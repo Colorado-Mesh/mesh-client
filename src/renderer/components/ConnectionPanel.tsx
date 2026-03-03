@@ -183,7 +183,7 @@ export default function ConnectionPanel({
     if (state.status === "connecting") {
       if (showBlePicker) setConnectionStage("Select your device below");
       else if (showSerialPicker) setConnectionStage("Select a serial port below");
-      else setConnectionStage("Scanning for devices...");
+      else setConnectionStage("Please wait...");
     } else if (state.status === "connected") {
       setConnectionStage("Configuring device...");
     } else if (state.status === "configured") {
@@ -224,7 +224,7 @@ export default function ConnectionPanel({
     setSerialPorts([]);
     setShowBlePicker(false);
     setShowSerialPicker(false);
-    setConnectionStage("Scanning for devices...");
+    setConnectionStage("Please wait...");
     try {
       await onConnect(connectionType, httpAddress);
     } catch (err) {
@@ -244,7 +244,7 @@ export default function ConnectionPanel({
       setSerialPorts([]);
       setShowBlePicker(false);
       setShowSerialPicker(false);
-      setConnectionStage("Scanning for devices...");
+      setConnectionStage("Please wait...");
       try {
         await onConnect(profile.type, profile.httpAddress);
       } catch (err) {
