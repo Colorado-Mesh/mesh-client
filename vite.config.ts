@@ -11,9 +11,11 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          recharts: ["recharts"],
-          leaflet: ["leaflet", "react-leaflet"],
+        manualChunks(id) {
+          if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/")) return "react";
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-") || id.includes("node_modules/victory-")) return "recharts";
+          if (id.includes("node_modules/leaflet") || id.includes("node_modules/react-leaflet") || id.includes("node_modules/@react-leaflet")) return "leaflet";
+          if (id.includes("node_modules/@meshtastic") || id.includes("node_modules/protobufjs")) return "meshtastic";
         },
       },
     },

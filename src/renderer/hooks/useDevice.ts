@@ -1,13 +1,16 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { MeshDevice } from "@meshtastic/core";
 import { create } from "@bufbuild/protobuf";
-import { Channel as ProtobufChannel } from "@meshtastic/protobufs";
-import { createConnection, reconnectBle, safeDisconnect } from "../lib/connection";
+import { Channel as ProtobufChannel, Portnums } from "@meshtastic/protobufs";
+import { createConnection, reconnectBle, safeDisconnect, clearCapturedBleDevice } from "../lib/connection";
+import { validateCoords } from "../lib/coordUtils";
+import { useDiagnosticsStore } from "../stores/diagnosticsStore";
 import type {
   ConnectionType,
   DeviceState,
   ChatMessage,
   MeshNode,
+  MQTTStatus,
   TelemetryPoint,
 } from "../lib/types";
 
@@ -25,6 +28,18 @@ const HTTP_DEAD_THRESHOLD_MS = 120_000;    // 2min
 const WATCHDOG_INTERVAL_MS = 15_000;       // Check every 15s
 const MAX_RECONNECT_ATTEMPTS = 5;
 const BLE_HEARTBEAT_INTERVAL_MS = 30_000;  // 30s heartbeat for BLE
+
+function getOrCreateVirtualNodeId(): number {
+  const key = "mesh-client:mqttVirtualNodeId";
+  const existing = localStorage.getItem(key);
+  if (existing) {
+    const n = parseInt(existing, 10);
+    if (n > 0 && n < 0xffffffff) return n;
+  }
+  const id = ((Math.random() * 0x0FFFFFFF) >>> 0) + 1;
+  localStorage.setItem(key, String(id));
+  return id;
+}
 
 export function useDevice() {
   const deviceRef = useRef<MeshDevice | null>(null);
@@ -46,6 +61,18 @@ export function useDevice() {
   const isReconnectingRef = useRef<boolean>(false);
   const reconnectGenerationRef = useRef<number>(0);
   const bleHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Carries replyId from sendMessage into the echo handler (packets are sequential)
+  const pendingReplyIdRef = useRef<number | undefined>(undefined);
+
+  // ─── MQTT session tracking ────────────────────────────────────
+  // Tracks current MQTT connection status in a ref for use in callbacks
+  const mqttStatusRef = useRef<MQTTStatus>("disconnected");
+  // Nodes heard via RF this session — prevents MQTT-only flag from being set
+  const rfHeardNodeIds = useRef<Set<number>>(new Set());
+  // Dedup map shared between RF and MQTT handlers
+  const seenPacketIds = useRef<Map<number, number>>(new Map());
+
+  const [mqttStatus, setMqttStatus] = useState<MQTTStatus>("disconnected");
 
   const [state, setState] = useState<DeviceState>({
     status: "disconnected",
@@ -83,6 +110,21 @@ export function useDevice() {
     },
     []
   );
+
+  // ─── Packet dedup helper (shared by RF and MQTT handlers) ──────
+  const isDuplicate = useCallback((packetId: number): boolean => {
+    const now = Date.now();
+    const expiry = seenPacketIds.current.get(packetId);
+    if (expiry !== undefined && expiry > now) return true;
+    seenPacketIds.current.set(packetId, now + 10 * 60 * 1000);
+    // Periodic cleanup to prevent unbounded growth
+    if (seenPacketIds.current.size > 5_000) {
+      for (const [id, exp] of seenPacketIds.current) {
+        if (exp < now) seenPacketIds.current.delete(id);
+      }
+    }
+    return false;
+  }, []);
 
   // Compact display name: short_name, truncated long_name, or hex ID
   const getNodeName = useCallback((nodeNum: number): string => {
@@ -199,18 +241,106 @@ export function useDevice() {
 
   // Load saved data from DB on mount
   useEffect(() => {
-    window.electronAPI.db.getMessages(undefined, 500).then((msgs) => {
-      setMessages(msgs.reverse());
-    });
-    window.electronAPI.db.getNodes().then((savedNodes) => {
-      const nodeMap = new Map<number, MeshNode>();
-      for (const n of savedNodes) {
-        nodeMap.set(n.node_id, { ...n, role: parseNodeRole(n.role) });
-      }
-      nodesRef.current = nodeMap;
-      setNodes(nodeMap);
-    });
+    window.electronAPI.db.getMessages(undefined, 500)
+      .then((msgs) => { setMessages(msgs.reverse()); })
+      .catch((err) => { console.error("[useDevice] Failed to load messages:", err); setMessages([]); });
+    window.electronAPI.db.getNodes()
+      .then((savedNodes) => {
+        const nodeMap = new Map<number, MeshNode>();
+        for (const n of savedNodes) {
+          nodeMap.set(n.node_id, { ...n, role: parseNodeRole(n.role), favorited: Boolean(n.favorited) });
+        }
+        nodesRef.current = nodeMap;
+        setNodes(nodeMap);
+      })
+      .catch((err) => { console.error("[useDevice] Failed to load nodes:", err); });
   }, []);
+
+  // ─── MQTT event subscriptions (independent of RF device) ──────
+  useEffect(() => {
+    const unsubStatus = window.electronAPI.mqtt.onStatus((s) => {
+      mqttStatusRef.current = s as MQTTStatus;
+      setMqttStatus(s as MQTTStatus);
+    });
+
+    const unsubNode = window.electronAPI.mqtt.onNodeUpdate((rawNode) => {
+      const nodeUpdate = rawNode as Partial<MeshNode> & { node_id: number; from_mqtt?: boolean; positionWarning?: string | null };
+      if (!nodeUpdate.node_id) return;
+
+      updateNodes((prev) => {
+        const existing = prev.get(nodeUpdate.node_id) || emptyNode(nodeUpdate.node_id);
+        const heardViaRF = rfHeardNodeIds.current.has(nodeUpdate.node_id);
+        const updated = new Map(prev);
+        const node: MeshNode = {
+          ...existing,
+          ...nodeUpdate,
+          heard_via_mqtt_only: !heardViaRF,
+          heard_via_mqtt: true,
+          source: heardViaRF ? "rf" : "mqtt",
+          last_heard: nodeUpdate.last_heard ?? Date.now(),
+        };
+        // Don't overwrite RF signal data with MQTT-sourced node data
+        if (!heardViaRF) {
+          // MQTT-only: suppress RF metrics
+          node.hops_away = existing.hops_away;
+          node.snr = existing.snr;
+          node.rssi = existing.rssi;
+        }
+        // Validate position if the update includes coords
+        if (nodeUpdate.latitude != null || nodeUpdate.longitude != null) {
+          const lat = nodeUpdate.latitude ?? 0;
+          const lon = nodeUpdate.longitude ?? 0;
+          const r = validateCoords(lat, lon);
+          if (!r.valid) {
+            node.latitude = existing.latitude;
+            node.longitude = existing.longitude;
+            node.lastPositionWarning = r.warning;
+          } else {
+            node.lastPositionWarning = undefined;
+          }
+        }
+        // Apply positionWarning emitted by mqtt-manager (bad coords, no position change)
+        if (nodeUpdate.positionWarning) {
+          node.lastPositionWarning = nodeUpdate.positionWarning;
+        } else if (nodeUpdate.positionWarning === null) {
+          node.lastPositionWarning = undefined;
+        }
+        updated.set(nodeUpdate.node_id, node);
+        window.electronAPI.db.saveNode(node);
+        return updated;
+      });
+      const updatedMqttNode = nodesRef.current.get(nodeUpdate.node_id);
+      if (updatedMqttNode) {
+        useDiagnosticsStore.getState().processNodeUpdate(
+          updatedMqttNode,
+          nodesRef.current.get(myNodeNumRef.current) ?? null
+        );
+      }
+    });
+
+    const unsubMsg = window.electronAPI.mqtt.onMessage((rawMsg) => {
+      const msg = rawMsg as Omit<ChatMessage, "id"> & { from_mqtt?: boolean };
+      if (msg.packetId && isDuplicate(msg.packetId)) {
+        useDiagnosticsStore.getState().recordDuplicate(msg.sender_id);
+        return;
+      }
+      // Deduplicate by content too (same sender + timestamp)
+      setMessages((prev) => {
+        const isDup = prev.some(
+          (m) => m.sender_id === msg.sender_id && m.timestamp === msg.timestamp && m.payload === msg.payload
+        );
+        if (isDup) return prev;
+        return [...prev, msg];
+      });
+      window.electronAPI.db.saveMessage(msg);
+    });
+
+    return () => {
+      unsubStatus();
+      unsubNode();
+      unsubMsg();
+    };
+  }, [updateNodes, isDuplicate]);
 
   // Cleanup on unmount — stop all intervals and subscriptions
   useEffect(() => {
@@ -257,21 +387,15 @@ export function useDevice() {
           startWatchdog();
         }
 
-        // Always clean up timers on disconnect, even before reaching configured
+        // Always clean up on disconnect, even if we never reached configured
         if (status === 2) {
           stopBleHeartbeat();
           stopWatchdog();
+          cleanupSubscriptions();
+          stopPolling();
           setTraceRouteResults(new Map());
-          if (wasConfigured) {
-            cleanupSubscriptions();
-            stopPolling();
-            deviceRef.current = null;
-            setState((s) => ({
-              ...s,
-              status: "disconnected",
-              connectionType: null,
-            }));
-          }
+          deviceRef.current = null;
+          setState((s) => ({ ...s, status: "disconnected", connectionType: null }));
         }
       });
       unsubscribesRef.current.push(unsub1);
@@ -291,27 +415,49 @@ export function useDevice() {
       unsubscribesRef.current.push(unsub2);
 
       // ─── Text messages ─────────────────────────────────────────
-      const unsub3 = device.events.onMessagePacket.subscribe((packet) => {
+      const unsub3 = device.events.onMeshPacket.subscribe((meshPacket) => {
+        if (meshPacket.payloadVariant.case !== "decoded") return;
+        const dataPacket = meshPacket.payloadVariant.value;
+        if (dataPacket.portnum !== Portnums.PortNum.TEXT_MESSAGE_APP) return;
+
         touchLastData();
-        const isEcho = packet.from === myNodeNumRef.current;
-        const pkt = packet as typeof packet & { emoji?: number; replyId?: number; to?: number };
+        const isEcho = meshPacket.from === myNodeNumRef.current;
+        const emoji = dataPacket.emoji || undefined;
+        const replyId = dataPacket.replyId
+          || (isEcho ? pendingReplyIdRef.current : undefined)
+          || undefined;
+        if (isEcho) pendingReplyIdRef.current = undefined;
+
         const msg: ChatMessage = {
-          sender_id: packet.from,
-          sender_name: getNodeName(packet.from),
-          payload: packet.data as string,
-          channel: packet.channel ?? 0,
-          timestamp: packet.rxTime?.getTime() ?? Date.now(),
-          packetId: packet.id,
+          sender_id: meshPacket.from,
+          sender_name: getNodeName(meshPacket.from),
+          payload: new TextDecoder().decode(dataPacket.payload),
+          channel: meshPacket.channel ?? 0,
+          timestamp: meshPacket.rxTime ? meshPacket.rxTime * 1000 : Date.now(),
+          packetId: meshPacket.id,
           status: isEcho ? "sending" : undefined,
-          emoji: pkt.emoji || undefined,
-          replyId: pkt.replyId || undefined,
-          to: pkt.to && pkt.to !== BROADCAST_ADDR ? pkt.to : undefined,
+          emoji,
+          replyId,
+          to: meshPacket.to && meshPacket.to !== BROADCAST_ADDR ? meshPacket.to : undefined,
         };
-        setMessages((prev) => [...prev, msg]);
+
+        setMessages((prev) => {
+          // Dedup reaction retransmissions before the DB write completes
+          if (msg.emoji && msg.replyId) {
+            const isDup = prev.some(
+              (m) =>
+                m.emoji === msg.emoji &&
+                m.replyId === msg.replyId &&
+                m.sender_id === msg.sender_id
+            );
+            if (isDup) return prev;
+          }
+          return [...prev, msg];
+        });
         window.electronAPI.db.saveMessage(msg);
 
         // Desktop notification for incoming messages when app is not focused
-        if (!isEcho && !msg.emoji && document.hidden) {
+        if (!isEcho && !emoji && document.hidden) {
           try {
             const title = msg.to
               ? `DM from ${msg.sender_name}`
@@ -328,6 +474,7 @@ export function useDevice() {
       // ─── User info (node identity) ─────────────────────────────
       const unsub4 = device.events.onUserPacket.subscribe((packet) => {
         touchLastData();
+        rfHeardNodeIds.current.add(packet.from);
         const user = packet.data as {
           id?: string;
           longName?: string;
@@ -344,6 +491,8 @@ export function useDevice() {
             short_name: user.shortName ?? existing.short_name,
             hw_model: String(user.hwModel ?? existing.hw_model),
             last_heard: Date.now(),
+            heard_via_mqtt_only: false,
+            source: "rf",
           };
           updated.set(packet.from, node);
           window.electronAPI.db.saveNode(node);
@@ -355,6 +504,7 @@ export function useDevice() {
       // ─── Node info packets ─────────────────────────────────────
       const unsub5 = device.events.onNodeInfoPacket.subscribe((packet) => {
         touchLastData();
+        rfHeardNodeIds.current.add((packet as any).num ?? (packet as any).from);
         const info = packet as {
           num?: number;
           user?: {
@@ -381,6 +531,26 @@ export function useDevice() {
         updateNodes((prev) => {
           const updated = new Map(prev);
           const existing = updated.get(nodeNum) || emptyNode(nodeNum);
+
+          let newLat = existing.latitude;
+          let newLon = existing.longitude;
+          let newAlt = info.position?.altitude ?? existing.altitude;
+          let posWarn: string | undefined = existing.lastPositionWarning;
+
+          if (info.position?.latitudeI != null || info.position?.longitudeI != null) {
+            const lat = (info.position.latitudeI ?? 0) / 1e7;
+            const lon = (info.position.longitudeI ?? 0) / 1e7;
+            const r = validateCoords(lat, lon);
+            if (r.valid) {
+              newLat = lat;
+              newLon = lon;
+              newAlt = info.position?.altitude ?? existing.altitude;
+              posWarn = undefined;
+            } else {
+              posWarn = r.warning;
+            }
+          }
+
           const node: MeshNode = {
             ...existing,
             node_id: nodeNum,
@@ -392,26 +562,30 @@ export function useDevice() {
             last_heard: (info.lastHeard ?? 0) > 0
               ? info.lastHeard! * 1000
               : existing.last_heard,
-            latitude:
-              info.position?.latitudeI != null
-                ? info.position.latitudeI / 1e7
-                : existing.latitude,
-            longitude:
-              info.position?.longitudeI != null
-                ? info.position.longitudeI / 1e7
-                : existing.longitude,
+            latitude: newLat,
+            longitude: newLon,
             role: info.user?.role ?? existing.role,
             hops_away: info.hopsAway ?? existing.hops_away,
             via_mqtt: info.viaMqtt ?? existing.via_mqtt,
             voltage: info.deviceMetrics?.voltage ?? existing.voltage,
             channel_utilization: info.deviceMetrics?.channelUtilization ?? existing.channel_utilization,
             air_util_tx: info.deviceMetrics?.airUtilTx ?? existing.air_util_tx,
-            altitude: info.position?.altitude ?? existing.altitude,
+            altitude: newAlt,
+            heard_via_mqtt_only: false,
+            source: "rf",
+            lastPositionWarning: posWarn,
           };
           updated.set(nodeNum, node);
           window.electronAPI.db.saveNode(node);
           return updated;
         });
+        const updatedRfNode = nodesRef.current.get(nodeNum);
+        if (updatedRfNode) {
+          useDiagnosticsStore.getState().processNodeUpdate(
+            updatedRfNode,
+            nodesRef.current.get(myNodeNumRef.current) ?? null
+          );
+        }
       });
       unsubscribesRef.current.push(unsub5);
 
@@ -421,8 +595,22 @@ export function useDevice() {
         const pos = packet.data as {
           latitudeI?: number;
           longitudeI?: number;
+          altitude?: number;
         };
-        if (pos.latitudeI === undefined && pos.longitudeI === undefined) return;
+
+        const lat = (pos.latitudeI ?? 0) / 1e7;
+        const lon = (pos.longitudeI ?? 0) / 1e7;
+        const r = validateCoords(lat, lon);
+
+        if (!r.valid) {
+          updateNodes((prev) => {
+            const updated = new Map(prev);
+            const existing = updated.get(packet.from) || emptyNode(packet.from);
+            updated.set(packet.from, { ...existing, lastPositionWarning: r.warning });
+            return updated;
+          });
+          return;
+        }
 
         updateNodes((prev) => {
           const updated = new Map(prev);
@@ -430,15 +618,11 @@ export function useDevice() {
 
           const node: MeshNode = {
             ...existing,
-            latitude:
-              pos.latitudeI != null
-                ? pos.latitudeI / 1e7
-                : existing.latitude,
-            longitude:
-              pos.longitudeI != null
-                ? pos.longitudeI / 1e7
-                : existing.longitude,
+            latitude: lat,
+            longitude: lon,
+            altitude: pos.altitude ?? existing.altitude,
             last_heard: Date.now(),
+            lastPositionWarning: undefined,
           };
           updated.set(packet.from, node);
           window.electronAPI.db.saveNode(node);
@@ -776,6 +960,7 @@ export function useDevice() {
     stopPolling();
     stopWatchdog();
     stopBleHeartbeat();
+    clearCapturedBleDevice();
     isReconnectingRef.current = false;
     reconnectAttemptRef.current = 0;
     reconnectGenerationRef.current++;
@@ -789,9 +974,42 @@ export function useDevice() {
     setState({ status: "disconnected", myNodeNum: 0, connectionType: null });
   }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat]);
 
-  const sendMessage = useCallback(async (text: string, channel = 0, destination?: number) => {
-    if (!deviceRef.current) throw new Error("Not connected");
+  const sendMessage = useCallback(async (text: string, channel = 0, destination?: number, replyId?: number) => {
+    if (!deviceRef.current) {
+      if (mqttStatusRef.current !== "connected") throw new Error("Not connected");
+
+      // MQTT-only send path (no device connected)
+      const from = myNodeNumRef.current || getOrCreateVirtualNodeId();
+      const packetId = await window.electronAPI.mqtt.publish({
+        text,
+        from,
+        channel,
+        destination: destination ?? BROADCAST_ADDR,
+        channelName: "LongFast",
+      });
+
+      const msg: ChatMessage = {
+        sender_id: from,
+        sender_name: getNodeName(from),
+        payload: text,
+        channel,
+        timestamp: Date.now(),
+        packetId,
+        status: "acked",
+        to: destination,
+        replyId,
+      };
+
+      // Register packetId to deduplicate the echo that comes back via MQTT subscription
+      isDuplicate(packetId);
+
+      setMessages((prev) => [...prev, msg]);
+      window.electronAPI.db.saveMessage(msg);
+      return;
+    }
+
     try {
+      pendingReplyIdRef.current = replyId;
       const dest: number | "broadcast" = destination ?? "broadcast";
       const packetId = await deviceRef.current.sendText(
         text,
@@ -818,7 +1036,7 @@ export function useDevice() {
       );
       window.electronAPI.db.updateMessageStatus(packetId, "failed", error);
     }
-  }, []);
+  }, [getNodeName, isDuplicate]);
 
   const setConfig = useCallback(async (config: unknown) => {
     if (!deviceRef.current) return;
@@ -903,6 +1121,16 @@ export function useDevice() {
     });
   }, [updateNodes]);
 
+  const setNodeFavorited = useCallback(async (nodeId: number, favorited: boolean) => {
+    await window.electronAPI.db.setNodeFavorited(nodeId, favorited);
+    updateNodes((prev) => {
+      const updated = new Map(prev);
+      const existing = updated.get(nodeId);
+      if (existing) updated.set(nodeId, { ...existing, favorited });
+      return updated;
+    });
+  }, [updateNodes]);
+
   const requestRefresh = useCallback(async () => {
     if (!deviceRef.current) return;
     await deviceRef.current.configure();
@@ -928,6 +1156,7 @@ export function useDevice() {
 
   return {
     state,
+    mqttStatus,
     messages,
     nodes,
     telemetry,
@@ -950,6 +1179,7 @@ export function useDevice() {
     requestPosition,
     traceRoute,
     deleteNode,
+    setNodeFavorited,
     requestRefresh,
     getFullNodeLabel,
   };

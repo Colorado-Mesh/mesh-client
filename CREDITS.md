@@ -20,3 +20,4 @@ Thanks to the [Denver Mesh](https://denvermesh.org) community for fostering open
 - [Recharts](https://recharts.org) — React charting library
 - [Tailwind CSS](https://tailwindcss.com) — Utility-first CSS
 - [OpenStreetMap](https://www.openstreetmap.org) — Map tile data
+- [mqtt](https://github.com/mqttjs/MQTT.js) — MQTT client for Node.js (broker connectivity and message publishing)

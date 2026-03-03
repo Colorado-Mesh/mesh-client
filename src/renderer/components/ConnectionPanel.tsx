@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type {
   ConnectionType,
   DeviceState,
   BluetoothDevice,
   SerialPortInfo,
+  MQTTSettings,
+  MQTTStatus,
 } from "../lib/types";
 import { LinkIcon } from "./SignalBars";
 
@@ -78,10 +80,46 @@ function Spinner({ className = "" }: { className?: string }) {
   );
 }
 
+const MQTT_DEFAULTS: MQTTSettings = {
+  server: "mqtt.meshtastic.org",
+  port: 1883,
+  username: "meshdev",
+  password: "large4cats",
+  topicPrefix: "msh/US/",
+  autoLaunch: false,
+  maxRetries: 5,
+};
+
+function loadMqttSettings(): MQTTSettings {
+  try {
+    const raw = localStorage.getItem("mesh-client:mqttSettings");
+    return raw ? { ...MQTT_DEFAULTS, ...JSON.parse(raw) } : MQTT_DEFAULTS;
+  } catch {
+    return MQTT_DEFAULTS;
+  }
+}
+
+function MqttGlobeIcon({ connected }: { connected: boolean }) {
+  return (
+    <svg
+      className={`w-5 h-5 ${connected ? "text-brand-green" : "text-gray-400"}`}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20M2 12h20" />
+      <path d="M2 7h20M2 17h20" />
+    </svg>
+  );
+}
+
 interface Props {
   state: DeviceState;
   onConnect: (type: ConnectionType, httpAddress?: string) => Promise<void>;
   onDisconnect: () => Promise<void>;
+  mqttStatus: MQTTStatus;
   myNodeLabel?: string;
 }
 
@@ -89,6 +127,7 @@ export default function ConnectionPanel({
   state,
   onConnect,
   onDisconnect,
+  mqttStatus,
   myNodeLabel,
 }: Props) {
   const [connectionType, setConnectionType] = useState<ConnectionType>("ble");
@@ -96,6 +135,35 @@ export default function ConnectionPanel({
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStage, setConnectionStage] = useState("");
+
+  // ─── MQTT settings state ───────────────────────────────────────
+  const [mqttSettings, setMqttSettings] = useState<MQTTSettings>(loadMqttSettings);
+  const [showMqttPassword, setShowMqttPassword] = useState(false);
+  const [mqttError, setMqttError] = useState<string | null>(null);
+  const [mqttClientId, setMqttClientId] = useState("");
+  const mqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Persist MQTT settings with debounce
+  useEffect(() => {
+    if (mqttSaveTimerRef.current) clearTimeout(mqttSaveTimerRef.current);
+    mqttSaveTimerRef.current = setTimeout(() => {
+      localStorage.setItem("mesh-client:mqttSettings", JSON.stringify(mqttSettings));
+    }, 300);
+    return () => { if (mqttSaveTimerRef.current) clearTimeout(mqttSaveTimerRef.current); };
+  }, [mqttSettings]);
+
+  // Listen for MQTT events from main process
+  useEffect(() => window.electronAPI.mqtt.onError(setMqttError), []);
+  useEffect(() => window.electronAPI.mqtt.onClientId(setMqttClientId), []);
+
+  // Clear MQTT error/clientId when connection succeeds or is disconnected
+  useEffect(() => {
+    if (mqttStatus === "connected" || mqttStatus === "disconnected") setMqttError(null);
+    if (mqttStatus === "disconnected") setMqttClientId("");
+  }, [mqttStatus]);
+
+  const updateMqtt = <K extends keyof MQTTSettings>(key: K, value: MQTTSettings[K]) =>
+    setMqttSettings((prev) => ({ ...prev, [key]: value }));
 
   // ─── BLE device picker state ──────────────────────────────────
   const [bleDevices, setBleDevices] = useState<BluetoothDevice[]>([]);
@@ -353,52 +421,226 @@ export default function ConnectionPanel({
     );
   }
 
+  // ─── Shared MQTT section ────────────────────────────────────────
+  const mqttHeaderBar = (
+    <div className={`flex items-center justify-between px-4 py-3 bg-secondary-dark border-b ${mqttStatus === "connected" ? "border-brand-green/20" : "border-gray-700"}`}>
+      <div className="flex items-center gap-2">
+        <MqttGlobeIcon connected={mqttStatus === "connected"} />
+        <span className="font-medium text-gray-200">MQTT Connection</span>
+      </div>
+      <span className={`text-xs font-medium ${
+        mqttStatus === "connected" ? "text-brand-green" :
+        mqttStatus === "connecting" ? "text-yellow-400 animate-pulse" :
+        mqttStatus === "error" ? "text-red-400" : "text-gray-500"
+      }`}>
+        ● {mqttStatus}
+      </span>
+    </div>
+  );
+
+  const mqttSection = mqttStatus === "connected" ? (
+    <div className={`bg-deep-black rounded-lg border border-brand-green/20 overflow-hidden`}>
+      {mqttHeaderBar}
+      <div className="p-4 space-y-3">
+        <div className="flex justify-between text-sm">
+          <span className="text-muted">Server</span>
+          <span className="text-gray-200">{mqttSettings.server}:{mqttSettings.port}</span>
+        </div>
+        {mqttClientId && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted">Client ID</span>
+            <span className="text-gray-200 font-mono text-xs">{mqttClientId}</span>
+          </div>
+        )}
+        <div className="flex justify-between text-sm">
+          <span className="text-muted">Topic</span>
+          <span className="text-gray-200 font-mono text-xs">
+            {mqttSettings.topicPrefix.endsWith("/") ? mqttSettings.topicPrefix : `${mqttSettings.topicPrefix}/`}#
+          </span>
+        </div>
+        <button
+          onClick={() => window.electronAPI.mqtt.disconnect()}
+          className="w-full px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition-colors"
+        >
+          Disconnect
+        </button>
+      </div>
+    </div>
+  ) : (
+    <div className="bg-deep-black rounded-lg border border-gray-700 overflow-hidden">
+      {mqttHeaderBar}
+      {mqttError && (
+        <div className="px-4 py-2 bg-red-900/50 border-b border-red-800 text-red-300 text-xs">
+          {mqttError}
+        </div>
+      )}
+      <div className="p-4 space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="col-span-2 space-y-1">
+            <label className="text-xs text-muted">Server</label>
+            <input
+              type="text"
+              value={mqttSettings.server}
+              onChange={(e) => updateMqtt("server", e.target.value)}
+              className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted">Port</label>
+            <input
+              type="number"
+              value={mqttSettings.port}
+              onChange={(e) => updateMqtt("port", parseInt(e.target.value) || 1883)}
+              className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-xs text-muted">Username</label>
+            <input
+              type="text"
+              value={mqttSettings.username}
+              onChange={(e) => updateMqtt("username", e.target.value)}
+              className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted">Password</label>
+            <div className="relative">
+              <input
+                type={showMqttPassword ? "text" : "password"}
+                value={mqttSettings.password}
+                onChange={(e) => updateMqtt("password", e.target.value)}
+                className="w-full px-2 py-1.5 pr-8 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowMqttPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-xs"
+              >
+                {showMqttPassword ? "hide" : "show"}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs text-muted">Topic Prefix</label>
+            <span
+              title="Each country/region has its own Topic setting; please research the correct hierarchy. Example: Colorado is msh/US/CO"
+              className="text-xs text-gray-500 cursor-help"
+            >
+              ⓘ
+            </span>
+          </div>
+          <input
+            type="text"
+            value={mqttSettings.topicPrefix}
+            onChange={(e) => updateMqtt("topicPrefix", e.target.value)}
+            className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
+            placeholder="msh/US/"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted">Max Retries</label>
+          <input
+            type="number"
+            min={1}
+            max={20}
+            value={mqttSettings.maxRetries ?? 5}
+            onChange={(e) => updateMqtt("maxRetries", parseInt(e.target.value) || 5)}
+            className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="mqttAutoLaunch"
+            checked={mqttSettings.autoLaunch}
+            onChange={(e) => updateMqtt("autoLaunch", e.target.checked)}
+            className="accent-brand-green"
+          />
+          <label htmlFor="mqttAutoLaunch" className="text-sm text-gray-300 cursor-pointer">
+            Auto-connect on application start
+          </label>
+        </div>
+        <div className="pt-1">
+          <button
+            onClick={() => window.electronAPI.mqtt.connect(mqttSettings)}
+            disabled={mqttStatus === "connecting"}
+            className="w-full px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-40"
+            style={{ backgroundColor: "#4CAF50" }}
+          >
+            Connect
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // ─── Connected View ────────────────────────────────────────────
   if (isConnected) {
     return (
       <div className="max-w-lg mx-auto space-y-6">
-        <h2 className="text-xl font-semibold text-gray-200">
-          Device Connection
-        </h2>
+        <button
+          onClick={async () => {
+            await onDisconnect();
+            window.electronAPI.mqtt.disconnect();
+            window.electronAPI.quitApp();
+          }}
+          className="w-full px-6 py-2.5 border border-red-700 text-red-400 hover:bg-red-900/30 hover:text-red-300 font-medium rounded-lg transition-colors text-sm"
+        >
+          Disconnect &amp; Quit
+        </button>
 
-        <div className="bg-deep-black rounded-lg p-5 space-y-3 border border-brand-green/20">
-          <div className="flex items-center gap-3 mb-1">
-            <LinkIcon className="w-5 h-5" />
-            <span className={`font-medium capitalize ${state.status === "reconnecting" ? "text-orange-400" : "text-bright-green"}`}>
-              {state.status}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted">Connection Type</span>
-            <span className="text-gray-200 uppercase flex items-center gap-2">
+        <div className={`bg-deep-black rounded-lg border overflow-hidden ${
+          state.status === "reconnecting" ? "border-orange-500/30" : "border-brand-green/20"
+        }`}>
+          <div className={`flex items-center justify-between px-4 py-3 bg-secondary-dark border-b ${
+            state.status === "reconnecting" ? "border-orange-500/30" : "border-brand-green/20"
+          }`}>
+            <div className="flex items-center gap-2">
               <ConnectionIcon type={state.connectionType!} />
-              {state.connectionType}
+              <span className="font-medium text-gray-200">Radio Connection</span>
+            </div>
+            <span className={`text-xs font-medium ${
+              state.status === "reconnecting" ? "text-orange-400 animate-pulse" : "text-brand-green"
+            }`}>
+              ● {state.status}
             </span>
           </div>
-          {state.myNodeNum > 0 && (
+          <div className="p-4 space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted">My Node</span>
-              <span className="text-gray-200 font-mono">
-                {myNodeLabel ?? `!${state.myNodeNum.toString(16)}`}
-              </span>
+              <span className="text-muted">Connection Type</span>
+              <span className="text-gray-200 uppercase">{state.connectionType}</span>
             </div>
-          )}
-          {state.lastDataReceived && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted">Last Data</span>
-              <span className="text-gray-300 text-xs">
-                {new Date(state.lastDataReceived).toLocaleTimeString()}
-              </span>
-            </div>
-          )}
+            {state.myNodeNum > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted">My Node</span>
+                <span className="text-gray-200 font-mono">
+                  {myNodeLabel ?? `!${state.myNodeNum.toString(16)}`}
+                </span>
+              </div>
+            )}
+            {state.lastDataReceived && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted">Last Data</span>
+                <span className="text-gray-300 text-xs">
+                  {new Date(state.lastDataReceived).toLocaleTimeString()}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={onDisconnect}
+              className="w-full px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Disconnect
+            </button>
+          </div>
         </div>
 
-        <button
-          onClick={onDisconnect}
-          className="w-full px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-medium rounded-lg transition-colors"
-        >
-          Disconnect
-        </button>
+        {mqttSection}
       </div>
     );
   }
@@ -406,9 +648,17 @@ export default function ConnectionPanel({
   // ─── Disconnected View ─────────────────────────────────────────
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <h2 className="text-xl font-semibold text-gray-200">
-        Device Connection
-      </h2>
+      {mqttStatus === "connected" && (
+        <button
+          onClick={() => {
+            window.electronAPI.mqtt.disconnect();
+            window.electronAPI.quitApp();
+          }}
+          className="w-full px-6 py-2.5 border border-red-700 text-red-400 hover:bg-red-900/30 hover:text-red-300 font-medium rounded-lg transition-colors text-sm"
+        >
+          Disconnect &amp; Quit
+        </button>
+      )}
 
       {/* Saved Profiles */}
       {profiles.length > 0 && (
@@ -447,101 +697,106 @@ export default function ConnectionPanel({
         </div>
       )}
 
-      {/* Connection type selector */}
-      <div className="space-y-3">
-        <label className="text-sm text-muted">Connection Type</label>
-        <div className="grid grid-cols-3 gap-2">
-          {(["ble", "serial", "http"] as const).map((type) => (
+      {/* Radio Connection card */}
+      <div className="bg-deep-black rounded-lg border border-gray-700 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 bg-secondary-dark border-b border-gray-700">
+          <div className="flex items-center gap-2">
+            <ConnectionIcon type={connectionType} />
+            <span className="font-medium text-gray-200">Radio Connection</span>
+          </div>
+          <span className="text-xs font-medium text-gray-500">● disconnected</span>
+        </div>
+
+        {/* Inline error */}
+        {error && (
+          <div className="px-4 py-2 bg-red-900/50 border-b border-red-800 text-red-300 text-xs">
+            {error}
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="p-4 space-y-3">
+          {/* Connection type selector */}
+          <div className="space-y-2">
+            <label className="text-xs text-muted">Connection Type</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(["ble", "serial", "http"] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setConnectionType(type)}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    connectionType === type
+                      ? "text-white ring-2 ring-bright-green"
+                      : "bg-secondary-dark text-gray-300 hover:bg-gray-600"
+                  }`}
+                  style={connectionType === type ? { backgroundColor: "#4CAF50" } : undefined}
+                >
+                  <ConnectionIcon type={type} />
+                  {type === "ble" && "Bluetooth"}
+                  {type === "serial" && "USB Serial"}
+                  {type === "http" && "WiFi/HTTP"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* HTTP address input */}
+          {connectionType === "http" && (
+            <div className="space-y-1">
+              <label className="text-xs text-muted">Device Address</label>
+              <input
+                type="text"
+                value={httpAddress}
+                onChange={(e) => setHttpAddress(e.target.value)}
+                placeholder="meshtastic.local or 192.168.1.x"
+                className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
+              />
+              <p className="text-xs text-muted">
+                Enter hostname or IP address (without http://)
+              </p>
+            </div>
+          )}
+
+          {/* Connection hints */}
+          <div className="text-xs text-muted bg-secondary-dark rounded-lg p-3 space-y-1">
+            {connectionType === "ble" && (
+              <>
+                <p>Ensure your Meshtastic device has Bluetooth enabled and is in range.</p>
+                <p>Click Connect to scan — a device picker will appear with discovered Meshtastic devices.</p>
+              </>
+            )}
+            {connectionType === "serial" && (
+              <>
+                <p>Connect your Meshtastic device via USB cable.</p>
+                <p>Click Connect — a port picker will appear with available serial ports.</p>
+              </>
+            )}
+            {connectionType === "http" && (
+              <p>Enter the IP address or hostname of a WiFi-connected Meshtastic node. The device must have WiFi enabled in its config.</p>
+            )}
+          </div>
+
+          {/* Connect button + Save profile */}
+          <div className="flex gap-2 pt-1">
             <button
-              key={type}
-              onClick={() => setConnectionType(type)}
-              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                connectionType === type
-                  ? "bg-brand-green text-white ring-2 ring-bright-green"
-                  : "bg-secondary-dark text-gray-300 hover:bg-gray-600"
-              }`}
+              onClick={handleConnect}
+              className="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors"
+              style={{ backgroundColor: "#4CAF50" }}
             >
-              <ConnectionIcon type={type} />
-              {type === "ble" && "Bluetooth"}
-              {type === "serial" && "USB Serial"}
-              {type === "http" && "WiFi/HTTP"}
+              Connect
             </button>
-          ))}
+            <button
+              onClick={() => setShowProfileForm(!showProfileForm)}
+              className="px-3 py-2.5 bg-secondary-dark hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              title="Save as profile"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* HTTP address input */}
-      {connectionType === "http" && (
-        <div className="space-y-2">
-          <label className="text-sm text-muted">Device Address</label>
-          <input
-            type="text"
-            value={httpAddress}
-            onChange={(e) => setHttpAddress(e.target.value)}
-            placeholder="meshtastic.local or 192.168.1.x"
-            className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none"
-          />
-          <p className="text-xs text-muted">
-            Enter hostname or IP address (without http://)
-          </p>
-        </div>
-      )}
-
-      {/* Connection hints */}
-      <div className="text-sm text-muted bg-deep-black rounded-lg p-3 space-y-1">
-        {connectionType === "ble" && (
-          <>
-            <p>
-              Ensure your Meshtastic device has Bluetooth enabled and is in
-              range.
-            </p>
-            <p>
-              Click Connect to scan — a device picker will appear with
-              discovered Meshtastic devices.
-            </p>
-          </>
-        )}
-        {connectionType === "serial" && (
-          <>
-            <p>Connect your Meshtastic device via USB cable.</p>
-            <p>
-              Click Connect — a port picker will appear with available serial
-              ports.
-            </p>
-          </>
-        )}
-        {connectionType === "http" && (
-          <p>
-            Enter the IP address or hostname of a WiFi-connected Meshtastic
-            node. The device must have WiFi enabled in its config.
-          </p>
-        )}
-      </div>
-
-      {/* Error display */}
-      {error && (
-        <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-2 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* Connect button + Save profile */}
-      <div className="flex gap-2">
-        <button
-          onClick={handleConnect}
-          className="flex-1 px-6 py-3 bg-brand-green hover:bg-brand-green/90 text-white font-medium rounded-lg transition-colors"
-        >
-          Connect
-        </button>
-        <button
-          onClick={() => setShowProfileForm(!showProfileForm)}
-          className="px-4 py-3 bg-secondary-dark hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
-          title="Save as profile"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-          </svg>
-        </button>
       </div>
 
       {/* Save Profile Form */}
@@ -561,7 +816,8 @@ export default function ConnectionPanel({
             <button
               onClick={handleSaveProfile}
               disabled={!profileName.trim()}
-              className="px-4 py-2 bg-brand-green hover:bg-brand-green/90 disabled:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-4 py-2 disabled:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+              style={{ backgroundColor: "#4CAF50" }}
             >
               Save
             </button>
@@ -572,6 +828,8 @@ export default function ConnectionPanel({
           </p>
         </div>
       )}
+
+      {mqttSection}
     </div>
   );
 }

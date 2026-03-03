@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import type { MeshNode } from "../lib/types";
 import { getNodeStatus, haversineDistanceKm } from "../lib/nodeStatus";
+import { useDiagnosticsStore } from "../stores/diagnosticsStore";
 import { RoleDisplay } from "../lib/roleInfo";
 import RefreshButton from "./RefreshButton";
 import SignalBars from "./SignalBars";
@@ -30,6 +31,7 @@ interface Props {
   onNodeClick: (node: MeshNode) => void;
   isConnected: boolean;
   locationFilter: LocationFilter;
+  onToggleFavorite: (nodeId: number, favorited: boolean) => void;
 }
 
 export default function NodeListPanel({
@@ -39,7 +41,10 @@ export default function NodeListPanel({
   onNodeClick,
   isConnected,
   locationFilter,
+  onToggleFavorite,
 }: Props) {
+  const anomalies = useDiagnosticsStore((s) => s.anomalies);
+  const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
   const [sortField, setSortField] = useState<SortField>("last_heard");
   const [sortAsc, setSortAsc] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,6 +72,11 @@ export default function NodeListPanel({
       );
     }
 
+    // Filter MQTT-only nodes
+    if (locationFilter.hideMqttOnly) {
+      list = list.filter((n) => !n.heard_via_mqtt_only);
+    }
+
     // Filter by distance
     if (locationFilter.enabled) {
       const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
@@ -80,7 +90,7 @@ export default function NodeListPanel({
         list = list.filter((n) => {
           if (n.node_id === myNodeNum) return true;
           // Nodes without GPS can't be distance-filtered — keep them visible
-          if (!n.latitude || !n.longitude) return true;
+          if (!n.latitude && !n.longitude) return true;
           const d = haversineDistanceKm(homeNode!.latitude, homeNode!.longitude, n.latitude, n.longitude);
           return d <= maxKm;
         });
@@ -89,6 +99,14 @@ export default function NodeListPanel({
 
     // Sort
     list.sort((a, b) => {
+      // Self-node always first
+      if (a.node_id === myNodeNum) return -1;
+      if (b.node_id === myNodeNum) return 1;
+      // Favorites pinned above non-favorites
+      const aFav = a.favorited ? 1 : 0;
+      const bFav = b.favorited ? 1 : 0;
+      if (aFav !== bFav) return bFav - aFav;
+      // Regular field sort
       let cmp = 0;
       switch (sortField) {
         case "node_id":
@@ -121,9 +139,12 @@ export default function NodeListPanel({
         case "hops_away":
           cmp = (a.hops_away ?? 999) - (b.hops_away ?? 999);
           break;
-        case "via_mqtt":
-          cmp = (a.via_mqtt ? 1 : 0) - (b.via_mqtt ? 1 : 0);
+        case "via_mqtt": {
+          const aVal = a.heard_via_mqtt_only ? 2 : (a.via_mqtt ? 1 : 0);
+          const bVal = b.heard_via_mqtt_only ? 2 : (b.via_mqtt ? 1 : 0);
+          cmp = aVal - bVal;
           break;
+        }
         case "voltage":
           cmp = (a.voltage ?? 0) - (b.voltage ?? 0);
           break;
@@ -137,14 +158,27 @@ export default function NodeListPanel({
           cmp = (a.altitude ?? 0) - (b.altitude ?? 0);
           break;
       }
-      // Self-node always first
-      if (a.node_id === myNodeNum) return -1;
-      if (b.node_id === myNodeNum) return 1;
       return sortAsc ? cmp : -cmp;
     });
 
     return list;
   }, [nodes, sortField, sortAsc, searchQuery, myNodeNum, locationFilter]);
+
+  const filterStatus = useMemo(() => {
+    if (!locationFilter.enabled) return null;
+    const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
+    const homeHasLocation = homeNode &&
+      homeNode.latitude != null && homeNode.latitude !== 0 &&
+      homeNode.longitude != null && homeNode.longitude !== 0;
+    if (!homeHasLocation) return "no-gps";
+    const totalWithGps = Array.from(nodes.values()).filter(
+      (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude)
+    ).length;
+    const visibleWithGps = nodeList.filter(
+      (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude)
+    ).length;
+    return { hidden: totalWithGps - visibleWithGps };
+  }, [locationFilter, myNodeNum, nodes, nodeList]);
 
   function formatTime(ts: number): string {
     if (!ts) return "Never";
@@ -196,6 +230,18 @@ export default function NodeListPanel({
         <RefreshButton onRefresh={onRefresh} disabled={!isConnected} />
       </div>
 
+      {/* Distance filter status */}
+      {filterStatus === "no-gps" && (
+        <div className="bg-yellow-900/30 border border-yellow-700 text-yellow-300 px-3 py-2 rounded-lg text-xs">
+          Distance filter is enabled but your device has no GPS fix — all nodes are shown.
+        </div>
+      )}
+      {filterStatus !== null && filterStatus !== "no-gps" && filterStatus.hidden > 0 && (
+        <div className="bg-brand-green/10 border border-brand-green/30 text-brand-green px-3 py-2 rounded-lg text-xs">
+          Distance filter active — {filterStatus.hidden} node{filterStatus.hidden !== 1 ? "s" : ""} hidden beyond {locationFilter.maxDistance} {locationFilter.unit}.
+        </div>
+      )}
+
       {/* Online / Stale / Offline summary */}
       <div className="flex gap-3 text-xs text-muted">
         <span className="flex items-center gap-1">
@@ -217,6 +263,7 @@ export default function NodeListPanel({
           <thead>
             <tr className="bg-deep-black text-muted text-left sticky top-0 z-10">
               <th className="px-3 py-2 w-8"></th>
+              <th className="px-2 py-2 w-6" title="Favorites"></th>
               <th
                 className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("node_id")}
@@ -319,7 +366,7 @@ export default function NodeListPanel({
             {nodeList.length === 0 ? (
               <tr>
                 <td
-                  colSpan={17}
+                  colSpan={18}
                   className="text-center text-muted py-8"
                 >
                   {searchQuery
@@ -331,12 +378,14 @@ export default function NodeListPanel({
               nodeList.map((node) => {
                 const isSelf = node.node_id === myNodeNum;
                 const status = getNodeStatus(node.last_heard);
-                const rowOpacity =
-                  status === "offline"
-                    ? "opacity-20"
-                    : status === "stale"
-                    ? "opacity-35"
-                    : "";
+                const isMqttOnlyDimmed = ignoreMqttEnabled && !!node.heard_via_mqtt_only;
+                const rowOpacity = isMqttOnlyDimmed
+                  ? "opacity-50"
+                  : status === "offline"
+                  ? "opacity-20"
+                  : status === "stale"
+                  ? "opacity-35"
+                  : "";
 
                 return (
                   <tr
@@ -368,16 +417,45 @@ export default function NodeListPanel({
                         )}
                       </div>
                     </td>
+                    {/* Favorite toggle */}
+                    <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
+                      {!isSelf && (
+                        <button
+                          onClick={() => onToggleFavorite(node.node_id, !node.favorited)}
+                          title={node.favorited ? "Remove from favorites" : "Add to favorites"}
+                        >
+                          <span className={node.favorited ? "text-yellow-400" : "text-gray-600 hover:text-yellow-400"}>
+                            {node.favorited ? "★" : "☆"}
+                          </span>
+                        </button>
+                      )}
+                    </td>
                     <td className="px-3 py-2 font-mono text-xs text-muted">
                       !{node.node_id.toString(16)}
                     </td>
-                    <td className={`px-3 py-2 ${isSelf ? "text-bright-green font-medium" : "text-gray-200"}`}>
+                    <td className={`px-3 py-2 ${isSelf ? "text-bright-green font-medium" : "text-gray-200"} ${isMqttOnlyDimmed ? "line-through" : ""}`}>
                       {node.long_name || "-"}
                       {isSelf && (
                         <span className="text-[10px] text-bright-green/60 ml-1.5">(you)</span>
                       )}
+                      {!isSelf && anomalies.has(node.node_id) && (
+                        <svg
+                          className={`w-4 h-4 ml-1 inline shrink-0 ${
+                            anomalies.get(node.node_id)?.severity === "error"
+                              ? "text-red-400"
+                              : "text-orange-400"
+                          }`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <title>{anomalies.get(node.node_id)?.description}</title>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      )}
                     </td>
-                    <td className="px-3 py-2 text-gray-300">
+                    <td className={`px-3 py-2 text-gray-300 ${isMqttOnlyDimmed ? "line-through" : ""}`}>
                       {node.short_name || "-"}
                     </td>
                     <td className="px-3 py-2 text-muted">
@@ -387,10 +465,16 @@ export default function NodeListPanel({
                       <RoleDisplay role={node.role} />
                     </td>
                     <td className={`px-3 py-2 text-right text-xs ${node.hops_away === 0 ? "text-bright-green" : "text-gray-300"}`}>
-                      {node.hops_away !== undefined ? node.hops_away : "-"}
+                      {node.heard_via_mqtt_only
+                        ? <span className="text-muted">—</span>
+                        : node.hops_away !== undefined ? node.hops_away : "-"}
                     </td>
                     <td className="px-3 py-2 text-center text-gray-300 text-xs">
-                      {node.via_mqtt ? "Yes" : "-"}
+                      {node.heard_via_mqtt_only
+                        ? <span title="Heard only via MQTT" className="text-blue-400">🌐</span>
+                        : node.via_mqtt
+                        ? <span title="Relay uses MQTT" className="text-gray-400 text-xs">relay</span>
+                        : "-"}
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-muted">
                       {formatCoord(node.latitude)}
@@ -400,11 +484,13 @@ export default function NodeListPanel({
                     </td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex justify-end">
-                        <SignalBars rssi={node.rssi} isSelf={isSelf} />
+                        {node.heard_via_mqtt_only
+                          ? <span className="text-muted text-xs">—</span>
+                          : <SignalBars rssi={node.rssi} isSelf={isSelf} />}
                       </div>
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-muted">
-                      {node.rssi != null ? `${node.rssi} dBm` : "-"}
+                      {node.heard_via_mqtt_only ? "—" : node.rssi != null ? `${node.rssi} dBm` : "-"}
                     </td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-1.5">

@@ -60,29 +60,34 @@ export default function TelemetryPanel({ telemetry, signalTelemetry, onRefresh, 
   const handleExportCsv = useCallback(() => {
     if (telemetry.length === 0 && signalTelemetry.length === 0) return;
 
+    function escapeCsvCell(v: string | number | undefined): string {
+      const s = String(v ?? "");
+      return /[,"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
     const headers = ["timestamp", "type", "battery_level", "voltage", "snr", "rssi"];
     const batteryRows = telemetry.map((t) => [
-      new Date(t.timestamp).toISOString(),
-      "battery",
-      t.batteryLevel ?? "",
-      t.voltage ?? "",
-      "",
-      "",
+      escapeCsvCell(new Date(t.timestamp).toISOString()),
+      escapeCsvCell("battery"),
+      escapeCsvCell(t.batteryLevel),
+      escapeCsvCell(t.voltage),
+      escapeCsvCell(""),
+      escapeCsvCell(""),
     ]);
     const signalRows = signalTelemetry.map((t) => [
-      new Date(t.timestamp).toISOString(),
-      "signal",
-      "",
-      "",
-      t.snr ?? "",
-      t.rssi ?? "",
+      escapeCsvCell(new Date(t.timestamp).toISOString()),
+      escapeCsvCell("signal"),
+      escapeCsvCell(""),
+      escapeCsvCell(""),
+      escapeCsvCell(t.snr),
+      escapeCsvCell(t.rssi),
     ]);
     const rows = [...batteryRows, ...signalRows].sort((a, b) =>
       a[0].localeCompare(b[0])
     );
 
     const csv = [
-      headers.join(","),
+      headers.map(escapeCsvCell).join(","),
       ...rows.map((r) => r.join(",")),
     ].join("\n");
 

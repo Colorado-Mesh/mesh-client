@@ -1,5 +1,22 @@
 export type ConnectionType = "ble" | "serial" | "http";
 
+export type AnomalyType = 'hop_goblin' | 'bad_route' | 'route_flapping' | 'impossible_hop';
+
+export interface NodeAnomaly {
+  nodeId: number;
+  type: AnomalyType;
+  severity: 'warning' | 'error';
+  description: string;
+  detectedAt: number;
+  snr?: number;
+  hopsAway?: number;
+}
+
+export interface HopHistoryPoint {
+  t: number; // timestamp ms
+  h: number; // hops_away value
+}
+
 export interface MeshNode {
   node_id: number;
   long_name: string;
@@ -18,7 +35,34 @@ export interface MeshNode {
   channel_utilization?: number;
   air_util_tx?: number;
   altitude?: number;
+  favorited?: boolean;
+  // MQTT source tracking
+  heard_via_mqtt_only?: boolean; // session-only: true if never heard via RF this session
+  heard_via_mqtt?: boolean;      // session-only: true if any MQTT update was received this session
+  source?: "rf" | "mqtt";       // persistent: written to DB
+  lastPositionWarning?: string; // set when bad GPS data received; cleared on valid update
 }
+
+export type RemediationCategory = 'Configuration' | 'Physical' | 'Hardware' | 'Software';
+
+export interface DiagnosticRemedy {
+  title: string;
+  description: string;
+  category: RemediationCategory;
+  severity: 'info' | 'warning' | 'critical';
+}
+
+export interface MQTTSettings {
+  server: string;
+  port: number;
+  username: string;
+  password: string;
+  topicPrefix: string;
+  autoLaunch: boolean;
+  maxRetries?: number;
+}
+
+export type MQTTStatus = "disconnected" | "connecting" | "connected" | "error";
 
 export interface ChatMessage {
   id?: number;
@@ -91,8 +135,21 @@ declare global {
         importDb: () => Promise<{ nodesAdded: number; messagesAdded: number } | null>;
         deleteNodesByAge: (days: number) => Promise<unknown>;
         pruneNodesByCount: (maxCount: number) => Promise<unknown>;
+        deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
         clearMessagesByChannel: (channel: number) => Promise<unknown>;
         getMessageChannels: () => Promise<{ channel: number }[]>;
+        setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<unknown>;
+        deleteNodesBySource: (source: string) => Promise<number>;
+      };
+      mqtt: {
+        connect: (settings: MQTTSettings) => Promise<void>;
+        disconnect: () => Promise<void>;
+        onStatus: (cb: (status: MQTTStatus) => void) => () => void;
+        onError: (cb: (message: string) => void) => () => void;
+        onNodeUpdate: (cb: (node: Partial<MeshNode> & { node_id: number }) => void) => () => void;
+        onMessage: (cb: (msg: Omit<ChatMessage, "id">) => void) => () => void;
+        onClientId: (cb: (id: string) => void) => () => void;
+        publish: (args: { text: string; from: number; channel: number; destination?: number; channelName?: string }) => Promise<number>;
       };
       onBluetoothDevicesDiscovered: (
         cb: (devices: BluetoothDevice[]) => void
@@ -108,6 +165,7 @@ declare global {
       notifyDeviceConnected: () => void;
       notifyDeviceDisconnected: () => void;
       setTrayUnread: (count: number) => void;
+      quitApp: () => Promise<void>;
     };
   }
 }

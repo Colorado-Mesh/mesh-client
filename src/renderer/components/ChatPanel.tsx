@@ -1,14 +1,25 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
 import type { ChatMessage, MeshNode } from "../lib/types";
 
-// Standard Meshtastic emoji reactions (matching mobile app conventions)
+// Standard emoji reaction set — Row 1: iMessage Classic, Row 2: WhatsApp/RCS Extended
 const REACTION_EMOJIS = [
-  { code: 128077, label: "\ud83d\udc4d" }, // thumbs up
-  { code: 10084, label: "\u2764\ufe0f" },   // red heart
-  { code: 128514, label: "\ud83d\ude02" }, // face with tears of joy
-  { code: 128078, label: "\ud83d\udc4e" }, // thumbs down
-  { code: 127881, label: "\ud83c\udf89" }, // party popper
+  // Row 1 (6)
+  { code: 128077, label: "\ud83d\udc4d", name: "Like"      },  // 👍
+  { code: 10084,  label: "\u2764\ufe0f", name: "Love"      },  // ❤️
+  { code: 128514, label: "\ud83d\ude02", name: "Laugh"     },  // 😂
+  { code: 128078, label: "\ud83d\udc4e", name: "Dislike"   },  // 👎
+  { code: 127881, label: "\ud83c\udf89", name: "Party"     },  // 🎉
+  { code: 128558, label: "\ud83d\ude2e", name: "Wow"       },  // 😮
+  // Row 2 (6)
+  { code: 128546, label: "\ud83d\ude22", name: "Sad"       },  // 😢
+  { code: 128075, label: "\ud83d\udc4b", name: "Wave"      },  // 👋
+  { code: 128591, label: "\ud83d\ude4f", name: "Thanks"    },  // 🙏
+  { code: 128293, label: "\ud83d\udd25", name: "Fire"      },  // 🔥
+  { code: 9989,   label: "\u2705",       name: "Check"     },  // ✅
+  { code: 129300, label: "\ud83e\udd14", name: "Thinking"  },  // 🤔
 ];
+
+const REACTION_LABEL_MAP = new Map(REACTION_EMOJIS.map((e) => [e.code, e.name]));
 
 /** Convert a Unicode codepoint to an emoji string */
 function emojiFromCode(code: number): string {
@@ -69,14 +80,27 @@ function HighlightText({
   );
 }
 
+function UnreadDivider() {
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <div className="flex-1 border-t border-red-500/50" />
+      <span className="text-[10px] text-red-400 font-semibold uppercase tracking-wider shrink-0 bg-red-500/10 border border-red-500/30 rounded-full px-2.5 py-0.5">
+        New messages
+      </span>
+      <div className="flex-1 border-t border-red-500/50" />
+    </div>
+  );
+}
+
 interface Props {
   messages: ChatMessage[];
   channels: Array<{ index: number; name: string }>;
   myNodeNum: number;
-  onSend: (text: string, channel: number, destination?: number) => Promise<void>;
+  onSend: (text: string, channel: number, destination?: number, replyId?: number) => Promise<void>;
   onReact: (emoji: number, replyId: number, channel: number) => Promise<void>;
   onNodeClick: (nodeNum: number) => void;
   isConnected: boolean;
+  isMqttOnly?: boolean;
   nodes: Map<number, MeshNode>;
   initialDmTarget?: number | null;
   onDmTargetConsumed?: () => void;
@@ -90,6 +114,7 @@ export default function ChatPanel({
   onReact,
   onNodeClick,
   isConnected,
+  isMqttOnly,
   nodes,
   initialDmTarget,
   onDmTargetConsumed,
@@ -97,12 +122,15 @@ export default function ChatPanel({
   const [input, setInput] = useState("");
   const [channel, setChannel] = useState(0);
   const [sending, setSending] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
+  const [showComposePicker, setShowComposePicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Two-section UI state — load DM tabs from localStorage for restart persistence
   const [viewMode, setViewMode] = useState<"channels" | "dm">("channels");
@@ -128,6 +156,35 @@ export default function ChatPanel({
   // Track unread counts per channel
   const lastReadRef = useRef<Map<number, number>>(new Map());
   const [unreadCounts, setUnreadCounts] = useState<Map<number, number>>(new Map());
+
+  // Persisted lastRead: { "ch:0": timestamp, "ch:2": ..., "dm:12345678": ... }
+  const [persistedLastRead, setPersistedLastRead] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem("mesh-client:lastRead");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+      }
+    } catch { /* ignore corrupt */ }
+    return {};
+  });
+  // Ref mirror — lets view-switch effect read latest value without adding it to deps
+  const persistedLastReadRef = useRef(persistedLastRead);
+  persistedLastReadRef.current = persistedLastRead;
+
+  // Snapshot of lastRead taken at the moment of view switch (for divider calculation)
+  const [unreadDividerTimestamp, setUnreadDividerTimestamp] = useState(0);
+
+  // Counter-based trigger: increment → useLayoutEffect fires scroll-to-divider
+  const [triggerScrollToUnread, setTriggerScrollToUnread] = useState(0);
+
+  // Ref to divider DOM node for scrollIntoView
+  const unreadDividerRef = useRef<HTMLDivElement>(null);
+
+  // Persist lastRead timestamps to localStorage
+  useEffect(() => {
+    localStorage.setItem("mesh-client:lastRead", JSON.stringify(persistedLastRead));
+  }, [persistedLastRead]);
 
   const getDmLabel = useCallback((nodeNum: number) => {
     const node = nodes.get(nodeNum);
@@ -165,6 +222,15 @@ export default function ChatPanel({
     }
     return { regularMessages: regular, reactionsByReplyId: reactions };
   }, [messages]);
+
+  // Lookup map for rendering quoted replies
+  const messageByPacketId = useMemo(() => {
+    const map = new Map<number, ChatMessage>();
+    for (const msg of regularMessages) {
+      if (msg.packetId) map.set(msg.packetId, msg);
+    }
+    return map;
+  }, [regularMessages]);
 
   // Update unread counts when messages change
   useEffect(() => {
@@ -229,13 +295,38 @@ export default function ChatPanel({
     return msgs;
   }, [regularMessages, channel, searchQuery, viewMode, activeDmNode, myNodeNum]);
 
-  // Scroll tracking for scroll-to-bottom button
+  const viewKey = useMemo(() => {
+    if (viewMode === "dm" && activeDmNode != null) return `dm:${activeDmNode}`;
+    return `ch:${channel}`;
+  }, [viewMode, activeDmNode, channel]);
+
+  // On view switch: snapshot lastRead for divider + arm scroll trigger
+  useEffect(() => {
+    if (channel === -1) {
+      // "All" view: no divider, just scroll to bottom
+      setUnreadDividerTimestamp(0);
+      setTriggerScrollToUnread((n) => n + 1);
+      return;
+    }
+    const snapshot = persistedLastReadRef.current[viewKey] ?? 0;
+    setUnreadDividerTimestamp(snapshot);
+    setTriggerScrollToUnread((n) => n + 1);
+  }, [viewKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Intentionally reads persistedLastRead via ref (not dep) to avoid re-firing on scroll updates
+
+  // Scroll tracking for scroll-to-bottom button + mark-as-read when at bottom
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     setShowScrollButton(distFromBottom > 200);
-  }, []);
+
+    if (distFromBottom < 50) {
+      const now = Date.now();
+      setPersistedLastRead((prev) => ({ ...prev, [viewKey]: now }));
+      setUnreadDividerTimestamp(0); // hide divider once user has read to bottom
+    }
+  }, [viewKey]);
 
   // Auto-scroll on new messages (only if near bottom)
   useEffect(() => {
@@ -247,6 +338,17 @@ export default function ChatPanel({
     }
   }, [filteredMessages.length]);
 
+  // Fires after view switch (triggerScrollToUnread increments). useLayoutEffect
+  // ensures DOM is committed before scrolling, preventing flash of wrong position.
+  useLayoutEffect(() => {
+    if (triggerScrollToUnread === 0) return; // skip initial mount
+    if (unreadDividerRef.current) {
+      unreadDividerRef.current.scrollIntoView({ block: "center" });
+    } else {
+      messagesEndRef.current?.scrollIntoView();
+    }
+  }, [triggerScrollToUnread]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
@@ -256,7 +358,10 @@ export default function ChatPanel({
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setPickerOpenFor(null);
-        if (showSearch) {
+        setShowComposePicker(false);
+        if (replyTo) {
+          setReplyTo(null);
+        } else if (showSearch) {
           setShowSearch(false);
         } else if (viewMode === "dm") {
           setViewMode("channels");
@@ -265,7 +370,7 @@ export default function ChatPanel({
     };
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [showSearch, viewMode]);
+  }, [showSearch, viewMode, replyTo]);
 
   // Toggle search with Cmd+F / Ctrl+F
   useEffect(() => {
@@ -285,8 +390,12 @@ export default function ChatPanel({
     try {
       const sendChannel = channel === -1 ? 0 : channel;
       const destination = viewMode === "dm" && activeDmNode != null ? activeDmNode : undefined;
-      await onSend(input.trim(), sendChannel, destination);
+      await onSend(input.trim(), sendChannel, destination, replyTo?.packetId);
       setInput("");
+      setReplyTo(null);
+      const now = Date.now();
+      setPersistedLastRead((prev) => ({ ...prev, [viewKey]: now }));
+      setUnreadDividerTimestamp(0);
     } catch (err) {
       console.error("Send failed:", err);
     } finally {
@@ -314,14 +423,29 @@ export default function ChatPanel({
     }
   };
 
+  const insertEmojiAtCursor = (code: number) => {
+    const el = inputRef.current;
+    const char = String.fromCodePoint(code);
+    // emoji is a surrogate pair = 2 UTF-16 code units
+    const charLen = char.length;
+    const start = el?.selectionStart ?? input.length;
+    const end = el?.selectionEnd ?? input.length;
+    const newVal = input.slice(0, start) + char + input.slice(end);
+    if (newVal.length > 228) return; // enforce maxLength
+    setInput(newVal);
+    setShowComposePicker(false);
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(start + charLen, start + charLen);
+    });
+  };
+
   // Open a DM tab for a node
   const openDmTo = useCallback((nodeNum: number) => {
-    if (!openDmTabs.includes(nodeNum)) {
-      setOpenDmTabs(prev => [...prev, nodeNum]);
-    }
+    setOpenDmTabs(prev => prev.includes(nodeNum) ? prev : [...prev, nodeNum]);
     setActiveDmNode(nodeNum);
     setViewMode("dm");
-  }, [openDmTabs]);
+  }, []);
 
   // Close a DM tab
   const closeDmTab = useCallback((nodeNum: number) => {
@@ -360,7 +484,7 @@ export default function ChatPanel({
     return Array.from(grouped.entries()).map(([emoji, senders]) => ({
       emoji,
       count: senders.length,
-      tooltip: senders.join(", "),
+      tooltip: `${REACTION_LABEL_MAP.get(emoji) ?? emojiFromCode(emoji)}: ${senders.join(", ")}`,
     }));
   }
 
@@ -377,6 +501,17 @@ export default function ChatPanel({
     }
     return indices;
   }, [filteredMessages]);
+
+  // Index of first message from another node newer than unreadDividerTimestamp.
+  // Returns -1 when: All view, search active, timestamp=0, or no qualifying messages.
+  const unreadStartIndex = useMemo(() => {
+    if (channel === -1 || searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
+    for (let i = 0; i < filteredMessages.length; i++) {
+      const msg = filteredMessages[i];
+      if (msg.sender_id !== myNodeNum && msg.timestamp > unreadDividerTimestamp) return i;
+    }
+    return -1;
+  }, [filteredMessages, myNodeNum, unreadDividerTimestamp, channel, searchQuery]);
 
   const isDmMode = viewMode === "dm" && activeDmNode != null;
   const dmNodeName = activeDmNode != null ? getDmLabel(activeDmNode) : "";
@@ -538,9 +673,16 @@ export default function ChatPanel({
               </div>
             ) : null;
 
+            const isUnreadStart = i === unreadStartIndex;
+
             return (
               <div key={`${msg.timestamp}-${i}`}>
                 {daySeparator}
+                {isUnreadStart && (
+                  <div ref={unreadDividerRef}>
+                    <UnreadDivider />
+                  </div>
+                )}
                 <div
                   className={`flex flex-col ${
                     isOwn ? "items-end" : "items-start"
@@ -593,6 +735,22 @@ export default function ChatPanel({
                         )}
                       </div>
 
+                      {/* Quoted reply preview */}
+                      {msg.replyId && !msg.emoji && messageByPacketId.has(msg.replyId) && (() => {
+                        const orig = messageByPacketId.get(msg.replyId)!;
+                        return (
+                          <div className="flex gap-1.5 mb-1.5 opacity-80">
+                            <div className="w-0.5 rounded-full bg-gray-500 shrink-0" />
+                            <div className="min-w-0">
+                              <span className="text-[10px] font-semibold text-gray-400 block">{orig.sender_name}</span>
+                              <span className="text-[11px] text-gray-500 block truncate">
+                                {orig.payload.length > 80 ? orig.payload.slice(0, 80) + "…" : orig.payload}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {/* Message text with optional search highlight */}
                       <p className="text-sm text-gray-200 break-words leading-relaxed">
                         <HighlightText text={msg.payload} query={searchQuery} />
@@ -632,6 +790,27 @@ export default function ChatPanel({
                     {/* Inline reaction trigger — visible on hover */}
                     {isConnected && msg.packetId && (
                       <div className="opacity-0 group-hover/msg:opacity-100 flex gap-0.5 transition-all shrink-0">
+                        {/* Reply */}
+                        <button
+                          onClick={() => { setReplyTo(msg); inputRef.current?.focus(); }}
+                          className="text-gray-600 hover:text-blue-400 text-xs p-1 rounded"
+                          title="Reply"
+                        >
+                          <svg
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"
+                            />
+                          </svg>
+                        </button>
+                        {/* React */}
                         <button
                           onClick={() =>
                             setPickerOpenFor(
@@ -657,7 +836,7 @@ export default function ChatPanel({
                             />
                           </svg>
                         </button>
-                        {/* Quick DM reply */}
+                        {/* Quick DM */}
                         {!isOwn && (
                           <button
                             onClick={() => openDmTo(msg.sender_id)}
@@ -686,26 +865,34 @@ export default function ChatPanel({
                   {/* Emoji picker */}
                   {showPicker && (
                     <div
-                      className={`flex gap-1 bg-secondary-dark border border-gray-600 rounded-xl px-2 py-1.5 mt-1 shadow-lg ${
+                      className={`flex flex-col gap-0.5 bg-secondary-dark border border-gray-600 rounded-xl px-2 py-1.5 mt-1 shadow-lg ${
                         isOwn ? "self-end" : "self-start"
                       }`}
                     >
-                      {REACTION_EMOJIS.map((re) => (
-                        <button
-                          key={re.code}
-                          onClick={() =>
-                            handleReact(
-                              re.code,
-                              msg.packetId!,
-                              msg.channel
-                            )
-                          }
-                          className="hover:scale-125 transition-transform text-lg px-0.5"
-                          title={re.label}
-                        >
-                          {re.label}
-                        </button>
-                      ))}
+                      <div className="flex gap-1">
+                        {REACTION_EMOJIS.slice(0, 6).map((re) => (
+                          <button
+                            key={re.code}
+                            onClick={() => handleReact(re.code, msg.packetId!, msg.channel)}
+                            className="hover:scale-125 transition-transform text-lg px-0.5"
+                            title={re.name}
+                          >
+                            {re.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-1 justify-center">
+                        {REACTION_EMOJIS.slice(6).map((re) => (
+                          <button
+                            key={re.code}
+                            onClick={() => handleReact(re.code, msg.packetId!, msg.channel)}
+                            className="hover:scale-125 transition-transform text-lg px-0.5"
+                            title={re.name}
+                          >
+                            {re.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -753,9 +940,63 @@ export default function ChatPanel({
         )}
       </div>
 
+      {/* Compose emoji picker — renders above the input row */}
+      {showComposePicker && (
+        <div className="flex flex-col gap-0.5 bg-secondary-dark border border-gray-600 rounded-xl px-2 py-1.5 mb-1 shadow-lg self-start">
+          <div className="flex gap-1">
+            {REACTION_EMOJIS.slice(0, 6).map((re) => (
+              <button
+                key={re.code}
+                onClick={() => insertEmojiAtCursor(re.code)}
+                className="hover:scale-125 transition-transform text-lg px-0.5"
+                title={re.name}
+              >
+                {re.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1 justify-center">
+            {REACTION_EMOJIS.slice(6).map((re) => (
+              <button
+                key={re.code}
+                onClick={() => insertEmojiAtCursor(re.code)}
+                className="hover:scale-125 transition-transform text-lg px-0.5"
+                title={re.name}
+              >
+                {re.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Reply preview bar */}
+      {replyTo && (
+        <div className="flex items-center gap-2 px-3 py-1.5 mb-1 bg-secondary-dark/80 border border-gray-600/50 rounded-xl text-xs">
+          <svg className="w-3 h-3 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+          </svg>
+          <span className="text-gray-400">
+            Replying to{" "}
+            <span className="text-gray-200 font-medium">{replyTo.sender_name}</span>:
+          </span>
+          <span className="flex-1 truncate text-gray-500">
+            {replyTo.payload.length > 60 ? replyTo.payload.slice(0, 60) + "…" : replyTo.payload}
+          </span>
+          <button
+            onClick={() => setReplyTo(null)}
+            className="text-muted hover:text-gray-200 ml-1 leading-none"
+            title="Cancel reply"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Input area */}
       <div className="flex gap-2 mt-2">
         <input
+          ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -764,9 +1005,11 @@ export default function ChatPanel({
           placeholder={
             isDmMode
               ? `DM to ${dmNodeName}...`
-              : isConnected
-              ? "Type a message..."
-              : "Connect to send messages"
+              : !isConnected
+              ? "Connect to send messages"
+              : isMqttOnly
+              ? "Type a message (via MQTT)..."
+              : "Type a message..."
           }
           className={`flex-1 px-4 py-2.5 rounded-xl text-gray-200 border focus:outline-none disabled:opacity-50 transition-colors ${
             isDmMode
@@ -775,13 +1018,26 @@ export default function ChatPanel({
           }`}
           maxLength={228}
         />
+        {/* Compose emoji picker toggle */}
+        <button
+          onClick={() => setShowComposePicker((prev) => !prev)}
+          disabled={!isConnected || sending}
+          className={`px-2.5 py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
+            showComposePicker
+              ? "bg-brand-green/20 text-bright-green"
+              : "bg-secondary-dark/80 text-muted hover:text-gray-300 border border-gray-600/50"
+          }`}
+          title="Insert emoji"
+        >
+          😊
+        </button>
         <button
           onClick={handleSend}
           disabled={!isConnected || !input.trim() || sending}
           className={`px-5 py-2.5 font-medium rounded-xl transition-colors ${
             isDmMode
               ? "bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:text-muted text-white"
-              : "bg-brand-green hover:bg-brand-green/90 disabled:bg-gray-600 disabled:text-muted text-white"
+              : "bg-[#4CAF50] hover:bg-[#43A047] disabled:bg-gray-600 disabled:text-muted text-white"
           }`}
         >
           {sending ? "..." : isDmMode ? "DM" : "Send"}

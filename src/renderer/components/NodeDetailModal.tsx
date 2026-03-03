@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
-import type { MeshNode } from "../lib/types";
+import type { MeshNode, HopHistoryPoint } from "../lib/types";
+import { useDiagnosticsStore } from "../stores/diagnosticsStore";
 import { RoleDisplay } from "../lib/roleInfo";
+import { getRecommendedAction } from "../lib/diagnostics/RemediationEngine";
+
+const CATEGORY_STYLES: Record<string, string> = {
+  Configuration: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+  Physical:      "bg-orange-500/20 text-orange-400 border border-orange-500/30",
+  Hardware:      "bg-purple-500/20 text-purple-400 border border-purple-500/30",
+  Software:      "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30",
+};
+
+const EMPTY_HOP_HISTORY: HopHistoryPoint[] = [];
 
 interface NodeDetailModalProps {
   node: MeshNode | null;
@@ -10,7 +21,9 @@ interface NodeDetailModalProps {
   traceRouteHops?: string[];
   onDeleteNode: (nodeNum: number) => Promise<void>;
   onMessageNode?: (nodeNum: number) => void;
+  onToggleFavorite: (nodeId: number, favorited: boolean) => void;
   isConnected: boolean;
+  homeNode?: MeshNode | null;
 }
 
 function formatTime(ts: number): string {
@@ -49,7 +62,9 @@ export default function NodeDetailModal({
   traceRouteHops,
   onDeleteNode,
   onMessageNode,
+  onToggleFavorite,
   isConnected,
+  homeNode = null,
 }: NodeDetailModalProps) {
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [positionRequestedAt, setPositionRequestedAt] = useState<number | null>(null);
@@ -105,6 +120,12 @@ export default function NodeDetailModal({
     }, 60_000);
     return () => clearTimeout(timer);
   }, [traceRoutePending]);
+
+  const anomaly = useDiagnosticsStore((s) => s.anomalies.get(node?.node_id ?? 0));
+  const nodePacketStats = useDiagnosticsStore((s) => s.packetStats.get(node?.node_id ?? 0));
+  const hopHistory = useDiagnosticsStore(
+    (s) => s.hopHistory.get(node?.node_id ?? 0) ?? EMPTY_HOP_HISTORY
+  );
 
   if (!node) return null;
 
@@ -175,6 +196,15 @@ export default function NodeDetailModal({
               )}
             </div>
           </div>
+          <button
+            onClick={() => onToggleFavorite(node.node_id, !node.favorited)}
+            className="p-1.5 rounded-lg hover:bg-secondary-dark transition-colors shrink-0 mr-1"
+            title={node.favorited ? "Remove from favorites" : "Add to favorites"}
+          >
+            <span className={`text-xl ${node.favorited ? "text-yellow-400" : "text-gray-500 hover:text-yellow-400"}`}>
+              {node.favorited ? "★" : "☆"}
+            </span>
+          </button>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors shrink-0"
@@ -253,6 +283,136 @@ export default function NodeDetailModal({
               className="text-gray-300 font-mono text-xs"
             />
           )}
+
+          {/* GPS warning */}
+          {node.lastPositionWarning && (
+            <div className="flex items-start gap-1.5 px-2 py-1.5 mt-1 rounded bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs">
+              <span>⚠</span>
+              <span>GPS Warning: {node.lastPositionWarning}</span>
+            </div>
+          )}
+
+          {/* Routing Health */}
+          {(() => {
+            const now = Date.now();
+            const oneHourAgo = now - 60 * 60 * 1000;
+            const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000;
+            const recentHour = hopHistory.filter((p) => p.t >= oneHourAgo);
+            const recentHistory = hopHistory.filter((p) => p.t >= twentyFourHoursAgo);
+            const hasSparkline = recentHistory.length >= 2;
+
+            // Stability: count hop-count changes in the last hour
+            let hopChanges = 0;
+            for (let i = 1; i < recentHour.length; i++) {
+              if (recentHour[i].h !== recentHour[i - 1].h) hopChanges++;
+            }
+            const stability =
+              recentHour.length < 2 ? "Unknown"
+              : hopChanges === 0 ? "Stable"
+              : hopChanges <= 2 ? "Moderate"
+              : "Unstable";
+            const stabilityColor =
+              stability === "Stable" ? "text-brand-green"
+              : stability === "Moderate" ? "text-yellow-400"
+              : stability === "Unknown" ? "text-muted"
+              : "text-red-400";
+
+            // Human-readable offense summary
+            const offenseSummary = anomaly
+              ? anomaly.type === "hop_goblin"
+                ? "Node is over-hopping for its distance or signal strength"
+                : anomaly.type === "bad_route"
+                ? "Possible routing loop — high packet duplication detected"
+                : anomaly.type === "route_flapping"
+                ? "Route is unstable — hop count changing frequently"
+                : "Reported as 0 hops but GPS data suggests otherwise"
+              : null;
+
+            return (
+              <div className="mt-3 p-3 bg-primary-dark rounded-lg">
+                <div className="text-xs text-gray-400 mb-1.5">Routing Health</div>
+
+                {/* Remedy badge */}
+                {(() => {
+                  const remedy = getRecommendedAction(node, homeNode, nodePacketStats);
+                  if (!remedy) return null;
+                  return (
+                    <div className={`flex items-start gap-2 p-2 mb-2 rounded-lg text-xs border ${CATEGORY_STYLES[remedy.category]}`}>
+                      <span className="font-semibold shrink-0">{remedy.category}</span>
+                      <span>{remedy.title}</span>
+                    </div>
+                  );
+                })()}
+
+                {/* Offense */}
+                {anomaly ? (
+                  <div className={`flex items-start gap-1.5 text-xs ${
+                    anomaly.severity === "error" ? "text-red-400" : "text-orange-400"
+                  }`}>
+                    <svg
+                      className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <div className="font-medium mb-0.5">{offenseSummary}</div>
+                      <div className="text-gray-400">{anomaly.description}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-brand-green">No routing issues detected</div>
+                )}
+
+                {/* Stability metric */}
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-700/50">
+                  <span className="text-[10px] text-gray-500">Route stability (1h)</span>
+                  <span className={`text-xs font-medium ${stabilityColor}`}>
+                    {stability}
+                    {recentHour.length >= 2 && hopChanges > 0 && (
+                      <span className="text-gray-500 font-normal ml-1">
+                        ({hopChanges} change{hopChanges !== 1 ? "s" : ""})
+                      </span>
+                    )}
+                  </span>
+                </div>
+
+                {hasSparkline && (() => {
+                  const minH = Math.min(...recentHistory.map((p) => p.h));
+                  const maxH = Math.max(...recentHistory.map((p) => p.h));
+                  const range = maxH - minH || 1;
+                  const minT = recentHistory[0].t;
+                  const maxT = recentHistory[recentHistory.length - 1].t;
+                  const timeRange = maxT - minT || 1;
+                  const points = recentHistory
+                    .map((p) => {
+                      const x = ((p.t - minT) / timeRange) * 200;
+                      const y = 40 - ((p.h - minH) / range) * 36 - 2;
+                      return `${x.toFixed(1)},${y.toFixed(1)}`;
+                    })
+                    .join(" ");
+                  return (
+                    <div className="mt-2">
+                      <div className="text-[10px] text-gray-500 mb-0.5">Hop count — 24h</div>
+                      <svg viewBox="0 0 200 40" className="w-full h-8 text-brand-green/60">
+                        <polyline
+                          points={points}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          })()}
 
           {/* Trace route result */}
           {traceRouteHops && (

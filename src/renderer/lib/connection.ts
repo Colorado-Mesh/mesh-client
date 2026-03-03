@@ -9,6 +9,10 @@ import type { ConnectionType } from "./types";
 // so we capture the reference by intercepting requestDevice() instead.
 let capturedBleDevice: BluetoothDevice | null = null;
 
+export function clearCapturedBleDevice(): void {
+  capturedBleDevice = null;
+}
+
 /**
  * Create a connection to a Meshtastic device.
  *

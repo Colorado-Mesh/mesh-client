@@ -63,6 +63,7 @@ interface AdminSettings {
   distanceFilterEnabled: boolean;
   distanceFilterMax: number;
   distanceUnit: "miles" | "km";
+  filterMqttOnly: boolean;
 }
 
 const DEFAULT_SETTINGS: AdminSettings = {
@@ -73,6 +74,7 @@ const DEFAULT_SETTINGS: AdminSettings = {
   distanceFilterEnabled: false,
   distanceFilterMax: 500,
   distanceUnit: "miles",
+  filterMqttOnly: false,
 };
 
 function loadSettings(): AdminSettings {
@@ -88,11 +90,6 @@ interface Props {
   nodes: Map<number, MeshNode>;
   messageCount: number;
   channels: Array<{ index: number; name: string }>;
-  onReboot: (seconds: number) => Promise<void>;
-  onShutdown: (seconds: number) => Promise<void>;
-  onFactoryReset: () => Promise<void>;
-  onResetNodeDb: () => Promise<void>;
-  isConnected: boolean;
   myNodeNum: number | null;
   onLocationFilterChange: (f: LocationFilter) => void;
 }
@@ -106,15 +103,10 @@ interface PendingAction {
   action: () => Promise<void>;
 }
 
-export default function AdminPanel({
+export default function AppPanel({
   nodes,
   messageCount,
   channels,
-  onReboot,
-  onShutdown,
-  onFactoryReset,
-  onResetNodeDb,
-  isConnected,
   myNodeNum,
   onLocationFilterChange,
 }: Props) {
@@ -135,18 +127,13 @@ export default function AdminPanel({
   }, [settings]);
 
   useEffect(() => {
-    let hideMqttOnly = false;
-    try {
-      const raw = localStorage.getItem("mesh-client:adminSettings");
-      if (raw) hideMqttOnly = JSON.parse(raw).filterMqttOnly ?? false;
-    } catch { /* ignore */ }
     onLocationFilterChange({
       enabled: settings.distanceFilterEnabled,
       maxDistance: settings.distanceFilterMax,
       unit: settings.distanceUnit,
-      hideMqttOnly,
+      hideMqttOnly: settings.filterMqttOnly,
     });
-  }, [settings.distanceFilterEnabled, settings.distanceFilterMax, settings.distanceUnit, onLocationFilterChange]);
+  }, [settings.distanceFilterEnabled, settings.distanceFilterMax, settings.distanceUnit, settings.filterMqttOnly, onLocationFilterChange]);
 
   const updateSetting = <K extends keyof AdminSettings>(key: K, value: AdminSettings[K]) =>
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -187,71 +174,7 @@ export default function AdminPanel({
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <h2 className="text-xl font-semibold text-gray-200">Administration</h2>
-
-      {!isConnected && (
-        <div className="bg-yellow-900/30 border border-yellow-700 text-yellow-300 px-4 py-2 rounded-lg text-sm">
-          Connect to a device to use admin commands.
-        </div>
-      )}
-
-      {/* Device Commands */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted">Device Commands (affects connected device)</h3>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() =>
-              executeWithConfirmation({
-                name: "Reboot",
-                title: "Reboot Device",
-                message:
-                  "This will reboot the connected Meshtastic device. It will briefly go offline during restart.",
-                confirmLabel: "Reboot",
-                action: () => onReboot(2),
-              })
-            }
-            disabled={!isConnected}
-            className="px-4 py-3 bg-secondary-dark text-gray-300 hover:bg-gray-600 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
-          >
-            Reboot
-          </button>
-
-          <button
-            onClick={() =>
-              executeWithConfirmation({
-                name: "Shutdown",
-                title: "Shutdown Device",
-                message:
-                  "This will power off the connected device. You will need to physically power it back on.",
-                confirmLabel: "Shutdown",
-                action: () => onShutdown(2),
-              })
-            }
-            disabled={!isConnected}
-            className="px-4 py-3 bg-secondary-dark text-gray-300 hover:bg-gray-600 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
-          >
-            Shutdown
-          </button>
-
-          <button
-            onClick={() =>
-              executeWithConfirmation({
-                name: "Reset NodeDB",
-                title: "Reset Node Database",
-                message:
-                  "This will clear the device's internal node database. The device will re-discover nodes over time.",
-                confirmLabel: "Reset NodeDB",
-                action: () => onResetNodeDb(),
-              })
-            }
-            disabled={!isConnected}
-            className="px-4 py-3 bg-secondary-dark text-gray-300 hover:bg-gray-600 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
-          >
-            Reset NodeDB
-          </button>
-
-        </div>
-      </div>
+      <h2 className="text-xl font-semibold text-gray-200">App Settings</h2>
 
       {/* Map & Node Filtering */}
       <div className="space-y-3">
@@ -304,6 +227,18 @@ export default function AdminPanel({
             ) : null;
           })()}
           <p className="text-xs text-muted">Note: Requires your device to have a valid GPS fix.</p>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="filterMqttOnly"
+              checked={settings.filterMqttOnly}
+              onChange={(e) => updateSetting("filterMqttOnly", e.target.checked)}
+              className="accent-brand-green"
+            />
+            <label htmlFor="filterMqttOnly" className="text-sm text-gray-300 cursor-pointer">
+              Hide MQTT-only nodes from map and node list
+            </label>
+          </div>
         </div>
       </div>
 
@@ -385,6 +320,27 @@ export default function AdminPanel({
               className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">nodes</span>
+          </div>
+
+          {/* Prune MQTT-only nodes */}
+          <div className="pt-1 border-t border-gray-700">
+            <button
+              onClick={() =>
+                executeWithConfirmation({
+                  name: "Prune MQTT-only Nodes",
+                  title: "Prune MQTT-only Nodes",
+                  message: "This will permanently delete all nodes discovered only via MQTT (never heard via RF). They will reappear if heard again via MQTT or RF.",
+                  confirmLabel: "Prune MQTT Nodes",
+                  danger: true,
+                  action: async () => {
+                    await window.electronAPI.db.deleteNodesBySource("mqtt");
+                  },
+                })
+              }
+              className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
+            >
+              Prune MQTT-only Nodes
+            </button>
           </div>
 
           {/* Clear all nodes */}
@@ -622,23 +578,6 @@ export default function AdminPanel({
             className="w-full px-4 py-3 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
           >
             Clear All Local Data &amp; Cache
-          </button>
-          <button
-            onClick={() =>
-              executeWithConfirmation({
-                name: "Factory Reset",
-                title: "⚠ Factory Reset",
-                message:
-                  "This will erase ALL device settings and restore factory defaults. All channels, configuration, and stored data on the device will be permanently lost. This action CANNOT be undone.",
-                confirmLabel: "Factory Reset",
-                danger: true,
-                action: () => onFactoryReset(),
-              })
-            }
-            disabled={!isConnected}
-            className="w-full px-4 py-3 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
-          >
-            Factory Reset Device
           </button>
         </div>
       </div>

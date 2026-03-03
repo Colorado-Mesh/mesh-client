@@ -54,6 +54,43 @@ contextBridge.exposeInMainWorld("electronAPI", {
     deleteNodesBatch: (nodeIds: number[]) => ipcRenderer.invoke("db:deleteNodesBatch", nodeIds),
     clearMessagesByChannel: (channel: number) => ipcRenderer.invoke("db:clearMessagesByChannel", channel),
     getMessageChannels: () => ipcRenderer.invoke("db:getMessageChannels"),
+    setNodeFavorited: (nodeId: number, favorited: boolean) =>
+      ipcRenderer.invoke("db:setNodeFavorited", nodeId, favorited),
+    deleteNodesBySource: (source: string) =>
+      ipcRenderer.invoke("db:deleteNodesBySource", source),
+  },
+
+  // ─── MQTT ──────────────────────────────────────────────────────
+  mqtt: {
+    connect: (settings: unknown) => ipcRenderer.invoke("mqtt:connect", settings),
+    disconnect: () => ipcRenderer.invoke("mqtt:disconnect"),
+    onStatus: (cb: (status: string) => void) => {
+      const handler = (_: unknown, s: string) => cb(s);
+      ipcRenderer.on("mqtt:status", handler);
+      return () => ipcRenderer.off("mqtt:status", handler);
+    },
+    onError: (cb: (message: string) => void) => {
+      const handler = (_: unknown, msg: string) => cb(msg);
+      ipcRenderer.on("mqtt:error", handler);
+      return () => ipcRenderer.off("mqtt:error", handler);
+    },
+    onNodeUpdate: (cb: (node: unknown) => void) => {
+      const handler = (_: unknown, n: unknown) => cb(n);
+      ipcRenderer.on("mqtt:node-update", handler);
+      return () => ipcRenderer.off("mqtt:node-update", handler);
+    },
+    onMessage: (cb: (msg: unknown) => void) => {
+      const handler = (_: unknown, m: unknown) => cb(m);
+      ipcRenderer.on("mqtt:message", handler);
+      return () => ipcRenderer.off("mqtt:message", handler);
+    },
+    onClientId: (cb: (id: string) => void) => {
+      const handler = (_: unknown, id: string) => cb(id);
+      ipcRenderer.on("mqtt:clientId", handler);
+      return () => ipcRenderer.off("mqtt:clientId", handler);
+    },
+    publish: (args: { text: string; from: number; channel: number; destination?: number; channelName?: string }) =>
+      ipcRenderer.invoke("mqtt:publish", args),
   },
 
   // ─── Bluetooth device selection ─────────────────────────────────
@@ -104,4 +141,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
   notifyDeviceConnected: () => ipcRenderer.send("device-connected"),
   notifyDeviceDisconnected: () => ipcRenderer.send("device-disconnected"),
   setTrayUnread: (count: number) => ipcRenderer.send("set-tray-unread", count),
+  quitApp: () => ipcRenderer.invoke("app:quit"),
 });

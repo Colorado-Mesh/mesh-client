@@ -25,6 +25,8 @@ export function initDatabase(): void {
 
   try {
     db = new Database(dbPath, { timeout: 5000 });
+    // Restrict DB file to owner-only access (no-op on Windows)
+    try { fs.chmodSync(dbPath, 0o600); } catch { /* Windows */ }
     db.pragma("journal_mode = WAL");
     db.pragma("synchronous = NORMAL");
 
@@ -37,7 +39,7 @@ export function initDatabase(): void {
       createBaseTables();
       if (isFreshDb) {
         // Base DDL already includes all columns; stamp current schema version
-        db!.pragma("user_version = 3");
+        db!.pragma("user_version = 7");
       } else {
         runMigrations();
       }
@@ -92,10 +94,13 @@ function createBaseTables(): void {
         voltage REAL,
         channel_utilization REAL,
         air_util_tx REAL,
-        altitude INTEGER
+        altitude INTEGER,
+        favorited INTEGER DEFAULT 0,
+        source TEXT DEFAULT 'rf'
       );
 
       CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_messages_channel_ts ON messages(channel, timestamp DESC);
       CREATE INDEX IF NOT EXISTS idx_nodes_last_heard ON nodes(last_heard);
     `);
   } catch (error) {
@@ -139,19 +144,60 @@ function runMigrations(): void {
     try {
       db!.exec("ALTER TABLE messages ADD COLUMN to_node INTEGER");
       db!.pragma("user_version = 3");
+      userVersion = 3;
     } catch (e) {
-      throw new Error(
-        `Migration v3 failed: ${e instanceof Error ? e.message : String(e)}`
+      throw new Error(`Migration v3 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 4) {
+    try {
+      db!.exec(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_reaction_dedup " +
+        "ON messages(sender_id, reply_id, emoji) " +
+        "WHERE emoji IS NOT NULL AND reply_id IS NOT NULL"
       );
+      db!.pragma("user_version = 4");
+      userVersion = 4;
+    } catch (e) {
+      throw new Error(`Migration v4 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 5) {
+    try {
+      db!.prepare("ALTER TABLE nodes ADD COLUMN favorited INTEGER DEFAULT 0").run();
+      db!.pragma("user_version = 5");
+      userVersion = 5;
+    } catch (e) {
+      throw new Error(`Migration v5 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 6) {
+    try {
+      db!.prepare(
+        "CREATE INDEX IF NOT EXISTS idx_messages_channel_ts ON messages(channel, timestamp DESC)"
+      ).run();
+      db!.pragma("user_version = 6");
+      userVersion = 6;
+    } catch (e) {
+      throw new Error(`Migration v6 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 7) {
+    try {
+      db!.prepare("ALTER TABLE nodes ADD COLUMN source TEXT DEFAULT 'rf'").run();
+      db!.pragma("user_version = 7");
+    } catch (e) {
+      throw new Error(`Migration v7 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }
 
-export function exportDatabase(destPath: string): void {
-  const database = getDatabase();
-  database.backup(destPath)
-    .then(() => console.log("Backup complete"))
-    .catch((err: unknown) => console.error("Backup failed", err));
+export async function exportDatabase(destPath: string): Promise<void> {
+  await getDatabase().backup(destPath);
 }
 
 export function mergeDatabase(sourcePath: string) {
@@ -214,6 +260,12 @@ export function mergeDatabase(sourcePath: string) {
   } finally {
     if (sourceDb) sourceDb.close();
   }
+}
+
+export function deleteNodesBySource(source: string): number {
+  const db = getDatabase();
+  const result = db.prepare("DELETE FROM nodes WHERE source = ?").run(source);
+  return result.changes;
 }
 
 export function closeDatabase(): void {
