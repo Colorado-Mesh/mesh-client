@@ -76,17 +76,25 @@ function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
   if (!hasUnread) return base;
 
   // Overlay the red dot for unread messages
-  const bitmap = Buffer.from(base.toBitmap());
-  const dotR = 2;
-  const dotCx = size - dotR - 1;
+  // Use getSize() after resize so the dot scales correctly with retina/2x template images.
+  // toBitmap() on macOS template images may return a buffer that is not exactly
+  // width*height*4 bytes, so we allocate the expected size and copy what we have.
+  const { width: actualW, height: actualH } = base.getSize();
+  const expectedSize = actualW * actualH * 4;
+  const rawBitmap = base.toBitmap();
+  const bitmap = Buffer.alloc(expectedSize, 0);
+  rawBitmap.copy(bitmap, 0, 0, Math.min(rawBitmap.length, expectedSize));
+
+  const dotR = Math.max(2, Math.round(actualW / 8));
+  const dotCx = actualW - dotR - 1;
   const dotCy = dotR + 1;
 
-  for (let py = 0; py < size; py++) {
-    for (let px = 0; px < size; px++) {
+  for (let py = 0; py < actualH; py++) {
+    for (let px = 0; px < actualW; px++) {
       const dx = px - dotCx;
       const dy = py - dotCy;
       if (dx * dx + dy * dy <= dotR * dotR) {
-        const idx = (py * size + px) * 4;
+        const idx = (py * actualW + px) * 4;
         bitmap[idx]     = 239; // R
         bitmap[idx + 1] = 68;  // G
         bitmap[idx + 2] = 68;  // B
@@ -95,7 +103,7 @@ function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
     }
   }
 
-  return nativeImage.createFromBitmap(bitmap, { width: size, height: size });
+  return nativeImage.createFromBitmap(bitmap, { width: actualW, height: actualH });
 }
 
 function setupTray(window: BrowserWindow) {
