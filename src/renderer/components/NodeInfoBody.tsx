@@ -165,9 +165,9 @@ export default function NodeInfoBody({ node, homeNode, traceRouteHops }: NodeInf
       {/* GPS warning */}
       {node.lastPositionWarning && (
         <div className="flex items-start gap-1.5 px-2 py-1.5 mt-1 rounded bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs">
-          <span>⚠</span>
-          <span>GPS Warning: {node.lastPositionWarning}</span>
-        </div>
+            <span>⚠</span>
+            <span>GPS Warning: {node.lastPositionWarning}</span>
+          </div>
       )}
 
       {/* Routing Health */}

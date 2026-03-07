@@ -45,8 +45,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     clearMessages: () => ipcRenderer.invoke("db:clearMessages"),
     clearNodes: () => ipcRenderer.invoke("db:clearNodes"),
     deleteNode: (nodeId: number) => ipcRenderer.invoke("db:deleteNode", nodeId),
-    updateMessageStatus: (packetId: number, status: string, error?: string) =>
-      ipcRenderer.invoke("db:updateMessageStatus", packetId, status, error),
+    updateMessageStatus: (packetId: number, status: string, error?: string, mqttStatus?: string) =>
+      ipcRenderer.invoke("db:updateMessageStatus", packetId, status, error, mqttStatus),
     exportDb: () => ipcRenderer.invoke("db:export"),
     importDb: () => ipcRenderer.invoke("db:import"),
     deleteNodesByAge: (days: number) => ipcRenderer.invoke("db:deleteNodesByAge", days),
@@ -137,6 +137,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // ─── Session management ────────────────────────────────────────
   clearSessionData: () => ipcRenderer.invoke("session:clearData"),
+
+  // ─── GPS ───────────────────────────────────────────────────────
+  getGpsFix: (): Promise<
+    | { lat: number; lon: number; source: string }
+    | { status: "error"; message: string; code?: string }
+  > => ipcRenderer.invoke("gps:getFix"),
 
   // ─── Connection status ─────────────────────────────────────────
   notifyDeviceConnected: () => ipcRenderer.send("device-connected"),

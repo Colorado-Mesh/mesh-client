@@ -13,7 +13,7 @@ interface DiagnosticsState {
   ignoreMqttEnabled: boolean;
   processNodeUpdate(node: MeshNode, homeNode: MeshNode | null): void;
   recordDuplicate(fromNodeId: number): void;
-  runReanalysis(nodes: Map<number, MeshNode>, myNodeNum: number): void;
+  runReanalysis(getNodes: () => Map<number, MeshNode>, myNodeNum: number): void;
   setCongestionHalosEnabled(enabled: boolean): void;
   setAnomalyHalosEnabled(enabled: boolean): void;
   setIgnoreMqttEnabled(enabled: boolean): void;
@@ -101,10 +101,11 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     });
   },
 
-  runReanalysis(nodes: Map<number, MeshNode>, myNodeNum: number) {
+  runReanalysis(getNodes: () => Map<number, MeshNode>, myNodeNum: number) {
     if (analysisTimer) clearTimeout(analysisTimer);
     analysisTimer = setTimeout(() => {
       const state = get();
+      const nodes = getNodes();
       const homeNode = nodes.get(myNodeNum) ?? null;
       const newAnomalies = new Map<number, NodeAnomaly>();
       for (const [nodeId, node] of nodes) {

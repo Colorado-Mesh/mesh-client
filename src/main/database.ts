@@ -39,7 +39,7 @@ export function initDatabase(): void {
       createBaseTables();
       if (isFreshDb) {
         // Base DDL already includes all columns; stamp current schema version
-        db!.pragma("user_version = 7");
+        db!.pragma("user_version = 8");
       } else {
         runMigrations();
       }
@@ -74,7 +74,8 @@ function createBaseTables(): void {
         error TEXT,
         emoji INTEGER,
         reply_id INTEGER,
-        to_node INTEGER
+        to_node INTEGER,
+        mqtt_status TEXT
       );
 
       CREATE TABLE IF NOT EXISTS nodes (
@@ -190,8 +191,18 @@ function runMigrations(): void {
     try {
       db!.prepare("ALTER TABLE nodes ADD COLUMN source TEXT DEFAULT 'rf'").run();
       db!.pragma("user_version = 7");
+      userVersion = 7;
     } catch (e) {
       throw new Error(`Migration v7 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 8) {
+    try {
+      db!.prepare("ALTER TABLE messages ADD COLUMN mqtt_status TEXT").run();
+      db!.pragma("user_version = 8");
+    } catch (e) {
+      throw new Error(`Migration v8 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

@@ -7,4 +7,5 @@ release/
 Thumbs.db
 .claude/
 .aider*
+.cursor/
 CLAUDE.md

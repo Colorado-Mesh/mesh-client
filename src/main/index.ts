@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage } from "el
 import path from "path";
 import { initDatabase, getDatabase, exportDatabase, mergeDatabase, closeDatabase, deleteNodesBySource } from "./database";
 import { MQTTManager } from "./mqtt-manager";
+import { getGpsFix } from "./gps";
 
 const mqttManager = new MQTTManager();
 
@@ -203,9 +204,26 @@ function createWindow() {
     }
   );
 
-  // Allow all serial port connections (needed for the permission check)
+  // Allow serial and geolocation only; media and web-app-installation are not used
   mainWindow.webContents.session.setPermissionCheckHandler(
-    (_webContents, permission) => permission === "serial"
+    (_webContents, permission) => {
+      const granted = permission === "serial" || permission === "geolocation";
+      if (granted) {
+        console.log(`[permissions] checkHandler: ${permission} → granted`);
+      }
+      return granted;
+    }
+  );
+
+  // Grant geolocation permission requests (for browser GPS fallback)
+  mainWindow.webContents.session.setPermissionRequestHandler(
+    (_webContents, permission, callback) => {
+      const grant = permission === "geolocation";
+      if (grant) {
+        console.log(`[permissions] requestHandler: ${permission} → granted`);
+      }
+      callback(grant);
+    }
   );
 
   // ─── Bluetooth Device Permission ───────────────────────────────────
@@ -339,6 +357,20 @@ ipcMain.handle("mqtt:publish", async (_event, args) => {
   );
 });
 
+// ─── IPC: GPS fix via main process ──────────────────────────────────
+ipcMain.handle("gps:getFix", async () => {
+  try {
+    return await getGpsFix();
+  } catch (err) {
+    console.error("[gps] getGpsFix threw:", err);
+    return {
+      status: "error",
+      message: "Location unavailable (network or service error).",
+      code: "UNKNOWN",
+    };
+  }
+});
+
 // ─── IPC: Force quit (disconnect all, then quit) ────────────────────
 ipcMain.handle("app:quit", async () => {
   isQuitting = true;
@@ -352,8 +384,8 @@ ipcMain.handle("db:saveMessage", (_event, message) => {
   try {
     const db = getDatabase();
     const stmt = db.prepare(`
-      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node)
-      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node)
+      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status)
+      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status)
     `);
     return stmt.run({
       sender_id: message.sender_id,
@@ -367,6 +399,7 @@ ipcMain.handle("db:saveMessage", (_event, message) => {
       emoji: message.emoji ?? null,
       reply_id: message.replyId ?? null,
       to_node: message.to ?? null,
+      mqtt_status: message.mqttStatus ?? null,
     });
   } catch (err) {
     console.error("[IPC] db:saveMessage failed:", err);
@@ -379,7 +412,8 @@ ipcMain.handle("db:getMessages", (_event, channel?: number, limit = 200) => {
     const safeLimit = Math.min(Math.max(1, Number(limit) || 200), 2000);
     const db = getDatabase();
     const columns = `id, sender_id, sender_name, payload, channel, timestamp,
-         packet_id AS packetId, status, error, emoji, reply_id AS replyId, to_node`;
+         packet_id AS packetId, status, error, emoji, reply_id AS replyId, to_node,
+         mqtt_status AS mqttStatus`;
     let rows: any[];
     if (channel !== undefined && channel !== null) {
       rows = db
@@ -568,9 +602,14 @@ ipcMain.handle("db:deleteNodesBySource", (_event, source: string) => {
 // ─── IPC: Update message delivery status ────────────────────────────
 ipcMain.handle(
   "db:updateMessageStatus",
-  (_event, packetId: number, status: string, error?: string) => {
+  (_event, packetId: number, status: string, error?: string, mqttStatus?: string) => {
     try {
       const db = getDatabase();
+      if (mqttStatus !== undefined) {
+        return db
+          .prepare("UPDATE messages SET status = ?, error = ?, mqtt_status = ? WHERE packet_id = ?")
+          .run(status, error ?? null, mqttStatus, packetId);
+      }
       return db
         .prepare("UPDATE messages SET status = ?, error = ? WHERE packet_id = ?")
         .run(status, error ?? null, packetId);
@@ -681,7 +720,9 @@ app.on("before-quit", () => {
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin" || isQuitting) {
+  const hasConnection = isConnected || mqttManager.getStatus() === "connected";
+  // On macOS: quit when user chose Quit, or when there's no connection (window closed with nothing to keep running for)
+  if (process.platform !== "darwin" || isQuitting || !hasConnection) {
     app.quit();
   }
 });

@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { MeshDevice } from "@meshtastic/core";
 import { create } from "@bufbuild/protobuf";
-import { Channel as ProtobufChannel, Portnums } from "@meshtastic/protobufs";
+import { Channel as ProtobufChannel, Mesh, Portnums } from "@meshtastic/protobufs";
+import { resolveOurPosition } from "../lib/gpsSource";
+import type { OurPosition } from "../lib/gpsSource";
 import { createConnection, reconnectBle, safeDisconnect, clearCapturedBleDevice } from "../lib/connection";
 import { validateCoords } from "../lib/coordUtils";
 import { useDiagnosticsStore } from "../stores/diagnosticsStore";
@@ -36,7 +38,16 @@ function getOrCreateVirtualNodeId(): number {
     const n = parseInt(existing, 10);
     if (n > 0 && n < 0xffffffff) return n;
   }
-  const id = ((Math.random() * 0x0FFFFFFF) >>> 0) + 1;
+  let id: number;
+  if (typeof window !== "undefined" && window.crypto && window.crypto.getRandomValues) {
+    const buf = new Uint32Array(1);
+    window.crypto.getRandomValues(buf);
+    // Limit to 0x0FFFFFFF to stay consistent with the previous range, then make it > 0
+    id = (buf[0] & 0x0fffffff) + 1;
+  } else {
+    // Fallback: still avoid returning 0; range 1..0x0FFFFFFF
+    id = ((Math.random() * 0x0fffffff) >>> 0) + 1;
+  }
   localStorage.setItem(key, String(id));
   return id;
 }
@@ -64,6 +75,11 @@ export function useDevice() {
   // Carries replyId from sendMessage into the echo handler (packets are sequential)
   const pendingReplyIdRef = useRef<number | undefined>(undefined);
 
+  // ─── GPS tracking ─────────────────────────────────────────────
+  const deviceGpsModeRef = useRef<number>(0); // 0=DISABLED,1=ENABLED,2=NOT_PRESENT
+  const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const refreshOurPositionRef = useRef<() => Promise<OurPosition | null>>(async () => null);
+
   // ─── MQTT session tracking ────────────────────────────────────
   // Tracks current MQTT connection status in a ref for use in callbacks
   const mqttStatusRef = useRef<MQTTStatus>("disconnected");
@@ -75,6 +91,9 @@ export function useDevice() {
   const seenPacketIds = useRef<Map<number, number>>(new Map());
 
   const [mqttStatus, setMqttStatus] = useState<MQTTStatus>("disconnected");
+  const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [deviceGpsMode, setDeviceGpsMode] = useState<number>(0);
 
   const [state, setState] = useState<DeviceState>({
     status: "disconnected",
@@ -220,6 +239,28 @@ export function useDevice() {
     }
   }, []);
 
+  // ─── GPS interval management ───────────────────────────────────
+  const stopGpsInterval = useCallback(() => {
+    if (gpsIntervalRef.current) {
+      clearInterval(gpsIntervalRef.current);
+      gpsIntervalRef.current = null;
+    }
+  }, []);
+
+  const startGpsInterval = useCallback(() => {
+    stopGpsInterval();
+    try {
+      const raw = localStorage.getItem('mesh-client:gpsSettings');
+      let intervalSecs = raw ? (JSON.parse(raw).refreshInterval ?? 0) : 0;
+      if (intervalSecs <= 0) intervalSecs = 3600; // default 1 hour
+      if (intervalSecs > 0) {
+        gpsIntervalRef.current = setInterval(() => {
+          refreshOurPositionRef.current();
+        }, intervalSecs * 1000);
+      }
+    } catch { /* ignore bad localStorage */ }
+  }, [stopGpsInterval]);
+
   // ─── Forward declarations for mutual recursion ────────────────
   const handleConnectionLostRef = useRef<() => void>(() => {});
   const attemptReconnectRef = useRef<() => Promise<void>>(async () => {});
@@ -247,7 +288,9 @@ export function useDevice() {
   // Load saved data from DB on mount
   useEffect(() => {
     window.electronAPI.db.getMessages(undefined, 500)
-      .then((msgs) => { setMessages(msgs.reverse()); })
+      .then((msgs) => {
+        setMessages(msgs.reverse());
+      })
       .catch((err) => { console.error("[useDevice] Failed to load messages:", err); setMessages([]); });
     window.electronAPI.db.getNodes()
       .then((savedNodes) => {
@@ -266,6 +309,7 @@ export function useDevice() {
     const unsubStatus = window.electronAPI.mqtt.onStatus((s) => {
       mqttStatusRef.current = s as MQTTStatus;
       setMqttStatus(s as MQTTStatus);
+      if (s === "connected" && !deviceRef.current) startGpsInterval();
     });
 
     const unsubNode = window.electronAPI.mqtt.onNodeUpdate((rawNode) => {
@@ -360,7 +404,7 @@ export function useDevice() {
       unsubNode();
       unsubMsg();
     };
-  }, [updateNodes, isDuplicate]);
+  }, [updateNodes, isDuplicate, startGpsInterval]);
 
   // Cleanup on unmount — stop all intervals and subscriptions
   useEffect(() => {
@@ -369,6 +413,7 @@ export function useDevice() {
       stopPolling();
       stopWatchdog();
       stopBleHeartbeat();
+      stopGpsInterval();
       isReconnectingRef.current = false;
       const device = deviceRef.current;
       deviceRef.current = null;
@@ -376,7 +421,7 @@ export function useDevice() {
         safeDisconnect(device).catch(() => {});
       }
     };
-  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat]);
+  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat, stopGpsInterval]);
 
   // ─── Wire up all event subscriptions for a device ─────────────
   const wireSubscriptions = useCallback(
@@ -405,12 +450,15 @@ export function useDevice() {
           lastDataReceivedRef.current = Date.now();
           startPolling();
           startWatchdog();
+          refreshOurPositionRef.current();
+          startGpsInterval();
         }
 
         // Always clean up on disconnect, even if we never reached configured
         if (status === 2) {
           stopBleHeartbeat();
           stopWatchdog();
+          stopGpsInterval();
           cleanupSubscriptions();
           stopPolling();
           setTraceRouteResults(new Map());
@@ -423,12 +471,24 @@ export function useDevice() {
       // ─── My node info ──────────────────────────────────────────
       const unsub2 = device.events.onMyNodeInfo.subscribe((info) => {
         touchLastData();
+        const virtualNodeId = getOrCreateVirtualNodeId();
+        if (virtualNodeId !== info.myNodeNum) {
+          window.electronAPI.db.deleteNode(virtualNodeId).catch(() => {});
+        }
         myNodeNumRef.current = info.myNodeNum;
         setState((s) => ({ ...s, myNodeNum: info.myNodeNum }));
         updateNodes((prev) => {
-          if (prev.has(info.myNodeNum)) return prev;
           const updated = new Map(prev);
-          updated.set(info.myNodeNum, emptyNode(info.myNodeNum));
+          if (virtualNodeId !== info.myNodeNum) updated.delete(virtualNodeId);
+          const existing = updated.get(info.myNodeNum);
+          if (!existing) {
+            const selfNode = { ...emptyNode(info.myNodeNum), hops_away: 0 };
+            updated.set(info.myNodeNum, selfNode);
+          } else {
+            const selfNode = { ...existing, hops_away: 0 };
+            updated.set(info.myNodeNum, selfNode);
+            window.electronAPI.db.saveNode(selfNode);
+          }
           return updated;
         });
       });
@@ -460,6 +520,11 @@ export function useDevice() {
           replyId,
           to: meshPacket.to && meshPacket.to !== BROADCAST_ADDR ? meshPacket.to : undefined,
         };
+
+        // Packet ID dedup: skip if already seen (e.g. via MQTT) so same message is not shown twice
+        if (!isEcho && !msg.emoji && msg.packetId && isDuplicate(msg.packetId)) {
+          return;
+        }
 
         setMessages((prev) => {
           // Dedup reaction retransmissions before the DB write completes
@@ -600,7 +665,7 @@ export function useDevice() {
             latitude: newLat,
             longitude: newLon,
             role: info.user?.role ?? existing.role,
-            hops_away: info.hopsAway ?? existing.hops_away,
+            hops_away: nodeNum === myNodeNumRef.current ? (info.hopsAway ?? 0) : (info.hopsAway ?? existing.hops_away),
             via_mqtt: info.viaMqtt ?? existing.via_mqtt,
             voltage: info.deviceMetrics?.voltage ?? existing.voltage,
             channel_utilization: info.deviceMetrics?.channelUtilization ?? existing.channel_utilization,
@@ -810,6 +875,16 @@ export function useDevice() {
       });
       unsubscribesRef.current.push(unsub10);
 
+      // ─── Device config (track GPS mode) ────────────────────────
+      const unsubConfig = device.events.onConfigPacket.subscribe((config) => {
+        const cfg = config as { payloadVariant?: { case?: string; value?: { gpsMode?: number } } };
+        if (cfg.payloadVariant?.case === 'position' && cfg.payloadVariant.value?.gpsMode != null) {
+          deviceGpsModeRef.current = cfg.payloadVariant.value.gpsMode;
+          setDeviceGpsMode(cfg.payloadVariant.value.gpsMode);
+        }
+      });
+      unsubscribesRef.current.push(unsubConfig);
+
       // ─── Trace route responses ──────────────────────────────────
       const unsubTrace = device.events.onTraceRoutePacket.subscribe((packet) => {
         setTraceRouteResults((prev) => {
@@ -859,7 +934,8 @@ export function useDevice() {
       }
     },
     [touchLastData, getNodeName, updateNodes, startPolling, stopPolling,
-     startWatchdog, stopWatchdog, stopBleHeartbeat, cleanupSubscriptions]
+     startWatchdog, stopWatchdog, stopBleHeartbeat, cleanupSubscriptions,
+     startGpsInterval, stopGpsInterval]
   );
 
   // ─── Connection lost handler ──────────────────────────────────
@@ -872,13 +948,14 @@ export function useDevice() {
     stopPolling();
     stopWatchdog();
     stopBleHeartbeat();
+    stopGpsInterval();
     const oldDevice = deviceRef.current;
     deviceRef.current = null;
     if (oldDevice) safeDisconnect(oldDevice).catch(() => {});
 
     // Begin reconnection
     attemptReconnectRef.current();
-  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat]);
+  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat, stopGpsInterval]);
 
   // Keep the ref in sync
   handleConnectionLostRef.current = handleConnectionLost;
@@ -995,6 +1072,7 @@ export function useDevice() {
     stopPolling();
     stopWatchdog();
     stopBleHeartbeat();
+    stopGpsInterval();
     clearCapturedBleDevice();
     isReconnectingRef.current = false;
     reconnectAttemptRef.current = 0;
@@ -1007,7 +1085,7 @@ export function useDevice() {
       await safeDisconnect(device);
     }
     setState({ status: "disconnected", myNodeNum: 0, connectionType: null });
-  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat]);
+  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat, stopGpsInterval]);
 
   const sendMessage = useCallback(async (text: string, channel = 0, destination?: number, replyId?: number) => {
     if (!deviceRef.current) {
@@ -1015,31 +1093,41 @@ export function useDevice() {
 
       // MQTT-only send path (no device connected)
       const from = myNodeNumRef.current || getOrCreateVirtualNodeId();
-      const packetId = await window.electronAPI.mqtt.publish({
-        text,
-        from,
-        channel,
-        destination: destination ?? BROADCAST_ADDR,
-        channelName: "LongFast",
-      });
-
+      const tempId = Math.floor(Math.random() * 0xFFFFFFFF);
       const msg: ChatMessage = {
         sender_id: from,
         sender_name: getNodeName(from),
         payload: text,
         channel,
         timestamp: Date.now(),
-        packetId,
-        status: "acked",
+        packetId: tempId,
+        status: "sending",
         to: destination,
         replyId,
       };
-
-      // Register packetId to deduplicate the echo that comes back via MQTT subscription
-      isDuplicate(packetId);
-
       setMessages((prev) => [...prev, msg]);
       window.electronAPI.db.saveMessage(msg);
+
+      try {
+        const packetId = await window.electronAPI.mqtt.publish({
+          text,
+          from,
+          channel,
+          destination: destination ?? BROADCAST_ADDR,
+          channelName: "LongFast",
+        });
+        // Register real packetId to deduplicate the echo that comes back via MQTT subscription
+        isDuplicate(packetId);
+        setMessages((prev) =>
+          prev.map((m) => m.packetId === tempId ? { ...m, packetId, status: "acked" as const } : m)
+        );
+        window.electronAPI.db.updateMessageStatus(tempId, "acked");
+      } catch (err) {
+        setMessages((prev) =>
+          prev.map((m) => m.packetId === tempId ? { ...m, status: "failed" as const, error: String(err) } : m)
+        );
+        window.electronAPI.db.updateMessageStatus(tempId, "failed", String(err));
+      }
       return;
     }
 
@@ -1063,13 +1151,28 @@ export function useDevice() {
       // Hybrid mode: if uplinkEnabled for this channel, also publish to MQTT
       const chCfg = channelConfigsRef.current.find(c => c.index === channel);
       if (chCfg?.uplinkEnabled && mqttStatusRef.current === "connected" && myNodeNumRef.current) {
+        setMessages((prev) =>
+          prev.map((m) => m.packetId === packetId ? { ...m, mqttStatus: "sending" as const } : m)
+        );
+        window.electronAPI.db.updateMessageStatus(packetId, "acked", undefined, "sending");
         window.electronAPI.mqtt.publish({
           text,
           from: myNodeNumRef.current,
           channel,
           destination: destination ?? BROADCAST_ADDR,
           channelName: "LongFast",
-        }).then(isDuplicate).catch(() => {}); // register echo packetId; non-fatal
+        }).then((mqttPacketId) => {
+          isDuplicate(mqttPacketId);
+          setMessages((prev) =>
+            prev.map((m) => m.packetId === packetId ? { ...m, mqttStatus: "acked" as const } : m)
+          );
+          window.electronAPI.db.updateMessageStatus(packetId, "acked", undefined, "acked");
+        }).catch(() => {
+          setMessages((prev) =>
+            prev.map((m) => m.packetId === packetId ? { ...m, mqttStatus: "failed" as const } : m)
+          );
+          window.electronAPI.db.updateMessageStatus(packetId, "acked", undefined, "failed");
+        });
       }
     } catch (err) {
       // NAK or timeout — extract packet ID and error from rejection
@@ -1168,6 +1271,25 @@ export function useDevice() {
     });
   }, [updateNodes]);
 
+  const refreshNodesFromDb = useCallback(() => {
+    window.electronAPI.db.getNodes()
+      .then((savedNodes) => {
+        const nodeMap = new Map<number, MeshNode>();
+        for (const n of savedNodes) {
+          nodeMap.set(n.node_id, { ...n, role: parseNodeRole(n.role), favorited: Boolean(n.favorited) });
+        }
+        nodesRef.current = nodeMap;
+        setNodes(nodeMap);
+      })
+      .catch((err) => { console.error("[useDevice] Failed to refresh nodes:", err); });
+  }, []);
+
+  const refreshMessagesFromDb = useCallback(() => {
+    window.electronAPI.db.getMessages(undefined, 500)
+      .then((msgs) => { setMessages(msgs.reverse()); })
+      .catch((err) => { console.error("[useDevice] Failed to refresh messages:", err); setMessages([]); });
+  }, []);
+
   const setNodeFavorited = useCallback(async (nodeId: number, favorited: boolean) => {
     await window.electronAPI.db.setNodeFavorited(nodeId, favorited);
     updateNodes((prev) => {
@@ -1177,6 +1299,84 @@ export function useDevice() {
       return updated;
     });
   }, [updateNodes]);
+
+  const refreshOurPosition = useCallback(async (): Promise<OurPosition | null> => {
+    setGpsLoading(true);
+    try {
+      const myNode = nodesRef.current.get(myNodeNumRef.current);
+      const pos = await resolveOurPosition(myNode?.latitude, myNode?.longitude);
+      setOurPosition(pos);
+
+      if (pos) {
+        const hasDevice = !!deviceRef.current;
+        const selfNodeId = hasDevice && myNodeNumRef.current > 0
+          ? myNodeNumRef.current
+          : mqttStatusRef.current === "connected"
+            ? getOrCreateVirtualNodeId()
+            : 0;
+        if (selfNodeId > 0) {
+          const isVirtualNode = !hasDevice && selfNodeId === getOrCreateVirtualNodeId();
+          updateNodes((prev) => {
+            const updated = new Map(prev);
+            const existing = updated.get(selfNodeId) || emptyNode(selfNodeId);
+            const node: MeshNode = {
+              ...existing,
+              node_id: selfNodeId,
+              latitude: pos.lat,
+              longitude: pos.lon,
+              last_heard: Date.now(),
+              lastPositionWarning: undefined,
+            };
+            updated.set(selfNodeId, node);
+            if (!isVirtualNode) window.electronAPI.db.saveNode(node);
+            return updated;
+          });
+        }
+
+        if (pos.source === "browser" && deviceGpsModeRef.current === 2 && deviceRef.current) {
+          deviceRef.current.setPosition(
+            create(Mesh.PositionSchema, {
+              latitudeI: Math.round(pos.lat * 1e7),
+              longitudeI: Math.round(pos.lon * 1e7),
+              time: Math.floor(Date.now() / 1000),
+            })
+          ).catch(() => {});
+        }
+      }
+      return pos;
+    } finally {
+      setGpsLoading(false);
+    }
+  }, [updateNodes]);
+
+  // Keep ref in sync so intervals/callbacks always call the latest version
+  refreshOurPositionRef.current = refreshOurPosition;
+
+  // Resolve position on app startup regardless of device connection
+  useEffect(() => {
+    refreshOurPositionRef.current();
+  }, []);
+
+  const sendPositionToDevice = useCallback(async (lat: number, lon: number, alt?: number) => {
+    if (!deviceRef.current) return;
+    await deviceRef.current.setPosition(
+      create(Mesh.PositionSchema, {
+        latitudeI: Math.round(lat * 1e7),
+        longitudeI: Math.round(lon * 1e7),
+        altitude: alt ?? 0,
+        time: Math.floor(Date.now() / 1000),
+      })
+    );
+  }, []);
+
+  const updateGpsInterval = useCallback((secs: number) => {
+    stopGpsInterval();
+    if (secs > 0) {
+      gpsIntervalRef.current = setInterval(() => {
+        refreshOurPositionRef.current();
+      }, secs * 1000);
+    }
+  }, [stopGpsInterval]);
 
   const requestRefresh = useCallback(async () => {
     if (!deviceRef.current) return;
@@ -1201,6 +1401,15 @@ export function useDevice() {
     sendStatusEvents();
   }, [sendStatusEvents]);
 
+  const selfNodeId =
+    state.myNodeNum > 0
+      ? state.myNodeNum
+      : mqttStatus === "connected"
+        ? getOrCreateVirtualNodeId()
+        : 0;
+
+  const getNodes = useCallback(() => nodesRef.current, []);
+
   return {
     state,
     mqttStatus,
@@ -1211,6 +1420,9 @@ export function useDevice() {
     channels,
     channelConfigs,
     traceRouteResults,
+    ourPosition,
+    selfNodeId,
+    deviceGpsMode,
     connect,
     disconnect,
     sendMessage,
@@ -1227,8 +1439,15 @@ export function useDevice() {
     traceRoute,
     deleteNode,
     setNodeFavorited,
+    refreshNodesFromDb,
+    refreshMessagesFromDb,
     requestRefresh,
+    gpsLoading,
+    refreshOurPosition,
+    sendPositionToDevice,
+    updateGpsInterval,
     getFullNodeLabel,
+    getNodes,
   };
 }
 

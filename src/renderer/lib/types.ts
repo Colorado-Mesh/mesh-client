@@ -73,7 +73,8 @@ export interface ChatMessage {
   timestamp: number;
   // Delivery status tracking
   packetId?: number;
-  status?: "sending" | "acked" | "failed";
+  status?: "sending" | "acked" | "failed";      // device (RF) transport
+  mqttStatus?: "sending" | "acked" | "failed";  // MQTT transport (hybrid/MQTT-only)
   error?: string;
   // Emoji reactions / tapback
   emoji?: number;
@@ -129,7 +130,8 @@ declare global {
         updateMessageStatus: (
           packetId: number,
           status: string,
-          error?: string
+          error?: string,
+          mqttStatus?: string
         ) => Promise<unknown>;
         exportDb: () => Promise<string | null>;
         importDb: () => Promise<{ nodesAdded: number; messagesAdded: number } | null>;

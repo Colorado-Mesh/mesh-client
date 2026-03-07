@@ -66,24 +66,12 @@ export default function DiagnosticsPanel({
   const setAnomalyHalosEnabled = useDiagnosticsStore((s) => s.setAnomalyHalosEnabled);
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
   const setIgnoreMqttEnabled = useDiagnosticsStore((s) => s.setIgnoreMqttEnabled);
-  const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);
 
   const [search, setSearch] = useState("");
   const [tracePending, setTracePending] = useState<number | null>(null);
   const [traceFailed, setTraceFailed] = useState<Set<number>>(new Set());
   const traceStartTimes = useRef<Map<number, number>>(new Map());
   const traceTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
-
-  // Re-run full analysis whenever nodes change
-  useEffect(() => {
-    runReanalysis(nodes, myNodeNum);
-  }, [nodes, myNodeNum, runReanalysis]);
-
-  // Re-run analysis when ignoreMqtt toggle changes
-  useEffect(() => {
-    runReanalysis(nodes, myNodeNum);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ignoreMqttEnabled]);
 
   // Detect when a trace result arrives for the pending node
   useEffect(() => {

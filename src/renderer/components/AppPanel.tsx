@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { MeshNode } from "../lib/types";
+import type { OurPosition } from "../lib/gpsSource";
 import { useToast } from "./Toast";
 import { haversineDistanceKm } from "../lib/nodeStatus";
 import type { LocationFilter } from "../App";
@@ -92,6 +93,12 @@ interface Props {
   channels: Array<{ index: number; name: string }>;
   myNodeNum: number | null;
   onLocationFilterChange: (f: LocationFilter) => void;
+  ourPosition?: OurPosition | null;
+  onRefreshGps?: () => void;
+  gpsLoading?: boolean;
+  onGpsIntervalChange?: (secs: number) => void;
+  onNodesPruned?: () => void;
+  onMessagesPruned?: () => void;
 }
 
 interface PendingAction {
@@ -109,6 +116,12 @@ export default function AppPanel({
   channels,
   myNodeNum,
   onLocationFilterChange,
+  ourPosition,
+  onRefreshGps,
+  gpsLoading,
+  onGpsIntervalChange,
+  onNodesPruned,
+  onMessagesPruned,
 }: Props) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const { addToast } = useToast();
@@ -138,6 +151,25 @@ export default function AppPanel({
   const updateSetting = <K extends keyof AdminSettings>(key: K, value: AdminSettings[K]) =>
     setSettings((prev) => ({ ...prev, [key]: value }));
 
+  // ─── GPS refresh settings ────────────────────────────────────
+  const [gpsRefreshInterval, setGpsRefreshInterval] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem('mesh-client:gpsSettings');
+      const val = raw ? (JSON.parse(raw).refreshInterval ?? 0) : 0;
+      return val > 0 ? val : 3600; // default 1 hour
+    } catch {
+      return 3600;
+    }
+  });
+
+  const handleGpsIntervalChange = useCallback((val: number) => {
+    setGpsRefreshInterval(val);
+    try {
+      localStorage.setItem('mesh-client:gpsSettings', JSON.stringify({ refreshInterval: val }));
+    } catch { /* ignore */ }
+    onGpsIntervalChange?.(val);
+  }, [onGpsIntervalChange]);
+
   // ─── Message channel selection ──────────────────────────────
   const [msgChannels, setMsgChannels] = useState<number[]>([]);
   const [clearChannelTarget, setClearChannelTarget] = useState<number>(-1);
@@ -160,21 +192,73 @@ export default function AppPanel({
 
   const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
+    const actionName = pendingAction.name;
     setPendingAction(null);
     try {
       await pendingAction.action();
-      addToast(`${pendingAction.name} completed successfully.`, "success");
+      const nodeActions = [
+        "Delete Old Nodes",
+        "Prune MQTT-only Nodes",
+        "Prune Zero Island Nodes",
+        "Prune Distant Nodes",
+        "Clear Nodes",
+        "Clear All Data",
+      ];
+      const messageActions = ["Clear Messages", "Clear All Data"];
+      if (nodeActions.includes(actionName)) onNodesPruned?.();
+      if (messageActions.includes(actionName)) onMessagesPruned?.();
+      addToast(`${actionName} completed successfully.`, "success");
     } catch (err) {
       addToast(
         `Failed: ${err instanceof Error ? err.message : "Unknown error"}`,
         "error"
       );
     }
-  }, [pendingAction, addToast]);
+  }, [pendingAction, addToast, onNodesPruned, onMessagesPruned]);
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <h2 className="text-xl font-semibold text-gray-200">App Settings</h2>
+
+      {/* GPS / Location */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-muted">GPS / Location</h3>
+        <div className="bg-secondary-dark rounded-lg p-4 space-y-4">
+          {ourPosition && (
+            <p className="text-xs text-brand-green">
+              {ourPosition.source === 'device'
+                ? `Device GPS: ${ourPosition.lat.toFixed(5)}, ${ourPosition.lon.toFixed(5)}`
+                : ourPosition.source === 'browser'
+                  ? `Browser location: ${ourPosition.lat.toFixed(5)}, ${ourPosition.lon.toFixed(5)}`
+                  : `IP location (city-level): ${ourPosition.lat.toFixed(5)}, ${ourPosition.lon.toFixed(5)}`}
+            </p>
+          )}
+          {!ourPosition && (
+            <p className="text-xs text-muted">No GPS position resolved yet.</p>
+          )}
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-300 flex-1">Auto-refresh interval:</label>
+            <select
+              value={gpsRefreshInterval}
+              onChange={(e) => handleGpsIntervalChange(Number(e.target.value))}
+              className="px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
+            >
+              <option value={0}>Manual only</option>
+              <option value={900}>Every 15 min</option>
+              <option value={1800}>Every 30 min</option>
+              <option value={3600}>Every hour</option>
+              <option value={7200}>Every 2 hours</option>
+            </select>
+          </div>
+          <button
+            onClick={() => onRefreshGps?.()}
+            disabled={gpsLoading}
+            className={`px-4 py-2 bg-secondary-dark text-gray-300 rounded-lg text-sm font-medium transition-colors ${gpsLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-600'}`}
+          >
+            {gpsLoading ? 'Refreshing...' : 'Refresh Now'}
+          </button>
+        </div>
+      </div>
 
       {/* Map & Node Filtering */}
       <div className="space-y-3">
@@ -404,8 +488,11 @@ export default function AppPanel({
             <button
               onClick={() => {
                 const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
-                if (!homeNode || !homeNode.latitude || !homeNode.longitude) {
-                  addToast("Your device has no GPS coordinates.", "error");
+                const homeLat = homeNode?.latitude ?? ourPosition?.lat;
+                const homeLon = homeNode?.longitude ?? ourPosition?.lon;
+                const hasHome = homeLat != null && homeLon != null && (homeLat !== 0 || homeLon !== 0);
+                if (!hasHome) {
+                  addToast("No GPS position available. Use device node coordinates or enable GPS in the app.", "error");
                   return;
                 }
                 const maxKm = settings.distanceUnit === "miles"
@@ -414,7 +501,7 @@ export default function AppPanel({
                 const distantNodes = Array.from(nodes.values()).filter((n) => {
                   if (n.node_id === myNodeNum) return false;
                   if (!n.latitude && !n.longitude) return false; // no GPS — can't determine distance
-                  const d = haversineDistanceKm(homeNode.latitude, homeNode.longitude, n.latitude, n.longitude);
+                  const d = haversineDistanceKm(homeLat, homeLon, n.latitude, n.longitude);
                   return d > maxKm;
                 });
                 if (distantNodes.length === 0) {

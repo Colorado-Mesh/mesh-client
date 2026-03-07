@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useDevice } from "./hooks/useDevice";
+import { useDiagnosticsStore } from "./stores/diagnosticsStore";
 import { ToastProvider } from "./components/Toast";
 import type { MQTTSettings } from "./lib/types";
 import Tabs from "./components/Tabs";
@@ -80,6 +81,12 @@ export default function App() {
   const prevMsgCountRef = useRef(0);
   const isInitialLoadRef = useRef(true);
   const device = useDevice();
+  const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);
+  const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
+
+  useEffect(() => {
+    runReanalysis(device.getNodes, device.selfNodeId);
+  }, [device.nodes, device.selfNodeId, device.getNodes, runReanalysis, ignoreMqttEnabled]);
 
   const isConfigured = device.state.status === "configured";
   const isOperational = isConfigured || device.state.status === "stale";
@@ -263,15 +270,17 @@ export default function App() {
                 nodes={device.nodes}
                 initialDmTarget={pendingDmTarget}
                 onDmTargetConsumed={() => setPendingDmTarget(null)}
+                isActive={activeTab === 1}
               />
             </div>
             {activeTab === 2 && (
               <NodeListPanel
                 nodes={device.nodes}
-                myNodeNum={device.state.myNodeNum}
+                myNodeNum={device.selfNodeId}
                 onRefresh={device.requestRefresh}
                 onNodeClick={(node) => setSelectedNodeId(node.node_id)}
                 isConnected={isOperational}
+                mqttConnected={device.mqttStatus === "connected"}
                 locationFilter={locationFilter}
                 onToggleFavorite={device.setNodeFavorited}
               />
@@ -279,10 +288,14 @@ export default function App() {
             {activeTab === 3 && (
               <MapPanel
                 nodes={device.nodes}
-                myNodeNum={device.state.myNodeNum}
-                onRefresh={device.requestRefresh}
-                isConnected={isOperational}
+                myNodeNum={device.selfNodeId}
                 locationFilter={locationFilter}
+                ourPosition={device.ourPosition}
+                onLocateMe={() =>
+                  device.refreshOurPosition().then((p) =>
+                    p ? { lat: p.lat, lon: p.lon } : null
+                  )
+                }
               />
             )}
             {activeTab === 4 && (
@@ -305,6 +318,8 @@ export default function App() {
                 onShutdown={device.shutdown}
                 onFactoryReset={device.factoryReset}
                 onResetNodeDb={device.resetNodeDb}
+                ourPosition={device.ourPosition}
+                onSendPositionToDevice={device.sendPositionToDevice}
               />
             )}
             {activeTab === 6 && (
@@ -314,12 +329,18 @@ export default function App() {
                 channels={device.channels}
                 myNodeNum={device.state.myNodeNum}
                 onLocationFilterChange={handleLocationFilterChange}
+                ourPosition={device.ourPosition}
+                onRefreshGps={device.refreshOurPosition}
+                gpsLoading={device.gpsLoading}
+                onGpsIntervalChange={device.updateGpsInterval}
+                onNodesPruned={device.refreshNodesFromDb}
+                onMessagesPruned={device.refreshMessagesFromDb}
               />
             )}
             {activeTab === 7 && (
               <DiagnosticsPanel
                 nodes={device.nodes}
-                myNodeNum={device.state.myNodeNum}
+                myNodeNum={device.selfNodeId}
                 onTraceRoute={device.traceRoute}
                 isConnected={isOperational}
                 traceRouteResults={device.traceRouteResults}

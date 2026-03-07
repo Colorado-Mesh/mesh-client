@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import type { OurPosition } from "../lib/gpsSource";
 import { useToast } from "./Toast";
 
 interface ChannelConfig {
@@ -32,6 +33,8 @@ interface Props {
   onShutdown: (seconds: number) => Promise<void>;
   onFactoryReset: () => Promise<void>;
   onResetNodeDb: () => Promise<void>;
+  ourPosition?: OurPosition | null;
+  onSendPositionToDevice?: (lat: number, lon: number, alt?: number) => Promise<void>;
 }
 
 const REGIONS = [
@@ -350,6 +353,8 @@ export default function RadioPanel({
   onShutdown,
   onFactoryReset,
   onResetNodeDb,
+  ourPosition,
+  onSendPositionToDevice,
 }: Props) {
   // ─── LoRa settings ────────────────────────────────────────────
   const [region, setRegion] = useState(1);
@@ -363,6 +368,9 @@ export default function RadioPanel({
   const [positionBroadcastSecs, setPositionBroadcastSecs] = useState(900);
   const [gpsUpdateInterval, setGpsUpdateInterval] = useState(120);
   const [fixedPosition, setFixedPosition] = useState(false);
+  const [fixedLat, setFixedLat] = useState(() => ourPosition?.lat ?? 0);
+  const [fixedLon, setFixedLon] = useState(() => ourPosition?.lon ?? 0);
+  const [fixedAlt, setFixedAlt] = useState(0);
 
   // ─── Power settings ───────────────────────────────────────────
   const [isPowerSaving, setIsPowerSaving] = useState(false);
@@ -551,6 +559,61 @@ export default function RadioPanel({
           disabled={disabled || applyingSection !== null}
           description="When enabled, the device will use a manually-set position instead of GPS."
         />
+        {fixedPosition && (
+          <div className="space-y-3 pt-2 border-t border-gray-700">
+            <p className="text-xs text-muted">
+              Set coordinates to send to the device.
+              {ourPosition && (
+                <button
+                  type="button"
+                  onClick={() => { setFixedLat(ourPosition.lat); setFixedLon(ourPosition.lon); }}
+                  className="ml-2 text-brand-green underline hover:opacity-80"
+                >
+                  Use current GPS
+                </button>
+              )}
+            </p>
+            <ConfigNumber
+              label="Latitude"
+              value={fixedLat}
+              onChange={setFixedLat}
+              disabled={disabled || applyingSection !== null}
+              min={-90}
+              max={90}
+            />
+            <ConfigNumber
+              label="Longitude"
+              value={fixedLon}
+              onChange={setFixedLon}
+              disabled={disabled || applyingSection !== null}
+              min={-180}
+              max={180}
+            />
+            <ConfigNumber
+              label="Altitude (m)"
+              value={fixedAlt}
+              onChange={setFixedAlt}
+              disabled={disabled || applyingSection !== null}
+              min={0}
+              max={8848}
+            />
+            <button
+              onClick={async () => {
+                if (!onSendPositionToDevice) return;
+                try {
+                  await onSendPositionToDevice(fixedLat, fixedLon, fixedAlt);
+                  addToast("Position sent to device.", "success");
+                } catch (err) {
+                  addToast(`Failed: ${err instanceof Error ? err.message : "Unknown error"}`, "error");
+                }
+              }}
+              disabled={disabled || !onSendPositionToDevice}
+              className="w-full px-4 py-2 bg-brand-green hover:bg-brand-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Send Position to Device
+            </button>
+          </div>
+        )}
       </ConfigSection>
 
       {/* ═══ Power ═══ */}

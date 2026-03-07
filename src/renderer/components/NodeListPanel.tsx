@@ -30,6 +30,7 @@ interface Props {
   onRefresh: () => Promise<void>;
   onNodeClick: (node: MeshNode) => void;
   isConnected: boolean;
+  mqttConnected?: boolean;
   locationFilter: LocationFilter;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
 }
@@ -40,6 +41,7 @@ export default function NodeListPanel({
   onRefresh,
   onNodeClick,
   isConnected,
+  mqttConnected = false,
   locationFilter,
   onToggleFavorite,
 }: Props) {
@@ -464,14 +466,20 @@ export default function NodeListPanel({
                     <td className="px-3 py-2 text-xs">
                       <RoleDisplay role={node.role} />
                     </td>
-                    <td className={`px-3 py-2 text-right text-xs ${node.hops_away === 0 ? "text-bright-green" : "text-gray-300"}`}>
+                    <td className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away === undefined || node.hops_away === null) ? 0 : node.hops_away) === 0 ? "text-bright-green" : "text-gray-300"}`}>
                       {node.heard_via_mqtt_only
                         ? <span className="text-muted">—</span>
-                        : node.hops_away !== undefined ? node.hops_away : "-"}
+                        : (isSelf && (node.hops_away === undefined || node.hops_away === null)
+                            ? 0
+                            : node.hops_away !== undefined && node.hops_away !== null
+                            ? node.hops_away
+                            : "-")}
                     </td>
                     <td className="px-3 py-2 text-center text-gray-300 text-xs">
                       {node.heard_via_mqtt_only
                         ? <span title="Heard only via MQTT" className="text-blue-400">🌐</span>
+                        : isSelf && mqttConnected
+                        ? <span title="Connected via MQTT" className="text-blue-400">🌐</span>
                         : node.via_mqtt
                         ? <span title="Relay uses MQTT" className="text-gray-400 text-xs">relay</span>
                         : "-"}

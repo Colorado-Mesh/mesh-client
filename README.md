@@ -4,7 +4,7 @@ A cross-platform Meshtastic desktop client for **Mac**, **Linux**, and **Windows
 
 Connect to your Meshtastic devices over Bluetooth, USB Serial, or WiFi. Independently, you can connect directly to MQTT.
 
-> Created by **[Joey (NV0N)](https://github.com/rinchen)** & **[dude.eth](https://github.com/defidude)**. Based on the [original Mac client](https://github.com/Denver-Mesh/meshtastic_mac_client). Part of [**Colorado Mesh**](https://github.com/Colorado-Mesh/meshtastic-client).
+> Created by **[Joey (NV0N)](https://github.com/rinchen)** & **[dude.eth](https://github.com/defidude)**. Based on the [original Mac client](https://github.com/Colorado-Mesh/meshtastic_mac_client). Part of [**Colorado Mesh**](https://github.com/Colorado-Mesh/meshtastic-client).
 
 ---
 
@@ -104,23 +104,32 @@ The distributable is output to the `release/` directory.
 
 ---
 
+## Troubleshooting
+
+- **Permission messages** — You may see `[permissions] checkHandler: media → denied` or `web-app-installation → denied`. These are expected: the app only uses **serial** and **geolocation**. Media and web-app-installation are not used and are intentionally denied.
+- **`[DEP0169]` / `url.parse()` deprecation** — The app uses npm package overrides to force `follow-redirects` and `cacheable-request` onto versions that use the WHATWG URL API instead of the legacy `url` module, which removes this warning. To find the source of any deprecation, run `npm run trace-deprecation` (builds then runs Electron with `NODE_OPTIONS=--trace-deprecation`).
+- **Swift** — This project does not use Swift. If you had Swift installed for something else, you can remove it; it is not required for Mesh-Client.
+
+---
+
 ## Features
 
 - **Bluetooth LE** — pair wirelessly with nearby Meshtastic devices
 - **USB Serial** — plug in via USB cable
 - **WiFi/HTTP** — connect to network-enabled nodes
-- **MQTT** — subscribe to a Meshtastic MQTT broker to receive mesh traffic over the internet; send messages via MQTT even when no hardware device is connected; AES-128-CTR encryption/decryption, automatic deduplication with RF, and exponential-backoff reconnect
-- **Chat** — send/receive messages across channels with delivery indicators (ACK/NAK), emoji reactions (11 emojis with compose picker), reply-to-message (hover to reply; quoted preview shown in bubble), and an unread message divider that persists across restarts and scrolls you to where you left off
+- **MQTT** — subscribe to a Meshtastic MQTT broker to receive mesh traffic over the internet; send messages via MQTT even when no hardware device is connected; AES-128-CTR encryption/decryption, automatic deduplication with RF, exponential-backoff reconnect, and per-message delivery status indicators
+- **Chat** — send/receive messages across channels with delivery indicators (ACK/NAK), emoji reactions (11 emojis with compose picker), reply-to-message (hover to reply; quoted preview shown in bubble), and an unread message divider that persists across restarts and auto-scrolls you to where you left off when switching tabs
 - **Channel Management** — create and configure channels with custom names and PSK encryption
 - **Node List** — all discovered nodes with SNR, RSSI signal strength, battery, GPS, last heard; distance filter hides nodes beyond a configurable range; favorite/pin nodes for quick access
 - **Signal Strength Indicators** — live RSSI bars on nodes and in chat, color-coded by signal quality
 - **Device Role Display** — visual icons and badges for each node's configured role (Router, Client, Repeater, etc.)
 - **Node Detail Modal** — click any node or sender name for full info; send a DM, run a trace route with hop-path display, or delete the node; GPS warning banner shown when a node has reported invalid coordinates; Routing Health section with active anomaly description and 24-hour hop-count sparkline
 - **Diagnostics** — tab 8 (Cmd/Ctrl+8): network health score badge (0–100), searchable anomaly table with per-node trace-route action, and remediation suggestions (antenna mismatch, RF noise, MQTT ghost, config issues); anomaly badges (⚠) shown inline in the node list; status aura circles on the map; congestion halos toggle; Ignore MQTT checkbox filters MQTT-only nodes from routing analysis and dims them in the node list
-- **Map** — interactive OpenStreetMap with node positions; distance filter matches the node list
+- **Map** — interactive OpenStreetMap with node positions; your current position is shown when available (device GPS, or browser geolocation as a city-level fallback); map auto-centers on your position when no nodes are visible; distance filter matches the node list
 - **Telemetry** — battery voltage and signal quality charts
-- **Radio** — region, modem preset, device role, GPS, power, Bluetooth, display settings
-- **App** — reboot, shutdown, factory reset, node retention controls, channel-scoped message deletion, DB export/import/clear; map & node distance filter; prune nodes by location
+- **Radio** — region, modem preset, device role, GPS, power, Bluetooth, display settings; fixed-position mode lets you enter coordinates manually or auto-fill from your current GPS location, then send them directly to the device
+- **GPS / Location** — resolves your position using a waterfall: device GPS first, then browser geolocation as a fallback. Note that browser geolocation is only accurate to roughly the city level. Includes an auto-refresh interval setting and a manual "Refresh Now" button in the App tab
+- **App** — reboot, shutdown, factory reset, node retention controls, channel-scoped message deletion, DB export/import/clear; map & node distance filter; prune nodes by location; GPS auto-refresh interval
 - **System Tray** — tray icon with live unread message badge; app stays accessible when window is closed
 - **Persistent Storage** — messages and nodes saved locally via SQLite
 - **Dark UI** — custom scrollbar, tab icons, polished chat bubbles
@@ -162,7 +171,7 @@ src/
     ├── components/ # All UI panels (Chat, Nodes, Map, Radio, App, Diagnostics, etc.)
     ├── hooks/      # useDevice — Meshtastic device state management
     ├── stores/     # Zustand stores (diagnostics state)
-    └── lib/        # Transport setup, TypeScript types, diagnostics engines
+    └── lib/        # Transport setup, TypeScript types, diagnostics engines, GPS resolution
 ```
 
 ---
@@ -206,4 +215,4 @@ MIT — see [LICENSE](LICENSE)
 
 ## Credits
 
-See [CREDITS.md](CREDITS.md). Created by **[Joey (NV0N)](https://github.com/rinchen)** & **[dude.eth](https://github.com/defidude)**. Based on the [original Mac client](https://github.com/Denver-Mesh/meshtastic_mac_client). Part of **[Colorado Mesh](https://github.com/Colorado-Mesh/meshtastic-client)**.
+See [CREDITS.md](CREDITS.md). Created by **[Joey (NV0N)](https://github.com/rinchen)** & **[dude.eth](https://github.com/defidude)**. Based on the [original Mac client](https://github.com/Colorado-Mesh/meshtastic_mac_client). Part of **[Colorado Mesh](https://github.com/Colorado-Mesh/meshtastic-client)**.
