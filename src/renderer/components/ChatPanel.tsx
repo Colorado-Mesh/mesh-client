@@ -577,7 +577,10 @@ export default function ChatPanel({
             >
               {ch.name}
               {unread > 0 && !(viewMode === "channels" && channel === ch.index) && (
-                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                <span
+                  aria-label={`${unread > 99 ? "99+" : unread} unread messages`}
+                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1"
+                >
                   {unread > 99 ? "99+" : unread}
                 </span>
               )}
@@ -590,6 +593,8 @@ export default function ChatPanel({
         {/* Search toggle */}
         <button
           onClick={() => setShowSearch(!showSearch)}
+          aria-pressed={showSearch}
+          aria-label="Search messages"
           className={`p-1.5 rounded-lg transition-colors ${
             showSearch
               ? "bg-brand-green/20 text-bright-green"
@@ -597,7 +602,7 @@ export default function ChatPanel({
           }`}
           title="Search messages (Cmd+F)"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </button>
@@ -646,6 +651,7 @@ export default function ChatPanel({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search messages..."
+            aria-label="Search messages"
             className="w-full px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
             autoFocus
           />
@@ -796,11 +802,11 @@ export default function ChatPanel({
                               <StatusBadge status={msg.mqttStatus} transport="mqtt" />
                             </>
                           ) : msg.status === "sending" ? (
-                            <span className="text-[10px] text-muted" title="Sending...">{"\u23F3"}</span>
+                            <span role="img" aria-label="Sending" className="text-[10px] text-muted" title="Sending...">{"\u23F3"}</span>
                           ) : msg.status === "acked" ? (
-                            <span className="text-[10px] text-bright-green" title="Delivered">{"\u2713"}</span>
+                            <span role="img" aria-label="Delivered" className="text-[10px] text-bright-green" title="Delivered">{"\u2713"}</span>
                           ) : msg.status === "failed" ? (
-                            <span className="text-[10px] text-red-400 cursor-help" title={msg.error || "Failed to deliver"}>
+                            <span role="img" aria-label="Failed to deliver" className="text-[10px] text-red-400 cursor-help" title={msg.error || "Failed to deliver"}>
                               {"\u2717"} {msg.error || "Failed"}
                             </span>
                           ) : null}
@@ -808,13 +814,14 @@ export default function ChatPanel({
                       )}
                     </div>
 
-                    {/* Inline reaction trigger — visible on hover */}
+                    {/* Inline reaction trigger — visible on hover or focus-within */}
                     {isConnected && msg.packetId && (
-                      <div className="opacity-0 group-hover/msg:opacity-100 flex gap-0.5 transition-all shrink-0">
+                      <div className="opacity-0 group-hover/msg:opacity-100 group-focus-within/msg:opacity-100 flex gap-0.5 transition-all shrink-0">
                         {/* Reply */}
                         <button
                           onClick={() => { setReplyTo(msg); inputRef.current?.focus(); }}
                           className="text-gray-600 hover:text-blue-400 text-xs p-1 rounded"
+                          aria-label="Reply to message"
                           title="Reply"
                         >
                           <svg
@@ -841,6 +848,7 @@ export default function ChatPanel({
                             )
                           }
                           className="text-gray-600 hover:text-gray-300 text-xs p-1 rounded"
+                          aria-label="Add reaction"
                           title="React"
                         >
                           <svg

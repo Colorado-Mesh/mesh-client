@@ -278,6 +278,7 @@ export default function DiagnosticsPanel({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search nodes..."
+            aria-label="Search anomalies"
             className="w-48 px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
           />
         </div>

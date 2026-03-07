@@ -1,0 +1,33 @@
+name: Accessibility Tests
+
+on:
+  push:
+    branches: [main, weekend-coding]
+  pull_request:
+    branches: [main, weekend-coding]
+
+jobs:
+  component-a11y:
+    name: Component Accessibility (axe)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run accessibility tests
+        run: npm run test:run
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-a11y-report
+          path: test-results/
+          retention-days: 7

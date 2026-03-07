@@ -895,7 +895,7 @@ function ChannelSection({
                 )}
               </div>
               {validationError && (
-                <p className="text-xs text-red-400">{validationError}</p>
+                <p role="alert" className="text-xs text-red-400">{validationError}</p>
               )}
             </div>
 

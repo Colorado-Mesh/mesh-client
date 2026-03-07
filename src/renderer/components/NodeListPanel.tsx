@@ -241,6 +241,7 @@ export default function NodeListPanel({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search nodes..."
+            aria-label="Search nodes"
             className="flex-1 px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
           />
         </div>
@@ -276,107 +277,141 @@ export default function NodeListPanel({
 
       <div className="min-w-0 flex-1 overflow-auto rounded-lg border border-gray-700">
         <table style={{ minWidth: '1600px' }} className="text-sm whitespace-nowrap">
+          <caption className="sr-only">Connected mesh nodes</caption>
           <thead>
             <tr className="bg-deep-black text-muted text-left sticky top-0 z-10 whitespace-nowrap">
-              <th className="px-3 py-2 w-8"></th>
-              <th className="px-2 py-2 w-6" title="Favorites"></th>
+              <th scope="col" className="px-3 py-2 w-8"><span className="sr-only">Status</span></th>
+              <th scope="col" className="px-2 py-2 w-6" title="Favorites"><span className="sr-only">Favorite</span></th>
               <th
+                scope="col"
+                aria-sort={sortField === "node_id" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("node_id")}
               >
                 ID <SortIcon field="node_id" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "long_name" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("long_name")}
               >
                 Long Name <SortIcon field="long_name" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "short_name" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("short_name")}
               >
                 Short <SortIcon field="short_name" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "last_heard" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("last_heard")}
               >
                 Last Heard <SortIcon field="last_heard" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "role" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("role")}
               >
                 Role <SortIcon field="role" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "hops_away" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("hops_away")}
               >
                 Hops <SortIcon field="hops_away" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "via_mqtt" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-center cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("via_mqtt")}
               >
                 MQTT <SortIcon field="via_mqtt" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "latitude" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("latitude")}
               >
                 Lat <SortIcon field="latitude" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "longitude" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("longitude")}
               >
                 Lon <SortIcon field="longitude" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "rssi" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("rssi")}
               >
                 Signal <SortIcon field="rssi" />
               </th>
               <th
+                scope="col"
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("rssi")}
               >
                 RSSI <SortIcon field="rssi" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "battery" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("battery")}
               >
                 Battery <SortIcon field="battery" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "voltage" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("voltage")}
               >
                 Voltage <SortIcon field="voltage" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "channel_utilization" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("channel_utilization")}
               >
                 Ch.Util <SortIcon field="channel_utilization" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "air_util_tx" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("air_util_tx")}
               >
                 Air Tx <SortIcon field="air_util_tx" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "altitude" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("altitude")}
               >
                 Alt <SortIcon field="altitude" />
               </th>
               <th
+                scope="col"
+                aria-sort={sortField === "redundancy" ? (sortAsc ? "ascending" : "descending") : "none"}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
                 onClick={() => handleSort("redundancy")}
                 title="Echoes: same packet received via multiple paths (e.g. RF + MQTT or multiple RF hops). Higher means better mesh redundancy."
@@ -414,6 +449,7 @@ export default function NodeListPanel({
                   <tr
                     key={node.node_id}
                     onClick={() => onNodeClick(node)}
+                    aria-label={node.favorited && !isSelf ? `${node.long_name || node.short_name || "Node"}, favorited` : undefined}
                     className={`cursor-pointer hover:bg-secondary-dark/50 transition-colors ${rowOpacity} ${
                       isSelf
                         ? "bg-brand-green/5 border-l-2 border-l-brand-green"
@@ -431,6 +467,7 @@ export default function NodeListPanel({
                               ? "bg-yellow-500"
                               : "bg-gray-600"
                           }`}
+                          aria-label={status === "online" ? "Online" : status === "stale" ? "Stale" : "Offline"}
                           title={status}
                         />
                         {isSelf && (
@@ -445,9 +482,11 @@ export default function NodeListPanel({
                       {!isSelf && (
                         <button
                           onClick={() => onToggleFavorite(node.node_id, !node.favorited)}
+                          aria-label={node.favorited ? "Remove from favorites" : "Add to favorites"}
+                          aria-pressed={node.favorited}
                           title={node.favorited ? "Remove from favorites" : "Add to favorites"}
                         >
-                          <span className={node.favorited ? "text-yellow-400" : "text-gray-600 hover:text-yellow-400"}>
+                          <span className={node.favorited ? "text-yellow-400" : "text-gray-600 hover:text-yellow-400"} aria-hidden="true">
                             {node.favorited ? "★" : "☆"}
                           </span>
                         </button>

@@ -328,7 +328,9 @@ export default function ConnectionPanel({
         <Spinner className="w-12 h-12 text-bright-green" />
         <div className="text-center space-y-2">
           <h2 className="text-xl font-semibold text-gray-200">Connecting...</h2>
-          <p className="text-sm text-muted">{connectionStage}</p>
+          <div role="status" aria-live="polite" aria-atomic="true">
+            <p className="text-sm text-muted">{connectionStage}</p>
+          </div>
         </div>
 
         {/* Embedded BLE Device Picker */}
@@ -497,8 +499,9 @@ export default function ConnectionPanel({
       <div className="p-4 space-y-3">
         <div className="grid grid-cols-3 gap-2">
           <div className="col-span-2 space-y-1">
-            <label className="text-xs text-muted">Server</label>
+            <label htmlFor="mqtt-server" className="text-xs text-muted">Server</label>
             <input
+              id="mqtt-server"
               type="text"
               value={mqttSettings.server}
               onChange={(e) => updateMqtt("server", e.target.value)}
@@ -506,8 +509,9 @@ export default function ConnectionPanel({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted">Port</label>
+            <label htmlFor="mqtt-port" className="text-xs text-muted">Port</label>
             <input
+              id="mqtt-port"
               type="number"
               value={mqttSettings.port}
               onChange={(e) => updateMqtt("port", parseInt(e.target.value) || 1883)}
@@ -517,8 +521,9 @@ export default function ConnectionPanel({
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <label className="text-xs text-muted">Username</label>
+            <label htmlFor="mqtt-username" className="text-xs text-muted">Username</label>
             <input
+              id="mqtt-username"
               type="text"
               value={mqttSettings.username}
               onChange={(e) => updateMqtt("username", e.target.value)}
@@ -526,9 +531,10 @@ export default function ConnectionPanel({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted">Password</label>
+            <label htmlFor="mqtt-password" className="text-xs text-muted">Password</label>
             <div className="relative">
               <input
+                id="mqtt-password"
                 type={showMqttPassword ? "text" : "password"}
                 value={mqttSettings.password}
                 onChange={(e) => updateMqtt("password", e.target.value)}
@@ -537,6 +543,7 @@ export default function ConnectionPanel({
               <button
                 type="button"
                 onClick={() => setShowMqttPassword((v) => !v)}
+                aria-label={showMqttPassword ? "Hide password" : "Show password"}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-xs"
               >
                 {showMqttPassword ? "hide" : "show"}
@@ -546,7 +553,7 @@ export default function ConnectionPanel({
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
-            <label className="text-xs text-muted">Topic Prefix</label>
+            <label htmlFor="mqtt-topic-prefix" className="text-xs text-muted">Topic Prefix</label>
             <span
               title="Each country/region has its own Topic setting; please research the correct hierarchy. Example: Colorado is msh/US/CO"
               className="text-xs text-gray-500 cursor-help"
@@ -555,6 +562,7 @@ export default function ConnectionPanel({
             </span>
           </div>
           <input
+            id="mqtt-topic-prefix"
             type="text"
             value={mqttSettings.topicPrefix}
             onChange={(e) => updateMqtt("topicPrefix", e.target.value)}
@@ -563,8 +571,9 @@ export default function ConnectionPanel({
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-muted">Max Retries</label>
+          <label htmlFor="mqtt-max-retries" className="text-xs text-muted">Max Retries</label>
           <input
+            id="mqtt-max-retries"
             type="number"
             min={1}
             max={20}

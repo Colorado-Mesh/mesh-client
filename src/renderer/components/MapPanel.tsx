@@ -401,6 +401,8 @@ function LocateMeControl({
         >
           <a
             title="Show my location"
+            aria-label="Show my location"
+            aria-busy={loading}
             role="button"
             className={loading ? "locating" : ""}
             onClick={handleLocate}
@@ -587,7 +589,10 @@ export default function MapPanel({
   }, [nodesToRender]);
 
   return (
-    <div className="h-full min-h-[500px] rounded-lg overflow-hidden border border-gray-700 relative">
+    <div
+      className="h-full min-h-[500px] rounded-lg overflow-hidden border border-gray-700 relative"
+      aria-label="Network map showing node positions"
+    >
       {/* Controls overlay — top right */}
       <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
         <div className="bg-deep-black/80 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-3 text-xs border border-gray-700">

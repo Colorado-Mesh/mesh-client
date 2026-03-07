@@ -67,10 +67,15 @@ function TabIcon({ name }: { name: string }) {
 
 export default function Tabs({ tabs, active, onChange }: TabsProps) {
   return (
-    <nav className="flex bg-deep-black border-b border-gray-700 px-2 gap-1">
+    <nav role="tablist" aria-label="Application panels" className="flex bg-deep-black border-b border-gray-700 px-2 gap-1">
       {tabs.map((name, i) => (
         <button
           key={name}
+          role="tab"
+          aria-selected={active === i}
+          aria-controls={`panel-${i}`}
+          id={`tab-${i}`}
+          accessKey={String(i + 1)}
           onClick={() => onChange(i)}
           className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors rounded-t-md ${
             active === i

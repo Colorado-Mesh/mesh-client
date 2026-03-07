@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MeshNode } from "../lib/types";
 import NodeInfoBody from "./NodeInfoBody";
 import { useDiagnosticsStore } from "../stores/diagnosticsStore";
@@ -35,6 +35,18 @@ export default function NodeDetailModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const mqttIgnoredNodes = useDiagnosticsStore((s) => s.mqttIgnoredNodes);
   const setNodeMqttIgnored = useDiagnosticsStore((s) => s.setNodeMqttIgnored);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  // Focus trap and focus management
+  useEffect(() => {
+    if (!node) return;
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    closeButtonRef.current?.focus();
+    return () => {
+      previousFocusRef.current?.focus();
+    };
+  }, [node?.node_id]);
 
   // Close on Escape
   useEffect(() => {
@@ -119,6 +131,9 @@ export default function NodeDetailModal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="node-modal-title"
         className="bg-deep-black border border-gray-700 rounded-xl max-w-md w-full shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -126,7 +141,7 @@ export default function NodeDetailModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-100 truncate">
+              <h3 id="node-modal-title" className="text-lg font-semibold text-gray-100 truncate">
                 {displayName}
               </h3>
               {mqttIgnoredNodes.has(node.node_id) && (
@@ -147,14 +162,17 @@ export default function NodeDetailModal({
           <button
             onClick={() => onToggleFavorite(node.node_id, !node.favorited)}
             className="p-1.5 rounded-lg hover:bg-secondary-dark transition-colors shrink-0 mr-1"
-            title={node.favorited ? "Remove from favorites" : "Add to favorites"}
+            aria-label={node.favorited ? "Remove from favorites" : "Add to favorites"}
+            aria-pressed={node.favorited}
           >
-            <span className={`text-xl ${node.favorited ? "text-yellow-400" : "text-gray-500 hover:text-yellow-400"}`}>
+            <span className={`text-xl ${node.favorited ? "text-yellow-400" : "text-gray-500 hover:text-yellow-400"}`} aria-hidden="true">
               {node.favorited ? "★" : "☆"}
             </span>
           </button>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
+            aria-label="Close dialog"
             className="p-1.5 rounded-lg hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors shrink-0"
           >
             <svg

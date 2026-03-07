@@ -28,18 +28,26 @@ function ConfirmModal({
         onClick={onCancel}
       />
       {/* Modal */}
-      <div className="relative bg-deep-black border border-gray-600 rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
-        <p className="text-sm text-muted leading-relaxed">{message}</p>
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        aria-describedby="confirm-desc"
+        className="relative bg-deep-black border border-gray-600 rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6 space-y-4"
+      >
+        <h3 id="confirm-title" className="text-lg font-semibold text-gray-200">{title}</h3>
+        <p id="confirm-desc" className="text-sm text-muted leading-relaxed">{message}</p>
         <div className="flex gap-3 pt-2">
           <button
             onClick={onCancel}
+            aria-label="Cancel"
             className="flex-1 px-4 py-2.5 bg-secondary-dark hover:bg-gray-600 text-gray-300 font-medium rounded-lg transition-colors text-sm"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
+            aria-label={confirmLabel}
             className={`flex-1 px-4 py-2.5 font-medium rounded-lg transition-colors text-sm text-white ${
               danger
                 ? "bg-red-600 hover:bg-red-500"
@@ -280,12 +288,14 @@ export default function AdminPanel({
               value={settings.distanceFilterMax}
               onChange={(e) => updateSetting("distanceFilterMax", Math.max(1, parseInt(e.target.value) || 1))}
               disabled={!settings.distanceFilterEnabled}
+              aria-label="Max distance"
               className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <select
               value={settings.distanceUnit}
               onChange={(e) => updateSetting("distanceUnit", e.target.value as "miles" | "km")}
               disabled={!settings.distanceFilterEnabled}
+              aria-label="Distance unit"
               className="px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none disabled:opacity-40"
             >
               <option value="miles">miles</option>
@@ -319,6 +329,7 @@ export default function AdminPanel({
               min={1}
               value={deleteAgeDays}
               onChange={(e) => setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1))}
+              aria-label="Delete nodes older than (days)"
               className="w-20 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none"
             />
             <span className="text-sm text-gray-300">days ago</span>
@@ -359,6 +370,7 @@ export default function AdminPanel({
               value={settings.autoPruneDays}
               onChange={(e) => updateSetting("autoPruneDays", Math.max(1, parseInt(e.target.value) || 1))}
               disabled={!settings.autoPruneEnabled}
+              aria-label="Auto-prune age (days)"
               className="w-20 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">days</span>
@@ -382,6 +394,7 @@ export default function AdminPanel({
               value={settings.nodeCapCount}
               onChange={(e) => updateSetting("nodeCapCount", Math.max(1, parseInt(e.target.value) || 1))}
               disabled={!settings.nodeCapEnabled}
+              aria-label="Maximum node count"
               className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">nodes</span>
@@ -557,6 +570,7 @@ export default function AdminPanel({
             <select
               value={clearChannelTarget}
               onChange={(e) => setClearChannelTarget(parseInt(e.target.value))}
+              aria-label="Select channel to clear"
               className="flex-1 px-3 py-1.5 bg-secondary-dark border border-gray-600 rounded-lg text-gray-200 text-sm focus:border-brand-green focus:outline-none"
             >
               <option value={-1}>All Channels</option>
