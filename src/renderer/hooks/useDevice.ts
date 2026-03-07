@@ -38,7 +38,16 @@ function getOrCreateVirtualNodeId(): number {
     const n = parseInt(existing, 10);
     if (n > 0 && n < 0xffffffff) return n;
   }
-  const id = ((Math.random() * 0x0FFFFFFF) >>> 0) + 1;
+  let id: number;
+  if (typeof window !== "undefined" && window.crypto && window.crypto.getRandomValues) {
+    const buf = new Uint32Array(1);
+    window.crypto.getRandomValues(buf);
+    // Limit to 0x0FFFFFFF to stay consistent with the previous range, then make it > 0
+    id = (buf[0] & 0x0fffffff) + 1;
+  } else {
+    // Fallback: still avoid returning 0; range 1..0x0FFFFFFF
+    id = ((Math.random() * 0x0fffffff) >>> 0) + 1;
+  }
   localStorage.setItem(key, String(id));
   return id;
 }
