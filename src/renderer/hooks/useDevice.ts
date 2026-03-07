@@ -500,9 +500,16 @@ export function useDevice() {
         myNodeNumRef.current = info.myNodeNum;
         setState((s) => ({ ...s, myNodeNum: info.myNodeNum }));
         updateNodes((prev) => {
-          if (prev.has(info.myNodeNum)) return prev;
           const updated = new Map(prev);
-          updated.set(info.myNodeNum, emptyNode(info.myNodeNum));
+          const existing = updated.get(info.myNodeNum);
+          if (!existing) {
+            const selfNode = { ...emptyNode(info.myNodeNum), hops_away: 0 };
+            updated.set(info.myNodeNum, selfNode);
+          } else {
+            const selfNode = { ...existing, hops_away: 0 };
+            updated.set(info.myNodeNum, selfNode);
+            window.electronAPI.db.saveNode(selfNode);
+          }
           return updated;
         });
       });
@@ -697,7 +704,7 @@ export function useDevice() {
             latitude: newLat,
             longitude: newLon,
             role: info.user?.role ?? existing.role,
-            hops_away: info.hopsAway ?? existing.hops_away,
+            hops_away: nodeNum === myNodeNumRef.current ? (info.hopsAway ?? 0) : (info.hopsAway ?? existing.hops_away),
             via_mqtt: info.viaMqtt ?? existing.via_mqtt,
             voltage: info.deviceMetrics?.voltage ?? existing.voltage,
             channel_utilization: info.deviceMetrics?.channelUtilization ?? existing.channel_utilization,

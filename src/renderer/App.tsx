@@ -273,6 +273,7 @@ export default function App() {
                 onRefresh={device.requestRefresh}
                 onNodeClick={(node) => setSelectedNodeId(node.node_id)}
                 isConnected={isOperational}
+                mqttConnected={device.mqttStatus === "connected"}
                 locationFilter={locationFilter}
                 onToggleFavorite={device.setNodeFavorited}
               />
