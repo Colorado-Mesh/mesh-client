@@ -51,17 +51,26 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 - Distance filter, favorite/pin nodes, device role icons, signal strength bars
 - Node Detail Modal: DM, trace route with hop-path display, delete node, Routing Health section with 24-hour sparkline, Connection Health %, and collapsible Path History
 
+**Radio & Channel Configuration**
+- Edit channels: name, PSK, and role; 18 region presets and 7 modem presets
+- Device roles: Client, Router, Tracker, Sensor, TAK, and more
+- Per-channel MQTT gateway uplink/downlink; device reboot, shutdown, and factory reset
+
 **Diagnostics**
-- Network health score (0–100) and searchable anomaly table with remediation suggestions
+- Network health score (0–100) and searchable anomaly table
+- Routing anomaly detection: hop_goblin (over-hopping), bad_route (high duplicates), route_flapping, impossible_hop — with remediation suggestions and severity levels
 - Anomaly badges inline in node list; status aura circles on the map
 - Congestion halos toggle; global and per-node MQTT ignore for fine-grained routing analysis
 
 **Map & Telemetry**
-- Interactive OpenStreetMap with node positions and your current location (device GPS → browser geolocation fallback)
+- Interactive OpenStreetMap with node positions and your current location
+  (device GPS → browser geolocation → IP-based city-level fallback)
+  — auto-refresh at configurable intervals; send your position back to your device
 - Battery voltage and signal quality charts (Recharts)
 
 **Productivity**
-- Full keyboard navigation — press `?` for shortcut reference; `Cmd/Ctrl+1–8` switches tabs
+- Full keyboard navigation — press `?` for shortcut reference; `Cmd/Ctrl+1–8` switches tabs; `Cmd/Ctrl+F` searches chat
+- Automatic update checking — packaged builds download and install in-app; macOS opens the release page
 - System tray with live unread badge; app stays accessible when window is closed
 - Persistent storage via local SQLite; DB export/import/clear in the App tab
 
@@ -119,7 +128,7 @@ npm run dist:linux -- --linux rpm
 npm run dist:linux -- --linux appimage
 ```
 
-BLE requires BlueZ. If Bluetooth doesn't work, try launching with `--enable-features=WebBluetooth`.
+BLE requires BlueZ (the standard Linux Bluetooth stack, included in most distros).
 
 **Sandbox issues (dev mode or AppImage):**
 
@@ -215,7 +224,7 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 |----------|-----------|--------|------|------|
 | macOS    | Yes       | Yes    | Yes  | Yes  |
 | Windows  | Yes       | Yes    | Yes  | Yes  |
-| Linux    | Partial   | Yes    | Yes  | Yes  |
+| Linux    | Yes       | Yes    | Yes  | Yes  |
 
 ### Tech Stack
 
