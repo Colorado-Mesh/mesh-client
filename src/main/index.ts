@@ -103,17 +103,20 @@ app.commandLine.appendSwitch(
  * Resolves the correct icon file based on the platform and package status.
  */
 function getAppIconPath() {
-  const ext = process.platform === "win32" ? "ico" : process.platform === "darwin" ? "icns" : "png";
-  
-  if (app.isPackaged) {
-    // Packaged apps look in the flattened Resources folder
-    return path.join(process.resourcesPath, `icon.${ext}`);
+  if (process.platform === "win32") {
+    return app.isPackaged
+      ? path.join(process.resourcesPath, "colorado-mesh.ico")
+      : path.join(__dirname, "../../resources/icons/win/colorado-mesh.ico");
   }
-  
-  // DEVELOPMENT: index.js is in dist-electron/main/, so we go up two levels
-  // Use .ico for Windows-dev, .png for Mac/Linux-dev
-  const devExt = process.platform === "win32" ? "ico" : "png";
-  return path.join(__dirname, `../../resources/icon.${devExt}`);
+  if (process.platform === "darwin") {
+    return app.isPackaged
+      ? path.join(process.resourcesPath, "icon.icns")
+      : path.join(__dirname, "../../resources/icons/mac/icon.icns");
+  }
+  // Linux
+  return app.isPackaged
+    ? path.join(process.resourcesPath, "256x256.png")
+    : path.join(__dirname, "../../resources/icons/linux/256x256.png");
 }
 
 function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
@@ -121,13 +124,13 @@ function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
   if (process.platform === 'darwin') {
     const trayIconPath = app.isPackaged
       ? path.join(process.resourcesPath, "macos-menubar-icon-Template.png")
-      : path.join(__dirname, "../../resources/macos-menubar-icon-Template.png");
+      : path.join(__dirname, "../../resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template.png");
     base = nativeImage.createFromPath(trayIconPath);
     base.setTemplateImage(true);
   } else {
     const trayIconPath = app.isPackaged
-      ? path.join(process.resourcesPath, "icon.png")
-      : path.join(__dirname, "../../resources/icon.png");
+      ? path.join(process.resourcesPath, "256x256.png")
+      : path.join(__dirname, "../../resources/icons/linux/256x256.png");
     base = nativeImage.createFromPath(trayIconPath).resize({ width: 22, height: 22 });
   }
 

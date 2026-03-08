@@ -15,6 +15,17 @@ publish:
   provider: github
   owner: Colorado-Mesh
   repo: meshtastic-client
+extraResources:
+  - from: resources/icons/win/colorado-mesh.ico
+    to: colorado-mesh.ico
+  - from: resources/icons/linux/256x256.png
+    to: 256x256.png
+  - from: resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template.png
+    to: macos-menubar-icon-Template.png
+  - from: resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template@2x.png
+    to: macos-menubar-icon-Template@2x.png
+  - from: resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template@3x.png
+    to: macos-menubar-icon-Template@3x.png
 mac:
   identity: "-"
   category: public.app-category.utilities
@@ -26,7 +37,7 @@ mac:
   target:
     - dmg
     - zip
-  icon: resources/icon.icns
+  icon: resources/icons/mac/icon.icns
   entitlements: resources/entitlements.mac.plist
   entitlementsInherit: resources/entitlements.mac.inherit.plist
 linux:
@@ -40,11 +51,11 @@ linux:
         - x64
         - arm64
   category: Utility
-  icon: resources/icon.png
+  icon: resources/icons/linux/
 win:
   target:
     - nsis
-  icon: resources/icon.ico
+  icon: resources/icons/win/colorado-mesh.ico
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
