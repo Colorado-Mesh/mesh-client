@@ -9,6 +9,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/renderer/vitest.setup.ts'],
     include: ['src/renderer/**/*.test.{ts,tsx}'],
+    reporters: ['default', 'junit'],
+    outputFile: {
+      junit: 'test-results/junit.xml',
+    },
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
