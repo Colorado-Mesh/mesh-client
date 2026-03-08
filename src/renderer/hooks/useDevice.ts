@@ -5,7 +5,7 @@ import { Channel as ProtobufChannel, Mesh, Portnums } from "@meshtastic/protobuf
 import { normalizeReactionEmoji } from "../lib/reactions";
 import { resolveOurPosition } from "../lib/gpsSource";
 import type { OurPosition } from "../lib/gpsSource";
-import { createConnection, reconnectBle, safeDisconnect, clearCapturedBleDevice } from "../lib/connection";
+import { createConnection, reconnectBle, reconnectSerial, safeDisconnect, clearCapturedBleDevice } from "../lib/connection";
 import { validateCoords } from "../lib/coordUtils";
 import { useDiagnosticsStore } from "../stores/diagnosticsStore";
 import type {
@@ -1196,6 +1196,56 @@ export function useDevice() {
     [wireSubscriptions, cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat]
   );
 
+  /**
+   * Like connect(), but uses gesture-free reconnect paths for BLE/serial.
+   * Called by auto-connect on startup, which runs outside a user gesture.
+   * @param lastSerialPortId - Stored portId from previous manual selection (serial only).
+   */
+  const connectAutomatic = useCallback(
+    async (type: ConnectionType, httpAddress?: string, lastSerialPortId?: string | null) => {
+      if (deviceRef.current) {
+        cleanupSubscriptions();
+        stopPolling();
+        stopWatchdog();
+        stopBleHeartbeat();
+        const oldDevice = deviceRef.current;
+        deviceRef.current = null;
+        safeDisconnect(oldDevice).catch(() => {});
+      }
+
+      connectionParamsRef.current = { type, httpAddress };
+      reconnectAttemptRef.current = 0;
+      isReconnectingRef.current = false;
+      reconnectGenerationRef.current++;
+
+      setState((s) => ({ ...s, status: "connecting", connectionType: type }));
+
+      try {
+        let device: MeshDevice;
+        if (type === "ble") {
+          device = await reconnectBle();
+        } else if (type === "serial") {
+          device = await reconnectSerial(lastSerialPortId);
+        } else {
+          device = await createConnection(type, httpAddress);
+        }
+        deviceRef.current = device;
+        wireSubscriptions(device, type);
+        device.configure();
+      } catch (err) {
+        console.error("Auto-connect failed:", err);
+        cleanupSubscriptions();
+        stopPolling();
+        stopWatchdog();
+        stopBleHeartbeat();
+        deviceRef.current = null;
+        setState({ status: "disconnected", myNodeNum: 0, connectionType: null });
+        throw err;
+      }
+    },
+    [wireSubscriptions, cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat]
+  );
+
   const disconnect = useCallback(async () => {
     // Stop all monitoring and reconnection
     cleanupSubscriptions();
@@ -1557,6 +1607,7 @@ export function useDevice() {
     selfNodeId,
     deviceGpsMode,
     connect,
+    connectAutomatic,
     disconnect,
     sendMessage,
     sendReaction,

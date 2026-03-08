@@ -128,6 +128,34 @@ export async function reconnectBle(): Promise<MeshDevice> {
 }
 
 /**
+ * Attempt to reconnect to a previously-granted serial port without
+ * requiring a new user gesture. Uses navigator.serial.getPorts() to
+ * enumerate ports that were previously granted permission.
+ *
+ * @param lastPortId - The portId stored from the last manual selection.
+ *   Used to match the correct port when multiple ports are available.
+ */
+export async function reconnectSerial(lastPortId?: string | null): Promise<MeshDevice> {
+  if (!navigator.serial?.getPorts) {
+    throw new Error("Web Serial API not available");
+  }
+  const ports = await navigator.serial.getPorts();
+  if (ports.length === 0) {
+    throw new Error("No previously granted serial ports found");
+  }
+  // Try to match the previously-selected port by ID; fall back to first
+  let port: SerialPort | undefined;
+  if (lastPortId) {
+    port = (ports as any[]).find((p: any) => p.portId === lastPortId);
+  }
+  port = port ?? ports[0];
+
+  const transport = await TransportWebSerial.createFromPort(port, 115200);
+  const device = new MeshDevice(transport as any);
+  return device;
+}
+
+/**
  * Safely disconnect from a device, handling transports that may not
  * have a disconnect() method (e.g. TransportWebBluetooth).
  */

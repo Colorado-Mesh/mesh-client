@@ -346,6 +346,7 @@ export default function App() {
               <ConnectionPanel
                 state={device.state}
                 onConnect={device.connect}
+                onAutoConnect={device.connectAutomatic}
                 onDisconnect={device.disconnect}
                 mqttStatus={device.mqttStatus}
                 myNodeLabel={

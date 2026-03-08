@@ -17,6 +17,7 @@ describe('ConnectionPanel accessibility', () => {
       <ConnectionPanel
         state={disconnectedState}
         onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
       />
