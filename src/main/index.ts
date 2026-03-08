@@ -775,10 +775,12 @@ app.whenReady().then(() => {
     createWindow();
   } catch (error) {
     console.error("Fatal startup error:", error);
-    dialog.showErrorBox(
-      "Mesh-Client — Startup Error",
-      `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`
-    );
+    const isNativeModuleError =
+      error instanceof Error && (error as NodeJS.ErrnoException).code === "ERR_DLOPEN_FAILED";
+    const message = isNativeModuleError
+      ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "npm install" in the project directory, then restart.\n\nDetails: ${error.message}`
+      : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
+    dialog.showErrorBox("Mesh-Client — Startup Error", message);
     app.quit();
     return;
   }

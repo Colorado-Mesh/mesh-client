@@ -11,7 +11,8 @@
     "dev": "concurrently \"npm run build:main -- --watch\" \"npm run build:preload -- --watch\" \"vite\" \"node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
     "start": "npm run build && electron .",
     "trace-deprecation": "npm run build && NODE_OPTIONS='--trace-deprecation' electron .",
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "node scripts/rebuild-native.mjs",
+    "rebuild": "node scripts/rebuild-native.mjs",
     "prepare": "git config core.hooksPath .githooks",
     "predist": "npm dedupe",
     "dist": "npm run build && electron-builder",
@@ -46,6 +47,7 @@
   },
   "devDependencies": {
     "@axe-core/react": "^4.11.1",
+    "@electron/rebuild": "^4.0.3",
     "@meshtastic/core": "npm:@jsr/meshtastic__core@^2.6.6",
     "@meshtastic/protobufs": "npm:@jsr/meshtastic__protobufs@^2.7.18",
     "@meshtastic/transport-http": "npm:@jsr/meshtastic__transport-http@^0.2.1",
