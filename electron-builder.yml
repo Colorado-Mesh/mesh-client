@@ -50,12 +50,21 @@ linux:
       arch:
         - x64
         - arm64
+    - target: rpm
+      arch:
+        - x64
+        - arm64
   category: Utility
   icon: resources/icons/linux/
+  desktop:
+    entry:
+      StartupWMClass: "com.mesh-client.app"
+      Categories: "Utility;Network;"
+
 win:
   target:
-    - nsis
+    - target: nsis
+      arch:
+        - x64
+        - arm64
   icon: resources/icons/win/colorado-mesh.ico
-nsis:
-  oneClick: false
-  allowToChangeInstallationDirectory: true
