@@ -102,6 +102,7 @@ export interface DeviceState {
   connectionType: ConnectionType | null;
   reconnectAttempt?: number;
   lastDataReceived?: number;
+  firmwareVersion?: string;
 }
 
 export interface BluetoothDevice {

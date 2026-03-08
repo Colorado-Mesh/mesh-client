@@ -522,7 +522,7 @@ export function useDevice() {
           stopPolling();
           setTraceRouteResults(new Map());
           deviceRef.current = null;
-          setState((s) => ({ ...s, status: "disconnected", connectionType: null }));
+          setState((s) => ({ ...s, status: "disconnected", connectionType: null, firmwareVersion: undefined }));
         }
       });
       unsubscribesRef.current.push(unsub1);
@@ -552,6 +552,13 @@ export function useDevice() {
         });
       });
       unsubscribesRef.current.push(unsub2);
+
+      // ─── Device metadata (firmware version) ────────────────────
+      const unsub_meta = device.events.onDeviceMetadataPacket.subscribe((packet) => {
+        const ver = packet.data.firmwareVersion;
+        if (ver) setState((s) => ({ ...s, firmwareVersion: ver }));
+      });
+      unsubscribesRef.current.push(unsub_meta);
 
       // ─── Text messages ─────────────────────────────────────────
       const unsub3 = device.events.onMeshPacket.subscribe((meshPacket) => {

@@ -652,6 +652,12 @@ export default function ConnectionPanel({
                 </span>
               </div>
             )}
+            {state.firmwareVersion && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted">Firmware</span>
+                <span className="text-gray-300 font-mono text-xs">{state.firmwareVersion}</span>
+              </div>
+            )}
             {state.lastDataReceived && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted">Last Data</span>
