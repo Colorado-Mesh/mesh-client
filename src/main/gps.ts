@@ -123,6 +123,11 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 
 export async function getGpsFix(): Promise<GpsFixResult> {
   try {
+    // Use a WiFi network scan as a lightweight system check: this verifies that
+    // the systeminformation module has required permissions and that basic
+    // network interfaces are available before attempting IP geolocation.
+    // The actual scan result is not used; failures are handled by falling back
+    // to inetChecksite below.
     await withTimeout(si.wifiNetworks(), GPS_SYSTEM_CHECK_TIMEOUT_MS, undefined);
   } catch {
     // Optional: WiFi scan can fail (permissions, no adapter). Try inetChecksite as fallback.
