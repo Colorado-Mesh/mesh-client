@@ -1,4 +1,7 @@
 #!/bin/sh
-# Run accessibility tests before every commit.
+# Run format check, lint, and tests before every commit.
 # To skip in an emergency: git commit --no-verify
+
+npm run format:check || { echo "Run 'npm run format' to fix formatting."; exit 1; }
+npm run lint || exit 1
 npm run test:run
