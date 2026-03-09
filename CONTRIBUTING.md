@@ -40,6 +40,8 @@ If the input has a visible label element next to it, use `htmlFor`/`id`. If it's
 
 ### Running the tests
 
+The vitest suite covers main-process utilities including GPS helpers (`src/main/gps.ts`).
+
 ```bash
 npm run test:run      # run once (also runs automatically on git commit)
 npm test              # watch mode

@@ -5,16 +5,17 @@ We take the security of our project seriously and appreciate your efforts to hel
 ## Reporting a Vulnerability
 
 If you believe you have found a security vulnerability, please **do not report it via a public GitHub issue**. Instead, please
- * send an email to: **nv0n@coloradomesh.org** or,
- * DM nv0n on our Discord
+
+- send an email to: **nv0n@coloradomesh.org** or,
+- DM nv0n on our Discord
 
 To help us investigate and triage the issue as quickly as possible, please include:
 
-* **Type of issue** (e.g., buffer overflow, SQL injection, cross-site scripting).
-* **Full paths of source files** related to the manifestation of the issue.
-* **Step-by-step instructions** to reproduce the vulnerability.
-* **Proof-of-concept or exploit code** (if possible).
-* **Impact of the issue**, including how an attacker might exploit it.
+- **Type of issue** (e.g., buffer overflow, SQL injection, cross-site scripting).
+- **Full paths of source files** related to the manifestation of the issue.
+- **Step-by-step instructions** to reproduce the vulnerability.
+- **Proof-of-concept or exploit code** (if possible).
+- **Impact of the issue**, including how an attacker might exploit it.
 
 ## Response Timeline
 

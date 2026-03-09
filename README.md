@@ -456,7 +456,7 @@ npm run trace-deprecation
 
 - Grant location permission when prompted by the app.
 - Or set coordinates manually via the **Radio** tab → Fixed Position.
-- Note: The IP-geolocation fallback provides city-level accuracy only — not suitable for position broadcasting.
+- Note: The IP-geolocation fallback (ip-api.com, then ipwho.is) provides city-level accuracy only — not suitable for position broadcasting. If both services are unreachable, "Location unavailable" is shown.
 
 ### "Something went wrong" blank screen
 
