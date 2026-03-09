@@ -22,7 +22,7 @@ We strive to respond to all reports within **48 hours**. Once we confirm a vulne
 
 ## Supported Versions
 
-We currently provide security updates only for the code in main and the latest release.
+We currently provide security updates only for the code in `main` and the latest release.
 
 ## Disclosure Policy
 
