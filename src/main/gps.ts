@@ -55,9 +55,12 @@ function fetchIpEndpoint(url: string, extract: (data: unknown) => GpsFix | null)
     const request = protocol.request(parsedUrl, { method: 'GET' }, (response) => {
       let body = '';
       response.on('data', (chunk: Buffer) => {
-        if (body.length + chunk.length <= MAX_IP_RESPONSE_BYTES) {
-          body += chunk.toString();
+        if (body.length + chunk.length > MAX_IP_RESPONSE_BYTES) {
+          clearTimeout(timer);
+          request.destroy(new Error('response too large'));
+          return;
         }
+        body += chunk.toString();
       });
       response.on('end', () => {
         clearTimeout(timer);
