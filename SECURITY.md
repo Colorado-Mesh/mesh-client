@@ -18,7 +18,7 @@ To help us investigate and triage the issue as quickly as possible, please inclu
 
 ## Response Timeline
 
-We strive to respond to all reports within **[e.g., 48 hours]**. Once we confirm a vulnerability, we will work to address it and keep you updated on the expected timeline for a patch.
+We strive to respond to all reports within **48 hours**. Once we confirm a vulnerability, we will work to address it and keep you updated on the expected timeline for a patch.
 
 ## Supported Versions
 
