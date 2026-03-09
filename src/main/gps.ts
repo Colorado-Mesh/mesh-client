@@ -58,7 +58,7 @@ function fetchIpEndpoint(url: string, extract: (data: unknown) => GpsFix | null)
         if (body.length + chunk.length > MAX_IP_RESPONSE_BYTES) {
           clearTimeout(timer);
           request.destroy();
-          reject(new Error('response too large'));
+          reject(new Error('Response body exceeds maximum size limit'));
           return;
         }
         body += chunk.toString();
@@ -68,7 +68,7 @@ function fetchIpEndpoint(url: string, extract: (data: unknown) => GpsFix | null)
         try {
           const fix = extract(JSON.parse(body));
           if (fix) resolve(fix);
-          else reject(new Error('no lat/lon in response'));
+          else reject(new Error('No latitude/longitude data found in response'));
         } catch (e) {
           const rawMessage = e instanceof Error ? e.message : String(e);
           const safeMessage = sanitizeLogMessage(rawMessage);
@@ -82,7 +82,7 @@ function fetchIpEndpoint(url: string, extract: (data: unknown) => GpsFix | null)
     });
     const timer = setTimeout(() => {
       request.destroy();
-      reject(new Error('timeout'));
+      reject(new Error('Request timeout exceeded while fetching IP geolocation'));
     }, 5000);
     request.on('error', (e) => {
       clearTimeout(timer);
@@ -130,8 +130,11 @@ export async function getGpsFix(): Promise<GpsFixResult> {
     // Use a WiFi network scan as a lightweight system check: this verifies that
     // the systeminformation module has required permissions and that basic
     // network interfaces are available before attempting IP geolocation.
-    // The actual scan result is not used; failures are handled by falling back
-    // to inetChecksite below.
+    //
+    // The actual scan result is intentionally discarded: we only care that the
+    // call succeeds (proving permissions/hardware are OK) or fails fast so we
+    // can fall back to inetChecksite below. The timeout bounds the cost, so
+    // running this scan for its side effects is intentional and acceptable.
     await withTimeout(si.wifiNetworks(), GPS_SYSTEM_CHECK_TIMEOUT_MS, undefined);
   } catch {
     // Optional: WiFi scan can fail (permissions, no adapter). Try inetChecksite as fallback.
