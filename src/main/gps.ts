@@ -112,7 +112,9 @@ async function getIpFix(): Promise<GpsFix> {
   });
 }
 
-const GPS_SYSTEM_CHECK_TIMEOUT_MS = 8000;
+// Keep the system check timeout aligned with the IP geolocation request timeout
+// to avoid delaying error responses with a longer pre-check.
+const GPS_SYSTEM_CHECK_TIMEOUT_MS = 5000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
