@@ -57,7 +57,8 @@ function fetchIpEndpoint(url: string, extract: (data: unknown) => GpsFix | null)
       response.on('data', (chunk: Buffer) => {
         if (body.length + chunk.length > MAX_IP_RESPONSE_BYTES) {
           clearTimeout(timer);
-          request.destroy(new Error('response too large'));
+          reject(new Error('response too large'));
+          request.destroy();
           return;
         }
         body += chunk.toString();
