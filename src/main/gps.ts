@@ -136,7 +136,7 @@ export async function getGpsFix(): Promise<GpsFixResult> {
     return fix;
   } catch (e) {
     const msg = sanitizeLogMessage((e as Error).message);
-    console.warn(`[gps] ip fix failed: ${msg}`);
+    console.warn(`[gps] ip fix failed: msg="${msg}"`);
     return {
       status: 'error',
       message: 'Location unavailable (network or service error).',
