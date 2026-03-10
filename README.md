@@ -43,7 +43,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Chat**
 
-- Send/receive messages across channels with ACK/NAK delivery indicators
+- Send/receive messages across channels with per-transport delivery badges (BT / USB / WiFi / MQTT) — shows ACK, no-ACK, and failure states independently for each transport
 - Emoji reactions (11 emojis with compose picker) and reply-to-message (quoted preview in bubble)
 - Unread message divider that persists across restarts and auto-scrolls on tab switch
 - Direct messages (DMs) to individual nodes
@@ -66,12 +66,14 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 - Routing anomaly detection: hop_goblin (over-hopping), bad_route (high duplicates), route_flapping, impossible_hop — with remediation suggestions and severity levels
 - Anomaly badges inline in node list; status aura circles on the map
 - Congestion halos toggle; global and per-node MQTT ignore for fine-grained routing analysis
+- **Environment Profile** segmented control — Standard (3 km), City (1.6× threshold for dense urban RF interference), Canyon (2.6× threshold for mountainous terrain)
+- IP geolocation accuracy warning: when city-level fallback is active, thresholds are doubled automatically and a banner prompts for a more accurate position source
 
 **Map & Telemetry**
 
 - Interactive OpenStreetMap with node positions and your current location
   (device GPS → browser geolocation → IP-based city-level fallback)
-  — auto-refresh at configurable intervals; send your position back to your device
+  — auto-refresh at configurable intervals; manual static position entry; send your position back to your device
 - Battery voltage and signal quality charts (Recharts)
 
 **Productivity**
@@ -79,7 +81,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 - Full keyboard navigation — press `?` for shortcut reference; `Cmd/Ctrl+1–8` switches tabs; `Cmd/Ctrl+F` searches chat
 - Automatic update checking — packaged builds download and install in-app; macOS opens the release page
 - System tray with live unread badge; app stays accessible when window is closed
-- Persistent storage via local SQLite; DB export/import/clear in the App tab
+- Persistent storage via local SQLite; DB export/import/clear in the App tab; Clear GPS Data and Reset Diagnostics actions available without a full DB wipe
 
 ---
 

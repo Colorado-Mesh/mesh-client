@@ -1,4 +1,11 @@
-export type GpsSource = 'device' | 'browser' | 'ip';
+export type GpsSource = 'device' | 'browser' | 'ip' | 'static';
+
+/** Sources that provide only city-level (~10–50 km) accuracy (browser WiFi/IP positioning included) */
+export const LOW_ACCURACY_SOURCES: ReadonlySet<GpsSource> = new Set(['ip', 'browser']);
+
+export function isLowAccuracyPosition(source: GpsSource): boolean {
+  return LOW_ACCURACY_SOURCES.has(source);
+}
 
 export interface OurPosition {
   lat: number;
@@ -7,11 +14,13 @@ export interface OurPosition {
 }
 
 /**
- * GPS waterfall: device coords → browser geolocation → IP geolocation → null.
+ * GPS waterfall: device coords → static override → browser geolocation → IP geolocation → null.
  */
 export async function resolveOurPosition(
   deviceLat?: number,
   deviceLon?: number,
+  staticLat?: number,
+  staticLon?: number,
 ): Promise<OurPosition | null> {
   // 1. Device GPS — use if clearly non-zero
   if (
@@ -22,7 +31,17 @@ export async function resolveOurPosition(
     return { lat: deviceLat, lon: deviceLon, source: 'device' };
   }
 
-  // 2. Native OS geolocation via main process (bypasses Chromium permission issues)
+  // 2. Static position — user-configured override (skips browser/IP lookup)
+  if (
+    staticLat != null &&
+    staticLon != null &&
+    Number.isFinite(staticLat) &&
+    Number.isFinite(staticLon)
+  ) {
+    return { lat: staticLat, lon: staticLon, source: 'static' };
+  }
+
+  // 3. Native OS geolocation via main process (bypasses Chromium permission issues)
   if (typeof window !== 'undefined' && (window as any).electronAPI?.getGpsFix) {
     try {
       const result = await (window as any).electronAPI.getGpsFix();
@@ -34,14 +53,15 @@ export async function resolveOurPosition(
         Number.isFinite(result.lat) &&
         Number.isFinite(result.lon)
       ) {
-        return { lat: result.lat, lon: result.lon, source: 'browser' };
+        const mappedSource: GpsSource = result.source === 'ip' ? 'ip' : 'browser';
+        return { lat: result.lat, lon: result.lon, source: mappedSource };
       }
     } catch {
       /* fall through */
     }
   }
 
-  // 3. IP-based geolocation (city-level, no API key required)
+  // 4. IP-based geolocation (city-level, no API key required)
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 5000);

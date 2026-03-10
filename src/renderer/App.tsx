@@ -109,10 +109,18 @@ export default function App() {
   const device = useDevice();
   const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
+  const envMode = useDiagnosticsStore((s) => s.envMode);
 
   useEffect(() => {
     runReanalysis(device.getNodes, device.selfNodeId);
-  }, [device.nodes, device.selfNodeId, device.getNodes, runReanalysis, ignoreMqttEnabled]);
+  }, [
+    device.nodes,
+    device.selfNodeId,
+    device.getNodes,
+    runReanalysis,
+    ignoreMqttEnabled,
+    envMode,
+  ]);
 
   const isConfigured = device.state.status === 'configured';
   const isOperational = isConfigured || device.state.status === 'stale';
@@ -364,6 +372,7 @@ export default function App() {
                 onNodeClick={setSelectedNodeId}
                 isConnected={isOperational || device.mqttStatus === 'connected'}
                 isMqttOnly={!isOperational && device.mqttStatus === 'connected'}
+                connectionType={device.state.connectionType}
                 nodes={device.nodes}
                 initialDmTarget={pendingDmTarget}
                 onDmTargetConsumed={() => setPendingDmTarget(null)}
@@ -438,6 +447,7 @@ export default function App() {
                 isConnected={isOperational}
                 traceRouteResults={device.traceRouteResults}
                 getFullNodeLabel={device.getFullNodeLabel}
+                ourPosition={device.ourPosition}
               />
             )}
           </ErrorBoundary>

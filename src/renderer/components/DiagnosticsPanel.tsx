@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { getRecommendedAction } from '../lib/diagnostics/RemediationEngine';
 import { computeHealthScore } from '../lib/diagnostics/RoutingDiagnosticEngine';
+import type { OurPosition } from '../lib/gpsSource';
 import type { MeshNode } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 
@@ -21,6 +22,7 @@ interface Props {
   isConnected: boolean;
   traceRouteResults: Map<number, { route: number[]; from: number; timestamp: number }>;
   getFullNodeLabel: (nodeNum: number) => string;
+  ourPosition?: OurPosition | null;
 }
 
 function AlertTriangleIcon({ className }: { className?: string }) {
@@ -57,6 +59,7 @@ export default function DiagnosticsPanel({
   isConnected,
   traceRouteResults,
   getFullNodeLabel,
+  ourPosition,
 }: Props) {
   const anomalies = useDiagnosticsStore((s) => s.anomalies);
   const packetStats = useDiagnosticsStore((s) => s.packetStats);
@@ -69,6 +72,8 @@ export default function DiagnosticsPanel({
   const setIgnoreMqttEnabled = useDiagnosticsStore((s) => s.setIgnoreMqttEnabled);
   const mqttIgnoredNodes = useDiagnosticsStore((s) => s.mqttIgnoredNodes);
   const setNodeMqttIgnored = useDiagnosticsStore((s) => s.setNodeMqttIgnored);
+  const envMode = useDiagnosticsStore((s) => s.envMode);
+  const setEnvMode = useDiagnosticsStore((s) => s.setEnvMode);
 
   const [search, setSearch] = useState('');
   const [tracePending, setTracePending] = useState<number | null>(null);
@@ -185,13 +190,6 @@ export default function DiagnosticsPanel({
               )}
             </div>
           </div>
-          {anomalies.size > 0 && (
-            <AlertTriangleIcon
-              className={`w-12 h-12 ${
-                errorCount > 0 ? 'text-red-400' : 'text-orange-400'
-              } opacity-60`}
-            />
-          )}
         </div>
       </div>
 
@@ -238,6 +236,35 @@ export default function DiagnosticsPanel({
               Gray out MQTT-only nodes and exclude them from diagnostics
             </span>
           </div>
+          <div className="flex flex-col gap-1.5">
+            <div className="text-sm text-gray-300">Environment Profile</div>
+            <div className="flex rounded-lg overflow-hidden border border-gray-600/50 w-fit">
+              {(
+                [
+                  { mode: 'standard', label: 'Standard' },
+                  { mode: 'city', label: 'City' },
+                  { mode: 'canyon', label: 'Canyon' },
+                ] as const
+              ).map(({ mode, label }, i) => (
+                <button
+                  key={mode}
+                  onClick={() => setEnvMode(mode)}
+                  className={`px-4 py-1.5 text-sm transition-colors ${i > 0 ? 'border-l border-gray-600/50' : ''} ${
+                    envMode === mode
+                      ? 'bg-brand-green/20 text-brand-green border-brand-green/50'
+                      : 'bg-secondary-dark text-gray-400 hover:text-gray-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs text-muted">
+              {envMode === 'standard' && 'Default 3 km threshold'}
+              {envMode === 'city' && 'Dense urban RF interference — 1.6× threshold, allow 1 extra hop'}
+              {envMode === 'canyon' && 'Mountainous terrain — 2.6× threshold, allow 2 extra hops'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -266,6 +293,18 @@ export default function DiagnosticsPanel({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* IP Geolocation Accuracy Warning */}
+      {ourPosition?.source === 'ip' && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-300">
+          <AlertTriangleIcon className="w-4 h-4 mt-0.5 shrink-0 text-yellow-400" />
+          <span>
+            Using city-level IP geolocation — distance-based thresholds are doubled to reduce false
+            positives. For accurate routing analysis, connect a device with GPS or set a static
+            position.
+          </span>
         </div>
       )}
 

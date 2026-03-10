@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setNodeFavorited: (nodeId: number, favorited: boolean) =>
       ipcRenderer.invoke('db:setNodeFavorited', nodeId, favorited),
     deleteNodesBySource: (source: string) => ipcRenderer.invoke('db:deleteNodesBySource', source),
+    clearNodePositions: () => ipcRenderer.invoke('db:clearNodePositions'),
   },
 
   // ─── MQTT ──────────────────────────────────────────────────────

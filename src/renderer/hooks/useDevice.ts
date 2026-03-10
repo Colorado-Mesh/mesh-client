@@ -97,6 +97,8 @@ export function useDevice() {
   const bleHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Carries replyId from sendMessage into the echo handler (packets are sequential)
   const pendingReplyIdRef = useRef<number | undefined>(undefined);
+  // Carries whether MQTT uplink is pending — read + cleared by the echo handler
+  const pendingMqttRef = useRef<boolean>(false);
 
   // ─── GPS tracking ─────────────────────────────────────────────
   const deviceGpsModeRef = useRef<number>(0); // 0=DISABLED,1=ENABLED,2=NOT_PRESENT
@@ -298,8 +300,7 @@ export function useDevice() {
     stopGpsInterval();
     try {
       const raw = localStorage.getItem('mesh-client:gpsSettings');
-      let intervalSecs = raw ? (JSON.parse(raw).refreshInterval ?? 0) : 0;
-      if (intervalSecs <= 0) intervalSecs = 3600; // default 1 hour
+      const intervalSecs = raw ? (JSON.parse(raw).refreshInterval ?? 0) : 0;
       if (intervalSecs > 0) {
         gpsIntervalRef.current = setInterval(() => {
           refreshOurPositionRef.current();
@@ -369,6 +370,13 @@ export function useDevice() {
     const unsubStatus = window.electronAPI.mqtt.onStatus((s) => {
       mqttStatusRef.current = s as MQTTStatus;
       setMqttStatus(s as MQTTStatus);
+      if (s !== 'connected') {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.mqttStatus === 'sending' ? { ...m, mqttStatus: 'failed' as const } : m,
+          ),
+        );
+      }
       if (s === 'connected' && !deviceRef.current) {
         startGpsInterval();
         const virtualId = getOrCreateVirtualNodeId();
@@ -605,7 +613,11 @@ export function useDevice() {
         const payloadText = new TextDecoder().decode(dataPacket.payload);
         const replyId =
           dataPacket.replyId || (isEcho ? pendingReplyIdRef.current : undefined) || undefined;
-        if (isEcho) pendingReplyIdRef.current = undefined;
+        const echoHasMqtt = isEcho && pendingMqttRef.current;
+        if (isEcho) {
+          pendingReplyIdRef.current = undefined;
+          pendingMqttRef.current = false;
+        }
         const wireEmoji = (dataPacket as { emoji?: number }).emoji;
         const emoji = replyId
           ? (normalizeReactionEmoji(wireEmoji, payloadText) ?? wireEmoji ?? undefined)
@@ -619,6 +631,7 @@ export function useDevice() {
           timestamp: meshPacket.rxTime ? meshPacket.rxTime * 1000 : Date.now(),
           packetId: meshPacket.id,
           status: isEcho ? 'sending' : undefined,
+          mqttStatus: echoHasMqtt ? ('sending' as const) : undefined,
           emoji,
           replyId,
           to: meshPacket.to && meshPacket.to !== BROADCAST_ADDR ? meshPacket.to : undefined,
@@ -750,7 +763,10 @@ export function useDevice() {
               newLon = lon;
               newAlt = info.position?.altitude ?? existing.altitude;
               posWarn = undefined;
-            } else {
+            } else if (
+              nodeNum !== myNodeNumRef.current ||
+              (existing.latitude === 0 && existing.longitude === 0)
+            ) {
               posWarn = r.warning;
             }
           }
@@ -826,6 +842,13 @@ export function useDevice() {
           updateNodes((prev) => {
             const updated = new Map(prev);
             const existing = updated.get(packet.from) || emptyNode(packet.from);
+            // Don't flag our own node if we have valid fallback coords
+            if (
+              packet.from === myNodeNumRef.current &&
+              (existing.latitude !== 0 || existing.longitude !== 0)
+            ) {
+              return prev; // no change
+            }
             updated.set(packet.from, { ...existing, lastPositionWarning: r.warning });
             return updated;
           });
@@ -1366,7 +1389,24 @@ export function useDevice() {
         return;
       }
 
+      // Check MQTT uplink conditions before entering try/catch so promise is accessible in catch
+      const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
+      const shouldUplink =
+        chCfg?.uplinkEnabled && mqttStatusRef.current === 'connected' && myNodeNumRef.current;
+
+      // Fire MQTT FIRST (before device send) — store promise, don't await yet
+      const mqttPromise: Promise<number> | null = shouldUplink
+        ? window.electronAPI.mqtt.publish({
+            text,
+            from: myNodeNumRef.current!,
+            channel,
+            destination: destination ?? BROADCAST_ADDR,
+            channelName: 'LongFast',
+          })
+        : null;
+
       try {
+        pendingMqttRef.current = !!shouldUplink;
         pendingReplyIdRef.current = replyId;
         const dest: number | 'broadcast' = destination ?? 'broadcast';
         const packetId = await deviceRef.current.sendText(text, dest, true, channel);
@@ -1376,23 +1416,15 @@ export function useDevice() {
         );
         window.electronAPI.db.updateMessageStatus(packetId, 'acked');
 
-        // Hybrid mode: if uplinkEnabled for this channel, also publish to MQTT
-        const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
-        if (chCfg?.uplinkEnabled && mqttStatusRef.current === 'connected' && myNodeNumRef.current) {
+        // Wire up MQTT result now that we have the packetId
+        if (mqttPromise) {
           setMessages((prev) =>
             prev.map((m) =>
               m.packetId === packetId ? { ...m, mqttStatus: 'sending' as const } : m,
             ),
           );
           window.electronAPI.db.updateMessageStatus(packetId, 'acked', undefined, 'sending');
-          window.electronAPI.mqtt
-            .publish({
-              text,
-              from: myNodeNumRef.current,
-              channel,
-              destination: destination ?? BROADCAST_ADDR,
-              channelName: 'LongFast',
-            })
+          mqttPromise
             .then((mqttPacketId) => {
               isDuplicate(mqttPacketId);
               setMessages((prev) =>
@@ -1415,11 +1447,43 @@ export function useDevice() {
         // NAK or timeout — extract packet ID and error from rejection
         const pe = err as any;
         const packetId = pe.packetId;
-        const error = pe.error;
-        setMessages((prev) =>
-          prev.map((m) => (m.packetId === packetId ? { ...m, status: 'failed', error } : m)),
-        );
-        window.electronAPI.db.updateMessageStatus(packetId, 'failed', error);
+        const error = pe.error || String(err);
+        if (typeof packetId === 'number' && Number.isFinite(packetId) && packetId >= 0) {
+          setMessages((prev) =>
+            prev.map((m) => (m.packetId === packetId ? { ...m, status: 'failed', error } : m)),
+          );
+          window.electronAPI.db.updateMessageStatus(packetId, 'failed', error);
+          // Wire up MQTT result to this packetId (MQTT was already fired before sendText)
+          if (mqttPromise) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.packetId === packetId ? { ...m, mqttStatus: 'sending' as const } : m,
+              ),
+            );
+            mqttPromise
+              .then((mqttPacketId) => {
+                isDuplicate(mqttPacketId);
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.packetId === packetId ? { ...m, mqttStatus: 'acked' as const } : m,
+                  ),
+                );
+                window.electronAPI.db.updateMessageStatus(packetId, 'failed', error, 'acked');
+              })
+              .catch(() => {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.packetId === packetId ? { ...m, mqttStatus: 'failed' as const } : m,
+                  ),
+                );
+              });
+          }
+        } else {
+          // No packetId — fall back to clearing any message stuck at 'sending'
+          setMessages((prev) =>
+            prev.map((m) => (m.status === 'sending' ? { ...m, status: 'failed', error } : m)),
+          );
+        }
       }
     },
     [getNodeName, isDuplicate],
@@ -1563,8 +1627,24 @@ export function useDevice() {
     setGpsLoading(true);
     try {
       const myNode = nodesRef.current.get(myNodeNumRef.current);
-      const pos = await resolveOurPosition(myNode?.latitude, myNode?.longitude);
+      let staticLat: number | undefined;
+      let staticLon: number | undefined;
+      try {
+        const raw = localStorage.getItem('mesh-client:gpsSettings');
+        const s = raw ? JSON.parse(raw) : {};
+        if (typeof s.staticLat === 'number' && typeof s.staticLon === 'number') {
+          staticLat = s.staticLat;
+          staticLon = s.staticLon;
+        }
+      } catch {
+        /* ignore */
+      }
+      // When a static position is set, don't let device coords override it
+      const devLat = staticLat != null ? undefined : myNode?.latitude;
+      const devLon = staticLon != null ? undefined : myNode?.longitude;
+      const pos = await resolveOurPosition(devLat, devLon, staticLat, staticLon);
       setOurPosition(pos);
+      useDiagnosticsStore.getState().setOurPositionSource(pos?.source ?? null);
 
       if (pos) {
         const hasDevice = !!deviceRef.current;
@@ -1596,7 +1676,12 @@ export function useDevice() {
           });
         }
 
-        if (pos.source === 'browser' && deviceGpsModeRef.current === 2 && deviceRef.current) {
+        const shouldSendToDevice =
+          deviceRef.current &&
+          ((pos.source === 'static' && deviceGpsModeRef.current !== 1) ||
+            (pos.source === 'browser' && deviceGpsModeRef.current === 2));
+
+        if (shouldSendToDevice) {
           deviceRef.current
             .setPosition(
               create(Mesh.PositionSchema, {
