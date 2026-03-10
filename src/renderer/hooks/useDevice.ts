@@ -749,7 +749,10 @@ export function useDevice() {
               newLon = lon;
               newAlt = info.position?.altitude ?? existing.altitude;
               posWarn = undefined;
-            } else {
+            } else if (
+              nodeNum !== myNodeNumRef.current ||
+              (existing.latitude === 0 && existing.longitude === 0)
+            ) {
               posWarn = r.warning;
             }
           }
@@ -825,6 +828,13 @@ export function useDevice() {
           updateNodes((prev) => {
             const updated = new Map(prev);
             const existing = updated.get(packet.from) || emptyNode(packet.from);
+            // Don't flag our own node if we have valid fallback coords
+            if (
+              packet.from === myNodeNumRef.current &&
+              (existing.latitude !== 0 || existing.longitude !== 0)
+            ) {
+              return prev; // no change
+            }
             updated.set(packet.from, { ...existing, lastPositionWarning: r.warning });
             return updated;
           });
