@@ -1428,7 +1428,9 @@ export function useDevice() {
         setMessages((prev) =>
           prev.map((m) => (m.packetId === packetId ? { ...m, status: 'failed', error } : m)),
         );
-        window.electronAPI.db.updateMessageStatus(packetId, 'failed', error);
+        if (typeof packetId === 'number' && Number.isFinite(packetId) && packetId >= 0) {
+          window.electronAPI.db.updateMessageStatus(packetId, 'failed', error);
+        }
       }
     },
     [getNodeName, isDuplicate],
