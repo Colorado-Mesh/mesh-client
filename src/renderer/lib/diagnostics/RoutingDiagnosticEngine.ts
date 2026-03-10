@@ -68,7 +68,7 @@ export function detectBadRoute(
   // High duplication rate with good signal = routing loop
   if (stats && stats.total > 0 && (!ignoreMqtt || !node.heard_via_mqtt_only)) {
     const lossRate = stats.duplicates / stats.total;
-    if (lossRate > 0.4 && node.snr > 5) {
+    if (lossRate > 0.55 && node.snr > 5) {
       return {
         nodeId: node.node_id,
         type: 'bad_route',
