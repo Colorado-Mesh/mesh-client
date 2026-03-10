@@ -66,6 +66,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 - Routing anomaly detection: hop_goblin (over-hopping), bad_route (high duplicates), route_flapping, impossible_hop — with remediation suggestions and severity levels
 - Anomaly badges inline in node list; status aura circles on the map
 - Congestion halos toggle; global and per-node MQTT ignore for fine-grained routing analysis
+- Canyon Mode doubles distance thresholds for mountainous terrain where line-of-sight is blocked
 
 **Map & Telemetry**
 
