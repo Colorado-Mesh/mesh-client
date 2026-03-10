@@ -51,6 +51,7 @@ interface DiagnosticsState {
   setNodeMqttIgnored(nodeId: number, ignored: boolean): void;
   setOurPositionSource(source: GpsSource | null): void;
   setCanyonModeEnabled(enabled: boolean): void;
+  clearDiagnostics(): void;
 }
 
 // Module-level debounce timer and pending analysis buffer
@@ -251,5 +252,18 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   setCanyonModeEnabled(enabled: boolean) {
     saveAdminKey('canyonModeEnabled', enabled);
     set({ canyonModeEnabled: enabled });
+  },
+
+  clearDiagnostics() {
+    if (analysisTimer) clearTimeout(analysisTimer);
+    analysisTimer = null;
+    pendingAnalyses.clear();
+    set({
+      anomalies: new Map(),
+      hopHistory: new Map(),
+      packetStats: new Map(),
+      packetCache: new Map(),
+      nodeRedundancy: new Map(),
+    });
   },
 }));

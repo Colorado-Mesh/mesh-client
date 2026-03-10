@@ -642,6 +642,18 @@ ipcMain.handle('db:clearNodes', () => {
   }
 });
 
+ipcMain.handle('db:clearNodePositions', () => {
+  try {
+    const db = getDatabase();
+    return db
+      .prepare('UPDATE nodes SET latitude = NULL, longitude = NULL, altitude = NULL')
+      .run();
+  } catch (err) {
+    console.error('[IPC] db:clearNodePositions failed:', err);
+    throw err;
+  }
+});
+
 ipcMain.handle('db:deleteNode', (_event, nodeId: number) => {
   try {
     const id = safeNonNegativeInt(nodeId);

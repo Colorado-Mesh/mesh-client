@@ -4,6 +4,7 @@ import type { LocationFilter } from '../App';
 import type { OurPosition } from '../lib/gpsSource';
 import { haversineDistanceKm } from '../lib/nodeStatus';
 import type { MeshNode } from '../lib/types';
+import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useToast } from './Toast';
 
 // ─── Confirmation Modal ─────────────────────────────────────────
@@ -125,6 +126,7 @@ export default function AppPanel({
 }: Props) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const { addToast } = useToast();
+  const clearDiagnostics = useDiagnosticsStore((s) => s.clearDiagnostics);
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AdminSettings>(loadSettings);
@@ -302,6 +304,7 @@ export default function AppPanel({
         'Prune Distant Nodes',
         'Clear Nodes',
         'Clear All Data',
+        'Clear GPS Data',
       ];
       const messageActions = ['Clear Messages', 'Clear All Data'];
       if (nodeActions.includes(actionName)) onNodesPruned?.();
@@ -703,6 +706,34 @@ export default function AppPanel({
         </div>
       </div>
 
+      {/* GPS Data */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-muted">GPS Data</h3>
+        <div className="bg-secondary-dark rounded-lg p-4 space-y-3">
+          <p className="text-xs text-muted leading-relaxed">
+            Removes stored GPS coordinates from all nodes without deleting the nodes themselves.
+            Positions will repopulate as new data is received.
+          </p>
+          <button
+            onClick={() =>
+              executeWithConfirmation({
+                name: 'Clear GPS Data',
+                title: 'Clear GPS Data',
+                message:
+                  'This will remove stored GPS coordinates from all nodes. Nodes will remain but their positions will be blank until new data is received. Continue?',
+                confirmLabel: 'Clear GPS Data',
+                action: async () => {
+                  await window.electronAPI.db.clearNodePositions();
+                },
+              })
+            }
+            className="w-full px-4 py-2.5 bg-secondary-dark text-gray-300 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+          >
+            Clear GPS Data
+          </button>
+        </div>
+      </div>
+
       {/* Data Management */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-muted">Data Management</h3>
@@ -837,6 +868,34 @@ export default function AppPanel({
         >
           Clear Messages ({messageCount})
         </button>
+      </div>
+
+      {/* Diagnostics */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-muted">Diagnostics</h3>
+        <div className="bg-secondary-dark rounded-lg p-4 space-y-3">
+          <p className="text-xs text-muted leading-relaxed">
+            Clears all in-memory routing anomalies, hop history, and packet stats. The engine will
+            rebuild automatically from new incoming packets.
+          </p>
+          <button
+            onClick={() =>
+              executeWithConfirmation({
+                name: 'Reset Diagnostics',
+                title: 'Reset Diagnostics',
+                message:
+                  'This will clear all routing anomalies, hop history, and packet stats. The engine will rebuild from new incoming packets. Continue?',
+                confirmLabel: 'Reset Diagnostics',
+                action: async () => {
+                  clearDiagnostics();
+                },
+              })
+            }
+            className="w-full px-4 py-2.5 bg-secondary-dark text-gray-300 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+          >
+            Reset Diagnostics
+          </button>
+        </div>
       </div>
 
       {/* Danger Zone */}
