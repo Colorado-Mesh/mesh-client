@@ -274,7 +274,7 @@ meshtastic-client/
 │   ├── main/
 │   │   ├── index.ts              # Window creation, BLE/Serial intercept, all IPC handlers
 │   │   ├── log-service.ts        # Log file, console patch, log panel IPC
-│   │   ├── database.ts           # SQLite schema & migrations (WAL mode, schema v7)
+│   │   ├── database.ts           # SQLite schema & migrations (WAL mode, user_version 9)
 │   │   ├── mqtt-manager.ts       # MQTT client: AES decrypt, dedup, protobuf decode
 │   │   ├── updater.ts            # Auto-update checks via electron-updater
 │   │   └── gps.ts                # Main-process GPS helper
@@ -318,18 +318,21 @@ meshtastic-client/
 │           ├── reactions.ts          # Emoji reaction helpers
 │           ├── roleInfo.tsx          # Node role display metadata
 │           ├── signal.ts             # SNR/RSSI signal quality helpers
+│           ├── parseStoredJson.ts    # Safe JSON parse for persisted values
 │           └── diagnostics/
 │               ├── RoutingDiagnosticEngine.ts  # Hop anomaly detectors (hop_goblin, bad_route, etc.)
 │               ├── RFDiagnosticEngine.ts        # RF-layer signal diagnostics
 │               └── RemediationEngine.ts         # Suggested fixes for detected anomalies
 ├── resources/
 │   ├── icons/                    # App icons (linux/, mac/, win/)
-│   └── images/                   # Bundled image assets
+│   ├── entitlements.mac.plist    # macOS signing entitlements (main)
+│   └── entitlements.mac.inherit.plist  # macOS child-process entitlements
 ├── scripts/
 │   ├── rebuild-native.mjs        # Rebuilds better-sqlite3 for Electron ABI (postinstall); removes stale build/ first to avoid wrong-platform .node after copying node_modules across OSes
 │   └── wait-for-dev.mjs          # Waits for Vite dev server before launching Electron
 ├── docs/
-│   └── accessibility-checklist.md
+│   ├── accessibility-checklist.md
+│   └── images/                   # README screenshots (node-list, map, diagnostics, node-detail)
 ├── electron-builder.yml          # Distributable config (targets, icons, signing)
 ├── vite.config.ts                # Renderer build (Vite)
 ├── vitest.config.ts              # Test runner config
