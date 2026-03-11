@@ -2,7 +2,21 @@
 # Run format check, lint, and tests before every commit.
 # To skip in an emergency: git commit --no-verify
 
+# Capture paths already staged so we only re-stage those after format. Using
+# git add -u would stage every tracked modification and sweep in unstaged WIP.
+STAGED_LIST=$(mktemp)
+trap 'rm -f "$STAGED_LIST"' EXIT
+git diff --cached --name-only --diff-filter=ACM > "$STAGED_LIST" || exit 1
+
 npm run format || exit 1
-git add -u
+
+if [ -s "$STAGED_LIST" ]; then
+  while IFS= read -r f || [ -n "$f" ]; do
+    [ -n "$f" ] || continue
+    [ -e "$f" ] || continue
+    git add -- "$f" || exit 1
+  done < "$STAGED_LIST"
+fi
+
 npm run lint || exit 1
 npm run test:run
