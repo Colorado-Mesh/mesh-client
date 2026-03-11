@@ -385,8 +385,11 @@ export default function AppPanel({
               location.
             </p>
             <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-300 w-8">Lat:</label>
+              <label htmlFor="apppanel-static-lat" className="text-sm text-gray-300 w-8">
+                Lat:
+              </label>
               <input
+                id="apppanel-static-lat"
                 type="number"
                 step="0.00001"
                 min={-90}
@@ -396,8 +399,11 @@ export default function AppPanel({
                 placeholder="e.g. 40.12345"
                 className="flex-1 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
               />
-              <label className="text-sm text-gray-300 w-8">Lon:</label>
+              <label htmlFor="apppanel-static-lon" className="text-sm text-gray-300 w-8">
+                Lon:
+              </label>
               <input
+                id="apppanel-static-lon"
                 type="number"
                 step="0.00001"
                 min={-180}
@@ -427,8 +433,12 @@ export default function AppPanel({
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-300 flex-1">Auto-refresh interval:</label>
+            <label htmlFor="apppanel-gps-interval" className="text-sm text-gray-300 flex-1">
+              Auto-refresh interval:
+            </label>
             <select
+              id="apppanel-gps-interval"
+              aria-label="GPS auto-refresh interval"
               value={gpsRefreshInterval}
               onChange={(e) => handleGpsIntervalChange(Number(e.target.value))}
               disabled={hasStaticPosition}
@@ -477,11 +487,15 @@ export default function AppPanel({
             </label>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300">Max distance:</span>
+            <label htmlFor="apppanel-max-distance" className="text-sm text-gray-300">
+              Max distance:
+            </label>
             <input
+              id="apppanel-max-distance"
               type="number"
               min={1}
               value={settings.distanceFilterMax}
+              aria-label="Maximum distance for node filter"
               onChange={(e) =>
                 updateSetting('distanceFilterMax', Math.max(1, parseInt(e.target.value) || 1))
               }
@@ -489,6 +503,8 @@ export default function AppPanel({
               className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <select
+              id="apppanel-distance-unit"
+              aria-label="Distance unit for filter"
               value={settings.distanceUnit}
               onChange={(e) => updateSetting('distanceUnit', e.target.value as 'miles' | 'km')}
               disabled={!settings.distanceFilterEnabled}
@@ -535,11 +551,15 @@ export default function AppPanel({
         <div className="bg-secondary-dark rounded-lg p-4 space-y-4">
           {/* Manual age delete */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300 flex-1">Delete nodes last heard more than</span>
+            <label htmlFor="apppanel-delete-age-days" className="text-sm text-gray-300 flex-1">
+              Delete nodes last heard more than
+            </label>
             <input
+              id="apppanel-delete-age-days"
               type="number"
               min={1}
               value={deleteAgeDays}
+              aria-label="Delete nodes older than this many days"
               onChange={(e) => setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1))}
               className="w-20 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none"
             />
@@ -576,9 +596,11 @@ export default function AppPanel({
               Auto-prune on startup, older than
             </label>
             <input
+              id="apppanel-auto-prune-days"
               type="number"
               min={1}
               value={settings.autoPruneDays}
+              aria-label="Auto-prune nodes older than days"
               onChange={(e) =>
                 updateSetting('autoPruneDays', Math.max(1, parseInt(e.target.value) || 1))
               }
@@ -601,9 +623,11 @@ export default function AppPanel({
               Cap total nodes, keep newest
             </label>
             <input
+              id="apppanel-node-cap-count"
               type="number"
               min={1}
               value={settings.nodeCapCount}
+              aria-label="Maximum number of nodes to keep"
               onChange={(e) =>
                 updateSetting('nodeCapCount', Math.max(1, parseInt(e.target.value) || 1))
               }
@@ -853,10 +877,12 @@ export default function AppPanel({
               Limit messages loaded
             </label>
             <input
+              id="apppanel-message-limit-count"
               type="number"
               min={1}
               max={10000}
               value={settings.messageLimitCount}
+              aria-label="Maximum messages to load from database"
               onChange={(e) =>
                 updateSetting(
                   'messageLimitCount',
@@ -873,8 +899,12 @@ export default function AppPanel({
         {/* Channel-scoped message deletion */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-400">Channel:</label>
+            <label htmlFor="apppanel-clear-channel" className="text-sm text-gray-400">
+              Channel:
+            </label>
             <select
+              id="apppanel-clear-channel"
+              aria-label="Channel for clearing messages"
               value={clearChannelTarget}
               onChange={(e) => setClearChannelTarget(parseInt(e.target.value))}
               className="flex-1 px-3 py-1.5 bg-secondary-dark border border-gray-600 rounded-lg text-gray-200 text-sm focus:border-brand-green focus:outline-none"

@@ -33,7 +33,7 @@ Run `npm run lint` before pushing. ESLint is configured with:
 
 - **Import order** — `eslint-plugin-simple-import-sort` on imports and exports; no duplicate imports; newline after imports.
 - **Type-only imports** — `@typescript-eslint/consistent-type-imports` (use `import type { … }` where appropriate).
-- **Renderer only** — `react-hooks/exhaustive-deps` is an **error**; fix dependency arrays rather than disabling.
+- **Renderer only** — `react-hooks/exhaustive-deps` is an **error**; fix dependency arrays rather than disabling. **Exception:** If an effect must _not_ re-run when a dependency changes (e.g. intentional one-shot on mount, or avoiding stale closure without widening deps), you may use `eslint-disable-next-line react-hooks/exhaustive-deps` **only** with an inline comment on the same line or immediately above explaining why (what is intentionally omitted and why). Prefer refs or splitting effects first; disable as a last resort.
 - **Ignored by lint** — `scripts/**`, `dist-electron/**`, and `*.config.*` files are excluded; change those configs only when needed.
 
 **Path alias:** `@/` maps to `src/` (see `tsconfig.json`, `tsconfig.main.json`, and `vitest.config.ts`). Prefer `@/renderer/...` or `@/main/...` over long relative paths when adding imports.
@@ -98,7 +98,8 @@ Every PR must be manually tested before review. No exceptions for "trivial" chan
 Before submitting a PR that touches IPC or the preload layer:
 
 - **contextBridge exposure**: Only expose the minimum API surface needed. Never expose `ipcRenderer` directly or pass arbitrary channel names to the renderer.
-- **Channel naming**: Main-process handlers use namespaced channels (e.g. `db:*`, `mqtt:*`, `update:*`). Preload exposes a single `electronAPI` object with nested namespaces (`db`, `mqtt`, …) that wrap `ipcRenderer.invoke` — see `src/preload/index.ts`. When adding IPC, add the handler in main **and** the typed method on the matching preload namespace so the renderer stays on a minimal, reviewed surface.
+- **Channel naming**: Main-process **invoke** handlers use namespaced channels (e.g. `db:*`, `mqtt:*`, `update:*`). Preload exposes a single `electronAPI` object with nested namespaces (`db`, `mqtt`, …) that wrap `ipcRenderer.invoke` — see `src/preload/index.ts`. When adding IPC, add the handler in main **and** the typed method on the matching preload namespace so the renderer stays on a minimal, reviewed surface.
+- **Main→renderer events**: One-way `webContents.send` / `ipcRenderer.on` channels sometimes use **kebab-case** without a domain prefix (e.g. `bluetooth-devices-discovered`, `serial-ports-discovered`) for historical or Chromium-callback wiring. **Invoke** channels should stay `domain:action`; when adding new **events**, prefer a consistent prefix (e.g. `ble:devices-discovered`) if you are touching both main and preload anyway; otherwise document the channel in the preload API.
 - **Cross-platform UI**: Test or at minimum visually verify your changes on your platform; flag in the PR if you could not test on other OSes.
 - **Build check**: Confirm `npm run build` completes without errors.
 
