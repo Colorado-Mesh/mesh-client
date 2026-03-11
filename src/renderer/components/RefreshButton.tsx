@@ -19,17 +19,20 @@ export default function RefreshButton({
     if (spinning || disabled) return;
     setSpinning(true);
     try {
+      console.debug('[RefreshButton] handleClick');
       await Promise.all([
         // Race the actual refresh against a hard timeout — whichever finishes first
         Promise.race([
-          onRefresh().catch(() => {}),
+          onRefresh().catch((err) => {
+            console.debug('[RefreshButton] onRefresh failed', err);
+          }),
           new Promise<void>((r) => setTimeout(r, HARD_TIMEOUT_MS)),
         ]),
         // Ensure the spinner shows for at least the minimum animation time
         new Promise<void>((r) => setTimeout(r, minimumAnimationMs)),
       ]);
-    } catch {
-      // Refresh is best-effort — swallow errors
+    } catch (e) {
+      console.debug('[RefreshButton] handleClick outer', e);
     } finally {
       setSpinning(false);
     }

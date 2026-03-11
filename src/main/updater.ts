@@ -80,6 +80,7 @@ export function initUpdater(win: BrowserWindow): void {
         await autoUpdater.checkForUpdates();
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
+        console.warn('[updater] update:check failed:', e);
         send('update:error', { message: msg });
       }
     });
@@ -90,6 +91,7 @@ export function initUpdater(win: BrowserWindow): void {
         await autoUpdater.downloadUpdate();
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
+        console.warn('[updater] update:download failed:', e);
         send('update:error', { message: msg });
       }
     });

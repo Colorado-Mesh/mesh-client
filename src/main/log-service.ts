@@ -38,8 +38,8 @@ export function initLogFile(): void {
   const p = getLogFilePath();
   try {
     fs.writeFileSync(p, '', { encoding: 'utf8' });
-  } catch {
-    /* userData may be unwritable; append later will try again */
+  } catch (e) {
+    original.debug('[log-service] initLogFile truncate failed', e);
   }
   flushPendingBuffer();
 }
@@ -50,8 +50,8 @@ function flushPendingBuffer(): void {
   const p = getLogFilePath();
   const data = lines.join('');
   appendChain = appendChain.then(() =>
-    fs.promises.appendFile(p, data, 'utf8').catch(() => {
-      /* file deleted or unwritable — recreate on next append */
+    fs.promises.appendFile(p, data, 'utf8').catch((e) => {
+      original.debug('[log-service] flushPendingBuffer appendFile failed', e);
     }),
   );
 }
@@ -96,12 +96,12 @@ export function appendLine(level: LogLevel, source: string, message: string): vo
 
   appendChain = appendChain
     .then(() => fs.promises.appendFile(getLogFilePath(), line, 'utf8'))
-    .catch(() => {
-      /* Log file missing or deleted — recreate and retry once */
+    .catch((e) => {
+      original.debug('[log-service] appendFile failed, retry writeFileSync', e);
       try {
         fs.writeFileSync(getLogFilePath(), line, { encoding: 'utf8' });
-      } catch {
-        /* ignore */
+      } catch (e2) {
+        original.debug('[log-service] writeFileSync retry failed', e2);
       }
     });
 
@@ -117,8 +117,8 @@ function broadcastLine(ts: number, level: LogLevel, source: string, message: str
   }
   try {
     win.webContents.send('log:line', { ts, level, source, message: msg });
-  } catch {
-    /* window may be closing */
+  } catch (e) {
+    original.debug('[log-service] broadcastLine send failed', e);
   }
 }
 
@@ -141,8 +141,8 @@ export function clearLogFile(): void {
     if (fs.existsSync(p)) {
       fs.unlinkSync(p);
     }
-  } catch {
-    /* no throw — issue #9 */
+  } catch (e) {
+    original.debug('[log-service] clearLogFile unlink failed', e);
   }
 }
 
@@ -162,7 +162,8 @@ function stringifyArgs(args: unknown[]): string {
       if (typeof a === 'object' && a !== null) {
         try {
           return JSON.stringify(a);
-        } catch {
+        } catch (e) {
+          original.debug('[log-service] stringifyArgs JSON.stringify failed', e);
           return String(a);
         }
       }
@@ -212,8 +213,8 @@ export function patchMainConsole(): void {
           const trimmed = chunk.replace(/\r?\n$/, '');
           if (trimmed) appendLine(level, source, trimmed);
         }
-      } catch {
-        /* never break stream */
+      } catch (e) {
+        original.debug('[log-service] patchStream write hook', e);
       }
       return origWrite.apply(this, args as Parameters<typeof origWrite>);
     } as typeof stream.write;

@@ -87,7 +87,8 @@ function loadSettings(): AdminSettings {
   try {
     const raw = localStorage.getItem('mesh-client:adminSettings');
     return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
-  } catch {
+  } catch (e) {
+    console.debug('[AdminPanel] loadSettings', e);
     return DEFAULT_SETTINGS;
   }
 }
@@ -149,8 +150,8 @@ export default function AdminPanel({
     try {
       const raw = localStorage.getItem('mesh-client:adminSettings');
       if (raw) hideMqttOnly = JSON.parse(raw).filterMqttOnly ?? false;
-    } catch {
-      /* ignore */
+    } catch (e) {
+      console.debug('[AdminPanel] hideMqttOnly from adminSettings', e);
     }
     onLocationFilterChange({
       enabled: settings.distanceFilterEnabled,
@@ -178,7 +179,9 @@ export default function AdminPanel({
       .then((rows) => {
         setMsgChannels(rows.map((r) => r.channel));
       })
-      .catch(() => {});
+      .catch((e) => {
+        console.debug('[AdminPanel] getMessageChannels', e);
+      });
   }, []);
 
   const getChannelLabel = useCallback(
@@ -201,6 +204,7 @@ export default function AdminPanel({
       await pendingAction.action();
       addToast(`${pendingAction.name} completed successfully.`, 'success');
     } catch (err) {
+      console.warn('[AdminPanel] pending action failed', err);
       addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
     }
   }, [pendingAction, addToast]);
@@ -556,6 +560,7 @@ export default function AdminPanel({
                   addToast(`Exported to: ${path}`, 'success');
                 }
               } catch (err) {
+                console.warn('[AdminPanel] export failed', err);
                 addToast(
                   `Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
                   'error',
@@ -578,6 +583,7 @@ export default function AdminPanel({
                   );
                 }
               } catch (err) {
+                console.warn('[AdminPanel] import failed', err);
                 addToast(
                   `Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
                   'error',

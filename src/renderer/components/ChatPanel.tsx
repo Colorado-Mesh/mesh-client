@@ -435,6 +435,7 @@ export default function ChatPanel({
     if (!input.trim() || !isConnected || sending) return;
     setSending(true);
     try {
+      console.debug('[ChatPanel] handleSend');
       const sendChannel = channel === -1 ? 0 : channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
       await onSend(input.trim(), sendChannel, destination, replyTo?.packetId);
@@ -453,6 +454,7 @@ export default function ChatPanel({
   const handleReact = async (emojiCode: number, packetId: number, msgChannel: number) => {
     setPickerOpenFor(null);
     try {
+      console.debug('[ChatPanel] handleReact', emojiCode, packetId, msgChannel);
       await onReact(emojiCode, packetId, msgChannel);
     } catch (err) {
       console.error('React failed:', err);

@@ -113,6 +113,7 @@ function createBaseTables(): void {
       CREATE INDEX IF NOT EXISTS idx_nodes_last_heard ON nodes(last_heard);
     `);
   } catch (error) {
+    console.error('[db] createBaseTables failed', error);
     throw new Error(
       `Failed to create base tables: ${error instanceof Error ? error.message : String(error)}`,
     );
@@ -130,6 +131,7 @@ function runMigrations(): void {
       db!.pragma('user_version = 1');
       userVersion = 1;
     } catch (e) {
+      console.error('[db] migration v1 failed', e);
       throw new Error(`Migration v1 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -141,6 +143,7 @@ function runMigrations(): void {
       db!.pragma('user_version = 2');
       userVersion = 2;
     } catch (e) {
+      console.error('[db] migration v2 failed', e);
       throw new Error(`Migration v2 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -151,6 +154,7 @@ function runMigrations(): void {
       db!.pragma('user_version = 3');
       userVersion = 3;
     } catch (e) {
+      console.error('[db] migration v3 failed', e);
       throw new Error(`Migration v3 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -165,6 +169,7 @@ function runMigrations(): void {
       db!.pragma('user_version = 4');
       userVersion = 4;
     } catch (e) {
+      console.error('[db] migration v4 failed', e);
       throw new Error(`Migration v4 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -175,6 +180,7 @@ function runMigrations(): void {
       db!.pragma('user_version = 5');
       userVersion = 5;
     } catch (e) {
+      console.error('[db] migration v5 failed', e);
       throw new Error(`Migration v5 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -189,6 +195,7 @@ function runMigrations(): void {
       db!.pragma('user_version = 6');
       userVersion = 6;
     } catch (e) {
+      console.error('[db] migration v6 failed', e);
       throw new Error(`Migration v6 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -199,6 +206,7 @@ function runMigrations(): void {
       db!.pragma('user_version = 7');
       userVersion = 7;
     } catch (e) {
+      console.error('[db] migration v7 failed', e);
       throw new Error(`Migration v7 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -209,6 +217,7 @@ function runMigrations(): void {
       db!.pragma('user_version = 8');
       userVersion = 8;
     } catch (e) {
+      console.error('[db] migration v8 failed', e);
       throw new Error(`Migration v8 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -221,6 +230,7 @@ function runMigrations(): void {
       db!.prepare('ALTER TABLE nodes ADD COLUMN num_packets_tx INTEGER').run();
       db!.pragma('user_version = 9');
     } catch (e) {
+      console.error('[db] migration v9 failed', e);
       throw new Error(`Migration v9 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }

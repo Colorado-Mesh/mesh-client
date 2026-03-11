@@ -81,7 +81,8 @@ function loadAdminBool(key: string): boolean {
   try {
     const raw = localStorage.getItem('mesh-client:adminSettings');
     return raw ? (JSON.parse(raw)[key] ?? false) : false;
-  } catch {
+  } catch (e) {
+    console.debug('[diagnosticsStore] loadAdminBool', key, e);
     return false;
   }
 }
@@ -92,7 +93,8 @@ function loadEnvMode(): EnvMode {
     const val = raw ? JSON.parse(raw).envMode : undefined;
     if (val === 'city' || val === 'canyon') return val;
     return 'standard';
-  } catch {
+  } catch (e) {
+    console.debug('[diagnosticsStore] loadEnvMode', e);
     return 'standard';
   }
 }
@@ -102,14 +104,17 @@ function saveAdminKey(key: string, value: unknown): void {
     const raw = localStorage.getItem('mesh-client:adminSettings');
     const s = raw ? JSON.parse(raw) : {};
     localStorage.setItem('mesh-client:adminSettings', JSON.stringify({ ...s, [key]: value }));
-  } catch {}
+  } catch (e) {
+    console.debug('[diagnosticsStore] saveAdminKey', key, e);
+  }
 }
 
 function loadMqttIgnoredNodes(): Set<number> {
   try {
     const raw = localStorage.getItem('mesh-client:mqttIgnoredNodes');
     return raw ? new Set<number>(JSON.parse(raw)) : new Set();
-  } catch {
+  } catch (e) {
+    console.debug('[diagnosticsStore] loadMqttIgnoredNodes', e);
     return new Set();
   }
 }
@@ -117,7 +122,9 @@ function loadMqttIgnoredNodes(): Set<number> {
 function saveMqttIgnoredNodes(nodes: Set<number>): void {
   try {
     localStorage.setItem('mesh-client:mqttIgnoredNodes', JSON.stringify([...nodes]));
-  } catch {}
+  } catch (e) {
+    console.debug('[diagnosticsStore] saveMqttIgnoredNodes', e);
+  }
 }
 
 export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({

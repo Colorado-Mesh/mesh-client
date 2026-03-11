@@ -186,8 +186,8 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
       // manually close the writable stream and GATT connection
       try {
         await device.transport.toDevice.close();
-      } catch {
-        /* already closed */
+      } catch (e) {
+        console.debug('[connection] safeDisconnect toDevice.close', e);
       }
 
       // For BLE: disconnect the GATT server
@@ -195,8 +195,8 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
       if (btDevice?.gatt?.connected) {
         try {
           btDevice.gatt.disconnect();
-        } catch {
-          /* ignore */
+        } catch (e) {
+          console.debug('[connection] safeDisconnect gatt.disconnect', e);
         }
       }
     } else {
@@ -206,8 +206,8 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
     // Always complete device streams to prevent memory leaks
     try {
       device.complete();
-    } catch {
-      /* already completed */
+    } catch (e) {
+      console.debug('[connection] safeDisconnect complete', e);
     }
   }
 }

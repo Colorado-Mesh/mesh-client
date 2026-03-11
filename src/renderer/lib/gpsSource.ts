@@ -56,8 +56,8 @@ export async function resolveOurPosition(
         const mappedSource: GpsSource = result.source === 'ip' ? 'ip' : 'browser';
         return { lat: result.lat, lon: result.lon, source: mappedSource };
       }
-    } catch {
-      /* fall through */
+    } catch (e) {
+      console.debug('[gpsSource] getGpsFix failed, fall through', e);
     }
   }
 
@@ -73,8 +73,8 @@ export async function resolveOurPosition(
         return { lat: data.latitude, lon: data.longitude, source: 'ip' };
       }
     }
-  } catch {
-    // network failure or abort — fall through
+  } catch (e) {
+    console.debug('[gpsSource] ipapi fetch failed, fall through', e);
   }
 
   return null;

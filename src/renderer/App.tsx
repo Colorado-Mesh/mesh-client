@@ -63,7 +63,8 @@ const LOG_PANEL_VISIBLE_KEY = 'mesh-client:logPanelVisible';
 function readLogPanelVisible(): boolean {
   try {
     return localStorage.getItem(LOG_PANEL_VISIBLE_KEY) === 'true';
-  } catch {
+  } catch (e) {
+    console.debug('[App] readLogPanelVisible', e);
     return false;
   }
 }
@@ -75,7 +76,8 @@ function readPersistedChatUnread(): number {
     const n = Math.floor(Number(raw));
     if (!Number.isFinite(n) || n < 0) return 0;
     return Math.min(n, 99999);
-  } catch {
+  } catch (e) {
+    console.debug('[App] readPersistedChatUnread', e);
     return 0;
   }
 }
@@ -84,8 +86,8 @@ function persistChatUnread(count: number): void {
   try {
     const n = Math.max(0, Math.min(Math.floor(count) || 0, 99999));
     localStorage.setItem(CHAT_UNREAD_STORAGE_KEY, String(n));
-  } catch {
-    /* ignore quota / private mode */
+  } catch (e) {
+    console.debug('[App] persistChatUnread quota/private mode', e);
   }
 }
 
@@ -129,7 +131,8 @@ export default function App() {
         unit: s.distanceUnit ?? 'miles',
         hideMqttOnly: s.filterMqttOnly ?? false,
       };
-    } catch {
+    } catch (e) {
+      console.debug('[App] locationFilter initial state', e);
       return { enabled: false, maxDistance: 500, unit: 'miles', hideMqttOnly: false };
     }
   });
@@ -174,7 +177,9 @@ export default function App() {
       if (s.autoPruneEnabled) window.electronAPI.db.deleteNodesByAge(s.autoPruneDays ?? 30);
       if (s.nodeCapEnabled !== false)
         window.electronAPI.db.pruneNodesByCount(s.nodeCapCount ?? 10000);
-    } catch {}
+    } catch (e) {
+      console.debug('[App] startup node pruning', e);
+    }
   }, []);
 
   // ─── MQTT auto-launch on startup ─────────────────────────────────
@@ -185,7 +190,9 @@ export default function App() {
         const settings = JSON.parse(raw) as MQTTSettings;
         if (settings.autoLaunch) window.electronAPI.mqtt.connect(settings);
       }
-    } catch {}
+    } catch (e) {
+      console.debug('[App] MQTT auto-launch startup', e);
+    }
   }, []);
 
   // ─── Auto-update event subscriptions ─────────────────────────────
@@ -273,7 +280,9 @@ export default function App() {
     device.disconnect().then(() => {
       // Small delay before reconnecting
       setTimeout(() => {
-        device.connect(lastType).catch(() => {});
+        device.connect(lastType).catch((err) => {
+          console.warn('[App] handleReconnect connect failed', err);
+        });
       }, 500);
     });
   }, [device]);
@@ -465,8 +474,8 @@ export default function App() {
                       setLogPanelVisible(visible);
                       try {
                         localStorage.setItem(LOG_PANEL_VISIBLE_KEY, visible ? 'true' : 'false');
-                      } catch {
-                        /* ignore */
+                      } catch (e) {
+                        console.debug('[App] persist logPanelVisible', e);
                       }
                     }}
                     nodes={device.nodes}

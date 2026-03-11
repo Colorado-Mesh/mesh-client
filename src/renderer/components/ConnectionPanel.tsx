@@ -25,7 +25,8 @@ function loadLastConnection(): LastConnection | null {
   try {
     const raw = localStorage.getItem(LAST_CONNECTION_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch {
+  } catch (e) {
+    console.debug('[ConnectionPanel] loadLastConnection', e);
     return null;
   }
 }
@@ -33,19 +34,24 @@ function loadLastConnection(): LastConnection | null {
 function saveLastConnection(c: LastConnection) {
   try {
     localStorage.setItem(LAST_CONNECTION_KEY, JSON.stringify(c));
-  } catch {}
+  } catch (e) {
+    console.debug('[ConnectionPanel] saveLastConnection', e);
+  }
 }
 
 function clearLastConnection() {
   try {
     localStorage.removeItem(LAST_CONNECTION_KEY);
-  } catch {}
+  } catch (e) {
+    console.debug('[ConnectionPanel] clearLastConnection', e);
+  }
 }
 
 function loadLastBleDevice(): string | null {
   try {
     return localStorage.getItem(LAST_BLE_DEVICE_KEY);
-  } catch {
+  } catch (e) {
+    console.debug('[ConnectionPanel] loadLastBleDevice', e);
     return null;
   }
 }
@@ -53,13 +59,16 @@ function loadLastBleDevice(): string | null {
 function saveLastBleDevice(id: string) {
   try {
     localStorage.setItem(LAST_BLE_DEVICE_KEY, id);
-  } catch {}
+  } catch (e) {
+    console.debug('[ConnectionPanel] saveLastBleDevice', e);
+  }
 }
 
 function loadLastSerialPort(): string | null {
   try {
     return localStorage.getItem(LAST_SERIAL_PORT_KEY);
-  } catch {
+  } catch (e) {
+    console.debug('[ConnectionPanel] loadLastSerialPort', e);
     return null;
   }
 }
@@ -67,7 +76,9 @@ function loadLastSerialPort(): string | null {
 function saveLastSerialPort(id: string) {
   try {
     localStorage.setItem(LAST_SERIAL_PORT_KEY, id);
-  } catch {}
+  } catch (e) {
+    console.debug('[ConnectionPanel] saveLastSerialPort', e);
+  }
 }
 
 function getBleDeviceName(deviceId: string): string | null {
@@ -75,7 +86,8 @@ function getBleDeviceName(deviceId: string): string | null {
     const raw = localStorage.getItem('mesh-client:bleDeviceNames');
     const cache: Record<string, string> = raw ? JSON.parse(raw) : {};
     return cache[deviceId] ?? null;
-  } catch {
+  } catch (e) {
+    console.debug('[ConnectionPanel] getBleDeviceName', e);
     return null;
   }
 }
@@ -145,7 +157,8 @@ function loadMqttSettings(): MQTTSettings {
   try {
     const raw = localStorage.getItem('mesh-client:mqttSettings');
     return raw ? { ...MQTT_DEFAULTS, ...JSON.parse(raw) } : MQTT_DEFAULTS;
-  } catch {
+  } catch (e) {
+    console.debug('[ConnectionPanel] loadMqttSettings', e);
     return MQTT_DEFAULTS;
   }
 }
@@ -368,8 +381,10 @@ export default function ConnectionPanel({
     setShowSerialPicker(false);
     setConnectionStage('Please wait...');
     try {
+      console.debug('[ConnectionPanel] handleConnect', connectionType, httpAddress);
       await onConnect(connectionType, httpAddress);
     } catch (err) {
+      console.warn('[ConnectionPanel] handleConnect failed', err);
       setError(err instanceof Error ? err.message : 'Connection failed');
       setConnecting(false);
       setConnectionStage('');
@@ -395,9 +410,10 @@ export default function ConnectionPanel({
     setConnectionStage('');
     // Ensure the underlying connection attempt is properly torn down
     try {
+      console.debug('[ConnectionPanel] handleCancelConnection onDisconnect');
       await onDisconnect();
-    } catch {
-      // Best effort cleanup
+    } catch (e) {
+      console.debug('[ConnectionPanel] onDisconnect best-effort cleanup', e);
     }
   }, [showBlePicker, showSerialPicker, onDisconnect]);
 

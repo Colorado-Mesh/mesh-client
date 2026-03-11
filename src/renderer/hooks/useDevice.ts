@@ -234,7 +234,9 @@ export function useDevice() {
     if (pollRef.current) return; // Already polling
     pollRef.current = setInterval(() => {
       // Broadcast position request to all nodes
-      deviceRef.current?.requestPosition(0xffffffff).catch(() => {});
+      deviceRef.current?.requestPosition(0xffffffff).catch((e) => {
+        console.debug('[useDevice] requestPosition poll', e);
+      });
     }, POLL_INTERVAL_MS);
   }, []);
 
@@ -482,7 +484,9 @@ export function useDevice() {
 
         // Re-transmit over RF (gateway downlink behavior)
         // isEcho check in onMeshPacket prevents the re-TX echo from being re-uploaded to MQTT
-        deviceRef.current.sendText(msg.payload, 'broadcast', true, msg.channel).catch(() => {}); // non-fatal; RF TX failure doesn't affect chat display
+        deviceRef.current.sendText(msg.payload, 'broadcast', true, msg.channel).catch((e) => {
+          console.debug('[useDevice] MQTT downlink sendText non-fatal', e);
+        });
       }
 
       // Deduplicate by content too (same sender + timestamp)
@@ -518,7 +522,9 @@ export function useDevice() {
       const device = deviceRef.current;
       deviceRef.current = null;
       if (device) {
-        safeDisconnect(device).catch(() => {});
+        safeDisconnect(device).catch((e) => {
+          console.debug('[useDevice] unmount safeDisconnect', e);
+        });
       }
     };
   }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat, stopGpsInterval]);
@@ -574,7 +580,9 @@ export function useDevice() {
         touchLastData();
         const virtualNodeId = getOrCreateVirtualNodeId();
         if (virtualNodeId !== info.myNodeNum) {
-          window.electronAPI.db.deleteNode(virtualNodeId).catch(() => {});
+          window.electronAPI.db.deleteNode(virtualNodeId).catch((e) => {
+            console.debug('[useDevice] deleteNode virtual', e);
+          });
         }
         myNodeNumRef.current = info.myNodeNum;
         setState((s) => ({ ...s, myNodeNum: info.myNodeNum }));
@@ -669,7 +677,9 @@ export function useDevice() {
                 channelName: 'LongFast',
               })
               .then(isDuplicate)
-              .catch(() => {}); // register echo packetId; non-fatal
+              .catch((e) => {
+                console.debug('[useDevice] MQTT publish echo register non-fatal', e);
+              });
           }
         }
 
@@ -681,8 +691,8 @@ export function useDevice() {
               body: msg.payload.slice(0, 100),
               silent: false,
             });
-          } catch {
-            /* notifications may not be available */
+          } catch (e) {
+            console.debug('[useDevice] Notification not available', e);
           }
         }
       });
@@ -1166,7 +1176,10 @@ export function useDevice() {
     stopGpsInterval();
     const oldDevice = deviceRef.current;
     deviceRef.current = null;
-    if (oldDevice) safeDisconnect(oldDevice).catch(() => {});
+    if (oldDevice)
+      safeDisconnect(oldDevice).catch((e) => {
+        console.debug('[useDevice] handleConnectionLost safeDisconnect', e);
+      });
 
     // Begin reconnection
     attemptReconnectRef.current();
@@ -1243,7 +1256,9 @@ export function useDevice() {
         stopBleHeartbeat();
         const oldDevice = deviceRef.current;
         deviceRef.current = null;
-        safeDisconnect(oldDevice).catch(() => {});
+        safeDisconnect(oldDevice).catch((e) => {
+          console.debug('[useDevice] connect safeDisconnect prior', e);
+        });
       }
 
       // Store connection params for reconnection
@@ -1255,6 +1270,7 @@ export function useDevice() {
       setState((s) => ({ ...s, status: 'connecting', connectionType: type }));
 
       try {
+        console.debug('[useDevice] connect', type, httpAddress);
         const device = await createConnection(type, httpAddress);
         deviceRef.current = device;
 
@@ -1295,7 +1311,9 @@ export function useDevice() {
         stopBleHeartbeat();
         const oldDevice = deviceRef.current;
         deviceRef.current = null;
-        safeDisconnect(oldDevice).catch(() => {});
+        safeDisconnect(oldDevice).catch((e) => {
+          console.debug('[useDevice] connectAutomatic safeDisconnect prior', e);
+        });
       }
 
       connectionParamsRef.current = { type, httpAddress };
@@ -1306,6 +1324,7 @@ export function useDevice() {
       setState((s) => ({ ...s, status: 'connecting', connectionType: type }));
 
       try {
+        console.debug('[useDevice] connectAutomatic', type, httpAddress);
         let device: MeshDevice;
         if (type === 'ble') {
           device = await reconnectBle();
@@ -1391,6 +1410,7 @@ export function useDevice() {
           );
           window.electronAPI.db.updateMessageStatus(tempId, 'acked');
         } catch (err) {
+          console.warn('[useDevice] sendMessage mqtt-only path failed', err);
           setMessages((prev) =>
             prev.map((m) =>
               m.packetId === tempId ? { ...m, status: 'failed' as const, error: String(err) } : m,
@@ -1418,6 +1438,10 @@ export function useDevice() {
         : null;
 
       try {
+        console.debug('[useDevice] sendMessage sendText', {
+          channel,
+          shouldUplink: !!shouldUplink,
+        });
         pendingMqttRef.current = !!shouldUplink;
         pendingReplyIdRef.current = replyId;
         const dest: number | 'broadcast' = destination ?? 'broadcast';
@@ -1446,7 +1470,8 @@ export function useDevice() {
               );
               window.electronAPI.db.updateMessageStatus(packetId, 'acked', undefined, 'acked');
             })
-            .catch(() => {
+            .catch((e) => {
+              console.debug('[useDevice] sendMessage mqttPromise after ack failed', e);
               setMessages((prev) =>
                 prev.map((m) =>
                   m.packetId === packetId ? { ...m, mqttStatus: 'failed' as const } : m,
@@ -1456,6 +1481,7 @@ export function useDevice() {
             });
         }
       } catch (err) {
+        console.warn('[useDevice] sendMessage sendText NAK/timeout or error', err);
         // NAK or timeout — extract packet ID and error from rejection
         const pe = err as any;
         const packetId = pe.packetId;
@@ -1482,7 +1508,8 @@ export function useDevice() {
                 );
                 window.electronAPI.db.updateMessageStatus(packetId, 'failed', error, 'acked');
               })
-              .catch(() => {
+              .catch((e) => {
+                console.debug('[useDevice] sendMessage mqttPromise after NAK failed', e);
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.packetId === packetId ? { ...m, mqttStatus: 'failed' as const } : m,
@@ -1702,7 +1729,9 @@ export function useDevice() {
                 time: Math.floor(Date.now() / 1000),
               }),
             )
-            .catch(() => {});
+            .catch((e) => {
+              console.debug('[useDevice] setPosition non-fatal', e);
+            });
         }
       }
       return pos;

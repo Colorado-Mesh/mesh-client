@@ -46,7 +46,8 @@ export function emojiDisplayChar(code: number): string {
   }
   try {
     return String.fromCodePoint(code);
-  } catch {
+  } catch (e) {
+    console.debug('[reactions] emojiDisplayChar invalid codepoint', code, e);
     return '\u2753';
   }
 }

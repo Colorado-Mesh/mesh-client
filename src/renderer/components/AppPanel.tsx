@@ -83,7 +83,8 @@ function loadSettings(): AdminSettings {
   try {
     const raw = localStorage.getItem('mesh-client:adminSettings');
     return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
-  } catch {
+  } catch (e) {
+    console.debug('[AppPanel] loadSettings', e);
     return DEFAULT_SETTINGS;
   }
 }
@@ -171,7 +172,8 @@ export default function AppPanel({
       const raw = localStorage.getItem('mesh-client:gpsSettings');
       const val = raw ? (JSON.parse(raw).refreshInterval ?? 0) : 0;
       return val > 0 ? val : 3600; // default 1 hour
-    } catch {
+    } catch (e) {
+      console.debug('[AppPanel] gps refresh interval state', e);
       return 3600;
     }
   });
@@ -186,8 +188,8 @@ export default function AppPanel({
           'mesh-client:gpsSettings',
           JSON.stringify({ ...existing, refreshInterval: val }),
         );
-      } catch {
-        /* ignore */
+      } catch (e) {
+        console.debug('[AppPanel] persist gps interval', e);
       }
       onGpsIntervalChange?.(val);
     },
@@ -200,7 +202,8 @@ export default function AppPanel({
       const raw = localStorage.getItem('mesh-client:gpsSettings');
       const s = raw ? JSON.parse(raw) : {};
       return typeof s.staticLat === 'number' ? s.staticLat.toFixed(5) : '';
-    } catch {
+    } catch (e) {
+      console.debug('[AppPanel] staticLat state', e);
       return '';
     }
   });
@@ -209,7 +212,8 @@ export default function AppPanel({
       const raw = localStorage.getItem('mesh-client:gpsSettings');
       const s = raw ? JSON.parse(raw) : {};
       return typeof s.staticLon === 'number' ? s.staticLon.toFixed(5) : '';
-    } catch {
+    } catch (e) {
+      console.debug('[AppPanel] staticLon state', e);
       return '';
     }
   });
@@ -218,7 +222,8 @@ export default function AppPanel({
       const raw = localStorage.getItem('mesh-client:gpsSettings');
       const s = raw ? JSON.parse(raw) : {};
       return typeof s.staticLat === 'number' && typeof s.staticLon === 'number';
-    } catch {
+    } catch (e) {
+      console.debug('[AppPanel] hasStaticPosition state', e);
       return false;
     }
   });
@@ -246,7 +251,8 @@ export default function AppPanel({
       onGpsIntervalChange?.(0);
       onRefreshGps?.();
       addToast('Static position saved.', 'success');
-    } catch {
+    } catch (e) {
+      console.warn('[AppPanel] save static position failed', e);
       addToast('Failed to save static position.', 'error');
     }
   }, [staticLatInput, staticLonInput, addToast, onRefreshGps, onGpsIntervalChange]);
@@ -264,7 +270,8 @@ export default function AppPanel({
       setHasStaticPosition(false);
       onRefreshGps?.();
       addToast('Static position cleared.', 'success');
-    } catch {
+    } catch (e) {
+      console.warn('[AppPanel] clear static position failed', e);
       addToast('Failed to clear static position.', 'error');
     }
   }, [addToast, onRefreshGps]);
@@ -279,7 +286,9 @@ export default function AppPanel({
       .then((rows) => {
         setMsgChannels(rows.map((r) => r.channel));
       })
-      .catch(() => {});
+      .catch((e) => {
+        console.debug('[AppPanel] getMessageChannels', e);
+      });
   }, []);
 
   const getChannelLabel = useCallback(
@@ -315,6 +324,7 @@ export default function AppPanel({
       if (messageActions.includes(actionName)) onMessagesPruned?.();
       addToast(`${actionName} completed successfully.`, 'success');
     } catch (err) {
+      console.warn('[AppPanel] pending action failed', err);
       addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
     }
   }, [pendingAction, addToast, onNodesPruned, onMessagesPruned]);
@@ -777,11 +787,13 @@ export default function AppPanel({
           <button
             onClick={async () => {
               try {
+                console.debug('[AppPanel] exportDb');
                 const path = await window.electronAPI.db.exportDb();
                 if (path) {
                   addToast(`Exported to: ${path}`, 'success');
                 }
               } catch (err) {
+                console.warn('[AppPanel] export failed', err);
                 addToast(
                   `Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
                   'error',
@@ -796,6 +808,7 @@ export default function AppPanel({
           <button
             onClick={async () => {
               try {
+                console.debug('[AppPanel] importDb');
                 const result = await window.electronAPI.db.importDb();
                 if (result) {
                   addToast(
@@ -804,6 +817,7 @@ export default function AppPanel({
                   );
                 }
               } catch (err) {
+                console.warn('[AppPanel] import failed', err);
                 addToast(
                   `Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
                   'error',
