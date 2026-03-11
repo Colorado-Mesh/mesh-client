@@ -8,7 +8,13 @@ const MAX_LINE_LENGTH = 8192;
 const MAX_IPC_MESSAGE_LENGTH = 4096;
 const RECENT_MAX = 1500;
 
-function sanitizeLogMessage(message: unknown): string {
+/**
+ * Sanitize untrusted or user-controlled text before it is persisted or forwarded as a log line.
+ * Strips control characters (including newlines) and normalizes whitespace so each entry stays
+ * one line and log injection is avoided. All paths that write to the log file go through
+ * {@link appendLine}, which applies this helper to every message before formatLine/appendFile.
+ */
+export function sanitizeLogMessage(message: unknown): string {
   // Remove control characters (including newlines and carriage returns) and normalize whitespace
   // to keep each log entry on a single line and prevent log injection.
   return String(message)
@@ -92,7 +98,13 @@ export function getRecentLines(): LogEntry[] {
   return recentEntries.slice();
 }
 
+/**
+ * Append one log line to the on-disk log and to the renderer. Every message is passed through
+ * {@link sanitizeLogMessage} first so renderer IPC, stdout/stderr hooks, and main console
+ * all persist single-line, control-char-free entries (GitHub/CodeQL untrusted-to-file guidance).
+ */
 export function appendLine(level: LogLevel, source: string, message: string): void {
+  message = sanitizeLogMessage(message);
   const ts = Date.now();
   pushRecent(ts, level, source, message);
   const line = formatLine(ts, level, source, message);
@@ -192,23 +204,23 @@ export function patchMainConsole(): void {
   consolePatched = true;
 
   console.log = (...args: unknown[]) => {
-    appendLine('log', 'main', sanitizeLogMessage(stringifyArgs(args)));
+    appendLine('log', 'main', stringifyArgs(args));
     original.log(...args);
   };
   console.info = (...args: unknown[]) => {
-    appendLine('info', 'main', sanitizeLogMessage(stringifyArgs(args)));
+    appendLine('info', 'main', stringifyArgs(args));
     original.info(...args);
   };
   console.warn = (...args: unknown[]) => {
-    appendLine('warn', 'main', sanitizeLogMessage(stringifyArgs(args)));
+    appendLine('warn', 'main', stringifyArgs(args));
     original.warn(...args);
   };
   console.error = (...args: unknown[]) => {
-    appendLine('error', 'main', sanitizeLogMessage(stringifyArgs(args)));
+    appendLine('error', 'main', stringifyArgs(args));
     original.error(...args);
   };
   console.debug = (...args: unknown[]) => {
-    appendLine('debug', 'main', sanitizeLogMessage(stringifyArgs(args)));
+    appendLine('debug', 'main', stringifyArgs(args));
     original.debug(...args);
   };
 
