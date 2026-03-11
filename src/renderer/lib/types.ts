@@ -177,6 +177,17 @@ declare global {
       notifyDeviceDisconnected: () => void;
       setTrayUnread: (count: number) => void;
       quitApp: () => Promise<void>;
+      log: {
+        getPath: () => Promise<string>;
+        getRecentLines: () => Promise<
+          { ts: number; level: string; source: string; message: string }[]
+        >;
+        clear: () => Promise<void>;
+        export: () => Promise<string | null>;
+        onLine: (
+          cb: (entry: { ts: number; level: string; source: string; message: string }) => void,
+        ) => () => void;
+      };
     };
   }
 }

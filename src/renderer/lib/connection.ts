@@ -99,9 +99,14 @@ export async function reconnectBle(): Promise<MeshDevice> {
 
   if (typeof navigator.bluetooth.getDevices === 'function') {
     const devices = await navigator.bluetooth.getDevices();
+    // Prefer disconnected-but-known GATT; else any with gatt; else first granted
+    // device — gatt is often null until connect(); createFromDevice/prepareConnection
+    // will call gatt.connect(). On some Electron builds getDevices() stays empty
+    // after grant; ConnectionPanel uses onConnect('ble') in the gesture path only.
     target =
       devices.find((d: any) => d.gatt && !d.gatt.connected) ??
-      devices.find((d: any) => d.gatt != null);
+      devices.find((d: any) => d.gatt != null) ??
+      (devices.length > 0 ? devices[0] : undefined);
   } else {
     // getDevices() unavailable — fall back to the device captured at connect time
     target = capturedBleDevice ?? undefined;

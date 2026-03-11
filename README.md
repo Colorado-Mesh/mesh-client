@@ -50,7 +50,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Node Management**
 
-- Node list with SNR, RSSI, battery, GPS, last heard, and packet redundancy score
+- Node list with SNR, RSSI, battery, GPS, last heard, and packet redundancy score — **last heard** and **hops** stay accurate on BLE connect (replayed device-DB payloads no longer mark long-offline nodes as “just heard” or show stale hop counts; stale entries show **–** for hops where appropriate)
 - Distance filter, favorite/pin nodes, device role icons, signal strength bars
 - Node Detail Modal: DM, trace route with hop-path display, delete node, Routing Health section with 24-hour sparkline, Connection Health %, and collapsible Path History
 
@@ -272,14 +272,15 @@ meshtastic-client/
 ├── src/
 │   ├── main/
 │   │   ├── index.ts              # Window creation, BLE/Serial intercept, all IPC handlers
+│   │   ├── log-service.ts        # Log file, console patch, log panel IPC
 │   │   ├── database.ts           # SQLite schema & migrations (WAL mode, schema v7)
 │   │   ├── mqtt-manager.ts       # MQTT client: AES decrypt, dedup, protobuf decode
 │   │   ├── updater.ts            # Auto-update checks via electron-updater
 │   │   └── gps.ts                # Main-process GPS helper
 │   ├── preload/
-│   │   └── index.ts              # contextBridge: exposes window.electronAPI (db, BLE, serial, session)
+│   │   └── index.ts              # contextBridge: electronAPI (db, mqtt, log, BLE, serial, session)
 │   └── renderer/
-│       ├── App.tsx               # Shell: 8 tabs, keyboard shortcuts (Cmd/Ctrl+1–8), status header
+│       ├── App.tsx               # Shell: 8 tabs, Log panel (right rail), keyboard shortcuts, status header
 │       ├── main.tsx              # React entry point
 │       ├── components/
 │       │   ├── ChatPanel.tsx         # Chat UI, DMs, emoji reactions, channel switching
@@ -290,6 +291,7 @@ meshtastic-client/
 │       │   ├── ConfigPanel.tsx       # Device & channel configuration editor
 │       │   ├── ConnectionPanel.tsx   # BLE/Serial/HTTP/MQTT connection setup
 │       │   ├── DiagnosticsPanel.tsx  # Network health score, anomaly table, halo toggles
+│       │   ├── LogPanel.tsx          # Live app log, debug toggle, export/delete log file
 │       │   ├── RadioPanel.tsx        # Radio settings, fixed position, GPS send
 │       │   ├── AppPanel.tsx          # App settings, GPS interval, database management
 │       │   ├── NodeDetailModal.tsx   # Detailed node info overlay
@@ -323,7 +325,7 @@ meshtastic-client/
 │   ├── icons/                    # App icons (linux/, mac/, win/)
 │   └── images/                   # Bundled image assets
 ├── scripts/
-│   ├── rebuild-native.mjs        # Rebuilds better-sqlite3 for Electron ABI (postinstall)
+│   ├── rebuild-native.mjs        # Rebuilds better-sqlite3 for Electron ABI (postinstall); removes stale build/ first to avoid wrong-platform .node after copying node_modules across OSes
 │   └── wait-for-dev.mjs          # Waits for Vite dev server before launching Electron
 ├── docs/
 │   └── accessibility-checklist.md
@@ -417,8 +419,9 @@ npm run trace-deprecation
 
 **Cause**: `better-sqlite3` was compiled for a different Electron ABI — common after an Electron or Node version change.
 
-**Fix**: Run `npm install` (the postinstall script rebuilds native modules for the correct ABI automatically).
+**Fix**: Run `npm install` (the postinstall script rebuilds native modules for the correct ABI automatically). The rebuild step **removes any existing `node_modules/better-sqlite3/build`** before compiling, so a wrong-platform `.node` (e.g. Linux ELF left on macOS after copying `node_modules`) cannot persist and cause `ERR_DLOPEN_FAILED`.
 
+- If you still see dlopen errors after switching machines or OSes, delete `node_modules` and run a clean `npm install`.
 - **Windows**: Also ensure the [Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) is installed.
 
 ### Database directory is not writable

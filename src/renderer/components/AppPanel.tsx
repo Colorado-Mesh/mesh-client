@@ -89,6 +89,8 @@ function loadSettings(): AdminSettings {
 }
 
 interface Props {
+  logPanelVisible?: boolean;
+  onLogPanelVisibleChange?: (visible: boolean) => void;
   nodes: Map<number, MeshNode>;
   messageCount: number;
   channels: { index: number; name: string }[];
@@ -112,6 +114,8 @@ interface PendingAction {
 }
 
 export default function AppPanel({
+  logPanelVisible = false,
+  onLogPanelVisibleChange,
   nodes,
   messageCount,
   channels,
@@ -318,6 +322,34 @@ export default function AppPanel({
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <h2 className="text-xl font-semibold text-gray-200">App Settings</h2>
+
+      {/* Log panel visibility */}
+      {onLogPanelVisibleChange && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted">Diagnostics</h3>
+          <div className="bg-secondary-dark rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <input
+                id="log-panel-visible-checkbox"
+                type="checkbox"
+                checked={logPanelVisible}
+                onChange={(e) => onLogPanelVisibleChange(e.target.checked)}
+                className="rounded border-gray-600"
+              />
+              <label
+                htmlFor="log-panel-visible-checkbox"
+                className="text-sm text-gray-300 cursor-pointer"
+              >
+                Show log panel (right side)
+              </label>
+            </div>
+            <p className="text-xs text-muted mt-2">
+              When enabled, a live log stream appears on the right. Debug lines require the checkbox
+              inside the log panel.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* GPS / Location */}
       <div className="space-y-3">

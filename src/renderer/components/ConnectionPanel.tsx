@@ -255,7 +255,9 @@ export default function ConnectionPanel({
     if (state.status === 'connecting') {
       if (showBlePicker) setConnectionStage('Select your device below');
       else if (showSerialPicker) setConnectionStage('Select a serial port below');
-      else setConnectionStage('Please wait...');
+      else if (connectionType === 'ble' && isAutoConnectingRef.current) {
+        setConnectionStage('Connecting to last Bluetooth device…');
+      } else setConnectionStage('Please wait...');
     } else if (state.status === 'connected') {
       setConnectionStage('Configuring device...');
     } else if (state.status === 'configured') {
@@ -296,7 +298,14 @@ export default function ConnectionPanel({
       setIsAutoConnecting(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lastConnection.bleDeviceName read as fallback only; omitted to avoid retriggering on stale-name updates
-  }, [state.status, state.connectionType, showBlePicker, showSerialPicker, httpAddress]);
+  }, [
+    state.status,
+    state.connectionType,
+    showBlePicker,
+    showSerialPicker,
+    httpAddress,
+    connectionType,
+  ]);
 
   // Listen for BLE devices discovered by main process
   useEffect(() => {
@@ -320,7 +329,7 @@ export default function ConnectionPanel({
         }
       }
       setShowBlePicker(true);
-      setConnectionStage('Select your device below');
+      setConnectionStage('Scanning — select your device when it appears below');
     });
     return cleanup;
   }, [lastConnection]); // isAutoConnecting intentionally omitted — ref handles it
@@ -413,8 +422,8 @@ export default function ConnectionPanel({
   }, []);
 
   // Auto-connect on mount: fires once per session using saved last connection.
-  // HTTP and serial can connect automatically (no user gesture needed).
-  // BLE requires a user gesture — show reconnect button instead.
+  // Serial and BLE use gesture-free reconnect when the platform remembers the device.
+  // HTTP still uses the one-click reconnect card (no autoconnect on mount).
   useEffect(() => {
     if (autoConnectFiredRef.current) return;
     if (state.status !== 'disconnected') return;
@@ -422,12 +431,8 @@ export default function ConnectionPanel({
 
     autoConnectFiredRef.current = true;
 
-    if (lastConnection.type === 'serial') {
-      setConnectionType('serial');
-      isAutoConnectingRef.current = true;
-      setIsAutoConnecting(true);
-      setConnecting(true);
-      setConnectionStage('Please wait...');
+    const startAutoConnectTimeout = () => {
+      if (autoConnectTimeoutRef.current) clearTimeout(autoConnectTimeoutRef.current);
       autoConnectTimeoutRef.current = setTimeout(() => {
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
@@ -435,15 +440,31 @@ export default function ConnectionPanel({
         setConnecting(false);
         setConnectionStage('');
       }, 30_000);
-      onAutoConnect('serial', undefined, lastConnection.serialPortId).catch((err) => {
-        isAutoConnectingRef.current = false;
-        setIsAutoConnecting(false);
-        setError(err instanceof Error ? err.message : 'Auto-connect failed');
-        setConnecting(false);
-        setConnectionStage('');
-      });
+    };
+
+    const onAutoConnectFailed = (err: unknown) => {
+      isAutoConnectingRef.current = false;
+      setIsAutoConnecting(false);
+      setError(err instanceof Error ? err.message : 'Auto-connect failed');
+      setConnecting(false);
+      setConnectionStage('');
+    };
+
+    if (lastConnection.type === 'serial') {
+      setConnectionType('serial');
+      isAutoConnectingRef.current = true;
+      setIsAutoConnecting(true);
+      setConnecting(true);
+      setConnectionStage('Please wait...');
+      startAutoConnectTimeout();
+      onAutoConnect('serial', undefined, lastConnection.serialPortId).catch(onAutoConnectFailed);
+    } else if (lastConnection.type === 'ble') {
+      // BLE: navigator.bluetooth.getDevices() is empty on this Electron build after
+      // grant (logs: all retries count 0). requestDevice() requires a user gesture,
+      // so no mount autoconnect — user taps Reconnect/Connect to open the picker.
+      return;
     }
-    // HTTP + BLE: do not auto-trigger — show one-click reconnect card instead
+    // HTTP: do not auto-trigger — show one-click reconnect card instead
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally empty — fires once on mount
 
@@ -460,14 +481,32 @@ export default function ConnectionPanel({
     setError(null);
 
     if (lastConnection.type === 'ble') {
-      isAutoConnectingRef.current = true;
-      setIsAutoConnecting(true);
+      // onConnect('ble') must run in the same turn as the click (user gesture).
+      // Set auto-connect ref so bluetooth-devices-discovered auto-selects lastId
+      // when it appears in the scan list — that is the "quick connect" path.
       setConnectionType('ble');
-      setConnecting(true);
       setBleDevices([]);
       setShowBlePicker(false);
-      setConnectionStage('Please wait...');
+      isAutoConnectingRef.current = true;
+      setIsAutoConnecting(true);
+      setConnecting(true);
+      setConnectionStage('Connecting to last Bluetooth device…');
+      if (autoConnectTimeoutRef.current) {
+        clearTimeout(autoConnectTimeoutRef.current);
+        autoConnectTimeoutRef.current = null;
+      }
+      autoConnectTimeoutRef.current = setTimeout(() => {
+        isAutoConnectingRef.current = false;
+        setIsAutoConnecting(false);
+        setError('Auto-connect timed out.');
+        setConnecting(false);
+        setConnectionStage('');
+      }, 30_000);
       onConnect('ble').catch((err) => {
+        if (autoConnectTimeoutRef.current) {
+          clearTimeout(autoConnectTimeoutRef.current);
+          autoConnectTimeoutRef.current = null;
+        }
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
         setError(err instanceof Error ? err.message : 'Reconnect failed');
@@ -518,7 +557,11 @@ export default function ConnectionPanel({
         <Spinner className="w-12 h-12 text-bright-green" />
         <div className="text-center space-y-2">
           <h2 className="text-xl font-semibold text-gray-200">
-            {isAutoConnecting ? 'Auto-connecting...' : 'Connecting...'}
+            {showBlePicker
+              ? 'Scanning for Bluetooth devices…'
+              : isAutoConnecting
+                ? 'Auto-connecting…'
+                : 'Connecting…'}
           </h2>
           <div role="status" aria-live="polite" aria-atomic="true">
             <p className="text-sm text-muted">{connectionStage}</p>

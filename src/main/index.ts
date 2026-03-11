@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Tray } from 'electron';
+import fs from 'fs';
 import path from 'path';
 
 import {
@@ -10,8 +11,21 @@ import {
   mergeDatabase,
 } from './database';
 import { getGpsFix } from './gps';
+import {
+  clearLogFile,
+  exportLogTo,
+  forwardRendererConsoleMessage,
+  getLogPath,
+  getRecentLines,
+  initLogFile,
+  patchMainConsole,
+  setMainWindow,
+} from './log-service';
 import { MQTTManager } from './mqtt-manager';
 import { initUpdater } from './updater';
+
+// Route main-process console through log file + Log panel (must run before other code logs)
+patchMainConsole();
 
 const mqttManager = new MQTTManager();
 
@@ -279,6 +293,9 @@ function createWindow() {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Exposes navigator.bluetooth.getDevices() so reconnectBle() can run without
+      // requestDevice() (which requires a user gesture). See electron/electron#31869.
+      experimentalFeatures: true,
     },
   });
 
@@ -352,11 +369,12 @@ function createWindow() {
     },
   );
 
-  // ─── Bluetooth Device Permission ───────────────────────────────────
-  // Required in Electron 20+ — without this, Chromium shows a blank/black
-  // permission overlay when navigator.bluetooth.requestDevice() is called.
+  // ─── Device permission (serial / HID / USB only) ───────────────────
+  // setDevicePermissionHandler covers navigator.serial / hid / usb — not Bluetooth.
+  // Bluetooth uses select-bluetooth-device above. Without a handler, Chromium can
+  // show a blank overlay for device permission prompts.
   mainWindow.webContents.session.setDevicePermissionHandler((details) => {
-    if (details.deviceType === 'bluetooth' || details.deviceType === 'serial') {
+    if (details.deviceType === 'serial') {
       return true;
     }
     return false;
@@ -377,8 +395,17 @@ function createWindow() {
     console.error('Failed to load:', errorCode, errorDesc, url);
   });
 
+  setMainWindow(mainWindow);
+  mainWindow.webContents.on('console-message', (details) => {
+    forwardRendererConsoleMessage(details);
+  });
+
   // Load the app
   if (process.env.VITE_DEV_SERVER_URL) {
+    // Same startup diagnostics as packaged build so Log panel captures them in dev too
+    console.log('[Startup] dev server URL:', process.env.VITE_DEV_SERVER_URL);
+    console.log('[Startup] app.isPackaged:', app.isPackaged);
+    console.log('[Startup] userData:', app.getPath('userData'));
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
@@ -393,17 +420,19 @@ function createWindow() {
   }
 
   mainWindow.on('closed', () => {
+    setMainWindow(null);
     mainWindow = null;
   });
 
   // Handle window close event
-  mainWindow.on('close', (event) => {
+  const win = mainWindow;
+  win.on('close', (event) => {
     if (!isQuitting && (isConnected || mqttManager.getStatus() === 'connected')) {
       event.preventDefault();
       if (process.platform === 'darwin') {
-        mainWindow.hide();
+        win.hide();
       } else {
-        mainWindow.minimize();
+        win.minimize();
       }
     }
   });
@@ -419,7 +448,7 @@ ipcMain.on('set-tray-unread', (_event, count: unknown) => {
   tray?.setImage(buildTrayIcon(hasUnread));
   tray?.setToolTip(hasUnread ? `Mesh-Client (${n} unread)` : 'Mesh-Client');
   if (process.platform === 'darwin') {
-    app.dock.setBadge(hasUnread ? String(n) : '');
+    app.dock?.setBadge(hasUnread ? String(n) : '');
   }
 });
 
@@ -877,9 +906,43 @@ ipcMain.handle('session:clearData', async () => {
   }
 });
 
+// ─── IPC: Log panel ─────────────────────────────────────────────────
+ipcMain.handle('log:getPath', () => getLogPath());
+
+ipcMain.handle('log:getRecentLines', () => getRecentLines());
+
+ipcMain.handle('log:clear', () => {
+  clearLogFile();
+});
+
+ipcMain.handle('log:export', async () => {
+  try {
+    if (!mainWindow) return null;
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export log',
+      defaultPath: `meshtastic-client-log-${new Date().toISOString().slice(0, 10)}.log`,
+      filters: [{ name: 'Log file', extensions: ['log', 'txt'] }],
+    });
+    if (!result.canceled && result.filePath) {
+      const src = getLogPath();
+      if (!fs.existsSync(src)) {
+        await fs.promises.writeFile(result.filePath, '', 'utf8');
+      } else {
+        await exportLogTo(result.filePath);
+      }
+      return result.filePath;
+    }
+    return null;
+  } catch (err) {
+    console.error('[IPC] log:export failed:', err);
+    throw err;
+  }
+});
+
 // ─── App lifecycle ─────────────────────────────────────────────────
 app.whenReady().then(() => {
   try {
+    initLogFile();
     initDatabase();
     // Force the dock icon n development on macOS
     if (!app.isPackaged && process.platform === 'darwin') {
@@ -887,7 +950,7 @@ app.whenReady().then(() => {
         __dirname,
         '../../resources/icons/mac/iconset/icon_256x256@1x.png',
       );
-      app.dock.setIcon(iconPath);
+      app.dock?.setIcon(iconPath);
     }
     createWindow();
   } catch (error) {

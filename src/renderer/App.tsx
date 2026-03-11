@@ -6,6 +6,7 @@ import ConnectionPanel from './components/ConnectionPanel';
 import DiagnosticsPanel from './components/DiagnosticsPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
+import LogPanel from './components/LogPanel';
 import MapPanel from './components/MapPanel';
 import NodeDetailModal from './components/NodeDetailModal';
 import NodeListPanel from './components/NodeListPanel';
@@ -57,6 +58,15 @@ export interface UpdateState {
 }
 
 const CHAT_UNREAD_STORAGE_KEY = 'mesh-client:chatUnread';
+const LOG_PANEL_VISIBLE_KEY = 'mesh-client:logPanelVisible';
+
+function readLogPanelVisible(): boolean {
+  try {
+    return localStorage.getItem(LOG_PANEL_VISIBLE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 function readPersistedChatUnread(): number {
   try {
@@ -125,6 +135,7 @@ export default function App() {
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [chatUnread, setChatUnread] = useState(readPersistedChatUnread);
+  const [logPanelVisible, setLogPanelVisible] = useState(readLogPanelVisible);
   const prevMsgCountRef = useRef(0);
   const isInitialLoadRef = useRef(true);
   const [updateState, setUpdateState] = useState<UpdateState>({ phase: 'idle', dismissed: false });
@@ -356,156 +367,177 @@ export default function App() {
           onDismiss={() => setUpdateState((s) => ({ ...s, dismissed: true }))}
         />
 
-        {/* Tabs */}
-        <Tabs tabs={TAB_NAMES} active={activeTab} onChange={setActiveTab} chatUnread={chatUnread} />
+        <div className={`flex flex-1 min-h-0 ${logPanelVisible ? 'flex-row' : 'flex-col'}`}>
+          <div className="flex flex-col flex-1 min-w-0 min-h-0">
+            {/* Tabs */}
+            <Tabs
+              tabs={TAB_NAMES}
+              active={activeTab}
+              onChange={setActiveTab}
+              chatUnread={chatUnread}
+            />
 
-        {/* Content */}
-        <main className="flex-1 overflow-auto p-4">
-          <ErrorBoundary>
-            {activeTab === 0 && (
-              <ConnectionPanel
-                state={device.state}
-                onConnect={device.connect}
-                onAutoConnect={device.connectAutomatic}
-                onDisconnect={device.disconnect}
-                mqttStatus={device.mqttStatus}
-                myNodeLabel={
-                  device.state.myNodeNum > 0
-                    ? device.getPickerStyleNodeLabel(device.state.myNodeNum)
-                    : undefined
-                }
-              />
-            )}
-            <div className={activeTab === 1 ? 'contents' : 'hidden'}>
-              <ChatPanel
-                messages={device.messages}
-                channels={device.channels}
-                myNodeNum={device.state.myNodeNum}
-                onSend={device.sendMessage}
-                onReact={device.sendReaction}
-                onNodeClick={setSelectedNodeId}
-                isConnected={isOperational || device.mqttStatus === 'connected'}
-                isMqttOnly={!isOperational && device.mqttStatus === 'connected'}
-                connectionType={device.state.connectionType}
-                nodes={device.nodes}
-                initialDmTarget={pendingDmTarget}
-                onDmTargetConsumed={() => setPendingDmTarget(null)}
-                isActive={activeTab === 1}
-              />
-            </div>
-            {activeTab === 2 && (
-              <NodeListPanel
-                nodes={device.nodes}
-                myNodeNum={device.selfNodeId}
-                onNodeClick={(node) => setSelectedNodeId(node.node_id)}
-                mqttConnected={device.mqttStatus === 'connected'}
-                locationFilter={locationFilter}
-                onToggleFavorite={device.setNodeFavorited}
-              />
-            )}
-            {activeTab === 3 && (
-              <MapPanel
-                nodes={device.nodes}
-                myNodeNum={device.selfNodeId}
-                locationFilter={locationFilter}
-                ourPosition={device.ourPosition}
-                onLocateMe={() =>
-                  device.refreshOurPosition().then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
-                }
-              />
-            )}
-            {activeTab === 4 && (
-              <TelemetryPanel
-                telemetry={device.telemetry}
-                signalTelemetry={device.signalTelemetry}
-                onRefresh={device.requestRefresh}
-                isConnected={isOperational}
-              />
-            )}
-            {activeTab === 5 && (
-              <RadioPanel
-                onSetConfig={device.setConfig}
-                onCommit={device.commitConfig}
-                onSetChannel={device.setDeviceChannel}
-                onClearChannel={device.clearChannel}
-                channelConfigs={device.channelConfigs}
-                isConnected={isOperational}
-                onReboot={device.reboot}
-                onShutdown={device.shutdown}
-                onFactoryReset={device.factoryReset}
-                onResetNodeDb={device.resetNodeDb}
-                ourPosition={device.ourPosition}
-                onSendPositionToDevice={device.sendPositionToDevice}
-              />
-            )}
-            {activeTab === 6 && (
-              <AppPanel
-                nodes={device.nodes}
-                messageCount={device.messages.length}
-                channels={device.channels}
-                myNodeNum={device.state.myNodeNum}
-                onLocationFilterChange={handleLocationFilterChange}
-                ourPosition={device.ourPosition}
-                onRefreshGps={device.refreshOurPosition}
-                gpsLoading={device.gpsLoading}
-                onGpsIntervalChange={device.updateGpsInterval}
-                onNodesPruned={device.refreshNodesFromDb}
-                onMessagesPruned={device.refreshMessagesFromDb}
-              />
-            )}
-            {activeTab === 7 && (
-              <DiagnosticsPanel
-                nodes={device.nodes}
-                myNodeNum={device.selfNodeId}
-                onTraceRoute={device.traceRoute}
-                isConnected={isOperational}
-                traceRouteResults={device.traceRouteResults}
-                getFullNodeLabel={device.getFullNodeLabel}
-                ourPosition={device.ourPosition}
-              />
-            )}
-          </ErrorBoundary>
-        </main>
+            {/* Content */}
+            <main className="flex-1 overflow-auto p-4 min-h-0">
+              <ErrorBoundary>
+                {activeTab === 0 && (
+                  <ConnectionPanel
+                    state={device.state}
+                    onConnect={device.connect}
+                    onAutoConnect={device.connectAutomatic}
+                    onDisconnect={device.disconnect}
+                    mqttStatus={device.mqttStatus}
+                    myNodeLabel={
+                      device.state.myNodeNum > 0
+                        ? device.getPickerStyleNodeLabel(device.state.myNodeNum)
+                        : undefined
+                    }
+                  />
+                )}
+                <div className={activeTab === 1 ? 'contents' : 'hidden'}>
+                  <ChatPanel
+                    messages={device.messages}
+                    channels={device.channels}
+                    myNodeNum={device.state.myNodeNum}
+                    onSend={device.sendMessage}
+                    onReact={device.sendReaction}
+                    onNodeClick={setSelectedNodeId}
+                    isConnected={isOperational || device.mqttStatus === 'connected'}
+                    isMqttOnly={!isOperational && device.mqttStatus === 'connected'}
+                    connectionType={device.state.connectionType}
+                    nodes={device.nodes}
+                    initialDmTarget={pendingDmTarget}
+                    onDmTargetConsumed={() => setPendingDmTarget(null)}
+                    isActive={activeTab === 1}
+                  />
+                </div>
+                {activeTab === 2 && (
+                  <NodeListPanel
+                    nodes={device.nodes}
+                    myNodeNum={device.selfNodeId}
+                    onNodeClick={(node) => setSelectedNodeId(node.node_id)}
+                    mqttConnected={device.mqttStatus === 'connected'}
+                    locationFilter={locationFilter}
+                    onToggleFavorite={device.setNodeFavorited}
+                  />
+                )}
+                {activeTab === 3 && (
+                  <MapPanel
+                    nodes={device.nodes}
+                    myNodeNum={device.selfNodeId}
+                    locationFilter={locationFilter}
+                    ourPosition={device.ourPosition}
+                    onLocateMe={() =>
+                      device
+                        .refreshOurPosition()
+                        .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
+                    }
+                  />
+                )}
+                {activeTab === 4 && (
+                  <TelemetryPanel
+                    telemetry={device.telemetry}
+                    signalTelemetry={device.signalTelemetry}
+                    onRefresh={device.requestRefresh}
+                    isConnected={isOperational}
+                  />
+                )}
+                {activeTab === 5 && (
+                  <RadioPanel
+                    onSetConfig={device.setConfig}
+                    onCommit={device.commitConfig}
+                    onSetChannel={device.setDeviceChannel}
+                    onClearChannel={device.clearChannel}
+                    channelConfigs={device.channelConfigs}
+                    isConnected={isOperational}
+                    onReboot={device.reboot}
+                    onShutdown={device.shutdown}
+                    onFactoryReset={device.factoryReset}
+                    onResetNodeDb={device.resetNodeDb}
+                    ourPosition={device.ourPosition}
+                    onSendPositionToDevice={device.sendPositionToDevice}
+                  />
+                )}
+                {activeTab === 6 && (
+                  <AppPanel
+                    logPanelVisible={logPanelVisible}
+                    onLogPanelVisibleChange={(visible) => {
+                      setLogPanelVisible(visible);
+                      try {
+                        localStorage.setItem(LOG_PANEL_VISIBLE_KEY, visible ? 'true' : 'false');
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                    nodes={device.nodes}
+                    messageCount={device.messages.length}
+                    channels={device.channels}
+                    myNodeNum={device.state.myNodeNum}
+                    onLocationFilterChange={handleLocationFilterChange}
+                    ourPosition={device.ourPosition}
+                    onRefreshGps={device.refreshOurPosition}
+                    gpsLoading={device.gpsLoading}
+                    onGpsIntervalChange={device.updateGpsInterval}
+                    onNodesPruned={device.refreshNodesFromDb}
+                    onMessagesPruned={device.refreshMessagesFromDb}
+                  />
+                )}
+                {activeTab === 7 && (
+                  <DiagnosticsPanel
+                    nodes={device.nodes}
+                    myNodeNum={device.selfNodeId}
+                    onTraceRoute={device.traceRoute}
+                    isConnected={isOperational}
+                    traceRouteResults={device.traceRouteResults}
+                    getFullNodeLabel={device.getFullNodeLabel}
+                    ourPosition={device.ourPosition}
+                  />
+                )}
+              </ErrorBoundary>
+            </main>
 
-        {/* Footer */}
-        <footer className="px-4 py-1.5 bg-deep-black border-t border-gray-700 text-[11px] text-muted flex justify-between">
-          <span>
-            A Project by{' '}
-            <a
-              href="https://coloradomesh.org/"
-              title="Colorado Mesh"
-              className="text-bright-green underline hover:opacity-80"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Colorado Mesh
-            </a>
-            . Join us on{' '}
-            <a
-              href="https://discord.com/invite/McChKR5NpS"
-              title="Colorado Mesh Discord"
-              className="text-bright-green underline hover:opacity-80"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Discord
-            </a>
-            . Code on{' '}
-            <a
-              href="https://github.com/Colorado-Mesh/meshtastic-client"
-              title="Colorado Mesh on GitHub"
-              className="text-bright-green underline hover:opacity-80"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              GitHub
-            </a>
-            .
-          </span>
-          <span>
-            {device.nodes.size} nodes | {device.messages.length} messages
-          </span>
-        </footer>
+            {/* Footer */}
+            <footer className="px-4 py-1.5 bg-deep-black border-t border-gray-700 text-[11px] text-muted flex justify-between shrink-0">
+              <span>
+                A Project by{' '}
+                <a
+                  href="https://coloradomesh.org/"
+                  title="Colorado Mesh"
+                  className="text-bright-green underline hover:opacity-80"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Colorado Mesh
+                </a>
+                . Join us on{' '}
+                <a
+                  href="https://discord.com/invite/McChKR5NpS"
+                  title="Colorado Mesh Discord"
+                  className="text-bright-green underline hover:opacity-80"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Discord
+                </a>
+                . Code on{' '}
+                <a
+                  href="https://github.com/Colorado-Mesh/meshtastic-client"
+                  title="Colorado Mesh on GitHub"
+                  className="text-bright-green underline hover:opacity-80"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GitHub
+                </a>
+                .
+              </span>
+              <span>
+                {device.nodes.size} nodes | {device.messages.length} messages
+              </span>
+            </footer>
+          </div>
+          {logPanelVisible && <LogPanel />}
+        </div>
 
         {/* Keyboard Shortcuts Modal */}
         {showShortcuts && <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />}
