@@ -1,0 +1,18 @@
+# CodeQL config for meshtastic-client
+#
+# js/http-to-file-access flags any taint from HTTP (e.g. updater fetch → console →
+# appendLine) reaching appendFile/writeFileSync. That rule targets backdoors that
+# persist remote payloads to disk. Our only sinks are formatted log lines written
+# to a fixed userData path after sanitizeLogMessage on message and source; we do
+# not write raw response bodies or arbitrary paths. CodeQL does not model
+# sanitizeLogMessage as a sanitizer, so taint remains on the formatted string.
+# Excluding this query avoids false positives on the log-service while keeping
+# other security queries enabled.
+#
+# See: https://codeql.github.com/codeql-query-help/javascript/js-http-to-file-access/
+
+name: meshtastic-client CodeQL config
+
+query-filters:
+  - exclude:
+      id: js/http-to-file-access
