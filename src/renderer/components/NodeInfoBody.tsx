@@ -142,7 +142,7 @@ export default function NodeInfoBody({ node, homeNode, traceRouteHops }: NodeInf
       {/* Signal */}
       <InfoRow
         label="SNR"
-        value={node.snr !== 0 ? `${node.snr.toFixed(1)} dB` : '—'}
+        value={node.snr != null && node.snr !== 0 ? `${node.snr.toFixed(1)} dB` : '—'}
         className={snrColor}
       />
 
@@ -174,13 +174,15 @@ export default function NodeInfoBody({ node, homeNode, traceRouteHops }: NodeInf
       <InfoRow label="Last Heard" value={formatTime(node.last_heard)} />
 
       {/* Location */}
-      {(node.latitude !== 0 || node.longitude !== 0) && (
-        <InfoRow
-          label="Position"
-          value={`${node.latitude.toFixed(5)}, ${node.longitude.toFixed(5)}`}
-          className="text-gray-300 font-mono text-xs"
-        />
-      )}
+      {node.latitude != null &&
+        node.longitude != null &&
+        (node.latitude !== 0 || node.longitude !== 0) && (
+          <InfoRow
+            label="Position"
+            value={`${node.latitude.toFixed(5)}, ${node.longitude.toFixed(5)}`}
+            className="text-gray-300 font-mono text-xs"
+          />
+        )}
 
       {/* GPS warning */}
       {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (
