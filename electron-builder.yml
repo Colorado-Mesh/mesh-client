@@ -27,7 +27,12 @@ extraResources:
   - from: resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template@3x.png
     to: macos-menubar-icon-Template@3x.png
 mac:
-  identity: "-"
+  # macOS 26+: ad-hoc signing (identity "-") can crash at launch with EXC_BREAKPOINT during
+  # ElectronMain/V8 init. identity: null skips signing so the bundled Electron Framework
+  # is not re-signed with a mismatched/ad-hoc identity. For notarized releases, set a real
+  # Developer ID here instead. See https://github.com/electron/electron/issues/49522
+  # and https://github.com/electron-userland/electron-builder/issues/9396
+  identity: null
   category: public.app-category.utilities
   # Hardened runtime improves tamper resistance; required for notarized distribution.
   hardenedRuntime: true

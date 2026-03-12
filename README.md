@@ -399,7 +399,8 @@ You're missing build tools for the native SQLite module:
 
 ### App crashes on launch (macOS distributable)
 
-- This may be a native module signing issue — try rebuilding: `npm run dist:mac`
+- **macOS 26 (Tahoe) + EXC_BREAKPOINT at launch**: electron-builder ad-hoc signing can crash during ElectronMain/V8 init before any app code runs. This repo sets `mac.identity: null` in `electron-builder.yml` so the packaged app is unsigned and avoids that re-sign path; first open may require **Right-click → Open** or `xattr -cr` on the app. For notarized releases, set a real Developer ID in `mac.identity` and retest on macOS 26. See [electron#49522](https://github.com/electron/electron/issues/49522) and [electron-builder#9396](https://github.com/electron-userland/electron-builder/issues/9396).
+- This may also be a native module signing issue — try rebuilding: `npm run dist:mac`
 - If building from source: make sure `npm install` completed without errors
 
 ### App shows "disconnected" but device is still on
