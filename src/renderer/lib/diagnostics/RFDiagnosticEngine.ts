@@ -1,4 +1,5 @@
 import type { MeshNode } from '../types';
+import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnostics';
 
 export interface RFDiagnosis {
   condition: string;
@@ -9,8 +10,7 @@ export interface RFDiagnosis {
 // Thresholds
 const HIGH_CU = 25; // channel_utilization > 25%
 const LOW_TX = 5; // air_util_tx < 5%
-const HIGH_SNR = 5; // snr > 5 dB
-const LOW_SNR = 0; // snr < 0 dB
+const LOW_SNR = 0; // snr < 0 dB (only used when snrMeaningfulForNodeDiagnostics)
 const HIGH_BAD_RATE = 0.1; // > 10% of rx packets are bad
 const SPIKE_BAD_RATE = 0.2; // > 20% — "spiking"
 const HIGH_DUPE_RATE = 0.15; // > 15% of rx packets are dupes
@@ -25,7 +25,6 @@ export function diagnoseConnectedNode(node: MeshNode): RFDiagnosis[] {
 
   const cu = node.channel_utilization ?? 0;
   const tx = node.air_util_tx ?? 0;
-  const snr = node.snr ?? 0;
   const rxBad = node.num_packets_rx_bad ?? 0;
   const rxDupe = node.num_rx_dupe ?? 0;
   const rxTotal = node.num_packets_rx ?? 0;
@@ -60,23 +59,9 @@ export function diagnoseConnectedNode(node: MeshNode): RFDiagnosis[] {
     });
   }
 
-  // 4. High rx_bad + high SNR → local non-Meshtastic LoRa
-  if (badRate > HIGH_BAD_RATE && snr > HIGH_SNR) {
-    findings.push({
-      condition: 'Local Non-Mesh LoRa',
-      cause: 'Strong nearby signals from Amazon Sidewalk, Helium, LoRaWAN devices.',
-      severity: 'warning',
-    });
-  }
-
-  // 5. High rx_bad + low SNR → fringe / weak mesh traffic
-  if (badRate > HIGH_BAD_RATE && snr < LOW_SNR) {
-    findings.push({
-      condition: 'Fringe / Weak Mesh Traffic',
-      cause: 'Receiving distant/weak nodes or poorly positioned mesh participants.',
-      severity: 'info',
-    });
-  }
+  // 4–5. SNR not used on connected node: node.snr is client-merged from mesh
+  // packets (last-hop / arbitrary from), not LocalStats. badRate-only path is
+  // covered by check 7 when not already covered by 3.
 
   // 6. High rx_duplicate → mesh congestion
   if (dupeRate > HIGH_DUPE_RATE) {
@@ -88,12 +73,7 @@ export function diagnoseConnectedNode(node: MeshNode): RFDiagnosis[] {
   }
 
   // 7. rx_bad general high count (catch-all if not already covered by checks 3/4/5)
-  const badRateCovered = findings.some(
-    (f) =>
-      f.condition === '900MHz Industrial Interference' ||
-      f.condition === 'Local Non-Mesh LoRa' ||
-      f.condition === 'Fringe / Weak Mesh Traffic',
-  );
+  const badRateCovered = findings.some((f) => f.condition === '900MHz Industrial Interference');
   if (badRate > HIGH_BAD_RATE && !badRateCovered) {
     findings.push({
       condition: 'LoRa Collision or Corruption',
@@ -120,6 +100,7 @@ export function diagnoseOtherNode(node: MeshNode): RFDiagnosis[] | null {
   const findings: RFDiagnosis[] = [];
   const cu = node.channel_utilization ?? 0;
   const tx = node.air_util_tx ?? 0;
+  const snrMeaningful = snrMeaningfulForNodeDiagnostics(node);
   const snr = node.snr ?? 0;
 
   // High CU + Low TX → external interference causing node to back off
@@ -131,8 +112,8 @@ export function diagnoseOtherNode(node: MeshNode): RFDiagnosis[] | null {
     });
   }
 
-  // High CU + Low SNR → wideband noise floor
-  if (cu > HIGH_CU && snr < LOW_SNR) {
+  // High CU + Low SNR → wideband noise floor (SNR only if direct RF context)
+  if (snrMeaningful && cu > HIGH_CU && snr < LOW_SNR) {
     findings.push({
       condition: 'Wideband Noise Floor',
       cause:
@@ -142,7 +123,7 @@ export function diagnoseOtherNode(node: MeshNode): RFDiagnosis[] | null {
   }
 
   // Low CU + Low SNR → fringe / weak coverage
-  if (cu <= 10 && snr < LOW_SNR) {
+  if (snrMeaningful && cu <= 10 && snr < LOW_SNR) {
     findings.push({
       condition: 'Fringe / Weak Coverage',
       cause: 'Node is too far away or poorly connected to the rest of the mesh.',

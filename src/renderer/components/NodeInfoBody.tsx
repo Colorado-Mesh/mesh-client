@@ -7,6 +7,7 @@ import {
   hasLocalStatsData,
   type RFDiagnosis,
 } from '../lib/diagnostics/RFDiagnosticEngine';
+import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { RoleDisplay } from '../lib/roleInfo';
 import type { HopHistoryPoint, MeshNode } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -80,6 +81,8 @@ export default function NodeInfoBody({ node, homeNode, traceRouteHops }: NodeInf
           ? 'text-red-400'
           : 'text-muted';
 
+  const isOurNode = homeNode != null && node.node_id === homeNode.node_id;
+  const showSnr = snrMeaningfulForNodeDiagnostics(node) || isOurNode;
   const snrColor =
     node.snr > 5
       ? 'text-bright-green'
@@ -119,7 +122,9 @@ export default function NodeInfoBody({ node, homeNode, traceRouteHops }: NodeInf
 
   const offenseSummary = anomaly
     ? anomaly.type === 'hop_goblin'
-      ? 'Node is over-hopping for its distance or signal strength'
+      ? anomaly.confidence === 'heuristic'
+        ? 'Route efficiency unclear — many hops with strong signal (heuristic only)'
+        : 'Node is over-hopping for its distance or signal strength'
       : anomaly.type === 'bad_route'
         ? 'Possible routing loop — high packet duplication detected'
         : anomaly.type === 'route_flapping'
@@ -139,12 +144,14 @@ export default function NodeInfoBody({ node, homeNode, traceRouteHops }: NodeInf
         <RoleDisplay role={node.role} />
       </div>
 
-      {/* Signal */}
-      <InfoRow
-        label="SNR"
-        value={node.snr != null && node.snr !== 0 ? `${node.snr.toFixed(1)} dB` : '—'}
-        className={snrColor}
-      />
+      {/* SNR only meaningful for direct (0-hop) RF; rxSnr is last-hop otherwise */}
+      {showSnr && (
+        <InfoRow
+          label="SNR"
+          value={node.snr != null && node.snr !== 0 ? `${node.snr.toFixed(1)} dB` : '—'}
+          className={snrColor}
+        />
+      )}
 
       {/* Battery */}
       <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
@@ -214,22 +221,42 @@ export default function NodeInfoBody({ node, homeNode, traceRouteHops }: NodeInf
         {anomaly ? (
           <div
             className={`flex items-start gap-1.5 text-xs ${
-              anomaly.severity === 'error' ? 'text-red-400' : 'text-orange-400'
+              anomaly.severity === 'error'
+                ? 'text-red-400'
+                : anomaly.severity === 'info'
+                  ? 'text-blue-400'
+                  : 'text-orange-400'
             }`}
           >
-            <svg
-              className="w-3.5 h-3.5 shrink-0 mt-0.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+            {anomaly.severity === 'info' ? (
+              <svg
+                className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            )}
             <div>
               <div className="font-medium mb-0.5">{offenseSummary}</div>
               <div className="text-gray-400">{anomaly.description}</div>
@@ -346,7 +373,7 @@ export default function NodeInfoBody({ node, homeNode, traceRouteHops }: NodeInf
                               >
                                 {p.transport.toUpperCase()}
                               </span>
-                              {p.snr != null && (
+                              {showSnr && p.snr != null && (
                                 <span className="ml-1">
                                   SNR {p.snr > 0 ? '+' : ''}
                                   {p.snr.toFixed(1)} dB

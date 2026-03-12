@@ -193,8 +193,7 @@ const MapMarker = memo(
     haloCenterOffset = [0, 0],
   }: MapMarkerProps) {
     const status = getNodeStatus(node.last_heard);
-    const cuForIcon =
-      congestionHalosEnabled && !anomalyHalosEnabled ? (node.channel_utilization ?? 0) : 0;
+    const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
 
     const icon = useMemo(
       () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only),
@@ -206,11 +205,13 @@ const MapMarker = memo(
       [anomalyHalosEnabled, anomaly, node.node_id, isSelf],
     );
 
-    const isError = anomaly?.severity === 'error';
+    const severity = anomaly?.severity;
+    const isError = severity === 'error';
+    const isInfo = severity === 'info';
 
     return (
       <Fragment>
-        {shouldShowHalo && (
+        {shouldShowHalo && !isInfo && (
           <Circle
             key={`anomaly-${node.node_id}`}
             center={[node.latitude! + haloCenterOffset[0], node.longitude! + haloCenterOffset[1]]}
@@ -228,17 +229,36 @@ const MapMarker = memo(
             }}
           />
         )}
+        {shouldShowHalo && isInfo && (
+          <Circle
+            key={`anomaly-info-${node.node_id}`}
+            center={[node.latitude! + haloCenterOffset[0], node.longitude! + haloCenterOffset[1]]}
+            radius={350}
+            pane="diagnosticPane"
+            interactive={false}
+            pathOptions={{
+              color: '#60a5fa',
+              fillColor: '#60a5fa',
+              fillOpacity: 0.08,
+              weight: 1,
+              opacity: 0.5,
+              dashArray: '4,8',
+              className: 'anomaly-halo-info',
+            }}
+          />
+        )}
         {congestionHalosEnabled && node.channel_utilization != null && (
           <Circle
             center={[node.latitude!, node.longitude!]}
-            radius={300}
+            radius={shouldShowHalo ? 520 : 300}
+            pane="diagnosticPane"
             interactive={false}
             pathOptions={{
               color: getCUColor(node.channel_utilization),
               fillColor: getCUColor(node.channel_utilization),
-              fillOpacity: 0.25,
-              weight: 1,
-              opacity: 0.6,
+              fillOpacity: shouldShowHalo ? 0 : 0.25,
+              weight: shouldShowHalo ? 3 : 1,
+              opacity: shouldShowHalo ? 0.9 : 0.6,
             }}
           />
         )}

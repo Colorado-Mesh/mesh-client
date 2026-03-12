@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { LocationFilter } from '../App';
+import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { RoleDisplay } from '../lib/roleInfo';
 import type { MeshNode } from '../lib/types';
@@ -12,6 +13,7 @@ type SortField =
   | 'long_name'
   | 'short_name'
   | 'rssi'
+  | 'snr'
   | 'battery'
   | 'last_heard'
   | 'latitude'
@@ -141,6 +143,9 @@ export default function NodeListPanel({
           break;
         case 'rssi':
           cmp = (a.rssi ?? -999) - (b.rssi ?? -999);
+          break;
+        case 'snr':
+          cmp = (a.snr ?? -999) - (b.snr ?? -999);
           break;
         case 'battery':
           cmp = (a.battery || 0) - (b.battery || 0);
@@ -413,10 +418,12 @@ export default function NodeListPanel({
               </th>
               <th
                 scope="col"
+                aria-sort={sortField === 'snr' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
                 className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
-                onClick={() => handleSort('rssi')}
+                onClick={() => handleSort('snr')}
+                title="SNR in dB — only meaningful for direct (0-hop) RF neighbors"
               >
-                RSSI <SortIcon field="rssi" />
+                SNR <SortIcon field="snr" />
               </th>
               <th
                 scope="col"
@@ -587,7 +594,9 @@ export default function NodeListPanel({
                           className={`w-4 h-4 ml-1 inline shrink-0 ${
                             anomalies.get(node.node_id)?.severity === 'error'
                               ? 'text-red-400'
-                              : 'text-orange-400'
+                              : anomalies.get(node.node_id)?.severity === 'info'
+                                ? 'text-blue-400'
+                                : 'text-orange-400'
                           }`}
                           fill="none"
                           viewBox="0 0 24 24"
@@ -652,17 +661,26 @@ export default function NodeListPanel({
                       <div className="flex justify-end">
                         {node.heard_via_mqtt_only ? (
                           <span className="text-muted text-xs">—</span>
-                        ) : (
+                        ) : isSelf || snrMeaningfulForNodeDiagnostics(node) ? (
                           <SignalBars rssi={node.rssi} isSelf={isSelf} />
+                        ) : (
+                          <span
+                            className="text-muted text-xs"
+                            title="Signal bars (RSSI) only for direct (0-hop) RF neighbors"
+                          >
+                            —
+                          </span>
                         )}
                       </div>
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-muted">
                       {node.heard_via_mqtt_only
                         ? '—'
-                        : node.rssi != null
-                          ? `${node.rssi} dBm`
-                          : '-'}
+                        : isSelf || snrMeaningfulForNodeDiagnostics(node)
+                          ? node.snr != null && node.snr !== 0
+                            ? `${node.snr.toFixed(1)} dB`
+                            : '—'
+                          : '—'}
                     </td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-1.5">

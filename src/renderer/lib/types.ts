@@ -2,14 +2,19 @@ export type ConnectionType = 'ble' | 'serial' | 'http';
 
 export type AnomalyType = 'hop_goblin' | 'bad_route' | 'route_flapping' | 'impossible_hop';
 
+/** How confident the detector is: proven uses distance/stats; heuristic is SNR/hops pattern only. */
+export type AnomalyConfidence = 'proven' | 'heuristic';
+
 export interface NodeAnomaly {
   nodeId: number;
   type: AnomalyType;
-  severity: 'warning' | 'error';
+  severity: 'error' | 'warning' | 'info';
   description: string;
   detectedAt: number;
   snr?: number;
   hopsAway?: number;
+  /** Set when severity is based on pattern only (e.g. no GPS distance). Drives UI copy without string matching. */
+  confidence?: AnomalyConfidence;
 }
 
 export interface HopHistoryPoint {

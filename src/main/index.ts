@@ -31,6 +31,8 @@ const mqttManager = new MQTTManager();
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
+/** Retain tray context menu so macOS menu bridge does not see a freed model (avoids console warning / crashes). */
+let trayContextMenu: Menu | null = null;
 let isConnected = false;
 let isQuitting = false;
 
@@ -273,28 +275,27 @@ function setupTray(window: BrowserWindow) {
     window.show();
     window.focus();
   });
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      {
-        label: 'Show Mesh-Client',
-        click: () => {
-          window.show();
-          window.focus();
-        },
+  trayContextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show Mesh-Client',
+      click: () => {
+        window.show();
+        window.focus();
       },
-      { type: 'separator' },
-      {
-        label: 'Quit',
-        click: () => {
-          isQuitting = true;
-          mqttManager.disconnect();
-          isConnected = false;
-          mainWindow?.destroy();
-          app.quit();
-        },
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        isQuitting = true;
+        mqttManager.disconnect();
+        isConnected = false;
+        mainWindow?.destroy();
+        app.quit();
       },
-    ]),
-  );
+    },
+  ]);
+  tray.setContextMenu(trayContextMenu);
 }
 
 function createWindow() {

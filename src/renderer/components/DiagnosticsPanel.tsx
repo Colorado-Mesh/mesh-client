@@ -45,6 +45,24 @@ function AlertTriangleIcon({ className }: { className?: string }) {
   );
 }
 
+function InfoCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+}
+
 function formatTime(ts: number): string {
   if (!ts) return '—';
   const diff = Date.now() - ts;
@@ -134,6 +152,7 @@ export default function DiagnosticsPanel({
   const warningCount = Array.from(anomalies.values()).filter(
     (a) => a.severity === 'warning',
   ).length;
+  const infoCount = Array.from(anomalies.values()).filter((a) => a.severity === 'info').length;
 
   const handleTraceRoute = async (nodeId: number) => {
     // Clear any prior failure for this node
@@ -187,6 +206,11 @@ export default function DiagnosticsPanel({
               {warningCount > 0 && (
                 <span className="text-orange-400">
                   {warningCount} warning{warningCount !== 1 ? 's' : ''}
+                </span>
+              )}
+              {infoCount > 0 && (
+                <span className="text-blue-400/90">
+                  {infoCount} note{infoCount !== 1 ? 's' : ''} (heuristic)
                 </span>
               )}
               {anomalies.size === 0 && totalNodes > 0 && (
@@ -340,7 +364,6 @@ export default function DiagnosticsPanel({
                 <tr className="bg-deep-black text-muted text-left sticky top-0">
                   <th className="px-4 py-2.5">Node</th>
                   <th className="px-4 py-2.5">Offense</th>
-                  <th className="px-4 py-2.5 text-right">SNR</th>
                   <th className="px-4 py-2.5 text-right">Hops</th>
                   <th className="px-4 py-2.5 text-right">Detected</th>
                   <th className="px-4 py-2.5">Suggested Fix</th>
@@ -351,7 +374,12 @@ export default function DiagnosticsPanel({
                 {anomalyList.map((anomaly) => {
                   const node = nodes.get(anomaly.nodeId);
                   const isError = anomaly.severity === 'error';
-                  const colorClass = isError ? 'text-red-400' : 'text-orange-400';
+                  const isInfo = anomaly.severity === 'info';
+                  const colorClass = isError
+                    ? 'text-red-400'
+                    : isInfo
+                      ? 'text-blue-400'
+                      : 'text-orange-400';
                   const hexId = `!${anomaly.nodeId.toString(16)}`;
                   const displayName = node?.long_name || node?.short_name || hexId;
 
@@ -381,7 +409,11 @@ export default function DiagnosticsPanel({
                     >
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
-                          <AlertTriangleIcon className={`w-4 h-4 shrink-0 ${colorClass}`} />
+                          {isInfo ? (
+                            <InfoCircleIcon className={`w-4 h-4 shrink-0 ${colorClass}`} />
+                          ) : (
+                            <AlertTriangleIcon className={`w-4 h-4 shrink-0 ${colorClass}`} />
+                          )}
                           <div>
                             <div className="text-gray-200 font-medium">{displayName}</div>
                             <div className="text-xs text-muted font-mono">{hexId}</div>
@@ -403,9 +435,6 @@ export default function DiagnosticsPanel({
                               Filter MQTT.
                             </div>
                           )}
-                      </td>
-                      <td className="px-4 py-2.5 text-right text-xs text-gray-300 font-mono">
-                        {anomaly.snr != null ? `${anomaly.snr.toFixed(1)} dB` : '—'}
                       </td>
                       <td className="px-4 py-2.5 text-right text-xs text-gray-300">
                         {anomaly.hopsAway != null ? anomaly.hopsAway : '—'}

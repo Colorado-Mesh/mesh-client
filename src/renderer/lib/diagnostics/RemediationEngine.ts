@@ -1,5 +1,6 @@
 import { haversineDistanceKm } from '../nodeStatus';
 import type { DiagnosticRemedy, MeshNode } from '../types';
+import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnostics';
 
 type ScenarioChecker = (
   node: MeshNode,
@@ -11,6 +12,7 @@ type ScenarioChecker = (
 const SCENARIOS: ScenarioChecker[] = [
   // Scenario C: Antenna/Polarization Mismatch (most specific — check first)
   (node, _home, distMiles) => {
+    if (!snrMeaningfulForNodeDiagnostics(node)) return null;
     if (distMiles === null || distMiles >= 1) return null;
     if ((node.hops_away ?? 0) <= 2) return null;
     if (node.snr >= -5) return null;
@@ -34,6 +36,7 @@ const SCENARIOS: ScenarioChecker[] = [
   },
   // Scenario A: High-Ground Config (chatty node)
   (node, _home, distMiles) => {
+    if (!snrMeaningfulForNodeDiagnostics(node)) return null;
     if (node.snr <= 8) return null;
     if ((node.hops_away ?? 0) < 3) return null;
     if (distMiles === null || distMiles >= 10) return null;
@@ -44,9 +47,8 @@ const SCENARIOS: ScenarioChecker[] = [
       severity: 'info',
     };
   },
-  // Scenario B: RF Noise / Hidden Terminal
+  // Scenario B: RF Noise / Hidden Terminal (duplication-only; SNR not reliable multi-hop/MQTT)
   (node, _home, distMiles, duplicateRate) => {
-    if (node.snr <= 0) return null;
     if (duplicateRate === null || duplicateRate < 0.5) return null;
     if (distMiles === null || distMiles >= 5) return null;
     return {

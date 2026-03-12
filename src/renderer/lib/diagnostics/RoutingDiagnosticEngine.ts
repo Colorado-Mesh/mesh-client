@@ -11,7 +11,8 @@ export function detectHopGoblin(
 ): NodeAnomaly | null {
   if (ignoreMqtt && node.heard_via_mqtt_only) return null;
 
-  // Distance-aware: if both nodes have GPS coords, use haversine
+  // Only distance-proven over-hopping. SNR+hops heuristics removed: rxSnr is
+  // last-hop only and meaningless for multi-hop originators and MQTT-only nodes.
   if (homeNode?.latitude && homeNode?.longitude && node.latitude && node.longitude) {
     const distKm = haversineDistanceKm(
       homeNode.latitude,
@@ -27,38 +28,13 @@ export function detectHopGoblin(
         nodeId: node.node_id,
         type: 'hop_goblin',
         severity: 'error',
+        confidence: 'proven',
         description: `Only ${distKm.toFixed(2)} km away but taking ${node.hops_away ?? '?'} hops — critical over-hopping`,
         detectedAt: Date.now(),
         snr: node.snr,
         hopsAway: node.hops_away,
       };
     }
-    // Coords present but node isn't critically close — still check SNR
-    if ((node.hops_away ?? 0) > hopsThreshold && node.snr > 5) {
-      return {
-        nodeId: node.node_id,
-        type: 'hop_goblin',
-        severity: 'warning',
-        description: `${node.hops_away ?? '?'} hops away but strong signal (${node.snr.toFixed(1)} dB) — may be over-hopping`,
-        detectedAt: Date.now(),
-        snr: node.snr,
-        hopsAway: node.hops_away,
-      };
-    }
-    return null;
-  }
-
-  // Fallback: SNR-only when coordinates are missing
-  if ((node.hops_away ?? 0) > hopsThreshold && node.snr > 5) {
-    return {
-      nodeId: node.node_id,
-      type: 'hop_goblin',
-      severity: 'warning',
-      description: `${node.hops_away ?? '?'} hops away but strong signal (${node.snr.toFixed(1)} dB) — may be over-hopping (no GPS for distance check)`,
-      detectedAt: Date.now(),
-      snr: node.snr,
-      hopsAway: node.hops_away,
-    };
   }
   return null;
 }
@@ -71,15 +47,16 @@ export function detectBadRoute(
   distanceMultiplier = 1,
   distanceOffsetKm = 0,
 ): NodeAnomaly | null {
-  // High duplication rate with good signal = routing loop
+  // High duplication rate → routing loop suspected (SNR not used: not meaningful
+  // for multi-hop / MQTT; duplication is still a local observation).
   if (stats && stats.total > 0 && (!ignoreMqtt || !node.heard_via_mqtt_only)) {
     const lossRate = stats.duplicates / stats.total;
-    if (lossRate > 0.55 && node.snr > 5) {
+    if (lossRate > 0.55) {
       return {
         nodeId: node.node_id,
         type: 'bad_route',
         severity: 'error',
-        description: `${Math.round(lossRate * 100)}% packet duplication with strong signal — routing loop suspected`,
+        description: `${Math.round(lossRate * 100)}% packet duplication — routing loop suspected`,
         detectedAt: Date.now(),
         snr: node.snr,
         hopsAway: node.hops_away,
@@ -222,7 +199,8 @@ export function computeHealthScore(
   let warningCount = 0;
   for (const anomaly of anomalies.values()) {
     if (anomaly.severity === 'error') errorCount++;
-    else warningCount++;
+    else if (anomaly.severity === 'warning') warningCount++;
+    // info (heuristic only) does not penalize health score
   }
   const score = 100 - ((errorCount * 2 + warningCount) / totalNodes) * 100;
   return Math.max(0, Math.min(100, Math.round(score)));

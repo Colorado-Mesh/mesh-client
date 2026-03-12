@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import AppPanel from './components/AppPanel';
 import ChatPanel from './components/ChatPanel';
@@ -18,6 +18,7 @@ import { ToastProvider } from './components/Toast';
 import UpdateBanner from './components/UpdateBanner';
 import { useDevice } from './hooks/useDevice';
 import { parseStoredJson } from './lib/parseStoredJson';
+import { applyThemeColors, loadThemeColors } from './lib/themeColors';
 import type { MQTTSettings } from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 
@@ -141,6 +142,11 @@ export default function App() {
   const prevMsgCountRef = useRef(0);
   const isInitialLoadRef = useRef(true);
   const [updateState, setUpdateState] = useState<UpdateState>({ phase: 'idle', dismissed: false });
+
+  // ─── Theme colors (localStorage overrides for @theme tokens) ─────
+  useLayoutEffect(() => {
+    applyThemeColors(loadThemeColors());
+  }, []);
 
   const device = useDevice();
   const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);

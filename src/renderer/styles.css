@@ -23,7 +23,7 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2d3748;
+  background: var(--color-secondary-dark, #2d3748);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
