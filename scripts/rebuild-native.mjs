@@ -67,9 +67,27 @@ if (!fs.existsSync(betterSqlite3Node)) {
   console.log(
     "better-sqlite3 native binary missing after install-app-deps; running @electron/rebuild…",
   );
+  // Run rebuild via node + CLI path so postinstall works on Windows (spawnSync("npx")
+  // fails with ENOENT: npx is npx.cmd and is not a direct executable). Do not use
+  // require.resolve("@electron/rebuild/lib/cli.js") — package exports block that path.
+  const rebuildCli = path.join(
+    projectRoot,
+    "node_modules",
+    "@electron",
+    "rebuild",
+    "lib",
+    "cli.js",
+  );
+  if (!fs.existsSync(rebuildCli)) {
+    console.error(
+      "@electron/rebuild not found; ensure npm install completed (electron-builder brings it in). " +
+        "On Windows, do not rely on npx from spawn — run: npx --yes @electron/rebuild -f -w better-sqlite3",
+    );
+    process.exit(1);
+  }
   const rebuildResult = spawnSync(
-    "npx",
-    ["--yes", "@electron/rebuild", "-f", "-w", "better-sqlite3"],
+    process.execPath,
+    [rebuildCli, "-f", "-w", "better-sqlite3"],
     { cwd: projectRoot, stdio: "inherit", env: { ...process.env } },
   );
   if (rebuildResult.error) {
