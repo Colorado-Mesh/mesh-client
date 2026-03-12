@@ -193,8 +193,7 @@ const MapMarker = memo(
     haloCenterOffset = [0, 0],
   }: MapMarkerProps) {
     const status = getNodeStatus(node.last_heard);
-    const cuForIcon =
-      congestionHalosEnabled && !anomalyHalosEnabled ? (node.channel_utilization ?? 0) : 0;
+    const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
 
     const icon = useMemo(
       () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only),
@@ -251,14 +250,15 @@ const MapMarker = memo(
         {congestionHalosEnabled && node.channel_utilization != null && (
           <Circle
             center={[node.latitude!, node.longitude!]}
-            radius={300}
+            radius={shouldShowHalo ? 520 : 300}
+            pane="diagnosticPane"
             interactive={false}
             pathOptions={{
               color: getCUColor(node.channel_utilization),
               fillColor: getCUColor(node.channel_utilization),
-              fillOpacity: 0.25,
-              weight: 1,
-              opacity: 0.6,
+              fillOpacity: shouldShowHalo ? 0 : 0.25,
+              weight: shouldShowHalo ? 3 : 1,
+              opacity: shouldShowHalo ? 0.9 : 0.6,
             }}
           />
         )}
