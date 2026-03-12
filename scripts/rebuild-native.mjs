@@ -52,4 +52,39 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
 
+// install-app-deps can exit 0 without compiling better-sqlite3 (no native .node
+// produced). If the addon is still missing, fall back to @electron/rebuild so
+// Electron main does not crash at startup with "Could not locate the bindings file".
+const betterSqlite3Node = path.join(
+  projectRoot,
+  "node_modules",
+  "better-sqlite3",
+  "build",
+  "Release",
+  "better_sqlite3.node",
+);
+if (!fs.existsSync(betterSqlite3Node)) {
+  console.log(
+    "better-sqlite3 native binary missing after install-app-deps; running @electron/rebuild…",
+  );
+  const rebuildResult = spawnSync(
+    "npx",
+    ["--yes", "@electron/rebuild", "-f", "-w", "better-sqlite3"],
+    { cwd: projectRoot, stdio: "inherit", env: { ...process.env } },
+  );
+  if (rebuildResult.error) {
+    console.error(rebuildResult.error);
+    process.exit(1);
+  }
+  if (rebuildResult.status !== 0) {
+    process.exit(rebuildResult.status ?? 1);
+  }
+  if (!fs.existsSync(betterSqlite3Node)) {
+    console.error(
+      "better-sqlite3 still has no better_sqlite3.node after @electron/rebuild; check build tools (python, Xcode CLI).",
+    );
+    process.exit(1);
+  }
+}
+
 console.log("Rebuild complete.");
