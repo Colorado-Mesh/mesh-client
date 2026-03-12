@@ -99,9 +99,14 @@ export async function reconnectBle(): Promise<MeshDevice> {
 
   if (typeof navigator.bluetooth.getDevices === 'function') {
     const devices = await navigator.bluetooth.getDevices();
+    // Prefer disconnected-but-known GATT; else any with gatt; else first granted
+    // device — gatt is often null until connect(); createFromDevice/prepareConnection
+    // will call gatt.connect(). On some Electron builds getDevices() stays empty
+    // after grant; ConnectionPanel uses onConnect('ble') in the gesture path only.
     target =
       devices.find((d: any) => d.gatt && !d.gatt.connected) ??
-      devices.find((d: any) => d.gatt != null);
+      devices.find((d: any) => d.gatt != null) ??
+      (devices.length > 0 ? devices[0] : undefined);
   } else {
     // getDevices() unavailable — fall back to the device captured at connect time
     target = capturedBleDevice ?? undefined;
@@ -181,8 +186,8 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
       // manually close the writable stream and GATT connection
       try {
         await device.transport.toDevice.close();
-      } catch {
-        /* already closed */
+      } catch (e) {
+        console.debug('[connection] safeDisconnect toDevice.close', e);
       }
 
       // For BLE: disconnect the GATT server
@@ -190,8 +195,8 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
       if (btDevice?.gatt?.connected) {
         try {
           btDevice.gatt.disconnect();
-        } catch {
-          /* ignore */
+        } catch (e) {
+          console.debug('[connection] safeDisconnect gatt.disconnect', e);
         }
       }
     } else {
@@ -201,8 +206,8 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
     // Always complete device streams to prevent memory leaks
     try {
       device.complete();
-    } catch {
-      /* already completed */
+    } catch (e) {
+      console.debug('[connection] safeDisconnect complete', e);
     }
   }
 }

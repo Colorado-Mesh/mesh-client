@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { analyzeNode } from '../lib/diagnostics/RoutingDiagnosticEngine';
 import type { GpsSource } from '../lib/gpsSource';
 import { isLowAccuracyPosition } from '../lib/gpsSource';
+import { parseStoredJson } from '../lib/parseStoredJson';
 import type { HopHistoryPoint, MeshNode, NodeAnomaly } from '../lib/types';
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -78,46 +79,47 @@ let analysisTimer: ReturnType<typeof setTimeout> | null = null;
 const pendingAnalyses = new Map<number, { node: MeshNode; homeNode: MeshNode | null }>();
 
 function loadAdminBool(key: string): boolean {
-  try {
-    const raw = localStorage.getItem('mesh-client:adminSettings');
-    return raw ? (JSON.parse(raw)[key] ?? false) : false;
-  } catch {
-    return false;
-  }
+  const raw = localStorage.getItem('mesh-client:adminSettings');
+  const o = parseStoredJson<Record<string, unknown>>(raw, 'diagnosticsStore loadAdminBool');
+  if (!o) return false;
+  return (o[key] ?? false) as boolean;
 }
 
 function loadEnvMode(): EnvMode {
-  try {
-    const raw = localStorage.getItem('mesh-client:adminSettings');
-    const val = raw ? JSON.parse(raw).envMode : undefined;
-    if (val === 'city' || val === 'canyon') return val;
-    return 'standard';
-  } catch {
-    return 'standard';
-  }
+  const raw = localStorage.getItem('mesh-client:adminSettings');
+  const o = parseStoredJson<{ envMode?: string }>(raw, 'diagnosticsStore loadEnvMode');
+  const val = o?.envMode;
+  if (val === 'city' || val === 'canyon') return val;
+  return 'standard';
 }
 
 function saveAdminKey(key: string, value: unknown): void {
   try {
     const raw = localStorage.getItem('mesh-client:adminSettings');
-    const s = raw ? JSON.parse(raw) : {};
+    const s =
+      parseStoredJson<Record<string, unknown>>(raw, 'diagnosticsStore saveAdminKey read') ?? {};
     localStorage.setItem('mesh-client:adminSettings', JSON.stringify({ ...s, [key]: value }));
-  } catch {}
+  } catch (e) {
+    console.warn('[diagnosticsStore] saveAdminKey failed', key, e);
+  }
 }
 
 function loadMqttIgnoredNodes(): Set<number> {
-  try {
-    const raw = localStorage.getItem('mesh-client:mqttIgnoredNodes');
-    return raw ? new Set<number>(JSON.parse(raw)) : new Set();
-  } catch {
-    return new Set();
+  const raw = localStorage.getItem('mesh-client:mqttIgnoredNodes');
+  const arr = parseStoredJson<unknown>(raw, 'diagnosticsStore loadMqttIgnoredNodes');
+  if (Array.isArray(arr) && arr.every((n) => typeof n === 'number')) {
+    return new Set<number>(arr as number[]);
   }
+  return new Set();
 }
 
 function saveMqttIgnoredNodes(nodes: Set<number>): void {
   try {
+    console.debug('[diagnosticsStore] saveMqttIgnoredNodes');
     localStorage.setItem('mesh-client:mqttIgnoredNodes', JSON.stringify([...nodes]));
-  } catch {}
+  } catch (e) {
+    console.warn('[diagnosticsStore] saveMqttIgnoredNodes failed', e);
+  }
 }
 
 export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({

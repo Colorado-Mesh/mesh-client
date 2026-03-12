@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { LocationFilter } from '../App';
 import { haversineDistanceKm } from '../lib/nodeStatus';
+import { parseStoredJson } from '../lib/parseStoredJson';
 import type { MeshNode } from '../lib/types';
 import { useToast } from './Toast';
 
@@ -84,12 +85,11 @@ const DEFAULT_SETTINGS: AdminSettings = {
 };
 
 function loadSettings(): AdminSettings {
-  try {
-    const raw = localStorage.getItem('mesh-client:adminSettings');
-    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
+  const parsed = parseStoredJson<Partial<AdminSettings>>(
+    localStorage.getItem('mesh-client:adminSettings'),
+    'AdminPanel loadSettings',
+  );
+  return parsed ? { ...DEFAULT_SETTINGS, ...parsed } : DEFAULT_SETTINGS;
 }
 
 interface Props {
@@ -145,13 +145,11 @@ export default function AdminPanel({
   }, [settings]);
 
   useEffect(() => {
-    let hideMqttOnly = false;
-    try {
-      const raw = localStorage.getItem('mesh-client:adminSettings');
-      if (raw) hideMqttOnly = JSON.parse(raw).filterMqttOnly ?? false;
-    } catch {
-      /* ignore */
-    }
+    const adminParsed = parseStoredJson<{ filterMqttOnly?: boolean }>(
+      localStorage.getItem('mesh-client:adminSettings'),
+      'AdminPanel hideMqttOnly from adminSettings',
+    );
+    const hideMqttOnly = adminParsed?.filterMqttOnly ?? false;
     onLocationFilterChange({
       enabled: settings.distanceFilterEnabled,
       maxDistance: settings.distanceFilterMax,
@@ -178,7 +176,9 @@ export default function AdminPanel({
       .then((rows) => {
         setMsgChannels(rows.map((r) => r.channel));
       })
-      .catch(() => {});
+      .catch((e) => {
+        console.debug('[AdminPanel] getMessageChannels', e);
+      });
   }, []);
 
   const getChannelLabel = useCallback(
@@ -201,6 +201,7 @@ export default function AdminPanel({
       await pendingAction.action();
       addToast(`${pendingAction.name} completed successfully.`, 'success');
     } catch (err) {
+      console.warn('[AdminPanel] pending action failed', err);
       addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
     }
   }, [pendingAction, addToast]);
@@ -556,6 +557,7 @@ export default function AdminPanel({
                   addToast(`Exported to: ${path}`, 'success');
                 }
               } catch (err) {
+                console.warn('[AdminPanel] export failed', err);
                 addToast(
                   `Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
                   'error',
@@ -578,6 +580,7 @@ export default function AdminPanel({
                   );
                 }
               } catch (err) {
+                console.warn('[AdminPanel] import failed', err);
                 addToast(
                   `Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
                   'error',

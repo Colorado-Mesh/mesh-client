@@ -250,7 +250,8 @@ function base64ToPsk(b64: string): Uint8Array {
   try {
     const binary = atob(b64);
     return Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  } catch {
+  } catch (e) {
+    console.debug('[RadioPanel] base64ToPsk invalid', e);
     return new Uint8Array([1]);
   }
 }
@@ -411,6 +412,7 @@ export default function RadioPanel({
       await onCommit();
       setStatus(`${section} applied successfully!`);
     } catch (err) {
+      console.warn('[RadioPanel] apply section failed', err);
       setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setApplyingSection(null);
@@ -428,6 +430,7 @@ export default function RadioPanel({
       await pendingAction.action();
       addToast(`${pendingAction.name} completed successfully.`, 'success');
     } catch (err) {
+      console.warn('[RadioPanel] pending action failed', err);
       addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
     }
   }, [pendingAction, addToast]);
@@ -596,6 +599,7 @@ export default function RadioPanel({
                   await onSendPositionToDevice(fixedLat, fixedLon, fixedAlt);
                   addToast('Position sent to device.', 'success');
                 } catch (err) {
+                  console.warn('[RadioPanel] send position to device failed', err);
                   addToast(
                     `Failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
                     'error',
@@ -971,6 +975,7 @@ function ChannelSection({
       await onCommit();
       setStatus(`Channel ${selectedIndex} saved!`);
     } catch (err) {
+      console.warn('[RadioPanel] save channel failed', err);
       setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown'}`);
     } finally {
       setSaving(false);
@@ -999,6 +1004,7 @@ function ChannelSection({
       await onCommit();
       setStatus(`Channel ${selectedIndex} reset!`);
     } catch (err) {
+      console.warn('[RadioPanel] reset channel failed', err);
       setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown'}`);
     } finally {
       setSaving(false);

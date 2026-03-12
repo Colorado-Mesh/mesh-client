@@ -14,11 +14,11 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            build_script: npm run dist:mac
+            build_script: npm run dist:mac:publish
           - os: ubuntu-latest
-            build_script: npm run dist:linux
+            build_script: npm run dist:linux:publish
           - os: windows-latest
-            build_script: npm run dist:win
+            build_script: npm run dist:win:publish
 
     steps:
       - name: Checkout code
@@ -35,11 +35,11 @@ jobs:
         run: npm install
     
       - name: Rebuild native dependencies
-        run: npx electron-rebuild -f -w better-sqlite3
+        run: npm run rebuild
 
       - name: Build and Publish
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # Executes the specific script for the current OS (dist:mac, dist:linux, or dist:win)
-        # The -- --publish always flag tells electron-builder to upload to the repo defined in your yml
-        run: ${{ matrix.build_script }} -- --publish always
+          # electron-publish reads GH_TOKEN; GITHUB_TOKEN alone is not used for uploads
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # dist:*:publish scripts run electron-builder with --publish always
+        run: ${{ matrix.build_script }}

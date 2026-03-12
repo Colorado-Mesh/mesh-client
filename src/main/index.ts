@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Tray } from 'electron';
+import fs from 'fs';
 import path from 'path';
 
 import {
@@ -10,8 +11,21 @@ import {
   mergeDatabase,
 } from './database';
 import { getGpsFix } from './gps';
+import {
+  clearLogFile,
+  exportLogTo,
+  forwardRendererConsoleMessage,
+  getLogPath,
+  getRecentLines,
+  initLogFile,
+  patchMainConsole,
+  setMainWindow,
+} from './log-service';
 import { MQTTManager } from './mqtt-manager';
 import { initUpdater } from './updater';
+
+// Route main-process console through log file + Log panel (must run before other code logs)
+patchMainConsole();
 
 const mqttManager = new MQTTManager();
 
@@ -42,8 +56,25 @@ process.on('uncaughtException', (error) => {
   }
 });
 
+// Throttle user-visible dialog so a tight loop of rejections does not spam the user
+let lastUnhandledRejectionDialogAt = 0;
+const UNHANDLED_REJECTION_DIALOG_COOLDOWN_MS = 60_000;
+
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled rejection:', reason);
+  const now = Date.now();
+  if (now - lastUnhandledRejectionDialogAt < UNHANDLED_REJECTION_DIALOG_COOLDOWN_MS) return;
+  lastUnhandledRejectionDialogAt = now;
+  const message =
+    reason instanceof Error ? `${reason.message}\n\n${reason.stack ?? ''}` : String(reason);
+  try {
+    dialog.showErrorBox(
+      'Mesh-Client — Unhandled Promise Rejection',
+      `A promise rejected without a handler. Check the main process terminal for full details.\n\n${message.slice(0, 1500)}${message.length > 1500 ? '…' : ''}`,
+    );
+  } catch {
+    /* dialog may not be available during early startup */
+  }
 });
 
 // ─── IPC validation helpers (main process boundary) ───────────────────
@@ -279,6 +310,9 @@ function createWindow() {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Exposes navigator.bluetooth.getDevices() so reconnectBle() can run without
+      // requestDevice() (which requires a user gesture). See electron/electron#31869.
+      experimentalFeatures: true,
     },
   });
 
@@ -352,11 +386,12 @@ function createWindow() {
     },
   );
 
-  // ─── Bluetooth Device Permission ───────────────────────────────────
-  // Required in Electron 20+ — without this, Chromium shows a blank/black
-  // permission overlay when navigator.bluetooth.requestDevice() is called.
+  // ─── Device permission (serial / HID / USB only) ───────────────────
+  // setDevicePermissionHandler covers navigator.serial / hid / usb — not Bluetooth.
+  // Bluetooth uses select-bluetooth-device above. Without a handler, Chromium can
+  // show a blank overlay for device permission prompts.
   mainWindow.webContents.session.setDevicePermissionHandler((details) => {
-    if (details.deviceType === 'bluetooth' || details.deviceType === 'serial') {
+    if (details.deviceType === 'serial') {
       return true;
     }
     return false;
@@ -371,14 +406,45 @@ function createWindow() {
   // ─── Renderer crash / load failure detection ──────────────────────
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     console.error('Renderer process gone:', details.reason, details.exitCode);
+    try {
+      dialog.showErrorBox(
+        'Mesh-Client — Renderer Stopped',
+        `The renderer process ended unexpectedly (${details.reason}, exit ${details.exitCode ?? 'n/a'}).\n\nRestart the application. If this keeps happening, export the log from the app (if still usable) or check the log file in your userData folder.`,
+      );
+    } catch {
+      /* dialog unavailable */
+    }
   });
 
-  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDesc, url) => {
-    console.error('Failed to load:', errorCode, errorDesc, url);
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDesc, validatedURL) => {
+    console.error('Failed to load:', errorCode, errorDesc, validatedURL);
+    // ERR_ABORTED (-3) often means navigation was cancelled; avoid noisy dialog
+    if (errorCode === -3) return;
+    try {
+      const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
+      const hint = isDev
+        ? 'Ensure the dev server is running (npm run dev) and the URL is reachable.'
+        : 'The app bundle may be missing or damaged. Try reinstalling or run from source with npm run build && npm start.';
+      dialog.showErrorBox(
+        'Mesh-Client — Failed to Load',
+        `Could not load the application UI (code ${errorCode}: ${errorDesc}).\n\n${hint}\n\nURL: ${validatedURL}`,
+      );
+    } catch {
+      /* dialog unavailable */
+    }
+  });
+
+  setMainWindow(mainWindow);
+  mainWindow.webContents.on('console-message', (details) => {
+    forwardRendererConsoleMessage(details);
   });
 
   // Load the app
   if (process.env.VITE_DEV_SERVER_URL) {
+    // Same startup diagnostics as packaged build so Log panel captures them in dev too
+    console.log('[Startup] dev server URL:', process.env.VITE_DEV_SERVER_URL);
+    console.log('[Startup] app.isPackaged:', app.isPackaged);
+    console.log('[Startup] userData:', app.getPath('userData'));
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
@@ -393,17 +459,19 @@ function createWindow() {
   }
 
   mainWindow.on('closed', () => {
+    setMainWindow(null);
     mainWindow = null;
   });
 
   // Handle window close event
-  mainWindow.on('close', (event) => {
+  const win = mainWindow;
+  win.on('close', (event) => {
     if (!isQuitting && (isConnected || mqttManager.getStatus() === 'connected')) {
       event.preventDefault();
       if (process.platform === 'darwin') {
-        mainWindow.hide();
+        win.hide();
       } else {
-        mainWindow.minimize();
+        win.minimize();
       }
     }
   });
@@ -419,7 +487,7 @@ ipcMain.on('set-tray-unread', (_event, count: unknown) => {
   tray?.setImage(buildTrayIcon(hasUnread));
   tray?.setToolTip(hasUnread ? `Mesh-Client (${n} unread)` : 'Mesh-Client');
   if (process.platform === 'darwin') {
-    app.dock.setBadge(hasUnread ? String(n) : '');
+    app.dock?.setBadge(hasUnread ? String(n) : '');
   }
 });
 
@@ -485,29 +553,55 @@ mqttManager.on('message', (m) => mainWindow?.webContents.send('mqtt:message', m)
 
 // ─── IPC: MQTT connect/disconnect ───────────────────────────────────
 ipcMain.handle('mqtt:connect', async (_event, settings) => {
-  validateMqttSettings(settings);
-  mqttManager.connect(settings);
+  try {
+    console.debug('[IPC] mqtt:connect');
+    validateMqttSettings(settings);
+    mqttManager.connect(settings);
+  } catch (err) {
+    console.error('[IPC] mqtt:connect failed:', err);
+    throw err;
+  }
 });
 ipcMain.handle('mqtt:disconnect', async () => {
-  mqttManager.disconnect();
+  try {
+    console.debug('[IPC] mqtt:disconnect');
+    mqttManager.disconnect();
+  } catch (err) {
+    console.error('[IPC] mqtt:disconnect failed:', err);
+    throw err;
+  }
 });
-ipcMain.handle('mqtt:getClientId', async () => mqttManager.getClientId());
+ipcMain.handle('mqtt:getClientId', async () => {
+  try {
+    console.debug('[IPC] mqtt:getClientId');
+    return mqttManager.getClientId();
+  } catch (err) {
+    console.error('[IPC] mqtt:getClientId failed:', err);
+    throw err;
+  }
+});
 ipcMain.handle('mqtt:publish', async (_event, args) => {
-  validateMqttPublishArgs(args);
-  const a = args as {
-    text: string;
-    from: number;
-    channel: number;
-    destination?: number;
-    channelName?: string;
-  };
-  return mqttManager.publish(
-    a.text,
-    a.from,
-    a.channel,
-    a.destination ?? 0xffffffff,
-    a.channelName ?? 'LongFast',
-  );
+  try {
+    console.debug('[IPC] mqtt:publish');
+    validateMqttPublishArgs(args);
+    const a = args as {
+      text: string;
+      from: number;
+      channel: number;
+      destination?: number;
+      channelName?: string;
+    };
+    return mqttManager.publish(
+      a.text,
+      a.from,
+      a.channel,
+      a.destination ?? 0xffffffff,
+      a.channelName ?? 'LongFast',
+    );
+  } catch (err) {
+    console.error('[IPC] mqtt:publish failed:', err);
+    throw err;
+  }
 });
 
 // ─── IPC: GPS fix via main process ──────────────────────────────────
@@ -527,9 +621,14 @@ ipcMain.handle('gps:getFix', async () => {
 // ─── IPC: Force quit (disconnect all, then quit) ────────────────────
 ipcMain.handle('app:quit', async () => {
   isQuitting = true;
-  mqttManager.disconnect();
   isConnected = false;
-  app.quit();
+  try {
+    mqttManager.disconnect();
+  } catch (err) {
+    console.error('[IPC] app:quit disconnect failed:', err);
+  } finally {
+    app.quit();
+  }
 });
 
 // ─── IPC: Database operations ──────────────────────────────────────
@@ -877,9 +976,62 @@ ipcMain.handle('session:clearData', async () => {
   }
 });
 
+// ─── IPC: Log panel ─────────────────────────────────────────────────
+ipcMain.handle('log:getPath', () => {
+  try {
+    return getLogPath();
+  } catch (err) {
+    console.error('[IPC] log:getPath failed:', err);
+    throw err;
+  }
+});
+
+ipcMain.handle('log:getRecentLines', () => {
+  try {
+    return getRecentLines();
+  } catch (err) {
+    console.error('[IPC] log:getRecentLines failed:', err);
+    throw err;
+  }
+});
+
+ipcMain.handle('log:clear', () => {
+  try {
+    clearLogFile();
+  } catch (err) {
+    console.error('[IPC] log:clear failed:', err);
+    throw err;
+  }
+});
+
+ipcMain.handle('log:export', async () => {
+  try {
+    if (!mainWindow) return null;
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export log',
+      defaultPath: `meshtastic-client-log-${new Date().toISOString().slice(0, 10)}.log`,
+      filters: [{ name: 'Log file', extensions: ['log', 'txt'] }],
+    });
+    if (!result.canceled && result.filePath) {
+      const src = getLogPath();
+      if (!fs.existsSync(src)) {
+        await fs.promises.writeFile(result.filePath, '', 'utf8');
+      } else {
+        await exportLogTo(result.filePath);
+      }
+      return result.filePath;
+    }
+    return null;
+  } catch (err) {
+    console.error('[IPC] log:export failed:', err);
+    throw err;
+  }
+});
+
 // ─── App lifecycle ─────────────────────────────────────────────────
 app.whenReady().then(() => {
   try {
+    initLogFile();
     initDatabase();
     // Force the dock icon n development on macOS
     if (!app.isPackaged && process.platform === 'darwin') {
@@ -887,7 +1039,7 @@ app.whenReady().then(() => {
         __dirname,
         '../../resources/icons/mac/iconset/icon_256x256@1x.png',
       );
-      app.dock.setIcon(iconPath);
+      app.dock?.setIcon(iconPath);
     }
     createWindow();
   } catch (error) {

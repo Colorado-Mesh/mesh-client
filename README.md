@@ -50,7 +50,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Node Management**
 
-- Node list with SNR, RSSI, battery, GPS, last heard, and packet redundancy score
+- Node list with SNR, RSSI, battery, GPS, last heard, and packet redundancy score — **last heard** and **hops** stay accurate on BLE connect (replayed device-DB payloads no longer mark long-offline nodes as “just heard” or show stale hop counts; stale entries show **–** for hops where appropriate)
 - Distance filter, favorite/pin nodes, device role icons, signal strength bars
 - Node Detail Modal: DM, trace route with hop-path display, delete node, Routing Health section with 24-hour sparkline, Connection Health %, and collapsible Path History
 
@@ -78,6 +78,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Productivity**
 
+- **Log panel** (right rail) — live app log stream from the main process, optional debug logging toggle, export or delete the log file
 - Full keyboard navigation — press `?` for shortcut reference; `Cmd/Ctrl+1–8` switches tabs; `Cmd/Ctrl+F` searches chat
 - Automatic update checking — packaged builds download and install in-app; macOS opens the release page
 - System tray with live unread badge; app stays accessible when window is closed
@@ -272,14 +273,15 @@ meshtastic-client/
 ├── src/
 │   ├── main/
 │   │   ├── index.ts              # Window creation, BLE/Serial intercept, all IPC handlers
-│   │   ├── database.ts           # SQLite schema & migrations (WAL mode, schema v7)
+│   │   ├── log-service.ts        # Log file, console patch, log panel IPC
+│   │   ├── database.ts           # SQLite schema & migrations (WAL mode, user_version 9)
 │   │   ├── mqtt-manager.ts       # MQTT client: AES decrypt, dedup, protobuf decode
 │   │   ├── updater.ts            # Auto-update checks via electron-updater
 │   │   └── gps.ts                # Main-process GPS helper
 │   ├── preload/
-│   │   └── index.ts              # contextBridge: exposes window.electronAPI (db, BLE, serial, session)
+│   │   └── index.ts              # contextBridge: electronAPI (db, mqtt, log, BLE, serial, session)
 │   └── renderer/
-│       ├── App.tsx               # Shell: 8 tabs, keyboard shortcuts (Cmd/Ctrl+1–8), status header
+│       ├── App.tsx               # Shell: 8 tabs, Log panel (right rail), keyboard shortcuts, status header
 │       ├── main.tsx              # React entry point
 │       ├── components/
 │       │   ├── ChatPanel.tsx         # Chat UI, DMs, emoji reactions, channel switching
@@ -290,6 +292,7 @@ meshtastic-client/
 │       │   ├── ConfigPanel.tsx       # Device & channel configuration editor
 │       │   ├── ConnectionPanel.tsx   # BLE/Serial/HTTP/MQTT connection setup
 │       │   ├── DiagnosticsPanel.tsx  # Network health score, anomaly table, halo toggles
+│       │   ├── LogPanel.tsx          # Live app log, debug toggle, export/delete log file
 │       │   ├── RadioPanel.tsx        # Radio settings, fixed position, GPS send
 │       │   ├── AppPanel.tsx          # App settings, GPS interval, database management
 │       │   ├── NodeDetailModal.tsx   # Detailed node info overlay
@@ -315,18 +318,21 @@ meshtastic-client/
 │           ├── reactions.ts          # Emoji reaction helpers
 │           ├── roleInfo.tsx          # Node role display metadata
 │           ├── signal.ts             # SNR/RSSI signal quality helpers
+│           ├── parseStoredJson.ts    # Safe JSON parse for persisted values
 │           └── diagnostics/
 │               ├── RoutingDiagnosticEngine.ts  # Hop anomaly detectors (hop_goblin, bad_route, etc.)
 │               ├── RFDiagnosticEngine.ts        # RF-layer signal diagnostics
 │               └── RemediationEngine.ts         # Suggested fixes for detected anomalies
 ├── resources/
 │   ├── icons/                    # App icons (linux/, mac/, win/)
-│   └── images/                   # Bundled image assets
+│   ├── entitlements.mac.plist    # macOS signing entitlements (main)
+│   └── entitlements.mac.inherit.plist  # macOS child-process entitlements
 ├── scripts/
-│   ├── rebuild-native.mjs        # Rebuilds better-sqlite3 for Electron ABI (postinstall)
+│   ├── rebuild-native.mjs        # Rebuilds better-sqlite3 for Electron ABI (postinstall); removes stale build/ first to avoid wrong-platform .node after copying node_modules across OSes
 │   └── wait-for-dev.mjs          # Waits for Vite dev server before launching Electron
 ├── docs/
-│   └── accessibility-checklist.md
+│   ├── accessibility-checklist.md
+│   └── images/                   # README screenshots (node-list, map, diagnostics, node-detail)
 ├── electron-builder.yml          # Distributable config (targets, icons, signing)
 ├── vite.config.ts                # Renderer build (Vite)
 ├── vitest.config.ts              # Test runner config
@@ -405,6 +411,18 @@ You're missing build tools for the native SQLite module:
 
 `[permissions] checkHandler: media → denied` and `web-app-installation → denied` are expected. The app only uses **serial** and **geolocation** — media and web-app-installation are intentionally denied.
 
+### `npm run dist:mac` fails with `GH_TOKEN` / "Cannot cleanup"
+
+electron-builder publishes to GitHub when it thinks it’s in CI. Local builds use `--publish never` so artifacts land in `release/` without a token. Tag releases use `npm run dist:mac:publish` (and `:linux:publish` / `:win:publish`) with `GH_TOKEN` set — see `.github/workflows/release.yaml`.
+
+### `[DEP0190]` when running electron-builder
+
+Node deprecates `spawn(..., { shell: true })` with an args array. This project patches `app-builder-lib` via `patch-package` so macOS/Linux use `shell: false` for the npm dependency collector. Re-run `npm install` if you upgrade electron-builder and the warning returns.
+
+### `duplicate dependency references` during dist
+
+npm’s JSON tree lists hoisted packages with many duplicate refs (one per edge). That’s expected and not something you need to fix. The **app-builder-lib** patch logs that summary at **debug** only so normal `dist:*` runs stay quiet. To see it: `DEBUG=electron-builder npx electron-builder --mac` (or your usual dist command).
+
 ### `[DEP0169]` / `url.parse()` deprecation warning
 
 The app uses npm package overrides to force `follow-redirects` and `cacheable-request` onto versions that use the WHATWG URL API, which removes this warning. To trace the source of any deprecation, run:
@@ -417,8 +435,9 @@ npm run trace-deprecation
 
 **Cause**: `better-sqlite3` was compiled for a different Electron ABI — common after an Electron or Node version change.
 
-**Fix**: Run `npm install` (the postinstall script rebuilds native modules for the correct ABI automatically).
+**Fix**: Run `npm install` (the postinstall script rebuilds native modules for the correct ABI automatically). The rebuild step **removes any existing `node_modules/better-sqlite3/build`** before compiling, so a wrong-platform `.node` (e.g. Linux ELF left on macOS after copying `node_modules`) cannot persist and cause `ERR_DLOPEN_FAILED`.
 
+- If you still see dlopen errors after switching machines or OSes, delete `node_modules` and run a clean `npm install`.
 - **Windows**: Also ensure the [Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) is installed.
 
 ### Database directory is not writable

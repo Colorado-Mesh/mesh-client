@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LocationFilter } from '../App';
 import type { OurPosition } from '../lib/gpsSource';
 import { haversineDistanceKm } from '../lib/nodeStatus';
+import { parseStoredJson } from '../lib/parseStoredJson';
 import type { MeshNode } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useToast } from './Toast';
@@ -80,15 +81,16 @@ const DEFAULT_SETTINGS: AdminSettings = {
 };
 
 function loadSettings(): AdminSettings {
-  try {
-    const raw = localStorage.getItem('mesh-client:adminSettings');
-    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
+  const parsed = parseStoredJson<Partial<AdminSettings>>(
+    localStorage.getItem('mesh-client:adminSettings'),
+    'AppPanel loadSettings',
+  );
+  return parsed ? { ...DEFAULT_SETTINGS, ...parsed } : DEFAULT_SETTINGS;
 }
 
 interface Props {
+  logPanelVisible?: boolean;
+  onLogPanelVisibleChange?: (visible: boolean) => void;
   nodes: Map<number, MeshNode>;
   messageCount: number;
   channels: { index: number; name: string }[];
@@ -112,6 +114,8 @@ interface PendingAction {
 }
 
 export default function AppPanel({
+  logPanelVisible = false,
+  onLogPanelVisibleChange,
   nodes,
   messageCount,
   channels,
@@ -163,27 +167,29 @@ export default function AppPanel({
 
   // ─── GPS refresh settings ────────────────────────────────────
   const [gpsRefreshInterval, setGpsRefreshInterval] = useState<number>(() => {
-    try {
-      const raw = localStorage.getItem('mesh-client:gpsSettings');
-      const val = raw ? (JSON.parse(raw).refreshInterval ?? 0) : 0;
-      return val > 0 ? val : 3600; // default 1 hour
-    } catch {
-      return 3600;
-    }
+    const gpsParsed = parseStoredJson<{ refreshInterval?: number }>(
+      localStorage.getItem('mesh-client:gpsSettings'),
+      'AppPanel gps refresh interval state',
+    );
+    const val = gpsParsed?.refreshInterval ?? 0;
+    return val > 0 ? val : 3600; // default 1 hour
   });
 
   const handleGpsIntervalChange = useCallback(
     (val: number) => {
       setGpsRefreshInterval(val);
       try {
-        const raw = localStorage.getItem('mesh-client:gpsSettings');
-        const existing = raw ? JSON.parse(raw) : {};
+        const existing =
+          parseStoredJson<Record<string, unknown>>(
+            localStorage.getItem('mesh-client:gpsSettings'),
+            'AppPanel persist gps interval',
+          ) ?? {};
         localStorage.setItem(
           'mesh-client:gpsSettings',
           JSON.stringify({ ...existing, refreshInterval: val }),
         );
-      } catch {
-        /* ignore */
+      } catch (e) {
+        console.debug('[AppPanel] persist gps interval', e);
       }
       onGpsIntervalChange?.(val);
     },
@@ -192,31 +198,28 @@ export default function AppPanel({
 
   // ─── Static GPS position ─────────────────────────────────────
   const [staticLatInput, setStaticLatInput] = useState<string>(() => {
-    try {
-      const raw = localStorage.getItem('mesh-client:gpsSettings');
-      const s = raw ? JSON.parse(raw) : {};
-      return typeof s.staticLat === 'number' ? s.staticLat.toFixed(5) : '';
-    } catch {
-      return '';
-    }
+    const s =
+      parseStoredJson<{ staticLat?: number }>(
+        localStorage.getItem('mesh-client:gpsSettings'),
+        'AppPanel staticLat state',
+      ) ?? {};
+    return typeof s.staticLat === 'number' ? s.staticLat.toFixed(5) : '';
   });
   const [staticLonInput, setStaticLonInput] = useState<string>(() => {
-    try {
-      const raw = localStorage.getItem('mesh-client:gpsSettings');
-      const s = raw ? JSON.parse(raw) : {};
-      return typeof s.staticLon === 'number' ? s.staticLon.toFixed(5) : '';
-    } catch {
-      return '';
-    }
+    const s =
+      parseStoredJson<{ staticLon?: number }>(
+        localStorage.getItem('mesh-client:gpsSettings'),
+        'AppPanel staticLon state',
+      ) ?? {};
+    return typeof s.staticLon === 'number' ? s.staticLon.toFixed(5) : '';
   });
   const [hasStaticPosition, setHasStaticPosition] = useState<boolean>(() => {
-    try {
-      const raw = localStorage.getItem('mesh-client:gpsSettings');
-      const s = raw ? JSON.parse(raw) : {};
-      return typeof s.staticLat === 'number' && typeof s.staticLon === 'number';
-    } catch {
-      return false;
-    }
+    const s =
+      parseStoredJson<{ staticLat?: number; staticLon?: number }>(
+        localStorage.getItem('mesh-client:gpsSettings'),
+        'AppPanel hasStaticPosition state',
+      ) ?? {};
+    return typeof s.staticLat === 'number' && typeof s.staticLon === 'number';
   });
 
   const saveStaticPosition = useCallback(() => {
@@ -231,8 +234,11 @@ export default function AppPanel({
       return;
     }
     try {
-      const raw = localStorage.getItem('mesh-client:gpsSettings');
-      const existing = raw ? JSON.parse(raw) : {};
+      const existing =
+        parseStoredJson<Record<string, unknown>>(
+          localStorage.getItem('mesh-client:gpsSettings'),
+          'AppPanel save static position',
+        ) ?? {};
       localStorage.setItem(
         'mesh-client:gpsSettings',
         JSON.stringify({ ...existing, staticLat: lat, staticLon: lon, refreshInterval: 0 }),
@@ -242,15 +248,19 @@ export default function AppPanel({
       onGpsIntervalChange?.(0);
       onRefreshGps?.();
       addToast('Static position saved.', 'success');
-    } catch {
+    } catch (e) {
+      console.warn('[AppPanel] save static position failed', e);
       addToast('Failed to save static position.', 'error');
     }
   }, [staticLatInput, staticLonInput, addToast, onRefreshGps, onGpsIntervalChange]);
 
   const clearStaticPosition = useCallback(() => {
     try {
-      const raw = localStorage.getItem('mesh-client:gpsSettings');
-      const existing = raw ? JSON.parse(raw) : {};
+      const existing =
+        parseStoredJson<Record<string, unknown>>(
+          localStorage.getItem('mesh-client:gpsSettings'),
+          'AppPanel clear static position',
+        ) ?? {};
       delete existing.staticLat;
       delete existing.staticLon;
       const rest = existing;
@@ -260,7 +270,8 @@ export default function AppPanel({
       setHasStaticPosition(false);
       onRefreshGps?.();
       addToast('Static position cleared.', 'success');
-    } catch {
+    } catch (e) {
+      console.warn('[AppPanel] clear static position failed', e);
       addToast('Failed to clear static position.', 'error');
     }
   }, [addToast, onRefreshGps]);
@@ -275,7 +286,9 @@ export default function AppPanel({
       .then((rows) => {
         setMsgChannels(rows.map((r) => r.channel));
       })
-      .catch(() => {});
+      .catch((e) => {
+        console.debug('[AppPanel] getMessageChannels', e);
+      });
   }, []);
 
   const getChannelLabel = useCallback(
@@ -311,6 +324,7 @@ export default function AppPanel({
       if (messageActions.includes(actionName)) onMessagesPruned?.();
       addToast(`${actionName} completed successfully.`, 'success');
     } catch (err) {
+      console.warn('[AppPanel] pending action failed', err);
       addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
     }
   }, [pendingAction, addToast, onNodesPruned, onMessagesPruned]);
@@ -318,6 +332,34 @@ export default function AppPanel({
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <h2 className="text-xl font-semibold text-gray-200">App Settings</h2>
+
+      {/* Log panel visibility */}
+      {onLogPanelVisibleChange && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted">Diagnostics</h3>
+          <div className="bg-secondary-dark rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <input
+                id="log-panel-visible-checkbox"
+                type="checkbox"
+                checked={logPanelVisible}
+                onChange={(e) => onLogPanelVisibleChange(e.target.checked)}
+                className="rounded border-gray-600"
+              />
+              <label
+                htmlFor="log-panel-visible-checkbox"
+                className="text-sm text-gray-300 cursor-pointer"
+              >
+                Show log panel (right side)
+              </label>
+            </div>
+            <p className="text-xs text-muted mt-2">
+              When enabled, a live log stream appears on the right. Debug lines require the checkbox
+              inside the log panel.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* GPS / Location */}
       <div className="space-y-3">
@@ -343,8 +385,11 @@ export default function AppPanel({
               location.
             </p>
             <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-300 w-8">Lat:</label>
+              <label htmlFor="apppanel-static-lat" className="text-sm text-gray-300 w-8">
+                Lat:
+              </label>
               <input
+                id="apppanel-static-lat"
                 type="number"
                 step="0.00001"
                 min={-90}
@@ -354,8 +399,11 @@ export default function AppPanel({
                 placeholder="e.g. 40.12345"
                 className="flex-1 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
               />
-              <label className="text-sm text-gray-300 w-8">Lon:</label>
+              <label htmlFor="apppanel-static-lon" className="text-sm text-gray-300 w-8">
+                Lon:
+              </label>
               <input
+                id="apppanel-static-lon"
                 type="number"
                 step="0.00001"
                 min={-180}
@@ -385,8 +433,12 @@ export default function AppPanel({
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-300 flex-1">Auto-refresh interval:</label>
+            <label htmlFor="apppanel-gps-interval" className="text-sm text-gray-300 flex-1">
+              Auto-refresh interval:
+            </label>
             <select
+              id="apppanel-gps-interval"
+              aria-label="GPS auto-refresh interval"
               value={gpsRefreshInterval}
               onChange={(e) => handleGpsIntervalChange(Number(e.target.value))}
               disabled={hasStaticPosition}
@@ -435,11 +487,15 @@ export default function AppPanel({
             </label>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300">Max distance:</span>
+            <label htmlFor="apppanel-max-distance" className="text-sm text-gray-300">
+              Max distance:
+            </label>
             <input
+              id="apppanel-max-distance"
               type="number"
               min={1}
               value={settings.distanceFilterMax}
+              aria-label="Maximum distance for node filter"
               onChange={(e) =>
                 updateSetting('distanceFilterMax', Math.max(1, parseInt(e.target.value) || 1))
               }
@@ -447,6 +503,8 @@ export default function AppPanel({
               className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <select
+              id="apppanel-distance-unit"
+              aria-label="Distance unit for filter"
               value={settings.distanceUnit}
               onChange={(e) => updateSetting('distanceUnit', e.target.value as 'miles' | 'km')}
               disabled={!settings.distanceFilterEnabled}
@@ -493,11 +551,15 @@ export default function AppPanel({
         <div className="bg-secondary-dark rounded-lg p-4 space-y-4">
           {/* Manual age delete */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300 flex-1">Delete nodes last heard more than</span>
+            <label htmlFor="apppanel-delete-age-days" className="text-sm text-gray-300 flex-1">
+              Delete nodes last heard more than
+            </label>
             <input
+              id="apppanel-delete-age-days"
               type="number"
               min={1}
               value={deleteAgeDays}
+              aria-label="Delete nodes older than this many days"
               onChange={(e) => setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1))}
               className="w-20 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none"
             />
@@ -534,9 +596,11 @@ export default function AppPanel({
               Auto-prune on startup, older than
             </label>
             <input
+              id="apppanel-auto-prune-days"
               type="number"
               min={1}
               value={settings.autoPruneDays}
+              aria-label="Auto-prune nodes older than days"
               onChange={(e) =>
                 updateSetting('autoPruneDays', Math.max(1, parseInt(e.target.value) || 1))
               }
@@ -559,9 +623,11 @@ export default function AppPanel({
               Cap total nodes, keep newest
             </label>
             <input
+              id="apppanel-node-cap-count"
               type="number"
               min={1}
               value={settings.nodeCapCount}
+              aria-label="Maximum number of nodes to keep"
               onChange={(e) =>
                 updateSetting('nodeCapCount', Math.max(1, parseInt(e.target.value) || 1))
               }
@@ -745,11 +811,13 @@ export default function AppPanel({
           <button
             onClick={async () => {
               try {
+                console.debug('[AppPanel] exportDb');
                 const path = await window.electronAPI.db.exportDb();
                 if (path) {
                   addToast(`Exported to: ${path}`, 'success');
                 }
               } catch (err) {
+                console.warn('[AppPanel] export failed', err);
                 addToast(
                   `Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
                   'error',
@@ -764,6 +832,7 @@ export default function AppPanel({
           <button
             onClick={async () => {
               try {
+                console.debug('[AppPanel] importDb');
                 const result = await window.electronAPI.db.importDb();
                 if (result) {
                   addToast(
@@ -772,6 +841,7 @@ export default function AppPanel({
                   );
                 }
               } catch (err) {
+                console.warn('[AppPanel] import failed', err);
                 addToast(
                   `Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
                   'error',
@@ -807,10 +877,12 @@ export default function AppPanel({
               Limit messages loaded
             </label>
             <input
+              id="apppanel-message-limit-count"
               type="number"
               min={1}
               max={10000}
               value={settings.messageLimitCount}
+              aria-label="Maximum messages to load from database"
               onChange={(e) =>
                 updateSetting(
                   'messageLimitCount',
@@ -827,8 +899,12 @@ export default function AppPanel({
         {/* Channel-scoped message deletion */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-400">Channel:</label>
+            <label htmlFor="apppanel-clear-channel" className="text-sm text-gray-400">
+              Channel:
+            </label>
             <select
+              id="apppanel-clear-channel"
+              aria-label="Channel for clearing messages"
               value={clearChannelTarget}
               onChange={(e) => setClearChannelTarget(parseInt(e.target.value))}
               className="flex-1 px-3 py-1.5 bg-secondary-dark border border-gray-600 rounded-lg text-gray-200 text-sm focus:border-brand-green focus:outline-none"

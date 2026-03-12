@@ -241,7 +241,8 @@ function base64ToPsk(b64: string): Uint8Array {
   try {
     const binary = atob(b64);
     return Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  } catch {
+  } catch (e) {
+    console.debug('[ConfigPanel] base64ToPsk invalid', e);
     return new Uint8Array([1]);
   }
 }
@@ -337,6 +338,7 @@ export default function ConfigPanel({
       await onCommit();
       setStatus(`${section} applied successfully!`);
     } catch (err) {
+      console.warn('[ConfigPanel] apply section failed', err);
       setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setApplyingSection(null);
@@ -723,6 +725,7 @@ function ChannelSection({
       await onCommit();
       setStatus(`Channel ${selectedIndex} saved!`);
     } catch (err) {
+      console.warn('[ConfigPanel] save channel failed', err);
       setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown'}`);
     } finally {
       setSaving(false);
@@ -751,6 +754,7 @@ function ChannelSection({
       await onCommit();
       setStatus(`Channel ${selectedIndex} reset!`);
     } catch (err) {
+      console.warn('[ConfigPanel] reset channel failed', err);
       setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown'}`);
     } finally {
       setSaving(false);

@@ -152,7 +152,8 @@ export default function DiagnosticsPanel({
     try {
       await onTraceRoute(nodeId);
       // Result arrival is detected via useEffect watching traceRouteResults
-    } catch {
+    } catch (e) {
+      console.warn('[DiagnosticsPanel] trace route failed', e);
       clearTimeout(timer);
       traceTimers.current.delete(nodeId);
       setTracePending(null);

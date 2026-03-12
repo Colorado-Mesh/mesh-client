@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayChar, emojiDisplayLabel } from '../lib/reactions';
 import type { ChatMessage, MeshNode } from '../lib/types';
 
@@ -176,16 +177,12 @@ export default function ChatPanel({
   // Two-section UI state — load DM tabs from localStorage for restart persistence
   const [viewMode, setViewMode] = useState<'channels' | 'dm'>('channels');
   const [openDmTabs, setOpenDmTabs] = useState<number[]>(() => {
-    try {
-      const saved = localStorage.getItem('mesh-client:openDmTabs');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.every((n: unknown) => typeof n === 'number')) {
-          return parsed;
-        }
-      }
-    } catch {
-      /* ignore corrupt data */
+    const parsed = parseStoredJson<unknown>(
+      localStorage.getItem('mesh-client:openDmTabs'),
+      'ChatPanel openDmTabs',
+    );
+    if (Array.isArray(parsed) && parsed.every((n: unknown) => typeof n === 'number')) {
+      return parsed;
     }
     return [];
   });
@@ -193,7 +190,11 @@ export default function ChatPanel({
 
   // Persist openDmTabs to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('mesh-client:openDmTabs', JSON.stringify(openDmTabs));
+    try {
+      localStorage.setItem('mesh-client:openDmTabs', JSON.stringify(openDmTabs));
+    } catch (e) {
+      console.warn('[ChatPanel] persist openDmTabs failed', e);
+    }
   }, [openDmTabs]);
 
   // Track unread counts per channel
@@ -202,15 +203,11 @@ export default function ChatPanel({
 
   // Persisted lastRead: { "ch:0": timestamp, "ch:2": ..., "dm:12345678": ... }
   const [persistedLastRead, setPersistedLastRead] = useState<Record<string, number>>(() => {
-    try {
-      const saved = localStorage.getItem('mesh-client:lastRead');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
-      }
-    } catch {
-      /* ignore corrupt */
-    }
+    const parsed = parseStoredJson<Record<string, number>>(
+      localStorage.getItem('mesh-client:lastRead'),
+      'ChatPanel lastRead',
+    );
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
     return {};
   });
   // Ref mirror — lets view-switch effect read latest value without adding it to deps
@@ -435,6 +432,7 @@ export default function ChatPanel({
     if (!input.trim() || !isConnected || sending) return;
     setSending(true);
     try {
+      console.debug('[ChatPanel] handleSend');
       const sendChannel = channel === -1 ? 0 : channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
       await onSend(input.trim(), sendChannel, destination, replyTo?.packetId);
@@ -453,6 +451,7 @@ export default function ChatPanel({
   const handleReact = async (emojiCode: number, packetId: number, msgChannel: number) => {
     setPickerOpenFor(null);
     try {
+      console.debug('[ChatPanel] handleReact', emojiCode, packetId, msgChannel);
       await onReact(emojiCode, packetId, msgChannel);
     } catch (err) {
       console.error('React failed:', err);

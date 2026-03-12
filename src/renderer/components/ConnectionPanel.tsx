@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { parseStoredJson } from '../lib/parseStoredJson';
 import type {
   BluetoothDevice,
   ConnectionType,
@@ -22,30 +23,33 @@ const LAST_BLE_DEVICE_KEY = 'mesh-client:lastBleDevice';
 const LAST_SERIAL_PORT_KEY = 'mesh-client:lastSerialPort';
 
 function loadLastConnection(): LastConnection | null {
-  try {
-    const raw = localStorage.getItem(LAST_CONNECTION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  return parseStoredJson<LastConnection>(
+    localStorage.getItem(LAST_CONNECTION_KEY),
+    'ConnectionPanel loadLastConnection',
+  );
 }
 
 function saveLastConnection(c: LastConnection) {
   try {
     localStorage.setItem(LAST_CONNECTION_KEY, JSON.stringify(c));
-  } catch {}
+  } catch (e) {
+    console.debug('[ConnectionPanel] saveLastConnection', e);
+  }
 }
 
 function clearLastConnection() {
   try {
     localStorage.removeItem(LAST_CONNECTION_KEY);
-  } catch {}
+  } catch (e) {
+    console.debug('[ConnectionPanel] clearLastConnection', e);
+  }
 }
 
 function loadLastBleDevice(): string | null {
   try {
     return localStorage.getItem(LAST_BLE_DEVICE_KEY);
-  } catch {
+  } catch (e) {
+    console.debug('[ConnectionPanel] loadLastBleDevice', e);
     return null;
   }
 }
@@ -53,13 +57,16 @@ function loadLastBleDevice(): string | null {
 function saveLastBleDevice(id: string) {
   try {
     localStorage.setItem(LAST_BLE_DEVICE_KEY, id);
-  } catch {}
+  } catch (e) {
+    console.debug('[ConnectionPanel] saveLastBleDevice', e);
+  }
 }
 
 function loadLastSerialPort(): string | null {
   try {
     return localStorage.getItem(LAST_SERIAL_PORT_KEY);
-  } catch {
+  } catch (e) {
+    console.debug('[ConnectionPanel] loadLastSerialPort', e);
     return null;
   }
 }
@@ -67,17 +74,18 @@ function loadLastSerialPort(): string | null {
 function saveLastSerialPort(id: string) {
   try {
     localStorage.setItem(LAST_SERIAL_PORT_KEY, id);
-  } catch {}
+  } catch (e) {
+    console.debug('[ConnectionPanel] saveLastSerialPort', e);
+  }
 }
 
 function getBleDeviceName(deviceId: string): string | null {
-  try {
-    const raw = localStorage.getItem('mesh-client:bleDeviceNames');
-    const cache: Record<string, string> = raw ? JSON.parse(raw) : {};
-    return cache[deviceId] ?? null;
-  } catch {
-    return null;
-  }
+  const cache =
+    parseStoredJson<Record<string, string>>(
+      localStorage.getItem('mesh-client:bleDeviceNames'),
+      'ConnectionPanel bleDeviceNames',
+    ) ?? {};
+  return cache[deviceId] ?? null;
 }
 
 /** Inline SVG icon for each connection type */
@@ -142,12 +150,9 @@ const MQTT_DEFAULTS: MQTTSettings = {
 };
 
 function loadMqttSettings(): MQTTSettings {
-  try {
-    const raw = localStorage.getItem('mesh-client:mqttSettings');
-    return raw ? { ...MQTT_DEFAULTS, ...JSON.parse(raw) } : MQTT_DEFAULTS;
-  } catch {
-    return MQTT_DEFAULTS;
-  }
+  const raw = localStorage.getItem('mesh-client:mqttSettings');
+  const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'ConnectionPanel loadMqttSettings');
+  return parsed ? { ...MQTT_DEFAULTS, ...parsed } : MQTT_DEFAULTS;
 }
 
 function MqttGlobeIcon({ connected }: { connected: boolean }) {
@@ -255,7 +260,9 @@ export default function ConnectionPanel({
     if (state.status === 'connecting') {
       if (showBlePicker) setConnectionStage('Select your device below');
       else if (showSerialPicker) setConnectionStage('Select a serial port below');
-      else setConnectionStage('Please wait...');
+      else if (connectionType === 'ble' && isAutoConnectingRef.current) {
+        setConnectionStage('Connecting to last Bluetooth device…');
+      } else setConnectionStage('Please wait...');
     } else if (state.status === 'connected') {
       setConnectionStage('Configuring device...');
     } else if (state.status === 'configured') {
@@ -296,7 +303,14 @@ export default function ConnectionPanel({
       setIsAutoConnecting(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lastConnection.bleDeviceName read as fallback only; omitted to avoid retriggering on stale-name updates
-  }, [state.status, state.connectionType, showBlePicker, showSerialPicker, httpAddress]);
+  }, [
+    state.status,
+    state.connectionType,
+    showBlePicker,
+    showSerialPicker,
+    httpAddress,
+    connectionType,
+  ]);
 
   // Listen for BLE devices discovered by main process
   useEffect(() => {
@@ -320,7 +334,7 @@ export default function ConnectionPanel({
         }
       }
       setShowBlePicker(true);
-      setConnectionStage('Select your device below');
+      setConnectionStage('Scanning — select your device when it appears below');
     });
     return cleanup;
   }, [lastConnection]); // isAutoConnecting intentionally omitted — ref handles it
@@ -359,8 +373,10 @@ export default function ConnectionPanel({
     setShowSerialPicker(false);
     setConnectionStage('Please wait...');
     try {
+      console.debug('[ConnectionPanel] handleConnect', connectionType, httpAddress);
       await onConnect(connectionType, httpAddress);
     } catch (err) {
+      console.warn('[ConnectionPanel] handleConnect failed', err);
       setError(err instanceof Error ? err.message : 'Connection failed');
       setConnecting(false);
       setConnectionStage('');
@@ -386,9 +402,10 @@ export default function ConnectionPanel({
     setConnectionStage('');
     // Ensure the underlying connection attempt is properly torn down
     try {
+      console.debug('[ConnectionPanel] handleCancelConnection onDisconnect');
       await onDisconnect();
-    } catch {
-      // Best effort cleanup
+    } catch (e) {
+      console.debug('[ConnectionPanel] onDisconnect best-effort cleanup', e);
     }
   }, [showBlePicker, showSerialPicker, onDisconnect]);
 
@@ -413,8 +430,8 @@ export default function ConnectionPanel({
   }, []);
 
   // Auto-connect on mount: fires once per session using saved last connection.
-  // HTTP and serial can connect automatically (no user gesture needed).
-  // BLE requires a user gesture — show reconnect button instead.
+  // Serial and BLE use gesture-free reconnect when the platform remembers the device.
+  // HTTP still uses the one-click reconnect card (no autoconnect on mount).
   useEffect(() => {
     if (autoConnectFiredRef.current) return;
     if (state.status !== 'disconnected') return;
@@ -422,12 +439,8 @@ export default function ConnectionPanel({
 
     autoConnectFiredRef.current = true;
 
-    if (lastConnection.type === 'serial') {
-      setConnectionType('serial');
-      isAutoConnectingRef.current = true;
-      setIsAutoConnecting(true);
-      setConnecting(true);
-      setConnectionStage('Please wait...');
+    const startAutoConnectTimeout = () => {
+      if (autoConnectTimeoutRef.current) clearTimeout(autoConnectTimeoutRef.current);
       autoConnectTimeoutRef.current = setTimeout(() => {
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
@@ -435,15 +448,31 @@ export default function ConnectionPanel({
         setConnecting(false);
         setConnectionStage('');
       }, 30_000);
-      onAutoConnect('serial', undefined, lastConnection.serialPortId).catch((err) => {
-        isAutoConnectingRef.current = false;
-        setIsAutoConnecting(false);
-        setError(err instanceof Error ? err.message : 'Auto-connect failed');
-        setConnecting(false);
-        setConnectionStage('');
-      });
+    };
+
+    const onAutoConnectFailed = (err: unknown) => {
+      isAutoConnectingRef.current = false;
+      setIsAutoConnecting(false);
+      setError(err instanceof Error ? err.message : 'Auto-connect failed');
+      setConnecting(false);
+      setConnectionStage('');
+    };
+
+    if (lastConnection.type === 'serial') {
+      setConnectionType('serial');
+      isAutoConnectingRef.current = true;
+      setIsAutoConnecting(true);
+      setConnecting(true);
+      setConnectionStage('Please wait...');
+      startAutoConnectTimeout();
+      onAutoConnect('serial', undefined, lastConnection.serialPortId).catch(onAutoConnectFailed);
+    } else if (lastConnection.type === 'ble') {
+      // BLE: navigator.bluetooth.getDevices() is empty on this Electron build after
+      // grant (logs: all retries count 0). requestDevice() requires a user gesture,
+      // so no mount autoconnect — user taps Reconnect/Connect to open the picker.
+      return;
     }
-    // HTTP + BLE: do not auto-trigger — show one-click reconnect card instead
+    // HTTP: do not auto-trigger — show one-click reconnect card instead
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally empty — fires once on mount
 
@@ -460,14 +489,32 @@ export default function ConnectionPanel({
     setError(null);
 
     if (lastConnection.type === 'ble') {
-      isAutoConnectingRef.current = true;
-      setIsAutoConnecting(true);
+      // onConnect('ble') must run in the same turn as the click (user gesture).
+      // Set auto-connect ref so bluetooth-devices-discovered auto-selects lastId
+      // when it appears in the scan list — that is the "quick connect" path.
       setConnectionType('ble');
-      setConnecting(true);
       setBleDevices([]);
       setShowBlePicker(false);
-      setConnectionStage('Please wait...');
+      isAutoConnectingRef.current = true;
+      setIsAutoConnecting(true);
+      setConnecting(true);
+      setConnectionStage('Connecting to last Bluetooth device…');
+      if (autoConnectTimeoutRef.current) {
+        clearTimeout(autoConnectTimeoutRef.current);
+        autoConnectTimeoutRef.current = null;
+      }
+      autoConnectTimeoutRef.current = setTimeout(() => {
+        isAutoConnectingRef.current = false;
+        setIsAutoConnecting(false);
+        setError('Auto-connect timed out.');
+        setConnecting(false);
+        setConnectionStage('');
+      }, 30_000);
       onConnect('ble').catch((err) => {
+        if (autoConnectTimeoutRef.current) {
+          clearTimeout(autoConnectTimeoutRef.current);
+          autoConnectTimeoutRef.current = null;
+        }
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
         setError(err instanceof Error ? err.message : 'Reconnect failed');
@@ -518,7 +565,11 @@ export default function ConnectionPanel({
         <Spinner className="w-12 h-12 text-bright-green" />
         <div className="text-center space-y-2">
           <h2 className="text-xl font-semibold text-gray-200">
-            {isAutoConnecting ? 'Auto-connecting...' : 'Connecting...'}
+            {showBlePicker
+              ? 'Scanning for Bluetooth devices…'
+              : isAutoConnecting
+                ? 'Auto-connecting…'
+                : 'Connecting…'}
           </h2>
           <div role="status" aria-live="polite" aria-atomic="true">
             <p className="text-sm text-muted">{connectionStage}</p>
@@ -540,19 +591,17 @@ export default function ConnectionPanel({
                 </div>
               ) : (
                 bleDevices.map((device) => {
-                  let displayName: string;
-                  try {
-                    const raw = localStorage.getItem('mesh-client:bleDeviceNames');
-                    const cache: Record<string, string> = raw ? JSON.parse(raw) : {};
-                    const cached = cache[device.deviceId];
-                    displayName = cached
-                      ? cached !== device.deviceName
-                        ? `${cached} (${device.deviceName})`
-                        : cached
-                      : device.deviceName;
-                  } catch {
-                    displayName = device.deviceName;
-                  }
+                  const cache =
+                    parseStoredJson<Record<string, string>>(
+                      localStorage.getItem('mesh-client:bleDeviceNames'),
+                      'ConnectionPanel bleDeviceNames list',
+                    ) ?? {};
+                  const cached = cache[device.deviceId];
+                  const displayName = cached
+                    ? cached !== device.deviceName
+                      ? `${cached} (${device.deviceName})`
+                      : cached
+                    : device.deviceName;
                   return (
                     <button
                       key={device.deviceId}

@@ -13,6 +13,7 @@ import {
 import { validateCoords } from '../lib/coordUtils';
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
+import { parseStoredJson } from '../lib/parseStoredJson';
 import { normalizeReactionEmoji } from '../lib/reactions';
 import type {
   ChatMessage,
@@ -25,15 +26,13 @@ import type {
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 
 function getMessageLoadLimit(): number {
-  try {
-    const raw = localStorage.getItem('mesh-client:adminSettings');
-    if (!raw) return 1000;
-    const s = JSON.parse(raw);
-    if (s.messageLimitEnabled === false) return 10000;
-    return Math.max(1, s.messageLimitCount ?? 1000);
-  } catch {
-    return 1000;
-  }
+  const s = parseStoredJson<{
+    messageLimitEnabled?: boolean;
+    messageLimitCount?: number;
+  }>(localStorage.getItem('mesh-client:adminSettings'), 'useDevice getMessageLoadLimit');
+  if (!s) return 1000;
+  if (s.messageLimitEnabled === false) return 10000;
+  return Math.max(1, s.messageLimitCount ?? 1000);
 }
 
 const MAX_TELEMETRY_POINTS = 50;
@@ -234,7 +233,9 @@ export function useDevice() {
     if (pollRef.current) return; // Already polling
     pollRef.current = setInterval(() => {
       // Broadcast position request to all nodes
-      deviceRef.current?.requestPosition(0xffffffff).catch(() => {});
+      deviceRef.current?.requestPosition(0xffffffff).catch((e) => {
+        console.debug('[useDevice] requestPosition poll', e);
+      });
     }, POLL_INTERVAL_MS);
   }, []);
 
@@ -299,8 +300,11 @@ export function useDevice() {
   const startGpsInterval = useCallback(() => {
     stopGpsInterval();
     try {
-      const raw = localStorage.getItem('mesh-client:gpsSettings');
-      const intervalSecs = raw ? (JSON.parse(raw).refreshInterval ?? 0) : 0;
+      const gpsParsed = parseStoredJson<{ refreshInterval?: number }>(
+        localStorage.getItem('mesh-client:gpsSettings'),
+        'useDevice startGpsInterval',
+      );
+      const intervalSecs = gpsParsed?.refreshInterval ?? 0;
       if (intervalSecs > 0) {
         gpsIntervalRef.current = setInterval(() => {
           refreshOurPositionRef.current();
@@ -482,7 +486,9 @@ export function useDevice() {
 
         // Re-transmit over RF (gateway downlink behavior)
         // isEcho check in onMeshPacket prevents the re-TX echo from being re-uploaded to MQTT
-        deviceRef.current.sendText(msg.payload, 'broadcast', true, msg.channel).catch(() => {}); // non-fatal; RF TX failure doesn't affect chat display
+        deviceRef.current.sendText(msg.payload, 'broadcast', true, msg.channel).catch((e) => {
+          console.debug('[useDevice] MQTT downlink sendText non-fatal', e);
+        });
       }
 
       // Deduplicate by content too (same sender + timestamp)
@@ -518,7 +524,9 @@ export function useDevice() {
       const device = deviceRef.current;
       deviceRef.current = null;
       if (device) {
-        safeDisconnect(device).catch(() => {});
+        safeDisconnect(device).catch((e) => {
+          console.debug('[useDevice] unmount safeDisconnect', e);
+        });
       }
     };
   }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat, stopGpsInterval]);
@@ -574,7 +582,9 @@ export function useDevice() {
         touchLastData();
         const virtualNodeId = getOrCreateVirtualNodeId();
         if (virtualNodeId !== info.myNodeNum) {
-          window.electronAPI.db.deleteNode(virtualNodeId).catch(() => {});
+          window.electronAPI.db.deleteNode(virtualNodeId).catch((e) => {
+            console.debug('[useDevice] deleteNode virtual', e);
+          });
         }
         myNodeNumRef.current = info.myNodeNum;
         setState((s) => ({ ...s, myNodeNum: info.myNodeNum }));
@@ -669,7 +679,9 @@ export function useDevice() {
                 channelName: 'LongFast',
               })
               .then(isDuplicate)
-              .catch(() => {}); // register echo packetId; non-fatal
+              .catch((e) => {
+                console.debug('[useDevice] MQTT publish echo register non-fatal', e);
+              });
           }
         }
 
@@ -681,8 +693,8 @@ export function useDevice() {
               body: msg.payload.slice(0, 100),
               silent: false,
             });
-          } catch {
-            /* notifications may not be available */
+          } catch (e) {
+            console.debug('[useDevice] Notification not available', e);
           }
         }
       });
@@ -707,7 +719,9 @@ export function useDevice() {
             long_name: user.longName ?? existing.long_name,
             short_name: user.shortName ?? existing.short_name,
             hw_model: String(user.hwModel ?? existing.hw_model),
-            last_heard: Date.now(),
+            // User packets are often replayed from the device DB at connect; do not
+            // bump last_hear to now or offline nodes appear freshly heard.
+            last_heard: existing.last_heard,
             heard_via_mqtt_only: false,
             source: 'rf',
           };
@@ -771,6 +785,11 @@ export function useDevice() {
             }
           }
 
+          const lastHeardMs =
+            (info.lastHeard ?? 0) > 0 ? info.lastHeard! * 1000 : existing.last_heard;
+          const staleHopMs = 2 * 3_600_000; // align with nodeStatus STALE_MS
+          const lastHeardStale = lastHeardMs > 0 && Date.now() - lastHeardMs > staleHopMs;
+
           const node: MeshNode = {
             ...existing,
             node_id: nodeNum,
@@ -779,14 +798,17 @@ export function useDevice() {
             hw_model: String(info.user?.hwModel ?? existing.hw_model),
             snr: info.snr ?? existing.snr,
             battery: info.deviceMetrics?.batteryLevel ?? existing.battery,
-            last_heard: (info.lastHeard ?? 0) > 0 ? info.lastHeard! * 1000 : existing.last_heard,
+            last_heard: lastHeardMs,
             latitude: newLat,
             longitude: newLon,
             role: info.user?.role ?? existing.role,
+            // Stale NodeInfo still carries cached hops; don't show hop count for ghosts.
             hops_away:
               nodeNum === myNodeNumRef.current
                 ? (info.hopsAway ?? 0)
-                : (info.hopsAway ?? existing.hops_away),
+                : lastHeardStale
+                  ? undefined
+                  : (info.hopsAway ?? existing.hops_away),
             via_mqtt: info.viaMqtt ?? existing.via_mqtt,
             voltage: info.deviceMetrics?.voltage ?? existing.voltage,
             channel_utilization:
@@ -813,8 +835,11 @@ export function useDevice() {
           if (btDevice?.id && shortName) {
             try {
               const key = 'mesh-client:bleDeviceNames';
-              const raw = localStorage.getItem(key);
-              const cache: Record<string, string> = raw ? JSON.parse(raw) : {};
+              const cache =
+                parseStoredJson<Record<string, string>>(
+                  localStorage.getItem(key),
+                  'useDevice bleDeviceNames cache',
+                ) ?? {};
               cache[btDevice.id] = shortName;
               localStorage.setItem(key, JSON.stringify(cache));
             } catch {
@@ -864,7 +889,8 @@ export function useDevice() {
             latitude: lat,
             longitude: lon,
             altitude: pos.altitude ?? existing.altitude,
-            last_heard: Date.now(),
+            // Position replays at connect must not bump last_heard to now.
+            last_heard: existing.last_heard,
             lastPositionWarning: undefined,
           };
           updated.set(packet.from, node);
@@ -941,7 +967,7 @@ export function useDevice() {
               updated.set(packet.from, {
                 ...existing,
                 battery: metrics.batteryLevel!,
-                last_heard: Date.now(),
+                // Telemetry replay at connect must not bump last_heard to now.
               });
             }
             return updated;
@@ -1037,7 +1063,8 @@ export function useDevice() {
                 ...existing,
                 ...(mp.rxSnr ? { snr: mp.rxSnr } : {}),
                 ...(mp.rxRssi ? { rssi: mp.rxRssi } : {}),
-                last_heard: Date.now(),
+                // Do not bump last_heard here — mesh packets at connect can be
+                // replayed/history; SNR/RSSI alone is not proof of a fresh hear.
               };
               updated.set(mp.from!, node);
               window.electronAPI.db.saveNode(node);
@@ -1154,7 +1181,10 @@ export function useDevice() {
     stopGpsInterval();
     const oldDevice = deviceRef.current;
     deviceRef.current = null;
-    if (oldDevice) safeDisconnect(oldDevice).catch(() => {});
+    if (oldDevice)
+      safeDisconnect(oldDevice).catch((e) => {
+        console.debug('[useDevice] handleConnectionLost safeDisconnect', e);
+      });
 
     // Begin reconnection
     attemptReconnectRef.current();
@@ -1231,7 +1261,9 @@ export function useDevice() {
         stopBleHeartbeat();
         const oldDevice = deviceRef.current;
         deviceRef.current = null;
-        safeDisconnect(oldDevice).catch(() => {});
+        safeDisconnect(oldDevice).catch((e) => {
+          console.debug('[useDevice] connect safeDisconnect prior', e);
+        });
       }
 
       // Store connection params for reconnection
@@ -1243,6 +1275,7 @@ export function useDevice() {
       setState((s) => ({ ...s, status: 'connecting', connectionType: type }));
 
       try {
+        console.debug('[useDevice] connect', type, httpAddress);
         const device = await createConnection(type, httpAddress);
         deviceRef.current = device;
 
@@ -1283,7 +1316,9 @@ export function useDevice() {
         stopBleHeartbeat();
         const oldDevice = deviceRef.current;
         deviceRef.current = null;
-        safeDisconnect(oldDevice).catch(() => {});
+        safeDisconnect(oldDevice).catch((e) => {
+          console.debug('[useDevice] connectAutomatic safeDisconnect prior', e);
+        });
       }
 
       connectionParamsRef.current = { type, httpAddress };
@@ -1294,6 +1329,7 @@ export function useDevice() {
       setState((s) => ({ ...s, status: 'connecting', connectionType: type }));
 
       try {
+        console.debug('[useDevice] connectAutomatic', type, httpAddress);
         let device: MeshDevice;
         if (type === 'ble') {
           device = await reconnectBle();
@@ -1379,6 +1415,7 @@ export function useDevice() {
           );
           window.electronAPI.db.updateMessageStatus(tempId, 'acked');
         } catch (err) {
+          console.warn('[useDevice] sendMessage mqtt-only path failed', err);
           setMessages((prev) =>
             prev.map((m) =>
               m.packetId === tempId ? { ...m, status: 'failed' as const, error: String(err) } : m,
@@ -1406,6 +1443,10 @@ export function useDevice() {
         : null;
 
       try {
+        console.debug('[useDevice] sendMessage sendText', {
+          channel,
+          shouldUplink: !!shouldUplink,
+        });
         pendingMqttRef.current = !!shouldUplink;
         pendingReplyIdRef.current = replyId;
         const dest: number | 'broadcast' = destination ?? 'broadcast';
@@ -1434,7 +1475,8 @@ export function useDevice() {
               );
               window.electronAPI.db.updateMessageStatus(packetId, 'acked', undefined, 'acked');
             })
-            .catch(() => {
+            .catch((e) => {
+              console.debug('[useDevice] sendMessage mqttPromise after ack failed', e);
               setMessages((prev) =>
                 prev.map((m) =>
                   m.packetId === packetId ? { ...m, mqttStatus: 'failed' as const } : m,
@@ -1444,6 +1486,7 @@ export function useDevice() {
             });
         }
       } catch (err) {
+        console.warn('[useDevice] sendMessage sendText NAK/timeout or error', err);
         // NAK or timeout — extract packet ID and error from rejection
         const pe = err as any;
         const packetId = pe.packetId;
@@ -1470,7 +1513,8 @@ export function useDevice() {
                 );
                 window.electronAPI.db.updateMessageStatus(packetId, 'failed', error, 'acked');
               })
-              .catch(() => {
+              .catch((e) => {
+                console.debug('[useDevice] sendMessage mqttPromise after NAK failed', e);
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.packetId === packetId ? { ...m, mqttStatus: 'failed' as const } : m,
@@ -1630,8 +1674,11 @@ export function useDevice() {
       let staticLat: number | undefined;
       let staticLon: number | undefined;
       try {
-        const raw = localStorage.getItem('mesh-client:gpsSettings');
-        const s = raw ? JSON.parse(raw) : {};
+        const s =
+          parseStoredJson<{ staticLat?: number; staticLon?: number }>(
+            localStorage.getItem('mesh-client:gpsSettings'),
+            'useDevice refreshOurPosition gpsSettings',
+          ) ?? {};
         if (typeof s.staticLat === 'number' && typeof s.staticLon === 'number') {
           staticLat = s.staticLat;
           staticLon = s.staticLon;
@@ -1690,7 +1737,9 @@ export function useDevice() {
                 time: Math.floor(Date.now() / 1000),
               }),
             )
-            .catch(() => {});
+            .catch((e) => {
+              console.debug('[useDevice] setPosition non-fatal', e);
+            });
         }
       }
       return pos;

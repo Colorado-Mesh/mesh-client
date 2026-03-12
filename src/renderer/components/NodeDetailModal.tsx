@@ -110,7 +110,8 @@ export default function NodeDetailModal({
     setActionStatus('Requesting position...');
     try {
       await onRequestPosition(node.node_id);
-    } catch {
+    } catch (e) {
+      console.warn('[NodeDetailModal] request position failed', e);
       setPositionRequestedAt(null);
       setActionStatus('Position request failed');
     }
@@ -121,7 +122,8 @@ export default function NodeDetailModal({
     setActionStatus('Trace route requested...');
     try {
       await onTraceRoute(node.node_id);
-    } catch {
+    } catch (e) {
+      console.warn('[NodeDetailModal] trace route failed', e);
       setTraceRoutePending(false);
       setActionStatus('Trace route failed');
     }

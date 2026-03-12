@@ -85,4 +85,11 @@ vi.stubGlobal('electronAPI', {
   selectBluetoothDevice: vi.fn(),
   selectSerialPort: vi.fn(),
   quitApp: vi.fn(),
+  log: {
+    getPath: vi.fn().mockResolvedValue('/tmp/test.log'),
+    getRecentLines: vi.fn().mockResolvedValue([]),
+    clear: vi.fn().mockResolvedValue(undefined),
+    export: vi.fn().mockResolvedValue(null),
+    onLine: vi.fn().mockReturnValue(() => {}),
+  },
 });

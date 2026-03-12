@@ -296,7 +296,8 @@ export class MQTTManager extends EventEmitter {
       }
     } catch (e) {
       // Not all MQTT messages are ServiceEnvelopes; ignore but log for operator diagnosis
-      console.debug(
+      // warn (not debug) so log panel shows without enabling debug spam
+      console.warn(
         '[MQTT] Ignored non–ServiceEnvelope or parse error:',
         e instanceof Error ? e.message : String(e),
       );
@@ -324,7 +325,7 @@ export class MQTTManager extends EventEmitter {
         };
         this.emit('nodeUpdate', nodeUpdate);
       } catch (e) {
-        console.debug(
+        console.warn(
           '[MQTT] NodeInfo parse failed for node',
           nodeId,
           e instanceof Error ? e.message : String(e),
@@ -364,7 +365,7 @@ export class MQTTManager extends EventEmitter {
           this.emitMinimalNodeUpdate(nodeId);
         }
       } catch (e) {
-        console.debug(
+        console.warn(
           '[MQTT] Position parse failed for node',
           nodeId,
           e instanceof Error ? e.message : String(e),
@@ -390,7 +391,7 @@ export class MQTTManager extends EventEmitter {
         this.emit('message', msg);
         this.emitMinimalNodeUpdate(nodeId);
       } catch (e) {
-        console.debug(
+        console.warn(
           '[MQTT] TextMessage parse failed for node',
           nodeId,
           e instanceof Error ? e.message : String(e),

@@ -196,4 +196,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notifyDeviceDisconnected: () => ipcRenderer.send('device-disconnected'),
   setTrayUnread: (count: number) => ipcRenderer.send('set-tray-unread', count),
   quitApp: () => ipcRenderer.invoke('app:quit'),
+
+  // ─── Log panel ───────────────────────────────────────────────────
+  log: {
+    getPath: (): Promise<string> => ipcRenderer.invoke('log:getPath'),
+    getRecentLines: (): Promise<{ ts: number; level: string; source: string; message: string }[]> =>
+      ipcRenderer.invoke('log:getRecentLines'),
+    clear: () => ipcRenderer.invoke('log:clear'),
+    export: (): Promise<string | null> => ipcRenderer.invoke('log:export'),
+    onLine: (
+      cb: (entry: { ts: number; level: string; source: string; message: string }) => void,
+    ) => {
+      const handler = (
+        _: unknown,
+        entry: { ts: number; level: string; source: string; message: string },
+      ) => cb(entry);
+      ipcRenderer.on('log:line', handler);
+      return () => ipcRenderer.off('log:line', handler);
+    },
+  },
 });

@@ -2,14 +2,7 @@ import http from 'http';
 import https from 'https';
 import si from 'systeminformation';
 
-function sanitizeLogMessage(message: unknown): string {
-  // Remove control characters (including newlines and carriage returns) and normalize whitespace
-  // to prevent log injection and preserve a single-line log entry.
-  return String(message)
-    .replace(/[\x00-\x1F\x7F\u2028\u2029]+/g, ' ') // eslint-disable-line no-control-regex
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+import { sanitizeLogMessage } from './log-service';
 
 export type GpsFixSource = 'native' | 'ip';
 
