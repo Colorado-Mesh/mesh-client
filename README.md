@@ -50,8 +50,8 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Node Management**
 
-- Node list with SNR, RSSI, battery, GPS, last heard, and packet redundancy score — **last heard** and **hops** stay accurate on BLE connect (replayed device-DB payloads no longer mark long-offline nodes as “just heard” or show stale hop counts; stale entries show **–** for hops where appropriate)
-- Distance filter, favorite/pin nodes, device role icons, signal strength bars
+- Node list with SNR, battery, GPS, last heard, and packet redundancy score — **signal bars** (RSSI-based) appear **only for direct (0-hop) RF neighbors**; multi-hop and MQTT-only paths have no RSSI at the client, so bars are omitted there — **last heard** and **hops** stay accurate on BLE connect (replayed device-DB payloads no longer mark long-offline nodes as “just heard” or show stale hop counts; stale entries show **–** for hops where appropriate)
+- Distance filter, favorite/pin nodes, device role icons, signal strength bars where direct RF applies
 - Node Detail Modal: DM, trace route with hop-path display, delete node, Routing Health section with 24-hour sparkline, Connection Health %, and collapsible Path History
 
 **Radio & Channel Configuration**
@@ -62,8 +62,10 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Diagnostics**
 
-- Network health score (0–100) and searchable anomaly table
-- Routing anomaly detection: hop_goblin (distance-proven over-hopping only; SNR not used for multi-hop/MQTT), bad_route (high duplication without SNR gating), route_flapping, impossible_hop — with remediation suggestions and severity levels (error / warning / info)
+- **Network health** is **counts-first** — status band **Healthy / Attention / Degraded** plus error and warning counts and **nodes with telemetry** (aligned with node-list Ch.Util / Air Tx, not hop-map size). The old 0–100 score was removed — it stayed ~99 on large meshes and was misleading. **Degraded** (red) applies only when routing **error** count ≥ 3; fewer errors use **Attention** (orange) so small issues don’t paint the whole panel red.
+- **Single table** from **diagnosticRows** (routing trace rows + RF rows), searchable; **connected node** (your device) section above mesh-wide rows. Rows persist across sessions with an optional **restore banner**; **max age** (1–168 hours) trims stale routing (24 h default) and RF (1 h default) rows.
+- **Mesh congestion attribution** — orange banner when mesh-wide routing stress (e.g. bad_route / hop_goblin) is present; duplicate-traffic copy is scoped as observed at this client. Shared block component also appears in node detail when relevant.
+- Routing anomaly detection: hop_goblin (distance-proven over-hopping only; SNR not used for multi-hop/MQTT), bad_route (high duplication without SNR gating), route_flapping, impossible_hop — with remediation suggestions and severity levels (error / warning / info). RF rows get a **Suggested Fix** column via RemediationEngine.
 - Anomaly badges inline in node list; status aura circles on the map
 - Congestion halos toggle; global and per-node MQTT ignore for fine-grained routing analysis
 - **Environment Profile** segmented control — Standard (3 km), City (1.6× threshold for dense urban RF interference), Canyon (2.6× threshold for mountainous terrain)
@@ -71,9 +73,10 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Where diagnostics UI lives in code**
 
-- **Node detail** (modal when you open a node): shell is [`src/renderer/components/NodeDetailModal.tsx`](src/renderer/components/NodeDetailModal.tsx); body content and RF findings list are [`src/renderer/components/NodeInfoBody.tsx`](src/renderer/components/NodeInfoBody.tsx) (`RFDiagnosticsSection`, Connection Health / Path History when redundant paths exist).
-- **Network diagnostics tab**: [`src/renderer/components/DiagnosticsPanel.tsx`](src/renderer/components/DiagnosticsPanel.tsx) (health score, anomaly table grouped by severity, env profile).
-- **Engines**: RF findings [`src/renderer/lib/diagnostics/RFDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RFDiagnosticEngine.ts); routing anomalies [`src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts); store [`src/renderer/stores/diagnosticsStore.ts`](src/renderer/stores/diagnosticsStore.ts). There is no `NodeDetailPanel.tsx` in this repo—use the paths above if docs or tools refer to a “node detail panel.”
+- **Node detail** (modal when you open a node): shell is [`src/renderer/components/NodeDetailModal.tsx`](src/renderer/components/NodeDetailModal.tsx); body content and RF findings list are [`src/renderer/components/NodeInfoBody.tsx`](src/renderer/components/NodeInfoBody.tsx) (`RFDiagnosticsSection`, mesh congestion / duplicate-traffic block, Connection Health / Path History when redundant paths exist). Modal body is scrollable (max height); position/trace/message actions are omitted for the home node.
+- **Network diagnostics tab**: [`src/renderer/components/DiagnosticsPanel.tsx`](src/renderer/components/DiagnosticsPanel.tsx) (health band + counts, diagnosticRows table, mesh congestion banner, env profile, halo toggles, diagnostic row max age).
+- **Mesh congestion UI**: [`src/renderer/components/MeshCongestionAttributionBlock.tsx`](src/renderer/components/MeshCongestionAttributionBlock.tsx) (shared between panel and node detail).
+- **Engines**: RF findings [`src/renderer/lib/diagnostics/RFDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RFDiagnosticEngine.ts); routing anomalies [`src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts) (`computeHealthScore` remains for tests; panel no longer uses it as primary display); row merge/prune [`src/renderer/lib/diagnostics/diagnosticRows.ts`](src/renderer/lib/diagnostics/diagnosticRows.ts); store [`src/renderer/stores/diagnosticsStore.ts`](src/renderer/stores/diagnosticsStore.ts). There is no `NodeDetailPanel.tsx` in this repo—use the paths above if docs or tools refer to a “node detail panel.”
 
 **Map & Telemetry**
 
@@ -297,7 +300,8 @@ meshtastic-client/
 │       │   ├── AdminPanel.tsx        # Reboot, shutdown, factory reset, trace route
 │       │   ├── ConfigPanel.tsx       # Device & channel configuration editor
 │       │   ├── ConnectionPanel.tsx   # BLE/Serial/HTTP/MQTT connection setup
-│       │   ├── DiagnosticsPanel.tsx  # Network health score, anomaly table, halo toggles
+│       │   ├── DiagnosticsPanel.tsx  # Health band + counts, diagnosticRows table, halos, max age
+│       │   ├── MeshCongestionAttributionBlock.tsx  # Shared mesh congestion / duplicate-traffic copy
 │       │   ├── LogPanel.tsx          # Live app log, debug toggle, export/delete log file
 │       │   ├── RadioPanel.tsx        # Radio settings, fixed position, GPS send
 │       │   ├── AppPanel.tsx          # App settings, appearance (theme presets), GPS interval, database management
@@ -306,7 +310,7 @@ meshtastic-client/
 │       │   ├── KeyboardShortcutsModal.tsx
 │       │   ├── UpdateBanner.tsx      # In-app update notification
 │       │   ├── ErrorBoundary.tsx     # Top-level React error boundary
-│       │   ├── SignalBars.tsx        # SNR/RSSI signal strength indicator
+│       │   ├── SignalBars.tsx        # RSSI→bars for direct (0-hop) RF only; null rssi → no bars
 │       │   ├── RefreshButton.tsx
 │       │   ├── Toast.tsx
 │       │   └── Tabs.tsx
@@ -323,12 +327,14 @@ meshtastic-client/
 │           ├── coordUtils.ts         # Coordinate conversion helpers
 │           ├── reactions.ts          # Emoji reaction helpers
 │           ├── roleInfo.tsx          # Node role display metadata
-│           ├── signal.ts             # SNR/RSSI signal quality helpers
+│           ├── signal.ts             # RSSI → signal level for SignalBars (direct RF only)
 │           ├── parseStoredJson.ts    # Safe JSON parse for persisted values
 │           └── diagnostics/
 │               ├── RoutingDiagnosticEngine.ts  # Hop anomaly detectors (hop_goblin, bad_route, etc.)
-│               ├── RFDiagnosticEngine.ts        # RF-layer signal diagnostics
-│               └── RemediationEngine.ts         # Suggested fixes for detected anomalies
+│               ├── RFDiagnosticEngine.ts        # RF-layer signal diagnostics (CU spike, hidden terminal, etc.)
+│               ├── diagnosticRows.ts            # Row merge/prune, routing map helper, default ages
+│               ├── meshCongestionAttribution.ts # Path mix + RF originator ranking for congestion copy
+│               └── RemediationEngine.ts         # Suggested fixes for routing + RF rows
 ├── resources/
 │   ├── icons/                    # App icons (linux/, mac/, win/)
 │   ├── entitlements.mac.plist    # macOS signing entitlements (main)
@@ -499,6 +505,24 @@ npm run trace-deprecation
 ### Update check fails / no update banner
 
 The app functions fully offline — this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached.
+
+### Diagnostics panel: "restored from last session" banner
+
+**Cause**: Diagnostic rows (routing + RF) are snapshotted to `localStorage` so a restart doesn’t wipe the table.
+
+**Fix**: This is expected — rows refresh as new packets arrive. Use **Stop restoring on next launch** on the banner to clear the snapshot, or use **App** tab → **Reset Diagnostics** to clear in-memory rows and related state.
+
+### Diagnostics look stale or overcrowded
+
+**Cause**: RF rows age out faster (default 1 h) than routing rows (default 24 h); very old rows are pruned by timestamp.
+
+**Fix**: In **Network Diagnostics** → Display Settings, adjust **diagnostic row max age** (hours). Or reset diagnostics from the App tab and let the mesh repopulate.
+
+### No signal bars on some nodes
+
+**Cause**: RSSI is only meaningful for **direct (0-hop) RF** neighbors. Multi-hop and MQTT-heard nodes have no client-side RSSI.
+
+**Fix**: Not a bug — use SNR/last heard and routing diagnostics instead for those paths.
 
 ---
 

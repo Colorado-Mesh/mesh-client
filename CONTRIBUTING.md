@@ -38,6 +38,8 @@ Run `npm run lint` before pushing. ESLint is configured with:
 
 **Path alias:** `@/` maps to `src/` (see `tsconfig.json`, `tsconfig.main.json`, and `vitest.config.ts`). Prefer `@/renderer/...` or `@/main/...` over long relative paths when adding imports.
 
+**Diagnostics work:** The Network Diagnostics tab is driven by `diagnosticRows` in `diagnosticsStore` (routing + RF rows merged in `useDevice`). Row TTL and pruning live in `src/renderer/lib/diagnostics/diagnosticRows.ts`; mesh congestion copy is shared via `MeshCongestionAttributionBlock.tsx`. If you add a new routing or RF finding, extend the `DiagnosticRow` union and ensure the panel table renders the new kind — see existing tests in `DiagnosticsPanel.test.tsx` and `diagnosticRows.test.ts`.
+
 **Dual TypeScript configs:** Renderer code uses `tsconfig.json` (bundler resolution, JSX). Main and preload use `tsconfig.main.json` (CommonJS, Node resolution). Do not assume the same module settings in main/preload as in the Vite renderer.
 
 ## Accessibility Requirements
