@@ -32,7 +32,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
   },
   "author": {
-    "name": "Mesh Contributors",
+    "name": "Colorado Mesh",
     "email": "nv0n@coloradomesh.org"
   },
   "contributors": [
