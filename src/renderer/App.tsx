@@ -420,7 +420,7 @@ export default function App() {
                   <ChatPanel
                     messages={device.messages}
                     channels={device.channels}
-                    myNodeNum={device.state.myNodeNum}
+                    myNodeNum={device.selfNodeId}
                     onSend={device.sendMessage}
                     onReact={device.sendReaction}
                     onNodeClick={setSelectedNodeId}
