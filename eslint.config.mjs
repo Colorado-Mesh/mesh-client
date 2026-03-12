@@ -19,7 +19,6 @@ export default tseslint.config(
       "vite.config.ts",
       "*.config.{ts,js,mjs,cjs}",
       "dist-electron/**",
-      "scripts/**",
     ],
   },
   js.configs.recommended,
@@ -32,6 +31,27 @@ export default tseslint.config(
       import: importPlugin,
     },
     rules: {
+      // Disallow dangerous child_process patterns project-wide
+      "no-restricted-imports": [
+        "error",
+        {
+          name: "child_process",
+          importNames: ["exec", "execSync"],
+          message: "Use safer project helpers or spawn-style APIs instead of these functions.",
+        },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.object.name='child_process'][callee.property.name=/^exec(Sync)?$/]",
+          message: "Avoid using child_process methods that execute shell commands directly.",
+        },
+        {
+          selector: "ObjectExpression > Property[key.name='shell'] > Literal[value=true]",
+          message: "Avoid shell: true; use direct process execution with argument arrays instead.",
+        },
+      ],
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
       "import/first": "off",
@@ -47,6 +67,28 @@ export default tseslint.config(
         "error",
         { allow: ["arrowFunctions"] },
       ],
+    },
+  },
+  // Node scripts: keep security rules, relax TS/prettier and set Node globals
+  {
+    files: ["scripts/**/*.{js,cjs,mjs}"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "script",
+      globals: {
+        require: "readonly",
+        module: "readonly",
+        process: "readonly",
+        console: "readonly",
+        setTimeout: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+      "no-undef": "off",
+      "prettier/prettier": "off",
+      "simple-import-sort/imports": "off",
+      "no-redeclare": "off",
     },
   },
   // Renderer: type-aware linting + React Hooks rules
