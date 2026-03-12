@@ -192,6 +192,24 @@ npm run dev -- --no-sandbox
 electron . --no-sandbox
 ```
 
+**SIGSEGV on startup** (`electron exited with signal SIGSEGV`):
+
+`npm start` runs `npm run build && electron .` — extra args after `npm start --` are **not** passed to Electron. Use one of:
+
+```bash
+npm run build && npx electron . --no-sandbox --disable-gpu
+# or (after build once)
+npm run electron:open -- --no-sandbox --disable-gpu
+```
+
+If that works, make it persistent:
+
+- **Shell:** `export MESH_CLIENT_DISABLE_GPU=1` then `npm start` (main process disables GPU before windows open).
+- **Wayland → X11:** `ELECTRON_OZONE_PLATFORM_HINT=x11 npm run electron:open -- --no-sandbox`
+- **Packaged AppImage:** `./MeshClient.AppImage --no-sandbox --disable-gpu`
+
+See [electron#41980](https://github.com/electron/electron/issues/41980) and related GPU/Wayland issues.
+
 </details>
 
 <details>

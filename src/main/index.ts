@@ -27,6 +27,12 @@ import { initUpdater } from './updater';
 // Route main-process console through log file + Log panel (must run before other code logs)
 patchMainConsole();
 
+// Linux: SIGSEGV in Electron GPU process on some Wayland / driver stacks (electron#41980).
+// Must run before app.whenReady(). CLI flags --disable-gpu also work; env avoids wrapper scripts.
+if (process.platform === 'linux' && process.env.MESH_CLIENT_DISABLE_GPU === '1') {
+  app.disableHardwareAcceleration();
+}
+
 const mqttManager = new MQTTManager();
 
 let mainWindow: BrowserWindow | null = null;
