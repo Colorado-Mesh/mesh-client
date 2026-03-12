@@ -575,7 +575,7 @@ export default function ChatPanel({
           }}
           className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
             viewMode === 'channels' && channel === -1
-              ? 'bg-green-600 text-white'
+              ? 'bg-readable-green text-white'
               : 'bg-secondary-dark text-muted hover:text-gray-200'
           }`}
         >
@@ -592,7 +592,7 @@ export default function ChatPanel({
               }}
               className={`relative px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                 viewMode === 'channels' && channel === ch.index
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-readable-green text-white'
                   : 'bg-secondary-dark text-muted hover:text-gray-200'
               }`}
             >

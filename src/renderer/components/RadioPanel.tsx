@@ -233,7 +233,7 @@ function ConfigSection({
         <button
           onClick={onApply}
           disabled={disabled || applying}
-          className="w-full px-4 py-2 bg-brand-green hover:bg-brand-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
+          className="w-full px-4 py-2 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
         >
           {applying ? 'Applying...' : `Apply ${title}`}
         </button>
@@ -607,7 +607,7 @@ export default function RadioPanel({
                 }
               }}
               disabled={disabled || !onSendPositionToDevice}
-              className="w-full px-4 py-2 bg-brand-green hover:bg-brand-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
+              className="w-full px-4 py-2 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
             >
               Send Position to Device
             </button>
@@ -1206,7 +1206,7 @@ function ChannelSection({
               <button
                 onClick={saveChannel}
                 disabled={disabled || saving}
-                className="flex-1 px-3 py-1.5 bg-brand-green hover:bg-brand-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-xs font-medium rounded transition-colors"
+                className="flex-1 px-3 py-1.5 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-xs font-medium rounded transition-colors"
               >
                 {saving ? 'Saving...' : 'Save Channel'}
               </button>

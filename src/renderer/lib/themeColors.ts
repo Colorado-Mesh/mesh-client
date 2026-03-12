@@ -7,12 +7,19 @@ import { parseStoredJson } from './parseStoredJson';
 export const THEME_COLORS_STORAGE_KEY = 'mesh-client:themeColors';
 
 /** Keys persisted in localStorage (camelCase). */
-export type ThemeColorKey = 'brandGreen' | 'brightGreen' | 'deepBlack' | 'secondaryDark' | 'muted';
+export type ThemeColorKey =
+  | 'brandGreen'
+  | 'brightGreen'
+  | 'readableGreen'
+  | 'deepBlack'
+  | 'secondaryDark'
+  | 'muted';
 
 /** CSS custom property name (no leading --). */
 export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
   brandGreen: '--color-brand-green',
   brightGreen: '--color-bright-green',
+  readableGreen: '--color-readable-green',
   deepBlack: '--color-deep-black',
   secondaryDark: '--color-secondary-dark',
   muted: '--color-muted',
@@ -22,6 +29,7 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
 export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
   brandGreen: '#9ae6b4',
   brightGreen: '#9ae6b4',
+  readableGreen: '#16a34a',
   deepBlack: '#1a202c',
   secondaryDark: '#2d3748',
   muted: '#a0aec0',
@@ -47,6 +55,7 @@ export const THEME_COLOR_PRESETS: { label: string; hex: string }[] = [
   { label: 'Slate light', hex: '#94a3b8' },
   { label: 'Slate dark', hex: '#334155' },
   { label: 'Emerald', hex: '#10b981' },
+  { label: 'Readable green (default)', hex: '#16a34a' },
 ];
 
 export const THEME_TOKEN_META: ThemeTokenMeta[] = [
@@ -60,6 +69,12 @@ export const THEME_TOKEN_META: ThemeTokenMeta[] = [
     key: 'brightGreen',
     label: 'Bright green',
     description: 'App title, emphasis text, links in footer, and hop/self highlights in node list.',
+  },
+  {
+    key: 'readableGreen',
+    label: 'Readable green',
+    description:
+      'Solid fills with white text—selected channel pills and primary action buttons for contrast.',
   },
   {
     key: 'deepBlack',
