@@ -99,7 +99,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Prerequisites:**
 
-- Node.js 20+ (LTS) and npm 9+
+- Node.js 22.12.0+ (matches `@electron/rebuild` / `node-abi` engine requirement) and npm 9+
 - Native build tools (for SQLite) — see platform notes below
 - A Meshtastic device (any hardware running Meshtastic firmware)
 
@@ -128,13 +128,23 @@ On first Bluetooth connection, macOS shows a system popup requesting Bluetooth p
 <details>
 <summary>Linux — extra notes</summary>
 
-Install build tools:
+Install Node.js (22.12.0+ recommended) and build tools:
 
 ```bash
-# Debian/Ubuntu
+# Debian/Ubuntu — install nvm, then Node 22 LTS:
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+nvm install 22
+
+# Build tools for native modules:
 sudo apt install build-essential python3
 
-# Fedora/RedHat
+# Fedora/RedHat — Node 22 via nvm, then dev tools:
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+nvm install 22
 sudo dnf groupinstall "Development Tools" && sudo dnf install python3
 ```
 
@@ -191,6 +201,19 @@ npm run dev -- --no-sandbox
 # or
 electron . --no-sandbox
 ```
+
+**SIGILL during `npm install`** (`electron exited with signal SIGILL`):
+
+`postinstall` runs `scripts/rebuild-native.mjs`, which invokes electron-builder’s `install-app-deps` — that **executes** the Electron binary. Sandboxed or minimal-CPU environments may not support instructions in the prebuilt Linux binary, so the process dies with SIGILL before the app starts (this is not the same as Chromium’s `--no-sandbox` runtime flag).
+
+If you see `npm WARN EBADENGINE` for `@electron/rebuild` or `node-abi` (for example `required: { node: '>=22.12.0' }` while your current Node is older), install Node 22+ first (for example via nvm as shown above). Running with an older Node version may appear to work but is unsupported by those tools and more likely to fail during native rebuilds.
+
+```bash
+# Install without running Electron / native rebuild; patch-package still runs.
+MESHTASTIC_SKIP_ELECTRON_REBUILD=1 npm install
+```
+
+Then run **`npm run rebuild`** on a normal Linux machine (or same host outside the sandbox) where `node_modules/electron/dist/electron --version` works. Lint/tests that do not load the Electron main process may still pass without a successful rebuild.
 
 **SIGSEGV on startup** (`electron exited with signal SIGSEGV`):
 

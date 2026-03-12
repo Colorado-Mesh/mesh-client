@@ -29,6 +29,8 @@ If `better-sqlite3` or other native addons fail after changing Node or Electron 
 
 **Windows**: If `dist:win` or `rebuild` fails with “space in the path” or `EPERM` unlink on `better_sqlite3.node`, try `npm run dist:win` again (beforeBuild clears `better-sqlite3/build` before the packaging rebuild), or `npm run dist:win:skip-rebuild` if postinstall already built the native module. If it still fails, use a path **without spaces**, close Electron/Node processes, and see README troubleshooting.
 
+**Linux sandbox / SIGILL**: If `npm install` fails with `electron exited with signal SIGILL`, use `MESHTASTIC_SKIP_ELECTRON_REBUILD=1 npm install`, then run `npm run rebuild` where the Electron binary runs (see README Linux troubleshooting).
+
 ## Code style
 
 Run `npm run lint` before pushing. ESLint is configured with:

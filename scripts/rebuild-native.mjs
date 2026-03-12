@@ -14,6 +14,37 @@ const projectRoot = path.resolve(__dirname, "..");
 
 const electronVersion = require(path.join(projectRoot, "node_modules/electron/package.json")).version;
 
+// install-app-deps / @electron/rebuild execute the Electron binary. In CPU-restricted
+// environments (sandbox, some VMs) the official Linux binary can hit SIGILL before
+// any --no-sandbox flag applies. Skip rebuild when explicitly requested; run
+// npm run rebuild on a machine where electron --version works.
+if (process.env.MESHTASTIC_SKIP_ELECTRON_REBUILD === "1") {
+  console.warn(
+    "MESHTASTIC_SKIP_ELECTRON_REBUILD=1 — skipping native rebuild. better-sqlite3 may not match Electron until you run: npm run rebuild",
+  );
+  process.exit(0);
+}
+
+if (process.platform === "linux") {
+  const electronBin = path.join(projectRoot, "node_modules", "electron", "dist", "electron");
+  if (fs.existsSync(electronBin)) {
+    const probe = spawnSync(electronBin, ["--version"], {
+      cwd: projectRoot,
+      encoding: "utf8",
+    });
+    if (probe.signal === "SIGILL") {
+      console.error(
+        "Electron binary exited with SIGILL (illegal instruction). Common in sandboxes or CPUs without instructions the prebuilt binary expects.",
+      );
+      console.error(
+        "To finish npm install without running Electron: MESHTASTIC_SKIP_ELECTRON_REBUILD=1 npm install",
+      );
+      console.error("Then run npm run rebuild on a full Linux host where electron --version succeeds.");
+      process.exit(1);
+    }
+  }
+}
+
 console.log(`Rebuilding native modules for Electron ${electronVersion}…`);
 
 // Drop stale better-sqlite3/build so a wrong-platform .node (e.g. Linux on macOS) cannot persist.
