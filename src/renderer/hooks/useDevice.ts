@@ -1160,8 +1160,15 @@ export function useDevice() {
             await deviceRef.current?.heartbeat();
             touchLastData();
           } catch (err) {
+            // "GATT operation already in progress" means a concurrent read or write is
+            // happening — the connection is still alive, so skip this beat rather than
+            // triggering a false disconnect.
+            if (String(err).includes('GATT operation already in progress')) {
+              console.debug('[BLE heartbeat] GATT busy — skipping beat, connection intact');
+              return;
+            }
             console.warn('BLE heartbeat write failed:', err);
-            // A failed GATT characteristic write = connection is dead
+            // Any other GATT write failure = connection is dead
             handleConnectionLostRef.current();
           }
         }, BLE_HEARTBEAT_INTERVAL_MS);
