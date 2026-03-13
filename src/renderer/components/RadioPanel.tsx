@@ -30,6 +30,7 @@ interface Props {
   onClearChannel: (index: number) => Promise<void>;
   channelConfigs: ChannelConfig[];
   isConnected: boolean;
+  telemetryDeviceUpdateInterval?: number | null;
   onReboot: (seconds: number) => Promise<void>;
   onShutdown: (seconds: number) => Promise<void>;
   onFactoryReset: () => Promise<void>;
@@ -350,6 +351,7 @@ export default function RadioPanel({
   onClearChannel,
   channelConfigs,
   isConnected,
+  telemetryDeviceUpdateInterval,
   onReboot,
   onShutdown,
   onFactoryReset,
@@ -383,6 +385,16 @@ export default function RadioPanel({
   // ─── Display settings ─────────────────────────────────────────
   const [screenOnSecs, setScreenOnSecs] = useState(60);
   const [displayUnits, setDisplayUnits] = useState(0);
+
+  // ─── Telemetry (device metrics) ────────────────────────────────
+  const [deviceUpdateInterval, setDeviceUpdateInterval] = useState(1800);
+
+  // Sync telemetry interval from device config when received
+  useEffect(() => {
+    if (typeof telemetryDeviceUpdateInterval === 'number') {
+      setDeviceUpdateInterval(telemetryDeviceUpdateInterval);
+    }
+  }, [telemetryDeviceUpdateInterval]);
 
   // ─── Shared state ─────────────────────────────────────────────
   const [status, setStatus] = useState<string | null>(null);
@@ -613,6 +625,29 @@ export default function RadioPanel({
             </button>
           </div>
         )}
+      </ConfigSection>
+
+      {/* ═══ Telemetry ═══ */}
+      <ConfigSection
+        title="Telemetry"
+        onApply={() =>
+          applyConfig('Telemetry', 'telemetry', {
+            device_update_interval: deviceUpdateInterval,
+          })
+        }
+        applying={applyingSection === 'Telemetry'}
+        disabled={disabled}
+      >
+        <ConfigNumber
+          label="Device metrics update interval"
+          value={deviceUpdateInterval}
+          onChange={setDeviceUpdateInterval}
+          disabled={disabled || applyingSection !== null}
+          min={0}
+          max={86400}
+          unit="seconds"
+          description="How often to send device metrics (battery, voltage, channel utilization) to the mesh. 0 = disabled. Default 1800 (30 min)."
+        />
       </ConfigSection>
 
       {/* ═══ Power ═══ */}

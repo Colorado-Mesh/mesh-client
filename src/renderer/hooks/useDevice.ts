@@ -118,6 +118,9 @@ export function useDevice() {
   const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [deviceGpsMode, setDeviceGpsMode] = useState<number>(0);
+  const [telemetryDeviceUpdateInterval, setTelemetryDeviceUpdateInterval] = useState<number | null>(
+    null,
+  );
 
   const [state, setState] = useState<DeviceState>({
     status: 'disconnected',
@@ -1102,12 +1105,29 @@ export function useDevice() {
       });
       unsubscribesRef.current.push(unsub10);
 
-      // ─── Device config (track GPS mode) ────────────────────────
+      // ─── Device config (track GPS mode and telemetry) ───────────
       const unsubConfig = device.events.onConfigPacket.subscribe((config) => {
-        const cfg = config as { payloadVariant?: { case?: string; value?: { gpsMode?: number } } };
+        const cfg = config as {
+          payloadVariant?: {
+            case?: string;
+            value?: {
+              gpsMode?: number;
+              device_update_interval?: number;
+              deviceUpdateInterval?: number;
+            };
+          };
+        };
         if (cfg.payloadVariant?.case === 'position' && cfg.payloadVariant.value?.gpsMode != null) {
           deviceGpsModeRef.current = cfg.payloadVariant.value.gpsMode;
           setDeviceGpsMode(cfg.payloadVariant.value.gpsMode);
+        }
+        if (cfg.payloadVariant?.case === 'telemetry' && cfg.payloadVariant.value != null) {
+          const interval =
+            cfg.payloadVariant.value.device_update_interval ??
+            cfg.payloadVariant.value.deviceUpdateInterval;
+          if (typeof interval === 'number') {
+            setTelemetryDeviceUpdateInterval(interval);
+          }
         }
       });
       unsubscribesRef.current.push(unsubConfig);
@@ -1811,6 +1831,15 @@ export function useDevice() {
     sendStatusEvents();
   }, [sendStatusEvents]);
 
+  useEffect(() => {
+    if (state.status === 'disconnected') {
+      setTelemetryDeviceUpdateInterval(null);
+    }
+  }, [state.status]);
+
+  const telemetryEnabled =
+    telemetryDeviceUpdateInterval === null ? null : telemetryDeviceUpdateInterval > 0;
+
   const selfNodeId =
     state.myNodeNum > 0
       ? state.myNodeNum
@@ -1833,6 +1862,8 @@ export function useDevice() {
     ourPosition,
     selfNodeId,
     deviceGpsMode,
+    telemetryEnabled,
+    telemetryDeviceUpdateInterval,
     connect,
     connectAutomatic,
     disconnect,
