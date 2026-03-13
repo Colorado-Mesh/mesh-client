@@ -19,4 +19,5 @@ if [ -s "$STAGED_LIST" ]; then
 fi
 
 npm run lint || exit 1
-npm run test:run
+npm run typecheck || exit 1
+npm run test:run || exit 1 || exit 1

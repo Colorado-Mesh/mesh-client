@@ -105,14 +105,15 @@ export class MQTTManager extends EventEmitter {
       this.onMessage(payload);
     });
 
-    this.client.on('error', (err: NodeJS.ErrnoException) => {
+    this.client.on('error', (err: Error & { code?: string | number }) => {
       // Transient network errors will trigger 'close' → our backoff handler; don't
       // flip status to "error" for them — that would hide the "connecting" state.
+      const code = String(err.code ?? '');
       const isTransient =
-        err.code === 'ECONNRESET' ||
-        err.code === 'ECONNREFUSED' ||
-        err.code === 'ETIMEDOUT' ||
-        err.code === 'ENOTFOUND';
+        code === 'ECONNRESET' ||
+        code === 'ECONNREFUSED' ||
+        code === 'ETIMEDOUT' ||
+        code === 'ENOTFOUND';
       if (isTransient) {
         console.warn('[MQTT] Network error (will reconnect):', err.message);
       } else {

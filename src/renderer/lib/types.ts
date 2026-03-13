@@ -258,6 +258,24 @@ declare global {
           cb: (entry: { ts: number; level: string; source: string; message: string }) => void,
         ) => () => void;
       };
+      update: {
+        check: () => Promise<void>;
+        download: () => Promise<void>;
+        install: () => Promise<void>;
+        openReleases: (url?: string) => Promise<void>;
+        onAvailable: (
+          cb: (info: {
+            version: string;
+            releaseUrl: string;
+            isPackaged: boolean;
+            isMac: boolean;
+          }) => void,
+        ) => () => void;
+        onNotAvailable: (cb: () => void) => () => void;
+        onProgress: (cb: (info: { percent: number }) => void) => () => void;
+        onDownloaded: (cb: () => void) => () => void;
+        onError: (cb: (info: { message: string }) => void) => () => void;
+      };
     };
   }
 }

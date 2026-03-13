@@ -31,7 +31,8 @@
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs,.mjs",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.cjs,.mjs --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.main.json"
   },
   "author": {
     "name": "Colorado Mesh",

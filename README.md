@@ -426,7 +426,7 @@ act --container-architecture linux/amd64
 
 Under act, artifact upload is skipped automatically; the rest of the pipeline runs as on GitHub.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for coding conventions, branch workflow, and PR guidelines.
+The pre-commit hook runs format, lint, typecheck, and tests. See [CONTRIBUTING.md](CONTRIBUTING.md) for coding conventions, branch workflow, and PR guidelines.
 
 ---
 

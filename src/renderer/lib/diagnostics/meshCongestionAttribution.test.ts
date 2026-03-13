@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { NodeAnomaly } from '../types';
+import type { PacketRecordLike } from './meshCongestionAttribution';
 import {
   meshCongestionDetailLines,
   meshHasRoutingAnomalies,
@@ -10,14 +11,14 @@ import {
 
 describe('summarizeRfDuplicateOriginators', () => {
   it('returns empty when no RF-only multi-path records', () => {
-    const cache = new Map<number, { fromNodeId: number; paths: { transport: string }[] }>();
+    const cache = new Map<number, PacketRecordLike & { fromNodeId: number }>();
     cache.set(1, { fromNodeId: 0x10, paths: [{ transport: 'rf' }] });
     cache.set(2, { fromNodeId: 0x10, paths: [{ transport: 'mqtt' }, { transport: 'rf' }] });
     expect(summarizeRfDuplicateOriginators(cache)).toEqual([]);
   });
 
   it('ranks originators by echo score for RF-only multi-path', () => {
-    const cache = new Map<number, { fromNodeId: number; paths: { transport: string }[] }>();
+    const cache = new Map<number, PacketRecordLike & { fromNodeId: number }>();
     // originator 0x10: two records with 2 and 3 paths → extra 1 + 2 = 3
     cache.set(1, { fromNodeId: 0x10, paths: [{ transport: 'rf' }, { transport: 'rf' }] });
     cache.set(2, {

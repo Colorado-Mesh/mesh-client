@@ -23,7 +23,7 @@ function isRfOnlyMultiPath(rec: PacketRecordLike): boolean {
  * Does not identify which repeater relayed — only which node's traffic most often arrives duplicated at our radio.
  */
 export function summarizeRfDuplicateOriginators(
-  packetCache: Map<number, { fromNodeId: number; paths: { transport: string }[] }>,
+  packetCache: Map<number, PacketRecordLike & { fromNodeId: number }>,
   limit = 5,
 ): RfDuplicateOriginator[] {
   const byNode = new Map<number, { echoScore: number; recordCount: number }>();

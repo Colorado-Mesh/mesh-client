@@ -13,6 +13,7 @@ npm install
 npm run dev       # Start in development mode
 npm run build     # Production build
 npm run lint      # Run ESLint (type-aware; see Code style below)
+npm run typecheck # TypeScript check (renderer + main/preload)
 npm run format    # Prettier write — ts, tsx, js, jsx, json, css, md
 npm run format:check   # Prettier check only (no writes)
 npm run rebuild   # Rebuild native modules (better-sqlite3) for current Electron
@@ -25,7 +26,8 @@ After `npm install`, the repo’s git hooks are enabled (`core.hooksPath` → `.
 1. **`npm run format`** — Prettier **writes** to matching files (not `format:check`).
 2. **Re-stage** — Only files that were already staged are re-added, so unstaged WIP is not swept in.
 3. **`npm run lint`**
-4. **`npm run test:run`**
+4. **`npm run typecheck`** — TypeScript check for renderer and main/preload.
+5. **`npm run test:run`** — Fails the commit if tests fail.
 
 To skip the hook in an emergency: `git commit --no-verify`.
 

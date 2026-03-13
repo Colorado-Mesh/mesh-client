@@ -190,13 +190,17 @@ export default function App() {
           'App startup node pruning',
         ) ?? {};
       if (s.autoPruneEnabled) {
+        const days =
+          typeof s.autoPruneDays === 'number' && s.autoPruneDays > 0 ? s.autoPruneDays : 30;
         void window.electronAPI.db
-          .deleteNodesByAge(s.autoPruneDays ?? 30)
+          .deleteNodesByAge(days)
           .catch((e) => console.warn('[App] startup deleteNodesByAge failed', e));
       }
       if (s.nodeCapEnabled !== false) {
+        const cap =
+          typeof s.nodeCapCount === 'number' && s.nodeCapCount > 0 ? s.nodeCapCount : 10000;
         void window.electronAPI.db
-          .pruneNodesByCount(s.nodeCapCount ?? 10000)
+          .pruneNodesByCount(cap)
           .catch((e) => console.warn('[App] startup pruneNodesByCount failed', e));
       }
     } catch (e) {
