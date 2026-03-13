@@ -134,7 +134,7 @@ interface Props {
   messages: ChatMessage[];
   channels: { index: number; name: string }[];
   myNodeNum: number;
-  onSend: (text: string, channel: number, destination?: number, replyId?: number) => Promise<void>;
+  onSend: (text: string, channel: number, destination?: number, replyId?: number) => void;
   onReact: (emoji: number, replyId: number, channel: number) => Promise<void>;
   onNodeClick: (nodeNum: number) => void;
   isConnected: boolean;

@@ -4,6 +4,9 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  worker: {
+    format: 'es',
+  },
   root: path.resolve(__dirname, 'src/renderer'),
   base: './',
   build: {

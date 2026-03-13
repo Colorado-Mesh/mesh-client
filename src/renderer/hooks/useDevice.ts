@@ -15,6 +15,8 @@ import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { normalizeReactionEmoji } from '../lib/reactions';
+import { TransportManager } from '../lib/transport/TransportManager';
+import type { StatusUpdateEvent } from '../lib/transport/types';
 import type {
   ChatMessage,
   ConnectionType,
@@ -95,10 +97,10 @@ export function useDevice() {
   const isReconnectingRef = useRef<boolean>(false);
   const reconnectGenerationRef = useRef<number>(0);
   const bleHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Carries replyId from sendMessage into the echo handler (packets are sequential)
-  const pendingReplyIdRef = useRef<number | undefined>(undefined);
-  // Carries whether MQTT uplink is pending — read + cleared by the echo handler
-  const pendingMqttRef = useRef<boolean>(false);
+  const transportManagerRef = useRef<TransportManager | null>(null);
+  const onStatusUpdateRef = useRef<(event: StatusUpdateEvent) => void>(() => {});
+  // Tracks the tempId of an in-flight optimistic message (device path) so the echo can be skipped
+  const pendingTempIdRef = useRef<number | undefined>(undefined);
 
   // ─── GPS tracking ─────────────────────────────────────────────
   const deviceGpsModeRef = useRef<number>(0); // 0=DISABLED,1=ENABLED,2=NOT_PRESENT
@@ -629,13 +631,7 @@ export function useDevice() {
         touchLastData();
         const isEcho = meshPacket.from === myNodeNumRef.current;
         const payloadText = new TextDecoder().decode(dataPacket.payload);
-        const replyId =
-          dataPacket.replyId || (isEcho ? pendingReplyIdRef.current : undefined) || undefined;
-        const echoHasMqtt = isEcho && pendingMqttRef.current;
-        if (isEcho) {
-          pendingReplyIdRef.current = undefined;
-          pendingMqttRef.current = false;
-        }
+        const replyId = dataPacket.replyId || undefined;
         const wireEmoji = (dataPacket as { emoji?: number }).emoji;
         const emoji = replyId
           ? (normalizeReactionEmoji(wireEmoji, payloadText) ?? wireEmoji ?? undefined)
@@ -649,7 +645,6 @@ export function useDevice() {
           timestamp: meshPacket.rxTime ? meshPacket.rxTime * 1000 : Date.now(),
           packetId: meshPacket.id,
           status: isEcho ? 'sending' : undefined,
-          mqttStatus: echoHasMqtt ? ('sending' as const) : undefined,
           emoji,
           replyId,
           to: meshPacket.to && meshPacket.to !== BROADCAST_ADDR ? meshPacket.to : undefined,
@@ -657,6 +652,12 @@ export function useDevice() {
 
         // Packet ID dedup: skip if already seen (e.g. via MQTT) so same message is not shown twice
         if (!isEcho && !msg.emoji && msg.packetId && isDuplicate(msg.packetId)) {
+          return;
+        }
+
+        // If we have an optimistic message in state for this send, skip the echo to avoid a duplicate
+        if (isEcho && pendingTempIdRef.current !== undefined) {
+          pendingTempIdRef.current = undefined;
           return;
         }
 
@@ -1410,187 +1411,96 @@ export function useDevice() {
     setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
   }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat, stopGpsInterval]);
 
-  const sendMessage = useCallback(
-    async (text: string, channel = 0, destination?: number, replyId?: number) => {
-      if (!deviceRef.current) {
-        if (mqttStatusRef.current !== 'connected') throw new Error('Not connected');
+  // ─── TransportManager status handler ─────────────────────────────────────
+  // Defined as useCallback so it's stable; stored in a ref so TransportManager
+  // always calls the latest version without needing re-initialization.
+  const handleTransportStatus = useCallback(
+    (event: StatusUpdateEvent) => {
+      const { tempId, transport, status, finalPacketId, error } = event;
 
-        // MQTT-only send path (no device connected)
-        const from = myNodeNumRef.current || getOrCreateVirtualNodeId();
-        const tempId = Math.floor(Math.random() * 0xffffffff);
-        const msg: ChatMessage = {
-          sender_id: from,
-          sender_name: getNodeName(from),
-          payload: text,
-          channel,
-          timestamp: Date.now(),
-          packetId: tempId,
-          status: 'sending',
-          to: destination,
-          replyId,
-        };
-        setMessages((prev) => [...prev, msg]);
-        window.electronAPI.db.saveMessage(msg);
-
-        try {
-          const packetId = await window.electronAPI.mqtt.publish({
-            text,
-            from,
-            channel,
-            destination: destination ?? BROADCAST_ADDR,
-            channelName: 'LongFast',
-          });
-          // Register real packetId to deduplicate the echo that comes back via MQTT subscription
-          isDuplicate(packetId);
+      if (transport === 'device') {
+        if (status === 'acked') {
+          // Register the real HW packet ID for RF/MQTT dedup of future incoming echoes
+          if (finalPacketId !== undefined) isDuplicate(finalPacketId);
           setMessages((prev) =>
-            prev.map((m) =>
-              m.packetId === tempId ? { ...m, packetId, status: 'acked' as const } : m,
-            ),
+            prev.map((m) => (m.packetId === tempId ? { ...m, status: 'acked' as const } : m)),
           );
           window.electronAPI.db.updateMessageStatus(tempId, 'acked');
-        } catch (err) {
-          console.warn('[useDevice] sendMessage mqtt-only path failed', err);
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.packetId === tempId ? { ...m, status: 'failed' as const, error: String(err) } : m,
-            ),
-          );
-          window.electronAPI.db.updateMessageStatus(tempId, 'failed', String(err));
-        }
-        return;
-      }
-
-      // Check MQTT uplink conditions before entering try/catch so promise is accessible in catch
-      const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
-      const shouldUplink =
-        chCfg?.uplinkEnabled && mqttStatusRef.current === 'connected' && myNodeNumRef.current;
-
-      // Fire MQTT FIRST (before device send) — store promise, don't await yet
-      const mqttPromise: Promise<number> | null = shouldUplink
-        ? window.electronAPI.mqtt.publish({
-            text,
-            from: myNodeNumRef.current!,
-            channel,
-            destination: destination ?? BROADCAST_ADDR,
-            channelName: 'LongFast',
-          })
-        : null;
-
-      try {
-        console.debug('[useDevice] sendMessage sendText', {
-          channel,
-          shouldUplink: !!shouldUplink,
-        });
-        pendingMqttRef.current = !!shouldUplink;
-        pendingReplyIdRef.current = replyId;
-        const dest: number | 'broadcast' = destination ?? 'broadcast';
-        const packetId = await deviceRef.current.sendText(text, dest, true, channel);
-        // ACK received — update message status
-        setMessages((prev) =>
-          prev.map((m) => (m.packetId === packetId ? { ...m, status: 'acked' as const } : m)),
-        );
-        window.electronAPI.db.updateMessageStatus(packetId, 'acked');
-
-        // Wire up MQTT result now that we have the packetId
-        if (mqttPromise) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.packetId === packetId ? { ...m, mqttStatus: 'sending' as const } : m,
-            ),
-          );
-          window.electronAPI.db.updateMessageStatus(packetId, 'acked', undefined, 'sending');
-          mqttPromise
-            .then((mqttPacketId) => {
-              isDuplicate(mqttPacketId);
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.packetId === packetId ? { ...m, mqttStatus: 'acked' as const } : m,
-                ),
-              );
-              window.electronAPI.db.updateMessageStatus(packetId, 'acked', undefined, 'acked');
-            })
-            .catch((e) => {
-              console.debug('[useDevice] sendMessage mqttPromise after ack failed', e);
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.packetId === packetId ? { ...m, mqttStatus: 'failed' as const } : m,
-                ),
-              );
-              window.electronAPI.db.updateMessageStatus(packetId, 'acked', undefined, 'failed');
-            });
-        }
-      } catch (err) {
-        console.warn('[useDevice] sendMessage sendText NAK/timeout or error', err);
-        // NAK or timeout — extract packet ID and error from rejection
-        const pe = err as any;
-        const packetId = pe.packetId;
-        const error = pe.error || String(err);
-        if (typeof packetId === 'number' && Number.isFinite(packetId) && packetId >= 0) {
-          setMessages((prev) =>
-            prev.map((m) => (m.packetId === packetId ? { ...m, status: 'failed', error } : m)),
-          );
-          window.electronAPI.db.updateMessageStatus(packetId, 'failed', error);
-          // Wire up MQTT result to this packetId (MQTT was already fired before sendText)
-          if (mqttPromise) {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.packetId === packetId ? { ...m, mqttStatus: 'sending' as const } : m,
-              ),
-            );
-            mqttPromise
-              .then((mqttPacketId) => {
-                isDuplicate(mqttPacketId);
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.packetId === packetId ? { ...m, mqttStatus: 'acked' as const } : m,
-                  ),
-                );
-                window.electronAPI.db.updateMessageStatus(packetId, 'failed', error, 'acked');
-              })
-              .catch((e) => {
-                console.debug('[useDevice] sendMessage mqttPromise after NAK failed', e);
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.packetId === packetId ? { ...m, mqttStatus: 'failed' as const } : m,
-                  ),
-                );
-              });
-          }
         } else {
-          // No packetId — clear device status and wire MQTT to the message that has both sending (so MQTT doesn't stay hourglass)
-          setMessages((prev) => {
-            const target = prev.find((m) => m.status === 'sending' && m.mqttStatus === 'sending');
-            const pid = target?.packetId;
-            if (pid !== undefined) {
-              window.electronAPI.db.updateMessageStatus(pid, 'failed', error);
-              if (mqttPromise) {
-                mqttPromise
-                  .then((mqttPacketId) => {
-                    isDuplicate(mqttPacketId);
-                    setMessages((p) =>
-                      p.map((m) =>
-                        m.packetId === pid ? { ...m, mqttStatus: 'acked' as const } : m,
-                      ),
-                    );
-                    window.electronAPI.db.updateMessageStatus(pid, 'failed', error, 'acked');
-                  })
-                  .catch((e) => {
-                    console.debug('[useDevice] sendMessage mqttPromise no-packetId failed', e);
-                    setMessages((p) =>
-                      p.map((m) =>
-                        m.packetId === pid ? { ...m, mqttStatus: 'failed' as const } : m,
-                      ),
-                    );
-                    window.electronAPI.db.updateMessageStatus(pid, 'failed', error, 'failed');
-                  });
-              }
-            }
-            return prev.map((m) =>
-              m.status === 'sending' ? { ...m, status: 'failed' as const, error } : m,
-            );
-          });
+          // failed
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.packetId === tempId ? { ...m, status: 'failed' as const, error } : m,
+            ),
+          );
+          window.electronAPI.db.updateMessageStatus(tempId, 'failed', error);
         }
+      } else {
+        // mqtt — read current device status from state so the DB update is consistent
+        setMessages((prev) => {
+          const existing = prev.find((m) => m.packetId === tempId);
+          if (status !== 'sending' && existing) {
+            const deviceStatus = existing.status ?? 'acked';
+            window.electronAPI.db.updateMessageStatus(tempId, deviceStatus, existing.error, status);
+          }
+          return prev.map((m) =>
+            m.packetId === tempId ? { ...m, mqttStatus: status as ChatMessage['mqttStatus'] } : m,
+          );
+        });
       }
+    },
+    [isDuplicate],
+  );
+
+  // Keep the ref in sync so TransportManager always invokes the latest handler
+  onStatusUpdateRef.current = handleTransportStatus;
+
+  const sendMessage = useCallback(
+    (text: string, channel = 0, destination?: number, replyId?: number) => {
+      const hasMqtt = mqttStatusRef.current === 'connected';
+      if (!deviceRef.current && !hasMqtt) throw new Error('Not connected');
+
+      const from = myNodeNumRef.current || getOrCreateVirtualNodeId();
+      const tempId = Math.floor(Math.random() * 0xffffffff);
+
+      // Determine initial MQTT display state (TransportManager will confirm/update asynchronously)
+      const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
+      const shouldUplink = !deviceRef.current
+        ? hasMqtt // MQTT-only: always uplink when connected
+        : !!(chCfg?.uplinkEnabled && hasMqtt && myNodeNumRef.current);
+
+      const msg: ChatMessage = {
+        sender_id: from,
+        sender_name: getNodeName(from),
+        payload: text,
+        channel,
+        timestamp: Date.now(),
+        packetId: tempId,
+        status: deviceRef.current ? ('sending' as const) : undefined,
+        mqttStatus: shouldUplink ? ('sending' as const) : undefined,
+        to: destination,
+        replyId,
+      };
+      setMessages((prev) => [...prev, msg]);
+      window.electronAPI.db.saveMessage(msg);
+
+      // For device path: track this tempId so the RF echo can be suppressed (avoids duplicate)
+      if (deviceRef.current) {
+        pendingTempIdRef.current = tempId;
+      }
+
+      // Lazy-init TransportManager (stable deps are all refs)
+      if (!transportManagerRef.current) {
+        transportManagerRef.current = new TransportManager({
+          deviceRef,
+          myNodeNumRef,
+          mqttStatusRef,
+          channelConfigsRef,
+          isDuplicate,
+          onStatusUpdateRef,
+        });
+      }
+      transportManagerRef.current.sendMessage(text, channel, destination, replyId, tempId);
     },
     [getNodeName, isDuplicate],
   );
