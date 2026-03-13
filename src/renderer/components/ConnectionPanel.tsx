@@ -1097,10 +1097,16 @@ export default function ConnectionPanel({
               </>
             )}
             {connectionType === 'http' && (
-              <p>
-                Enter the IP address or hostname of a WiFi-connected Meshtastic node. The device
-                must have WiFi enabled in its config.
-              </p>
+              <>
+                <p>
+                  Enter the IP address or hostname of a WiFi-connected Meshtastic node. The device
+                  must have WiFi enabled in its config.
+                </p>
+                <p>
+                  If connection is unreliable (e.g. with meshtastic.local), try the device&apos;s IP
+                  address instead — desktop mDNS can be flaky.
+                </p>
+              </>
             )}
           </div>
 

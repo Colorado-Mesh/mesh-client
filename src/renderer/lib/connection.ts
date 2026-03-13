@@ -5,6 +5,39 @@ import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
 import type { ConnectionType } from './types';
 
+// HTTP base connection: timeouts and retries to avoid hanging on slow mDNS or flaky networks.
+const HTTP_CONNECT_TIMEOUT_MS = 15_000;
+const HTTP_PREFLIGHT_RETRIES = 3;
+const HTTP_PREFLIGHT_RETRY_DELAY_MS = 2_000;
+
+function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), timeoutMs);
+  return fetch(url, { signal: ac.signal }).finally(() => clearTimeout(t));
+}
+
+async function httpPreflightWithRetries(connectionUrl: string): Promise<void> {
+  const reportUrl = `${connectionUrl}/json/report`;
+  let lastErr: Error | null = null;
+  for (let attempt = 1; attempt <= HTTP_PREFLIGHT_RETRIES; attempt++) {
+    try {
+      const res = await fetchWithTimeout(reportUrl, HTTP_CONNECT_TIMEOUT_MS);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return;
+    } catch (err) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      if (attempt < HTTP_PREFLIGHT_RETRIES) {
+        await new Promise((r) => setTimeout(r, HTTP_PREFLIGHT_RETRY_DELAY_MS));
+      }
+    }
+  }
+  const msg =
+    lastErr?.name === 'AbortError'
+      ? `Connection timed out after ${HTTP_CONNECT_TIMEOUT_MS / 1000}s. Try the device's IP address if you use meshtastic.local.`
+      : (lastErr?.message ?? 'Connection failed');
+  throw new Error(msg);
+}
+
 // Cached BluetoothDevice from the most recent successful BLE connection.
 // navigator.bluetooth.getDevices() is not available in all Electron builds,
 // so we capture the reference by intercepting requestDevice() instead.
@@ -72,7 +105,19 @@ export async function createConnection(
       host = host.replace(/^https?:\/\//, '');
       // Strip trailing slashes
       host = host.replace(/\/+$/, '');
-      transport = await TransportHTTP.create(host, useTls);
+      const connectionUrl = `${useTls ? 'https' : 'http'}://${host}`;
+      await httpPreflightWithRetries(connectionUrl);
+      const createPromise = TransportHTTP.create(host, useTls);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(`Connection to ${host} timed out after ${HTTP_CONNECT_TIMEOUT_MS / 1000}s`),
+            ),
+          HTTP_CONNECT_TIMEOUT_MS,
+        ),
+      );
+      transport = await Promise.race([createPromise, timeoutPromise]);
       break;
     }
 
