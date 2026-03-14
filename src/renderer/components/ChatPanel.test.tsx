@@ -12,6 +12,7 @@ describe('ChatPanel accessibility', () => {
     myNodeNum: 0,
     onSend: vi.fn().mockResolvedValue(undefined),
     onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
     onNodeClick: vi.fn(),
     isConnected: false,
     nodes: new Map(),

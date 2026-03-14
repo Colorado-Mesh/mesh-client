@@ -10,12 +10,19 @@ import {
   YAxis,
 } from 'recharts';
 
-import type { TelemetryPoint } from '../lib/types';
+import type { EnvironmentTelemetryPoint, TelemetryPoint } from '../lib/types';
 import RefreshButton from './RefreshButton';
+
+function toF(c: number) {
+  return (c * 9) / 5 + 32;
+}
 
 interface Props {
   telemetry: TelemetryPoint[];
   signalTelemetry: TelemetryPoint[];
+  environmentTelemetry: EnvironmentTelemetryPoint[];
+  useFahrenheit: boolean;
+  onToggleFahrenheit: () => void;
   onRefresh: () => Promise<void>;
   isConnected: boolean;
 }
@@ -23,6 +30,9 @@ interface Props {
 export default function TelemetryPanel({
   telemetry,
   signalTelemetry,
+  environmentTelemetry,
+  useFahrenheit,
+  onToggleFahrenheit,
   onRefresh,
   isConnected,
 }: Props) {
@@ -59,20 +69,63 @@ export default function TelemetryPanel({
   const hasBatteryData = chartData.some((d) => d.battery !== undefined || d.voltage !== undefined);
   const hasSignalData = signalChartData.some((d) => d.snr !== undefined || d.rssi !== undefined);
 
+  const envChartData = useMemo(
+    () =>
+      environmentTelemetry.map((t, i) => ({
+        index: i,
+        time: new Date(t.timestamp).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+        temperature:
+          t.temperature !== undefined
+            ? useFahrenheit
+              ? parseFloat(toF(t.temperature).toFixed(1))
+              : parseFloat(t.temperature.toFixed(1))
+            : undefined,
+        humidity: t.relativeHumidity,
+        pressure: t.barometricPressure,
+        iaq: t.iaq,
+      })),
+    [environmentTelemetry, useFahrenheit],
+  );
+
+  const hasTemp = envChartData.some((d) => d.temperature !== undefined);
+  const hasHumidity = envChartData.some((d) => d.humidity !== undefined);
+  const hasPressure = envChartData.some((d) => d.pressure !== undefined);
+  const hasIaq = envChartData.some((d) => d.iaq !== undefined);
+
   const handleExportCsv = useCallback(() => {
-    if (telemetry.length === 0 && signalTelemetry.length === 0) return;
+    if (telemetry.length === 0 && signalTelemetry.length === 0 && environmentTelemetry.length === 0)
+      return;
 
     function escapeCsvCell(v: string | number | undefined): string {
       const s = String(v ?? '');
       return /[,"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     }
 
-    const headers = ['timestamp', 'type', 'battery_level', 'voltage', 'snr', 'rssi'];
+    const headers = [
+      'timestamp',
+      'type',
+      'battery_level',
+      'voltage',
+      'snr',
+      'rssi',
+      'env_temperature_c',
+      'env_humidity_pct',
+      'env_pressure_hpa',
+      'env_iaq',
+    ];
     const batteryRows = telemetry.map((t) => [
       escapeCsvCell(new Date(t.timestamp).toISOString()),
       escapeCsvCell('battery'),
       escapeCsvCell(t.batteryLevel),
       escapeCsvCell(t.voltage),
+      escapeCsvCell(''),
+      escapeCsvCell(''),
+      escapeCsvCell(''),
+      escapeCsvCell(''),
       escapeCsvCell(''),
       escapeCsvCell(''),
     ]);
@@ -83,8 +136,26 @@ export default function TelemetryPanel({
       escapeCsvCell(''),
       escapeCsvCell(t.snr),
       escapeCsvCell(t.rssi),
+      escapeCsvCell(''),
+      escapeCsvCell(''),
+      escapeCsvCell(''),
+      escapeCsvCell(''),
     ]);
-    const rows = [...batteryRows, ...signalRows].sort((a, b) => a[0].localeCompare(b[0]));
+    const envRows = environmentTelemetry.map((t) => [
+      escapeCsvCell(new Date(t.timestamp).toISOString()),
+      escapeCsvCell('environment'),
+      escapeCsvCell(''),
+      escapeCsvCell(''),
+      escapeCsvCell(''),
+      escapeCsvCell(''),
+      escapeCsvCell(t.temperature),
+      escapeCsvCell(t.relativeHumidity),
+      escapeCsvCell(t.barometricPressure),
+      escapeCsvCell(t.iaq),
+    ]);
+    const rows = [...batteryRows, ...signalRows, ...envRows].sort((a, b) =>
+      a[0].localeCompare(b[0]),
+    );
 
     const csv = [headers.map(escapeCsvCell).join(','), ...rows.map((r) => r.join(','))].join('\n');
 
@@ -95,14 +166,25 @@ export default function TelemetryPanel({
     link.download = `mesh-client-telemetry-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-  }, [telemetry, signalTelemetry]);
+  }, [telemetry, signalTelemetry, environmentTelemetry]);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-200">Telemetry</h2>
         <div className="flex items-center gap-2">
-          {(telemetry.length > 0 || signalTelemetry.length > 0) && (
+          {hasTemp && (
+            <button
+              onClick={onToggleFahrenheit}
+              title="Toggle temperature unit"
+              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-300"
+            >
+              {useFahrenheit ? '°F' : '°C'}
+            </button>
+          )}
+          {(telemetry.length > 0 ||
+            signalTelemetry.length > 0 ||
+            environmentTelemetry.length > 0) && (
             <button
               onClick={handleExportCsv}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-medium rounded-lg transition-colors"
@@ -128,7 +210,9 @@ export default function TelemetryPanel({
         </div>
       </div>
 
-      {telemetry.length === 0 && signalTelemetry.length === 0 ? (
+      {telemetry.length === 0 &&
+      signalTelemetry.length === 0 &&
+      environmentTelemetry.length === 0 ? (
         <div className="text-center text-muted py-12">
           No telemetry data yet. Connect to a device to see real-time metrics.
         </div>
@@ -264,9 +348,172 @@ export default function TelemetryPanel({
             </div>
           )}
 
+          {/* Temperature & Humidity Chart */}
+          {(hasTemp || hasHumidity) && (
+            <div className="bg-deep-black rounded-lg p-4">
+              <h3 className="text-sm font-medium text-muted mb-3">
+                Temperature {hasHumidity ? '& Humidity' : ''}
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={envChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                  {hasTemp && (
+                    <YAxis
+                      yAxisId="temp"
+                      stroke="#f59e0b"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: useFahrenheit ? '°F' : '°C',
+                        angle: -90,
+                        position: 'insideLeft',
+                        style: { fill: '#f59e0b' },
+                      }}
+                    />
+                  )}
+                  {hasHumidity && (
+                    <YAxis
+                      yAxisId="humidity"
+                      orientation="right"
+                      domain={[0, 100]}
+                      stroke="#06b6d4"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: '%',
+                        angle: 90,
+                        position: 'insideRight',
+                        style: { fill: '#06b6d4' },
+                      }}
+                    />
+                  )}
+                  <Tooltip
+                    contentStyle={{
+                      background: '#1a202c',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Legend />
+                  {hasTemp && (
+                    <Line
+                      yAxisId="temp"
+                      type="monotone"
+                      dataKey="temperature"
+                      name={useFahrenheit ? 'Temp °F' : 'Temp °C'}
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  )}
+                  {hasHumidity && (
+                    <Line
+                      yAxisId="humidity"
+                      type="monotone"
+                      dataKey="humidity"
+                      name="Humidity %"
+                      stroke="#06b6d4"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Barometric Pressure Chart */}
+          {hasPressure && (
+            <div className="bg-deep-black rounded-lg p-4">
+              <h3 className="text-sm font-medium text-muted mb-3">Barometric Pressure</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={envChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                  <YAxis
+                    yAxisId="pressure"
+                    stroke="#a78bfa"
+                    tick={{ fontSize: 11 }}
+                    label={{
+                      value: 'hPa',
+                      angle: -90,
+                      position: 'insideLeft',
+                      style: { fill: '#a78bfa' },
+                    }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: '#1a202c',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Legend />
+                  <Line
+                    yAxisId="pressure"
+                    type="monotone"
+                    dataKey="pressure"
+                    name="Pressure hPa"
+                    stroke="#a78bfa"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Air Quality (IAQ) Chart */}
+          {hasIaq && (
+            <div className="bg-deep-black rounded-lg p-4">
+              <h3 className="text-sm font-medium text-muted mb-3">Air Quality (IAQ)</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={envChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                  <YAxis
+                    yAxisId="iaq"
+                    domain={[0, 500]}
+                    stroke="#34d399"
+                    tick={{ fontSize: 11 }}
+                    label={{
+                      value: 'IAQ',
+                      angle: -90,
+                      position: 'insideLeft',
+                      style: { fill: '#34d399' },
+                    }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: '#1a202c',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Legend />
+                  <Line
+                    yAxisId="iaq"
+                    type="monotone"
+                    dataKey="iaq"
+                    name="IAQ (0–500)"
+                    stroke="#34d399"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           <div className="text-xs text-gray-600 text-center">
-            Battery: {telemetry.length} pts &nbsp;·&nbsp; Signal: {signalTelemetry.length} pts (max
-            50 each)
+            Battery: {telemetry.length} pts &nbsp;·&nbsp; Signal: {signalTelemetry.length} pts
+            {environmentTelemetry.length > 0 && (
+              <> &nbsp;·&nbsp; Env: {environmentTelemetry.length} pts</>
+            )}{' '}
+            (max 50 each)
           </div>
         </>
       )}

@@ -18,6 +18,7 @@ interface NodeDetailModalProps {
   isConnected: boolean;
   homeNode?: MeshNode | null;
   neighborInfo?: Map<number, NeighborInfoRecord>;
+  useFahrenheit?: boolean;
 }
 
 export default function NodeDetailModal({
@@ -33,6 +34,7 @@ export default function NodeDetailModal({
   isConnected,
   homeNode = null,
   neighborInfo,
+  useFahrenheit,
 }: NodeDetailModalProps) {
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [positionRequestedAt, setPositionRequestedAt] = useState<number | null>(null);
@@ -205,6 +207,7 @@ export default function NodeDetailModal({
             homeNode={homeNode}
             traceRouteHops={isOurNode ? undefined : traceRouteHops}
             nodes={nodes}
+            useFahrenheit={useFahrenheit}
           />
         </div>
 

@@ -20,7 +20,7 @@ import UpdateBanner from './components/UpdateBanner';
 import { useDevice } from './hooks/useDevice';
 import { parseStoredJson } from './lib/parseStoredJson';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
-import type { MQTTSettings } from './lib/types';
+import type { ChatMessage, MQTTSettings } from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 
 const STATUS_COLOR: Record<string, string> = {
@@ -145,6 +145,16 @@ export default function App() {
   const isInitialLoadRef = useRef(true);
   const [updateState, setUpdateState] = useState<UpdateState>({ phase: 'idle', dismissed: false });
   const [telemetryNoticeDismissed, setTelemetryNoticeDismissed] = useState(false);
+  const [useFahrenheit, setUseFahrenheit] = useState(
+    () => localStorage.getItem('mesh-client:useFahrenheit') === 'true',
+  );
+  const toggleFahrenheit = useCallback(() => {
+    setUseFahrenheit((prev) => {
+      const next = !prev;
+      localStorage.setItem('mesh-client:useFahrenheit', String(next));
+      return next;
+    });
+  }, []);
 
   // ─── Theme colors (localStorage overrides for @theme tokens) ─────
   useLayoutEffect(() => {
@@ -170,6 +180,13 @@ export default function App() {
   const isOperational = isConfigured || device.state.status === 'stale';
   const isConnectedOrOperational = isOperational || device.state.status === 'connected';
   const selectedNode = selectedNodeId ? (device.nodes.get(selectedNodeId) ?? null) : null;
+
+  const handleResend = useCallback(
+    (msg: ChatMessage) => {
+      device.sendMessage(msg.payload, msg.channel, msg.to ?? undefined);
+    },
+    [device],
+  );
 
   const traceRouteHops = useMemo(() => {
     if (!selectedNode) return undefined;
@@ -482,6 +499,7 @@ export default function App() {
                     myNodeNum={device.selfNodeId}
                     onSend={device.sendMessage}
                     onReact={device.sendReaction}
+                    onResend={handleResend}
                     onNodeClick={setSelectedNodeId}
                     isConnected={isOperational || device.mqttStatus === 'connected'}
                     isMqttOnly={!isOperational && device.mqttStatus === 'connected'}
@@ -553,6 +571,9 @@ export default function App() {
                   <TelemetryPanel
                     telemetry={device.telemetry}
                     signalTelemetry={device.signalTelemetry}
+                    environmentTelemetry={device.environmentTelemetry}
+                    useFahrenheit={useFahrenheit}
+                    onToggleFahrenheit={toggleFahrenheit}
                     onRefresh={device.requestRefresh}
                     isConnected={isOperational}
                   />
@@ -668,6 +689,7 @@ export default function App() {
           isConnected={isOperational}
           homeNode={device.nodes.get(device.state.myNodeNum) ?? null}
           neighborInfo={device.neighborInfo}
+          useFahrenheit={useFahrenheit}
         />
       </div>
     </ToastProvider>

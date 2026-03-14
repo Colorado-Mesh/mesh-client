@@ -58,12 +58,22 @@ export function InfoRow({
   );
 }
 
+function iaqLabel(iaq: number): string {
+  if (iaq <= 50) return 'Excellent';
+  if (iaq <= 100) return 'Good';
+  if (iaq <= 150) return 'Lightly Polluted';
+  if (iaq <= 200) return 'Moderately Polluted';
+  if (iaq <= 300) return 'Heavily Polluted';
+  return 'Severely Polluted';
+}
+
 export interface NodeInfoBodyProps {
   node: MeshNode;
   homeNode?: MeshNode | null;
   traceRouteHops?: string[];
   /** When set, Mesh Congestion can list originators by name/role (RF duplicate-prone traffic). */
   nodes?: Map<number, MeshNode>;
+  useFahrenheit?: boolean;
 }
 
 const SEVERITY_STYLES: Record<RFDiagnosis['severity'], string> = {
@@ -76,7 +86,13 @@ const SEVERITY_ICON: Record<RFDiagnosis['severity'], string> = {
   info: 'ℹ',
 };
 
-export default function NodeInfoBody({ node, homeNode, traceRouteHops, nodes }: NodeInfoBodyProps) {
+export default function NodeInfoBody({
+  node,
+  homeNode,
+  traceRouteHops,
+  nodes,
+  useFahrenheit = false,
+}: NodeInfoBodyProps) {
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const routingRow = getRoutingRowForNode(diagnosticRows, node.node_id);
   const anomaly: NodeAnomaly | null = routingRow ? routingRowToNodeAnomaly(routingRow) : null;
@@ -438,6 +454,50 @@ export default function NodeInfoBody({ node, homeNode, traceRouteHops, nodes }: 
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Environment */}
+      {(node.env_temperature !== undefined ||
+        node.env_humidity !== undefined ||
+        node.env_pressure !== undefined ||
+        node.env_iaq !== undefined ||
+        node.env_lux !== undefined ||
+        node.env_wind_speed !== undefined) && (
+        <div className="mt-3 border-t border-gray-700 pt-3">
+          <div className="text-xs font-semibold text-gray-400 uppercase mb-1">Environment</div>
+          {node.env_temperature !== undefined && (
+            <InfoRow
+              label="Temperature"
+              value={
+                useFahrenheit
+                  ? `${((node.env_temperature * 9) / 5 + 32).toFixed(1)}°F`
+                  : `${node.env_temperature.toFixed(1)}°C`
+              }
+            />
+          )}
+          {node.env_humidity !== undefined && (
+            <InfoRow label="Humidity" value={`${node.env_humidity.toFixed(1)}%`} />
+          )}
+          {node.env_pressure !== undefined && (
+            <InfoRow label="Pressure" value={`${node.env_pressure.toFixed(1)} hPa`} />
+          )}
+          {node.env_iaq !== undefined && (
+            <InfoRow label="Air Quality" value={`${node.env_iaq} – ${iaqLabel(node.env_iaq)}`} />
+          )}
+          {node.env_lux !== undefined && (
+            <InfoRow label="Light" value={`${node.env_lux.toFixed(0)} lux`} />
+          )}
+          {node.env_wind_speed !== undefined && (
+            <InfoRow
+              label="Wind"
+              value={
+                node.env_wind_direction !== undefined
+                  ? `${node.env_wind_speed.toFixed(1)} m/s @ ${node.env_wind_direction}°`
+                  : `${node.env_wind_speed.toFixed(1)} m/s`
+              }
+            />
+          )}
         </div>
       )}
 
