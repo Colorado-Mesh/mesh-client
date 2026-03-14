@@ -1,0 +1,5 @@
+# Project rules
+
+When adding or changing code that feeds into the app log pipeline (e.g. `src/main/log-service.ts`, `appendLine`, console overrides, or any path that eventually writes to the log file):
+
+- **Log injection (CodeQL):** User-controlled or untrusted data must be sanitized at the **call site** before being passed to `appendLine()` or any logger. Use `sanitizeLogMessage(...)` from `src/main/log-service.ts`. Do not rely on sanitization only inside the logging function — CodeQL does not treat that as clearing taint. See CONTRIBUTING.md § "Log injection (CodeQL js/log-injection)".

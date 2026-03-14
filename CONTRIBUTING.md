@@ -98,6 +98,7 @@ npm run test:verbose  # verbose output with full violation details
 AI coding assistants (Claude Code, GitHub Copilot, etc.) are welcome for brainstorming, boilerplate, and first drafts. However:
 
 - **Electron IPC security is a known weak spot for AI tools.** AI models are confidently wrong about what is and isn't safe to expose via `contextBridge`. Never accept AI-generated IPC code without understanding it yourself.
+- **Log injection (CodeQL):** AI often suggests sanitizing only inside the logging function. CodeQL requires sanitization at the **call site** — pass `sanitizeLogMessage(...)` around any user-controlled value before it is passed into `appendLine()` or similar. See [Log injection (CodeQL js/log-injection)](#log-injection-codeql-jslog-injection) above.
 - All AI-generated code must be reviewed and manually tested by a human before merging.
 - If you used an AI tool, note it briefly in the PR body — not required, just helpful for reviewers.
 
@@ -140,6 +141,16 @@ Wrap **boundaries** where failure is possible and must not be silent: IPC handle
 Main-process IPC handlers that rethrow should log with `console.error` before rethrowing so the main terminal shows context when the renderer sees a rejected promise (aligned with existing `db:*` handlers in `src/main/index.ts`).
 
 For repeated `localStorage` + `JSON.parse` in the renderer, prefer `parseStoredJson` from `src/renderer/lib/parseStoredJson.ts` so debug/warn behavior stays consistent.
+
+### Log injection (CodeQL js/log-injection)
+
+GitHub Code scanning (CodeQL) reports **log injection** when user-controlled or untrusted data flows into a log sink (e.g. `appendLine` in `src/main/log-service.ts`) without being sanitized. CodeQL tracks data flow **to** the sink; it does **not** treat sanitization that happens **inside** the sink as clearing taint from the caller.
+
+**Rule:** Sanitize at the **call site**. Any value that is or may be user-controlled (console arguments, IPC payloads, network data, file paths from user input, etc.) must be passed through `sanitizeLogMessage()` **before** being passed to `appendLine()` or any other logger. Do not rely on sanitization only inside the logging function — that is correct for safety but does not satisfy CodeQL and will keep the code-scanning alert open.
+
+- **Helper:** `sanitizeLogMessage(message: unknown): string` in `src/main/log-service.ts` strips control characters (including newlines) and normalizes whitespace. Use it for every log message and source string that is derived from untrusted input.
+- **Example:** In `patchMainConsole()`, console overrides pass `sanitizeLogMessage(stringifyArgs(args))` into `appendLine()`, not `stringifyArgs(args)` alone.
+- **Checks:** Code scanning runs on push (GitHub default setup). If you add or change code that feeds into the log pipeline, ensure the **first** use of untrusted data in that path is wrapped in `sanitizeLogMessage()` at the call site.
 
 ## Commit Style
 

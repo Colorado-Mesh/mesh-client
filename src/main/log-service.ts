@@ -236,23 +236,23 @@ export function patchMainConsole(): void {
   consolePatched = true;
 
   console.log = (...args: unknown[]) => {
-    appendLine('log', resolveMainSource(), stringifyArgs(args));
+    appendLine('log', resolveMainSource(), sanitizeLogMessage(stringifyArgs(args)));
     original.log(...args);
   };
   console.info = (...args: unknown[]) => {
-    appendLine('info', resolveMainSource(), stringifyArgs(args));
+    appendLine('info', resolveMainSource(), sanitizeLogMessage(stringifyArgs(args)));
     original.info(...args);
   };
   console.warn = (...args: unknown[]) => {
-    appendLine('warn', resolveMainSource(), stringifyArgs(args));
+    appendLine('warn', resolveMainSource(), sanitizeLogMessage(stringifyArgs(args)));
     original.warn(...args);
   };
   console.error = (...args: unknown[]) => {
-    appendLine('error', resolveMainSource(), stringifyArgs(args));
+    appendLine('error', resolveMainSource(), sanitizeLogMessage(stringifyArgs(args)));
     original.error(...args);
   };
   console.debug = (...args: unknown[]) => {
-    appendLine('debug', resolveMainSource(), stringifyArgs(args));
+    appendLine('debug', resolveMainSource(), sanitizeLogMessage(stringifyArgs(args)));
     original.debug(...args);
   };
 
