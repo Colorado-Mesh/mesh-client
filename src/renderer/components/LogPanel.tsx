@@ -9,7 +9,6 @@ import {
 import { parseStoredJson } from '../lib/parseStoredJson';
 
 const LOG_LEVEL_FILTERS_KEY = 'mesh-client:logLevelFilters';
-const LOG_MAIN_ONLY_KEY = 'mesh-client:logMainOnly';
 const LOG_PANEL_WIDTH_KEY = 'mesh-client:logPanelWidth';
 const MAX_LINES = 2500;
 const PANEL_WIDTH_MIN = 260;
@@ -69,22 +68,6 @@ function levelVisible(level: string, f: LevelFilters): boolean {
   return true;
 }
 
-function readMainOnly(): boolean {
-  try {
-    return localStorage.getItem(LOG_MAIN_ONLY_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
-
-function persistMainOnly(mainOnly: boolean): void {
-  try {
-    localStorage.setItem(LOG_MAIN_ONLY_KEY, mainOnly ? 'true' : 'false');
-  } catch {
-    /* ignore */
-  }
-}
-
 function isAppLog(entry: LogEntry): boolean {
   // Main-process patched console uses source "main". Renderer/Chromium uses "renderer:...".
   return entry.source === 'main';
@@ -116,7 +99,6 @@ function persistPanelWidth(w: number): void {
 type LogPanelVariant = 'sidebar' | 'overlay';
 
 export default function LogPanel({
-  deviceLogs = [],
   variant = 'sidebar',
   onClose,
 }: {
@@ -126,7 +108,6 @@ export default function LogPanel({
 }) {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [levelFilters, setLevelFiltersState] = useState<LevelFilters>(readLevelFilters);
-  const [mainOnly, setMainOnlyState] = useState(readMainOnly);
   const [logSource, setLogSource] = useState<'app' | 'device'>('app');
   const [panelWidth, setPanelWidth] = useState(readPanelWidth);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -166,7 +147,7 @@ export default function LogPanel({
     if (atBottomRef.current && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [entries, mainOnly, levelFilters]);
+  }, [entries, logSource, levelFilters]);
 
   const onScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -199,16 +180,9 @@ export default function LogPanel({
     setEntries([]);
   }, []);
 
-  const toggleMainOnly = useCallback(() => {
-    setMainOnlyState((m) => {
-      const next = !m;
-      persistMainOnly(next);
-      return next;
-    });
-  }, []);
-
   const visibleLines = entries.filter((e) => {
-    if (mainOnly && !isAppLog(e)) return false;
+    if (logSource === 'app' && !isAppLog(e)) return false;
+    if (logSource === 'device' && isAppLog(e)) return false;
     return levelVisible(e.level, levelFilters);
   });
 
@@ -305,21 +279,6 @@ export default function LogPanel({
             All levels are still written to the log file; filters only affect this panel.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <input
-            id="log-main-only-checkbox"
-            type="checkbox"
-            checked={mainOnly}
-            onChange={toggleMainOnly}
-            className="rounded border-gray-600"
-          />
-          <label htmlFor="log-main-only-checkbox" className="text-xs text-muted cursor-pointer">
-            App logs only (hide renderer / device)
-          </label>
-        </div>
-        <p className="text-[10px] text-muted leading-snug">
-          When enabled, only main-process lines are shown (e.g. [Startup], [MQTT], [gps], [IPC]).
-        </p>
         <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
           <span className="text-[10px] text-muted uppercase tracking-wide">Source</span>
           <div className="flex gap-1 ml-auto">
@@ -335,7 +294,7 @@ export default function LogPanel({
               onClick={() => setLogSource('device')}
               className={`px-2 py-0.5 text-[10px] rounded ${logSource === 'device' ? 'bg-brand-green/20 text-brand-green border border-brand-green/40' : 'bg-slate-800 text-gray-400 border border-gray-700'}`}
             >
-              Device ({deviceLogs.length})
+              Device ({entries.filter((e) => !isAppLog(e)).length})
             </button>
           </div>
         </div>
@@ -386,46 +345,21 @@ export default function LogPanel({
         aria-live="polite"
         aria-relevant="additions"
       >
-        {logSource === 'device' ? (
-          deviceLogs.length === 0 ? (
-            <span className="text-muted">
-              No device log records yet. Device logs are streamed when connected.
-            </span>
-          ) : (
-            [...deviceLogs].reverse().map((entry, i) => {
-              const ts =
-                entry.time > 0
-                  ? new Date(entry.time * 1000).toISOString().slice(11, 23)
-                  : '--:--:--.---';
-              const levelColor =
-                entry.level >= 50
-                  ? 'text-red-400'
-                  : entry.level >= 40
-                    ? 'text-red-400'
-                    : entry.level >= 30
-                      ? 'text-yellow-400'
-                      : entry.level >= 20
-                        ? 'text-blue-400'
-                        : 'text-gray-500';
-              return (
-                <div
-                  key={`device-${i}-${entry.time}-${entry.message.slice(0, 20)}`}
-                  className={`whitespace-pre-wrap break-all ${levelColor}`}
-                >
-                  {ts} [{entry.source}] {entry.message}
-                </div>
-              );
-            })
-          )
-        ) : visibleLines.length === 0 ? (
+        {visibleLines.length === 0 ? (
           <span className="text-muted">
-            {entries.length === 0
-              ? 'No log lines yet.'
-              : mainOnly
-                ? 'No app-only lines match the filter. Turn off filter to see renderer logs.'
+            {logSource === 'app'
+              ? entries.length === 0
+                ? 'No main-process log lines yet.'
+                : entries.filter(isAppLog).length === 0
+                  ? 'No main-process lines yet.'
+                  : !levelFilters.logInfo && !levelFilters.warnError && !levelFilters.debug
+                    ? 'All level filters are off. Enable at least one under Show levels.'
+                    : 'No main-process lines match the current filters.'
+              : entries.filter((e) => !isAppLog(e)).length === 0
+                ? 'No renderer/device log lines yet.'
                 : !levelFilters.logInfo && !levelFilters.warnError && !levelFilters.debug
                   ? 'All level filters are off. Enable at least one under Show levels.'
-                  : 'No lines match the current filters.'}
+                  : 'No non-main lines match the current filters.'}
           </span>
         ) : (
           visibleLines.map((entry, i) => {
