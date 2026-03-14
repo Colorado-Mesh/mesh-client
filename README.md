@@ -286,6 +286,7 @@ If serial isn't detected, install the correct USB drivers for your device (CP210
 4. Select your connection type (Bluetooth / USB Serial / WiFi / MQTT)
 5. Click **Connect** and select your device from the picker
 6. Wait for status to show **Configured** — you're connected
+7. For best results, keep the **Connection** tab open while the app is discovering and connecting to your device.
 
 ### Auto-Reconnect
 
