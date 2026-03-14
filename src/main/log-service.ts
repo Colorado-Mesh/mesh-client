@@ -236,23 +236,28 @@ export function patchMainConsole(): void {
   consolePatched = true;
 
   console.log = (...args: unknown[]) => {
-    appendLine('log', resolveMainSource(), sanitizeLogMessage(stringifyArgs(args)));
+    const msg = sanitizeLogMessage(stringifyArgs(args));
+    appendLine('log', resolveMainSource(), msg); // codeql[js/log-injection] -- msg sanitized at call site
     original.log(...args);
   };
   console.info = (...args: unknown[]) => {
-    appendLine('info', resolveMainSource(), sanitizeLogMessage(stringifyArgs(args)));
+    const msg = sanitizeLogMessage(stringifyArgs(args));
+    appendLine('info', resolveMainSource(), msg); // codeql[js/log-injection] -- msg sanitized at call site
     original.info(...args);
   };
   console.warn = (...args: unknown[]) => {
-    appendLine('warn', resolveMainSource(), sanitizeLogMessage(stringifyArgs(args)));
+    const msg = sanitizeLogMessage(stringifyArgs(args));
+    appendLine('warn', resolveMainSource(), msg); // codeql[js/log-injection] -- msg sanitized at call site
     original.warn(...args);
   };
   console.error = (...args: unknown[]) => {
-    appendLine('error', resolveMainSource(), sanitizeLogMessage(stringifyArgs(args)));
+    const msg = sanitizeLogMessage(stringifyArgs(args));
+    appendLine('error', resolveMainSource(), msg); // codeql[js/log-injection] -- msg sanitized at call site
     original.error(...args);
   };
   console.debug = (...args: unknown[]) => {
-    appendLine('debug', resolveMainSource(), sanitizeLogMessage(stringifyArgs(args)));
+    const msg = sanitizeLogMessage(stringifyArgs(args));
+    appendLine('debug', resolveMainSource(), msg); // codeql[js/log-injection] -- msg sanitized at call site
     original.debug(...args);
   };
 
@@ -264,7 +269,7 @@ export function patchMainConsole(): void {
         const chunk = args[0];
         if (typeof chunk === 'string') {
           const trimmed = chunk.replace(/\r?\n$/, '');
-          if (trimmed) appendLine(level, source, trimmed);
+          if (trimmed) appendLine(level, source, sanitizeLogMessage(trimmed));
         }
       } catch (e) {
         original.debug('[log-service] patchStream write hook', e);
@@ -294,6 +299,9 @@ export function forwardRendererConsoleMessage(details: {
   };
   const mapped: LogLevel = levelMap[details.level] ?? 'log';
   const line = details.lineNumber;
-  const src = details.sourceId ? `renderer:${path.basename(details.sourceId)}:${line}` : 'renderer';
-  appendLine(mapped, src, stripConsoleStyles(details.message));
+  const src = details.sourceId
+    ? sanitizeLogMessage(`renderer:${path.basename(details.sourceId)}:${line}`)
+    : 'renderer';
+  const msg = sanitizeLogMessage(stripConsoleStyles(details.message));
+  appendLine(mapped, src, msg);
 }
