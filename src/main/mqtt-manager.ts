@@ -403,9 +403,61 @@ export class MQTTManager extends EventEmitter {
     if (cleanBytes[0] !== 0x0a) return;
 
     try {
-      // @meshtastic/protobufs Mqtt namespace: ServiceEnvelopeSchema from MqttProto; decode via fromBinary (bufbuild)
-      const envelope = fromBinary(ServiceEnvelopeSchema, cleanBytes);
-      const packet = envelope.packet;
+      // 1. Extract the MeshPacket length and offset from the ServiceEnvelope (Tag 1)
+      let i = 1;
+      let packetLen = 0;
+      let shift = 0;
+      while (i < cleanBytes.length) {
+        const b = cleanBytes[i++];
+        packetLen |= (b & 0x7f) << shift;
+        shift += 7;
+        if ((b & 0x80) === 0) break;
+      }
+
+      const packetBytes = cleanBytes.subarray(i, Math.min(i + packetLen, cleanBytes.length));
+
+      // 2. Mini-parser: Read valid tags and stop exactly when we hit the 0x00 padding
+      let pos = 0;
+      let lastValidPos = 0;
+      while (pos < packetBytes.length) {
+        lastValidPos = pos;
+        const b = packetBytes[pos++];
+        if (b === 0) break;
+        const wireType = b & 7;
+
+        if ((b & 0x80) !== 0) {
+          while (pos < packetBytes.length && (packetBytes[pos++] & 0x80) !== 0) {
+            /* skip remaining tag varint bytes */
+          }
+        }
+
+        if (wireType === 0) {
+          while (pos < packetBytes.length && (packetBytes[pos++] & 0x80) !== 0) {
+            /* skip varint value bytes */
+          }
+        } else if (wireType === 1) {
+          pos += 8;
+        } else if (wireType === 2) {
+          let len = 0;
+          let lShift = 0;
+          while (pos < packetBytes.length) {
+            const lb = packetBytes[pos++];
+            len |= (lb & 0x7f) << lShift;
+            lShift += 7;
+            if ((lb & 0x80) === 0) break;
+          }
+          pos += len;
+        } else if (wireType === 5) {
+          pos += 4;
+        } else {
+          break;
+        }
+      }
+
+      // 3. Slice off the garbage padding and decode using strict fromBinary
+      const sanitizedBytes = packetBytes.subarray(0, lastValidPos);
+      const packet = fromBinary(MeshPacketSchema, sanitizedBytes);
+
       if (!packet?.from) return;
 
       const nodeId = packet.from;

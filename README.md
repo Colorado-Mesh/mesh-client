@@ -338,7 +338,7 @@ meshtastic-client/
 │   │   ├── index.ts              # Window creation, BLE/Serial intercept, all IPC handlers
 │   │   ├── log-service.ts        # Log file, console patch, log panel IPC
 │   │   ├── database.ts           # SQLite schema & migrations (WAL mode, user_version 9)
-│   │   ├── mqtt-manager.ts       # MQTT client: AES decrypt, dedup, protobuf decode
+│   │   ├── mqtt-manager.ts       # MQTT client: AES decrypt, dedup, protobuf decode, pre-parser for firmware trailing padding
 │   │   ├── updater.ts            # Auto-update checks via electron-updater
 │   │   └── gps.ts                # Main-process GPS helper
 │   ├── preload/
