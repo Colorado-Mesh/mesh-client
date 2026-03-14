@@ -23,6 +23,26 @@ export function sanitizeLogMessage(message: unknown): string {
     .trim();
 }
 
+/**
+ * Strip console %c style directives and their trailing CSS argument strings from messages
+ * captured via Electron's console-message event. tslog (used by @meshtastic/core) emits
+ * styled logs with %c markers; Chrome appends each CSS argument space-separated at the end
+ * of the message string when it is serialized by the console-message event.
+ */
+function stripConsoleStyles(msg: string): string {
+  if (!msg.includes('%c')) return msg;
+  // Remove inline %c format specifiers
+  const withoutMarkers = msg.replace(/%c/g, '');
+  // Strip trailing CSS property declarations appended by Chrome's console-message serialization.
+  // tslog uses: font-weight, color, background, padding, border-radius, font-style, text-decoration.
+  return withoutMarkers
+    .replace(
+      /(\s+(?:font-weight|font-style|color|background(?:-color)?|padding|border-radius|text-decoration)\s*:[^,\n]+)+$/,
+      '',
+    )
+    .trim();
+}
+
 interface LogEntry {
   ts: number;
   level: LogLevel;
@@ -270,5 +290,5 @@ export function forwardRendererConsoleMessage(details: {
   const mapped: LogLevel = levelMap[details.level] ?? 'log';
   const line = details.lineNumber;
   const src = details.sourceId ? `renderer:${path.basename(details.sourceId)}:${line}` : 'renderer';
-  appendLine(mapped, src, details.message);
+  appendLine(mapped, src, stripConsoleStyles(details.message));
 }
