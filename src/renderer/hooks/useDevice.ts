@@ -516,10 +516,34 @@ export function useDevice() {
 
     const unsubMsg = window.electronAPI.mqtt.onMessage((rawMsg) => {
       const raw = rawMsg as Omit<ChatMessage, 'id'> & { from_mqtt?: boolean };
+
+      // Normalize placeholder replyId/emoji (some senders emit 0 instead of omitting the field)
+      const cleanedReplyId = raw.replyId != null && raw.replyId !== 0 ? raw.replyId : undefined;
+      const cleanedEmoji = raw.emoji != null && raw.emoji !== 0 ? raw.emoji : undefined;
+
+      let cleanedPayload = raw.payload as string;
+      if (typeof cleanedPayload === 'string') {
+        const trimmed = cleanedPayload.trim();
+        if (trimmed === '0') {
+          // Strip leading "0" payloads that are just a placeholder from buggy senders
+          cleanedPayload = '';
+        }
+      }
+
+      const baseMsg: Omit<ChatMessage, 'id'> & { from_mqtt?: boolean } = {
+        ...raw,
+        payload: cleanedPayload,
+        replyId: cleanedReplyId,
+        emoji: cleanedEmoji,
+      };
+
       const msg: Omit<ChatMessage, 'id'> & { from_mqtt?: boolean } =
-        raw.emoji != null && raw.replyId != null
-          ? { ...raw, emoji: normalizeReactionEmoji(raw.emoji, raw.payload) ?? raw.emoji }
-          : raw;
+        baseMsg.emoji != null && baseMsg.replyId != null
+          ? {
+              ...baseMsg,
+              emoji: normalizeReactionEmoji(baseMsg.emoji, baseMsg.payload) ?? baseMsg.emoji,
+            }
+          : baseMsg;
       // Record MQTT path before dedup check (captures all copies, new and duplicate). Skip packetId 0 (no unique id per protobuf).
       const rawPacketId = Number(msg.packetId);
       const packetId = rawPacketId >>> 0;
@@ -684,10 +708,18 @@ export function useDevice() {
 
         touchLastData();
         const isEcho = meshPacket.from === myNodeNumRef.current;
-        const payloadText = new TextDecoder().decode(dataPacket.payload);
+        let payloadText = new TextDecoder().decode(dataPacket.payload);
         const data = dataPacket as { replyId?: number; reply_id?: number; emoji?: number };
-        const replyId = data.replyId ?? data.reply_id ?? undefined;
-        const wireEmoji = data.emoji;
+
+        const rawReplyId = data.replyId ?? data.reply_id ?? undefined;
+        const replyId = rawReplyId != null && rawReplyId !== 0 ? rawReplyId : undefined;
+        const wireEmoji = data.emoji != null && data.emoji !== 0 ? data.emoji : undefined;
+
+        if (payloadText.trim() === '0' && !replyId && !wireEmoji) {
+          // Strip leading "0" payloads that are just a placeholder from buggy senders
+          payloadText = '';
+        }
+
         const emoji = replyId
           ? (normalizeReactionEmoji(wireEmoji, payloadText) ?? wireEmoji ?? undefined)
           : undefined;
