@@ -851,6 +851,7 @@ ipcMain.handle('db:getMessages', (_event, channel?: number, limit = 200) => {
         .prepare(`SELECT ${columns} FROM messages ORDER BY timestamp DESC LIMIT ?`)
         .all(safeLimit);
     }
+
     // Map to_node back to `to` for the renderer
     return rows.map((r: any) => {
       const { to_node, ...rest } = r;

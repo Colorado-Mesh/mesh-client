@@ -32,6 +32,19 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
   if (cmd.type !== 'ENCODE_MESSAGE') return;
 
   try {
+    const decodedPayload: {
+      portnum: 1;
+      payload: Uint8Array;
+      replyId?: number;
+    } = {
+      portnum: 1, // TEXT_MESSAGE_APP
+      payload: new TextEncoder().encode(cmd.text),
+    };
+
+    if (cmd.replyId != null) {
+      decodedPayload.replyId = cmd.replyId;
+    }
+
     const toRadio = {
       payloadVariant: {
         case: 'packet' as const,
@@ -41,11 +54,7 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
           channel: cmd.channel,
           payloadVariant: {
             case: 'decoded' as const,
-            value: {
-              portnum: 1, // TEXT_MESSAGE_APP
-              payload: new TextEncoder().encode(cmd.text),
-              replyId: cmd.replyId ?? 0,
-            },
+            value: decodedPayload,
           },
         },
       },

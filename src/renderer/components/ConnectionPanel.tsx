@@ -573,6 +573,9 @@ export default function ConnectionPanel({
           </h2>
           <div role="status" aria-live="polite" aria-atomic="true">
             <p className="text-sm text-muted">{connectionStage}</p>
+            <p className="mt-1 text-xs text-muted/80">
+              For best results, stay on this tab until the device has finished connecting.
+            </p>
           </div>
         </div>
 

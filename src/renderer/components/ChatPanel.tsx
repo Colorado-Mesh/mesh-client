@@ -39,14 +39,12 @@ function StatusBadge({
         : connectionType === 'http'
           ? 'WiFi'
           : 'BT';
+  const failedReason =
+    status === 'failed' && transport === 'device'
+      ? 'No ACK (message may still have been broadcast; no other node in range to acknowledge)'
+      : error || 'Failed';
   const tooltip = `${transport === 'mqtt' ? 'MQTT' : 'Device'}: ${
-    status === 'sending'
-      ? 'Sending...'
-      : status === 'acked'
-        ? 'Delivered'
-        : transport === 'device'
-          ? 'No ACK received'
-          : error || 'Failed'
+    status === 'sending' ? 'Sending...' : status === 'acked' ? 'Delivered' : failedReason
   }`;
   return (
     <span className={`text-[10px] ${colorClass} cursor-help`} title={tooltip}>

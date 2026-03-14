@@ -461,7 +461,7 @@ export default function App() {
             {/* Content */}
             <main className="flex-1 overflow-auto p-4 min-h-0">
               <ErrorBoundary>
-                {activeTab === 0 && (
+                <div className={activeTab === 0 ? 'contents' : 'hidden'}>
                   <ConnectionPanel
                     state={device.state}
                     onConnect={device.connect}
@@ -474,7 +474,7 @@ export default function App() {
                         : undefined
                     }
                   />
-                )}
+                </div>
                 <div className={activeTab === 1 ? 'contents' : 'hidden'}>
                   <ChatPanel
                     messages={device.messages}
