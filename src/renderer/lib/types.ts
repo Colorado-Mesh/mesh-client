@@ -158,6 +158,8 @@ export interface ChatMessage {
   replyId?: number;
   // Direct message destination (undefined = broadcast)
   to?: number;
+  // Which transport(s) delivered this incoming message
+  receivedVia?: 'rf' | 'mqtt' | 'both';
 }
 
 export interface TelemetryPoint {
@@ -218,6 +220,7 @@ declare global {
         setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<unknown>;
         deleteNodesBySource: (source: string) => Promise<number>;
         clearNodePositions: () => Promise<unknown>;
+        updateMessageReceivedVia: (packetId: number) => Promise<unknown>;
       };
       mqtt: {
         connect: (settings: MQTTSettings) => Promise<void>;

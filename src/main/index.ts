@@ -113,6 +113,7 @@ function validateSaveMessage(message: unknown): asserts message is Record<string
   replyId?: number;
   to?: number;
   mqttStatus?: string;
+  receivedVia?: string;
 } {
   if (!message || typeof message !== 'object')
     throw new Error('db:saveMessage: message must be an object');
@@ -684,9 +685,10 @@ ipcMain.handle('db:saveMessage', (_event, message) => {
     validateSaveMessage(message);
     const db = getDatabase();
     const stmt = db.prepare(`
-      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status)
-      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status)
+      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status, received_via)
+      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status, @received_via)
     `);
+    const validReceivedVia = ['rf', 'mqtt', 'both'];
     return stmt.run({
       sender_id: safeNonNegativeInt(message.sender_id),
       sender_name: String(message.sender_name),
@@ -700,6 +702,10 @@ ipcMain.handle('db:saveMessage', (_event, message) => {
       reply_id: message.replyId != null ? safeNonNegativeInt(message.replyId) : null,
       to_node: message.to != null ? safeNonNegativeInt(message.to) : null,
       mqtt_status: message.mqttStatus ?? null,
+      received_via:
+        message.receivedVia != null && validReceivedVia.includes(message.receivedVia)
+          ? message.receivedVia
+          : null,
     });
   } catch (err) {
     console.error('[IPC] db:saveMessage failed:', err);
@@ -713,7 +719,7 @@ ipcMain.handle('db:getMessages', (_event, channel?: number, limit = 200) => {
     const db = getDatabase();
     const columns = `id, sender_id, sender_name, payload, channel, timestamp,
          packet_id AS packetId, status, error, emoji, reply_id AS replyId, to_node,
-         mqtt_status AS mqttStatus`;
+         mqtt_status AS mqttStatus, received_via AS receivedVia`;
     let rows: any[];
     if (channel !== undefined && channel !== null) {
       const ch = safeNonNegativeInt(channel);
@@ -967,6 +973,22 @@ ipcMain.handle(
     }
   },
 );
+
+// ─── IPC: Upgrade received_via to 'both' when packet arrives on second transport ─
+ipcMain.handle('db:updateMessageReceivedVia', (_event, packetId: number) => {
+  try {
+    const pid = safeNonNegativeInt(packetId);
+    const db = getDatabase();
+    return db
+      .prepare(
+        "UPDATE messages SET received_via = 'both' WHERE packet_id = ? AND received_via != 'both'",
+      )
+      .run(pid);
+  } catch (err) {
+    console.error('[IPC] db:updateMessageReceivedVia failed:', err);
+    throw err;
+  }
+});
 
 // ─── IPC: Export database ───────────────────────────────────────────
 ipcMain.handle('db:export', async () => {

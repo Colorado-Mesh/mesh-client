@@ -486,6 +486,15 @@ export function useDevice() {
       // Packet ID dedup (catches our own uplink echoes)
       if (packetId !== 0 && isDuplicate(packetId)) {
         useDiagnosticsStore.getState().recordDuplicate(msg.sender_id);
+        // Upgrade receivedVia to 'both' if this packet was already saved via RF
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.packetId === packetId && m.receivedVia === 'rf'
+              ? { ...m, receivedVia: 'both' as const }
+              : m,
+          ),
+        );
+        if (packetId !== 0) window.electronAPI.db.updateMessageReceivedVia(packetId);
         return;
       }
 
@@ -502,17 +511,18 @@ export function useDevice() {
       }
 
       // Deduplicate by content too (same sender + timestamp)
+      const mqttMsg = { ...msg, receivedVia: 'mqtt' as const };
       setMessages((prev) => {
         const isDup = prev.some(
           (m) =>
-            m.sender_id === msg.sender_id &&
-            m.timestamp === msg.timestamp &&
-            m.payload === msg.payload,
+            m.sender_id === mqttMsg.sender_id &&
+            m.timestamp === mqttMsg.timestamp &&
+            m.payload === mqttMsg.payload,
         );
         if (isDup) return prev;
-        return [...prev, msg];
+        return [...prev, mqttMsg];
       });
-      window.electronAPI.db.saveMessage(msg);
+      window.electronAPI.db.saveMessage(mqttMsg);
     });
 
     return () => {
@@ -652,6 +662,16 @@ export function useDevice() {
 
         // Packet ID dedup: skip if already seen (e.g. via MQTT) so same message is not shown twice
         if (!isEcho && !msg.emoji && msg.packetId && isDuplicate(msg.packetId)) {
+          // Upgrade receivedVia to 'both' if this packet was already saved via MQTT
+          const rfDedupPacketId = msg.packetId;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.packetId === rfDedupPacketId && m.receivedVia === 'mqtt'
+                ? { ...m, receivedVia: 'both' as const }
+                : m,
+            ),
+          );
+          window.electronAPI.db.updateMessageReceivedVia(rfDedupPacketId);
           return;
         }
 
@@ -661,18 +681,21 @@ export function useDevice() {
           return;
         }
 
+        const rfMsg: ChatMessage = isEcho ? msg : { ...msg, receivedVia: 'rf' as const };
         setMessages((prev) => {
           // Dedup reaction retransmissions before the DB write completes
-          if (msg.emoji && msg.replyId) {
+          if (rfMsg.emoji && rfMsg.replyId) {
             const isDup = prev.some(
               (m) =>
-                m.emoji === msg.emoji && m.replyId === msg.replyId && m.sender_id === msg.sender_id,
+                m.emoji === rfMsg.emoji &&
+                m.replyId === rfMsg.replyId &&
+                m.sender_id === rfMsg.sender_id,
             );
             if (isDup) return prev;
           }
-          return [...prev, msg];
+          return [...prev, rfMsg];
         });
-        window.electronAPI.db.saveMessage(msg);
+        window.electronAPI.db.saveMessage(rfMsg);
 
         // Gateway uplink: forward RF messages to MQTT if uplinkEnabled for this channel
         // Skip our own echoes, reactions, and DMs (privacy)
@@ -1791,6 +1814,20 @@ export function useDevice() {
       window.electronAPI.db.saveMessage(msg);
 
       // Device transport
+      // #region agent log
+      fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'f20454' },
+        body: JSON.stringify({
+          sessionId: 'f20454',
+          location: 'useDevice.ts:sendReaction',
+          message: 'sendReaction device path',
+          data: { hasDevice: !!deviceRef.current, channel, replyId, emoji },
+          hypothesisId: 'H1',
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       if (deviceRef.current) {
         await deviceRef.current.sendText('', 'broadcast', true, channel, replyId, emoji);
       }

@@ -43,7 +43,7 @@ export function initDatabase(): void {
       createBaseTables();
       if (isFreshDb) {
         // Base DDL already includes all columns; stamp current schema version
-        db!.pragma('user_version = 9');
+        db!.pragma('user_version = 10');
       } else {
         runMigrations();
       }
@@ -79,7 +79,8 @@ function createBaseTables(): void {
         emoji INTEGER,
         reply_id INTEGER,
         to_node INTEGER,
-        mqtt_status TEXT
+        mqtt_status TEXT,
+        received_via TEXT
       );
 
       CREATE TABLE IF NOT EXISTS nodes (
@@ -229,9 +230,20 @@ function runMigrations(): void {
       db!.prepare('ALTER TABLE nodes ADD COLUMN num_packets_rx INTEGER').run();
       db!.prepare('ALTER TABLE nodes ADD COLUMN num_packets_tx INTEGER').run();
       db!.pragma('user_version = 9');
+      userVersion = 9;
     } catch (e) {
       console.error('[db] migration v9 failed', e);
       throw new Error(`Migration v9 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 10) {
+    try {
+      db!.prepare('ALTER TABLE messages ADD COLUMN received_via TEXT').run();
+      db!.pragma('user_version = 10');
+    } catch (e) {
+      console.error('[db] migration v10 failed', e);
+      throw new Error(`Migration v10 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }
