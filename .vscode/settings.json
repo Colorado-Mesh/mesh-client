@@ -5,7 +5,6 @@
   "eslint.validate": ["javascript", "typescript", "javascriptreact", "typescriptreact"],
   "eslint.format.enable": true,
   "[typescript]": { "editor.defaultFormatter": "vscode.typescript-language-features" },
-  "[typescriptreact]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
