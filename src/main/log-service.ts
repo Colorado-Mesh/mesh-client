@@ -222,6 +222,11 @@ function stringifyArgs(args: unknown[]): string {
 
 let consolePatched = false;
 
+function resolveMainSource(): 'sdk' | 'main' {
+  const stack = new Error().stack ?? '';
+  return stack.includes('node_modules/@meshtastic') ? 'sdk' : 'main';
+}
+
 /**
  * Route main-process console.* through appendLine and still echo to original console
  * so terminal/devtools behavior is preserved.
@@ -231,23 +236,23 @@ export function patchMainConsole(): void {
   consolePatched = true;
 
   console.log = (...args: unknown[]) => {
-    appendLine('log', 'main', stringifyArgs(args));
+    appendLine('log', resolveMainSource(), stringifyArgs(args));
     original.log(...args);
   };
   console.info = (...args: unknown[]) => {
-    appendLine('info', 'main', stringifyArgs(args));
+    appendLine('info', resolveMainSource(), stringifyArgs(args));
     original.info(...args);
   };
   console.warn = (...args: unknown[]) => {
-    appendLine('warn', 'main', stringifyArgs(args));
+    appendLine('warn', resolveMainSource(), stringifyArgs(args));
     original.warn(...args);
   };
   console.error = (...args: unknown[]) => {
-    appendLine('error', 'main', stringifyArgs(args));
+    appendLine('error', resolveMainSource(), stringifyArgs(args));
     original.error(...args);
   };
   console.debug = (...args: unknown[]) => {
-    appendLine('debug', 'main', stringifyArgs(args));
+    appendLine('debug', resolveMainSource(), stringifyArgs(args));
     original.debug(...args);
   };
 
