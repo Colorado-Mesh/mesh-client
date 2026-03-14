@@ -245,7 +245,7 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
         }
       }
     } else {
-      console.warn('Disconnect error:', err);
+      console.warn('[meshtastic] Disconnect error:', err);
     }
   } finally {
     // Always complete device streams to prevent memory leaks

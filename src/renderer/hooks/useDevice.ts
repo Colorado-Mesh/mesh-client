@@ -1167,7 +1167,7 @@ export function useDevice() {
               console.debug('[BLE heartbeat] GATT busy — skipping beat, connection intact');
               return;
             }
-            console.warn('BLE heartbeat write failed:', err);
+            console.warn('[meshtastic] BLE heartbeat write failed:', err);
             // Any other GATT write failure = connection is dead
             handleConnectionLostRef.current();
           }
@@ -1283,7 +1283,7 @@ export function useDevice() {
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
     } catch (err) {
-      console.warn(`Reconnect attempt ${reconnectAttemptRef.current} failed:`, err);
+      console.warn(`[meshtastic] Reconnect attempt ${reconnectAttemptRef.current} failed:`, err);
       // Retry
       attemptReconnectRef.current();
     }
@@ -1327,7 +1327,7 @@ export function useDevice() {
         // Start configuration AFTER all listeners are wired
         device.configure();
       } catch (err) {
-        console.error('Connection failed:', err);
+        console.error('[meshtastic] Connection failed:', err);
         cleanupSubscriptions();
         stopPolling();
         stopWatchdog();
@@ -1384,7 +1384,7 @@ export function useDevice() {
         wireSubscriptions(device, type);
         device.configure();
       } catch (err) {
-        console.error('Auto-connect failed:', err);
+        console.error('[meshtastic] Auto-connect failed:', err);
         cleanupSubscriptions();
         stopPolling();
         stopWatchdog();

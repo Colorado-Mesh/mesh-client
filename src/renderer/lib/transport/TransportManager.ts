@@ -89,7 +89,7 @@ export class TransportManager {
           const pe = err as { packetId?: number; error?: string };
           const packetId = typeof pe.packetId === 'number' ? pe.packetId : undefined;
           const error = pe.error ?? String(err);
-          console.warn('[TransportManager] sendText failed', err);
+          console.warn('[meshtastic] sendText failed', err);
           onStatusUpdateRef.current({
             tempId,
             transport: 'device',
