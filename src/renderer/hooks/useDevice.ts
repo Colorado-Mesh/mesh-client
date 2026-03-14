@@ -21,6 +21,7 @@ import type {
   ChatMessage,
   ConnectionType,
   DeviceState,
+  EnvironmentTelemetryPoint,
   MeshNode,
   MeshWaypoint,
   MQTTStatus,
@@ -144,6 +145,7 @@ export function useDevice() {
   const [nodes, setNodes] = useState<Map<number, MeshNode>>(new Map());
   const [telemetry, setTelemetry] = useState<TelemetryPoint[]>([]);
   const [signalTelemetry, setSignalTelemetry] = useState<TelemetryPoint[]>([]);
+  const [environmentTelemetry, setEnvironmentTelemetry] = useState<EnvironmentTelemetryPoint[]>([]);
   const [traceRouteResults, setTraceRouteResults] = useState<
     Map<number, { route: number[]; from: number; timestamp: number }>
   >(new Map());
@@ -1037,9 +1039,64 @@ export function useDevice() {
               numRxDupe?: number;
               numPacketsRx?: number;
               numPacketsTx?: number;
+              // environmentMetrics fields
+              temperature?: number;
+              relativeHumidity?: number;
+              barometricPressure?: number;
+              gasResistance?: number;
+              iaq?: number;
+              lux?: number;
+              windSpeed?: number;
+              windDirection?: number;
+              windGust?: number;
+              windLull?: number;
+              weight?: number;
+              rainfall1h?: number;
+              rainfall24h?: number;
             };
           };
         };
+
+        // Handle environmentMetrics variant
+        if (tel.variant?.case === 'environmentMetrics' && tel.variant.value) {
+          const env = tel.variant.value;
+          const point: EnvironmentTelemetryPoint = {
+            timestamp: Date.now(),
+            nodeNum: packet.from,
+            temperature: env.temperature,
+            relativeHumidity: env.relativeHumidity,
+            barometricPressure: env.barometricPressure,
+            gasResistance: env.gasResistance,
+            iaq: env.iaq,
+            lux: env.lux,
+            windSpeed: env.windSpeed,
+            windDirection: env.windDirection,
+            windGust: env.windGust,
+            windLull: env.windLull,
+            weight: env.weight,
+            rainfall1h: env.rainfall1h,
+            rainfall24h: env.rainfall24h,
+          };
+          setEnvironmentTelemetry((prev) => [...prev, point].slice(-MAX_TELEMETRY_POINTS));
+          updateNodes((prev) => {
+            const updated = new Map(prev);
+            const existing = updated.get(packet.from);
+            if (existing) {
+              updated.set(packet.from, {
+                ...existing,
+                env_temperature: env.temperature ?? existing.env_temperature,
+                env_humidity: env.relativeHumidity ?? existing.env_humidity,
+                env_pressure: env.barometricPressure ?? existing.env_pressure,
+                env_iaq: env.iaq ?? existing.env_iaq,
+                env_lux: env.lux ?? existing.env_lux,
+                env_wind_speed: env.windSpeed ?? existing.env_wind_speed,
+                env_wind_direction: env.windDirection ?? existing.env_wind_direction,
+              });
+            }
+            return updated;
+          });
+          return;
+        }
 
         // Handle localStats variant (connected node's radio statistics)
         if (
@@ -2116,6 +2173,7 @@ export function useDevice() {
     nodes,
     telemetry,
     signalTelemetry,
+    environmentTelemetry,
     channels,
     channelConfigs,
     traceRouteResults,

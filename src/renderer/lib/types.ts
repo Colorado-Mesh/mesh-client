@@ -116,6 +116,14 @@ export interface MeshNode {
   num_rx_dupe?: number;
   num_packets_rx?: number;
   num_packets_tx?: number;
+  // Environmental sensor data (session-only, last received reading)
+  env_temperature?: number;
+  env_humidity?: number;
+  env_pressure?: number;
+  env_iaq?: number;
+  env_lux?: number;
+  env_wind_speed?: number;
+  env_wind_direction?: number;
 }
 
 export type RemediationCategory = 'Configuration' | 'Physical' | 'Hardware' | 'Software';
@@ -180,6 +188,24 @@ export interface TelemetryPoint {
   voltage?: number;
   snr?: number;
   rssi?: number;
+}
+
+export interface EnvironmentTelemetryPoint {
+  timestamp: number;
+  nodeNum: number;
+  temperature?: number; // °C
+  relativeHumidity?: number; // %
+  barometricPressure?: number; // hPa
+  gasResistance?: number; // MOhm
+  iaq?: number; // 0–500 (BME680)
+  lux?: number;
+  windSpeed?: number; // m/s
+  windDirection?: number; // degrees 0–360
+  windGust?: number;
+  windLull?: number;
+  weight?: number; // kg
+  rainfall1h?: number;
+  rainfall24h?: number;
 }
 
 export interface DeviceState {
