@@ -462,7 +462,7 @@ export default function RadioPanel({
     if (loraConfig.freq != null) setRadioFreqHz(loraConfig.freq);
     if (loraConfig.bw != null) setBandwidth(loraConfig.bw / 1000);
     if (loraConfig.sf != null) setSpreadFactor(loraConfig.sf);
-    if (loraConfig.cr != null) setCodingRate(loraConfig.cr + 4);
+    if (loraConfig.cr != null) setCodingRate(loraConfig.cr);
     if (loraConfig.txPower != null) setTxPower(loraConfig.txPower);
   }, [loraConfig]);
 
@@ -654,7 +654,7 @@ export default function RadioPanel({
                 freq: importedFreqHz!,
                 bw: importedBwKhz! * 1000,
                 sf: importedSf!,
-                cr: importedCr! - 4,
+                cr: importedCr!,
                 txPower: importedTxPower!,
               });
             } catch {
@@ -892,7 +892,7 @@ export default function RadioPanel({
                 freq: radioFreqHz,
                 bw: bandwidth * 1000,
                 sf: spreadFactor,
-                cr: codingRate - 4,
+                cr: codingRate,
                 txPower,
               });
               setStatus('LoRa applied successfully!');

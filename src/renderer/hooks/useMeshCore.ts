@@ -1309,7 +1309,7 @@ export function useMeshCore() {
     // Stubs for interface compatibility
     mqttStatus: 'disconnected' as const,
     selfNodeId: state.myNodeNum,
-    getNodes: useCallback(() => Array.from(nodes.values()), [nodes]),
+    getNodes: useCallback(() => nodes, [nodes]),
     getFullNodeLabel: useCallback(
       (id: number) => nodes.get(id)?.long_name ?? id.toString(16).toUpperCase(),
       [nodes],
