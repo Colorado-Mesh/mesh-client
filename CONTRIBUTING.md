@@ -57,9 +57,11 @@ Run `npm run lint` before pushing. ESLint is configured with:
 
 **Dual-protocol architecture:** The app supports two protocols: `meshtastic` (default) and `meshcore`. The active protocol is stored in `localStorage['mesh-client:protocol']` and drives which hook (`useDevice` vs `useMeshCore`) powers the app. Both hooks expose the same top-level shape so components stay protocol-agnostic wherever possible. Protocol-specific divergences are handled via the `ProtocolCapabilities` descriptor from `src/renderer/lib/radio/BaseRadioProvider.ts` — add capabilities there (not as string comparisons) when gating UI on protocol.
 
-- `useDevice.ts` — Meshtastic-specific; uses `@meshtastic/core`
-- `useMeshCore.ts` — MeshCore-specific; uses `@liamcottle/meshcore.js` over BLE, Web Serial, or a main-process TCP bridge (`meshcore:tcp-*` IPC channels)
-- `useRadioProvider(protocol)` — returns a memoized `ProtocolCapabilities` object; pass this down into components and engines rather than comparing `protocol === 'meshcore'` strings everywhere
+- `useDevice.ts` — Meshtastic-specific; uses `@meshtastic/core`; connections created via `createConnection()` in `src/renderer/lib/connection.ts` (BLE/Serial/HTTP).
+- `useMeshCore.ts` — MeshCore-specific; uses `@liamcottle/meshcore.js`; connections created inside the hook (BLE, Web Serial, or TCP via main-process IPC). No use of `connection.ts`.
+- `useRadioProvider(protocol)` — returns a memoized `ProtocolCapabilities` object; pass this down into components and engines rather than comparing `protocol === 'meshcore'` strings everywhere.
+
+**Dual-mode UI:** `App.tsx` chooses the active hook by protocol and renders the same shell (tabs, Log panel, status). Tab 6 is **Modules** (Meshtastic: `ConfigPanel`, `ModulePanel`) or **Repeaters** (MeshCore: `RepeatersPanel`). Panels such as `RadioPanel`, `ConnectionPanel`, and `NodeDetailModal` accept optional props (e.g. `onApplyLoraParams`, `onSetOwner`) that are set only for the active protocol; when adding protocol-specific UI, gate on `capabilities` or the presence of these handlers rather than on the protocol string.
 
 **MeshCore IPC channels:** Main-process TCP bridge for MeshCore uses `meshcore:tcp-connect`, `meshcore:tcp-write`, `meshcore:tcp-disconnect`, `meshcore:tcp-data` (renderer push), and `meshcore:tcp-disconnected` (renderer push). These are handled in `src/main/index.ts` and wired into the renderer via `window.electronAPI.meshcore.tcp.*` in the preload.
 

@@ -407,17 +407,17 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 
 ### Tech Stack
 
-| Component  | Technology                        |
-| ---------- | --------------------------------- |
-| Desktop    | Electron                          |
-| UI         | React 19 + TypeScript             |
-| Styling    | Tailwind CSS v4                   |
-| Meshtastic | @meshtastic/core (JSR)            |
-| MeshCore   | @liamcottle/meshcore.js           |
-| Maps       | Leaflet + OpenStreetMap           |
-| Charts     | Recharts                          |
-| Database   | SQLite (better-sqlite3)           |
-| Build      | esbuild + Vite + electron-builder |
+| Component  | Technology                                                                             |
+| ---------- | -------------------------------------------------------------------------------------- |
+| Desktop    | Electron                                                                               |
+| UI         | React 19 + TypeScript                                                                  |
+| Styling    | Tailwind CSS v4                                                                        |
+| Meshtastic | @meshtastic/core + transport-http, transport-web-bluetooth, transport-web-serial (JSR) |
+| MeshCore   | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                    |
+| Maps       | Leaflet + OpenStreetMap                                                                |
+| Charts     | Recharts                                                                               |
+| Database   | SQLite (better-sqlite3)                                                                |
+| Build      | esbuild + Vite + electron-builder                                                      |
 
 ### Project Structure
 
@@ -430,55 +430,58 @@ meshtastic-client/
 │   └── dependabot.yml
 ├── src/
 │   ├── main/
-│   │   ├── index.ts              # Window creation, BLE/Serial intercept, all IPC handlers
+│   │   ├── index.ts              # Window creation, BLE/Serial intercept, IPC (incl. meshcore TCP), MQTT
 │   │   ├── log-service.ts        # Log file, console patch, log panel IPC
+│   │   ├── sanitize-log-message.ts  # Log injection sanitization (CodeQL); use at call sites before appendLine
 │   │   ├── database.ts           # SQLite schema & migrations (WAL mode, user_version 13)
-│   │   ├── mqtt-manager.ts       # MQTT client: AES decrypt, dedup, protobuf decode, pre-parser for firmware trailing padding
+│   │   ├── mqtt-manager.ts       # MQTT client: AES decrypt, dedup, protobuf decode (Meshtastic only)
 │   │   ├── updater.ts            # Auto-update checks via electron-updater
 │   │   └── gps.ts                # Main-process GPS helper
 │   ├── preload/
-│   │   └── index.ts              # contextBridge: electronAPI (db, mqtt, log, BLE, serial, session)
+│   │   └── index.ts              # contextBridge: electronAPI (db, mqtt, log, BLE, serial, session, meshcore.tcp)
 │   └── renderer/
 │       ├── index.html            # HTML entry
-│       ├── App.tsx               # Shell: 9 tabs, Log panel (right rail), keyboard shortcuts, status header
 │       ├── main.tsx              # React entry point
-│       ├── components/
+│       ├── App.tsx               # Shell: 9 tabs (protocol-dependent: Modules vs Repeaters), Log panel, shortcuts, status
+│       ├── styles.css            # Global styles, theme variables
+│       ├── components/           # Panels and UI (many have co-located *.test.tsx)
 │       │   ├── ChatPanel.tsx         # Chat UI, DMs, emoji reactions, channel switching
 │       │   ├── NodeListPanel.tsx     # Node browser with online/stale/offline/MQTT filter
 │       │   ├── MapPanel.tsx          # Node positions on OpenStreetMap (Leaflet)
 │       │   ├── TelemetryPanel.tsx    # Battery/voltage/SNR charts (Recharts)
 │       │   ├── AdminPanel.tsx        # Reboot, shutdown, factory reset, trace route
-│       │   ├── ConfigPanel.tsx       # Device & channel configuration editor
-│       │   ├── ConnectionPanel.tsx   # BLE/Serial/HTTP/MQTT connection setup; MeshCore manual contact toggle
+│       │   ├── ConfigPanel.tsx       # Meshtastic: device & channel configuration editor
+│       │   ├── ModulePanel.tsx       # Meshtastic: modules tab (telemetry, MQTT, etc.)
+│       │   ├── ConnectionPanel.tsx   # BLE/Serial/HTTP/MQTT; protocol toggle; MeshCore manual contact toggle
 │       │   ├── DiagnosticsPanel.tsx  # Health band + counts, diagnosticRows table, halos, max age
 │       │   ├── MeshCongestionAttributionBlock.tsx  # Shared mesh congestion / duplicate-traffic copy
 │       │   ├── LogPanel.tsx          # Live app log, debug toggle, export/delete log file
-│       │   ├── RadioPanel.tsx        # Radio settings, fixed position, GPS send; MeshCore: channel display/edit, config import
-│       │   ├── RepeatersPanel.tsx    # MeshCore: repeater list, status, JSON nickname import
-│       │   ├── AppPanel.tsx          # App settings, appearance (theme presets), GPS interval, database management
+│       │   ├── RadioPanel.tsx        # Radio settings, position, GPS send; MeshCore: channels, Import Config JSON
+│       │   ├── RepeatersPanel.tsx    # MeshCore only: repeater list, status, JSON nickname import
+│       │   ├── AppPanel.tsx          # App settings, theme presets, GPS interval, database management
 │       │   ├── NodeDetailModal.tsx   # Node info overlay; MeshCore: trace, repeater status, telemetry, neighbors
 │       │   ├── NodeInfoBody.tsx      # Shared node info content (modal + map popup)
 │       │   ├── KeyboardShortcutsModal.tsx
 │       │   ├── UpdateBanner.tsx      # In-app update notification
 │       │   ├── ErrorBoundary.tsx     # Top-level React error boundary
-│       │   ├── SignalBars.tsx        # Signal strength → bars for direct (0-hop) RF only; no data → no bars
+│       │   ├── SignalBars.tsx        # Signal strength → bars for direct (0-hop) RF only
 │       │   ├── RefreshButton.tsx
 │       │   ├── Toast.tsx
 │       │   └── Tabs.tsx
 │       ├── hooks/
-│       │   ├── useDevice.ts          # Core hook: Meshtastic device lifecycle, 3 transports, auto-reconnect
-│       │   └── useMeshCore.ts        # MeshCore hook: BLE/Serial/TCP, contacts, messages, ACK, trace route, telemetry, neighbors
+│       │   ├── useDevice.ts          # Meshtastic: device lifecycle, 3 transports, auto-reconnect
+│       │   └── useMeshCore.ts        # MeshCore: BLE/Serial/TCP, contacts, messages, ACK, trace, telemetry
 │       ├── stores/
-│       │   ├── diagnosticsStore.ts   # Zustand: anomalies, packet stats, halo flags, MQTT ignore, foreign LoRa detections
-│       │   ├── mapViewportStore.ts   # Zustand: persisted map center/zoom
-│       │   ├── positionHistoryStore.ts  # 60-min position trail; show/hide path overlay
+│       │   ├── diagnosticsStore.ts   # Anomalies, halo flags, MQTT ignore, foreign LoRa (both protocols)
+│       │   ├── mapViewportStore.ts   # Persisted map center/zoom
+│       │   ├── positionHistoryStore.ts  # 60-min position trail; path overlay visibility
 │       │   └── repeaterSignalStore.ts    # MeshCore: repeater status cache
 │       ├── lib/
-│       │   ├── types.ts              # TypeScript interfaces: MeshNode, ChatMessage, DeviceState, MeshProtocol…
-│       │   ├── connection.ts         # Connection factory: BLE/Serial/HTTP transport creation
-│       │   ├── foreignLoraDetection.ts   # Cross-protocol: classify payload, foreign LoRa detection, RSSI/SNR extraction
-│       │   ├── meshcoreUtils.ts      # MeshCore helpers: pubkeyToNodeId, meshcoreContactToMeshNode, contact type labels
-│       │   ├── gpsSource.ts          # GPS waterfall: device coords → browser geolocation → null
+│       │   ├── types.ts              # MeshNode, ChatMessage, DeviceState, MeshProtocol, etc.
+│       │   ├── connection.ts         # Meshtastic: createConnection (BLE/Serial/HTTP)
+│       │   ├── foreignLoraDetection.ts   # Cross-protocol: classify payload, foreign LoRa, RSSI/SNR
+│       │   ├── meshcoreUtils.ts      # MeshCore: pubkeyToNodeId, meshcoreContactToMeshNode, contact types
+│       │   ├── gpsSource.ts          # GPS waterfall: device → geolocation → null
 │       │   ├── nodeStatus.ts         # Node freshness: online <30 min, stale <2 h, offline 2 h+
 │       │   ├── coordUtils.ts         # Coordinate conversion helpers
 │       │   ├── reactions.ts          # Emoji reaction helpers
@@ -487,16 +490,21 @@ meshtastic-client/
 │       │   ├── themeColors.ts        # Theme color helpers
 │       │   ├── parseStoredJson.ts    # Safe JSON parse for persisted values
 │       │   ├── radio/
-│       │   │   ├── BaseRadioProvider.ts  # ProtocolCapabilities descriptor + MESHTASTIC_CAPABILITIES + MESHCORE_CAPABILITIES
-│       │   │   └── providerFactory.ts    # useRadioProvider(protocol) hook — memoized capabilities lookup
+│       │   │   ├── BaseRadioProvider.ts  # ProtocolCapabilities; MESHTASTIC_CAPABILITIES, MESHCORE_CAPABILITIES
+│       │   │   └── providerFactory.ts    # useRadioProvider(protocol) — memoized capabilities
+│       │   ├── transport/             # Meshtastic: transport abstraction (used by connection.ts)
+│       │   │   ├── TransportManager.ts
+│       │   │   └── types.ts
 │       │   └── diagnostics/
-│       │       ├── RoutingDiagnosticEngine.ts  # Hop anomaly detectors (hop_goblin, bad_route, etc.); protocol-aware
-│       │       ├── RFDiagnosticEngine.ts       # RF-layer signal diagnostics (CU spike, hidden terminal, etc.)
-│       │       ├── diagnosticRows.ts           # Row merge/prune, routing map helper, default ages
-│       │       ├── meshCongestionAttribution.ts # Path mix + RF originator ranking for congestion copy
-│       │       ├── snrMeaningfulForNodeDiagnostics.ts  # SNR relevance for node diagnostics
+│       │       ├── RoutingDiagnosticEngine.ts  # Hop anomalies (Meshtastic); protocol-aware
+│       │       ├── RFDiagnosticEngine.ts       # RF-layer signal diagnostics
+│       │       ├── diagnosticRows.ts           # Row merge/prune, default ages
+│       │       ├── meshCongestionAttribution.ts # Path mix + RF originator for congestion copy
+│       │       ├── snrMeaningfulForNodeDiagnostics.ts
 │       │       └── RemediationEngine.ts        # Suggested fixes for routing + RF rows
-│       └── types/                  # Type declarations (web-serial.d.ts, meshcore.d.ts)
+│       ├── types/                  # Type declarations (web-serial.d.ts, meshcore.d.ts)
+│       └── workers/
+│           └── messageEncoder.worker.ts  # Meshtastic: message encoding worker
 ├── resources/
 │   ├── icons/                    # App icons (linux/, mac/, win/)
 │   ├── entitlements.mac.plist    # macOS signing entitlements (main)
@@ -504,7 +512,8 @@ meshtastic-client/
 ├── scripts/
 │   ├── before-build-native.cjs   # Cleans better-sqlite3 build before dist (Windows EPERM workaround)
 │   ├── rebuild-native.mjs        # Rebuilds better-sqlite3 for Electron ABI (postinstall)
-│   └── wait-for-dev.mjs         # Waits for Vite dev server before launching Electron
+│   ├── wait-for-dev.mjs          # Waits for Vite dev server before launching Electron
+│   └── check-log-injection.mjs   # Pre-commit: ensures log call sites use sanitizeLogMessage (CodeQL)
 ├── patches/                     # patch-package patches (e.g. electron-builder)
 ├── docs/
 │   ├── accessibility-checklist.md
