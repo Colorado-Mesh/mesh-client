@@ -65,6 +65,130 @@ Run `npm run lint` before pushing. ESLint is configured with:
 
 **MeshCore database:** MeshCore contacts and messages are stored in `meshcore_contacts` and `meshcore_messages` (schema v11). The `saveMeshcoreContact` IPC does a full `INSERT OR REPLACE` (preserves `favorited`); `updateMeshcoreContactAdvert` does a targeted `UPDATE` of `last_advert`, `adv_lat`, `adv_lon` only — used by the periodic advert push event (128) to avoid overwriting contact metadata with partial data.
 
+### MeshCore internals
+
+This subsection is a contributor reference for working on MeshCore-specific features. Read it alongside `src/renderer/hooks/useMeshCore.ts`.
+
+#### `useMeshCore` — state and refs
+
+**Exported state** (visible to callers via the hook's return value):
+
+| Field                   | Type                       | Description                                  |
+| ----------------------- | -------------------------- | -------------------------------------------- |
+| `nodes`                 | `Map<number, MeshNode>`    | Keyed by `pubkeyToNodeId()`                  |
+| `messages`              | `ChatMessage[]`            | Channel + DM history                         |
+| `channels`              | `{index, name}[]`          | Channel list from device                     |
+| `selfInfo`              | `MeshCoreSelfInfo \| null` | Device identity, radio params, battery       |
+| `deviceLogs`            | `DeviceLogEntry[]`         | Capped at `MAX_DEVICE_LOGS` (500)            |
+| `telemetry`             | `TelemetryPoint[]`         | Battery telemetry; cap 50                    |
+| `signalTelemetry`       | `TelemetryPoint[]`         | SNR/RSSI telemetry; cap 50                   |
+| `meshcoreTraceResults`  | `Map<number, …>`           | Per-hop SNR trace results keyed by nodeId    |
+| `meshcoreNodeStatus`    | `Map<number, …>`           | On-demand repeater status keyed by nodeId    |
+| `meshcoreNodeTelemetry` | `Map<number, …>`           | On-demand sensor data keyed by nodeId        |
+| `meshcoreNeighbors`     | `Map<number, …>`           | Neighbor list results keyed by nodeId        |
+| `manualAddContacts`     | `boolean`                  | `true` = manual approval; `false` = auto-add |
+
+**Key internal refs** (not returned, used inside the hook only):
+
+| Ref                  | Purpose                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| `connRef`            | The active `MeshCoreConnection`                                                      |
+| `pubKeyMapRef`       | `Map<number, Uint8Array>` — nodeId → full 32-byte public key (used when sending)     |
+| `pubKeyPrefixMapRef` | `Map<string, number>` — 6-byte hex prefix → nodeId (for DM routing from push events) |
+| `pendingAcksRef`     | `Map<number, {timeoutId}>` — in-flight ACK tracking keyed by `expectedAckCrc`        |
+| `nodesRef`           | Stable ref to current `nodes` map (prevents stale closures in event listeners)       |
+
+When adding new device state: add a `useState` / `useRef` entry, expose it in the return value, and update the matching return-type shape.
+
+#### `MeshCoreConnection` API
+
+The connection object exposes these methods. Call them via `connRef.current` inside callbacks:
+
+| Method                              | Purpose                                      |
+| ----------------------------------- | -------------------------------------------- |
+| `getSelfInfo()`                     | Fetch device identity, radio params, battery |
+| `getContacts()`                     | Fetch all contacts from device               |
+| `getChannels()`                     | Fetch channel list                           |
+| `getWaitingMessages()`              | Drain queued messages on connect             |
+| `sendFloodAdvert()`                 | Broadcast presence to mesh                   |
+| `sendTextMessage(pubKey, text)`     | DM; returns `{expectedAckCrc, estTimeout}`   |
+| `sendChannelTextMessage(idx, text)` | Channel broadcast                            |
+| `removeContact(pubKey)`             | Delete a contact                             |
+| `setAdvertName(name)`               | Set device display name                      |
+| `setRadioParams(freq, bw, sf, cr)`  | Apply radio config                           |
+| `setTxPower(power)`                 | Set TX power                                 |
+| `setAdvertLatLong(lat, lon)`        | Set broadcast position                       |
+| `reboot()`                          | Reboot device                                |
+| `tracePath(pubKeys)`                | Per-hop SNR trace                            |
+| `getStatus(pubKey)`                 | Repeater status                              |
+| `getTelemetry(pubKey)`              | CayenneLPP sensor data                       |
+| `getNeighbours(pubKey)`             | Neighbor list (Repeater-only)                |
+| `setManualAddContacts()`            | Switch to manual contact approval            |
+| `setAutoAddContacts()`              | Switch to automatic contact approval         |
+
+**Adding a new device command:** add the method signature to `MeshCoreConnection` in `useMeshCore.ts`, implement the call in a callback (using `connRef.current`), and expose the callback in the hook's return value.
+
+#### Push event numbering
+
+MeshCore devices emit push events as numeric codes. Register listeners with `conn.on(EVENT_CODE, handler)`:
+
+| Code         | Name                     | Description                                                                                                          |
+| ------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `0x80` (128) | Periodic advert          | Contact presence update; call `updateMeshcoreContactAdvert` IPC (partial update — do not overwrite contact metadata) |
+| `0x81` (129) | Path update              | Routing path changed                                                                                                 |
+| `0x82` (130) | Send confirmed           | ACK received; resolve the pending entry in `pendingAcksRef`                                                          |
+| `0x83` (131) | Message waiting          | Incoming message queued; fetch via `getWaitingMessages()`                                                            |
+| `0x8A` (138) | New contact              | New contact discovered; call `saveMeshcoreContact` IPC                                                               |
+| `7`          | Incoming DM              | Direct message received                                                                                              |
+| `8`          | Incoming channel message | Channel message received                                                                                             |
+| `0x88` (136) | RF packet event          | Signal telemetry (SNR/RSSI); source of `signalTelemetry`                                                             |
+
+When adding a handler for a new push event code, register it in the `conn.on(…)` block in `useMeshCore.ts` alongside the existing listeners.
+
+#### ACK tracking pattern
+
+`sendTextMessage()` returns `{expectedAckCrc, estTimeout}`. The expected flow after sending a DM:
+
+1. Update the message status to `'pending'`.
+2. Store `{timeoutId}` in `pendingAcksRef` keyed by `expectedAckCrc`.
+3. When push event `0x82` fires with matching CRC → mark message `'acked'` and clear the timeout.
+4. On timeout expiry → mark message `'failed'`.
+
+Do **not** use a sequential packet ID here. MeshCore uses the CRC of the expected ACK, not a sequential ID.
+
+#### `meshcoreUtils.ts` helpers
+
+Reference file: `src/renderer/lib/meshcoreUtils.ts`
+
+- **`pubkeyToNodeId(key: Uint8Array): number`** — XOR-folds a 32-byte public key into a stable 32-bit node ID. Use this as the map key in `nodes`, `meshcoreNodeStatus`, and similar maps. Never inline the XOR-fold math.
+- **`meshcoreContactToMeshNode(contact): MeshNode`** — Converts a raw MeshCore contact (from device or DB) to the unified `MeshNode` type consumed by shared components.
+- **`CONTACT_TYPE_LABELS`** — `{0: 'None', 1: 'Chat', 2: 'Repeater', 3: 'Room'}`. Displayed in the `hw_model` field in the node list. Use this map instead of inlining the label strings.
+
+#### `IpcTcpConnection`
+
+TCP transport is implemented as a class inside `useMeshCore.ts` (not a separate file). It wraps `SerialConnection` from `meshcore.js` and routes bytes through the main-process TCP bridge. The default MeshCore TCP port is **4403**.
+
+Data flow when TCP is selected:
+
+1. `IpcTcpConnection.connect()` → `meshcore:tcp-connect` IPC → `net.Socket` opened in main process.
+2. Incoming bytes: `meshcore:tcp-data` push → `instance.onDataReceived()`.
+3. Outgoing bytes: `instance.write()` → `meshcore:tcp-write` IPC.
+4. Disconnect: `meshcore:tcp-disconnected` push → `instance.onDisconnected()`.
+
+#### `ProtocolCapabilities` guidance
+
+When a new MeshCore feature requires UI gating:
+
+1. Add the capability flag to `ProtocolCapabilities` in `src/renderer/lib/radio/BaseRadioProvider.ts`.
+2. Set it in both `MESHTASTIC_CAPABILITIES` and `MESHCORE_CAPABILITIES`.
+3. Consume it via `useRadioProvider(protocol)` in components — **never** use `protocol === 'meshcore'` string comparisons.
+
+Current MeshCore-specific capabilities that differ from Meshtastic: `hasPerHopSnr`, `hasRepeaterStatus`, and `hasOnDemandNodeStatus` are `true`; all config-related capabilities (`hasChannelConfig`, `hasModemPresets`, `hasBluetoothConfig`, etc.) are `false`.
+
+#### Type declarations for `meshcore.js`
+
+`src/renderer/types/meshcore.d.ts` declares the `@liamcottle/meshcore.js` module's exported classes (`WebBleConnection`, `WebSerialConnection`, `SerialConnection`, `CayenneLpp`). When upgrading the library or using a new export, add or update declarations there.
+
 **Dual TypeScript configs:** Renderer code uses `tsconfig.json` (bundler resolution, JSX). Main and preload use `tsconfig.main.json` (CommonJS, Node resolution). Do not assume the same module settings in main/preload as in the Vite renderer.
 
 ## Accessibility Requirements
