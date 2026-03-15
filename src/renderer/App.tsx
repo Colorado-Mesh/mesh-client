@@ -20,6 +20,7 @@ import UpdateBanner from './components/UpdateBanner';
 import { useDevice } from './hooks/useDevice';
 import { useMeshCore } from './hooks/useMeshCore';
 import { parseStoredJson } from './lib/parseStoredJson';
+import { useRadioProvider } from './lib/radio/providerFactory';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
 import type { ChatMessage, MeshProtocol, MQTTSettings } from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
@@ -27,7 +28,8 @@ import { useDiagnosticsStore } from './stores/diagnosticsStore';
 const PROTOCOL_KEY = 'mesh-client:protocol';
 
 // Tabs (0-indexed) that are disabled in MeshCore mode
-const MESHCORE_DISABLED_TABS = new Set([4, 5, 6, 8]);
+// Tabs 6 (Telemetry) and 8 (Diagnostics) re-enabled — capabilities-aware rendering handles protocol differences
+const MESHCORE_DISABLED_TABS = new Set([4, 5]);
 
 const STATUS_COLOR: Record<string, string> = {
   disconnected: 'bg-red-500',
@@ -178,6 +180,8 @@ export default function App() {
       ? (meshcoreDevice as unknown as typeof meshtasticDevice)
       : meshtasticDevice;
 
+  const capabilities = useRadioProvider(protocol);
+
   const handleProtocolChange = useCallback(
     (p: MeshProtocol) => {
       if (p === protocol) return;
@@ -193,8 +197,16 @@ export default function App() {
   const envMode = useDiagnosticsStore((s) => s.envMode);
 
   useEffect(() => {
-    runReanalysis(device.getNodes, device.selfNodeId);
-  }, [device.nodes, device.selfNodeId, device.getNodes, runReanalysis, ignoreMqttEnabled, envMode]);
+    runReanalysis(device.getNodes, device.selfNodeId, capabilities);
+  }, [
+    device.nodes,
+    device.selfNodeId,
+    device.getNodes,
+    runReanalysis,
+    ignoreMqttEnabled,
+    envMode,
+    capabilities,
+  ]);
 
   useEffect(() => {
     if (device.state.status === 'disconnected') {
@@ -631,6 +643,7 @@ export default function App() {
                     onToggleFahrenheit={toggleFahrenheit}
                     onRefresh={device.requestRefresh}
                     isConnected={isOperational}
+                    capabilities={capabilities}
                   />
                 )}
                 {activeTab === 7 && (
@@ -667,6 +680,7 @@ export default function App() {
                     getFullNodeLabel={device.getFullNodeLabel}
                     ourPosition={device.ourPosition}
                     onNodeClick={(node) => setSelectedNodeId(node.node_id)}
+                    capabilities={capabilities}
                   />
                 )}
               </ErrorBoundary>

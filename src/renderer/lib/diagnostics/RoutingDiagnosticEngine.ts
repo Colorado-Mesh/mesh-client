@@ -1,4 +1,5 @@
 import { haversineDistanceKm } from '../nodeStatus';
+import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import type { DiagnosticRow, HopHistoryPoint, MeshNode, NodeAnomaly } from '../types';
 
 export function detectHopGoblin(
@@ -163,9 +164,12 @@ export function analyzeNode(
   distanceMultiplier = 1,
   distanceOffsetKm = 0,
   hopsThreshold = 2,
+  capabilities?: ProtocolCapabilities,
 ): NodeAnomaly | null {
   // Priority: errors first, then warnings
-  const impossibleHop = detectImpossibleHop(node, homeNode, ignoreMqtt);
+  // impossible_hop requires hops_away === 0 — skip for protocols without hop count
+  const impossibleHop =
+    capabilities?.hasHopCount === false ? null : detectImpossibleHop(node, homeNode, ignoreMqtt);
   if (impossibleHop) return impossibleHop;
 
   const badRoute = detectBadRoute(

@@ -1,3 +1,4 @@
+import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import type { MeshNode } from '../types';
 import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnostics';
 
@@ -20,11 +21,13 @@ export interface CuStats24h {
 
 export interface ConnectedNodeDiagnosticContext {
   cuStats24h?: CuStats24h | null;
+  capabilities?: ProtocolCapabilities;
 }
 
 /** Same CU spike context for any node_id with cuHistory */
 export interface OtherNodeDiagnosticContext {
   cuStats24h?: CuStats24h | null;
+  capabilities?: ProtocolCapabilities;
 }
 
 // Thresholds
@@ -83,11 +86,13 @@ export function detectCuSpike(
 /**
  * Diagnose the connected node using LocalStats telemetry fields.
  * Optional context: CU spike (needs 24h history), Mesh Congestion hints from path mix.
+ * Returns [] immediately when the protocol does not provide RF stats (e.g. MeshCore).
  */
 export function diagnoseConnectedNode(
   node: MeshNode,
   context?: ConnectedNodeDiagnosticContext,
 ): RFDiagnosis[] {
+  if (context?.capabilities?.hasRfStats === false) return [];
   const findings: RFDiagnosis[] = [];
 
   const cu = node.channel_utilization ?? 0;
@@ -179,17 +184,19 @@ export function hasLocalStatsData(node: MeshNode): boolean {
  * Returns null if no telemetry is available for the node.
  * SNR-based findings set isLastHop when interpretation is last-hop only.
  * Optional context: CU spike when cuHistory exists for this node_id.
+ * Returns null immediately when the protocol does not provide RF stats (e.g. MeshCore).
  */
 export function diagnoseOtherNode(
   node: MeshNode,
   context?: OtherNodeDiagnosticContext,
 ): RFDiagnosis[] | null {
+  if (context?.capabilities?.hasRfStats === false) return null;
   if (node.channel_utilization == null && node.air_util_tx == null) return null;
 
   const findings: RFDiagnosis[] = [];
   const cu = node.channel_utilization ?? 0;
   const tx = node.air_util_tx ?? 0;
-  const snrMeaningful = snrMeaningfulForNodeDiagnostics(node);
+  const snrMeaningful = snrMeaningfulForNodeDiagnostics(node, context?.capabilities);
   const snr = node.snr ?? 0;
 
   if (cu > HIGH_CU && tx < LOW_TX) {

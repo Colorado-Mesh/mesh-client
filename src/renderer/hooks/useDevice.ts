@@ -14,6 +14,7 @@ import { validateCoords } from '../lib/coordUtils';
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import { normalizeReactionEmoji } from '../lib/reactions';
 import { TransportManager } from '../lib/transport/TransportManager';
 import type { StatusUpdateEvent } from '../lib/transport/types';
@@ -516,6 +517,7 @@ export function useDevice() {
             updatedMqttNode,
             nodesRef.current.get(myNodeNumRef.current) ?? null,
             myNodeNumRef.current,
+            MESHTASTIC_CAPABILITIES,
           );
       }
     });
@@ -966,6 +968,7 @@ export function useDevice() {
               updatedRfNode,
               nodesRef.current.get(myNodeNumRef.current) ?? null,
               myNodeNumRef.current,
+              MESHTASTIC_CAPABILITIES,
             );
         }
         if (type === 'ble' && nodeNum === myNodeNumRef.current) {

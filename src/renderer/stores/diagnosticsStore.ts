@@ -18,6 +18,7 @@ import { analyzeNode } from '../lib/diagnostics/RoutingDiagnosticEngine';
 import type { GpsSource } from '../lib/gpsSource';
 import { isLowAccuracyPosition } from '../lib/gpsSource';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { DiagnosticRow, HopHistoryPoint, MeshNode, NodeAnomaly } from '../lib/types';
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -212,10 +213,19 @@ interface DiagnosticsState {
   mqttIgnoredNodes: Set<number>;
   ourPositionSource: GpsSource | null;
   envMode: EnvMode;
-  processNodeUpdate(node: MeshNode, homeNode: MeshNode | null, myNodeNum?: number): void;
+  processNodeUpdate(
+    node: MeshNode,
+    homeNode: MeshNode | null,
+    myNodeNum?: number,
+    capabilities?: ProtocolCapabilities,
+  ): void;
   recordDuplicate(fromNodeId: number): void;
   recordPacketPath(packetId: number, fromNodeId: number, path: PacketPath): void;
-  runReanalysis(getNodes: () => Map<number, MeshNode>, myNodeNum: number): void;
+  runReanalysis(
+    getNodes: () => Map<number, MeshNode>,
+    myNodeNum: number,
+    capabilities?: ProtocolCapabilities,
+  ): void;
   setCongestionHalosEnabled(enabled: boolean): void;
   setAnomalyHalosEnabled(enabled: boolean): void;
   setIgnoreMqttEnabled(enabled: boolean): void;
@@ -298,7 +308,12 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   envMode: loadEnvMode(),
   diagnosticRowsMaxAgeHours: loadDiagnosticRowsMaxAgeHours(),
 
-  processNodeUpdate(node: MeshNode, homeNode: MeshNode | null, myNodeNum?: number) {
+  processNodeUpdate(
+    node: MeshNode,
+    homeNode: MeshNode | null,
+    myNodeNum?: number,
+    capabilities?: ProtocolCapabilities,
+  ) {
     const now = Date.now();
     set((state) => {
       // Record hop history (keep last 24h)
@@ -353,6 +368,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
             distanceMultiplier,
             0,
             hopsThreshold,
+            capabilities,
           );
           if (anomaly) newAnomalies.set(nodeId, anomaly);
           else newAnomalies.delete(nodeId);
@@ -367,6 +383,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
             const cuStats24h = get().getCuStats24h(myNodeNum);
             const findings = diagnoseConnectedNode(homeFromPending, {
               cuStats24h: cuStats24h ?? undefined,
+              capabilities,
             });
             if (findings.length > 0) {
               diagnosticRows = replaceRfRowsForNode(diagnosticRows, myNodeNum, findings);
@@ -441,7 +458,11 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     });
   },
 
-  runReanalysis(getNodes: () => Map<number, MeshNode>, myNodeNum: number) {
+  runReanalysis(
+    getNodes: () => Map<number, MeshNode>,
+    myNodeNum: number,
+    capabilities?: ProtocolCapabilities,
+  ) {
     if (analysisTimer) clearTimeout(analysisTimer);
     analysisTimer = setTimeout(() => {
       const state = get();
@@ -466,6 +487,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           distanceMultiplier,
           0,
           hopsThreshold,
+          capabilities,
         );
         if (anomaly) newAnomalies.set(nodeId, anomaly);
       }
@@ -475,6 +497,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         const cuStats24h = get().getCuStats24h(myNodeNum);
         const findings = diagnoseConnectedNode(selfNode, {
           cuStats24h: cuStats24h ?? undefined,
+          capabilities,
         });
         if (findings.length > 0) {
           diagnosticRows = replaceRfRowsForNode(diagnosticRows, myNodeNum, findings);
@@ -485,7 +508,10 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       for (const [nodeId, node] of nodes) {
         if (nodeId === myNodeNum) continue;
         const cuStats24h = get().getCuStats24h(nodeId);
-        const findings = diagnoseOtherNode(node, { cuStats24h: cuStats24h ?? undefined });
+        const findings = diagnoseOtherNode(node, {
+          cuStats24h: cuStats24h ?? undefined,
+          capabilities,
+        });
         if (findings && findings.length > 0) {
           diagnosticRows = replaceRfRowsForNode(diagnosticRows, nodeId, findings);
         } else {

@@ -16,6 +16,7 @@ import {
 } from '../lib/diagnostics/RemediationEngine';
 import { diagnoseConnectedNode, hasLocalStatsData } from '../lib/diagnostics/RFDiagnosticEngine';
 import type { OurPosition } from '../lib/gpsSource';
+import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { DiagnosticRow, MeshNode, RfDiagnosticRow, RoutingDiagnosticRow } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -40,6 +41,8 @@ interface Props {
   ourPosition?: OurPosition | null;
   /** When set, clicking an anomaly row opens the node detail modal (same as NodeListPanel). */
   onNodeClick?: (node: MeshNode) => void;
+  /** Protocol capabilities — controls which sections are shown (MQTT controls hidden for MeshCore). */
+  capabilities?: ProtocolCapabilities;
 }
 
 function AlertTriangleIcon({ className }: { className?: string }) {
@@ -96,7 +99,9 @@ export default function DiagnosticsPanel({
   getFullNodeLabel,
   ourPosition,
   onNodeClick,
+  capabilities,
 }: Props) {
+  const showMqttControls = capabilities?.hasMqttHybrid !== false;
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const diagnosticRowsRestoredAt = useDiagnosticsStore((s) => s.diagnosticRowsRestoredAt);
   const clearDiagnosticRowsSnapshot = useDiagnosticsStore((s) => s.clearDiagnosticRowsSnapshot);
@@ -464,7 +469,8 @@ export default function DiagnosticsPanel({
               {anomaly.type.replace(/_/g, ' ')}
             </div>
             <div className="text-xs text-gray-400 max-w-xs">{anomaly.description}</div>
-            {anomaly.type === 'hop_goblin' &&
+            {showMqttControls &&
+              anomaly.type === 'hop_goblin' &&
               node?.heard_via_mqtt === true &&
               !node?.heard_via_mqtt_only && (
                 <div className="text-xs text-yellow-400/70 mt-1">
@@ -553,23 +559,24 @@ export default function DiagnosticsPanel({
                   {isFailed ? 'Retry Trace' : 'Trace Route'}
                 </button>
               )}
-              {mqttIgnoredNodes.has(anomaly.nodeId) ? (
-                <button
-                  onClick={() => setNodeMqttIgnored(anomaly.nodeId, false)}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 hover:bg-yellow-500/30 transition-colors whitespace-nowrap"
-                  title="Click to stop ignoring MQTT for this node"
-                >
-                  MQTT Ignored ✕
-                </button>
-              ) : (
-                <button
-                  onClick={() => setNodeMqttIgnored(anomaly.nodeId, true)}
-                  className="px-2 py-0.5 text-[10px] rounded bg-secondary-dark hover:bg-gray-600 text-muted hover:text-gray-300 transition-colors whitespace-nowrap"
-                  title="Exclude this node's MQTT data from diagnostics"
-                >
-                  Ignore MQTT
-                </button>
-              )}
+              {showMqttControls &&
+                (mqttIgnoredNodes.has(anomaly.nodeId) ? (
+                  <button
+                    onClick={() => setNodeMqttIgnored(anomaly.nodeId, false)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 hover:bg-yellow-500/30 transition-colors whitespace-nowrap"
+                    title="Click to stop ignoring MQTT for this node"
+                  >
+                    MQTT Ignored ✕
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setNodeMqttIgnored(anomaly.nodeId, true)}
+                    className="px-2 py-0.5 text-[10px] rounded bg-secondary-dark hover:bg-gray-600 text-muted hover:text-gray-300 transition-colors whitespace-nowrap"
+                    title="Exclude this node's MQTT data from diagnostics"
+                  >
+                    Ignore MQTT
+                  </button>
+                ))}
             </div>
           </td>
         </tr>,
@@ -691,21 +698,23 @@ export default function DiagnosticsPanel({
               Show routing anomaly halos on map
             </label>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="ignoreMqtt"
-              checked={ignoreMqttEnabled}
-              onChange={(e) => setIgnoreMqttEnabled(e.target.checked)}
-              className="accent-brand-green"
-            />
-            <label htmlFor="ignoreMqtt" className="text-sm text-gray-300 cursor-pointer">
-              Ignore MQTT
-            </label>
-            <span className="text-xs text-muted">
-              Gray out MQTT-only nodes and exclude them from diagnostics
-            </span>
-          </div>
+          {showMqttControls && (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="ignoreMqtt"
+                checked={ignoreMqttEnabled}
+                onChange={(e) => setIgnoreMqttEnabled(e.target.checked)}
+                className="accent-brand-green"
+              />
+              <label htmlFor="ignoreMqtt" className="text-sm text-gray-300 cursor-pointer">
+                Ignore MQTT
+              </label>
+              <span className="text-xs text-muted">
+                Gray out MQTT-only nodes and exclude them from diagnostics
+              </span>
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <div className="text-sm text-gray-300">Environment Profile</div>
             <div className="flex rounded-lg overflow-hidden border border-gray-600/50 w-fit">
@@ -765,7 +774,7 @@ export default function DiagnosticsPanel({
       </div>
 
       {/* Per-Node MQTT Filters */}
-      {mqttIgnoredNodes.size > 0 && (
+      {showMqttControls && mqttIgnoredNodes.size > 0 && (
         <div className="bg-secondary-dark rounded-lg p-3">
           <h3 className="text-xs font-medium text-muted mb-2">Per-Node MQTT Filters</h3>
           <div className="flex flex-wrap gap-1.5">
