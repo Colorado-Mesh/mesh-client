@@ -1204,8 +1204,9 @@ export function useMeshCore() {
         return;
       }
       try {
-        // MeshCore device expects frequency in MHz; we hold it in Hz in the UI.
-        await connRef.current.setRadioParams(p.freq / 1e6, p.bw, p.sf, p.cr);
+        // MeshCore protocol: freq as UInt32 in kHz (910525 = 910.525 MHz), bw in Hz.
+        const freqKhz = Math.round(p.freq / 1000);
+        await connRef.current.setRadioParams(freqKhz, p.bw, p.sf, p.cr);
         console.log('[useMeshCore] setRadioParams succeeded');
       } catch (e) {
         console.error('[useMeshCore] setRadioParams threw:', e);

@@ -145,7 +145,7 @@ MeshCore support is available alongside Meshtastic — switch protocols in the C
 **Radio Parameters**
 
 - Frequency (Hz), bandwidth, spreading factor, coding rate, and TX power — synced from device `selfInfo` and applied live via the Radio tab
-- **Channel display and edit** — view and edit channel list from the device in the Radio tab; config import with auto-apply
+- **Channel display and edit** — view and edit channel list from the device in the Radio tab; **Import Config JSON** (MeshCore) applies name and radio settings to the device and reports what was applied vs. not supported
 
 **Battery & Signal Telemetry**
 

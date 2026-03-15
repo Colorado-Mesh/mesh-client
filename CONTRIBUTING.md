@@ -106,27 +106,27 @@ When adding new device state: add a `useState` / `useRef` entry, expose it in th
 
 The connection object exposes these methods. Call them via `connRef.current` inside callbacks:
 
-| Method                              | Purpose                                      |
-| ----------------------------------- | -------------------------------------------- |
-| `getSelfInfo()`                     | Fetch device identity, radio params, battery |
-| `getContacts()`                     | Fetch all contacts from device               |
-| `getChannels()`                     | Fetch channel list                           |
-| `getWaitingMessages()`              | Drain queued messages on connect             |
-| `sendFloodAdvert()`                 | Broadcast presence to mesh                   |
-| `sendTextMessage(pubKey, text)`     | DM; returns `{expectedAckCrc, estTimeout}`   |
-| `sendChannelTextMessage(idx, text)` | Channel broadcast                            |
-| `removeContact(pubKey)`             | Delete a contact                             |
-| `setAdvertName(name)`               | Set device display name                      |
-| `setRadioParams(freq, bw, sf, cr)`  | Apply radio config                           |
-| `setTxPower(power)`                 | Set TX power                                 |
-| `setAdvertLatLong(lat, lon)`        | Set broadcast position                       |
-| `reboot()`                          | Reboot device                                |
-| `tracePath(pubKeys)`                | Per-hop SNR trace                            |
-| `getStatus(pubKey)`                 | Repeater status                              |
-| `getTelemetry(pubKey)`              | CayenneLPP sensor data                       |
-| `getNeighbours(pubKey)`             | Neighbor list (Repeater-only)                |
-| `setManualAddContacts()`            | Switch to manual contact approval            |
-| `setAutoAddContacts()`              | Switch to automatic contact approval         |
+| Method                              | Purpose                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| `getSelfInfo()`                     | Fetch device identity, radio params, battery                             |
+| `getContacts()`                     | Fetch all contacts from device                                           |
+| `getChannels()`                     | Fetch channel list                                                       |
+| `getWaitingMessages()`              | Drain queued messages on connect                                         |
+| `sendFloodAdvert()`                 | Broadcast presence to mesh                                               |
+| `sendTextMessage(pubKey, text)`     | DM; returns `{expectedAckCrc, estTimeout}`                               |
+| `sendChannelTextMessage(idx, text)` | Channel broadcast                                                        |
+| `removeContact(pubKey)`             | Delete a contact                                                         |
+| `setAdvertName(name)`               | Set device display name                                                  |
+| `setRadioParams(freq, bw, sf, cr)`  | Apply radio config; `freq` in kHz (e.g. 910525), `bw` in Hz (e.g. 62500) |
+| `setTxPower(power)`                 | Set TX power                                                             |
+| `setAdvertLatLong(lat, lon)`        | Set broadcast position                                                   |
+| `reboot()`                          | Reboot device                                                            |
+| `tracePath(pubKeys)`                | Per-hop SNR trace                                                        |
+| `getStatus(pubKey)`                 | Repeater status                                                          |
+| `getTelemetry(pubKey)`              | CayenneLPP sensor data                                                   |
+| `getNeighbours(pubKey)`             | Neighbor list (Repeater-only)                                            |
+| `setManualAddContacts()`            | Switch to manual contact approval                                        |
+| `setAutoAddContacts()`              | Switch to automatic contact approval                                     |
 
 **Adding a new device command:** add the method signature to `MeshCoreConnection` in `useMeshCore.ts`, implement the call in a callback (using `connRef.current`), and expose the callback in the hook's return value.
 

@@ -644,16 +644,18 @@ export default function RadioPanel({
           }
 
           // ── Auto-apply to device ─────────────────────────────────────
-          const errors: string[] = [];
+          const applied: string[] = [];
+          const notSupported: string[] = [];
 
           if (importedName && onSetOwner) {
             console.log('[RadioPanel] calling onSetOwner with name:', importedName);
             try {
               await onSetOwner({ longName: importedName, shortName, isLicensed });
               console.log('[RadioPanel] onSetOwner succeeded');
+              applied.push('name');
             } catch (e) {
               console.error('[RadioPanel] onSetOwner threw:', e);
-              errors.push('name');
+              notSupported.push('name');
             }
           } else {
             console.log(
@@ -690,16 +692,24 @@ export default function RadioPanel({
             try {
               await onApplyLoraParams(loraPayload);
               console.log('[RadioPanel] onApplyLoraParams succeeded');
+              applied.push('radio settings');
             } catch (e) {
               console.error('[RadioPanel] onApplyLoraParams threw:', e);
-              errors.push('radio settings');
+              notSupported.push('radio settings');
             }
           }
 
-          if (errors.length > 0) {
-            addToast(`Config imported; failed to apply: ${errors.join(', ')}`, 'warning');
-          } else {
+          if (notSupported.length > 0) {
+            const parts = ['Config imported.'];
+            if (applied.length > 0) {
+              parts.push(` Applied to device: ${applied.join(', ')}.`);
+            }
+            parts.push(` Not supported by this device: ${notSupported.join(', ')}.`);
+            addToast(parts.join(''), 'warning');
+          } else if (applied.length > 0) {
             addToast('Config imported and applied successfully.', 'success');
+          } else {
+            addToast('Config imported. No device changes to apply.', 'success');
           }
         } catch (err) {
           console.error('[RadioPanel] config import error:', err);
