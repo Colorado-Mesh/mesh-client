@@ -219,7 +219,9 @@ export default function TelemetryPanel({
       signalTelemetry.length === 0 &&
       environmentTelemetry.length === 0 ? (
         <div className="text-center text-muted py-12">
-          No telemetry data yet. Connect to a device to see real-time metrics.
+          {isConnected
+            ? 'No telemetry data yet. Waiting for data from device…'
+            : 'No telemetry data yet. Connect to a device to see real-time metrics.'}
         </div>
       ) : (
         <>
