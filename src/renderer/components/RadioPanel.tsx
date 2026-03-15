@@ -465,9 +465,10 @@ export default function RadioPanel({
   const [positionBroadcastSecs, setPositionBroadcastSecs] = useState(900);
   const [gpsUpdateInterval, setGpsUpdateInterval] = useState(120);
   const [fixedPosition, setFixedPosition] = useState(false);
-  const [fixedLat, setFixedLat] = useState(() => ourPosition?.lat ?? 0);
-  const [fixedLon, setFixedLon] = useState(() => ourPosition?.lon ?? 0);
-  const [fixedAlt, setFixedAlt] = useState(0);
+  // String state for position inputs to allow typing negative values (e.g. "-105.06")
+  const [latStr, setLatStr] = useState(() => String(ourPosition?.lat ?? 0));
+  const [lonStr, setLonStr] = useState(() => String(ourPosition?.lon ?? 0));
+  const [altStr, setAltStr] = useState('0');
   const [gpsMode, setGpsMode] = useState(0);
   const [positionPrecision, setPositionPrecision] = useState(10);
   const [smartPositionEnabled, setSmartPositionEnabled] = useState(false);
@@ -558,9 +559,74 @@ export default function RadioPanel({
     }
   }, [pendingAction, addToast]);
 
+  const handleImportConfig = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const cfg = JSON.parse(ev.target?.result as string);
+          if (cfg.name) setLongName(String(cfg.name));
+          if (cfg.radio_settings) {
+            const rs = cfg.radio_settings;
+            // frequency: kHz in config file → Hz for state
+            if (typeof rs.frequency === 'number') setRadioFreqHz(rs.frequency * 1000);
+            // bandwidth: Hz in config → nearest kHz option (31, 62, 125, 250, 500)
+            if (typeof rs.bandwidth === 'number') {
+              const bwKhz = rs.bandwidth / 1000;
+              const bwOptions = [31, 62, 125, 250, 500];
+              const nearest = bwOptions.reduce((a, b) =>
+                Math.abs(b - bwKhz) < Math.abs(a - bwKhz) ? b : a,
+              );
+              setBandwidth(nearest);
+            }
+            if (typeof rs.spreading_factor === 'number') setSpreadFactor(rs.spreading_factor);
+            // coding_rate: denominator (4–8); state stores denominator directly (display adds 4)
+            if (typeof rs.coding_rate === 'number') setCodingRate(rs.coding_rate);
+            if (typeof rs.tx_power === 'number') setTxPower(rs.tx_power);
+          }
+          if (cfg.public_key || cfg.private_key) {
+            try {
+              localStorage.setItem(
+                'mesh-client:meshcoreIdentity',
+                JSON.stringify({ public_key: cfg.public_key, private_key: cfg.private_key }),
+              );
+            } catch {
+              // ignore storage errors
+            }
+          }
+          addToast('Config imported. Review settings and click Apply in each section.', 'success');
+        } catch (err) {
+          addToast(
+            `Failed to parse config: ${err instanceof Error ? err.message : 'Invalid JSON'}`,
+            'error',
+          );
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }, [addToast]);
+
   return (
     <div className="max-w-lg mx-auto space-y-4">
       <h2 className="text-xl font-semibold text-gray-200">Radio Configuration</h2>
+
+      {capabilities?.protocol === 'meshcore' && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleImportConfig}
+            className="px-3 py-1.5 text-sm bg-secondary-dark hover:bg-gray-700 text-gray-300 border border-gray-600 rounded-lg transition-colors"
+          >
+            Import Config JSON
+          </button>
+        </div>
+      )}
 
       {!isConnected && (
         <div className="bg-yellow-900/30 border border-yellow-700 text-yellow-300 px-4 py-2 rounded-lg text-sm">
@@ -651,40 +717,56 @@ export default function RadioPanel({
         disabled={disabled || !onSetOwner}
       >
         <div className="space-y-1">
-          <label className="text-sm text-muted">Long Name</label>
+          <label className="text-sm text-muted">
+            {capabilities?.protocol === 'meshcore' ? 'Name' : 'Long Name'}
+          </label>
           <input
             type="text"
             value={longName}
-            onChange={(e) => setLongName(e.target.value.slice(0, 39))}
-            maxLength={39}
+            onChange={(e) =>
+              setLongName(
+                capabilities?.protocol === 'meshcore'
+                  ? e.target.value
+                  : e.target.value.slice(0, 39),
+              )
+            }
+            maxLength={capabilities?.protocol === 'meshcore' ? undefined : 39}
             disabled={disabled}
             placeholder="Your Name"
             className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
           />
-          <p className="text-xs text-muted">Display name (max 39 chars)</p>
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm text-muted">Short Name</label>
-          <input
-            type="text"
-            value={shortName}
-            onChange={(e) => setShortName(e.target.value.slice(0, 4))}
-            maxLength={4}
-            disabled={disabled}
-            placeholder="NAME"
-            className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
-          />
           <p className="text-xs text-muted">
-            Short identifier shown on tiny displays (max 4 chars)
+            {capabilities?.protocol === 'meshcore'
+              ? 'Advertised node name (emoji supported)'
+              : 'Display name (max 39 chars)'}
           </p>
         </div>
-        <ConfigToggle
-          label="Licensed (Ham Radio Operator)"
-          checked={isLicensed}
-          onChange={setIsLicensed}
-          disabled={disabled}
-          description="Enables additional frequencies for licensed amateur radio operators"
-        />
+        {capabilities?.protocol !== 'meshcore' && (
+          <>
+            <div className="space-y-1">
+              <label className="text-sm text-muted">Short Name</label>
+              <input
+                type="text"
+                value={shortName}
+                onChange={(e) => setShortName(e.target.value.slice(0, 4))}
+                maxLength={4}
+                disabled={disabled}
+                placeholder="NAME"
+                className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+              />
+              <p className="text-xs text-muted">
+                Short identifier shown on tiny displays (max 4 chars)
+              </p>
+            </div>
+            <ConfigToggle
+              label="Licensed (Ham Radio Operator)"
+              checked={isLicensed}
+              onChange={setIsLicensed}
+              disabled={disabled}
+              description="Enables additional frequencies for licensed amateur radio operators"
+            />
+          </>
+        )}
       </ConfigSection>
 
       {/* ═══ Display ═══ */}
@@ -1045,8 +1127,8 @@ export default function RadioPanel({
                 <button
                   type="button"
                   onClick={() => {
-                    setFixedLat(ourPosition.lat);
-                    setFixedLon(ourPosition.lon);
+                    setLatStr(String(ourPosition.lat));
+                    setLonStr(String(ourPosition.lon));
                   }}
                   className="ml-2 text-brand-green underline hover:opacity-80"
                 >
@@ -1054,35 +1136,54 @@ export default function RadioPanel({
                 </button>
               )}
             </p>
-            <ConfigNumber
-              label="Latitude"
-              value={fixedLat}
-              onChange={setFixedLat}
-              disabled={disabled || applyingSection !== null}
-              min={-90}
-              max={90}
-            />
-            <ConfigNumber
-              label="Longitude"
-              value={fixedLon}
-              onChange={setFixedLon}
-              disabled={disabled || applyingSection !== null}
-              min={-180}
-              max={180}
-            />
-            <ConfigNumber
-              label="Altitude (m)"
-              value={fixedAlt}
-              onChange={setFixedAlt}
-              disabled={disabled || applyingSection !== null}
-              min={0}
-              max={8848}
-            />
+            <div className="space-y-1">
+              <label className="text-sm text-muted">Latitude</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={latStr}
+                onChange={(e) => setLatStr(e.target.value)}
+                disabled={disabled || applyingSection !== null}
+                placeholder="0.000000"
+                className="w-36 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-muted">Longitude</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={lonStr}
+                onChange={(e) => setLonStr(e.target.value)}
+                disabled={disabled || applyingSection !== null}
+                placeholder="0.000000"
+                className="w-36 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-muted">Altitude (m)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={altStr}
+                onChange={(e) => setAltStr(e.target.value)}
+                disabled={disabled || applyingSection !== null}
+                placeholder="0"
+                className="w-36 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+              />
+            </div>
             <button
               onClick={async () => {
                 if (!onSendPositionToDevice) return;
+                const lat = parseFloat(latStr);
+                const lon = parseFloat(lonStr);
+                const alt = parseFloat(altStr);
+                if (!isFinite(lat) || !isFinite(lon)) {
+                  addToast('Invalid coordinates — enter valid lat/lon values.', 'error');
+                  return;
+                }
                 try {
-                  await onSendPositionToDevice(fixedLat, fixedLon, fixedAlt);
+                  await onSendPositionToDevice(lat, lon, isFinite(alt) ? alt : 0);
                   addToast('Position sent to device.', 'success');
                 } catch (err) {
                   console.warn('[RadioPanel] send position to device failed', err);
