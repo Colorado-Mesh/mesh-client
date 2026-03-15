@@ -53,7 +53,17 @@ Run `npm run lint` before pushing. ESLint is configured with:
 
 **Path alias:** `@/` maps to `src/` (see `tsconfig.json`, `tsconfig.main.json`, and `vitest.config.ts`). Prefer `@/renderer/...` or `@/main/...` over long relative paths when adding imports.
 
-**Diagnostics work:** The Network Diagnostics tab is driven by `diagnosticRows` in `diagnosticsStore` (routing + RF rows merged in `useDevice`). Row TTL and pruning live in `src/renderer/lib/diagnostics/diagnosticRows.ts`; mesh congestion copy is shared via `MeshCongestionAttributionBlock.tsx`. If you add a new routing or RF finding, extend the `DiagnosticRow` union and ensure the panel table renders the new kind — see existing tests in `DiagnosticsPanel.test.tsx` and `diagnosticRows.test.ts`.
+**Diagnostics work:** The Network Diagnostics tab is driven by `diagnosticRows` in `diagnosticsStore` (routing + RF rows merged in `useDevice`). Row TTL and pruning live in `src/renderer/lib/diagnostics/diagnosticRows.ts`; mesh congestion copy is shared via `MeshCongestionAttributionBlock.tsx`. If you add a new routing or RF finding, extend the `DiagnosticRow` union and ensure the panel table renders the new kind — see existing tests in `DiagnosticsPanel.test.tsx` and `diagnosticRows.test.ts`. Note: diagnostics are Meshtastic-only — `RoutingDiagnosticEngine` accepts an optional `capabilities` parameter and skips protocol-incompatible detectors (e.g. `impossible_hop` is skipped for MeshCore because `hops_away` does not exist in that protocol).
+
+**Dual-protocol architecture:** The app supports two protocols: `meshtastic` (default) and `meshcore`. The active protocol is stored in `localStorage['mesh-client:protocol']` and drives which hook (`useDevice` vs `useMeshCore`) powers the app. Both hooks expose the same top-level shape so components stay protocol-agnostic wherever possible. Protocol-specific divergences are handled via the `ProtocolCapabilities` descriptor from `src/renderer/lib/radio/BaseRadioProvider.ts` — add capabilities there (not as string comparisons) when gating UI on protocol.
+
+- `useDevice.ts` — Meshtastic-specific; uses `@meshtastic/core`
+- `useMeshCore.ts` — MeshCore-specific; uses `@liamcottle/meshcore.js` over BLE, Web Serial, or a main-process TCP bridge (`meshcore:tcp-*` IPC channels)
+- `useRadioProvider(protocol)` — returns a memoized `ProtocolCapabilities` object; pass this down into components and engines rather than comparing `protocol === 'meshcore'` strings everywhere
+
+**MeshCore IPC channels:** Main-process TCP bridge for MeshCore uses `meshcore:tcp-connect`, `meshcore:tcp-write`, `meshcore:tcp-disconnect`, `meshcore:tcp-data` (renderer push), and `meshcore:tcp-disconnected` (renderer push). These are handled in `src/main/index.ts` and wired into the renderer via `window.electronAPI.meshcore.tcp.*` in the preload.
+
+**MeshCore database:** MeshCore contacts and messages are stored in `meshcore_contacts` and `meshcore_messages` (schema v11). The `saveMeshcoreContact` IPC does a full `INSERT OR REPLACE` (preserves `favorited`); `updateMeshcoreContactAdvert` does a targeted `UPDATE` of `last_advert`, `adv_lat`, `adv_lon` only — used by the periodic advert push event (128) to avoid overwriting contact metadata with partial data.
 
 **Dual TypeScript configs:** Renderer code uses `tsconfig.json` (bundler resolution, JSX). Main and preload use `tsconfig.main.json` (CommonJS, Node resolution). Do not assume the same module settings in main/preload as in the Vite renderer.
 
@@ -116,7 +126,7 @@ Every PR must be manually tested before review. No exceptions for "trivial" chan
 Before submitting a PR that touches IPC or the preload layer:
 
 - **contextBridge exposure**: Only expose the minimum API surface needed. Never expose `ipcRenderer` directly or pass arbitrary channel names to the renderer.
-- **Channel naming**: Main-process **invoke** handlers use namespaced channels (e.g. `db:*`, `mqtt:*`, `update:*`). Preload exposes a single `electronAPI` object with nested namespaces (`db`, `mqtt`, …) that wrap `ipcRenderer.invoke` — see `src/preload/index.ts`. When adding IPC, add the handler in main **and** the typed method on the matching preload namespace so the renderer stays on a minimal, reviewed surface.
+- **Channel naming**: Main-process **invoke** handlers use namespaced channels (e.g. `db:*`, `mqtt:*`, `meshcore:*`, `update:*`). Preload exposes a single `electronAPI` object with nested namespaces (`db`, `mqtt`, `meshcore`, …) that wrap `ipcRenderer.invoke` — see `src/preload/index.ts`. When adding IPC, add the handler in main **and** the typed method on the matching preload namespace **and** the corresponding entry in the `Window.electronAPI` type declaration in `src/renderer/lib/types.ts` so the renderer stays on a minimal, reviewed, typed surface.
 - **Main→renderer events**: One-way `webContents.send` / `ipcRenderer.on` channels sometimes use **kebab-case** without a domain prefix (e.g. `bluetooth-devices-discovered`, `serial-ports-discovered`) for historical or Chromium-callback wiring. **Invoke** channels should stay `domain:action`; when adding new **events**, prefer a consistent prefix (e.g. `ble:devices-discovered`) if you are touching both main and preload anyway; otherwise document the channel in the preload API.
 - **Cross-platform UI**: Test or at minimum visually verify your changes on your platform; flag in the PR if you could not test on other OSes.
 - **Build check**: Confirm `npm run build` completes without errors.

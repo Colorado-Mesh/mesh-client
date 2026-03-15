@@ -1,6 +1,6 @@
 # Mesh-Client
 
-> A cross-platform Meshtastic desktop client for **Mac**, **Linux**, and **Windows** — built for power users who need more than a mobile app.
+> A cross-platform desktop client for **Meshtastic** and **MeshCore** devices on **Mac**, **Linux**, and **Windows** — built for power users who need more than a mobile app.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
@@ -10,7 +10,7 @@
 
 ## Why
 
-The official Meshtastic apps cover the basics, but desktop power users need more: persistent message history, mesh diagnostics, MQTT integration, and keyboard-driven workflows. Mesh-Client fills that gap — a full-featured desktop client built on Electron with a local SQLite database, routing diagnostics, and multi-transport connectivity.
+The official Meshtastic apps cover the basics, but desktop power users need more: persistent message history, mesh diagnostics, MQTT integration, and keyboard-driven workflows. Mesh-Client fills that gap — a full-featured desktop client built on Electron with a local SQLite database, routing diagnostics, and multi-transport connectivity. It also supports **MeshCore** firmware devices, giving you a single app for both mesh protocols.
 
 ---
 
@@ -33,6 +33,24 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 ---
 
 ## Key Features
+
+**Dual Protocol Support**
+
+The Connection tab has a **Meshtastic / MeshCore** toggle that switches the entire app between protocols. Each protocol remembers its own last connection and reconnects independently. The active protocol is shown as a badge in the header (green for Meshtastic, purple for MeshCore). Tabs incompatible with MeshCore (Modules, Network Diagnostics) are disabled automatically when MeshCore is active; protocol-capable components (Radio, Telemetry) adapt their UI based on device capabilities.
+
+**MeshCore Features**
+
+- Connect to MeshCore firmware devices via **Bluetooth LE**, **USB Serial**, or **TCP** (WiFi/network)
+- Contact list with advert-based positions, contact types (Chat, Repeater, Room), and GPS coordinates persisted to SQLite
+- Channel messaging and **direct messages (DMs)** with delivery ACK tracking (expectedAckCrc) and failure timeout
+- **Trace route** (`tracePath`) with per-hop SNR display (a MeshCore unique capability — each hop's SNR is reported individually)
+- **Repeater status** — on-demand query of noise floor, last RSSI/SNR, packet counts, air time, uptime, TX queue, error events, and duplicate counts for repeater/router nodes
+- **Flood advert** — broadcast your node's presence to the mesh
+- **LoRa parameter editing** — frequency (Hz), bandwidth, spreading factor, coding rate, and TX power, synced from device `selfInfo` and applied live
+- Battery voltage telemetry and per-packet signal telemetry (SNR/RSSI from event 136) visible in the Telemetry tab
+- Incoming push events: periodic advert (128), path update (129), send confirmed ACK (130), message waiting (131), new contact (138), incoming DM (7), incoming channel message (8)
+- All messages and contacts persisted to SQLite (`meshcore_messages`, `meshcore_contacts` tables; schema v11); contacts seed from DB on reconnect as a fallback cache
+- BLE: waits for GATT init (`connected` event) before issuing any commands; serial: auto-reconnects on startup using saved port ID
 
 **Connectivity**
 
@@ -98,6 +116,10 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 ## Limitations
 
 - **MQTT → RF**: Messages received via MQTT are shown in chat but are not rebroadcast over the radio. The underlying Meshtastic libraries cannot reliably relay MQTT-originated messages onto the mesh while preserving correct attribution and delivery state; previous relay behavior caused duplicate or misattributed messages and confused users on the mesh. As a result, MQTT remains receive-only for mesh rebroadcast.
+- **MeshCore — no MQTT**: MQTT is a Meshtastic-specific feature and is not available in MeshCore mode.
+- **MeshCore — no routing diagnostics**: Hop anomaly detection (hop_goblin, bad_route, impossible_hop, route_flapping) and RF diagnostics require Meshtastic's `hops_away`, LocalStats, and NeighborInfo packets, none of which exist in the MeshCore protocol. The Network Diagnostics tab is disabled in MeshCore mode.
+- **MeshCore — no channel/device config editing**: MeshCore does not expose a channel-configuration API over the serial/BLE protocol. Radio parameters (frequency, bandwidth, spreading factor, coding rate, TX power) can be set via the Radio tab.
+- **MeshCore — contact type labels**: MeshCore firmware reports a numeric `type` field for contacts (0 = None, 1 = Chat, 2 = Repeater, 3 = Room); other values show as "Unknown". These labels are displayed in the hw_model field in the node list.
 
 ---
 
@@ -109,7 +131,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 - **Node.js** 22.12.0+ (matches `@electron/rebuild` / `node-abi`) and **npm** 9+
 - **Native build tools** (for SQLite) — see platform notes below
-- A **Meshtastic device** (any hardware running Meshtastic firmware)
+- A **Meshtastic** or **MeshCore** device
 
 ### Mac & Linux
 
@@ -278,23 +300,36 @@ If serial isn't detected, install the correct USB drivers for your device (CP210
 
 ## Usage
 
+### Choosing a Protocol
+
+The **Connection** tab shows a **Meshtastic / MeshCore** toggle at the top. Select the protocol that matches your device firmware before connecting. Each protocol stores its own last-connection and reconnects independently. Switching protocols disconnects the current session.
+
 ### Connecting Your Device
+
+**Meshtastic:**
 
 1. Power on your Meshtastic device
 2. Put it in Bluetooth pairing mode (if connecting via BLE)
-3. Open Mesh-Client and go to the **Connection** tab
+3. Open Mesh-Client and go to the **Connection** tab, ensure **Meshtastic** is selected
 4. Select your connection type (Bluetooth / USB Serial / WiFi / MQTT)
 5. Click **Connect** and select your device from the picker
 6. Wait for status to show **Configured** — you're connected
-7. For best results, keep the **Connection** tab open while the app is discovering and connecting to your device.
+
+**MeshCore:**
+
+1. Power on your MeshCore firmware device
+2. In the Connection tab, select **MeshCore**
+3. Choose **Bluetooth**, **Serial**, or **TCP** (enter the device's IP address for TCP)
+4. Click **Connect** — the app fetches self info, contacts, and channels from the device
+5. Wait for status to show **Configured** — contacts and channels are loaded
 
 ### Auto-Reconnect
 
-After a successful connection, Mesh-Client remembers your last device. On next launch:
+After a successful connection, Mesh-Client remembers your last device per protocol. On next launch:
 
-- **Serial** — auto-connects silently in the background
-- **Bluetooth / WiFi** — a one-click reconnect card appears; click **Reconnect** (BLE requires a user gesture)
-- **MQTT** — auto-reconnects using saved broker settings
+- **Serial** — auto-connects silently in the background (both protocols)
+- **Bluetooth / WiFi / TCP** — a one-click reconnect card appears; click **Reconnect** (BLE requires a user gesture)
+- **MQTT** — auto-reconnects using saved broker settings (Meshtastic only)
 
 ### MQTT
 
@@ -306,11 +341,21 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 
 ### Connection Types
 
+**Meshtastic** supports all four transport types:
+
 | Platform | Bluetooth | Serial | HTTP | MQTT |
 | -------- | --------- | ------ | ---- | ---- |
 | macOS    | Yes       | Yes    | Yes  | Yes  |
 | Windows  | Yes       | Yes    | Yes  | Yes  |
 | Linux    | Yes       | Yes    | Yes  | Yes  |
+
+**MeshCore** supports three transport types (no MQTT):
+
+| Platform | Bluetooth | Serial | TCP |
+| -------- | --------- | ------ | --- |
+| macOS    | Yes       | Yes    | Yes |
+| Windows  | Yes       | Yes    | Yes |
+| Linux    | Yes       | Yes    | Yes |
 
 ### Tech Stack
 
@@ -320,6 +365,7 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 | UI         | React 19 + TypeScript             |
 | Styling    | Tailwind CSS v4                   |
 | Meshtastic | @meshtastic/core (JSR)            |
+| MeshCore   | @liamcottle/meshcore.js           |
 | Maps       | Leaflet + OpenStreetMap           |
 | Charts     | Recharts                          |
 | Database   | SQLite (better-sqlite3)           |
@@ -338,7 +384,7 @@ meshtastic-client/
 │   ├── main/
 │   │   ├── index.ts              # Window creation, BLE/Serial intercept, all IPC handlers
 │   │   ├── log-service.ts        # Log file, console patch, log panel IPC
-│   │   ├── database.ts           # SQLite schema & migrations (WAL mode, user_version 9)
+│   │   ├── database.ts           # SQLite schema & migrations (WAL mode, user_version 11)
 │   │   ├── mqtt-manager.ts       # MQTT client: AES decrypt, dedup, protobuf decode, pre-parser for firmware trailing padding
 │   │   ├── updater.ts            # Auto-update checks via electron-updater
 │   │   └── gps.ts                # Main-process GPS helper
@@ -371,13 +417,15 @@ meshtastic-client/
 │       │   ├── Toast.tsx
 │       │   └── Tabs.tsx
 │       ├── hooks/
-│       │   └── useDevice.ts          # Core hook: device lifecycle, 3 transports, auto-reconnect
+│       │   ├── useDevice.ts          # Core hook: Meshtastic device lifecycle, 3 transports, auto-reconnect
+│       │   └── useMeshCore.ts        # MeshCore hook: BLE/Serial/TCP, contacts, messages, ACK, trace route
 │       ├── stores/
 │       │   ├── diagnosticsStore.ts   # Zustand: anomalies, packet stats, halo flags, MQTT ignore
 │       │   └── mapViewportStore.ts   # Zustand: persisted map center/zoom
 │       ├── lib/
-│       │   ├── types.ts              # TypeScript interfaces: MeshNode, ChatMessage, DeviceState…
+│       │   ├── types.ts              # TypeScript interfaces: MeshNode, ChatMessage, DeviceState, MeshProtocol…
 │       │   ├── connection.ts         # Connection factory: BLE/Serial/HTTP transport creation
+│       │   ├── meshcoreUtils.ts      # MeshCore helpers: pubkeyToNodeId, meshcoreContactToMeshNode, contact type labels
 │       │   ├── gpsSource.ts          # GPS waterfall: device coords → browser geolocation → null
 │       │   ├── nodeStatus.ts         # Node freshness: online <30 min, stale <2 h, offline 2 h+
 │       │   ├── coordUtils.ts         # Coordinate conversion helpers
@@ -386,14 +434,17 @@ meshtastic-client/
 │       │   ├── signal.ts             # Signal strength → level for SignalBars (direct RF only)
 │       │   ├── themeColors.ts        # Theme color helpers
 │       │   ├── parseStoredJson.ts    # Safe JSON parse for persisted values
+│       │   ├── radio/
+│       │   │   ├── BaseRadioProvider.ts  # ProtocolCapabilities descriptor + MESHTASTIC_CAPABILITIES + MESHCORE_CAPABILITIES
+│       │   │   └── providerFactory.ts    # useRadioProvider(protocol) hook — memoized capabilities lookup
 │       │   └── diagnostics/
-│       │       ├── RoutingDiagnosticEngine.ts  # Hop anomaly detectors (hop_goblin, bad_route, etc.)
+│       │       ├── RoutingDiagnosticEngine.ts  # Hop anomaly detectors (hop_goblin, bad_route, etc.); protocol-aware (skips impossible_hop for MeshCore)
 │       │       ├── RFDiagnosticEngine.ts       # RF-layer signal diagnostics (CU spike, hidden terminal, etc.)
 │       │       ├── diagnosticRows.ts           # Row merge/prune, routing map helper, default ages
 │       │       ├── meshCongestionAttribution.ts # Path mix + RF originator ranking for congestion copy
 │       │       ├── snrMeaningfulForNodeDiagnostics.ts  # SNR relevance for node diagnostics
 │       │       └── RemediationEngine.ts        # Suggested fixes for routing + RF rows
-│       └── types/                  # Type declarations (e.g. web-serial.d.ts)
+│       └── types/                  # Type declarations (web-serial.d.ts, meshcore.d.ts)
 ├── resources/
 │   ├── icons/                    # App icons (linux/, mac/, win/)
 │   ├── entitlements.mac.plist    # macOS signing entitlements (main)
