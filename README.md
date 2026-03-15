@@ -620,6 +620,12 @@ You're missing build tools for the native modules (e.g. `better-sqlite3`, `@seri
 - Try disconnecting fully first, then reconnecting
 - If the device picker never appears, restart the app
 
+### BLE known issues (Linux / Windows)
+
+- **Web Bluetooth is experimental** on some platforms; you may see a console note linking to [implementation-status](https://github.com/WebBluetoothCG/web-bluetooth/blob/main/implementation-status.md).
+- **"Connection already in progress"** or **GATT init failures** can occur when the first BLE write runs before the connection is fully ready. The app **retries once** automatically after a short delay; if it still fails, wait a few seconds and try again, or use **Serial/USB** instead.
+- If BLE is unreliable on your system, prefer Serial or TCP for a stable connection. Upstream improvements to delay BLE writes until after GATT connect (e.g. in `@liamcottle/meshcore.js`) would address this at the source.
+
 ### Serial port not detected
 
 - Ensure USB drivers are installed for your device (CP210x, CH340, etc.)

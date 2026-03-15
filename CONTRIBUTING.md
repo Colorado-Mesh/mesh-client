@@ -73,6 +73,8 @@ Run `npm run lint` before pushing. ESLint is configured with:
 
 This subsection is a contributor reference for working on MeshCore-specific features. Read it alongside `src/renderer/hooks/useMeshCore.ts`.
 
+**BLE:** The app retries BLE connect once on "Connection already in progress" or "disconnected during GATT init" (see `useMeshCore.ts`). The ideal fix is for `@liamcottle/meshcore.js` to perform the first BLE write only after `gatt.connect()` has resolved; contributors can consider opening an issue or PR upstream for that behavior.
+
 #### `useMeshCore` — state and refs
 
 **Exported state** (visible to callers via the hook's return value):

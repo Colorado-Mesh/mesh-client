@@ -865,65 +865,103 @@ export function useMeshCore() {
         let conn: MeshCoreConnection;
 
         if (type === 'ble') {
-          console.log('[useMeshCore] connect: BLE opening...');
-          conn = (await (
-            WebBleConnection as unknown as { open(): Promise<unknown> }
-          ).open()) as MeshCoreConnection;
-          // WebBleConnection.open() returns before init() finishes — init() calls
-          // gatt.connect() + startNotifications() async in the constructor without
-          // awaiting.  'connected' is emitted at the end of init() via onConnected().
-          // We must wait for it before sending any commands or rxCharacteristic is null.
-          //
-          // Two failure modes we guard against:
-          // 1. init() throws before onConnected() (no try/catch in the lib) → unhandledrejection
-          // 2. deviceQuery() inside onConnected() hangs because the device never responds
-          //    (BLE write can silently fail with "GATT operation already in progress").
-          //    onConnected() catches deviceQuery errors and emits 'connected' regardless,
-          //    so we unblock it by emitting ResponseCodes.Err (1) after a nudge timeout.
-          await new Promise<void>((resolve, reject) => {
-            const NUDGE_MS = 10_000; // emit Err to unblock hanging deviceQuery
-            const TIMEOUT_MS = 20_000; // hard timeout after nudge attempt
+          let hasRetriedBle = false;
+          const BLE_RETRY_DELAY_MS = 2_500;
 
-            interface EventSource {
-              once(event: string, fn: () => void): void;
-              emit(event: string | number, ...args: unknown[]): void;
+          while (true) {
+            try {
+              console.log('[useMeshCore] connect: BLE opening...');
+              conn = (await (
+                WebBleConnection as unknown as { open(): Promise<unknown> }
+              ).open()) as MeshCoreConnection;
+              // WebBleConnection.open() returns before init() finishes — init() calls
+              // gatt.connect() + startNotifications() async in the constructor without
+              // awaiting.  'connected' is emitted at the end of init() via onConnected().
+              // We must wait for it before sending any commands or rxCharacteristic is null.
+              //
+              // Two failure modes we guard against:
+              // 1. init() throws before onConnected() (no try/catch in the lib) → unhandledrejection
+              // 2. deviceQuery() inside onConnected() hangs because the device never responds
+              //    (BLE write can silently fail with "GATT operation already in progress").
+              //    onConnected() catches deviceQuery errors and emits 'connected' regardless,
+              //    so we unblock it by emitting ResponseCodes.Err (1) after a nudge timeout.
+              await new Promise<void>((resolve, reject) => {
+                const NUDGE_MS = 10_000; // emit Err to unblock hanging deviceQuery
+                const TIMEOUT_MS = 20_000; // hard timeout after nudge attempt
+
+                interface EventSource {
+                  once(event: string, fn: () => void): void;
+                  emit(event: string | number, ...args: unknown[]): void;
+                }
+
+                const cleanup = () => {
+                  clearTimeout(nudge);
+                  clearTimeout(timeout);
+                  window.removeEventListener('unhandledrejection', onUnhandledRejection);
+                };
+
+                // Catch errors thrown inside init() (no try/catch in WebBleConnection.init())
+                const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+                  cleanup();
+                  reject(event.reason ?? new Error('BLE init failed'));
+                };
+                window.addEventListener('unhandledrejection', onUnhandledRejection, {
+                  once: true,
+                });
+
+                // If deviceQuery hangs (device doesn't respond), nudge it by emitting Err.
+                // onConnected() wraps deviceQuery in try/catch and ignores errors, so it will
+                // proceed to emit 'connected' after we force-reject the deviceQuery promise.
+                const nudge = setTimeout(() => {
+                  console.warn(
+                    '[useMeshCore] BLE deviceQuery appears stuck — nudging with Err event',
+                  );
+                  (conn as unknown as EventSource).emit(1 /* ResponseCodes.Err */);
+                }, NUDGE_MS);
+
+                const timeout = setTimeout(() => {
+                  cleanup();
+                  reject(new Error('BLE GATT init timed out'));
+                }, TIMEOUT_MS);
+
+                (conn as unknown as EventSource).once('connected', () => {
+                  cleanup();
+                  resolve();
+                });
+                (conn as unknown as EventSource).once('disconnected', () => {
+                  cleanup();
+                  reject(
+                    new Error(
+                      'BLE disconnected during GATT init. Move closer to the device, ensure it is on, and try again.',
+                    ),
+                  );
+                });
+              });
+              break;
+            } catch (bleErr) {
+              const bleMsg =
+                bleErr instanceof Error
+                  ? bleErr.message
+                  : typeof bleErr === 'string'
+                    ? bleErr
+                    : String(bleErr ?? '');
+              const isRetryable =
+                /already in progress|Connection already in progress|disconnected during GATT init/i.test(
+                  bleMsg,
+                );
+              if (isRetryable && !hasRetriedBle) {
+                hasRetriedBle = true;
+                console.warn(
+                  '[useMeshCore] BLE connect failed, retrying once in',
+                  BLE_RETRY_DELAY_MS,
+                  'ms',
+                );
+                await new Promise((r) => setTimeout(r, BLE_RETRY_DELAY_MS));
+                continue;
+              }
+              throw bleErr;
             }
-
-            const cleanup = () => {
-              clearTimeout(nudge);
-              clearTimeout(timeout);
-              window.removeEventListener('unhandledrejection', onUnhandledRejection);
-            };
-
-            // Catch errors thrown inside init() (no try/catch in WebBleConnection.init())
-            const onUnhandledRejection = (event: PromiseRejectionEvent) => {
-              cleanup();
-              reject(event.reason ?? new Error('BLE init failed'));
-            };
-            window.addEventListener('unhandledrejection', onUnhandledRejection, { once: true });
-
-            // If deviceQuery hangs (device doesn't respond), nudge it by emitting Err.
-            // onConnected() wraps deviceQuery in try/catch and ignores errors, so it will
-            // proceed to emit 'connected' after we force-reject the deviceQuery promise.
-            const nudge = setTimeout(() => {
-              console.warn('[useMeshCore] BLE deviceQuery appears stuck — nudging with Err event');
-              (conn as unknown as EventSource).emit(1 /* ResponseCodes.Err */);
-            }, NUDGE_MS);
-
-            const timeout = setTimeout(() => {
-              cleanup();
-              reject(new Error('BLE GATT init timed out'));
-            }, TIMEOUT_MS);
-
-            (conn as unknown as EventSource).once('connected', () => {
-              cleanup();
-              resolve();
-            });
-            (conn as unknown as EventSource).once('disconnected', () => {
-              cleanup();
-              reject(new Error('BLE disconnected during GATT init'));
-            });
-          });
+          }
         } else if (type === 'serial') {
           console.log('[useMeshCore] connect: serial requesting port...');
           if (!navigator.serial?.requestPort) throw new Error('Web Serial API not available');
@@ -953,21 +991,24 @@ export function useMeshCore() {
         await initConn(conn);
         console.log('[useMeshCore] connect: handshake complete, type=', type);
       } catch (err) {
-        const message =
+        const rawMessage =
           err instanceof Error
             ? err.message
             : typeof err === 'string'
               ? err
               : String(err ?? 'Connection failed');
+        const safeMessage = (rawMessage && String(rawMessage).trim()) || 'Connection failed';
         const isAlreadyInProgress = /already in progress|Connection already in progress/i.test(
-          message,
+          safeMessage,
         );
         const normalizedErr = new Error(
           isAlreadyInProgress
             ? 'Bluetooth connection already in progress. Wait for it to finish or try Serial/USB instead.'
-            : message || 'Connection failed',
+            : safeMessage,
         );
-        console.error('[useMeshCore] connect error', normalizedErr.message, err);
+        const errForLog =
+          err != null ? (err instanceof Error ? err.message : String(err)) : '(no error object)';
+        console.error('[useMeshCore] connect error', normalizedErr.message, errForLog);
         setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
         ipcTcpRef.current?.cleanup();
         ipcTcpRef.current = null;
