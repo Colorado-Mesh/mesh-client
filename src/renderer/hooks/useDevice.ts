@@ -287,8 +287,8 @@ export function useDevice() {
     for (const unsub of unsubscribesRef.current) {
       try {
         unsub();
-      } catch {
-        /* ignore */
+      } catch (e) {
+        console.debug('[useDevice] unsubscribe error (ignored)', e);
       }
     }
     unsubscribesRef.current = [];
@@ -362,9 +362,14 @@ export function useDevice() {
       if (isReconnectingRef.current) return;
       const elapsed = Date.now() - lastDataReceivedRef.current;
       const { stale, dead } = getThresholds();
+      const transport = connectionParamsRef.current?.type ?? 'unknown';
       if (elapsed > dead) {
+        console.warn(
+          `[useDevice] watchdog: ${transport} dead for ${elapsed}ms, triggering reconnect`,
+        );
         handleConnectionLostRef.current();
       } else if (elapsed > stale) {
+        console.warn(`[useDevice] watchdog: ${transport} stale for ${elapsed}ms`);
         setState((s) => {
           if (s.status === 'configured' || s.status === 'connected') {
             return { ...s, status: 'stale', lastDataReceived: lastDataReceivedRef.current };

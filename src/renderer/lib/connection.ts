@@ -157,6 +157,12 @@ export async function reconnectBle(): Promise<MeshDevice> {
     target = capturedBleDevice ?? undefined;
   }
 
+  // getDevices() exists but returned [] (common on Windows and some Linux builds
+  // even after a device has been granted). Fall back to the captured reference.
+  if (!target && capturedBleDevice) {
+    target = capturedBleDevice;
+  }
+
   if (!target) {
     throw new Error('No previously connected BLE device found for reconnection');
   }

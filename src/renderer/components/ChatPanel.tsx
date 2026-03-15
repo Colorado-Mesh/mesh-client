@@ -276,7 +276,11 @@ export default function ChatPanel({
 
   // Persist lastRead timestamps to localStorage
   useEffect(() => {
-    localStorage.setItem('mesh-client:lastRead', JSON.stringify(persistedLastRead));
+    try {
+      localStorage.setItem('mesh-client:lastRead', JSON.stringify(persistedLastRead));
+    } catch (e) {
+      console.warn('[ChatPanel] persist lastRead failed', e);
+    }
   }, [persistedLastRead]);
 
   const getDmLabel = useCallback(

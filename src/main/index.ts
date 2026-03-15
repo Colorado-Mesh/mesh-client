@@ -305,7 +305,12 @@ function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
     const trayIconPath = app.isPackaged
       ? path.join(process.resourcesPath, '256x256.png')
       : path.join(__dirname, '../../resources/icons/linux/256x256.png');
-    base = nativeImage.createFromPath(trayIconPath).resize({ width: 22, height: 22 });
+    try {
+      base = nativeImage.createFromPath(trayIconPath).resize({ width: 22, height: 22 });
+    } catch (e) {
+      console.error('[main] tray icon load failed', e); // log-injection-ok: e is a local Error from nativeImage, not user input
+      base = nativeImage.createEmpty();
+    }
   }
 
   if (!hasUnread) return base;
@@ -576,8 +581,10 @@ function createWindow() {
     if (!isQuitting && (isConnected || mqttManager.getStatus() === 'connected')) {
       event.preventDefault();
       if (process.platform === 'darwin') {
+        console.log('[main] window close event: hiding (macOS, device connected)');
         win.hide();
       } else {
+        console.log('[main] window close event: minimizing (device connected)');
         win.minimize();
       }
     }
@@ -645,18 +652,35 @@ ipcMain.on('serial-port-cancelled', () => {
 
 // ─── IPC: Connection status tracking (module-scope, not per-window) ─
 ipcMain.on('device-connected', () => {
+  console.log('[main] device-connected: isConnected = true');
   isConnected = true;
 });
 ipcMain.on('device-disconnected', () => {
+  console.log('[main] device-disconnected: isConnected = false');
   isConnected = false;
 });
 
 // ─── MQTT: Forward manager events to renderer ───────────────────────
-mqttManager.on('status', (s) => mainWindow?.webContents.send('mqtt:status', s));
-mqttManager.on('error', (msg) => mainWindow?.webContents.send('mqtt:error', msg));
-mqttManager.on('clientId', (id) => mainWindow?.webContents.send('mqtt:clientId', id));
-mqttManager.on('nodeUpdate', (n) => mainWindow?.webContents.send('mqtt:node-update', n));
-mqttManager.on('message', (m) => mainWindow?.webContents.send('mqtt:message', m));
+mqttManager.on('status', (s) => {
+  if (mainWindow) mainWindow.webContents.send('mqtt:status', s);
+  else console.debug('[main] mqtt:status dropped (mainWindow not ready)', s);
+});
+mqttManager.on('error', (msg) => {
+  if (mainWindow) mainWindow.webContents.send('mqtt:error', msg);
+  else console.debug('[main] mqtt:error dropped (mainWindow not ready)', msg);
+});
+mqttManager.on('clientId', (id) => {
+  if (mainWindow) mainWindow.webContents.send('mqtt:clientId', id);
+  else console.debug('[main] mqtt:clientId dropped (mainWindow not ready)', id);
+});
+mqttManager.on('nodeUpdate', (n) => {
+  if (mainWindow) mainWindow.webContents.send('mqtt:node-update', n);
+  else console.debug('[main] mqtt:node-update dropped (mainWindow not ready)');
+});
+mqttManager.on('message', (m) => {
+  if (mainWindow) mainWindow.webContents.send('mqtt:message', m);
+  else console.debug('[main] mqtt:message dropped (mainWindow not ready)');
+});
 
 // ─── IPC: MQTT connect/disconnect ───────────────────────────────────
 ipcMain.handle('mqtt:connect', async (_event, settings) => {
