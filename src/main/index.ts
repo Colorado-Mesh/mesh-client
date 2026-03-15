@@ -1506,9 +1506,17 @@ ipcMain.handle('meshcore:openJsonFile', async () => {
     properties: ['openFile'],
   });
   if (result.canceled || result.filePaths.length === 0) return null;
-  const raw = fs.readFileSync(result.filePaths[0], 'utf-8');
-  if (raw.length > 5 * 1024 * 1024) throw new Error('File too large (max 5 MB)');
-  return raw;
+  try {
+    const raw = fs.readFileSync(result.filePaths[0], 'utf-8');
+    if (raw.length > 5 * 1024 * 1024) throw new Error('File too large (max 5 MB)');
+    return raw;
+  } catch (err) {
+    console.error(
+      '[IPC] meshcore:openJsonFile failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
 });
 
 ipcMain.handle('db:updateMeshcoreMessageStatus', (_event, packetId: number, status: string) => {
@@ -1576,8 +1584,12 @@ ipcMain.handle(
           'UPDATE meshcore_contacts SET last_advert = ?, adv_lat = ?, adv_lon = ? WHERE node_id = ?',
         )
         .run(lastAdvert, advLat, advLon, safeNodeId);
-    } catch (e: any) {
-      console.error('[IPC] db:updateMeshcoreContactAdvert error:', e.message);
+    } catch (err) {
+      console.error(
+        '[IPC] db:updateMeshcoreContactAdvert error:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
     }
   },
 );
@@ -1623,8 +1635,11 @@ ipcMain.handle('meshcore:tcp-write', (_event, bytes: number[]) => {
 });
 
 ipcMain.handle('meshcore:tcp-disconnect', () => {
-  meshcoreTcpSocket?.destroy();
-  meshcoreTcpSocket = null;
+  if (meshcoreTcpSocket) {
+    console.log('[IPC] meshcore:tcp-disconnect');
+    meshcoreTcpSocket.destroy();
+    meshcoreTcpSocket = null;
+  }
 });
 
 // ─── App lifecycle ─────────────────────────────────────────────────

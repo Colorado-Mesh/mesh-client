@@ -578,6 +578,10 @@ export default function RadioPanel({
       reader.onload = async (ev) => {
         try {
           const cfg = JSON.parse(ev.target?.result as string);
+          console.log('[RadioPanel] parsed config JSON:', cfg);
+          console.log(
+            `[RadioPanel] current device state before import: radioFreqHz=${radioFreqHz} bandwidth=${bandwidth}`,
+          );
 
           // ── Extract values ───────────────────────────────────────────
           const importedName = cfg.name ? String(cfg.name) : null;
@@ -591,6 +595,9 @@ export default function RadioPanel({
 
           if (cfg.radio_settings) {
             const rs = cfg.radio_settings;
+            console.log(
+              `[RadioPanel] radio_settings from config: frequency=${rs.frequency} bandwidth=${rs.bandwidth} spreading_factor=${rs.spreading_factor} coding_rate=${rs.coding_rate} tx_power=${rs.tx_power}`,
+            );
             // frequency: kHz in config file → Hz for state
             if (typeof rs.frequency === 'number') {
               importedFreqHz = rs.frequency * 1000;
@@ -615,6 +622,11 @@ export default function RadioPanel({
               importedTxPower = rs.tx_power;
               setTxPower(rs.tx_power);
             }
+            console.log(
+              `[RadioPanel] extracted lora values: importedFreqHz=${importedFreqHz} importedBwKhz=${importedBwKhz} importedSf=${importedSf} importedCr=${importedCr} importedTxPower=${importedTxPower}`,
+            );
+          } else {
+            console.warn('[RadioPanel] no radio_settings in config');
           }
 
           if (cfg.public_key || cfg.private_key) {
@@ -632,11 +644,21 @@ export default function RadioPanel({
           const errors: string[] = [];
 
           if (importedName && onSetOwner) {
+            console.log('[RadioPanel] calling onSetOwner with name:', importedName);
             try {
               await onSetOwner({ longName: importedName, shortName, isLicensed });
-            } catch {
+              console.log('[RadioPanel] onSetOwner succeeded');
+            } catch (e) {
+              console.error('[RadioPanel] onSetOwner threw:', e);
               errors.push('name');
             }
+          } else {
+            console.log(
+              '[RadioPanel] skipping onSetOwner — name:',
+              importedName,
+              'handler:',
+              !!onSetOwner,
+            );
           }
 
           const hasLoraData =
@@ -645,16 +667,28 @@ export default function RadioPanel({
             importedSf !== null &&
             importedCr !== null &&
             importedTxPower !== null;
+          console.log(
+            '[RadioPanel] hasLoraData:',
+            hasLoraData,
+            'onApplyLoraParams:',
+            !!onApplyLoraParams,
+          );
           if (hasLoraData && onApplyLoraParams) {
+            const loraPayload = {
+              freq: importedFreqHz!,
+              bw: importedBwKhz! * 1000,
+              sf: importedSf!,
+              cr: importedCr!,
+              txPower: importedTxPower!,
+            };
+            console.log(
+              `[RadioPanel] calling onApplyLoraParams with: freq=${loraPayload.freq} bw=${loraPayload.bw} sf=${loraPayload.sf} cr=${loraPayload.cr} txPower=${loraPayload.txPower}`,
+            );
             try {
-              await onApplyLoraParams({
-                freq: importedFreqHz!,
-                bw: importedBwKhz! * 1000,
-                sf: importedSf!,
-                cr: importedCr!,
-                txPower: importedTxPower!,
-              });
-            } catch {
+              await onApplyLoraParams(loraPayload);
+              console.log('[RadioPanel] onApplyLoraParams succeeded');
+            } catch (e) {
+              console.error('[RadioPanel] onApplyLoraParams threw:', e);
               errors.push('radio settings');
             }
           }
@@ -665,6 +699,7 @@ export default function RadioPanel({
             addToast('Config imported and applied successfully.', 'success');
           }
         } catch (err) {
+          console.error('[RadioPanel] config import error:', err);
           addToast(
             `Failed to parse config: ${err instanceof Error ? err.message : 'Invalid JSON'}`,
             'error',
@@ -674,7 +709,7 @@ export default function RadioPanel({
       reader.readAsText(file);
     };
     input.click();
-  }, [addToast, onSetOwner, onApplyLoraParams, shortName, isLicensed]);
+  }, [addToast, onSetOwner, onApplyLoraParams, shortName, isLicensed, bandwidth, radioFreqHz]);
 
   return (
     <div className="max-w-lg mx-auto space-y-4">

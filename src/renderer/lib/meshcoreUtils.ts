@@ -1,7 +1,11 @@
 import type { MeshNode } from './types';
 
-/** XOR-fold 32 pubkey bytes into a stable unsigned 32-bit node ID. */
+/**
+ * XOR-fold pubkey bytes into a stable unsigned 32-bit node ID.
+ * Expects a 32-byte MeshCore public key; returns 0 for any other length.
+ */
 export function pubkeyToNodeId(key: Uint8Array): number {
+  if (key.length !== 32) return 0;
   let result = 0;
   for (let i = 0; i < key.length; i += 4) {
     const word =
