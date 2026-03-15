@@ -12,6 +12,7 @@ import {
   pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
 import type { ChatMessage, DeviceState, MeshNode, TelemetryPoint } from '../lib/types';
+import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
 function contactToDbRow(
   contact: MeshCoreContactRaw,
@@ -365,6 +366,9 @@ export function useMeshCore() {
           });
           return next;
         });
+        if (d.advLat !== 0 && d.advLon !== 0) {
+          usePositionHistoryStore.getState().recordPosition(nodeId, d.advLat / 1e7, d.advLon / 1e7);
+        }
         // Persist updated advert position to DB
         void window.electronAPI.db
           .updateMeshcoreContactAdvert(

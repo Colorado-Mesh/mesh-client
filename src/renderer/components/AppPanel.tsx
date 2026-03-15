@@ -16,6 +16,7 @@ import {
 } from '../lib/themeColors';
 import type { MeshNode } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useToast } from './Toast';
 
 // ─── Confirmation Modal ─────────────────────────────────────────
@@ -143,6 +144,8 @@ export default function AppPanel({
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const { addToast } = useToast();
   const clearDiagnostics = useDiagnosticsStore((s) => s.clearDiagnostics);
+  const showPaths = usePositionHistoryStore((s) => s.showPaths);
+  const setShowPaths = usePositionHistoryStore((s) => s.setShowPaths);
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AdminSettings>(loadSettings);
@@ -634,6 +637,18 @@ export default function AppPanel({
             />
             <label htmlFor="filterMqttOnly" className="text-sm text-gray-300 cursor-pointer">
               Hide MQTT-only nodes from map and node list
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="showMovementPaths"
+              checked={showPaths}
+              onChange={(e) => setShowPaths(e.target.checked)}
+              className="accent-brand-green"
+            />
+            <label htmlFor="showMovementPaths" className="text-sm text-gray-300 cursor-pointer">
+              Show movement paths (last 60 min)
             </label>
           </div>
         </div>

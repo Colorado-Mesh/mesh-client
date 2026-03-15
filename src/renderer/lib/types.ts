@@ -89,6 +89,12 @@ export interface HopHistoryPoint {
   h: number; // hops_away value
 }
 
+export interface PositionPoint {
+  t: number; // Unix ms timestamp
+  lat: number;
+  lon: number;
+}
+
 export interface MeshNode {
   node_id: number;
   long_name: string;

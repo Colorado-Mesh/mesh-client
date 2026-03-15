@@ -30,6 +30,7 @@ import type {
   TelemetryPoint,
 } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
 function getMessageLoadLimit(): number {
   const s = parseStoredJson<{
@@ -520,6 +521,13 @@ export function useDevice() {
             MESHTASTIC_CAPABILITIES,
           );
       }
+      if (nodeUpdate.latitude != null && nodeUpdate.longitude != null) {
+        if (validateCoords(nodeUpdate.latitude, nodeUpdate.longitude).valid) {
+          usePositionHistoryStore
+            .getState()
+            .recordPosition(nodeUpdate.node_id, nodeUpdate.latitude, nodeUpdate.longitude);
+        }
+      }
     });
 
     const unsubMsg = window.electronAPI.mqtt.onMessage((rawMsg) => {
@@ -666,6 +674,7 @@ export function useDevice() {
           setTraceRouteResults(new Map());
           setQueueStatus(null);
           setDeviceLogs([]);
+          usePositionHistoryStore.getState().clearHistory();
           setNeighborInfo(new Map());
           setWaypoints(new Map());
           setModuleConfigs({});
@@ -971,6 +980,13 @@ export function useDevice() {
               MESHTASTIC_CAPABILITIES,
             );
         }
+        if (info.position?.latitudeI != null || info.position?.longitudeI != null) {
+          const lat = (info.position.latitudeI ?? 0) / 1e7;
+          const lon = (info.position.longitudeI ?? 0) / 1e7;
+          if (validateCoords(lat, lon).valid) {
+            usePositionHistoryStore.getState().recordPosition(nodeNum, lat, lon);
+          }
+        }
         if (type === 'ble' && nodeNum === myNodeNumRef.current) {
           const btDevice = (device.transport as any)?.__bluetoothDevice;
           const shortName = info.user?.shortName ?? null;
@@ -1039,6 +1055,7 @@ export function useDevice() {
           window.electronAPI.db.saveNode(node);
           return updated;
         });
+        usePositionHistoryStore.getState().recordPosition(packet.from, lat, lon);
       });
       unsubscribesRef.current.push(unsub6);
 

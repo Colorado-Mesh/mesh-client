@@ -7,6 +7,7 @@ import {
   CircleMarker,
   MapContainer,
   Marker,
+  Polyline,
   Popup,
   TileLayer,
   useMap,
@@ -20,6 +21,7 @@ import type { MeshNode, MeshWaypoint, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
+import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import NodeInfoBody from './NodeInfoBody';
 import { useToast } from './Toast';
 
@@ -148,6 +150,12 @@ function getMarkerIcon(
   const opacity = status === 'online' ? 1 : status === 'stale' ? 0.65 : 0.45;
   return createMarkerIcon(color, isSelf, cu, opacity, isMqttOnly);
 }
+
+const PATH_COLORS = {
+  online: '#9ae6b4',
+  stale: '#c4a864',
+  offline: '#6b7280',
+} as const;
 
 // ─── DiagnosticPanes ──────────────────────────────────────────────────────────
 // Creates a dedicated Leaflet pane for anomaly halos. Sits above overlayPane
@@ -501,6 +509,9 @@ export default function MapPanel({
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const routingNodeIds = useMemo(() => routingAnomalyNodeIds(diagnosticRows), [diagnosticRows]);
 
+  const positionHistory = usePositionHistoryStore((s) => s.history);
+  const showPaths = usePositionHistoryStore((s) => s.showPaths);
+
   useEffect(() => {
     ensureMapStyles();
   }, []);
@@ -604,6 +615,23 @@ export default function MapPanel({
     [nodesToRender],
   );
 
+  const movingNodePaths = useMemo(() => {
+    if (!showPaths) return [];
+    const result: { nodeId: number; positions: [number, number][]; color: string }[] = [];
+    for (const [nodeId, points] of positionHistory) {
+      if (points.length < 2) continue;
+      const node = nodes.get(nodeId);
+      if (!node) continue;
+      const status = getNodeStatus(node.last_heard);
+      result.push({
+        nodeId,
+        positions: points.map((p) => [p.lat, p.lon]),
+        color: PATH_COLORS[status],
+      });
+    }
+    return result;
+  }, [positionHistory, showPaths, nodes]);
+
   const savedViewport = useMapViewportStore((s) => s.viewport);
   const computedCenter: [number, number] =
     nodesToRender.length > 0
@@ -663,6 +691,13 @@ export default function MapPanel({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
+        {movingNodePaths.map(({ nodeId, positions: pathPositions, color }) => (
+          <Polyline
+            key={`path-${nodeId}`}
+            positions={pathPositions}
+            pathOptions={{ color, weight: 3, opacity: 0.65 }}
+          />
+        ))}
         {nodesWithStatusAndHaloOffset.map(({ node, anomaly, haloCenterOffset }) => (
           <MapMarker
             key={node.node_id}
