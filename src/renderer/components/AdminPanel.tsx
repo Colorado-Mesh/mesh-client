@@ -72,6 +72,7 @@ interface AdminSettings {
   distanceFilterEnabled: boolean;
   distanceFilterMax: number;
   distanceUnit: 'miles' | 'km';
+  pruneEmptyNamesEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: AdminSettings = {
@@ -82,6 +83,7 @@ const DEFAULT_SETTINGS: AdminSettings = {
   distanceFilterEnabled: false,
   distanceFilterMax: 500,
   distanceUnit: 'miles',
+  pruneEmptyNamesEnabled: false,
 };
 
 function loadSettings(): AdminSettings {
@@ -397,6 +399,46 @@ export default function AdminPanel({
               className="w-20 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">days</span>
+          </div>
+
+          {/* Delete unnamed nodes */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-300 flex-1">Delete nodes with no name</span>
+            <button
+              onClick={() =>
+                executeWithConfirmation({
+                  name: 'Delete Unnamed Nodes',
+                  title: 'Delete Unnamed Nodes',
+                  message:
+                    'This will permanently delete all nodes that have no long name set. They will be re-discovered when they broadcast again.',
+                  confirmLabel: 'Delete Unnamed Nodes',
+                  danger: true,
+                  action: async () => {
+                    await window.electronAPI.db.deleteNodesWithoutLongname();
+                  },
+                })
+              }
+              className="px-3 py-1.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded text-sm font-medium transition-colors whitespace-nowrap"
+            >
+              Delete Unnamed Nodes
+            </button>
+          </div>
+
+          {/* Auto-prune unnamed nodes on startup */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="pruneEmptyNames"
+              checked={settings.pruneEmptyNamesEnabled}
+              onChange={(e) => updateSetting('pruneEmptyNamesEnabled', e.target.checked)}
+              className="accent-brand-green"
+            />
+            <label
+              htmlFor="pruneEmptyNames"
+              className="text-sm text-gray-300 flex-1 cursor-pointer"
+            >
+              Auto-prune unnamed nodes on startup
+            </label>
           </div>
 
           {/* Node cap */}

@@ -261,6 +261,11 @@ export default function App() {
           .pruneNodesByCount(cap)
           .catch((e) => console.warn('[App] startup pruneNodesByCount failed', e));
       }
+      if (s.pruneEmptyNamesEnabled) {
+        void window.electronAPI.db
+          .deleteNodesWithoutLongname()
+          .catch((e) => console.warn('[App] startup deleteNodesWithoutLongname failed', e));
+      }
     } catch (e) {
       console.debug('[App] startup node pruning', e);
     }

@@ -6,6 +6,7 @@ import path from 'path';
 import {
   closeDatabase,
   deleteNodesBySource,
+  deleteNodesWithoutLongname,
   exportDatabase,
   getDatabase,
   initDatabase,
@@ -1141,6 +1142,18 @@ ipcMain.handle('db:deleteNodesBySource', (_event, source: string) => {
   } catch (err) {
     console.error(
       '[IPC] db:deleteNodesBySource failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:deleteNodesWithoutLongname', () => {
+  try {
+    return deleteNodesWithoutLongname();
+  } catch (err) {
+    console.error(
+      '[IPC] db:deleteNodesWithoutLongname failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

@@ -286,6 +286,7 @@ declare global {
         getMessageChannels: () => Promise<{ channel: number }[]>;
         setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<unknown>;
         deleteNodesBySource: (source: string) => Promise<number>;
+        deleteNodesWithoutLongname: () => Promise<number>;
         clearNodePositions: () => Promise<unknown>;
         updateMessageReceivedVia: (packetId: number) => Promise<unknown>;
         saveMeshcoreMessage: (message: {

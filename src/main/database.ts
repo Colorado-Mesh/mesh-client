@@ -440,6 +440,14 @@ export function deleteNodesBySource(source: string): number {
   return result.changes;
 }
 
+export function deleteNodesWithoutLongname(): number {
+  const db = getDatabase();
+  const result = db
+    .prepare("DELETE FROM nodes WHERE long_name IS NULL OR TRIM(long_name) = ''")
+    .run();
+  return result.changes;
+}
+
 export function closeDatabase(): void {
   if (db) {
     try {
