@@ -329,9 +329,11 @@ winget install openjs.nodejs
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-**3. Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)** with the "Desktop development with C++" workload (required for native SQLite).
+**3. Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)** with the "Desktop development with C++" workload (required for native SQLite and Serial).
 
-**4. Clone and run:**
+**4. Install Python 3** — node-gyp (used to build native modules including `better-sqlite3` and `@serialport/bindings-cpp`) requires Python on Windows. Install from [python.org](https://www.python.org/downloads/) or `winget install Python.Python.3.12`, and during setup check **"Add Python to PATH"**. If Python is installed but not found, set it explicitly: `npm config set python "C:\Path\To\python.exe"`.
+
+**5. Clone and run:**
 
 ```bash
 git clone https://github.com/Colorado-Mesh/meshtastic-client
@@ -584,11 +586,22 @@ Join the `#mesh-client-development` channel on Discord for help, feedback, and d
 
 ### `npm install` fails on native module compilation
 
-You're missing build tools for the native SQLite module:
+You're missing build tools for the native modules (e.g. `better-sqlite3`, `@serialport/bindings-cpp`):
 
 - **Mac**: `xcode-select --install`
 - **Linux**: `sudo apt install build-essential python3`
-- **Windows**: Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the "Desktop development with C++" workload
+- **Windows**: Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the "Desktop development with C++" workload, and **Python 3** (see [Windows — extra notes](#windows--extra-notes) step 4). If you see "Could not find any Python installation to use", install Python and ensure it is on PATH or set `npm config set python "C:\Path\To\python.exe"`.
+
+### Windows: "Could not find any Python installation to use" (e.g. when building `@serialport/bindings-cpp`)
+
+**Cause**: node-gyp (used to compile native addons such as `better-sqlite3` and `@serialport/bindings-cpp`) requires Python on Windows. The build fails during `npm install` (postinstall) or during `npm run dist:win` when Python is not installed or not on PATH.
+
+**Fix**:
+
+1. Install **Python 3** from [python.org](https://www.python.org/downloads/) or run `winget install Python.Python.3.12`.
+2. During installation, enable **"Add Python to PATH"**.
+3. Close and reopen your terminal (or restart the IDE), then run `npm install` or `npm run dist:win` again.
+4. If Python is installed but node-gyp still can't find it, point npm at it: `npm config set python "C:\Users\YourName\AppData\Local\Programs\Python\Python312\python.exe"` (adjust the path to your Python executable).
 
 ### BLE connection fails with "Connection attempt failed"
 
