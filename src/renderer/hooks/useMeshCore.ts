@@ -1102,7 +1102,16 @@ export function useMeshCore() {
 
   const sendPositionToDeviceMeshCore = useCallback(async (lat: number, lon: number) => {
     if (!connRef.current) return;
-    await connRef.current.setAdvertLatLong(Math.round(lat * 1e7), Math.round(lon * 1e7));
+    const latInt = Math.round(lat * 1e7);
+    const lonInt = Math.round(lon * 1e7);
+    try {
+      await connRef.current.setAdvertLatLong(latInt, lonInt);
+    } catch (e) {
+      console.error('[useMeshCore] setAdvertLatLong failed', { lat, lon, latInt, lonInt }, e);
+      throw new Error(
+        'Device rejected position update — check that the device supports setting coordinates',
+      );
+    }
   }, []);
 
   const traceRoute = useCallback(async (nodeId: number) => {

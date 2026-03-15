@@ -234,7 +234,7 @@ function ConfigSection({
 }: {
   title: string;
   children: React.ReactNode;
-  onApply: () => void;
+  onApply?: () => void;
   applying: boolean;
   disabled: boolean;
 }) {
@@ -253,13 +253,15 @@ function ConfigSection({
       </summary>
       <div className="px-4 pb-4 space-y-4">
         {children}
-        <button
-          onClick={onApply}
-          disabled={disabled || applying}
-          className="w-full px-4 py-2 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          {applying ? 'Applying...' : `Apply ${title}`}
-        </button>
+        {onApply && (
+          <button
+            onClick={onApply}
+            disabled={disabled || applying}
+            className="w-full px-4 py-2 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            {applying ? 'Applying...' : `Apply ${title}`}
+          </button>
+        )}
       </div>
     </details>
   );
@@ -573,28 +575,51 @@ export default function RadioPanel({
       const file = input.files?.[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
         try {
           const cfg = JSON.parse(ev.target?.result as string);
-          if (cfg.name) setLongName(String(cfg.name));
+
+          // ── Extract values ───────────────────────────────────────────
+          const importedName = cfg.name ? String(cfg.name) : null;
+          let importedFreqHz: number | null = null;
+          let importedBwKhz: number | null = null;
+          let importedSf: number | null = null;
+          let importedCr: number | null = null;
+          let importedTxPower: number | null = null;
+
+          if (importedName) setLongName(importedName);
+
           if (cfg.radio_settings) {
             const rs = cfg.radio_settings;
             // frequency: kHz in config file → Hz for state
-            if (typeof rs.frequency === 'number') setRadioFreqHz(rs.frequency * 1000);
+            if (typeof rs.frequency === 'number') {
+              importedFreqHz = rs.frequency * 1000;
+              setRadioFreqHz(importedFreqHz);
+            }
             // bandwidth: Hz in config → nearest kHz option (31, 62, 125, 250, 500)
             if (typeof rs.bandwidth === 'number') {
               const bwKhz = rs.bandwidth / 1000;
-              const bwOptions = [31, 62, 125, 250, 500];
-              const nearest = bwOptions.reduce((a, b) =>
+              const nearest = [31, 62, 125, 250, 500].reduce((a, b) =>
                 Math.abs(b - bwKhz) < Math.abs(a - bwKhz) ? b : a,
               );
+              importedBwKhz = nearest;
               setBandwidth(nearest);
             }
-            if (typeof rs.spreading_factor === 'number') setSpreadFactor(rs.spreading_factor);
+            if (typeof rs.spreading_factor === 'number') {
+              importedSf = rs.spreading_factor;
+              setSpreadFactor(rs.spreading_factor);
+            }
             // coding_rate: denominator (4–8); state stores denominator directly (display adds 4)
-            if (typeof rs.coding_rate === 'number') setCodingRate(rs.coding_rate);
-            if (typeof rs.tx_power === 'number') setTxPower(rs.tx_power);
+            if (typeof rs.coding_rate === 'number') {
+              importedCr = rs.coding_rate;
+              setCodingRate(rs.coding_rate);
+            }
+            if (typeof rs.tx_power === 'number') {
+              importedTxPower = rs.tx_power;
+              setTxPower(rs.tx_power);
+            }
           }
+
           if (cfg.public_key || cfg.private_key) {
             try {
               localStorage.setItem(
@@ -605,7 +630,43 @@ export default function RadioPanel({
               // ignore storage errors
             }
           }
-          addToast('Config imported. Review settings and click Apply in each section.', 'success');
+
+          // ── Auto-apply to device ─────────────────────────────────────
+          const errors: string[] = [];
+
+          if (importedName && onSetOwner) {
+            try {
+              await onSetOwner({ longName: importedName, shortName, isLicensed });
+            } catch {
+              errors.push('name');
+            }
+          }
+
+          const hasLoraData =
+            importedFreqHz !== null &&
+            importedBwKhz !== null &&
+            importedSf !== null &&
+            importedCr !== null &&
+            importedTxPower !== null;
+          if (hasLoraData && onApplyLoraParams) {
+            try {
+              await onApplyLoraParams({
+                freq: importedFreqHz!,
+                bw: importedBwKhz! * 1000,
+                sf: importedSf!,
+                cr: importedCr! - 4,
+                txPower: importedTxPower!,
+              });
+            } catch {
+              errors.push('radio settings');
+            }
+          }
+
+          if (errors.length > 0) {
+            addToast(`Config imported; failed to apply: ${errors.join(', ')}`, 'warning');
+          } else {
+            addToast('Config imported and applied successfully.', 'success');
+          }
         } catch (err) {
           addToast(
             `Failed to parse config: ${err instanceof Error ? err.message : 'Invalid JSON'}`,
@@ -616,7 +677,7 @@ export default function RadioPanel({
       reader.readAsText(file);
     };
     input.click();
-  }, [addToast]);
+  }, [addToast, onSetOwner, onApplyLoraParams, shortName, isLicensed]);
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
@@ -1037,7 +1098,7 @@ export default function RadioPanel({
         title="Position / GPS"
         onApply={
           capabilities?.hasFullPositionConfig === false
-            ? async () => {}
+            ? undefined
             : () =>
                 applyConfig('Position', 'position', {
                   positionBroadcastSecs,
