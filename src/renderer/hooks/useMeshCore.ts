@@ -1221,9 +1221,13 @@ export function useMeshCore() {
       await connRef.current.setAdvertLatLong(latInt, lonInt);
     } catch (e) {
       console.error('[useMeshCore] setAdvertLatLong failed', { lat, lon, latInt, lonInt }, e);
-      throw new Error(
-        'Device rejected position update — check that the device supports setting coordinates',
-      );
+      const err =
+        e === undefined || (e instanceof Error && !e.message)
+          ? new Error(
+              'Device rejected position update — check that the device supports setting coordinates',
+            )
+          : e;
+      throw err;
     }
   }, []);
 
