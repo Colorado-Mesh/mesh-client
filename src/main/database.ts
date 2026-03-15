@@ -393,7 +393,12 @@ function runMigrations(): void {
 
   if (userVersion < 13) {
     try {
-      db!.prepare('ALTER TABLE meshcore_contacts ADD COLUMN nickname TEXT').run();
+      const columns = db!.prepare('PRAGMA table_info(meshcore_contacts)').all() as {
+        name: string;
+      }[];
+      if (!columns.some((c) => c.name === 'nickname')) {
+        db!.prepare('ALTER TABLE meshcore_contacts ADD COLUMN nickname TEXT').run();
+      }
       db!.pragma('user_version = 13');
       userVersion = 13;
     } catch (e) {
