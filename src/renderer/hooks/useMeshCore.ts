@@ -343,6 +343,60 @@ export function useMeshCore() {
     myNodeNumRef.current = state.myNodeNum;
   }, [state.myNodeNum]);
 
+  // Load persisted MeshCore contacts (e.g. imported repeaters) from DB on mount so list shows before connect
+  useEffect(() => {
+    let cancelled = false;
+    window.electronAPI.db
+      .getMeshcoreContacts()
+      .then((rows) => {
+        if (cancelled) return;
+        const dbContacts = rows as {
+          node_id: number;
+          public_key: string;
+          adv_name: string | null;
+          contact_type: number;
+          last_advert: number | null;
+          adv_lat: number | null;
+          adv_lon: number | null;
+          last_snr: number | null;
+          last_rssi: number | null;
+          favorited: number;
+          nickname: string | null;
+        }[];
+        const initial = new Map<number, MeshNode>();
+        for (const row of dbContacts) {
+          const node: MeshNode = {
+            node_id: row.node_id,
+            long_name:
+              row.nickname ?? row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
+            short_name: row.nickname ? row.nickname.slice(0, 4) : '',
+            hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
+            battery: 0,
+            snr: row.last_snr ?? 0,
+            rssi: row.last_rssi ?? 0,
+            last_heard: row.last_advert ?? 0,
+            latitude: row.adv_lat ?? null,
+            longitude: row.adv_lon ?? null,
+            favorited: row.favorited === 1,
+          };
+          initial.set(row.node_id, node);
+          if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
+          const hex = row.public_key.replace(/\s/g, '');
+          if (hex.length >= 12) {
+            const bytes = new Uint8Array(hex.match(/.{2}/g)!.map((b) => parseInt(b, 16)));
+            pubKeyMapRef.current.set(row.node_id, bytes);
+            const prefix = hex.slice(0, 12);
+            pubKeyPrefixMapRef.current.set(prefix, row.node_id);
+          }
+        }
+        setNodes(initial);
+      })
+      .catch((e) => console.warn('[useMeshCore] load contacts from DB on mount', e));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Record a battery telemetry point whenever selfInfo battery data arrives/changes
   useEffect(() => {
     if (selfInfo?.batteryMilliVolts == null) return;
@@ -1579,11 +1633,25 @@ export function useMeshCore() {
         return next;
       });
 
-      for (const { nodeId, name } of validEntries) {
+      for (const { nodeId, name, pubKey } of validEntries) {
+        const publicKeyHex = Array.from(pubKey)
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
         void window.electronAPI.db
-          .updateMeshcoreContactNickname(nodeId, name)
+          .saveMeshcoreContact({
+            node_id: nodeId,
+            public_key: publicKeyHex,
+            adv_name: null,
+            contact_type: 2, // Repeater
+            last_advert: null,
+            adv_lat: null,
+            adv_lon: null,
+            last_snr: null,
+            last_rssi: null,
+            nickname: name,
+          })
           .catch((e: unknown) =>
-            console.warn('[useMeshCore] updateMeshcoreContactNickname error', e),
+            console.warn('[useMeshCore] saveMeshcoreContact (import repeaters) error', e),
           );
       }
     }
