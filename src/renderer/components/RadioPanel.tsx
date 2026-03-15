@@ -48,6 +48,9 @@ interface Props {
   onEnterDfu?: () => Promise<void>;
   onFactoryResetConfig?: () => Promise<void>;
   capabilities?: ProtocolCapabilities;
+  meshcoreChannels?: { index: number; name: string; secret: Uint8Array }[];
+  onMeshcoreSetChannel?: (idx: number, name: string, secret: Uint8Array) => Promise<void>;
+  onMeshcoreDeleteChannel?: (idx: number) => Promise<void>;
   onApplyLoraParams?: (params: {
     freq: number;
     bw: number;
@@ -419,6 +422,9 @@ export default function RadioPanel({
   onEnterDfu,
   onFactoryResetConfig,
   capabilities,
+  meshcoreChannels,
+  onMeshcoreSetChannel,
+  onMeshcoreDeleteChannel,
   onApplyLoraParams,
   loraConfig,
 }: Props) {
@@ -675,6 +681,15 @@ export default function RadioPanel({
           onCommit={onCommit}
           disabled={disabled}
           setStatus={setStatus}
+        />
+      )}
+
+      {capabilities?.protocol === 'meshcore' && meshcoreChannels !== undefined && (
+        <MeshcoreChannelSection
+          channels={meshcoreChannels}
+          onSetChannel={onMeshcoreSetChannel ?? (async () => {})}
+          onDeleteChannel={onMeshcoreDeleteChannel ?? (async () => {})}
+          disabled={disabled}
         />
       )}
 
@@ -1940,6 +1955,275 @@ function ChannelSection({
 
         <p className="text-xs text-muted">
           Select a channel to edit. AES-128/256 keys are shown in base64 (Meshtastic convention).
+        </p>
+      </div>
+    </details>
+  );
+}
+
+// ─── MeshCore Channel Management Section ─────────────────────────────────
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(16);
+  for (let i = 0; i < 16; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function MeshcoreChannelSection({
+  channels,
+  onSetChannel,
+  onDeleteChannel,
+  disabled,
+}: {
+  channels: { index: number; name: string; secret: Uint8Array }[];
+  onSetChannel: (idx: number, name: string, secret: Uint8Array) => Promise<void>;
+  onDeleteChannel: (idx: number) => Promise<void>;
+  disabled: boolean;
+}) {
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editKeyHex, setEditKeyHex] = useState('');
+  const [revealedIdx, setRevealedIdx] = useState<Set<number>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [confirmDeleteIdx, setConfirmDeleteIdx] = useState<number | null>(null);
+  const [addingNew, setAddingNew] = useState(false);
+  const [newIdx, setNewIdx] = useState('');
+
+  const isValidHex = editKeyHex.length === 32 && /^[0-9a-fA-F]{32}$/.test(editKeyHex);
+
+  function openEdit(ch: { index: number; name: string; secret: Uint8Array }) {
+    setEditingIdx(ch.index);
+    setEditName(ch.name);
+    setEditKeyHex(bytesToHex(ch.secret));
+    setAddingNew(false);
+  }
+
+  function openAdd() {
+    setAddingNew(true);
+    setEditingIdx(null);
+    setNewIdx('');
+    setEditName('');
+    setEditKeyHex('');
+  }
+
+  async function handleSave() {
+    const idx = addingNew ? parseInt(newIdx, 10) : editingIdx!;
+    if (isNaN(idx) || idx < 0 || idx > 7) return;
+    if (!isValidHex) return;
+    setSaving(true);
+    try {
+      await onSetChannel(idx, editName, hexToBytes(editKeyHex));
+      setEditingIdx(null);
+      setAddingNew(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(idx: number) {
+    setSaving(true);
+    try {
+      await onDeleteChannel(idx);
+      setConfirmDeleteIdx(null);
+      if (editingIdx === idx) setEditingIdx(null);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function generateKey() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    setEditKeyHex(bytesToHex(bytes));
+  }
+
+  const showForm = editingIdx !== null || addingNew;
+
+  return (
+    <details className="group rounded-lg border border-gray-700/60 bg-secondary-dark/40 overflow-hidden">
+      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-gray-800/40 transition-colors">
+        <span className="text-sm font-semibold text-gray-200">Channels (MeshCore)</span>
+        <svg
+          className="w-4 h-4 text-muted group-open:rotate-180 transition-transform"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div className="px-4 pb-4 space-y-3">
+        {/* ── Channel List ── */}
+        <div className="space-y-1">
+          {channels.length === 0 && (
+            <p className="text-xs text-muted italic">No channels configured.</p>
+          )}
+          {channels.map((ch) => {
+            const revealed = revealedIdx.has(ch.index);
+            return (
+              <div
+                key={ch.index}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-deep-black/60 border border-gray-700/50"
+              >
+                <span className="text-xs font-mono px-1.5 py-0.5 rounded font-bold bg-gray-700 text-gray-400">
+                  {ch.index}
+                </span>
+                <span className="flex-1 text-sm text-gray-200">
+                  {ch.name || `Channel ${ch.index}`}
+                </span>
+                <span className="text-xs font-mono text-muted">
+                  {revealed ? bytesToHex(ch.secret) : '••••••••••••••••'}
+                </span>
+                <button
+                  onClick={() =>
+                    setRevealedIdx((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(ch.index)) next.delete(ch.index);
+                      else next.add(ch.index);
+                      return next;
+                    })
+                  }
+                  className="text-xs text-muted hover:text-gray-300 px-1"
+                  title={revealed ? 'Hide key' : 'Reveal key'}
+                >
+                  {revealed ? 'Hide' : 'Show'}
+                </button>
+                <button
+                  onClick={() => openEdit(ch)}
+                  disabled={disabled}
+                  className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50 px-1"
+                >
+                  Edit
+                </button>
+                {confirmDeleteIdx === ch.index ? (
+                  <span className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleDelete(ch.index)}
+                      disabled={disabled || saving}
+                      className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteIdx(null)}
+                      className="text-xs text-muted hover:text-gray-300"
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteIdx(ch.index)}
+                    disabled={disabled || saving}
+                    className="text-xs text-red-500 hover:text-red-400 disabled:opacity-50 px-1"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── Edit / Add Form ── */}
+        {showForm && (
+          <div className="mt-3 p-3 bg-deep-black/60 rounded-lg border border-gray-600 space-y-3">
+            <h4 className="text-sm font-medium text-gray-200">
+              {addingNew ? 'Add Channel' : `Edit Channel ${editingIdx}`}
+            </h4>
+
+            {addingNew && (
+              <div className="space-y-1">
+                <label className="text-xs text-muted">Index (0–7)</label>
+                <input
+                  type="number"
+                  value={newIdx}
+                  onChange={(e) => setNewIdx(e.target.value)}
+                  min={0}
+                  max={7}
+                  disabled={disabled}
+                  className="w-20 px-2 py-1.5 bg-secondary-dark rounded text-sm text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <label className="text-xs text-muted">Name</label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                maxLength={11}
+                disabled={disabled}
+                className="w-full px-2 py-1.5 bg-secondary-dark rounded text-sm text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-muted">Key (32 hex chars = 16 bytes)</label>
+                <button onClick={generateKey} className="text-xs text-blue-400 hover:text-blue-300">
+                  Generate random
+                </button>
+              </div>
+              <input
+                type="text"
+                value={editKeyHex}
+                onChange={(e) => setEditKeyHex(e.target.value.toLowerCase())}
+                maxLength={32}
+                placeholder="00000000000000000000000000000000"
+                disabled={disabled}
+                className={`w-full px-2 py-1.5 bg-secondary-dark rounded text-sm font-mono border focus:outline-none disabled:opacity-50 ${
+                  editKeyHex.length > 0 && !isValidHex
+                    ? 'border-red-500 text-red-400'
+                    : 'border-gray-600 text-gray-200 focus:border-brand-green'
+                }`}
+              />
+              {editKeyHex.length > 0 && !isValidHex && (
+                <p className="text-xs text-red-400">Must be exactly 32 hex characters.</p>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={handleSave}
+                disabled={disabled || saving || !isValidHex || (addingNew && newIdx === '')}
+                className="flex-1 px-3 py-1.5 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-xs font-medium rounded transition-colors"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={() => {
+                  setEditingIdx(null);
+                  setAddingNew(false);
+                }}
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs font-medium rounded transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!showForm && (
+          <button
+            onClick={openAdd}
+            disabled={disabled}
+            className="w-full px-3 py-1.5 border border-dashed border-gray-600 hover:border-gray-400 text-xs text-muted hover:text-gray-300 rounded transition-colors disabled:opacity-50"
+          >
+            + Add Channel
+          </button>
+        )}
+
+        <p className="text-xs text-muted">
+          Keys are 128-bit (16 bytes), shown as 32 hex characters.
         </p>
       </div>
     </details>

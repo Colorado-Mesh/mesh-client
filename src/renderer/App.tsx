@@ -667,6 +667,18 @@ export default function App() {
                     onEnterDfu={device.enterDfuMode}
                     onFactoryResetConfig={device.factoryResetConfig}
                     capabilities={capabilities}
+                    meshcoreChannels={protocol === 'meshcore' ? meshcoreDevice.channels : undefined}
+                    onMeshcoreSetChannel={
+                      protocol === 'meshcore'
+                        ? async (idx, name, secret) =>
+                            meshcoreDevice.setMeshcoreChannel(idx, name, secret)
+                        : undefined
+                    }
+                    onMeshcoreDeleteChannel={
+                      protocol === 'meshcore'
+                        ? async (idx) => meshcoreDevice.deleteMeshcoreChannel(idx)
+                        : undefined
+                    }
                     onApplyLoraParams={
                       protocol === 'meshcore'
                         ? async (p) => meshcoreDevice.setRadioParams(p)

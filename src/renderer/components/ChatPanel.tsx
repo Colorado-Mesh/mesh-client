@@ -208,7 +208,12 @@ export default function ChatPanel({
   isActive = true,
 }: Props) {
   const [input, setInput] = useState('');
-  const [channel, setChannel] = useState(0);
+  const [channel, setChannel] = useState(() => (channels.length > 0 ? channels[0].index : 0));
+  useEffect(() => {
+    if (channels.length > 0 && !channels.some((c) => c.index === channel)) {
+      setChannel(channels[0].index);
+    }
+  }, [channels, channel]);
   const [sending, setSending] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);

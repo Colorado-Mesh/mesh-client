@@ -171,6 +171,9 @@ interface MeshCoreConnection {
   getSelfInfo(timeout?: number): Promise<MeshCoreSelfInfo>;
   getContacts(): Promise<MeshCoreContactRaw[]>;
   getChannels(): Promise<MeshCoreChannelRaw[]>;
+  getChannel(channelIdx: number): Promise<MeshCoreChannelRaw>;
+  setChannel(channelIdx: number, name: string, secret: Uint8Array): Promise<void>;
+  deleteChannel(channelIdx: number): Promise<void>;
   getWaitingMessages(): Promise<unknown[]>;
   sendFloodAdvert(): Promise<void>;
   sendTextMessage(
@@ -243,6 +246,7 @@ interface MeshCoreContactRaw {
 interface MeshCoreChannelRaw {
   channelIdx: number;
   name: string;
+  secret: Uint8Array;
 }
 
 interface DeviceLogEntry {
@@ -277,7 +281,9 @@ export function useMeshCore() {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [nodes, setNodes] = useState<Map<number, MeshNode>>(new Map());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [channels, setChannels] = useState<{ index: number; name: string }[]>([]);
+  const [channels, setChannels] = useState<{ index: number; name: string; secret: Uint8Array }[]>(
+    [],
+  );
   const [selfInfo, setSelfInfo] = useState<MeshCoreSelfInfo | null>(null);
   const [deviceLogs, setDeviceLogs] = useState<DeviceLogEntry[]>([]);
   const [telemetry, setTelemetry] = useState<TelemetryPoint[]>([]);
@@ -655,7 +661,9 @@ export function useMeshCore() {
       console.log('[useMeshCore] initConn: contacts loaded, device=', contacts.length);
 
       const rawChannels = await withTimeout(conn.getChannels(), 10_000, 'getChannels');
-      setChannels(rawChannels.map((c) => ({ index: c.channelIdx, name: c.name })));
+      setChannels(
+        rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+      );
       console.log('[useMeshCore] initConn: channels=', rawChannels.length);
 
       // Post-init side-effects — fire-and-forget after full handshake to avoid request conflicts
@@ -1243,6 +1251,21 @@ export function useMeshCore() {
     }
   }, []);
 
+  const setMeshcoreChannel = useCallback(async (idx: number, name: string, secret: Uint8Array) => {
+    if (!connRef.current) return;
+    await connRef.current.setChannel(idx, name, secret);
+    setChannels((prev) => {
+      const next = prev.filter((c) => c.index !== idx);
+      return [...next, { index: idx, name, secret }].sort((a, b) => a.index - b.index);
+    });
+  }, []);
+
+  const deleteMeshcoreChannel = useCallback(async (idx: number) => {
+    if (!connRef.current) return;
+    await connRef.current.deleteChannel(idx);
+    setChannels((prev) => prev.filter((c) => c.index !== idx));
+  }, []);
+
   // No-op stubs to satisfy the same interface shape used in App.tsx
   const noopAsync = useCallback(async () => {}, []);
   const noopVoid = useCallback(() => {}, []);
@@ -1266,6 +1289,8 @@ export function useMeshCore() {
     requestTelemetry,
     requestNeighbors,
     toggleManualAddContacts,
+    setMeshcoreChannel,
+    deleteMeshcoreChannel,
     deviceLogs,
     meshcoreTraceResults,
     meshcoreNodeStatus,
