@@ -453,6 +453,10 @@ export default function ConnectionPanel({
   }, [isAutoConnecting, lastConnection]);
 
   const handleConnect = useCallback(async () => {
+    if (autoConnectTimeoutRef.current) {
+      clearTimeout(autoConnectTimeoutRef.current);
+      autoConnectTimeoutRef.current = null;
+    }
     setError(null);
     setConnecting(true);
     setBleDevices([]);
@@ -540,7 +544,7 @@ export default function ConnectionPanel({
     const startAutoConnectTimeout = () => {
       if (autoConnectTimeoutRef.current) clearTimeout(autoConnectTimeoutRef.current);
       autoConnectTimeoutRef.current = setTimeout(() => {
-        console.warn('[ConnectionPanel] BLE auto-connect timed out after 30s');
+        console.warn('[ConnectionPanel] auto-connect timed out after 30s');
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
         setError('Auto-connect timed out.');
@@ -550,6 +554,10 @@ export default function ConnectionPanel({
     };
 
     const onAutoConnectFailed = (err: unknown) => {
+      if (autoConnectTimeoutRef.current) {
+        clearTimeout(autoConnectTimeoutRef.current);
+        autoConnectTimeoutRef.current = null;
+      }
       isAutoConnectingRef.current = false;
       setIsAutoConnecting(false);
       setError(err instanceof Error ? err.message : 'Auto-connect failed');
@@ -603,7 +611,7 @@ export default function ConnectionPanel({
         autoConnectTimeoutRef.current = null;
       }
       autoConnectTimeoutRef.current = setTimeout(() => {
-        console.warn('[ConnectionPanel] BLE auto-connect timed out after 30s');
+        console.warn('[ConnectionPanel] auto-connect timed out after 30s');
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
         setError('Auto-connect timed out.');
