@@ -102,6 +102,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearMeshcoreContacts: () => ipcRenderer.invoke('db:clearMeshcoreContacts'),
     updateMeshcoreContactNickname: (nodeId: number, nickname: string | null) =>
       ipcRenderer.invoke('db:updateMeshcoreContactNickname', nodeId, nickname),
+    savePositionHistory: (
+      nodeId: number,
+      lat: number,
+      lon: number,
+      recordedAt: number,
+      source: string,
+    ) => ipcRenderer.invoke('db:savePositionHistory', nodeId, lat, lon, recordedAt, source),
+    getPositionHistory: (sinceMs: number) => ipcRenderer.invoke('db:getPositionHistory', sinceMs),
+    clearPositionHistory: () => ipcRenderer.invoke('db:clearPositionHistory'),
   },
 
   // ─── MQTT ──────────────────────────────────────────────────────

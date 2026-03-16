@@ -148,6 +148,9 @@ export default function AppPanel({
   const clearDiagnostics = useDiagnosticsStore((s) => s.clearDiagnostics);
   const showPaths = usePositionHistoryStore((s) => s.showPaths);
   const setShowPaths = usePositionHistoryStore((s) => s.setShowPaths);
+  const historyWindowHours = usePositionHistoryStore((s) => s.historyWindowHours);
+  const setHistoryWindow = usePositionHistoryStore((s) => s.setHistoryWindow);
+  const clearHistory = usePositionHistoryStore((s) => s.clearHistory);
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AdminSettings>(loadSettings);
@@ -650,8 +653,26 @@ export default function AppPanel({
               className="accent-brand-green"
             />
             <label htmlFor="showMovementPaths" className="text-sm text-gray-300 cursor-pointer">
-              Show movement paths (last 60 min)
+              Show movement paths
             </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="apppanel-history-window" className="text-sm text-gray-400 shrink-0">
+              Position history window:
+            </label>
+            <select
+              id="apppanel-history-window"
+              aria-label="Position history window"
+              value={historyWindowHours}
+              onChange={(e) => setHistoryWindow(Number(e.target.value))}
+              className="px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
+            >
+              <option value={1}>1 hour</option>
+              <option value={4}>4 hours</option>
+              <option value={24}>24 hours</option>
+              <option value={72}>3 days</option>
+              <option value={168}>7 days</option>
+            </select>
           </div>
         </div>
       </div>
@@ -889,6 +910,35 @@ export default function AppPanel({
               className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
             >
               Clear GPS Data
+            </button>
+          </div>
+
+          <div className="border-t border-red-900/50 pt-4 space-y-2">
+            <div className="text-xs font-medium text-red-400/90 uppercase tracking-wide">
+              Position History
+            </div>
+            <p className="text-xs text-muted leading-relaxed">
+              Clears all persisted movement trail data. In-memory paths and future positions are
+              unaffected.
+            </p>
+            <button
+              type="button"
+              onClick={() =>
+                executeWithConfirmation({
+                  name: 'Clear Position History',
+                  title: 'Clear Position History',
+                  message:
+                    'This will permanently delete all stored position history from the database. Movement trails will no longer be shown for past sessions. Continue?',
+                  confirmLabel: 'Clear Position History',
+                  danger: true,
+                  action: async () => {
+                    clearHistory();
+                  },
+                })
+              }
+              className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
+            >
+              Clear Position History
             </button>
           </div>
 

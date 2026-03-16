@@ -55,12 +55,23 @@ export function initDatabase(): void {
            WHERE packet_id IS NOT NULL`,
           )
           .run();
-        db!.pragma('user_version = 13');
+        db!.pragma('user_version = 14');
       } else {
         runMigrations();
       }
     });
     setup();
+
+    // Prune position_history rows older than 30 days on startup
+    try {
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const pruned = db.prepare('DELETE FROM position_history WHERE recorded_at < ?').run(cutoff);
+      if (pruned.changes > 0) {
+        console.log(`[db] Pruned ${pruned.changes} old position_history rows`);
+      }
+    } catch {
+      /* non-fatal */
+    }
 
     const version = db.pragma('user_version', { simple: true });
     console.log(
@@ -160,6 +171,17 @@ function createBaseTables(): void {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup
         ON meshcore_messages(sender_id, timestamp, channel_idx)
         WHERE sender_id IS NOT NULL;
+
+      CREATE TABLE IF NOT EXISTS position_history (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        node_id     INTEGER NOT NULL,
+        latitude    REAL    NOT NULL,
+        longitude   REAL    NOT NULL,
+        recorded_at INTEGER NOT NULL,
+        source      TEXT    DEFAULT 'rf'
+      );
+      CREATE INDEX IF NOT EXISTS idx_position_history_node_time
+        ON position_history(node_id, recorded_at);
     `);
   } catch (error) {
     console.error(
@@ -407,6 +429,35 @@ function runMigrations(): void {
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       throw new Error(`Migration v13 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 14) {
+    try {
+      db!
+        .prepare(
+          'CREATE TABLE IF NOT EXISTS position_history (' +
+            'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
+            'node_id INTEGER NOT NULL,' +
+            'latitude REAL NOT NULL,' +
+            'longitude REAL NOT NULL,' +
+            "recorded_at INTEGER NOT NULL, source TEXT DEFAULT 'rf')",
+        )
+        .run();
+      db!
+        .prepare(
+          'CREATE INDEX IF NOT EXISTS idx_position_history_node_time ' +
+            'ON position_history(node_id, recorded_at)',
+        )
+        .run();
+      db!.pragma('user_version = 14');
+      userVersion = 14;
+    } catch (e) {
+      console.error(
+        '[db] migration v14 failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw new Error(`Migration v14 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

@@ -333,6 +333,23 @@ declare global {
           nodeId: number,
           nickname: string | null,
         ) => Promise<unknown>;
+        savePositionHistory: (
+          nodeId: number,
+          lat: number,
+          lon: number,
+          recordedAt: number,
+          source: string,
+        ) => Promise<unknown>;
+        getPositionHistory: (sinceMs: number) => Promise<
+          {
+            node_id: number;
+            latitude: number;
+            longitude: number;
+            recorded_at: number;
+            source: string;
+          }[]
+        >;
+        clearPositionHistory: () => Promise<unknown>;
       };
       mqtt: {
         connect: (settings: MQTTSettings) => Promise<void>;

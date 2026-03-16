@@ -511,10 +511,12 @@ export default function MapPanel({
 
   const positionHistory = usePositionHistoryStore((s) => s.history);
   const showPaths = usePositionHistoryStore((s) => s.showPaths);
+  const loadHistoryFromDb = usePositionHistoryStore((s) => s.loadHistoryFromDb);
 
   useEffect(() => {
     ensureMapStyles();
-  }, []);
+    loadHistoryFromDb();
+  }, [loadHistoryFromDb]);
 
   const nodesWithPosition = useMemo(() => {
     const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
