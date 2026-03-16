@@ -26,6 +26,69 @@ function lastConnectionKey(p: MeshProtocol) {
   return `mesh-client:lastConnection:${p}`;
 }
 
+function humanizeSerialError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
+  if (/access denied|permission|not allowed/i.test(msg)) {
+    if (isWindows) {
+      return `${msg} — Ensure the correct USB driver is installed (CH340, CP210x, or FTDI). Check Device Manager for a yellow warning on the COM port.`;
+    }
+    return `${msg} — On Linux, add your user to the dialout group: sudo usermod -aG dialout $USER (then log out and back in)`;
+  }
+  if (/no port|not found|disconnected|device not found/i.test(msg)) {
+    return `${msg} — Ensure the USB cable is connected and the device is powered on.`;
+  }
+  if (/timed out/i.test(msg)) {
+    return `${msg} — If the port appeared briefly, try reconnecting the USB cable.`;
+  }
+  return msg;
+}
+
+function humanizeHttpError(address: string, err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const isMdns = address.toLowerCase().includes('meshtastic.local');
+  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
+  if (/timed out|timeout|aborted/i.test(msg)) {
+    const hint = isMdns
+      ? isWindows
+        ? "On Windows, meshtastic.local requires Bonjour (installed with iTunes). Use the device's IP address instead."
+        : "mDNS may not resolve — try the device's IP address instead."
+      : 'Ensure the device is powered on and reachable.';
+    return `${msg} — ${hint}`;
+  }
+  if (/401|403|unauthorized/i.test(msg)) {
+    return `${msg} — Check device authentication settings.`;
+  }
+  if (/econnrefused|connection refused|failed to fetch|network/i.test(msg)) {
+    return `${msg} — Ensure the device is powered on and connected to the same network.`;
+  }
+  if (isMdns) {
+    const suffix = isWindows
+      ? "On Windows, meshtastic.local requires Bonjour (installed with iTunes). Use the device's IP address instead."
+      : "mDNS may not resolve on your network; try the device's IP address instead.";
+    return `${msg} — ${suffix}`;
+  }
+  return msg;
+}
+
+function humanizeBleError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
+  if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
+    if (isWindows) {
+      return `${msg} — Check Settings > Bluetooth & devices. If Bluetooth is on but unavailable, update your Bluetooth driver in Device Manager.`;
+    }
+    return `${msg} — Make sure Bluetooth is enabled. On Linux, run: systemctl status bluetooth`;
+  }
+  if (msg.includes('SecurityError') || msg.includes('not allowed to access')) {
+    return `${msg} — Bluetooth permission denied. Ensure the app has access to the Bluetooth device.`;
+  }
+  if (msg.includes('GATT Server is disconnected')) {
+    return `${msg} — GATT connection dropped. Try moving closer to the device and reconnecting.`;
+  }
+  return msg;
+}
+
 function loadLastConnection(p: MeshProtocol): LastConnection | null {
   return parseStoredJson<LastConnection>(
     localStorage.getItem(lastConnectionKey(p)),
@@ -402,7 +465,17 @@ export default function ConnectionPanel({
       await onConnect(connectionType, httpAddress);
     } catch (err) {
       console.warn('[ConnectionPanel] handleConnect failed', err);
-      setError(err instanceof Error ? err.message : 'Connection failed');
+      let errorMsg: string;
+      if (connectionType === 'ble') {
+        errorMsg = humanizeBleError(err);
+      } else if (connectionType === 'serial') {
+        errorMsg = humanizeSerialError(err);
+      } else if (connectionType === 'http') {
+        errorMsg = humanizeHttpError(httpAddress, err);
+      } else {
+        errorMsg = err instanceof Error ? err.message : 'Connection failed';
+      }
+      setError(errorMsg);
       setConnecting(false);
       setConnectionStage('');
     }
@@ -467,6 +540,7 @@ export default function ConnectionPanel({
     const startAutoConnectTimeout = () => {
       if (autoConnectTimeoutRef.current) clearTimeout(autoConnectTimeoutRef.current);
       autoConnectTimeoutRef.current = setTimeout(() => {
+        console.warn('[ConnectionPanel] BLE auto-connect timed out after 30s');
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
         setError('Auto-connect timed out.');
@@ -529,6 +603,7 @@ export default function ConnectionPanel({
         autoConnectTimeoutRef.current = null;
       }
       autoConnectTimeoutRef.current = setTimeout(() => {
+        console.warn('[ConnectionPanel] BLE auto-connect timed out after 30s');
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
         setError('Auto-connect timed out.');
@@ -542,7 +617,7 @@ export default function ConnectionPanel({
         }
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
-        setError(err instanceof Error ? err.message : 'Reconnect failed');
+        setError(humanizeBleError(err));
         setConnecting(false);
         setConnectionStage('');
       });
@@ -557,7 +632,7 @@ export default function ConnectionPanel({
       setShowSerialPicker(false);
       setConnectionStage('Please wait...');
       onConnect('http', addr).catch((err) => {
-        setError(err instanceof Error ? err.message : 'Reconnect failed');
+        setError(humanizeHttpError(addr, err));
         setConnecting(false);
         setConnectionStage('');
       });
@@ -570,7 +645,7 @@ export default function ConnectionPanel({
       onAutoConnect('serial', undefined, lastConnection.serialPortId).catch((err) => {
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
-        setError(err instanceof Error ? err.message : 'Reconnect failed');
+        setError(humanizeSerialError(err));
         setConnecting(false);
         setConnectionStage('');
       });
@@ -1190,6 +1265,12 @@ export default function ConnectionPanel({
                 className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
               />
               <p className="text-xs text-muted">Enter hostname or IP address (without http://)</p>
+              {navigator.userAgent.toLowerCase().includes('windows') && (
+                <p className="text-xs text-yellow-400">
+                  On Windows, meshtastic.local may not resolve — use the device&apos;s IP address
+                  instead.
+                </p>
+              )}
             </div>
           )}
           {connectionType === 'http' && protocol === 'meshcore' && (
@@ -1262,7 +1343,11 @@ export default function ConnectionPanel({
             <button
               type="button"
               onClick={handleConnect}
-              disabled={connecting || state.status === 'connecting'}
+              disabled={
+                connecting ||
+                state.status === 'connecting' ||
+                (connectionType === 'http' && !httpAddress.trim())
+              }
               className="w-full px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#4CAF50' }}
             >

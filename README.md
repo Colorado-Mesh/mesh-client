@@ -14,7 +14,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Known Bugs:**
 
-- **Linux Web Bluetooth** — Web Bluetooth is experimental upstream and does not work reliably on Linux. BLE connection from this app on Linux may fail (e.g. "User cancelled" immediately). Use USB Serial or WiFi/HTTP to connect on Linux.
+- **Linux Web Bluetooth** — Web Bluetooth is experimental upstream. The app automatically enables `--enable-experimental-web-platform-features` on Linux to improve BLE device discovery on Electron 28–30 / Ubuntu 22.04. If BLE still fails (e.g. connection drops after pairing), prefer USB Serial or WiFi/HTTP.
 - **MeshCore library race** — There is a race condition in the MeshCore (e.g. `@liamcottle/meshcore.js`) connection flow that can cause BLE connections to fail or behave inconsistently.
 
 ---
@@ -631,10 +631,50 @@ You're missing build tools for the native modules (e.g. `better-sqlite3`, `@seri
 - **"Connection already in progress"** or **GATT init failures** can occur when the first BLE write runs before the connection is fully ready. The app **retries once** automatically after a short delay; if it still fails, wait a few seconds and try again, or use **Serial/USB** instead.
 - If BLE is unreliable on your system, prefer Serial or TCP for a stable connection. The root cause is a race in the MeshCore library: the first BLE write (deviceQuery) can run before `gatt.connect()` completes. An [upstream bug report](https://github.com/meshcore-dev/meshcore.js/issues/22) tracks the fix (await GATT connect before any write); the app’s retry is a workaround until the library is updated.
 
+**Linux-specific:**
+
+- The app passes `--enable-experimental-web-platform-features` on Linux so the Chromium Bluetooth device picker fires correctly. If you see `"Bluetooth adapter not found"`, ensure BlueZ is running (`systemctl status bluetooth`) and the adapter is enabled (`rfkill list`).
+- GATT connect now has a 15-second timeout to prevent indefinite hangs when the BlueZ stack is in a confused state. If you hit it, restart the Bluetooth service (`sudo systemctl restart bluetooth`) and try again.
+
+**Windows-specific:**
+
+- BLE reconnect timeout is **20 seconds** (vs. 15 s on other platforms) to account for WinRT re-scan latency. If the reconnect card times out, retry once before switching to Serial.
+- If you see `"Bluetooth adapter not found"`, go to **Settings → Bluetooth & devices** and confirm Bluetooth is on. Then check **Device Manager → Bluetooth** for adapter errors. If the adapter is present but flagged, reinstall its driver.
+- `"GATT Error: In Progress"` from the WinRT stack is handled gracefully and will not cause a false disconnect.
+
 ### Serial port not detected
 
 - Ensure USB drivers are installed for your device (CP210x, CH340, etc.)
 - On Linux, add yourself to the `dialout` group: `sudo usermod -a -G dialout $USER`
+- On Windows, open **Device Manager** and look for an unknown/COM device under **Ports (COM & LPT)**. Install the matching driver:
+  - **CH340/CH341** (common on many boards): [WCH CH340 driver](http://www.wch-ic.com/downloads/CH341SER_EXE.html)
+  - **CP210x** (Silicon Labs): install from **Device Manager → Update driver → Search automatically**, or download from [Silicon Labs](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)
+  - **FTDI** (FT232): install from [FTDI VCP drivers](https://ftdichip.com/drivers/vcp-drivers/)
+
+### Linux: `Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED`
+
+This error means your user doesn't have permission to access the serial port.
+
+**Fix**:
+
+1. Add yourself to the `dialout` group and re-login:
+
+   ```sh
+   sudo usermod -a -G dialout $USER
+   ```
+
+   Then **log out and back in** for the group membership to take effect.
+
+2. If the error persists after re-logging, verify the group was applied:
+   ```sh
+   groups
+   ```
+   If `dialout` is not listed, the group may not exist on your distro. Create it and activate it in your current session without logging out:
+   ```sh
+   sudo groupadd dialout
+   sudo usermod -a -G dialout $USER
+   newgrp dialout
+   ```
 
 ### App crashes on launch (macOS distributable)
 
@@ -727,6 +767,23 @@ CI builds avoid both issues by using short paths and clean agents; local Windows
 
 - **Mac/Linux**: `chmod 755 ~/Library/Application\ Support/mesh-client` (or `~/.config/mesh-client` on Linux)
 - **Windows**: Right-click `%APPDATA%\mesh-client` → Properties → Security → grant your user Full Control
+
+### HTTP / WiFi connection issues
+
+**`meshtastic.local` (or any `.local` hostname) not found on Windows:**
+
+Windows does not have built-in mDNS resolution. `.local` hostnames require **Bonjour** (installed with iTunes or Apple Devices). Install either:
+
+- [iTunes](https://www.apple.com/itunes/) — includes Bonjour automatically
+- [Bonjour Print Services for Windows](https://support.apple.com/kb/DL999) — standalone Bonjour installer
+
+Alternatively, enter the device's **IP address** directly instead of its `.local` hostname.
+
+> A yellow warning is shown below the address input on Windows as a reminder.
+
+**IPv6 address format:**
+
+Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in the HTTP address field: `[fe80::1]`. The app normalises bare addresses automatically, but entering `[fe80::1]:443` (with port) is the most reliable form.
 
 ### MQTT: "Connection lost after N reconnect attempts"
 

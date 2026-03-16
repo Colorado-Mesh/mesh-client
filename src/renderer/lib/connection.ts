@@ -7,6 +7,9 @@ import type { ConnectionType } from './types';
 
 // HTTP base connection: timeouts and retries to avoid hanging on slow mDNS or flaky networks.
 const HTTP_CONNECT_TIMEOUT_MS = 15_000;
+// BLE reconnect: gatt.connect() can hang indefinitely on Linux when the BT stack is confused,
+// and on Windows WinRT can take 15-25s as the stack re-scans for the device on reconnect.
+const BLE_RECONNECT_TIMEOUT_MS = 20_000;
 const HTTP_PREFLIGHT_RETRIES = 3;
 const HTTP_PREFLIGHT_RETRY_DELAY_MS = 2_000;
 
@@ -91,9 +94,22 @@ export async function createConnection(
       break;
     }
 
-    case 'serial':
-      transport = await TransportWebSerial.create(115200);
+    case 'serial': {
+      console.debug('[connection] createConnection: serial');
+      const SERIAL_CONNECT_TIMEOUT_MS = 15_000;
+      const serialPromise = TransportWebSerial.create(115200);
+      const serialTimeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(`Serial connection timed out after ${SERIAL_CONNECT_TIMEOUT_MS / 1000}s`),
+            ),
+          SERIAL_CONNECT_TIMEOUT_MS,
+        ),
+      );
+      transport = await Promise.race([serialPromise, serialTimeoutPromise]);
       break;
+    }
 
     case 'http': {
       if (!httpAddress) throw new Error('HTTP address required');
@@ -105,6 +121,11 @@ export async function createConnection(
       host = host.replace(/^https?:\/\//, '');
       // Strip trailing slashes
       host = host.replace(/\/+$/, '');
+      // Normalize bare IPv6 addresses — browsers require brackets: [fe80::1]
+      if (host.includes(':') && !host.startsWith('[')) {
+        host = `[${host}]`;
+      }
+      console.debug(`[connection] createConnection: http address=${host} tls=${useTls}`);
       const connectionUrl = `${useTls ? 'https' : 'http'}://${host}`;
       await httpPreflightWithRetries(connectionUrl);
       const createPromise = TransportHTTP.create(host, useTls);
@@ -142,8 +163,14 @@ export async function createConnection(
 export async function reconnectBle(): Promise<MeshDevice> {
   let target: BluetoothDevice | undefined;
 
-  if (typeof navigator.bluetooth.getDevices === 'function') {
+  const hasGetDevices = typeof navigator.bluetooth.getDevices === 'function';
+  console.debug(
+    `[connection] reconnectBle: getDevices=${hasGetDevices}, captured=${!!capturedBleDevice}`,
+  );
+
+  if (hasGetDevices) {
     const devices = await navigator.bluetooth.getDevices();
+    console.debug(`[connection] reconnectBle: getDevices returned ${devices.length} device(s)`);
     // Prefer disconnected-but-known GATT; else any with gatt; else first granted
     // device — gatt is often null until connect(); createFromDevice/prepareConnection
     // will call gatt.connect(). On some Electron builds getDevices() stays empty
@@ -164,16 +191,34 @@ export async function reconnectBle(): Promise<MeshDevice> {
   }
 
   if (!target) {
+    console.warn('[connection] reconnectBle: no target device found — reconnection will fail');
     throw new Error('No previously connected BLE device found for reconnection');
   }
 
+  console.debug(
+    `[connection] reconnectBle: target device id=${target.id}, gatt.connected=${target.gatt?.connected ?? 'n/a'}`,
+  );
+
   // Let the transport library handle GATT connection internally
   // (both createFromDevice and prepareConnection call gatt.connect())
+  // Wrap in a timeout to guard against hung gatt.connect() on Linux when the BT stack is confused.
   let transport: any;
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(
+      () => reject(new Error(`BLE reconnect timed out after ${BLE_RECONNECT_TIMEOUT_MS / 1000}s`)),
+      BLE_RECONNECT_TIMEOUT_MS,
+    ),
+  );
   if (typeof (TransportWebBluetooth as any).createFromDevice === 'function') {
-    transport = await (TransportWebBluetooth as any).createFromDevice(target);
+    transport = await Promise.race([
+      (TransportWebBluetooth as any).createFromDevice(target),
+      timeoutPromise,
+    ]);
   } else if (typeof (TransportWebBluetooth as any).prepareConnection === 'function') {
-    transport = await (TransportWebBluetooth as any).prepareConnection(target);
+    transport = await Promise.race([
+      (TransportWebBluetooth as any).prepareConnection(target),
+      timeoutPromise,
+    ]);
   } else {
     throw new Error(
       'TransportWebBluetooth has no method to create a transport from an existing device',
@@ -204,6 +249,9 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
     throw new Error('Web Serial API not available');
   }
   const ports = await navigator.serial.getPorts();
+  console.debug(
+    `[connection] reconnectSerial: getPorts returned ${ports.length} port(s), lastPortId=${lastPortId ?? 'none'}`,
+  );
   if (ports.length === 0) {
     throw new Error('No previously granted serial ports found');
   }
@@ -212,7 +260,13 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
   if (lastPortId) {
     port = (ports as any[]).find((p: any) => p.portId === lastPortId);
   }
+  if (lastPortId && !port) {
+    console.warn(
+      `[connection] reconnectSerial: portId ${lastPortId} not found — falling back to first port`,
+    );
+  }
   port = port ?? ports[0];
+  console.debug(`[connection] reconnectSerial: using port ${(port as any)?.portId ?? 'unknown'}`);
 
   const transport = await TransportWebSerial.createFromPort(port, 115200);
   const device = new MeshDevice(transport as any);
@@ -239,6 +293,13 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
         await device.transport.toDevice.close();
       } catch (e) {
         console.debug('[connection] safeDisconnect toDevice.close', e);
+      }
+
+      // Close fromDevice stream to prevent GC leaks and lingering fetches (HTTP)
+      try {
+        await (device.transport.fromDevice as ReadableStream).cancel();
+      } catch (e) {
+        console.debug('[connection] safeDisconnect fromDevice.cancel', e);
       }
 
       // For BLE: disconnect the GATT server

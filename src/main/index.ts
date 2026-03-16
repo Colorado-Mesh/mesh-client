@@ -270,6 +270,10 @@ function validateMqttPublishArgs(args: unknown): void {
 app.commandLine.appendSwitch('enable-features', 'WebBluetooth');
 // Enable Web Serial (experimental)
 app.commandLine.appendSwitch('enable-blink-features', 'Serial');
+// Linux: some Electron 28-30 builds require this for WebBluetooth to fire select-bluetooth-device
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('enable-experimental-web-platform-features');
+}
 
 // ─── Icon Path Helper ──────────────────────────────────────────────
 /**
@@ -435,6 +439,23 @@ function createWindow() {
     if (!pendingBluetoothCallback) {
       pendingBluetoothCallback = callback;
       bluetoothDiscoveryDevices.clear();
+      // Safety: auto-cancel if the callback is never resolved (e.g. renderer crash, unmount).
+      // This prevents blocking future BLE discovery sessions on Linux where multi-fire is common.
+      setTimeout(() => {
+        if (pendingBluetoothCallback === callback) {
+          console.warn('[IPC] BLE discovery callback stale after 60s — auto-cancelling');
+          pendingBluetoothCallback('');
+          pendingBluetoothCallback = null;
+          lastBluetoothDeviceIds.clear();
+          bluetoothDiscoveryDevices.clear();
+        }
+      }, 60_000);
+    } else {
+      // Stale callback from a previous session that never resolved (crash, throw, unmount).
+      // Replace it so this session's selection works correctly.
+      console.warn('[IPC] select-bluetooth-device: replacing stale pendingBluetoothCallback');
+      pendingBluetoothCallback = callback;
+      bluetoothDiscoveryDevices.clear();
     }
     // Merge new devices into the accumulated list for this discovery session
     for (const d of devices) {
@@ -458,8 +479,25 @@ function createWindow() {
     (event, portList, _webContents, callback) => {
       event.preventDefault();
 
+      // Warn if a previous callback is being replaced (renderer re-triggered before resolving)
+      if (pendingSerialCallback) {
+        console.warn('[IPC] select-serial-port: replacing stale pendingSerialCallback');
+      }
+
       // Store callback so we can resolve it when the user picks a port
       pendingSerialCallback = callback;
+
+      console.debug(`[IPC] select-serial-port: discovered ${portList.length} port(s)`);
+
+      // Auto-cancel after 60s to prevent indefinite block if renderer unmounts mid-flow
+      setTimeout(() => {
+        if (pendingSerialCallback === callback) {
+          console.warn('[IPC] Serial port selection callback stale after 60s — auto-cancelling');
+          pendingSerialCallback('');
+          pendingSerialCallback = null;
+          lastSerialPortIds.clear();
+        }
+      }, 60_000);
 
       lastSerialPortIds = new Set(portList.map((p) => p.portId));
       // Send port list to renderer for selection
