@@ -7,8 +7,9 @@ import type { ConnectionType } from './types';
 
 // HTTP base connection: timeouts and retries to avoid hanging on slow mDNS or flaky networks.
 const HTTP_CONNECT_TIMEOUT_MS = 15_000;
-// BLE reconnect: gatt.connect() can hang indefinitely on Linux when the BT stack is confused.
-const BLE_RECONNECT_TIMEOUT_MS = 15_000;
+// BLE reconnect: gatt.connect() can hang indefinitely on Linux when the BT stack is confused,
+// and on Windows WinRT can take 15-25s as the stack re-scans for the device on reconnect.
+const BLE_RECONNECT_TIMEOUT_MS = 20_000;
 const HTTP_PREFLIGHT_RETRIES = 3;
 const HTTP_PREFLIGHT_RETRY_DELAY_MS = 2_000;
 

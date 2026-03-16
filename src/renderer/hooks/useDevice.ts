@@ -1485,11 +1485,17 @@ export function useDevice() {
             await deviceRef.current?.heartbeat();
             touchLastData();
           } catch (err) {
-            // "GATT operation already in progress" means a concurrent read or write is
-            // happening — the connection is still alive, so skip this beat rather than
+            // "GATT operation already in progress" = BlueZ/CoreBluetooth concurrent op.
+            // "GATT Error: In Progress" = Windows WinRT equivalent.
+            // Both mean the connection is still alive — skip this beat rather than
             // triggering a false disconnect.
-            if (String(err).includes('GATT operation already in progress')) {
-              console.debug('[BLE heartbeat] GATT busy — skipping beat, connection intact');
+            if (
+              String(err).includes('GATT operation already in progress') ||
+              String(err).includes('GATT Error: In Progress')
+            ) {
+              console.debug(
+                `[BLE heartbeat] GATT busy — skipping beat, connection intact (${String(err)})`,
+              );
               return;
             }
             console.warn('[Meshtastic] BLE heartbeat write failed:', err);

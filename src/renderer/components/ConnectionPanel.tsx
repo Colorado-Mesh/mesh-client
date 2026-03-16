@@ -28,7 +28,11 @@ function lastConnectionKey(p: MeshProtocol) {
 
 function humanizeSerialError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
+  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   if (/access denied|permission|not allowed/i.test(msg)) {
+    if (isWindows) {
+      return `${msg} — Ensure the correct USB driver is installed (CH340, CP210x, or FTDI). Check Device Manager for a yellow warning on the COM port.`;
+    }
     return `${msg} — On Linux, add your user to the dialout group: sudo usermod -aG dialout $USER (then log out and back in)`;
   }
   if (/no port|not found|disconnected|device not found/i.test(msg)) {
@@ -43,9 +47,12 @@ function humanizeSerialError(err: unknown): string {
 function humanizeHttpError(address: string, err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
   const isMdns = address.toLowerCase().includes('meshtastic.local');
+  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   if (/timed out|timeout|aborted/i.test(msg)) {
     const hint = isMdns
-      ? "mDNS may not resolve — try the device's IP address instead."
+      ? isWindows
+        ? "On Windows, meshtastic.local requires Bonjour (installed with iTunes). Use the device's IP address instead."
+        : "mDNS may not resolve — try the device's IP address instead."
       : 'Ensure the device is powered on and reachable.';
     return `${msg} — ${hint}`;
   }
@@ -56,14 +63,21 @@ function humanizeHttpError(address: string, err: unknown): string {
     return `${msg} — Ensure the device is powered on and connected to the same network.`;
   }
   if (isMdns) {
-    return `${msg} — mDNS may not resolve on your network; try the device's IP address instead.`;
+    const suffix = isWindows
+      ? "On Windows, meshtastic.local requires Bonjour (installed with iTunes). Use the device's IP address instead."
+      : "mDNS may not resolve on your network; try the device's IP address instead.";
+    return `${msg} — ${suffix}`;
   }
   return msg;
 }
 
 function humanizeBleError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
+  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
+    if (isWindows) {
+      return `${msg} — Check Settings > Bluetooth & devices. If Bluetooth is on but unavailable, update your Bluetooth driver in Device Manager.`;
+    }
     return `${msg} — Make sure Bluetooth is enabled. On Linux, run: systemctl status bluetooth`;
   }
   if (msg.includes('SecurityError') || msg.includes('not allowed to access')) {
@@ -1251,6 +1265,12 @@ export default function ConnectionPanel({
                 className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
               />
               <p className="text-xs text-muted">Enter hostname or IP address (without http://)</p>
+              {navigator.userAgent.toLowerCase().includes('windows') && (
+                <p className="text-xs text-yellow-400">
+                  On Windows, meshtastic.local may not resolve — use the device&apos;s IP address
+                  instead.
+                </p>
+              )}
             </div>
           )}
           {connectionType === 'http' && protocol === 'meshcore' && (
