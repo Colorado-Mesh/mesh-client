@@ -595,7 +595,9 @@ export function deleteNodesBySource(source: string): number {
 export function deleteNodesWithoutLongname(): number {
   const db = getDatabase();
   const result = db
-    .prepare("DELETE FROM nodes WHERE long_name IS NULL OR TRIM(long_name) = ''")
+    .prepare(
+      "DELETE FROM nodes WHERE long_name IS NULL OR TRIM(long_name) = '' OR long_name = printf('!%08x', node_id)",
+    )
     .run();
   return result.changes;
 }

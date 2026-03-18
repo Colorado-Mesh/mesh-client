@@ -410,7 +410,7 @@ export default function AdminPanel({
                   name: 'Delete Unnamed Nodes',
                   title: 'Delete Unnamed Nodes',
                   message:
-                    'This will permanently delete all nodes that have no long name set. They will be re-discovered when they broadcast again.',
+                    'This will permanently delete all nodes that have no name set (or only an auto-generated placeholder name). They will be re-discovered when they broadcast again.',
                   confirmLabel: 'Delete Unnamed Nodes',
                   danger: true,
                   action: async () => {

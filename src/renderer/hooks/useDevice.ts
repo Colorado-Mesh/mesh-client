@@ -2337,11 +2337,12 @@ function parseNodeRole(val: unknown): number | undefined {
   return undefined;
 }
 
-function emptyNode(nodeId: number): MeshNode {
+export function emptyNode(nodeId: number): MeshNode {
+  const hex = nodeId.toString(16).padStart(8, '0');
   return {
     node_id: nodeId,
-    short_name: '',
-    long_name: '',
+    short_name: hex.slice(-4),
+    long_name: `!${hex}`,
     hw_model: '',
     snr: 0,
     battery: 0,

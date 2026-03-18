@@ -994,6 +994,34 @@ export default function ConnectionPanel({
               className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
             />
           </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="mqtt-channel-psks" className="text-xs text-muted">
+                Channel PSKs
+              </label>
+              <span
+                title="Base64-encoded AES-128 keys for custom channels, one per line. The default LongFast key is always tried automatically."
+                className="text-xs text-gray-500 cursor-help"
+              >
+                ⓘ
+              </span>
+            </div>
+            <textarea
+              id="mqtt-channel-psks"
+              rows={3}
+              value={(mqttSettings.channelPsks ?? []).join('\n')}
+              onChange={(e) => {
+                const lines = e.target.value
+                  .split('\n')
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                updateMqtt('channelPsks', lines.length > 0 ? lines : undefined);
+              }}
+              className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm font-mono resize-none"
+              placeholder={'1PG7OiApB1nwvP+rz05pAQ==\n(one key per line)'}
+              spellCheck={false}
+            />
+          </div>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
