@@ -16,6 +16,22 @@ const DEFAULT_PSK = Buffer.from([
   0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ]);
 
+/**
+ * Parse a base64-encoded PSK string into a 16-byte AES-128 key.
+ * Short keys (e.g. "AQ==" = 1 byte) are zero-padded to 16 bytes.
+ * Keys longer than 16 bytes are truncated.
+ * Empty strings are rejected (returns null).
+ */
+export function parsePsk(b64: string): Buffer | null {
+  if (!b64.trim()) return null;
+  const raw = Buffer.from(b64, 'base64');
+  if (raw.length === 0) return null;
+  if (raw.length === 16) return raw;
+  const out = Buffer.alloc(16, 0);
+  raw.copy(out, 0, 0, Math.min(raw.length, 16));
+  return out;
+}
+
 // Dedup window: 10 minutes
 const DEDUP_TTL_MS = 10 * 60 * 1000;
 
@@ -63,12 +79,17 @@ export class MQTTManager extends EventEmitter {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private currentSettings: MQTTSettings | null = null;
   private clientId = '';
+  /** Parsed additional PSKs from settings.channelPsks, tried after DEFAULT_PSK. */
+  private extraPsks: Buffer[] = [];
 
   connect(settings: MQTTSettings): void {
     // Disconnect any existing connection first
     this.disconnect();
 
     this.currentSettings = settings;
+    this.extraPsks = (settings.channelPsks ?? [])
+      .map(parsePsk)
+      .filter((k): k is Buffer => k !== null);
     this.retryCount = 0;
     this.setStatus('connecting');
     this._doConnect(settings);
@@ -442,19 +463,11 @@ export class MQTTManager extends EventEmitter {
         this.handleDecoded(nodeId, packetId, decoded);
       } else if (payloadCase === 'encrypted') {
         const encrypted = packet.payloadVariant!.value as Uint8Array;
-        const decrypted = this.tryDecrypt(encrypted, packetId, nodeId);
-        if (decrypted) {
-          try {
-            const decodedData = fromBinary(DataSchema, decrypted);
-            this.handleDecoded(
-              nodeId,
-              packetId,
-              decodedData as { portnum?: number; payload?: Uint8Array },
-            );
-          } catch {
-            this.emitMinimalNodeUpdate(nodeId);
-          }
+        const decodedData = this.tryDecryptAllKeys(encrypted, packetId, nodeId);
+        if (decodedData) {
+          this.handleDecoded(nodeId, packetId, decodedData);
         } else {
+          this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
           this.emitMinimalNodeUpdate(nodeId);
         }
       }
@@ -598,26 +611,65 @@ export class MQTTManager extends EventEmitter {
   }
 
   private emitMinimalNodeUpdate(nodeId: number): void {
+    const cached = this.nodeCache.get(nodeId);
     this.emit('nodeUpdate', {
       node_id: nodeId,
       last_heard: Date.now(),
       from_mqtt: true,
+      ...(cached?.long_name && { long_name: cached.long_name }),
+      ...(cached?.short_name && { short_name: cached.short_name }),
+      ...(cached?.hw_model && { hw_model: cached.hw_model }),
     });
   }
 
-  private tryDecrypt(encrypted: Uint8Array, packetId: number, from: number): Buffer | null {
+  /**
+   * Attempt AES-128-CTR decryption with a specific key.
+   * Returns raw bytes on success, null if the crypto operation itself fails (e.g. bad key length).
+   * Note: AES-CTR always "succeeds" cryptographically — a wrong key just produces garbage bytes.
+   * Use tryDecryptAllKeys to validate by attempting protobuf decode across all known keys.
+   */
+  private tryDecryptWithKey(
+    encrypted: Uint8Array,
+    packetId: number,
+    from: number,
+    key: Buffer,
+  ): Buffer | null {
     try {
-      // AES-128-CTR with default PSK
-      // Nonce: packetId (4 bytes LE) + from (4 bytes LE) + 8 zero bytes
+      // AES-128-CTR nonce: packetId (4 bytes LE) + from (4 bytes LE) + 8 zero bytes
       const nonce = Buffer.alloc(16, 0);
-      const fromId = Number(from) >>> 0;
       nonce.writeUInt32LE(packetId >>> 0, 0);
-      nonce.writeUInt32LE(fromId >>> 0, 4);
-
-      const decipher = createDecipheriv('aes-128-ctr', DEFAULT_PSK, nonce);
+      nonce.writeUInt32LE(Number(from) >>> 0, 4);
+      const decipher = createDecipheriv('aes-128-ctr', key, nonce);
       return Buffer.concat([decipher.update(Buffer.from(encrypted)), decipher.final()]);
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Try decrypting with DEFAULT_PSK first, then any configured extraPsks.
+   * Validates each decryption attempt by parsing the result as a DataSchema protobuf.
+   * Returns the decoded Data message if any key succeeds, null if all fail.
+   */
+  private tryDecryptAllKeys(
+    encrypted: Uint8Array,
+    packetId: number,
+    from: number,
+  ): { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number } | null {
+    for (const key of [DEFAULT_PSK, ...this.extraPsks]) {
+      const raw = this.tryDecryptWithKey(encrypted, packetId, from, key);
+      if (!raw) continue;
+      try {
+        return fromBinary(DataSchema, raw) as {
+          portnum?: number;
+          payload?: Uint8Array;
+          emoji?: number;
+          replyId?: number;
+        };
+      } catch {
+        // Wrong PSK produces garbage bytes that fail protobuf decode — try next key
+      }
+    }
+    return null;
   }
 }

@@ -153,6 +153,11 @@ export interface MQTTSettings {
   maxRetries?: number;
   /** When using TLS (port 8883), set true to skip certificate verification (self-signed brokers). Default false = verify. */
   tlsInsecure?: boolean;
+  /**
+   * Additional base64-encoded AES-128 PSKs to try when decrypting packets from custom channels.
+   * The default PSK (AQ==, padded to 16 bytes) is always tried first.
+   */
+  channelPsks?: string[];
 }
 
 export type MQTTStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
