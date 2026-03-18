@@ -1,6 +1,6 @@
 {
   "name": "mesh-client",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "Cross-platform Meshtastic desktop client - BLE, Serial, HTTP, and MQTT support",
   "main": "dist-electron/main/index.js",
   "scripts": {
