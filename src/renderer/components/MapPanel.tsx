@@ -107,6 +107,7 @@ function createMarkerIcon(
   cu = 0,
   markerOpacity = 1,
   isMqttOnly = false,
+  isRepeater = false,
 ): L.Icon {
   const haloPx = cu <= 0 ? 0 : Math.round((cu / 100) * 14);
   const haloColor = getCUColor(cu);
@@ -118,11 +119,15 @@ function createMarkerIcon(
     isMqttOnly
       ? `<circle cx="${c + 7}" cy="${c - 7}" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>`
       : '';
+  const repeaterBadge = (c: number) =>
+    isRepeater
+      ? `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#111827" stroke="#fff" stroke-width="1.2"/><text x="${c - 7}" y="${c - 4.5}" text-anchor="middle" fill="#f9fafb" font-family="system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="7.5" font-weight="700">R</text></g>`
+      : '';
 
   if (isSelf) {
     const total = 32 + 2 * haloPx;
     const c = total / 2;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<g transform="translate(${haloPx},${haloPx}) scale(${32 / 24})"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${color}" stroke="#000" stroke-width="0.5"/></g>${mqttBadge(c)}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<g transform="translate(${haloPx},${haloPx}) scale(${32 / 24})"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${color}" stroke="#000" stroke-width="0.5"/></g>${mqttBadge(c)}${repeaterBadge(c)}</svg>`;
     return L.icon({
       iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
       iconSize: [total, total],
@@ -133,7 +138,7 @@ function createMarkerIcon(
 
   const total = 25 + 2 * haloPx;
   const c = total / 2;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<circle cx="${c}" cy="${c}" r="10.4" fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/><circle cx="${c}" cy="${c}" r="4.2" fill="#fff" opacity="0.8"/>${mqttBadge(c)}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<circle cx="${c}" cy="${c}" r="10.4" fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/><circle cx="${c}" cy="${c}" r="4.2" fill="#fff" opacity="0.8"/>${mqttBadge(c)}${repeaterBadge(c)}</svg>`;
   return L.icon({
     iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
     iconSize: [total, total],
@@ -147,10 +152,11 @@ function getMarkerIcon(
   isSelf: boolean,
   cu: number,
   isMqttOnly = false,
+  isRepeater = false,
 ): L.Icon {
   const color = status === 'online' ? '#9ae6b4' : status === 'stale' ? '#c4a864' : '#6b7280';
   const opacity = status === 'online' ? 1 : status === 'stale' ? 0.65 : 0.45;
-  return createMarkerIcon(color, isSelf, cu, opacity, isMqttOnly);
+  return createMarkerIcon(color, isSelf, cu, opacity, isMqttOnly, isRepeater);
 }
 
 const PATH_COLORS = {
@@ -208,10 +214,11 @@ const MapMarker = memo(
   }: MapMarkerProps) {
     const status = getNodeStatus(node.last_heard);
     const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
+    const isRepeater = node.hw_model === 'Repeater';
 
     const icon = useMemo(
-      () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only),
-      [status, isSelf, cuForIcon, node.heard_via_mqtt_only],
+      () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only, isRepeater),
+      [status, isSelf, cuForIcon, node.heard_via_mqtt_only, isRepeater],
     );
 
     const shouldShowHalo = useMemo(
@@ -338,12 +345,15 @@ function MapFitter({
     if (!shouldFitOnMount) return;
     if (!hasPerformedInitialFitRef.current) {
       hasPerformedInitialFitRef.current = true;
-      const center: [number, number] = ourPosition
-        ? [ourPosition.lat, ourPosition.lon]
-        : DEFAULT_CENTER;
+      const center: [number, number] =
+        positions.length > 0
+          ? positions[0]
+          : ourPosition
+            ? [ourPosition.lat, ourPosition.lon]
+            : DEFAULT_CENTER;
       map.setView(center, DEFAULT_ZOOM);
     }
-  }, [positions.length, ourPosition, map, shouldFitOnMount]);
+  }, [positions, ourPosition, map, shouldFitOnMount]);
   return null;
 }
 
@@ -534,21 +544,28 @@ export default function MapPanel({
         : locationFilter.maxDistance;
 
     return Array.from(nodes.values()).filter((n) => {
+      let rejectReason: string | null = null;
       if (
         n.latitude == null ||
         n.longitude == null ||
         !(Math.abs(n.latitude) > 0.0001 || Math.abs(n.longitude) > 0.0001)
-      )
-        return false;
-      if (locationFilter.hideMqttOnly && n.heard_via_mqtt_only) return false;
-      if (locationFilter.enabled && homeHasLocation) {
+      ) {
+        rejectReason = 'invalid_or_zero_coords';
+      }
+      if (!rejectReason && locationFilter.hideMqttOnly && n.heard_via_mqtt_only) {
+        rejectReason = 'mqtt_only_filtered';
+      }
+      if (!rejectReason && locationFilter.enabled && homeHasLocation) {
         const d = haversineDistanceKm(
           homeNode!.latitude!,
           homeNode!.longitude!,
           n.latitude!,
           n.longitude!,
         );
-        if (d > maxKm) return false;
+        if (d > maxKm) rejectReason = 'distance_filtered';
+      }
+      if (rejectReason) {
+        return false;
       }
       return true;
     });
@@ -576,7 +593,8 @@ export default function MapPanel({
       const existing = byPos.get(k);
       const hasAnomaly = routingNodeIds.has(n.node_id);
       const existingHasAnomaly = existing ? routingNodeIds.has(existing.node_id) : false;
-      if (!existing || (hasAnomaly && !existingHasAnomaly)) byPos.set(k, n);
+      const shouldReplace = !existing || (hasAnomaly && !existingHasAnomaly);
+      if (shouldReplace) byPos.set(k, n);
     }
     return Array.from(byPos.values());
   }, [nodesWithPosition, routingNodeIds, nodes]);
@@ -614,10 +632,49 @@ export default function MapPanel({
     }));
   }, [nodesWithStatus]);
 
-  const positions = useMemo<[number, number][]>(
-    () => nodesToRender.map((n) => [n.latitude!, n.longitude!]),
-    [nodesToRender],
+  const selfInNodesToRender = useMemo(
+    () => nodesToRender.some((n) => n.node_id === myNodeNum),
+    [nodesToRender, myNodeNum],
   );
+
+  const selfFallbackNode = useMemo<MeshNode | null>(() => {
+    if (selfInNodesToRender || !ourPosition) return null;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const longName = homeNode?.long_name || `Node-${myNodeNum.toString(16).toUpperCase()}`;
+    return {
+      node_id: myNodeNum,
+      long_name: longName,
+      short_name: homeNode?.short_name || longName.slice(0, 4),
+      hw_model: homeNode?.hw_model ?? 'Unknown',
+      battery: homeNode?.battery ?? 0,
+      snr: homeNode?.snr ?? 0,
+      rssi: homeNode?.rssi ?? 0,
+      last_heard: homeNode?.last_heard ?? nowSec,
+      latitude: ourPosition.lat,
+      longitude: ourPosition.lon,
+      favorited: homeNode?.favorited ?? false,
+      heard_via_mqtt_only: homeNode?.heard_via_mqtt_only,
+      channel_utilization: homeNode?.channel_utilization,
+    };
+  }, [selfInNodesToRender, ourPosition, homeNode, myNodeNum]);
+
+  const nodesWithStatusAndHaloOffsetForRender = useMemo(() => {
+    if (!selfFallbackNode) return nodesWithStatusAndHaloOffset;
+    return [
+      ...nodesWithStatusAndHaloOffset,
+      {
+        node: selfFallbackNode,
+        anomaly: null,
+        haloCenterOffset: undefined,
+      },
+    ];
+  }, [nodesWithStatusAndHaloOffset, selfFallbackNode]);
+
+  const positions = useMemo<[number, number][]>(() => {
+    const base = nodesToRender.map((n) => [n.latitude!, n.longitude!] as [number, number]);
+    if (selfFallbackNode) base.push([selfFallbackNode.latitude!, selfFallbackNode.longitude!]);
+    return base;
+  }, [nodesToRender, selfFallbackNode]);
 
   const movingNodePaths = useMemo(() => {
     if (!showPaths) return [];
@@ -658,7 +715,6 @@ export default function MapPanel({
     }
     return counts;
   }, [nodesToRender]);
-
   return (
     <div
       className="h-full min-h-[500px] rounded-lg overflow-hidden border border-gray-700 relative"
@@ -702,7 +758,7 @@ export default function MapPanel({
             pathOptions={{ color, weight: 3, opacity: 0.65 }}
           />
         ))}
-        {nodesWithStatusAndHaloOffset.map(({ node, anomaly, haloCenterOffset }) => (
+        {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
           <MapMarker
             key={node.node_id}
             node={node}

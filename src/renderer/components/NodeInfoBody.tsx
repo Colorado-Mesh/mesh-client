@@ -17,6 +17,7 @@ import {
   type RFDiagnosis,
 } from '../lib/diagnostics/RFDiagnosticEngine';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
+import { normalizeLastHeardMs } from '../lib/nodeStatus';
 import { RoleDisplay } from '../lib/roleInfo';
 import type { HopHistoryPoint, MeshNode, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
@@ -34,11 +35,12 @@ const EMPTY_HOP_HISTORY: HopHistoryPoint[] = [];
 
 export function formatTime(ts: number): string {
   if (!ts) return 'Never';
-  const diff = Date.now() - ts;
+  const normalizedTs = normalizeLastHeardMs(ts);
+  const diff = Date.now() - normalizedTs;
   if (diff < 60_000) return 'Just now';
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return new Date(ts).toLocaleString();
+  return new Date(normalizedTs).toLocaleString();
 }
 
 export function InfoRow({

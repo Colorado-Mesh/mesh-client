@@ -7,7 +7,12 @@ interface SerialPort {
   readonly writable: WritableStream<Uint8Array>;
   open(options: { baudRate: number }): Promise<void>;
   close(): Promise<void>;
-  getInfo(): { serialNumber?: string; usbVendorId?: number; usbProductId?: number };
+  getInfo(): {
+    serialNumber?: string;
+    usbVendorId?: number;
+    usbProductId?: number;
+    bluetoothServiceClassId?: string;
+  };
 }
 
 interface Serial {

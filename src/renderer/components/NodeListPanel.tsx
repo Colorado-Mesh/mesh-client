@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { LocationFilter } from '../App';
 import { getRoutingRowForNode } from '../lib/diagnostics/diagnosticRows';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
-import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
+import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib/nodeStatus';
 import { RoleDisplay } from '../lib/roleInfo';
 import type { MeshNode } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -218,11 +218,12 @@ export default function NodeListPanel({
 
   function formatTime(ts: number): string {
     if (!ts) return 'Never';
-    const diff = Date.now() - ts;
+    const normalizedTs = normalizeLastHeardMs(ts);
+    const diff = Date.now() - normalizedTs;
     if (diff < 60_000) return 'Just now';
     if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
     if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-    return new Date(ts).toLocaleDateString();
+    return new Date(normalizedTs).toLocaleDateString();
   }
 
   function formatCoord(val: number | null | undefined): string {

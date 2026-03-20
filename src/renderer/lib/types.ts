@@ -308,6 +308,8 @@ declare global {
           timestamp: number;
           status?: string;
           packet_id?: number | null;
+          emoji?: number | null;
+          reply_id?: number | null;
           to_node?: number | null;
         }) => Promise<unknown>;
         saveMeshcoreContact: (contact: {

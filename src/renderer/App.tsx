@@ -194,6 +194,8 @@ export default function App() {
   const handleProtocolChange = useCallback(
     (p: MeshProtocol) => {
       if (p === protocol) return;
+      // Keep diagnostics scoped to the active protocol.
+      useDiagnosticsStore.getState().clearDiagnostics();
       localStorage.setItem(PROTOCOL_KEY, p);
       setProtocol(p);
       void device.disconnect();
@@ -744,6 +746,7 @@ export default function App() {
                     meshcoreNeighbors={meshcoreDevice.meshcoreNeighbors}
                     onRequestTelemetry={meshcoreDevice.requestTelemetry}
                     meshcoreTelemetry={meshcoreDevice.meshcoreNodeTelemetry}
+                    onSelectRepeater={(node) => setSelectedNodeId(node.node_id)}
                   />
                 )}
                 {activeTab === 5 && protocol !== 'meshcore' && (

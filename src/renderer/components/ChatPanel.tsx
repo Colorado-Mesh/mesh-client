@@ -322,11 +322,12 @@ export default function ChatPanel({
     return { regularMessages: regular, reactionsByReplyId: reactions };
   }, [messages]);
 
-  // Lookup map for rendering quoted replies
-  const messageByPacketId = useMemo(() => {
+  // Lookup map for rendering quoted replies (packetId in Meshtastic, timestamp fallback in MeshCore)
+  const messageByReplyKey = useMemo(() => {
     const map = new Map<number, ChatMessage>();
     for (const msg of regularMessages) {
-      if (msg.packetId) map.set(msg.packetId, msg);
+      if (msg.packetId != null) map.set(msg.packetId, msg);
+      map.set(msg.timestamp, msg);
     }
     return map;
   }, [regularMessages]);
@@ -571,10 +572,10 @@ export default function ChatPanel({
     });
   }
 
-  /** Group reactions by emoji code for a given packetId */
-  function getGroupedReactions(packetId: number | undefined) {
-    if (!packetId) return [];
-    const reactions = reactionsByReplyId.get(packetId);
+  /** Group reactions by emoji code for a message key (packetId or timestamp fallback) */
+  function getGroupedReactions(messageKey: number | undefined) {
+    if (!messageKey) return [];
+    const reactions = reactionsByReplyId.get(messageKey);
     if (!reactions) return [];
 
     const grouped = new Map<number, string[]>();
@@ -805,7 +806,7 @@ export default function ChatPanel({
           filteredMessages.map((msg, i) => {
             const isOwn = msg.sender_id === myNodeNum;
             const isDm = !!msg.to;
-            const reactions = getGroupedReactions(msg.packetId);
+            const reactions = getGroupedReactions(msg.packetId ?? msg.timestamp);
             const showPicker = pickerOpenFor === (msg.packetId ?? -(i + 1));
             const pickerOpensAbove = i >= filteredMessages.length - 3;
 
@@ -877,9 +878,9 @@ export default function ChatPanel({
                       {/* Quoted reply preview */}
                       {msg.replyId &&
                         !msg.emoji &&
-                        messageByPacketId.has(msg.replyId) &&
+                        messageByReplyKey.has(msg.replyId) &&
                         (() => {
-                          const orig = messageByPacketId.get(msg.replyId)!;
+                          const orig = messageByReplyKey.get(msg.replyId)!;
                           return (
                             <div className="flex gap-1.5 mb-1.5 opacity-80">
                               <div className="w-0.5 rounded-full bg-gray-500 shrink-0" />
@@ -963,7 +964,7 @@ export default function ChatPanel({
                     </div>
 
                     {/* Inline reaction trigger — visible on hover or focus-within */}
-                    {isConnected && msg.packetId && (
+                    {isConnected && (
                       <div className="opacity-0 group-hover/msg:opacity-100 group-focus-within/msg:opacity-100 flex gap-0.5 transition-all shrink-0">
                         {/* Reply */}
                         <button
@@ -1049,7 +1050,9 @@ export default function ChatPanel({
                         {REACTION_EMOJIS.slice(0, 6).map((re) => (
                           <button
                             key={re.code}
-                            onClick={() => handleReact(re.code, msg.packetId!, msg.channel)}
+                            onClick={() =>
+                              handleReact(re.code, msg.packetId ?? msg.timestamp, msg.channel)
+                            }
                             className="hover:scale-125 transition-transform text-lg px-0.5"
                             title={re.name}
                           >
@@ -1061,7 +1064,9 @@ export default function ChatPanel({
                         {REACTION_EMOJIS.slice(6).map((re) => (
                           <button
                             key={re.code}
-                            onClick={() => handleReact(re.code, msg.packetId!, msg.channel)}
+                            onClick={() =>
+                              handleReact(re.code, msg.packetId ?? msg.timestamp, msg.channel)
+                            }
                             className="hover:scale-125 transition-transform text-lg px-0.5"
                             title={re.name}
                           >

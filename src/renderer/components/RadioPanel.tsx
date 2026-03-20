@@ -1313,7 +1313,9 @@ export default function RadioPanel({
                 } catch (err) {
                   console.warn('[RadioPanel] send position to device failed', err);
                   addToast(
-                    `Failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+                    capabilities?.protocol === 'meshcore'
+                      ? `Device GPS set failed (${err instanceof Error ? err.message : 'unknown'}). Using App Location (static/browser/IP) for map position.`
+                      : `Failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
                     'error',
                   );
                 }

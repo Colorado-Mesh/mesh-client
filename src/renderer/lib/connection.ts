@@ -3,6 +3,7 @@ import { TransportHTTP } from '@meshtastic/transport-http';
 import { TransportWebBluetooth } from '@meshtastic/transport-web-bluetooth';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
+import { persistSerialPortIdentity, selectGrantedSerialPort } from './serialPortSignature';
 import type { ConnectionType } from './types';
 
 // HTTP base connection: timeouts and retries to avoid hanging on slow mDNS or flaky networks.
@@ -96,18 +97,36 @@ export async function createConnection(
 
     case 'serial': {
       console.debug('[connection] createConnection: serial');
+      if (!navigator.serial?.requestPort) {
+        throw new Error('Web Serial API not available');
+      }
       const SERIAL_CONNECT_TIMEOUT_MS = 15_000;
-      const serialPromise = TransportWebSerial.create(115200);
-      const serialTimeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(
-          () =>
-            reject(
-              new Error(`Serial connection timed out after ${SERIAL_CONNECT_TIMEOUT_MS / 1000}s`),
-            ),
-          SERIAL_CONNECT_TIMEOUT_MS,
-        ),
-      );
-      transport = await Promise.race([serialPromise, serialTimeoutPromise]);
+      const serialApi = navigator.serial;
+      const origRequestPort = serialApi.requestPort.bind(serialApi);
+      let capturedSerialPort: SerialPort | null = null;
+      serialApi.requestPort = async (options?: { filters?: unknown[] }) => {
+        const p = await origRequestPort(options);
+        capturedSerialPort = p;
+        return p;
+      };
+      try {
+        const serialPromise = TransportWebSerial.create(115200);
+        const serialTimeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(`Serial connection timed out after ${SERIAL_CONNECT_TIMEOUT_MS / 1000}s`),
+              ),
+            SERIAL_CONNECT_TIMEOUT_MS,
+          ),
+        );
+        transport = await Promise.race([serialPromise, serialTimeoutPromise]);
+      } finally {
+        serialApi.requestPort = origRequestPort;
+      }
+      if (capturedSerialPort) {
+        persistSerialPortIdentity(capturedSerialPort);
+      }
       break;
     }
 
@@ -241,8 +260,9 @@ export async function reconnectBle(): Promise<MeshDevice> {
  * requiring a new user gesture. Uses navigator.serial.getPorts() to
  * enumerate ports that were previously granted permission.
  *
- * @param lastPortId - The portId stored from the last manual selection.
- *   Used to match the correct port when multiple ports are available.
+ * @param lastPortId - The portId stored from the last manual selection when
+ *   Chromium exposes it; otherwise matching uses saved USB/Bluetooth signature
+ *   from `serialPortSignature.ts` (same store as MeshCore).
  */
 export async function reconnectSerial(lastPortId?: string | null): Promise<MeshDevice> {
   if (!navigator.serial?.getPorts) {
@@ -252,21 +272,11 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
   console.debug(
     `[connection] reconnectSerial: getPorts returned ${ports.length} port(s), lastPortId=${lastPortId ?? 'none'}`,
   );
-  if (ports.length === 0) {
-    throw new Error('No previously granted serial ports found');
-  }
-  // Try to match the previously-selected port by ID; fall back to first
-  let port: SerialPort | undefined;
-  if (lastPortId) {
-    port = (ports as any[]).find((p: any) => p.portId === lastPortId);
-  }
-  if (lastPortId && !port) {
-    console.warn(
-      `[connection] reconnectSerial: portId ${lastPortId} not found — falling back to first port`,
-    );
-  }
-  port = port ?? ports[0];
-  console.debug(`[connection] reconnectSerial: using port ${(port as any)?.portId ?? 'unknown'}`);
+  const port = selectGrantedSerialPort(ports, lastPortId);
+  persistSerialPortIdentity(port);
+  console.debug(
+    `[connection] reconnectSerial: using port portId=${(port as SerialPort & { portId?: string }).portId ?? 'none'} usbVendor=${port.getInfo?.().usbVendorId ?? 'n/a'} usbProduct=${port.getInfo?.().usbProductId ?? 'n/a'}`,
+  );
 
   const transport = await TransportWebSerial.createFromPort(port, 115200);
   const device = new MeshDevice(transport as any);

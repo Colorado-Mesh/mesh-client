@@ -1,5 +1,7 @@
 import type { MeshNode } from './types';
 
+const MESHCORE_COORD_SCALE = 1e6;
+
 /**
  * XOR-fold pubkey bytes into a stable unsigned 32-bit node ID.
  * Expects a 32-byte MeshCore public key; returns 0 for any other length.
@@ -33,8 +35,8 @@ interface MeshCoreContact {
 
 export function meshcoreContactToMeshNode(contact: MeshCoreContact): MeshNode {
   const nodeId = pubkeyToNodeId(contact.publicKey);
-  const lat = contact.advLat !== 0 ? contact.advLat / 1e7 : null;
-  const lon = contact.advLon !== 0 ? contact.advLon / 1e7 : null;
+  const lat = contact.advLat !== 0 ? contact.advLat / MESHCORE_COORD_SCALE : null;
+  const lon = contact.advLon !== 0 ? contact.advLon / MESHCORE_COORD_SCALE : null;
   return {
     node_id: nodeId,
     long_name: contact.advName || `Node-${nodeId.toString(16).toUpperCase()}`,

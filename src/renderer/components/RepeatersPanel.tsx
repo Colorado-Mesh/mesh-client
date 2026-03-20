@@ -31,6 +31,7 @@ interface Props {
   meshcoreNeighbors?: Map<number, MeshCoreNeighborResult>;
   onRequestTelemetry?: (nodeId: number) => Promise<void>;
   meshcoreTelemetry?: Map<number, MeshCoreNodeTelemetry>;
+  onSelectRepeater?: (node: MeshNode) => void;
 }
 
 const STALE_THRESHOLD_MS = 15 * 60 * 1000;
@@ -105,6 +106,7 @@ export default function RepeatersPanel({
   meshcoreNeighbors,
   onRequestTelemetry,
   meshcoreTelemetry,
+  onSelectRepeater,
 }: Props) {
   const { addToast } = useToast();
   const signalHistory = useRepeaterSignalStore((s) => s.history);
@@ -452,7 +454,16 @@ export default function RepeatersPanel({
                           </span>
                         </span>
                       </td>
-                      <td className="py-2 pr-4 font-medium text-white">{node.long_name}</td>
+                      <td className="py-2 pr-4 font-medium text-white">
+                        <button
+                          type="button"
+                          onClick={() => onSelectRepeater?.(node)}
+                          className="text-left text-white hover:text-brand-green transition-colors underline decoration-transparent hover:decoration-brand-green/70 disabled:no-underline"
+                          aria-label={`Open details for ${node.long_name}`}
+                        >
+                          {node.long_name}
+                        </button>
+                      </td>
                       <td className="py-2 pr-4 text-gray-400 text-xs">
                         {formatRelativeTime(node.last_heard)}
                       </td>

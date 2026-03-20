@@ -4,9 +4,16 @@ const OFFLINE_MS = 72 * 3_600_000; // 72 hours
 
 export type NodeStatus = 'online' | 'stale' | 'offline';
 
+export function normalizeLastHeardMs(lastHeard: number): number {
+  if (!lastHeard || !Number.isFinite(lastHeard)) return 0;
+  // MeshCore uses epoch seconds; Meshtastic paths usually use epoch milliseconds.
+  return lastHeard < 1_000_000_000_000 ? lastHeard * 1000 : lastHeard;
+}
+
 export function getNodeStatus(lastHeard: number): NodeStatus {
   if (!lastHeard || !Number.isFinite(lastHeard)) return 'offline';
-  const diff = Date.now() - lastHeard;
+  const normalizedLastHeard = normalizeLastHeardMs(lastHeard);
+  const diff = Date.now() - normalizedLastHeard;
   if (diff < STALE_MS) return 'online';
   if (diff < OFFLINE_MS) return 'stale';
   return 'offline';

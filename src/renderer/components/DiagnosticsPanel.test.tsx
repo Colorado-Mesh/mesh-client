@@ -148,4 +148,37 @@ describe('DiagnosticsPanel node click', () => {
     fireEvent.click(screen.getByRole('button', { name: /ignore mqtt/i }));
     expect(onNodeClick).not.toHaveBeenCalled();
   });
+
+  it('falls back to hex id and is not clickable when node is missing', () => {
+    const nodeId = 0x9abc;
+    const row: RoutingDiagnosticRow = {
+      kind: 'routing',
+      id: `routing:${nodeId}`,
+      nodeId,
+      type: 'hop_goblin',
+      severity: 'warning',
+      description: 'Orphaned row',
+      detectedAt: Date.now(),
+    };
+    diagnosticsStoreState.diagnosticRows = [row];
+    diagnosticsStoreState.packetStats = new Map();
+
+    const onNodeClick = vi.fn();
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        onNodeClick={onNodeClick}
+      />,
+    );
+
+    const fallbackLabel = `!${nodeId.toString(16)}`;
+    fireEvent.click(screen.getAllByText(fallbackLabel)[0]);
+    expect(onNodeClick).not.toHaveBeenCalled();
+  });
 });

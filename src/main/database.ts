@@ -167,6 +167,8 @@ function createBaseTables(): void {
         timestamp   INTEGER NOT NULL,
         status      TEXT DEFAULT 'acked',
         packet_id   INTEGER,
+        emoji       INTEGER,
+        reply_id    INTEGER,
         to_node     INTEGER
       );
 
@@ -366,7 +368,7 @@ function runMigrations(): void {
         'CREATE TABLE IF NOT EXISTS meshcore_messages (' +
           'id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id INTEGER, sender_name TEXT, ' +
           'payload TEXT NOT NULL, channel_idx INTEGER DEFAULT 0, timestamp INTEGER NOT NULL, ' +
-          "status TEXT DEFAULT 'acked', packet_id INTEGER, to_node INTEGER)",
+          "status TEXT DEFAULT 'acked', packet_id INTEGER, emoji INTEGER, reply_id INTEGER, to_node INTEGER)",
       );
       db!.exec('CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp)');
       db!.exec(
@@ -460,6 +462,27 @@ function runMigrations(): void {
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       throw new Error(`Migration v14 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 15) {
+    try {
+      const columns = db!.prepare('PRAGMA table_info(meshcore_messages)').all() as {
+        name: string;
+      }[];
+      if (!columns.some((c) => c.name === 'emoji')) {
+        db!.prepare('ALTER TABLE meshcore_messages ADD COLUMN emoji INTEGER').run();
+      }
+      if (!columns.some((c) => c.name === 'reply_id')) {
+        db!.prepare('ALTER TABLE meshcore_messages ADD COLUMN reply_id INTEGER').run();
+      }
+      db!.pragma('user_version = 15');
+    } catch (e) {
+      console.error(
+        '[db] migration v15 failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw new Error(`Migration v15 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

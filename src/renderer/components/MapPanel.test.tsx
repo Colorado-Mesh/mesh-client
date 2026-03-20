@@ -4,6 +4,10 @@ import { axe } from 'vitest-axe';
 
 import MapPanel from './MapPanel';
 
+const { leafletIconMock } = vi.hoisted(() => ({
+  leafletIconMock: vi.fn().mockReturnValue({}),
+}));
+
 vi.mock('../stores/diagnosticsStore', () => ({
   useDiagnosticsStore: (selector: (s: unknown) => unknown) => {
     const store = {
@@ -49,11 +53,11 @@ vi.mock('react-leaflet', () => ({
 vi.mock('leaflet', () => ({
   default: {
     divIcon: vi.fn().mockReturnValue({}),
-    icon: vi.fn().mockReturnValue({}),
+    icon: leafletIconMock,
     latLngBounds: vi.fn().mockReturnValue({ isValid: () => false }),
   },
   divIcon: vi.fn().mockReturnValue({}),
-  icon: vi.fn().mockReturnValue({}),
+  icon: leafletIconMock,
   latLngBounds: vi.fn().mockReturnValue({ isValid: () => false }),
 }));
 
@@ -65,6 +69,59 @@ const defaultFilter = {
 };
 
 describe('MapPanel accessibility', () => {
+  it('adds R badge to repeater map markers', () => {
+    leafletIconMock.mockClear();
+    const nowSec = Math.floor(Date.now() / 1000);
+    const nodes = new Map([
+      [
+        1,
+        {
+          node_id: 1,
+          long_name: 'Repeater Alpha',
+          short_name: 'RPTA',
+          hw_model: 'Repeater',
+          snr: 0,
+          battery: 0,
+          last_heard: nowSec,
+          latitude: 40.185,
+          longitude: -105.073,
+        },
+      ],
+      [
+        2,
+        {
+          node_id: 2,
+          long_name: 'User Node',
+          short_name: 'USER',
+          hw_model: 'T-Echo',
+          snr: 0,
+          battery: 0,
+          last_heard: nowSec,
+          latitude: 40.186,
+          longitude: -105.074,
+        },
+      ],
+    ]);
+
+    render(
+      <MapPanel
+        nodes={nodes}
+        myNodeNum={2}
+        locationFilter={defaultFilter}
+        ourPosition={null}
+        onLocateMe={vi.fn().mockResolvedValue(null)}
+      />,
+    );
+
+    const iconCalls = leafletIconMock.mock.calls.map((call) => call[0] as { iconUrl?: string });
+    const markerIcons = iconCalls.filter((call) => typeof call.iconUrl === 'string');
+    expect(markerIcons.length).toBeGreaterThan(0);
+
+    const decodedSvgs = markerIcons.map((call) => decodeURIComponent(call.iconUrl!));
+    expect(decodedSvgs.some((svg) => svg.includes('>R</text>'))).toBe(true);
+    expect(decodedSvgs.some((svg) => !svg.includes('>R</text>'))).toBe(true);
+  });
+
   it('has no axe violations with empty nodes', async () => {
     const { container } = render(
       <MapPanel

@@ -213,6 +213,18 @@ function loadDiagnosticRowsSnapshot(): { rows: DiagnosticRow[]; savedAt: number 
 }
 
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
+function clearPersistedDiagnosticRowsSnapshot(): void {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  try {
+    localStorage.removeItem(DIAGNOSTIC_ROWS_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 function schedulePersistDiagnosticRows(getRows: () => DiagnosticRow[]): void {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
@@ -780,11 +792,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   },
 
   clearDiagnosticRowsSnapshot() {
-    try {
-      localStorage.removeItem(DIAGNOSTIC_ROWS_STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
+    clearPersistedDiagnosticRowsSnapshot();
     set({ diagnosticRowsRestoredAt: null });
   },
 
@@ -794,11 +802,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     analysisTimer = null;
     pendingAnalyses.clear();
     resetCuSpikeCooldown();
-    try {
-      localStorage.removeItem(DIAGNOSTIC_ROWS_STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
+    clearPersistedDiagnosticRowsSnapshot();
     rfRowCooldowns.clear();
     set({
       diagnosticRows: [],

@@ -7,11 +7,20 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { classifyPayload, extractMeshtasticSenderId } from '../lib/foreignLoraDetection';
+import type { OurPosition } from '../lib/gpsSource';
+import { resolveOurPosition } from '../lib/gpsSource';
 import {
   CONTACT_TYPE_LABELS,
   meshcoreContactToMeshNode,
   pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
+import {
+  getPortSignature,
+  loadLastSerialPortSignature,
+  persistSerialPortIdentity,
+  selectGrantedSerialPort,
+  signaturesEqual,
+} from '../lib/serialPortSignature';
 import type { ChatMessage, DeviceState, MeshNode, TelemetryPoint } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
@@ -29,8 +38,8 @@ function contactToDbRow(
     adv_name: contact.advName ?? null,
     contact_type: contact.type,
     last_advert: contact.lastAdvert ?? null,
-    adv_lat: contact.advLat !== 0 ? contact.advLat / 1e7 : null,
-    adv_lon: contact.advLon !== 0 ? contact.advLon / 1e7 : null,
+    adv_lat: contact.advLat !== 0 ? contact.advLat / MESHCORE_COORD_SCALE : null,
+    adv_lon: contact.advLon !== 0 ? contact.advLon / MESHCORE_COORD_SCALE : null,
     nickname: nickname ?? null,
   };
 }
@@ -46,6 +55,8 @@ function messageToDbRow(
     timestamp: msg.timestamp,
     status: msg.status ?? 'acked',
     packet_id: msg.packetId ?? null,
+    emoji: msg.emoji ?? null,
+    reply_id: msg.replyId ?? null,
     to_node: msg.to ?? null,
   };
 }
@@ -266,8 +277,8 @@ interface DeviceLogEntry {
   message: string;
 }
 
-const LAST_SERIAL_PORT_KEY = 'mesh-client:lastSerialPort';
 const MANUAL_CONTACTS_KEY = 'mesh-client:meshcoreManualContacts';
+const MESHCORE_COORD_SCALE = 1e6;
 
 const INITIAL_STATE: DeviceState = {
   status: 'disconnected',
@@ -277,6 +288,38 @@ const INITIAL_STATE: DeviceState = {
 
 const MAX_DEVICE_LOGS = 500;
 const MAX_TELEMETRY_POINTS = 50;
+
+interface MeshcoreNormalizedText {
+  senderName?: string;
+  payload: string;
+}
+
+function normalizeMeshcoreIncomingText(rawText: string): MeshcoreNormalizedText {
+  const text = (rawText ?? '').trim();
+  if (!text) return { payload: '' };
+  const colonIdx = text.indexOf(':');
+  if (colonIdx <= 0) return { payload: text };
+  const senderCandidate = text.slice(0, colonIdx).trim();
+  let payload = text.slice(colonIdx + 1).trim();
+  if (!senderCandidate || !payload) return { payload: text };
+  const tapbackTargetMatch = payload.match(/^@\[[^\]]+\]\s*(.+)$/u);
+  if (tapbackTargetMatch && tapbackTargetMatch[1]) {
+    payload = tapbackTargetMatch[1].trim();
+  }
+  return { senderName: senderCandidate, payload };
+}
+
+function meshcoreMessageDedupeKey(msg: ChatMessage): string {
+  return [
+    msg.sender_id,
+    msg.to ?? '',
+    msg.channel,
+    msg.timestamp,
+    msg.payload,
+    msg.emoji ?? '',
+    msg.replyId ?? '',
+  ].join('|');
+}
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -295,6 +338,7 @@ export function useMeshCore() {
     [],
   );
   const [selfInfo, setSelfInfo] = useState<MeshCoreSelfInfo | null>(null);
+  const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
   const [deviceLogs, setDeviceLogs] = useState<DeviceLogEntry[]>([]);
   const [telemetry, setTelemetry] = useState<TelemetryPoint[]>([]);
   const [signalTelemetry, setSignalTelemetry] = useState<TelemetryPoint[]>([]);
@@ -329,6 +373,7 @@ export function useMeshCore() {
   const nicknameMapRef = useRef<Map<number, string>>(new Map());
   // Stable ref to current nodes so event listeners don't form stale closures
   const nodesRef = useRef<Map<number, MeshNode>>(new Map());
+  const messagesRef = useRef<ChatMessage[]>([]);
   // Stable ref to own node ID so event listeners don't form stale closures
   const myNodeNumRef = useRef<number>(0);
   // Pending ACK tracking: packetId → { nodeId, timeoutId }
@@ -339,6 +384,10 @@ export function useMeshCore() {
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     myNodeNumRef.current = state.myNodeNum;
@@ -407,10 +456,21 @@ export function useMeshCore() {
   }, [selfInfo?.batteryMilliVolts]);
 
   const addMessage = useCallback((msg: ChatMessage) => {
-    setMessages((prev) => [...prev, msg]);
-    void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(msg)).catch((e: unknown) => {
-      console.warn('[useMeshCore] saveMeshcoreMessage error', e);
+    const incomingKey = meshcoreMessageDedupeKey(msg);
+    let inserted = false;
+    setMessages((prev) => {
+      const isDup = prev.some((m) => meshcoreMessageDedupeKey(m) === incomingKey);
+      if (isDup) {
+        return prev;
+      }
+      inserted = true;
+      return [...prev, msg];
     });
+    if (inserted) {
+      void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(msg)).catch((e: unknown) => {
+        console.warn('[useMeshCore] saveMeshcoreMessage error', e);
+      });
+    }
   }, []);
 
   const updateNode = useCallback((node: MeshNode) => {
@@ -441,22 +501,28 @@ export function useMeshCore() {
           next.set(nodeId, {
             ...existing,
             last_heard: d.lastAdvert,
-            latitude: d.advLat !== 0 ? d.advLat / 1e7 : existing.latitude,
-            longitude: d.advLon !== 0 ? d.advLon / 1e7 : existing.longitude,
+            latitude: d.advLat !== 0 ? d.advLat / MESHCORE_COORD_SCALE : existing.latitude,
+            longitude: d.advLon !== 0 ? d.advLon / MESHCORE_COORD_SCALE : existing.longitude,
             ...(nick ? { long_name: nick, short_name: nick.slice(0, 4) } : {}),
           });
           return next;
         });
         if (d.advLat !== 0 && d.advLon !== 0) {
-          usePositionHistoryStore.getState().recordPosition(nodeId, d.advLat / 1e7, d.advLon / 1e7);
+          usePositionHistoryStore
+            .getState()
+            .recordPosition(
+              nodeId,
+              d.advLat / MESHCORE_COORD_SCALE,
+              d.advLon / MESHCORE_COORD_SCALE,
+            );
         }
         // Persist updated advert position to DB
         void window.electronAPI.db
           .updateMeshcoreContactAdvert(
             nodeId,
             d.lastAdvert ?? null,
-            d.advLat !== 0 ? d.advLat / 1e7 : null,
-            d.advLon !== 0 ? d.advLon / 1e7 : null,
+            d.advLat !== 0 ? d.advLat / MESHCORE_COORD_SCALE : null,
+            d.advLon !== 0 ? d.advLon / MESHCORE_COORD_SCALE : null,
           )
           .catch((e: unknown) => {
             console.warn('[useMeshCore] updateMeshcoreContactAdvert error', e);
@@ -557,10 +623,11 @@ export function useMeshCore() {
               }
               if (m.channelMessage) {
                 const d = m.channelMessage;
+                const normalized = normalizeMeshcoreIncomingText(d.text);
                 addMessage({
                   sender_id: 0,
-                  sender_name: 'Unknown',
-                  payload: d.text,
+                  sender_name: normalized.senderName ?? 'Unknown',
+                  payload: normalized.payload,
                   channel: d.channelIdx,
                   timestamp: d.senderTimestamp * 1000,
                   status: 'acked',
@@ -610,11 +677,12 @@ export function useMeshCore() {
       // Incoming channel message — event 8
       conn.on(8, (data: unknown) => {
         const d = data as { channelIdx: number; text: string; senderTimestamp: number };
+        const normalized = normalizeMeshcoreIncomingText(d.text);
         console.log('[useMeshCore] event 8: channel msg idx=', d.channelIdx);
         addMessage({
           sender_id: 0, // unknown sender in channel mode
-          sender_name: 'Unknown',
-          payload: d.text,
+          sender_name: normalized.senderName ?? 'Unknown',
+          payload: normalized.payload,
           channel: d.channelIdx,
           timestamp: d.senderTimestamp * 1000,
           status: 'acked',
@@ -684,20 +752,38 @@ export function useMeshCore() {
           timestamp: number;
           status: string;
           packet_id: number | null;
+          emoji: number | null;
+          reply_id: number | null;
           to_node: number | null;
         }[];
         if (dbMsgs.length > 0) {
-          const mapped: ChatMessage[] = dbMsgs.map((r) => ({
-            sender_id: r.sender_id ?? 0,
-            sender_name: r.sender_name ?? 'Unknown',
-            payload: r.payload,
-            channel: r.channel_idx,
-            timestamp: r.timestamp,
-            status: (r.status as ChatMessage['status']) ?? 'acked',
-            packetId: r.packet_id ?? undefined,
-            to: r.to_node ?? undefined,
-            isHistory: true,
-          }));
+          const seen = new Set<string>();
+          const mapped: ChatMessage[] = [];
+          for (const r of dbMsgs) {
+            const normalized = normalizeMeshcoreIncomingText(r.payload);
+            const msg: ChatMessage = {
+              sender_id: r.sender_id ?? 0,
+              sender_name:
+                r.sender_name && r.sender_name !== 'Unknown'
+                  ? r.sender_name
+                  : (normalized.senderName ?? 'Unknown'),
+              payload: normalized.payload,
+              channel: r.channel_idx,
+              timestamp: r.timestamp,
+              status: (r.status as ChatMessage['status']) ?? 'acked',
+              packetId: r.packet_id ?? undefined,
+              emoji: r.emoji ?? undefined,
+              replyId: r.reply_id ?? undefined,
+              to: r.to_node ?? undefined,
+              isHistory: true,
+            };
+            const key = meshcoreMessageDedupeKey(msg);
+            if (seen.has(key)) {
+              continue;
+            }
+            seen.add(key);
+            mapped.push(msg);
+          }
           setMessages(mapped);
           console.log('[useMeshCore] initConn: loaded', mapped.length, 'messages from DB');
         }
@@ -972,15 +1058,26 @@ export function useMeshCore() {
           console.log('[useMeshCore] connect: serial requesting port...');
           if (!navigator.serial?.requestPort) throw new Error('Web Serial API not available');
           const port = await navigator.serial.requestPort();
+          // #region agent log
+          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
+            body: JSON.stringify({
+              sessionId: '2e4429',
+              runId: 'intermittent-pre-fix',
+              hypothesisId: 'H3',
+              location: 'useMeshCore.ts:connect-serial-requestPort',
+              message: 'Manual serial connect selected a port',
+              data: {
+                portId: (port as { portId?: string }).portId ?? null,
+                info: (port as SerialPort).getInfo?.(),
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
+          persistSerialPortIdentity(port as SerialPort);
           await (port as any).open({ baudRate: 115200 });
-          const portId = (port as any).portId as string | undefined;
-          if (portId) {
-            try {
-              localStorage.setItem(LAST_SERIAL_PORT_KEY, portId);
-            } catch {
-              /* ignore */
-            }
-          }
           conn = new (WebSerialConnection as unknown as new (port: unknown) => MeshCoreConnection)(
             port,
           );
@@ -1045,31 +1142,112 @@ export function useMeshCore() {
       lastSerialPortId?: string | null,
     ) => {
       if (type === 'serial') {
+        // #region agent log
+        fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
+          body: JSON.stringify({
+            sessionId: '2e4429',
+            runId: 'intermittent-pre-fix',
+            hypothesisId: 'H2',
+            location: 'useMeshCore.ts:connectAutomatic-entry',
+            message: 'Auto serial reconnect started',
+            data: { type, lastSerialPortId: lastSerialPortId ?? null },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         setState({ status: 'connecting', myNodeNum: 0, connectionType: 'serial' });
         try {
           if (!navigator.serial?.getPorts) throw new Error('Web Serial API not available');
           const ports = await navigator.serial.getPorts();
-          if (ports.length === 0) throw new Error('No previously granted serial ports found');
-          let port: SerialPort | undefined;
-          if (lastSerialPortId) {
-            port = (ports as any[]).find((p: any) => p.portId === lastSerialPortId);
-          }
-          port = port ?? ports[0];
-          const portId = (port as any).portId as string | undefined;
-          if (portId) {
-            try {
-              localStorage.setItem(LAST_SERIAL_PORT_KEY, portId);
-            } catch {
-              /* ignore */
-            }
-          }
-          await (port as any).open({ baudRate: 115200 });
+          // #region agent log
+          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
+            body: JSON.stringify({
+              sessionId: '2e4429',
+              runId: 'intermittent-pre-fix',
+              hypothesisId: 'H4',
+              location: 'useMeshCore.ts:connectAutomatic-getPorts',
+              message: 'Auto serial reconnect discovered granted ports',
+              data: {
+                count: ports.length,
+                ports: (ports as (SerialPort & { portId?: string })[]).map((p) => ({
+                  portId: p.portId ?? null,
+                  info: p.getInfo?.(),
+                })),
+                lastSerialPortId: lastSerialPortId ?? null,
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
+          const port = selectGrantedSerialPort(ports, lastSerialPortId);
+          const lastSig = loadLastSerialPortSignature();
+          const portId = (port as SerialPort & { portId?: string }).portId;
+          const matchedById = Boolean(lastSerialPortId && portId === lastSerialPortId);
+          const matchedBySig = Boolean(
+            lastSig && signaturesEqual(lastSig, getPortSignature(port)) && !matchedById,
+          );
+          // #region agent log
+          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
+            body: JSON.stringify({
+              sessionId: '2e4429',
+              runId: 'post-fix',
+              hypothesisId: 'H5',
+              location: 'useMeshCore.ts:connectAutomatic-selectedPort',
+              message: 'Auto serial reconnect selected port',
+              data: {
+                selectedPortId: portId ?? null,
+                lastSerialPortId: lastSerialPortId ?? null,
+                matchedById,
+                matchedBySig,
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
+          persistSerialPortIdentity(port);
+          await (port as SerialPort).open({ baudRate: 115200 });
           const conn = new (WebSerialConnection as unknown as new (
             port: unknown,
           ) => MeshCoreConnection)(port);
           await initConn(conn);
           console.log('[useMeshCore] connectAutomatic serial: connected');
+          // #region agent log
+          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
+            body: JSON.stringify({
+              sessionId: '2e4429',
+              runId: 'intermittent-pre-fix',
+              hypothesisId: 'H5',
+              location: 'useMeshCore.ts:connectAutomatic-success',
+              message: 'Auto serial reconnect succeeded',
+              data: { selectedPortId: portId ?? null },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
         } catch (err) {
+          // #region agent log
+          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
+            body: JSON.stringify({
+              sessionId: '2e4429',
+              runId: 'intermittent-pre-fix',
+              hypothesisId: 'H5',
+              location: 'useMeshCore.ts:connectAutomatic-error',
+              message: 'Auto serial reconnect failed',
+              data: { error: err instanceof Error ? err.message : String(err) },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
           console.error('[useMeshCore] connectAutomatic serial error', err);
           setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
           throw err;
@@ -1400,23 +1578,58 @@ export function useMeshCore() {
     [],
   );
 
-  const sendPositionToDeviceMeshCore = useCallback(async (lat: number, lon: number) => {
-    if (!connRef.current) return;
-    const latInt = Math.round(lat * 1e7);
-    const lonInt = Math.round(lon * 1e7);
-    try {
-      await connRef.current.setAdvertLatLong(latInt, lonInt);
-    } catch (e) {
-      console.error('[useMeshCore] setAdvertLatLong failed', { lat, lon, latInt, lonInt }, e);
-      const err =
-        e === undefined || (e instanceof Error && !e.message)
-          ? new Error(
-              'Device rejected position update — check that the device supports setting coordinates',
-            )
-          : e;
-      throw err;
-    }
-  }, []);
+  const sendPositionToDeviceMeshCore = useCallback(
+    async (lat: number, lon: number) => {
+      if (!connRef.current) return;
+      const latInt = Math.round(lat * MESHCORE_COORD_SCALE);
+      const lonInt = Math.round(lon * MESHCORE_COORD_SCALE);
+      try {
+        await connRef.current.setAdvertLatLong(latInt, lonInt);
+        const selfNodeId = myNodeNumRef.current;
+        const nowSec = Math.floor(Date.now() / 1000);
+        setOurPosition({ lat, lon, source: 'static' });
+        if (selfNodeId > 0) {
+          setNodes((prev) => {
+            const next = new Map(prev);
+            const existing = next.get(selfNodeId);
+            if (existing) {
+              next.set(selfNodeId, {
+                ...existing,
+                latitude: lat,
+                longitude: lon,
+                last_heard: nowSec,
+              });
+            } else {
+              const trimmedName = selfInfo?.name?.trim() ?? '';
+              next.set(selfNodeId, {
+                node_id: selfNodeId,
+                long_name: trimmedName || `Node-${selfNodeId.toString(16).toUpperCase()}`,
+                short_name: (trimmedName || '????').slice(0, 4),
+                hw_model: 'Unknown',
+                battery: 0,
+                snr: 0,
+                rssi: 0,
+                last_heard: nowSec,
+                latitude: lat,
+                longitude: lon,
+              });
+            }
+            return next;
+          });
+        }
+      } catch (e) {
+        console.error('[useMeshCore] setAdvertLatLong failed', { lat, lon, latInt, lonInt }, e);
+        const err =
+          e === undefined || (e instanceof Error && !e.message)
+            ? new Error(
+                'Device rejected position update — check that the device supports setting coordinates',
+              )
+            : e;
+        throw err;
+      }
+    },
+    [selfInfo?.name],
+  );
 
   const traceRoute = useCallback(async (nodeId: number) => {
     const pubKey = pubKeyMapRef.current.get(nodeId);
@@ -1658,7 +1871,13 @@ export function useMeshCore() {
 
     let skipped = 0;
     const errors: string[] = [];
-    const validEntries: { nodeId: number; name: string; pubKey: Uint8Array }[] = [];
+    const validEntries: {
+      nodeId: number;
+      name: string;
+      pubKey: Uint8Array;
+      latitude: number | null;
+      longitude: number | null;
+    }[] = [];
 
     for (const r of parsed) {
       if (!r || typeof r !== 'object') {
@@ -1682,6 +1901,15 @@ export function useMeshCore() {
         continue;
       }
       const nodeId = pubkeyToNodeId(pubKey);
+      const parseCoord = (value: unknown): number | null => {
+        if (value == null) return null;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : null;
+      };
+      const latitude = parseCoord(rec.latitude ?? rec.lat ?? rec.adv_lat ?? rec.advLat);
+      const longitude = parseCoord(
+        rec.longitude ?? rec.lon ?? rec.lng ?? rec.adv_lon ?? rec.advLon,
+      );
       console.log(
         '[useMeshCore] importRepeaters: valid entry',
         name,
@@ -1689,7 +1917,7 @@ export function useMeshCore() {
       );
       nicknameMapRef.current.set(nodeId, name);
       pubKeyMapRef.current.set(nodeId, pubKey);
-      validEntries.push({ nodeId, name, pubKey });
+      validEntries.push({ nodeId, name, pubKey, latitude, longitude });
     }
 
     console.log(
@@ -1704,10 +1932,18 @@ export function useMeshCore() {
     if (validEntries.length > 0) {
       setNodes((prev) => {
         const next = new Map(prev);
-        for (const { nodeId, name, pubKey } of validEntries) {
+        for (const { nodeId, name, pubKey, latitude, longitude } of validEntries) {
           const existing = next.get(nodeId);
+          const hasImportGps = latitude != null && longitude != null;
+          const existingHasGps = existing?.latitude != null && existing?.longitude != null;
           if (existing) {
-            next.set(nodeId, { ...existing, long_name: name, short_name: name.slice(0, 4) });
+            next.set(nodeId, {
+              ...existing,
+              long_name: name,
+              short_name: name.slice(0, 4),
+              latitude: hasImportGps && !existingHasGps ? latitude : existing.latitude,
+              longitude: hasImportGps && !existingHasGps ? longitude : existing.longitude,
+            });
           } else {
             // Create a stub node for pre-loaded repeaters
             const prefix = Array.from(pubKey.slice(0, 6))
@@ -1723,8 +1959,8 @@ export function useMeshCore() {
               snr: 0,
               rssi: 0,
               last_heard: 0,
-              latitude: null,
-              longitude: null,
+              latitude: hasImportGps ? latitude : null,
+              longitude: hasImportGps ? longitude : null,
               favorited: false,
             });
           }
@@ -1732,10 +1968,11 @@ export function useMeshCore() {
         return next;
       });
 
-      for (const { nodeId, name, pubKey } of validEntries) {
+      for (const { nodeId, name, pubKey, latitude, longitude } of validEntries) {
         const publicKeyHex = Array.from(pubKey)
           .map((b) => b.toString(16).padStart(2, '0'))
           .join('');
+        const hasImportGps = latitude != null && longitude != null;
         void window.electronAPI.db
           .saveMeshcoreContact({
             node_id: nodeId,
@@ -1743,8 +1980,8 @@ export function useMeshCore() {
             adv_name: null,
             contact_type: 2, // Repeater
             last_advert: null,
-            adv_lat: null,
-            adv_lon: null,
+            adv_lat: hasImportGps ? latitude : null,
+            adv_lon: hasImportGps ? longitude : null,
             last_snr: null,
             last_rssi: null,
             nickname: name,
@@ -1758,9 +1995,54 @@ export function useMeshCore() {
     return { imported: validEntries.length, skipped, errors };
   }, []);
 
+  const sendReaction = useCallback(
+    async (emoji: number, replyId: number, channel: number) => {
+      if (!connRef.current) return;
+      const reactedTo = messagesRef.current.find(
+        (m) => m.packetId === replyId || m.timestamp === replyId,
+      );
+      const targetName = reactedTo?.sender_name || 'Unknown';
+      const emojiChar = String.fromCodePoint(emoji);
+      const tapbackText = `@[${targetName}] ${emojiChar}`;
+      await connRef.current.sendChannelTextMessage(channel, tapbackText);
+      addMessage({
+        sender_id: myNodeNumRef.current,
+        sender_name: selfInfo?.name ?? 'Me',
+        payload: emojiChar,
+        channel,
+        timestamp: Date.now(),
+        status: 'acked',
+        emoji,
+        replyId,
+      });
+    },
+    [addMessage, selfInfo?.name],
+  );
+
   // No-op stubs to satisfy the same interface shape used in App.tsx
   const noopAsync = useCallback(async () => {}, []);
   const noopVoid = useCallback(() => {}, []);
+  const refreshOurPositionNoop = useCallback(async () => {
+    const myNode = nodesRef.current.get(myNodeNumRef.current);
+    let staticLat: number | undefined;
+    let staticLon: number | undefined;
+    try {
+      const s = JSON.parse(localStorage.getItem('mesh-client:gpsSettings') || '{}') as {
+        staticLat?: number;
+        staticLon?: number;
+      };
+      if (typeof s.staticLat === 'number' && typeof s.staticLon === 'number') {
+        staticLat = s.staticLat;
+        staticLon = s.staticLon;
+      }
+    } catch {
+      /* ignore */
+    }
+    const pos = await resolveOurPosition(myNode?.latitude, myNode?.longitude, staticLat, staticLon);
+    setOurPosition(pos);
+    useDiagnosticsStore.getState().setOurPositionSource(pos?.source ?? null);
+    return pos;
+  }, []);
 
   return {
     state,
@@ -1814,10 +2096,10 @@ export function useMeshCore() {
     channelConfigs: [] as unknown[],
     moduleConfigs: {} as Record<string, unknown>,
     deviceOwner: selfInfo ? { longName: selfInfo.name, shortName: '', isLicensed: false } : null,
-    ourPosition: null,
+    ourPosition,
     gpsLoading: false,
     telemetryEnabled: null,
-    sendReaction: noopAsync,
+    sendReaction,
     requestPosition: noopAsync,
     setNodeFavorited: noopAsync,
     shutdown: noopAsync,
@@ -1835,7 +2117,7 @@ export function useMeshCore() {
     setModuleConfig: noopAsync,
     setCannedMessages: noopAsync,
     requestRefresh: noopAsync,
-    refreshOurPosition: noopAsync,
+    refreshOurPosition: refreshOurPositionNoop,
     sendPositionToDevice: sendPositionToDeviceMeshCore,
     updateGpsInterval: noopVoid,
     refreshNodesFromDb: useCallback(async () => {
@@ -1886,6 +2168,8 @@ export function useMeshCore() {
           timestamp: number;
           status: string;
           packet_id: number | null;
+          emoji: number | null;
+          reply_id: number | null;
           to_node: number | null;
         }[];
         setMessages(
@@ -1897,6 +2181,8 @@ export function useMeshCore() {
             timestamp: r.timestamp,
             status: (r.status as ChatMessage['status']) ?? 'acked',
             packetId: r.packet_id ?? undefined,
+            emoji: r.emoji ?? undefined,
+            replyId: r.reply_id ?? undefined,
             to: r.to_node ?? undefined,
             isHistory: true,
           })),

@@ -60,6 +60,8 @@ let pendingSerialCallback: ((portId: string) => void) | null = null;
 // (empty string always allowed = cancel). Prevents arbitrary id injection from a compromised renderer.
 let lastBluetoothDeviceIds = new Set<string>();
 let lastSerialPortIds = new Set<string>();
+let hasInstalledOsmReferrerHook = false;
+const OSM_HTTP_REFERRER = 'https://meshtastic-client.app/';
 
 // ─── Global error handlers (prevent silent crashes in packaged app) ──
 process.on('uncaughtException', (error) => {
@@ -567,6 +569,18 @@ function createWindow() {
     callback({ confirmed: true });
   });
 
+  if (!hasInstalledOsmReferrerHook) {
+    hasInstalledOsmReferrerHook = true;
+    mainWindow.webContents.session.webRequest.onBeforeSendHeaders(
+      { urls: ['https://*.tile.openstreetmap.org/*'] },
+      (details, callback) => {
+        const nextHeaders = details.requestHeaders;
+        nextHeaders.Referer = OSM_HTTP_REFERRER;
+        callback({ requestHeaders: nextHeaders });
+      },
+    );
+  }
+
   // ─── Renderer crash / load failure detection ──────────────────────
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     console.error(
@@ -633,7 +647,7 @@ function createWindow() {
     // from the packaged app include a valid Referer header and comply with the
     // OSM tile usage policy for web-style traffic.
     mainWindow.loadURL(indexUrl, {
-      httpReferrer: 'https://meshtastic-client.app/',
+      httpReferrer: OSM_HTTP_REFERRER,
     });
   }
 
@@ -1537,12 +1551,16 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
   try {
     validateSaveMeshcoreMessage(message);
     const m = message as Record<string, unknown>;
+    const replyId = m.reply_id != null ? Number(m.reply_id) : null;
+    if (replyId != null && (!Number.isFinite(replyId) || replyId < 0)) {
+      throw new Error('db:saveMeshcoreMessage: reply_id must be a non-negative finite number');
+    }
     const db = getDatabase();
     return db
       .prepare(
         'INSERT OR IGNORE INTO meshcore_messages ' +
-          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, to_node) ' +
-          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @to_node)',
+          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node) ' +
+          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node)',
       )
       .run({
         sender_id: m.sender_id != null ? Number(m.sender_id) : null,
@@ -1552,6 +1570,8 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
         timestamp: Number(m.timestamp),
         status: m.status != null ? String(m.status) : 'acked',
         packet_id: m.packet_id != null ? Number(m.packet_id) : null,
+        emoji: m.emoji != null ? safeNonNegativeInt(m.emoji) : null,
+        reply_id: replyId,
         to_node: m.to_node != null ? Number(m.to_node) : null,
       });
   } catch (err) {

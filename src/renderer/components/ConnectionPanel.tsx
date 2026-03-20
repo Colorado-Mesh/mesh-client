@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import type {
   BluetoothDevice,
   ConnectionType,
@@ -20,7 +21,6 @@ interface LastConnection {
 }
 
 const LAST_BLE_DEVICE_KEY = 'mesh-client:lastBleDevice';
-const LAST_SERIAL_PORT_KEY = 'mesh-client:lastSerialPort';
 
 function lastConnectionKey(p: MeshProtocol) {
   return `mesh-client:lastConnection:${p}`;
@@ -90,10 +90,26 @@ function humanizeBleError(err: unknown): string {
 }
 
 function loadLastConnection(p: MeshProtocol): LastConnection | null {
-  return parseStoredJson<LastConnection>(
+  const loaded = parseStoredJson<LastConnection>(
     localStorage.getItem(lastConnectionKey(p)),
     'ConnectionPanel loadLastConnection',
   );
+  // #region agent log
+  fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
+    body: JSON.stringify({
+      sessionId: '2e4429',
+      runId: 'intermittent-pre-fix',
+      hypothesisId: 'H1',
+      location: 'ConnectionPanel.tsx:loadLastConnection',
+      message: 'Loaded last connection at startup/protocol switch',
+      data: { protocol: p, type: loaded?.type ?? null, serialPortId: loaded?.serialPortId ?? null },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+  return loaded;
 }
 
 function saveLastConnection(p: MeshProtocol, c: LastConnection) {
@@ -525,6 +541,21 @@ export default function ConnectionPanel({
   );
 
   const handleSelectSerialPort = useCallback((portId: string) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
+      body: JSON.stringify({
+        sessionId: '2e4429',
+        runId: 'intermittent-pre-fix',
+        hypothesisId: 'H3',
+        location: 'ConnectionPanel.tsx:handleSelectSerialPort',
+        message: 'User selected serial port from picker',
+        data: { selectedPortId: portId },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     saveLastSerialPort(portId);
     window.electronAPI.selectSerialPort(portId);
     setShowSerialPicker(false);
@@ -645,6 +676,24 @@ export default function ConnectionPanel({
         setConnectionStage('');
       });
     } else if (lastConnection.type === 'serial') {
+      // #region agent log
+      fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
+        body: JSON.stringify({
+          sessionId: '2e4429',
+          runId: 'intermittent-pre-fix',
+          hypothesisId: 'H2',
+          location: 'ConnectionPanel.tsx:handleReconnect-serial',
+          message: 'Manual reconnect triggered for serial',
+          data: {
+            lastConnectionSerialPortId: lastConnection.serialPortId ?? null,
+            lastSerialPortKeyValue: loadLastSerialPort(),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       isAutoConnectingRef.current = true;
       setIsAutoConnecting(true);
       setConnectionType('serial');
