@@ -17,6 +17,3 @@ test-results/
 coverage/
 .next/
 
-# Lock files and large non-source files
-package-lock.json
-*.log

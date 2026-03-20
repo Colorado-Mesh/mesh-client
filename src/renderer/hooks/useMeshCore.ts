@@ -1128,7 +1128,7 @@ export function useMeshCore() {
         const sentAt = Date.now();
         // Optimistically add own message with 'sending' status
         const tempMsg: ChatMessage = {
-          sender_id: 0, // placeholder, replaced after we get the ackCrc
+          sender_id: myNodeNumRef.current,
           sender_name: selfInfo?.name ?? 'Me',
           payload: text,
           channel: channelIdx,
@@ -1148,14 +1148,14 @@ export function useMeshCore() {
             setMessages((prev) =>
               prev.map((m) =>
                 m === tempMsg || (m.timestamp === sentAt && m.status === 'sending')
-                  ? { ...m, sender_id: 0, packetId: ackCrc }
+                  ? { ...m, sender_id: myNodeNumRef.current, packetId: ackCrc }
                   : m,
               ),
             );
             // Persist the outgoing DM with packet_id for status tracking
             void window.electronAPI.db
               .saveMeshcoreMessage({
-                sender_id: null,
+                sender_id: myNodeNumRef.current || null,
                 sender_name: selfInfo?.name ?? 'Me',
                 payload: text,
                 channel_idx: channelIdx,
@@ -1190,13 +1190,13 @@ export function useMeshCore() {
             setMessages((prev) =>
               prev.map((m) =>
                 m === tempMsg || (m.timestamp === sentAt && m.status === 'sending')
-                  ? { ...m, sender_id: 0, status: 'acked' as const }
+                  ? { ...m, sender_id: myNodeNumRef.current, status: 'acked' as const }
                   : m,
               ),
             );
             void window.electronAPI.db
               .saveMeshcoreMessage({
-                sender_id: null,
+                sender_id: myNodeNumRef.current || null,
                 sender_name: selfInfo?.name ?? 'Me',
                 payload: text,
                 channel_idx: channelIdx,
@@ -1223,7 +1223,7 @@ export function useMeshCore() {
           await connRef.current.sendChannelTextMessage(channelIdx, text);
           // Channel messages resolve with Ok — add as acked immediately
           addMessage({
-            sender_id: 0,
+            sender_id: myNodeNumRef.current,
             sender_name: selfInfo?.name ?? 'Me',
             payload: text,
             channel: channelIdx,
