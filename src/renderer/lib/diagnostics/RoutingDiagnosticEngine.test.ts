@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MeshNode } from '../types';
-import { computeHealthScore, detectBadRoute, detectHopGoblin } from './RoutingDiagnosticEngine';
+import { detectBadRoute, detectHopGoblin } from './RoutingDiagnosticEngine';
 
 function baseNode(overrides: Partial<MeshNode> = {}): MeshNode {
   return {
@@ -91,38 +91,5 @@ describe('detectBadRoute', () => {
     // hopsThreshold 4 => maxHopsCloseIn 6 => 5 hops does not trigger same branch
     const w2 = detectBadRoute(node, undefined, home, false, 1, 0, 4);
     expect(w2).toBeNull();
-  });
-});
-
-describe('computeHealthScore', () => {
-  it('does not penalize for info-severity anomalies', () => {
-    const rows = [
-      {
-        kind: 'routing' as const,
-        id: 'routing:1',
-        nodeId: 1,
-        type: 'hop_goblin' as const,
-        severity: 'info' as const,
-        confidence: 'heuristic' as const,
-        description: 'heuristic',
-        detectedAt: Date.now(),
-      },
-    ];
-    expect(computeHealthScore(10, rows)).toBe(100);
-  });
-
-  it('still penalizes warnings', () => {
-    const rows = [
-      {
-        kind: 'routing' as const,
-        id: 'routing:1',
-        nodeId: 1,
-        type: 'route_flapping' as const,
-        severity: 'warning' as const,
-        description: 'flap',
-        detectedAt: Date.now(),
-      },
-    ];
-    expect(computeHealthScore(10, rows)).toBe(90);
   });
 });

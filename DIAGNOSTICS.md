@@ -4,34 +4,24 @@ This document is the authoritative reference for every diagnostic output in Mesh
 
 **Where diagnostics appear:**
 
-- **DiagnosticsPanel** (Tab 8, `Cmd/Ctrl+8`) — health score, anomaly table, halos toggles, environment profile, max-age settings
+- **DiagnosticsPanel** (Tab 8, `Cmd/Ctrl+8`) — network health status, anomaly table, halos toggles, environment profile, max-age settings
 - **NodeDetailModal** — per-node routing health section, redundancy path history, RF findings, MQTT ignore toggle
 - **NodeListPanel** — inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming
 - **MapPanel** — channel utilization halos, routing anomaly aura circles
 
 ---
 
-## 1. Network Health Score
+## 1. Network Health Status
 
-The health score is a single 0–100 number summarizing the current diagnostic state of the mesh.
+The network health band summarizes the current diagnostic state of the mesh in the DiagnosticsPanel header.
 
-**Formula:**
+| Badge     | Condition                                   | Color  |
+| --------- | ------------------------------------------- | ------ |
+| Healthy   | 0 errors, 0 warnings                        | Green  |
+| Attention | Any errors or warnings (routing errors < 3) | Yellow |
+| Degraded  | ≥ 3 routing errors                          | Red    |
 
-```
-score = 100 - ((errors × 2 + warnings) / totalNodes × 100)
-```
-
-Clamped to the range 0–100.
-
-**Badge states:**
-
-| Badge     | Condition                           | Color  |
-| --------- | ----------------------------------- | ------ |
-| Healthy   | 0 errors, 0 warnings                | Green  |
-| Attention | Any errors or warnings (errors < 3) | Yellow |
-| Degraded  | ≥ 3 routing errors                  | Red    |
-
-**Weighting:** routing errors count 2×; routing warnings and RF-warning nodes count 1× each.
+The panel also shows a breakdown of error and warning counts, and a "This node" line when your connected device has its own issues separate from the mesh-wide picture.
 
 ---
 
