@@ -72,16 +72,19 @@ export default function NodeDetailModal({
   const getForeignLoraDetectionsList = useDiagnosticsStore((s) => s.getForeignLoraDetectionsList);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const nodeRef = useRef(node);
+  nodeRef.current = node;
+  const positionRequestedAtRef = useRef(positionRequestedAt);
+  positionRequestedAtRef.current = positionRequestedAt;
 
   // Focus trap and focus management
   useEffect(() => {
-    if (!node) return;
+    if (!nodeRef.current) return;
     previousFocusRef.current = document.activeElement as HTMLElement;
     closeButtonRef.current?.focus();
     return () => {
       previousFocusRef.current?.focus();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on node identity only, not every property change
   }, [node?.node_id]);
 
   // Close on Escape
@@ -109,11 +112,10 @@ export default function NodeDetailModal({
 
   // Detect position update after a request was sent
   useEffect(() => {
-    if (positionRequestedAt !== null) {
+    if (positionRequestedAtRef.current !== null) {
       setPositionRequestedAt(null);
       setActionStatus('Position updated');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- positionRequestedAt omitted intentionally; effect must fire on position arrival, not on request initiation
   }, [node?.latitude, node?.longitude]);
 
   // 30-second timeout for position request

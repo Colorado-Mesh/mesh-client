@@ -1982,7 +1982,7 @@ ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
     const socket = new net.Socket();
     meshcoreTcpSocket = socket;
     socket.connect(p, host, () => {
-      console.log('[IPC] meshcore:tcp-connect connected to', host, p);
+      console.log('[IPC] meshcore:tcp-connect connected to', sanitizeLogMessage(host), p);
       if (!settled) {
         settled = true;
         resolve();
@@ -2008,11 +2008,20 @@ ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
 
 ipcMain.handle('meshcore:tcp-write', (_event, bytes: number[]) => {
   if (!meshcoreTcpSocket) {
-    console.warn('[IPC] meshcore:tcp-write: no active socket, dropping write');
-    return;
+    const msg = 'meshcore:tcp-write: no active socket';
+    console.warn(`[IPC] ${msg}`);
+    return Promise.reject(new Error(msg));
   }
-  meshcoreTcpSocket.write(new Uint8Array(bytes), (err) => {
-    if (err) console.error('[IPC] meshcore:tcp-write error:', sanitizeLogMessage(err.message));
+  const sock = meshcoreTcpSocket;
+  return new Promise<void>((resolve, reject) => {
+    sock.write(new Uint8Array(bytes), (err) => {
+      if (err) {
+        console.error('[IPC] meshcore:tcp-write error:', sanitizeLogMessage(err.message));
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
   });
 });
 

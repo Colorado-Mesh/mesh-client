@@ -183,6 +183,12 @@ export default function App() {
     protocol === 'meshcore'
       ? (meshcoreDevice as unknown as typeof meshtasticDevice)
       : meshtasticDevice;
+  const messagesRef = useRef(device.messages);
+  const activeTabRef = useRef(activeTab);
+  const myNodeNumForUnreadRef = useRef(device.state.myNodeNum);
+  messagesRef.current = device.messages;
+  activeTabRef.current = activeTab;
+  myNodeNumForUnreadRef.current = device.state.myNodeNum;
   const nodesForUi = protocol === 'meshcore' ? meshcoreDevice.nodes : meshtasticDevice.nodes;
   const nodeCountLabel = protocol === 'meshcore' ? 'contacts' : 'nodes';
 
@@ -248,8 +254,7 @@ export default function App() {
       ...result.route.map((id) => device.getFullNodeLabel(id)),
       device.getFullNodeLabel(result.from),
     ];
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- device object ref excluded intentionally; specific stable properties listed instead
-  }, [selectedNode, device.traceRouteResults, device.state.myNodeNum, device.getFullNodeLabel]);
+  }, [selectedNode, device]);
 
   /** In meshcore mode, only show configured channels (key !== all zeros) in chat. */
   const chatChannels = useMemo(() => {
@@ -410,15 +415,14 @@ export default function App() {
       if (count > 0) isInitialLoadRef.current = false;
       return;
     }
-    if (count > prevMsgCountRef.current && activeTab !== 1) {
-      const newMsgs = device.messages.slice(prevMsgCountRef.current);
+    if (count > prevMsgCountRef.current && activeTabRef.current !== 1) {
+      const newMsgs = messagesRef.current.slice(prevMsgCountRef.current);
       const realNew = newMsgs.filter(
-        (m) => m.sender_id !== device.state.myNodeNum && !m.emoji && !m.isHistory,
+        (m) => m.sender_id !== myNodeNumForUnreadRef.current && !m.emoji && !m.isHistory,
       );
       if (realNew.length > 0) setChatUnread((prev) => prev + realNew.length);
     }
     prevMsgCountRef.current = count;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally triggered only on message count change; activeTab/myNodeNum read as current values at run time
   }, [device.messages.length]);
 
   // ─── Clear unread when Chat tab becomes active ────────────────────

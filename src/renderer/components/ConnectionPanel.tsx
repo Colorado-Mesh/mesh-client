@@ -94,21 +94,6 @@ function loadLastConnection(p: MeshProtocol): LastConnection | null {
     localStorage.getItem(lastConnectionKey(p)),
     'ConnectionPanel loadLastConnection',
   );
-  // #region agent log
-  fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
-    body: JSON.stringify({
-      sessionId: '2e4429',
-      runId: 'intermittent-pre-fix',
-      hypothesisId: 'H1',
-      location: 'ConnectionPanel.tsx:loadLastConnection',
-      message: 'Loaded last connection at startup/protocol switch',
-      data: { protocol: p, type: loaded?.type ?? null, serialPortId: loaded?.serialPortId ?? null },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
   return loaded;
 }
 
@@ -352,6 +337,8 @@ export default function ConnectionPanel({
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
   // Tracks BLE device name at selection time, used when saving LastConnection
   const lastSelectedBleNameRef = useRef<string | null>(null);
+  const lastConnectionBleDeviceNameFallbackRef = useRef(lastConnection?.bleDeviceName);
+  lastConnectionBleDeviceNameFallbackRef.current = lastConnection?.bleDeviceName;
 
   // Reload last connection when protocol switches (each protocol has its own key)
   useEffect(() => {
@@ -389,7 +376,7 @@ export default function ConnectionPanel({
             conn.bleDeviceName =
               getBleDeviceName(bleId) ??
               lastSelectedBleNameRef.current ??
-              lastConnection?.bleDeviceName ??
+              lastConnectionBleDeviceNameFallbackRef.current ??
               undefined;
           }
         } else if (state.connectionType === 'serial') {
@@ -405,7 +392,6 @@ export default function ConnectionPanel({
       isAutoConnectingRef.current = false;
       setIsAutoConnecting(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- lastConnection.bleDeviceName read as fallback only; omitted to avoid retriggering on stale-name updates
   }, [
     state.status,
     state.connectionType,
@@ -541,21 +527,6 @@ export default function ConnectionPanel({
   );
 
   const handleSelectSerialPort = useCallback((portId: string) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
-      body: JSON.stringify({
-        sessionId: '2e4429',
-        runId: 'intermittent-pre-fix',
-        hypothesisId: 'H3',
-        location: 'ConnectionPanel.tsx:handleSelectSerialPort',
-        message: 'User selected serial port from picker',
-        data: { selectedPortId: portId },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     saveLastSerialPort(portId);
     window.electronAPI.selectSerialPort(portId);
     setShowSerialPicker(false);
@@ -611,8 +582,8 @@ export default function ConnectionPanel({
       return;
     }
     // HTTP: do not auto-trigger — show one-click reconnect card instead
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally empty — fires once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: uses lastConnection/onAutoConnect from first paint; deps would re-fire auto-connect
+  }, []);
 
   // Cleanup timeout on unmount
   useEffect(
@@ -676,24 +647,6 @@ export default function ConnectionPanel({
         setConnectionStage('');
       });
     } else if (lastConnection.type === 'serial') {
-      // #region agent log
-      fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
-        body: JSON.stringify({
-          sessionId: '2e4429',
-          runId: 'intermittent-pre-fix',
-          hypothesisId: 'H2',
-          location: 'ConnectionPanel.tsx:handleReconnect-serial',
-          message: 'Manual reconnect triggered for serial',
-          data: {
-            lastConnectionSerialPortId: lastConnection.serialPortId ?? null,
-            lastSerialPortKeyValue: loadLastSerialPort(),
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       isAutoConnectingRef.current = true;
       setIsAutoConnecting(true);
       setConnectionType('serial');

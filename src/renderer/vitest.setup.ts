@@ -48,6 +48,9 @@ vi.stubGlobal('electronAPI', {
     getMessageChannels: vi.fn().mockResolvedValue([]),
     deleteMessagesByChannel: vi.fn().mockResolvedValue(0),
     deleteAllMessages: vi.fn().mockResolvedValue(0),
+    getPositionHistory: vi.fn().mockResolvedValue([]),
+    savePositionHistory: vi.fn().mockResolvedValue(undefined),
+    clearPositionHistory: vi.fn().mockResolvedValue(undefined),
   },
   bluetooth: {
     connect: vi.fn().mockResolvedValue(undefined),

@@ -14,13 +14,7 @@ import {
   meshcoreContactToMeshNode,
   pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
-import {
-  getPortSignature,
-  loadLastSerialPortSignature,
-  persistSerialPortIdentity,
-  selectGrantedSerialPort,
-  signaturesEqual,
-} from '../lib/serialPortSignature';
+import { persistSerialPortIdentity, selectGrantedSerialPort } from '../lib/serialPortSignature';
 import type {
   ChatMessage,
   DeviceState,
@@ -102,6 +96,7 @@ class IpcTcpConnection {
             await window.electronAPI.meshcore.tcp.write(Array.from(bytes));
           } catch (e) {
             console.error('[IpcTcpConnection] write error', e);
+            throw e;
           }
         }
         async close() {
@@ -1140,24 +1135,6 @@ export function useMeshCore() {
           console.log('[useMeshCore] connect: serial requesting port...');
           if (!navigator.serial?.requestPort) throw new Error('Web Serial API not available');
           const port = await navigator.serial.requestPort();
-          // #region agent log
-          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
-            body: JSON.stringify({
-              sessionId: '2e4429',
-              runId: 'intermittent-pre-fix',
-              hypothesisId: 'H3',
-              location: 'useMeshCore.ts:connect-serial-requestPort',
-              message: 'Manual serial connect selected a port',
-              data: {
-                portId: (port as { portId?: string }).portId ?? null,
-                info: (port as SerialPort).getInfo?.(),
-              },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
-          // #endregion
           persistSerialPortIdentity(port as SerialPort);
           await (port as any).open({ baudRate: 115200 });
           conn = new (WebSerialConnection as unknown as new (port: unknown) => MeshCoreConnection)(
@@ -1224,74 +1201,11 @@ export function useMeshCore() {
       lastSerialPortId?: string | null,
     ) => {
       if (type === 'serial') {
-        // #region agent log
-        fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
-          body: JSON.stringify({
-            sessionId: '2e4429',
-            runId: 'intermittent-pre-fix',
-            hypothesisId: 'H2',
-            location: 'useMeshCore.ts:connectAutomatic-entry',
-            message: 'Auto serial reconnect started',
-            data: { type, lastSerialPortId: lastSerialPortId ?? null },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
         setState({ status: 'connecting', myNodeNum: 0, connectionType: 'serial' });
         try {
           if (!navigator.serial?.getPorts) throw new Error('Web Serial API not available');
           const ports = await navigator.serial.getPorts();
-          // #region agent log
-          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
-            body: JSON.stringify({
-              sessionId: '2e4429',
-              runId: 'intermittent-pre-fix',
-              hypothesisId: 'H4',
-              location: 'useMeshCore.ts:connectAutomatic-getPorts',
-              message: 'Auto serial reconnect discovered granted ports',
-              data: {
-                count: ports.length,
-                ports: (ports as (SerialPort & { portId?: string })[]).map((p) => ({
-                  portId: p.portId ?? null,
-                  info: p.getInfo?.(),
-                })),
-                lastSerialPortId: lastSerialPortId ?? null,
-              },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
-          // #endregion
           const port = selectGrantedSerialPort(ports, lastSerialPortId);
-          const lastSig = loadLastSerialPortSignature();
-          const portId = (port as SerialPort & { portId?: string }).portId;
-          const matchedById = Boolean(lastSerialPortId && portId === lastSerialPortId);
-          const matchedBySig = Boolean(
-            lastSig && signaturesEqual(lastSig, getPortSignature(port)) && !matchedById,
-          );
-          // #region agent log
-          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
-            body: JSON.stringify({
-              sessionId: '2e4429',
-              runId: 'post-fix',
-              hypothesisId: 'H5',
-              location: 'useMeshCore.ts:connectAutomatic-selectedPort',
-              message: 'Auto serial reconnect selected port',
-              data: {
-                selectedPortId: portId ?? null,
-                lastSerialPortId: lastSerialPortId ?? null,
-                matchedById,
-                matchedBySig,
-              },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
-          // #endregion
           persistSerialPortIdentity(port);
           await (port as SerialPort).open({ baudRate: 115200 });
           const conn = new (WebSerialConnection as unknown as new (
@@ -1299,37 +1213,7 @@ export function useMeshCore() {
           ) => MeshCoreConnection)(port);
           await initConn(conn);
           console.log('[useMeshCore] connectAutomatic serial: connected');
-          // #region agent log
-          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
-            body: JSON.stringify({
-              sessionId: '2e4429',
-              runId: 'intermittent-pre-fix',
-              hypothesisId: 'H5',
-              location: 'useMeshCore.ts:connectAutomatic-success',
-              message: 'Auto serial reconnect succeeded',
-              data: { selectedPortId: portId ?? null },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
-          // #endregion
         } catch (err) {
-          // #region agent log
-          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2e4429' },
-            body: JSON.stringify({
-              sessionId: '2e4429',
-              runId: 'intermittent-pre-fix',
-              hypothesisId: 'H5',
-              location: 'useMeshCore.ts:connectAutomatic-error',
-              message: 'Auto serial reconnect failed',
-              data: { error: err instanceof Error ? err.message : String(err) },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
-          // #endregion
           console.error('[useMeshCore] connectAutomatic serial error', err);
           setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
           throw err;

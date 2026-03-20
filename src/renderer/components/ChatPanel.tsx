@@ -239,6 +239,10 @@ export default function ChatPanel({
     }
     return [];
   });
+  const openDmTabsRef = useRef(openDmTabs);
+  openDmTabsRef.current = openDmTabs;
+  const channelsRef = useRef(channels);
+  channelsRef.current = channels;
   const [activeDmNode, setActiveDmNode] = useState<number | null>(null);
 
   // Persist openDmTabs to localStorage whenever it changes
@@ -296,14 +300,14 @@ export default function ChatPanel({
   // Handle initialDmTarget from Nodes tab
   useEffect(() => {
     if (initialDmTarget != null) {
-      if (!openDmTabs.includes(initialDmTarget)) {
+      if (!openDmTabsRef.current.includes(initialDmTarget)) {
         setOpenDmTabs((prev) => [...prev, initialDmTarget]);
       }
       setActiveDmNode(initialDmTarget);
       setViewMode('dm');
       onDmTargetConsumed?.();
     }
-  }, [initialDmTarget]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialDmTarget, onDmTargetConsumed]);
 
   // Separate regular messages from reaction messages
   const { regularMessages, reactionsByReplyId } = useMemo(() => {
@@ -352,7 +356,7 @@ export default function ChatPanel({
       const now = Date.now();
       if (channel === -1) {
         // "All" view: mark every channel as read
-        for (const ch of channels) {
+        for (const ch of channelsRef.current) {
           lastReadRef.current.set(ch.index, now);
         }
         setUnreadCounts(new Map());
@@ -365,7 +369,6 @@ export default function ChatPanel({
         });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- channels ref read at run time; effect intentionally triggered by channel/message/viewMode changes only
   }, [channel, regularMessages.length, viewMode]);
 
   const filteredMessages = useMemo(() => {
@@ -399,7 +402,7 @@ export default function ChatPanel({
 
   // On view switch: snapshot lastRead for divider + arm scroll trigger
   useEffect(() => {
-    if (channel === -1) {
+    if (viewKey === 'ch:-1') {
       // "All" view: no divider, just scroll to bottom
       setUnreadDividerTimestamp(0);
       setTriggerScrollToUnread((n) => n + 1);
@@ -408,8 +411,7 @@ export default function ChatPanel({
     const snapshot = persistedLastReadRef.current[viewKey] ?? 0;
     setUnreadDividerTimestamp(snapshot);
     setTriggerScrollToUnread((n) => n + 1);
-  }, [viewKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Intentionally reads persistedLastRead via ref (not dep) to avoid re-firing on scroll updates
+  }, [viewKey]);
 
   // Scroll tracking for scroll-to-bottom button + mark-as-read when at bottom
   const handleScroll = useCallback(() => {
