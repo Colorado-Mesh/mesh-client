@@ -83,7 +83,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 **Connectivity**
 
 - **Bluetooth LE** — pair wirelessly; one-click reconnect card remembers your last device (name persists across sessions)
-- **USB Serial** — plug in via USB; auto-reconnects silently on startup
+- **USB Serial** — plug in via USB; auto-reconnects silently on startup (saved port signature matches the same physical device across re-enumeration)
 - **WiFi / HTTP / TCP** — connect to network-enabled nodes; saves last address for quick reconnect
 - Protocol toggle in the Connection tab (**Meshtastic / MeshCore**); each protocol remembers its own last connection and reconnects independently; the active protocol is shown as a badge in the header
 
@@ -114,7 +114,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 **Productivity**
 
 - **Log panel** (right rail) — live app log stream, optional debug toggle, export or delete the log file
-- Full keyboard navigation — press `?` for shortcut reference; `Cmd/Ctrl+1–8` switches tabs; `Cmd/Ctrl+F` searches chat
+- Full keyboard navigation — press `?` for shortcut reference; `Cmd/Ctrl+1–8` switches tabs; `Cmd/Ctrl+F` opens **chat search** across all channels (optional `user:name` and `channel:name` filters)
 - Automatic update checking — packaged builds download and install in-app; macOS opens the release page
 - System tray with live unread badge; app stays accessible when window is closed
 - Persistent SQLite storage; DB export/import/clear in the App tab; Clear GPS Data and Reset Diagnostics without a full DB wipe
@@ -128,6 +128,7 @@ MeshCore support is available alongside Meshtastic — switch protocols in the C
 **Contacts & Discovery**
 
 - Contact list with advert-based positions, contact types (Chat, Repeater, Room), and GPS coordinates persisted to SQLite; contacts seed from DB on reconnect as a fallback cache
+- **Favorite / pin** — persisted per contact in SQLite (`meshcore_contacts.favorited`)
 - **Refresh Contacts** — pull the full contact list from the device on demand
 - **Send Advert** — broadcast your node's presence (flood advert) to the mesh
 - **Manual Contact Approval** — toggle between auto-add (contacts appear automatically when heard) and manual-add (new contacts require approval before appearing); preference is persisted and re-applied on reconnect
@@ -135,6 +136,7 @@ MeshCore support is available alongside Meshtastic — switch protocols in the C
 **Messaging**
 
 - Channel messaging and **direct messages (DMs)** with delivery ACK tracking (`expectedAckCrc`) and failure timeout
+- **Transport badges** on received messages — **RF**, **MQTT**, or **both** (persisted as `received_via` in `meshcore_messages`); MQTT JSON chat can be used when RF is down
 - Incoming push events: periodic advert (0x80), path update (0x81), send confirmed (0x82), message waiting (0x83), new contact (0x8A), incoming DM (7), incoming channel message (8)
 - All messages and contacts persisted to SQLite (`meshcore_messages`, `meshcore_contacts` tables)
 
@@ -147,7 +149,8 @@ MeshCore support is available alongside Meshtastic — switch protocols in the C
 
 **Repeaters**
 
-- **Repeaters panel** (MeshCore-only tab) — list repeaters with on-demand status (noise floor, RSSI/SNR, packet counts, air time, uptime, TX queue); JSON nickname import for bulk contact names
+- **Repeaters panel** (MeshCore-only tab) — list repeaters with on-demand status (noise floor, RSSI/SNR, packet counts, air time, uptime, TX queue); JSON nickname import for bulk contact names; **Path** column shows a per-hop SNR sparkline from the last trace; per-row **Neighbors** expands an inline neighbor list (same query as node detail)
+- **Panel toolbar** — **Send Advert**, **Sync Clock**, and **Reboot Device** (shown when the device supports the corresponding commands)
 - **Per-repeater removal** — two-click confirm button on each row; removes from in-memory state and deletes from the SQLite contacts DB
 - **Clear All Repeaters** — Danger Zone entry in the App tab that deletes all Repeater-type contacts (contact_type = 2) from the DB while leaving Chat and Room contacts intact
 
@@ -159,11 +162,12 @@ MeshCore support is available alongside Meshtastic — switch protocols in the C
 **Battery & Signal Telemetry**
 
 - Battery voltage from device `selfInfo`; per-packet signal telemetry (SNR/RSSI) from RF event 0x88 — visible in the Telemetry tab
+- **Environment charts** (temperature, humidity, barometric pressure, etc.) in the Telemetry tab when pulled Cayenne LPP data is available — same panel as Meshtastic environment telemetry
 
 **Transport Notes**
 
 - BLE: waits for GATT init (`connected` event) before issuing commands; includes nudge timeout for stuck `deviceQuery` on some devices
-- Serial: auto-reconnects on startup using saved port ID
+- Serial: auto-reconnects on startup using a saved port signature so reconnect targets the same physical device when possible
 - TCP: connects to MeshCore companion radio on port 4403
 
 ---
@@ -389,11 +393,11 @@ After a successful connection, Mesh-Client remembers your last device per protoc
 
 - **Serial** — auto-connects silently in the background (both protocols)
 - **Bluetooth / WiFi / TCP** — a one-click reconnect card appears; click **Reconnect** (BLE requires a user gesture)
-- **MQTT** — auto-reconnects using saved broker settings (Meshtastic only)
+- **MQTT** — auto-reconnects using saved broker settings (Meshtastic protobuf pipeline; MeshCore JSON v1 adapter — select transport when connecting)
 
 ### MQTT
 
-Enter your broker URL, topic, and optional credentials in the MQTT section of the Connection tab. When connected, the section collapses to a compact info card showing the server, client ID, and topic. You can send messages via MQTT even when no hardware device is connected.
+Enter your broker URL, topic, and optional credentials in the MQTT section of the Connection tab. When connected, the section collapses to a compact info card showing the server, client ID, and topic. You can send messages via MQTT even when no hardware device is connected. **Meshtastic** uses the protobuf MQTT stack; **MeshCore** uses the JSON v1 chat envelope on the broker (see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md)).
 
 ---
 
@@ -411,11 +415,11 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 
 **MeshCore** supports BLE, Web Serial, TCP, and optional MQTT (broker JSON v1 adapter):
 
-| Platform | Bluetooth | Serial | TCP |
-| -------- | --------- | ------ | --- |
-| macOS    | Yes       | Yes    | Yes |
-| Windows  | Yes       | Yes    | Yes |
-| Linux    | Yes       | Yes    | Yes |
+| Platform | Bluetooth | Serial | TCP | MQTT (JSON v1) |
+| -------- | --------- | ------ | --- | -------------- |
+| macOS    | Yes       | Yes    | Yes | Yes            |
+| Windows  | Yes       | Yes    | Yes | Yes            |
+| Linux    | Yes       | Yes    | Yes | Yes            |
 
 ### Tech Stack
 
@@ -442,15 +446,18 @@ meshtastic-client/
 │   └── dependabot.yml
 ├── src/
 │   ├── main/
-│   │   ├── index.ts              # Window creation, BLE/Serial intercept, IPC (incl. meshcore TCP), MQTT
+│   │   ├── index.ts              # Window creation, BLE/Serial intercept, IPC (incl. meshcore TCP & MQTT)
+│   │   ├── meshcore-mqtt-adapter.ts  # MeshCore MQTT JSON v1 subscribe/publish
 │   │   ├── log-service.ts        # Log file, console patch, log panel IPC
 │   │   ├── sanitize-log-message.ts  # Log injection sanitization (CodeQL); use at call sites before appendLine
-│   │   ├── database.ts           # SQLite schema & migrations (WAL mode, user_version 14)
+│   │   ├── database.ts           # SQLite schema & migrations (WAL mode, user_version 16)
 │   │   ├── mqtt-manager.ts       # MQTT client: AES decrypt, dedup, protobuf decode (Meshtastic only)
 │   │   ├── updater.ts            # Auto-update checks via electron-updater
 │   │   └── gps.ts                # Main-process GPS helper
 │   ├── preload/
 │   │   └── index.ts              # contextBridge: electronAPI (db, mqtt, log, BLE, serial, session, meshcore.tcp)
+│   ├── shared/
+│   │   └── meshcoreMqttEnvelope.ts   # JSON v1 envelope parse/validate (main + renderer)
 │   └── renderer/
 │       ├── index.html            # HTML entry
 │       ├── main.tsx              # React entry point
@@ -458,6 +465,7 @@ meshtastic-client/
 │       ├── styles.css            # Global styles, theme variables
 │       ├── components/           # Panels and UI (many have co-located *.test.tsx)
 │       │   ├── ChatPanel.tsx         # Chat UI, DMs, emoji reactions, channel switching
+│       │   ├── SearchModal.tsx       # Cross-channel chat search (`user:` / `channel:` filters)
 │       │   ├── NodeListPanel.tsx     # Node browser with online/stale/offline/MQTT filter
 │       │   ├── MapPanel.tsx          # Node positions on OpenStreetMap (Leaflet)
 │       │   ├── TelemetryPanel.tsx    # Battery/voltage/SNR charts (Recharts)
@@ -469,7 +477,7 @@ meshtastic-client/
 │       │   ├── MeshCongestionAttributionBlock.tsx  # Shared mesh congestion / duplicate-traffic copy
 │       │   ├── LogPanel.tsx          # Live app log, debug toggle, export/delete log file
 │       │   ├── RadioPanel.tsx        # Radio settings, position, GPS send; MeshCore: channels, Import Config JSON
-│       │   ├── RepeatersPanel.tsx    # MeshCore only: repeater list, status, JSON nickname import
+│       │   ├── RepeatersPanel.tsx    # MeshCore: repeater list, status, trace SNR, neighbors, console actions
 │       │   ├── AppPanel.tsx          # App settings, theme presets, GPS interval, database management
 │       │   ├── NodeDetailModal.tsx   # Node info overlay; MeshCore: trace, repeater status, telemetry, neighbors
 │       │   ├── NodeInfoBody.tsx      # Shared node info content (modal + map popup)
@@ -482,7 +490,7 @@ meshtastic-client/
 │       │   └── Tabs.tsx
 │       ├── hooks/
 │       │   ├── useDevice.ts          # Meshtastic: device lifecycle, 3 transports, auto-reconnect
-│       │   └── useMeshCore.ts        # MeshCore: BLE/Serial/TCP, contacts, messages, ACK, trace, telemetry
+│       │   └── useMeshCore.ts        # MeshCore: BLE/Serial/TCP/MQTT, contacts, messages, ACK, trace, telemetry
 │       ├── stores/
 │       │   ├── diagnosticsStore.ts   # Anomalies, halo flags, MQTT ignore, foreign LoRa (both protocols)
 │       │   ├── mapViewportStore.ts   # Persisted map center/zoom

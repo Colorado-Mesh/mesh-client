@@ -291,7 +291,7 @@ For contributors who want to modify or extend the diagnostics system:
 | [`src/renderer/lib/diagnostics/RFDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RFDiagnosticEngine.ts)           | RF signal analysis (connected node + remote node findings)                        |
 | [`src/renderer/lib/diagnostics/diagnosticRows.ts`](src/renderer/lib/diagnostics/diagnosticRows.ts)                   | Row merge/prune utilities, default max-age values                                 |
 | [`src/renderer/lib/foreignLoraDetection.ts`](src/renderer/lib/foreignLoraDetection.ts)                               | Foreign LoRa packet classification and proximity scoring                          |
-| [`src/renderer/components/DiagnosticsPanel.tsx`](src/renderer/components/DiagnosticsPanel.tsx)                       | Tab 8 UI: health score, anomaly table, settings                                   |
+| [`src/renderer/components/DiagnosticsPanel.tsx`](src/renderer/components/DiagnosticsPanel.tsx)                       | Tab 8 UI: health band + counts, anomaly table, settings                           |
 | [`src/renderer/components/NodeDetailModal.tsx`](src/renderer/components/NodeDetailModal.tsx)                         | Per-node detail overlay: routing health, MQTT ignore toggle                       |
 | [`src/renderer/components/NodeInfoBody.tsx`](src/renderer/components/NodeInfoBody.tsx)                               | RF findings section, redundancy path history, congestion block                    |
 
