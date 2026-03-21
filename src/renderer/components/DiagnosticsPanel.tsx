@@ -849,7 +849,7 @@ export default function DiagnosticsPanel({
                   const v = parseInt(e.target.value, 10);
                   if (Number.isFinite(v)) setDiagnosticRowsMaxAgeHours(v);
                 }}
-                aria-label="Max age in hours for routing diagnostic rows"
+                aria-label={`Drop routing rows older than ${diagnosticRowsMaxAgeHours} hours (1–168)`}
                 className="w-16 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none"
               />
               <span className="text-sm text-gray-400">hours (1–168)</span>
@@ -877,6 +877,7 @@ export default function DiagnosticsPanel({
                   {label}
                   <button
                     onClick={() => setNodeMqttIgnored(nodeId, false)}
+                    aria-label="✕"
                     className="ml-0.5 hover:text-yellow-100 leading-none"
                     title="Remove per-node MQTT filter"
                   >
@@ -928,8 +929,8 @@ export default function DiagnosticsPanel({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search nodes..."
-            aria-label="Search anomalies"
+            placeholder="Search anomalies..."
+            aria-label="Search anomalies..."
             className="w-48 px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
           />
         </div>

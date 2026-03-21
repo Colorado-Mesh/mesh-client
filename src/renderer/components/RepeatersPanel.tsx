@@ -458,8 +458,8 @@ export default function RepeatersPanel({
                         <button
                           type="button"
                           onClick={() => onSelectRepeater?.(node)}
+                          aria-label={node.long_name}
                           className="text-left text-white hover:text-brand-green transition-colors underline decoration-transparent hover:decoration-brand-green/70 disabled:no-underline"
-                          aria-label={`Open details for ${node.long_name}`}
                         >
                           {node.long_name}
                         </button>

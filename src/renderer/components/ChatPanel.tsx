@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayChar, emojiDisplayLabel } from '../lib/reactions';
-import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
+import type { ChatMessage, MeshNode } from '../lib/types';
 
 function StatusBadge({
   status,
@@ -175,8 +175,6 @@ function UnreadDivider() {
 }
 
 interface Props {
-  /** Active mesh protocol — same Chat tab UI (composer, spellcheck, search) for both. */
-  protocol: MeshProtocol;
   messages: ChatMessage[];
   channels: { index: number; name: string }[];
   myNodeNum: number;
@@ -195,7 +193,6 @@ interface Props {
 }
 
 export default function ChatPanel({
-  protocol,
   messages,
   channels,
   myNodeNum,
@@ -229,6 +226,7 @@ export default function ChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Two-section UI state — load DM tabs from localStorage for restart persistence
   const [viewMode, setViewMode] = useState<'channels' | 'dm'>('channels');
@@ -491,6 +489,12 @@ export default function ChatPanel({
     return () => window.removeEventListener('keydown', handleKeys);
   }, []);
 
+  useEffect(() => {
+    if (showSearch) {
+      searchInputRef.current?.focus();
+    }
+  }, [showSearch]);
+
   const handleSend = async () => {
     if (!input.trim() || !isConnected || sending) return;
     setSending(true);
@@ -623,6 +627,17 @@ export default function ChatPanel({
 
   const isDmMode = viewMode === 'dm' && activeDmNode != null;
   const dmNodeName = activeDmNode != null ? getDmLabel(activeDmNode) : '';
+  const composePlaceholder = useMemo(
+    () =>
+      isDmMode
+        ? `DM to ${dmNodeName}...`
+        : !isConnected
+          ? 'Connect to send messages'
+          : isMqttOnly
+            ? 'Type a message (via MQTT)...'
+            : 'Type a message...',
+    [isDmMode, dmNodeName, isConnected, isMqttOnly],
+  );
 
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-10rem)]">
@@ -632,6 +647,7 @@ export default function ChatPanel({
           Channels
         </span>
         <button
+          aria-label="All"
           onClick={() => {
             setChannel(-1);
             setViewMode('channels');
@@ -646,9 +662,14 @@ export default function ChatPanel({
         </button>
         {channels.map((ch) => {
           const unread = unreadCounts.get(ch.index) ?? 0;
+          const channelUnreadSuffix =
+            unread > 0 && !(viewMode === 'channels' && channel === ch.index)
+              ? ` ${unread > 99 ? '99+' : unread}`
+              : '';
           return (
             <button
               key={ch.index}
+              aria-label={`${ch.name}${channelUnreadSuffix}`}
               onClick={() => {
                 setChannel(ch.index);
                 setViewMode('channels');
@@ -661,10 +682,7 @@ export default function ChatPanel({
             >
               {ch.name}
               {unread > 0 && !(viewMode === 'channels' && channel === ch.index) && (
-                <span
-                  aria-label={`${unread > 99 ? '99+' : unread} unread messages`}
-                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1"
-                >
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
                   {unread > 99 ? '99+' : unread}
                 </span>
               )}
@@ -738,22 +756,31 @@ export default function ChatPanel({
           openDmTabs.map((nodeNum) => (
             <div
               key={nodeNum}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
                 viewMode === 'dm' && activeDmNode === nodeNum
                   ? 'bg-purple-600 text-white'
                   : 'bg-secondary-dark text-muted hover:text-gray-200'
               }`}
-              onClick={() => {
-                setActiveDmNode(nodeNum);
-                setViewMode('dm');
-              }}
             >
-              <span>{getDmLabel(nodeNum)}</span>
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeDmTab(nodeNum);
+                type="button"
+                aria-label={getDmLabel(nodeNum)}
+                className={`min-w-0 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
+                  viewMode === 'dm' && activeDmNode === nodeNum
+                    ? 'text-white'
+                    : 'text-muted hover:text-gray-200'
+                }`}
+                onClick={() => {
+                  setActiveDmNode(nodeNum);
+                  setViewMode('dm');
                 }}
+              >
+                {getDmLabel(nodeNum)}
+              </button>
+              <button
+                type="button"
+                onClick={() => closeDmTab(nodeNum)}
+                aria-label="x"
                 className="ml-0.5 text-muted hover:text-white text-[10px] leading-none"
                 title="Close DM"
               >
@@ -768,14 +795,14 @@ export default function ChatPanel({
       {showSearch && (
         <div className="mb-2">
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search messages..."
-            aria-label="Search messages"
+            aria-label="Search messages..."
             spellCheck={false}
             className="w-full px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
-            autoFocus
           />
           {searchQuery && (
             <div className="text-xs text-muted mt-1">
@@ -1210,24 +1237,8 @@ export default function ChatPanel({
             typeof navigator !== 'undefined' && navigator.language ? navigator.language : undefined
           }
           enterKeyHint="send"
-          aria-label={
-            protocol === 'meshcore'
-              ? isDmMode
-                ? 'MeshCore direct message text'
-                : 'MeshCore channel message text'
-              : isDmMode
-                ? 'Meshtastic direct message text'
-                : 'Meshtastic channel message text'
-          }
-          placeholder={
-            isDmMode
-              ? `DM to ${dmNodeName}...`
-              : !isConnected
-                ? 'Connect to send messages'
-                : isMqttOnly
-                  ? 'Type a message (via MQTT)...'
-                  : 'Type a message...'
-          }
+          placeholder={composePlaceholder}
+          aria-label={composePlaceholder}
           className={`flex-1 min-h-[42px] max-h-32 px-4 py-2.5 rounded-xl text-gray-200 border focus:outline-none transition-colors resize-none overflow-y-auto ${
             !isConnected || sending ? 'opacity-60' : ''
           } ${
@@ -1241,6 +1252,7 @@ export default function ChatPanel({
         <button
           onClick={() => setShowComposePicker((prev) => !prev)}
           disabled={!isConnected || sending}
+          aria-label="😊"
           className={`px-2.5 py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
             showComposePicker
               ? 'bg-brand-green/20 text-bright-green'
@@ -1253,6 +1265,7 @@ export default function ChatPanel({
         <button
           onClick={handleSend}
           disabled={!isConnected || !input.trim() || sending}
+          aria-label={sending ? '...' : isDmMode ? 'DM' : 'Send'}
           className={`px-5 py-2.5 font-medium rounded-xl transition-colors ${
             isDmMode
               ? 'bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:text-muted text-white'

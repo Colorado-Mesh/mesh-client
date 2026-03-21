@@ -384,9 +384,12 @@ export default function ConfigPanel({
           disabled={disabled || applyingSection !== null}
         />
         <div className="space-y-1">
-          <label className="text-sm text-muted">Hop Limit</label>
+          <label htmlFor="cfg-hop-limit" className="text-sm text-muted">
+            Hop Limit
+          </label>
           <div className="flex items-center gap-3">
             <input
+              id="cfg-hop-limit"
               type="range"
               min={1}
               max={7}
@@ -839,10 +842,13 @@ function ChannelSection({
             {/* Name */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-muted">Name</label>
+                <label htmlFor="cfg-ch-name" className="text-xs text-muted">
+                  Name
+                </label>
                 <span className="text-xs text-muted">{editName.length}/11</span>
               </div>
               <input
+                id="cfg-ch-name"
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
@@ -856,8 +862,11 @@ function ChannelSection({
             {/* Role — locked for ch0 */}
             {selectedIndex !== 0 && (
               <div className="space-y-1">
-                <label className="text-xs text-muted">Role</label>
+                <label htmlFor="cfg-ch-role" className="text-xs text-muted">
+                  Role
+                </label>
                 <select
+                  id="cfg-ch-role"
                   value={editRole}
                   onChange={(e) => setEditRole(Number(e.target.value))}
                   disabled={disabled}
@@ -871,8 +880,11 @@ function ChannelSection({
 
             {/* Key Size */}
             <div className="space-y-1">
-              <label className="text-xs text-muted">Key Size</label>
+              <label htmlFor="cfg-ch-key-size" className="text-xs text-muted">
+                Key Size
+              </label>
               <select
+                id="cfg-ch-key-size"
                 value={editKeySize}
                 onChange={(e) => handleKeySizeChange(e.target.value as KeySize)}
                 disabled={disabled}
@@ -887,9 +899,12 @@ function ChannelSection({
 
             {/* Encryption Key */}
             <div className="space-y-1">
-              <label className="text-xs text-muted">Encryption Key (base64)</label>
+              <label htmlFor="cfg-ch-psk" className="text-xs text-muted">
+                Encryption Key (base64)
+              </label>
               <div className="flex items-center gap-2">
                 <input
+                  id="cfg-ch-psk"
                   type="text"
                   value={editPskB64}
                   onChange={(e) => {
@@ -943,8 +958,11 @@ function ChannelSection({
 
             {/* Position Precision */}
             <div className="space-y-1">
-              <label className="text-xs text-muted">Position Precision (0 = no location)</label>
+              <label htmlFor="cfg-ch-pos-precision" className="text-xs text-muted">
+                Position Precision (0 = no location)
+              </label>
               <input
+                id="cfg-ch-pos-precision"
                 type="number"
                 value={editPosPrecision}
                 onChange={(e) => setEditPosPrecision(Number(e.target.value))}

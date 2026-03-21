@@ -322,8 +322,11 @@ export default function ModulePanel({
           disabled={disabled}
         />
         <div className="space-y-1">
-          <label className="text-sm text-muted">Messages (one per line, max 30 chars each)</label>
+          <label htmlFor="module-canned-messages" className="text-sm text-muted">
+            Messages (one per line, max 30 chars each)
+          </label>
           <textarea
+            id="module-canned-messages"
             value={cannedText}
             onChange={(e) => setCannedText(e.target.value)}
             disabled={disabled || !cannedEnabled}
@@ -564,8 +567,11 @@ export default function ModulePanel({
           description="Echo received serial data back to sender."
         />
         <div className="space-y-1">
-          <label className="text-sm text-muted">Baud rate</label>
+          <label htmlFor="module-serial-baud" className="text-sm text-muted">
+            Baud rate
+          </label>
           <select
+            id="module-serial-baud"
             value={serialBaud}
             onChange={(e) => setSerialBaud(Number(e.target.value))}
             disabled={disabled || !serialEnabled}

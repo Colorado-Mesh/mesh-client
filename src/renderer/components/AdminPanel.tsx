@@ -24,8 +24,12 @@ function ConfirmModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <button
+        type="button"
+        aria-label="Cancel"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer border-0 p-0"
+        onClick={onCancel}
+      />
       {/* Modal */}
       <div
         role="alertdialog"
@@ -225,6 +229,7 @@ export default function AdminPanel({
         </h3>
         <div className="grid grid-cols-2 gap-2">
           <button
+            aria-label="Reboot"
             onClick={() =>
               executeWithConfirmation({
                 name: 'Reboot',
@@ -242,6 +247,7 @@ export default function AdminPanel({
           </button>
 
           <button
+            aria-label="Shutdown"
             onClick={() =>
               executeWithConfirmation({
                 name: 'Shutdown',
@@ -259,6 +265,7 @@ export default function AdminPanel({
           </button>
 
           <button
+            aria-label="Reset NodeDB"
             onClick={() =>
               executeWithConfirmation({
                 name: 'Reset NodeDB',
@@ -291,6 +298,7 @@ export default function AdminPanel({
               id="distanceFilter"
               checked={settings.distanceFilterEnabled}
               onChange={(e) => updateSetting('distanceFilterEnabled', e.target.checked)}
+              aria-label="Filter distant nodes from map and node list"
               className="accent-brand-green"
             />
             <label htmlFor="distanceFilter" className="text-sm text-gray-300 cursor-pointer">
@@ -298,8 +306,11 @@ export default function AdminPanel({
             </label>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300">Max distance:</span>
+            <label htmlFor="admin-distance-filter-max" className="text-sm text-gray-300">
+              Max distance:
+            </label>
             <input
+              id="admin-distance-filter-max"
               type="number"
               min={1}
               value={settings.distanceFilterMax}
@@ -307,14 +318,18 @@ export default function AdminPanel({
                 updateSetting('distanceFilterMax', Math.max(1, parseInt(e.target.value) || 1))
               }
               disabled={!settings.distanceFilterEnabled}
-              aria-label="Max distance"
+              aria-label={`Max distance: ${settings.distanceFilterMax}`}
               className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
+            <label htmlFor="admin-distance-filter-unit" className="text-sm text-gray-300">
+              Unit:
+            </label>
             <select
+              id="admin-distance-filter-unit"
               value={settings.distanceUnit}
               onChange={(e) => updateSetting('distanceUnit', e.target.value as 'miles' | 'km')}
               disabled={!settings.distanceFilterEnabled}
-              aria-label="Distance unit"
+              aria-label={`Unit: ${settings.distanceUnit}`}
               className="px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none disabled:opacity-40"
             >
               <option value="miles">miles</option>
@@ -346,17 +361,21 @@ export default function AdminPanel({
         <div className="bg-secondary-dark rounded-lg p-4 space-y-4">
           {/* Manual age delete */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300 flex-1">Delete nodes last heard more than</span>
+            <label htmlFor="admin-delete-age-days" className="text-sm text-gray-300 flex-1">
+              Delete nodes last heard more than
+            </label>
             <input
+              id="admin-delete-age-days"
               type="number"
               min={1}
               value={deleteAgeDays}
               onChange={(e) => setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1))}
-              aria-label="Delete nodes older than (days)"
+              aria-label={`Delete nodes last heard more than ${deleteAgeDays} days ago`}
               className="w-20 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none"
             />
             <span className="text-sm text-gray-300">days ago</span>
             <button
+              aria-label="Delete Old Nodes"
               onClick={() =>
                 executeWithConfirmation({
                   name: 'Delete Old Nodes',
@@ -382,12 +401,18 @@ export default function AdminPanel({
               id="autoPrune"
               checked={settings.autoPruneEnabled}
               onChange={(e) => updateSetting('autoPruneEnabled', e.target.checked)}
+              aria-label="Auto-prune on startup, older than"
               className="accent-brand-green"
             />
-            <label htmlFor="autoPrune" className="text-sm text-gray-300 flex-1 cursor-pointer">
+            <label
+              id="admin-auto-prune-label"
+              htmlFor="autoPrune"
+              className="text-sm text-gray-300 flex-1 cursor-pointer"
+            >
               Auto-prune on startup, older than
             </label>
             <input
+              id="admin-auto-prune-days"
               type="number"
               min={1}
               value={settings.autoPruneDays}
@@ -395,7 +420,8 @@ export default function AdminPanel({
                 updateSetting('autoPruneDays', Math.max(1, parseInt(e.target.value) || 1))
               }
               disabled={!settings.autoPruneEnabled}
-              aria-label="Auto-prune age (days)"
+              aria-labelledby="admin-auto-prune-label"
+              aria-label={`Auto-prune on startup, older than ${settings.autoPruneDays} days`}
               className="w-20 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">days</span>
@@ -405,6 +431,7 @@ export default function AdminPanel({
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-300 flex-1">Delete nodes with no name</span>
             <button
+              aria-label="Delete Unnamed Nodes"
               onClick={() =>
                 executeWithConfirmation({
                   name: 'Delete Unnamed Nodes',
@@ -431,6 +458,7 @@ export default function AdminPanel({
               id="pruneEmptyNames"
               checked={settings.pruneEmptyNamesEnabled}
               onChange={(e) => updateSetting('pruneEmptyNamesEnabled', e.target.checked)}
+              aria-label="Auto-prune unnamed nodes on startup"
               className="accent-brand-green"
             />
             <label
@@ -448,12 +476,18 @@ export default function AdminPanel({
               id="nodeCap"
               checked={settings.nodeCapEnabled}
               onChange={(e) => updateSetting('nodeCapEnabled', e.target.checked)}
+              aria-label="Cap total nodes, keep newest"
               className="accent-brand-green"
             />
-            <label htmlFor="nodeCap" className="text-sm text-gray-300 flex-1 cursor-pointer">
+            <label
+              id="admin-node-cap-label"
+              htmlFor="nodeCap"
+              className="text-sm text-gray-300 flex-1 cursor-pointer"
+            >
               Cap total nodes, keep newest
             </label>
             <input
+              id="admin-node-cap-count"
               type="number"
               min={1}
               value={settings.nodeCapCount}
@@ -461,7 +495,8 @@ export default function AdminPanel({
                 updateSetting('nodeCapCount', Math.max(1, parseInt(e.target.value) || 1))
               }
               disabled={!settings.nodeCapEnabled}
-              aria-label="Maximum node count"
+              aria-labelledby="admin-node-cap-label"
+              aria-label={`Cap total nodes, keep newest ${settings.nodeCapCount} nodes`}
               className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">nodes</span>
@@ -470,6 +505,7 @@ export default function AdminPanel({
           {/* Clear all nodes */}
           <div className="pt-1 border-t border-gray-700">
             <button
+              aria-label={`Clear All Nodes (${nodes.size})`}
               onClick={() =>
                 executeWithConfirmation({
                   name: 'Clear Nodes',
@@ -499,6 +535,7 @@ export default function AdminPanel({
           </p>
           <div className="space-y-2">
             <button
+              aria-label="Prune Zero/Null Island Nodes Removes nodes with coordinates at or near 0°N, 0°E (invalid GPS)."
               onClick={() => {
                 const zeroIslandNodes = Array.from(nodes.values()).filter(
                   (n) => Math.abs(n.latitude ?? 0) < 0.5 && Math.abs(n.longitude ?? 0) < 0.5,
@@ -528,6 +565,7 @@ export default function AdminPanel({
               </div>
             </button>
             <button
+              aria-label="Prune Distant Nodes Removes nodes beyond the distance threshold above. Requires your device to have a valid GPS location."
               onClick={() => {
                 const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
                 if (
@@ -592,6 +630,7 @@ export default function AdminPanel({
         </p>
         <div className="grid grid-cols-2 gap-2">
           <button
+            aria-label="Export Database"
             onClick={async () => {
               try {
                 const path = await window.electronAPI.db.exportDb();
@@ -612,6 +651,7 @@ export default function AdminPanel({
           </button>
 
           <button
+            aria-label="Import & Merge"
             onClick={async () => {
               try {
                 const result = await window.electronAPI.db.importDb();
@@ -643,11 +683,14 @@ export default function AdminPanel({
         {/* Channel-scoped message deletion */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-400">Channel:</label>
+            <label htmlFor="admin-clear-channel" className="text-sm text-gray-400">
+              Channel:
+            </label>
             <select
+              id="admin-clear-channel"
               value={clearChannelTarget}
               onChange={(e) => setClearChannelTarget(parseInt(e.target.value))}
-              aria-label="Select channel to clear"
+              aria-label="Channel:"
               className="flex-1 px-3 py-1.5 bg-secondary-dark border border-gray-600 rounded-lg text-gray-200 text-sm focus:border-brand-green focus:outline-none"
             >
               <option value={-1}>All Channels</option>
@@ -661,6 +704,7 @@ export default function AdminPanel({
         </div>
 
         <button
+          aria-label={`Clear Messages (${messageCount})`}
           onClick={() => {
             const isAll = clearChannelTarget === -1;
             const channelName = isAll ? '' : getChannelLabel(clearChannelTarget);
@@ -695,6 +739,7 @@ export default function AdminPanel({
             These actions are permanent and cannot be undone.
           </p>
           <button
+            aria-label="Clear All Local Data & Cache"
             onClick={() =>
               executeWithConfirmation({
                 name: 'Clear All Data',
@@ -715,6 +760,7 @@ export default function AdminPanel({
             Clear All Local Data &amp; Cache
           </button>
           <button
+            aria-label="Factory Reset Device"
             onClick={() =>
               executeWithConfirmation({
                 name: 'Factory Reset',

@@ -45,16 +45,18 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label="Close dialog"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-pointer border-0 p-0"
+        onClick={onClose}
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="shortcuts-title"
-        className="bg-deep-black border border-gray-700 rounded-xl max-w-md w-full shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 bg-deep-black border border-gray-700 rounded-xl max-w-md w-full shadow-2xl"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700">
           <h2 id="shortcuts-title" className="text-lg font-semibold text-gray-100">

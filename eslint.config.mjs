@@ -4,6 +4,7 @@ import prettier from "eslint-plugin-prettier/recommended";
 import importPlugin from "eslint-plugin-import";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import reactHooks from "eslint-plugin-react-hooks";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 
 export default tseslint.config(
   {
@@ -91,16 +92,21 @@ export default tseslint.config(
       "no-redeclare": "off",
     },
   },
-  // Renderer: type-aware linting + React Hooks rules
+  // Renderer: type-aware linting + React Hooks + jsx-a11y
   {
     files: ["src/renderer/**/*.{ts,tsx}"],
-    plugins: { "react-hooks": reactHooks },
+    plugins: {
+      ...jsxA11y.flatConfigs.recommended.plugins,
+      "react-hooks": reactHooks,
+    },
     rules: {
-        ...reactHooks.configs.recommended.rules,
-        "react-hooks/exhaustive-deps": "error",
-      },
+      ...jsxA11y.flatConfigs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      "react-hooks/exhaustive-deps": "error",
+    },
     languageOptions: {
       parserOptions: {
+        ...jsxA11y.flatConfigs.recommended.languageOptions.parserOptions,
         project: "./tsconfig.json",
         tsconfigRootDir: import.meta.dirname,
       },

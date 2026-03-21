@@ -233,7 +233,14 @@ export default function LogPanel({
   const showResizeControls = !isOverlay;
 
   const panel = (
-    <aside className="flex flex-col flex-1 min-w-0 min-h-0" aria-label="Application log">
+    <aside
+      className="flex flex-col flex-1 min-w-0 min-h-0"
+      aria-label="Application log"
+      aria-labelledby="log-panel-landmark-title"
+    >
+      <h2 id="log-panel-landmark-title" className="sr-only">
+        Application log
+      </h2>
       <div className="px-2 py-2 border-b border-gray-700 flex flex-col gap-2">
         <div className="space-y-1">
           <span className="text-[10px] text-muted uppercase tracking-wide">Show levels</span>
@@ -244,6 +251,7 @@ export default function LogPanel({
                 type="checkbox"
                 checked={levelFilters.logInfo}
                 onChange={(e) => setFilter('logInfo', e.target.checked)}
+                aria-label="Log / Info"
                 className="rounded border-gray-600"
               />
               <label htmlFor="log-filter-loginfo" className="text-xs text-muted cursor-pointer">
@@ -256,6 +264,7 @@ export default function LogPanel({
                 type="checkbox"
                 checked={levelFilters.warnError}
                 onChange={(e) => setFilter('warnError', e.target.checked)}
+                aria-label="Warn / Error"
                 className="rounded border-gray-600"
               />
               <label htmlFor="log-filter-warn" className="text-xs text-muted cursor-pointer">
@@ -268,6 +277,7 @@ export default function LogPanel({
                 type="checkbox"
                 checked={levelFilters.debug}
                 onChange={(e) => setFilter('debug', e.target.checked)}
+                aria-label="Debug"
                 className="rounded border-gray-600"
               />
               <label htmlFor="log-filter-debug" className="text-xs text-muted cursor-pointer">
@@ -285,6 +295,7 @@ export default function LogPanel({
             <button
               type="button"
               onClick={() => setLogSource('app')}
+              aria-label="App"
               className={`px-2 py-0.5 text-[10px] rounded ${logSource === 'app' ? 'bg-brand-green/20 text-brand-green border border-brand-green/40' : 'bg-slate-800 text-gray-400 border border-gray-700'}`}
             >
               App
@@ -292,6 +303,7 @@ export default function LogPanel({
             <button
               type="button"
               onClick={() => setLogSource('device')}
+              aria-label={`Device (${entries.filter((e) => !isAppLog(e)).length})`}
               className={`px-2 py-0.5 text-[10px] rounded ${logSource === 'device' ? 'bg-brand-green/20 text-brand-green border border-brand-green/40' : 'bg-slate-800 text-gray-400 border border-gray-700'}`}
             >
               Device ({entries.filter((e) => !isAppLog(e)).length})
@@ -303,7 +315,7 @@ export default function LogPanel({
             <button
               type="button"
               onClick={narrow}
-              aria-label="Narrower log panel"
+              aria-label="−"
               className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
             >
               −
@@ -311,7 +323,7 @@ export default function LogPanel({
             <button
               type="button"
               onClick={widen}
-              aria-label="Wider log panel"
+              aria-label="+"
               className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
             >
               +
@@ -323,6 +335,7 @@ export default function LogPanel({
           <button
             type="button"
             onClick={handleExport}
+            aria-label="Export log…"
             className="flex-1 px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-gray-200"
           >
             Export log…
@@ -330,7 +343,7 @@ export default function LogPanel({
           <button
             type="button"
             onClick={handleDelete}
-            aria-label="Delete log file and clear panel"
+            aria-label="Delete log"
             className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
           >
             Delete log
@@ -384,12 +397,13 @@ export default function LogPanel({
         className="fixed inset-y-0 right-0 z-[1100] flex flex-col min-h-0 border-l border-gray-700 bg-deep-black w-full max-w-md"
         role="complementary"
         aria-label="Application log"
+        aria-labelledby="log-panel-landmark-title"
       >
         <div className="flex items-center justify-end shrink-0 px-2 py-1.5 border-b border-gray-700">
           <button
             type="button"
             onClick={() => onClose?.()}
-            aria-label="Close log panel"
+            aria-label="Close"
             className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
           >
             Close
@@ -405,11 +419,10 @@ export default function LogPanel({
       className="flex shrink-0 min-h-0 border-l border-gray-700 bg-deep-black"
       style={{ width: panelWidth }}
     >
-      <div
-        role="separator"
-        aria-orientation="vertical"
+      <button
+        type="button"
         aria-label="Drag to resize log panel"
-        className="w-1.5 shrink-0 cursor-col-resize hover:bg-slate-600 bg-gray-800/50"
+        className="w-1.5 shrink-0 cursor-col-resize hover:bg-slate-600 bg-gray-800/50 border-0 p-0 self-stretch"
         onMouseDown={onResizeMouseDown}
       />
       {panel}

@@ -286,7 +286,7 @@ export default function NodeListPanel({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search nodes..."
-            aria-label="Search nodes"
+            aria-label="Search nodes..."
             className="flex-1 px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
           />
         </div>
@@ -530,11 +530,6 @@ export default function NodeListPanel({
                   <tr
                     key={node.node_id}
                     onClick={() => onNodeClick(node)}
-                    aria-label={
-                      node.favorited && !isSelf
-                        ? `${node.long_name || node.short_name || 'Node'}, favorited`
-                        : undefined
-                    }
                     className={`cursor-pointer hover:bg-secondary-dark/50 transition-colors ${rowOpacity} ${
                       isSelf ? 'bg-brand-green/5 border-l-2 border-l-brand-green' : ''
                     }`}

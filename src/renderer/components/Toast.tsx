@@ -94,10 +94,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
           setVisible(false);
           dismissTimerRef.current = setTimeout(() => onDismiss(toast.id), 300);
         }}
-        className="text-muted hover:text-gray-200 ml-2 shrink-0"
-        aria-label="Dismiss notification"
+        aria-label="Dismiss"
+        className="text-muted hover:text-gray-200 ml-2 shrink-0 text-xs font-medium"
       >
-        ×
+        Dismiss
       </button>
     </div>
   );

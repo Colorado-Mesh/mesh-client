@@ -449,12 +449,12 @@ function LocateMeControl({
           className="leaflet-control leaflet-bar leaflet-locate-control"
           style={{ marginTop: '80px', pointerEvents: 'auto' }}
         >
-          <a
+          <button
+            type="button"
             title="Show my location"
             aria-label="Show my location"
             aria-busy={loading}
-            role="button"
-            className={loading ? 'locating' : ''}
+            className={`leaflet-bar-part border-0 bg-white p-0 cursor-pointer ${loading ? 'locating' : ''}`}
             onClick={handleLocate}
           >
             <svg
@@ -474,7 +474,7 @@ function LocateMeControl({
               <line x1="2" y1="12" x2="6" y2="12" />
               <line x1="18" y1="12" x2="22" y2="12" />
             </svg>
-          </a>
+          </button>
         </div>
       </div>
       {locatedPos && (

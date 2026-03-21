@@ -88,10 +88,10 @@ export default function UpdateBanner({
       {phase !== 'downloading' && (
         <button
           onClick={onDismiss}
-          aria-label="Dismiss update banner"
-          className="ml-auto text-gray-600 hover:text-gray-300 transition-colors text-base leading-none"
+          aria-label="Dismiss"
+          className="ml-auto text-gray-600 hover:text-gray-300 transition-colors text-xs font-medium px-2 py-1 rounded border border-gray-700 hover:border-gray-600"
         >
-          ×
+          Dismiss
         </button>
       )}
     </div>

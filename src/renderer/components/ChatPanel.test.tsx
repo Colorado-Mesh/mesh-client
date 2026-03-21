@@ -7,7 +7,6 @@ import { ToastProvider } from './Toast';
 
 describe('ChatPanel accessibility', () => {
   const defaultProps = {
-    protocol: 'meshtastic' as const,
     messages: [],
     channels: [{ index: 0, name: 'General' }],
     myNodeNum: 0,

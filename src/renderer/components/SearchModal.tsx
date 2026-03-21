@@ -151,14 +151,14 @@ export default function SearchModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-2xl bg-gray-900 border border-gray-700 rounded-xl shadow-2xl flex flex-col max-h-[60vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24">
+      <button
+        type="button"
+        aria-label="Close search"
+        className="absolute inset-0 bg-black/60 cursor-pointer border-0 p-0"
+        onClick={onClose}
+      />
+      <div className="relative z-10 w-full max-w-2xl mx-4 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl flex flex-col max-h-[60vh]">
         {/* Input */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-700">
           <svg

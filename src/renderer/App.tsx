@@ -106,15 +106,6 @@ function persistChatUnread(count: number): void {
   }
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  disconnected: 'Disconnected',
-  connecting: 'Connecting',
-  connected: 'Connected',
-  configured: 'Configured',
-  stale: 'Connection stale',
-  reconnecting: 'Reconnecting',
-};
-
 function MqttGlobeIcon({ connected }: { connected: boolean }) {
   return (
     <svg
@@ -500,19 +491,23 @@ export default function App() {
           {/* Keyboard shortcuts — absolutely centered in header */}
           <button
             onClick={() => setShowShortcuts(true)}
-            aria-label="Keyboard shortcuts"
+            aria-label="Shortcuts ?"
             aria-haspopup="dialog"
             className="absolute left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-600 bg-slate-800/60 shadow-sm text-gray-400 hover:text-gray-200 hover:border-slate-500 hover:bg-slate-700/60 transition-colors text-sm font-medium"
             title="Keyboard shortcuts (?)"
           >
             Shortcuts{' '}
-            <kbd className="px-1.5 py-0.5 border border-slate-500 rounded bg-slate-700 text-slate-300 text-xs font-mono">
+            <kbd
+              className="px-1.5 py-0.5 border border-slate-500 rounded bg-slate-700 text-slate-300 text-xs font-mono"
+              aria-hidden="true"
+            >
               ?
             </kbd>
           </button>
           <div className="flex items-center gap-2">
             {/* Protocol badge */}
             <span
+              aria-label={protocol === 'meshcore' ? 'MeshCore' : 'Meshtastic'}
               className={`text-xs px-2 py-0.5 rounded-full font-mono ${
                 protocol === 'meshcore'
                   ? 'bg-purple-600 text-white'
@@ -521,26 +516,28 @@ export default function App() {
             >
               {protocol === 'meshcore' ? 'MeshCore' : 'Meshtastic'}
             </span>
-            <div
-              className="flex items-center gap-1.5 mr-3 pr-3 border-r border-gray-700"
-              aria-label={
-                device.mqttStatus === 'connected' ? 'MQTT: connected' : 'MQTT: disconnected'
-              }
-            >
+            <div className="flex items-center gap-1.5 mr-3 pr-3 border-r border-gray-700">
               <MqttGlobeIcon connected={device.mqttStatus === 'connected'} />
               <span
+                aria-label={
+                  device.mqttStatus === 'connected' ? 'MQTT connected' : 'MQTT disconnected'
+                }
                 className={`text-xs ${device.mqttStatus === 'connected' ? 'text-brand-green' : 'text-gray-500'}`}
               >
-                MQTT
+                MQTT {device.mqttStatus === 'connected' ? 'connected' : 'disconnected'}
               </span>
             </div>
             {isConnectedOrOperational && <LinkIcon className="w-4 h-4" aria-hidden="true" />}
             <div
               className={`w-2.5 h-2.5 rounded-full ${statusColor}`}
-              aria-label={STATUS_LABELS[device.state.status] ?? device.state.status}
+              aria-hidden="true"
+              title={device.state.status}
             />
             <div role="status" aria-live="polite" aria-atomic="true">
-              <span className="text-sm text-muted capitalize">
+              <span
+                aria-label={`${device.state.status}${device.state.connectionType ? ` (${device.state.connectionType.toUpperCase()})` : ''}`}
+                className="text-sm text-muted capitalize"
+              >
                 {device.state.status}
                 {device.state.connectionType
                   ? ` (${device.state.connectionType.toUpperCase()})`
@@ -548,13 +545,17 @@ export default function App() {
               </span>
             </div>
             {device.state.myNodeNum > 0 && (
-              <span className="text-xs text-muted ml-2 whitespace-nowrap">
+              <span
+                aria-label={`Node: ${device.getPickerStyleNodeLabel(device.state.myNodeNum)}`}
+                className="text-xs text-muted ml-2 whitespace-nowrap"
+              >
                 Node: {device.getPickerStyleNodeLabel(device.state.myNodeNum)}
               </span>
             )}
             {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
             {queueShowBadge && device.queueStatus && (
               <div
+                aria-label={`Q: ${queueUsed}/${device.queueStatus.maxlen}`}
                 className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${queueColorClass}`}
                 title={`Queue: ${queueUsed}/${device.queueStatus.maxlen} used`}
               >
@@ -585,10 +586,10 @@ export default function App() {
             <button
               type="button"
               onClick={() => setTelemetryNoticeDismissed(true)}
-              aria-label="Dismiss telemetry notice"
-              className="shrink-0 text-gray-500 hover:text-gray-300 transition-colors text-base leading-none"
+              aria-label="Dismiss"
+              className="shrink-0 text-gray-500 hover:text-gray-300 transition-colors text-xs font-medium px-2 py-1 rounded border border-gray-600 hover:border-gray-500"
             >
-              ×
+              Dismiss
             </button>
           </div>
         )}
@@ -653,7 +654,6 @@ export default function App() {
                 </div>
                 <div id="panel-1" role="tabpanel" aria-labelledby="tab-1" hidden={activeTab !== 1}>
                   <ChatPanel
-                    protocol={protocol}
                     messages={device.messages}
                     channels={chatChannels}
                     myNodeNum={device.selfNodeId}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import type { OurPosition } from '../lib/gpsSource';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
@@ -335,7 +335,12 @@ function ConfirmModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <button
+        type="button"
+        aria-label="Cancel"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer border-0 p-0"
+        onClick={onCancel}
+      />
       <div className="relative bg-deep-black border border-gray-600 rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6 space-y-4">
         <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
         <p className="text-sm text-muted leading-relaxed">{message}</p>
@@ -370,11 +375,15 @@ function WifiPasswordField({
   disabled: boolean;
 }) {
   const [show, setShow] = useState(false);
+  const wifiPwdId = useId();
   return (
     <div className="space-y-1">
-      <label className="text-sm text-muted">WiFi Password</label>
+      <label htmlFor={wifiPwdId} className="text-sm text-muted">
+        WiFi Password
+      </label>
       <div className="flex items-center gap-1">
         <input
+          id={wifiPwdId}
           type={show ? 'text' : 'password'}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -839,10 +848,11 @@ export default function RadioPanel({
         disabled={disabled || !onSetOwner}
       >
         <div className="space-y-1">
-          <label className="text-sm text-muted">
+          <label htmlFor="radio-long-name" className="text-sm text-muted">
             {capabilities?.protocol === 'meshcore' ? 'Name' : 'Long Name'}
           </label>
           <input
+            id="radio-long-name"
             type="text"
             value={longName}
             onChange={(e) =>
@@ -866,8 +876,11 @@ export default function RadioPanel({
         {capabilities?.protocol !== 'meshcore' && (
           <>
             <div className="space-y-1">
-              <label className="text-sm text-muted">Short Name</label>
+              <label htmlFor="radio-short-name" className="text-sm text-muted">
+                Short Name
+              </label>
               <input
+                id="radio-short-name"
                 type="text"
                 value={shortName}
                 onChange={(e) => setShortName(e.target.value.slice(0, 4))}
@@ -952,8 +965,11 @@ export default function RadioPanel({
           disabled={disabled}
         >
           <div className="space-y-1">
-            <label className="text-sm text-muted">Frequency (MHz)</label>
+            <label htmlFor="radio-freq-mhz" className="text-sm text-muted">
+              Frequency (MHz)
+            </label>
             <input
+              id="radio-freq-mhz"
               type="number"
               value={(radioFreqHz / 1e6).toFixed(3)}
               onChange={(e) => {
@@ -1121,9 +1137,12 @@ export default function RadioPanel({
             </div>
           )}
           <div className="space-y-1">
-            <label className="text-sm text-muted">Hop Limit</label>
+            <label htmlFor="radio-hop-limit" className="text-sm text-muted">
+              Hop Limit
+            </label>
             <div className="flex items-center gap-3">
               <input
+                id="radio-hop-limit"
                 type="range"
                 min={1}
                 max={7}
@@ -1262,8 +1281,11 @@ export default function RadioPanel({
               )}
             </p>
             <div className="space-y-1">
-              <label className="text-sm text-muted">Latitude</label>
+              <label htmlFor="radio-fixed-lat" className="text-sm text-muted">
+                Latitude
+              </label>
               <input
+                id="radio-fixed-lat"
                 type="text"
                 inputMode="decimal"
                 value={latStr}
@@ -1274,8 +1296,11 @@ export default function RadioPanel({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-muted">Longitude</label>
+              <label htmlFor="radio-fixed-lon" className="text-sm text-muted">
+                Longitude
+              </label>
               <input
+                id="radio-fixed-lon"
                 type="text"
                 inputMode="decimal"
                 value={lonStr}
@@ -1286,8 +1311,11 @@ export default function RadioPanel({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-muted">Altitude (m)</label>
+              <label htmlFor="radio-fixed-alt" className="text-sm text-muted">
+                Altitude (m)
+              </label>
               <input
+                id="radio-fixed-alt"
                 type="text"
                 inputMode="decimal"
                 value={altStr}
@@ -1450,8 +1478,11 @@ export default function RadioPanel({
             description="Enable the device's WiFi radio. Requires reboot to take effect."
           />
           <div className="space-y-1">
-            <label className="text-sm text-muted">WiFi SSID</label>
+            <label htmlFor="radio-wifi-ssid" className="text-sm text-muted">
+              WiFi SSID
+            </label>
             <input
+              id="radio-wifi-ssid"
               type="text"
               value={wifiSsid}
               onChange={(e) => setWifiSsid(e.target.value)}
@@ -1467,8 +1498,11 @@ export default function RadioPanel({
             disabled={disabled || !wifiEnabled || applyingSection !== null}
           />
           <div className="space-y-1">
-            <label className="text-sm text-muted">NTP Server</label>
+            <label htmlFor="radio-ntp-server" className="text-sm text-muted">
+              NTP Server
+            </label>
             <input
+              id="radio-ntp-server"
               type="text"
               value={ntpServer}
               onChange={(e) => setNtpServer(e.target.value)}
@@ -1932,10 +1966,13 @@ function ChannelSection({
             {/* Name */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-muted">Name</label>
+                <label htmlFor="radio-mt-ch-name" className="text-xs text-muted">
+                  Name
+                </label>
                 <span className="text-xs text-muted">{editName.length}/11</span>
               </div>
               <input
+                id="radio-mt-ch-name"
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
@@ -1949,8 +1986,11 @@ function ChannelSection({
             {/* Role — locked for ch0 */}
             {selectedIndex !== 0 && (
               <div className="space-y-1">
-                <label className="text-xs text-muted">Role</label>
+                <label htmlFor="radio-mt-ch-role" className="text-xs text-muted">
+                  Role
+                </label>
                 <select
+                  id="radio-mt-ch-role"
                   value={editRole}
                   onChange={(e) => setEditRole(Number(e.target.value))}
                   disabled={disabled}
@@ -1964,8 +2004,11 @@ function ChannelSection({
 
             {/* Key Size */}
             <div className="space-y-1">
-              <label className="text-xs text-muted">Key Size</label>
+              <label htmlFor="radio-mt-ch-key-size" className="text-xs text-muted">
+                Key Size
+              </label>
               <select
+                id="radio-mt-ch-key-size"
                 value={editKeySize}
                 onChange={(e) => handleKeySizeChange(e.target.value as KeySize)}
                 disabled={disabled}
@@ -1980,9 +2023,12 @@ function ChannelSection({
 
             {/* Encryption Key */}
             <div className="space-y-1">
-              <label className="text-xs text-muted">Encryption Key (base64)</label>
+              <label htmlFor="radio-mt-ch-psk" className="text-xs text-muted">
+                Encryption Key (base64)
+              </label>
               <div className="flex items-center gap-2">
                 <input
+                  id="radio-mt-ch-psk"
                   type="text"
                   value={editPskB64}
                   onChange={(e) => {
@@ -2032,8 +2078,11 @@ function ChannelSection({
 
             {/* Position Precision */}
             <div className="space-y-1">
-              <label className="text-xs text-muted">Position Precision (0 = no location)</label>
+              <label htmlFor="radio-mt-ch-pos-precision" className="text-xs text-muted">
+                Position Precision (0 = no location)
+              </label>
               <input
+                id="radio-mt-ch-pos-precision"
                 type="number"
                 value={editPosPrecision}
                 onChange={(e) => setEditPosPrecision(Number(e.target.value))}
@@ -2277,8 +2326,11 @@ function MeshcoreChannelSection({
 
             {addingNew && (
               <div className="space-y-1">
-                <label className="text-xs text-muted">Index (0–7)</label>
+                <label htmlFor="radio-mc-ch-idx" className="text-xs text-muted">
+                  Index (0–7)
+                </label>
                 <input
+                  id="radio-mc-ch-idx"
                   type="number"
                   value={newIdx}
                   onChange={(e) => setNewIdx(e.target.value)}
@@ -2291,8 +2343,11 @@ function MeshcoreChannelSection({
             )}
 
             <div className="space-y-1">
-              <label className="text-xs text-muted">Name</label>
+              <label htmlFor="radio-mc-ch-name" className="text-xs text-muted">
+                Name
+              </label>
               <input
+                id="radio-mc-ch-name"
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
@@ -2304,12 +2359,15 @@ function MeshcoreChannelSection({
 
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-muted">Key (32 hex chars = 16 bytes)</label>
+                <label htmlFor="radio-mc-ch-key" className="text-xs text-muted">
+                  Key (32 hex chars = 16 bytes)
+                </label>
                 <button onClick={generateKey} className="text-xs text-blue-400 hover:text-blue-300">
                   Generate random
                 </button>
               </div>
               <input
+                id="radio-mc-ch-key"
                 type="text"
                 value={editKeyHex}
                 onChange={(e) => setEditKeyHex(e.target.value.toLowerCase())}

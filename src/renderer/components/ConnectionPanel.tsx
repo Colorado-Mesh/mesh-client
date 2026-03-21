@@ -796,15 +796,12 @@ export default function ConnectionPanel({
 
   // ─── Protocol toggle (shown in both connected and disconnected views) ──
   const protocolToggle = (
-    <div
-      role="group"
-      aria-label="Mesh protocol"
-      className="flex rounded-lg overflow-hidden border border-gray-700 bg-deep-black"
-    >
+    <div className="flex rounded-lg overflow-hidden border border-gray-700 bg-deep-black">
       {(['meshtastic', 'meshcore'] as const).map((p) => (
         <button
           key={p}
           type="button"
+          aria-label={p === 'meshtastic' ? 'Meshtastic' : 'MeshCore'}
           aria-pressed={protocol === p}
           onClick={() => onProtocolChange(p)}
           className={`flex-1 py-2 text-sm font-medium transition-colors ${
@@ -876,11 +873,12 @@ export default function ConnectionPanel({
                       ? `${cached} (${device.deviceName})`
                       : cached
                     : device.deviceName;
+                  const bleAriaLabel = `${displayName} ${device.deviceId}`;
                   return (
                     <button
                       key={device.deviceId}
                       type="button"
-                      aria-label={`Connect to ${displayName}`}
+                      aria-label={bleAriaLabel}
                       onClick={() => handleSelectBleDevice(device.deviceId)}
                       className="w-full px-4 py-3 text-left hover:bg-secondary-dark transition-colors border-b border-gray-700 last:border-b-0"
                     >
@@ -924,25 +922,29 @@ export default function ConnectionPanel({
                   No serial ports found. Ensure your device is plugged in.
                 </div>
               ) : (
-                serialPorts.map((port) => (
-                  <button
-                    key={port.portId}
-                    type="button"
-                    aria-label={`Connect using serial port ${port.displayName}`}
-                    onClick={() => handleSelectSerialPort(port.portId)}
-                    className="w-full px-4 py-3 text-left hover:bg-secondary-dark transition-colors border-b border-gray-700 last:border-b-0"
-                  >
-                    <div className="text-sm text-gray-200 flex items-center gap-2">
-                      <ConnectionIcon type="serial" />
-                      {port.displayName}
-                    </div>
-                    <div className="text-xs text-muted font-mono ml-7">
-                      {port.portName}
-                      {port.vendorId && ` (VID: ${port.vendorId})`}
-                      {port.productId && ` PID: ${port.productId}`}
-                    </div>
-                  </button>
-                ))
+                serialPorts.map((port) => {
+                  const serialDetails = `${port.portName}${port.vendorId ? ` (VID: ${port.vendorId})` : ''}${port.productId ? ` PID: ${port.productId}` : ''}`;
+                  const serialAriaLabel = `${port.displayName} ${serialDetails}`;
+                  return (
+                    <button
+                      key={port.portId}
+                      type="button"
+                      aria-label={serialAriaLabel}
+                      onClick={() => handleSelectSerialPort(port.portId)}
+                      className="w-full px-4 py-3 text-left hover:bg-secondary-dark transition-colors border-b border-gray-700 last:border-b-0"
+                    >
+                      <div className="text-sm text-gray-200 flex items-center gap-2">
+                        <ConnectionIcon type="serial" />
+                        {port.displayName}
+                      </div>
+                      <div className="text-xs text-muted font-mono ml-7">
+                        {port.portName}
+                        {port.vendorId && ` (VID: ${port.vendorId})`}
+                        {port.productId && ` PID: ${port.productId}`}
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
@@ -1038,8 +1040,14 @@ export default function ConnectionPanel({
         <div className="p-4 space-y-3">
           {protocol === 'meshcore' && (
             <div className="space-y-1">
-              <label className="text-xs text-muted">Network Preset</label>
-              <div className="flex gap-2">
+              <p id="conn-meshcore-network-preset" className="text-xs text-muted">
+                Network Preset
+              </p>
+              <div
+                className="flex gap-2"
+                role="group"
+                aria-labelledby="conn-meshcore-network-preset"
+              >
                 {(
                   [
                     { id: 'letsmesh', label: 'LetsMesh' },
@@ -1169,7 +1177,7 @@ export default function ConnectionPanel({
                 <button
                   type="button"
                   onClick={() => setShowMqttPassword((v) => !v)}
-                  aria-label={showMqttPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showMqttPassword ? 'hide' : 'show'}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-xs"
                 >
                   {showMqttPassword ? 'hide' : 'show'}

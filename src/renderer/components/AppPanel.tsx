@@ -19,6 +19,22 @@ import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useToast } from './Toast';
 
+const GPS_REFRESH_INTERVAL_LABELS: Record<number, string> = {
+  0: 'Manual only',
+  900: 'Every 15 min',
+  1800: 'Every 30 min',
+  3600: 'Every hour',
+  7200: 'Every 2 hours',
+};
+
+const HISTORY_WINDOW_LABELS: Record<number, string> = {
+  1: '1 hour',
+  4: '4 hours',
+  24: '24 hours',
+  72: '3 days',
+  168: '7 days',
+};
+
 // ─── Confirmation Modal ─────────────────────────────────────────
 function ConfirmModal({
   title,
@@ -37,8 +53,12 @@ function ConfirmModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <button
+        type="button"
+        aria-label="Cancel"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer border-0 p-0"
+        onClick={onCancel}
+      />
       {/* Modal */}
       <div className="relative bg-deep-black border border-gray-600 rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6 space-y-4">
         <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
@@ -46,12 +66,14 @@ function ConfirmModal({
         <div className="flex gap-3 pt-2">
           <button
             onClick={onCancel}
+            aria-label="Cancel"
             className="flex-1 px-4 py-2.5 bg-secondary-dark hover:bg-gray-600 text-gray-300 font-medium rounded-lg transition-colors text-sm"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
+            aria-label={confirmLabel}
             className={`flex-1 px-4 py-2.5 font-medium rounded-lg transition-colors text-sm text-white ${
               danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'
             }`}
@@ -376,6 +398,7 @@ export default function AppPanel({
                 type="checkbox"
                 checked={logPanelVisible}
                 onChange={(e) => onLogPanelVisibleChange(e.target.checked)}
+                aria-label="Show log panel (right side)"
                 className="rounded border-gray-600"
               />
               <label
@@ -415,7 +438,12 @@ export default function AppPanel({
                     aria-hidden="true"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-200">{meta.label}</div>
+                    <div
+                      id={`theme-color-heading-${meta.key}`}
+                      className="text-sm font-medium text-gray-200"
+                    >
+                      {meta.label}
+                    </div>
                     <p className="text-xs text-muted">{meta.description}</p>
                     <p className="text-xs font-mono text-gray-400 mt-1">Current: {hex}</p>
                   </div>
@@ -424,7 +452,7 @@ export default function AppPanel({
                 <div
                   className="flex flex-wrap gap-1.5 pl-10"
                   role="group"
-                  aria-label={`${meta.label} color presets`}
+                  aria-labelledby={`theme-color-heading-${meta.key}`}
                 >
                   {THEME_COLOR_PRESETS.map((p) => {
                     const selected = p.hex === hex;
@@ -456,6 +484,7 @@ export default function AppPanel({
               setThemeColors({ ...DEFAULT_THEME_COLORS });
               addToast('Colors reset to app defaults.', 'success');
             }}
+            aria-label="Reset all colors to defaults"
             className="w-full px-3 py-2 bg-secondary-dark hover:bg-gray-600 text-gray-300 rounded-lg text-sm font-medium transition-colors"
           >
             Reset all colors to defaults
@@ -499,6 +528,7 @@ export default function AppPanel({
                 value={staticLatInput}
                 onChange={(e) => setStaticLatInput(e.target.value)}
                 placeholder="e.g. 40.12345"
+                aria-label={`Lat: ${staticLatInput || 'e.g. 40.12345'}`}
                 className="flex-1 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
               />
               <label htmlFor="apppanel-static-lon" className="text-sm text-gray-300 w-8">
@@ -513,12 +543,14 @@ export default function AppPanel({
                 value={staticLonInput}
                 onChange={(e) => setStaticLonInput(e.target.value)}
                 placeholder="e.g. -105.12345"
+                aria-label={`Lon: ${staticLonInput || 'e.g. -105.12345'}`}
                 className="flex-1 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
               />
             </div>
             <div className="flex gap-2">
               <button
                 onClick={saveStaticPosition}
+                aria-label="Save Static Position"
                 className="flex-1 px-3 py-1.5 bg-brand-green/20 text-brand-green hover:bg-brand-green/30 border border-brand-green/40 rounded text-sm font-medium transition-colors"
               >
                 Save Static Position
@@ -526,6 +558,7 @@ export default function AppPanel({
               {hasStaticPosition && (
                 <button
                   onClick={clearStaticPosition}
+                  aria-label="Clear"
                   className="px-3 py-1.5 bg-secondary-dark text-gray-400 hover:bg-gray-600 rounded text-sm font-medium transition-colors"
                 >
                   Clear
@@ -540,10 +573,10 @@ export default function AppPanel({
             </label>
             <select
               id="apppanel-gps-interval"
-              aria-label="GPS auto-refresh interval"
               value={gpsRefreshInterval}
               onChange={(e) => handleGpsIntervalChange(Number(e.target.value))}
               disabled={hasStaticPosition}
+              aria-label={`Auto-refresh interval: ${GPS_REFRESH_INTERVAL_LABELS[gpsRefreshInterval] ?? gpsRefreshInterval}`}
               className={`px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none ${hasStaticPosition ? 'opacity-40 cursor-not-allowed' : ''}`}
             >
               <option value={0}>Manual only</option>
@@ -561,6 +594,7 @@ export default function AppPanel({
           <button
             onClick={() => onRefreshGps?.()}
             disabled={gpsLoading}
+            aria-label={gpsLoading ? 'Refreshing...' : 'Refresh Now'}
             className={`px-4 py-2 bg-secondary-dark text-gray-300 rounded-lg text-sm font-medium transition-colors ${gpsLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-600'}`}
           >
             {gpsLoading ? 'Refreshing...' : 'Refresh Now'}
@@ -582,6 +616,7 @@ export default function AppPanel({
               id="distanceFilter"
               checked={settings.distanceFilterEnabled}
               onChange={(e) => updateSetting('distanceFilterEnabled', e.target.checked)}
+              aria-label="Filter distant nodes from map and node list"
               className="accent-brand-green"
             />
             <label htmlFor="distanceFilter" className="text-sm text-gray-300 cursor-pointer">
@@ -597,19 +632,22 @@ export default function AppPanel({
               type="number"
               min={1}
               value={settings.distanceFilterMax}
-              aria-label="Maximum distance for node filter"
               onChange={(e) =>
                 updateSetting('distanceFilterMax', Math.max(1, parseInt(e.target.value) || 1))
               }
               disabled={!settings.distanceFilterEnabled}
+              aria-label={`Max distance: ${settings.distanceFilterMax}`}
               className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
+            <label htmlFor="apppanel-distance-unit" className="text-sm text-gray-300">
+              Unit:
+            </label>
             <select
               id="apppanel-distance-unit"
-              aria-label="Distance unit for filter"
               value={settings.distanceUnit}
               onChange={(e) => updateSetting('distanceUnit', e.target.value as 'miles' | 'km')}
               disabled={!settings.distanceFilterEnabled}
+              aria-label={`Unit: ${settings.distanceUnit}`}
               className="px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none disabled:opacity-40"
             >
               <option value="miles">miles</option>
@@ -638,6 +676,7 @@ export default function AppPanel({
               id="filterMqttOnly"
               checked={settings.filterMqttOnly}
               onChange={(e) => updateSetting('filterMqttOnly', e.target.checked)}
+              aria-label="Hide MQTT-only nodes from map and node list"
               className="accent-brand-green"
             />
             <label htmlFor="filterMqttOnly" className="text-sm text-gray-300 cursor-pointer">
@@ -650,6 +689,7 @@ export default function AppPanel({
               id="showMovementPaths"
               checked={showPaths}
               onChange={(e) => setShowPaths(e.target.checked)}
+              aria-label="Show movement paths"
               className="accent-brand-green"
             />
             <label htmlFor="showMovementPaths" className="text-sm text-gray-300 cursor-pointer">
@@ -662,9 +702,9 @@ export default function AppPanel({
             </label>
             <select
               id="apppanel-history-window"
-              aria-label="Position history window"
               value={historyWindowHours}
               onChange={(e) => setHistoryWindow(Number(e.target.value))}
+              aria-label={`Position history window: ${HISTORY_WINDOW_LABELS[historyWindowHours] ?? historyWindowHours}`}
               className="px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
             >
               <option value={1}>1 hour</option>
@@ -688,9 +728,14 @@ export default function AppPanel({
               id="autoPrune"
               checked={settings.autoPruneEnabled}
               onChange={(e) => updateSetting('autoPruneEnabled', e.target.checked)}
+              aria-label="Auto-prune on startup, older than"
               className="accent-brand-green"
             />
-            <label htmlFor="autoPrune" className="text-sm text-gray-300 flex-1 cursor-pointer">
+            <label
+              id="apppanel-auto-prune-label"
+              htmlFor="autoPrune"
+              className="text-sm text-gray-300 flex-1 cursor-pointer"
+            >
               Auto-prune on startup, older than
             </label>
             <input
@@ -698,11 +743,12 @@ export default function AppPanel({
               type="number"
               min={1}
               value={settings.autoPruneDays}
-              aria-label="Auto-prune nodes older than days"
               onChange={(e) =>
                 updateSetting('autoPruneDays', Math.max(1, parseInt(e.target.value) || 1))
               }
               disabled={!settings.autoPruneEnabled}
+              aria-labelledby="apppanel-auto-prune-label"
+              aria-label={`Auto-prune on startup, older than ${settings.autoPruneDays} days`}
               className="w-20 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">days</span>
@@ -715,6 +761,7 @@ export default function AppPanel({
               id="pruneEmptyNames"
               checked={settings.pruneEmptyNamesEnabled}
               onChange={(e) => updateSetting('pruneEmptyNamesEnabled', e.target.checked)}
+              aria-label="Remove unnamed nodes on startup"
               className="accent-brand-green"
             />
             <label
@@ -732,9 +779,14 @@ export default function AppPanel({
               id="nodeCap"
               checked={settings.nodeCapEnabled}
               onChange={(e) => updateSetting('nodeCapEnabled', e.target.checked)}
+              aria-label="Cap total nodes, keep newest"
               className="accent-brand-green"
             />
-            <label htmlFor="nodeCap" className="text-sm text-gray-300 flex-1 cursor-pointer">
+            <label
+              id="apppanel-node-cap-label"
+              htmlFor="nodeCap"
+              className="text-sm text-gray-300 flex-1 cursor-pointer"
+            >
               Cap total nodes, keep newest
             </label>
             <input
@@ -742,11 +794,12 @@ export default function AppPanel({
               type="number"
               min={1}
               value={settings.nodeCapCount}
-              aria-label="Maximum number of nodes to keep"
               onChange={(e) =>
                 updateSetting('nodeCapCount', Math.max(1, parseInt(e.target.value) || 1))
               }
               disabled={!settings.nodeCapEnabled}
+              aria-labelledby="apppanel-node-cap-label"
+              aria-label={`Cap total nodes, keep newest ${settings.nodeCapCount} nodes`}
               className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">nodes</span>
@@ -765,9 +818,14 @@ export default function AppPanel({
               id="messageLimit"
               checked={settings.messageLimitEnabled}
               onChange={(e) => updateSetting('messageLimitEnabled', e.target.checked)}
+              aria-label="Limit messages loaded"
               className="accent-brand-green"
             />
-            <label htmlFor="messageLimit" className="text-sm text-gray-300 flex-1 cursor-pointer">
+            <label
+              id="apppanel-message-limit-label"
+              htmlFor="messageLimit"
+              className="text-sm text-gray-300 flex-1 cursor-pointer"
+            >
               Limit messages loaded
             </label>
             <input
@@ -776,7 +834,6 @@ export default function AppPanel({
               min={1}
               max={10000}
               value={settings.messageLimitCount}
-              aria-label="Maximum messages to load from database"
               onChange={(e) =>
                 updateSetting(
                   'messageLimitCount',
@@ -784,6 +841,8 @@ export default function AppPanel({
                 )
               }
               disabled={!settings.messageLimitEnabled}
+              aria-labelledby="apppanel-message-limit-label"
+              aria-label={`Limit messages loaded ${settings.messageLimitCount} messages`}
               className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">messages</span>
@@ -800,6 +859,7 @@ export default function AppPanel({
         </p>
         <div className="grid grid-cols-2 gap-2">
           <button
+            aria-label="Export Database"
             onClick={async () => {
               try {
                 console.debug('[AppPanel] exportDb');
@@ -821,6 +881,7 @@ export default function AppPanel({
           </button>
 
           <button
+            aria-label="Import & Merge"
             onClick={async () => {
               try {
                 console.debug('[AppPanel] importDb');
@@ -865,6 +926,7 @@ export default function AppPanel({
             </p>
             <button
               type="button"
+              aria-label="Reset Diagnostics"
               onClick={() =>
                 executeWithConfirmation({
                   name: 'Reset Diagnostics',
@@ -894,6 +956,7 @@ export default function AppPanel({
             </p>
             <button
               type="button"
+              aria-label="Clear GPS Data"
               onClick={() =>
                 executeWithConfirmation({
                   name: 'Clear GPS Data',
@@ -923,6 +986,7 @@ export default function AppPanel({
             </p>
             <button
               type="button"
+              aria-label="Clear Position History"
               onClick={() =>
                 executeWithConfirmation({
                   name: 'Clear Position History',
@@ -954,13 +1018,14 @@ export default function AppPanel({
                 type="number"
                 min={1}
                 value={deleteAgeDays}
-                aria-label="Delete nodes older than this many days"
                 onChange={(e) => setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1))}
+                aria-label={`Delete nodes last heard more than ${deleteAgeDays} days`}
                 className="w-20 px-2 py-1 bg-deep-black border border-red-800/60 rounded text-gray-200 text-sm text-right focus:border-red-500 focus:outline-none"
               />
               <span className="text-sm text-gray-300">days</span>
               <button
                 type="button"
+                aria-label="Delete Old Nodes"
                 onClick={() =>
                   executeWithConfirmation({
                     name: 'Delete Old Nodes',
@@ -980,6 +1045,7 @@ export default function AppPanel({
             </div>
             <button
               type="button"
+              aria-label="Prune MQTT-only Nodes"
               onClick={() =>
                 executeWithConfirmation({
                   name: 'Prune MQTT-only Nodes',
@@ -999,6 +1065,7 @@ export default function AppPanel({
             </button>
             <button
               type="button"
+              aria-label="Prune Unnamed Nodes"
               onClick={() =>
                 executeWithConfirmation({
                   name: 'Prune Unnamed Nodes',
@@ -1018,6 +1085,7 @@ export default function AppPanel({
             </button>
             <button
               type="button"
+              aria-label="Prune Zero/Null Island Nodes Removes nodes at or near 0°N, 0°E (invalid GPS)."
               onClick={() => {
                 const zeroIslandNodes = Array.from(nodes.values()).filter(
                   (n) => Math.abs(n.latitude ?? 0) < 0.5 && Math.abs(n.longitude ?? 0) < 0.5,
@@ -1048,6 +1116,7 @@ export default function AppPanel({
             </button>
             <button
               type="button"
+              aria-label="Prune Distant Nodes Beyond the distance threshold in Map & Node Filtering. Requires a valid GPS location."
               onClick={() => {
                 const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
                 const homeLat = homeNode?.latitude ?? ourPosition?.lat;
@@ -1098,6 +1167,7 @@ export default function AppPanel({
             </button>
             <button
               type="button"
+              aria-label={`Clear All Nodes (${nodes.size})`}
               onClick={() =>
                 executeWithConfirmation({
                   name: 'Clear Nodes',
@@ -1127,9 +1197,9 @@ export default function AppPanel({
               </label>
               <select
                 id="apppanel-clear-channel"
-                aria-label="Channel for clearing messages"
                 value={clearChannelTarget}
                 onChange={(e) => setClearChannelTarget(parseInt(e.target.value))}
+                aria-label="Channel:"
                 className="flex-1 px-3 py-1.5 bg-deep-black border border-red-800/60 rounded-lg text-gray-200 text-sm focus:border-red-500 focus:outline-none"
               >
                 <option value={-1}>All Channels</option>
@@ -1142,6 +1212,7 @@ export default function AppPanel({
             </div>
             <button
               type="button"
+              aria-label={`Clear Messages (${messageCount})`}
               onClick={() => {
                 const isAll = clearChannelTarget === -1;
                 const channelName = isAll ? '' : getChannelLabel(clearChannelTarget);
@@ -1176,6 +1247,7 @@ export default function AppPanel({
               </div>
               <button
                 type="button"
+                aria-label="Clear All Repeaters"
                 onClick={() =>
                   executeWithConfirmation({
                     name: 'Clear All Repeaters',
@@ -1201,6 +1273,7 @@ export default function AppPanel({
             </div>
             <button
               type="button"
+              aria-label="Clear All Local Data & Cache"
               onClick={() =>
                 executeWithConfirmation({
                   name: 'Clear All Data',
