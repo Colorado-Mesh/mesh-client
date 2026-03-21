@@ -961,7 +961,10 @@ export default function ConnectionPanel({
                           ...prev,
                           server: 'mqtt.ripplenetworks.com.au',
                           port: 8883,
+                          username: 'nswmesh',
+                          password: 'nswmesh',
                           topicPrefix: 'meshcore',
+                          tlsInsecure: true,
                           useWebSocket: false,
                         }));
                       }
