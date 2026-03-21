@@ -40,6 +40,7 @@ import {
 } from './log-service';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { MQTTManager } from './mqtt-manager';
+import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { initUpdater } from './updater';
 
 // Route main-process console through log file + Log panel (must run before other code logs)
@@ -53,6 +54,7 @@ if (process.platform === 'linux' && process.env.MESH_CLIENT_DISABLE_GPU === '1')
 
 const mqttManager = new MQTTManager();
 const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
+const nobleBleManager = new NobleBleManager();
 
 function isAnyMqttConnected(): boolean {
   return mqttManager.getStatus() === 'connected' || meshcoreMqttAdapter.getStatus() === 'connected';
@@ -66,16 +68,13 @@ let trayContextMenu: Menu | null = null;
 let appMenu: Menu | null = null;
 let isConnected = false;
 let isQuitting = false;
+/** Second pass of `before-quit` after async Noble BLE teardown (see `before-quit` handler). */
+let nobleQuitRetry = false;
 
-// Pending Bluetooth callback from Chromium's Web Bluetooth API
-let pendingBluetoothCallback: ((deviceId: string) => void) | null = null;
-// Accumulated BLE devices for the current discovery session (merged across multiple select-bluetooth-device events)
-const bluetoothDiscoveryDevices = new Map<string, { deviceId: string; deviceName: string }>();
-// Pending Serial callback (mirrors the BLE pattern)
+// Pending Serial callback
 let pendingSerialCallback: ((portId: string) => void) | null = null;
-// Last discovery sets: only allow selection IPC to resolve callbacks with ids from these sets
+// Last serial port discovery set: only allow selection IPC to resolve with ids from this set
 // (empty string always allowed = cancel). Prevents arbitrary id injection from a compromised renderer.
-let lastBluetoothDeviceIds = new Set<string>();
 let lastSerialPortIds = new Set<string>();
 let hasInstalledOsmReferrerHook = false;
 const OSM_HTTP_REFERRER = 'https://meshtastic-client.app/';
@@ -119,6 +118,10 @@ process.on('unhandledRejection', (reason) => {
     /* dialog may not be available during early startup */
   }
 });
+
+app.on('browser-window-created', () => {});
+
+process.on('exit', () => {});
 
 // ─── IPC validation helpers (main process boundary) ───────────────────
 const MAX_PAYLOAD_LENGTH = 1024 * 1024; // 1MB cap for message payload
@@ -327,14 +330,8 @@ function validateMqttPublishArgs(args: unknown): void {
   }
 }
 
-// Enable Web Bluetooth feature flag
-app.commandLine.appendSwitch('enable-features', 'WebBluetooth');
 // Enable Web Serial (experimental)
 app.commandLine.appendSwitch('enable-blink-features', 'Serial');
-// Linux: some Electron 28-30 builds require this for WebBluetooth to fire select-bluetooth-device
-if (process.platform === 'linux') {
-  app.commandLine.appendSwitch('enable-experimental-web-platform-features');
-}
 
 // ─── Icon Path Helper ──────────────────────────────────────────────
 /**
@@ -553,8 +550,6 @@ function createWindow() {
       // Inline misspelling marks and context-menu suggestions (all platforms). macOS app menu
       // stays minimal (no role-based Edit menu) to reduce WeakPtr menu-bridge noise.
       spellcheck: true,
-      // Exposes navigator.bluetooth.getDevices() so reconnectBle() can run without
-      // requestDevice() (which requires a user gesture). See electron/electron#31869.
       experimentalFeatures: true,
     },
   });
@@ -618,65 +613,6 @@ function createWindow() {
       y: params.y,
       ...(params.frame ? { frame: params.frame } : {}),
     });
-  });
-
-  // ─── Web Bluetooth: Device Selection ───────────────────────────────
-  // When the renderer calls navigator.bluetooth.requestDevice(),
-  // Chromium fires this event. We intercept it to build our own picker
-  // in the renderer instead of the (missing) native Chromium dialog.
-  // On Linux, Chromium can fire the event multiple times during discovery;
-  // if we overwrite the callback each time, the previous promise is rejected
-  // with "User cancelled". Retain the first callback and merge device lists
-  // from subsequent events so the picker updates without cancelling.
-  mainWindow.webContents.on('select-bluetooth-device', (event, devices, callback) => {
-    event.preventDefault();
-
-    if (!pendingBluetoothCallback) {
-      pendingBluetoothCallback = callback;
-      bluetoothDiscoveryDevices.clear();
-      // Safety: auto-cancel if the callback is never resolved (e.g. renderer crash, unmount).
-      // This prevents blocking future BLE discovery sessions on Linux where multi-fire is common.
-      setTimeout(() => {
-        if (pendingBluetoothCallback === callback) {
-          console.warn('[IPC] BLE discovery callback stale after 60s — auto-cancelling');
-          pendingBluetoothCallback('');
-          pendingBluetoothCallback = null;
-          lastBluetoothDeviceIds.clear();
-          bluetoothDiscoveryDevices.clear();
-        }
-      }, 60_000);
-    } else {
-      // Stale callback from a previous session that never resolved (crash, throw, unmount).
-      // Replace it so this session's selection works correctly.
-      console.warn('[IPC] select-bluetooth-device: replacing stale pendingBluetoothCallback');
-      pendingBluetoothCallback = callback;
-      bluetoothDiscoveryDevices.clear();
-      // Safety: start a fresh 60s auto-cancel for the replacement callback.
-      // The old timer references the stale callback reference so it will not fire.
-      setTimeout(() => {
-        if (pendingBluetoothCallback === callback) {
-          console.warn(
-            '[IPC] BLE discovery replacement callback stale after 60s — auto-cancelling',
-          );
-          pendingBluetoothCallback('');
-          pendingBluetoothCallback = null;
-          lastBluetoothDeviceIds.clear();
-          bluetoothDiscoveryDevices.clear();
-        }
-      }, 60_000);
-    }
-    // Merge new devices into the accumulated list for this discovery session
-    for (const d of devices) {
-      bluetoothDiscoveryDevices.set(d.deviceId, {
-        deviceId: d.deviceId,
-        deviceName: d.deviceName || 'Unknown Device',
-      });
-    }
-    lastBluetoothDeviceIds = new Set(bluetoothDiscoveryDevices.keys());
-    mainWindow?.webContents.send(
-      'bluetooth-devices-discovered',
-      Array.from(bluetoothDiscoveryDevices.values()),
-    );
   });
 
   // ─── Web Serial: Port Selection ────────────────────────────────────
@@ -753,12 +689,6 @@ function createWindow() {
     return false;
   });
 
-  // ─── Bluetooth Pairing ─────────────────────────────────────────────
-  mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
-    // Auto-confirm pairing (Meshtastic doesn't use PIN)
-    callback({ confirmed: true });
-  });
-
   if (!hasInstalledOsmReferrerHook) {
     hasInstalledOsmReferrerHook = true;
     mainWindow.webContents.session.webRequest.onBeforeSendHeaders(
@@ -823,6 +753,7 @@ function createWindow() {
     console.log('[Startup] app.isPackaged:', app.isPackaged);
     console.log('[Startup] userData:', sanitizeLogMessage(app.getPath('userData')));
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+
     mainWindow.webContents.openDevTools();
   } else {
     const indexPath = path.join(__dirname, '../../dist/renderer/index.html');
@@ -841,10 +772,14 @@ function createWindow() {
     });
   }
 
+  mainWindow.webContents.on('did-finish-load', () => {});
+  mainWindow.webContents.on('did-fail-load', () => {});
+
   mainWindow.on('closed', () => {
     setMainWindow(null);
     mainWindow = null;
   });
+  mainWindow.webContents.on('destroyed', () => {});
 
   // Handle window close event
   win.on('close', (event) => {
@@ -861,6 +796,7 @@ function createWindow() {
   });
 
   setupTray(mainWindow);
+
   initUpdater(mainWindow);
 }
 
@@ -873,31 +809,6 @@ ipcMain.on('set-tray-unread', (_event, count: unknown) => {
   if (process.platform === 'darwin') {
     app.dock?.setBadge(hasUnread ? String(n) : '');
   }
-});
-
-// ─── IPC: Bluetooth device selected by user ────────────────────────
-ipcMain.on('bluetooth-device-selected', (_event, deviceId: unknown) => {
-  if (!pendingBluetoothCallback) return;
-  const id = typeof deviceId === 'string' ? deviceId : '';
-  // Cancel is empty string; otherwise id must have been in the last discovery list
-  if (id !== '' && !lastBluetoothDeviceIds.has(id)) {
-    console.warn('[IPC] bluetooth-device-selected: ignoring unknown deviceId');
-    return;
-  }
-  pendingBluetoothCallback(id);
-  pendingBluetoothCallback = null;
-  lastBluetoothDeviceIds.clear();
-  bluetoothDiscoveryDevices.clear();
-});
-
-// ─── IPC: Cancel Bluetooth selection ────────────────────────────────
-ipcMain.on('bluetooth-device-cancelled', () => {
-  if (pendingBluetoothCallback) {
-    pendingBluetoothCallback(''); // Empty string cancels the request
-    pendingBluetoothCallback = null;
-  }
-  lastBluetoothDeviceIds.clear();
-  bluetoothDiscoveryDevices.clear();
 });
 
 // ─── IPC: Serial port selected by user ──────────────────────────────
@@ -930,6 +841,64 @@ ipcMain.on('device-connected', () => {
 ipcMain.on('device-disconnected', () => {
   console.log('[main] device-disconnected: isConnected = false');
   isConnected = false;
+});
+
+// ─── Noble BLE: Forward manager events to renderer ──────────────────
+nobleBleManager.on('adapterState', (state: string) => {
+  mainWindow?.webContents.send('noble-ble-adapter-state', state);
+});
+nobleBleManager.on('deviceDiscovered', (device: { deviceId: string; deviceName: string }) => {
+  mainWindow?.webContents.send('noble-ble-device-discovered', device);
+});
+nobleBleManager.on('connected', ({ sessionId }: { sessionId: NobleSessionId }) => {
+  mainWindow?.webContents.send('noble-ble-connected', { sessionId });
+});
+nobleBleManager.on('disconnected', ({ sessionId }: { sessionId: NobleSessionId }) => {
+  mainWindow?.webContents.send('noble-ble-disconnected', { sessionId });
+});
+nobleBleManager.on(
+  'fromRadio',
+  ({ sessionId, bytes }: { sessionId: NobleSessionId; bytes: Uint8Array }) => {
+    mainWindow?.webContents.send('noble-ble-from-radio', { sessionId, bytes });
+  },
+);
+
+// ─── Noble BLE: IPC command handlers ────────────────────────────────
+ipcMain.handle('noble-ble-start-scan', async () => {
+  if (isQuitting) {
+    return;
+  }
+  await nobleBleManager.startScanning();
+});
+ipcMain.handle('noble-ble-stop-scan', async () => {
+  await nobleBleManager.stopScanning();
+});
+ipcMain.handle('noble-ble-connect', async (_event, sessionId: unknown, peripheralId: unknown) => {
+  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
+    throw new Error('noble-ble-connect: sessionId must be meshtastic or meshcore');
+  }
+  if (typeof peripheralId !== 'string')
+    throw new Error('noble-ble-connect: peripheralId must be a string');
+  if (isQuitting) {
+    return;
+  }
+  await nobleBleManager.connect(sessionId, peripheralId);
+});
+ipcMain.handle('noble-ble-disconnect', async (_event, sessionId: unknown) => {
+  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
+    throw new Error('noble-ble-disconnect: sessionId must be meshtastic or meshcore');
+  }
+  await nobleBleManager.disconnect(sessionId);
+});
+ipcMain.handle('noble-ble-to-radio', async (_event, sessionId: unknown, bytes: unknown) => {
+  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
+    throw new Error('noble-ble-to-radio: sessionId must be meshtastic or meshcore');
+  }
+  if (isQuitting) {
+    return;
+  }
+  const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes as Uint8Array);
+  await nobleBleManager.writeToRadio(sessionId, buf);
 });
 
 // ─── MQTT: Forward manager events to renderer ───────────────────────
@@ -1189,14 +1158,25 @@ ipcMain.handle('app:quit', async () => {
   isConnected = false;
   try {
     mqttManager.disconnect();
+
     meshcoreMqttAdapter.disconnect();
+
+    nobleBleManager.stopScanning();
+
+    closeDatabase();
+
+    nobleBleManager.releaseNobleProcessHandles();
+    tray?.destroy();
+    tray = null;
+    app.exit(0);
   } catch (err) {
     console.error(
       '[IPC] app:quit disconnect failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
-  } finally {
     app.quit();
+  } finally {
+    // no-op: handled above
   }
 });
 
@@ -2188,6 +2168,7 @@ ipcMain.handle('meshcore:tcp-disconnect', () => {
 app.whenReady().then(() => {
   try {
     initLogFile();
+
     initDatabase();
     // Force the dock icon in development on macOS
     if (!app.isPackaged && process.platform === 'darwin') {
@@ -2198,6 +2179,7 @@ app.whenReady().then(() => {
       app.dock?.setIcon(iconPath);
     }
     createWindow();
+
     setupAppMenu();
   } catch (error) {
     console.error(
@@ -2230,10 +2212,60 @@ app.whenReady().then(() => {
   });
 });
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
+  if (nobleQuitRetry) {
+    isQuitting = true;
+    closeDatabase();
+    return;
+  }
+
+  if (nobleBleManager.isBleSessionActive()) {
+    event.preventDefault();
+    void (async () => {
+      try {
+        nobleBleManager.stopScanning();
+        await nobleBleManager.disconnectAll();
+      } catch (err) {
+        console.error(
+          '[main] Noble BLE shutdown failed:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+      } finally {
+        nobleQuitRetry = true;
+        app.quit();
+      }
+    })();
+    return;
+  }
+
   isQuitting = true;
   closeDatabase();
 });
+
+app.on('will-quit', () => {
+  try {
+    mqttManager.disconnect();
+    meshcoreMqttAdapter.disconnect();
+  } catch {
+    /* ignore */
+  }
+  if (meshcoreTcpSocket) {
+    try {
+      meshcoreTcpSocket.destroy();
+    } catch {
+      /* ignore */
+    }
+    meshcoreTcpSocket = null;
+  }
+  nobleBleManager.releaseNobleProcessHandles();
+  tray?.destroy();
+  tray = null;
+  // releaseNobleProcessHandles() above calls noble._bindings.stop() which releases the native
+  // BLEManager and its CBqueue GCD dispatch queue — without that, the process cannot exit on macOS.
+  app.exit(0);
+});
+
+app.on('quit', () => {});
 
 app.on('window-all-closed', () => {
   const hasConnection = isConnected || isAnyMqttConnected();

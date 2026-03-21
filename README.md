@@ -14,7 +14,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Known Bugs:**
 
-- **Linux Web Bluetooth** — Web Bluetooth is experimental upstream. The app automatically enables `--enable-experimental-web-platform-features` on Linux to improve BLE device discovery on Electron 28–30 / Ubuntu 22.04. If BLE still fails (e.g. connection drops after pairing), prefer USB Serial or WiFi/HTTP.
+- **Linux BLE permissions** — BLE uses `@abandonware/noble` (native BlueZ), which needs raw socket access. Run `sudo setcap cap_net_raw+eip $(which electron)` once after install, or launch with `sudo` during development. Packaged AppImages include the cap in the installer.
 - **MeshCore library race** — There is a race condition in the MeshCore (e.g. `@liamcottle/meshcore.js`) connection flow that can cause BLE connections to fail or behave inconsistently.
 
 ---
@@ -82,7 +82,7 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 
 **Connectivity**
 
-- **Bluetooth LE** — pair wirelessly; one-click reconnect card remembers your last device (name persists across sessions)
+- **Bluetooth LE** — pair wirelessly; auto-reconnects on startup with no user gesture required (noble native BLE via BlueZ/CoreBluetooth/WinRT); last device name persists across sessions
 - **USB Serial** — plug in via USB; auto-reconnects silently on startup (saved port signature matches the same physical device across re-enumeration)
 - **WiFi / HTTP / TCP** — connect to network-enabled nodes; saves last address for quick reconnect
 - Protocol toggle in the Connection tab (**Meshtastic / MeshCore**); each protocol remembers its own last connection and reconnects independently; the active protocol is shown as a badge in the header
@@ -257,7 +257,13 @@ npm run dist:linux -- --linux rpm
 npm run dist:linux -- --linux appimage
 ```
 
-BLE requires BlueZ (the standard Linux Bluetooth stack, included in most distros).
+BLE uses `@abandonware/noble` (native BlueZ) and requires raw socket capability:
+
+```bash
+sudo setcap cap_net_raw+eip $(which electron)
+```
+
+Run this once after `npm install`. You may alternatively run with `sudo` during development. BlueZ is the standard Linux Bluetooth stack and is included in most distros.
 
 **Sandbox issues (dev mode or AppImage):**
 
@@ -394,7 +400,8 @@ The **Connection** tab shows a **Meshtastic / MeshCore** toggle at the top. Sele
 After a successful connection, Mesh-Client remembers your last device per protocol. On next launch:
 
 - **Serial** — auto-connects silently in the background (both protocols)
-- **Bluetooth / WiFi / TCP** — a one-click reconnect card appears; click **Reconnect** (BLE requires a user gesture)
+- **Bluetooth** — auto-scans on launch and reconnects when the last device is discovered (no user gesture required)
+- **WiFi / TCP** — a one-click reconnect card appears; click **Reconnect**
 - **MQTT** — auto-reconnects using saved broker settings (Meshtastic protobuf pipeline; MeshCore JSON v1 adapter — select transport when connecting)
 
 ### MQTT
@@ -425,17 +432,17 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 
 ### Tech Stack
 
-| Component  | Technology                                                                             |
-| ---------- | -------------------------------------------------------------------------------------- |
-| Desktop    | Electron                                                                               |
-| UI         | React 19 + TypeScript                                                                  |
-| Styling    | Tailwind CSS v4                                                                        |
-| Meshtastic | @meshtastic/core + transport-http, transport-web-bluetooth, transport-web-serial (JSR) |
-| MeshCore   | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                    |
-| Maps       | Leaflet + OpenStreetMap                                                                |
-| Charts     | Recharts                                                                               |
-| Database   | SQLite (better-sqlite3)                                                                |
-| Build      | esbuild + Vite + electron-builder                                                      |
+| Component  | Technology                                                                                |
+| ---------- | ----------------------------------------------------------------------------------------- |
+| Desktop    | Electron                                                                                  |
+| UI         | React 19 + TypeScript                                                                     |
+| Styling    | Tailwind CSS v4                                                                           |
+| Meshtastic | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @abandonware/noble |
+| MeshCore   | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                       |
+| Maps       | Leaflet + OpenStreetMap                                                                   |
+| Charts     | Recharts                                                                                  |
+| Database   | SQLite (better-sqlite3)                                                                   |
+| Build      | esbuild + Vite + electron-builder                                                         |
 
 ### Project Structure
 
@@ -650,22 +657,16 @@ You're missing build tools for the native modules (e.g. `better-sqlite3`, `@seri
 - Try disconnecting fully first, then reconnecting
 - If the device picker never appears, restart the app
 
-### BLE known issues (Linux / Windows)
+### BLE known issues
 
-- **Web Bluetooth is experimental** on some platforms; you may see a console note linking to [implementation-status](https://github.com/WebBluetoothCG/web-bluetooth/blob/main/implementation-status.md).
-- **"Connection already in progress"** or **GATT init failures** can occur when the first BLE write runs before the connection is fully ready. The app **retries once** automatically after a short delay; if it still fails, wait a few seconds and try again, or use **Serial/USB** instead.
-- If BLE is unreliable on your system, prefer Serial or TCP for a stable connection. The root cause is a race in the MeshCore library: the first BLE write (deviceQuery) can run before `gatt.connect()` completes. An [upstream bug report](https://github.com/meshcore-dev/meshcore.js/issues/22) tracks the fix (await GATT connect before any write); the app’s retry is a workaround until the library is updated.
+- **Bluetooth adapter not found** — ensure Bluetooth is enabled at the OS level. On Linux: `systemctl status bluetooth` and `rfkill list`. On macOS: check **System Settings > Bluetooth**. On Windows: **Settings → Bluetooth & devices**.
+- **Device not discovered** — make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.
+- If BLE is unreliable, prefer Serial (USB) or TCP/HTTP for a stable connection.
 
 **Linux-specific:**
 
-- The app passes `--enable-experimental-web-platform-features` on Linux so the Chromium Bluetooth device picker fires correctly. If you see `"Bluetooth adapter not found"`, ensure BlueZ is running (`systemctl status bluetooth`) and the adapter is enabled (`rfkill list`).
-- GATT connect now has a 15-second timeout to prevent indefinite hangs when the BlueZ stack is in a confused state. If you hit it, restart the Bluetooth service (`sudo systemctl restart bluetooth`) and try again.
-
-**Windows-specific:**
-
-- BLE reconnect timeout is **20 seconds** (vs. 15 s on other platforms) to account for WinRT re-scan latency. If the reconnect card times out, retry once before switching to Serial.
-- If you see `"Bluetooth adapter not found"`, go to **Settings → Bluetooth & devices** and confirm Bluetooth is on. Then check **Device Manager → Bluetooth** for adapter errors. If the adapter is present but flagged, reinstall its driver.
-- `"GATT Error: In Progress"` from the WinRT stack is handled gracefully and will not cause a false disconnect.
+- noble requires raw socket capability. Run once after install: `sudo setcap cap_net_raw+eip $(which electron)`. Without this, BLE scanning will silently fail.
+- If the adapter is present but scanning does not start, restart BlueZ: `sudo systemctl restart bluetooth`.
 
 ### Serial port not detected
 

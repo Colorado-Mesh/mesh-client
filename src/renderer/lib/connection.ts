@@ -1,16 +1,13 @@
 import { MeshDevice } from '@meshtastic/core';
 import { TransportHTTP } from '@meshtastic/transport-http';
-import { TransportWebBluetooth } from '@meshtastic/transport-web-bluetooth';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
 import { persistSerialPortIdentity, selectGrantedSerialPort } from './serialPortSignature';
-import type { ConnectionType } from './types';
+import { TransportNobleIpc } from './transportNobleIpc';
+import type { ConnectionType, NobleBleSessionId } from './types';
 
 // HTTP base connection: timeouts and retries to avoid hanging on slow mDNS or flaky networks.
 const HTTP_CONNECT_TIMEOUT_MS = 15_000;
-// BLE reconnect: gatt.connect() can hang indefinitely on Linux when the BT stack is confused,
-// and on Windows WinRT can take 15-25s as the stack re-scans for the device on reconnect.
-const BLE_RECONNECT_TIMEOUT_MS = 20_000;
 const HTTP_PREFLIGHT_RETRIES = 3;
 const HTTP_PREFLIGHT_RETRY_DELAY_MS = 2_000;
 
@@ -42,26 +39,33 @@ async function httpPreflightWithRetries(connectionUrl: string): Promise<void> {
   throw new Error(msg);
 }
 
-// Cached BluetoothDevice from the most recent successful BLE connection.
-// navigator.bluetooth.getDevices() is not available in all Electron builds,
-// so we capture the reference by intercepting requestDevice() instead.
-let capturedBleDevice: BluetoothDevice | null = null;
-
-export function clearCapturedBleDevice(): void {
-  capturedBleDevice = null;
+/**
+ * Create a BLE connection to a Meshtastic device via @abandonware/noble.
+ * The main process NobleBleManager must have already discovered the peripheral
+ * (via startNobleBleScanning) before this is called.
+ */
+export async function createBleConnection(
+  peripheralId: string,
+  sessionId: NobleBleSessionId = 'meshtastic',
+): Promise<MeshDevice> {
+  console.debug('[connection] createBleConnection start', peripheralId);
+  // Subscribe to IPC events before telling main to connect, so no fromRadio
+  // packets emitted during the initial drain are dropped.
+  const transport = new TransportNobleIpc(sessionId);
+  await window.electronAPI.connectNobleBle(sessionId, peripheralId);
+  console.debug('[connection] createBleConnection connected', peripheralId);
+  return new MeshDevice(transport as any);
 }
 
 /**
  * Create a connection to a Meshtastic device.
  *
- * BLE: Triggers Chromium's navigator.bluetooth.requestDevice() which
- *   Electron intercepts via select-bluetooth-device. The main process
- *   sends the device list to the renderer for user selection.
- *
  * Serial: Triggers navigator.serial.requestPort() which Electron
- *   intercepts via select-serial-port. Same flow as BLE.
+ *   intercepts via select-serial-port.
  *
  * HTTP: Connects directly to a WiFi-enabled Meshtastic node.
+ *
+ * BLE: Use createBleConnection() instead.
  */
 export async function createConnection(
   type: ConnectionType,
@@ -74,26 +78,8 @@ export async function createConnection(
   };
 
   switch (type) {
-    case 'ble': {
-      // Intercept requestDevice to capture the BluetoothDevice reference
-      // before the transport library discards it. This is more reliable than
-      // navigator.bluetooth.getDevices() which isn't available in all builds.
-      const origRequestDevice = navigator.bluetooth.requestDevice.bind(navigator.bluetooth);
-      navigator.bluetooth.requestDevice = async (options?: RequestDeviceOptions) => {
-        const device = await origRequestDevice(options);
-        capturedBleDevice = device;
-        return device;
-      };
-      try {
-        transport = await TransportWebBluetooth.create();
-      } finally {
-        navigator.bluetooth.requestDevice = origRequestDevice;
-      }
-      if (capturedBleDevice) {
-        (transport as any).__bluetoothDevice = capturedBleDevice;
-      }
-      break;
-    }
+    case 'ble':
+      throw new Error('Use createBleConnection(peripheralId) for BLE connections');
 
     case 'serial': {
       console.debug('[connection] createConnection: serial');
@@ -175,87 +161,6 @@ export async function createConnection(
 }
 
 /**
- * Attempt to reconnect to a previously-paired BLE device without
- * requiring a new user gesture. Uses navigator.bluetooth.getDevices()
- * to find the device that was previously granted permission.
- */
-export async function reconnectBle(): Promise<MeshDevice> {
-  let target: BluetoothDevice | undefined;
-
-  const hasGetDevices = typeof navigator.bluetooth.getDevices === 'function';
-  console.debug(
-    `[connection] reconnectBle: getDevices=${hasGetDevices}, captured=${!!capturedBleDevice}`,
-  );
-
-  if (hasGetDevices) {
-    const devices = await navigator.bluetooth.getDevices();
-    console.debug(`[connection] reconnectBle: getDevices returned ${devices.length} device(s)`);
-    // Prefer disconnected-but-known GATT; else any with gatt; else first granted
-    // device — gatt is often null until connect(); createFromDevice/prepareConnection
-    // will call gatt.connect(). On some Electron builds getDevices() stays empty
-    // after grant; ConnectionPanel uses onConnect('ble') in the gesture path only.
-    target =
-      devices.find((d: any) => d.gatt && !d.gatt.connected) ??
-      devices.find((d: any) => d.gatt != null) ??
-      (devices.length > 0 ? devices[0] : undefined);
-  } else {
-    // getDevices() unavailable — fall back to the device captured at connect time
-    target = capturedBleDevice ?? undefined;
-  }
-
-  // getDevices() exists but returned [] (common on Windows and some Linux builds
-  // even after a device has been granted). Fall back to the captured reference.
-  if (!target && capturedBleDevice) {
-    target = capturedBleDevice;
-  }
-
-  if (!target) {
-    console.warn('[connection] reconnectBle: no target device found — reconnection will fail');
-    throw new Error('No previously connected BLE device found for reconnection');
-  }
-
-  console.debug(
-    `[connection] reconnectBle: target device id=${target.id}, gatt.connected=${target.gatt?.connected ?? 'n/a'}`,
-  );
-
-  // Let the transport library handle GATT connection internally
-  // (both createFromDevice and prepareConnection call gatt.connect())
-  // Wrap in a timeout to guard against hung gatt.connect() on Linux when the BT stack is confused.
-  let transport: any;
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(
-      () => reject(new Error(`BLE reconnect timed out after ${BLE_RECONNECT_TIMEOUT_MS / 1000}s`)),
-      BLE_RECONNECT_TIMEOUT_MS,
-    ),
-  );
-  if (typeof (TransportWebBluetooth as any).createFromDevice === 'function') {
-    transport = await Promise.race([
-      (TransportWebBluetooth as any).createFromDevice(target),
-      timeoutPromise,
-    ]);
-  } else if (typeof (TransportWebBluetooth as any).prepareConnection === 'function') {
-    transport = await Promise.race([
-      (TransportWebBluetooth as any).prepareConnection(target),
-      timeoutPromise,
-    ]);
-  } else {
-    throw new Error(
-      'TransportWebBluetooth has no method to create a transport from an existing device',
-    );
-  }
-
-  if (!transport) {
-    throw new Error('Failed to create BLE transport for reconnection');
-  }
-
-  // Stash the BluetoothDevice reference for GATT monitoring
-  (transport as any).__bluetoothDevice = target;
-
-  const device = new MeshDevice(transport as any);
-  return device;
-}
-
-/**
  * Attempt to reconnect to a previously-granted serial port without
  * requiring a new user gesture. Uses navigator.serial.getPorts() to
  * enumerate ports that were previously granted permission.
@@ -285,7 +190,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
 
 /**
  * Safely disconnect from a device, handling transports that may not
- * have a disconnect() method (e.g. TransportWebBluetooth).
+ * have a disconnect() method (e.g. TransportHTTP).
  */
 export async function safeDisconnect(device: MeshDevice): Promise<void> {
   try {
@@ -297,8 +202,7 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
       msg.includes('already been closed') ||
       msg.includes('locked')
     ) {
-      // BLE and HTTP transports don't implement disconnect() —
-      // manually close the writable stream and GATT connection
+      // HTTP transport doesn't implement disconnect() — manually close the streams
       try {
         await device.transport.toDevice.close();
       } catch (e) {
@@ -310,16 +214,6 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
         await (device.transport.fromDevice as ReadableStream).cancel();
       } catch (e) {
         console.debug('[connection] safeDisconnect fromDevice.cancel', e);
-      }
-
-      // For BLE: disconnect the GATT server
-      const btDevice = (device.transport as any)?.__bluetoothDevice;
-      if (btDevice?.gatt?.connected) {
-        try {
-          btDevice.gatt.disconnect();
-        } catch (e) {
-          console.debug('[connection] safeDisconnect gatt.disconnect', e);
-        }
       }
     } else {
       console.warn('[Meshtastic] Disconnect error:', err);

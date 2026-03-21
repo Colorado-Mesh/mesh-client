@@ -4,8 +4,8 @@
   "description": "Cross-platform Meshtastic desktop client - BLE, Serial, HTTP, and MQTT support",
   "main": "dist-electron/main/index.js",
   "scripts": {
-    "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:better-sqlite3 --external:electron-updater --external:systeminformation --format=cjs",
-    "build:main:prod": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:better-sqlite3 --external:electron-updater --external:systeminformation --format=cjs --minify",
+    "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:better-sqlite3 --external:electron-updater --external:systeminformation --external:@abandonware/noble --format=cjs",
+    "build:main:prod": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:better-sqlite3 --external:electron-updater --external:systeminformation --external:@abandonware/noble --format=cjs --minify",
     "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --outfile=dist-electron/preload/index.js --external:electron --format=cjs",
     "build:renderer": "vite build",
     "build": "npm run build:main:prod && npm run build:preload && npm run build:renderer",
@@ -63,7 +63,6 @@
     "@meshtastic/core": "npm:@jsr/meshtastic__core@^2.6.6",
     "@meshtastic/protobufs": "npm:@jsr/meshtastic__protobufs@^2.7.18",
     "@meshtastic/transport-http": "npm:@jsr/meshtastic__transport-http@^0.2.1",
-    "@meshtastic/transport-web-bluetooth": "npm:@jsr/meshtastic__transport-web-bluetooth@^0.1.2",
     "@meshtastic/transport-web-serial": "npm:@jsr/meshtastic__transport-web-serial@^0.2.5",
     "@tailwindcss/postcss": "^4.2.0",
     "@testing-library/jest-dom": "^6.9.1",
@@ -74,7 +73,6 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/web-bluetooth": "^0.0.21",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
     "@vitejs/plugin-react": "^5.1.4",
@@ -107,9 +105,11 @@
   },
   "overrides": {
     "cacheable-request": "^10.0.0",
+    "tar": "^7.5.11",
     "yauzl": "^3.2.1"
   },
   "dependencies": {
+    "@abandonware/noble": "^1.9.2-9",
     "@liamcottle/meshcore.js": "^1.12.0",
     "better-sqlite3": "^12.6.2",
     "electron-updater": "^6.8.3",

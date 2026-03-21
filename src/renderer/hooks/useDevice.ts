@@ -4,9 +4,8 @@ import { Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/protobuf
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  clearCapturedBleDevice,
+  createBleConnection,
   createConnection,
-  reconnectBle,
   reconnectSerial,
   safeDisconnect,
 } from '../lib/connection';
@@ -58,7 +57,6 @@ const HTTP_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const HTTP_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
 const WATCHDOG_INTERVAL_MS = 15_000; // Check every 15s
 const MAX_RECONNECT_ATTEMPTS = 5;
-const BLE_HEARTBEAT_INTERVAL_MS = 30_000; // 30s heartbeat for BLE
 
 function getOrCreateVirtualNodeId(): number {
   const key = 'mesh-client:mqttVirtualNodeId';
@@ -100,10 +98,13 @@ export function useDevice() {
   const lastDataReceivedRef = useRef<number>(Date.now());
   const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reconnectAttemptRef = useRef<number>(0);
-  const connectionParamsRef = useRef<{ type: ConnectionType; httpAddress?: string } | null>(null);
+  const connectionParamsRef = useRef<{
+    type: ConnectionType;
+    httpAddress?: string;
+    blePeripheralId?: string;
+  } | null>(null);
   const isReconnectingRef = useRef<boolean>(false);
   const reconnectGenerationRef = useRef<number>(0);
-  const bleHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const transportManagerRef = useRef<TransportManager | null>(null);
   const onStatusUpdateRef = useRef<(event: StatusUpdateEvent) => void>(() => {});
   // Tracks the tempId of an in-flight optimistic message (device path) so the echo can be skipped
@@ -111,6 +112,7 @@ export function useDevice() {
   // True while the device is in the configuring phase (replaying queued packets); messages
   // received during this window are historical and should not increment the unread counter.
   const isConfiguringRef = useRef<boolean>(false);
+  const configureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── GPS tracking ─────────────────────────────────────────────
   const deviceGpsModeRef = useRef<number>(0); // 0=DISABLED,1=ENABLED,2=NOT_PRESENT
@@ -309,6 +311,13 @@ export function useDevice() {
     unsubscribesRef.current = [];
   }, []);
 
+  const clearConfigureTimeout = useCallback(() => {
+    if (configureTimeoutRef.current) {
+      clearTimeout(configureTimeoutRef.current);
+      configureTimeoutRef.current = null;
+    }
+  }, []);
+
   // ─── Watchdog: get thresholds per transport type ──────────────
   const getThresholds = useCallback(() => {
     const type = connectionParamsRef.current?.type;
@@ -321,14 +330,6 @@ export function useDevice() {
         return { stale: HTTP_STALE_THRESHOLD_MS, dead: HTTP_DEAD_THRESHOLD_MS };
       default:
         return { stale: 90_000, dead: 180_000 };
-    }
-  }, []);
-
-  // ─── Watchdog: stop BLE heartbeat ─────────────────────────────
-  const stopBleHeartbeat = useCallback(() => {
-    if (bleHeartbeatRef.current) {
-      clearInterval(bleHeartbeatRef.current);
-      bleHeartbeatRef.current = null;
     }
   }, []);
 
@@ -647,9 +648,9 @@ export function useDevice() {
   useEffect(() => {
     return () => {
       cleanupSubscriptions();
+      clearConfigureTimeout();
       stopPolling();
       stopWatchdog();
-      stopBleHeartbeat();
       stopGpsInterval();
       isReconnectingRef.current = false;
       const device = deviceRef.current;
@@ -660,14 +661,30 @@ export function useDevice() {
         });
       }
     };
-  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat, stopGpsInterval]);
+  }, [cleanupSubscriptions, clearConfigureTimeout, stopPolling, stopWatchdog, stopGpsInterval]);
 
   // ─── Wire up all event subscriptions for a device ─────────────
   const wireSubscriptions = useCallback(
     (device: MeshDevice, type: ConnectionType) => {
       // ─── Device status ─────────────────────────────────────────
       const unsub1 = device.events.onDeviceStatus.subscribe((status) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e199e9' },
+          body: JSON.stringify({
+            sessionId: 'e199e9',
+            runId: 'run-1',
+            hypothesisId: 'H3',
+            location: 'useDevice.ts:onDeviceStatus',
+            message: 'renderer device status event',
+            data: { status, type },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         touchLastData();
+        console.debug('[useDevice] onDeviceStatus', status, type);
         const statusMap: Record<number, DeviceState['status']> = {
           1: 'connecting', // DeviceRestarting
           2: 'disconnected', // DeviceDisconnected
@@ -683,10 +700,47 @@ export function useDevice() {
         // Track configuring phase so packet replays are marked as historical
         if (status === 3 || status === 5 || status === 6) {
           isConfiguringRef.current = true;
+          if (status === 6 && type === 'ble' && !configureTimeoutRef.current) {
+            configureTimeoutRef.current = setTimeout(() => {
+              // #region agent log
+              fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e199e9' },
+                body: JSON.stringify({
+                  sessionId: 'e199e9',
+                  runId: 'run-3',
+                  hypothesisId: 'H6',
+                  location: 'useDevice.ts:configureTimeout',
+                  message: 'renderer configure timeout fired',
+                  data: { type, status },
+                  timestamp: Date.now(),
+                }),
+              }).catch(() => {});
+              // #endregion
+              const activeDevice = deviceRef.current;
+              deviceRef.current = null;
+              if (activeDevice) {
+                void safeDisconnect(activeDevice).catch((e) => {
+                  console.debug('[useDevice] configure timeout safeDisconnect', e);
+                });
+              }
+              cleanupSubscriptions();
+              stopPolling();
+              stopWatchdog();
+              stopGpsInterval();
+              setState({
+                status: 'disconnected',
+                myNodeNum: 0,
+                connectionType: null,
+              });
+              clearConfigureTimeout();
+            }, 30000);
+          }
         }
 
         // Start polling + watchdog when configured
         if (status === 7) {
+          clearConfigureTimeout();
           isConfiguringRef.current = false;
           lastDataReceivedRef.current = Date.now();
           startPolling(type);
@@ -697,8 +751,8 @@ export function useDevice() {
 
         // Always clean up on disconnect, even if we never reached configured
         if (status === 2) {
+          clearConfigureTimeout();
           isConfiguringRef.current = false;
-          stopBleHeartbeat();
           stopWatchdog();
           stopGpsInterval();
           cleanupSubscriptions();
@@ -1494,36 +1548,14 @@ export function useDevice() {
       });
       unsubscribesRef.current.push(unsubModuleConfig);
 
-      // ─── BLE heartbeat with failure detection ──────────────────
-      // HTTP transport does not need a heartbeat — the 3s fromradio poll
-      // and onMeshHeartbeat keep the connection alive. heartbeat() for HTTP
-      // uses the queue with a 60s auto-resolve timeout (no real device ACK),
-      // so awaiting it would call touchLastData() 60s late and mask dead
-      // connections from the watchdog.
+      // ─── Noble BLE disconnect detection ────────────────────────
       if (type === 'ble') {
-        bleHeartbeatRef.current = setInterval(async () => {
-          try {
-            await deviceRef.current?.heartbeat();
-            touchLastData();
-          } catch (err) {
-            // "GATT operation already in progress" = BlueZ/CoreBluetooth concurrent op.
-            // "GATT Error: In Progress" = Windows WinRT equivalent.
-            // Both mean the connection is still alive — skip this beat rather than
-            // triggering a false disconnect.
-            if (
-              String(err).includes('GATT operation already in progress') ||
-              String(err).includes('GATT Error: In Progress')
-            ) {
-              console.debug(
-                `[BLE heartbeat] GATT busy — skipping beat, connection intact (${String(err)})`,
-              );
-              return;
-            }
-            console.warn('[Meshtastic] BLE heartbeat write failed:', err);
-            // Any other GATT write failure = connection is dead
-            handleConnectionLostRef.current();
-          }
-        }, BLE_HEARTBEAT_INTERVAL_MS);
+        const unsubNobleDisconnect = window.electronAPI.onNobleBleDisconnected((sessionId) => {
+          if (sessionId !== 'meshtastic') return;
+          console.warn('[useDevice] Noble BLE disconnected event received');
+          handleConnectionLostRef.current();
+        });
+        unsubscribesRef.current.push(unsubNobleDisconnect);
       }
 
       // ─── Serial heartbeat (existing behavior, keeps device alive)
@@ -1532,25 +1564,6 @@ export function useDevice() {
           device.setHeartbeatInterval(60_000);
         } catch (e) {
           console.warn('[useDevice] serial: setHeartbeatInterval failed', e);
-        }
-      }
-
-      // ─── GATT disconnection event (Layer 3) ────────────────────
-      if (type === 'ble') {
-        const btDevice = (device.transport as any)?.__bluetoothDevice;
-        if (btDevice) {
-          const onGattDisconnected = () => {
-            console.warn('[useDevice] GATT server disconnected event fired');
-            handleConnectionLostRef.current();
-          };
-          btDevice.addEventListener('gattserverdisconnected', onGattDisconnected);
-          unsubscribesRef.current.push(() => {
-            btDevice.removeEventListener('gattserverdisconnected', onGattDisconnected);
-          });
-        } else {
-          console.warn(
-            '[useDevice] BLE: __bluetoothDevice not found on transport — GATT disconnect events unavailable; relying on heartbeat + watchdog only',
-          );
         }
       }
     },
@@ -1562,12 +1575,12 @@ export function useDevice() {
       stopPolling,
       startWatchdog,
       stopWatchdog,
-      stopBleHeartbeat,
       cleanupSubscriptions,
       startGpsInterval,
       stopGpsInterval,
       isDuplicate,
       ensureNodeExists,
+      clearConfigureTimeout,
     ],
   );
 
@@ -1578,10 +1591,10 @@ export function useDevice() {
     isReconnectingRef.current = true;
 
     // Clean up existing connection
+    clearConfigureTimeout();
     cleanupSubscriptions();
     stopPolling();
     stopWatchdog();
-    stopBleHeartbeat();
     stopGpsInterval();
     const oldDevice = deviceRef.current;
     deviceRef.current = null;
@@ -1592,7 +1605,7 @@ export function useDevice() {
 
     // Begin reconnection
     attemptReconnectRef.current();
-  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat, stopGpsInterval]);
+  }, [clearConfigureTimeout, cleanupSubscriptions, stopPolling, stopWatchdog, stopGpsInterval]);
 
   // Keep the ref in sync
   handleConnectionLostRef.current = handleConnectionLost;
@@ -1632,8 +1645,8 @@ export function useDevice() {
     try {
       let device: MeshDevice;
       if (params.type === 'ble') {
-        // Try BLE reconnection without user gesture
-        device = await reconnectBle();
+        if (!params.blePeripheralId) throw new Error('BLE peripheral ID not stored for reconnect');
+        device = await createBleConnection(params.blePeripheralId, 'meshtastic');
       } else {
         device = await createConnection(params.type, params.httpAddress);
       }
@@ -1657,13 +1670,13 @@ export function useDevice() {
 
   // ─── Connect ──────────────────────────────────────────────────
   const connect = useCallback(
-    async (type: ConnectionType, httpAddress?: string) => {
+    async (type: ConnectionType, httpAddress?: string, blePeripheralId?: string) => {
       // Force-disconnect stale device before creating a new connection
+      clearConfigureTimeout();
       if (deviceRef.current) {
         cleanupSubscriptions();
         stopPolling();
         stopWatchdog();
-        stopBleHeartbeat();
         const oldDevice = deviceRef.current;
         deviceRef.current = null;
         safeDisconnect(oldDevice).catch((e) => {
@@ -1672,7 +1685,7 @@ export function useDevice() {
       }
 
       // Store connection params for reconnection
-      connectionParamsRef.current = { type, httpAddress };
+      connectionParamsRef.current = { type, httpAddress, blePeripheralId };
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
       reconnectGenerationRef.current++;
@@ -1680,21 +1693,57 @@ export function useDevice() {
       setState((s) => ({ ...s, status: 'connecting', connectionType: type }));
 
       try {
-        console.debug('[useDevice] connect', type, httpAddress);
-        const device = await createConnection(type, httpAddress);
+        console.debug('[useDevice] connect', type, httpAddress ?? blePeripheralId);
+        let device: MeshDevice;
+        if (type === 'ble') {
+          if (!blePeripheralId) throw new Error('BLE peripheral ID required');
+          device = await createBleConnection(blePeripheralId, 'meshtastic');
+          // #region agent log
+          fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e199e9' },
+            body: JSON.stringify({
+              sessionId: 'e199e9',
+              runId: 'run-1',
+              hypothesisId: 'H2',
+              location: 'useDevice.ts:connect:createBleConnection',
+              message: 'renderer createBleConnection resolved',
+              data: { type, blePeripheralId },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
+        } else {
+          device = await createConnection(type, httpAddress);
+        }
         deviceRef.current = device;
 
         // Wire all event subscriptions
         wireSubscriptions(device, type);
 
         // Start configuration AFTER all listeners are wired
+        // #region agent log
+        fetch('http://127.0.0.1:7586/ingest/49af3064-4f08-4b78-bc65-b64d378f5d17', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e199e9' },
+          body: JSON.stringify({
+            sessionId: 'e199e9',
+            runId: 'run-1',
+            hypothesisId: 'H3',
+            location: 'useDevice.ts:connect:configure',
+            message: 'renderer device.configure start',
+            data: { type },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         device.configure();
       } catch (err) {
+        clearConfigureTimeout();
         console.error('[Meshtastic] Connection failed:', err);
         cleanupSubscriptions();
         stopPolling();
         stopWatchdog();
-        stopBleHeartbeat();
         deviceRef.current = null;
         setState({
           status: 'disconnected',
@@ -1704,21 +1753,26 @@ export function useDevice() {
         throw err;
       }
     },
-    [wireSubscriptions, cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat],
+    [wireSubscriptions, cleanupSubscriptions, stopPolling, stopWatchdog, clearConfigureTimeout],
   );
 
   /**
-   * Like connect(), but uses gesture-free reconnect paths for BLE/serial.
-   * Called by auto-connect on startup, which runs outside a user gesture.
+   * Like connect(), but for auto-connect paths that don't require a user gesture.
    * @param lastSerialPortId - Stored portId from previous manual selection (serial only).
+   * @param blePeripheralId - Noble peripheral ID from previous BLE selection (BLE only).
    */
   const connectAutomatic = useCallback(
-    async (type: ConnectionType, httpAddress?: string, lastSerialPortId?: string | null) => {
+    async (
+      type: ConnectionType,
+      httpAddress?: string,
+      lastSerialPortId?: string | null,
+      blePeripheralId?: string,
+    ) => {
+      clearConfigureTimeout();
       if (deviceRef.current) {
         cleanupSubscriptions();
         stopPolling();
         stopWatchdog();
-        stopBleHeartbeat();
         const oldDevice = deviceRef.current;
         deviceRef.current = null;
         safeDisconnect(oldDevice).catch((e) => {
@@ -1726,7 +1780,7 @@ export function useDevice() {
         });
       }
 
-      connectionParamsRef.current = { type, httpAddress };
+      connectionParamsRef.current = { type, httpAddress, blePeripheralId };
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
       reconnectGenerationRef.current++;
@@ -1734,10 +1788,11 @@ export function useDevice() {
       setState((s) => ({ ...s, status: 'connecting', connectionType: type }));
 
       try {
-        console.debug('[useDevice] connectAutomatic', type, httpAddress);
+        console.debug('[useDevice] connectAutomatic', type, httpAddress ?? blePeripheralId);
         let device: MeshDevice;
         if (type === 'ble') {
-          device = await reconnectBle();
+          if (!blePeripheralId) throw new Error('BLE peripheral ID required for auto-connect');
+          device = await createBleConnection(blePeripheralId, 'meshtastic');
         } else if (type === 'serial') {
           device = await reconnectSerial(lastSerialPortId);
         } else {
@@ -1747,27 +1802,26 @@ export function useDevice() {
         wireSubscriptions(device, type);
         device.configure();
       } catch (err) {
+        clearConfigureTimeout();
         console.error('[Meshtastic] Auto-connect failed:', err);
         cleanupSubscriptions();
         stopPolling();
         stopWatchdog();
-        stopBleHeartbeat();
         deviceRef.current = null;
         setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
         throw err;
       }
     },
-    [wireSubscriptions, cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat],
+    [wireSubscriptions, cleanupSubscriptions, stopPolling, stopWatchdog, clearConfigureTimeout],
   );
 
   const disconnect = useCallback(async () => {
     // Stop all monitoring and reconnection
+    clearConfigureTimeout();
     cleanupSubscriptions();
     stopPolling();
     stopWatchdog();
-    stopBleHeartbeat();
     stopGpsInterval();
-    clearCapturedBleDevice();
     isReconnectingRef.current = false;
     reconnectAttemptRef.current = 0;
     reconnectGenerationRef.current++;
@@ -1779,7 +1833,7 @@ export function useDevice() {
       await safeDisconnect(device);
     }
     setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
-  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopBleHeartbeat, stopGpsInterval]);
+  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopGpsInterval, clearConfigureTimeout]);
 
   // ─── TransportManager status handler ─────────────────────────────────────
   // Defined as useCallback so it's stable; stored in a ref so TransportManager

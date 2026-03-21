@@ -14,6 +14,7 @@ files:
 asarUnpack:
   - "node_modules/better-sqlite3/**/*"
   - "node_modules/systeminformation/**/*"
+  - "node_modules/@abandonware/**/*"
 publish:
   provider: github
   owner: Colorado-Mesh

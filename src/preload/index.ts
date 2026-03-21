@@ -1,9 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-export interface BluetoothDevice {
+export interface NobleBleDevice {
   deviceId: string;
   deviceName: string;
 }
+export type NobleBleSessionId = 'meshtastic' | 'meshcore';
 
 export interface SerialPort {
   portId: string;
@@ -195,25 +196,45 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
 
-  // ─── Bluetooth device selection ─────────────────────────────────
-  // Main process intercepts select-bluetooth-device and sends the
-  // device list here. Renderer shows a picker, then calls select/cancel.
-  onBluetoothDevicesDiscovered: (callback: (devices: BluetoothDevice[]) => void) => {
-    const handler = (_event: unknown, devices: BluetoothDevice[]) => callback(devices);
-    ipcRenderer.on('bluetooth-devices-discovered', handler);
-    // Return cleanup function
-    return () => {
-      ipcRenderer.removeListener('bluetooth-devices-discovered', handler);
-    };
+  // ─── Noble BLE ──────────────────────────────────────────────────
+  onNobleBleAdapterState: (cb: (state: string) => void) => {
+    const handler = (_: unknown, state: string) => cb(state);
+    ipcRenderer.on('noble-ble-adapter-state', handler);
+    return () => ipcRenderer.off('noble-ble-adapter-state', handler);
   },
-
-  selectBluetoothDevice: (deviceId: string) => {
-    ipcRenderer.send('bluetooth-device-selected', deviceId);
+  onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => {
+    const handler = (_: unknown, device: NobleBleDevice) => cb(device);
+    ipcRenderer.on('noble-ble-device-discovered', handler);
+    return () => ipcRenderer.off('noble-ble-device-discovered', handler);
   },
-
-  cancelBluetoothSelection: () => {
-    ipcRenderer.send('bluetooth-device-cancelled');
+  onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => {
+    const handler = (_: unknown, payload: { sessionId: NobleBleSessionId }) =>
+      cb(payload.sessionId);
+    ipcRenderer.on('noble-ble-connected', handler);
+    return () => ipcRenderer.off('noble-ble-connected', handler);
   },
+  onNobleBleDisconnected: (cb: (sessionId: NobleBleSessionId) => void) => {
+    const handler = (_: unknown, payload: { sessionId: NobleBleSessionId }) =>
+      cb(payload.sessionId);
+    ipcRenderer.on('noble-ble-disconnected', handler);
+    return () => ipcRenderer.off('noble-ble-disconnected', handler);
+  },
+  onNobleBleFromRadio: (
+    cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
+  ) => {
+    const handler = (_: unknown, payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) =>
+      cb(payload);
+    ipcRenderer.on('noble-ble-from-radio', handler);
+    return () => ipcRenderer.off('noble-ble-from-radio', handler);
+  },
+  startNobleBleScanning: (): Promise<void> => ipcRenderer.invoke('noble-ble-start-scan'),
+  stopNobleBleScanning: (): Promise<void> => ipcRenderer.invoke('noble-ble-stop-scan'),
+  connectNobleBle: (sessionId: NobleBleSessionId, peripheralId: string): Promise<void> =>
+    ipcRenderer.invoke('noble-ble-connect', sessionId, peripheralId),
+  disconnectNobleBle: (sessionId: NobleBleSessionId): Promise<void> =>
+    ipcRenderer.invoke('noble-ble-disconnect', sessionId),
+  nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array): Promise<void> =>
+    ipcRenderer.invoke('noble-ble-to-radio', sessionId, bytes),
 
   // ─── Serial port selection ──────────────────────────────────────
   // Main process intercepts select-serial-port and sends the port

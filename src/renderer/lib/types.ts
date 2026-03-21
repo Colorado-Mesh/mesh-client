@@ -238,10 +238,11 @@ export interface DeviceState {
   firmwareVersion?: string;
 }
 
-export interface BluetoothDevice {
+export interface NobleBleDevice {
   deviceId: string;
   deviceName: string;
 }
+export type NobleBleSessionId = 'meshtastic' | 'meshcore';
 
 export interface SerialPortInfo {
   portId: string;
@@ -426,9 +427,18 @@ declare global {
         };
         openJsonFile: () => Promise<string | null>;
       };
-      onBluetoothDevicesDiscovered: (cb: (devices: BluetoothDevice[]) => void) => () => void;
-      selectBluetoothDevice: (deviceId: string) => void;
-      cancelBluetoothSelection: () => void;
+      onNobleBleAdapterState: (cb: (state: string) => void) => () => void;
+      onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => () => void;
+      onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
+      onNobleBleDisconnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
+      onNobleBleFromRadio: (
+        cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
+      ) => () => void;
+      startNobleBleScanning: () => Promise<void>;
+      stopNobleBleScanning: () => Promise<void>;
+      connectNobleBle: (sessionId: NobleBleSessionId, peripheralId: string) => Promise<void>;
+      disconnectNobleBle: (sessionId: NobleBleSessionId) => Promise<void>;
+      nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array) => Promise<void>;
       onSerialPortsDiscovered: (cb: (ports: SerialPortInfo[]) => void) => () => void;
       selectSerialPort: (portId: string) => void;
       cancelSerialSelection: () => void;

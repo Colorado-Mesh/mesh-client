@@ -3,12 +3,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import type {
-  BluetoothDevice,
   ConnectionType,
   DeviceState,
   MeshProtocol,
   MQTTSettings,
   MQTTStatus,
+  NobleBleDevice,
   SerialPortInfo,
 } from '../lib/types';
 // ─── Last Connection (localStorage) ───────────────────────────────
@@ -260,13 +260,18 @@ function MqttGlobeIcon({ connected }: { connected: boolean }) {
 
 interface Props {
   state: DeviceState;
-  onConnect: (type: ConnectionType, httpAddress?: string) => Promise<void>;
+  onConnect: (
+    type: ConnectionType,
+    httpAddress?: string,
+    blePeripheralId?: string,
+  ) => Promise<void>;
   onRefreshContacts?: () => Promise<void>;
   onSendAdvert?: () => Promise<void>;
   onAutoConnect: (
     type: ConnectionType,
     httpAddress?: string,
     lastSerialPortId?: string | null,
+    blePeripheralId?: string,
   ) => Promise<void>;
   onDisconnect: () => Promise<void>;
   mqttStatus: MQTTStatus;
@@ -300,6 +305,7 @@ export default function ConnectionPanel({
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStage, setConnectionStage] = useState('');
+  const activeHostAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
 
   // ─── MQTT settings state ───────────────────────────────────────
   const [mqttSettings, setMqttSettings] = useState<MQTTSettings>(loadMqttSettings);
@@ -362,7 +368,7 @@ export default function ConnectionPanel({
   };
 
   // ─── BLE device picker state ──────────────────────────────────
-  const [bleDevices, setBleDevices] = useState<BluetoothDevice[]>([]);
+  const [bleDevices, setBleDevices] = useState<NobleBleDevice[]>([]);
   const [showBlePicker, setShowBlePicker] = useState(false);
 
   // ─── Serial port picker state ─────────────────────────────────
@@ -417,7 +423,7 @@ export default function ConnectionPanel({
       if (state.connectionType) {
         const conn: LastConnection = { type: state.connectionType };
         if (state.connectionType === 'http') {
-          conn.httpAddress = httpAddress;
+          conn.httpAddress = activeHostAddress;
         } else if (state.connectionType === 'ble') {
           const bleId = loadLastBleDevice();
           if (bleId) {
@@ -436,6 +442,11 @@ export default function ConnectionPanel({
         setLastConnection(conn);
       }
     } else if (state.status === 'disconnected') {
+      const awaitingManualSelection =
+        (connectionType === 'ble' || connectionType === 'serial') && connecting;
+      if (awaitingManualSelection || showBlePicker || showSerialPicker) {
+        return;
+      }
       setConnectionStage('');
       setConnecting(false);
       isAutoConnectingRef.current = false;
@@ -447,36 +458,45 @@ export default function ConnectionPanel({
     showBlePicker,
     showSerialPicker,
     httpAddress,
+    activeHostAddress,
     connectionType,
+    connecting,
     protocol,
   ]);
 
-  // Listen for BLE devices discovered by main process
+  // Listen for BLE devices discovered by noble in main process
   useEffect(() => {
-    const cleanup = window.electronAPI.onBluetoothDevicesDiscovered((devices) => {
-      setBleDevices(devices);
+    const cleanup = window.electronAPI.onNobleBleDeviceDiscovered((device) => {
+      setBleDevices((prev) => {
+        if (prev.find((d) => d.deviceId === device.deviceId)) return prev;
+        return [...prev, device];
+      });
       if (isAutoConnectingRef.current) {
         const lastId = lastConnection?.bleDeviceId ?? loadLastBleDevice();
-        if (lastId) {
-          const match = devices.find((d) => d.deviceId === lastId);
-          if (match) {
-            if (autoConnectTimeoutRef.current) {
-              clearTimeout(autoConnectTimeoutRef.current);
-              autoConnectTimeoutRef.current = null;
-            }
-            saveLastBleDevice(match.deviceId);
-            lastSelectedBleNameRef.current = match.deviceName ?? null;
-            window.electronAPI.selectBluetoothDevice(match.deviceId);
-            setConnectionStage('Connecting to device...');
-            return;
+        if (lastId && device.deviceId === lastId) {
+          if (autoConnectTimeoutRef.current) {
+            clearTimeout(autoConnectTimeoutRef.current);
+            autoConnectTimeoutRef.current = null;
           }
+          void window.electronAPI.stopNobleBleScanning();
+          saveLastBleDevice(device.deviceId);
+          lastSelectedBleNameRef.current = device.deviceName ?? null;
+          setConnectionStage('Connecting to device...');
+          onConnect('ble', undefined, device.deviceId).catch((err: unknown) => {
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setError(humanizeBleError(err));
+            setConnecting(false);
+            setConnectionStage('');
+          });
+          return;
         }
       }
       setShowBlePicker(true);
       setConnectionStage('Scanning — select your device when it appears below');
     });
     return cleanup;
-  }, [lastConnection]); // isAutoConnecting intentionally omitted — ref handles it
+  }, [lastConnection, onConnect]); // isAutoConnecting intentionally omitted — ref handles it
 
   // Listen for serial ports discovered by main process
   useEffect(() => {
@@ -515,18 +535,30 @@ export default function ConnectionPanel({
     setShowBlePicker(false);
     setShowSerialPicker(false);
     setConnectionStage('Please wait...');
+
+    if (connectionType === 'ble') {
+      // Noble: start scanning — actual connection triggered when user selects a device
+      setConnectionStage('Scanning — select your device when it appears below');
+      try {
+        await window.electronAPI.startNobleBleScanning();
+      } catch (err) {
+        setError(humanizeBleError(err));
+        setConnecting(false);
+        setConnectionStage('');
+      }
+      return;
+    }
+
     try {
-      console.debug('[ConnectionPanel] handleConnect', connectionType, httpAddress);
-      await onConnect(connectionType, httpAddress);
+      console.debug('[ConnectionPanel] handleConnect', connectionType, activeHostAddress);
+      await onConnect(connectionType, activeHostAddress);
     } catch (err) {
       console.warn('[ConnectionPanel] handleConnect failed', err);
       let errorMsg: string;
-      if (connectionType === 'ble') {
-        errorMsg = humanizeBleError(err);
-      } else if (connectionType === 'serial') {
+      if (connectionType === 'serial') {
         errorMsg = humanizeSerialError(err);
       } else if (connectionType === 'http') {
-        errorMsg = humanizeHttpError(httpAddress, err);
+        errorMsg = humanizeHttpError(activeHostAddress, err);
       } else {
         errorMsg = err instanceof Error ? err.message : 'Connection failed';
       }
@@ -534,7 +566,7 @@ export default function ConnectionPanel({
       setConnecting(false);
       setConnectionStage('');
     }
-  }, [connectionType, httpAddress, onConnect]);
+  }, [connectionType, activeHostAddress, onConnect]);
 
   const handleCancelConnection = useCallback(async () => {
     isAutoConnectingRef.current = false;
@@ -543,8 +575,8 @@ export default function ConnectionPanel({
       clearTimeout(autoConnectTimeoutRef.current);
       autoConnectTimeoutRef.current = null;
     }
-    if (showBlePicker) {
-      window.electronAPI.cancelBluetoothSelection();
+    if (showBlePicker || connectionType === 'ble') {
+      void window.electronAPI.stopNobleBleScanning();
     }
     if (showSerialPicker) {
       window.electronAPI.cancelSerialSelection();
@@ -560,19 +592,27 @@ export default function ConnectionPanel({
     } catch (e) {
       console.debug('[ConnectionPanel] onDisconnect best-effort cleanup', e);
     }
-  }, [showBlePicker, showSerialPicker, onDisconnect]);
+  }, [showBlePicker, showSerialPicker, onDisconnect, connectionType]);
 
   const handleSelectBleDevice = useCallback(
     (deviceId: string) => {
+      console.debug('[ConnectionPanel] BLE device selected', deviceId);
       saveLastBleDevice(deviceId);
       // Save BLE advertisement name for use in LastConnection display
       const found = bleDevices.find((d) => d.deviceId === deviceId);
       lastSelectedBleNameRef.current = found?.deviceName ?? null;
-      window.electronAPI.selectBluetoothDevice(deviceId);
+      void window.electronAPI.stopNobleBleScanning();
       setShowBlePicker(false);
       setConnectionStage('Connecting to device...');
+      // Trigger the actual connection with the peripheral ID
+      onConnect('ble', undefined, deviceId).catch((err: unknown) => {
+        console.warn('[ConnectionPanel] BLE connect after selection failed', err);
+        setError(humanizeBleError(err));
+        setConnecting(false);
+        setConnectionStage('');
+      });
     },
-    [bleDevices],
+    [bleDevices, onConnect],
   );
 
   const handleSelectSerialPort = useCallback((portId: string) => {
@@ -628,13 +668,20 @@ export default function ConnectionPanel({
         .current('serial', undefined, lc.serialPortId)
         .catch(onAutoConnectFailed);
     } else if (lc.type === 'ble') {
-      // BLE: navigator.bluetooth.getDevices() is empty on this Electron build after
-      // grant (logs: all retries count 0). requestDevice() requires a user gesture,
-      // so no mount autoconnect — user taps Reconnect/Connect to open the picker.
-      return;
+      setConnectionType('ble');
+      if (lc.bleDeviceId) {
+        // Noble: auto-scan on startup — no user gesture required.
+        // onNobleBleDeviceDiscovered will auto-connect when the known device appears.
+        isAutoConnectingRef.current = true;
+        setIsAutoConnecting(true);
+        setConnecting(true);
+        setConnectionStage('Scanning for last Bluetooth device…');
+        startAutoConnectTimeout();
+        void window.electronAPI.startNobleBleScanning().catch(onAutoConnectFailed);
+      }
     }
     // HTTP: do not auto-trigger — show one-click reconnect card instead
-  }, []);
+  }, [protocol]);
 
   // Cleanup timeout on unmount
   useEffect(
@@ -649,42 +696,48 @@ export default function ConnectionPanel({
     setError(null);
 
     if (lastConnection.type === 'ble') {
-      // onConnect('ble') must run in the same turn as the click (user gesture).
-      // Set auto-connect ref so bluetooth-devices-discovered auto-selects lastId
-      // when it appears in the scan list — that is the "quick connect" path.
-      setConnectionType('ble');
-      setBleDevices([]);
-      setShowBlePicker(false);
-      isAutoConnectingRef.current = true;
-      setIsAutoConnecting(true);
-      setConnecting(true);
-      setConnectionStage('Connecting to last Bluetooth device…');
-      if (autoConnectTimeoutRef.current) {
-        clearTimeout(autoConnectTimeoutRef.current);
-        autoConnectTimeoutRef.current = null;
-      }
-      autoConnectTimeoutRef.current = setTimeout(() => {
-        console.warn('[ConnectionPanel] auto-connect timed out after 30s');
-        isAutoConnectingRef.current = false;
-        setIsAutoConnecting(false);
-        setError('Auto-connect timed out.');
-        setConnecting(false);
-        setConnectionStage('');
-      }, 30_000);
-      onConnect('ble').catch((err) => {
+      if (lastConnection.bleDeviceId) {
+        // Noble: start scanning — no user gesture required.
+        // onNobleBleDeviceDiscovered will auto-connect when the known device appears.
+        setConnectionType('ble');
+        setBleDevices([]);
+        setShowBlePicker(false);
+        isAutoConnectingRef.current = true;
+        setIsAutoConnecting(true);
+        setConnecting(true);
+        setConnectionStage('Scanning for last Bluetooth device…');
         if (autoConnectTimeoutRef.current) {
           clearTimeout(autoConnectTimeoutRef.current);
           autoConnectTimeoutRef.current = null;
         }
-        isAutoConnectingRef.current = false;
-        setIsAutoConnecting(false);
-        setError(humanizeBleError(err));
-        setConnecting(false);
-        setConnectionStage('');
-      });
+        autoConnectTimeoutRef.current = setTimeout(() => {
+          console.warn('[ConnectionPanel] auto-connect timed out after 30s');
+          isAutoConnectingRef.current = false;
+          setIsAutoConnecting(false);
+          setError('Auto-connect timed out.');
+          setConnecting(false);
+          setConnectionStage('');
+        }, 30_000);
+        void window.electronAPI.startNobleBleScanning().catch((err: unknown) => {
+          if (autoConnectTimeoutRef.current) {
+            clearTimeout(autoConnectTimeoutRef.current);
+            autoConnectTimeoutRef.current = null;
+          }
+          isAutoConnectingRef.current = false;
+          setIsAutoConnecting(false);
+          setError(humanizeBleError(err));
+          setConnecting(false);
+          setConnectionStage('');
+        });
+      }
     } else if (lastConnection.type === 'http') {
-      const addr = lastConnection.httpAddress ?? httpAddress;
-      setHttpAddress(addr);
+      const fallbackAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
+      const addr = lastConnection.httpAddress ?? fallbackAddress;
+      if (protocol === 'meshcore') {
+        setTcpHost(addr);
+      } else {
+        setHttpAddress(addr);
+      }
       setConnectionType('http');
       setConnecting(true);
       setBleDevices([]);
@@ -711,7 +764,7 @@ export default function ConnectionPanel({
         setConnectionStage('');
       });
     }
-  }, [lastConnection, onConnect, onAutoConnect, httpAddress]);
+  }, [lastConnection, onConnect, onAutoConnect, httpAddress, protocol, tcpHost]);
 
   const isConnected =
     state.status === 'connected' ||
@@ -1503,7 +1556,7 @@ export default function ConnectionPanel({
               disabled={
                 connecting ||
                 state.status === 'connecting' ||
-                (connectionType === 'http' && !httpAddress.trim())
+                (connectionType === 'http' && !activeHostAddress.trim())
               }
               className="w-full px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#4CAF50' }}
