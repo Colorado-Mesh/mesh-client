@@ -1093,7 +1093,15 @@ export default function ConnectionPanel({
                     onClick={() => {
                       setMeshtasticPreset(id);
                       if (id === 'official') {
-                        setMqttSettings(MQTT_DEFAULTS);
+                        setMqttSettings((prev) => ({
+                          ...prev,
+                          server: MQTT_DEFAULTS.server,
+                          port: MQTT_DEFAULTS.port,
+                          username: MQTT_DEFAULTS.username,
+                          password: MQTT_DEFAULTS.password,
+                          tlsInsecure: false,
+                          useWebSocket: false,
+                        }));
                       }
                     }}
                     className={`flex-1 px-2 py-1.5 text-xs font-medium rounded border transition-colors ${
@@ -1271,7 +1279,7 @@ export default function ConnectionPanel({
               id="mqtt-topic-prefix"
               type="text"
               value={activeMqttSettings.topicPrefix}
-              onChange={(e) => updateMqtt('topicPrefix', e.target.value)}
+              onChange={(e) => updateMqtt('topicPrefix', e.target.value, false)}
               className="w-full px-2 py-1.5 bg-secondary-dark rounded text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
               placeholder="msh/US/"
             />
