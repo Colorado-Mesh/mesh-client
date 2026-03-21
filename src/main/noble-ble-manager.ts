@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const noble = require('@abandonware/noble') as any;
+const noble = require('@stoprocent/noble') as any;
 
 // Meshtastic BLE GATT UUIDs (from @meshtastic/transport-web-bluetooth)
 const SERVICE_UUID = '6ba1b21815a8461f9fa85dcae273eafd';
@@ -262,9 +262,9 @@ export class NobleBleManager extends EventEmitter {
     }
     this.removeAllListeners();
     // Release the native BLEManager and its CBqueue dispatch queue (macOS only).
-    // noble._bindings.stop() → CFRelease(BLEManager) → CBCentralManager + dispatch queue released.
+    // noble.stop() → _bindings.stop() → CFRelease(BLEManager) → CBCentralManager + dispatch queue released.
     try {
-      noble._bindings.stop();
+      noble.stop();
     } catch {
       /* ignore */
     }

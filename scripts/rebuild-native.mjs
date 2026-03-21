@@ -136,49 +136,7 @@ if (!fs.existsSync(betterSqlite3Node)) {
   }
 }
 
-// xpc-connection is a macOS-only native addon used by @abandonware/noble for BLE.
-// install-app-deps sometimes misses it; explicitly verify and rebuild if needed.
-if (process.platform === "darwin") {
-  const xpcConnectionDir = path.join(projectRoot, "node_modules", "xpc-connection");
-  if (fs.existsSync(xpcConnectionDir)) {
-    const xpcConnectionNode = path.join(xpcConnectionDir, "build", "Release", "xpc_connection.node");
-    if (!fs.existsSync(xpcConnectionNode)) {
-      console.log("xpc-connection native binary missing after install-app-deps; running @electron/rebuild…");
-      const rebuildCli = path.join(
-        projectRoot,
-        "node_modules",
-        "@electron",
-        "rebuild",
-        "lib",
-        "cli.js",
-      );
-      if (!fs.existsSync(rebuildCli)) {
-        console.error(
-          "@electron/rebuild not found; ensure npm install completed. " +
-            "Run: npx --yes @electron/rebuild -f -w xpc-connection",
-        );
-        process.exit(1);
-      }
-      const rebuildResult = spawnSync(
-        process.execPath,
-        [rebuildCli, "-f", "-w", "xpc-connection"],
-        { cwd: projectRoot, stdio: "inherit", env: { ...process.env } },
-      );
-      if (rebuildResult.error) {
-        console.error(rebuildResult.error);
-        process.exit(1);
-      }
-      if (rebuildResult.status !== 0) {
-        process.exit(rebuildResult.status ?? 1);
-      }
-      if (!fs.existsSync(xpcConnectionNode)) {
-        console.error(
-          "xpc-connection still has no xpc_connection.node after @electron/rebuild; check Xcode CLI tools.",
-        );
-        process.exit(1);
-      }
-    }
-  }
-}
+// @stoprocent/noble ships universal prebuilt binaries (darwin-x64+arm64) via node-gyp-build.
+// install-app-deps above handles any Electron-specific rebuild if needed.
 
 console.log("Rebuild complete.");
