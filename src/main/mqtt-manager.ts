@@ -116,7 +116,7 @@ export class MQTTManager extends EventEmitter {
         password: settings.password || undefined,
         clean: true,
         keepalive: 60,
-        connectTimeout: 30_000,
+        connectTimeout: 10_000,
         reconnectPeriod: 0,
         rejectUnauthorized: settings.port === 443 ? true : rejectUnauthorized,
       };
@@ -132,7 +132,7 @@ export class MQTTManager extends EventEmitter {
         password: settings.password || undefined,
         clean: true,
         keepalive: 60,
-        connectTimeout: 30_000,
+        connectTimeout: 10_000,
         reconnectPeriod: 0,
         rejectUnauthorized,
       };
@@ -498,7 +498,9 @@ export class MQTTManager extends EventEmitter {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(
+      // Public msh/# feeds carry JSON, corrupt, or non-Meshtastic binary; first byte 0x0a is not
+      // sufficient proof of ServiceEnvelope. Debug only — avoids dual-mode log spam.
+      console.debug(
         '[MQTT] ServiceEnvelope decode failed:',
         sanitizeLogMessage(msg),
         '| Topic:',

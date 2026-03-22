@@ -1,7 +1,15 @@
-export const LETSMESH_HOST = 'mqtt-us-v1.letsmesh.net';
+/** US LetsMesh broker (WebSocket TLS on 443). */
+export const LETSMESH_HOST_US = 'mqtt-us-v1.letsmesh.net';
+/** EU LetsMesh broker (WebSocket TLS on 443). */
+export const LETSMESH_HOST_EU = 'mqtt-eu-v1.letsmesh.net';
+
+/** @deprecated Use {@link LETSMESH_HOST_US} */
+export const LETSMESH_HOST = LETSMESH_HOST_US;
+
+const LETSMESH_HOSTS = new Set([LETSMESH_HOST_US, LETSMESH_HOST_EU]);
 
 export function isLetsMeshSettings(server: string): boolean {
-  return server.trim() === LETSMESH_HOST;
+  return LETSMESH_HOSTS.has(server.trim());
 }
 
 // Read the identity cached by RadioPanel after a config-file import.
@@ -19,71 +27,92 @@ export function readMeshcoreIdentity(): {
   }
 }
 
-function base64url(data: Uint8Array | string): string {
-  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
-  // btoa works on small buffers; spread is fine for 32–64 byte keys/sigs
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+/** MQTT username for MeshCore MQTT brokers: `v1_` + 64 hex chars (uppercase) public key. */
+export function letsMeshMqttUsernameFromIdentity(
+  identity: {
+    public_key?: string | number[];
+  } | null,
+): string | null {
+  const pk = normalizePublicKeyHex(identity?.public_key);
+  if (!pk) return null;
+  return `v1_${pk.toUpperCase()}`;
 }
 
-function decodeKey(key: string | number[]): Uint8Array {
-  // Array of byte values (e.g. [170, 187, ...]) — take first 32 bytes
-  if (Array.isArray(key)) {
-    return new Uint8Array(key.slice(0, 32));
+function normalizePublicKeyHex(publicKey: string | number[] | undefined): string | null {
+  if (!publicKey) return null;
+  if (Array.isArray(publicKey)) {
+    if (publicKey.length < 32) return null;
+    return Array.from(publicKey.slice(0, 32))
+      .map((b) => Number(b).toString(16).padStart(2, '0'))
+      .join('');
   }
-  // 64 hex chars = 32 bytes (seed only)
-  if (/^[0-9a-fA-F]{64}$/.test(key)) {
-    return new Uint8Array(key.match(/.{2}/g)!.map((b) => parseInt(b, 16)));
+  const raw = String(publicKey).trim();
+  if (/^[0-9a-fA-F]{64}$/.test(raw)) return raw.toLowerCase();
+  try {
+    const s = raw.replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(s);
+    if (bin.length === 32) {
+      return Array.from(bin, (c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+    }
+  } catch {
+    // catch-no-log-ok base64 decode attempt for public key
   }
-  // 128 hex chars = 64 bytes (seed + public key concatenated); take first 32 bytes
-  if (/^[0-9a-fA-F]{128}$/.test(key)) {
-    return new Uint8Array(
-      key
-        .slice(0, 64)
-        .match(/.{2}/g)!
-        .map((b) => parseInt(b, 16)),
-    );
-  }
-  // Fall back to standard or URL-safe base64
-  const bin = atob(key.replace(/-/g, '+').replace(/_/g, '/'));
-  return new Uint8Array(bin.split('').map((c) => c.charCodeAt(0)));
+  return null;
 }
-
-// PKCS#8 DER wrapper for a raw 32-byte Ed25519 seed (RFC 8410)
-const PKCS8_PREFIX = new Uint8Array([
-  0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20,
-]);
 
 /**
- * Generate a LetsMesh MQTT password token.
- * Header: { alg: "EdDSA", typ: "JWT" }
- * Payload: { sub: username, iat: now, exp: now+30 }
- * Signed with the node's Ed25519 private key.
+ * 64-byte orlp/MeshCore private key as lowercase hex (128 chars), for createAuthToken.
+ * MeshCore NaCl-style extended secret = 32-byte seed || 32-byte public key when only a seed is stored.
  */
-export async function generateLetsMeshJwt(
-  privateKeyRaw: string | number[],
-  username: string,
+function meshcoreOrlpPrivateKeyHex(
+  privateKey: string | number[] | undefined,
+  publicKeyHex: string | null,
+): string | null {
+  if (!publicKeyHex) return null;
+  if (Array.isArray(privateKey)) {
+    if (privateKey.length >= 64) {
+      return Array.from(privateKey.slice(0, 64))
+        .map((b) => Number(b).toString(16).padStart(2, '0'))
+        .join('');
+    }
+    if (privateKey.length >= 32) {
+      const seed = Array.from(privateKey.slice(0, 32))
+        .map((b) => Number(b).toString(16).padStart(2, '0'))
+        .join('');
+      return seed + publicKeyHex;
+    }
+    return null;
+  }
+  const s = String(privateKey ?? '')
+    .trim()
+    .replace(/^0x/i, '');
+  if (/^[0-9a-fA-F]{128}$/.test(s)) return s.toLowerCase();
+  if (/^[0-9a-fA-F]{64}$/.test(s)) return s.toLowerCase() + publicKeyHex;
+  return null;
+}
+
+/**
+ * Generate a LetsMesh MQTT password token compatible with meshcore-mqtt-broker / verifyAuthToken.
+ * Uses broker hostname as JWT `aud` (must match server AUTH_EXPECTED_AUDIENCE when set).
+ */
+export async function generateLetsMeshAuthToken(
+  identity: { private_key?: string | number[]; public_key?: string | number[] },
+  serverHost: string,
 ): Promise<string> {
-  const seed = decodeKey(privateKeyRaw);
-  console.debug(
-    `[letsMeshJwt] generating JWT — username: ${username}, key type: ${Array.isArray(privateKeyRaw) ? 'array' : 'string'}, key raw length: ${privateKeyRaw.length} → seed: ${seed.length} bytes`,
-  );
-  if (seed.length !== 32) throw new Error('LetsMesh JWT: private key must be 32 bytes');
-
-  const pkcs8 = new Uint8Array(PKCS8_PREFIX.length + seed.length);
-  pkcs8.set(PKCS8_PREFIX);
-  pkcs8.set(seed, PKCS8_PREFIX.length);
-
-  const key = await crypto.subtle.importKey('pkcs8', pkcs8, { name: 'Ed25519' }, false, ['sign']);
-
+  const pub = normalizePublicKeyHex(identity.public_key);
+  const priv = meshcoreOrlpPrivateKeyHex(identity.private_key, pub);
+  if (!pub) throw new Error('LetsMesh auth: public key missing or invalid');
+  if (!priv) throw new Error('LetsMesh auth: private key missing or invalid');
+  const { createAuthToken } = await import('@michaelhart/meshcore-decoder');
   const now = Math.floor(Date.now() / 1000);
-  const header = base64url(JSON.stringify({ alg: 'EdDSA', typ: 'JWT' }));
-  const payload = base64url(JSON.stringify({ sub: username, iat: now, exp: now + 30 }));
-  const message = `${header}.${payload}`;
-  const sig = await crypto.subtle.sign('Ed25519', key, new TextEncoder().encode(message));
-  const token = `${message}.${base64url(new Uint8Array(sig))}`;
-  console.debug(`[letsMeshJwt] JWT generated — header.payload: ${message}`);
-  return token;
+  return createAuthToken(
+    {
+      publicKey: pub.toUpperCase(),
+      aud: serverHost.trim(),
+      iat: now,
+      exp: now + 3600,
+    },
+    priv,
+    pub,
+  );
 }

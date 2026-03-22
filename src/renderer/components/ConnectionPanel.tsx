@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { generateLetsMeshJwt, isLetsMeshSettings, readMeshcoreIdentity } from '../lib/letsMeshJwt';
+import {
+  generateLetsMeshAuthToken,
+  isLetsMeshSettings,
+  letsMeshMqttUsernameFromIdentity,
+  readMeshcoreIdentity,
+} from '../lib/letsMeshJwt';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import type {
@@ -392,8 +397,13 @@ export default function ConnectionPanel({
     };
   }, [meshcoreMqttSettings]);
 
-  // Listen for MQTT events from main process
-  useEffect(() => window.electronAPI.mqtt.onError(({ error }) => setMqttError(error)), []);
+  // Listen for MQTT events from main process (dual-mode: only errors for the active protocol)
+  useEffect(() => {
+    return window.electronAPI.mqtt.onError(({ error, protocol: mqttProtocol }) => {
+      if (mqttProtocol !== protocol) return;
+      setMqttError(error);
+    });
+  }, [protocol]);
   useEffect(() => {
     // Restore clientId if already connected when this component mounts (e.g. after tab switch)
     window.electronAPI.mqtt
@@ -404,7 +414,10 @@ export default function ConnectionPanel({
       .catch((err) => {
         console.warn('[ConnectionPanel] getClientId failed:', err);
       });
-    return window.electronAPI.mqtt.onClientId(({ clientId }) => setMqttClientId(clientId));
+    return window.electronAPI.mqtt.onClientId(({ clientId, protocol: mqttProtocol }) => {
+      if (mqttProtocol !== protocol) return;
+      setMqttClientId(clientId);
+    });
   }, [protocol]);
 
   // Clear MQTT error on successful connect; leave it visible on disconnect so the user can read it.
@@ -413,15 +426,19 @@ export default function ConnectionPanel({
     if (mqttStatus === 'disconnected') setMqttClientId('');
   }, [mqttStatus]);
 
-  // When the MeshCore device connects (or reconnects after a reboot), keep the LetsMesh username
-  // in sync with the newly known node ID so the user doesn't have to re-click the preset.
+  // Keep LetsMesh MQTT username in sync with imported MeshCore identity (v1_<64-hex public key>).
   useEffect(() => {
-    if (protocol !== 'meshcore' || meshcorePreset !== 'letsmesh' || state.myNodeNum === 0) return;
-    const nodeHex = `v1_!${state.myNodeNum.toString(16).padStart(8, '0')}`;
-    setMeshcoreMqttSettings((prev) =>
-      prev.username === nodeHex ? prev : { ...prev, username: nodeHex },
-    );
-  }, [state.myNodeNum, protocol, meshcorePreset]);
+    const syncLetsMeshUsername = () => {
+      if (protocol !== 'meshcore' || meshcorePreset !== 'letsmesh') return;
+      const u = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+      if (!u) return;
+      setMeshcoreMqttSettings((prev) => (prev.username === u ? prev : { ...prev, username: u }));
+    };
+    syncLetsMeshUsername();
+    window.addEventListener('meshclient:meshcoreIdentityUpdated', syncLetsMeshUsername);
+    return () =>
+      window.removeEventListener('meshclient:meshcoreIdentityUpdated', syncLetsMeshUsername);
+  }, [protocol, meshcorePreset]);
 
   const activeMqttSettings = protocol === 'meshcore' ? meshcoreMqttSettings : mqttSettings;
   const setActiveMqttSettings = protocol === 'meshcore' ? setMeshcoreMqttSettings : setMqttSettings;
@@ -1155,17 +1172,15 @@ export default function ConnectionPanel({
                     onClick={() => {
                       setMeshcorePreset(id);
                       if (id === 'letsmesh') {
-                        const nodeHex =
-                          state.myNodeNum > 0
-                            ? `v1_!${state.myNodeNum.toString(16).padStart(8, '0')}`
-                            : '';
+                        const fromIdentity =
+                          letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
                         setMeshcoreMqttSettings((prev) => ({
                           ...prev,
                           server: 'mqtt-us-v1.letsmesh.net',
                           port: 443,
                           topicPrefix: 'meshcore',
                           useWebSocket: true,
-                          username: nodeHex || prev.username,
+                          username: fromIdentity || prev.username,
                           password: '',
                         }));
                       } else if (id === 'ripple') {
@@ -1259,9 +1274,12 @@ export default function ConnectionPanel({
                   : 'border-amber-700/50 bg-amber-900/20 text-amber-200/90'
               }`}
             >
-              {readMeshcoreIdentity()?.private_key
-                ? 'JWT will be generated automatically when you connect.'
-                : 'No device identity — import your MeshCore config in the Radio panel for auto-JWT, or paste a pre-generated JWT in the password field.'}
+              {(() => {
+                const id = readMeshcoreIdentity();
+                return id?.private_key && id?.public_key
+                  ? 'Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex).'
+                  : 'No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually.';
+              })()}
             </div>
           )}
           <div className="grid grid-cols-2 gap-2">
@@ -1387,29 +1405,30 @@ export default function ConnectionPanel({
                 };
                 if (meshcorePreset === 'letsmesh' && isLetsMeshSettings(settings.server)) {
                   const identity = readMeshcoreIdentity();
-                  if (identity?.private_key && settings.username) {
-                    // Auto-generate a fresh JWT; overrides whatever is in the password field.
+                  if (identity?.private_key && identity?.public_key) {
                     try {
-                      settings.password = await generateLetsMeshJwt(
-                        identity.private_key,
-                        settings.username,
+                      const u = letsMeshMqttUsernameFromIdentity(identity);
+                      if (u) settings.username = u;
+                      settings.password = await generateLetsMeshAuthToken(
+                        identity,
+                        settings.server,
                       );
                     } catch (e) {
                       const msg = e instanceof Error ? e.message : String(e);
-                      setMqttError(`JWT generation failed: ${msg}`);
-                      console.warn('[ConnectionPanel] LetsMesh JWT generation failed', e);
+                      setMqttError(`Auth token generation failed: ${msg}`);
+                      console.warn('[ConnectionPanel] LetsMesh auth token generation failed', e);
                       return;
                     }
                   } else if (!settings.password) {
-                    // No identity and no manually-entered password — nothing to authenticate with.
                     setMqttError(
-                      identity
-                        ? 'Username is empty. Connect your MeshCore device or enter the username manually (format: v1_!<hex>).'
-                        : 'No device identity found. Import your MeshCore config JSON in the Radio panel, or paste a pre-generated JWT in the password field.',
+                      identity?.private_key && !identity?.public_key
+                        ? 'Public key missing from identity. Import your MeshCore config JSON in the Radio panel (must include public and private keys), or paste a broker token in the password field.'
+                        : identity
+                          ? 'Could not build LetsMesh username. Import your MeshCore config JSON in the Radio panel, or paste username (v1_<public key>) and token manually.'
+                          : 'No device identity found. Import your MeshCore config JSON in the Radio panel, or paste username and token manually.',
                     );
                     return;
                   }
-                  // If no identity but password is set, fall through and use the typed password as-is.
                 }
                 window.electronAPI.mqtt.connect(settings).catch((err: unknown) => {
                   console.warn('[ConnectionPanel] mqtt.connect failed:', err);

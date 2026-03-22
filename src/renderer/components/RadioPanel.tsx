@@ -648,6 +648,7 @@ export default function RadioPanel({
                 'mesh-client:meshcoreIdentity',
                 JSON.stringify({ public_key: cfg.public_key, private_key: cfg.private_key }),
               );
+              window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
             } catch {
               // catch-no-log-ok localStorage quota or private mode — non-critical identity cache
             }

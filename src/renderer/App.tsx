@@ -21,7 +21,12 @@ import { ToastProvider, useToast } from './components/Toast';
 import UpdateBanner from './components/UpdateBanner';
 import { useDevice } from './hooks/useDevice';
 import { useMeshCore } from './hooks/useMeshCore';
-import { generateLetsMeshJwt, isLetsMeshSettings, readMeshcoreIdentity } from './lib/letsMeshJwt';
+import {
+  generateLetsMeshAuthToken,
+  isLetsMeshSettings,
+  letsMeshMqttUsernameFromIdentity,
+  readMeshcoreIdentity,
+} from './lib/letsMeshJwt';
 import { parseStoredJson } from './lib/parseStoredJson';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
@@ -361,14 +366,16 @@ export default function App() {
           const tryConnect = async () => {
             if (prot === 'meshcore' && isLetsMeshSettings(connectSettings.server)) {
               const identity = readMeshcoreIdentity();
-              if (identity?.private_key && connectSettings.username) {
+              if (identity?.private_key && identity?.public_key) {
                 try {
-                  connectSettings.password = await generateLetsMeshJwt(
-                    identity.private_key,
-                    connectSettings.username,
+                  const u = letsMeshMqttUsernameFromIdentity(identity);
+                  if (u) connectSettings.username = u;
+                  connectSettings.password = await generateLetsMeshAuthToken(
+                    identity,
+                    connectSettings.server,
                   );
                 } catch (e) {
-                  console.warn('[App] LetsMesh JWT auto-launch generation failed', e);
+                  console.warn('[App] LetsMesh auth token auto-launch generation failed', e);
                 }
               }
             }
