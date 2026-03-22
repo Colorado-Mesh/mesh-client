@@ -446,10 +446,10 @@ function setupTray(window: BrowserWindow) {
 }
 
 /**
- * macOS: avoid native MenuItem `role:` entries (about/services/window/edit/etc.). Those map to
- * AppKit NSMenuItem targets that still participate in responder / menu validation while typing
- * in a web view and can log WeakPtrToElectronMenuModelAsNSObject. Use plain click handlers only.
- * Cmd+C/V/X/Z still work in the page via Chromium. No menu bar Window group — use traffic lights.
+ * macOS: set a minimal application menu so the native menu bridge has a stable model.
+ * `role: 'editMenu'` is required for Cmd+C/V/X/Z/A keyboard shortcuts — macOS routes
+ * these through AppKit, not Chromium. It may log WeakPtrToElectronMenuModelAsNSObject
+ * when focusing text inputs, but that warning is a known harmless Electron/Chromium quirk.
  */
 function setupAppMenu() {
   if (process.platform !== 'darwin') return;
@@ -495,6 +495,7 @@ function setupAppMenu() {
         },
       ],
     },
+    { role: 'editMenu' as const },
   ]);
   Menu.setApplicationMenu(appMenu);
 }
