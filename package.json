@@ -1,7 +1,7 @@
 {
   "name": "mesh-client",
   "version": "4.0.1",
-  "description": "Cross-platform Meshtastic desktop client - BLE, Serial, HTTP, and MQTT support",
+  "description": "Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows — BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, routing diagnostics, and keyboard-first workflows.",
   "main": "dist-electron/main/index.js",
   "scripts": {
     "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --format=cjs",

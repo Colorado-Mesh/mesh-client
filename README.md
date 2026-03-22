@@ -1,6 +1,6 @@
 # Mesh-Client
 
-> A cross-platform desktop **Meshtastic** client for **Mac**, **Linux**, and **Windows** — built for power users who need more than a mobile app. Also supports **MeshCore** firmware devices.
+> Cross-platform **Electron** desktop client for **Meshtastic** and **MeshCore** on **macOS**, **Linux**, and **Windows** — **BLE**, **USB serial**, **Wi‑Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, and **keyboard-first** workflows.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
