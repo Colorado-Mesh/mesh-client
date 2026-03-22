@@ -1,18 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-export interface NobleBleDevice {
-  deviceId: string;
-  deviceName: string;
-}
-export type NobleBleSessionId = 'meshtastic' | 'meshcore';
+import type {
+  ElectronAPI,
+  NobleBleDevice,
+  NobleBleSessionId,
+  SerialPort,
+} from '../shared/electron-api.types';
 
-export interface SerialPort {
-  portId: string;
-  displayName: string;
-  portName: string;
-  vendorId?: string;
-  productId?: string;
-}
+export type { NobleBleDevice, NobleBleSessionId, SerialPort };
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // ─── Database operations ────────────────────────────────────────
@@ -388,4 +383,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.off('log:line', handler);
     },
   },
-});
+} satisfies ElectronAPI);

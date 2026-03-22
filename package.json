@@ -33,7 +33,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.main.json",
     "check:log-injection": "node scripts/check-log-injection.mjs",
-    "check:db-migrations": "node scripts/check-db-migrations.mjs"
+    "check:db-migrations": "node scripts/check-db-migrations.mjs",
+    "check:ipc-contract": "node scripts/check-ipc-contract.mjs"
   },
   "author": {
     "name": "Colorado Mesh",
