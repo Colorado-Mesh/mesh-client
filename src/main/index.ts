@@ -347,6 +347,9 @@ function validateMqttSettings(settings: unknown): void {
     throw new Error('mqtt:connect: tlsInsecure must be a boolean');
   if (s.useWebSocket != null && typeof s.useWebSocket !== 'boolean')
     throw new Error('mqtt:connect: useWebSocket must be a boolean');
+  if (s.meshcorePacketLoggerEnabled != null && typeof s.meshcorePacketLoggerEnabled !== 'boolean') {
+    throw new Error('mqtt:connect: meshcorePacketLoggerEnabled must be a boolean');
+  }
   if (s.mqttTransportProtocol != null) {
     if (s.mqttTransportProtocol !== 'meshtastic' && s.mqttTransportProtocol !== 'meshcore') {
       throw new Error('mqtt:connect: mqttTransportProtocol must be meshtastic or meshcore');
@@ -376,6 +379,31 @@ function validateMqttPublishMeshcoreArgs(args: unknown): void {
   }
   if (a.timestamp != null && !Number.isFinite(Number(a.timestamp))) {
     throw new Error('mqtt:publishMeshcore: timestamp invalid');
+  }
+}
+
+const MAX_MESHCORE_PACKET_LOG_ORIGIN = 200;
+const MAX_MESHCORE_PACKET_LOG_RAW_HEX = 2048;
+
+function validateMqttPublishMeshcorePacketLogArgs(args: unknown): void {
+  if (!args || typeof args !== 'object')
+    throw new Error('mqtt:publishMeshcorePacketLog: args must be an object');
+  const a = args as Record<string, unknown>;
+  if (typeof a.origin !== 'string' || a.origin.length === 0)
+    throw new Error('mqtt:publishMeshcorePacketLog: origin must be a non-empty string');
+  if (a.origin.length > MAX_MESHCORE_PACKET_LOG_ORIGIN)
+    throw new Error('mqtt:publishMeshcorePacketLog: origin too long');
+  const snr = Number(a.snr);
+  const rssi = Number(a.rssi);
+  if (!Number.isFinite(snr)) throw new Error('mqtt:publishMeshcorePacketLog: snr must be finite');
+  if (!Number.isFinite(rssi)) throw new Error('mqtt:publishMeshcorePacketLog: rssi must be finite');
+  if (a.rawHex != null) {
+    if (typeof a.rawHex !== 'string')
+      throw new Error('mqtt:publishMeshcorePacketLog: rawHex invalid');
+    if (a.rawHex.length > MAX_MESHCORE_PACKET_LOG_RAW_HEX)
+      throw new Error('mqtt:publishMeshcorePacketLog: rawHex too long');
+    if (!/^[0-9a-fA-F]*$/.test(a.rawHex))
+      throw new Error('mqtt:publishMeshcorePacketLog: rawHex must be hex');
   }
 }
 
@@ -1203,6 +1231,26 @@ ipcMain.handle('mqtt:publishMeshcore', async (_event, args) => {
   } catch (err) {
     console.error(
       '[IPC] mqtt:publishMeshcore failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('mqtt:publishMeshcorePacketLog', async (_event, args) => {
+  try {
+    console.debug('[IPC] mqtt:publishMeshcorePacketLog');
+    validateMqttPublishMeshcorePacketLogArgs(args);
+    const a = args as { origin: string; snr: number; rssi: number; rawHex?: string };
+    meshcoreMqttAdapter.publishPacketLog({
+      origin: a.origin,
+      snr: a.snr,
+      rssi: a.rssi,
+      rawHex: a.rawHex,
+    });
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:publishMeshcorePacketLog failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

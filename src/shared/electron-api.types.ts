@@ -193,6 +193,12 @@ export interface ElectronAPI {
       senderNodeId?: number;
       timestamp?: number;
     }) => Promise<unknown>;
+    publishMeshcorePacketLog: (args: {
+      origin: string;
+      snr: number;
+      rssi: number;
+      rawHex?: string;
+    }) => Promise<unknown>;
     onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
   };
 

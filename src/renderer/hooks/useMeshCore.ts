@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { classifyPayload, extractMeshtasticSenderId } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
+import { isLetsMeshSettings } from '../lib/letsMeshJwt';
+import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
@@ -580,6 +582,13 @@ export function useMeshCore() {
   );
   /** MQTT-derived contacts persisted with a placeholder pubkey until 0x8A supplies a real key. */
   const mqttPlaceholderSavedRef = useRef<Set<number>>(new Set());
+  const selfInfoRef = useRef<MeshCoreSelfInfo | null>(null);
+  /** Throttle LetsMesh packet-logger publishes (event 136 can be very frequent). */
+  const lastPacketLogAtRef = useRef(0);
+
+  useEffect(() => {
+    selfInfoRef.current = selfInfo;
+  }, [selfInfo]);
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -1180,6 +1189,33 @@ export function useMeshCore() {
               );
           }
         }
+
+        const mq = readMeshcoreMqttSettingsFromStorage();
+        if (
+          mqttStatusRef.current === 'connected' &&
+          isLetsMeshSettings(mq.server) &&
+          mq.meshcorePacketLoggerEnabled
+        ) {
+          const now = Date.now();
+          if (now - lastPacketLogAtRef.current >= 100) {
+            lastPacketLogAtRef.current = now;
+            const origin = selfInfoRef.current?.name ?? 'mesh-client';
+            let rawHex: string | undefined;
+            if (d.raw instanceof Uint8Array && d.raw.length > 0) {
+              rawHex = Array.from(d.raw, (b) => b.toString(16).padStart(2, '0')).join('');
+            }
+            void window.electronAPI.mqtt
+              .publishMeshcorePacketLog({
+                origin,
+                snr,
+                rssi,
+                rawHex,
+              })
+              .catch(() => {
+                // catch-no-log-ok optional packet-logger publish must not disrupt RF path
+              });
+          }
+        }
       });
 
       conn.on('disconnected', () => {
@@ -1539,6 +1575,12 @@ export function useMeshCore() {
               status: 'acked',
             });
           } else if (mqttStatusRef.current === 'connected') {
+            const mq = readMeshcoreMqttSettingsFromStorage();
+            if (isLetsMeshSettings(mq.server)) {
+              // LetsMesh MQTT is for authenticated packet/analyzer feeds (see docs), not MQTT-only
+              // channel chat without a radio.
+              return;
+            }
             await window.electronAPI.mqtt.publishMeshcore({
               text,
               channelIdx,

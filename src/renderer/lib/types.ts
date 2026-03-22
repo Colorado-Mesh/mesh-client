@@ -162,6 +162,11 @@ export interface MQTTSettings {
   mqttTransportProtocol?: 'meshtastic' | 'meshcore';
   /** Use ws:// or wss:// transport instead of mqtt:// / mqtts:// (required for port 443 on LetsMesh). */
   useWebSocket?: boolean;
+  /**
+   * When true (MeshCore MQTT + LetsMesh public broker), forward RX packet summaries to
+   * `{topicPrefix}/meshcore/packets` for the Analyzer (meshcoretomqtt-shaped JSON). Default false.
+   */
+  meshcorePacketLoggerEnabled?: boolean;
 }
 
 export type MQTTStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -424,6 +429,12 @@ declare global {
           senderName?: string;
           senderNodeId?: number;
           timestamp?: number;
+        }) => Promise<void>;
+        publishMeshcorePacketLog: (args: {
+          origin: string;
+          snr: number;
+          rssi: number;
+          rawHex?: string;
         }) => Promise<void>;
         onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
       };

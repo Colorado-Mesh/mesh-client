@@ -97,6 +97,7 @@ const electronAPIMock = {
     publishNodeInfo: vi.fn().mockResolvedValue(undefined),
     publishPosition: vi.fn().mockResolvedValue(undefined),
     publishMeshcore: vi.fn().mockResolvedValue(undefined),
+    publishMeshcorePacketLog: vi.fn().mockResolvedValue(undefined),
     onMeshcoreChat: vi.fn().mockReturnValue(() => {}),
   },
   onNobleBleAdapterState: vi.fn().mockReturnValue(() => {}),

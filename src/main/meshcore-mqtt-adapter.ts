@@ -302,4 +302,35 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     const payload = JSON.stringify(envelope);
     this.client.publish(topic, payload, { qos: 0 });
   }
+
+  /**
+   * Packet logger / Analyzer feed — same topic layout as meshcoretomqtt (`meshcore/packets` under
+   * topic prefix), JSON shape aligned with Andrew-a-g/meshcoretomqtt README examples.
+   */
+  publishPacketLog(args: { origin: string; snr: number; rssi: number; rawHex?: string }): void {
+    if (!this.client || this.status !== 'connected' || !this.lastSettings) {
+      throw new Error('MeshCore MQTT not connected');
+    }
+    const base = normalizePrefix(this.lastSettings.topicPrefix || 'msh');
+    const topic = `${base}/meshcore/packets`;
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const date = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+    const payload: Record<string, string> = {
+      origin: args.origin.slice(0, 200),
+      timestamp: now.toISOString(),
+      type: 'PACKET',
+      direction: 'rx',
+      time,
+      date,
+      SNR: String(args.snr),
+      RSSI: String(args.rssi),
+      meshclient_source: 'mesh-client',
+    };
+    if (args.rawHex && args.rawHex.length > 0) {
+      payload.raw_hex = args.rawHex.length > 2048 ? args.rawHex.slice(0, 2048) : args.rawHex;
+    }
+    this.client.publish(topic, JSON.stringify(payload), { qos: 0 });
+  }
 }

@@ -260,6 +260,7 @@ const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
   topicPrefix: 'meshcore',
   autoLaunch: false,
   maxRetries: 5,
+  meshcorePacketLoggerEnabled: false,
 };
 
 function migrateMqttSettingsOnce(): void {
@@ -1367,6 +1368,24 @@ export default function ConnectionPanel({
                   ? 'Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex). JWT audience matches the Server hostname.'
                   : 'No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually. JWT audience in the token must match the Server hostname.';
               })()}
+            </div>
+          )}
+          {meshcorePreset === 'letsmesh' && (
+            <div className="flex items-start gap-2 rounded border border-gray-600/50 bg-secondary-dark/40 px-2 py-2 text-xs text-gray-300">
+              <input
+                type="checkbox"
+                id="meshcore-packet-logger"
+                checked={meshcoreMqttSettings.meshcorePacketLoggerEnabled ?? false}
+                onChange={(e) => updateMqtt('meshcorePacketLoggerEnabled', e.target.checked)}
+                className="accent-brand-green mt-0.5 shrink-0"
+              />
+              <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
+                Packet logger (LetsMesh Analyzer) — when connected to your radio and MQTT, forward
+                RX packet summaries to{' '}
+                <code className="text-gray-400">{`{topicPrefix}/meshcore/packets`}</code> in the
+                same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to
+                share heard air traffic with the public analyzer.
+              </label>
             </div>
           )}
           <div className="grid grid-cols-2 gap-2">

@@ -208,6 +208,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       senderNodeId?: number;
       timestamp?: number;
     }) => ipcRenderer.invoke('mqtt:publishMeshcore', args),
+    publishMeshcorePacketLog: (args: {
+      origin: string;
+      snr: number;
+      rssi: number;
+      rawHex?: string;
+    }) => ipcRenderer.invoke('mqtt:publishMeshcorePacketLog', args),
     onMeshcoreChat: (cb: (msg: unknown) => void) => {
       const handler = (_: unknown, m: unknown) => cb(m);
       ipcRenderer.on('mqtt:meshcore-chat', handler);

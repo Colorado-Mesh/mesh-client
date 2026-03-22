@@ -29,3 +29,9 @@ Meshtastic MQTT working on the same machine does not guarantee MeshCore LetsMesh
 ## Manual token
 
 Import identity under **Radio**, or set **Custom** and paste username `v1_<public key>` and a token from tooling that matches your broker’s `AUTH_EXPECTED_AUDIENCE`.
+
+## Packet logger / Analyzer (LetsMesh)
+
+[LetsMesh](https://www.letsmesh.net/) positions public MQTT as part of the **MeshCore Analyzer** ecosystem: clients contribute **observed** traffic (e.g. packet captures) for the map and web UI—similar to [meshcoretomqtt](https://github.com/Andrew-a-g/meshcoretomqtt) (topics such as `meshcore/packets` with JSON metadata).
+
+In mesh-client, **LetsMesh public brokers** are **not** used for MQTT-only channel chat when no radio is connected. Optional **Packet logger (LetsMesh Analyzer)** (off by default) publishes RX summaries from the radio to `{topicPrefix}/meshcore/packets` using a meshcoretomqtt-style JSON shape (see [`MeshcoreMqttAdapter.publishPacketLog`](../src/main/meshcore-mqtt-adapter.ts)). Confirm broker ACLs and [observer onboarding](https://analyzer.letsmesh.net/observer/onboard) expectations with current operator docs.
