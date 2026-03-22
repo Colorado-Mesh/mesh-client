@@ -308,6 +308,26 @@ GitHub Code scanning (CodeQL) reports **log injection** when user-controlled or 
 - **Checks:** Code scanning runs on push (GitHub default setup). If you add or change code that feeds into the log pipeline, ensure the **first** use of untrusted data in that path is wrapped in `sanitizeLogMessage()` at the call site.
 - **Tests:** When adding or changing code that feeds into the log pipeline (e.g. new call sites of `appendLine`, `console.*` in main, or renderer→main log forwarding), add or extend tests so that log injection is caught by the suite. Pre-commit runs `npm run test:run`, which includes `src/renderer/lib/sanitize-log-message.test.ts`: that file tests both `sanitizeLogMessage` and `sanitizeForLogSink` (used by the console overrides in log-service) and runs the log-injection script so that regressions fail the test run. Add or extend tests there (or equivalent) so regressions are caught. AI and reviewers should ensure such tests exist or are added.
 
+### Silent-catch check
+
+`scripts/check-silent-catches.mjs` scans `src/` for `catch` blocks that contain no `console.*` call, no rethrow, and no suppression comment. It runs automatically on every commit as part of `npm run test:run`.
+
+**Rule:** Every catch block must either log the error, rethrow it, or carry a suppression comment explaining why silence is intentional.
+
+- **Suppression format:** Add `// catch-no-log-ok <reason>` on the first line inside the catch block (or on the same line as a one-liner catch). Keep the reason brief — it exists so reviewers can judge whether silence is truly safe.
+- **When silence is acceptable:** localStorage fallbacks where a missing/corrupt key is expected and harmless, teardown paths (`dialog.showErrorBox`, cleanup in `will-quit`) where a secondary failure must not mask the primary one, and AES key-iteration loops where a single key failing to import is normal protocol behaviour.
+- **When silence is not acceptable:** Any path where the error represents unexpected state, a failed IPC call, or a condition that would cause silent data loss or a broken UI.
+
+### console.log check
+
+`scripts/check-console-log.mjs` bans bare `console.log()` calls in `src/`. All diagnostic trace output must use `console.debug` so users can filter it separately in the App Log panel (`debug` is hidden by default). `console.warn` and `console.error` are allowed. The check runs as part of `npm run test:run`.
+
+- **Suppression:** Add `// log-level-ok <reason>` on the same line to allow a specific `console.log` where promotion to `warn`/`error` would be misleading and `debug` would be too noisy to filter.
+
+### XSS patterns check
+
+`scripts/check-xss-patterns.mjs` bans React's raw HTML injection prop, direct DOM `innerHTML` assignment, and dynamic code execution from all source files. There are zero current violations. The check has no suppression mechanism — if you believe an exception is warranted, discuss it with a maintainer before adding the pattern. The check runs as part of `npm run test:run`.
+
 ### MQTT publish (nonce and gatewayId)
 
 - When modifying `MQTTManager.publish` or `publishEncryptedData` in `src/main/mqtt-manager.ts`, always normalize `from`, `to`, and `channel` to numbers (for example, `const fromId = Number(from) >>> 0;`) before using them in AES-CTR nonce construction or MeshPacket fields.
