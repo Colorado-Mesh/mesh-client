@@ -39,6 +39,48 @@ describe('ConnectionPanel MQTT port clamping', () => {
   });
 });
 
+describe('HelpTooltip in MQTT form', () => {
+  function renderMqttForm(protocol: 'meshtastic' | 'meshcore' = 'meshtastic') {
+    return render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol={protocol}
+        onProtocolChange={vi.fn()}
+      />,
+    );
+  }
+
+  it('shows non-empty tooltip text on mouseenter for each help icon', async () => {
+    const user = userEvent.setup();
+    renderMqttForm();
+    const helpIcons = document.querySelectorAll('.cursor-help');
+    expect(helpIcons.length).toBeGreaterThan(0);
+    for (const icon of helpIcons) {
+      await user.hover(icon as HTMLElement);
+      // After hover, a tooltip span should appear with non-empty text
+      const tooltips = document.querySelectorAll('.pointer-events-none');
+      const visibleTooltip = Array.from(tooltips).find(
+        (el) => el.textContent && el.textContent.trim().length > 0,
+      );
+      expect(visibleTooltip).toBeTruthy();
+      await user.unhover(icon as HTMLElement);
+    }
+  });
+
+  it('help icons do not use native title attribute (broken in Electron)', () => {
+    renderMqttForm();
+    const helpIcons = document.querySelectorAll('.cursor-help');
+    expect(helpIcons.length).toBeGreaterThan(0);
+    for (const icon of helpIcons) {
+      expect(icon.getAttribute('title')).toBeNull();
+    }
+  });
+});
+
 describe('ConnectionPanel accessibility', () => {
   it('has no axe violations in disconnected state', async () => {
     const { container } = render(
