@@ -10,6 +10,10 @@ import { useMeshCore } from './useMeshCore';
 
 const SENDER_ID = 0x12345678;
 
+/** Transport metadata line that must not appear as channel chat (regression: DB hydration must filter). */
+const ACK_TRANSPORT_PAYLOAD =
+  'ack @[Digi Mobile] | ca,18,9c,72,97,69,0a | SNR: 12.0 dB | RSSI: -25 dBm | Received at: 12:56:35';
+
 function sampleMeshcoreDbRow() {
   return {
     id: 42,
@@ -24,6 +28,14 @@ function sampleMeshcoreDbRow() {
     reply_id: null as number | null,
     to_node: null as number | null,
     received_via: 'mqtt' as const,
+  };
+}
+
+function sampleAckOnlyMeshcoreDbRow() {
+  return {
+    ...sampleMeshcoreDbRow(),
+    id: 99,
+    payload: ACK_TRANSPORT_PAYLOAD,
   };
 }
 
@@ -66,5 +78,35 @@ describe('useMeshCore mount hydration', () => {
     });
 
     expect(result.current.messages).toEqual([]);
+  });
+
+  it('does not surface persisted ack transport-status lines as chat messages', async () => {
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([
+      sampleAckOnlyMeshcoreDbRow(),
+    ]);
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await waitFor(() => {
+      expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
+    });
+
+    expect(result.current.messages).toEqual([]);
+  });
+
+  it('filters ack transport lines from DB but keeps normal messages', async () => {
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([
+      sampleAckOnlyMeshcoreDbRow(),
+      { ...sampleMeshcoreDbRow(), id: 43 },
+    ]);
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await waitFor(() => {
+      expect(result.current.messages.length).toBe(1);
+    });
+
+    expect(result.current.messages[0].payload).toBe('Hello from DB');
+    expect(result.current.messages[0].sender_name).toBe('Alice');
   });
 });
