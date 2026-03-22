@@ -73,10 +73,13 @@ function levelVisible(level: string, f: LevelFilters): boolean {
 export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean {
   if (protocol === 'meshtastic') {
     return (
+      entry.source === 'sdk' ||
       entry.source.includes('meshtastic') ||
       entry.message.includes('[iMeshDevice]') ||
       entry.message.includes('[TransportNobleIpc]') ||
-      entry.message.includes('[MQTT]')
+      entry.message.includes('[MQTT]') ||
+      entry.message.includes('[NobleBleManager]') ||
+      entry.message.includes('[BLE:')
     );
   }
   if (protocol === 'meshcore') {
@@ -88,13 +91,16 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
   }
   // No protocol: show all device entries (fallback)
   return (
+    entry.source === 'sdk' ||
     entry.source.includes('meshtastic') ||
     entry.source.includes('meshcore') ||
     entry.message.includes('[iMeshDevice]') ||
     entry.message.includes('[useMeshCore]') ||
     entry.message.includes('[TransportNobleIpc]') ||
     entry.message.includes('[MQTT]') ||
-    entry.message.includes('[MeshcoreMqttAdapter]')
+    entry.message.includes('[MeshcoreMqttAdapter]') ||
+    entry.message.includes('[NobleBleManager]') ||
+    entry.message.includes('[BLE:')
   );
 }
 

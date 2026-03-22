@@ -30,6 +30,24 @@ describe('isDeviceEntry — Meshtastic protocol', () => {
     ).toBe(true);
   });
 
+  it('classifies [NobleBleManager] message as Meshtastic device entry', () => {
+    expect(
+      isDeviceEntry(entry('main', '[NobleBleManager] startScanning error: timeout'), 'meshtastic'),
+    ).toBe(true);
+  });
+
+  it('classifies [BLE:sessionId] message as Meshtastic device entry', () => {
+    expect(
+      isDeviceEntry(entry('main', '[BLE:abc123] connect failed: peripheral lost'), 'meshtastic'),
+    ).toBe(true);
+  });
+
+  it('classifies sdk source as Meshtastic device entry', () => {
+    expect(isDeviceEntry(entry('sdk', 'Packet 42 of type decoded timed out'), 'meshtastic')).toBe(
+      true,
+    );
+  });
+
   it('does NOT classify MeshCore source as Meshtastic device entry', () => {
     expect(isDeviceEntry(entry('meshcore', 'meshcore message'), 'meshtastic')).toBe(false);
   });
@@ -72,6 +90,18 @@ describe('isDeviceEntry — MeshCore protocol', () => {
     expect(isDeviceEntry(entry('main', '[MQTT] ServiceEnvelope decode failed'), 'meshcore')).toBe(
       false,
     );
+  });
+
+  it('does NOT classify [NobleBleManager] message as MeshCore device entry', () => {
+    expect(
+      isDeviceEntry(entry('main', '[NobleBleManager] startScanning error: timeout'), 'meshcore'),
+    ).toBe(false);
+  });
+
+  it('does NOT classify [BLE:sessionId] message as MeshCore device entry', () => {
+    expect(
+      isDeviceEntry(entry('main', '[BLE:abc123] connect failed: peripheral lost'), 'meshcore'),
+    ).toBe(false);
   });
 });
 
@@ -130,6 +160,12 @@ describe('dual-mode appEntries guard', () => {
     const meshcoreEntry = entry('meshcore', 'rx rssi=-90');
     const isApp =
       !isDeviceEntry(meshcoreEntry, 'meshtastic') && !isDeviceEntry(meshcoreEntry, 'meshcore');
+    expect(isApp).toBe(false);
+  });
+
+  it('[NobleBleManager] entry is excluded from app view', () => {
+    const bleEntry = entry('main', '[NobleBleManager] startScanning error: peripheral lost');
+    const isApp = !isDeviceEntry(bleEntry, 'meshtastic') && !isDeviceEntry(bleEntry, 'meshcore');
     expect(isApp).toBe(false);
   });
 
