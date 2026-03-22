@@ -1014,6 +1014,7 @@ export default function RadioPanel({
               ]}
               onChange={setBandwidth}
               disabled={disabled || applyingSection !== null}
+              tooltip="Channel width in kHz. Narrower = longer range and less interference but slower data rate. All nodes on the network must use the same bandwidth."
             />
             <ConfigSelect
               label="Spread Factor"
@@ -1037,6 +1038,7 @@ export default function RadioPanel({
               ]}
               onChange={setCodingRate}
               disabled={disabled || applyingSection !== null}
+              tooltip="Forward error correction overhead. 4/5 = minimal redundancy (faster). 4/8 = maximum redundancy (more resilient to interference). All nodes must match."
             />
             <ConfigNumber
               label="TX Power"
@@ -1047,6 +1049,7 @@ export default function RadioPanel({
               max={30}
               unit="dBm"
               description="Transmit power. Check local regulations before increasing."
+              tooltip="Transmit power in dBm (1–30). Higher = longer range but more power draw. Check regional regulations for the legal maximum in your area."
             />
           </div>
         </ConfigSection>
