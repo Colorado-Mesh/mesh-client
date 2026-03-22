@@ -76,6 +76,12 @@ describe('validateLetsMeshManualCredentials', () => {
       }),
     ).toBeNull();
   });
+
+  it('does not throw when username is undefined', () => {
+    const s = { ...base, password: 'tok', username: undefined as unknown as string };
+    expect(() => validateLetsMeshManualCredentials(s)).not.toThrow();
+    expect(validateLetsMeshManualCredentials(s)).toContain('v1_');
+  });
 });
 
 describe('letsMeshPresetConfigurationDeviation', () => {

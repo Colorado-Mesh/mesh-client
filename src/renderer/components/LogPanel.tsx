@@ -143,6 +143,7 @@ export default function LogPanel({
 }) {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [levelFilters, setLevelFiltersState] = useState<LevelFilters>(readLevelFilters);
+  const [logClearError, setLogClearError] = useState<string | null>(null);
   const [logSource, setLogSource] = useState<'app' | 'device'>('app');
   const [panelWidth, setPanelWidth] = useState(readPanelWidth);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -211,8 +212,14 @@ export default function LogPanel({
   }, []);
 
   const handleDelete = useCallback(async () => {
-    await window.electronAPI.log.clear();
-    setEntries([]);
+    setLogClearError(null);
+    try {
+      await window.electronAPI.log.clear();
+      setEntries([]);
+    } catch (e) {
+      console.warn('[LogPanel] clear log failed', e);
+      setLogClearError(e instanceof Error ? e.message : 'Could not clear log');
+    }
   }, []);
 
   const libraryEntries = entries.filter((e) => isDeviceEntry(e, protocol));
@@ -374,23 +381,30 @@ export default function LogPanel({
             <span className="text-[10px] text-muted flex-1 text-right">{panelWidth}px</span>
           </div>
         )}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleExport}
-            aria-label="Export log…"
-            className="flex-1 px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-gray-200"
-          >
-            Export log…
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            aria-label="Delete log"
-            className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
-          >
-            Delete log
-          </button>
+        <div className="flex flex-col gap-1">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleExport}
+              aria-label="Export log…"
+              className="flex-1 px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-gray-200"
+            >
+              Export log…
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              aria-label="Delete log"
+              className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
+            >
+              Delete log
+            </button>
+          </div>
+          {logClearError && (
+            <div role="alert" className="text-[10px] text-red-400">
+              {logClearError}
+            </div>
+          )}
         </div>
       </div>
       <div

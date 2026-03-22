@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 const DEFAULT_TAB_NAMES = [
   'Connection',
@@ -29,6 +29,8 @@ interface KeyboardShortcutsModalProps {
 }
 
 export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardShortcutsModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   const shortcuts = useMemo(() => {
     const names = tabNames ?? DEFAULT_TAB_NAMES;
     const tabShortcuts = names.slice(0, 9).map((name, i) => ({
@@ -46,6 +48,35 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
     return () => document.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
+  useEffect(() => {
+    const root = dialogRef.current;
+    if (!root) return;
+    const focusables = Array.from(
+      root.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+      ),
+    ).filter((el) => el.offsetParent !== null || root.contains(el));
+    if (focusables.length > 0) {
+      focusables[0].focus();
+    }
+    const onTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    root.addEventListener('keydown', onTab);
+    return () => root.removeEventListener('keydown', onTab);
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
@@ -55,6 +86,7 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
         onClick={onClose}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="shortcuts-title"

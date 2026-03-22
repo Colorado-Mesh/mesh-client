@@ -2,8 +2,12 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { escapeSqlLikePattern } from '../shared/sqlLikeEscape';
 import { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
+
+/** Drop position_history rows older than this window on DB open. */
+const POSITION_HISTORY_PRUNE_MS = 30 * 24 * 60 * 60 * 1000;
 
 let db: NodeSqliteDB | null = null;
 
@@ -68,7 +72,7 @@ export function initDatabase(): void {
 
     // Prune position_history rows older than 30 days on startup
     try {
-      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const cutoff = Date.now() - POSITION_HISTORY_PRUNE_MS;
       const pruned = db.prepare('DELETE FROM position_history WHERE recorded_at < ?').run(cutoff);
       if (pruned.changes > 0) {
         console.debug(`[db] Pruned ${pruned.changes} old position_history rows`);
@@ -95,7 +99,8 @@ export function initDatabase(): void {
 
 export function getDatabase(): NodeSqliteDB {
   if (!db) initDatabase();
-  return db!;
+  if (!db) throw new Error('[db] Database failed to initialize');
+  return db;
 }
 
 function createBaseTables(): void {
@@ -654,22 +659,22 @@ export function mergeDatabase(sourcePath: string) {
 
 export function searchMessages(query: string, limit = 50): unknown[] {
   const db = getDatabase();
-  const like = `%${query}%`;
+  const like = `%${escapeSqlLikePattern(query)}%`;
   return db
     .prepare(
       `SELECT id, sender_id, sender_name, payload, channel, timestamp, to_node
-       FROM messages WHERE payload LIKE ? ORDER BY timestamp DESC LIMIT ?`,
+       FROM messages WHERE payload LIKE ? ESCAPE '\\' ORDER BY timestamp DESC LIMIT ?`,
     )
     .all(like, limit);
 }
 
 export function searchMeshcoreMessages(query: string, limit = 50): unknown[] {
   const db = getDatabase();
-  const like = `%${query}%`;
+  const like = `%${escapeSqlLikePattern(query)}%`;
   return db
     .prepare(
       `SELECT id, sender_id, sender_name, payload, channel_idx, timestamp, to_node
-       FROM meshcore_messages WHERE payload LIKE ? ORDER BY timestamp DESC LIMIT ?`,
+       FROM meshcore_messages WHERE payload LIKE ? ESCAPE '\\' ORDER BY timestamp DESC LIMIT ?`,
     )
     .all(like, limit);
 }

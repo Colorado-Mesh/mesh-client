@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -96,5 +96,31 @@ describe('ConnectionPanel accessibility', () => {
     );
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+});
+
+describe('ConnectionPanel MQTT connect error', () => {
+  it('surfaces error when mqtt.connect rejects', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.mqtt.connect).mockRejectedValueOnce(new Error('broker refused'));
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+        onProtocolChange={vi.fn()}
+      />,
+    );
+
+    const mqttCard = screen.getByText('MQTT Connection').closest('.bg-deep-black');
+    expect(mqttCard).toBeTruthy();
+    const connectBtn = within(mqttCard as HTMLElement).getByRole('button', { name: 'Connect' });
+    await user.click(connectBtn);
+
+    expect(await screen.findByText('broker refused')).toBeInTheDocument();
   });
 });

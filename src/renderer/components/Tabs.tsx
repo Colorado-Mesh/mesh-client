@@ -195,6 +195,8 @@ function TabIcon({ name }: { name: string }) {
 }
 
 export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledTabs }: TabsProps) {
+  const safeActive = tabs.length === 0 ? 0 : Math.max(0, Math.min(active, tabs.length - 1));
+
   return (
     <div
       role="tablist"
@@ -209,11 +211,11 @@ export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledT
           : name;
         return (
           <button
-            key={name}
+            key={`${i}-${name}`}
             type="button"
             role="tab"
             aria-label={tabAriaLabel}
-            aria-selected={active === i}
+            aria-selected={safeActive === i}
             aria-controls={`panel-${i}`}
             id={`tab-${i}`}
             disabled={isDisabled}
@@ -222,7 +224,7 @@ export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledT
             className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors rounded-t-md ${
               isDisabled
                 ? 'text-gray-600 cursor-not-allowed opacity-50'
-                : active === i
+                : safeActive === i
                   ? 'bg-gray-900 text-bright-green border-b-2 border-bright-green'
                   : 'text-muted hover:text-gray-200 hover:bg-secondary-dark'
             }`}

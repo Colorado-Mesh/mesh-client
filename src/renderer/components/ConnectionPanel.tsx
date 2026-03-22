@@ -1543,6 +1543,8 @@ export default function ConnectionPanel({
                   }
                 }
                 window.electronAPI.mqtt.connect(settings).catch((err: unknown) => {
+                  const msg = err instanceof Error ? err.message : String(err);
+                  setMqttError(msg);
                   console.warn('[ConnectionPanel] mqtt.connect failed:', err);
                 });
               }}

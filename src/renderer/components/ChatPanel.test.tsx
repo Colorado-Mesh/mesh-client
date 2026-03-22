@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -132,6 +132,23 @@ describe('ChatPanel accessibility', () => {
       </ToastProvider>,
     );
     expect(screen.getByTitle('Received via RF')).toBeInTheDocument();
+  });
+
+  it('shows role="alert" when onSend rejects', async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn().mockRejectedValue(new Error('send failed'));
+    render(
+      <ToastProvider>
+        <ChatPanel {...defaultProps} isConnected onSend={onSend} />
+      </ToastProvider>,
+    );
+    const input = screen.getByPlaceholderText('Type a message...');
+    await user.type(input, 'hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    expect(onSend).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('send failed');
+    });
   });
 });
 

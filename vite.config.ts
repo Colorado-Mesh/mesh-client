@@ -59,6 +59,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
+    sourcemap: false,
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       // Node built-ins for transitive deps. Do NOT list `fs` here — Rollup would emit bare

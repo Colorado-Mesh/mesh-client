@@ -71,6 +71,11 @@ const mqttManager = new MQTTManager();
 const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
 const nobleBleManager = new NobleBleManager();
 
+/** Max bytes per MeshCore TCP IPC write (DoS guard). */
+const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024;
+/** Max bytes per BLE write IPC (DoS guard). */
+const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512;
+
 function isAnyMqttConnected(): boolean {
   return mqttManager.getStatus() === 'connected' || meshcoreMqttAdapter.getStatus() === 'connected';
 }
@@ -1076,6 +1081,13 @@ ipcMain.handle('noble-ble-to-radio', async (_event, sessionId: unknown, bytes: u
     return;
   }
   const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes as Uint8Array);
+  if (buf.length > NOBLE_BLE_TO_RADIO_MAX_BYTES) {
+    return Promise.reject(
+      new Error(
+        `noble-ble-to-radio: payload exceeds ${NOBLE_BLE_TO_RADIO_MAX_BYTES} bytes (${buf.length})`,
+      ),
+    );
+  }
   await nobleBleManager.writeToRadio(sessionId, buf);
 });
 
@@ -2403,6 +2415,13 @@ ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
 });
 
 ipcMain.handle('meshcore:tcp-write', (_event, bytes: number[]) => {
+  if (!Array.isArray(bytes) || bytes.length > MESHCORE_TCP_WRITE_MAX_BYTES) {
+    return Promise.reject(
+      new Error(
+        `meshcore:tcp-write: invalid or oversized payload (max ${MESHCORE_TCP_WRITE_MAX_BYTES} bytes)`,
+      ),
+    );
+  }
   if (!meshcoreTcpSocket) {
     const msg = 'meshcore:tcp-write: no active socket';
     console.warn(`[IPC] ${msg}`);

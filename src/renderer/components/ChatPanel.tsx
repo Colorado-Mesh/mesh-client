@@ -219,6 +219,7 @@ export default function ChatPanel({
     }
   }, [channels, channel]);
   const [sending, setSending] = useState(false);
+  const [chatActionError, setChatActionError] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
   const [showComposePicker, setShowComposePicker] = useState(false);
@@ -500,6 +501,7 @@ export default function ChatPanel({
   const handleSend = async () => {
     if (!input.trim() || !isConnected || sending) return;
     setSending(true);
+    setChatActionError(null);
     try {
       console.debug('[ChatPanel] handleSend');
       const sendChannel = channel === -1 ? 0 : channel;
@@ -512,6 +514,7 @@ export default function ChatPanel({
       setUnreadDividerTimestamp(0);
     } catch (err) {
       console.error('[ChatPanel] Send failed:', err);
+      setChatActionError(err instanceof Error ? err.message : 'Send failed');
     } finally {
       setSending(false);
     }
@@ -519,11 +522,13 @@ export default function ChatPanel({
 
   const handleReact = async (emojiCode: number, packetId: number, msgChannel: number) => {
     setPickerOpenFor(null);
+    setChatActionError(null);
     try {
       console.debug('[ChatPanel] handleReact', emojiCode, packetId, msgChannel);
       await onReact(emojiCode, packetId, msgChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed:', err);
+      setChatActionError(err instanceof Error ? err.message : 'Reaction failed');
     }
   };
 
@@ -1226,13 +1231,22 @@ export default function ChatPanel({
         </div>
       )}
 
+      {chatActionError && (
+        <div role="alert" className="text-sm text-red-400 mt-2 px-1">
+          {chatActionError}
+        </div>
+      )}
+
       {/* Input area — textarea so Chromium applies spellcheck (single-line inputs often skip it) */}
       <div className="flex gap-2 mt-2">
         <textarea
           ref={inputRef}
           rows={1}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            setChatActionError(null);
+          }}
           onKeyDown={handleKeyDown}
           spellCheck
           lang={

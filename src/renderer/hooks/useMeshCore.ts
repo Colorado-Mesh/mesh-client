@@ -1,6 +1,7 @@
 import { CayenneLpp, SerialConnection, WebSerialConnection } from '@liamcottle/meshcore.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { withTimeout } from '../../shared/withTimeout';
 import { classifyPayload, extractMeshtasticSenderId } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
@@ -445,15 +446,6 @@ function mergeMeshcoreDbHydrationWithLive(
   return merged;
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
-    ),
-  ]);
-}
-
 /** Row shape from `db:getMeshcoreMessages` — shared by initConn, mount load, refreshMessagesFromDb. */
 interface MeshcoreMessageDbRow {
   id: number;
@@ -585,6 +577,14 @@ export function useMeshCore() {
   const selfInfoRef = useRef<MeshCoreSelfInfo | null>(null);
   /** Throttle LetsMesh packet-logger publishes (event 136 can be very frequent). */
   const lastPacketLogAtRef = useRef(0);
+  const meshcoreHookMountedRef = useRef(true);
+
+  useEffect(() => {
+    meshcoreHookMountedRef.current = true;
+    return () => {
+      meshcoreHookMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     selfInfoRef.current = selfInfo;
@@ -658,7 +658,9 @@ export function useMeshCore() {
           if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
           const hex = row.public_key.replace(/\s/g, '');
           if (!meshcoreIsSyntheticPlaceholderPubKeyHex(hex) && hex.length >= 12) {
-            const bytes = new Uint8Array(hex.match(/.{2}/g)!.map((b) => parseInt(b, 16)));
+            const pairs = hex.match(/.{2}/g);
+            if (!pairs) continue;
+            const bytes = new Uint8Array(pairs.map((b) => parseInt(b, 16)));
             pubKeyMapRef.current.set(row.node_id, bytes);
             const prefix = hex.slice(0, 12);
             pubKeyPrefixMapRef.current.set(prefix, row.node_id);
@@ -997,6 +999,7 @@ export function useMeshCore() {
         void (async () => {
           try {
             const msgs = await conn.getWaitingMessages();
+            if (!meshcoreHookMountedRef.current) return;
             const arr = msgs as {
               contactMessage?: { pubKeyPrefix: Uint8Array; senderTimestamp: number; text: string };
               channelMessage?: { channelIdx: number; senderTimestamp: number; text: string };
@@ -1415,7 +1418,25 @@ export function useMeshCore() {
           throw err;
         }
       } else if (type === 'http') {
-        await connect('tcp', httpAddress);
+        let addr = httpAddress;
+        if (addr == null || !String(addr).trim()) {
+          try {
+            const raw = localStorage.getItem('mesh-client:lastConnection:meshcore');
+            const parsed = raw
+              ? (JSON.parse(raw) as { type?: string; httpAddress?: string })
+              : null;
+            if (
+              parsed?.type === 'http' &&
+              typeof parsed.httpAddress === 'string' &&
+              parsed.httpAddress.trim()
+            ) {
+              addr = parsed.httpAddress;
+            }
+          } catch {
+            // catch-no-log-ok corrupt lastConnection JSON
+          }
+        }
+        await connect('tcp', addr);
       }
       // BLE: requires user gesture — not supported for auto-connect
     },
@@ -1564,8 +1585,9 @@ export function useMeshCore() {
       } else {
         const sentAt = Date.now();
         try {
-          if (connRef.current) {
-            await connRef.current.sendChannelTextMessage(channelIdx, text);
+          const channelConn = connRef.current;
+          if (channelConn) {
+            await channelConn.sendChannelTextMessage(channelIdx, text);
             addMessage({
               sender_id: myNodeNumRef.current,
               sender_name: selfInfo?.name ?? 'Me',
@@ -1820,7 +1842,7 @@ export function useMeshCore() {
     try {
       const result = await connRef.current.tracePath([pubKey]);
       // pathSnrs are signed bytes in 0.25dB units
-      const hops = result.pathSnrs.map((raw) => {
+      const hops = (result.pathSnrs ?? []).map((raw) => {
         const signed = raw > 127 ? raw - 256 : raw;
         return { snr: signed * 0.25 };
       });

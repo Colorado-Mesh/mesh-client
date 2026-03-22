@@ -139,7 +139,11 @@ function ConfigSelect({
       </div>
       <select
         value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          if (!Number.isFinite(n)) return;
+          onChange(n);
+        }}
         disabled={disabled}
         className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
       >
@@ -192,7 +196,7 @@ function ConfigToggle({
 }
 
 /** Reusable number input */
-function ConfigNumber({
+export function ConfigNumber({
   label,
   value,
   onChange,
@@ -223,7 +227,11 @@ function ConfigNumber({
         <input
           type="number"
           value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (!Number.isFinite(n)) return;
+            onChange(n);
+          }}
           min={min}
           max={max}
           disabled={disabled}
@@ -2226,6 +2234,8 @@ function MeshcoreChannelSection({
       await onSetChannel(idx, editName, hexToBytes(editKeyHex));
       setEditingIdx(null);
       setAddingNew(false);
+    } catch (e) {
+      console.warn('[MeshcoreChannelSection] save failed', e);
     } finally {
       setSaving(false);
     }
@@ -2237,6 +2247,8 @@ function MeshcoreChannelSection({
       await onDeleteChannel(idx);
       setConfirmDeleteIdx(null);
       if (editingIdx === idx) setEditingIdx(null);
+    } catch (e) {
+      console.warn('[MeshcoreChannelSection] delete failed', e);
     } finally {
       setSaving(false);
     }

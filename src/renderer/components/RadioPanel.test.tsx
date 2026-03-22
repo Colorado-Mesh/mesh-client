@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import RadioPanel from './RadioPanel';
+import RadioPanel, { ConfigNumber } from './RadioPanel';
 import { ToastProvider } from './Toast';
 
 /**
@@ -96,5 +96,22 @@ describe('RadioPanel HelpTooltip coverage — channel edit form', () => {
 
     expect(hasTooltipNext('Key Size')).toBe(true);
     expect(hasTooltipNext('Encryption Key (base64)')).toBe(true);
+  });
+});
+
+describe('ConfigNumber NaN guard', () => {
+  it('does not call onChange with NaN for invalid numeric input', () => {
+    const onChange = vi.fn();
+    render(
+      <ToastProvider>
+        <ConfigNumber label="Test num" value={42} onChange={onChange} disabled={false} />
+      </ToastProvider>,
+    );
+    const input = document.querySelector('input[type="number"]') as HTMLInputElement;
+    const samples = ['', 'abc', 'NaN', 'not-a-number', '1e999'];
+    for (const value of samples) {
+      fireEvent.change(input, { target: { value } });
+    }
+    expect(onChange.mock.calls.some(([v]) => Number.isNaN(v))).toBe(false);
   });
 });

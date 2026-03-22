@@ -3,6 +3,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
+import { escapeSqlLikePattern } from '../shared/sqlLikeEscape';
+
 /**
  * Tests for deleteNodesWithoutLongname.
  *
@@ -119,5 +121,27 @@ describe('meshcore_messages dedup index and fresh DB version', () => {
 
   it('fresh DB init stamps user_version 17 inside isFreshDb', () => {
     expect(DB_SOURCE).toMatch(/if \(isFreshDb\) \{[\s\S]*?pragma\('user_version = 17'\)/);
+  });
+});
+
+describe('escapeSqlLikePattern', () => {
+  it('escapes percent for LIKE wildcards', () => {
+    expect(escapeSqlLikePattern('foo%bar')).toBe('foo\\%bar');
+  });
+
+  it('escapes underscore for LIKE wildcards', () => {
+    expect(escapeSqlLikePattern('a_b')).toBe('a\\_b');
+  });
+
+  it('escapes backslashes first so later escapes are literal', () => {
+    expect(escapeSqlLikePattern('x\\y%z')).toBe('x\\\\y\\%z');
+  });
+
+  it('leaves normal text unchanged', () => {
+    expect(escapeSqlLikePattern('hello world')).toBe('hello world');
+  });
+
+  it('returns empty string for empty input', () => {
+    expect(escapeSqlLikePattern('')).toBe('');
   });
 });

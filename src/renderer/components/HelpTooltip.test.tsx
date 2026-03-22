@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -35,6 +35,20 @@ describe('HelpTooltip', () => {
     const { container } = render(<HelpTooltip text="Should not be native" />);
     const helpEl = container.querySelector('.cursor-help');
     expect(helpEl?.getAttribute('title')).toBeNull();
+  });
+
+  it('shows tooltip on focus and hides on blur', () => {
+    render(<HelpTooltip text="Keyboard help" />);
+    const trigger = document.querySelector('.cursor-help') as HTMLElement;
+    expect(screen.queryByText('Keyboard help')).not.toBeInTheDocument();
+    act(() => {
+      fireEvent.focus(trigger);
+    });
+    expect(screen.getByText('Keyboard help')).toBeInTheDocument();
+    act(() => {
+      fireEvent.blur(trigger);
+    });
+    expect(screen.queryByText('Keyboard help')).not.toBeInTheDocument();
   });
 
   it('clamps tooltip left when trigger is near the right viewport edge', async () => {

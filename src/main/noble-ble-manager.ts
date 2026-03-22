@@ -1,5 +1,7 @@
 import { EventEmitter } from 'events';
 
+import { withTimeout } from '../shared/withTimeout';
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const noble = require('@stoprocent/noble') as any;
 
@@ -9,17 +11,15 @@ const TORADIO_UUID = 'f75c76d2129e4dada1dd7866124401e7';
 const FROMRADIO_UUID = '2c55e69e499311edb8780242ac120002';
 const FROMNUM_UUID = 'ed9da18ca8004f66a670aa7547e34453';
 
+/** Max iterations per read-pump burst (avoids infinite spin on misbehaving stacks). */
+const BLE_READ_PUMP_MAX_ITERATIONS = 512;
+/** Timeout for a single fromRadio GATT read. */
+const BLE_FROM_RADIO_READ_TIMEOUT_MS = 2000;
+/** Delay before kicking read pump after a write (device prep time). */
+const POST_WRITE_READ_PUMP_DELAY_MS = 100;
+
 function normalizeUuid(uuid: string): string {
   return uuid.toLowerCase().replace(/-/g, '');
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
-    ),
-  ]);
 }
 
 export interface NobleBleDevice {
@@ -41,6 +41,8 @@ interface NobleBleSession {
   readPumpRequested: boolean;
   /** Set to true on disconnect/close so the read pump exits without issuing more GATT reads. */
   closing: boolean;
+  /** Cleared on disconnect; avoids post-write timer firing after teardown. */
+  postWriteReadPumpTimer: ReturnType<typeof setTimeout> | null;
 }
 
 export class NobleBleManager extends EventEmitter {
@@ -96,6 +98,7 @@ export class NobleBleManager extends EventEmitter {
       readPumpActive: false,
       readPumpRequested: false,
       closing: false,
+      postWriteReadPumpTimer: null,
     };
   }
 
@@ -108,6 +111,10 @@ export class NobleBleManager extends EventEmitter {
   private clearSessionState(session: NobleBleSession): void {
     // Signal any in-flight read pump to exit without issuing more GATT reads.
     session.closing = true;
+    if (session.postWriteReadPumpTimer !== null) {
+      clearTimeout(session.postWriteReadPumpTimer);
+      session.postWriteReadPumpTimer = null;
+    }
     session.connectedPeripheral = null;
     session.connectedPeripheralDisconnectHandler = null;
     session.toRadioChar = null;
@@ -135,7 +142,7 @@ export class NobleBleManager extends EventEmitter {
       while (session.readPumpRequested && !session.closing) {
         session.readPumpRequested = false;
         if (!session.fromRadioChar || !session.connectedPeripheral) return;
-        for (let i = 0; i < 512; i++) {
+        for (let i = 0; i < BLE_READ_PUMP_MAX_ITERATIONS; i++) {
           // Exit immediately if session was torn down between reads.
           if (session.closing || session.connectedPeripheral?.state !== 'connected') {
             console.debug(`[BLE:${sessionId}] read pump: peripheral disconnected, exiting`);
@@ -151,7 +158,7 @@ export class NobleBleManager extends EventEmitter {
             console.debug(`[BLE:${sessionId}] readAsync #${i} start`);
             data = await withTimeout<Buffer>(
               session.fromRadioChar.readAsync(),
-              2000,
+              BLE_FROM_RADIO_READ_TIMEOUT_MS,
               'BLE fromRadio read',
             );
             console.debug(
@@ -493,11 +500,18 @@ export class NobleBleManager extends EventEmitter {
     console.debug(`[BLE:${sessionId}] writeToRadio: ${data.length} bytes`);
     await session.toRadioChar.writeAsync(data, false);
     console.debug(
-      `[BLE:${sessionId}] writeToRadio done — scheduling post-write read pump in 100ms`,
+      `[BLE:${sessionId}] writeToRadio done — scheduling post-write read pump in ${POST_WRITE_READ_PUMP_DELAY_MS}ms`,
     );
-    // Give the device ~100ms to prepare its response, then kick the read pump.
+    // Give the device time to prepare its response, then kick the read pump.
     // fromNum notify is the primary trigger; this is a safety net for devices that are slow to notify.
-    setTimeout(() => this.requestFromRadioReadPump(sessionId), 100);
+    if (session.postWriteReadPumpTimer !== null) {
+      clearTimeout(session.postWriteReadPumpTimer);
+      session.postWriteReadPumpTimer = null;
+    }
+    session.postWriteReadPumpTimer = setTimeout(() => {
+      session.postWriteReadPumpTimer = null;
+      this.requestFromRadioReadPump(sessionId);
+    }, POST_WRITE_READ_PUMP_DELAY_MS);
   }
 
   async disconnect(sessionId: NobleSessionId): Promise<void> {
