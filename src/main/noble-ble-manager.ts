@@ -273,6 +273,11 @@ export class NobleBleManager extends EventEmitter {
   }
 
   private doStopScanning(): Promise<void> {
+    // If nothing is scanning, noble's stopScanning callback may never run (observed on Windows),
+    // which would hang shutdown forever.
+    if (!this.scanningActive) {
+      return Promise.resolve();
+    }
     return new Promise((resolve) => {
       try {
         noble.stopScanning(() => {

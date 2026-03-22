@@ -1499,8 +1499,32 @@ ipcMain.handle('app:quit', async () => {
     meshcoreMqttAdapter.disconnect();
 
     await nobleBleManager.stopAllScanning();
+    try {
+      await nobleBleManager.disconnectAll();
+    } catch (err) {
+      console.error(
+        '[IPC] app:quit BLE disconnectAll failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+    }
 
     closeDatabase();
+
+    if (meshcoreTcpSocket) {
+      try {
+        meshcoreTcpSocket.destroy();
+      } catch (err) {
+        console.debug(
+          '[IPC] app:quit TCP socket destroy (ignored):',
+          err instanceof Error ? err.message : err,
+        ); // log-injection-ok internal Node.js socket error during cleanup
+      }
+      meshcoreTcpSocket = null;
+    }
+    if (powerSaveBlockerId !== null && powerSaveBlocker.isStarted(powerSaveBlockerId)) {
+      powerSaveBlocker.stop(powerSaveBlockerId);
+    }
+    powerSaveBlockerId = null;
 
     nobleBleManager.releaseNobleProcessHandles();
     tray?.destroy();

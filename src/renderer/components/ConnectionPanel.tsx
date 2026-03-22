@@ -1570,9 +1570,13 @@ export default function ConnectionPanel({
         {protocolToggle}
         <button
           onClick={async () => {
-            await onDisconnect();
-            window.electronAPI.mqtt.disconnect();
-            window.electronAPI.quitApp();
+            // Cap wait so quit always runs if transport teardown hangs (e.g. Windows serial/BLE).
+            await Promise.race([
+              onDisconnect(),
+              new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
+            ]);
+            void window.electronAPI.mqtt.disconnect();
+            await window.electronAPI.quitApp();
           }}
           className="w-full px-6 py-2.5 border border-red-700 text-red-400 hover:bg-red-900/30 hover:text-red-300 font-medium rounded-lg transition-colors text-sm"
         >
