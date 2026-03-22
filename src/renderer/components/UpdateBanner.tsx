@@ -10,6 +10,44 @@ interface Props {
   onDismiss: () => void;
 }
 
+function IconUpToDate() {
+  return (
+    <svg
+      className="w-5 h-5 text-brand-green shrink-0"
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+}
+
+function IconUpdateAvailable() {
+  return (
+    <svg
+      className="w-5 h-5 text-brand-green shrink-0"
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+      />
+    </svg>
+  );
+}
+
 export default function UpdateBanner({
   updateState,
   onDownload,
@@ -30,18 +68,30 @@ export default function UpdateBanner({
   // On macOS or in dev mode, always direct to the releases page (no auto-install)
   const useReleasePage = !isPackaged || isMac;
 
+  const rootClass =
+    phase === 'up-to-date'
+      ? 'flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 border-b border-brand-green/30 text-sm'
+      : phase === 'available'
+        ? 'relative flex items-center justify-center min-h-[2.25rem] px-4 py-2 pr-24 bg-gray-900 border-b border-brand-green/30 text-sm'
+        : 'flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-brand-green/30 text-sm';
+
+  const dismissClass =
+    phase === 'available'
+      ? 'absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-300 transition-colors text-xs font-medium px-2 py-1 rounded border border-gray-700 hover:border-gray-600'
+      : 'ml-auto text-gray-600 hover:text-gray-300 transition-colors text-xs font-medium px-2 py-1 rounded border border-gray-700 hover:border-gray-600';
+
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-brand-green/30 text-sm"
-    >
+    <div role="status" aria-live="polite" className={rootClass}>
       {phase === 'up-to-date' && (
-        <span className="text-brand-green font-medium">You&apos;re up to date</span>
+        <>
+          <IconUpToDate />
+          <span className="text-brand-green font-medium">You&apos;re up to date</span>
+        </>
       )}
 
       {phase === 'available' && (
-        <>
+        <div className="flex flex-1 items-center justify-center gap-2 flex-wrap">
+          <IconUpdateAvailable />
           <span className="text-brand-green font-medium">Update v{version} available</span>
           {useReleasePage ? (
             <button
@@ -58,7 +108,7 @@ export default function UpdateBanner({
               Download
             </button>
           )}
-        </>
+        </div>
       )}
 
       {phase === 'downloading' && (
@@ -100,11 +150,7 @@ export default function UpdateBanner({
 
       {/* Dismiss — not shown during active download or the auto-dismissing up-to-date notice */}
       {phase !== 'downloading' && phase !== 'up-to-date' && (
-        <button
-          onClick={onDismiss}
-          aria-label="Dismiss"
-          className="ml-auto text-gray-600 hover:text-gray-300 transition-colors text-xs font-medium px-2 py-1 rounded border border-gray-700 hover:border-gray-600"
-        >
+        <button onClick={onDismiss} aria-label="Dismiss" className={dismissClass}>
           Dismiss
         </button>
       )}
