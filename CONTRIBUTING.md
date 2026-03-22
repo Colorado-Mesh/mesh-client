@@ -235,7 +235,7 @@ If the input has a visible label element next to it, use `htmlFor`/`id`. If it's
 
 ### Running the tests
 
-Vitest is configured to run **renderer** tests only: `src/renderer/**/*.test.{ts,tsx}` (see `vitest.config.ts`). Main-process code is not covered by the current vitest include glob; add or adjust tests there if you introduce main-only logic that should be automated.
+Vitest runs two projects (see `vitest.config.ts`): **renderer** (`src/renderer/**/*.test.{ts,tsx}`, jsdom) and **main** (`src/main/**/*.test.ts`, node). Add or extend tests in the matching project when you change renderer or main-process behavior.
 
 **Accessibility tests:** `src/renderer/vitest.setup.ts` registers **vitest-axe**. New or heavily changed panels should include a test that renders the component and asserts no axe violations, following existing component tests (e.g. `await axe(container)` and `expect(results).toHaveNoViolations()`).
 
@@ -327,6 +327,18 @@ GitHub Code scanning (CodeQL) reports **log injection** when user-controlled or 
 ### XSS patterns check
 
 `scripts/check-xss-patterns.mjs` bans React's raw HTML injection prop, direct DOM `innerHTML` assignment, and dynamic code execution from all source files. There are zero current violations. The check has no suppression mechanism — if you believe an exception is warranted, discuss it with a maintainer before adding the pattern. The check runs as part of `npm run test:run`.
+
+### Log panel filter contract
+
+`scripts/check-log-panel-filter.mjs` scans `noble-ble-manager.ts`, `mqtt-manager.ts`, and `meshcore-mqtt-adapter.ts` for `[TAG]` prefixes in `console.*` calls and asserts each tag is handled by `isDeviceEntry()` in `LogPanel.tsx` (so device logs stay on the Device tab per protocol). It is invoked from `LogPanel.filtering.test.ts` as part of `npm run test:run`. When you add a new tagged log line in those files, extend the matching Meshtastic or MeshCore branch in `isDeviceEntry`.
+
+### Renderer CSP and Vite build contracts
+
+`src/renderer/index.html.test.ts` locks the Content-Security-Policy in `src/renderer/index.html` (for example, `connect-src` must not use a blanket `http://*`). `src/main/vite-config.contract.test.ts` asserts the production Vite build keeps `sourcemap: false`. If you relax or tighten CSP or change the build’s sourcemap setting, update those tests.
+
+### IPC payload size limits (DoS guards)
+
+`src/main/index.contract.test.ts` asserts BLE-to-radio and MeshCore TCP write byte caps remain defined in `src/main/index.ts` and used in the corresponding handlers. If you rename limits or handlers, update the contract test.
 
 ### MQTT publish (nonce and gatewayId)
 
