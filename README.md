@@ -629,6 +629,18 @@ You're missing build tools for the native modules (e.g. `@serialport/bindings-cp
 - **Linux**: `sudo apt install build-essential python3`
 - **Windows**: Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the "Desktop development with C++" workload, and **Python 3** (see [Windows — extra notes](#windows--extra-notes) step 4). If you see "Could not find any Python installation to use", see the [Python troubleshooting](#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp) section. If you see "Could not find any Visual Studio installation to use", see the [Visual Studio troubleshooting](#windows-could-not-find-any-visual-studio-installation-to-use) section.
 
+### `npm install` fails with a `node-gyp` compile error
+
+**Cause**: The version of `node-gyp` bundled with Electron may be outdated and incompatible with newer versions of Visual Studio (or other build toolchains).
+
+**Fix**: Upgrade `node-gyp` globally and as a dev dependency, then retry:
+
+```sh
+npm install node-gyp@latest -g && npm install node-gyp@latest --save-dev
+```
+
+Then run `npm install` again.
+
 ### Windows: "Could not find any Visual Studio installation to use"
 
 **Cause**: node-gyp (used to build native modules like `@serialport/bindings-cpp` and `@stoprocent/noble`) requires Visual Studio Build Tools (or full Visual Studio) with the C++ workload on Windows. The error appears during `npm install` (postinstall) or `npm run dist:win` when no suitable installation is found. **Even when Build Tools are installed**, this often happens when the **project path contains spaces** (e.g. `C:\Users\Joey Stanford\meshcore`) — node-gyp's Visual Studio finder can fail in that case. Fix the path first.
