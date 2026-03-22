@@ -9,9 +9,9 @@ The broker validates that the token’s `aud` claim matches its configured `AUTH
 For **LetsMesh public presets** (`mqtt-us-v1.letsmesh.net`, `mqtt-eu-v1.letsmesh.net`), mesh-client sets:
 
 - **MQTT connect host/port**: the regional hostname and `443` (WebSocket TLS).
-- **JWT `aud`**: `letsmesh.net` (apex), not the regional hostname.
+- **JWT `aud`**: the **same** regional hostname as the MQTT server (not a separate apex domain).
 
-That matches a common multi-region deployment pattern (one audience for all regional endpoints). If your operator documents a different `aud`, use **Custom** MQTT and paste a manually generated token, or adjust app behavior once the value is confirmed.
+That aligns with common tooling such as [meshcoretomqtt](https://github.com/Cisien/meshcoretomqtt) (token `audience` matches the broker host). If your operator documents a different `aud`, use **Custom** MQTT and paste a manually generated token.
 
 ## Debugging connection vs auth
 

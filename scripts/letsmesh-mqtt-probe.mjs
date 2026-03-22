@@ -7,8 +7,8 @@
  *   MESHCORE_PUBLIC_KEY_HEX=... MESHCORE_PRIVATE_KEY_HEX=... \
  *   node scripts/letsmesh-mqtt-probe.mjs
  *
- * Token uses aud=letsmesh.net (same as mesh-client LetsMesh presets). Generate offline with
- * mesh-client or a small script importing @michaelhart/meshcore-decoder createAuthToken.
+ * Token `aud` must match LETSMESH_HOST (same as mesh-client: regional broker hostname).
+ * Generate offline with mesh-client or @michaelhart/meshcore-decoder createAuthToken.
  *
  * Or set MQTT_PASSWORD to a pre-built token and MQTT_USERNAME to v1_<64-hex UPPERCASE>.
  */

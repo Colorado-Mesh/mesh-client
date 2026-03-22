@@ -6,7 +6,6 @@ import {
   isLetsMeshSettings,
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
-  LETSMESH_JWT_AUDIENCE,
   letsMeshJwtAudience,
   letsMeshMqttUsernameFromIdentity,
 } from './letsMeshJwt';
@@ -37,10 +36,10 @@ describe('letsMeshJwt', () => {
     expect(isLetsMeshSettings('mqtt.example.com')).toBe(false);
   });
 
-  it('letsMeshJwtAudience uses apex audience for LetsMesh hosts only', () => {
-    expect(letsMeshJwtAudience(LETSMESH_HOST_US)).toBe(LETSMESH_JWT_AUDIENCE);
-    expect(letsMeshJwtAudience(LETSMESH_HOST_EU)).toBe(LETSMESH_JWT_AUDIENCE);
-    expect(letsMeshJwtAudience('mqtt.example.com')).toBe('mqtt.example.com');
+  it('letsMeshJwtAudience uses trimmed MQTT server hostname as aud', () => {
+    expect(letsMeshJwtAudience(LETSMESH_HOST_US)).toBe(LETSMESH_HOST_US);
+    expect(letsMeshJwtAudience(LETSMESH_HOST_EU)).toBe(LETSMESH_HOST_EU);
+    expect(letsMeshJwtAudience(' mqtt.example.com ')).toBe('mqtt.example.com');
   });
 
   it('generateLetsMeshAuthToken produces verifyAuthToken-valid tokens (full private key)', async () => {
@@ -52,7 +51,7 @@ describe('letsMeshJwt', () => {
     const verified = await verifyAuthToken(token, sampleKeyPair.publicKey);
     expect(verified).not.toBeNull();
     expect(verified?.publicKey.toUpperCase()).toBe(sampleKeyPair.publicKey.toUpperCase());
-    expect(verified?.aud).toBe(LETSMESH_JWT_AUDIENCE);
+    expect(verified?.aud).toBe(LETSMESH_HOST_US);
   });
 
   it('generateLetsMeshAuthToken works with 32-byte seed + public key (NaCl-style)', async () => {
@@ -64,6 +63,6 @@ describe('letsMeshJwt', () => {
     const token = await generateLetsMeshAuthToken(identity, LETSMESH_HOST_EU);
     const verified = await verifyAuthToken(token, sampleKeyPair.publicKey);
     expect(verified).not.toBeNull();
-    expect(verified?.aud).toBe(LETSMESH_JWT_AUDIENCE);
+    expect(verified?.aud).toBe(LETSMESH_HOST_EU);
   });
 });

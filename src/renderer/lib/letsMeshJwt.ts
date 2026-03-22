@@ -8,25 +8,19 @@ export const LETSMESH_HOST = LETSMESH_HOST_US;
 
 const LETSMESH_HOSTS = new Set([LETSMESH_HOST_US, LETSMESH_HOST_EU]);
 
-/**
- * JWT `aud` for LetsMesh public MQTT (must match broker `AUTH_EXPECTED_AUDIENCE`).
- * Regional broker hostnames (`mqtt-us-v1.…`, `mqtt-eu-v1.…`) still connect to that host; only the
- * token claim uses this apex value. For private brokers, `aud` stays the server hostname.
- * If a deployment uses a different audience, use Custom MQTT with a manually generated token.
- */
-export const LETSMESH_JWT_AUDIENCE = 'letsmesh.net';
-
 export function isLetsMeshSettings(server: string): boolean {
   return LETSMESH_HOSTS.has(server.trim());
 }
 
-/** JWT `aud` for createAuthToken: LetsMesh presets use {@link LETSMESH_JWT_AUDIENCE}; otherwise the MQTT server host. */
+/**
+ * JWT `aud` for `createAuthToken`: trimmed MQTT server hostname (must match broker
+ * `AUTH_EXPECTED_AUDIENCE` when set). Public LetsMesh US/EU use the regional broker host
+ * (`mqtt-us-v1.letsmesh.net`, `mqtt-eu-v1.letsmesh.net`), matching common tooling such as
+ * meshcoretomqtt. If an operator uses a different audience, use Custom MQTT with a manually
+ * generated token.
+ */
 export function letsMeshJwtAudience(serverHost: string): string {
-  const h = serverHost.trim();
-  if (isLetsMeshSettings(h)) {
-    return LETSMESH_JWT_AUDIENCE;
-  }
-  return h;
+  return serverHost.trim();
 }
 
 // Read the identity cached by RadioPanel after a config-file import.
@@ -110,7 +104,7 @@ function meshcoreOrlpPrivateKeyHex(
 
 /**
  * Generate a LetsMesh MQTT password token compatible with meshcore-mqtt-broker / verifyAuthToken.
- * Uses {@link letsMeshJwtAudience} for `aud` (must match broker `AUTH_EXPECTED_AUDIENCE` when set).
+ * Uses {@link letsMeshJwtAudience} for `aud`.
  */
 export async function generateLetsMeshAuthToken(
   identity: { private_key?: string | number[]; public_key?: string | number[] },
