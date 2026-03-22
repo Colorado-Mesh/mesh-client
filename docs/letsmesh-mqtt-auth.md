@@ -17,8 +17,8 @@ That aligns with common tooling such as [meshcoretomqtt](https://github.com/Cisi
 
 When investigating failures, use the **main process** log (not only the UI):
 
-- **`[MeshcoreMqttAdapter] client error`** with “Not authorized” (or similar) **before** the 10s timeout usually indicates **rejected credentials or JWT** (signature, expiry, or `aud`).
-- **Only** the timeout message (`no CONNACK/SUBACK within 10s`) with **no** preceding client error often points to **transport** (TLS/WebSocket stall, DNS, IPv6, firewall), not a validated MQTT session.
+- **`[MeshcoreMqttAdapter] client error`** with “Not authorized” (or similar) **before** a phase timeout usually indicates **rejected credentials or JWT** (signature, expiry, or `aud`).
+- **`no CONNACK`** (connect phase) or **`no SUBACK`** (subscribe phase) with **no** preceding client error often points to **transport** or **broker ACL/topic** respectively (TLS/WebSocket stall, DNS, firewall vs topic prefix).
 
 Meshtastic MQTT working on the same machine does not guarantee MeshCore LetsMesh will (different code path and broker), but it helps rule out total network outage.
 

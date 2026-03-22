@@ -22,6 +22,10 @@ import UpdateBanner from './components/UpdateBanner';
 import { useDevice } from './hooks/useDevice';
 import { useMeshCore } from './hooks/useMeshCore';
 import {
+  validateLetsMeshManualCredentials,
+  validateLetsMeshPresetConnect,
+} from './lib/letsMeshConnectionGuards';
+import {
   generateLetsMeshAuthToken,
   isLetsMeshSettings,
   letsMeshMqttUsernameFromIdentity,
@@ -370,8 +374,14 @@ export default function App() {
           };
           const tryConnect = async () => {
             if (prot === 'meshcore' && isLetsMeshSettings(connectSettings.server)) {
+              const presetErr = validateLetsMeshPresetConnect(connectSettings);
+              if (presetErr) {
+                console.warn('[App] MQTT auto-launch skipped:', presetErr);
+                return;
+              }
               const identity = readMeshcoreIdentity();
-              if (identity?.private_key && identity?.public_key) {
+              const hasFull = !!(identity?.private_key && identity?.public_key);
+              if (hasFull) {
                 try {
                   const u = letsMeshMqttUsernameFromIdentity(identity);
                   if (u) connectSettings.username = u;
@@ -381,6 +391,19 @@ export default function App() {
                   );
                 } catch (e) {
                   console.warn('[App] LetsMesh auth token auto-launch generation failed', e);
+                  return;
+                }
+              } else {
+                if (!connectSettings.password?.trim()) {
+                  console.warn(
+                    '[App] MQTT auto-launch skipped: LetsMesh needs imported identity or password',
+                  );
+                  return;
+                }
+                const manualErr = validateLetsMeshManualCredentials(connectSettings);
+                if (manualErr) {
+                  console.warn('[App] MQTT auto-launch skipped:', manualErr);
+                  return;
                 }
               }
             }

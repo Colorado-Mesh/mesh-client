@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
+  letsMeshPresetConfigurationDeviation,
+  validateLetsMeshManualCredentials,
+  validateLetsMeshPresetConnect,
+} from '../lib/letsMeshConnectionGuards';
+import {
   generateLetsMeshAuthToken,
-  isLetsMeshSettings,
+  LETSMESH_HOST_EU,
+  LETSMESH_HOST_US,
   letsMeshMqttUsernameFromIdentity,
   readMeshcoreIdentity,
 } from '../lib/letsMeshJwt';
@@ -1178,7 +1184,7 @@ export default function ConnectionPanel({
                           letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
                         setMeshcoreMqttSettings((prev) => ({
                           ...prev,
-                          server: 'mqtt-us-v1.letsmesh.net',
+                          server: LETSMESH_HOST_US,
                           port: 443,
                           topicPrefix: 'meshcore',
                           useWebSocket: true,
@@ -1208,6 +1214,57 @@ export default function ConnectionPanel({
                   </button>
                 ))}
               </div>
+              {meshcorePreset === 'letsmesh' && (
+                <div
+                  className="flex flex-wrap items-center gap-2 pt-1"
+                  role="group"
+                  aria-label="LetsMesh region"
+                >
+                  <span className="text-xs text-muted">Region</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                      setMeshcoreMqttSettings((prev) => ({
+                        ...prev,
+                        server: LETSMESH_HOST_US,
+                        port: 443,
+                        useWebSocket: true,
+                        topicPrefix: 'meshcore',
+                        username: fromIdentity || prev.username,
+                      }));
+                    }}
+                    className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${
+                      meshcoreMqttSettings.server === LETSMESH_HOST_US
+                        ? 'bg-brand-green/20 border-brand-green text-brand-green'
+                        : 'bg-secondary-dark border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    US
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                      setMeshcoreMqttSettings((prev) => ({
+                        ...prev,
+                        server: LETSMESH_HOST_EU,
+                        port: 443,
+                        useWebSocket: true,
+                        topicPrefix: 'meshcore',
+                        username: fromIdentity || prev.username,
+                      }));
+                    }}
+                    className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${
+                      meshcoreMqttSettings.server === LETSMESH_HOST_EU
+                        ? 'bg-brand-green/20 border-brand-green text-brand-green'
+                        : 'bg-secondary-dark border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    EU
+                  </button>
+                </div>
+              )}
             </div>
           )}
           <div className="grid grid-cols-3 gap-2">
@@ -1268,6 +1325,13 @@ export default function ConnectionPanel({
               Use WebSocket transport <span className="text-gray-500">(required for port 443)</span>
             </label>
           </div>
+          {meshcorePreset === 'letsmesh' &&
+            letsMeshPresetConfigurationDeviation(meshcoreMqttSettings) && (
+              <div className="rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2 text-xs text-amber-200/90">
+                Public LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or
+                mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.
+              </div>
+            )}
           {meshcorePreset === 'letsmesh' && (
             <div
               className={`flex items-start gap-2 rounded border px-2 py-2 text-xs ${
@@ -1279,8 +1343,8 @@ export default function ConnectionPanel({
               {(() => {
                 const id = readMeshcoreIdentity();
                 return id?.private_key && id?.public_key
-                  ? 'Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex).'
-                  : 'No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually.';
+                  ? 'Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex). JWT audience matches the Server hostname.'
+                  : 'No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually. JWT audience in the token must match the Server hostname.';
               })()}
             </div>
           )}
@@ -1398,9 +1462,22 @@ export default function ConnectionPanel({
                   ...activeMqttSettings,
                   mqttTransportProtocol: protocol === 'meshcore' ? 'meshcore' : 'meshtastic',
                 };
-                if (meshcorePreset === 'letsmesh' && isLetsMeshSettings(settings.server)) {
+                if (meshcorePreset === 'letsmesh') {
+                  const presetErr = validateLetsMeshPresetConnect(settings);
+                  if (presetErr) {
+                    setMqttError(presetErr);
+                    return;
+                  }
                   const identity = readMeshcoreIdentity();
-                  if (identity?.private_key && identity?.public_key) {
+                  const hasFullIdentity = !!(identity?.private_key && identity?.public_key);
+                  if (!hasFullIdentity) {
+                    const manualErr = validateLetsMeshManualCredentials(settings);
+                    if (manualErr) {
+                      setMqttError(manualErr);
+                      return;
+                    }
+                  }
+                  if (hasFullIdentity) {
                     try {
                       const u = letsMeshMqttUsernameFromIdentity(identity);
                       if (u) settings.username = u;

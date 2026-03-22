@@ -15,6 +15,14 @@ describe('meshcoreMqttUserFacingHint', () => {
     expect(out).toContain('firewall');
   });
 
+  it('appends transport hint for connect-phase timeout', () => {
+    const out = meshcoreMqttUserFacingHint(
+      'MeshCore MQTT: timed out before MQTT session (no CONNACK within 30s). …',
+    );
+    expect(out).toContain('IPv4');
+    expect(out).toContain('CONNACK');
+  });
+
   it('passes through unrelated messages unchanged', () => {
     expect(meshcoreMqttUserFacingHint('Something else')).toBe('Something else');
   });

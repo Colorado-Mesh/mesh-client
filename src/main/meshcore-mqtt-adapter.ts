@@ -25,13 +25,19 @@ function buildMeshcoreUrlForLog(settings: MQTTSettings): string {
     : `mqtt://${host}:${settings.port}`;
 }
 
+/** Time allowed for TCP/TLS/WebSocket + MQTT CONNACK (slow networks, captive portals). */
+const MESHCORE_MQTT_CONNECT_ACK_MS = 30_000;
+/** Time allowed for SUBACK after CONNACK (broker ACL or load). */
+const MESHCORE_MQTT_SUBSCRIBE_MS = 30_000;
+
 export class MeshcoreMqttAdapter extends EventEmitter {
   private client: mqtt.MqttClient | null = null;
   private status: MQTTStatus = 'disconnected';
   private clientIdStr = '';
   private lastSettings: MQTTSettings | null = null;
-  private connectWatchdog: ReturnType<typeof setTimeout> | null = null;
-  /** True when the connect watchdog tore the client down — suppress noisy subscribe(err) after. */
+  private connectAckTimer: ReturnType<typeof setTimeout> | null = null;
+  private subscribeTimer: ReturnType<typeof setTimeout> | null = null;
+  /** True when a watchdog tore the client down — suppress noisy subscribe(err) after. */
   private connectAbortByWatchdog = false;
 
   getStatus(): MQTTStatus {
@@ -42,11 +48,19 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     return this.clientIdStr;
   }
 
-  disconnect(): void {
-    if (this.connectWatchdog) {
-      clearTimeout(this.connectWatchdog);
-      this.connectWatchdog = null;
+  private clearConnectTimers(): void {
+    if (this.connectAckTimer) {
+      clearTimeout(this.connectAckTimer);
+      this.connectAckTimer = null;
     }
+    if (this.subscribeTimer) {
+      clearTimeout(this.subscribeTimer);
+      this.subscribeTimer = null;
+    }
+  }
+
+  disconnect(): void {
+    this.clearConnectTimers();
     if (this.client) {
       try {
         this.client.removeAllListeners();
@@ -80,7 +94,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       clean: true,
       keepalive: 60,
       reconnectPeriod: 0,
-      connectTimeout: 10_000,
+      connectTimeout: MESHCORE_MQTT_CONNECT_ACK_MS,
       protocolVersion: 4,
     };
     if (settings.useWebSocket) {
@@ -116,12 +130,11 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.setStatus('connecting');
     this.connectAbortByWatchdog = false;
     this.client = mqtt.connect(connectOpts);
-    this.connectWatchdog = setTimeout(() => {
-      this.connectWatchdog = null;
+    this.connectAckTimer = setTimeout(() => {
+      this.connectAckTimer = null;
       if (this.status !== 'connecting' || !this.client) return;
       this.connectAbortByWatchdog = true;
-      const msg =
-        'MeshCore MQTT: connection timed out (no CONNACK/SUBACK within 10s). Check host, port, WebSocket path /mqtt, TLS, credentials, and topic prefix.';
+      const msg = `MeshCore MQTT: timed out before MQTT session (no CONNACK within ${MESHCORE_MQTT_CONNECT_ACK_MS / 1000}s). Check host, port, WebSocket path /mqtt, TLS, and network (firewall, VPN, DNS).`;
       console.error('[MeshcoreMqttAdapter]', sanitizeLogMessage(msg));
       this.emit('error', msg);
       try {
@@ -132,22 +145,37 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       }
       this.client = null;
       this.setStatus('disconnected');
-    }, 10_000);
-    const clearConnectWatchdog = () => {
-      if (this.connectWatchdog) {
-        clearTimeout(this.connectWatchdog);
-        this.connectWatchdog = null;
-      }
-    };
+    }, MESHCORE_MQTT_CONNECT_ACK_MS);
     this.client.on('connect', () => {
-      // Do not clear connectWatchdog here. mqtt.js emits `connect` after CONNACK; if subscribe
-      // never completes (no SUBACK), we must still hit the 10s watchdog and unblock the UI.
+      if (this.connectAckTimer) {
+        clearTimeout(this.connectAckTimer);
+        this.connectAckTimer = null;
+      }
       console.debug('[MeshcoreMqttAdapter] MQTT session established, subscribing…');
       this.clientIdStr = (this.client?.options.clientId as string) || '';
       const base = normalizePrefix(settings.topicPrefix || 'msh');
       const subTopic = `${base}/#`;
+      this.subscribeTimer = setTimeout(() => {
+        this.subscribeTimer = null;
+        if (this.status !== 'connecting' || !this.client) return;
+        this.connectAbortByWatchdog = true;
+        const msg = `MeshCore MQTT: MQTT session OK but subscribe did not complete within ${MESHCORE_MQTT_SUBSCRIBE_MS / 1000}s (no SUBACK). Check topic prefix and broker ACL.`;
+        console.error('[MeshcoreMqttAdapter]', sanitizeLogMessage(msg));
+        this.emit('error', msg);
+        try {
+          this.client.removeAllListeners();
+          this.client.end(true);
+        } catch {
+          // catch-no-log-ok forced end during stuck subscribe
+        }
+        this.client = null;
+        this.setStatus('disconnected');
+      }, MESHCORE_MQTT_SUBSCRIBE_MS);
       this.client!.subscribe(subTopic, (err) => {
-        clearConnectWatchdog();
+        if (this.subscribeTimer) {
+          clearTimeout(this.subscribeTimer);
+          this.subscribeTimer = null;
+        }
         if (err) {
           if (this.connectAbortByWatchdog) {
             this.connectAbortByWatchdog = false;
@@ -177,7 +205,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       this.emit('chatMessage', { topic, ...env });
     });
     this.client.on('error', (err) => {
-      clearConnectWatchdog();
+      this.clearConnectTimers();
       console.error(
         '[MeshcoreMqttAdapter] client error',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
@@ -189,7 +217,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       }
     });
     this.client.on('close', () => {
-      clearConnectWatchdog();
+      this.clearConnectTimers();
       if (this.status === 'connected' || this.status === 'connecting') {
         this.setStatus('disconnected');
       }
