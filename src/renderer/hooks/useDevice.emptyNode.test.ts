@@ -50,8 +50,8 @@ describe('emptyNode', () => {
   it('chat stub nodes use the standard !hex long_name and an empty short_name', () => {
     const nodeId = 0x6985e7fc;
     const stub = createChatStubNode(nodeId, 'rf');
-    // deleteNodesWithoutLongname preserves nodes with a non-empty source, so
-    // stubs no longer need the old "RF !" prefix to survive startup pruning.
+    // deleteNodesWithoutLongname keeps RF placeholder stubs (source=rf); MQTT
+    // placeholder stubs (source=mqtt) are pruned. Stubs no longer need "RF !".
     expect(stub.long_name).toBe('!6985e7fc');
     expect(stub.short_name).toBe('');
   });

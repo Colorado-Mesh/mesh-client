@@ -485,7 +485,6 @@ mesh-client/
 │       │   ├── NodeListPanel.tsx     # Node browser with online/stale/offline/MQTT filter
 │       │   ├── MapPanel.tsx          # Node positions on OpenStreetMap (Leaflet)
 │       │   ├── TelemetryPanel.tsx    # Battery/voltage/SNR charts (Recharts)
-│       │   ├── AdminPanel.tsx        # Reboot, shutdown, factory reset, trace route
 │       │   ├── ConfigPanel.tsx       # Meshtastic: device & channel configuration editor
 │       │   ├── ModulePanel.tsx       # Meshtastic: modules tab (telemetry, MQTT, etc.)
 │       │   ├── ConnectionPanel.tsx   # BLE/Serial/HTTP/MQTT; protocol toggle; MeshCore manual contact toggle

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { LocationFilter } from '../App';
+import { DEFAULT_ADMIN_SETTINGS_SHARED } from '../lib/defaultAdminSettings';
 import type { OurPosition } from '../lib/gpsSource';
 import { haversineDistanceKm } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
@@ -102,14 +103,7 @@ interface AdminSettings {
 }
 
 const DEFAULT_SETTINGS: AdminSettings = {
-  autoPruneEnabled: false,
-  autoPruneDays: 30,
-  pruneEmptyNamesEnabled: true,
-  nodeCapEnabled: true,
-  nodeCapCount: 10000,
-  distanceFilterEnabled: false,
-  distanceFilterMax: 500,
-  distanceUnit: 'miles',
+  ...DEFAULT_ADMIN_SETTINGS_SHARED,
   filterMqttOnly: false,
   messageLimitEnabled: true,
   messageLimitCount: 1000,
@@ -815,21 +809,27 @@ export default function AppPanel({
           </div>
 
           {/* Prune unnamed nodes on startup */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="pruneEmptyNames"
-              checked={settings.pruneEmptyNamesEnabled}
-              onChange={(e) => updateSetting('pruneEmptyNamesEnabled', e.target.checked)}
-              aria-label="Remove unnamed nodes on startup"
-              className="accent-brand-green"
-            />
-            <label
-              htmlFor="pruneEmptyNames"
-              className="text-sm text-gray-300 flex-1 cursor-pointer"
-            >
-              Remove unnamed nodes on startup
-            </label>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="pruneEmptyNames"
+                checked={settings.pruneEmptyNamesEnabled}
+                onChange={(e) => updateSetting('pruneEmptyNamesEnabled', e.target.checked)}
+                aria-label="Remove unnamed nodes on startup"
+                className="accent-brand-green"
+              />
+              <label
+                htmlFor="pruneEmptyNames"
+                className="text-sm text-gray-300 flex-1 cursor-pointer"
+              >
+                Remove unnamed nodes on startup
+              </label>
+            </div>
+            <p className="text-xs text-muted pl-6">
+              Includes MQTT-only placeholders that still use the default !hex ID; favorited nodes
+              are kept.
+            </p>
           </div>
 
           {/* Node cap */}
@@ -1131,7 +1131,7 @@ export default function AppPanel({
                   name: 'Prune Unnamed Nodes',
                   title: 'Prune Unnamed Nodes',
                   message:
-                    'This will permanently delete all nodes without a long name. They will be re-discovered when they broadcast again.',
+                    'This will permanently delete nodes with no real long name: empty names, auto-generated !hex placeholders, and MQTT-only identities that never received UserInfo. Favorited nodes are kept. They will be re-discovered when they broadcast again.',
                   confirmLabel: 'Prune Unnamed Nodes',
                   danger: true,
                   action: async () => {

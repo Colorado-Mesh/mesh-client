@@ -34,8 +34,8 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
   const shortcuts = useMemo(() => {
     const names = tabNames ?? DEFAULT_TAB_NAMES;
     const tabShortcuts = names.slice(0, 9).map((name, i) => ({
-      keys: `Cmd/Ctrl + ${i + 1}` as const,
-      action: `Switch to ${name} tab` as const,
+      keys: `Cmd/Ctrl + ${i + 1}`,
+      action: `Switch to ${name} tab`,
     }));
     return [...tabShortcuts, ...OTHER_SHORTCUTS];
   }, [tabNames]);

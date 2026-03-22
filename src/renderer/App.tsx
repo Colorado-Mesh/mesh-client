@@ -31,6 +31,7 @@ import {
   RepeatersPanel,
   TelemetryPanel,
 } from './lazyTabPanels';
+import { DEFAULT_ADMIN_SETTINGS_SHARED } from './lib/defaultAdminSettings';
 import {
   validateLetsMeshManualCredentials,
   validateLetsMeshPresetConnect,
@@ -364,11 +365,12 @@ export default function App() {
   // ─── Startup node pruning based on persisted admin settings ─────
   const { refreshNodesFromDb } = device;
   useEffect(() => {
-    const s =
+    const raw =
       parseStoredJson<Record<string, unknown>>(
         localStorage.getItem('mesh-client:adminSettings'),
         'App startup node pruning',
       ) ?? {};
+    const s = { ...DEFAULT_ADMIN_SETTINGS_SHARED, ...raw };
     const ops: Promise<unknown>[] = [
       // One-time migration: rename legacy "RF !xxxxxxxx" stub nodes to "!xxxxxxxx"
       window.electronAPI.db
