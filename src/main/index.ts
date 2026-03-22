@@ -549,7 +549,7 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    title: 'Meshtastic Client',
+    title: 'Mesh Client',
     // Use the helper to select .ico, .icns, or .png automatically
     icon: getAppIconPath(),
     webPreferences: {

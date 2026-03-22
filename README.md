@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
-![Build Status](https://img.shields.io/github/actions/workflow/status/Colorado-Mesh/meshtastic-client/ci.yaml?branch=main)
+![Build Status](https://img.shields.io/github/actions/workflow/status/Colorado-Mesh/mesh-client/ci.yaml?branch=main)
 
 ---
 
@@ -188,7 +188,7 @@ MeshCore support is available alongside Meshtastic — switch protocols in the C
 
 ## Quick Start
 
-**Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/meshtastic-client/releases) area. Download the installer or archive for your platform — no Node.js or build tools required.
+**Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) area. Download the installer or archive for your platform — no Node.js or build tools required.
 
 **To build from source**, you need:
 
@@ -199,8 +199,8 @@ MeshCore support is available alongside Meshtastic — switch protocols in the C
 ### Mac & Linux
 
 ```bash
-git clone https://github.com/Colorado-Mesh/meshtastic-client
-cd meshtastic-client
+git clone https://github.com/Colorado-Mesh/mesh-client
+cd mesh-client
 npm install
 npm start
 ```
@@ -357,8 +357,8 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 **5. Clone and run:**
 
 ```bash
-git clone https://github.com/Colorado-Mesh/meshtastic-client
-cd meshtastic-client
+git clone https://github.com/Colorado-Mesh/mesh-client
+cd mesh-client
 npm install
 npm start
 ```
@@ -446,7 +446,7 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 ### Project Structure
 
 ```
-meshtastic-client/
+mesh-client/
 ├── .github/
 │   ├── workflows/                # CI and release (ci.yaml, release.yaml, tests.yaml)
 │   ├── ISSUE_TEMPLATE/           # Bug report and feature request templates
@@ -758,12 +758,12 @@ npm run trace-deprecation
 
 **Cause**
 
-1. **Spaces in the project path** — node-gyp is unreliable when the repo lives under a path with spaces (e.g. `C:\Users\Joey Stanford\meshtastic-client`). This can surface as "Attempting to build a module with a space in the path", "Could not find any Visual Studio installation to use", or EPERM. See [node-gyp#65](https://github.com/nodejs/node-gyp/issues/65#issuecomment-368820565).
+1. **Spaces in the project path** — node-gyp is unreliable when the repo lives under a path with spaces (e.g. `C:\Users\Joey Stanford\mesh-client`). This can surface as "Attempting to build a module with a space in the path", "Could not find any Visual Studio installation to use", or EPERM. See [node-gyp#65](https://github.com/nodejs/node-gyp/issues/65#issuecomment-368820565).
 2. **EPERM on unlink** — Something on Windows still has the `.node` file open (another `node`/`electron` process, antivirus/Windows Defender scanning the file, or a stuck handle).
 
 **Fix**
 
-1. **Use a path without spaces** (strongly recommended): clone or copy the repo to e.g. `C:\dev\meshtastic-client`, then `npm install` and `npm run dist:win` from there.
+1. **Use a path without spaces** (strongly recommended): clone or copy the repo to e.g. `C:\dev\mesh-client`, then `npm install` and `npm run dist:win` from there.
 2. **Clear the lock before rebuild**: quit any running Mesh-Client/Electron dev instances, then delete the affected `build` folder under `node_modules` and retry.
 3. **Rebuild then dist**: `npm run rebuild` — if that succeeds, run `npm run dist:win`.
 
@@ -883,4 +883,4 @@ MIT — see [LICENSE](LICENSE)
 
 ## Credits
 
-See [CREDITS.md](CREDITS.md). Created by **[Joey (NV0N)](https://github.com/rinchen)** & **[dude.eth](https://github.com/defidude)**. Based on the [original Mac client](https://github.com/Colorado-Mesh/meshtastic-client). Part of **[Colorado Mesh](https://github.com/Colorado-Mesh/meshtastic-client)**.
+See [CREDITS.md](CREDITS.md). Created by **[Joey (NV0N)](https://github.com/rinchen)** & **[dude.eth](https://github.com/defidude)**. Based on the [original Mac client](https://github.com/Colorado-Mesh/meshtastic_mac_client). Part of **[Colorado Mesh](https://github.com/Colorado-Mesh/mesh-client)**.

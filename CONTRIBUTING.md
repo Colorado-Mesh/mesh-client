@@ -1,4 +1,4 @@
-# Contributing to Meshtastic Client
+# Contributing to Mesh Client
 
 Thank you for your interest in contributing. This document covers setup, testing requirements, and the PR process.
 

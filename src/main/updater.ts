@@ -14,7 +14,7 @@ export function getCheckNow(): (() => void) | null {
   return checkNow;
 }
 
-const REPO = 'Colorado-Mesh/meshtastic-client';
+const REPO = 'Colorado-Mesh/mesh-client';
 const RELEASES_URL = `https://github.com/${REPO}/releases`;
 const API_URL = `https://api.github.com/repos/${REPO}/releases/latest`;
 

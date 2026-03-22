@@ -519,7 +519,7 @@ export default function App() {
         >
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-bold text-bright-green tracking-wide">Colorado Mesh</h1>
-            <span className="text-xs text-muted">Meshtastic Client</span>
+            <span className="text-xs text-muted">Mesh Client</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -907,7 +907,7 @@ export default function App() {
                 </a>
                 . Code on{' '}
                 <a
-                  href="https://github.com/Colorado-Mesh/meshtastic-client"
+                  href="https://github.com/Colorado-Mesh/mesh-client"
                   title="Colorado Mesh on GitHub"
                   className="text-bright-green underline hover:opacity-80"
                   target="_blank"

@@ -591,7 +591,7 @@ export default function DiagnosticsPanel({
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-200">Network Diagnostics</h2>
         <a
-          href="https://github.com/Colorado-Mesh/meshtastic-client/blob/main/DIAGNOSTICS.md"
+          href="https://github.com/Colorado-Mesh/mesh-client/blob/main/DIAGNOSTICS.md"
           target="_blank"
           rel="noreferrer"
           className="text-xs text-muted hover:text-brand-green transition-colors"
