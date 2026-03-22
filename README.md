@@ -197,6 +197,14 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 **Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) area. Download the installer or archive for your platform — no Node.js or build tools required.
 
+**macOS (release download):** If macOS reports **“Mesh-client” is damaged and can’t be opened** (or **File is damaged and cannot be opened**), that is usually **Gatekeeper quarantine** on downloaded, **unsigned** apps — especially on **Apple silicon (M-series)** Macs — not a corrupt file. Remove the quarantine attribute, then open the app again (use the path where your copy actually lives):
+
+```bash
+xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
+```
+
+See [Troubleshooting — macOS: File is damaged…](#macos-file-is-damaged-and-cannot-be-opened) and [this explanation for a similar Electron app](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
+
 **To build from source**, you need:
 
 - **Node.js** 22.12.0+ (matches `@electron/rebuild` / `node-abi`) and **npm** 9+
@@ -725,9 +733,21 @@ This error means your user doesn't have permission to access the serial port.
    newgrp dialout
    ```
 
+### macOS: File is damaged and cannot be opened
+
+**Cause:** macOS tags downloads with the **`com.apple.quarantine`** extended attribute. For apps that are **not signed with a Developer ID** and **not notarized**, Gatekeeper may show **“File is damaged and cannot be opened”** (or **“Mesh-client” is damaged and can’t be opened**) instead of the usual unidentified-developer prompt. This is a **security / quarantine** behavior and is **common on Apple silicon** for community-built Electron binaries.
+
+**Fix:** Strip quarantine recursively, then launch again — adjust the path if the app is still under **Downloads** or another folder:
+
+```bash
+xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
+```
+
+**Right-click → Open** on first launch can also help in some cases. Background and discussion: [jeffvli/feishin#104 (comment)](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
+
 ### App crashes on launch (macOS distributable)
 
-- **macOS 26 (Tahoe) + EXC_BREAKPOINT at launch**: electron-builder ad-hoc signing can crash during ElectronMain/V8 init before any app code runs. This repo sets `mac.identity: null` in `electron-builder.yml` so the packaged app is unsigned and avoids that re-sign path; first open may require **Right-click → Open** or `xattr -cr` on the app. For notarized releases, set a real Developer ID in `mac.identity` and retest on macOS 26. See [electron#49522](https://github.com/electron/electron/issues/49522) and [electron-builder#9396](https://github.com/electron-userland/electron-builder/issues/9396).
+- **macOS 26 (Tahoe) + EXC_BREAKPOINT at launch**: electron-builder ad-hoc signing can crash during ElectronMain/V8 init before any app code runs. This repo sets `mac.identity: null` in `electron-builder.yml` so the packaged app is unsigned and avoids that re-sign path; first open may require **Right-click → Open** or clearing quarantine ([macOS: File is damaged…](#macos-file-is-damaged-and-cannot-be-opened) above). For notarized releases, set a real Developer ID in `mac.identity` and retest on macOS 26. See [electron#49522](https://github.com/electron/electron/issues/49522) and [electron-builder#9396](https://github.com/electron-userland/electron-builder/issues/9396).
 - This may also be a native module signing issue — try rebuilding: `npm run dist:mac`
 - If building from source: make sure `npm install` completed without errors
 
