@@ -601,47 +601,80 @@ async function showAboutDialog(): Promise<void> {
 }
 
 /**
- * macOS: set a minimal application menu so the native menu bridge has a stable model.
- * `role: 'editMenu'` is required for Cmd+C/V/X/Z/A keyboard shortcuts — macOS routes
- * these through AppKit, not Chromium. It may log WeakPtrToElectronMenuModelAsNSObject
- * when focusing text inputs, but that warning is a known harmless Electron/Chromium quirk.
+ * Application menu: macOS uses the app-name menu (About, updates, Hide, Quit) plus editMenu
+ * for Cmd+C/V/X/Z/A via AppKit. Windows/Linux get File (Quit), Edit, and Help (About, updates)
+ * so About is reachable from the menu bar and standard edit shortcuts work.
  */
 function setupAppMenu() {
-  if (process.platform !== 'darwin') return;
-  appMenu = Menu.buildFromTemplate([
-    {
-      label: app.name,
-      submenu: [
-        {
-          label: `About ${app.name}`,
-          click: () => void showAboutDialog(),
-        },
-        { type: 'separator' as const },
-        {
-          label: 'Check for Updates\u2026',
-          click: () => getCheckNow()?.(),
-        },
-        { type: 'separator' as const },
-        {
-          label: 'Hide',
-          accelerator: 'Command+H',
-          click: () => app.hide(),
-        },
-        { type: 'separator' as const },
-        {
-          label: 'Quit',
-          accelerator: 'Command+Q',
-          click: () => {
-            isQuitting = true;
-            mqttManager.disconnect();
-            meshcoreMqttAdapter.disconnect();
-            app.quit();
+  if (process.platform === 'darwin') {
+    appMenu = Menu.buildFromTemplate([
+      {
+        label: app.name,
+        submenu: [
+          {
+            label: `About ${app.name}`,
+            click: () => void showAboutDialog(),
           },
-        },
-      ],
-    },
-    { role: 'editMenu' as const },
-  ]);
+          { type: 'separator' as const },
+          {
+            label: 'Check for Updates\u2026',
+            click: () => getCheckNow()?.(),
+          },
+          { type: 'separator' as const },
+          {
+            label: 'Hide',
+            accelerator: 'Command+H',
+            click: () => app.hide(),
+          },
+          { type: 'separator' as const },
+          {
+            label: 'Quit',
+            accelerator: 'Command+Q',
+            click: () => {
+              isQuitting = true;
+              mqttManager.disconnect();
+              meshcoreMqttAdapter.disconnect();
+              app.quit();
+            },
+          },
+        ],
+      },
+      { role: 'editMenu' as const },
+    ]);
+  } else {
+    appMenu = Menu.buildFromTemplate([
+      {
+        label: 'File',
+        submenu: [
+          {
+            label: 'Quit',
+            accelerator: 'Ctrl+Q',
+            click: () => {
+              isQuitting = true;
+              mqttManager.disconnect();
+              meshcoreMqttAdapter.disconnect();
+              app.quit();
+            },
+          },
+        ],
+      },
+      { role: 'editMenu' as const },
+      {
+        label: 'Help',
+        submenu: [
+          {
+            label: `About ${app.name}`,
+            click: () => void showAboutDialog(),
+          },
+          { type: 'separator' as const },
+          {
+            label: 'Check for Updates\u2026',
+            click: () => getCheckNow()?.(),
+          },
+        ],
+      },
+    ]);
+  }
   Menu.setApplicationMenu(appMenu);
 }
 

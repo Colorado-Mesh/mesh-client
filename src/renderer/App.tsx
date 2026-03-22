@@ -610,7 +610,7 @@ export default function App() {
       <div className="flex flex-col h-screen">
         {/* Header */}
         <header
-          className={`relative flex items-center justify-between px-4 py-2 bg-deep-black border-b ${
+          className={`relative flex items-center px-4 py-2 bg-deep-black border-b ${
             isConfigured
               ? protocol === 'meshcore'
                 ? 'border-cyan-500/20'
@@ -618,12 +618,12 @@ export default function App() {
               : 'border-gray-700'
           }`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-1 min-w-0 items-center justify-start gap-3">
             <h1 className="text-lg font-bold text-bright-green tracking-wide">Colorado Mesh</h1>
             <span className="text-xs text-muted">Mesh Client</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center justify-center px-2">
             {/* Protocol context switcher */}
             <div
               role="group"
@@ -668,6 +668,9 @@ export default function App() {
                 )}
               </button>
             </div>
+          </div>
+
+          <div className="flex flex-1 min-w-0 items-center justify-end gap-2">
             <div className="flex items-center gap-1.5 mr-3 pr-3 border-r border-gray-700">
               <MqttGlobeIcon connected={device.mqttStatus === 'connected'} />
               <span
