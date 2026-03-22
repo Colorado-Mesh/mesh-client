@@ -462,6 +462,7 @@ mesh-client/
 ├── src/
 │   ├── main/
 │   │   ├── index.ts              # Window creation, BLE/Serial intercept, IPC (incl. meshcore TCP & MQTT)
+│   │   ├── noble-ble-manager.ts  # BLE via @stoprocent/noble (BlueZ); scan/connect IPC
 │   │   ├── meshcore-mqtt-adapter.ts  # MeshCore MQTT JSON v1 subscribe/publish
 │   │   ├── log-service.ts        # Log file, console patch, log panel IPC
 │   │   ├── sanitize-log-message.ts  # Log injection sanitization (CodeQL); use at call sites before appendLine
@@ -473,7 +474,11 @@ mesh-client/
 │   ├── preload/
 │   │   └── index.ts              # contextBridge: electronAPI (db, mqtt, log, BLE, serial, session, meshcore.tcp)
 │   ├── shared/
-│   │   └── meshcoreMqttEnvelope.ts   # JSON v1 envelope parse/validate (main + renderer)
+│   │   ├── electron-api.types.ts     # IPC / preload API contracts
+│   │   ├── meshcoreMqttEnvelope.ts   # JSON v1 envelope parse/validate (main + renderer)
+│   │   ├── nodeNameUtils.ts          # Shared node naming helpers
+│   │   ├── sqlLikeEscape.ts          # SQL LIKE escape for safe queries
+│   │   └── withTimeout.ts            # Shared timeout helper
 │   └── renderer/
 │       ├── index.html            # HTML entry
 │       ├── main.tsx              # React entry point
@@ -548,10 +553,19 @@ mesh-client/
 ├── scripts/
 │   ├── rebuild-native.mjs        # Rebuilds @stoprocent/noble for Electron ABI (postinstall)
 │   ├── wait-for-dev.mjs          # Waits for Vite dev server before launching Electron
-│   └── check-log-injection.mjs   # Pre-commit: ensures log call sites use sanitizeLogMessage (CodeQL)
+│   ├── check-log-injection.mjs   # Pre-commit: log call sites use sanitizeLogMessage (CodeQL)
+│   ├── check-db-migrations.mjs   # Pre-commit: migration / schema consistency
+│   ├── check-ipc-contract.mjs    # Pre-commit: preload and main API alignment
+│   ├── check-log-panel-filter.mjs
+│   ├── check-console-log.mjs
+│   ├── check-silent-catches.mjs
+│   ├── check-xss-patterns.mjs
+│   └── letsmesh-mqtt-probe.mjs   # Optional LetsMesh / MQTT debugging
 ├── patches/                     # patch-package patches (e.g. electron-builder)
 ├── docs/
 │   ├── accessibility-checklist.md
+│   ├── letsmesh-mqtt-auth.md    # LetsMesh broker auth and analyzer-related notes
+│   ├── meshcore-meshtastic-parity.md  # Meshtastic vs MeshCore feature parity
 │   └── images/                  # README screenshots (nodes, map, diagnostics, node-detail, chat, connection, repeaters)
 ├── release.sh                   # Release automation script
 ├── electron-builder.yml         # Distributable config (targets, icons, signing)
