@@ -121,10 +121,19 @@ The official Meshtastic apps cover the basics, but desktop power users need more
 **Productivity**
 
 - **Log panel** (right rail) — live app log stream, optional debug toggle, export or delete the log file
-- Full keyboard navigation — press `?` for shortcut reference; `Cmd/Ctrl+1–8` switches tabs; `Cmd/Ctrl+[` switches to Meshtastic; `Cmd/Ctrl+]` switches to MeshCore; `Cmd/Ctrl+F` opens **chat search** across all channels (optional `user:name` and `channel:name` filters)
+- Full keyboard navigation — press `?` for shortcut reference; `Cmd/Ctrl+1–9` switches tabs; `Cmd/Ctrl+[` switches to Meshtastic; `Cmd/Ctrl+]` switches to MeshCore; `Cmd/Ctrl+Shift+F` opens **chat search** across all channels (optional `user:name` and `channel:name` filters)
 - **Updates** — permanent status in the footer (up to date, update available, errors, download progress, etc.); automatic check runs a few seconds after every launch; **Check for Updates…** in the app menu (macOS) or **Help** (Windows/Linux), or tap **Up to date** in the footer to re-check; Windows/Linux packaged builds can download in-app, macOS and dev builds open the GitHub release page
 - System tray with live unread badge; app stays accessible when window is closed
 - Persistent SQLite storage; DB export/import/clear in the App tab; Clear GPS Data and Reset Diagnostics without a full DB wipe
+
+**Accessibility**
+
+- **Keyboard navigation** — every panel, form, and control is reachable by keyboard; Tab/Shift+Tab cycles interactive elements; all sortable table headers and the hop-limit slider are arrow-key operable; focus indicator is always visible
+- **Modal focus trap** — Tab cycles only within an open modal or dialog; Escape closes and returns focus to the triggering control
+- **Screen reader support** — connection status changes announced via `aria-live`; modals and dialogs carry `role="dialog"` / `role="alertdialog"` with `aria-labelledby`; form errors announced immediately via `role="alert"`; sortable columns expose `aria-sort`; toggle buttons expose `aria-pressed`; icon-only controls have `aria-label`; status indicators pair color with a text alternative so they are not color-only
+- **Reduced motion** — `@media (prefers-reduced-motion: reduce)` suppresses pulse animations, halo rings, and transition effects
+- **Windows High Contrast** — `@media (forced-colors: active)` support prevents Tailwind from overriding system colors
+- **Automated tests** — vitest-axe accessibility assertions run on every major panel as part of the pre-commit test suite
 
 ---
 
@@ -349,6 +358,8 @@ See [electron#41980](https://github.com/electron/electron/issues/41980) and rela
 
 </details>
 
+<a id="windows--extra-notes"></a>
+
 <details>
 <summary>Windows — extra notes</summary>
 
@@ -531,7 +542,7 @@ mesh-client/
 │       │   ├── foreignLoraDetection.ts   # Cross-protocol: classify payload, foreign LoRa, RSSI/SNR
 │       │   ├── meshcoreUtils.ts      # MeshCore: pubkeyToNodeId, meshcoreContactToMeshNode, contact types
 │       │   ├── gpsSource.ts          # GPS waterfall: device → geolocation → null
-│       │   ├── nodeStatus.ts         # Node freshness: online <30 min, stale <2 h, offline 2 h+
+│       │   ├── nodeStatus.ts         # Node freshness: online <2 h, stale 2–72 h, offline 72 h+
 │       │   ├── coordUtils.ts         # Coordinate conversion helpers
 │       │   ├── reactions.ts          # Emoji reaction helpers
 │       │   ├── roleInfo.tsx          # Node role display metadata
@@ -657,7 +668,7 @@ You're missing build tools for the native modules (e.g. `@serialport/bindings-cp
 - **Linux**: `sudo apt install build-essential python3`
 - **Windows**: Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the "Desktop development with C++" workload, and **Python 3** (see [Windows — extra notes](#windows--extra-notes) step 4). If you see "Could not find any Python installation to use", see the [Python troubleshooting](#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp) section. If you see "Could not find any Visual Studio installation to use", see the [Visual Studio troubleshooting](#windows-could-not-find-any-visual-studio-installation-to-use) section.
 
-### `npm install` fails with a `node-gyp` compile error
+### Windows: "Could not find any Visual Studio installation to use"
 
 **Cause**: The version of `node-gyp` bundled with Electron is often outdated and cannot "see" newer versions of Visual Studio. This leads to the error "Could not find any Visual Studio installation to use" even when the tools are correctly installed.
 

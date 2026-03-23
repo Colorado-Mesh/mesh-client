@@ -13,7 +13,7 @@ const DEFAULT_TAB_NAMES = [
 ];
 
 const OTHER_SHORTCUTS = [
-  { keys: 'Cmd/Ctrl + F', action: 'Toggle message search (Chat tab)' },
+  { keys: 'Cmd/Ctrl + Shift + F', action: 'Toggle message search (Chat tab)' },
   { keys: 'Escape', action: 'Close search / close DM panel (Chat tab)' },
   { keys: 'Enter', action: 'Send message' },
   { keys: 'Shift + Enter', action: 'New line in message' },
