@@ -8,13 +8,13 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
 
 - [ ] Tab through every interactive element in order (no skips, no traps outside modals)
 - [ ] Shift+Tab reverses correctly
-- [ ] All 8 tabs (Cmd/Ctrl+1-8) switch panels correctly
+- [ ] All 9 tabs (Cmd/Ctrl+1-9) switch panels correctly
 - [ ] `?` button opens Keyboard Shortcuts modal; Escape closes it; focus returns to `?` button
 - [ ] Keyboard shortcuts modal table is readable by screen reader in correct order
 - [ ] Modals: Tab cycles only within modal; Escape closes
 - [ ] Dropdown menus: arrow keys navigate options
 - [ ] Chat inline actions (reply/react/DM) reachable without mouse (focus-within visible)
-- [ ] Cmd/Ctrl+F opens message search; Escape closes it
+- [ ] Cmd/Ctrl+Shift+F opens message search; Escape closes it
 - [ ] Sortable table columns activatable with Enter/Space
 - [ ] Slider (hop limit) adjustable with arrow keys
 - [ ] Focus indicator visible at all times (no invisible focus)
