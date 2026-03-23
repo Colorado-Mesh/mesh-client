@@ -12,6 +12,12 @@ const TORADIO_UUID = 'f75c76d2129e4dada1dd7866124401e7';
 const FROMRADIO_UUID = '2c55e69e499311edb8780242ac120002';
 const FROMNUM_UUID = 'ed9da18ca8004f66a670aa7547e34453';
 
+// MeshCore BLE GATT UUIDs — Nordic UART Service (NUS)
+// RX = we write to it (radio reads from it); TX = we read/notify from it (radio writes to it)
+const MESHCORE_SERVICE_UUID = '6e400001b5a3f393e0a9e50e24dcca9e';
+const MESHCORE_RX_UUID = '6e400002b5a3f393e0a9e50e24dcca9e';
+const MESHCORE_TX_UUID = '6e400003b5a3f393e0a9e50e24dcca9e';
+
 /** Max iterations per read-pump burst (avoids infinite spin on misbehaving stacks). */
 const BLE_READ_PUMP_MAX_ITERATIONS = 512;
 /** Timeout for a single fromRadio GATT read. */
@@ -415,21 +421,32 @@ export class NobleBleManager extends EventEmitter {
       await withTimeout(peripheral.connectAsync(), 15000, 'BLE connectAsync');
       connected = true;
 
+      const isMeshcore = sessionId === 'meshcore';
+      const discoverServiceUuids = isMeshcore ? [MESHCORE_SERVICE_UUID] : [SERVICE_UUID];
+      const discoverCharUuids = isMeshcore
+        ? [MESHCORE_RX_UUID, MESHCORE_TX_UUID]
+        : [TORADIO_UUID, FROMRADIO_UUID, FROMNUM_UUID];
+
       const { characteristics } = await withTimeout<{
         characteristics: any[];
       }>(
         peripheral.discoverSomeServicesAndCharacteristicsAsync(
-          [SERVICE_UUID],
-          [TORADIO_UUID, FROMRADIO_UUID, FROMNUM_UUID],
+          discoverServiceUuids,
+          discoverCharUuids,
         ),
         15000,
         'BLE characteristic discovery',
       );
       for (const char of characteristics) {
         const uuid = normalizeUuid(char.uuid);
-        if (uuid === TORADIO_UUID) session.toRadioChar = char;
-        else if (uuid === FROMRADIO_UUID) session.fromRadioChar = char;
-        else if (uuid === FROMNUM_UUID) session.fromNumChar = char;
+        if (isMeshcore) {
+          if (uuid === MESHCORE_RX_UUID) session.toRadioChar = char;
+          else if (uuid === MESHCORE_TX_UUID) session.fromRadioChar = char;
+        } else {
+          if (uuid === TORADIO_UUID) session.toRadioChar = char;
+          else if (uuid === FROMRADIO_UUID) session.fromRadioChar = char;
+          else if (uuid === FROMNUM_UUID) session.fromNumChar = char;
+        }
       }
       console.debug(
         `[BLE:${sessionId}] discovered chars — toRadio=${Boolean(session.toRadioChar)} fromRadio=${Boolean(session.fromRadioChar)} fromNum=${Boolean(session.fromNumChar)} toRadioProps=${JSON.stringify(session.toRadioChar?.properties)} fromRadioProps=${JSON.stringify(session.fromRadioChar?.properties)} fromNumProps=${JSON.stringify(session.fromNumChar?.properties)}`,
@@ -437,7 +454,7 @@ export class NobleBleManager extends EventEmitter {
 
       // FROMNUM is optional for notification-based flow; require only TX/RX characteristics.
       if (!session.toRadioChar || !session.fromRadioChar) {
-        throw new Error('Failed to find required Meshtastic BLE toRadio/fromRadio characteristics');
+        throw new Error('Failed to find required BLE characteristics');
       }
 
       if (session.fromNumChar) {
