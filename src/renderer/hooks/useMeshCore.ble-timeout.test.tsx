@@ -196,6 +196,45 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     expect(warnSpy).toHaveBeenCalledWith('[IpcNobleConnection:meshcore] peripheral disconnected');
   });
 
+  it('retries and surfaces timeout guidance when main-process BLE connectAsync times out', async () => {
+    // Simulates the Linux/Windows case where peripheral.connectAsync() in the main process
+    // times out and the error propagates through IPC to the renderer.
+    vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue(
+      new Error('BLE connectAsync timed out after 30000ms'),
+    );
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await expect(
+      act(async () => {
+        await result.current.connect('ble', undefined, 'ble-device-linux');
+      }),
+    ).rejects.toThrow(
+      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
+    );
+
+    // Should retry once (main-process timeout is now recognized as a retryable timeout).
+    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(warnSpy).toHaveBeenCalledWith('[useMeshCore] connect: BLE Noble IPC attempt failed', {
+      attempt: 1,
+      maxAttempts: 2,
+      isTimeout: true,
+      stage: 'ipc-open',
+      elapsedMs: expect.any(Number),
+      message: 'BLE connectAsync timed out after 30000ms',
+    });
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback',
+      { stage: 'ipc-open' },
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect error',
+      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
+      'BLE connectAsync timed out after 30000ms',
+      { bleTimeoutStage: 'ipc-open' },
+    );
+  });
+
   it('stringifies object-shaped non-timeout BLE errors', async () => {
     vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue({
       code: 'BLE_CUSTOM',
