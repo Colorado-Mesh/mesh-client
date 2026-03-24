@@ -917,186 +917,203 @@ export default function App() {
                   className="h-full"
                 >
                   {activeTab === 3 ? (
-                    <Suspense fallback={<PanelSkeleton />}>
-                      <MapPanel
-                        nodes={nodesForUi}
-                        myNodeNum={device.selfNodeId}
-                        locationFilter={locationFilter}
-                        ourPosition={device.ourPosition}
-                        onLocateMe={() =>
-                          device
-                            .refreshOurPosition()
-                            .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
-                        }
-                        waypoints={device.waypoints}
-                        onSendWaypoint={device.sendWaypoint}
-                        onDeleteWaypoint={device.deleteWaypoint}
-                      />
-                    </Suspense>
+                    <ErrorBoundary>
+                      <Suspense fallback={<PanelSkeleton />}>
+                        <MapPanel
+                          nodes={nodesForUi}
+                          myNodeNum={device.selfNodeId}
+                          locationFilter={locationFilter}
+                          ourPosition={device.ourPosition}
+                          onLocateMe={() =>
+                            device
+                              .refreshOurPosition()
+                              .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
+                          }
+                          waypoints={device.waypoints}
+                          onSendWaypoint={device.sendWaypoint}
+                          onDeleteWaypoint={device.deleteWaypoint}
+                        />
+                      </Suspense>
+                    </ErrorBoundary>
                   ) : null}
                 </div>
                 <div id="panel-4" role="tabpanel" aria-labelledby="tab-4" hidden={activeTab !== 4}>
                   {activeTab === 4 ? (
-                    <Suspense fallback={<PanelSkeleton />}>
-                      <RadioPanel
-                        onSetConfig={device.setConfig}
-                        onCommit={device.commitConfig}
-                        onSetChannel={device.setDeviceChannel}
-                        onClearChannel={device.clearChannel}
-                        channelConfigs={device.channelConfigs}
-                        isConnected={isOperational}
-                        telemetryDeviceUpdateInterval={device.telemetryDeviceUpdateInterval}
-                        onReboot={device.reboot}
-                        onShutdown={device.shutdown}
-                        onFactoryReset={device.factoryReset}
-                        onResetNodeDb={device.resetNodeDb}
-                        ourPosition={device.ourPosition}
-                        onSendPositionToDevice={device.sendPositionToDevice}
-                        deviceOwner={device.deviceOwner}
-                        onSetOwner={
-                          protocol === 'meshcore'
-                            ? async (owner) => meshcoreDevice.setOwner(owner)
-                            : device.setOwner
-                        }
-                        onRebootOta={device.rebootOta}
-                        onEnterDfu={device.enterDfuMode}
-                        onFactoryResetConfig={device.factoryResetConfig}
-                        capabilities={capabilities}
-                        meshcoreChannels={
-                          protocol === 'meshcore' ? meshcoreDevice.channels : undefined
-                        }
-                        onMeshcoreSetChannel={
-                          protocol === 'meshcore'
-                            ? async (idx, name, secret) =>
-                                meshcoreDevice.setMeshcoreChannel(idx, name, secret)
-                            : undefined
-                        }
-                        onMeshcoreDeleteChannel={
-                          protocol === 'meshcore'
-                            ? async (idx) => meshcoreDevice.deleteMeshcoreChannel(idx)
-                            : undefined
-                        }
-                        onApplyLoraParams={
-                          protocol === 'meshcore'
-                            ? async (p) => meshcoreDevice.setRadioParams(p)
-                            : undefined
-                        }
-                        loraConfig={
-                          protocol === 'meshcore' && meshcoreDevice.selfInfo
-                            ? {
-                                freq: meshcoreDevice.selfInfo.radioFreq,
-                                bw: meshcoreDevice.selfInfo.radioBw,
-                                sf: meshcoreDevice.selfInfo.radioSf,
-                                cr: meshcoreDevice.selfInfo.radioCr,
-                                txPower: meshcoreDevice.selfInfo.txPower,
-                              }
-                            : undefined
-                        }
-                      />
-                    </Suspense>
+                    <ErrorBoundary>
+                      <Suspense fallback={<PanelSkeleton />}>
+                        <RadioPanel
+                          onSetConfig={device.setConfig}
+                          onCommit={device.commitConfig}
+                          onSetChannel={device.setDeviceChannel}
+                          onClearChannel={device.clearChannel}
+                          channelConfigs={device.channelConfigs}
+                          isConnected={isOperational}
+                          telemetryDeviceUpdateInterval={device.telemetryDeviceUpdateInterval}
+                          onReboot={device.reboot}
+                          onShutdown={device.shutdown}
+                          onFactoryReset={device.factoryReset}
+                          onResetNodeDb={device.resetNodeDb}
+                          ourPosition={device.ourPosition}
+                          onSendPositionToDevice={device.sendPositionToDevice}
+                          deviceOwner={device.deviceOwner}
+                          onSetOwner={
+                            protocol === 'meshcore'
+                              ? async (owner) => meshcoreDevice.setOwner(owner)
+                              : device.setOwner
+                          }
+                          onRebootOta={device.rebootOta}
+                          onEnterDfu={device.enterDfuMode}
+                          onFactoryResetConfig={device.factoryResetConfig}
+                          capabilities={capabilities}
+                          meshcoreChannels={
+                            protocol === 'meshcore' ? meshcoreDevice.channels : undefined
+                          }
+                          onMeshcoreSetChannel={
+                            protocol === 'meshcore'
+                              ? async (idx, name, secret) =>
+                                  meshcoreDevice.setMeshcoreChannel(idx, name, secret)
+                              : undefined
+                          }
+                          onMeshcoreDeleteChannel={
+                            protocol === 'meshcore'
+                              ? async (idx) => meshcoreDevice.deleteMeshcoreChannel(idx)
+                              : undefined
+                          }
+                          onApplyLoraParams={
+                            protocol === 'meshcore'
+                              ? async (p) => meshcoreDevice.setRadioParams(p)
+                              : undefined
+                          }
+                          loraConfig={
+                            protocol === 'meshcore' && meshcoreDevice.selfInfo
+                              ? {
+                                  freq: meshcoreDevice.selfInfo.radioFreq,
+                                  bw: meshcoreDevice.selfInfo.radioBw,
+                                  sf: meshcoreDevice.selfInfo.radioSf,
+                                  cr: meshcoreDevice.selfInfo.radioCr,
+                                  txPower: meshcoreDevice.selfInfo.txPower,
+                                }
+                              : undefined
+                          }
+                        />
+                      </Suspense>
+                    </ErrorBoundary>
                   ) : null}
                 </div>
                 <div id="panel-5" role="tabpanel" aria-labelledby="tab-5" hidden={activeTab !== 5}>
                   {activeTab === 5 && protocol === 'meshcore' ? (
-                    <Suspense fallback={<PanelSkeleton />}>
-                      <RepeatersPanel
-                        nodes={meshcoreDevice.nodes}
-                        meshcoreNodeStatus={meshcoreDevice.meshcoreNodeStatus}
-                        meshcoreTraceResults={meshcoreDevice.meshcoreTraceResults}
-                        onRequestRepeaterStatus={meshcoreDevice.requestRepeaterStatus}
-                        onPing={meshcoreDevice.traceRoute}
-                        onImportRepeaters={meshcoreDevice.importRepeaters}
-                        onDeleteRepeater={meshcoreDevice.deleteNode}
-                        isConnected={isOperational}
-                        onSendAdvert={meshcoreDevice.sendAdvert}
-                        onSyncClock={meshcoreDevice.syncClock}
-                        onReboot={meshcoreDevice.reboot}
-                        onRequestNeighbors={meshcoreDevice.requestNeighbors}
-                        meshcoreNeighbors={meshcoreDevice.meshcoreNeighbors}
-                        onRequestTelemetry={meshcoreDevice.requestTelemetry}
-                        meshcoreTelemetry={meshcoreDevice.meshcoreNodeTelemetry}
-                        onSelectRepeater={(node) => {
-                          setSelectedNodeId(node.node_id);
-                        }}
-                      />
-                    </Suspense>
+                    <ErrorBoundary>
+                      <Suspense fallback={<PanelSkeleton />}>
+                        <RepeatersPanel
+                          nodes={meshcoreDevice.nodes}
+                          meshcoreNodeStatus={meshcoreDevice.meshcoreNodeStatus}
+                          meshcoreTraceResults={meshcoreDevice.meshcoreTraceResults}
+                          onRequestRepeaterStatus={meshcoreDevice.requestRepeaterStatus}
+                          onPing={meshcoreDevice.traceRoute}
+                          onImportRepeaters={meshcoreDevice.importRepeaters}
+                          onDeleteRepeater={meshcoreDevice.deleteNode}
+                          isConnected={isOperational}
+                          onSendAdvert={meshcoreDevice.sendAdvert}
+                          onSyncClock={meshcoreDevice.syncClock}
+                          onReboot={meshcoreDevice.reboot}
+                          onRequestNeighbors={meshcoreDevice.requestNeighbors}
+                          meshcoreNeighbors={meshcoreDevice.meshcoreNeighbors}
+                          onRequestTelemetry={meshcoreDevice.requestTelemetry}
+                          meshcoreTelemetry={meshcoreDevice.meshcoreNodeTelemetry}
+                          onSelectRepeater={(node) => {
+                            setSelectedNodeId(node.node_id);
+                          }}
+                        />
+                      </Suspense>
+                    </ErrorBoundary>
                   ) : null}
                   {activeTab === 5 && protocol !== 'meshcore' ? (
-                    <Suspense fallback={<PanelSkeleton />}>
-                      <ModulePanel
-                        moduleConfigs={device.moduleConfigs}
-                        onSetModuleConfig={device.setModuleConfig}
-                        onSetCannedMessages={device.setCannedMessages}
-                        onCommit={device.commitConfig}
-                        isConnected={isOperational}
-                      />
-                    </Suspense>
+                    <ErrorBoundary>
+                      <Suspense fallback={<PanelSkeleton />}>
+                        <ModulePanel
+                          moduleConfigs={device.moduleConfigs}
+                          onSetModuleConfig={device.setModuleConfig}
+                          onSetCannedMessages={device.setCannedMessages}
+                          onCommit={device.commitConfig}
+                          isConnected={isOperational}
+                        />
+                      </Suspense>
+                    </ErrorBoundary>
                   ) : null}
                 </div>
                 <div id="panel-6" role="tabpanel" aria-labelledby="tab-6" hidden={activeTab !== 6}>
                   {activeTab === 6 ? (
-                    <Suspense fallback={<PanelSkeleton />}>
-                      <TelemetryPanel
-                        telemetry={device.telemetry}
-                        signalTelemetry={device.signalTelemetry}
-                        environmentTelemetry={device.environmentTelemetry}
-                        useFahrenheit={useFahrenheit}
-                        onToggleFahrenheit={toggleFahrenheit}
-                        onRefresh={device.requestRefresh}
-                        isConnected={isOperational}
-                        capabilities={capabilities}
-                      />
-                    </Suspense>
+                    <ErrorBoundary>
+                      <Suspense fallback={<PanelSkeleton />}>
+                        <TelemetryPanel
+                          telemetry={device.telemetry}
+                          signalTelemetry={device.signalTelemetry}
+                          environmentTelemetry={device.environmentTelemetry}
+                          useFahrenheit={useFahrenheit}
+                          onToggleFahrenheit={toggleFahrenheit}
+                          onRefresh={device.requestRefresh}
+                          isConnected={isOperational}
+                          capabilities={capabilities}
+                        />
+                      </Suspense>
+                    </ErrorBoundary>
                   ) : null}
                 </div>
                 <div id="panel-7" role="tabpanel" aria-labelledby="tab-7" hidden={activeTab !== 7}>
                   {activeTab === 7 ? (
-                    <Suspense fallback={<PanelSkeleton />}>
-                      <AppPanel
-                        logPanelVisible={logPanelVisible}
-                        onLogPanelVisibleChange={(visible) => {
-                          setLogPanelVisible(visible);
-                          try {
-                            localStorage.setItem(LOG_PANEL_VISIBLE_KEY, visible ? 'true' : 'false');
-                          } catch (e) {
-                            console.debug('[App] persist logPanelVisible', e);
+                    <ErrorBoundary>
+                      <Suspense fallback={<PanelSkeleton />}>
+                        <AppPanel
+                          logPanelVisible={logPanelVisible}
+                          onLogPanelVisibleChange={(visible) => {
+                            setLogPanelVisible(visible);
+                            try {
+                              localStorage.setItem(
+                                LOG_PANEL_VISIBLE_KEY,
+                                visible ? 'true' : 'false',
+                              );
+                            } catch (e) {
+                              console.debug('[App] persist logPanelVisible', e);
+                            }
+                          }}
+                          nodes={nodesForUi}
+                          messageCount={device.messages.length}
+                          channels={device.channels}
+                          myNodeNum={device.state.myNodeNum}
+                          onLocationFilterChange={handleLocationFilterChange}
+                          ourPosition={device.ourPosition}
+                          onRefreshGps={device.refreshOurPosition}
+                          gpsLoading={device.gpsLoading}
+                          onGpsIntervalChange={device.updateGpsInterval}
+                          onNodesPruned={device.refreshNodesFromDb}
+                          onMessagesPruned={device.refreshMessagesFromDb}
+                          onClearMeshcoreRepeaters={
+                            protocol === 'meshcore' ? meshcoreDevice.clearAllRepeaters : undefined
                           }
-                        }}
-                        nodes={nodesForUi}
-                        messageCount={device.messages.length}
-                        channels={device.channels}
-                        myNodeNum={device.state.myNodeNum}
-                        onLocationFilterChange={handleLocationFilterChange}
-                        ourPosition={device.ourPosition}
-                        onRefreshGps={device.refreshOurPosition}
-                        gpsLoading={device.gpsLoading}
-                        onGpsIntervalChange={device.updateGpsInterval}
-                        onNodesPruned={device.refreshNodesFromDb}
-                        onMessagesPruned={device.refreshMessagesFromDb}
-                        onClearMeshcoreRepeaters={
-                          protocol === 'meshcore' ? meshcoreDevice.clearAllRepeaters : undefined
-                        }
-                      />
-                    </Suspense>
+                        />
+                      </Suspense>
+                    </ErrorBoundary>
                   ) : null}
                 </div>
                 <div id="panel-8" role="tabpanel" aria-labelledby="tab-8" hidden={activeTab !== 8}>
                   {activeTab === 8 ? (
-                    <Suspense fallback={<PanelSkeleton />}>
-                      <DiagnosticsPanel
-                        nodes={nodesForUi}
-                        myNodeNum={device.selfNodeId}
-                        onTraceRoute={device.traceRoute}
-                        isConnected={isOperational}
-                        traceRouteResults={device.traceRouteResults}
-                        getFullNodeLabel={device.getFullNodeLabel}
-                        ourPosition={device.ourPosition}
-                        onNodeClick={(node) => {
-                          setSelectedNodeId(node.node_id);
-                        }}
-                        capabilities={capabilities}
-                      />
-                    </Suspense>
+                    <ErrorBoundary>
+                      <Suspense fallback={<PanelSkeleton />}>
+                        <DiagnosticsPanel
+                          nodes={nodesForUi}
+                          myNodeNum={device.selfNodeId}
+                          onTraceRoute={device.traceRoute}
+                          isConnected={isOperational}
+                          traceRouteResults={device.traceRouteResults}
+                          getFullNodeLabel={device.getFullNodeLabel}
+                          ourPosition={device.ourPosition}
+                          onNodeClick={(node) => {
+                            setSelectedNodeId(node.node_id);
+                          }}
+                          capabilities={capabilities}
+                        />
+                      </Suspense>
+                    </ErrorBoundary>
                   ) : null}
                 </div>
               </ErrorBoundary>

@@ -285,6 +285,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     });
     this.client.on('offline', () => {
       console.warn('[MeshcoreMqttAdapter] client offline');
+      if (this.status === 'connected' || this.status === 'connecting') {
+        this.setStatus('disconnected');
+      }
     });
   }
 

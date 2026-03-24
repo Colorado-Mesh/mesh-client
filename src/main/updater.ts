@@ -170,8 +170,16 @@ export function initUpdater(win: BrowserWindow): void {
   ipcMain.handle('update:open-releases', async (_event, url?: string) => {
     try {
       console.debug('[IPC] update:open-releases');
+      let parsedUrl: URL | null = null;
+      try {
+        if (typeof url === 'string') parsedUrl = new URL(url);
+      } catch {
+        // catch-no-log-ok — invalid URL falls through to RELEASES_URL
+      }
       const target =
-        typeof url === 'string' && url.startsWith('https://github.com/') ? url : RELEASES_URL;
+        parsedUrl?.hostname === 'github.com' && parsedUrl.protocol === 'https:'
+          ? url!
+          : RELEASES_URL;
       await shell.openExternal(target);
     } catch (err) {
       console.error(

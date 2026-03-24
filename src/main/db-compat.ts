@@ -166,14 +166,26 @@ export class NodeSqliteDB {
    * Get:  pragma('user_version', { simple: true }) → number | string
    */
   pragma(str: string, opts?: { simple: true }): unknown {
+    const ALLOWED_PRAGMAS = new Set([
+      'journal_mode',
+      'synchronous',
+      'busy_timeout',
+      'user_version',
+    ]);
     const eqIdx = str.indexOf('=');
     if (eqIdx !== -1) {
       const key = str.slice(0, eqIdx).trim();
       const val = str.slice(eqIdx + 1).trim();
+      if (!ALLOWED_PRAGMAS.has(key)) {
+        throw new Error(`db-compat: PRAGMA '${key}' is not on the allowed list`);
+      }
       this._run(`PRAGMA ${key} = ${val}`);
       return undefined;
     }
     const key = str.trim();
+    if (!ALLOWED_PRAGMAS.has(key)) {
+      throw new Error(`db-compat: PRAGMA '${key}' is not on the allowed list`);
+    }
     const row = new WrappedStatement(this.db.prepare(`PRAGMA ${key}`), `PRAGMA ${key}`).get() as
       | Record<string, unknown>
       | undefined;

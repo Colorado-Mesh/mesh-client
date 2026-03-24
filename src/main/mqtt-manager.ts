@@ -405,11 +405,19 @@ export class MQTTManager extends EventEmitter {
 
   private isDuplicate(packetId: number): boolean {
     const now = Date.now();
-    // Cleanup expired entries occasionally
+    // Cleanup expired entries occasionally — collect first, then delete to avoid iterator mutation
     if (this.seenPacketIds.size > 10_000) {
+      const expired: number[] = [];
       for (const [id, expiry] of this.seenPacketIds) {
-        if (expiry < now) this.seenPacketIds.delete(id);
+        if (expiry < now) expired.push(id);
       }
+      for (const id of expired) this.seenPacketIds.delete(id);
+    }
+    // Hard cap: if the map is still very large after cleanup, clear it entirely to prevent
+    // unbounded memory growth from a malicious or misbehaving broker.
+    if (this.seenPacketIds.size > 50_000) {
+      console.warn('[MQTT] seenPacketIds exceeded 50k entries after cleanup — clearing dedup map');
+      this.seenPacketIds.clear();
     }
     if (this.seenPacketIds.has(packetId)) {
       const expiry = this.seenPacketIds.get(packetId)!;

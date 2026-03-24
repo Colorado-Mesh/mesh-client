@@ -200,6 +200,10 @@ function loadDiagnosticRowsSnapshot(): { rows: DiagnosticRow[]; savedAt: number 
   );
   if (parsed?.v !== 1 || !Array.isArray(parsed.rows)) return null;
   let rows = parsed.rows.filter(isValidDiagnosticRow);
+  const droppedCount = parsed.rows.length - rows.length;
+  if (droppedCount > 0) {
+    console.warn(`[diagnosticsStore] dropped ${droppedCount} invalid diagnostic rows on load`);
+  }
   if (rows.length === 0 && parsed.rows.length > 0) return null;
   const now = Date.now();
   rows = pruneDiagnosticRowsByAge(

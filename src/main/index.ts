@@ -1033,6 +1033,7 @@ ipcMain.on('serial-port-selected', (_event, portId: unknown) => {
     console.warn('[IPC] serial-port-selected: ignoring unknown portId');
     return;
   }
+  console.debug('[IPC] serial-port-selected:', sanitizeLogMessage(id || '(cancelled)'));
   pendingSerialCallback(id);
   pendingSerialCallback = null;
   lastSerialPortIds.clear();

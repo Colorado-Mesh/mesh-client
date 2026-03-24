@@ -128,6 +128,8 @@ export function useDevice() {
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
   // Periodic NodeInfo broadcast when MQTT-only so other nodes see this client
   const mqttPresenceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Initial 10-second delay before starting presence broadcasts — tracked so it can be cancelled on unmount
+  const mqttPresenceInitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Mirror channelConfigs state into a ref so MQTT callbacks don't have stale closures
   const channelConfigsRef = useRef<typeof channelConfigs>([]);
   // Nodes heard via RF this session — prevents MQTT-only flag from being set
@@ -494,10 +496,11 @@ export function useDevice() {
               channelName: 'LongFast',
             })
             .catch((e: unknown) => {
-              console.debug('[useDevice] MQTT presence publish failed', e);
+              console.warn('[useDevice] MQTT presence publish failed', e);
             });
         };
-        setTimeout(sendPresence, 10_000);
+        if (mqttPresenceInitTimerRef.current) clearTimeout(mqttPresenceInitTimerRef.current);
+        mqttPresenceInitTimerRef.current = setTimeout(sendPresence, 10_000);
         mqttPresenceIntervalRef.current = setInterval(sendPresence, 5 * 60 * 1000);
       } else if (s !== 'connected') {
         if (mqttPresenceIntervalRef.current) {
@@ -662,6 +665,10 @@ export function useDevice() {
       unsubStatus();
       unsubNode();
       unsubMsg();
+      if (mqttPresenceInitTimerRef.current) {
+        clearTimeout(mqttPresenceInitTimerRef.current);
+        mqttPresenceInitTimerRef.current = null;
+      }
       if (mqttPresenceIntervalRef.current) {
         clearInterval(mqttPresenceIntervalRef.current);
         mqttPresenceIntervalRef.current = null;

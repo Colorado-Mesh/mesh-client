@@ -84,6 +84,10 @@ export class RollingRateCounter {
     this.timestamps.push(now);
     const cutoff = now - this.windowMs;
     this.timestamps = this.timestamps.filter((t) => t > cutoff);
+    // Hard cap: prevent unbounded growth if record() is called much faster than the window expires
+    if (this.timestamps.length > 10_000) {
+      this.timestamps = this.timestamps.slice(-10_000);
+    }
   }
 
   /** Returns packets per minute over the rolling window. */
