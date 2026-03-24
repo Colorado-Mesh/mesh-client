@@ -1,0 +1,67 @@
+#!/usr/bin/env node
+import { spawn } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '..');
+const localElectronBin = path.join(projectRoot, 'node_modules', 'electron', 'dist', 'electron');
+
+export function classifyElectronStartupError(stderrText) {
+  const lower = String(stderrText || '').toLowerCase();
+  const hasSharedLibraryFailure = lower.includes('error while loading shared libraries');
+  const hasMissingFfmpeg = lower.includes('libffmpeg.so');
+  const hasCannotOpenSharedObject = lower.includes('cannot open shared object file');
+  if (hasSharedLibraryFailure && hasMissingFfmpeg && hasCannotOpenSharedObject) {
+    return 'linux-libffmpeg-missing';
+  }
+  return null;
+}
+
+export function fedoraLibffmpegRemediation() {
+  return [
+    '[mesh-client] Detected Linux startup failure: libffmpeg.so could not be loaded.',
+    '[mesh-client] This can happen on Fedora/glibc after applying setcap directly to Electron.',
+    '[mesh-client] Remove file capability from the local Electron binary:',
+    '  sudo setcap -r ./node_modules/electron/dist/electron',
+    '[mesh-client] Then run with ambient capability instead (no file capability on electron):',
+    "  sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'",
+  ].join('\n');
+}
+
+export async function runStartElectron(argv = process.argv.slice(2)) {
+  const child = spawn(localElectronBin, ['.', ...argv], {
+    cwd: projectRoot,
+    stdio: ['inherit', 'inherit', 'pipe'],
+    env: process.env,
+  });
+
+  let stderrBuffer = '';
+  child.stderr.on('data', (chunk) => {
+    const text = chunk.toString();
+    stderrBuffer += text;
+    process.stderr.write(text);
+  });
+
+  child.on('error', (err) => {
+    process.stderr.write(`${String(err)}\n`);
+    process.exit(1);
+  });
+
+  child.on('close', (code, signal) => {
+    const classification = classifyElectronStartupError(stderrBuffer);
+    if (classification === 'linux-libffmpeg-missing') {
+      process.stderr.write(`\n${fedoraLibffmpegRemediation()}\n`);
+    }
+    if (signal) {
+      process.kill(process.pid, signal);
+      return;
+    }
+    process.exit(code ?? 1);
+  });
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  void runStartElectron();
+}

@@ -786,9 +786,31 @@ sudo setcap cap_net_raw+eip squashfs-root/mesh-client
 ./squashfs-root/AppRun
 ```
 
+#### Fedora troubleshooting: `libffmpeg.so` missing after `setcap`
+
+If `npm start` exits before opening the app with:
+
+```bash
+.../node_modules/electron/dist/electron: error while loading shared libraries: libffmpeg.so: cannot open shared object file: No such file or directory
+```
+
+this is typically caused by applying file capabilities directly to the Electron binary on some Fedora/glibc setups.
+
+1. Remove file capability from the local Electron binary:
+
+```bash
+sudo setcap -r ./node_modules/electron/dist/electron
+```
+
+2. Use ambient capability for launch instead:
+
+```bash
+sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'
+```
+
 #### Important troubleshooting note
 
-If you run `npm install` / `npm ci` again, or download a newer release binary, capabilities are reset on the new executable. Re-run the `setcap` command for that new binary.
+If you run `npm install` / `npm ci` again, or download a newer release binary, capabilities are reset on the new executable. Re-run the appropriate capability command for that new binary.
 
 ### Serial port not detected
 
