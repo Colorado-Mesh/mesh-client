@@ -63,6 +63,8 @@ export function linuxDisplayMissingRemediation() {
     '[mesh-client] If you are in SSH or headless mode, launch from a desktop session instead.',
     '[mesh-client] If already in a desktop session, verify display environment variables:',
     "  echo \"DISPLAY=$DISPLAY WAYLAND_DISPLAY=$WAYLAND_DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE\"",
+    '[mesh-client] If BLE only works via setpriv, preserve display auth when launching:',
+    "  sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc \"export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start\"",
     '[mesh-client] For Wayland sessions, forcing X11 may help:',
     "  ELECTRON_OZONE_PLATFORM_HINT=x11 npm start",
   ].join('\n');

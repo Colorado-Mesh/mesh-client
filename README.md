@@ -808,6 +808,12 @@ sudo setcap -r ./node_modules/electron/dist/electron
 sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'
 ```
 
+If your desktop session then fails with `Missing X server or $DISPLAY` (or the app only starts when preserving display auth), run:
+
+```bash
+sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc "export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start"
+```
+
 #### Important troubleshooting note
 
 If you run `npm install` / `npm ci` again, or download a newer release binary, capabilities are reset on the new executable. Re-run the appropriate capability command for that new binary.

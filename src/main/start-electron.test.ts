@@ -50,6 +50,11 @@ describe('start-electron wrapper helpers', () => {
     expect(text).toContain('Missing X server or $DISPLAY');
     expect(text).toContain('ELECTRON_OZONE_PLATFORM_HINT=x11 npm start');
     expect(text).toContain('DISPLAY=$DISPLAY WAYLAND_DISPLAY=$WAYLAND_DISPLAY');
+    expect(text).toContain('XAUTHORITY=$XAUTHORITY');
+    expect(text).toContain('sudo setpriv --reuid=$USER --regid=$(id -g)');
+    expect(text).toContain(
+      'bash -lc "export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start"',
+    );
   });
 
   it('resolves macOS electron app binary path', async () => {

@@ -23,4 +23,15 @@ describe('Linux BLE guidance contracts (regression)', () => {
     expect(README).toContain('sudo setcap -r ./node_modules/electron/dist/electron');
     expect(README).toContain('--ambient-caps +net_raw');
   });
+
+  it('documents display-preserving setpriv launch hint for desktop sessions', () => {
+    expect(README).toContain('Missing X server or $DISPLAY');
+    expect(README).toContain('XAUTHORITY=$XAUTHORITY');
+    expect(README).toContain(
+      'sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env',
+    );
+    expect(README).toContain(
+      'bash -lc "export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start"',
+    );
+  });
 });
