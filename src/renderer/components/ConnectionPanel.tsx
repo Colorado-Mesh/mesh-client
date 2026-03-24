@@ -102,10 +102,10 @@ function humanizeBleError(err: unknown): string {
   const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   const isLinux = navigator.userAgent.toLowerCase().includes('linux');
   if (msg.includes('BLE_LINUX_CAPABILITY_MISSING')) {
-    return 'Linux BLE permissions are missing. For npm start: sudo setcap cap_net_raw+eip ./node_modules/electron/dist/electron. For releases: run setcap on the extracted executable (AppImage must be extracted first), then restart the app.';
+    return "Linux BLE permissions are missing. Preferred for npm start: launch with ambient capability using sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'. If setcap was previously applied to local Electron, remove it with sudo setcap -r ./node_modules/electron/dist/electron. For releases: run setcap on the extracted executable (AppImage must be extracted first), then restart the app.";
   }
   if (isLinux && /operation not permitted|permission denied|\beperm\b/i.test(msg)) {
-    return `${msg} — Linux BLE may be missing permissions. For npm start use: sudo setcap cap_net_raw+eip ./node_modules/electron/dist/electron`;
+    return `${msg} — Linux BLE may be missing permissions. Preferred for npm start: sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'`;
   }
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
     if (isWindows) {

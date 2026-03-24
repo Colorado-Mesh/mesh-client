@@ -63,10 +63,9 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
 });
 
 /**
- * Regression guard: MeshCore NUS TX (6e400003) is notify-only — it does not support GATT reads.
- * Previously, the read pump called readAsync() on it unconditionally, producing "Protocol error
- * while reading characteristic 6e400003-b5a3-f393-e0a9-e50e24dcca9e" on every connect and write.
- * Fix: session.fromRadioNotifyOnly suppresses the read pump and post-write timer entirely.
+ * Regression guard: MeshCore NUS TX may advertise both read+notify on some stacks, but
+ * protocol reads can fail at runtime. We should prefer notify delivery when available and
+ * fall back to the read pump only if subscribe fails or notify is unavailable.
  */
 describe('NobleBleManager — notify-only fromRadio read pump suppression (regression)', () => {
   it('declares fromRadioNotifyOnly in session state and initialises it to false', () => {
@@ -87,20 +86,15 @@ describe('NobleBleManager — notify-only fromRadio read pump suppression (regre
     expect(SOURCE).toMatch(/if \(session\.fromRadioNotifyOnly\) return/);
   });
 
-  it('connect() sets fromRadioNotifyOnly only when notify is present AND read is absent', () => {
-    // fromRadioNotifyOnly must be true only for pure notify-only characteristics.
-    // Windows NUS TX reports ["read","notify"] — the read flag must gate the assignment.
-    expect(SOURCE).toMatch(
-      /session\.fromRadioNotifyOnly\s*=\s*fromRadioSupportsNotify\s*&&\s*!fromRadioCanRead/,
-    );
+  it('connect() starts fromRadioNotifyOnly as false before strategy selection', () => {
+    expect(SOURCE).toMatch(/session\.fromRadioNotifyOnly\s*=\s*false/);
   });
 
-  it('subscribes to fromRadio notify only when notify is set and read is NOT available', () => {
-    // When the characteristic also supports reads (e.g. Windows ["read","notify"]), we use
-    // the read pump instead of notify to avoid Noble WinRT notification delivery issues.
-    expect(SOURCE).toMatch(/if \(fromRadioSupportsNotify && !fromRadioCanRead\)/);
-    // The read pump log must mention canRead and hasNotify for diagnostics
-    expect(SOURCE).toContain('fromRadio supports reads');
+  it('uses notify-first strategy and logs explicit fallback-read path', () => {
+    expect(SOURCE).toMatch(/if \(fromRadioSupportsNotify\)/);
+    expect(SOURCE).toContain('fromRadio strategy=notify-first');
+    expect(SOURCE).toContain('fromRadio subscribe failed; falling back to read-pump');
+    expect(SOURCE).toContain('fromRadio strategy=fallback-read');
   });
 
   it('writeToRadio skips the post-write read-pump timer when fromRadioNotifyOnly is set', () => {
@@ -163,8 +157,9 @@ describe('NobleBleManager — Linux BLE capability diagnostics (regression)', ()
   });
 
   it('includes both source and release capability guidance in the classified error', () => {
-    expect(SOURCE).toContain('If running from source, run:');
-    expect(SOURCE).toContain('sudo setcap cap_net_raw+eip ./node_modules/electron/dist/electron');
+    expect(SOURCE).toContain('Preferred for npm start: run with ambient capability');
+    expect(SOURCE).toContain('sudo setpriv --reuid=$USER --regid=$(id -g)');
+    expect(SOURCE).toContain('sudo setcap -r ./node_modules/electron/dist/electron');
     expect(SOURCE).toContain(
       'For release builds, run setcap on the extracted executable (not the .AppImage wrapper).',
     );

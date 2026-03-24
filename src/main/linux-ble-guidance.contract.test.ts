@@ -7,6 +7,12 @@ const README = readFileSync(join(__dirname, '../../README.md'), 'utf-8');
 const NOBLE_MANAGER = readFileSync(join(__dirname, 'noble-ble-manager.ts'), 'utf-8');
 
 describe('Linux BLE guidance contracts (regression)', () => {
+  it('documents setpriv as the preferred npm start flow', () => {
+    expect(README).toContain('Scenario 1: Running from Source (`npm start`) - preferred');
+    expect(README).toContain('--ambient-caps +net_raw');
+    expect(README).toContain("bash -lc 'npm start'");
+  });
+
   it('documents release guidance for extracted binaries and AppImage limitations', () => {
     expect(README).toContain('Scenario 2: Running a Downloaded Release Binary');
     expect(README).toContain('For extracted archives (`.tar.gz`, `.zip`, or `linux-unpacked`)');
@@ -14,6 +20,9 @@ describe('Linux BLE guidance contracts (regression)', () => {
   });
 
   it('keeps runtime capability error wording aligned with release guidance', () => {
+    expect(NOBLE_MANAGER).toContain('Preferred for npm start: run with ambient capability');
+    expect(NOBLE_MANAGER).toContain('sudo setpriv --reuid=$USER --regid=$(id -g)');
+    expect(NOBLE_MANAGER).toContain('sudo setcap -r ./node_modules/electron/dist/electron');
     expect(NOBLE_MANAGER).toContain('For release builds, run setcap on the extracted executable');
     expect(NOBLE_MANAGER).toContain('not the .AppImage wrapper');
   });

@@ -126,7 +126,7 @@ describe('ConnectionPanel MQTT connect error', () => {
 });
 
 describe('ConnectionPanel BLE error humanization', () => {
-  it('shows Linux setcap guidance for classified Linux capability errors', async () => {
+  it('shows Linux setpriv-first guidance for classified Linux capability errors', async () => {
     const user = userEvent.setup();
     vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce(
       new Error(
@@ -151,7 +151,10 @@ describe('ConnectionPanel BLE error humanization', () => {
     await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
 
     expect(await screen.findByText(/Linux BLE permissions are missing/i)).toBeInTheDocument();
-    expect(screen.getByText(/setcap cap_net_raw\+eip/i)).toBeInTheDocument();
+    expect(screen.getByText(/setpriv --reuid=\$USER/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/setcap -r \.\/node_modules\/electron\/dist\/electron/i),
+    ).toBeInTheDocument();
   });
 
   it('shows Windows handshake guidance for MeshCore BLE handshake timeout/disconnect', async () => {

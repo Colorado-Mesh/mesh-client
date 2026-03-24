@@ -395,7 +395,7 @@ export class NobleBleManager extends EventEmitter {
     }
     const detail = capabilityProbe.detail ? ` (${capabilityProbe.detail})` : '';
     return new Error(
-      `${BLE_LINUX_CAPABILITY_MISSING}: Linux BLE scan permissions are missing or not applied${detail}. If running from source, run: sudo setcap cap_net_raw+eip ./node_modules/electron/dist/electron (then verify with getcap ./node_modules/electron/dist/electron). For release builds, run setcap on the extracted executable (not the .AppImage wrapper).`,
+      `${BLE_LINUX_CAPABILITY_MISSING}: Linux BLE scan permissions are missing or not applied${detail}. Preferred for npm start: run with ambient capability (sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'). If you previously used file capabilities and hit startup issues, remove them with: sudo setcap -r ./node_modules/electron/dist/electron. For release builds, run setcap on the extracted executable (not the .AppImage wrapper).`,
     );
   }
 
@@ -666,34 +666,50 @@ export class NobleBleManager extends EventEmitter {
       const fromRadioSupportsNotify =
         fromRadioProps.includes('notify') || fromRadioProps.includes('indicate');
       const fromRadioCanRead = fromRadioProps.includes('read');
-      // fromRadioNotifyOnly=true only when notify is the sole delivery path (no GATT reads).
-      // macOS/Linux NUS TX = ["notify"] → notify-only, read pump skipped.
-      // Windows NUS TX = ["read","notify"] → use read pump; Noble WinRT notification delivery
-      // is unreliable on some devices, and skipping the notify subscription also prevents
-      // duplicate packet delivery when both paths would otherwise fire for the same write.
-      session.fromRadioNotifyOnly = fromRadioSupportsNotify && !fromRadioCanRead;
+      // Notify-first strategy:
+      // - Prefer notifications whenever the characteristic advertises notify/indicate.
+      // - Fall back to read-pump only if subscribe fails or notify is unavailable.
+      // This avoids Windows/Linux stacks that advertise "read" but fail protocol reads at runtime.
+      session.fromRadioNotifyOnly = false;
       const tSubscribe = Date.now();
-      if (fromRadioSupportsNotify && !fromRadioCanRead) {
-        await withTimeout(
-          session.fromRadioChar.subscribeAsync(),
-          BLE_SUBSCRIBE_TIMEOUT_MS,
-          'BLE fromRadio subscribe',
-        );
-        session.fromRadioDataHandler = (data: Buffer, isNotification: boolean) => {
-          if (!data || data.length === 0) return;
-          console.debug(
-            `[BLE:${sessionId}] fromRadio data: ${data.length} bytes isNotification=${isNotification}`,
+      let fromRadioSubscribed = false;
+      if (fromRadioSupportsNotify) {
+        try {
+          await withTimeout(
+            session.fromRadioChar.subscribeAsync(),
+            BLE_SUBSCRIBE_TIMEOUT_MS,
+            'BLE fromRadio subscribe',
           );
-          this.emit('fromRadio', { sessionId, bytes: new Uint8Array(Buffer.from(data)) });
-        };
-        session.fromRadioChar.on('data', session.fromRadioDataHandler);
-      } else {
+          session.fromRadioDataHandler = (data: Buffer, isNotification: boolean) => {
+            if (!data || data.length === 0) return;
+            console.debug(
+              `[BLE:${sessionId}] fromRadio data: ${data.length} bytes isNotification=${isNotification}`,
+            );
+            this.emit('fromRadio', { sessionId, bytes: new Uint8Array(Buffer.from(data)) });
+          };
+          session.fromRadioChar.on('data', session.fromRadioDataHandler);
+          fromRadioSubscribed = true;
+          session.fromRadioNotifyOnly = true;
+          console.debug(
+            `[BLE:${sessionId}] fromRadio strategy=notify-first (hasNotify=${fromRadioSupportsNotify} canRead=${fromRadioCanRead})`,
+          );
+        } catch (err) {
+          console.warn(
+            `[BLE:${sessionId}] fromRadio subscribe failed; falling back to read-pump (hasNotify=${fromRadioSupportsNotify} canRead=${fromRadioCanRead}):`,
+            sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+          );
+        }
+      }
+      if (!fromRadioSubscribed) {
+        if (!fromRadioCanRead) {
+          throw new Error('fromRadio characteristic supports neither notify nor read');
+        }
         console.debug(
-          `[BLE:${sessionId}] fromRadio using read-pump path (canRead=${fromRadioCanRead} hasNotify=${fromRadioSupportsNotify})`,
+          `[BLE:${sessionId}] fromRadio strategy=fallback-read (hasNotify=${fromRadioSupportsNotify} canRead=${fromRadioCanRead})`,
         );
       }
       console.debug(
-        `[BLE:${sessionId}] subscriptions ready in ${Date.now() - tSubscribe}ms — fromNum=${Boolean(session.fromNumChar)} fromRadioNotify=${fromRadioSupportsNotify && !fromRadioCanRead} fromRadioReadPump=${fromRadioCanRead} mtu=${peripheral.mtu ?? 'null'}`,
+        `[BLE:${sessionId}] subscriptions ready in ${Date.now() - tSubscribe}ms — fromNum=${Boolean(session.fromNumChar)} fromRadioNotify=${fromRadioSubscribed} fromRadioReadPump=${!fromRadioSubscribed && fromRadioCanRead} mtu=${peripheral.mtu ?? 'null'}`,
       );
 
       session.connectedPeripheral = peripheral;

@@ -722,11 +722,11 @@ You're missing build tools for the native modules (e.g. `@serialport/bindings-cp
 
 ### Linux Bluetooth (BLE) Permissions
 
-On Linux, applications require special network capabilities to scan for and connect to Bluetooth devices. If you see a **"Linux BLE permissions are missing"** error, grant the `CAP_NET_RAW` capability to the executable.
+On Linux, applications require `CAP_NET_RAW` to scan for and connect to Bluetooth devices. For development (`npm start`), the preferred approach is to launch with an ambient capability using `setpriv` (instead of applying file capabilities directly to Electron).
 
 How you do this depends on how you are running the application:
 
-#### Scenario 1: Running from Source (`npm start`)
+#### Scenario 1: Running from Source (`npm start`) - preferred
 
 When running the app in development mode, `npm start` uses the local Electron binary in your project's `node_modules` folder.
 
@@ -736,28 +736,16 @@ When running the app in development mode, `npm start` uses the local Electron bi
 npm install
 ```
 
-2. Grant the capability to the local Electron binary:
+2. Launch with ambient capability:
 
 ```bash
-sudo setcap cap_net_raw+eip ./node_modules/electron/dist/electron
+sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'
 ```
 
-3. Verify the capability:
+If your desktop session then fails with `Missing X server or $DISPLAY`, preserve display auth:
 
 ```bash
-getcap ./node_modules/electron/dist/electron
-```
-
-Expected output:
-
-```bash
-./node_modules/electron/dist/electron = cap_net_raw+eip
-```
-
-4. Start the app:
-
-```bash
-npm start
+sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc "export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start"
 ```
 
 #### Scenario 2: Running a Downloaded Release Binary
@@ -802,7 +790,7 @@ this is typically caused by applying file capabilities directly to the Electron 
 sudo setcap -r ./node_modules/electron/dist/electron
 ```
 
-2. Use ambient capability for launch instead:
+2. Use ambient capability for launch instead (recommended for source runs):
 
 ```bash
 sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'

@@ -48,11 +48,13 @@ export function classifyElectronStartupError(stderrText) {
 export function fedoraLibffmpegRemediation() {
   return [
     '[mesh-client] Detected Linux startup failure: libffmpeg.so could not be loaded.',
-    '[mesh-client] This can happen on Fedora/glibc after applying setcap directly to Electron.',
+    '[mesh-client] Preferred Linux BLE launch for npm start uses ambient capability (setpriv), not file capabilities on Electron.',
+    '[mesh-client] This failure can happen on Fedora/glibc after applying setcap directly to Electron.',
+    '[mesh-client] Launch with ambient capability:',
+    "  sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'",
     '[mesh-client] Remove file capability from the local Electron binary:',
     '  sudo setcap -r ./node_modules/electron/dist/electron',
-    '[mesh-client] Then run with ambient capability instead (no file capability on electron):',
-    "  sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'",
+    '[mesh-client] Keep file capabilities for packaged release binaries only (setcap on extracted executable).',
   ].join('\n');
 }
 
@@ -62,11 +64,11 @@ export function linuxDisplayMissingRemediation() {
     '[mesh-client] Electron could not initialize a GUI backend (Missing X server or $DISPLAY).',
     '[mesh-client] If you are in SSH or headless mode, launch from a desktop session instead.',
     '[mesh-client] If already in a desktop session, verify display environment variables:',
-    "  echo \"DISPLAY=$DISPLAY WAYLAND_DISPLAY=$WAYLAND_DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE\"",
+    '  echo "DISPLAY=$DISPLAY WAYLAND_DISPLAY=$WAYLAND_DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE"',
     '[mesh-client] If BLE only works via setpriv, preserve display auth when launching:',
-    "  sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc \"export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start\"",
+    '  sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc "export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start"',
     '[mesh-client] For Wayland sessions, forcing X11 may help:',
-    "  ELECTRON_OZONE_PLATFORM_HINT=x11 npm start",
+    '  ELECTRON_OZONE_PLATFORM_HINT=x11 npm start',
   ].join('\n');
 }
 
