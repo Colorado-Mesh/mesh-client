@@ -130,6 +130,16 @@ function serializeErrorLike(value: unknown): string {
   }
 }
 
+/** One string for Electron's renderer console forwarder (avoids "[object Object]" in disk logs). */
+function formatStructuredLogDetail(detail: Record<string, unknown>): string {
+  try {
+    return sanitizeLogMessage(JSON.stringify(detail));
+  } catch {
+    // catch-no-log-ok stringify fallback for circular / non-serializable log payloads
+    return sanitizeLogMessage('{}');
+  }
+}
+
 /** TCP connection implemented over IPC bridge (main-process net.Socket). */
 class IpcTcpConnection {
   private host: string;
@@ -1456,11 +1466,15 @@ export function useMeshCore() {
               conn = nobleConn.connection as unknown as MeshCoreConnection;
               connected = true;
               if (attempt > 1) {
-                console.info('[useMeshCore] connect: BLE via Noble IPC recovered on retry', {
-                  attempt,
-                  maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
-                  elapsedMs: Date.now() - attemptStartedAt,
-                });
+                console.info(
+                  `[useMeshCore] connect: BLE via Noble IPC recovered on retry ${formatStructuredLogDetail(
+                    {
+                      attempt,
+                      maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                      elapsedMs: Date.now() - attemptStartedAt,
+                    },
+                  )}`,
+                );
               }
               break;
             } catch (bleErr) {
@@ -1469,28 +1483,31 @@ export function useMeshCore() {
               const stage = classifyMeshcoreBleTimeoutStage(rawBleMessage);
               const isTimeout = stage !== 'unknown';
               const isRetryable = isMeshcoreRetryableBleErrorMessage(rawBleMessage);
-              console.warn('[useMeshCore] connect: BLE Noble IPC attempt failed', {
-                attempt,
-                maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
-                isTimeout,
-                isRetryable,
-                stage,
-                elapsedMs: Date.now() - attemptStartedAt,
-                message: rawBleMessage,
-              });
+              console.warn(
+                `[useMeshCore] connect: BLE Noble IPC attempt failed ${formatStructuredLogDetail({
+                  attempt,
+                  maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                  isTimeout,
+                  isRetryable,
+                  stage,
+                  elapsedMs: Date.now() - attemptStartedAt,
+                  message: rawBleMessage,
+                })}`,
+              );
               ipcNobleRef.current?.cleanup();
               ipcNobleRef.current = null;
               if (!isRetryable || attempt >= NOBLE_IPC_CONNECT_MAX_ATTEMPTS) {
                 throw bleErr;
               }
               console.debug(
-                '[useMeshCore] connect: retrying BLE Noble IPC after retryable failure',
-                {
-                  nextAttempt: attempt + 1,
-                  maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
-                  isTimeout,
-                  stage,
-                },
+                `[useMeshCore] connect: retrying BLE Noble IPC after retryable failure ${formatStructuredLogDetail(
+                  {
+                    nextAttempt: attempt + 1,
+                    maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                    isTimeout,
+                    stage,
+                  },
+                )}`,
               );
               // Brief pause before retry: gives BlueZ/WinRT time to release adapter state
               // after a failed or timed-out connect attempt.
@@ -1576,14 +1593,19 @@ export function useMeshCore() {
         );
         if (isBleConnectTimeout) {
           console.warn(
-            '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback',
-            { stage: bleTimeoutStage },
+            `[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback ${formatStructuredLogDetail(
+              { stage: bleTimeoutStage },
+            )}`,
           );
         }
         const errForLog = serializeErrorLike(err) || '(no error object)';
-        console.error('[useMeshCore] connect error', normalizedErr.message, errForLog, {
-          bleTimeoutStage: isBleConnectTimeout ? bleTimeoutStage : null,
-        });
+        console.error(
+          `[useMeshCore] connect error ${formatStructuredLogDetail({
+            userMessage: normalizedErr.message,
+            raw: errForLog,
+            bleTimeoutStage: isBleConnectTimeout ? bleTimeoutStage : null,
+          })}`,
+        );
         setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
         ipcTcpRef.current?.cleanup();
         ipcTcpRef.current = null;

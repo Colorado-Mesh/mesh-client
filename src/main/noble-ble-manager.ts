@@ -42,6 +42,19 @@ function normalizeUuid(uuid: string): string {
   return uuid.toLowerCase().replace(/-/g, '');
 }
 
+function formatBleDisconnectReason(reason: unknown): string {
+  if (reason instanceof Error) return reason.message;
+  if (reason == null) return 'none';
+  if (typeof reason === 'string') return reason;
+  if (typeof reason === 'number' || typeof reason === 'boolean') return String(reason);
+  try {
+    return JSON.stringify(reason);
+  } catch {
+    // catch-no-log-ok JSON.stringify failure for exotic disconnect reason values
+    return '(unserializable)';
+  }
+}
+
 export interface NobleBleDevice {
   deviceId: string;
   deviceName: string;
@@ -70,6 +83,10 @@ interface NobleBleSession {
    * MeshCore NUS TX (6e400003) is notify-only; Meshtastic fromRadio supports reads.
    */
   fromRadioNotifyOnly: boolean;
+  /** Count of fromRadio payloads forwarded to the renderer (notify + read pump). */
+  fromRadioDeliveryCount: number;
+  /** Total bytes in those payloads (for disconnect diagnostics). */
+  fromRadioDeliveryBytes: number;
 }
 
 export class NobleBleManager extends EventEmitter {
@@ -152,6 +169,8 @@ export class NobleBleManager extends EventEmitter {
       closing: false,
       postWriteReadPumpTimer: null,
       fromRadioNotifyOnly: false,
+      fromRadioDeliveryCount: 0,
+      fromRadioDeliveryBytes: 0,
     };
   }
 
@@ -178,6 +197,15 @@ export class NobleBleManager extends EventEmitter {
     session.readPumpActive = false;
     session.readPumpRequested = false;
     session.fromRadioNotifyOnly = false;
+    session.fromRadioDeliveryCount = 0;
+    session.fromRadioDeliveryBytes = 0;
+  }
+
+  private emitFromRadio(sessionId: NobleSessionId, bytes: Uint8Array): void {
+    const session = this.getSession(sessionId);
+    session.fromRadioDeliveryCount += 1;
+    session.fromRadioDeliveryBytes += bytes.length;
+    this.emit('fromRadio', { sessionId, bytes });
   }
 
   /**
@@ -248,7 +276,7 @@ export class NobleBleManager extends EventEmitter {
             break;
           }
           console.debug(`[BLE:${sessionId}] emitting fromRadio: ${data.length} bytes → renderer`);
-          this.emit('fromRadio', { sessionId, bytes: new Uint8Array(Buffer.from(data)) });
+          this.emitFromRadio(sessionId, new Uint8Array(Buffer.from(data)));
           // Small floor delay between consecutive reads to avoid flooding the CBQueue.
           await new Promise<void>((r) => setTimeout(r, 10));
         }
@@ -584,8 +612,20 @@ export class NobleBleManager extends EventEmitter {
         }
       }
 
-      const onDisconnected = (reason?: string) => {
-        console.debug(`[BLE:${sessionId}] peripheral disconnected — reason=${reason ?? 'none'}`);
+      const onDisconnected = (reason?: unknown) => {
+        const reasonStr = formatBleDisconnectReason(reason);
+        console.debug(
+          `[BLE:${sessionId}] peripheral disconnected — reason=${sanitizeLogMessage(reasonStr)}`,
+        );
+        if (sessionId === 'meshcore' && session.fromRadioDeliveryCount === 0) {
+          console.warn(
+            `[BLE:meshcore] session ended with no fromRadio data (platform=${process.platform} notify subscribed but 0 packets; check signal/link or stack). disconnectReason=${sanitizeLogMessage(reasonStr)}`,
+          );
+        } else if (sessionId === 'meshcore') {
+          console.debug(
+            `[BLE:meshcore] session fromRadio summary packets=${session.fromRadioDeliveryCount} bytes=${session.fromRadioDeliveryBytes} disconnectReason=${sanitizeLogMessage(reasonStr)}`,
+          );
+        }
         if (session.fromRadioChar && session.fromRadioDataHandler) {
           try {
             session.fromRadioChar.off('data', session.fromRadioDataHandler);
@@ -710,7 +750,7 @@ export class NobleBleManager extends EventEmitter {
             console.debug(
               `[BLE:${sessionId}] fromRadio data: ${data.length} bytes isNotification=${isNotification}`,
             );
-            this.emit('fromRadio', { sessionId, bytes: new Uint8Array(Buffer.from(data)) });
+            this.emitFromRadio(sessionId, new Uint8Array(Buffer.from(data)));
           };
           session.fromRadioChar.on('data', session.fromRadioDataHandler);
           fromRadioSubscribed = true;
