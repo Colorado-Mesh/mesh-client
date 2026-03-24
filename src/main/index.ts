@@ -48,6 +48,7 @@ import {
 } from './log-service';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { MQTTManager } from './mqtt-manager';
+import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { getCheckNow, initUpdater } from './updater';
 
@@ -76,16 +77,6 @@ const nobleBleManager = new NobleBleManager();
 const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024;
 /** Max bytes per BLE write IPC (DoS guard). */
 const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512;
-
-function isExpectedNobleDisconnectError(err: unknown): boolean {
-  if (!(err instanceof Error)) return false;
-  const message = err.message.toLowerCase();
-  return (
-    /\bdisconnected\b(?:\s*[:#-]?\s*\d+)?/.test(message) ||
-    message.includes('not connected') ||
-    message.includes('not currently connected')
-  );
-}
 
 function isAnyMqttConnected(): boolean {
   return mqttManager.getStatus() === 'connected' || meshcoreMqttAdapter.getStatus() === 'connected';
@@ -1132,34 +1123,26 @@ ipcMain.handle('noble-ble-to-radio', async (_event, sessionId: unknown, bytes: u
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-to-radio: sessionId must be meshtastic or meshcore');
   }
-  if (isQuitting) {
+  const result = await handleNobleBleToRadioWrite({
+    sessionId,
+    bytes,
+    isQuitting,
+    maxBytes: NOBLE_BLE_TO_RADIO_MAX_BYTES,
+    manager: nobleBleManager,
+  });
+  if (result === 'ignored-quitting') {
     console.debug(`[main] noble-ble-to-radio: ignoring session=${sessionId} (app is quitting)`);
     return;
   }
-  if (!nobleBleManager.isConnected(sessionId)) {
+  if (result === 'ignored-disconnected') {
     console.debug(`[main] noble-ble-to-radio: session=${sessionId} not connected, ignoring`);
     return;
   }
-  const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes as Uint8Array);
-  if (buf.length > NOBLE_BLE_TO_RADIO_MAX_BYTES) {
-    return Promise.reject(
-      new Error(
-        `noble-ble-to-radio: payload exceeds ${NOBLE_BLE_TO_RADIO_MAX_BYTES} bytes (${buf.length})`,
-      ),
+  if (result === 'ignored-expected-disconnect') {
+    console.debug(
+      '[main] noble-ble-to-radio: disconnected during write, ignoring session=',
+      sanitizeLogMessage(String(sessionId)),
     );
-  }
-  try {
-    await nobleBleManager.writeToRadio(sessionId, buf);
-  } catch (err) {
-    if (isExpectedNobleDisconnectError(err)) {
-      console.debug(
-        '[main] noble-ble-to-radio: disconnected during write, ignoring session=',
-        sanitizeLogMessage(String(sessionId)),
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      return;
-    }
-    throw err;
   }
 });
 

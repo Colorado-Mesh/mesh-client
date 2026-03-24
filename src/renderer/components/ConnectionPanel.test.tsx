@@ -153,4 +153,95 @@ describe('ConnectionPanel BLE error humanization', () => {
     expect(await screen.findByText(/Linux BLE permissions are missing/i)).toBeInTheDocument();
     expect(screen.getByText(/setcap cap_net_raw\+eip/i)).toBeInTheDocument();
   });
+
+  it('shows Windows handshake guidance for MeshCore BLE handshake timeout/disconnect', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce(
+      new Error(
+        'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
+      ),
+    );
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+        onProtocolChange={vi.fn()}
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(await screen.findByText(/On Windows, toggle Bluetooth off\/on/i)).toBeInTheDocument();
+    userAgentSpy.mockRestore();
+  });
+
+  it('renders object-shaped BLE errors as JSON instead of [object Object]', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce({
+      reason: 'adapter glitch',
+      code: 'BLE_OBJECT_ERR',
+    });
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+        onProtocolChange={vi.fn()}
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(await screen.findByText(/"reason":"adapter glitch"/)).toBeInTheDocument();
+    expect(screen.queryByText(/\[object Object\]/)).not.toBeInTheDocument();
+  });
+
+  it('shows Windows adapter guidance when BLE adapter is unavailable', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce(
+      new Error('Bluetooth adapter is not available'),
+    );
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+        onProtocolChange={vi.fn()}
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(
+      await screen.findByText(/update your Bluetooth driver in Device Manager/i),
+    ).toBeInTheDocument();
+    userAgentSpy.mockRestore();
+  });
 });

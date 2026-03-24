@@ -86,7 +86,19 @@ function humanizeHttpError(address: string, err: unknown): string {
 }
 
 function humanizeBleError(err: unknown): string {
-  const msg = err instanceof Error ? err.message : String(err);
+  const msg =
+    err instanceof Error
+      ? err.message
+      : typeof err === 'string'
+        ? err
+        : (() => {
+            try {
+              return JSON.stringify(err);
+            } catch {
+              // catch-no-log-ok stringify fallback for arbitrary renderer error shapes
+              return String(err);
+            }
+          })();
   const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   const isLinux = navigator.userAgent.toLowerCase().includes('linux');
   if (msg.includes('BLE_LINUX_CAPABILITY_MISSING')) {
@@ -106,6 +118,15 @@ function humanizeBleError(err: unknown): string {
   }
   if (msg.includes('GATT Server is disconnected')) {
     return `${msg} — GATT connection dropped. Try moving closer to the device and reconnecting.`;
+  }
+  if (/Bluetooth connected but MeshCore protocol handshake did not complete/i.test(msg)) {
+    if (isWindows) {
+      return `${msg} On Windows, toggle Bluetooth off/on, confirm no stale pairing is holding the device, then retry.`;
+    }
+    return msg;
+  }
+  if (isWindows && /disconnected|timed out/i.test(msg) && /MeshCore/i.test(msg)) {
+    return `${msg} On Windows, toggle Bluetooth off/on and update the adapter driver in Device Manager if disconnects persist.`;
   }
   return msg;
 }

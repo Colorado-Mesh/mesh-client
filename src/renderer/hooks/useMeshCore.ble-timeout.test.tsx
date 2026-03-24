@@ -78,7 +78,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
         await result.current.connect('ble', undefined, 'ble-device-2');
       }),
     ).rejects.toThrow(
-      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
+      'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
     );
 
     expect(handshakeAttempt).toBe(2);
@@ -91,7 +91,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     );
     expect(errorSpy).toHaveBeenCalledWith(
       '[useMeshCore] connect error',
-      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
+      'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
       'MeshCore BLE protocol handshake timed out after 20000ms',
       { bleTimeoutStage: 'protocol-handshake' },
     );
@@ -118,7 +118,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
         await result.current.connect('ble', undefined, 'ble-device-3');
       }),
     ).rejects.toThrow(
-      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
+      'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
     );
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
@@ -141,5 +141,79 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       }),
     );
     expect(infoSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not retry non-timeout BLE failures', async () => {
+    vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue(
+      new Error('Bluetooth adapter is not available'),
+    );
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await expect(
+      act(async () => {
+        await result.current.connect('ble', undefined, 'ble-device-4');
+      }),
+    ).rejects.toThrow('Bluetooth adapter is not available');
+
+    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect: BLE Noble IPC attempt failed',
+      expect.objectContaining({
+        attempt: 1,
+        maxAttempts: 2,
+        isTimeout: false,
+        stage: null,
+      }),
+    );
+  });
+
+  it('logs peripheral disconnect signal during handshake timeout path', async () => {
+    let onDisconnected: ((sessionId: 'meshtastic' | 'meshcore') => void) | null = null;
+    vi.mocked(window.electronAPI.onNobleBleDisconnected).mockImplementation((cb) => {
+      onDisconnected = cb;
+      return () => {};
+    });
+    vi.mocked(withTimeout).mockImplementation(
+      async (promise: Promise<unknown>, _ms: number, label: string) => {
+        if (label === 'MeshCore BLE protocol handshake') {
+          onDisconnected?.('meshcore');
+          throw new Error('MeshCore BLE protocol handshake timed out after 20000ms');
+        }
+        return promise;
+      },
+    );
+
+    const { result } = renderHook(() => useMeshCore());
+    await expect(
+      act(async () => {
+        await result.current.connect('ble', undefined, 'ble-device-5');
+      }),
+    ).rejects.toThrow(
+      'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout.',
+    );
+
+    expect(warnSpy).toHaveBeenCalledWith('[IpcNobleConnection:meshcore] peripheral disconnected');
+  });
+
+  it('stringifies object-shaped non-timeout BLE errors', async () => {
+    vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue({
+      code: 'BLE_CUSTOM',
+      detail: 'adapter glitch',
+    });
+    const { result } = renderHook(() => useMeshCore());
+
+    await expect(
+      act(async () => {
+        await result.current.connect('ble', undefined, 'ble-device-6');
+      }),
+    ).rejects.toThrow('{"code":"BLE_CUSTOM","detail":"adapter glitch"}');
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect error',
+      '{"code":"BLE_CUSTOM","detail":"adapter glitch"}',
+      '{"code":"BLE_CUSTOM","detail":"adapter glitch"}',
+      { bleTimeoutStage: null },
+    );
   });
 });

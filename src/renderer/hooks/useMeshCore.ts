@@ -95,6 +95,18 @@ function classifyMeshcoreBleTimeoutStage(message: string): MeshcoreBleTimeoutSta
   return 'unknown';
 }
 
+function serializeErrorLike(value: unknown): string {
+  if (value instanceof Error) return value.message;
+  if (typeof value === 'string') return value;
+  if (value == null) return '';
+  try {
+    return JSON.stringify(value);
+  } catch {
+    // catch-no-log-ok stringify fallback for arbitrary error payloads
+    return String(value);
+  }
+}
+
 /** TCP connection implemented over IPC bridge (main-process net.Socket). */
 class IpcTcpConnection {
   private host: string;
@@ -1391,8 +1403,7 @@ export function useMeshCore() {
               break;
             } catch (bleErr) {
               lastBleError = bleErr;
-              const rawBleMessage =
-                bleErr instanceof Error ? bleErr.message : String(bleErr ?? 'BLE connect failed');
+              const rawBleMessage = serializeErrorLike(bleErr) || 'BLE connect failed';
               const isTimeout =
                 /MeshCore BLE IPC open timed out|MeshCore BLE protocol handshake timed out/i.test(
                   rawBleMessage,
@@ -1442,12 +1453,7 @@ export function useMeshCore() {
         await initConn(conn);
         console.debug('[useMeshCore] connect: handshake complete, type=', type);
       } catch (err) {
-        const rawMessage =
-          err instanceof Error
-            ? err.message
-            : typeof err === 'string'
-              ? err
-              : String(err ?? 'Connection failed');
+        const rawMessage = serializeErrorLike(err) || 'Connection failed';
         const safeMessage = (rawMessage && String(rawMessage).trim()) || 'Connection failed';
         const isAlreadyInProgress = /already in progress|Connection already in progress/i.test(
           safeMessage,
@@ -1468,6 +1474,10 @@ export function useMeshCore() {
             ? 'BLE connection failed (no error details from device). Try again or use Serial/USB.'
             : 'Connection failed';
         const displayMessage = safeMessage !== 'Connection failed' ? safeMessage : fallbackMessage;
+        const timeoutMessage =
+          bleTimeoutStage === 'protocol-handshake'
+            ? 'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.'
+            : 'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.';
         const normalizedErr = new Error(
           isAlreadyInProgress
             ? 'Bluetooth connection already in progress. Wait for it to finish or try Serial/USB instead.'
@@ -1476,7 +1486,7 @@ export function useMeshCore() {
               : isPeripheralInUse
                 ? 'This device is already connected via Meshtastic BLE. Disconnect it first before connecting as MeshCore.'
                 : isBleConnectTimeout
-                  ? 'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.'
+                  ? timeoutMessage
                   : displayMessage,
         );
         if (isBleConnectTimeout) {
@@ -1485,8 +1495,7 @@ export function useMeshCore() {
             { stage: bleTimeoutStage },
           );
         }
-        const errForLog =
-          err != null ? (err instanceof Error ? err.message : String(err)) : '(no error object)';
+        const errForLog = serializeErrorLike(err) || '(no error object)';
         console.error('[useMeshCore] connect error', normalizedErr.message, errForLog, {
           bleTimeoutStage,
         });

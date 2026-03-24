@@ -9,17 +9,16 @@ describe('IPC payload size limits (source contract)', () => {
   it('defines meshcore tcp-write and noble-ble limits and uses them in handlers', () => {
     expect(INDEX_SOURCE).toContain('const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024');
     expect(INDEX_SOURCE).toContain('const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512');
-    expect(INDEX_SOURCE).toMatch(/buf\.length > NOBLE_BLE_TO_RADIO_MAX_BYTES/);
+    expect(INDEX_SOURCE).toMatch(/maxBytes: NOBLE_BLE_TO_RADIO_MAX_BYTES/);
     expect(INDEX_SOURCE).toMatch(/bytes\.length > MESHCORE_TCP_WRITE_MAX_BYTES/);
   });
 });
 
 describe('Noble BLE disconnect handling (source contract)', () => {
   it('classifies expected disconnect write races and ignores them in noble-ble-to-radio', () => {
-    expect(INDEX_SOURCE).toContain('function isExpectedNobleDisconnectError(err: unknown)');
-    expect(INDEX_SOURCE).toMatch(/message\.includes\('not connected'\)/);
-    expect(INDEX_SOURCE).toMatch(/await nobleBleManager\.writeToRadio\(sessionId, buf\)/);
-    expect(INDEX_SOURCE).toMatch(/if \(isExpectedNobleDisconnectError\(err\)\)/);
+    expect(INDEX_SOURCE).toContain("import { handleNobleBleToRadioWrite } from './noble-ble-ipc'");
+    expect(INDEX_SOURCE).toMatch(/const result = await handleNobleBleToRadioWrite\(/);
+    expect(INDEX_SOURCE).toMatch(/result === 'ignored-expected-disconnect'/);
     expect(INDEX_SOURCE).toMatch(
       /noble-ble-to-radio: disconnected during write, ignoring session=/,
     );
