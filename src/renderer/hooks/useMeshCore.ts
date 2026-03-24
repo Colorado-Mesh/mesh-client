@@ -83,8 +83,9 @@ function messageToDbRow(
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface SerialConnectionInstance extends InstanceType<typeof SerialConnection> {}
 
-const NOBLE_IPC_CONNECT_TIMEOUT_MS = 20_000;
-const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = 15_000;
+const NOBLE_IPC_CONNECT_TIMEOUT_MS = 25_000;
+const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = 20_000;
+const NOBLE_IPC_CONNECT_MAX_ATTEMPTS = 2;
 
 type MeshcoreBleTimeoutStage = 'ipc-open' | 'protocol-handshake' | 'unknown';
 
@@ -1361,17 +1362,63 @@ export function useMeshCore() {
       if (type === 'ble') bleConnectInProgressRef.current = true;
 
       try {
-        let conn: MeshCoreConnection;
+        let conn: MeshCoreConnection | null = null;
 
         if (type === 'ble') {
           if (!blePeripheralId) {
             throw new Error('BLE peripheral ID required');
           }
-          console.debug('[useMeshCore] connect: BLE via Noble IPC opening...');
-          const nobleConn = new IpcNobleConnection(blePeripheralId, 'meshcore');
-          ipcNobleRef.current = nobleConn;
-          await nobleConn.connect();
-          conn = nobleConn.connection as unknown as MeshCoreConnection;
+          let connected = false;
+          let lastBleError: unknown = null;
+          for (let attempt = 1; attempt <= NOBLE_IPC_CONNECT_MAX_ATTEMPTS; attempt++) {
+            const attemptStartedAt = Date.now();
+            console.debug(
+              `[useMeshCore] connect: BLE via Noble IPC opening... (attempt ${attempt}/${NOBLE_IPC_CONNECT_MAX_ATTEMPTS})`,
+            );
+            const nobleConn = new IpcNobleConnection(blePeripheralId, 'meshcore');
+            ipcNobleRef.current = nobleConn;
+            try {
+              await nobleConn.connect();
+              conn = nobleConn.connection as unknown as MeshCoreConnection;
+              connected = true;
+              if (attempt > 1) {
+                console.info('[useMeshCore] connect: BLE via Noble IPC recovered on retry', {
+                  attempt,
+                  maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                  elapsedMs: Date.now() - attemptStartedAt,
+                });
+              }
+              break;
+            } catch (bleErr) {
+              lastBleError = bleErr;
+              const rawBleMessage =
+                bleErr instanceof Error ? bleErr.message : String(bleErr ?? 'BLE connect failed');
+              const isTimeout =
+                /MeshCore BLE IPC open timed out|MeshCore BLE protocol handshake timed out/i.test(
+                  rawBleMessage,
+                );
+              const stage = isTimeout ? classifyMeshcoreBleTimeoutStage(rawBleMessage) : null;
+              console.warn('[useMeshCore] connect: BLE Noble IPC attempt failed', {
+                attempt,
+                maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                isTimeout,
+                stage,
+                elapsedMs: Date.now() - attemptStartedAt,
+                message: rawBleMessage,
+              });
+              ipcNobleRef.current?.cleanup();
+              ipcNobleRef.current = null;
+              if (!isTimeout || attempt >= NOBLE_IPC_CONNECT_MAX_ATTEMPTS) {
+                throw bleErr;
+              }
+              console.debug('[useMeshCore] connect: retrying BLE Noble IPC after timeout', {
+                nextAttempt: attempt + 1,
+                maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                stage,
+              });
+            }
+          }
+          if (!connected) throw lastBleError ?? new Error('BLE connect failed');
         } else if (type === 'serial') {
           console.debug('[useMeshCore] connect: serial requesting port...');
           if (!navigator.serial?.requestPort) throw new Error('Web Serial API not available');
@@ -1391,6 +1438,7 @@ export function useMeshCore() {
           conn = tcpConn.connection as unknown as MeshCoreConnection;
         }
 
+        if (!conn) throw new Error('Connection initialization failed');
         await initConn(conn);
         console.debug('[useMeshCore] connect: handshake complete, type=', type);
       } catch (err) {

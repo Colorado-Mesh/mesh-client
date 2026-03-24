@@ -51,12 +51,27 @@ export async function createBleConnection(
   peripheralId: string,
   sessionId: NobleBleSessionId = 'meshtastic',
 ): Promise<MeshDevice> {
+  const connectStartedAt = Date.now();
   console.debug('[connection] createBleConnection start', peripheralId);
   // Subscribe to IPC events before telling main to connect, so no fromRadio
   // packets emitted during the initial drain are dropped.
   const transport = new TransportNobleIpc(sessionId);
-  await window.electronAPI.connectNobleBle(sessionId, peripheralId);
+  try {
+    await window.electronAPI.connectNobleBle(sessionId, peripheralId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const isTimeout = /timed out/i.test(message);
+    console.warn('[connection] createBleConnection failed', {
+      sessionId,
+      peripheralId,
+      isTimeout,
+      elapsedMs: Date.now() - connectStartedAt,
+      message,
+    });
+    throw err;
+  }
   console.debug('[connection] createBleConnection connected', peripheralId);
+  console.debug('[connection] createBleConnection elapsedMs', Date.now() - connectStartedAt);
   return new MeshDevice(transport as any);
 }
 
