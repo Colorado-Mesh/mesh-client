@@ -9,6 +9,9 @@ import { withTimeout } from '../../shared/withTimeout';
 import { useMeshCore } from './useMeshCore';
 
 describe('useMeshCore BLE Noble IPC timeout handling', () => {
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
@@ -34,6 +37,16 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     );
 
     expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback',
+      { stage: 'ipc-open' },
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect error',
+      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
+      'MeshCore BLE IPC open timed out after 20000ms',
+      { bleTimeoutStage: 'ipc-open' },
+    );
   });
 
   it('disconnects and surfaces timeout guidance when protocol handshake stalls', async () => {
@@ -58,5 +71,15 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledWith('meshcore', 'ble-device-2');
     expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback',
+      { stage: 'protocol-handshake' },
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect error',
+      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
+      'MeshCore BLE protocol handshake timed out after 15000ms',
+      { bleTimeoutStage: 'protocol-handshake' },
+    );
   });
 });

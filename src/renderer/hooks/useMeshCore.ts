@@ -86,6 +86,14 @@ interface SerialConnectionInstance extends InstanceType<typeof SerialConnection>
 const NOBLE_IPC_CONNECT_TIMEOUT_MS = 20_000;
 const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = 15_000;
 
+type MeshcoreBleTimeoutStage = 'ipc-open' | 'protocol-handshake' | 'unknown';
+
+function classifyMeshcoreBleTimeoutStage(message: string): MeshcoreBleTimeoutStage {
+  if (/MeshCore BLE IPC open timed out/i.test(message)) return 'ipc-open';
+  if (/MeshCore BLE protocol handshake timed out/i.test(message)) return 'protocol-handshake';
+  return 'unknown';
+}
+
 /** TCP connection implemented over IPC bridge (main-process net.Socket). */
 class IpcTcpConnection {
   private host: string;
@@ -1403,6 +1411,9 @@ export function useMeshCore() {
           /MeshCore BLE IPC open timed out|MeshCore BLE protocol handshake timed out/i.test(
             safeMessage,
           );
+        const bleTimeoutStage = isBleConnectTimeout
+          ? classifyMeshcoreBleTimeoutStage(safeMessage)
+          : null;
         // When err is missing (e.g. library rejected with no reason), use a BLE-specific hint if we were connecting via BLE
         const fallbackMessage =
           type === 'ble' && err == null
@@ -1423,11 +1434,14 @@ export function useMeshCore() {
         if (isBleConnectTimeout) {
           console.warn(
             '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback',
+            { stage: bleTimeoutStage },
           );
         }
         const errForLog =
           err != null ? (err instanceof Error ? err.message : String(err)) : '(no error object)';
-        console.error('[useMeshCore] connect error', normalizedErr.message, errForLog);
+        console.error('[useMeshCore] connect error', normalizedErr.message, errForLog, {
+          bleTimeoutStage,
+        });
         setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
         ipcTcpRef.current?.cleanup();
         ipcTcpRef.current = null;

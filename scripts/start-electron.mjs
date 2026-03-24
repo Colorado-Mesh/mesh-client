@@ -36,6 +36,12 @@ export function classifyElectronStartupError(stderrText) {
   if (hasSharedLibraryFailure && hasMissingFfmpeg && hasCannotOpenSharedObject) {
     return 'linux-libffmpeg-missing';
   }
+  const hasXServerMissing = lower.includes('missing x server or $display');
+  const hasOzoneX11Failure = lower.includes('ozone_platform_x11.cc');
+  const hasAuraPlatformInitFailure = lower.includes('platform failed to initialize');
+  if ((hasXServerMissing || hasOzoneX11Failure) && hasAuraPlatformInitFailure) {
+    return 'linux-display-missing';
+  }
   return null;
 }
 
@@ -47,6 +53,18 @@ export function fedoraLibffmpegRemediation() {
     '  sudo setcap -r ./node_modules/electron/dist/electron',
     '[mesh-client] Then run with ambient capability instead (no file capability on electron):',
     "  sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'",
+  ].join('\n');
+}
+
+export function linuxDisplayMissingRemediation() {
+  return [
+    '[mesh-client] Detected Linux startup failure: no active desktop display (X11/Wayland).',
+    '[mesh-client] Electron could not initialize a GUI backend (Missing X server or $DISPLAY).',
+    '[mesh-client] If you are in SSH or headless mode, launch from a desktop session instead.',
+    '[mesh-client] If already in a desktop session, verify display environment variables:',
+    "  echo \"DISPLAY=$DISPLAY WAYLAND_DISPLAY=$WAYLAND_DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE\"",
+    '[mesh-client] For Wayland sessions, forcing X11 may help:',
+    "  ELECTRON_OZONE_PLATFORM_HINT=x11 npm start",
   ].join('\n');
 }
 
@@ -73,6 +91,8 @@ export async function runStartElectron(argv = process.argv.slice(2)) {
     const classification = classifyElectronStartupError(stderrBuffer);
     if (classification === 'linux-libffmpeg-missing') {
       process.stderr.write(`\n${fedoraLibffmpegRemediation()}\n`);
+    } else if (classification === 'linux-display-missing') {
+      process.stderr.write(`\n${linuxDisplayMissingRemediation()}\n`);
     }
     if (signal) {
       process.kill(process.pid, signal);
