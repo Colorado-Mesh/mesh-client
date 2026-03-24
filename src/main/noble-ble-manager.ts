@@ -26,6 +26,16 @@ const BLE_READ_PUMP_MAX_ITERATIONS = 512;
 const BLE_FROM_RADIO_READ_TIMEOUT_MS = 2000;
 /** Delay before kicking read pump after a write (device prep time). */
 const POST_WRITE_READ_PUMP_DELAY_MS = 100;
+
+// BlueZ (Linux) and WinRT (Windows) BLE stacks are significantly slower than macOS
+// CBCentralManager. Use generous timeouts on those platforms.
+const IS_DARWIN = process.platform === 'darwin';
+/** Timeout for peripheral.connectAsync(). */
+const BLE_CONNECT_TIMEOUT_MS = IS_DARWIN ? 15_000 : 30_000;
+/** Timeout for GATT service/characteristic discovery. */
+const BLE_DISCOVERY_TIMEOUT_MS = IS_DARWIN ? 15_000 : 30_000;
+/** Timeout for characteristic subscribeAsync(). */
+const BLE_SUBSCRIBE_TIMEOUT_MS = IS_DARWIN ? 10_000 : 20_000;
 const BLE_LINUX_CAPABILITY_MISSING = 'BLE_LINUX_CAPABILITY_MISSING';
 
 function normalizeUuid(uuid: string): string {
@@ -503,7 +513,8 @@ export class NobleBleManager extends EventEmitter {
       }
       // CBCentralManager on macOS cannot scan and connect simultaneously.
       // Stop scanning without clearing scanRequesters — it will resume in the finally block.
-      if (this.scanningActive) {
+      // On Linux (BlueZ) and Windows (WinRT) this restriction does not apply.
+      if (process.platform === 'darwin' && this.scanningActive) {
         await this.doStopScanning();
       }
       await this.disconnect(sessionId);
@@ -567,7 +578,20 @@ export class NobleBleManager extends EventEmitter {
       };
       peripheral.once('disconnect', onDisconnected);
       session.connectedPeripheralDisconnectHandler = onDisconnected;
-      await withTimeout(peripheral.connectAsync(), 15000, 'BLE connectAsync');
+      try {
+        await withTimeout(peripheral.connectAsync(), BLE_CONNECT_TIMEOUT_MS, 'BLE connectAsync');
+      } catch (err) {
+        if (err instanceof Error && /BLE connectAsync timed out/i.test(err.message)) {
+          const hint =
+            process.platform === 'linux'
+              ? ' On Linux/BlueZ: reset the adapter (bluetoothctl power off; power on) and ensure the device is not connected to another host.'
+              : process.platform === 'win32'
+                ? ' On Windows: try pairing the device in Windows Bluetooth settings first, then retry.'
+                : '';
+          throw new Error(err.message + hint);
+        }
+        throw err;
+      }
       connected = true;
 
       const isMeshcore = sessionId === 'meshcore';
@@ -583,7 +607,7 @@ export class NobleBleManager extends EventEmitter {
           discoverServiceUuids,
           discoverCharUuids,
         ),
-        15000,
+        BLE_DISCOVERY_TIMEOUT_MS,
         'BLE characteristic discovery',
       );
       for (const char of characteristics) {
@@ -607,7 +631,11 @@ export class NobleBleManager extends EventEmitter {
       }
 
       if (session.fromNumChar) {
-        await withTimeout(session.fromNumChar.subscribeAsync(), 10000, 'BLE fromNum subscribe');
+        await withTimeout(
+          session.fromNumChar.subscribeAsync(),
+          BLE_SUBSCRIBE_TIMEOUT_MS,
+          'BLE fromNum subscribe',
+        );
         session.fromNumDataHandler = () => {
           console.debug(
             `[BLE:${sessionId}] fromNum notify — pump active=${session.readPumpActive}`,
@@ -625,7 +653,11 @@ export class NobleBleManager extends EventEmitter {
       // notify-only — attempting readAsync() on it yields a BLE protocol error.
       session.fromRadioNotifyOnly = fromRadioSupportsNotify;
       if (fromRadioSupportsNotify) {
-        await withTimeout(session.fromRadioChar.subscribeAsync(), 10000, 'BLE fromRadio subscribe');
+        await withTimeout(
+          session.fromRadioChar.subscribeAsync(),
+          BLE_SUBSCRIBE_TIMEOUT_MS,
+          'BLE fromRadio subscribe',
+        );
         session.fromRadioDataHandler = (data: Buffer) => {
           if (!data || data.length === 0) return;
           console.debug(`[BLE:${sessionId}] fromRadio notify: ${data.length} bytes`);

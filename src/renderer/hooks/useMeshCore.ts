@@ -83,7 +83,10 @@ function messageToDbRow(
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface SerialConnectionInstance extends InstanceType<typeof SerialConnection> {}
 
-const NOBLE_IPC_CONNECT_TIMEOUT_MS = 25_000;
+// Umbrella timeout for the IPC call to main process to connect BLE.
+// Must exceed the sum of all per-operation GATT timeouts on the slowest platform:
+// non-macOS: connectAsync(30s) + discovery(30s) + subscribe×2(20s each) = 100s.
+const NOBLE_IPC_CONNECT_TIMEOUT_MS = 120_000;
 const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = 20_000;
 const NOBLE_IPC_CONNECT_MAX_ATTEMPTS = 2;
 
@@ -92,6 +95,13 @@ type MeshcoreBleTimeoutStage = 'ipc-open' | 'protocol-handshake' | 'unknown';
 function classifyMeshcoreBleTimeoutStage(message: string): MeshcoreBleTimeoutStage {
   if (/MeshCore BLE IPC open timed out/i.test(message)) return 'ipc-open';
   if (/MeshCore BLE protocol handshake timed out/i.test(message)) return 'protocol-handshake';
+  // Main-process GATT-level timeouts propagated through IPC
+  if (
+    /BLE connectAsync timed out|BLE characteristic discovery timed out|BLE fromNum subscribe timed out|BLE fromRadio subscribe timed out/i.test(
+      message,
+    )
+  )
+    return 'ipc-open';
   return 'unknown';
 }
 
@@ -1405,7 +1415,7 @@ export function useMeshCore() {
               lastBleError = bleErr;
               const rawBleMessage = serializeErrorLike(bleErr) || 'BLE connect failed';
               const isTimeout =
-                /MeshCore BLE IPC open timed out|MeshCore BLE protocol handshake timed out/i.test(
+                /MeshCore BLE IPC open timed out|MeshCore BLE protocol handshake timed out|BLE connectAsync timed out|BLE characteristic discovery timed out|BLE fromNum subscribe timed out|BLE fromRadio subscribe timed out/i.test(
                   rawBleMessage,
                 );
               const stage = isTimeout ? classifyMeshcoreBleTimeoutStage(rawBleMessage) : null;
@@ -1462,7 +1472,7 @@ export function useMeshCore() {
         const isPeripheralInUse = /already in use by the/i.test(safeMessage);
         const isBleConnectTimeout =
           type === 'ble' &&
-          /MeshCore BLE IPC open timed out|MeshCore BLE protocol handshake timed out/i.test(
+          /MeshCore BLE IPC open timed out|MeshCore BLE protocol handshake timed out|BLE connectAsync timed out|BLE characteristic discovery timed out|BLE fromNum subscribe timed out|BLE fromRadio subscribe timed out/i.test(
             safeMessage,
           );
         const bleTimeoutStage = isBleConnectTimeout
