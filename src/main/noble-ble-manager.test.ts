@@ -61,3 +61,75 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
     expect(meshcoreBranch).not.toContain('fromNumChar');
   });
 });
+
+/**
+ * Regression guard: MeshCore NUS TX (6e400003) is notify-only — it does not support GATT reads.
+ * Previously, the read pump called readAsync() on it unconditionally, producing "Protocol error
+ * while reading characteristic 6e400003-b5a3-f393-e0a9-e50e24dcca9e" on every connect and write.
+ * Fix: session.fromRadioNotifyOnly suppresses the read pump and post-write timer entirely.
+ */
+describe('NobleBleManager — notify-only fromRadio read pump suppression (regression)', () => {
+  it('declares fromRadioNotifyOnly in session state and initialises it to false', () => {
+    expect(SOURCE).toContain('fromRadioNotifyOnly: boolean');
+    // createSessionState must initialise the flag to false
+    expect(SOURCE).toContain('fromRadioNotifyOnly: false,');
+  });
+
+  it('clearSessionState resets fromRadioNotifyOnly to false', () => {
+    // The flag must be reset on disconnect so a reconnect starts clean
+    const fnMatch = SOURCE.match(/private clearSessionState\([\s\S]+?\n {2}\}/);
+    expect(fnMatch).not.toBeNull();
+    expect(fnMatch![0]).toContain('fromRadioNotifyOnly = false');
+  });
+
+  it('requestFromRadioReadPump returns early when fromRadioNotifyOnly is set', () => {
+    // Prevents readAsync() being called on a notify-only characteristic
+    expect(SOURCE).toMatch(/if \(session\.fromRadioNotifyOnly\) return/);
+  });
+
+  it('connect() assigns fromRadioNotifyOnly from fromRadioSupportsNotify', () => {
+    // The flag must be derived from the actual characteristic properties at connect time
+    expect(SOURCE).toMatch(/session\.fromRadioNotifyOnly\s*=\s*fromRadioSupportsNotify/);
+  });
+
+  it('writeToRadio skips the post-write read-pump timer when fromRadioNotifyOnly is set', () => {
+    // MeshCore responses arrive via notify events — no polling after writes
+    expect(SOURCE).toMatch(
+      /if \(!session\.fromRadioNotifyOnly\)[\s\S]{0,300}postWriteReadPumpTimer/,
+    );
+  });
+});
+
+/**
+ * Regression guard: on Linux/BlueZ, noble.state is 'unknown' at construction (async D-Bus init).
+ * Seeding adapterReady from noble.state evaluates to false, so clicking Scan before the
+ * stateChange event fires produced a false "Bluetooth adapter is not powered on" error.
+ * Fix: startScanning waits up to 5s for the adapterState event before throwing.
+ */
+describe('NobleBleManager — Linux/BlueZ adapter init race (regression)', () => {
+  it('defines waitForAdapterReady and resolves it via the adapterState event', () => {
+    expect(SOURCE).toContain('waitForAdapterReady');
+    // Must listen to the manager's own adapterState event (emitted by stateChange handler)
+    expect(SOURCE).toMatch(/this\.once\('adapterState'/);
+  });
+
+  it('startScanning awaits waitForAdapterReady before throwing the adapter-not-ready error', () => {
+    // Extract the startScanning method body (up to the next method declaration)
+    const fnMatch = SOURCE.match(/async startScanning\b[\s\S]+?(?=\n {2}async stopScanning)/);
+    expect(fnMatch).not.toBeNull();
+    const body = fnMatch![0];
+    const waitIdx = body.indexOf('waitForAdapterReady');
+    const throwIdx = body.indexOf("throw new Error('Bluetooth adapter is not powered on')");
+    expect(waitIdx).toBeGreaterThan(-1);
+    expect(throwIdx).toBeGreaterThan(-1);
+    // The wait must precede the throw so the adapter gets a chance to initialise
+    expect(waitIdx).toBeLessThan(throwIdx);
+  });
+
+  it('doStartScanning is idempotent — returns early when a scan is already active', () => {
+    // Prevents double noble.startScanning() when stateChange handler and startScanning resume concurrently
+    expect(SOURCE).toMatch(
+      /doStartScanning[\s\S]{0,200}if \(this\.scanningActive\) return Promise\.resolve\(\)/,
+    );
+  });
+});
