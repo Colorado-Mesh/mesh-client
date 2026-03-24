@@ -30,7 +30,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **Known Bugs:**
 
-- **Linux BLE permissions** — BLE uses `@stoprocent/noble` (native BlueZ), which needs raw socket access. Run `sudo setcap cap_net_raw+eip $(which electron)` once after install, or launch with `sudo` during development. Packaged AppImages include the cap in the installer.
+- **Linux BLE permissions** — BLE uses `@stoprocent/noble` (native BlueZ), which needs raw socket access. If capability setup is missing, the app reports a dedicated Linux capability error (`BLE_LINUX_CAPABILITY_MISSING`) and suggests: `sudo setcap cap_net_raw+eip $(which electron)`.
 
 ---
 
@@ -723,7 +723,7 @@ You're missing build tools for the native modules (e.g. `@serialport/bindings-cp
 
 **Linux-specific:**
 
-- noble requires raw socket capability. Run once after install: `sudo setcap cap_net_raw+eip $(which electron)`. Without this, BLE scanning will silently fail.
+- noble requires raw socket capability. Run once after install: `sudo setcap cap_net_raw+eip $(which electron)`. Without this, BLE scanning may fail and the app should show Linux capability guidance with the same command.
 - If the adapter is present but scanning does not start, restart BlueZ: `sudo systemctl restart bluetooth`.
 
 ### Serial port not detected

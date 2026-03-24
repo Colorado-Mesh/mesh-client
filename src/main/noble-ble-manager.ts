@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process';
+
 import { EventEmitter } from 'events';
 
 import { withTimeout } from '../shared/withTimeout';
@@ -24,6 +26,7 @@ const BLE_READ_PUMP_MAX_ITERATIONS = 512;
 const BLE_FROM_RADIO_READ_TIMEOUT_MS = 2000;
 /** Delay before kicking read pump after a write (device prep time). */
 const POST_WRITE_READ_PUMP_DELAY_MS = 100;
+const BLE_LINUX_CAPABILITY_MISSING = 'BLE_LINUX_CAPABILITY_MISSING';
 
 function normalizeUuid(uuid: string): string {
   return uuid.toLowerCase().replace(/-/g, '');
@@ -73,6 +76,7 @@ export class NobleBleManager extends EventEmitter {
   private adapterReady = false;
   /** True only while noble.startScanning() has actually been called and confirmed active. */
   private scanningActive = false;
+  private lastAdapterState = String(noble.state ?? 'unknown');
 
   constructor() {
     super();
@@ -82,6 +86,7 @@ export class NobleBleManager extends EventEmitter {
     // this manager was constructed (avoids false "adapter not powered on" errors on startup).
     this.adapterReady = noble.state === 'poweredOn';
     noble.on('stateChange', (state: string) => {
+      this.lastAdapterState = state;
       this.adapterReady = state === 'poweredOn';
       this.emit('adapterState', state);
       if (this.adapterReady && this.scanRequesters.size > 0) {
@@ -283,7 +288,13 @@ export class NobleBleManager extends EventEmitter {
       );
       await this.waitForAdapterReady(5000);
     }
-    if (!this.adapterReady) throw new Error('Bluetooth adapter is not powered on');
+    if (!this.adapterReady) {
+      const capabilityErr = this.getLinuxCapabilityError(
+        `Adapter state remained ${this.lastAdapterState} after startup wait`,
+      );
+      if (capabilityErr) throw capabilityErr;
+      throw new Error('Bluetooth adapter is not powered on');
+    }
     await this.doStartScanning();
   }
 
@@ -312,8 +323,9 @@ export class NobleBleManager extends EventEmitter {
     return new Promise((resolve, reject) => {
       noble.startScanning(filter, false, (err: Error | null) => {
         if (err) {
-          console.error('[NobleBleManager] startScanning error:', err); // log-injection-ok noble internal error
-          reject(err);
+          const classifiedErr = this.classifyLinuxBleError(err);
+          console.error('[NobleBleManager] startScanning error:', classifiedErr); // log-injection-ok noble internal error
+          reject(classifiedErr);
           return;
         }
         this.scanningActive = true;
@@ -333,20 +345,72 @@ export class NobleBleManager extends EventEmitter {
   private waitForAdapterReady(timeoutMs: number): Promise<void> {
     if (this.adapterReady) return Promise.resolve();
     return new Promise<void>((resolve) => {
+      const deadline = Date.now() + timeoutMs;
       const cleanup = () => {
-        clearTimeout(timer);
+        clearTimeout(timeout);
         this.off('adapterState', onState);
       };
       const onState = () => {
-        cleanup();
-        resolve();
+        if (this.adapterReady || Date.now() >= deadline) {
+          cleanup();
+          resolve();
+        }
       };
-      const timer = setTimeout(() => {
+      // Keep waiting through transient non-powered states (e.g. unknown/resetting) until
+      // poweredOn arrives or timeout is reached.
+      const timeout = setTimeout(() => {
         cleanup();
         resolve();
       }, timeoutMs);
-      this.once('adapterState', onState);
+      this.on('adapterState', onState);
     });
+  }
+
+  private classifyLinuxBleError(err: unknown): Error {
+    if (!(err instanceof Error)) return new Error(String(err));
+    const capabilityErr = this.getLinuxCapabilityError(err.message);
+    return capabilityErr ?? err;
+  }
+
+  private getLinuxCapabilityError(context: string): Error | null {
+    if (process.platform !== 'linux') return null;
+    const lowerContext = context.toLowerCase();
+    const looksPermissionRelated =
+      /\beperm\b|operation not permitted|permission denied|not permitted|set scan parameters/i.test(
+        lowerContext,
+      ) || /\bhci\d+\b/.test(lowerContext);
+    const capabilityProbe = this.probeLinuxBleCapability();
+    if (!looksPermissionRelated && capabilityProbe.hasBleCapabilities) {
+      return null;
+    }
+    const detail = capabilityProbe.detail ? ` (${capabilityProbe.detail})` : '';
+    return new Error(
+      `${BLE_LINUX_CAPABILITY_MISSING}: Linux BLE scan permissions are missing or not applied${detail}. Run: sudo setcap cap_net_raw+eip "$(which electron)"`,
+    );
+  }
+
+  private probeLinuxBleCapability(): { hasBleCapabilities: boolean; detail: string } {
+    if (process.platform !== 'linux') {
+      return { hasBleCapabilities: true, detail: '' };
+    }
+    try {
+      const output = execFileSync('getcap', [process.execPath], {
+        encoding: 'utf8',
+      }).trim();
+      const normalized = output.toLowerCase();
+      const hasRaw = normalized.includes('cap_net_raw');
+      const hasAdmin = normalized.includes('cap_net_admin');
+      return {
+        hasBleCapabilities: hasRaw || hasAdmin,
+        detail: output || `no capabilities set on ${process.execPath}`,
+      };
+    } catch {
+      // catch-no-log-ok capability probe fallback: handled by returned detail message
+      return {
+        hasBleCapabilities: false,
+        detail: `unable to read capabilities for ${process.execPath}`,
+      };
+    }
   }
 
   private doStopScanning(): Promise<void> {
@@ -431,6 +495,10 @@ export class NobleBleManager extends EventEmitter {
     );
     try {
       if (!this.adapterReady) {
+        const capabilityErr = this.getLinuxCapabilityError(
+          `connect() called while adapter state is ${this.lastAdapterState}`,
+        );
+        if (capabilityErr) throw capabilityErr;
         throw new Error('Bluetooth adapter is not powered on');
       }
       // CBCentralManager on macOS cannot scan and connect simultaneously.

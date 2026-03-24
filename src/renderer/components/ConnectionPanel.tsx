@@ -88,6 +88,13 @@ function humanizeHttpError(address: string, err: unknown): string {
 function humanizeBleError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
   const isWindows = navigator.userAgent.toLowerCase().includes('windows');
+  const isLinux = navigator.userAgent.toLowerCase().includes('linux');
+  if (msg.includes('BLE_LINUX_CAPABILITY_MISSING')) {
+    return 'Linux BLE permissions are missing for Electron. Run: sudo setcap cap_net_raw+eip "$(which electron)" and restart the app.';
+  }
+  if (isLinux && /operation not permitted|permission denied|\beperm\b/i.test(msg)) {
+    return `${msg} — Linux BLE may be missing permissions. Run: sudo setcap cap_net_raw+eip "$(which electron)"`;
+  }
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
     if (isWindows) {
       return `${msg} — Check Settings > Bluetooth & devices. If Bluetooth is on but unavailable, update your Bluetooth driver in Device Manager.`;

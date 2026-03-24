@@ -107,10 +107,12 @@ describe('NobleBleManager — notify-only fromRadio read pump suppression (regre
  * Fix: startScanning waits up to 5s for the adapterState event before throwing.
  */
 describe('NobleBleManager — Linux/BlueZ adapter init race (regression)', () => {
-  it('defines waitForAdapterReady and resolves it via the adapterState event', () => {
+  it('defines waitForAdapterReady and keeps listening for adapterState events', () => {
     expect(SOURCE).toContain('waitForAdapterReady');
     // Must listen to the manager's own adapterState event (emitted by stateChange handler)
-    expect(SOURCE).toMatch(/this\.once\('adapterState'/);
+    expect(SOURCE).toMatch(/this\.on\('adapterState'/);
+    // Should ignore transient non-ready states until timeout or poweredOn
+    expect(SOURCE).toMatch(/if \(this\.adapterReady \|\| Date\.now\(\) >= deadline\)/);
   });
 
   it('startScanning awaits waitForAdapterReady before throwing the adapter-not-ready error', () => {
@@ -131,5 +133,21 @@ describe('NobleBleManager — Linux/BlueZ adapter init race (regression)', () =>
     expect(SOURCE).toMatch(
       /doStartScanning[\s\S]{0,200}if \(this\.scanningActive\) return Promise\.resolve\(\)/,
     );
+  });
+});
+
+describe('NobleBleManager — Linux BLE capability diagnostics (regression)', () => {
+  it('defines a dedicated Linux capability error code', () => {
+    expect(SOURCE).toContain('BLE_LINUX_CAPABILITY_MISSING');
+  });
+
+  it('classifies Linux scan errors through classifyLinuxBleError before rejecting', () => {
+    expect(SOURCE).toMatch(/const classifiedErr = this\.classifyLinuxBleError\(err\)/);
+    expect(SOURCE).toMatch(/reject\(classifiedErr\)/);
+  });
+
+  it('probes executable capabilities via getcap and process.execPath', () => {
+    expect(SOURCE).toMatch(/execFileSync\('getcap', \[process\.execPath\]/);
+    expect(SOURCE).toMatch(/cap_net_raw/);
   });
 });
