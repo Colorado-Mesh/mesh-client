@@ -1,5 +1,9 @@
-import * as Meshcore from '@liamcottle/meshcore.js';
-import { CayenneLpp, SerialConnection, WebSerialConnection } from '@liamcottle/meshcore.js';
+import {
+  CayenneLpp,
+  Connection,
+  SerialConnection,
+  WebSerialConnection,
+} from '@liamcottle/meshcore.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
@@ -96,10 +100,9 @@ interface NobleIpcMeshcoreConnectionInstance {
   onFrameReceived(frame: Uint8Array): void;
 }
 
-/** `Connection` is exported at runtime (see meshcore.js `src/index.js`); package typings omit it. */
-const MeshcoreConnectionBase = (
-  Meshcore as unknown as { Connection: new () => NobleIpcMeshcoreConnectionInstance }
-).Connection as unknown as new () => NobleIpcMeshcoreConnectionInstance;
+/** Runtime Connection + onFrameReceived (NUS path); meshcore.d.ts covers the shared base. */
+const MeshcoreConnectionBase =
+  Connection as unknown as new () => NobleIpcMeshcoreConnectionInstance;
 
 // Umbrella timeout for the IPC call to main process to connect BLE.
 // Must exceed the sum of all per-operation GATT timeouts on the slowest platform:

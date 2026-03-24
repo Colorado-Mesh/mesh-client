@@ -1,4 +1,26 @@
 declare module '@liamcottle/meshcore.js' {
+  /** Subset of meshcore.js constants used in tests and app code. */
+  export class Constants {
+    static SerialFrameTypes: { Incoming: number; Outgoing: number };
+    static CommandCodes: { DeviceQuery: number };
+    static SupportedCompanionProtocolVersion: number;
+  }
+
+  /** Logical companion protocol base (BLE / TCP use different byte framing on the wire). */
+  export class Connection {
+    on(event: string, cb: (...args: unknown[]) => void): void;
+    off(event: string, cb: (...args: unknown[]) => void): void;
+    once(event: string, cb: (...args: unknown[]) => void): void;
+    emit(event: string | number, ...args: unknown[]): void;
+    onConnected(): Promise<void>;
+    onDisconnected(): void;
+    close(): Promise<void>;
+    sendCommandDeviceQuery(appTargetVer: number): Promise<void>;
+    sendToRadioFrame(data: Uint8Array): Promise<void>;
+    /** BLE / raw-byte path: dispatch a full companion response frame (not USB serial framing). */
+    onFrameReceived(frame: Uint8Array): void;
+  }
+
   export class CayenneLpp {
     static LPP_DIGITAL_INPUT: number;
     static LPP_DIGITAL_OUTPUT: number;
@@ -46,12 +68,8 @@ declare module '@liamcottle/meshcore.js' {
     sendChannelTextMessage(channelIdx: number, text: string): Promise<void>;
   }
 
-  export class WebSerialConnection {
+  export class WebSerialConnection extends SerialConnection {
     static open(): Promise<WebSerialConnection>;
-    on(event: string, cb: (...args: unknown[]) => void): void;
-    off(event: string, cb: (...args: unknown[]) => void): void;
-    once(event: string, cb: (...args: unknown[]) => void): void;
-    close(): Promise<void>;
     getSelfInfo(timeout?: number): Promise<unknown>;
     getContacts(): Promise<unknown[]>;
     getChannels(): Promise<unknown[]>;
@@ -60,15 +78,8 @@ declare module '@liamcottle/meshcore.js' {
     sendChannelTextMessage(channelIdx: number, text: string): Promise<void>;
   }
 
-  export class SerialConnection {
+  export class SerialConnection extends Connection {
     write(bytes: Uint8Array): Promise<void>;
     onDataReceived(value: Uint8Array): Promise<void>;
-    onConnected(): Promise<void>;
-    onDisconnected(): void;
-    close(): Promise<void>;
-    on(event: string, cb: (...args: unknown[]) => void): void;
-    off(event: string, cb: (...args: unknown[]) => void): void;
-    once(event: string, cb: (...args: unknown[]) => void): void;
-    emit(event: string, ...args: unknown[]): void;
   }
 }
