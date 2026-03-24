@@ -90,10 +90,10 @@ function humanizeBleError(err: unknown): string {
   const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   const isLinux = navigator.userAgent.toLowerCase().includes('linux');
   if (msg.includes('BLE_LINUX_CAPABILITY_MISSING')) {
-    return 'Linux BLE permissions are missing for Electron. Run: sudo setcap cap_net_raw+eip "$(which electron)" and restart the app.';
+    return 'Linux BLE permissions are missing. For npm start: sudo setcap cap_net_raw+eip ./node_modules/electron/dist/electron. For releases: run setcap on the extracted executable (AppImage must be extracted first), then restart the app.';
   }
   if (isLinux && /operation not permitted|permission denied|\beperm\b/i.test(msg)) {
-    return `${msg} — Linux BLE may be missing permissions. Run: sudo setcap cap_net_raw+eip "$(which electron)"`;
+    return `${msg} — Linux BLE may be missing permissions. For npm start use: sudo setcap cap_net_raw+eip ./node_modules/electron/dist/electron`;
   }
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
     if (isWindows) {

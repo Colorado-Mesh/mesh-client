@@ -385,7 +385,7 @@ export class NobleBleManager extends EventEmitter {
     }
     const detail = capabilityProbe.detail ? ` (${capabilityProbe.detail})` : '';
     return new Error(
-      `${BLE_LINUX_CAPABILITY_MISSING}: Linux BLE scan permissions are missing or not applied${detail}. Run: sudo setcap cap_net_raw+eip "$(which electron)"`,
+      `${BLE_LINUX_CAPABILITY_MISSING}: Linux BLE scan permissions are missing or not applied${detail}. If running from source, run: sudo setcap cap_net_raw+eip ./node_modules/electron/dist/electron (then verify with getcap ./node_modules/electron/dist/electron). For release builds, run setcap on the extracted executable (not the .AppImage wrapper).`,
     );
   }
 

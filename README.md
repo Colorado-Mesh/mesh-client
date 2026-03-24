@@ -30,7 +30,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **Known Bugs:**
 
-- **Linux BLE permissions** — BLE uses `@stoprocent/noble` (native BlueZ), which needs raw socket access. If capability setup is missing, the app reports a dedicated Linux capability error (`BLE_LINUX_CAPABILITY_MISSING`) and suggests: `sudo setcap cap_net_raw+eip $(which electron)`.
+- **Linux BLE permissions** — BLE uses `@stoprocent/noble` (native BlueZ), which needs raw socket access (`cap_net_raw`) on the executable you launch. If capability setup is missing, the app reports `BLE_LINUX_CAPABILITY_MISSING`. See [Linux Bluetooth (BLE) Permissions](#linux-bluetooth-ble-permissions).
 
 ---
 
@@ -296,13 +296,7 @@ npm run dist:linux -- --linux rpm
 npm run dist:linux -- --linux appimage
 ```
 
-BLE uses `@stoprocent/noble` (native BlueZ) and requires raw socket capability:
-
-```bash
-sudo setcap cap_net_raw+eip $(which electron)
-```
-
-Run this once after `npm install`. You may alternatively run with `sudo` during development. BlueZ is the standard Linux Bluetooth stack and is included in most distros.
+BLE uses `@stoprocent/noble` (native BlueZ) and requires raw socket capability on the exact executable you launch. Follow [Linux Bluetooth (BLE) Permissions](#linux-bluetooth-ble-permissions).
 
 **Sandbox issues (dev mode or AppImage):**
 
@@ -664,7 +658,7 @@ The pre-commit hook runs format, lint, typecheck, **npm audit**, **actionlint** 
 
 ## Community
 
-Join the `#mesh-client-development` channel on Discord for help, feedback, and development discussion: https://discord.com/invite/McChKR5NpS
+Join the `#mesh-client` channel on Discord for help, feedback, and development discussion: https://discord.com/invite/McChKR5NpS
 
 ---
 
@@ -723,8 +717,100 @@ You're missing build tools for the native modules (e.g. `@serialport/bindings-cp
 
 **Linux-specific:**
 
-- noble requires raw socket capability. Run once after install: `sudo setcap cap_net_raw+eip $(which electron)`. Without this, BLE scanning may fail and the app should show Linux capability guidance with the same command.
+- noble requires raw socket capability on the executable you run. Follow [Linux Bluetooth (BLE) Permissions](#linux-bluetooth-ble-permissions).
 - If the adapter is present but scanning does not start, restart BlueZ: `sudo systemctl restart bluetooth`.
+
+### Linux Bluetooth (BLE) Permissions
+
+On Linux, applications require special network capabilities to scan for and connect to Bluetooth devices. If you see a **"Linux BLE permissions are missing"** error, grant the `CAP_NET_RAW` capability to the executable.
+
+How you do this depends on how you are running the application:
+
+#### Scenario 1: Running from Source (`npm start`)
+
+When running the app in development mode, `npm start` uses the local Electron binary in your project's `node_modules` folder.
+
+1. Install project dependencies:
+
+```bash
+npm install
+```
+
+2. Grant the capability to the local Electron binary:
+
+```bash
+sudo setcap cap_net_raw+eip ./node_modules/electron/dist/electron
+```
+
+3. Verify the capability:
+
+```bash
+getcap ./node_modules/electron/dist/electron
+```
+
+Expected output:
+
+```bash
+./node_modules/electron/dist/electron = cap_net_raw+eip
+```
+
+4. Start the app:
+
+```bash
+npm start
+```
+
+#### Scenario 2: Running a Downloaded Release Binary
+
+For compiled releases, the command depends on the package format:
+
+For extracted archives (`.tar.gz`, `.zip`, or `linux-unpacked`):
+
+```bash
+sudo setcap cap_net_raw+eip /path/to/extracted/mesh-client
+```
+
+For installed system packages (`.deb` or `.rpm`):
+
+```bash
+sudo setcap cap_net_raw+eip /opt/mesh-client/mesh-client
+```
+
+- **AppImage (`.AppImage`)**
+
+You cannot apply `setcap` directly to an AppImage because it mounts a read-only filesystem at runtime. Extract it first:
+
+```bash
+./mesh-client-linux.AppImage --appimage-extract
+sudo setcap cap_net_raw+eip squashfs-root/mesh-client
+./squashfs-root/AppRun
+```
+
+#### Fedora troubleshooting: `libffmpeg.so` missing after `setcap`
+
+If `npm start` exits before opening the app with:
+
+```bash
+.../node_modules/electron/dist/electron: error while loading shared libraries: libffmpeg.so: cannot open shared object file: No such file or directory
+```
+
+this is typically caused by applying file capabilities directly to the Electron binary on some Fedora/glibc setups.
+
+1. Remove file capability from the local Electron binary:
+
+```bash
+sudo setcap -r ./node_modules/electron/dist/electron
+```
+
+2. Use ambient capability for launch instead:
+
+```bash
+sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'
+```
+
+#### Important troubleshooting note
+
+If you run `npm install` / `npm ci` again, or download a newer release binary, capabilities are reset on the new executable. Re-run the appropriate capability command for that new binary.
 
 ### Serial port not detected
 

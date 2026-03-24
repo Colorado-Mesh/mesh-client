@@ -150,9 +150,7 @@ describe('ConnectionPanel BLE error humanization', () => {
     expect(radioCard).toBeTruthy();
     await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
 
-    expect(
-      await screen.findByText(/Linux BLE permissions are missing for Electron/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Linux BLE permissions are missing/i)).toBeInTheDocument();
     expect(screen.getByText(/setcap cap_net_raw\+eip/i)).toBeInTheDocument();
   });
 });

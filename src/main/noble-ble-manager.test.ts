@@ -150,4 +150,12 @@ describe('NobleBleManager — Linux BLE capability diagnostics (regression)', ()
     expect(SOURCE).toMatch(/execFileSync\('getcap', \[process\.execPath\]/);
     expect(SOURCE).toMatch(/cap_net_raw/);
   });
+
+  it('includes both source and release capability guidance in the classified error', () => {
+    expect(SOURCE).toContain('If running from source, run:');
+    expect(SOURCE).toContain('sudo setcap cap_net_raw+eip ./node_modules/electron/dist/electron');
+    expect(SOURCE).toContain(
+      'For release builds, run setcap on the extracted executable (not the .AppImage wrapper).',
+    );
+  });
 });

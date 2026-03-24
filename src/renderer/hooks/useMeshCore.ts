@@ -83,6 +83,9 @@ function messageToDbRow(
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface SerialConnectionInstance extends InstanceType<typeof SerialConnection> {}
 
+const NOBLE_IPC_CONNECT_TIMEOUT_MS = 20_000;
+const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = 15_000;
+
 /** TCP connection implemented over IPC bridge (main-process net.Socket). */
 class IpcTcpConnection {
   private host: string;
@@ -183,8 +186,30 @@ class IpcNobleConnection {
       instance.onDisconnected();
     });
     this.cleanupFns = [offData, offDisc];
-    await window.electronAPI.connectNobleBle(sessionId, this.peripheralId);
-    await instance.onConnected();
+    try {
+      await withTimeout(
+        window.electronAPI.connectNobleBle(sessionId, this.peripheralId),
+        NOBLE_IPC_CONNECT_TIMEOUT_MS,
+        'MeshCore BLE IPC open',
+      );
+      await withTimeout(
+        instance.onConnected(),
+        NOBLE_IPC_HANDSHAKE_TIMEOUT_MS,
+        'MeshCore BLE protocol handshake',
+      );
+    } catch (err) {
+      try {
+        await window.electronAPI.disconnectNobleBle(sessionId);
+      } catch (disconnectErr) {
+        console.debug(
+          '[IpcNobleConnection] best-effort disconnect after connect failure',
+          disconnectErr,
+        );
+      }
+      this.cleanup();
+      this.inner = null;
+      throw err;
+    }
   }
 
   get connection() {
@@ -1373,6 +1398,11 @@ export function useMeshCore() {
         );
         const isMissingServices = /could not find all requested services/i.test(safeMessage);
         const isPeripheralInUse = /already in use by the/i.test(safeMessage);
+        const isBleConnectTimeout =
+          type === 'ble' &&
+          /MeshCore BLE IPC open timed out|MeshCore BLE protocol handshake timed out/i.test(
+            safeMessage,
+          );
         // When err is missing (e.g. library rejected with no reason), use a BLE-specific hint if we were connecting via BLE
         const fallbackMessage =
           type === 'ble' && err == null
@@ -1386,8 +1416,15 @@ export function useMeshCore() {
               ? 'Device does not support the MeshCore BLE protocol. Make sure the device is running MeshCore firmware.'
               : isPeripheralInUse
                 ? 'This device is already connected via Meshtastic BLE. Disconnect it first before connecting as MeshCore.'
-                : displayMessage,
+                : isBleConnectTimeout
+                  ? 'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.'
+                  : displayMessage,
         );
+        if (isBleConnectTimeout) {
+          console.warn(
+            '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback',
+          );
+        }
         const errForLog =
           err != null ? (err instanceof Error ? err.message : String(err)) : '(no error object)';
         console.error('[useMeshCore] connect error', normalizedErr.message, errForLog);
