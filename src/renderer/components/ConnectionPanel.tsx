@@ -212,6 +212,15 @@ function getBleDeviceName(deviceId: string): string | null {
   return cache[deviceId] ?? null;
 }
 
+function getSerialPortNodeName(portId: string): string | null {
+  const cache =
+    parseStoredJson<Record<string, string>>(
+      localStorage.getItem('mesh-client:serialPortNodeNames'),
+      'ConnectionPanel serialPortNodeNames',
+    ) ?? {};
+  return cache[portId] ?? null;
+}
+
 /** Inline SVG icon for each connection type */
 function ConnectionIcon({ type }: { type: ConnectionType }) {
   const cls = 'w-5 h-5 shrink-0';
@@ -1061,8 +1070,9 @@ export default function ConnectionPanel({
                 </div>
               ) : (
                 serialPorts.map((port) => {
+                  const cachedNodeName = getSerialPortNodeName(port.portId);
                   const serialDetails = `${port.portName}${port.vendorId ? ` (VID: ${port.vendorId})` : ''}${port.productId ? ` PID: ${port.productId}` : ''}`;
-                  const serialAriaLabel = `${port.displayName} ${serialDetails}`;
+                  const serialAriaLabel = `${cachedNodeName ? `${cachedNodeName} ` : ''}${port.displayName} ${serialDetails}`;
                   return (
                     <button
                       key={port.portId}
@@ -1075,7 +1085,7 @@ export default function ConnectionPanel({
                     >
                       <div className="text-sm text-gray-200 flex items-center gap-2">
                         <ConnectionIcon type="serial" />
-                        {port.displayName}
+                        {cachedNodeName ?? port.displayName}
                       </div>
                       <div className="text-xs text-muted font-mono ml-7">
                         {port.portName}

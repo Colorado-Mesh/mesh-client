@@ -30,7 +30,12 @@ import {
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
-import { persistSerialPortIdentity, selectGrantedSerialPort } from '../lib/serialPortSignature';
+import { parseStoredJson } from '../lib/parseStoredJson';
+import {
+  LAST_SERIAL_PORT_KEY,
+  persistSerialPortIdentity,
+  selectGrantedSerialPort,
+} from '../lib/serialPortSignature';
 import type {
   ChatMessage,
   DeviceState,
@@ -1518,6 +1523,24 @@ export function useMeshCore() {
 
         if (!conn) throw new Error('Connection initialization failed');
         await initConn(conn);
+        if (type === 'serial') {
+          const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
+          const nodeName = selfInfoRef.current?.name?.trim() || null;
+          if (portId && nodeName) {
+            try {
+              const key = 'mesh-client:serialPortNodeNames';
+              const cache =
+                parseStoredJson<Record<string, string>>(
+                  localStorage.getItem(key),
+                  'useMeshCore serialPortNodeNames cache',
+                ) ?? {};
+              cache[portId] = nodeName;
+              localStorage.setItem(key, JSON.stringify(cache));
+            } catch {
+              // catch-no-log-ok localStorage write for serial port node name cache — non-critical
+            }
+          }
+        }
         console.debug('[useMeshCore] connect: handshake complete, type=', type);
       } catch (err) {
         const rawMessage = serializeErrorLike(err) || 'Connection failed';

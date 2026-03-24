@@ -17,6 +17,7 @@ import { resolveOurPosition } from '../lib/gpsSource';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import { normalizeReactionEmoji } from '../lib/reactions';
+import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { TransportManager } from '../lib/transport/TransportManager';
 import type { StatusUpdateEvent } from '../lib/transport/types';
 import type {
@@ -1123,6 +1124,24 @@ export function useDevice() {
               localStorage.setItem(key, JSON.stringify(cache));
             } catch {
               // catch-no-log-ok localStorage write for BLE device name cache — non-critical
+            }
+          }
+        }
+        if (type === 'serial' && nodeNum === myNodeNumRef.current) {
+          const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
+          const shortName = info.user?.shortName ?? info.user?.longName ?? null;
+          if (portId && shortName) {
+            try {
+              const key = 'mesh-client:serialPortNodeNames';
+              const cache =
+                parseStoredJson<Record<string, string>>(
+                  localStorage.getItem(key),
+                  'useDevice serialPortNodeNames cache',
+                ) ?? {};
+              cache[portId] = shortName;
+              localStorage.setItem(key, JSON.stringify(cache));
+            } catch {
+              // catch-no-log-ok localStorage write for serial port node name cache — non-critical
             }
           }
         }
