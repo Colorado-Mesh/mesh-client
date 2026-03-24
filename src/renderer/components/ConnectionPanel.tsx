@@ -123,6 +123,18 @@ function humanizeBleError(err: unknown): string {
     if (isWindows) {
       return `${msg} On Windows, toggle Bluetooth off/on, confirm no stale pairing is holding the device, then retry.`;
     }
+    if (isLinux) {
+      return `${msg} On Linux/BlueZ, run bluetoothctl power off; power on, then retry with the device awake and nearby.`;
+    }
+    return msg;
+  }
+  if (/Bluetooth connection timed out while opening MeshCore over Noble IPC/i.test(msg)) {
+    if (isWindows) {
+      return `${msg} On Windows, pair in Bluetooth settings first and clear stale pairings before retrying.`;
+    }
+    if (isLinux) {
+      return `${msg} On Linux/BlueZ, run bluetoothctl power off; power on, then retry.`;
+    }
     return msg;
   }
   if (isWindows && /disconnected|timed out/i.test(msg) && /MeshCore/i.test(msg)) {

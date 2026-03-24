@@ -43,6 +43,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       attempt: 1,
       maxAttempts: 2,
       isTimeout: true,
+      isRetryable: true,
       stage: 'ipc-open',
       elapsedMs: expect.any(Number),
       message: 'MeshCore BLE IPC open timed out after 25000ms',
@@ -128,6 +129,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
         attempt: 1,
         maxAttempts: 2,
         isTimeout: true,
+        isRetryable: true,
         stage: 'ipc-open',
       }),
     );
@@ -137,6 +139,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
         attempt: 2,
         maxAttempts: 2,
         isTimeout: true,
+        isRetryable: true,
         stage: 'protocol-handshake',
       }),
     );
@@ -163,7 +166,8 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
         attempt: 1,
         maxAttempts: 2,
         isTimeout: false,
-        stage: null,
+        isRetryable: false,
+        stage: 'unknown',
       }),
     );
   });
@@ -219,6 +223,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       attempt: 1,
       maxAttempts: 2,
       isTimeout: true,
+      isRetryable: true,
       stage: 'ipc-open',
       elapsedMs: expect.any(Number),
       message: 'BLE connectAsync timed out after 30000ms',
@@ -253,6 +258,33 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       '{"code":"BLE_CUSTOM","detail":"adapter glitch"}',
       '{"code":"BLE_CUSTOM","detail":"adapter glitch"}',
       { bleTimeoutStage: null },
+    );
+  });
+
+  it('retries once on retryable non-timeout "already in progress" errors', async () => {
+    vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue(
+      new Error('Connection already in progress'),
+    );
+    const { result } = renderHook(() => useMeshCore());
+
+    await expect(
+      act(async () => {
+        await result.current.connect('ble', undefined, 'ble-device-7');
+      }),
+    ).rejects.toThrow(
+      'Bluetooth connection already in progress. Wait for it to finish or try Serial/USB instead.',
+    );
+
+    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect: BLE Noble IPC attempt failed',
+      expect.objectContaining({
+        attempt: 1,
+        maxAttempts: 2,
+        isTimeout: false,
+        isRetryable: true,
+        stage: 'unknown',
+      }),
     );
   });
 });

@@ -2,6 +2,7 @@ import { MeshDevice } from '@meshtastic/core';
 import { TransportHTTP } from '@meshtastic/transport-http';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
+import { isMainProcessBleTimeoutMessage } from './bleConnectErrors';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from './serialPortSignature';
 import { TransportNobleIpc } from './transportNobleIpc';
 import type { ConnectionType, NobleBleSessionId } from './types';
@@ -10,6 +11,8 @@ import type { ConnectionType, NobleBleSessionId } from './types';
 const HTTP_CONNECT_TIMEOUT_MS = 15_000;
 const HTTP_PREFLIGHT_RETRIES = 3;
 const HTTP_PREFLIGHT_RETRY_DELAY_MS = 2_000;
+const BLE_CONNECT_MAX_ATTEMPTS = 2;
+const BLE_CONNECT_RETRY_DELAY_MS = 1_500;
 
 function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
   const ac = new AbortController();
@@ -56,23 +59,44 @@ export async function createBleConnection(
   // Subscribe to IPC events before telling main to connect, so no fromRadio
   // packets emitted during the initial drain are dropped.
   const transport = new TransportNobleIpc(sessionId);
-  try {
-    await window.electronAPI.connectNobleBle(sessionId, peripheralId);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const isTimeout = /timed out/i.test(message);
-    console.warn('[connection] createBleConnection failed', {
-      sessionId,
-      peripheralId,
-      isTimeout,
-      elapsedMs: Date.now() - connectStartedAt,
-      message,
-    });
-    throw err;
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
+    const attemptStartedAt = Date.now();
+    try {
+      await window.electronAPI.connectNobleBle(sessionId, peripheralId);
+      if (attempt > 1) {
+        console.info('[connection] createBleConnection recovered on retry', {
+          sessionId,
+          peripheralId,
+          attempt,
+          maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
+          totalElapsedMs: Date.now() - connectStartedAt,
+        });
+      }
+      console.debug('[connection] createBleConnection connected', peripheralId);
+      console.debug('[connection] createBleConnection elapsedMs', Date.now() - connectStartedAt);
+      return new MeshDevice(transport as any);
+    } catch (err) {
+      lastError = err;
+      const message = err instanceof Error ? err.message : String(err);
+      const isTimeout = isMainProcessBleTimeoutMessage(message) || /timed out/i.test(message);
+      console.warn('[connection] createBleConnection attempt failed', {
+        sessionId,
+        peripheralId,
+        attempt,
+        maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
+        isTimeout,
+        attemptElapsedMs: Date.now() - attemptStartedAt,
+        totalElapsedMs: Date.now() - connectStartedAt,
+        message,
+      });
+      if (!isTimeout || attempt >= BLE_CONNECT_MAX_ATTEMPTS) {
+        break;
+      }
+      await new Promise<void>((r) => setTimeout(r, BLE_CONNECT_RETRY_DELAY_MS));
+    }
   }
-  console.debug('[connection] createBleConnection connected', peripheralId);
-  console.debug('[connection] createBleConnection elapsedMs', Date.now() - connectStartedAt);
-  return new MeshDevice(transport as any);
+  throw lastError ?? new Error('BLE connection failed');
 }
 
 /**

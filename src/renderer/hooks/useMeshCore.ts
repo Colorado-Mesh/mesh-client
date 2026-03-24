@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 
 import { withTimeout } from '../../shared/withTimeout';
+import {
+  classifyMeshcoreBleTimeoutStage,
+  isMeshcoreRetryableBleErrorMessage,
+} from '../lib/bleConnectErrors';
 import { classifyPayload, extractMeshtasticSenderId } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
@@ -89,21 +93,6 @@ interface SerialConnectionInstance extends InstanceType<typeof SerialConnection>
 const NOBLE_IPC_CONNECT_TIMEOUT_MS = 120_000;
 const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = 20_000;
 const NOBLE_IPC_CONNECT_MAX_ATTEMPTS = 2;
-
-type MeshcoreBleTimeoutStage = 'ipc-open' | 'protocol-handshake' | 'unknown';
-
-function classifyMeshcoreBleTimeoutStage(message: string): MeshcoreBleTimeoutStage {
-  if (/MeshCore BLE IPC open timed out/i.test(message)) return 'ipc-open';
-  if (/MeshCore BLE protocol handshake timed out/i.test(message)) return 'protocol-handshake';
-  // Main-process GATT-level timeouts propagated through IPC
-  if (
-    /BLE connectAsync timed out|BLE characteristic discovery timed out|BLE fromNum subscribe timed out|BLE fromRadio subscribe timed out/i.test(
-      message,
-    )
-  )
-    return 'ipc-open';
-  return 'unknown';
-}
 
 function serializeErrorLike(value: unknown): string {
   if (value instanceof Error) return value.message;
@@ -1416,29 +1405,32 @@ export function useMeshCore() {
             } catch (bleErr) {
               lastBleError = bleErr;
               const rawBleMessage = serializeErrorLike(bleErr) || 'BLE connect failed';
-              const isTimeout =
-                /MeshCore BLE IPC open timed out|MeshCore BLE protocol handshake timed out|BLE connectAsync timed out|BLE characteristic discovery timed out|BLE fromNum subscribe timed out|BLE fromRadio subscribe timed out/i.test(
-                  rawBleMessage,
-                );
-              const stage = isTimeout ? classifyMeshcoreBleTimeoutStage(rawBleMessage) : null;
+              const stage = classifyMeshcoreBleTimeoutStage(rawBleMessage);
+              const isTimeout = stage !== 'unknown';
+              const isRetryable = isMeshcoreRetryableBleErrorMessage(rawBleMessage);
               console.warn('[useMeshCore] connect: BLE Noble IPC attempt failed', {
                 attempt,
                 maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
                 isTimeout,
+                isRetryable,
                 stage,
                 elapsedMs: Date.now() - attemptStartedAt,
                 message: rawBleMessage,
               });
               ipcNobleRef.current?.cleanup();
               ipcNobleRef.current = null;
-              if (!isTimeout || attempt >= NOBLE_IPC_CONNECT_MAX_ATTEMPTS) {
+              if (!isRetryable || attempt >= NOBLE_IPC_CONNECT_MAX_ATTEMPTS) {
                 throw bleErr;
               }
-              console.debug('[useMeshCore] connect: retrying BLE Noble IPC after timeout', {
-                nextAttempt: attempt + 1,
-                maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
-                stage,
-              });
+              console.debug(
+                '[useMeshCore] connect: retrying BLE Noble IPC after retryable failure',
+                {
+                  nextAttempt: attempt + 1,
+                  maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                  isTimeout,
+                  stage,
+                },
+              );
               // Brief pause before retry: gives BlueZ/WinRT time to release adapter state
               // after a failed or timed-out connect attempt.
               await new Promise<void>((r) => setTimeout(r, 1500));
@@ -1476,14 +1468,9 @@ export function useMeshCore() {
         );
         const isMissingServices = /could not find all requested services/i.test(safeMessage);
         const isPeripheralInUse = /already in use by the/i.test(safeMessage);
-        const isBleConnectTimeout =
-          type === 'ble' &&
-          /MeshCore BLE IPC open timed out|MeshCore BLE protocol handshake timed out|BLE connectAsync timed out|BLE characteristic discovery timed out|BLE fromNum subscribe timed out|BLE fromRadio subscribe timed out/i.test(
-            safeMessage,
-          );
-        const bleTimeoutStage = isBleConnectTimeout
-          ? classifyMeshcoreBleTimeoutStage(safeMessage)
-          : null;
+        const bleTimeoutStage =
+          type === 'ble' ? classifyMeshcoreBleTimeoutStage(safeMessage) : 'unknown';
+        const isBleConnectTimeout = bleTimeoutStage !== 'unknown';
         // When err is missing (e.g. library rejected with no reason), use a BLE-specific hint if we were connecting via BLE
         const fallbackMessage =
           type === 'ble' && err == null
@@ -1513,7 +1500,7 @@ export function useMeshCore() {
         }
         const errForLog = serializeErrorLike(err) || '(no error object)';
         console.error('[useMeshCore] connect error', normalizedErr.message, errForLog, {
-          bleTimeoutStage,
+          bleTimeoutStage: isBleConnectTimeout ? bleTimeoutStage : null,
         });
         setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
         ipcTcpRef.current?.cleanup();
