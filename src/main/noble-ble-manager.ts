@@ -72,6 +72,9 @@ export class NobleBleManager extends EventEmitter {
     super();
     this.sessions.set('meshtastic', this.createSessionState());
     this.sessions.set('meshcore', this.createSessionState());
+    // Seed from the current synchronous state in case noble already transitioned before
+    // this manager was constructed (avoids false "adapter not powered on" errors on startup).
+    this.adapterReady = noble.state === 'poweredOn';
     noble.on('stateChange', (state: string) => {
       this.adapterReady = state === 'poweredOn';
       this.emit('adapterState', state);
@@ -398,6 +401,36 @@ export class NobleBleManager extends EventEmitter {
         );
       }
 
+      if (peripheral.state === 'connected') {
+        // Check if any other session already owns this peripheral. If so, refuse to connect
+        // rather than destructively disconnecting the other session's active GATT link.
+        for (const [otherSessionId, otherSession] of this.sessions.entries()) {
+          if (
+            otherSessionId !== sessionId &&
+            otherSession.connectedPeripheral?.id === peripheral.id
+          ) {
+            throw new Error(
+              `Peripheral ${peripheral.id} is already in use by the ${otherSessionId} session`,
+            );
+          }
+        }
+        // Peripheral is connected in noble's internal state but not claimed by any session
+        // (e.g. leftover from a previous crashed session). Disconnect before reconnecting.
+        // NOTE: register onDisconnected AFTER this cleanup so the pre-connect disconnectAsync()
+        // does not prematurely trigger the handler and wipe the new session state.
+        console.warn(
+          `[BLE:${sessionId}] peripheral already connected in noble — disconnecting before reconnect`,
+        );
+        try {
+          await withTimeout(peripheral.disconnectAsync(), 5000, 'BLE pre-connect disconnectAsync');
+        } catch (err) {
+          console.debug(
+            `[BLE:${sessionId}] pre-connect disconnect error (ignored):`,
+            sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+          );
+        }
+      }
+
       const onDisconnected = () => {
         if (session.fromRadioChar && session.fromRadioDataHandler) {
           try {
@@ -418,34 +451,6 @@ export class NobleBleManager extends EventEmitter {
       };
       peripheral.once('disconnect', onDisconnected);
       session.connectedPeripheralDisconnectHandler = onDisconnected;
-
-      if (peripheral.state === 'connected') {
-        // Check if any other session already owns this peripheral. If so, refuse to connect
-        // rather than destructively disconnecting the other session's active GATT link.
-        for (const [otherSessionId, otherSession] of this.sessions.entries()) {
-          if (
-            otherSessionId !== sessionId &&
-            otherSession.connectedPeripheral?.id === peripheral.id
-          ) {
-            throw new Error(
-              `Peripheral ${peripheral.id} is already in use by the ${otherSessionId} session`,
-            );
-          }
-        }
-        // Peripheral is connected in noble's internal state but not claimed by any session
-        // (e.g. leftover from a previous crashed session). Disconnect before reconnecting.
-        console.warn(
-          `[BLE:${sessionId}] peripheral already connected in noble — disconnecting before reconnect`,
-        );
-        try {
-          await withTimeout(peripheral.disconnectAsync(), 5000, 'BLE pre-connect disconnectAsync');
-        } catch (err) {
-          console.debug(
-            `[BLE:${sessionId}] pre-connect disconnect error (ignored):`,
-            sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-          );
-        }
-      }
       await withTimeout(peripheral.connectAsync(), 15000, 'BLE connectAsync');
       connected = true;
 
