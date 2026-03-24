@@ -79,7 +79,8 @@ function flushPendingBuffer(): void {
   const data = sanitizeLogPayloadForDisk(lines.join(''));
   appendChain = appendChain.then(() =>
     fs.promises
-      .appendFile(p, data, 'utf8') // codeql[js/http-to-file-access] -- data from sanitizeLogPayloadForDisk (see sanitize-log-message.ts); CodeQL does not model that sanitizer for this query
+      // codeql[js/http-to-file-access]: data from sanitizeLogPayloadForDisk; query does not model that helper as a barrier
+      .appendFile(p, data, 'utf8')
       .catch((e: unknown) => {
         original.debug('[log-service] flushPendingBuffer appendFile failed', e);
       }),
@@ -135,12 +136,14 @@ export function appendLine(level: LogLevel, source: string, message: string): vo
   const diskLine = sanitizeLogPayloadForDisk(line);
   appendChain = appendChain
     .then(
-      () => fs.promises.appendFile(getLogFilePath(), diskLine, 'utf8'), // codeql[js/http-to-file-access] -- diskLine from sanitizeLogPayloadForDisk; query has no library sanitizer for formatted log lines
+      // codeql[js/http-to-file-access]: diskLine from sanitizeLogPayloadForDisk; query has no library sanitizer for formatted log lines
+      () => fs.promises.appendFile(getLogFilePath(), diskLine, 'utf8'),
     )
     .catch((e: unknown) => {
       original.debug('[log-service] appendFile failed, retry writeFileSync', e);
       try {
-        fs.writeFileSync(getLogFilePath(), diskLine, { encoding: 'utf8' }); // codeql[js/http-to-file-access] -- diskLine from sanitizeLogPayloadForDisk; retry path only
+        // codeql[js/http-to-file-access]: diskLine from sanitizeLogPayloadForDisk; appendFile retry path only
+        fs.writeFileSync(getLogFilePath(), diskLine, { encoding: 'utf8' });
       } catch (e2) {
         original.debug('[log-service] writeFileSync retry failed', e2);
       }

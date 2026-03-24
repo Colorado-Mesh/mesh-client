@@ -311,7 +311,7 @@ GitHub Code scanning (CodeQL) reports **log injection** when user-controlled or 
 
 ### Network data written to file (CodeQL js/http-to-file-access)
 
-Code scanning may report this query on `fs.promises.appendFile` / `fs.writeFileSync` in `src/main/log-service.ts` when taint from HTTP responses reaches formatted log lines. The query does not model `sanitizeLogPayloadForDisk` as a sanitizer, so after routing payloads through that helper you must keep a `// codeql[js/http-to-file-access]` tag on each sink line (with a short reason), matching the pattern used for `js/log-injection` elsewhere.
+Code scanning may report this query on `fs.promises.appendFile` / `fs.writeFileSync` in `src/main/log-service.ts` when taint from HTTP responses reaches formatted log lines. The query does not model `sanitizeLogPayloadForDisk` as a sanitizer. After routing payloads through that helper, add `// codeql[js/http-to-file-access]: …` on **the line immediately above** each sink (GitHub’s suppression model applies `codeql[…]` only to the next line, and it must be the first text on its line—trailing same-line comments are not reliable and formatters can move them).
 
 **Pre-commit:** `src/main/log-service.contract.test.ts` requires `sanitizeLogPayloadForDisk` at every log disk write and that those CodeQL tags stay on the sink lines. See `.github/codeql/README.md`.
 

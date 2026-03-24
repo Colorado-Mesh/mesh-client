@@ -22,12 +22,15 @@ describe('log-service disk writes (CodeQL js/http-to-file-access contract)', () 
     const lines = LOG_SERVICE_SOURCE.split('\n');
     const sinkLinePattern =
       /(?:^|\s)\.appendFile\(\s*[^,]+,\s*(data|diskLine)\s*,|fs\.writeFileSync\(\s*[^,]+,\s*diskLine\s*,/;
-    for (const line of lines) {
-      if (sinkLinePattern.test(line)) {
-        expect(line, `missing CodeQL suppression on sink line: ${line.trim()}`).toMatch(
-          /codeql\[js\/http-to-file-access\]/,
-        );
-      }
+    const tag = 'codeql[js/http-to-file-access]';
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!sinkLinePattern.test(line)) continue;
+      const prev = i > 0 ? lines[i - 1] : '';
+      expect(
+        line.includes(tag) || prev.includes(tag),
+        `missing CodeQL suppression (line above or same line) for sink: ${line.trim()}`,
+      ).toBe(true);
     }
   });
 });

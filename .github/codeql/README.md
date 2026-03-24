@@ -14,7 +14,7 @@ Default setup already runs JavaScript/TypeScript analysis on push/PR; no separat
 
 ## `js/http-to-file-access` and the log file
 
-Default CodeQL flags `appendFile` / `writeFileSync` in `src/main/log-service.ts` when HTTP-tainted data can reach those sinks. The query does not treat `sanitizeLogPayloadForDisk` as a barrier, so we document each sink with `// codeql[js/http-to-file-access]` after sanitizing (same idea as `// codeql[js/log-injection]` in `gps.ts`). **Pre-commit:** `src/main/log-service.contract.test.ts` asserts disk payloads stay wired through `sanitizeLogPayloadForDisk` and that those suppression tags remain on the sink lines.
+Default CodeQL flags `appendFile` / `writeFileSync` in `src/main/log-service.ts` when HTTP-tainted data can reach those sinks. The query does not treat `sanitizeLogPayloadForDisk` as a barrier. Use `// codeql[js/http-to-file-access]: …` on the **line above** each sink (CodeQL applies that form to the following line only; do not rely on trailing comments—Prettier/ESLint can reflow them). **Pre-commit:** `src/main/log-service.contract.test.ts` asserts `sanitizeLogPayloadForDisk` wiring and that the tag appears on the line above or on the sink line.
 
 ## Using `codeql-config.yml` (advanced setup only)
 
