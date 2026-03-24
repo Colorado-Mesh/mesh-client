@@ -15,6 +15,7 @@ import {
 
 import type { LocationFilter } from '../App';
 import { getRoutingRowForNode, routingAnomalyNodeIds } from '../lib/diagnostics/diagnosticRows';
+import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import type { MeshNode, MeshWaypoint, NodeAnomaly } from '../lib/types';
@@ -108,6 +109,13 @@ function getCUColor(cu: number): string {
   return '#ef4444';
 }
 
+/**
+ * Build a Leaflet SVG marker icon.
+ *
+ * SECURITY: `color` and any future string parameters are interpolated into SVG
+ * attribute values. Always pass internal computed values or wrap user-supplied
+ * strings with `escapeSvgAttr` / `escapeSvgText` before interpolating.
+ */
 function createMarkerIcon(
   color: string,
   isSelf: boolean,
@@ -120,7 +128,7 @@ function createMarkerIcon(
   const haloColor = getCUColor(cu);
   const halo = (c: number) =>
     haloPx > 0
-      ? `<circle cx="${c}" cy="${c}" r="${c - 0.5}" fill="${haloColor}" opacity="0.4"/>`
+      ? `<circle cx="${c}" cy="${c}" r="${c - 0.5}" fill="${escapeSvgAttr(haloColor)}" opacity="0.4"/>`
       : '';
   const mqttBadge = (c: number) =>
     isMqttOnly
@@ -134,7 +142,7 @@ function createMarkerIcon(
   if (isSelf) {
     const total = 32 + 2 * haloPx;
     const c = total / 2;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<g transform="translate(${haloPx},${haloPx}) scale(${32 / 24})"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${color}" stroke="#000" stroke-width="0.5"/></g>${mqttBadge(c)}${repeaterBadge(c)}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<g transform="translate(${haloPx},${haloPx}) scale(${32 / 24})"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${escapeSvgAttr(color)}" stroke="#000" stroke-width="0.5"/></g>${mqttBadge(c)}${repeaterBadge(c)}</svg>`;
     return L.icon({
       iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
       iconSize: [total, total],
@@ -145,7 +153,7 @@ function createMarkerIcon(
 
   const total = 25 + 2 * haloPx;
   const c = total / 2;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<circle cx="${c}" cy="${c}" r="10.4" fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/><circle cx="${c}" cy="${c}" r="4.2" fill="#fff" opacity="0.8"/>${mqttBadge(c)}${repeaterBadge(c)}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<circle cx="${c}" cy="${c}" r="10.4" fill="${escapeSvgAttr(color)}" stroke="#000" stroke-width="1" opacity="0.9"/><circle cx="${c}" cy="${c}" r="4.2" fill="#fff" opacity="0.8"/>${mqttBadge(c)}${repeaterBadge(c)}</svg>`;
   return L.icon({
     iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
     iconSize: [total, total],
