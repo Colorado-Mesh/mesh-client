@@ -81,10 +81,60 @@ vi.mock('@liamcottle/meshcore.js', () => {
     }
   }
 
+  /** Base class for Noble-over-IPC (same surface as meshcore.js Connection). */
+  class MockConnection {
+    async write(bytes: Uint8Array) {
+      await Promise.resolve();
+      void bytes;
+      return undefined;
+    }
+    async sendToRadioFrame(data: Uint8Array) {
+      await Promise.resolve();
+      void data;
+      return undefined;
+    }
+    async onConnected() {
+      await Promise.resolve();
+      return undefined;
+    }
+    onDisconnected() {
+      return undefined;
+    }
+    onFrameReceived(frame: Uint8Array) {
+      void frame;
+      return undefined;
+    }
+    async close() {
+      await Promise.resolve();
+      return undefined;
+    }
+    on(event: string, cb: (...args: unknown[]) => void) {
+      void event;
+      void cb;
+      return undefined;
+    }
+    off(event: string, cb: (...args: unknown[]) => void) {
+      void event;
+      void cb;
+      return undefined;
+    }
+    once(event: string, cb: (...args: unknown[]) => void) {
+      void event;
+      void cb;
+      return undefined;
+    }
+    emit(event: string, ...args: unknown[]) {
+      void event;
+      void args;
+      return undefined;
+    }
+  }
+
   return {
     CayenneLpp: {
       parse: vi.fn().mockReturnValue([]),
     },
+    Connection: MockConnection,
     SerialConnection: MockSerialConnection,
     WebSerialConnection: MockWebSerialConnection,
   };
