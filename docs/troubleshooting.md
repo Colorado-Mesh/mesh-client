@@ -35,7 +35,7 @@ See [development-environment.md](development-environment.md#windows) for Python 
 
 **Linux-specific:**
 
-- noble requires raw socket capability on the executable you run. Follow [Linux Bluetooth (BLE) Permissions](#linux-bluetooth-ble-permissions).
+- noble requires raw socket capability on the executable you run. **From source, prefer `npm run linux`.** See [Linux Bluetooth (BLE) Permissions](#linux-bluetooth-ble-permissions).
 - If the adapter is present but scanning does not start, restart BlueZ: `sudo systemctl restart bluetooth`.
 - `cannot create /sys/kernel/debug/bluetooth/hci0/conn_*: Permission denied` lines come from native noble internals (debugfs connection tuning) and are often non-fatal by themselves.
 - If those lines appear together with MeshCore protocol-handshake timeout and zero inbound `fromRadio` bytes, treat it as a BLE data-path issue: keep the device awake/nearby, power-cycle the adapter (`bluetoothctl power off; power on`), retry, or use Serial/TCP.

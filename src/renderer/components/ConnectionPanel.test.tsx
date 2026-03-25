@@ -180,6 +180,7 @@ describe('ConnectionPanel BLE error humanization', () => {
     );
 
     expect(await screen.findByText(/Bluetooth permissions missing on Linux/i)).toBeInTheDocument();
+    expect(screen.getByText(/npm run linux/i)).toBeInTheDocument();
   });
 
   it('shows Linux setpriv-first guidance for classified Linux capability errors', async () => {
@@ -207,6 +208,7 @@ describe('ConnectionPanel BLE error humanization', () => {
     await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
 
     expect(await screen.findByText(/Linux BLE permissions are missing/i)).toBeInTheDocument();
+    expect(screen.getByText(/npm run linux/i)).toBeInTheDocument();
     expect(screen.getByText(/setpriv --reuid=\$USER/i)).toBeInTheDocument();
     expect(
       screen.getByText(/setcap -r \.\/node_modules\/electron\/dist\/electron/i),

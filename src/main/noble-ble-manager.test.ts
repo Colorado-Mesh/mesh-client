@@ -206,11 +206,7 @@ describe('NobleBleManager — Linux BLE capability diagnostics (regression)', ()
   });
 
   it('includes both source and release capability guidance in the classified error', () => {
-    expect(SOURCE).toContain('Preferred for npm start: run with ambient capability');
-    expect(SOURCE).toContain('sudo setpriv --reuid=$USER --regid=$(id -g)');
-    expect(SOURCE).toContain('sudo setcap -r ./node_modules/electron/dist/electron');
-    expect(SOURCE).toContain(
-      'For release builds, run setcap on the extracted executable (not the .AppImage wrapper).',
-    );
+    expect(SOURCE).toContain('linuxBleNobleCapabilityErrorBody');
+    expect(SOURCE).toContain('BLE_LINUX_CAPABILITY_MISSING');
   });
 });

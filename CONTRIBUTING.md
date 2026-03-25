@@ -274,7 +274,7 @@ AI coding assistants (Claude Code, GitHub Copilot, etc.) are welcome for brainst
 
 Every PR must be manually tested before review. No exceptions for "trivial" changes.
 
-1. Run `npm start` locally and exercise the changed functionality end-to-end.
+1. Run the app locally and exercise the changed functionality end-to-end (`npm start`, or on **Linux** when testing Bluetooth: **`npm run linux`** — see [Linux Bluetooth (BLE) Permissions](docs/development-environment.md#linux-bluetooth-ble-permissions)).
 2. Open Chrome DevTools for **both** the Main process (via the terminal) and the Renderer process (Ctrl/Cmd+Shift+I) — confirm no new errors or warnings.
 3. If you changed connection logic, test on an actual or emulated device if possible.
 

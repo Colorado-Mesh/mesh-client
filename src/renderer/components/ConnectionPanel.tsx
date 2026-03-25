@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import {
+  linuxBleCapabilityWarningBanner,
+  linuxBleHumanizeCapabilityMaybeMessage,
+  linuxBleHumanizeCapabilityMissingMessage,
+} from '../../shared/linuxBleDevLaunch';
 import { MESHCORE_SETUP_ABORT_MESSAGE } from '../lib/bleConnectErrors';
 import {
   letsMeshPresetConfigurationDeviation,
@@ -112,10 +117,10 @@ function humanizeBleError(err: unknown): string {
   const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   const isLinux = navigator.userAgent.toLowerCase().includes('linux');
   if (msg.includes('BLE_LINUX_CAPABILITY_MISSING')) {
-    return "Linux BLE permissions are missing. Preferred for npm start: launch with ambient capability using sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'. If setcap was previously applied to local Electron, remove it with sudo setcap -r ./node_modules/electron/dist/electron. For releases: run setcap on the extracted executable (AppImage must be extracted first), then restart the app.";
+    return linuxBleHumanizeCapabilityMissingMessage();
   }
   if (isLinux && /operation not permitted|permission denied|\beperm\b/i.test(msg)) {
-    return `${msg} — Linux BLE may be missing permissions. Preferred for npm start: sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'`;
+    return linuxBleHumanizeCapabilityMaybeMessage(msg);
   }
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
     if (isWindows) {
@@ -579,9 +584,7 @@ export default function ConnectionPanel({
           setLinuxBleCapabilityWarning(null);
           return;
         }
-        setLinuxBleCapabilityWarning(
-          "Bluetooth permissions missing on Linux (CAP_NET_RAW). For npm start use: sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'. For release binaries, run setcap on the installed/extracted executable (AppImage must be extracted first).",
-        );
+        setLinuxBleCapabilityWarning(linuxBleCapabilityWarningBanner());
       })
       .catch((err: unknown) => {
         console.debug('[ConnectionPanel] getLinuxBleCapabilityStatus failed', err);

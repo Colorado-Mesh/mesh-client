@@ -60,7 +60,8 @@ npm install
 ### 3) Run the app
 
 - Dev mode (hot reload): `npm run dev`
-- Production-like local start: `npm start`
+- **Linux (BLE + desktop GUI from source):** `npm run linux` — preferred over plain `npm start` so Bluetooth scanning has `CAP_NET_RAW` without `setcap` on local Electron (see [Linux Bluetooth (BLE) Permissions](#linux-bluetooth-ble-permissions)).
+- Production-like local start (other platforms, or Linux without BLE): `npm start`
 
 ### Common npm commands
 
@@ -69,6 +70,7 @@ Use these from the repository root:
 ```bash
 # App run/build
 npm run dev
+npm run linux   # Linux: BLE + GUI from source (see Linux BLE section)
 npm start
 npm run build
 
@@ -346,17 +348,15 @@ Log out/in after changing groups.
 
 BLE scanning with `@stoprocent/noble` requires `CAP_NET_RAW`.
 
-When running from source, preferred launch is ambient capability with `setpriv`:
+**From the repo root, preferred:** run `npm run linux`. It wraps `sudo setpriv …` so your process gets ambient `CAP_NET_RAW`, preserves `DISPLAY` / `XAUTHORITY` / `PATH` for the desktop session, and runs `npm start -- -no-sandbox` (production-like build + Electron). You need `sudo` once per launch for `setpriv`.
+
+**Manual (equivalent to `npm run linux`):**
 
 ```bash
-sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'
+sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc "export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start -- -no-sandbox"
 ```
 
-If desktop auth variables are needed:
-
-```bash
-sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc "export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start"
-```
+Packaged installs (`.deb`, AppImage, etc.) do **not** use `npm run linux`; apply file capabilities to the **installed or extracted app binary** as described elsewhere in this doc — that path is separate from development.
 
 If you see lines like `cannot create /sys/kernel/debug/bluetooth/hci0/conn_min_interval: Permission denied`, those are emitted by native noble internals trying to write debugfs connection tuning. Those lines alone do **not** prove `CAP_NET_RAW` is missing and can appear even when `setpriv` is correct.
 
@@ -366,7 +366,9 @@ If you reinstall dependencies (`npm install`/`npm ci`) or switch binaries, re-ap
 
 ### Sandbox and ARM notes
 
-If app launch fails due to sandbox on some environments:
+The recommended Linux dev entry (`npm run linux`) already passes `-no-sandbox` to the packaged `npm start` flow.
+
+If app launch fails due to sandbox when using **hot reload** (`npm run dev`) on some environments:
 
 ```bash
 npm run dev -- --no-sandbox

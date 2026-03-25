@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 import { EventEmitter } from 'events';
 
+import { linuxBleNobleCapabilityErrorBody } from '../shared/linuxBleDevLaunch';
 import { withTimeout } from '../shared/withTimeout';
 import { logDeviceConnection, sanitizeLogMessage } from './log-service';
 
@@ -42,6 +43,7 @@ const BLE_SUBSCRIBE_TIMEOUT_MS = IS_DARWIN ? 10_000 : 20_000;
 /** Linux MeshCore: keep polling briefly for first packet when notify delivers nothing yet. */
 const MESHCORE_LINUX_EARLY_READ_POLL_MAX_ATTEMPTS = 40;
 const MESHCORE_LINUX_EARLY_READ_POLL_BACKOFF_MS = 250;
+
 const BLE_LINUX_CAPABILITY_MISSING = 'BLE_LINUX_CAPABILITY_MISSING';
 const CAP_NET_RAW_BIT = 13n;
 
@@ -653,7 +655,7 @@ export class NobleBleManager extends EventEmitter {
     }
     const detail = capabilityProbe.detail ? ` (${capabilityProbe.detail})` : '';
     return new Error(
-      `${BLE_LINUX_CAPABILITY_MISSING}: Linux BLE scan permissions are missing or not applied${detail}. Preferred for npm start: run with ambient capability (sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc 'npm start'). If you previously used file capabilities and hit startup issues, remove them with: sudo setcap -r ./node_modules/electron/dist/electron. For release builds, run setcap on the extracted executable (not the .AppImage wrapper).`,
+      `${BLE_LINUX_CAPABILITY_MISSING}: Linux BLE scan permissions are missing or not applied${detail}. ${linuxBleNobleCapabilityErrorBody()}`,
     );
   }
 

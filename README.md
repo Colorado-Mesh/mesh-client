@@ -30,7 +30,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **Known Bugs:**
 
-- **Linux BLE permissions** — BLE uses `@stoprocent/noble` (native BlueZ), which needs raw socket access (`cap_net_raw`) on the executable you launch. If capability setup is missing, the app reports `BLE_LINUX_CAPABILITY_MISSING`. See [Linux Bluetooth (BLE) Permissions](docs/development-environment.md#linux-bluetooth-ble-permissions).
+- **Linux BLE permissions** — BLE uses `@stoprocent/noble` (native BlueZ), which needs raw socket access (`cap_net_raw`) on the executable you launch. **From source on Linux, prefer `npm run linux`** (see [Linux Bluetooth (BLE) Permissions](docs/development-environment.md#linux-bluetooth-ble-permissions)). If capability setup is missing, the app reports `BLE_LINUX_CAPABILITY_MISSING`.
 
 ---
 
