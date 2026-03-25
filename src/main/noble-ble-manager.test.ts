@@ -38,6 +38,16 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
     expect(SOURCE).toContain('6ba1b21815a8461f9fa85dcae273eafd');
   });
 
+  it('meshcore skips duplicate connect IPC when already connected (WinRT handshake race)', () => {
+    expect(SOURCE).toContain('connect idempotent skip');
+    expect(SOURCE).toContain('duplicate IPC would disconnect and break handshake');
+  });
+
+  it('meshcore coalesces duplicate connect while GATT is still in progress', () => {
+    expect(SOURCE).toContain('connect coalesce');
+    expect(SOURCE).toContain('meshcoreGattInflight');
+  });
+
   it('branches on sessionId to pick the correct service UUID for discovery', () => {
     // There must be a conditional that distinguishes meshcore from meshtastic sessions
     expect(SOURCE).toMatch(/sessionId\s*===\s*['"]meshcore['"]/);
@@ -47,10 +57,13 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
   });
 
   it('maps NUS RX char to toRadioChar and NUS TX char to fromRadioChar for meshcore sessions', () => {
-    // RX uuid → toRadioChar (we write to radio via RX)
-    expect(SOURCE).toMatch(/MESHCORE_RX_UUID.*toRadioChar|toRadioChar.*MESHCORE_RX_UUID/);
-    // TX uuid → fromRadioChar (radio writes to us via TX)
-    expect(SOURCE).toMatch(/MESHCORE_TX_UUID.*fromRadioChar|fromRadioChar.*MESHCORE_TX_UUID/);
+    // WinRT full discovery can list duplicate NUS UUIDs — collect candidates then pick best score
+    expect(SOURCE).toContain('rxCandidates');
+    expect(SOURCE).toContain('txCandidates');
+    expect(SOURCE).toContain('viableRx');
+    expect(SOURCE).toContain('viableTx');
+    expect(SOURCE).toMatch(/meshcorePickBestChar\(\s*[\s\S]{0,80}meshcoreNusRxScore/);
+    expect(SOURCE).toMatch(/meshcorePickBestChar\(\s*[\s\S]{0,80}meshcoreNusTxScore/);
   });
 
   it('does not assign fromNumChar for meshcore sessions (NUS has no equivalent)', () => {
@@ -81,9 +94,11 @@ describe('NobleBleManager — notify-first fromRadio read pump strategy (regress
     expect(fnMatch![0]).toContain('fromRadioNotifyOnly = false');
   });
 
-  it('centralizes read-pump gating in shouldUseFromRadioReadPump (meshcore notify-only, meshtastic Win safety net)', () => {
+  it('centralizes read-pump gating in shouldUseFromRadioReadPump (Darwin + meshcore Win32 notify-only)', () => {
     expect(SOURCE).toContain('shouldUseFromRadioReadPump');
-    expect(SOURCE).toMatch(/sessionId === 'meshcore'/);
+    expect(SOURCE).toMatch(/if \(!session\.fromRadioNotifyOnly\) return true/);
+    expect(SOURCE).toMatch(/if \(IS_DARWIN\) return false/);
+    expect(SOURCE).toMatch(/if \(IS_WIN32 && sessionId === 'meshcore'\) return false/);
     expect(SOURCE).toMatch(/if \(!this\.shouldUseFromRadioReadPump\(sessionId, session\)\) return/);
   });
 

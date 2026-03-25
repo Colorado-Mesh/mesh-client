@@ -113,7 +113,27 @@ const MeshcoreConnectionBase =
 // Must exceed the sum of all per-operation GATT timeouts on the slowest platform:
 // non-macOS: connectAsync(30s) + discovery(30s) + subscribe×2(20s each) = 100s.
 const NOBLE_IPC_CONNECT_TIMEOUT_MS = 120_000;
-const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = 20_000;
+
+/** Vite renderer may omit `process.platform`; WinRT handshakes need a longer budget. */
+function rendererLikelyWin32(): boolean {
+  try {
+    if (typeof process !== 'undefined' && process.platform === 'win32') return true;
+  } catch {
+    // ignore
+  }
+  if (typeof navigator !== 'undefined') {
+    const ua = navigator.userAgent ?? '';
+    if (/Windows/i.test(ua)) return true;
+    const plat = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
+      ?.platform;
+    if (plat && /Windows/i.test(plat)) return true;
+    if (navigator.platform && /Win/i.test(navigator.platform)) return true;
+  }
+  return false;
+}
+
+/** WinRT + companion handshake can be slower than CoreBluetooth. */
+const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = rendererLikelyWin32() ? 45_000 : 20_000;
 const NOBLE_IPC_CONNECT_MAX_ATTEMPTS = 2;
 
 function serializeErrorLike(value: unknown): string {
@@ -202,6 +222,8 @@ class IpcTcpConnection {
 
 /** BLE connection implemented over session-scoped Noble IPC. */
 class IpcNobleConnection {
+  private static meshcoreConnectChain = Promise.resolve();
+
   private readonly peripheralId: string;
   private readonly sessionId: NobleBleSessionId;
   private inner: NobleIpcMeshcoreConnectionInstance | null = null;
@@ -213,7 +235,8 @@ class IpcNobleConnection {
   }
 
   async connect() {
-    const sessionId = this.sessionId;
+    const runConnect = async () => {
+      const sessionId = this.sessionId;
     class NobleOverIpc extends (MeshcoreConnectionBase as unknown as new () => NobleIpcMeshcoreConnectionInstance) {
       constructor(private readonly session: NobleBleSessionId) {
         super();
@@ -260,12 +283,51 @@ class IpcNobleConnection {
         NOBLE_IPC_CONNECT_TIMEOUT_MS,
         'MeshCore BLE IPC open',
       );
+      // #region agent log
+      fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
+        body: JSON.stringify({
+          sessionId: 'd7c8ed',
+          runId: 'post-fix',
+          hypothesisId: 'H5',
+          location: 'useMeshCore.ts:ipc-open-ok',
+          message: 'MeshCore BLE IPC connect returned ok, before onConnected',
+          data: { sessionId },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       await withTimeout(
         instance.onConnected(),
         NOBLE_IPC_HANDSHAKE_TIMEOUT_MS,
         'MeshCore BLE protocol handshake',
       );
     } catch (err) {
+      // #region agent log
+      {
+        const msg = serializeErrorLike(err);
+        const stage =
+          /MeshCore BLE IPC open/i.test(msg) || /BLE connect failed/i.test(msg)
+            ? 'ipc-open'
+            : /MeshCore BLE protocol handshake/i.test(msg) || /handshake/i.test(msg)
+              ? 'handshake'
+              : 'other';
+        fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
+          body: JSON.stringify({
+            sessionId: 'd7c8ed',
+            runId: 'post-fix',
+            hypothesisId: 'H4-H5',
+            location: 'useMeshCore.ts:ipc-connect-catch',
+            message: 'IpcNobleConnection connect failed',
+            data: { sessionId, stage, errMsg: msg.slice(0, 500) },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      }
+      // #endregion
       try {
         await window.electronAPI.disconnectNobleBle(sessionId);
       } catch (disconnectErr) {
@@ -277,6 +339,24 @@ class IpcNobleConnection {
       this.cleanup();
       this.inner = null;
       throw err;
+    }
+    };
+
+    if (this.sessionId !== 'meshcore') {
+      await runConnect();
+      return;
+    }
+
+    const prev = IpcNobleConnection.meshcoreConnectChain;
+    let releaseChain!: () => void;
+    IpcNobleConnection.meshcoreConnectChain = new Promise<void>((resolve) => {
+      releaseChain = resolve;
+    });
+    await prev;
+    try {
+      await runConnect();
+    } finally {
+      releaseChain();
     }
   }
 

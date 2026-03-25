@@ -30,6 +30,7 @@ const POST_WRITE_READ_PUMP_DELAY_MS = 100;
 // BlueZ (Linux) and WinRT (Windows) BLE stacks are significantly slower than macOS
 // CBCentralManager. Use generous timeouts on those platforms.
 const IS_DARWIN = process.platform === 'darwin';
+const IS_WIN32 = process.platform === 'win32';
 /** Timeout for peripheral.connectAsync(). */
 const BLE_CONNECT_TIMEOUT_MS = IS_DARWIN ? 15_000 : 30_000;
 /** Timeout for GATT service/characteristic discovery. */
@@ -40,6 +41,32 @@ const BLE_LINUX_CAPABILITY_MISSING = 'BLE_LINUX_CAPABILITY_MISSING';
 
 function normalizeUuid(uuid: string): string {
   return uuid.toLowerCase().replace(/-/g, '');
+}
+
+function normalizedGattProps(char: { properties?: unknown }): string[] {
+  return Array.isArray(char.properties) ? char.properties : [];
+}
+
+/** Score NUS TX candidates so we pick a real char over WinRT stubs (duplicate UUIDs, empty props). */
+function meshcoreNusTxScore(char: { properties?: unknown }): number {
+  const p = normalizedGattProps(char);
+  let s = p.length;
+  if (p.includes('notify')) s += 100;
+  if (p.includes('indicate')) s += 80;
+  if (p.includes('read')) s += 40;
+  return s;
+}
+
+function meshcoreNusRxScore(char: { properties?: unknown }): number {
+  const p = normalizedGattProps(char);
+  let s = p.length;
+  if (p.some((x) => x === 'write' || x === 'writeWithoutResponse')) s += 100;
+  return s;
+}
+
+function meshcorePickBestChar(candidates: any[], score: (c: any) => number): any | null {
+  if (candidates.length === 0) return null;
+  return candidates.reduce((best, c) => (score(c) > score(best) ? c : best));
 }
 
 function formatBleDisconnectReason(reason: unknown): string {
@@ -87,6 +114,16 @@ interface NobleBleSession {
   fromRadioDeliveryCount: number;
   /** Total bytes in those payloads (for disconnect diagnostics). */
   fromRadioDeliveryBytes: number;
+  /**
+   * MeshCore only: set after link-up while GATT discovery/subscribe is still running.
+   * A second `connect(samePeripheral)` awaits this instead of calling `disconnect()` first,
+   * which would tear down the in-progress session (Win32 duplicate IPC / strict-mode).
+   */
+  meshcoreGattInflight: {
+    promise: Promise<void>;
+    resolve: () => void;
+    reject: (e: unknown) => void;
+  } | null;
 }
 
 export class NobleBleManager extends EventEmitter {
@@ -171,6 +208,7 @@ export class NobleBleManager extends EventEmitter {
       fromRadioNotifyOnly: false,
       fromRadioDeliveryCount: 0,
       fromRadioDeliveryBytes: 0,
+      meshcoreGattInflight: null,
     };
   }
 
@@ -181,6 +219,14 @@ export class NobleBleManager extends EventEmitter {
   }
 
   private clearSessionState(session: NobleBleSession): void {
+    if (session.meshcoreGattInflight) {
+      try {
+        session.meshcoreGattInflight.reject(new Error('BLE session cleared'));
+      } catch {
+        // catch-no-log-ok promise may already be settled
+      }
+      session.meshcoreGattInflight = null;
+    }
     // Signal any in-flight read pump to exit without issuing more GATT reads.
     session.closing = true;
     if (session.postWriteReadPumpTimer !== null) {
@@ -205,21 +251,42 @@ export class NobleBleManager extends EventEmitter {
     const session = this.getSession(sessionId);
     session.fromRadioDeliveryCount += 1;
     session.fromRadioDeliveryBytes += bytes.length;
+    // #region agent log
+    if (sessionId === 'meshcore' && session.fromRadioDeliveryCount <= 3) {
+      fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
+        body: JSON.stringify({
+          sessionId: 'd7c8ed',
+          runId: 'post-fix',
+          hypothesisId: 'H3',
+          location: 'noble-ble-manager.ts:emitFromRadio',
+          message: 'meshcore emit fromRadio to IPC',
+          data: {
+            platform: process.platform,
+            deliveryN: session.fromRadioDeliveryCount,
+            byteLen: bytes.length,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    }
+    // #endregion
     this.emit('fromRadio', { sessionId, bytes });
   }
 
   /**
    * Whether to issue GATT reads on fromRadio (NUS TX / Meshtastic fromRadio) as a complement to notify.
    * - Fallback mode (subscribe failed): always read — notify is not active.
-   * - MeshCore NUS + notify OK: never read. WinRT often returns "Protocol error" on read even when
-   *   the characteristic lists "read"; Web Bluetooth path is notify-only. macOS tolerates reads but
-   *   they are redundant.
-   * - Meshtastic + notify OK: skip reads on Darwin only; on Windows/Linux keep read pump as a
-   *   safety net because notify delivery has been unreliable in noble.
+   * - Darwin: skip reads when notify is active — CoreBluetooth delivers notifications reliably.
+   * - MeshCore + Win32 + notify active: skip reads — WinRT returns "Protocol error" on NUS TX read while
+   *   notifications are enabled (logs: readPump-read-error). Rely on notify only.
+   * - Other non-Darwin: keep read pump alongside notify as a safety net when noble drops notifies.
    */
   private shouldUseFromRadioReadPump(sessionId: NobleSessionId, session: NobleBleSession): boolean {
     if (!session.fromRadioNotifyOnly) return true;
-    if (sessionId === 'meshcore' || IS_DARWIN) return false;
+    if (IS_DARWIN) return false;
+    if (IS_WIN32 && sessionId === 'meshcore') return false;
     return true;
   }
 
@@ -241,6 +308,12 @@ export class NobleBleManager extends EventEmitter {
         session.readPumpRequested = false;
         if (!session.fromRadioChar || !session.connectedPeripheral) return;
         for (let i = 0; i < BLE_READ_PUMP_MAX_ITERATIONS; i++) {
+          /** MeshCore Win32 TX read-poll (no notify): first reads are often empty before any payload. */
+          const meshcoreWinEarlyReadPoll =
+            sessionId === 'meshcore' &&
+            IS_WIN32 &&
+            !session.fromRadioNotifyOnly &&
+            session.fromRadioDeliveryCount === 0;
           // Exit immediately if session was torn down between reads.
           if (session.closing || session.connectedPeripheral?.state !== 'connected') {
             console.debug(`[BLE:${sessionId}] read pump: peripheral disconnected, exiting`);
@@ -267,12 +340,19 @@ export class NobleBleManager extends EventEmitter {
               `[BLE:${sessionId}] readAsync #${i} error after ${Date.now() - t0}ms:`,
               sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
             );
+            if (meshcoreWinEarlyReadPoll && !session.closing) {
+              session.readPumpRequested = true;
+            }
             // Back off before the outer while can re-trigger to avoid hammering a failing characteristic.
             await new Promise<void>((r) => setTimeout(r, 500));
             break;
           }
           if (!data || data.length === 0) {
             console.debug(`[BLE:${sessionId}] readAsync #${i} empty — draining done`);
+            if (meshcoreWinEarlyReadPoll && i === 0 && !session.closing) {
+              session.readPumpRequested = true;
+              await new Promise<void>((r) => setTimeout(r, 150));
+            }
             break;
           }
           console.debug(`[BLE:${sessionId}] emitting fromRadio: ${data.length} bytes → renderer`);
@@ -560,6 +640,48 @@ export class NobleBleManager extends EventEmitter {
       if (process.platform === 'darwin' && this.scanningActive) {
         await this.doStopScanning();
       }
+      const knownForMeshcore = this.knownPeripherals.get(peripheralId);
+      if (
+        sessionId === 'meshcore' &&
+        knownForMeshcore &&
+        session.connectedPeripheral?.id === knownForMeshcore.id &&
+        session.toRadioChar &&
+        session.fromRadioChar &&
+        !session.closing
+      ) {
+        console.debug(
+          `[BLE:meshcore] connect idempotent skip — already connected to ${peripheralId} (duplicate IPC would disconnect and break handshake)`,
+        );
+        return;
+      }
+      if (
+        sessionId === 'meshcore' &&
+        knownForMeshcore &&
+        peripheralId === knownForMeshcore.id &&
+        session.connectedPeripheral?.id === knownForMeshcore.id &&
+        session.meshcoreGattInflight &&
+        !session.closing
+      ) {
+        console.debug(
+          `[BLE:meshcore] connect coalesce — awaiting in-flight GATT setup for ${peripheralId} (avoid disconnect during discovery)`,
+        );
+        try {
+          await session.meshcoreGattInflight.promise;
+        } catch {
+          // First attempt failed or session cleared; fall through to full reconnect.
+        }
+        if (
+          session.toRadioChar &&
+          session.fromRadioChar &&
+          session.connectedPeripheral?.id === knownForMeshcore.id &&
+          !session.closing
+        ) {
+          console.debug(
+            `[BLE:meshcore] connect coalesce done — session ready for ${peripheralId}`,
+          );
+          return;
+        }
+      }
       await this.disconnect(sessionId);
       // Re-open a fresh session (disconnect sets closing=true; reset it for the new connection).
       session.closing = false;
@@ -668,30 +790,72 @@ export class NobleBleManager extends EventEmitter {
       console.debug(
         `[BLE:${sessionId}] connectAsync done in ${Date.now() - tConnect}ms — address=${peripheral.address ?? 'unknown'} mtu=${peripheral.mtu ?? 'null'} state=${peripheral.state}`,
       );
+      // Set early so idempotent duplicate IPC + disconnect handlers see the peripheral during long GATT setup.
+      session.connectedPeripheral = peripheral;
 
       const isMeshcore = sessionId === 'meshcore';
+      if (isMeshcore) {
+        let resolveGatt!: () => void;
+        let rejectGatt!: (e: unknown) => void;
+        const promise = new Promise<void>((resolve, reject) => {
+          resolveGatt = resolve;
+          rejectGatt = reject;
+        });
+        // Avoid unhandledRejection when no duplicate connect is awaiting coalesce.
+        void promise.catch(() => {});
+        session.meshcoreGattInflight = {
+          promise,
+          resolve: resolveGatt,
+          reject: rejectGatt,
+        };
+      }
       const discoverServiceUuids = isMeshcore ? [MESHCORE_SERVICE_UUID] : [SERVICE_UUID];
       const discoverCharUuids = isMeshcore
         ? [MESHCORE_RX_UUID, MESHCORE_TX_UUID]
         : [TORADIO_UUID, FROMRADIO_UUID, FROMNUM_UUID];
 
       const tDiscover = Date.now();
-      const { characteristics } = await withTimeout<{
-        characteristics: any[];
-      }>(
-        peripheral.discoverSomeServicesAndCharacteristicsAsync(
-          discoverServiceUuids,
-          discoverCharUuids,
-        ),
-        BLE_DISCOVERY_TIMEOUT_MS,
-        'BLE characteristic discovery',
-      );
-      for (const char of characteristics) {
-        const uuid = normalizeUuid(char.uuid);
-        if (isMeshcore) {
-          if (uuid === MESHCORE_RX_UUID) session.toRadioChar = char;
-          else if (uuid === MESHCORE_TX_UUID) session.fromRadioChar = char;
-        } else {
+      const meshcoreWinFullDiscovery = isMeshcore && IS_WIN32;
+      let characteristics: any[];
+      if (meshcoreWinFullDiscovery) {
+        const all = await withTimeout<{ characteristics: any[] }>(
+          peripheral.discoverAllServicesAndCharacteristicsAsync(),
+          BLE_DISCOVERY_TIMEOUT_MS,
+          'BLE full GATT discovery (meshcore Win32)',
+        );
+        characteristics = all.characteristics;
+      } else {
+        const discovered = await withTimeout<{ characteristics: any[] }>(
+          peripheral.discoverSomeServicesAndCharacteristicsAsync(
+            discoverServiceUuids,
+            discoverCharUuids,
+          ),
+          BLE_DISCOVERY_TIMEOUT_MS,
+          'BLE characteristic discovery',
+        );
+        characteristics = discovered.characteristics;
+      }
+      if (isMeshcore) {
+        const rxCandidates: any[] = [];
+        const txCandidates: any[] = [];
+        for (const char of characteristics) {
+          const uuid = normalizeUuid(char.uuid);
+          if (uuid === MESHCORE_RX_UUID) rxCandidates.push(char);
+          else if (uuid === MESHCORE_TX_UUID) txCandidates.push(char);
+        }
+        const viableRx = rxCandidates.filter((c) => meshcoreNusRxScore(c) > 0);
+        const viableTx = txCandidates.filter((c) => meshcoreNusTxScore(c) > 0);
+        session.toRadioChar = meshcorePickBestChar(
+          viableRx.length > 0 ? viableRx : rxCandidates,
+          meshcoreNusRxScore,
+        );
+        session.fromRadioChar = meshcorePickBestChar(
+          viableTx.length > 0 ? viableTx : txCandidates,
+          meshcoreNusTxScore,
+        );
+      } else {
+        for (const char of characteristics) {
+          const uuid = normalizeUuid(char.uuid);
           if (uuid === TORADIO_UUID) session.toRadioChar = char;
           else if (uuid === FROMRADIO_UUID) session.fromRadioChar = char;
           else if (uuid === FROMNUM_UUID) session.fromNumChar = char;
@@ -710,11 +874,6 @@ export class NobleBleManager extends EventEmitter {
       }
 
       if (session.fromNumChar) {
-        await withTimeout(
-          session.fromNumChar.subscribeAsync(),
-          BLE_SUBSCRIBE_TIMEOUT_MS,
-          'BLE fromNum subscribe',
-        );
         session.fromNumDataHandler = () => {
           console.debug(
             `[BLE:${sessionId}] fromNum notify — pump active=${session.readPumpActive}`,
@@ -722,6 +881,11 @@ export class NobleBleManager extends EventEmitter {
           this.requestFromRadioReadPump(sessionId);
         };
         session.fromNumChar.on('data', session.fromNumDataHandler);
+        await withTimeout(
+          session.fromNumChar.subscribeAsync(),
+          BLE_SUBSCRIBE_TIMEOUT_MS,
+          'BLE fromNum subscribe',
+        );
       }
       const fromRadioProps: string[] = Array.isArray(session.fromRadioChar.properties)
         ? session.fromRadioChar.properties
@@ -730,29 +894,50 @@ export class NobleBleManager extends EventEmitter {
         fromRadioProps.includes('notify') || fromRadioProps.includes('indicate');
       const fromRadioCanRead = fromRadioProps.includes('read');
       // Notify-first strategy:
-      // - Subscribe whenever the characteristic advertises notify/indicate.
+      // - Register the `data` listener before subscribeAsync() so WinRT/noble cannot drop the first notify.
       // - On macOS, CoreBluetooth reliably delivers notify events — read-pump is skipped.
       // - On Windows/Linux, noble may not deliver notify events even after a successful subscribe,
-      //   so the read-pump runs in parallel as a safety net (see fromRadioNotifyOnly flag usage).
+      //   so the read-pump runs in parallel as a safety net (except meshcore+Win32: read errors — see above).
       // - Fall back to read-pump only if subscribe fails or notify is unavailable.
       session.fromRadioNotifyOnly = false;
       const tSubscribe = Date.now();
       let fromRadioSubscribed = false;
       if (fromRadioSupportsNotify) {
         try {
-          await withTimeout(
-            session.fromRadioChar.subscribeAsync(),
-            BLE_SUBSCRIBE_TIMEOUT_MS,
-            'BLE fromRadio subscribe',
-          );
           session.fromRadioDataHandler = (data: Buffer, isNotification: boolean) => {
             if (!data || data.length === 0) return;
             console.debug(
               `[BLE:${sessionId}] fromRadio data: ${data.length} bytes isNotification=${isNotification}`,
             );
+            // #region agent log
+            if (sessionId === 'meshcore') {
+              fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
+                body: JSON.stringify({
+                  sessionId: 'd7c8ed',
+                  runId: 'post-fix',
+                  hypothesisId: 'H1-H3',
+                  location: 'noble-ble-manager.ts:fromRadio-data',
+                  message: 'meshcore NUS TX data callback',
+                  data: {
+                    platform: process.platform,
+                    len: data.length,
+                    isNotification,
+                  },
+                  timestamp: Date.now(),
+                }),
+              }).catch(() => {});
+            }
+            // #endregion
             this.emitFromRadio(sessionId, new Uint8Array(Buffer.from(data)));
           };
           session.fromRadioChar.on('data', session.fromRadioDataHandler);
+          await withTimeout(
+            session.fromRadioChar.subscribeAsync(),
+            BLE_SUBSCRIBE_TIMEOUT_MS,
+            'BLE fromRadio subscribe',
+          );
           fromRadioSubscribed = true;
           session.fromRadioNotifyOnly = true;
           console.debug(
@@ -777,12 +962,75 @@ export class NobleBleManager extends EventEmitter {
         `[BLE:${sessionId}] subscriptions ready in ${Date.now() - tSubscribe}ms — fromNum=${Boolean(session.fromNumChar)} fromRadioNotify=${fromRadioSubscribed} fromRadioReadPump=${!fromRadioSubscribed && fromRadioCanRead} mtu=${peripheral.mtu ?? 'null'}`,
       );
 
-      session.connectedPeripheral = peripheral;
+      // #region agent log
+      if (sessionId === 'meshcore') {
+        const readPumpWillRun = this.shouldUseFromRadioReadPump(sessionId, session);
+        fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
+          body: JSON.stringify({
+            sessionId: 'd7c8ed',
+            runId: 'post-fix',
+            hypothesisId: 'H1-H2',
+            location: 'noble-ble-manager.ts:post-subscribe',
+            message: 'meshcore BLE path after subscribe',
+            data: {
+              platform: process.platform,
+              fromRadioSubscribed,
+              fromRadioNotifyOnly: session.fromRadioNotifyOnly,
+              meshcoreWinFullDiscovery,
+              fromRadioProps,
+              fromRadioCanRead,
+              fromRadioSupportsNotify,
+              readPumpWillRun,
+              mtu: peripheral.mtu ?? null,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      }
+      // #endregion
+
       // One-shot initial read in case the device already queued bytes before the first FROMNUM notify.
       this.requestFromRadioReadPump(sessionId);
+      if (session.meshcoreGattInflight) {
+        session.meshcoreGattInflight.resolve();
+        session.meshcoreGattInflight = null;
+      }
       this.emit('connected', { sessionId });
     } catch (err) {
+      // #region agent log
+      if (sessionId === 'meshcore') {
+        fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
+          body: JSON.stringify({
+            sessionId: 'd7c8ed',
+            runId: 'post-fix',
+            hypothesisId: 'H4',
+            location: 'noble-ble-manager.ts:connect-catch',
+            message: 'meshcore connect threw',
+            data: {
+              platform: process.platform,
+              errMsg: err instanceof Error ? err.message : String(err),
+              connected,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      }
+      // #endregion
       console.warn(`[BLE:${sessionId}] connect failed:`, err instanceof Error ? err.message : err); // log-injection-ok noble internal error
+      if (session.meshcoreGattInflight) {
+        try {
+          session.meshcoreGattInflight.reject(
+            err instanceof Error ? err : new Error(String(err)),
+          );
+        } catch {
+          // catch-no-log-ok promise may already be settled
+        }
+        session.meshcoreGattInflight = null;
+      }
       if (session.fromRadioChar && session.fromRadioDataHandler) {
         try {
           session.fromRadioChar.off('data', session.fromRadioDataHandler);
@@ -830,6 +1078,23 @@ export class NobleBleManager extends EventEmitter {
     if (!session.toRadioChar)
       throw new Error(`Not connected to a BLE device for session ${sessionId}`);
     console.debug(`[BLE:${sessionId}] writeToRadio: ${data.length} bytes`);
+    // #region agent log
+    if (sessionId === 'meshcore' && session.fromRadioDeliveryCount === 0) {
+      fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
+        body: JSON.stringify({
+          sessionId: 'd7c8ed',
+          runId: 'post-fix',
+          hypothesisId: 'H6',
+          location: 'noble-ble-manager.ts:writeToRadio-first',
+          message: 'First NUS RX write while fromRadio delivery count still 0',
+          data: { byteLen: data.length, platform: process.platform },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    }
+    // #endregion
     await session.toRadioChar.writeAsync(data, false);
     const scheduleReadPump = this.shouldUseFromRadioReadPump(sessionId, session);
     console.debug(

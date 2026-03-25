@@ -16,7 +16,7 @@ export function classifyMeshcoreBleTimeoutStage(message: string): MeshcoreBleTim
 
 export function isMeshcoreRetryableBleErrorMessage(message: string): boolean {
   if (classifyMeshcoreBleTimeoutStage(message) !== 'unknown') return true;
-  return /already in progress|gatt server is disconnected|disconnected during gatt init/i.test(
+  return /already in progress|gatt server is disconnected|disconnected during gatt init|fromRadio characteristic supports neither notify nor read/i.test(
     message,
   );
 }

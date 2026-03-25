@@ -55,10 +55,10 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
   it('disconnects and surfaces timeout guidance when protocol handshake stalls', async () => {
     let handshakeAttempt = 0;
     vi.mocked(withTimeout).mockImplementation(
-      async (promise: Promise<unknown>, _ms: number, label: string) => {
+      async (promise: Promise<unknown>, ms: number, label: string) => {
         if (label === 'MeshCore BLE protocol handshake') {
           handshakeAttempt += 1;
-          throw new Error('MeshCore BLE protocol handshake timed out after 20000ms');
+          throw new Error(`MeshCore BLE protocol handshake timed out after ${ms}ms`);
         }
         return promise;
       },
@@ -82,7 +82,9 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"protocol-handshake"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect error {"userMessage":"Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.","raw":"MeshCore BLE protocol handshake timed out after 20000ms","bleTimeoutStage":"protocol-handshake"}',
+      expect.stringMatching(
+        /\[useMeshCore\] connect error .*MeshCore BLE protocol handshake timed out after \d+ms.*"bleTimeoutStage":"protocol-handshake"/,
+      ),
     );
   });
 
@@ -92,9 +94,9 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       .mockResolvedValueOnce({ ok: true });
 
     vi.mocked(withTimeout).mockImplementation(
-      async (promise: Promise<unknown>, _ms: number, label: string) => {
+      async (promise: Promise<unknown>, ms: number, label: string) => {
         if (label === 'MeshCore BLE protocol handshake') {
-          throw new Error('MeshCore BLE protocol handshake timed out after 20000ms');
+          throw new Error(`MeshCore BLE protocol handshake timed out after ${ms}ms`);
         }
         return promise;
       },
@@ -152,10 +154,10 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       return () => {};
     });
     vi.mocked(withTimeout).mockImplementation(
-      async (promise: Promise<unknown>, _ms: number, label: string) => {
+      async (promise: Promise<unknown>, ms: number, label: string) => {
         if (label === 'MeshCore BLE protocol handshake') {
           onDisconnected?.('meshcore');
-          throw new Error('MeshCore BLE protocol handshake timed out after 20000ms');
+          throw new Error(`MeshCore BLE protocol handshake timed out after ${ms}ms`);
         }
         return promise;
       },

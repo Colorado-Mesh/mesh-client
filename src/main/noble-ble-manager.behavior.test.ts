@@ -80,6 +80,13 @@ class FakePeripheral extends EventEmitter {
     await Promise.resolve();
     return { characteristics: this.characteristics };
   }
+
+  async discoverAllServicesAndCharacteristicsAsync(): Promise<{
+    characteristics: FakeCharacteristic[];
+  }> {
+    await Promise.resolve();
+    return { characteristics: this.characteristics };
+  }
 }
 
 class FakeNoble extends EventEmitter {
