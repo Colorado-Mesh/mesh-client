@@ -28,6 +28,10 @@ Shared UI gates use `ProtocolCapabilities` in [`src/renderer/lib/radio/BaseRadio
 | Chat transport badges / history | `received_via` on Meshtastic messages                                               | `meshcore_messages.received_via` (`rf` / `mqtt` / `both`)                                                                                                                                                                                                                                                                                   | **App** (implemented)                                           |
 | Chat search                     | `searchMessages`                                                                    | `searchMeshcoreMessages`; UI search modal supports `user:` / `channel:` filters for cross-channel lookup                                                                                                                                                                                                                                    | Parallel DB tables                                              |
 
+## Windows: MeshCore over BLE
+
+Pair the radio in **Settings → Bluetooth & devices** before connecting from the app; WinRT is much more reliable with a bonded device. The client may **retry once** after transient GATT discovery failures, and canceling mid-connect should not surface a misleading long-running channel timeout. User-facing copy lives in the Connection tab on Windows; contributor details are in [CONTRIBUTING.md](../CONTRIBUTING.md) (MeshCore internals, BLE) and [README.md](../README.md) (MeshCore Transport Notes).
+
 ## MeshCore MQTT JSON envelope (v1)
 
 Interim broker format until a binary/official MeshCore MQTT layout ships:

@@ -83,7 +83,13 @@ Run `npm run lint` before pushing. ESLint is configured with:
 
 This subsection is a contributor reference for working on MeshCore-specific features. Read it alongside `src/renderer/hooks/useMeshCore.ts`.
 
-**BLE:** In the main process, `NobleBleManager` (`src/main/noble-ble-manager.ts`) serializes BLE connects across Meshtastic and MeshCore sessions. If you connect the **same** peripheral for one protocol while the other protocol still holds the GATT link, the manager **disconnects the other session first** and then connects the requested session (so you do not need to disconnect manually in the UI). The renderer retries MeshCore BLE once on "Connection already in progress" or "disconnected during GATT init" (see `useMeshCore.ts`). The ideal fix is for `@liamcottle/meshcore.js` to perform the first BLE write only after `gatt.connect()` has resolved; contributors can consider opening an issue or PR upstream for that behavior.
+**BLE:** In the main process, `NobleBleManager` (`src/main/noble-ble-manager.ts`) serializes BLE connects across Meshtastic and MeshCore sessions. If you connect the **same** peripheral for one protocol while the other protocol still holds the GATT link, the manager **disconnects the other session first** and then connects the requested session (so you do not need to disconnect manually in the UI).
+
+- **MeshCore NUS on Windows:** When `fromRadio` supports **notify**, the manager uses a notify-first strategy and **does not issue redundant GATT reads** on that characteristic on `win32` (WinRT can misbehave when mixing reads and notifications on the Nordic UART TX path). Other platforms may still use read pumps where needed.
+- **Renderer retry policy:** `useMeshCore` attempts up to two Noble IPC connects per user connect. Retryable failures include main-process BLE timeouts, protocol-handshake timeouts, and transient GATT flakes classified in `src/renderer/lib/bleConnectErrors.ts` (`isMeshcoreRetryableBleErrorMessage`, e.g. unreachable-during-service-discovery style strings). Extend that helper (and tests) when adding new recoverable BLE error text from the stack.
+- **Disconnect during `initConn`:** `meshcoreSetupGenerationRef` increments on `disconnect()`; long awaits in `initConn` are wrapped so setup aborts promptly instead of sitting until `getChannels` / similar timeouts fire. User-visible cancel uses `DOMException` + `AbortError` with `MESHCORE_SETUP_ABORT_MESSAGE` from `bleConnectErrors.ts`; `ConnectionPanel` treats that as a silent cancel (no inline error banner).
+
+The ideal upstream fix remains for `@liamcottle/meshcore.js` to perform the first BLE write only after `gatt.connect()` has resolved; contributors can consider opening an issue or PR upstream for that behavior.
 
 #### `useMeshCore` — state and refs
 
