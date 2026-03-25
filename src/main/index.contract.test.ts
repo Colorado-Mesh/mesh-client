@@ -45,3 +45,15 @@ describe('MQTT forwarder dropped-event logs (source contract)', () => {
     expect((INDEX_SOURCE.match(/sanitizeLogMessage\(String\(id\)\)/g) ?? []).length).toBe(2);
   });
 });
+
+describe('External link routing (source contract)', () => {
+  it('routes external http/https navigations to system browser', () => {
+    expect(INDEX_SOURCE).toContain('setWindowOpenHandler');
+    expect(INDEX_SOURCE).toContain('will-navigate');
+    expect(INDEX_SOURCE).toContain('openExternalHttpOrHttpsIfExternal');
+    expect(INDEX_SOURCE).toContain("protocol === 'http:'");
+    expect(INDEX_SOURCE).toContain("protocol === 'https:'");
+    expect(INDEX_SOURCE).toContain('shell.openExternal');
+    expect(INDEX_SOURCE).toContain('event.preventDefault()');
+  });
+});
