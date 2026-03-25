@@ -38,6 +38,7 @@ import {
   persistSerialPortIdentity,
   selectGrantedSerialPort,
 } from '../lib/serialPortSignature';
+import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import type {
   ChatMessage,
   DeviceState,
@@ -1338,7 +1339,12 @@ export function useMeshCore() {
         setSignalTelemetry((prev) => [...prev, sigPoint].slice(-MAX_TELEMETRY_POINTS));
 
         // Foreign LoRa fingerprinting: only flag non-MeshCore packets as foreign (requires known self node ID)
-        if (myNodeNumRef.current !== 0 && d.raw instanceof Uint8Array && d.raw.length > 0) {
+        if (
+          getStoredMeshProtocol() === 'meshcore' &&
+          myNodeNumRef.current !== 0 &&
+          d.raw instanceof Uint8Array &&
+          d.raw.length > 0
+        ) {
           const packetClass = classifyPayload(d.raw);
           if (packetClass !== 'meshcore') {
             const senderId = packetClass === 'meshtastic' ? extractMeshtasticSenderId(d.raw) : null;
@@ -1475,7 +1481,9 @@ export function useMeshCore() {
 
       const myNodeId = pubkeyToNodeId(info.publicKey);
       setState((prev) => ({ ...prev, myNodeNum: myNodeId, status: 'configured' }));
-      useDiagnosticsStore.getState().migrateForeignLoraFromZero(myNodeId);
+      if (getStoredMeshProtocol() === 'meshcore') {
+        useDiagnosticsStore.getState().migrateForeignLoraFromZero(myNodeId);
+      }
 
       const contacts = await awaitUnlessMeshcoreSetupCancelled(
         setupGen,
@@ -2736,7 +2744,9 @@ export function useMeshCore() {
     }
     const pos = await resolveOurPosition(myNode?.latitude, myNode?.longitude, staticLat, staticLon);
     setOurPosition(pos);
-    useDiagnosticsStore.getState().setOurPositionSource(pos?.source ?? null);
+    if (getStoredMeshProtocol() === 'meshcore') {
+      useDiagnosticsStore.getState().setOurPositionSource(pos?.source ?? null);
+    }
     return pos;
   }, []);
 

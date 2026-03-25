@@ -18,6 +18,7 @@ import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import { normalizeReactionEmoji } from '../lib/reactions';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
+import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { TransportManager } from '../lib/transport/TransportManager';
 import type { StatusUpdateEvent } from '../lib/transport/types';
 import type {
@@ -568,7 +569,7 @@ export function useDevice() {
         return updated;
       });
       const updatedMqttNode = nodesRef.current.get(nodeUpdate.node_id);
-      if (updatedMqttNode) {
+      if (updatedMqttNode && getStoredMeshProtocol() === 'meshtastic') {
         useDiagnosticsStore
           .getState()
           .processNodeUpdate(
@@ -624,7 +625,12 @@ export function useDevice() {
       // Record MQTT path before dedup check (captures all copies, new and duplicate). Skip packetId 0 (no unique id per protobuf).
       const rawPacketId = Number(msg.packetId);
       const packetId = rawPacketId >>> 0;
-      if (msg.sender_id && Number.isInteger(rawPacketId) && packetId !== 0) {
+      if (
+        getStoredMeshProtocol() === 'meshtastic' &&
+        msg.sender_id &&
+        Number.isInteger(rawPacketId) &&
+        packetId !== 0
+      ) {
         useDiagnosticsStore.getState().recordPacketPath(packetId, msg.sender_id, {
           transport: 'mqtt',
           timestamp: Date.now(),
@@ -634,7 +640,9 @@ export function useDevice() {
       // Packet ID dedup (catches our own uplink echoes)
       console.debug('[useDevice] MQTT message: from=%d packetId=%d', msg.sender_id, packetId);
       if (packetId !== 0 && isDuplicate(packetId)) {
-        useDiagnosticsStore.getState().recordDuplicate(msg.sender_id);
+        if (getStoredMeshProtocol() === 'meshtastic') {
+          useDiagnosticsStore.getState().recordDuplicate(msg.sender_id);
+        }
         // Upgrade receivedVia to 'both' if this packet was already saved via RF
         setMessages((prev) =>
           prev.map((m) =>
@@ -790,7 +798,9 @@ export function useDevice() {
           });
         }
         myNodeNumRef.current = info.myNodeNum;
-        useDiagnosticsStore.getState().migrateForeignLoraFromZero(info.myNodeNum);
+        if (getStoredMeshProtocol() === 'meshtastic') {
+          useDiagnosticsStore.getState().migrateForeignLoraFromZero(info.myNodeNum);
+        }
         setState((s) => ({ ...s, myNodeNum: info.myNodeNum }));
         updateNodes((prev) => {
           const updated = new Map(prev);
@@ -1092,7 +1102,7 @@ export function useDevice() {
           );
         }
         const updatedRfNode = nodesRef.current.get(nodeNum);
-        if (updatedRfNode) {
+        if (updatedRfNode && getStoredMeshProtocol() === 'meshtastic') {
           useDiagnosticsStore
             .getState()
             .processNodeUpdate(
@@ -1399,7 +1409,7 @@ export function useDevice() {
         // Record RF path for packet redundancy tracking (skip id 0 — protobuf: no unique id for no-ack/non-broadcast)
         const rawId = Number(mp.id);
         const packetId = rawId >>> 0;
-        if (Number.isInteger(rawId) && packetId !== 0) {
+        if (getStoredMeshProtocol() === 'meshtastic' && Number.isInteger(rawId) && packetId !== 0) {
           useDiagnosticsStore.getState().recordPacketPath(packetId, mp.from, {
             transport: 'rf',
             snr: mp.rxSnr,
@@ -1510,7 +1520,11 @@ export function useDevice() {
             },
           ];
         });
-        if (containsMeshCorePattern(record.message) && myNodeNumRef.current !== 0) {
+        if (
+          getStoredMeshProtocol() === 'meshtastic' &&
+          containsMeshCorePattern(record.message) &&
+          myNodeNumRef.current !== 0
+        ) {
           const { rssi, snr } = extractRssiSnr(record.message);
           useDiagnosticsStore
             .getState()
@@ -2184,7 +2198,9 @@ export function useDevice() {
       const devLon = staticLon != null ? undefined : myNode?.longitude;
       const pos = await resolveOurPosition(devLat, devLon, staticLat, staticLon);
       setOurPosition(pos);
-      useDiagnosticsStore.getState().setOurPositionSource(pos?.source ?? null);
+      if (getStoredMeshProtocol() === 'meshtastic') {
+        useDiagnosticsStore.getState().setOurPositionSource(pos?.source ?? null);
+      }
 
       if (pos) {
         const hasDevice = !!deviceRef.current;

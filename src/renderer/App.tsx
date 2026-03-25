@@ -44,11 +44,10 @@ import {
 } from './lib/letsMeshJwt';
 import { parseStoredJson } from './lib/parseStoredJson';
 import { useRadioProvider } from './lib/radio/providerFactory';
+import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
 import type { ChatMessage, MeshProtocol, MQTTSettings } from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
-
-const PROTOCOL_KEY = 'mesh-client:protocol';
 
 // Tabs (0-indexed) that are disabled in MeshCore mode
 // Tab 6 (Telemetry) re-enabled — capabilities-aware rendering handles battery/signal differences
@@ -205,9 +204,7 @@ export default function App() {
     applyThemeColors(loadThemeColors());
   }, []);
 
-  const [protocol, setProtocol] = useState<MeshProtocol>(
-    () => (localStorage.getItem(PROTOCOL_KEY) as MeshProtocol) ?? 'meshtastic',
-  );
+  const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredMeshProtocol());
 
   const meshtasticDevice = useDevice();
   const meshcoreDevice = useMeshCore();
@@ -242,7 +239,7 @@ export default function App() {
       if (p === protocol) return;
       // Keep diagnostics scoped to the active protocol.
       useDiagnosticsStore.getState().clearDiagnostics();
-      localStorage.setItem(PROTOCOL_KEY, p);
+      localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, p);
       setProtocol(p);
       // Dual-mode: both devices stay connected — no disconnect on switch.
     },
