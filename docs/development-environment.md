@@ -329,6 +329,12 @@ For Fedora / Bazzite / Aurora (inside a Distrobox/Toolbox):
 sudo dnf install cups-libs nspr nss atk at-spi2-atk libXcomposite libXdamage libXrandr mesa-libgbm alsa-lib libdrm libxshmfence cairo
 ```
 
+If GTK/Pango/GDK runtime shared objects are missing, install:
+
+```bash
+sudo dnf install libgtk-3.so.0 libgdk-3.so.0 libpangocairo-1.0.so.0 libpangoft2-1.0.so.0 libgdk_pixbuf-2.0.so.0
+```
+
 If your environment needs development headers (for example, native build/debug tooling), install:
 
 ```bash
