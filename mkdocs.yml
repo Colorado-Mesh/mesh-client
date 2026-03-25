@@ -36,6 +36,7 @@ nav:
       - MQTT Auth: letsmesh-mqtt-auth.md
   - Support:
       - Diagnostics: diagnostics.md
+      - Troubleshooting: troubleshooting.md
       - Contributing: https://github.com/Colorado-Mesh/mesh-client/blob/main/CONTRIBUTING.md
       - License: https://github.com/Colorado-Mesh/mesh-client/blob/main/LICENSE
       - Credits: credits.md

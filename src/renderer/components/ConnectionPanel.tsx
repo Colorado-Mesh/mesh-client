@@ -1726,15 +1726,25 @@ export default function ConnectionPanel({
               <ConnectionIcon type={state.connectionType!} />
               <span className="font-medium text-gray-200">Radio Connection</span>
             </div>
-            <span
-              className={`text-xs font-medium ${
-                state.status === 'reconnecting'
-                  ? 'text-orange-400 animate-pulse'
-                  : 'text-brand-green'
-              }`}
-            >
-              ● {state.status}
-            </span>
+            <div className="flex items-center gap-3">
+              <a
+                href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-muted hover:text-brand-green transition-colors"
+              >
+                Docs ↗
+              </a>
+              <span
+                className={`text-xs font-medium ${
+                  state.status === 'reconnecting'
+                    ? 'text-orange-400 animate-pulse'
+                    : 'text-brand-green'
+                }`}
+              >
+                ● {state.status}
+              </span>
+            </div>
           </div>
           <div className="p-4 space-y-3">
             <div className="flex justify-between text-sm">
@@ -1902,7 +1912,17 @@ export default function ConnectionPanel({
             <ConnectionIcon type={connectionType} />
             <span className="font-medium text-gray-200">Radio Connection</span>
           </div>
-          <span className="text-xs font-medium text-gray-500">● disconnected</span>
+          <div className="flex items-center gap-3">
+            <a
+              href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-muted hover:text-brand-green transition-colors"
+            >
+              Docs ↗
+            </a>
+            <span className="text-xs font-medium text-gray-500">● disconnected</span>
+          </div>
         </div>
 
         {/* Inline error */}
