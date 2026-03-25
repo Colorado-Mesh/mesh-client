@@ -283,51 +283,12 @@ class IpcNobleConnection {
         NOBLE_IPC_CONNECT_TIMEOUT_MS,
         'MeshCore BLE IPC open',
       );
-      // #region agent log
-      fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
-        body: JSON.stringify({
-          sessionId: 'd7c8ed',
-          runId: 'post-fix',
-          hypothesisId: 'H5',
-          location: 'useMeshCore.ts:ipc-open-ok',
-          message: 'MeshCore BLE IPC connect returned ok, before onConnected',
-          data: { sessionId },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       await withTimeout(
         instance.onConnected(),
         NOBLE_IPC_HANDSHAKE_TIMEOUT_MS,
         'MeshCore BLE protocol handshake',
       );
     } catch (err) {
-      // #region agent log
-      {
-        const msg = serializeErrorLike(err);
-        const stage =
-          /MeshCore BLE IPC open/i.test(msg) || /BLE connect failed/i.test(msg)
-            ? 'ipc-open'
-            : /MeshCore BLE protocol handshake/i.test(msg) || /handshake/i.test(msg)
-              ? 'handshake'
-              : 'other';
-        fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
-          body: JSON.stringify({
-            sessionId: 'd7c8ed',
-            runId: 'post-fix',
-            hypothesisId: 'H4-H5',
-            location: 'useMeshCore.ts:ipc-connect-catch',
-            message: 'IpcNobleConnection connect failed',
-            data: { sessionId, stage, errMsg: msg.slice(0, 500) },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-      }
-      // #endregion
       try {
         await window.electronAPI.disconnectNobleBle(sessionId);
       } catch (disconnectErr) {

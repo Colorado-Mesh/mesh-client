@@ -251,27 +251,6 @@ export class NobleBleManager extends EventEmitter {
     const session = this.getSession(sessionId);
     session.fromRadioDeliveryCount += 1;
     session.fromRadioDeliveryBytes += bytes.length;
-    // #region agent log
-    if (sessionId === 'meshcore' && session.fromRadioDeliveryCount <= 3) {
-      fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
-        body: JSON.stringify({
-          sessionId: 'd7c8ed',
-          runId: 'post-fix',
-          hypothesisId: 'H3',
-          location: 'noble-ble-manager.ts:emitFromRadio',
-          message: 'meshcore emit fromRadio to IPC',
-          data: {
-            platform: process.platform,
-            deliveryN: session.fromRadioDeliveryCount,
-            byteLen: bytes.length,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    }
-    // #endregion
     this.emit('fromRadio', { sessionId, bytes });
   }
 
@@ -909,27 +888,6 @@ export class NobleBleManager extends EventEmitter {
             console.debug(
               `[BLE:${sessionId}] fromRadio data: ${data.length} bytes isNotification=${isNotification}`,
             );
-            // #region agent log
-            if (sessionId === 'meshcore') {
-              fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
-                body: JSON.stringify({
-                  sessionId: 'd7c8ed',
-                  runId: 'post-fix',
-                  hypothesisId: 'H1-H3',
-                  location: 'noble-ble-manager.ts:fromRadio-data',
-                  message: 'meshcore NUS TX data callback',
-                  data: {
-                    platform: process.platform,
-                    len: data.length,
-                    isNotification,
-                  },
-                  timestamp: Date.now(),
-                }),
-              }).catch(() => {});
-            }
-            // #endregion
             this.emitFromRadio(sessionId, new Uint8Array(Buffer.from(data)));
           };
           session.fromRadioChar.on('data', session.fromRadioDataHandler);
@@ -962,35 +920,6 @@ export class NobleBleManager extends EventEmitter {
         `[BLE:${sessionId}] subscriptions ready in ${Date.now() - tSubscribe}ms — fromNum=${Boolean(session.fromNumChar)} fromRadioNotify=${fromRadioSubscribed} fromRadioReadPump=${!fromRadioSubscribed && fromRadioCanRead} mtu=${peripheral.mtu ?? 'null'}`,
       );
 
-      // #region agent log
-      if (sessionId === 'meshcore') {
-        const readPumpWillRun = this.shouldUseFromRadioReadPump(sessionId, session);
-        fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
-          body: JSON.stringify({
-            sessionId: 'd7c8ed',
-            runId: 'post-fix',
-            hypothesisId: 'H1-H2',
-            location: 'noble-ble-manager.ts:post-subscribe',
-            message: 'meshcore BLE path after subscribe',
-            data: {
-              platform: process.platform,
-              fromRadioSubscribed,
-              fromRadioNotifyOnly: session.fromRadioNotifyOnly,
-              meshcoreWinFullDiscovery,
-              fromRadioProps,
-              fromRadioCanRead,
-              fromRadioSupportsNotify,
-              readPumpWillRun,
-              mtu: peripheral.mtu ?? null,
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-      }
-      // #endregion
-
       // One-shot initial read in case the device already queued bytes before the first FROMNUM notify.
       this.requestFromRadioReadPump(sessionId);
       if (session.meshcoreGattInflight) {
@@ -999,27 +928,6 @@ export class NobleBleManager extends EventEmitter {
       }
       this.emit('connected', { sessionId });
     } catch (err) {
-      // #region agent log
-      if (sessionId === 'meshcore') {
-        fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
-          body: JSON.stringify({
-            sessionId: 'd7c8ed',
-            runId: 'post-fix',
-            hypothesisId: 'H4',
-            location: 'noble-ble-manager.ts:connect-catch',
-            message: 'meshcore connect threw',
-            data: {
-              platform: process.platform,
-              errMsg: err instanceof Error ? err.message : String(err),
-              connected,
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-      }
-      // #endregion
       console.warn(`[BLE:${sessionId}] connect failed:`, err instanceof Error ? err.message : err); // log-injection-ok noble internal error
       if (session.meshcoreGattInflight) {
         try {
@@ -1078,23 +986,6 @@ export class NobleBleManager extends EventEmitter {
     if (!session.toRadioChar)
       throw new Error(`Not connected to a BLE device for session ${sessionId}`);
     console.debug(`[BLE:${sessionId}] writeToRadio: ${data.length} bytes`);
-    // #region agent log
-    if (sessionId === 'meshcore' && session.fromRadioDeliveryCount === 0) {
-      fetch('http://127.0.0.1:7617/ingest/7e17c8e6-9920-4c0f-98b9-4e8b66e3f0ce', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd7c8ed' },
-        body: JSON.stringify({
-          sessionId: 'd7c8ed',
-          runId: 'post-fix',
-          hypothesisId: 'H6',
-          location: 'noble-ble-manager.ts:writeToRadio-first',
-          message: 'First NUS RX write while fromRadio delivery count still 0',
-          data: { byteLen: data.length, platform: process.platform },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    }
-    // #endregion
     await session.toRadioChar.writeAsync(data, false);
     const scheduleReadPump = this.shouldUseFromRadioReadPump(sessionId, session);
     console.debug(
