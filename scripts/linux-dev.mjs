@@ -24,10 +24,35 @@ try {
   process.exit(1);
 }
 
+/** Skip sentinel values that Chromium/libdbus cannot parse (e.g. Flatpak/sandbox "disabled:"). */
+function dbusSessionBusAddressToExport() {
+  const v = process.env.DBUS_SESSION_BUS_ADDRESS;
+  if (v === undefined || v === null || typeof v !== 'string') return undefined;
+  const t = v.trim().toLowerCase();
+  if (t === '' || t.startsWith('disabled')) return undefined;
+  return v;
+}
+
 const pathEnv = JSON.stringify(process.env.PATH ?? '');
 const display = JSON.stringify(process.env.DISPLAY ?? '');
 const xauth = JSON.stringify(process.env.XAUTHORITY ?? '');
-const inner = `export PATH=${pathEnv}; export DISPLAY=${display}; export XAUTHORITY=${xauth}; npm start -- -no-sandbox`;
+const dbusSession = dbusSessionBusAddressToExport();
+const xdgRuntime = process.env.XDG_RUNTIME_DIR;
+const xdgSessionId = process.env.XDG_SESSION_ID;
+
+const preExports = [];
+if (dbusSession !== undefined) {
+  preExports.push(`export DBUS_SESSION_BUS_ADDRESS=${JSON.stringify(dbusSession)}`);
+}
+if (xdgRuntime) {
+  preExports.push(`export XDG_RUNTIME_DIR=${JSON.stringify(xdgRuntime)}`);
+}
+if (xdgSessionId) {
+  preExports.push(`export XDG_SESSION_ID=${JSON.stringify(xdgSessionId)}`);
+}
+
+const pre = preExports.length ? `${preExports.join('; ')}; ` : '';
+const inner = `${pre}export PATH=${pathEnv}; export DISPLAY=${display}; export XAUTHORITY=${xauth}; npm start -- -no-sandbox`;
 
 const result = spawnSync(
   'sudo',
