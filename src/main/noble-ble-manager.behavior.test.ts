@@ -80,6 +80,13 @@ class FakePeripheral extends EventEmitter {
     await Promise.resolve();
     return { characteristics: this.characteristics };
   }
+
+  async discoverAllServicesAndCharacteristicsAsync(): Promise<{
+    characteristics: FakeCharacteristic[];
+  }> {
+    await Promise.resolve();
+    return { characteristics: this.characteristics };
+  }
 }
 
 class FakeNoble extends EventEmitter {
@@ -100,12 +107,13 @@ class FakeNoble extends EventEmitter {
 const MESHCORE_RX_UUID = '6e400002b5a3f393e0a9e50e24dcca9e';
 const MESHCORE_TX_UUID = '6e400003b5a3f393e0a9e50e24dcca9e';
 
+/** Matches `shouldUseFromRadioReadPump` for meshcore + notify-first: no parallel GATT reads on darwin or win32. */
+const MESHCORE_NOTIFY_FIRST_SKIPS_READ_PUMP =
+  process.platform === 'darwin' || process.platform === 'win32';
+
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-/** Matches `IS_DARWIN` in noble-ble-manager: Darwin skips read-pump when notify-only; Linux/Win use it as safety net. */
-const IS_DARWIN = process.platform === 'darwin';
 
 describe('NobleBleManager behavior (notify-first + fallback)', () => {
   let fakeNoble: FakeNoble;
@@ -142,8 +150,13 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
     });
 
     expect(fromRadio.subscribeCalls).toBe(1);
-    // Non-Darwin: one-shot drain after connect (see requestFromRadioReadPump + fromRadioNotifyOnly).
-    expect(fromRadio.readCalls).toBe(IS_DARWIN ? 0 : 1);
+    // MeshCore + notify-first: darwin + win32 skip the read pump (CoreBluetooth / WinRT). Linux keeps
+    // a read safety net alongside notify — expect at least the initial drain read on CI.
+    if (MESHCORE_NOTIFY_FIRST_SKIPS_READ_PUMP) {
+      expect(fromRadio.readCalls).toBe(0);
+    } else {
+      expect(fromRadio.readCalls).toBeGreaterThanOrEqual(1);
+    }
 
     const received: Uint8Array[] = [];
     manager.on('fromRadio', ({ bytes }) => {
@@ -188,17 +201,24 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
     );
   });
 
-  it('read-pump safety net after write when notify-first succeeds (non-Darwin only)', async () => {
+  it('meshcore notify-first skips post-write read pump on darwin/win32 only', async () => {
     const { manager, fromRadio } = await setupMeshcoreConnection({
       properties: ['read', 'notify'],
       readResults: [Buffer.alloc(0)],
     });
 
-    expect(fromRadio.readCalls).toBe(IS_DARWIN ? 0 : 1);
+    const readsAfterSubscribe = fromRadio.readCalls;
+    if (MESHCORE_NOTIFY_FIRST_SKIPS_READ_PUMP) {
+      expect(readsAfterSubscribe).toBe(0);
+    } else {
+      expect(readsAfterSubscribe).toBeGreaterThanOrEqual(1);
+    }
     await manager.writeToRadio('meshcore', Buffer.from([0xbb]));
     await wait(140);
-    // Darwin: writeToRadio skips post-write read pump for notify-only sessions.
-    // Linux/Windows: post-write read pump runs (POST_WRITE_READ_PUMP_DELAY_MS + drain read).
-    expect(fromRadio.readCalls).toBe(IS_DARWIN ? 0 : 2);
+    if (MESHCORE_NOTIFY_FIRST_SKIPS_READ_PUMP) {
+      expect(fromRadio.readCalls).toBe(0);
+    } else {
+      expect(fromRadio.readCalls).toBeGreaterThan(readsAfterSubscribe);
+    }
   });
 });

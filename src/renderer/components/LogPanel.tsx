@@ -81,14 +81,16 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.message.includes('[TransportNobleIpc]') ||
       entry.message.includes('[MQTT]') ||
       entry.message.includes('[NobleBleManager]') ||
-      entry.message.includes('[BLE:')
+      entry.message.includes('[BLE:') ||
+      entry.message.includes('[BLE:meshcore]')
     );
   }
   if (protocol === 'meshcore') {
     return (
       entry.source.includes('meshcore') ||
       entry.message.includes('[useMeshCore]') ||
-      entry.message.includes('[MeshcoreMqttAdapter]')
+      entry.message.includes('[MeshcoreMqttAdapter]') ||
+      entry.message.includes('[BLE:meshcore]')
     );
   }
   // No protocol: show all device entries (fallback)
@@ -102,7 +104,8 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     entry.message.includes('[MQTT]') ||
     entry.message.includes('[MeshcoreMqttAdapter]') ||
     entry.message.includes('[NobleBleManager]') ||
-    entry.message.includes('[BLE:')
+    entry.message.includes('[BLE:') ||
+    entry.message.includes('[BLE:meshcore]')
   );
 }
 

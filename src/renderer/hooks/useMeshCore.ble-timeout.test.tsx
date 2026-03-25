@@ -39,34 +39,26 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
     expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
-    expect(warnSpy).toHaveBeenCalledWith('[useMeshCore] connect: BLE Noble IPC attempt failed', {
-      attempt: 1,
-      maxAttempts: 2,
-      isTimeout: true,
-      isRetryable: true,
-      stage: 'ipc-open',
-      elapsedMs: expect.any(Number),
-      message: 'MeshCore BLE IPC open timed out after 25000ms',
-    });
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback',
-      { stage: 'ipc-open' },
+      expect.stringMatching(
+        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":true,"isRetryable":true,"stage":"ipc-open","elapsedMs":\d+,"message":"MeshCore BLE IPC open timed out after 25000ms"\}/,
+      ),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect error',
-      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
-      'MeshCore BLE IPC open timed out after 25000ms',
-      { bleTimeoutStage: 'ipc-open' },
+      '[useMeshCore] connect error {"userMessage":"Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.","raw":"MeshCore BLE IPC open timed out after 25000ms","bleTimeoutStage":"ipc-open"}',
     );
   });
 
   it('disconnects and surfaces timeout guidance when protocol handshake stalls', async () => {
     let handshakeAttempt = 0;
     vi.mocked(withTimeout).mockImplementation(
-      async (promise: Promise<unknown>, _ms: number, label: string) => {
+      async (promise: Promise<unknown>, ms: number, label: string) => {
         if (label === 'MeshCore BLE protocol handshake') {
           handshakeAttempt += 1;
-          throw new Error('MeshCore BLE protocol handshake timed out after 20000ms');
+          throw new Error(`MeshCore BLE protocol handshake timed out after ${ms}ms`);
         }
         return promise;
       },
@@ -87,14 +79,12 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback',
-      { stage: 'protocol-handshake' },
+      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"protocol-handshake"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect error',
-      'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
-      'MeshCore BLE protocol handshake timed out after 20000ms',
-      { bleTimeoutStage: 'protocol-handshake' },
+      expect.stringMatching(
+        /\[useMeshCore\] connect error .*MeshCore BLE protocol handshake timed out after \d+ms.*"bleTimeoutStage":"protocol-handshake"/,
+      ),
     );
   });
 
@@ -104,9 +94,9 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       .mockResolvedValueOnce({ ok: true });
 
     vi.mocked(withTimeout).mockImplementation(
-      async (promise: Promise<unknown>, _ms: number, label: string) => {
+      async (promise: Promise<unknown>, ms: number, label: string) => {
         if (label === 'MeshCore BLE protocol handshake') {
-          throw new Error('MeshCore BLE protocol handshake timed out after 20000ms');
+          throw new Error(`MeshCore BLE protocol handshake timed out after ${ms}ms`);
         }
         return promise;
       },
@@ -124,24 +114,14 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect: BLE Noble IPC attempt failed',
-      expect.objectContaining({
-        attempt: 1,
-        maxAttempts: 2,
-        isTimeout: true,
-        isRetryable: true,
-        stage: 'ipc-open',
-      }),
+      expect.stringMatching(
+        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":true,"isRetryable":true,"stage":"ipc-open"/,
+      ),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect: BLE Noble IPC attempt failed',
-      expect.objectContaining({
-        attempt: 2,
-        maxAttempts: 2,
-        isTimeout: true,
-        isRetryable: true,
-        stage: 'protocol-handshake',
-      }),
+      expect.stringMatching(
+        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":2,"maxAttempts":2,"isTimeout":true,"isRetryable":true,"stage":"protocol-handshake"/,
+      ),
     );
     expect(infoSpy).not.toHaveBeenCalled();
   });
@@ -161,14 +141,9 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect: BLE Noble IPC attempt failed',
-      expect.objectContaining({
-        attempt: 1,
-        maxAttempts: 2,
-        isTimeout: false,
-        isRetryable: false,
-        stage: 'unknown',
-      }),
+      expect.stringMatching(
+        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":false,"isRetryable":false,"stage":"unknown"/,
+      ),
     );
   });
 
@@ -179,10 +154,10 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       return () => {};
     });
     vi.mocked(withTimeout).mockImplementation(
-      async (promise: Promise<unknown>, _ms: number, label: string) => {
+      async (promise: Promise<unknown>, ms: number, label: string) => {
         if (label === 'MeshCore BLE protocol handshake') {
           onDisconnected?.('meshcore');
-          throw new Error('MeshCore BLE protocol handshake timed out after 20000ms');
+          throw new Error(`MeshCore BLE protocol handshake timed out after ${ms}ms`);
         }
         return promise;
       },
@@ -219,24 +194,16 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
     // Should retry once (main-process timeout is now recognized as a retryable timeout).
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
-    expect(warnSpy).toHaveBeenCalledWith('[useMeshCore] connect: BLE Noble IPC attempt failed', {
-      attempt: 1,
-      maxAttempts: 2,
-      isTimeout: true,
-      isRetryable: true,
-      stage: 'ipc-open',
-      elapsedMs: expect.any(Number),
-      message: 'BLE connectAsync timed out after 30000ms',
-    });
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback',
-      { stage: 'ipc-open' },
+      expect.stringMatching(
+        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":true,"isRetryable":true,"stage":"ipc-open","elapsedMs":\d+,"message":"BLE connectAsync timed out after 30000ms"\}/,
+      ),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect error',
-      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
-      'BLE connectAsync timed out after 30000ms',
-      { bleTimeoutStage: 'ipc-open' },
+      '[useMeshCore] connect error {"userMessage":"Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.","raw":"BLE connectAsync timed out after 30000ms","bleTimeoutStage":"ipc-open"}',
     );
   });
 
@@ -254,10 +221,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     ).rejects.toThrow('{"code":"BLE_CUSTOM","detail":"adapter glitch"}');
 
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect error',
-      '{"code":"BLE_CUSTOM","detail":"adapter glitch"}',
-      '{"code":"BLE_CUSTOM","detail":"adapter glitch"}',
-      { bleTimeoutStage: null },
+      '[useMeshCore] connect error {"userMessage":"{\\"code\\":\\"BLE_CUSTOM\\",\\"detail\\":\\"adapter glitch\\"}","raw":"{\\"code\\":\\"BLE_CUSTOM\\",\\"detail\\":\\"adapter glitch\\"}","bleTimeoutStage":null}',
     );
   });
 
@@ -277,14 +241,41 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect: BLE Noble IPC attempt failed',
-      expect.objectContaining({
-        attempt: 1,
-        maxAttempts: 2,
-        isTimeout: false,
-        isRetryable: true,
-        stage: 'unknown',
+      expect.stringMatching(
+        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":false,"isRetryable":true,"stage":"unknown"/,
+      ),
+    );
+  });
+
+  it('retries once after WinRT GATT unreachable during service discovery', async () => {
+    vi.mocked(window.electronAPI.connectNobleBle)
+      .mockRejectedValueOnce(new Error('Device is unreachable while discovering services'))
+      .mockResolvedValueOnce({ ok: true });
+
+    vi.mocked(withTimeout).mockImplementation(
+      async (promise: Promise<unknown>, ms: number, label: string) => {
+        if (label === 'MeshCore BLE protocol handshake') {
+          throw new Error(`MeshCore BLE protocol handshake timed out after ${ms}ms`);
+        }
+        return promise;
+      },
+    );
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await expect(
+      act(async () => {
+        await result.current.connect('ble', undefined, 'ble-device-unreachable');
       }),
+    ).rejects.toThrow(
+      'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
+    );
+
+    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":false,"isRetryable":true,"stage":"unknown","elapsedMs":\d+,"message":"Device is unreachable while discovering services"\}/,
+      ),
     );
   });
 });

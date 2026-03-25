@@ -116,6 +116,12 @@ describe('isDeviceEntry — MeshCore protocol', () => {
       isDeviceEntry(entry('main', '[BLE:abc123] connect failed: peripheral lost'), 'meshcore'),
     ).toBe(false);
   });
+
+  it('classifies [BLE:meshcore] Noble IPC message as MeshCore device entry', () => {
+    expect(
+      isDeviceEntry(entry('main', '[BLE:meshcore] connect coalesce await failed — x'), 'meshcore'),
+    ).toBe(true);
+  });
 });
 
 describe('isDeviceEntry — no protocol (fallback)', () => {

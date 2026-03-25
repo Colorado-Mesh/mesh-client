@@ -198,9 +198,9 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 **Transport Notes**
 
-- BLE: waits for GATT init (`connected` event) before issuing commands; includes nudge timeout for stuck `deviceQuery` on some devices
+- BLE: waits for GATT init (`connected` event) before issuing commands; includes nudge timeout for stuck `deviceQuery` on some devices. On **Windows**, **pair the MeshCore device in Settings → Bluetooth & devices** before connecting in the app; WinRT may need a bonded device for a stable Nordic UART session. A **second connect attempt** may run automatically after some transient GATT discovery errors.
 - Serial: auto-reconnects on startup using a saved port signature so reconnect targets the same physical device when possible
-- TCP: connects to MeshCore companion radio on port 4403
+- TCP: connects to MeshCore companion radio on port **5000**
 - **MQTT (JSON v1):** The Connection tab MQTT card includes **Network Preset** buttons — **LetsMesh** (WebSocket on port 443, topic prefix `meshcore`; broker auth uses `@michaelhart/meshcore-decoder`’s `createAuthToken` — MQTT username `v1_<64-hex public key>`, password token with JWT `aud` matching the **MQTT server hostname** (e.g. `mqtt-us-v1.letsmesh.net` for the US preset); optional **Packet logger (Analyzer)** forwards RX packet summaries to the broker when enabled; see [docs/letsmesh-mqtt-auth.md](docs/letsmesh-mqtt-auth.md)), **Ripple Networks** (TLS on port 8883, same topic prefix, preset default credentials, and **Allow insecure TLS** for brokers that use a non–public CA), and **Custom** for your own broker
 
 ---
@@ -713,6 +713,10 @@ You're missing build tools for the native modules (e.g. `@serialport/bindings-cp
 - **Bluetooth adapter not found** — ensure Bluetooth is enabled at the OS level. On Linux: `systemctl status bluetooth` and `rfkill list`. On macOS: check **System Settings > Bluetooth**. On Windows: **Settings → Bluetooth & devices**.
 - **Device not discovered** — make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.
 - If BLE is unreliable, prefer Serial (USB) or TCP/HTTP for a stable connection.
+
+**Windows-specific:**
+
+- Before connecting to a MeshCore device over BLE, pair it first in **Settings → Bluetooth & devices → Add device**. Without pairing, the connection appears to succeed but no data is exchanged.
 
 **Linux-specific:**
 

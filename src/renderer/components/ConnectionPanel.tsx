@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { MESHCORE_SETUP_ABORT_MESSAGE } from '../lib/bleConnectErrors';
 import {
   letsMeshPresetConfigurationDeviation,
   validateLetsMeshManualCredentials,
@@ -88,6 +89,13 @@ function humanizeHttpError(address: string, err: unknown): string {
 }
 
 function humanizeBleError(err: unknown): string {
+  if (
+    err instanceof DOMException &&
+    err.name === 'AbortError' &&
+    err.message === MESHCORE_SETUP_ABORT_MESSAGE
+  ) {
+    return '';
+  }
   const msg =
     err instanceof Error
       ? err.message
@@ -647,7 +655,8 @@ export default function ConnectionPanel({
           onConnect('ble', undefined, device.deviceId).catch((err: unknown) => {
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
-            setError(humanizeBleError(err));
+            const bleErrMsg = humanizeBleError(err);
+            if (bleErrMsg) setError(bleErrMsg);
             setConnecting(false);
             setConnectionStage('');
           });
@@ -707,7 +716,8 @@ export default function ConnectionPanel({
         await window.electronAPI.startNobleBleScanning(protocol);
       } catch (err) {
         console.warn('[ConnectionPanel] startNobleBleScanning failed:', err);
-        setError(humanizeBleError(err));
+        const bleErrMsg = humanizeBleError(err);
+        if (bleErrMsg) setError(bleErrMsg);
         setConnecting(false);
         setConnectionStage('');
       }
@@ -772,7 +782,8 @@ export default function ConnectionPanel({
       // Trigger the actual connection with the peripheral ID
       onConnect('ble', undefined, deviceId).catch((err: unknown) => {
         console.warn('[ConnectionPanel] BLE connect after selection failed', err);
-        setError(humanizeBleError(err));
+        const bleErrMsg = humanizeBleError(err);
+        if (bleErrMsg) setError(bleErrMsg);
         setConnecting(false);
         setConnectionStage('');
       });
@@ -890,7 +901,8 @@ export default function ConnectionPanel({
           }
           isAutoConnectingRef.current = false;
           setIsAutoConnecting(false);
-          setError(humanizeBleError(err));
+          const bleErrMsg = humanizeBleError(err);
+          if (bleErrMsg) setError(bleErrMsg);
           setConnecting(false);
           setConnectionStage('');
         });
@@ -1013,11 +1025,12 @@ export default function ConnectionPanel({
                       'ConnectionPanel bleDeviceNames list',
                     ) ?? {};
                   const cached = cache[device.deviceId];
+                  const advertisedName = device.deviceName || null;
                   const displayName = cached
-                    ? cached !== device.deviceName
-                      ? `${cached} (${device.deviceName})`
+                    ? advertisedName && advertisedName !== cached
+                      ? `${cached} (${advertisedName})`
                       : cached
-                    : device.deviceName;
+                    : (advertisedName ?? device.deviceId);
                   const bleAriaLabel = `${displayName} ${device.deviceId}`;
                   return (
                     <button
@@ -1043,6 +1056,13 @@ export default function ConnectionPanel({
               <p className="px-4 py-2 text-xs text-muted border-t border-gray-700">
                 On macOS, if a device shows as &quot;AdaDFU&quot;, pair it first in System Settings
                 → Bluetooth to see its Meshtastic name.
+              </p>
+            )}
+            {protocol === 'meshcore' && (
+              <p className="px-4 py-2 text-xs text-yellow-400 border-t border-gray-700">
+                Pair your MeshCore device in <strong>system Bluetooth settings</strong> before
+                connecting (Windows: <strong>Settings &rarr; Bluetooth &amp; devices</strong>;
+                macOS: <strong>System Settings &rarr; Bluetooth</strong>).
               </p>
             )}
           </div>
@@ -1955,7 +1975,7 @@ export default function ConnectionPanel({
           {connectionType === 'http' && protocol === 'meshcore' && (
             <div className="space-y-1">
               <label htmlFor="connection-meshcore-tcp-host" className="text-xs text-muted">
-                Host (port 4403)
+                Host (port 5000)
               </label>
               <input
                 id="connection-meshcore-tcp-host"
@@ -1969,7 +1989,7 @@ export default function ConnectionPanel({
                 autoComplete="off"
               />
               <p className="text-xs text-muted">
-                MeshCore companion radio host (connects on port 4403)
+                MeshCore companion radio host (connects on port 5000)
               </p>
             </div>
           )}
@@ -2018,7 +2038,7 @@ export default function ConnectionPanel({
             {connectionType === 'http' && protocol === 'meshcore' && (
               <p>
                 Enter the hostname or IP address of your MeshCore companion radio. It must be
-                reachable on port 4403.
+                reachable on port 5000.
               </p>
             )}
           </div>

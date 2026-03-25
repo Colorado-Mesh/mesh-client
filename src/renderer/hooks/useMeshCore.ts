@@ -12,6 +12,7 @@ import { withTimeout } from '../../shared/withTimeout';
 import {
   classifyMeshcoreBleTimeoutStage,
   isMeshcoreRetryableBleErrorMessage,
+  MESHCORE_SETUP_ABORT_MESSAGE,
 } from '../lib/bleConnectErrors';
 import { classifyPayload, extractMeshtasticSenderId } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
@@ -113,7 +114,29 @@ const MeshcoreConnectionBase =
 // Must exceed the sum of all per-operation GATT timeouts on the slowest platform:
 // non-macOS: connectAsync(30s) + discovery(30s) + subscribe×2(20s each) = 100s.
 const NOBLE_IPC_CONNECT_TIMEOUT_MS = 120_000;
-const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = 20_000;
+
+/** Vite renderer may omit `process.platform`; WinRT handshakes need a longer budget. */
+function rendererLikelyWin32(): boolean {
+  try {
+    if (typeof process !== 'undefined' && process.platform === 'win32') return true;
+  } catch {
+    // catch-no-log-ok process access can throw in some renderer bundles; fall back to UA heuristics
+  }
+  if (typeof navigator !== 'undefined') {
+    const ua = navigator.userAgent ?? '';
+    if (/Windows/i.test(ua)) return true;
+    const plat = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
+      ?.platform;
+    if (plat && /Windows/i.test(plat)) return true;
+    // Legacy fallback when userAgent / userAgentData are inconclusive (Chromium still exposes platform on Win).
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- navigator.platform is the last-resort Win hint
+    if (navigator.platform && /Win/i.test(navigator.platform)) return true;
+  }
+  return false;
+}
+
+/** WinRT + companion handshake can be slower than CoreBluetooth. */
+const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = rendererLikelyWin32() ? 45_000 : 20_000;
 const NOBLE_IPC_CONNECT_MAX_ATTEMPTS = 2;
 
 function serializeErrorLike(value: unknown): string {
@@ -127,6 +150,16 @@ function serializeErrorLike(value: unknown): string {
   } catch {
     // catch-no-log-ok stringify fallback for arbitrary error payloads
     return '[unserializable]';
+  }
+}
+
+/** One string for Electron's renderer console forwarder (avoids "[object Object]" in disk logs). */
+function formatStructuredLogDetail(detail: Record<string, unknown>): string {
+  try {
+    return sanitizeLogMessage(JSON.stringify(detail));
+  } catch {
+    // catch-no-log-ok stringify fallback for circular / non-serializable log payloads
+    return sanitizeLogMessage('{}');
   }
 }
 
@@ -192,6 +225,8 @@ class IpcTcpConnection {
 
 /** BLE connection implemented over session-scoped Noble IPC. */
 class IpcNobleConnection {
+  private static meshcoreConnectChain = Promise.resolve();
+
   private readonly peripheralId: string;
   private readonly sessionId: NobleBleSessionId;
   private inner: NobleIpcMeshcoreConnectionInstance | null = null;
@@ -203,70 +238,89 @@ class IpcNobleConnection {
   }
 
   async connect() {
-    const sessionId = this.sessionId;
-    class NobleOverIpc extends (MeshcoreConnectionBase as unknown as new () => NobleIpcMeshcoreConnectionInstance) {
-      constructor(private readonly session: NobleBleSessionId) {
-        super();
+    const runConnect = async () => {
+      const sessionId = this.sessionId;
+      class NobleOverIpc extends (MeshcoreConnectionBase as unknown as new () => NobleIpcMeshcoreConnectionInstance) {
+        constructor(private readonly session: NobleBleSessionId) {
+          super();
+        }
+
+        /**
+         * Raw companion frames over Nordic UART (same as meshcore.js WebBleConnection), not SerialConnection's
+         * USB framing (0x3c/0x3e + length) used for WebSerial/TCP.
+         */
+        async sendToRadioFrame(data: Uint8Array) {
+          this.emit('tx', data);
+          await this.write(data);
+        }
+
+        async write(bytes: Uint8Array) {
+          console.debug(`[IpcNobleConnection:${this.session}] write ${bytes.length} bytes`);
+          await window.electronAPI.nobleBleToRadio(this.session, bytes);
+        }
+
+        async close() {
+          await window.electronAPI.disconnectNobleBle(this.session);
+        }
       }
 
-      /**
-       * Raw companion frames over Nordic UART (same as meshcore.js WebBleConnection), not SerialConnection's
-       * USB framing (0x3c/0x3e + length) used for WebSerial/TCP.
-       */
-      async sendToRadioFrame(data: Uint8Array) {
-        this.emit('tx', data);
-        await this.write(data);
+      const instance = new NobleOverIpc(sessionId) as unknown as NobleIpcMeshcoreConnectionInstance;
+      this.inner = instance;
+      const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
+        if (sid !== sessionId) return;
+        console.debug(`[IpcNobleConnection:${sessionId}] fromRadio ${bytes.length} bytes`);
+        const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes as ArrayBuffer);
+        instance.onFrameReceived(frame);
+      });
+      const offDisc = window.electronAPI.onNobleBleDisconnected((sid) => {
+        if (sid !== sessionId) return;
+        console.warn(`[IpcNobleConnection:${sessionId}] peripheral disconnected`);
+        instance.onDisconnected();
+      });
+      this.cleanupFns = [offData, offDisc];
+      try {
+        await withTimeout(
+          window.electronAPI.connectNobleBle(sessionId, this.peripheralId).then((result) => {
+            if (!result.ok) throw new Error(result.error || 'BLE connect failed');
+          }),
+          NOBLE_IPC_CONNECT_TIMEOUT_MS,
+          'MeshCore BLE IPC open',
+        );
+        await withTimeout(
+          instance.onConnected(),
+          NOBLE_IPC_HANDSHAKE_TIMEOUT_MS,
+          'MeshCore BLE protocol handshake',
+        );
+      } catch (err) {
+        try {
+          await window.electronAPI.disconnectNobleBle(sessionId);
+        } catch (disconnectErr) {
+          console.debug(
+            '[IpcNobleConnection] best-effort disconnect after connect failure',
+            disconnectErr,
+          );
+        }
+        this.cleanup();
+        this.inner = null;
+        throw err;
       }
+    };
 
-      async write(bytes: Uint8Array) {
-        console.debug(`[IpcNobleConnection:${this.session}] write ${bytes.length} bytes`);
-        await window.electronAPI.nobleBleToRadio(this.session, bytes);
-      }
-
-      async close() {
-        await window.electronAPI.disconnectNobleBle(this.session);
-      }
+    if (this.sessionId !== 'meshcore') {
+      await runConnect();
+      return;
     }
 
-    const instance = new NobleOverIpc(sessionId) as unknown as NobleIpcMeshcoreConnectionInstance;
-    this.inner = instance;
-    const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
-      if (sid !== sessionId) return;
-      console.debug(`[IpcNobleConnection:${sessionId}] fromRadio ${bytes.length} bytes`);
-      const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes as ArrayBuffer);
-      instance.onFrameReceived(frame);
+    const prev = IpcNobleConnection.meshcoreConnectChain;
+    let releaseChain!: () => void;
+    IpcNobleConnection.meshcoreConnectChain = new Promise<void>((resolve) => {
+      releaseChain = resolve;
     });
-    const offDisc = window.electronAPI.onNobleBleDisconnected((sid) => {
-      if (sid !== sessionId) return;
-      console.warn(`[IpcNobleConnection:${sessionId}] peripheral disconnected`);
-      instance.onDisconnected();
-    });
-    this.cleanupFns = [offData, offDisc];
+    await prev;
     try {
-      await withTimeout(
-        window.electronAPI.connectNobleBle(sessionId, this.peripheralId).then((result) => {
-          if (!result.ok) throw new Error(result.error || 'BLE connect failed');
-        }),
-        NOBLE_IPC_CONNECT_TIMEOUT_MS,
-        'MeshCore BLE IPC open',
-      );
-      await withTimeout(
-        instance.onConnected(),
-        NOBLE_IPC_HANDSHAKE_TIMEOUT_MS,
-        'MeshCore BLE protocol handshake',
-      );
-    } catch (err) {
-      try {
-        await window.electronAPI.disconnectNobleBle(sessionId);
-      } catch (disconnectErr) {
-        console.debug(
-          '[IpcNobleConnection] best-effort disconnect after connect failure',
-          disconnectErr,
-        );
-      }
-      this.cleanup();
-      this.inner = null;
-      throw err;
+      await runConnect();
+    } finally {
+      releaseChain();
     }
   }
 
@@ -644,6 +698,8 @@ export function useMeshCore() {
   const ipcTcpRef = useRef<IpcTcpConnection | null>(null);
   const ipcNobleRef = useRef<IpcNobleConnection | null>(null);
   const bleConnectInProgressRef = useRef(false);
+  /** Incremented on `disconnect()` so in-flight `initConn` can abort instead of timing out. */
+  const meshcoreSetupGenerationRef = useRef(0);
   // Map pubKeyPrefix (6-byte hex) → nodeId for DM routing
   const pubKeyPrefixMapRef = useRef<Map<string, number>>(new Map());
   // Full pubKey → nodeId for sending
@@ -1337,17 +1393,51 @@ export function useMeshCore() {
     [addMessage, updateNode, setDeviceLogs],
   );
 
+  /** Reject promptly when `disconnect()` bumps `meshcoreSetupGenerationRef` (avoids hanging on getChannels, etc.). */
+  const awaitUnlessMeshcoreSetupCancelled = useCallback(
+    async <T>(setupGen: number, promise: Promise<T>): Promise<T> => {
+      if (meshcoreSetupGenerationRef.current !== setupGen) {
+        throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+      }
+      return new Promise<T>((resolve, reject) => {
+        const id = setInterval(() => {
+          if (meshcoreSetupGenerationRef.current !== setupGen) {
+            clearInterval(id);
+            reject(new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError'));
+          }
+        }, 50);
+        promise.then(
+          (v) => {
+            clearInterval(id);
+            if (meshcoreSetupGenerationRef.current !== setupGen) {
+              reject(new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError'));
+            } else {
+              resolve(v);
+            }
+          },
+          (e: unknown) => {
+            clearInterval(id);
+            reject(
+              e instanceof Error ? e : new Error(serializeErrorLike(e) || 'Connection failed'),
+            );
+          },
+        );
+      });
+    },
+    [],
+  );
+
   /** Shared post-connection handshake: wire events, fetch self info, contacts, channels. */
   const initConn = useCallback(
-    async (conn: MeshCoreConnection) => {
+    async (conn: MeshCoreConnection, setupGen: number) => {
       connRef.current = conn;
       setupEventListeners(conn);
 
       // Load persisted messages from DB before device's MsgWaiting fires (merge with mount-hydrated state)
       try {
-        const dbMsgs = (await window.electronAPI.db.getMeshcoreMessages(
-          undefined,
-          500,
+        const dbMsgs = (await awaitUnlessMeshcoreSetupCancelled(
+          setupGen,
+          window.electronAPI.db.getMeshcoreMessages(undefined, 500),
         )) as MeshcoreMessageDbRow[];
         if (dbMsgs.length > 0) {
           const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
@@ -1356,11 +1446,12 @@ export function useMeshCore() {
           console.debug('[useMeshCore] initConn: loaded', mapped.length, 'messages from DB');
         }
       } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') throw e;
         console.warn('[useMeshCore] loadMessagesFromDb error', e);
       }
 
       // Fetch self info, contacts, channels (sequential — device handles one request at a time)
-      const info = await conn.getSelfInfo(5000);
+      const info = await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.getSelfInfo(5000));
       console.debug(
         `[useMeshCore] selfInfo: radioFreq=${info.radioFreq} radioBw=${info.radioBw} radioSf=${info.radioSf} radioCr=${info.radioCr} txPower=${info.txPower}`,
       );
@@ -1371,12 +1462,21 @@ export function useMeshCore() {
       setState((prev) => ({ ...prev, myNodeNum: myNodeId, status: 'configured' }));
       useDiagnosticsStore.getState().migrateForeignLoraFromZero(myNodeId);
 
-      const contacts = await withTimeout(conn.getContacts(), 10_000, 'getContacts');
-      const newNodes = await buildNodesFromContacts(contacts, { self: info, myNodeId });
+      const contacts = await awaitUnlessMeshcoreSetupCancelled(
+        setupGen,
+        withTimeout(conn.getContacts(), 10_000, 'getContacts'),
+      );
+      const newNodes = await awaitUnlessMeshcoreSetupCancelled(
+        setupGen,
+        buildNodesFromContacts(contacts, { self: info, myNodeId }),
+      );
       setNodes((prev) => mergeMeshcoreChatStubNodes(prev, newNodes));
       console.debug('[useMeshCore] initConn: contacts loaded, device=', contacts.length);
 
-      const rawChannels = await withTimeout(conn.getChannels(), 10_000, 'getChannels');
+      const rawChannels = await awaitUnlessMeshcoreSetupCancelled(
+        setupGen,
+        withTimeout(conn.getChannels(), 10_000, 'getChannels'),
+      );
       setChannels(
         rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
       );
@@ -1388,25 +1488,32 @@ export function useMeshCore() {
       try {
         const savedManual = localStorage.getItem(MANUAL_CONTACTS_KEY) === 'true';
         if (savedManual) {
-          await conn.setManualAddContacts();
+          await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.setManualAddContacts());
         }
       } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') throw e;
         console.warn('[useMeshCore] setManualAddContacts (init) error', e);
       }
 
-      await conn.syncDeviceTime().catch((e: unknown) => {
-        console.warn('[useMeshCore] syncDeviceTime error', e);
-      });
-      await conn
-        .getBatteryVoltage()
-        .then(({ batteryMilliVolts }) => {
-          setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts } : prev));
-        })
-        .catch((e: unknown) => {
-          console.warn('[useMeshCore] getBatteryVoltage error', e);
-        });
+      await awaitUnlessMeshcoreSetupCancelled(
+        setupGen,
+        conn.syncDeviceTime().catch((e: unknown) => {
+          console.warn('[useMeshCore] syncDeviceTime error', e);
+        }),
+      );
+      await awaitUnlessMeshcoreSetupCancelled(
+        setupGen,
+        conn
+          .getBatteryVoltage()
+          .then(({ batteryMilliVolts }) => {
+            setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts } : prev));
+          })
+          .catch((e: unknown) => {
+            console.warn('[useMeshCore] getBatteryVoltage error', e);
+          }),
+      );
     },
-    [buildNodesFromContacts, setupEventListeners],
+    [awaitUnlessMeshcoreSetupCancelled, buildNodesFromContacts, setupEventListeners],
   );
 
   const connect = useCallback(
@@ -1438,6 +1545,7 @@ export function useMeshCore() {
       let serialRawPort: SerialPort | null = null;
 
       try {
+        const setupGen = meshcoreSetupGenerationRef.current;
         if (type === 'ble') {
           if (!blePeripheralId) {
             throw new Error('BLE peripheral ID required');
@@ -1456,11 +1564,15 @@ export function useMeshCore() {
               conn = nobleConn.connection as unknown as MeshCoreConnection;
               connected = true;
               if (attempt > 1) {
-                console.info('[useMeshCore] connect: BLE via Noble IPC recovered on retry', {
-                  attempt,
-                  maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
-                  elapsedMs: Date.now() - attemptStartedAt,
-                });
+                console.info(
+                  `[useMeshCore] connect: BLE via Noble IPC recovered on retry ${formatStructuredLogDetail(
+                    {
+                      attempt,
+                      maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                      elapsedMs: Date.now() - attemptStartedAt,
+                    },
+                  )}`,
+                );
               }
               break;
             } catch (bleErr) {
@@ -1469,28 +1581,31 @@ export function useMeshCore() {
               const stage = classifyMeshcoreBleTimeoutStage(rawBleMessage);
               const isTimeout = stage !== 'unknown';
               const isRetryable = isMeshcoreRetryableBleErrorMessage(rawBleMessage);
-              console.warn('[useMeshCore] connect: BLE Noble IPC attempt failed', {
-                attempt,
-                maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
-                isTimeout,
-                isRetryable,
-                stage,
-                elapsedMs: Date.now() - attemptStartedAt,
-                message: rawBleMessage,
-              });
+              console.warn(
+                `[useMeshCore] connect: BLE Noble IPC attempt failed ${formatStructuredLogDetail({
+                  attempt,
+                  maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                  isTimeout,
+                  isRetryable,
+                  stage,
+                  elapsedMs: Date.now() - attemptStartedAt,
+                  message: rawBleMessage,
+                })}`,
+              );
               ipcNobleRef.current?.cleanup();
               ipcNobleRef.current = null;
               if (!isRetryable || attempt >= NOBLE_IPC_CONNECT_MAX_ATTEMPTS) {
                 throw bleErr;
               }
               console.debug(
-                '[useMeshCore] connect: retrying BLE Noble IPC after retryable failure',
-                {
-                  nextAttempt: attempt + 1,
-                  maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
-                  isTimeout,
-                  stage,
-                },
+                `[useMeshCore] connect: retrying BLE Noble IPC after retryable failure ${formatStructuredLogDetail(
+                  {
+                    nextAttempt: attempt + 1,
+                    maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                    isTimeout,
+                    stage,
+                  },
+                )}`,
               );
               // Brief pause before retry: gives BlueZ/WinRT time to release adapter state
               // after a failed or timed-out connect attempt.
@@ -1515,14 +1630,18 @@ export function useMeshCore() {
           // tcp
           const host = tcpHost ?? 'localhost';
           console.debug('[useMeshCore] connect: TCP to', host);
-          const tcpConn = new IpcTcpConnection(host, 4403);
+          const tcpConn = new IpcTcpConnection(host, 5000);
           ipcTcpRef.current = tcpConn;
           await tcpConn.connect();
           conn = tcpConn.connection as unknown as MeshCoreConnection;
         }
 
         if (!conn) throw new Error('Connection initialization failed');
-        await initConn(conn);
+        if (meshcoreSetupGenerationRef.current !== setupGen) {
+          void conn.close().catch(() => {});
+          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+        }
+        await initConn(conn, setupGen);
         if (type === 'serial') {
           const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
           const nodeName = selfInfoRef.current?.name?.trim() || null;
@@ -1543,6 +1662,36 @@ export function useMeshCore() {
         }
         console.debug('[useMeshCore] connect: handshake complete, type=', type);
       } catch (err) {
+        const isSetupAbort =
+          err instanceof DOMException &&
+          err.name === 'AbortError' &&
+          err.message === MESHCORE_SETUP_ABORT_MESSAGE;
+        if (isSetupAbort) {
+          console.debug('[useMeshCore] connect: aborted (disconnect during setup)');
+          setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
+          ipcTcpRef.current?.cleanup();
+          ipcTcpRef.current = null;
+          ipcNobleRef.current?.cleanup();
+          ipcNobleRef.current = null;
+          if (type === 'serial') {
+            connRef.current = null;
+            if (conn) {
+              try {
+                await conn.close();
+              } catch {
+                // catch-no-log-ok port may already be in a bad state
+              }
+            }
+            if (serialRawPort) {
+              try {
+                await serialRawPort.close();
+              } catch {
+                // catch-no-log-ok port may already be in a bad state
+              }
+            }
+          }
+          throw err;
+        }
         const rawMessage = serializeErrorLike(err) || 'Connection failed';
         const safeMessage = rawMessage.trim() || 'Connection failed';
         const isAlreadyInProgress = /already in progress|Connection already in progress/i.test(
@@ -1576,14 +1725,19 @@ export function useMeshCore() {
         );
         if (isBleConnectTimeout) {
           console.warn(
-            '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback',
-            { stage: bleTimeoutStage },
+            `[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback ${formatStructuredLogDetail(
+              { stage: bleTimeoutStage },
+            )}`,
           );
         }
         const errForLog = serializeErrorLike(err) || '(no error object)';
-        console.error('[useMeshCore] connect error', normalizedErr.message, errForLog, {
-          bleTimeoutStage: isBleConnectTimeout ? bleTimeoutStage : null,
-        });
+        console.error(
+          `[useMeshCore] connect error ${formatStructuredLogDetail({
+            userMessage: normalizedErr.message,
+            raw: errForLog,
+            bleTimeoutStage: isBleConnectTimeout ? bleTimeoutStage : null,
+          })}`,
+        );
         setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
         ipcTcpRef.current?.cleanup();
         ipcTcpRef.current = null;
@@ -1632,6 +1786,7 @@ export function useMeshCore() {
         let serialPort: SerialPort | null = null;
         let serialConn: MeshCoreConnection | null = null;
         try {
+          const setupGen = meshcoreSetupGenerationRef.current;
           if (!navigator.serial?.getPorts) throw new Error('Web Serial API not available');
           const ports = await navigator.serial.getPorts();
           serialPort = selectGrantedSerialPort(ports, lastSerialPortId);
@@ -1640,13 +1795,23 @@ export function useMeshCore() {
           serialConn = new (WebSerialConnection as unknown as new (
             port: unknown,
           ) => MeshCoreConnection)(serialPort);
-          await initConn(serialConn);
+          await initConn(serialConn, setupGen);
           console.debug('[useMeshCore] connectAutomatic serial: connected');
         } catch (err) {
-          console.error(
-            '[useMeshCore] connectAutomatic serial error',
-            serializeErrorLike(err) || err,
-          );
+          const isSetupAbort =
+            err instanceof DOMException &&
+            err.name === 'AbortError' &&
+            err.message === MESHCORE_SETUP_ABORT_MESSAGE;
+          if (isSetupAbort) {
+            console.debug(
+              '[useMeshCore] connectAutomatic serial: aborted (disconnect during setup)',
+            );
+          } else {
+            console.error(
+              '[useMeshCore] connectAutomatic serial error',
+              serializeErrorLike(err) || err,
+            );
+          }
           setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
           connRef.current = null;
           // Always try both: conn.close() may throw if the read pump already errored
@@ -1694,6 +1859,7 @@ export function useMeshCore() {
 
   const disconnect = useCallback(async () => {
     console.debug('[useMeshCore] disconnect');
+    meshcoreSetupGenerationRef.current += 1;
     // Cancel all pending ACK timers
     for (const { timeoutId } of pendingAcksRef.current.values()) {
       clearTimeout(timeoutId);
