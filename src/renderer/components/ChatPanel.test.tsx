@@ -182,6 +182,197 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByTitle('Received via MQTT')).toBeInTheDocument();
   });
 
+  it('surfaces incoming DM conversations and renders them in DM view', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshtastic"
+          isConnected
+          myNodeNum={1}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'Private hello',
+              channel: -1,
+              timestamp: Date.now(),
+              status: 'acked',
+              to: 1,
+            },
+          ]}
+          nodes={
+            new Map([
+              [
+                2,
+                {
+                  node_id: 2,
+                  long_name: 'Alice',
+                  short_name: '',
+                  hw_model: '',
+                  snr: 0,
+                  battery: 0,
+                  last_heard: Date.now(),
+                  latitude: null,
+                  longitude: null,
+                },
+              ],
+            ])
+          }
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.queryByText('Private hello')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Alice' }));
+    expect(screen.getByText('Private hello')).toBeInTheDocument();
+  });
+
+  it('shows close button for inferred DM tabs in Meshtastic', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshtastic"
+          isConnected
+          myNodeNum={1}
+          nodes={
+            new Map([
+              [
+                2,
+                {
+                  node_id: 2,
+                  long_name: 'Alice',
+                  short_name: 'Alice',
+                  hw_model: '',
+                  snr: 0,
+                  battery: 0,
+                  last_heard: Date.now(),
+                  latitude: null,
+                  longitude: null,
+                },
+              ],
+            ])
+          }
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'Private hello',
+              channel: -1,
+              timestamp: Date.now(),
+              status: 'acked',
+              to: 1,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByTitle('Close DM')).toBeInTheDocument();
+  });
+
+  it('allows closing inferred DM tab and resurfaces on subsequent message (even if timestamp is stale)', async () => {
+    const user = userEvent.setup();
+    const firstTs = Date.now();
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshtastic"
+          isConnected
+          myNodeNum={1}
+          nodes={
+            new Map([
+              [
+                2,
+                {
+                  node_id: 2,
+                  long_name: 'Alice',
+                  short_name: 'Alice',
+                  hw_model: '',
+                  snr: 0,
+                  battery: 0,
+                  last_heard: Date.now(),
+                  latitude: null,
+                  longitude: null,
+                },
+              ],
+            ])
+          }
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'First DM',
+              channel: -1,
+              timestamp: firstTs,
+              status: 'acked',
+              to: 1,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+    await user.click(screen.getByTitle('Close DM'));
+    expect(screen.queryByRole('button', { name: 'Alice' })).not.toBeInTheDocument();
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          isConnected
+          myNodeNum={1}
+          nodes={
+            new Map([
+              [
+                2,
+                {
+                  node_id: 2,
+                  long_name: 'Alice',
+                  short_name: 'Alice',
+                  hw_model: '',
+                  snr: 0,
+                  battery: 0,
+                  last_heard: Date.now(),
+                  latitude: null,
+                  longitude: null,
+                },
+              ],
+            ])
+          }
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'First DM',
+              channel: -1,
+              timestamp: firstTs,
+              status: 'acked',
+              to: 1,
+            },
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'Second DM',
+              channel: -1,
+              // Must resurface even if timestamp is not newer (regression: older/stale timestamps
+              // can happen across transports/hydration).
+              timestamp: firstTs,
+              status: 'acked',
+              to: 1,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+  });
+
   it('shows role="alert" when onSend rejects', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn().mockRejectedValue(new Error('send failed'));

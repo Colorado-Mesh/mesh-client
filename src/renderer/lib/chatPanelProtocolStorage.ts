@@ -12,6 +12,10 @@ export function lastReadStorageKey(protocol: MeshProtocol): string {
   return `mesh-client:lastRead:${protocol}`;
 }
 
+export function dismissedDmTabsStorageKey(protocol: MeshProtocol): string {
+  return `mesh-client:dismissedDmTabs:${protocol}`;
+}
+
 /** Load persisted open DM tab node ids for this protocol; migrates legacy key into Meshtastic only. */
 export function loadOpenDmTabsInitial(protocol: MeshProtocol): number[] {
   const key = openDmTabsStorageKey(protocol);

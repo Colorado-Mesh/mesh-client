@@ -1,11 +1,13 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import {
+  dismissedDmTabsStorageKey,
   lastReadStorageKey,
   loadOpenDmTabsInitial,
   loadPersistedLastReadInitial,
   openDmTabsStorageKey,
 } from '../lib/chatPanelProtocolStorage';
+import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayChar, emojiDisplayLabel } from '../lib/reactions';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 
@@ -190,6 +192,12 @@ function UnreadDivider() {
   );
 }
 
+function withoutDmNode(source: Record<number, number>, nodeNum: number): Record<number, number> {
+  return Object.fromEntries(
+    Object.entries(source).filter(([key]) => Number(key) !== nodeNum),
+  ) as Record<number, number>;
+}
+
 interface Props {
   messages: ChatMessage[];
   channels: { index: number; name: string }[];
@@ -261,6 +269,22 @@ function ChatPanel({
   const channelsRef = useRef(channels);
   channelsRef.current = channels;
   const [activeDmNode, setActiveDmNode] = useState<number | null>(null);
+  const [dismissedDmTabs, setDismissedDmTabs] = useState<Record<number, number>>(() => {
+    const raw = localStorage.getItem(dismissedDmTabsStorageKey(protocol));
+    const parsed = parseStoredJson<Record<string, number>>(raw, 'ChatPanel dismissedDmTabs');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out: Record<number, number> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      const node = Number(key);
+      if (!Number.isFinite(node) || typeof value !== 'number') continue;
+      // Back-compat: older versions stored `Date.now()` here (ms since epoch).
+      // We now store an inferred DM message-count. If the value looks like a timestamp,
+      // treat it as "dismissed nothing" so conversations can resurface.
+      const looksLikeTimestamp = value > 10_000_000_000;
+      out[node] = looksLikeTimestamp ? 0 : value;
+    }
+    return out;
+  });
 
   // Persist openDmTabs to localStorage whenever it changes
   useEffect(() => {
@@ -270,6 +294,14 @@ function ChatPanel({
       console.warn('[ChatPanel] persist openDmTabs failed', e);
     }
   }, [openDmTabs, protocol]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(dismissedDmTabsStorageKey(protocol), JSON.stringify(dismissedDmTabs));
+    } catch (e) {
+      console.warn('[ChatPanel] persist dismissedDmTabs failed', e);
+    }
+  }, [dismissedDmTabs, protocol]);
 
   // Track unread counts per channel
   const lastReadRef = useRef<Map<number, number>>(new Map());
@@ -320,6 +352,10 @@ function ChatPanel({
       if (!openDmTabsRef.current.includes(initialDmTarget)) {
         setOpenDmTabs((prev) => [...prev, initialDmTarget]);
       }
+      setDismissedDmTabs((prev) => {
+        if (!(initialDmTarget in prev)) return prev;
+        return withoutDmNode(prev, initialDmTarget);
+      });
       setActiveDmNode(initialDmTarget);
       setViewMode('dm');
       onDmTargetConsumed?.();
@@ -342,6 +378,35 @@ function ChatPanel({
     }
     return { regularMessages: regular, reactionsByReplyId: reactions };
   }, [messages]);
+
+  const inferredDmTabs = useMemo(() => {
+    const peers = new Map<number, number>();
+    for (const msg of regularMessages) {
+      if (msg.to == null) continue;
+      // Mirror the DM thread filter in `filteredMessages`:
+      // - outgoing: sender_id == me, to == peer
+      // - incoming: sender_id == peer, to == me
+      let peer: number | undefined;
+      if (msg.sender_id === myNodeNum && msg.to !== myNodeNum) peer = msg.to;
+      if (msg.to === myNodeNum && msg.sender_id !== myNodeNum) peer = msg.sender_id;
+      if (peer == null) continue;
+      peers.set(peer, (peers.get(peer) ?? 0) + 1);
+    }
+    return peers;
+  }, [regularMessages, myNodeNum]);
+
+  const visibleDmTabs = useMemo(() => {
+    const all = new Set(openDmTabs);
+    for (const [nodeNum, dmCount] of inferredDmTabs) {
+      const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
+      if (dmCount > dismissedCount) {
+        all.add(nodeNum);
+      }
+    }
+    return Array.from(all);
+  }, [openDmTabs, inferredDmTabs, dismissedDmTabs]);
+
+  const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
 
   // Lookup map for rendering quoted replies (packetId in Meshtastic, timestamp fallback in MeshCore)
   const messageByReplyKey = useMemo(() => {
@@ -577,6 +642,10 @@ function ChatPanel({
   // Open a DM tab for a node
   const openDmTo = useCallback((nodeNum: number) => {
     setOpenDmTabs((prev) => (prev.includes(nodeNum) ? prev : [...prev, nodeNum]));
+    setDismissedDmTabs((prev) => {
+      if (!(nodeNum in prev)) return prev;
+      return withoutDmNode(prev, nodeNum);
+    });
     setActiveDmNode(nodeNum);
     setViewMode('dm');
   }, []);
@@ -585,9 +654,13 @@ function ChatPanel({
   const closeDmTab = useCallback(
     (nodeNum: number) => {
       setOpenDmTabs((prev) => prev.filter((n) => n !== nodeNum));
+      if (protocol === 'meshtastic' && inferredDmTabSet.has(nodeNum)) {
+        const dmCount = inferredDmTabs.get(nodeNum) ?? 0;
+        setDismissedDmTabs((prev) => ({ ...prev, [nodeNum]: dmCount }));
+      }
       if (activeDmNode === nodeNum) {
         // Switch to next tab or back to channels
-        const remaining = openDmTabs.filter((n) => n !== nodeNum);
+        const remaining = visibleDmTabs.filter((n) => n !== nodeNum);
         if (remaining.length > 0) {
           setActiveDmNode(remaining[remaining.length - 1]);
         } else {
@@ -596,7 +669,7 @@ function ChatPanel({
         }
       }
     },
-    [activeDmNode, openDmTabs],
+    [activeDmNode, inferredDmTabSet, inferredDmTabs, protocol, visibleDmTabs],
   );
 
   function formatTime(ts: number): string {
@@ -777,10 +850,10 @@ function ChatPanel({
         <span className="text-[10px] text-muted font-medium uppercase tracking-wider mr-1">
           DMs
         </span>
-        {openDmTabs.length === 0 ? (
+        {visibleDmTabs.length === 0 ? (
           <span className="text-[10px] text-gray-600 italic">No conversations</span>
         ) : (
-          openDmTabs.map((nodeNum) => (
+          visibleDmTabs.map((nodeNum) => (
             <div
               key={nodeNum}
               className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
@@ -804,17 +877,19 @@ function ChatPanel({
               >
                 {getDmLabel(nodeNum)}
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  closeDmTab(nodeNum);
-                }}
-                aria-label="x"
-                className="ml-0.5 text-muted hover:text-white text-[10px] leading-none"
-                title="Close DM"
-              >
-                x
-              </button>
+              {protocol === 'meshtastic' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeDmTab(nodeNum);
+                  }}
+                  aria-label="x"
+                  className="ml-0.5 text-muted hover:text-white text-[10px] leading-none"
+                  title="Close DM"
+                >
+                  x
+                </button>
+              )}
             </div>
           ))
         )}

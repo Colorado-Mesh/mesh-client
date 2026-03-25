@@ -1194,6 +1194,7 @@ export function useMeshCore() {
                     channel: -1,
                     timestamp: d.senderTimestamp * 1000,
                     status: 'acked',
+                    to: myNodeNumRef.current || undefined,
                     receivedVia: 'rf',
                     isHistory: true,
                     meshcoreDedupeKey: d.text,
@@ -1276,6 +1277,7 @@ export function useMeshCore() {
           channel: -1, // DM channel sentinel
           timestamp: d.senderTimestamp * 1000,
           status: 'acked',
+          to: myNodeNumRef.current || undefined,
           receivedVia: 'rf',
           meshcoreDedupeKey: d.text,
         });

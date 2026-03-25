@@ -39,6 +39,16 @@ function sampleAckOnlyMeshcoreDbRow() {
   };
 }
 
+function sampleIncomingDmMeshcoreDbRow() {
+  return {
+    ...sampleMeshcoreDbRow(),
+    id: 55,
+    channel_idx: -1,
+    to_node: 0x11111111,
+    payload: 'Incoming DM from DB',
+  };
+}
+
 describe('useMeshCore mount hydration', () => {
   beforeEach(() => {
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
@@ -108,5 +118,21 @@ describe('useMeshCore mount hydration', () => {
 
     expect(result.current.messages[0].payload).toBe('Hello from DB');
     expect(result.current.messages[0].sender_name).toBe('Alice');
+  });
+
+  it('hydrates persisted incoming DMs with to_node for DM filtering', async () => {
+    const dmRow = sampleIncomingDmMeshcoreDbRow();
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([dmRow]);
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await waitFor(() => {
+      expect(result.current.messages.length).toBe(1);
+    });
+
+    const dm = result.current.messages[0];
+    expect(dm.payload).toBe('Incoming DM from DB');
+    expect(dm.to).toBe(dmRow.to_node);
+    expect(dm.channel).toBe(-1);
   });
 });
