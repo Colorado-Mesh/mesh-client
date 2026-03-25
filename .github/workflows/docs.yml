@@ -20,4 +20,20 @@ jobs:
         with:
           python-version: 3.x
       - run: pip install -r docs/requirements.txt
+      - run: cp README.md docs/index.md
+      - name: Rewrite README links for MkDocs root
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          index = Path("docs/index.md")
+          text = index.read_text(encoding="utf-8")
+
+          # Convert README-style docs-relative links to MkDocs page-relative links.
+          text = re.sub(r"\]\(docs/([^)]+)\)", r"](\1)", text)
+          text = re.sub(r'src="docs/([^"]+)"', r'src="\1"', text)
+
+          index.write_text(text, encoding="utf-8")
+          PY
       - run: mkdocs gh-deploy --force
