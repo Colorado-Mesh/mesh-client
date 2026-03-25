@@ -182,7 +182,7 @@ Reference file: `src/renderer/lib/meshcoreUtils.ts`
 
 #### `IpcTcpConnection`
 
-TCP transport is implemented as a class inside `useMeshCore.ts` (not a separate file). It wraps `SerialConnection` from `meshcore.js` and routes bytes through the main-process TCP bridge. The default MeshCore TCP port is **4403**.
+TCP transport is implemented as a class inside `useMeshCore.ts` (not a separate file). It wraps `SerialConnection` from `meshcore.js` and routes bytes through the main-process TCP bridge. The default MeshCore TCP port is **5000**.
 
 Data flow when TCP is selected:
 

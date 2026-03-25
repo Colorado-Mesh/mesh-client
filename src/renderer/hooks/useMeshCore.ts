@@ -1575,7 +1575,7 @@ export function useMeshCore() {
           // tcp
           const host = tcpHost ?? 'localhost';
           console.debug('[useMeshCore] connect: TCP to', host);
-          const tcpConn = new IpcTcpConnection(host, 4403);
+          const tcpConn = new IpcTcpConnection(host, 5000);
           ipcTcpRef.current = tcpConn;
           await tcpConn.connect();
           conn = tcpConn.connection as unknown as MeshCoreConnection;
