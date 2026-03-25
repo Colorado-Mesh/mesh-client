@@ -90,6 +90,9 @@ export default tseslint.config(
       // strictTypeChecked enables this, but it flags many defensive DOM/runtime patterns where
       // types are narrower than reality; keep other strict rules without churning the whole UI.
       '@typescript-eslint/no-unnecessary-condition': 'off',
+      // Autofix removes generics that TypeScript still needs for inference (tsc errors after
+      // eslint --fix). Prefer explicit types at those call sites over a blanket autofix.
+      '@typescript-eslint/no-unnecessary-type-arguments': 'off',
       '@typescript-eslint/prefer-nullish-coalescing': [
         'error',
         {

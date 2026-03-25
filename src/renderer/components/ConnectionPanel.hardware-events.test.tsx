@@ -14,6 +14,7 @@
  */
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { flushSync } from 'react-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { NobleBleDevice, SerialPort } from '@/shared/electron-api.types';
@@ -62,14 +63,15 @@ describe('ConnectionPanel hardware event wiring', () => {
     const registeredCb = vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mock
       .calls[0]?.[0];
     expect(registeredCb, 'callback must be registered').toBeDefined();
+    if (registeredCb === undefined) throw new Error('callback must be registered');
 
     const device: NobleBleDevice = { deviceId: 'ble-001', deviceName: 'Test Radio' };
     // Must not throw — validates payload shape is consumed correctly
-    expect(() => {
-      act(() => {
+    act(() => {
+      flushSync(() => {
         registeredCb(device);
       });
-    }).not.toThrow();
+    });
   });
 
   it('deduplicates BLE devices by deviceId on repeated discovery', () => {
@@ -173,6 +175,7 @@ describe('ConnectionPanel hardware event wiring', () => {
 
     const registeredCb = vi.mocked(window.electronAPI.onSerialPortsDiscovered).mock.calls[0]?.[0];
     expect(registeredCb, 'callback must be registered').toBeDefined();
+    if (registeredCb === undefined) throw new Error('callback must be registered');
 
     const ports: SerialPort[] = [
       { portId: 'port-1', displayName: 'Meshtastic USB', portName: '/dev/ttyUSB0' },
@@ -185,11 +188,11 @@ describe('ConnectionPanel hardware event wiring', () => {
       },
     ];
     // Must not throw — validates payload shape including optional fields
-    expect(() => {
-      act(() => {
+    act(() => {
+      flushSync(() => {
         registeredCb(ports);
       });
-    }).not.toThrow();
+    });
   });
 
   it('onSerialPortsDiscovered handles empty port list without crashing', () => {
@@ -197,11 +200,12 @@ describe('ConnectionPanel hardware event wiring', () => {
 
     const registeredCb = vi.mocked(window.electronAPI.onSerialPortsDiscovered).mock.calls[0]?.[0];
     expect(registeredCb).toBeDefined();
-    expect(() => {
-      act(() => {
+    if (registeredCb === undefined) throw new Error('callback must be registered');
+    act(() => {
+      flushSync(() => {
         registeredCb([]);
       });
-    }).not.toThrow();
+    });
   });
 
   it('unsubscribes onSerialPortsDiscovered listener on unmount', () => {
