@@ -1,17 +1,62 @@
-# Welcome to MkDocs
+# Mesh-Client
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+Cross-platform **Electron** desktop client for **Meshtastic** and **MeshCore**
+on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**,
+**Wi-Fi/TCP**, **MQTT**, local **SQLite** history, and routing diagnostics.
 
-## Commands
+This page is the docs landing view based on the project README. For the full
+repository version, see [README on GitHub](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md).
 
-- `mkdocs new [dir-name]` - Create a new project.
-- `mkdocs serve` - Start the live-reloading docs server.
-- `mkdocs build` - Build the documentation site.
-- `mkdocs -h` - Print help message and exit.
+---
 
-## Project layout
+## Why
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+Mesh-Client provides one desktop workflow for both Meshtastic and MeshCore
+with persistent local storage, keyboard-first UX, and protocol-specific
+diagnostic tooling.
+
+Key outcomes:
+
+- True message persistence with SQLite-backed history.
+- Unified interface across Meshtastic and MeshCore.
+- Advanced mesh visibility via diagnostics, map overlays, and routing insights.
+- Cross-platform desktop support for macOS, Linux, and Windows.
+
+---
+
+## Visuals
+
+![Nodes](images/nodes.png)
+![Map](images/map.png)
+![Diagnostics](images/diagnostics.png)
+
+---
+
+## Quick Start
+
+Pre-built binaries are available in [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases).
+
+For development setup and local build/test workflow, see:
+
+- [Development Guide](development-environment.md)
+- [Troubleshooting](troubleshooting.md)
+- [Contributing](contributing.md)
+
+---
+
+## Docs Guide
+
+- **Engineering**
+  - [Development Guide](development-environment.md)
+  - [Accessibility Checklist](accessibility-checklist.md)
+  - [Contributing](contributing.md)
+- **MeshCore Roadmap**
+  - [Deferred Epics](meshcore-deferred-epics.md)
+  - [Feature Parity](meshcore-meshtastic-parity.md)
+  - [MQTT Auth](letsmesh-mqtt-auth.md)
+- **Support**
+  - [Diagnostics](diagnostics.md)
+  - [Troubleshooting](troubleshooting.md)
+- **Project**
+  - [License](license.md)
+  - [Credits](credits.md)

@@ -25,10 +25,13 @@ theme:
     - search.highlight
 
 nav:
-  - Home: index.md
+  - Home:
+      - Overview: index.md
+      - License: license.md
+      - Credits: credits.md
   - Engineering:
       - Development Guide: development-environment.md
-      - Hardware Setup: development-environment.md
+      - Contributing: contributing.md
       - Accessibility: accessibility-checklist.md
   - MeshCore Roadmap:
       - Deferred Epics: meshcore-deferred-epics.md
@@ -37,6 +40,6 @@ nav:
   - Support:
       - Diagnostics: diagnostics.md
       - Troubleshooting: troubleshooting.md
-      - Contributing: https://github.com/Colorado-Mesh/mesh-client/blob/main/CONTRIBUTING.md
-      - License: https://github.com/Colorado-Mesh/mesh-client/blob/main/LICENSE
-      - Credits: credits.md
+      - Community:
+          - Discord: https://discord.com/invite/McChKR5NpS
+          - Website: https://coloradomesh.org/
