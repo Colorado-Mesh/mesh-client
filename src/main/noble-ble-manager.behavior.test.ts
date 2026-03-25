@@ -107,6 +107,10 @@ class FakeNoble extends EventEmitter {
 const MESHCORE_RX_UUID = '6e400002b5a3f393e0a9e50e24dcca9e';
 const MESHCORE_TX_UUID = '6e400003b5a3f393e0a9e50e24dcca9e';
 
+/** Matches `shouldUseFromRadioReadPump` for meshcore + notify-first: no parallel GATT reads on darwin or win32. */
+const MESHCORE_NOTIFY_FIRST_SKIPS_READ_PUMP =
+  process.platform === 'darwin' || process.platform === 'win32';
+
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -146,8 +150,13 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
     });
 
     expect(fromRadio.subscribeCalls).toBe(1);
-    // MeshCore + notify-first: never GATT-read NUS TX (WinRT protocol errors; same as Web Bluetooth).
-    expect(fromRadio.readCalls).toBe(0);
+    // MeshCore + notify-first: darwin + win32 skip the read pump (CoreBluetooth / WinRT). Linux keeps
+    // a read safety net alongside notify — expect at least the initial drain read on CI.
+    if (MESHCORE_NOTIFY_FIRST_SKIPS_READ_PUMP) {
+      expect(fromRadio.readCalls).toBe(0);
+    } else {
+      expect(fromRadio.readCalls).toBeGreaterThanOrEqual(1);
+    }
 
     const received: Uint8Array[] = [];
     manager.on('fromRadio', ({ bytes }) => {
@@ -192,15 +201,24 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
     );
   });
 
-  it('meshcore notify-first never schedules post-write GATT read (notify-only path)', async () => {
+  it('meshcore notify-first skips post-write read pump on darwin/win32 only', async () => {
     const { manager, fromRadio } = await setupMeshcoreConnection({
       properties: ['read', 'notify'],
       readResults: [Buffer.alloc(0)],
     });
 
-    expect(fromRadio.readCalls).toBe(0);
+    const readsAfterSubscribe = fromRadio.readCalls;
+    if (MESHCORE_NOTIFY_FIRST_SKIPS_READ_PUMP) {
+      expect(readsAfterSubscribe).toBe(0);
+    } else {
+      expect(readsAfterSubscribe).toBeGreaterThanOrEqual(1);
+    }
     await manager.writeToRadio('meshcore', Buffer.from([0xbb]));
     await wait(140);
-    expect(fromRadio.readCalls).toBe(0);
+    if (MESHCORE_NOTIFY_FIRST_SKIPS_READ_PUMP) {
+      expect(fromRadio.readCalls).toBe(0);
+    } else {
+      expect(fromRadio.readCalls).toBeGreaterThan(readsAfterSubscribe);
+    }
   });
 });
