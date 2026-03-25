@@ -25,6 +25,10 @@ npm run format:check
 
 ## Documentation Workflow
 
+- Create/activate a local Python virtualenv first (required on many macOS setups):
+  - macOS/Linux: `python3 -m venv .venv && source .venv/bin/activate`
+  - Windows PowerShell: `py -3 -m venv .venv; .\.venv\Scripts\Activate.ps1`
+- Install docs deps: `npm run docs:install`
 - Build docs: `npm run docs:build`
 - Preview docs: `npm run docs:serve`
 

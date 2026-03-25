@@ -395,7 +395,7 @@ Fixes #35
 ## PR Process
 
 1. **Describe your changes** — What did you change and why? What did you test?
-2. **Update docs** — If you added or changed a feature, update README.md or relevant `/docs` files. If you touch docs content, install MkDocs deps (`npm run docs:install`) and run `npm run docs:build` before opening the PR.
+2. **Update docs** — If you added or changed a feature, update README.md or relevant `/docs` files. If you touch docs content, create/activate a local Python virtualenv first (recommended on macOS/Homebrew Python; avoids `externally-managed-environment`), then install MkDocs deps (`npm run docs:install`) and run `npm run docs:build` before opening the PR.
 3. **Follow existing code style** — Run `npm run lint` (and let pre-commit run `format` or run `npm run format` yourself). Fix import-sort, type-imports, and hook dependency issues before pushing.
 4. **Keep scope tight** — Avoid refactoring unrelated code in the same PR. One concern per PR makes review faster.
 5. **Await review** — A maintainer will review and may request changes before merging.

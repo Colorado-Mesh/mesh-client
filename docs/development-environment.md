@@ -25,13 +25,22 @@ npm --version
 
 Docs are built with MkDocs Material.
 
-1. Install the Python dependency:
+1. Create and activate a local virtual environment (recommended on macOS/Homebrew Python because of PEP 668 externally managed environments):
+   - macOS/Linux:
+     - `python3 -m venv .venv`
+     - `source .venv/bin/activate`
+   - Windows PowerShell:
+     - `py -3 -m venv .venv`
+     - `.\.venv\Scripts\Activate.ps1`
+2. Install the docs dependencies:
    - `npm run docs:install`
    - or (manual): `python3 -m pip install -r docs/requirements.txt`
-2. Build locally:
+3. Build locally:
    - `npm run docs:build`
-3. Preview locally:
+4. Preview locally:
    - `npm run docs:serve`
+
+If `npm run docs:install` fails with `externally-managed-environment`, activate `.venv` and rerun.
 
 ### 2) Clone and install
 
