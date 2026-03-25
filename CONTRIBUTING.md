@@ -244,6 +244,8 @@ If the input has a visible label element next to it, use `htmlFor`/`id`. If it's
 
 Vitest runs two projects (see `vitest.config.ts`): **renderer** (`src/renderer/**/*.test.{ts,tsx}`, jsdom) and **main** (`src/main/**/*.test.ts`, node). Add or extend tests in the matching project when you change renderer or main-process behavior.
 
+If you are fixing a regression, always add or update a test that reproduces the regression and verifies the fix so it does not happen again.
+
 **Accessibility tests:** `src/renderer/vitest.setup.ts` registers **vitest-axe**. New or heavily changed panels should include a test that renders the component and asserts no axe violations, following existing component tests (e.g. `await axe(container)` and `expect(results).toHaveNoViolations()`).
 
 ```bash
