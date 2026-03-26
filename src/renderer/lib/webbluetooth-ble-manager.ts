@@ -62,8 +62,14 @@ export class WebBluetoothManager {
       });
     } catch (err) {
       const domErr = err as DOMException;
-      const errorDetails = domErr.name ? `${domErr.name}: ${domErr.message}` : String(err);
-      console.warn(`[WebBluetooth:${this.sessionId}] requestDevice failed:`, errorDetails);
+      console.error(
+        `[WebBluetooth:${this.sessionId}] requestDevice EXCEPTION:`,
+        err,
+        'name:',
+        domErr?.name,
+        'message:',
+        domErr?.message,
+      );
       throw err;
     }
 
