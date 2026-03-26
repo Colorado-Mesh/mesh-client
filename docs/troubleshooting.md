@@ -52,10 +52,6 @@ See [development-environment.md](development-environment.md#windows) for Python 
   ```
 - MeshCore devices must be in Bluetooth Companion mode and paired with a PIN. If Linux pairs without asking for a PIN, remove and re-pair using the steps above.
 
-### Linux Bluetooth (BLE) Permissions
-
-See [development-environment.md#linux-bluetooth-ble-permissions](development-environment.md#linux-bluetooth-ble-permissions) for full source-development and packaged-binary guidance.
-
 ### Serial port not detected
 
 See [development-environment.md](development-environment.md) for OS-specific serial setup and driver guidance.
