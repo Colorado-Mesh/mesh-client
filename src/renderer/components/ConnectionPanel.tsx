@@ -1329,6 +1329,10 @@ export default function ConnectionPanel({
         )}
 
         {/* Re-pair button for Linux BLE pairing issues */}
+        {(() => {
+          console.debug('[ConnectionPanel] RENDER CHECK:', { showRePairButton, isLinux, error });
+          return null;
+        })()}
         {showRePairButton && isLinux && (
           <div className="w-full max-w-4xl flex flex-col gap-2">
             <button
