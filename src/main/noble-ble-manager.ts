@@ -3,8 +3,9 @@ import { EventEmitter } from 'events';
 import { withTimeout } from '../shared/withTimeout';
 import { logDeviceConnection, sanitizeLogMessage } from './log-service';
 
+// Only load noble on Mac/Windows — Linux uses Web Bluetooth in renderer instead
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const noble = require('@stoprocent/noble');
+const noble = process.platform === 'linux' ? null : require('@stoprocent/noble');
 
 // Meshtastic BLE GATT UUIDs (from @meshtastic/transport-web-bluetooth)
 const SERVICE_UUID = '6ba1b21815a8461f9fa85dcae273eafd';
@@ -146,7 +147,7 @@ export class NobleBleManager extends EventEmitter {
   private adapterReady = false;
   /** True only while noble.startScanning() has actually been called and confirmed active. */
   private scanningActive = false;
-  private lastAdapterState = String(noble.state ?? 'unknown');
+  private lastAdapterState = String(noble?.state ?? 'unknown');
   private releaseHandlesCallCount = 0;
 
   constructor() {
