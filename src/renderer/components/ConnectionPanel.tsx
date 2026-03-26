@@ -1328,12 +1328,8 @@ export default function ConnectionPanel({
           </div>
         )}
 
-        {/* Re-pair button for Linux BLE pairing issues */}
-        {(() => {
-          console.debug('[ConnectionPanel] RENDER CHECK:', { showRePairButton, isLinux, error });
-          return null;
-        })()}
-        {showRePairButton && isLinux && (
+        {/* Re-pair button for Linux BLE pairing issues - DEBUG: always show if showRePairButton */}
+        {showRePairButton && (
           <div className="w-full max-w-4xl flex flex-col gap-2">
             <button
               type="button"
@@ -1341,10 +1337,10 @@ export default function ConnectionPanel({
               disabled={connecting}
               className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
             >
-              Remove &amp; Re-pair Device
+              Remove &amp; Re-pair Device (DEBUG)
             </button>
             <p className="text-xs text-gray-400">
-              This will remove the device from Bluetooth settings and allow you to pair it again.
+              showRePairButton={String(showRePairButton)} isLinux={String(isLinux)}
             </p>
           </div>
         )}
