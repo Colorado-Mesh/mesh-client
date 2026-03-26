@@ -69,7 +69,17 @@ export function linuxDisplayMissingRemediation() {
 }
 
 export async function runStartElectron(argv = process.argv.slice(2)) {
-  const child = spawn(resolveLocalElectronBin(), ['.', ...argv], {
+  // Web Bluetooth on Linux requires --no-sandbox so navigator.bluetooth is available in the
+  // renderer. Passing as CLI args (not app.commandLine.appendSwitch) ensures they are applied
+  // during Chromium's early bootstrap, preventing fatal crashes when chrome-sandbox exists but
+  // lacks root/setuid permissions (common in dev envs).
+  // --no-sandbox: disables all sandboxing (needed for Web Bluetooth API availability)
+  // --disable-setuid-sandbox: skips SUID helper entirely, uses seccomp-bpf sandbox instead
+  const linuxSandboxArgs =
+    process.platform === 'linux' && !argv.includes('--no-sandbox')
+      ? ['--no-sandbox', '--disable-setuid-sandbox']
+      : [];
+  const child = spawn(resolveLocalElectronBin(), ['.', ...linuxSandboxArgs, ...argv], {
     cwd: projectRoot,
     stdio: ['inherit', 'inherit', 'pipe'],
     env: process.env,
