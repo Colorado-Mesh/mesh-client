@@ -1112,6 +1112,11 @@ export class NobleBleManager extends EventEmitter {
   }
 
   async disconnectAll(): Promise<void> {
+    // On Linux, Noble is not initialized (Web Bluetooth is used in renderer instead)
+    if (this.sessions.size === 0) {
+      console.debug('[NobleBleManager] disconnectAll: skipping (not initialized on Linux)');
+      return;
+    }
     await Promise.all(
       (['meshtastic', 'meshcore'] as NobleSessionId[]).map((sessionId) =>
         this.disconnect(sessionId),
