@@ -59,10 +59,6 @@ export class WebBluetoothManager {
           { services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] },
           { services: ['6ba1b218-15a8-461f-9fa8-5dcae273eafd'] },
         ],
-        optionalServices: [
-          '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
-          '6ba1b218-15a8-461f-9fa8-5dcae273eafd',
-        ],
       });
     } catch (err) {
       const domErr = err as DOMException;
