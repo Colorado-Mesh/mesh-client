@@ -759,8 +759,13 @@ export default function ConnectionPanel({
     try {
       await window.electronAPI.bluetoothUnpair(mac);
       console.debug('[ConnectionPanel] Successfully unpaired device:', mac);
-      setConnectionStage('Re-select your Bluetooth device...');
-      // The user will need to click BLE connect again to trigger device selection
+      // Show the BLE picker so user can re-select the device after unpairing
+      setShowBlePicker(true);
+      setBleDevices([]);
+      setConnecting(false);
+      setConnectionStage(
+        'Select your Bluetooth device below. If your device does not appear, click Connect again.',
+      );
     } catch (err) {
       console.warn('[ConnectionPanel] Failed to unpair device:', err);
       const msg = err instanceof Error ? err.message : String(err);
