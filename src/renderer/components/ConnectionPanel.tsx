@@ -608,16 +608,6 @@ export default function ConnectionPanel({
     setLastConnection(loadLastConnection(protocol));
   }, [protocol]);
 
-  // Debug: track showRePairButton changes
-  useEffect(() => {
-    console.debug(
-      '[ConnectionPanel] showRePairButton changed:',
-      showRePairButton,
-      'isLinux:',
-      isLinux,
-    );
-  }, [showRePairButton, isLinux]);
-
   // Update connection stage based on state transitions, and save last connection on success
   useEffect(() => {
     if (state.status === 'connecting') {
@@ -845,10 +835,8 @@ export default function ConnectionPanel({
           setConnectionStage('');
           return;
         } catch (err) {
-          console.warn('[ConnectionPanel] handleConnect CATCH BLOCK ENTERED');
-          console.warn('[ConnectionPanel] handleConnect caught error:', err);
+          // catch-no-log-ok -- error is humanized and surfaced via setError
           const bleErrMsg = humanizeBleError(err);
-          console.debug('[ConnectionPanel] handleConnect humanized:', bleErrMsg);
           if (bleErrMsg) setError(bleErrMsg);
           const errWithPairingFlag = err as { isPairingRelated?: boolean } | null | undefined;
           const isPairingRelatedError =
@@ -859,12 +847,7 @@ export default function ConnectionPanel({
             errWithPairingFlag?.isPairingRelated === true ||
             (err instanceof DOMException &&
               (err.name === 'SecurityError' || err.name === 'NetworkError'));
-          console.debug(
-            '[ConnectionPanel] handleConnect isPairingRelatedError:',
-            isPairingRelatedError,
-          );
           if (isPairingRelatedError) {
-            console.debug('[ConnectionPanel] handleConnect SHOWING RE-PAIR BUTTON');
             setShowRePairButton(true);
             setShowBlePicker(false);
             setConnectionStage('Pairing failed. Please re-pair your device.');

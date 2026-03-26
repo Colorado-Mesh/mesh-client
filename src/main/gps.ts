@@ -88,17 +88,6 @@ function fetchIpEndpoint(url: string, extract: (data: unknown) => GpsFix | null)
 }
 
 async function getIpFix(): Promise<GpsFix> {
-  try {
-    return await fetchIpEndpoint('https://ip-api.com/json/', (d: unknown) => {
-      const x = d as { status?: string; lat?: number; lon?: number };
-      return x.status === 'success' && typeof x.lat === 'number' && typeof x.lon === 'number'
-        ? { lat: x.lat, lon: x.lon, source: 'ip' as const }
-        : null;
-    });
-  } catch (e) {
-    const msg = sanitizeLogMessage((e as Error).message);
-    console.warn(`[gps] ip-api.com failed: ${msg}, trying ipwho.is`); // codeql[js/log-injection] -- msg is sanitized by sanitizeLogMessage (strips control chars)
-  }
   return fetchIpEndpoint('https://ipwho.is/', (d: unknown) => {
     const x = d as { success?: boolean; latitude?: number; longitude?: number };
     return x.success && typeof x.latitude === 'number' && typeof x.longitude === 'number'
@@ -143,7 +132,7 @@ export async function getGpsFix(): Promise<GpsFixResult> {
     // Optional: WiFi scan can fail (permissions, no adapter). Try inetChecksite as fallback.
     try {
       await withTimeout(
-        si.inetChecksite('https://ip-api.com'),
+        si.inetChecksite('https://ipwho.is'),
         GPS_SYSTEM_CHECK_TIMEOUT_MS,
         undefined,
       );

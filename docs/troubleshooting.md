@@ -190,7 +190,7 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 - Grant location permission when prompted by the app.
 - Or set coordinates manually via the **Radio** tab → Fixed Position.
-- Note: The IP-geolocation fallback (ip-api.com, then ipwho.is) provides city-level accuracy only — not suitable for position broadcasting. If both services are unreachable, "Location unavailable" is shown.
+- Note: The IP-geolocation fallback (ipwho.is) provides city-level accuracy only — not suitable for position broadcasting. If the service is unreachable, "Location unavailable" is shown.
 
 ### "Something went wrong" blank screen
 
