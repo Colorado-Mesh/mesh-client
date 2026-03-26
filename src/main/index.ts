@@ -463,8 +463,11 @@ function validateMqttPublishArgs(args: unknown): void {
 app.commandLine.appendSwitch('enable-blink-features', 'Serial');
 
 // Enable Web Bluetooth on Linux (experimental - required for BLE on Linux)
+// --no-sandbox is required for navigator.bluetooth to be available in the renderer on Linux;
+// without it the Web Bluetooth API is undefined and BLE cannot be used.
 if (process.platform === 'linux') {
   app.commandLine.appendSwitch('enable-experimental-web-platform-features');
+  app.commandLine.appendSwitch('no-sandbox');
 }
 
 // ─── Icon Path Helper ──────────────────────────────────────────────
