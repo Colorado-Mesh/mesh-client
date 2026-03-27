@@ -165,6 +165,8 @@ const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = rendererLikelyWin32()
     ? 60_000
     : 20_000;
 const NOBLE_IPC_CONNECT_MAX_ATTEMPTS = 2;
+const WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS = 2;
+const WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS = 1_500;
 
 function serializeErrorLike(value: unknown): string {
   if (value instanceof Error) return value.message;
@@ -1612,17 +1614,76 @@ export function useMeshCore() {
           const isLinux = navigator.userAgent.toLowerCase().includes('linux');
           if (isLinux) {
             console.debug('[useMeshCore] connect: BLE via Web Bluetooth (Linux)');
-            const transport = new TransportWebBluetoothIpc('meshcore');
-            try {
-              const meshcoreConn = new MeshcoreWebBluetoothConnection(transport);
-              await meshcoreConn.connect();
-              webBluetoothTransportRef.current = transport;
-              conn = meshcoreConn as unknown as MeshCoreConnection;
-              console.info('[useMeshCore] connect: BLE via Web Bluetooth connected');
-            } catch (bleErr) {
-              console.warn('[useMeshCore] connect: BLE Web Bluetooth failed:', bleErr);
-              webBluetoothTransportRef.current = null;
-              throw bleErr;
+            for (let attempt = 1; attempt <= WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS; attempt++) {
+              const attemptStartedAt = Date.now();
+              const transport = new TransportWebBluetoothIpc('meshcore');
+              console.debug(
+                `[useMeshCore] connect: BLE via Web Bluetooth (Linux) opening... (attempt ${attempt}/${WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS})`,
+              );
+              try {
+                const meshcoreConn = new MeshcoreWebBluetoothConnection(transport);
+                await meshcoreConn.connect();
+                webBluetoothTransportRef.current = transport;
+                conn = meshcoreConn as unknown as MeshCoreConnection;
+                if (attempt > 1) {
+                  console.info(
+                    `[useMeshCore] connect: BLE via Web Bluetooth recovered on retry ${formatStructuredLogDetail(
+                      {
+                        attempt,
+                        maxAttempts: WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS,
+                        elapsedMs: Date.now() - attemptStartedAt,
+                      },
+                    )}`,
+                  );
+                }
+                console.info('[useMeshCore] connect: BLE via Web Bluetooth connected');
+                break;
+              } catch (bleErr) {
+                // Clean up transport on failure before retry
+                try {
+                  await transport.disconnect();
+                } catch (cleanupErr) {
+                  console.debug(
+                    '[useMeshCore] connect: Web Bluetooth cleanup error on failure',
+                    cleanupErr,
+                  );
+                }
+
+                const rawBleMessage = serializeErrorLike(bleErr) || 'BLE connect failed';
+                const isTimeout = rawBleMessage.includes('timed out');
+                const isPairingError =
+                  bleErr instanceof Error &&
+                  (bleErr as Error & { isPairingRelated?: boolean }).isPairingRelated;
+                console.warn(
+                  `[useMeshCore] connect: BLE via Web Bluetooth attempt failed ${formatStructuredLogDetail(
+                    {
+                      attempt,
+                      maxAttempts: WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS,
+                      isTimeout,
+                      isPairingError,
+                      elapsedMs: Date.now() - attemptStartedAt,
+                      message: rawBleMessage,
+                    },
+                  )}`,
+                );
+                webBluetoothTransportRef.current = null;
+
+                // Don't retry on pairing errors (user needs to fix pairing, not retry)
+                if (isPairingError || !isTimeout || attempt >= WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS) {
+                  throw bleErr;
+                }
+
+                console.debug(
+                  `[useMeshCore] connect: retrying BLE via Web Bluetooth after retryable failure ${formatStructuredLogDetail(
+                    {
+                      attempt,
+                      maxAttempts: WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS,
+                      retryDelayMs: WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS,
+                    },
+                  )}`,
+                );
+                await new Promise<void>((r) => setTimeout(r, WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS));
+              }
             }
           } else {
             if (!blePeripheralId) {

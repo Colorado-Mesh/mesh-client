@@ -8,6 +8,8 @@ import {
   useState,
 } from 'react';
 
+import discordLogo from './assets/social/discord.svg';
+import githubLogo from './assets/social/github.svg';
 import ChatPanel from './components/ChatPanel';
 import ConnectionPanel from './components/ConnectionPanel';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -1136,22 +1138,24 @@ export default function App() {
                 . Join us on{' '}
                 <a
                   href="https://discord.com/invite/McChKR5NpS"
-                  title="Colorado Mesh Discord"
-                  className="text-bright-green underline hover:opacity-80"
+                  title="Colorado Mesh Discord (click to open)"
+                  aria-label="Colorado Mesh Discord"
+                  className="inline-flex h-5 w-5 items-center justify-center rounded border border-brand-green/40 text-bright-green hover:bg-brand-green/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Discord
+                  <img src={discordLogo} alt="" aria-hidden="true" className="h-3.5 w-3.5" />
                 </a>
                 . Code on{' '}
                 <a
                   href="https://github.com/Colorado-Mesh/mesh-client"
-                  title="Colorado Mesh on GitHub"
-                  className="text-bright-green underline hover:opacity-80"
+                  title="Colorado Mesh on GitHub (click to open)"
+                  aria-label="Colorado Mesh on GitHub"
+                  className="inline-flex h-5 w-5 items-center justify-center rounded border border-brand-green/40 text-bright-green hover:bg-brand-green/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  GitHub
+                  <img src={githubLogo} alt="" aria-hidden="true" className="h-3.5 w-3.5" />
                 </a>
                 .
               </span>

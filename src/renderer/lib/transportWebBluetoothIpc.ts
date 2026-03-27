@@ -77,15 +77,40 @@ export class TransportWebBluetoothIpc implements Types.Transport {
   }
 
   private async _readLoop(reader: ReadableStreamDefaultReader<Types.DeviceOutput>): Promise<void> {
+    console.debug('[TransportWebBluetoothIpc] _readLoop: started');
     try {
       while (true) {
         const { done, value } = await reader.read();
-        if (done || !this._fromDeviceController) break;
+        console.debug('[TransportWebBluetoothIpc] _readLoop: read result', {
+          done,
+          hasValue: !!value,
+          hasController: !!this._fromDeviceController,
+        });
+        if (done) {
+          console.debug('[TransportWebBluetoothIpc] _readLoop: done=true, exiting');
+          break;
+        }
+        if (!this._fromDeviceController) {
+          console.debug('[TransportWebBluetoothIpc] _readLoop: controller is null, exiting');
+          break;
+        }
+        console.debug('[TransportWebBluetoothIpc] _readLoop: enqueuing', value.type, 'data');
         this._fromDeviceController.enqueue(value);
+        console.debug('[TransportWebBluetoothIpc] _readLoop: enqueue completed');
       }
-    } catch {
-      // catch-no-log-ok reader error or closed
+    } catch (err) {
+      console.error('[TransportWebBluetoothIpc] _readLoop: error:', err);
+      // Error the controller so stream consumers are notified and don't hang
+      this._fromDeviceController?.error(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      // Release the reader to prevent memory leaks
+      try {
+        reader.releaseLock();
+      } catch (releaseErr) {
+        console.debug('[TransportWebBluetoothIpc] _readLoop: error releasing reader:', releaseErr);
+      }
     }
+    console.debug('[TransportWebBluetoothIpc] _readLoop: exited');
   }
 
   async disconnect(): Promise<void> {

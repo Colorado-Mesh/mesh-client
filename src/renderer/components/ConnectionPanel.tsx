@@ -952,6 +952,7 @@ export default function ConnectionPanel({
             setShowRePairButton(true);
             setShowBlePicker(false);
             setConnectionStage('Pairing failed. Please re-pair your device.');
+            setConnecting(false);
           } else {
             setConnecting(false);
             setConnectionStage('');
@@ -1055,7 +1056,7 @@ export default function ConnectionPanel({
           '[ConnectionPanel] handleSelectBleDevice Linux: resolving pending requestDevice',
         );
         window.electronAPI.selectBluetoothDevice(deviceId);
-        const found = bleDevices.find((d) => d.deviceId === deviceId);
+        // Reuse 'found' from above to avoid duplicate lookup
         const manager = TransportWebBluetoothIpc.getManager(protocol);
         if (found && manager) {
           const device = { id: found.deviceId, name: found.deviceName } as BluetoothDevice;

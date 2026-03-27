@@ -14,6 +14,30 @@ export type WebBluetoothErrorType =
 const BLUEZ_PAIRING_ERROR_RE =
   /le-connection-abort-by-local|auth failed|connection rejected|pin failed|authentication failed/i;
 
+// Timeout constants for GATT operations (BlueZ is slower than macOS)
+const GATT_CONNECT_TIMEOUT_MS = 30_000;
+const GATT_DISCOVERY_TIMEOUT_MS = 30_000;
+const GATT_NOTIFICATION_TIMEOUT_MS = 20_000;
+
+/**
+ * Wrap a Promise with a timeout that rejects if it doesn't complete within the specified time.
+ * Unlike withTimeout, this doesn't require a label and wraps timeout errors with better context.
+ */
+function withGattTimeout<T>(promise: Promise<T>, ms: number, context: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${context} timed out after ${ms}ms`));
+    }, ms);
+  });
+  return Promise.race([
+    promise.finally(() => {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    }),
+    timeoutPromise,
+  ]);
+}
+
 // Chrome DOMException names that often indicate pairing issues on Linux
 const CHROME_PAIRING_ERROR_NAMES = ['SecurityError', 'NetworkError'];
 
@@ -44,7 +68,6 @@ export class WebBluetoothManager {
   private fromRadioCharacteristic: BluetoothRemoteGATTCharacteristic | null = null;
   private fromRadioNotifyHandler: ((event: Event) => void) | null = null;
   private _fromDeviceController: ReadableStreamDefaultController<Types.DeviceOutput> | null = null;
-  private fromRadioUnsub: (() => void) | null = null;
   private connectStartedAtMs: number | null = null;
   private sessionId: NobleBleSessionId;
   private _pendingDevicePromise?: Promise<BluetoothDevice>;
@@ -165,7 +188,11 @@ export class WebBluetoothManager {
 
     // Wrap all GATT operations to classify errors for better user guidance
     try {
-      this.server = await this.device.gatt!.connect();
+      this.server = await withGattTimeout(
+        this.device.gatt!.connect(),
+        GATT_CONNECT_TIMEOUT_MS,
+        'GATT connect',
+      );
       console.debug(`[WebBluetooth:${this.sessionId}] gatt connected`);
     } catch (err) {
       const domErr = err as DOMException;
@@ -186,20 +213,40 @@ export class WebBluetoothManager {
     }
 
     try {
-      const service = await this.server.getPrimaryService(serviceUuid);
+      const service = await withGattTimeout(
+        this.server.getPrimaryService(serviceUuid),
+        GATT_DISCOVERY_TIMEOUT_MS,
+        'GATT service discovery',
+      );
 
       if (isMeshcore) {
         const rxUuid = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
         const txUuid = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
-        this.toRadioCharacteristic = await service.getCharacteristic(rxUuid);
-        this.fromRadioCharacteristic = await service.getCharacteristic(txUuid);
+        this.toRadioCharacteristic = await withGattTimeout(
+          service.getCharacteristic(rxUuid),
+          GATT_DISCOVERY_TIMEOUT_MS,
+          'GATT characteristic discovery (RX)',
+        );
+        this.fromRadioCharacteristic = await withGattTimeout(
+          service.getCharacteristic(txUuid),
+          GATT_DISCOVERY_TIMEOUT_MS,
+          'GATT characteristic discovery (TX)',
+        );
       } else {
         const toRadioUuid = 'f75c76d2-129e-4dad-a1dd-7866124401e7';
         const fromRadioUuid = '2c55e69e-4993-11ed-b878-0242ac120002';
 
-        this.toRadioCharacteristic = await service.getCharacteristic(toRadioUuid);
-        this.fromRadioCharacteristic = await service.getCharacteristic(fromRadioUuid);
+        this.toRadioCharacteristic = await withGattTimeout(
+          service.getCharacteristic(toRadioUuid),
+          GATT_DISCOVERY_TIMEOUT_MS,
+          'GATT characteristic discovery (toRadio)',
+        );
+        this.fromRadioCharacteristic = await withGattTimeout(
+          service.getCharacteristic(fromRadioUuid),
+          GATT_DISCOVERY_TIMEOUT_MS,
+          'GATT characteristic discovery (fromRadio)',
+        );
       }
     } catch (err) {
       const domErr = err as DOMException;
@@ -237,7 +284,11 @@ export class WebBluetoothManager {
         'characteristicvaluechanged',
         this.fromRadioNotifyHandler,
       );
-      await this.fromRadioCharacteristic.startNotifications();
+      await withGattTimeout(
+        this.fromRadioCharacteristic.startNotifications(),
+        GATT_NOTIFICATION_TIMEOUT_MS,
+        'GATT start notifications',
+      );
       console.debug(`[WebBluetooth:${this.sessionId}] notifications started`);
     } catch (err) {
       const domErr = err as DOMException;
@@ -268,26 +319,22 @@ export class WebBluetoothManager {
         );
         await this.fromRadioCharacteristic.stopNotifications();
       }
-    } catch {
-      // catch-no-log-ok ignore errors during cleanup
+    } catch (err) {
+      console.debug('[WebBluetoothManager] stopNotifications error during cleanup:', err);
     }
 
     try {
       if (this.device.gatt?.connected) {
         this.device.gatt.disconnect();
       }
-    } catch {
-      // catch-no-log-ok ignore errors during disconnect
+    } catch (err) {
+      console.debug('[WebBluetoothManager] disconnect error during cleanup:', err);
     }
 
     this.cleanup();
   }
 
   private cleanup(): void {
-    if (this.fromRadioUnsub) {
-      this.fromRadioUnsub();
-      this.fromRadioUnsub = null;
-    }
     this._fromDeviceController = null;
     this.device = null;
     this.server = null;

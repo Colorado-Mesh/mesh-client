@@ -1378,14 +1378,30 @@ ipcMain.handle('bluetooth-untrust', async (_event, macAddress: unknown) => {
   console.debug('[IPC] bluetooth-untrust:', macAddress);
   return new Promise<void>((resolve) => {
     const proc = spawn('bluetoothctl', ['untrust', macAddress]);
-    proc.on('close', () => {
-      // Ignore failure - untrust is best-effort
-      console.debug('[IPC] bluetooth-untrust done');
+    let stderr = '';
+    proc.stderr.on('data', (data: Buffer) => {
+      stderr += data.toString();
+    });
+    proc.on('close', (code) => {
+      // Ignore failure - untrust is best-effort, but log for debugging
+      if (code !== 0) {
+        console.debug(
+          '[IPC] bluetooth-untrust exited with code',
+          code,
+          'stderr:',
+          stderr.trim() || '(none)',
+        );
+      } else {
+        console.debug('[IPC] bluetooth-untrust done');
+      }
       resolve();
     });
-    proc.on('error', () => {
-      // Ignore error - untrust is best-effort
-      console.debug('[IPC] bluetooth-untrust ignored error');
+    proc.on('error', (err) => {
+      // Ignore error - untrust is best-effort, but log for debugging
+      console.debug(
+        '[IPC] bluetooth-untrust error:',
+        sanitizeLogMessage(err?.message ?? String(err)),
+      );
       resolve();
     });
   });
@@ -3066,6 +3082,14 @@ void app.whenReady().then(() => {
 });
 
 app.on('before-quit', (event) => {
+  // Clean up any pending Bluetooth device selection to prevent callback leak
+  if (pendingBluetoothCallback) {
+    console.debug('[main] before-quit: cleaning up pending Bluetooth callback');
+    pendingBluetoothCallback('');
+    pendingBluetoothCallback = null;
+    lastBluetoothDeviceIds.clear();
+  }
+
   if (nobleQuitRetry) {
     isQuitting = true;
     closeDatabase();
@@ -3131,6 +3155,13 @@ app.on('will-quit', () => {
 app.on('quit', () => {});
 
 app.on('window-all-closed', () => {
+  // Clean up any pending Bluetooth device selection to prevent callback leak
+  if (pendingBluetoothCallback) {
+    console.debug('[main] window-all-closed: cleaning up pending Bluetooth callback');
+    pendingBluetoothCallback('');
+    pendingBluetoothCallback = null;
+    lastBluetoothDeviceIds.clear();
+  }
   const hasConnection = isConnected || isAnyMqttConnected();
   // On macOS: quit when user chose Quit, or when there's no connection (window closed with nothing to keep running for)
   if (process.platform !== 'darwin' || isQuitting || !hasConnection) {

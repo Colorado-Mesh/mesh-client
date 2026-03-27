@@ -79,25 +79,73 @@ export async function createBleConnection(
     // Reset the pairing retry count so the first attempt uses the default PIN
     window.electronAPI.resetBlePairingRetryCount();
 
-    const transport = new TransportWebBluetoothIpc(sessionId);
-    console.debug('[connection] createBleConnection: using Web Bluetooth transport on Linux');
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
+      const attemptStartedAt = Date.now();
+      const transport = new TransportWebBluetoothIpc(sessionId);
+      console.debug('[connection] createBleConnection: using Web Bluetooth transport on Linux', {
+        attempt,
+        maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
+      });
 
-    // On Linux, requestDevice() must be called with a user gesture
-    // If no peripheralId provided, initiate device selection now
-    let deviceId = peripheralId;
-    let deviceName = 'Unknown Device';
-    if (!deviceId) {
-      console.debug('[connection] createBleConnection: requesting device selection (Linux)');
-      const deviceInfo = await transport.requestDevice();
-      deviceId = deviceInfo.deviceId;
-      deviceName = deviceInfo.deviceName;
-      console.debug('[connection] createBleConnection: device selected', deviceId, deviceName);
+      // On Linux, requestDevice() must be called with a user gesture
+      // If no peripheralId provided, initiate device selection now
+      let deviceId = peripheralId;
+      let deviceName = 'Unknown Device';
+      try {
+        if (!deviceId) {
+          console.debug('[connection] createBleConnection: requesting device selection (Linux)');
+          const deviceInfo = await transport.requestDevice();
+          deviceId = deviceInfo.deviceId;
+          deviceName = deviceInfo.deviceName;
+          console.debug('[connection] createBleConnection: device selected', deviceId, deviceName);
+        }
+
+        // Now connect to the device
+        await transport.connect();
+        if (attempt > 1) {
+          console.info('[connection] createBleConnection recovered on retry', {
+            sessionId,
+            deviceId,
+            attempt,
+            maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
+            totalElapsedMs: Date.now() - connectStartedAt,
+          });
+        }
+        console.debug('[connection] createBleConnection: connected on Linux');
+        return new MeshDevice(transport as any);
+      } catch (err) {
+        lastError = err;
+        // Clean up transport on failure before retry
+        try {
+          await transport.disconnect();
+        } catch (cleanupErr) {
+          console.debug('[connection] createBleConnection: cleanup error on failure', cleanupErr);
+        }
+
+        const message = err instanceof Error ? err.message : String(err);
+        const isTimeout = /timed out/i.test(message);
+        const isPairingError =
+          err instanceof Error && (err as Error & { isPairingRelated?: boolean }).isPairingRelated;
+        console.warn('[connection] createBleConnection attempt failed', {
+          sessionId,
+          deviceId,
+          attempt,
+          maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
+          isTimeout,
+          isPairingError,
+          attemptElapsedMs: Date.now() - attemptStartedAt,
+          totalElapsedMs: Date.now() - connectStartedAt,
+          message,
+        });
+        // Don't retry on pairing errors (user needs to fix pairing, not retry)
+        if (isPairingError || !isTimeout || attempt >= BLE_CONNECT_MAX_ATTEMPTS) {
+          break;
+        }
+        await new Promise<void>((r) => setTimeout(r, BLE_CONNECT_RETRY_DELAY_MS));
+      }
     }
-
-    // Now connect to the device
-    await transport.connect();
-    console.debug('[connection] createBleConnection: connected on Linux');
-    return new MeshDevice(transport as any);
+    throw lastError instanceof Error ? lastError : new Error('BLE connection failed');
   }
 
   // Mac/Windows: use Noble IPC transport

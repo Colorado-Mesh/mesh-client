@@ -1,8 +1,14 @@
 import { Connection } from '@liamcottle/meshcore.js';
 import type { Types } from '@meshtastic/core';
 
+import { withTimeout } from '../../shared/withTimeout';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- TransportWebBluetoothIpc is used as a value (new) in connect()
 import { TransportWebBluetoothIpc } from './transportWebBluetoothIpc';
+
+// BlueZ is slower than macOS CBCentralManager - use generous timeouts
+const WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS = 60_000;
+const WEB_BLUETOOTH_CONNECT_TIMEOUT_MS = 60_000;
+const WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS = 20_000;
 
 export class MeshcoreWebBluetoothConnection extends Connection {
   private readonly transport: TransportWebBluetoothIpc;
@@ -33,26 +39,66 @@ export class MeshcoreWebBluetoothConnection extends Connection {
   }
 
   async connect(): Promise<void> {
-    await this.transport.requestDevice();
-    await this.transport.connect();
+    console.debug('[MeshcoreWebBluetoothConnection] connect: starting');
+
+    // Wrap all connection steps in timeouts to prevent hanging on unresponsive devices
+    await withTimeout(
+      this.transport.requestDevice(),
+      WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS,
+      'Web Bluetooth request device',
+    );
+    console.debug('[MeshcoreWebBluetoothConnection] connect: device selected');
+
+    await withTimeout(
+      this.transport.connect(),
+      WEB_BLUETOOTH_CONNECT_TIMEOUT_MS,
+      'Web Bluetooth transport connect',
+    );
+    console.debug('[MeshcoreWebBluetoothConnection] connect: transport connected');
 
     this._fromDeviceReader = this.transport.fromDevice.getReader();
+    console.debug('[MeshcoreWebBluetoothConnection] connect: starting read loop');
     void this._readLoop();
 
-    await this.onConnected();
+    console.debug('[MeshcoreWebBluetoothConnection] connect: calling onConnected()');
+    await withTimeout(
+      this.onConnected(),
+      WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS,
+      'MeshCore BLE protocol handshake',
+    );
+    console.debug('[MeshcoreWebBluetoothConnection] connect: onConnected() completed');
   }
 
   private async _readLoop(): Promise<void> {
+    console.debug('[MeshcoreWebBluetoothConnection] _readLoop: started');
     try {
       while (true) {
         const { done, value } = await this._fromDeviceReader!.read();
-        if (done) break;
+        console.debug('[MeshcoreWebBluetoothConnection] _readLoop: read result', {
+          done,
+          hasValue: !!value,
+        });
+        if (done) {
+          console.debug('[MeshcoreWebBluetoothConnection] _readLoop: done=true, exiting');
+          break;
+        }
         if (value.type === 'packet') {
+          console.debug(
+            '[MeshcoreWebBluetoothConnection] _readLoop: received packet,',
+            value.data.length,
+            'bytes',
+          );
           this.onFrameReceived(value.data);
+        } else {
+          console.debug(
+            '[MeshcoreWebBluetoothConnection] _readLoop: received non-packet:',
+            value.type,
+          );
         }
       }
-    } catch {
-      // catch-no-log-ok reader error or closed
+    } catch (err) {
+      console.debug('[MeshcoreWebBluetoothConnection] _readLoop: caught error:', err);
     }
+    console.debug('[MeshcoreWebBluetoothConnection] _readLoop: exited');
   }
 }
