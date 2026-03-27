@@ -178,6 +178,8 @@ interface BluetoothPairingResponse {
 }
 let pendingPairingCallback: ((response: BluetoothPairingResponse) => void) | null = null;
 let pendingPairingRetryCount = 0;
+/** Which BLE stack is connecting; MeshCore must not auto-use Meshtastic default PIN on first pairing. */
+let blePairingSessionKind: 'meshtastic' | 'meshcore' = 'meshtastic';
 
 let hasInstalledOsmReferrerHook = false;
 const OSM_HTTP_REFERRER = 'https://meshtastic-client.app/';
@@ -965,17 +967,23 @@ function createWindow() {
     console.debug('[main] bluetooth-pairing-request:', details.pairingKind, details.deviceId);
 
     if (details.pairingKind === 'providePin') {
-      // Meshtastic devices use fixed PIN 123456. MeshCore uses random PIN displayed on device.
-      // On first attempt, try the Meshtastic default PIN. If it fails, prompt user.
-      if (pendingPairingRetryCount === 0) {
-        console.debug('[main] bluetooth-pairing: auto-providing default PIN (attempt 1)');
+      // Meshtastic devices use fixed PIN 123456. MeshCore uses a random PIN shown on the device.
+      // Only auto-submit 123456 for Meshtastic; MeshCore must prompt on first PIN request.
+      if (blePairingSessionKind === 'meshtastic' && pendingPairingRetryCount === 0) {
+        console.debug(
+          '[main] bluetooth-pairing: auto-providing default PIN (Meshtastic attempt 1)',
+        );
         pendingPairingRetryCount++;
         callback({ pin: '123456', confirmed: true });
         return;
       }
 
-      // Second attempt: prompt user for PIN (MeshCore or failed Meshtastic pairing)
-      console.debug('[main] bluetooth-pairing: prompting user for PIN (attempt 2+)');
+      console.debug(
+        '[main] bluetooth-pairing: prompting user for PIN',
+        blePairingSessionKind === 'meshcore'
+          ? '(MeshCore or Meshtastic retry)'
+          : '(Meshtastic retry)',
+      );
       pendingPairingCallback = (response: BluetoothPairingResponse) => {
         callback(response);
         pendingPairingCallback = null;
@@ -1617,8 +1625,9 @@ ipcMain.on('bluetooth-cancel-pairing', () => {
 
 // ─── IPC: Reset BLE pairing retry count (Linux) ───────────────────────────
 // Called when starting a new BLE connection so the first pairing attempt uses the default PIN
-ipcMain.on('ble-reset-pairing-retry-count', () => {
+ipcMain.on('ble-reset-pairing-retry-count', (_event, sessionKind?: unknown) => {
   pendingPairingRetryCount = 0;
+  blePairingSessionKind = sessionKind === 'meshcore' ? 'meshcore' : 'meshtastic';
 });
 
 // ─── IPC: Connection status tracking (module-scope, not per-window) ─

@@ -9,6 +9,7 @@ export class TransportWebBluetoothIpc implements Types.Transport {
   private readonly sessionId: NobleBleSessionId;
   private _fromDeviceController: ReadableStreamDefaultController<Types.DeviceOutput> | null = null;
   private _bleManager: WebBluetoothManager | null = null;
+  private _lastGrantedDeviceId: string | null = null;
 
   public readonly toDevice: WritableStream<Uint8Array>;
   public readonly fromDevice: ReadableStream<Types.DeviceOutput>;
@@ -51,6 +52,19 @@ export class TransportWebBluetoothIpc implements Types.Transport {
     this._bleManager = new WebBluetoothManager(this.sessionId);
     webBluetoothManagerBySession.set(this.sessionId, this._bleManager);
     const device = await this._bleManager.requestDevice();
+    this._lastGrantedDeviceId = device.id;
+    return {
+      deviceId: device.id,
+      deviceName: device.name ?? 'Unknown Device',
+    };
+  }
+
+  /** Reuse a granted device after a timeout retry (no `requestDevice()` / user gesture). */
+  async requestGrantedDevice(deviceId: string): Promise<{ deviceId: string; deviceName: string }> {
+    this._bleManager = new WebBluetoothManager(this.sessionId);
+    webBluetoothManagerBySession.set(this.sessionId, this._bleManager);
+    const device = await this._bleManager.acquireGrantedDeviceById(deviceId);
+    this._lastGrantedDeviceId = device.id;
     return {
       deviceId: device.id,
       deviceName: device.name ?? 'Unknown Device',
@@ -126,5 +140,9 @@ export class TransportWebBluetoothIpc implements Types.Transport {
 
   getDeviceInfo(): { deviceId: string; deviceName: string } | null {
     return this._bleManager?.getDeviceInfo() ?? null;
+  }
+
+  getLastGrantedDeviceId(): string | null {
+    return this._lastGrantedDeviceId;
   }
 }

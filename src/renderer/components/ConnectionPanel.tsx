@@ -188,15 +188,36 @@ function shouldShowLinuxRePairFromBleError(err: unknown, bleErrMsg: string): boo
     (err as Error & { isPairingRelated?: boolean }).isPairingRelated === true;
   const domPairingSignal =
     err instanceof DOMException && (err.name === 'SecurityError' || err.name === 'NetworkError');
+  // MeshCore Linux Web Bluetooth: handshake timeout often means PIN not paired at OS level (Electron may never fire providePin).
+  const meshcoreWebBtHandshakeOrTimeout =
+    /MeshCore handshake timed out \(Web Bluetooth\)|opening MeshCore over Web Bluetooth|Bluetooth connected but MeshCore protocol handshake did not complete/i.test(
+      bleErrMsg,
+    );
   // High-confidence pairing indicators only; avoid broad "connection failed" matching.
   return (
     pairingFlag ||
     domPairingSignal ||
+    meshcoreWebBtHandshakeOrTimeout ||
     /GATT Error:\s*Not supported/i.test(rawMessage) ||
     /authentication failed/i.test(rawMessage) ||
     /not be properly paired/i.test(bleErrMsg) ||
     /pairing issue/i.test(rawMessage)
   );
+}
+
+/** When Electron never shows a PIN sheet, offer manual PIN + bluetoothctl pairing after a MeshCore timeout. */
+function shouldOfferMeshcoreLinuxManualPinAfterError(bleErrMsg: string): boolean {
+  return /MeshCore handshake timed out \(Web Bluetooth\)|opening MeshCore over Web Bluetooth/i.test(
+    bleErrMsg,
+  );
+}
+
+/** Parse `bluetoothctl info <mac>` output for bond state (Linux / BlueZ). */
+function parseBluetoothctlPairedState(info: string): 'yes' | 'no' | 'unknown' {
+  const s = info.toLowerCase();
+  if (/paired:\s*yes\b/.test(s)) return 'yes';
+  if (/paired:\s*no\b/.test(s)) return 'no';
+  return 'unknown';
 }
 
 function shouldForgetGrantedWebBluetoothDevice(
@@ -633,6 +654,11 @@ export default function ConnectionPanel({
   const lastSelectedBleNameRef = useRef<string | null>(null);
   // Tracks BLE device MAC for potential re-pairing on Linux
   const lastSelectedBleMacRef = useRef<string | null>(null);
+  /**
+   * Linux MeshCore Web Bluetooth: when `bluetoothctl` reports not paired, we must `pair` + PIN
+   * before resolving `requestDevice()` — otherwise GATT connects without OS pairing and fails.
+   */
+  const pendingMeshcoreLinuxWbMacRef = useRef<string | null>(null);
   const lastConnectionBleDeviceNameFallbackRef = useRef(lastConnection?.bleDeviceName);
   lastConnectionBleDeviceNameFallbackRef.current = lastConnection?.bleDeviceName;
   /** Mount-only auto-connect reads latest props/state via refs so the effect can stay `[]`. */
@@ -648,6 +674,10 @@ export default function ConnectionPanel({
   // Reload last connection when protocol switches (each protocol has its own key)
   useEffect(() => {
     setLastConnection(loadLastConnection(protocol));
+  }, [protocol]);
+
+  useEffect(() => {
+    pendingMeshcoreLinuxWbMacRef.current = null;
   }, [protocol]);
 
   // Update connection stage based on state transitions, and save last connection on success
@@ -806,6 +836,32 @@ export default function ConnectionPanel({
       setError('PIN must be exactly 6 digits.');
       return;
     }
+    const pendingWbMac = pendingMeshcoreLinuxWbMacRef.current;
+    if (pendingWbMac && protocol === 'meshcore' && isLinux && !manualPairingFallback) {
+      try {
+        setError(null);
+        setConnecting(true);
+        setConnectionStage('Pairing with PIN (bluetoothctl)...');
+        await window.electronAPI.bluetoothPair(pendingWbMac, normalizedPin);
+        try {
+          await window.electronAPI.bluetoothGetInfo(pendingWbMac);
+        } catch {
+          // catch-no-log-ok -- diagnostics only
+        }
+        pendingMeshcoreLinuxWbMacRef.current = null;
+        setShowPinPrompt(false);
+        setPinInputValue('');
+        setConnectionStage('Connecting to device...');
+        window.electronAPI.selectBluetoothDevice(pendingWbMac);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn('[ConnectionPanel] MeshCore pre-connect pair failed:', err);
+        setError(`Pairing failed: ${msg}`);
+        setConnectionStage('Enter the PIN shown on your device');
+        setConnecting(false);
+      }
+      return;
+    }
     const manualMac = lastSelectedBleMacRef.current;
     if (manualPairingFallback && isLinux && manualMac) {
       let scanStarted = false;
@@ -883,10 +939,19 @@ export default function ConnectionPanel({
     setShowPinPrompt(false);
     setPinInputValue('');
     setConnectionStage('Pairing...');
-  }, [pinInputValue, manualPairingFallback, isLinux]);
+  }, [pinInputValue, manualPairingFallback, isLinux, protocol]);
 
   // Handle PIN prompt cancel
   const handlePinCancel = useCallback(() => {
+    if (pendingMeshcoreLinuxWbMacRef.current) {
+      pendingMeshcoreLinuxWbMacRef.current = null;
+      window.electronAPI.cancelBluetoothSelection();
+      setShowPinPrompt(false);
+      setPinInputValue('');
+      setConnecting(false);
+      setConnectionStage('');
+      return;
+    }
     console.debug('[ConnectionPanel] Cancelling pairing');
     if (!manualPairingFallback) {
       window.electronAPI.cancelBluetoothPairing();
@@ -969,6 +1034,11 @@ export default function ConnectionPanel({
             setConnecting(false);
             setConnectionStage('');
           }
+          if (protocol === 'meshcore' && shouldOfferMeshcoreLinuxManualPinAfterError(bleErrMsg)) {
+            setShowPinPrompt(true);
+            setManualPairingFallback(true);
+            setPinInputValue('');
+          }
           return;
         }
       }
@@ -1014,10 +1084,13 @@ export default function ConnectionPanel({
     }
     if (showBlePicker || connectionType === 'ble') {
       if (isLinux) {
-        if (showBlePicker) {
-          // Cancel the in-flight requestDevice() if the picker was visible
+        if (showBlePicker || pendingMeshcoreLinuxWbMacRef.current) {
+          // Cancel in-flight requestDevice() (picker or MeshCore pre-connect PIN gate)
           window.electronAPI.cancelBluetoothSelection();
         }
+        pendingMeshcoreLinuxWbMacRef.current = null;
+        setShowPinPrompt(false);
+        setManualPairingFallback(false);
         if (webBluetoothDevice) {
           setWebBluetoothDevice(null);
         }
@@ -1059,8 +1132,30 @@ export default function ConnectionPanel({
       // Store MAC address for potential re-pairing on Linux
       lastSelectedBleMacRef.current = deviceId;
       setShowBlePicker(false);
-      setConnectionStage('Connecting to device...');
       setShowRePairButton(false);
+      if (isLinux && protocol === 'meshcore') {
+        setConnectionStage('Checking Bluetooth pairing…');
+        void (async () => {
+          try {
+            const info = await window.electronAPI.bluetoothGetInfo(deviceId);
+            const paired = parseBluetoothctlPairedState(info);
+            if (paired === 'yes') {
+              setConnectionStage('Connecting to device...');
+              window.electronAPI.selectBluetoothDevice(deviceId);
+              return;
+            }
+          } catch {
+            // catch-no-log-ok -- if bluetoothctl info fails, continue to explicit PIN pairing flow
+          }
+          pendingMeshcoreLinuxWbMacRef.current = deviceId;
+          setManualPairingFallback(false);
+          setPinInputValue('');
+          setShowPinPrompt(true);
+          setConnectionStage('Enter the PIN shown on your device (pair with Linux first)');
+        })();
+        return;
+      }
+      setConnectionStage('Connecting to device...');
       if (isLinux) {
         // Web Bluetooth path: requestDevice() is pending. Resolve the deferred promise
         // so that the original onConnect's requestDevice() returns and proceeds to connect().
@@ -1191,6 +1286,11 @@ export default function ConnectionPanel({
             } else {
               setConnecting(false);
               setConnectionStage('');
+            }
+            if (protocol === 'meshcore' && shouldOfferMeshcoreLinuxManualPinAfterError(bleErrMsg)) {
+              setShowPinPrompt(true);
+              setManualPairingFallback(true);
+              setPinInputValue('');
             }
           });
         } else {

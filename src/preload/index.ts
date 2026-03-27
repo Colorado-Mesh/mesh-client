@@ -381,8 +381,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // Reset pairing retry count (call before starting a new BLE connection)
-  resetBlePairingRetryCount: () => {
-    ipcRenderer.send('ble-reset-pairing-retry-count');
+  resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => {
+    ipcRenderer.send('ble-reset-pairing-retry-count', sessionKind ?? 'meshtastic');
   },
 
   // ─── Session management ────────────────────────────────────────

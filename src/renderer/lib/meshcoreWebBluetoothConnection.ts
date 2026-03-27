@@ -38,15 +38,23 @@ export class MeshcoreWebBluetoothConnection extends Connection {
     await this.transport.disconnect();
   }
 
-  async connect(): Promise<void> {
+  async connect(reuseDeviceId?: string): Promise<void> {
     console.debug('[MeshcoreWebBluetoothConnection] connect: starting');
 
     // Wrap all connection steps in timeouts to prevent hanging on unresponsive devices
-    await withTimeout(
-      this.transport.requestDevice(),
-      WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS,
-      'Web Bluetooth request device',
-    );
+    if (reuseDeviceId) {
+      await withTimeout(
+        this.transport.requestGrantedDevice(reuseDeviceId),
+        WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS,
+        'Web Bluetooth reuse granted device',
+      );
+    } else {
+      await withTimeout(
+        this.transport.requestDevice(),
+        WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS,
+        'Web Bluetooth request device',
+      );
+    }
     console.debug('[MeshcoreWebBluetoothConnection] connect: device selected');
 
     await withTimeout(

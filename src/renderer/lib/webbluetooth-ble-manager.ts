@@ -209,6 +209,41 @@ export class WebBluetoothManager {
     }
   }
 
+  /**
+   * Reconnect a previously granted Web Bluetooth device without `requestDevice()` (no user gesture).
+   * Used after a retryable timeout when Chromium still grants access to the same device id.
+   */
+  async acquireGrantedDeviceById(deviceId: string): Promise<BluetoothDevice> {
+    if (this.device?.id === deviceId) {
+      return this.device;
+    }
+
+    if (!navigator.bluetooth) {
+      throw new Error(
+        'Web Bluetooth is not available. Ensure you are using a Chromium-based browser with Web Bluetooth enabled.',
+      );
+    }
+
+    const devices = await navigator.bluetooth.getDevices();
+    const device = devices.find((d) => d.id === deviceId);
+    if (!device) {
+      throw new Error(
+        'Previously selected Bluetooth device is no longer available. Tap Connect again to choose the device.',
+      );
+    }
+
+    console.debug(
+      `[WebBluetooth:${this.sessionId}] reusing granted device: ${device.id} (${device.name ?? 'unnamed'})`,
+    );
+    this.device = device;
+    this.connectStartedAtMs = Date.now();
+    device.addEventListener('gattserverdisconnected', () => {
+      console.debug(`[WebBluetooth:${this.sessionId}] device disconnected`);
+      this.cleanup();
+    });
+    return device;
+  }
+
   private enqueueFromRadioBytes(bytes: Uint8Array, source: 'notify' | 'read-pump'): void {
     if (bytes.length === 0) return;
     console.debug(`[WebBluetooth:${this.sessionId}] fromRadio ${source}: ${bytes.length} bytes`);
