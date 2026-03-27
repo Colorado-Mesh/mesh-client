@@ -73,37 +73,60 @@ export async function runStartElectron(argv = process.argv.slice(2)) {
     process.platform === 'linux' && !argv.includes('--disable-setuid-sandbox')
       ? ['--disable-setuid-sandbox']
       : [];
-  const child = spawn(resolveLocalElectronBin(), ['.', ...linuxArgs, ...argv], {
-    cwd: projectRoot,
-    stdio: ['inherit', 'inherit', 'pipe'],
-    env: process.env,
-  });
+  const launch = (extraArgs = [], runId = 'pre-fix') => {
+    const spawnArgs = ['.', ...linuxArgs, ...extraArgs, ...argv];
+    const child = spawn(resolveLocalElectronBin(), spawnArgs, {
+      cwd: projectRoot,
+      stdio: ['inherit', 'inherit', 'pipe'],
+      env: process.env,
+    });
 
-  let stderrBuffer = '';
-  child.stderr.on('data', (chunk) => {
-    const text = chunk.toString();
-    stderrBuffer += text;
-    process.stderr.write(text);
-  });
+    let stderrBuffer = '';
+    child.stderr.on('data', (chunk) => {
+      const text = chunk.toString();
+      stderrBuffer += text;
+      if (runId === 'post-fix') {
+        process.stderr.write(text);
+      }
+    });
 
-  child.on('error', (err) => {
-    process.stderr.write(`${String(err)}\n`);
-    process.exit(1);
-  });
+    child.on('error', (err) => {
+      process.stderr.write(`${String(err)}\n`);
+      process.exit(1);
+    });
 
-  child.on('close', (code, signal) => {
-    const classification = classifyElectronStartupError(stderrBuffer);
-    if (classification === 'linux-libffmpeg-missing') {
-      process.stderr.write(`\n${fedoraLibffmpegRemediation()}\n`);
-    } else if (classification === 'linux-display-missing') {
-      process.stderr.write(`\n${linuxDisplayMissingRemediation()}\n`);
-    }
-    if (signal) {
-      process.kill(process.pid, signal);
-      return;
-    }
-    process.exit(code ?? 1);
-  });
+    child.on('close', (code, signal) => {
+      const noUsableSandbox = /No usable sandbox!/i.test(stderrBuffer);
+      if (
+        process.platform === 'linux' &&
+        noUsableSandbox &&
+        !spawnArgs.includes('--no-sandbox') &&
+        !argv.includes('--no-sandbox')
+      ) {
+        launch(['--no-sandbox'], 'post-fix');
+        return;
+      }
+
+      // Initial Linux attempt buffers stderr so expected sandbox-fallback noise
+      // is not shown when retry succeeds. If no fallback path is taken, flush now.
+      if (runId === 'pre-fix' && stderrBuffer.length > 0) {
+        process.stderr.write(stderrBuffer);
+      }
+      const classification = classifyElectronStartupError(stderrBuffer);
+      if (classification === 'linux-libffmpeg-missing') {
+        process.stderr.write(`\n${fedoraLibffmpegRemediation()}\n`);
+      } else if (classification === 'linux-display-missing') {
+        process.stderr.write(`\n${linuxDisplayMissingRemediation()}\n`);
+      }
+      if (signal) {
+        process.kill(process.pid, signal);
+        return;
+      }
+      process.exit(code ?? 1);
+    });
+  };
+
+  launch();
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
