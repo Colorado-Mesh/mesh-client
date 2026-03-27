@@ -849,30 +849,9 @@ export default function ConnectionPanel({
       }
       console.debug('[ConnectionPanel] handleRePair: Step 9 complete');
 
-      // Step 10: Complete connection via handleConnect (this goes through Web Bluetooth flow)
+      // Step 10: Complete connection via Web Bluetooth picker
       console.debug('[ConnectionPanel] handleRePair: Step 10 - showing picker');
       setConnectionStage('Completing connection...');
-      setConnecting(false);
-      setShowBlePicker(true);
-      setBleDevices([]);
-      setConnectionStage('Select your device and complete pairing...');
-      console.debug('[ConnectionPanel] handleRePair END');
-
-      // Step 8: Connect at OS level
-      console.debug('[ConnectionPanel] handleRePair: Step 8 - bluetoothConnect');
-      setConnectionStage('Connecting to device...');
-      try {
-        await window.electronAPI.bluetoothConnect(mac);
-      } catch (connectErr) {
-        console.warn('[ConnectionPanel] bluetoothConnect warning:', connectErr);
-        // Continue anyway - OS-level connect might already be established
-      }
-      console.debug('[ConnectionPanel] handleRePair: Step 8 complete');
-
-      // Step 9: Complete connection via handleConnect (this goes through Web Bluetooth flow)
-      console.debug('[ConnectionPanel] handleRePair: Step 9 - showing picker');
-      setConnectionStage('Completing connection...');
-      setConnecting(false);
       setShowBlePicker(true);
       setBleDevices([]);
       setConnectionStage('Select your device and complete pairing...');
@@ -1071,11 +1050,22 @@ export default function ConnectionPanel({
       if (isLinux) {
         // Web Bluetooth path: requestDevice() is already in-flight in the renderer.
         // Resolving the main-process select-bluetooth-device callback will let it complete.
-        // handleConnect's await onConnect will continue and use the resolved device.
+        // Then re-enter onConnect to call transport.connect() which triggers the pairing handler.
         console.debug(
           '[ConnectionPanel] handleSelectBleDevice Linux: resolving pending requestDevice',
         );
         window.electronAPI.selectBluetoothDevice(deviceId);
+        // Re-enter onConnect to call transport.connect() which triggers the pairing handler
+        console.debug(
+          '[ConnectionPanel] handleSelectBleDevice Linux: calling onConnect to establish connection',
+        );
+        onConnect('ble', undefined).catch((err: unknown) => {
+          console.warn('[ConnectionPanel] BLE re-connect after selection failed', err);
+          const bleErrMsg = humanizeBleError(err);
+          if (bleErrMsg) setError(bleErrMsg);
+          setConnecting(false);
+          setConnectionStage('');
+        });
       } else {
         void window.electronAPI.stopNobleBleScanning(protocol);
         // Trigger the actual connection with the peripheral ID
