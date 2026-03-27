@@ -91,13 +91,12 @@ export async function createBleConnection(
       // On Linux, requestDevice() must be called with a user gesture
       // If no peripheralId provided, initiate device selection now
       let deviceId = peripheralId;
-      let deviceName = 'Unknown Device';
       try {
         if (!deviceId) {
           console.debug('[connection] createBleConnection: requesting device selection (Linux)');
           const deviceInfo = await transport.requestDevice();
           deviceId = deviceInfo.deviceId;
-          deviceName = deviceInfo.deviceName;
+          const deviceName = deviceInfo.deviceName;
           console.debug('[connection] createBleConnection: device selected', deviceId, deviceName);
         }
 
