@@ -710,7 +710,6 @@ export function useDevice() {
       // ─── Device status ─────────────────────────────────────────
       const unsub1 = device.events.onDeviceStatus.subscribe((status) => {
         touchLastData();
-        console.debug('[useDevice] onDeviceStatus', status, type);
         const statusMap: Record<number, DeviceState['status']> = {
           1: 'connecting', // DeviceRestarting
           2: 'disconnected', // DeviceDisconnected
@@ -1760,7 +1759,7 @@ export function useDevice() {
         console.debug('[useDevice] connect', type, httpAddress ?? blePeripheralId);
         let device: MeshDevice;
         if (type === 'ble') {
-          if (!blePeripheralId) throw new Error('BLE peripheral ID required');
+          // On Linux, peripheralId is optional - createBleConnection will call requestDevice()
           device = await createBleConnection(blePeripheralId, 'meshtastic');
         } else {
           device = await createConnection(type, httpAddress);
@@ -1825,7 +1824,7 @@ export function useDevice() {
         console.debug('[useDevice] connectAutomatic', type, httpAddress ?? blePeripheralId);
         let device: MeshDevice;
         if (type === 'ble') {
-          if (!blePeripheralId) throw new Error('BLE peripheral ID required for auto-connect');
+          // On Linux, peripheralId is optional - createBleConnection will call requestDevice()
           device = await createBleConnection(blePeripheralId, 'meshtastic');
         } else if (type === 'serial') {
           device = await reconnectSerial(lastSerialPortId);

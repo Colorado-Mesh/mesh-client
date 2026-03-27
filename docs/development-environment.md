@@ -9,7 +9,7 @@ These requirements apply to all platforms.
 ### 1) Required software
 
 - Git
-- Node.js **25.8.1+** (prefer the latest stable release for development when possible)
+- Node.js **22.12.0+** (match [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml); `CONTRIBUTING.md` recommends the same)
 - npm **9+**
 - Python 3 + `pip` (needed for MkDocs documentation build)
 
@@ -60,8 +60,7 @@ npm install
 ### 3) Run the app
 
 - Dev mode (hot reload): `npm run dev`
-- **Linux (BLE + desktop GUI from source):** `npm run linux` — preferred over plain `npm start` so Bluetooth scanning has `CAP_NET_RAW` without `setcap` on local Electron (see [Linux Bluetooth (BLE) Permissions](#linux-bluetooth-ble-permissions)).
-- Production-like local start (other platforms, or Linux without BLE): `npm start`
+- Production-like local start: `npm start`
 
 ### Common npm commands
 
@@ -70,7 +69,6 @@ Use these from the repository root:
 ```bash
 # App run/build
 npm run dev
-npm run linux   # Linux: BLE + GUI from source (see Linux BLE section)
 npm start
 npm run build
 
@@ -344,34 +342,50 @@ sudo usermod -a -G dialout $USER
 
 Log out/in after changing groups.
 
-### Linux Bluetooth (BLE) Permissions
+### Linux Bluetooth (BLE)
 
-BLE scanning with `@stoprocent/noble` requires `CAP_NET_RAW`.
+Linux uses Web Bluetooth (Chromium's built-in BLE API) instead of `@stoprocent/noble`. This approach:
 
-**From the repo root, preferred:** run `npm run linux`. It wraps `sudo setpriv …` so your process gets ambient `CAP_NET_RAW`, preserves `DISPLAY` / `XAUTHORITY` / `PATH` for the desktop session, and runs `npm start -- -no-sandbox` (production-like build + Electron). You need `sudo` once per launch for `setpriv`.
+- Requires no setcap/setuid workaround scripts
+- Requires the user to select a device from the in-app Bluetooth picker (backed by Chromium's chooser event)
+- Requires a user gesture (button click) to trigger device selection
 
-**Manual (equivalent to `npm run linux`):**
+The app automatically enables `--enable-experimental-web-platform-features` on Linux at startup.
+
+#### Bluetooth Pairing on Linux
+
+Web Bluetooth may invoke the **Electron pairing handler** during GATT connect. Behavior differs by protocol:
+
+- **Meshtastic:** On the first Chromium `providePin` request, the client tries the standard Meshtastic PIN `123456`. If that fails, you are prompted to enter the PIN manually.
+- **MeshCore:** The MeshCore session does **not** auto-submit `123456`. When Chromium asks for a PIN, you enter the random code shown on the radio.
+
+**MeshCore and OS-level pairing (Linux / BlueZ):** A stable GATT session usually requires a bond in BlueZ first. After you choose a device in the in-app picker, the client runs `bluetoothctl info <MAC>`. If the device is **not** paired (`Paired: no`) or not yet known to the adapter, the UI prompts for the PIN on the **radio** and runs **`bluetooth-pair`** (main-process `bluetoothctl` pairing) **before** resolving the pending Web Bluetooth selection. If `Paired: yes` already, connection continues without that step.
+
+Handshake retries reuse the **same granted Web Bluetooth device** (`navigator.bluetooth.getDevices()`) so the second attempt does not call `requestDevice()` without a user gesture.
+
+If you encounter pairing issues (e.g., "Connection attempt failed" or device was previously paired with wrong PIN):
+
+1. Use the **"Remove & Re-pair Device"** button in the app
+2. Or manually remove via `bluetoothctl`:
+   ```bash
+   bluetoothctl
+   # Inside bluetoothctl:
+   remove XX:XX:XX:XX:XX:XX  # Replace with your device MAC
+   # Then re-pair from the app
+   ```
+3. If the device still won't connect, power cycle Bluetooth:
+   ```bash
+   bluetoothctl power off
+   bluetoothctl power on
+   ```
+
+### Linux launch notes
+
+The supported dev and local run flows are:
 
 ```bash
-sudo setpriv --reuid=$USER --regid=$(id -g) --init-groups --inh-caps +net_raw --ambient-caps +net_raw --reset-env bash -lc "export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start -- -no-sandbox"
-```
-
-Packaged installs (`.deb`, AppImage, etc.) do **not** use `npm run linux`; apply file capabilities to the **installed or extracted app binary** as described elsewhere in this doc — that path is separate from development.
-
-If you see lines like `cannot create /sys/kernel/debug/bluetooth/hci0/conn_min_interval: Permission denied`, those are emitted by native noble internals trying to write debugfs connection tuning. Those lines alone do **not** prove `CAP_NET_RAW` is missing and can appear even when `setpriv` is correct.
-
-Treat this as actionable only when paired with BLE data-path failures (for example, MeshCore protocol handshake timeout with zero inbound `fromRadio` packets). In that case: keep the device awake/nearby, reset the adapter (`bluetoothctl power off; power on`), retry, or use Serial/TCP fallback.
-
-If you reinstall dependencies (`npm install`/`npm ci`) or switch binaries, re-apply capability setup.
-
-### Sandbox and ARM notes
-
-The recommended Linux dev entry (`npm run linux`) already passes `-no-sandbox` to the packaged `npm start` flow.
-
-If app launch fails due to sandbox when using **hot reload** (`npm run dev`) on some environments:
-
-```bash
-npm run dev -- --no-sandbox
+npm run dev
+npm start
 ```
 
 ARM (for example Raspberry Pi) may also require:
@@ -410,19 +424,19 @@ npm run rebuild
 Use:
 
 ```bash
-npm run build && npx electron . --no-sandbox --disable-gpu
+npm run build && npx electron . --disable-gpu
 ```
 
 Or:
 
 ```bash
-npm run electron:open -- --no-sandbox --disable-gpu
+npm run electron:open -- --disable-gpu
 ```
 
 Optional persistent mitigation:
 
 - `export MESH_CLIENT_DISABLE_GPU=1`
-- `ELECTRON_OZONE_PLATFORM_HINT=x11 npm run electron:open -- --no-sandbox`
+- `ELECTRON_OZONE_PLATFORM_HINT=x11 npm run electron:open`
 
 #### `Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED`
 

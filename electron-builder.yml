@@ -70,9 +70,7 @@ linux:
     - from: ./copyright
       to: usr/share/doc/mesh-client/copyright
 deb:
-  afterInstall: scripts/linux-setcap-postinstall.sh
 rpm:
-  afterInstall: scripts/linux-setcap-postinstall.sh
 win:
   target:
     - target: nsis

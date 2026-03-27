@@ -138,6 +138,10 @@ describe('ConnectionPanel hardware event wiring', () => {
 
   it('opens BLE picker when a device is discovered during manual Bluetooth scan', async () => {
     const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
     let capturedCb: ((device: NobleBleDevice) => void) | undefined;
     vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
       capturedCb = cb;
@@ -161,6 +165,7 @@ describe('ConnectionPanel hardware event wiring', () => {
     });
 
     expect(screen.getByText('Select Bluetooth Device')).toBeInTheDocument();
+    userAgentSpy.mockRestore();
   });
 
   // ─── Serial port discovery ─────────────────────────────────────────────────

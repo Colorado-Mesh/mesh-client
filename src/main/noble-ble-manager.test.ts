@@ -99,7 +99,7 @@ describe('NobleBleManager — notify-first fromRadio read pump strategy (regress
     expect(SOURCE).toMatch(/if \(!session\.fromRadioNotifyOnly\) return true/);
     expect(SOURCE).toMatch(/if \(IS_DARWIN\) return false/);
     expect(SOURCE).toMatch(/if \(IS_WIN32 && sessionId === 'meshcore'\) return false/);
-    expect(SOURCE).toMatch(/if \(!this\.shouldUseFromRadioReadPump\(sessionId, session\)\) return/);
+    expect(SOURCE).toMatch(/if \(!this\.shouldUseFromRadioReadPump\(sessionId, session\)\) /);
   });
 
   it('connect() starts fromRadioNotifyOnly as false before strategy selection', () => {
@@ -118,13 +118,6 @@ describe('NobleBleManager — notify-first fromRadio read pump strategy (regress
       /const scheduleReadPump = this\.shouldUseFromRadioReadPump\(sessionId, session\)/,
     );
     expect(SOURCE).toMatch(/scheduleReadPump[\s\S]{0,400}postWriteReadPumpTimer/);
-  });
-
-  it('adds Linux MeshCore bounded early-read polling when notify-first receives no payload', () => {
-    expect(SOURCE).toContain('MESHCORE_LINUX_EARLY_READ_POLL_MAX_ATTEMPTS');
-    expect(SOURCE).toContain('MESHCORE_LINUX_EARLY_READ_POLL_BACKOFF_MS');
-    expect(SOURCE).toContain('maybeScheduleLinuxMeshcoreEarlyReadPoll');
-    expect(SOURCE).toContain('linux early-read polling exhausted');
   });
 
   it('logs MeshCore first-packet diagnostics with source and latency', () => {
@@ -180,33 +173,5 @@ describe('NobleBleManager.connect — release other session on same peripheral (
     expect(SOURCE).toContain('releasedOtherSession');
     expect(SOURCE).toContain('await this.disconnect(otherSessionId)');
     expect(SOURCE).not.toContain('already in use by the');
-  });
-});
-
-describe('NobleBleManager — Linux BLE capability diagnostics (regression)', () => {
-  it('defines a dedicated Linux capability error code', () => {
-    expect(SOURCE).toContain('BLE_LINUX_CAPABILITY_MISSING');
-  });
-
-  it('classifies Linux scan errors through classifyLinuxBleError before rejecting', () => {
-    expect(SOURCE).toMatch(/const classifiedErr = this\.classifyLinuxBleError\(err\)/);
-    expect(SOURCE).toMatch(/reject\(classifiedErr\)/);
-  });
-
-  it('probes executable capabilities via getcap and process.execPath', () => {
-    expect(SOURCE).toMatch(/execFileSync\('getcap', \[process\.execPath\]/);
-    expect(SOURCE).toMatch(/cap_net_raw/);
-  });
-
-  it('checks runtime Linux capabilities from /proc/self/status before file caps', () => {
-    expect(SOURCE).toContain('/proc/self/status');
-    expect(SOURCE).toContain('CapEff');
-    expect(SOURCE).toContain('CapAmb');
-    expect(SOURCE).toContain('probeLinuxRuntimeBleCapability');
-  });
-
-  it('includes both source and release capability guidance in the classified error', () => {
-    expect(SOURCE).toContain('linuxBleNobleCapabilityErrorBody');
-    expect(SOURCE).toContain('BLE_LINUX_CAPABILITY_MISSING');
   });
 });

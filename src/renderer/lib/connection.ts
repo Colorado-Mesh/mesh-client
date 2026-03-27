@@ -9,6 +9,7 @@ import {
   selectGrantedSerialPort,
 } from './serialPortSignature';
 import { TransportNobleIpc } from './transportNobleIpc';
+import { TransportWebBluetoothIpc } from './transportWebBluetoothIpc';
 import type { ConnectionType, NobleBleSessionId } from './types';
 
 // HTTP base connection: timeouts and retries to avoid hanging on slow mDNS or flaky networks.
@@ -59,18 +60,99 @@ async function httpPreflightWithRetries(connectionUrl: string): Promise<void> {
 }
 
 /**
- * Create a BLE connection to a Meshtastic device via @stoprocent/noble.
- * The main process NobleBleManager must have already discovered the peripheral
+ * Create a BLE connection to a Meshtastic device.
+ *
+ * On Mac/Windows: The main process NobleBleManager must have already discovered the peripheral
  * (via startNobleBleScanning) before this is called.
+ *
+ * On Linux: Uses Web Bluetooth directly in the renderer.
  */
 export async function createBleConnection(
-  peripheralId: string,
+  peripheralId?: string,
   sessionId: NobleBleSessionId = 'meshtastic',
 ): Promise<MeshDevice> {
+  const isLinux = navigator.userAgent.toLowerCase().includes('linux');
   const connectStartedAt = Date.now();
-  console.debug('[connection] createBleConnection start', peripheralId);
+  console.debug('[connection] createBleConnection start', peripheralId, { isLinux });
+
+  if (isLinux) {
+    // Reset the pairing retry count so the first attempt uses the default PIN
+    window.electronAPI.resetBlePairingRetryCount();
+
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
+      const attemptStartedAt = Date.now();
+      const transport = new TransportWebBluetoothIpc(sessionId);
+      console.debug('[connection] createBleConnection: using Web Bluetooth transport on Linux', {
+        attempt,
+        maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
+      });
+
+      // On Linux, requestDevice() must be called with a user gesture
+      // If no peripheralId provided, initiate device selection now
+      let deviceId = peripheralId;
+      try {
+        if (!deviceId) {
+          console.debug('[connection] createBleConnection: requesting device selection (Linux)');
+          const deviceInfo = await transport.requestDevice();
+          deviceId = deviceInfo.deviceId;
+          const deviceName = deviceInfo.deviceName;
+          console.debug('[connection] createBleConnection: device selected', deviceId, deviceName);
+        }
+
+        // Now connect to the device
+        await transport.connect();
+        if (attempt > 1) {
+          console.info('[connection] createBleConnection recovered on retry', {
+            sessionId,
+            deviceId,
+            attempt,
+            maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
+            totalElapsedMs: Date.now() - connectStartedAt,
+          });
+        }
+        console.debug('[connection] createBleConnection: connected on Linux');
+        return new MeshDevice(transport as any);
+      } catch (err) {
+        lastError = err;
+        // Clean up transport on failure before retry
+        try {
+          await transport.disconnect();
+        } catch (cleanupErr) {
+          console.debug('[connection] createBleConnection: cleanup error on failure', cleanupErr);
+        }
+
+        const message = err instanceof Error ? err.message : String(err);
+        const isTimeout = /timed out/i.test(message);
+        const isPairingError =
+          err instanceof Error && (err as Error & { isPairingRelated?: boolean }).isPairingRelated;
+        console.warn('[connection] createBleConnection attempt failed', {
+          sessionId,
+          deviceId,
+          attempt,
+          maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
+          isTimeout,
+          isPairingError,
+          attemptElapsedMs: Date.now() - attemptStartedAt,
+          totalElapsedMs: Date.now() - connectStartedAt,
+          message,
+        });
+        // Don't retry on pairing errors (user needs to fix pairing, not retry)
+        if (isPairingError || !isTimeout || attempt >= BLE_CONNECT_MAX_ATTEMPTS) {
+          break;
+        }
+        await new Promise<void>((r) => setTimeout(r, BLE_CONNECT_RETRY_DELAY_MS));
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error('BLE connection failed');
+  }
+
+  // Mac/Windows: use Noble IPC transport
   // Subscribe to IPC events before telling main to connect, so no fromRadio
   // packets emitted during the initial drain are dropped.
+  if (!peripheralId) {
+    throw new Error('BLE peripheral ID required on Mac/Windows');
+  }
   const transport = new TransportNobleIpc(sessionId);
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
@@ -193,7 +275,7 @@ export async function createConnection(
       host = host.replace(/^https?:\/\//, '');
       // Strip trailing slashes
       host = host.replace(/\/+$/, '');
-      // Normalize bare IPv6 addresses — browsers require brackets: [fe80::1]
+      // Normalize bare IPv6 addresses - browsers require brackets: [fe80::1]
       if (host.includes(':') && !host.startsWith('[')) {
         host = `[${host}]`;
       }
@@ -282,7 +364,7 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
       msg.includes('already been closed') ||
       msg.includes('locked')
     ) {
-      // HTTP transport doesn't implement disconnect() — manually close the streams
+      // HTTP transport doesn't implement disconnect() - manually close the streams
       try {
         await device.transport.toDevice.close();
       } catch (e) {

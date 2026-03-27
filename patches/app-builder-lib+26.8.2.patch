@@ -1,17 +1,17 @@
 diff --git a/node_modules/app-builder-lib/out/node-module-collector/moduleManager.js b/node_modules/app-builder-lib/out/node-module-collector/moduleManager.js
-index d23a542..865caca 100644
+index f483d93..ab66a7f 100644
 --- a/node_modules/app-builder-lib/out/node-module-collector/moduleManager.js
 +++ b/node_modules/app-builder-lib/out/node-module-collector/moduleManager.js
-@@ -15,7 +15,8 @@ var LogMessageByKey;
+@@ -16,7 +16,8 @@ var LogMessageByKey;
      LogMessageByKey["PKG_COLLECTOR_OUTPUT"] = "collector stderr output";
  })(LogMessageByKey || (exports.LogMessageByKey = LogMessageByKey = {}));
  exports.logMessageLevelByKey = {
 -    [LogMessageByKey.PKG_DUPLICATE_REF]: "info",
 +    // Hoisted npm tree lists many edges to the same copy; not actionable — avoid noisy dist output
 +    [LogMessageByKey.PKG_DUPLICATE_REF]: "debug",
+     [LogMessageByKey.PKG_DUPLICATE_REF_UNRESOLVED]: "warn",
      [LogMessageByKey.PKG_NOT_FOUND]: "warn",
      [LogMessageByKey.PKG_NOT_ON_DISK]: "warn",
-     [LogMessageByKey.PKG_SELF_REF]: "debug",
 diff --git a/node_modules/app-builder-lib/out/node-module-collector/nodeModulesCollector.js b/node_modules/app-builder-lib/out/node-module-collector/nodeModulesCollector.js
 index 0956d26..4718c45 100644
 --- a/node_modules/app-builder-lib/out/node-module-collector/nodeModulesCollector.js

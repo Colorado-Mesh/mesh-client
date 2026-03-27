@@ -35,14 +35,24 @@ See [development-environment.md](development-environment.md#windows) for Python 
 
 **Linux-specific:**
 
-- noble requires raw socket capability on the executable you run. **From source, prefer `npm run linux`.** See [Linux Bluetooth (BLE) Permissions](#linux-bluetooth-ble-permissions).
-- If the adapter is present but scanning does not start, restart BlueZ: `sudo systemctl restart bluetooth`.
-- `cannot create /sys/kernel/debug/bluetooth/hci0/conn_*: Permission denied` lines come from native noble internals (debugfs connection tuning) and are often non-fatal by themselves.
-- If those lines appear together with MeshCore protocol-handshake timeout and zero inbound `fromRadio` bytes, treat it as a BLE data-path issue: keep the device awake/nearby, power-cycle the adapter (`bluetoothctl power off; power on`), retry, or use Serial/TCP.
-
-### Linux Bluetooth (BLE) Permissions
-
-See [development-environment.md#linux-bluetooth-ble-permissions](development-environment.md#linux-bluetooth-ble-permissions) for full source-development and packaged-binary guidance.
+- The app uses Web Bluetooth (Chromium's built-in BLE API). You still need a working Bluetooth stack (`systemctl status bluetooth`).
+- Linux BLE uses the in-app Bluetooth picker (triggered from a button click); if no picker appears, restart the app and try Connect again.
+- If the Bluetooth adapter isn't detected, check: `systemctl status bluetooth` and `rfkill list`.
+- **MeshCore:** After you pick a radio, the app checks `bluetoothctl info <MAC>`. If the device is **not** paired at the OS level, you are prompted for the **PIN shown on the device** and pairing runs via **`bluetooth-pair`** before Web Bluetooth finishes connecting. Meshtastic does not use this gate in the same way (it may use PIN `123456` on the first pairing prompt from Chromium).
+- If device pairing fails with "Connection attempt failed", try the **"Remove & Re-pair Device"** button in the app, or manually remove via `bluetoothctl`:
+  ```bash
+  bluetoothctl
+  # Inside bluetoothctl:
+  remove XX:XX:XX:XX:XX:XX  # Replace with your device MAC
+  # Then re-pair from the app
+  ```
+- For **Meshtastic** devices, the first Chromium pairing attempt may use PIN `123456`. For **MeshCore**, always use the PIN shown on the radio (and the pre-connect prompt when BlueZ reports not paired).
+- If devices won't pair or connect, power-cycle Bluetooth:
+  ```bash
+  bluetoothctl power off
+  bluetoothctl power on
+  ```
+- MeshCore devices must be in Bluetooth Companion mode. If you still see bonds without a PIN, remove the device in `bluetoothctl` or use **Remove & Re-pair Device**, then connect again.
 
 ### Serial port not detected
 
@@ -182,7 +192,7 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 - Grant location permission when prompted by the app.
 - Or set coordinates manually via the **Radio** tab → Fixed Position.
-- Note: The IP-geolocation fallback (ip-api.com, then ipwho.is) provides city-level accuracy only — not suitable for position broadcasting. If both services are unreachable, "Location unavailable" is shown.
+- Note: The IP-geolocation fallback (ipwho.is) provides city-level accuracy only — not suitable for position broadcasting. If the service is unreachable, "Location unavailable" is shown.
 
 ### "Something went wrong" blank screen
 

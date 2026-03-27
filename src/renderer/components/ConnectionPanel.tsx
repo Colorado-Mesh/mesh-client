@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import {
-  linuxBleCapabilityWarningBanner,
-  linuxBleHumanizeCapabilityMaybeMessage,
-  linuxBleHumanizeCapabilityMissingMessage,
-} from '../../shared/linuxBleDevLaunch';
 import { MESHCORE_SETUP_ABORT_MESSAGE } from '../lib/bleConnectErrors';
 import {
   letsMeshPresetConfigurationDeviation,
@@ -116,15 +111,12 @@ function humanizeBleError(err: unknown): string {
           })();
   const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   const isLinux = navigator.userAgent.toLowerCase().includes('linux');
-  if (msg.includes('BLE_LINUX_CAPABILITY_MISSING')) {
-    return linuxBleHumanizeCapabilityMissingMessage();
-  }
-  if (isLinux && /operation not permitted|permission denied|\beperm\b/i.test(msg)) {
-    return linuxBleHumanizeCapabilityMaybeMessage(msg);
-  }
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
     if (isWindows) {
       return `${msg} — Check Settings > Bluetooth & devices. If Bluetooth is on but unavailable, update your Bluetooth driver in Device Manager.`;
+    }
+    if (isLinux) {
+      return `${msg} — Make sure Bluetooth is enabled and the Web Bluetooth experimental flag is set. Try: systemctl status bluetooth`;
     }
     return `${msg} — Make sure Bluetooth is enabled. On Linux, run: systemctl status bluetooth`;
   }
@@ -134,28 +126,124 @@ function humanizeBleError(err: unknown): string {
   if (msg.includes('GATT Server is disconnected')) {
     return `${msg} — GATT connection dropped. Try moving closer to the device and reconnecting.`;
   }
-  if (/Bluetooth connected but MeshCore protocol handshake did not complete/i.test(msg)) {
-    if (isWindows) {
-      return `${msg} On Windows, toggle Bluetooth off/on, confirm no stale pairing is holding the device, then retry.`;
-    }
+  // Web Bluetooth on Linux: "GATT Error: Not supported" means the device requires pairing
+  // before GATT operations are allowed. This is common with Meshtastic devices.
+  if (msg.includes('GATT Error: Not supported')) {
+    let enhanced = `${msg} The device requires pairing before connecting. Use the "Remove & Re-pair Device" button to re-initiate pairing.`;
     if (isLinux) {
-      return `${msg} On Linux/BlueZ, run bluetoothctl power off; power on, then retry with the device awake and nearby.`;
+      enhanced += ` For Meshtastic use PIN 123456. For MeshCore the PIN is shown on the device display.`;
     }
-    return msg;
+    return enhanced;
+  }
+  // Check error.name directly for DOMException types that indicate pairing issues
+  if (err instanceof DOMException) {
+    if (err.name === 'SecurityError') {
+      let enhanced = `Bluetooth authentication failed (${err.message}). The device may not be properly paired. Use the "Remove & Re-pair Device" button.`;
+      if (isLinux) {
+        enhanced += ` For Meshtastic use PIN 123456.`;
+      }
+      return enhanced;
+    }
+    if (err.name === 'NetworkError') {
+      let enhanced = `Bluetooth connection failed (${err.message}). The device may not be properly paired.`;
+      if (isLinux) {
+        enhanced += ` Use the "Remove & Re-pair Device" button or manage pairings via 'bluetoothctl'.`;
+      } else {
+        enhanced += ` Remove the device from Bluetooth settings and re-pair.`;
+      }
+      return enhanced;
+    }
+  }
+  // Web Bluetooth on Linux: connection failed often means device not paired properly
+  if (msg.includes('Connection Error: Connection attempt failed')) {
+    let enhanced = `${msg} The device may not be paired with your computer. Remove the device from Bluetooth settings, then re-pair it. For Meshtastic use PIN 123456. For MeshCore the PIN is randomly generated and displayed on the device.`;
+    if (isLinux) {
+      enhanced += ` On Linux, you can manage pairings via the system Bluetooth settings or 'bluetoothctl' tool.`;
+    }
+    return enhanced;
+  }
+  if (/Bluetooth connected but MeshCore protocol handshake did not complete/i.test(msg)) {
+    let enhanced = `${msg} Ensure your MeshCore device is in Bluetooth Companion mode and paired with your computer using a PIN. Remove any existing pairing and re-pair if connection issues persist.`;
+    if (isWindows) {
+      enhanced +=
+        ' On Windows, toggle Bluetooth off/on and update the adapter driver in Device Manager if disconnects persist.';
+    }
+    return enhanced;
   }
   if (/Bluetooth connection timed out while opening MeshCore over Noble IPC/i.test(msg)) {
+    let enhanced = `${msg} Ensure your MeshCore device is in Bluetooth Companion mode and paired with your computer using a PIN. Remove any existing pairing and re-pair if connection issues persist.`;
     if (isWindows) {
-      return `${msg} On Windows, pair in Bluetooth settings first and clear stale pairings before retrying.`;
+      enhanced +=
+        ' On Windows, toggle Bluetooth off/on and update the adapter driver in Device Manager if disconnects persist.';
     }
-    if (isLinux) {
-      return `${msg} On Linux/BlueZ, run bluetoothctl power off; power on, then retry.`;
-    }
-    return msg;
-  }
-  if (isWindows && /disconnected|timed out/i.test(msg) && /MeshCore/i.test(msg)) {
-    return `${msg} On Windows, toggle Bluetooth off/on and update the adapter driver in Device Manager if disconnects persist.`;
+    return enhanced;
   }
   return msg;
+}
+
+function shouldShowLinuxRePairFromBleError(err: unknown, bleErrMsg: string): boolean {
+  const rawMessage = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+  const pairingFlag =
+    err instanceof Error &&
+    (err as Error & { isPairingRelated?: boolean }).isPairingRelated === true;
+  const domPairingSignal =
+    err instanceof DOMException && (err.name === 'SecurityError' || err.name === 'NetworkError');
+  // MeshCore Linux Web Bluetooth: handshake timeout often means PIN not paired at OS level (Electron may never fire providePin).
+  const meshcoreWebBtHandshakeOrTimeout =
+    /MeshCore handshake timed out \(Web Bluetooth\)|opening MeshCore over Web Bluetooth|Bluetooth connected but MeshCore protocol handshake did not complete/i.test(
+      bleErrMsg,
+    );
+  // High-confidence pairing indicators only; avoid broad "connection failed" matching.
+  return (
+    pairingFlag ||
+    domPairingSignal ||
+    meshcoreWebBtHandshakeOrTimeout ||
+    /GATT Error:\s*Not supported/i.test(rawMessage) ||
+    /authentication failed/i.test(rawMessage) ||
+    /not be properly paired/i.test(bleErrMsg) ||
+    /pairing issue/i.test(rawMessage)
+  );
+}
+
+/** When Electron never shows a PIN sheet, offer manual PIN + bluetoothctl pairing after a MeshCore timeout. */
+function shouldOfferMeshcoreLinuxManualPinAfterError(bleErrMsg: string): boolean {
+  return /MeshCore handshake timed out \(Web Bluetooth\)|opening MeshCore over Web Bluetooth/i.test(
+    bleErrMsg,
+  );
+}
+
+/** Parse `bluetoothctl info <mac>` output for bond state (Linux / BlueZ). */
+function parseBluetoothctlPairedState(info: string): 'yes' | 'no' | 'unknown' {
+  const s = info.toLowerCase();
+  if (/paired:\s*yes\b/.test(s)) return 'yes';
+  if (/paired:\s*no\b/.test(s)) return 'no';
+  return 'unknown';
+}
+
+/** Shown when MeshCore Linux reconnect finds the saved device is not OS-paired (BlueZ). */
+const MESHCORE_LINUX_SAVED_UNPAIRED_HINT =
+  'Saved device is not paired in Linux Bluetooth — select it below to enter PIN and connect.';
+
+function shouldForgetGrantedWebBluetoothDevice(
+  device: BluetoothDevice,
+  macAddress: string,
+  selectedName?: string | null,
+): boolean {
+  const normalizedMac = macAddress.replace(/:/g, '').toLowerCase();
+  const macTail4 = normalizedMac.slice(-4);
+  const devId = (device.id ?? '').toLowerCase();
+  const devName = (device.name ?? '').toLowerCase();
+  const selectedNameNorm = (selectedName ?? '').toLowerCase();
+  return (
+    devId.includes(normalizedMac) ||
+    (macTail4.length === 4 && devName.includes(macTail4)) ||
+    (selectedNameNorm.length > 0 && devName === selectedNameNorm)
+  );
+}
+
+function normalizeSixDigitPin(raw: string): string | null {
+  const digits = raw.replace(/\D/g, '');
+  return /^\d{6}$/.test(digits) ? digits : null;
 }
 
 function loadLastConnection(p: MeshProtocol): LastConnection | null {
@@ -417,9 +505,14 @@ export default function ConnectionPanel({
   });
   const [tcpHost, setTcpHost] = useState('localhost');
   const [error, setError] = useState<string | null>(null);
-  const [linuxBleCapabilityWarning, setLinuxBleCapabilityWarning] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStage, setConnectionStage] = useState('');
+  const [showRePairButton, setShowRePairButton] = useState(false);
+  const [showPinPrompt, setShowPinPrompt] = useState(false);
+  const showPinPromptRef = useRef(false);
+  const [manualPairingFallback, setManualPairingFallback] = useState(false);
+  const [pinInputValue, setPinInputValue] = useState('');
+  const pinPromptSeenSinceRePairRef = useRef(false);
   const activeHostAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
 
   // ─── MQTT settings state ───────────────────────────────────────
@@ -544,6 +637,11 @@ export default function ConnectionPanel({
   // ─── BLE device picker state ──────────────────────────────────
   const [bleDevices, setBleDevices] = useState<NobleBleDevice[]>([]);
   const [showBlePicker, setShowBlePicker] = useState(false);
+  const isLinux = navigator.userAgent.toLowerCase().includes('linux');
+  const [webBluetoothDevice, setWebBluetoothDevice] = useState<{
+    deviceId: string;
+    deviceName: string;
+  } | null>(null);
 
   // ─── Serial port picker state ─────────────────────────────────
   const [serialPorts, setSerialPorts] = useState<SerialPortInfo[]>([]);
@@ -559,6 +657,17 @@ export default function ConnectionPanel({
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
   // Tracks BLE device name at selection time, used when saving LastConnection
   const lastSelectedBleNameRef = useRef<string | null>(null);
+  // Tracks BLE device MAC for potential re-pairing on Linux
+  const lastSelectedBleMacRef = useRef<string | null>(null);
+  /**
+   * Linux MeshCore Web Bluetooth: when `bluetoothctl` reports not paired, we must `pair` + PIN
+   * before resolving `requestDevice()` — otherwise GATT connects without OS pairing and fails.
+   */
+  const pendingMeshcoreLinuxWbMacRef = useRef<string | null>(null);
+  /** Linux Web Bluetooth: after the user picks a device, discovery must not reopen the embedded picker. */
+  const bleLinuxPickerSelectionResolvedRef = useRef(false);
+  /** MeshCore Linux reconnect: dedupe concurrent bluetoothGetInfo checks from repeated discovery events. */
+  const meshcoreLinuxReconnectPairingCheckRef = useRef(false);
   const lastConnectionBleDeviceNameFallbackRef = useRef(lastConnection?.bleDeviceName);
   lastConnectionBleDeviceNameFallbackRef.current = lastConnection?.bleDeviceName;
   /** Mount-only auto-connect reads latest props/state via refs so the effect can stay `[]`. */
@@ -577,23 +686,17 @@ export default function ConnectionPanel({
   }, [protocol]);
 
   useEffect(() => {
-    window.electronAPI
-      .getLinuxBleCapabilityStatus()
-      .then((status) => {
-        if (status.platform !== 'linux' || status.hasCapNetRaw) {
-          setLinuxBleCapabilityWarning(null);
-          return;
-        }
-        setLinuxBleCapabilityWarning(linuxBleCapabilityWarningBanner());
-      })
-      .catch((err: unknown) => {
-        console.debug('[ConnectionPanel] getLinuxBleCapabilityStatus failed', err);
-      });
-  }, []);
+    pendingMeshcoreLinuxWbMacRef.current = null;
+  }, [protocol]);
+
+  useEffect(() => {
+    showPinPromptRef.current = showPinPrompt;
+  }, [showPinPrompt]);
 
   // Update connection stage based on state transitions, and save last connection on success
   useEffect(() => {
     if (state.status === 'connecting') {
+      if (showPinPrompt) return;
       if (showBlePicker) setConnectionStage('Select your device below');
       else if (showSerialPicker) setConnectionStage('Select a serial port below');
       else if (connectionType === 'ble' && isAutoConnectingRef.current) {
@@ -647,6 +750,7 @@ export default function ConnectionPanel({
     state.status,
     state.connectionType,
     showBlePicker,
+    showPinPrompt,
     showSerialPicker,
     httpAddress,
     activeHostAddress,
@@ -692,6 +796,235 @@ export default function ConnectionPanel({
     return cleanup;
   }, [lastConnection, onConnect, protocol]); // isAutoConnecting intentionally omitted — ref handles it
 
+  // Listen for Bluetooth devices discovered by main process (Linux Web Bluetooth)
+  useEffect(() => {
+    const cleanup = window.electronAPI.onBluetoothDevicesDiscovered((devices) => {
+      setBleDevices(devices);
+      const lastId = lastConnectionRef.current?.bleDeviceId ?? loadLastBleDevice(protocol);
+      if (
+        isLinux &&
+        isAutoConnectingRef.current &&
+        lastId &&
+        devices.some((d) => d.deviceId === lastId)
+      ) {
+        // MeshCore must OS-pair before GATT (same as handleSelectBleDevice). Auto-selecting here
+        // skipped that gate and left reconnect stuck or broken for unpaired devices.
+        if (protocol === 'meshcore') {
+          if (meshcoreLinuxReconnectPairingCheckRef.current) return;
+          meshcoreLinuxReconnectPairingCheckRef.current = true;
+          void (async () => {
+            try {
+              const info = await window.electronAPI.bluetoothGetInfo(lastId);
+              const paired = parseBluetoothctlPairedState(info);
+              if (paired === 'yes') {
+                bleLinuxPickerSelectionResolvedRef.current = true;
+                setShowBlePicker(false);
+                setConnectionStage('Connecting to saved Bluetooth device…');
+                window.electronAPI.selectBluetoothDevice(lastId);
+                return;
+              }
+            } catch {
+              // catch-no-log-ok — show picker to complete MeshCore pairing flow
+            } finally {
+              meshcoreLinuxReconnectPairingCheckRef.current = false;
+            }
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setShowBlePicker(true);
+            setConnectionStage(MESHCORE_LINUX_SAVED_UNPAIRED_HINT);
+          })();
+          return;
+        }
+        bleLinuxPickerSelectionResolvedRef.current = true;
+        setShowBlePicker(false);
+        setConnectionStage('Connecting to saved Bluetooth device…');
+        window.electronAPI.selectBluetoothDevice(lastId);
+        return;
+      }
+      const shouldShowEmbeddedPicker =
+        connectionTypeRef.current === 'ble' &&
+        !bleLinuxPickerSelectionResolvedRef.current &&
+        !showPinPromptRef.current &&
+        !pendingMeshcoreLinuxWbMacRef.current;
+      if (shouldShowEmbeddedPicker) {
+        setShowBlePicker(true);
+        setConnectionStage('Select your Bluetooth device below');
+      }
+    });
+    return cleanup;
+  }, [protocol, isLinux]);
+
+  // Listen for Bluetooth PIN required event (Linux Web Bluetooth pairing)
+  useEffect(() => {
+    if (!isLinux) return;
+    const cleanup = window.electronAPI.onBluetoothPinRequired((data) => {
+      console.debug('[ConnectionPanel] Bluetooth PIN required for', data.deviceId);
+      pinPromptSeenSinceRePairRef.current = true;
+      setShowPinPrompt(true);
+      setManualPairingFallback(false);
+      setPinInputValue('');
+      setConnectionStage('Enter the PIN shown on your device');
+    });
+    return cleanup;
+  }, [isLinux]);
+
+  // Handle re-pair button click: always capture PIN before re-pair actions.
+  const handleRePair = useCallback(() => {
+    console.debug('[ConnectionPanel] handleRePair START');
+    const mac = lastSelectedBleMacRef.current;
+    if (!mac) {
+      console.debug('[ConnectionPanel] handleRePair: no MAC available');
+      setError('No device MAC address available for re-pairing');
+      return;
+    }
+
+    console.debug('[ConnectionPanel] handleRePair: MAC=', mac);
+    setError(null);
+    setShowRePairButton(false);
+    setManualPairingFallback(true);
+    setPinInputValue(protocol === 'meshtastic' ? '123456' : '');
+    setShowPinPrompt(true);
+    setConnecting(false);
+    setConnectionStage('Enter PIN to pair device');
+    pinPromptSeenSinceRePairRef.current = false;
+    console.debug('[ConnectionPanel] handleRePair END');
+  }, [protocol]);
+
+  // Handle PIN submission for pairing
+  const handlePinSubmit = useCallback(async () => {
+    const normalizedPin = normalizeSixDigitPin(pinInputValue);
+    if (!normalizedPin) {
+      setError('PIN must be exactly 6 digits.');
+      return;
+    }
+    const pendingWbMac = pendingMeshcoreLinuxWbMacRef.current;
+    if (pendingWbMac && protocol === 'meshcore' && isLinux && !manualPairingFallback) {
+      try {
+        setError(null);
+        setConnecting(true);
+        setConnectionStage('Pairing with PIN (bluetoothctl)...');
+        await window.electronAPI.bluetoothPair(pendingWbMac, normalizedPin);
+        try {
+          await window.electronAPI.bluetoothGetInfo(pendingWbMac);
+        } catch {
+          // catch-no-log-ok -- diagnostics only
+        }
+        pendingMeshcoreLinuxWbMacRef.current = null;
+        setShowPinPrompt(false);
+        setPinInputValue('');
+        setConnectionStage('Connecting to device...');
+        window.electronAPI.selectBluetoothDevice(pendingWbMac);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn('[ConnectionPanel] MeshCore pre-connect pair failed:', err);
+        setError(`Pairing failed: ${msg}`);
+        setConnectionStage('Enter the PIN shown on your device');
+        setConnecting(false);
+      }
+      return;
+    }
+    const manualMac = lastSelectedBleMacRef.current;
+    if (manualPairingFallback && isLinux && manualMac) {
+      let scanStarted = false;
+      try {
+        setError(null);
+        setShowPinPrompt(false);
+        setConnecting(true);
+        setConnectionStage('Removing device...');
+        await window.electronAPI.bluetoothUnpair(manualMac);
+        try {
+          await window.electronAPI.bluetoothUntrust(manualMac);
+        } catch {
+          // catch-no-log-ok -- untrust is best-effort, ignore all failures
+        }
+        if (navigator.bluetooth) {
+          try {
+            const devices = await navigator.bluetooth.getDevices();
+            for (const device of devices) {
+              if (
+                shouldForgetGrantedWebBluetoothDevice(
+                  device,
+                  manualMac,
+                  lastSelectedBleNameRef.current ?? null,
+                )
+              ) {
+                await device.forget();
+              }
+            }
+          } catch (e) {
+            console.warn('[ConnectionPanel] Failed to forget Web Bluetooth device:', e);
+          }
+        }
+        try {
+          await window.electronAPI.bluetoothStartScan();
+          scanStarted = true;
+        } catch (e) {
+          console.warn('[ConnectionPanel] bluetoothStartScan warning:', e);
+        }
+        setConnectionStage('Pairing with PIN...');
+        await window.electronAPI.bluetoothPair(manualMac, normalizedPin);
+        try {
+          await window.electronAPI.bluetoothGetInfo(manualMac);
+        } catch {
+          // catch-no-log-ok -- diagnostics only
+        }
+        setPinInputValue('');
+        setManualPairingFallback(false);
+        setShowRePairButton(false);
+        setConnecting(false);
+        setConnectionStage('');
+        setError(
+          'PIN accepted. Pairing completed. Press Connect and select your device to finish connecting.',
+        );
+        return;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn('[ConnectionPanel] manual pair failed:', err);
+        setError(`PIN pairing failed: ${msg}`);
+        setShowRePairButton(true);
+        setConnecting(false);
+        setConnectionStage('');
+        return;
+      } finally {
+        if (scanStarted) {
+          try {
+            await window.electronAPI.bluetoothStopScan();
+          } catch {
+            // catch-no-log-ok -- stop scan is best-effort
+          }
+        }
+      }
+    }
+    console.debug('[ConnectionPanel] Providing PIN for pairing');
+    window.electronAPI.provideBluetoothPin(normalizedPin);
+    setShowPinPrompt(false);
+    setPinInputValue('');
+    setConnectionStage('Pairing...');
+  }, [pinInputValue, manualPairingFallback, isLinux, protocol]);
+
+  // Handle PIN prompt cancel
+  const handlePinCancel = useCallback(() => {
+    if (pendingMeshcoreLinuxWbMacRef.current) {
+      pendingMeshcoreLinuxWbMacRef.current = null;
+      bleLinuxPickerSelectionResolvedRef.current = false;
+      window.electronAPI.cancelBluetoothSelection();
+      setShowPinPrompt(false);
+      setPinInputValue('');
+      setConnecting(false);
+      setConnectionStage('');
+      return;
+    }
+    console.debug('[ConnectionPanel] Cancelling pairing');
+    if (!manualPairingFallback) {
+      window.electronAPI.cancelBluetoothPairing();
+    }
+    setShowPinPrompt(false);
+    setManualPairingFallback(false);
+    setPinInputValue('');
+    setConnecting(false);
+    setConnectionStage('');
+  }, [manualPairingFallback]);
+
   // Listen for serial ports discovered by main process
   useEffect(() => {
     const cleanup = window.electronAPI.onSerialPortsDiscovered((ports) => {
@@ -728,9 +1061,53 @@ export default function ConnectionPanel({
     setSerialPorts([]);
     setShowBlePicker(false);
     setShowSerialPicker(false);
+    bleLinuxPickerSelectionResolvedRef.current = false;
     setConnectionStage('Please wait...');
 
     if (connectionType === 'ble') {
+      if (isLinux) {
+        console.debug('[ConnectionPanel] handleConnect Linux BLE path');
+        setConnectionStage('Select your Bluetooth device...');
+        // Same-tick IPC: select-bluetooth-device can fire before React commits connectionType;
+        // discovery uses connectionTypeRef for shouldShowEmbeddedPicker.
+        connectionTypeRef.current = 'ble';
+        try {
+          console.debug('[ConnectionPanel] handleConnect calling onConnect');
+          await onConnect('ble', undefined);
+          console.debug('[ConnectionPanel] handleConnect onConnect succeeded');
+          setConnecting(false);
+          setConnectionStage('');
+          return;
+        } catch (err) {
+          // catch-no-log-ok -- error is humanized and surfaced via setError
+          const bleErrMsg = humanizeBleError(err);
+          const mac = lastSelectedBleMacRef.current;
+          if (mac) {
+            try {
+              await window.electronAPI.bluetoothGetInfo(mac);
+            } catch {
+              // catch-no-log-ok -- diagnostics only
+            }
+          }
+          if (bleErrMsg) setError(bleErrMsg);
+          const isPairingRelatedError = shouldShowLinuxRePairFromBleError(err, bleErrMsg);
+          if (isPairingRelatedError) {
+            setShowRePairButton(true);
+            setShowBlePicker(false);
+            setConnectionStage('Pairing failed. Please re-pair your device.');
+            setConnecting(false);
+          } else {
+            setConnecting(false);
+            setConnectionStage('');
+          }
+          if (protocol === 'meshcore' && shouldOfferMeshcoreLinuxManualPinAfterError(bleErrMsg)) {
+            setShowPinPrompt(true);
+            setManualPairingFallback(true);
+            setPinInputValue('');
+          }
+          return;
+        }
+      }
       // Noble: start scanning — actual connection triggered when user selects a device
       setConnectionStage('Scanning — select your device when it appears below');
       try {
@@ -762,7 +1139,7 @@ export default function ConnectionPanel({
       setConnecting(false);
       setConnectionStage('');
     }
-  }, [connectionType, activeHostAddress, onConnect, protocol]);
+  }, [connectionType, activeHostAddress, onConnect, protocol, isLinux]);
 
   const handleCancelConnection = useCallback(async () => {
     isAutoConnectingRef.current = false;
@@ -772,13 +1149,27 @@ export default function ConnectionPanel({
       autoConnectTimeoutRef.current = null;
     }
     if (showBlePicker || connectionType === 'ble') {
-      void window.electronAPI.stopNobleBleScanning(protocol);
+      if (isLinux) {
+        if (showBlePicker || pendingMeshcoreLinuxWbMacRef.current) {
+          // Cancel in-flight requestDevice() (picker or MeshCore pre-connect PIN gate)
+          window.electronAPI.cancelBluetoothSelection();
+        }
+        pendingMeshcoreLinuxWbMacRef.current = null;
+        setShowPinPrompt(false);
+        setManualPairingFallback(false);
+        if (webBluetoothDevice) {
+          setWebBluetoothDevice(null);
+        }
+      } else {
+        void window.electronAPI.stopNobleBleScanning(protocol);
+      }
     }
     if (showSerialPicker) {
       window.electronAPI.cancelSerialSelection();
     }
     setShowBlePicker(false);
     setShowSerialPicker(false);
+    bleLinuxPickerSelectionResolvedRef.current = false;
     setConnecting(false);
     setConnectionStage('');
     // Ensure the underlying connection attempt is properly torn down
@@ -788,28 +1179,75 @@ export default function ConnectionPanel({
     } catch (e) {
       console.debug('[ConnectionPanel] onDisconnect best-effort cleanup', e);
     }
-  }, [showBlePicker, showSerialPicker, onDisconnect, connectionType, protocol]);
+  }, [
+    showBlePicker,
+    showSerialPicker,
+    onDisconnect,
+    connectionType,
+    protocol,
+    isLinux,
+    webBluetoothDevice,
+  ]);
 
   const handleSelectBleDevice = useCallback(
     (deviceId: string) => {
-      console.debug('[ConnectionPanel] BLE device selected', deviceId);
+      console.debug('[ConnectionPanel] BLE device selected', deviceId, { isLinux });
       saveLastBleDevice(protocol, deviceId);
       // Save BLE advertisement name for use in LastConnection display
       const found = bleDevices.find((d) => d.deviceId === deviceId);
       lastSelectedBleNameRef.current = found?.deviceName ?? null;
-      void window.electronAPI.stopNobleBleScanning(protocol);
+      // Store MAC address for potential re-pairing on Linux
+      lastSelectedBleMacRef.current = deviceId;
       setShowBlePicker(false);
+      if (isLinux) {
+        bleLinuxPickerSelectionResolvedRef.current = true;
+      }
+      setShowRePairButton(false);
+      if (isLinux && protocol === 'meshcore') {
+        setConnectionStage('Checking Bluetooth pairing…');
+        void (async () => {
+          try {
+            const info = await window.electronAPI.bluetoothGetInfo(deviceId);
+            const paired = parseBluetoothctlPairedState(info);
+            if (paired === 'yes') {
+              setConnectionStage('Connecting to device...');
+              window.electronAPI.selectBluetoothDevice(deviceId);
+              return;
+            }
+          } catch {
+            // catch-no-log-ok -- if bluetoothctl info fails, continue to explicit PIN pairing flow
+          }
+          pendingMeshcoreLinuxWbMacRef.current = deviceId;
+          setManualPairingFallback(false);
+          setPinInputValue('');
+          setShowPinPrompt(true);
+          setConnectionStage('Enter the PIN shown on your device (pair with Linux first)');
+        })();
+        return;
+      }
       setConnectionStage('Connecting to device...');
-      // Trigger the actual connection with the peripheral ID
-      onConnect('ble', undefined, deviceId).catch((err: unknown) => {
-        console.warn('[ConnectionPanel] BLE connect after selection failed', err);
-        const bleErrMsg = humanizeBleError(err);
-        if (bleErrMsg) setError(bleErrMsg);
-        setConnecting(false);
-        setConnectionStage('');
-      });
+      if (isLinux) {
+        // Web Bluetooth path: requestDevice() is pending. Resolve the deferred promise
+        // so that the original onConnect's requestDevice() returns and proceeds to connect().
+        console.debug(
+          '[ConnectionPanel] handleSelectBleDevice Linux: resolving pending requestDevice',
+        );
+        window.electronAPI.selectBluetoothDevice(deviceId);
+        // Don't call onConnect again - the original onConnect will continue from requestDevice()
+        // and proceed to connect(), which triggers the pairing handler.
+      } else {
+        void window.electronAPI.stopNobleBleScanning(protocol);
+        // Trigger the actual connection with the peripheral ID
+        onConnect('ble', undefined, deviceId).catch((err: unknown) => {
+          console.warn('[ConnectionPanel] BLE connect after selection failed', err);
+          const bleErrMsg = humanizeBleError(err);
+          if (bleErrMsg) setError(bleErrMsg);
+          setConnecting(false);
+          setConnectionStage('');
+        });
+      }
     },
-    [bleDevices, onConnect, protocol],
+    [bleDevices, isLinux, onConnect, protocol],
   );
 
   const handleSelectSerialPort = useCallback((portId: string) => {
@@ -866,9 +1304,10 @@ export default function ConnectionPanel({
         .catch(onAutoConnectFailed);
     } else if (lc.type === 'ble') {
       setConnectionType('ble');
-      if (lc.bleDeviceId) {
+      if (lc.bleDeviceId && !isLinux) {
         // Noble: auto-scan on startup — no user gesture required.
         // onNobleBleDeviceDiscovered will auto-connect when the known device appears.
+        // On Linux, Web Bluetooth requires a user gesture; skip auto-scan and let user click Connect.
         isAutoConnectingRef.current = true;
         setIsAutoConnecting(true);
         setConnecting(true);
@@ -878,7 +1317,7 @@ export default function ConnectionPanel({
       }
     }
     // HTTP: do not auto-trigger — show one-click reconnect card instead
-  }, [protocol]);
+  }, [protocol, isLinux]);
 
   // Cleanup timeout on unmount
   useEffect(
@@ -894,39 +1333,69 @@ export default function ConnectionPanel({
 
     if (lastConnection.type === 'ble') {
       if (lastConnection.bleDeviceId) {
-        // Noble: start scanning — no user gesture required.
-        // onNobleBleDeviceDiscovered will auto-connect when the known device appears.
         setConnectionType('ble');
         setBleDevices([]);
         setShowBlePicker(false);
+        bleLinuxPickerSelectionResolvedRef.current = false;
+        meshcoreLinuxReconnectPairingCheckRef.current = false;
         isAutoConnectingRef.current = true;
         setIsAutoConnecting(true);
         setConnecting(true);
-        setConnectionStage('Scanning for last Bluetooth device…');
-        if (autoConnectTimeoutRef.current) {
-          clearTimeout(autoConnectTimeoutRef.current);
-          autoConnectTimeoutRef.current = null;
-        }
-        autoConnectTimeoutRef.current = setTimeout(() => {
-          console.warn('[ConnectionPanel] auto-connect timed out after 30s');
-          isAutoConnectingRef.current = false;
-          setIsAutoConnecting(false);
-          setError('Auto-connect timed out.');
-          setConnecting(false);
-          setConnectionStage('');
-        }, 30_000);
-        void window.electronAPI.startNobleBleScanning(protocol).catch((err: unknown) => {
+        if (isLinux) {
+          // Web Bluetooth path: use onConnect directly (NOT connectAutomatic which skips BLE for MeshCore)
+          // This is a user gesture, so requestDevice() is allowed.
+          setConnectionStage('Reconnecting to last Bluetooth device…');
+          // Same-tick IPC: discovery may run before setConnectionType('ble') commits; picker gating uses connectionTypeRef.
+          connectionTypeRef.current = 'ble';
+          void onConnect('ble', undefined).catch((err: unknown) => {
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            const bleErrMsg = humanizeBleError(err);
+            if (bleErrMsg) setError(bleErrMsg);
+            const isPairingRelatedError = shouldShowLinuxRePairFromBleError(err, bleErrMsg);
+            if (isPairingRelatedError) {
+              setShowRePairButton(true);
+              setShowBlePicker(false);
+              setConnectionStage('Pairing failed. Please re-pair your device.');
+            } else {
+              setConnecting(false);
+              setConnectionStage('');
+            }
+            if (protocol === 'meshcore' && shouldOfferMeshcoreLinuxManualPinAfterError(bleErrMsg)) {
+              setShowPinPrompt(true);
+              setManualPairingFallback(true);
+              setPinInputValue('');
+            }
+          });
+        } else {
+          // Noble: start scanning — no user gesture required.
+          // onNobleBleDeviceDiscovered will auto-connect when the known device appears.
+          setConnectionStage('Scanning for last Bluetooth device…');
           if (autoConnectTimeoutRef.current) {
             clearTimeout(autoConnectTimeoutRef.current);
             autoConnectTimeoutRef.current = null;
           }
-          isAutoConnectingRef.current = false;
-          setIsAutoConnecting(false);
-          const bleErrMsg = humanizeBleError(err);
-          if (bleErrMsg) setError(bleErrMsg);
-          setConnecting(false);
-          setConnectionStage('');
-        });
+          autoConnectTimeoutRef.current = setTimeout(() => {
+            console.warn('[ConnectionPanel] auto-connect timed out after 30s');
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setError('Auto-connect timed out.');
+            setConnecting(false);
+            setConnectionStage('');
+          }, 30_000);
+          void window.electronAPI.startNobleBleScanning(protocol).catch((err: unknown) => {
+            if (autoConnectTimeoutRef.current) {
+              clearTimeout(autoConnectTimeoutRef.current);
+              autoConnectTimeoutRef.current = null;
+            }
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            const bleErrMsg = humanizeBleError(err);
+            if (bleErrMsg) setError(bleErrMsg);
+            setConnecting(false);
+            setConnectionStage('');
+          });
+        }
       }
     } else if (lastConnection.type === 'http') {
       const fallbackAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
@@ -962,7 +1431,7 @@ export default function ConnectionPanel({
         setConnectionStage('');
       });
     }
-  }, [lastConnection, onConnect, onAutoConnect, httpAddress, protocol, tcpHost]);
+  }, [lastConnection, onConnect, onAutoConnect, httpAddress, protocol, tcpHost, isLinux]);
 
   const isConnected =
     state.status === 'connected' ||
@@ -1003,22 +1472,32 @@ export default function ConnectionPanel({
         <Spinner className="w-12 h-12 text-bright-green" />
         <div className="text-center space-y-2">
           <h2 className="text-xl font-semibold text-gray-200">
-            {showBlePicker
-              ? 'Scanning for Bluetooth devices…'
-              : isAutoConnecting
-                ? 'Auto-connecting…'
-                : 'Connecting…'}
+            {showPinPrompt
+              ? 'Pair with your device'
+              : showBlePicker
+                ? 'Scanning for Bluetooth devices…'
+                : isAutoConnecting
+                  ? 'Auto-connecting…'
+                  : 'Connecting…'}
           </h2>
           <div role="status" aria-live="polite" aria-atomic="true">
-            <p className="text-sm text-muted">{connectionStage}</p>
+            <p
+              className={
+                connectionStage === MESHCORE_LINUX_SAVED_UNPAIRED_HINT
+                  ? 'text-sm text-amber-200 border border-amber-500/45 bg-amber-950/40 rounded-lg px-4 py-3'
+                  : 'text-sm text-muted'
+              }
+            >
+              {connectionStage}
+            </p>
             <p className="mt-1 text-xs text-muted/80">
               For best results, stay on this tab until the device has finished connecting.
             </p>
           </div>
         </div>
 
-        {/* Embedded BLE Device Picker */}
-        {showBlePicker && (
+        {/* Embedded BLE Device Picker — hide while PIN entry is primary (Linux pairing / MeshCore pre-connect) */}
+        {showBlePicker && !showPinPrompt && (
           <div
             role="region"
             aria-labelledby="ble-device-picker-heading"
@@ -1039,38 +1518,40 @@ export default function ConnectionPanel({
                   Scanning for {protocol === 'meshcore' ? 'MeshCore' : 'Meshtastic'} devices...
                 </div>
               ) : (
-                bleDevices.map((device) => {
-                  const cache =
+                (() => {
+                  const bleDeviceNamesCache =
                     parseStoredJson<Record<string, string>>(
                       localStorage.getItem('mesh-client:bleDeviceNames'),
                       'ConnectionPanel bleDeviceNames list',
                     ) ?? {};
-                  const cached = cache[device.deviceId];
-                  const advertisedName = device.deviceName || null;
-                  const displayName = cached
-                    ? advertisedName && advertisedName !== cached
-                      ? `${cached} (${advertisedName})`
-                      : cached
-                    : (advertisedName ?? device.deviceId);
-                  const bleAriaLabel = `${displayName} ${device.deviceId}`;
-                  return (
-                    <button
-                      key={device.deviceId}
-                      type="button"
-                      aria-label={bleAriaLabel}
-                      onClick={() => {
-                        handleSelectBleDevice(device.deviceId);
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-secondary-dark transition-colors border-b border-gray-700 last:border-b-0"
-                    >
-                      <div className="text-sm text-gray-200 flex items-center gap-2">
-                        <ConnectionIcon type="ble" />
-                        {displayName}
-                      </div>
-                      <div className="text-xs text-muted font-mono ml-7">{device.deviceId}</div>
-                    </button>
-                  );
-                })
+                  return bleDevices.map((device) => {
+                    const cached = bleDeviceNamesCache[device.deviceId];
+                    const advertisedName = device.deviceName || null;
+                    const displayName = cached
+                      ? advertisedName && advertisedName !== cached
+                        ? `${cached} (${advertisedName})`
+                        : cached
+                      : (advertisedName ?? device.deviceId);
+                    const bleAriaLabel = `${displayName} ${device.deviceId}`;
+                    return (
+                      <button
+                        key={device.deviceId}
+                        type="button"
+                        aria-label={bleAriaLabel}
+                        onClick={() => {
+                          handleSelectBleDevice(device.deviceId);
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-secondary-dark transition-colors border-b border-gray-700 last:border-b-0"
+                      >
+                        <div className="text-sm text-gray-200 flex items-center gap-2">
+                          <ConnectionIcon type="ble" />
+                          {displayName}
+                        </div>
+                        <div className="text-xs text-muted font-mono ml-7">{device.deviceId}</div>
+                      </button>
+                    );
+                  });
+                })()
               )}
             </div>
             {bleDevices.some((d) => d.deviceName === 'AdaDFU') && (
@@ -1082,8 +1563,8 @@ export default function ConnectionPanel({
             {protocol === 'meshcore' && (
               <p className="px-4 py-2 text-xs text-yellow-400 border-t border-gray-700">
                 Pair your MeshCore device in <strong>system Bluetooth settings</strong> before
-                connecting (Windows: <strong>Settings &rarr; Bluetooth &amp; devices</strong>;
-                macOS: <strong>System Settings &rarr; Bluetooth</strong>).
+                connecting. Use a PIN code if prompted — if your system does not ask for a PIN, the
+                connection will fail and you may need to remove the pairing and re-pair with a PIN.
               </p>
             )}
           </div>
@@ -1147,12 +1628,53 @@ export default function ConnectionPanel({
             {error}
           </div>
         )}
-        {linuxBleCapabilityWarning && (
-          <div
-            role="alert"
-            className="w-full max-w-4xl bg-amber-900/40 border border-amber-700 text-amber-100 px-4 py-2 rounded-lg text-sm"
-          >
-            {linuxBleCapabilityWarning}
+
+        {/* Re-pair button for Linux BLE pairing issues */}
+        {showRePairButton && (
+          <div className="w-full max-w-4xl flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={handleRePair}
+              className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors"
+            >
+              Remove &amp; Re-pair Device
+            </button>
+          </div>
+        )}
+
+        {/* PIN input prompt for Linux BLE pairing (connecting view) */}
+        {showPinPrompt && (
+          <div className="w-full max-w-4xl bg-blue-900/50 border border-blue-700 text-blue-300 px-4 py-3 rounded-lg">
+            <p className="text-sm mb-2">Enter the PIN shown on your device:</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={pinInputValue}
+                onChange={(e) => {
+                  setPinInputValue(e.target.value.replace(/\D/g, '').slice(0, 6));
+                }}
+                placeholder="PIN"
+                className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                maxLength={6}
+                inputMode="numeric"
+                pattern="[0-9]*"
+              />
+              <button
+                type="button"
+                onClick={handlePinSubmit}
+                disabled={!normalizeSixDigitPin(pinInputValue)}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded disabled:opacity-50"
+              >
+                Submit
+              </button>
+              <button
+                type="button"
+                onClick={handlePinCancel}
+                className="px-4 py-1.5 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 
@@ -1838,14 +2360,6 @@ export default function ConnectionPanel({
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {protocolToggle}
-      {linuxBleCapabilityWarning && (
-        <div
-          role="alert"
-          className="bg-amber-900/40 border border-amber-700 text-amber-100 px-4 py-3 rounded-lg text-sm"
-        >
-          {linuxBleCapabilityWarning}
-        </div>
-      )}
       {mqttStatus === 'connected' && (
         <button
           type="button"
@@ -1932,6 +2446,56 @@ export default function ConnectionPanel({
         {error && (
           <div className="px-4 py-2 bg-red-900/50 border-b border-red-800 text-red-300 text-xs">
             {error}
+          </div>
+        )}
+
+        {showRePairButton && isLinux && connectionType === 'ble' && (
+          <div className="px-4 py-2 bg-orange-900/30 border-b border-orange-800">
+            <button
+              type="button"
+              onClick={handleRePair}
+              className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              Remove &amp; Re-pair Device
+            </button>
+          </div>
+        )}
+
+        {/* PIN input prompt for Linux BLE pairing (disconnected view) */}
+        {showPinPrompt && (
+          <div className="px-4 py-3 bg-blue-900/30 border-b border-blue-800 text-blue-200">
+            <p className="text-sm mb-2">Enter the PIN shown on your device:</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={pinInputValue}
+                onChange={(e) => {
+                  setPinInputValue(e.target.value.replace(/\D/g, '').slice(0, 6));
+                }}
+                placeholder="PIN"
+                className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                maxLength={6}
+                inputMode="numeric"
+                pattern="[0-9]*"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  void handlePinSubmit();
+                }}
+                disabled={!normalizeSixDigitPin(pinInputValue)}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded disabled:opacity-50"
+              >
+                Submit
+              </button>
+              <button
+                type="button"
+                onClick={handlePinCancel}
+                className="px-4 py-1.5 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 

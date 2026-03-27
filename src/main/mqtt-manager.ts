@@ -71,6 +71,9 @@ function coordWarning(lat: number, lon: number): string | null {
 
 const BROADCAST_ID = 0xffffffff >>> 0;
 
+/** TCP/TLS/WSS + MQTT CONNACK window (30s, same as meshcore-mqtt-adapter). */
+const MESHTASTIC_MQTT_CONNECT_ACK_MS = 30_000;
+
 export class MQTTManager extends EventEmitter {
   private client: mqtt.MqttClient | null = null;
   private status: MQTTStatus = 'disconnected';
@@ -117,7 +120,7 @@ export class MQTTManager extends EventEmitter {
         password: settings.password || undefined,
         clean: true,
         keepalive: 60,
-        connectTimeout: 10_000,
+        connectTimeout: MESHTASTIC_MQTT_CONNECT_ACK_MS,
         reconnectPeriod: 0,
         rejectUnauthorized: settings.port === 443 ? true : rejectUnauthorized,
       };
@@ -133,7 +136,7 @@ export class MQTTManager extends EventEmitter {
         password: settings.password || undefined,
         clean: true,
         keepalive: 60,
-        connectTimeout: 10_000,
+        connectTimeout: MESHTASTIC_MQTT_CONNECT_ACK_MS,
         reconnectPeriod: 0,
         rejectUnauthorized,
       };

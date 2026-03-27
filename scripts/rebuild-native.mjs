@@ -14,8 +14,8 @@ const projectRoot = path.resolve(__dirname, "..");
 const electronVersion = require(path.join(projectRoot, "node_modules/electron/package.json")).version;
 
 // install-app-deps executes the Electron binary. In CPU-restricted environments
-// (sandbox, some VMs) the official Linux binary can hit SIGILL before any
-// --no-sandbox flag applies. Skip rebuild when explicitly requested.
+// (sandbox, some VMs) the official Linux binary can hit SIGILL during probe.
+// Skip rebuild when explicitly requested.
 if (process.env.MESHTASTIC_SKIP_ELECTRON_REBUILD === "1") {
   console.warn(
     "MESHTASTIC_SKIP_ELECTRON_REBUILD=1 — skipping native rebuild. " +

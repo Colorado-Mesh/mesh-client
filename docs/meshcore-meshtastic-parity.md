@@ -32,6 +32,10 @@ Shared UI gates use `ProtocolCapabilities` in [`src/renderer/lib/radio/BaseRadio
 
 Pair the radio in **Settings → Bluetooth & devices** before connecting from the app; WinRT is much more reliable with a bonded device. The client may **retry once** after transient GATT discovery failures, and canceling mid-connect should not surface a misleading long-running channel timeout. User-facing copy lives in the Connection tab on Windows; contributor details are in [CONTRIBUTING.md](../CONTRIBUTING.md) (MeshCore internals, BLE) and [README.md](../README.md) (MeshCore Transport Notes).
 
+## Linux: MeshCore over BLE
+
+Linux uses **Web Bluetooth** in the renderer (not Noble). After you pick a device, the client reads **`bluetoothctl info &lt;MAC&gt;`**. If the radio is **not** paired in BlueZ, the UI asks for the **PIN shown on the device** and runs **`bluetooth-pair`** before resolving the pending Web Bluetooth `requestDevice()` selection. If a handshake times out, a **single retry** reuses the granted device via `getDevices()` so `requestDevice()` is not called again without a click. See [development-environment.md](development-environment.md#linux-bluetooth-ble) and [troubleshooting.md](troubleshooting.md#ble-known-issues).
+
 ## MeshCore MQTT JSON envelope (v1)
 
 Interim broker format until a binary/official MeshCore MQTT layout ships:

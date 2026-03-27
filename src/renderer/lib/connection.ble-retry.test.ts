@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@meshtastic/core', () => ({
   MeshDevice: vi.fn().mockImplementation(function MeshDevice(transport: unknown) {
@@ -17,9 +17,19 @@ import { MeshDevice } from '@meshtastic/core';
 import { createBleConnection } from './connection';
 
 describe('createBleConnection retry behavior', () => {
+  let userAgentSpy: { mockRestore: () => void } | null = null;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    userAgentSpy = vi
+      .spyOn(window.navigator, 'userAgent', 'get')
+      .mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
     vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({ ok: true });
+  });
+
+  afterEach(() => {
+    userAgentSpy?.mockRestore();
+    userAgentSpy = null;
   });
 
   it('retries once on main-process BLE timeout errors', async () => {

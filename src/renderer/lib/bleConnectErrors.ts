@@ -28,3 +28,43 @@ export function isMeshcoreRetryableBleErrorMessage(message: string): boolean {
     message,
   );
 }
+
+// ─── Web Bluetooth (Linux) error detection ───────────────────────────────────
+
+/**
+ * BlueZ error patterns that indicate pairing/authentication failures on Linux.
+ * These appear in DOMException.message when Chrome/Chromium communicates with BlueZ.
+ */
+const BLUEZ_PAIRING_ERROR_RE =
+  /le-connection-abort-by-local|auth failed|connection rejected|pin failed|authentication failed|org\.bluez\.Error/i;
+
+/**
+ * Chrome DOMException error.name values that often indicate pairing issues on Linux.
+ * - SecurityError: Authentication failure, permission denied
+ * - NetworkError: Connection attempt failed (includes BlueZ pairing failures)
+ */
+const CHROME_PAIRING_ERROR_NAMES = ['SecurityError', 'NetworkError'];
+
+/**
+ * Check if a DOMException from Web Bluetooth is likely a pairing-related error.
+ * On Linux with BlueZ, pairing failures surface as generic NetworkError or SecurityError.
+ */
+export function isWebBluetoothPairingError(err: unknown): boolean {
+  if (err instanceof DOMException) {
+    if (CHROME_PAIRING_ERROR_NAMES.includes(err.name)) {
+      return true;
+    }
+    if (BLUEZ_PAIRING_ERROR_RE.test(err.message)) {
+      return true;
+    }
+  }
+  if (err instanceof Error) {
+    if (err.message.includes('GATT Error: Not supported')) {
+      return true;
+    }
+    if (BLUEZ_PAIRING_ERROR_RE.test(err.message)) {
+      return true;
+    }
+  }
+  return false;
+}

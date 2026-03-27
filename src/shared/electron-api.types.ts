@@ -33,12 +33,6 @@ export interface LogEntry {
   message: string;
 }
 
-export interface LinuxBleCapabilityStatus {
-  platform: 'linux' | 'other';
-  hasCapNetRaw: boolean;
-  detail: string;
-}
-
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
 export interface ElectronAPI {
@@ -227,12 +221,29 @@ export interface ElectronAPI {
   ) => Promise<NobleBleConnectResult>;
   disconnectNobleBle: (sessionId: NobleBleSessionId) => Promise<void>;
   nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array) => Promise<void>;
-  getLinuxBleCapabilityStatus: () => Promise<LinuxBleCapabilityStatus>;
 
   // ─── Serial port selection ───────────────────────────────────────────────────
   onSerialPortsDiscovered: (callback: (ports: SerialPort[]) => void) => () => void;
   selectSerialPort: (portId: string) => void;
   cancelSerialSelection: () => void;
+
+  // ─── Bluetooth device selection (Linux Web Bluetooth) ────────────────────────
+  onBluetoothDevicesDiscovered: (callback: (devices: NobleBleDevice[]) => void) => () => void;
+  selectBluetoothDevice: (deviceId: string) => void;
+  cancelBluetoothSelection: () => void;
+
+  // ─── Bluetooth pairing (Linux) ──────────────────────────────────────────────
+  bluetoothUnpair: (macAddress: string) => Promise<void>;
+  bluetoothStartScan: () => Promise<void>;
+  bluetoothStopScan: () => Promise<void>;
+  bluetoothPair: (macAddress: string, pin?: string) => Promise<void>;
+  bluetoothConnect: (macAddress: string) => Promise<void>;
+  bluetoothUntrust: (macAddress: string) => Promise<void>;
+  bluetoothGetInfo: (macAddress: string) => Promise<string>;
+  onBluetoothPinRequired: (callback: (data: { deviceId: string }) => void) => () => void;
+  provideBluetoothPin: (pin: string) => void;
+  cancelBluetoothPairing: () => void;
+  resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => void;
 
   // ─── Session management ──────────────────────────────────────────────────────
   clearSessionData: () => Promise<unknown>;

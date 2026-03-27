@@ -1,3 +1,4 @@
+import { spawn } from 'child_process';
 import {
   app,
   BrowserWindow,
@@ -51,11 +52,7 @@ import {
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { MQTTManager } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
-import {
-  NobleBleManager,
-  type NobleSessionId,
-  probeLinuxBleCapabilityStatus,
-} from './noble-ble-manager';
+import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { getCheckNow, initUpdater } from './updater';
 
 // Route main-process console through log file + Log panel (must run before other code logs)
@@ -168,6 +165,22 @@ let pendingSerialCallback: ((portId: string) => void) | null = null;
 // Last serial port discovery set: only allow selection IPC to resolve with ids from this set
 // (empty string always allowed = cancel). Prevents arbitrary id injection from a compromised renderer.
 let lastSerialPortIds = new Set<string>();
+
+// Pending Web Bluetooth callback (Linux only — select-bluetooth-device on webContents)
+let pendingBluetoothCallback: ((deviceId: string) => void) | null = null;
+let lastBluetoothDeviceIds = new Set<string>();
+
+// Bluetooth pairing state (Linux only — setBluetoothPairingHandler)
+// Electron's Response type requires confirmed: boolean, pin is optional
+interface BluetoothPairingResponse {
+  confirmed: boolean;
+  pin?: string;
+}
+let pendingPairingCallback: ((response: BluetoothPairingResponse) => void) | null = null;
+let pendingPairingRetryCount = 0;
+/** Which BLE stack is connecting; MeshCore must not auto-use Meshtastic default PIN on first pairing. */
+let blePairingSessionKind: 'meshtastic' | 'meshcore' = 'meshtastic';
+
 let hasInstalledOsmReferrerHook = false;
 const OSM_HTTP_REFERRER = 'https://meshtastic-client.app/';
 
@@ -212,6 +225,10 @@ process.on('unhandledRejection', (reason) => {
 });
 
 app.on('browser-window-created', () => {});
+
+// ─── Bluetooth pairing handler (Linux only) ──────────────────────────
+// Note: Bluetooth pairing for Web Bluetooth is handled via session.setBluetoothPairingHandler()
+// which is set up after mainWindow creation. See the setup below near select-bluetooth-device.
 
 process.on('exit', () => {});
 
@@ -461,6 +478,11 @@ function validateMqttPublishArgs(args: unknown): void {
 
 // Enable Web Serial (experimental)
 app.commandLine.appendSwitch('enable-blink-features', 'Serial');
+
+// Enable Web Bluetooth on Linux (experimental - required for BLE on Linux)
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('enable-experimental-web-platform-features');
+}
 
 // ─── Icon Path Helper ──────────────────────────────────────────────
 /**
@@ -906,6 +928,88 @@ function createWindow() {
     },
   );
 
+  // ─── Web Bluetooth: Device Selection (Linux) ───────────────────────
+  // On Linux, Electron does not show a native Bluetooth chooser. Instead it fires
+  // select-bluetooth-device on the webContents. Without a handler the request is
+  // immediately cancelled ("User cancelled the requestDevice() chooser.").
+  // We intercept, forward the device list to the renderer, and resolve the callback
+  // when the user picks a device (or cancels) via IPC.
+  mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+    event.preventDefault();
+
+    const isNewRequest = !pendingBluetoothCallback;
+    pendingBluetoothCallback = callback;
+
+    if (isNewRequest) {
+      // MeshCore Linux may need bluetoothctl pairing + PIN before resolving requestDevice();
+      // 60s was too short and left pendingBluetoothCallback null so selectBluetoothDevice was ignored.
+      const selectionStaleMs = 300_000;
+      setTimeout(() => {
+        if (pendingBluetoothCallback === callback) {
+          console.warn(
+            `[IPC] Bluetooth device selection stale after ${selectionStaleMs / 1000}s — auto-cancelling`,
+          );
+          pendingBluetoothCallback('');
+          pendingBluetoothCallback = null;
+          lastBluetoothDeviceIds.clear();
+        }
+      }, selectionStaleMs);
+    }
+
+    console.debug(`[IPC] select-bluetooth-device: ${deviceList.length} device(s) found`);
+    lastBluetoothDeviceIds = new Set(deviceList.map((d) => d.deviceId));
+    mainWindow?.webContents.send(
+      'bluetooth-devices-discovered',
+      deviceList.map((d) => ({ deviceId: d.deviceId, deviceName: d.deviceName })),
+    );
+  });
+
+  // ─── Web Bluetooth: Pairing Handler (Linux) ───────────────────────────
+  // Required for devices that require PIN/confirmation during pairing.
+  // This is called by Chromium when a device requires pairing during GATT connect.
+  mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
+    console.debug('[main] bluetooth-pairing-request:', details.pairingKind, details.deviceId);
+
+    if (details.pairingKind === 'providePin') {
+      // Meshtastic devices use fixed PIN 123456. MeshCore uses a random PIN shown on the device.
+      // Only auto-submit 123456 for Meshtastic; MeshCore must prompt on first PIN request.
+      if (blePairingSessionKind === 'meshtastic' && pendingPairingRetryCount === 0) {
+        console.debug(
+          '[main] bluetooth-pairing: auto-providing default PIN (Meshtastic attempt 1)',
+        );
+        pendingPairingRetryCount++;
+        callback({ pin: '123456', confirmed: true });
+        return;
+      }
+
+      console.debug(
+        '[main] bluetooth-pairing: prompting user for PIN',
+        blePairingSessionKind === 'meshcore'
+          ? '(MeshCore or Meshtastic retry)'
+          : '(Meshtastic retry)',
+      );
+      pendingPairingCallback = (response: BluetoothPairingResponse) => {
+        callback(response);
+        pendingPairingCallback = null;
+      };
+      mainWindow?.webContents.send('bluetooth-pin-required', {
+        deviceId: details.deviceId,
+      });
+    } else if (details.pairingKind === 'confirmPin') {
+      // Device shows a PIN, user must confirm it matches
+      console.debug('[main] bluetooth-pairing: confirming PIN match');
+      callback({ confirmed: true });
+    } else if (details.pairingKind === 'confirm') {
+      // Just confirm without PIN
+      console.debug('[main] bluetooth-pairing: confirming pairing');
+      callback({ confirmed: true });
+    } else {
+      // Unknown pairing kind - log and confirm
+      console.debug('[main] bluetooth-pairing: unknown kind, confirming', details.pairingKind);
+      callback({ confirmed: true });
+    }
+  });
+
   // Allow serial and geolocation only; media and web-app-installation are not used
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
     const granted = permission === 'serial' || permission === 'geolocation';
@@ -1101,6 +1205,440 @@ ipcMain.on('serial-port-cancelled', () => {
   lastSerialPortIds.clear();
 });
 
+// ─── IPC: Bluetooth device selected by user (Linux Web Bluetooth) ────
+ipcMain.on('bluetooth-device-selected', (_event, deviceId: unknown) => {
+  if (!pendingBluetoothCallback) {
+    console.warn(
+      '[IPC] bluetooth-device-selected: no pending selection (ignored — may have timed out or already resolved)',
+    );
+    return;
+  }
+  const id = typeof deviceId === 'string' ? deviceId : '';
+  if (id !== '' && !lastBluetoothDeviceIds.has(id)) {
+    console.warn('[IPC] bluetooth-device-selected: ignoring unknown deviceId');
+    return;
+  }
+  console.debug('[IPC] bluetooth-device-selected:', sanitizeLogMessage(id || '(cancelled)'));
+  pendingBluetoothCallback(id);
+  pendingBluetoothCallback = null;
+  lastBluetoothDeviceIds.clear();
+});
+
+// ─── IPC: Cancel Bluetooth selection ────────────────────────────────
+ipcMain.on('bluetooth-device-cancelled', () => {
+  if (pendingBluetoothCallback) {
+    pendingBluetoothCallback(''); // Empty string cancels the request
+    pendingBluetoothCallback = null;
+  }
+  lastBluetoothDeviceIds.clear();
+});
+
+// ─── IPC: Unpair Bluetooth device (Linux) ─────────────────────────────
+ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
+  if (typeof macAddress !== 'string') {
+    throw new Error('bluetooth-unpair: macAddress must be a string');
+  }
+  // Validate MAC format (XX:XX:XX:XX:XX:XX)
+  if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macAddress)) {
+    throw new Error('bluetooth-unpair: invalid MAC address format');
+  }
+
+  console.debug('[IPC] bluetooth-unpair:', macAddress);
+
+  return new Promise<void>((resolve, reject) => {
+    const proc = spawn('bluetoothctl', ['remove', macAddress]);
+    let stderr = '';
+    let stdout = '';
+
+    proc.stdout.on('data', (data: Buffer) => {
+      stdout += data.toString();
+    });
+    proc.stderr.on('data', (data: Buffer) => {
+      stderr += data.toString();
+    });
+    proc.on('close', (code) => {
+      if (code !== 0) {
+        console.error('[IPC] bluetooth-unpair failed:', stderr);
+        reject(new Error(stderr || 'Failed to unpair device'));
+        return;
+      }
+      console.debug('[IPC] bluetooth-unpair success:', stdout.trim());
+      resolve();
+    });
+    proc.on('error', (err) => {
+      console.error(
+        '[IPC] bluetooth-unpair error:',
+        sanitizeLogMessage(err?.message ?? String(err)),
+      );
+      reject(err);
+    });
+  });
+});
+
+// ─── IPC: Start BLE scan (Linux) ─────────────────────────────────────
+ipcMain.handle('bluetooth-start-scan', async () => {
+  console.debug('[IPC] bluetooth-start-scan');
+  return new Promise<void>((resolve, reject) => {
+    const proc = spawn('bluetoothctl', ['scan', 'on']);
+    proc.on('close', (code) => {
+      if (code === 0) {
+        console.debug('[IPC] bluetooth-start-scan success');
+        resolve();
+      } else {
+        console.warn('[IPC] bluetooth-start-scan failed with code', code);
+        reject(new Error(`scan on failed with code ${code}`));
+      }
+    });
+    proc.on('error', (err) => {
+      console.warn(
+        '[IPC] bluetooth-start-scan error:',
+        sanitizeLogMessage(err?.message ?? String(err)),
+      );
+      reject(err);
+    });
+  });
+});
+
+// ─── IPC: Stop BLE scan (Linux) ──────────────────────────────────────
+ipcMain.handle('bluetooth-stop-scan', async () => {
+  console.debug('[IPC] bluetooth-stop-scan');
+  return new Promise<void>((resolve) => {
+    const proc = spawn('bluetoothctl', ['scan', 'off']);
+    proc.on('close', () => {
+      console.debug('[IPC] bluetooth-stop-scan done');
+      resolve();
+    });
+    proc.on('error', (err) => {
+      console.warn(
+        '[IPC] bluetooth-stop-scan error:',
+        sanitizeLogMessage(err?.message ?? String(err)),
+      );
+      resolve(); // Don't reject - stop scan failure is not critical
+    });
+  });
+});
+
+// ─── IPC: Pair Bluetooth device (Linux) ───────────────────────────────
+ipcMain.handle('bluetooth-pair', async (_event, macAddress: unknown, pin: unknown) => {
+  if (typeof macAddress !== 'string') {
+    throw new Error('bluetooth-pair: macAddress must be a string');
+  }
+  if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macAddress)) {
+    throw new Error('bluetooth-pair: invalid MAC address format');
+  }
+  let normalizedPin: string | undefined;
+  if (typeof pin === 'number' && Number.isInteger(pin) && pin >= 0 && pin <= 999999) {
+    normalizedPin = String(pin).padStart(6, '0');
+  } else if (typeof pin === 'string' && pin.trim().length > 0) {
+    const trimmed = pin.trim();
+    if (/^\d{6}$/.test(trimmed)) normalizedPin = trimmed;
+    else throw new Error('bluetooth-pair: pin must be exactly 6 digits');
+  } else if (typeof pin !== 'undefined' && pin !== null) {
+    throw new Error('bluetooth-pair: pin must be a 6-digit number');
+  }
+  console.debug('[IPC] bluetooth-pair:', macAddress);
+  return new Promise<void>((resolve, reject) => {
+    const pairTimeoutMs = 45000;
+    let settled = false;
+    const trustDeviceBestEffort = (): Promise<void> =>
+      new Promise((resolveTrust) => {
+        const trustProc = spawn('bluetoothctl', ['trust', macAddress]);
+        trustProc.stdout.on('data', () => {
+          // drain
+        });
+        trustProc.stderr.on('data', () => {
+          // drain
+        });
+        trustProc.on('close', () => {
+          resolveTrust();
+        });
+        trustProc.on('error', () => {
+          resolveTrust();
+        });
+      });
+
+    const proc = spawn('bluetoothctl', [], { stdio: ['pipe', 'pipe', 'pipe'] });
+    let stderr = '';
+    let stdout = '';
+    let pinSubmitted = false;
+    let confirmSubmitted = false;
+    let pairRequested = false;
+    let agentReady = false;
+    let targetDiscovered = false;
+    const finishReject = (err: Error): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(pairTimeout);
+      reject(err);
+    };
+    const finishResolve = (): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(pairTimeout);
+      resolve();
+    };
+    const pairTimeout = setTimeout(() => {
+      try {
+        proc.stdin.write('scan off\n');
+      } catch {
+        // catch-no-log-ok -- best-effort cleanup during timeout
+      }
+      try {
+        proc.stdin.write('quit\n');
+      } catch {
+        // catch-no-log-ok -- best-effort cleanup during timeout
+      }
+      try {
+        proc.kill('SIGTERM');
+      } catch {
+        // catch-no-log-ok -- best-effort cleanup during timeout
+      }
+      finishReject(new Error('Bluetooth pairing timed out; please retry'));
+    }, pairTimeoutMs);
+    const requestPair = (): void => {
+      if (pairRequested) return;
+      if (!agentReady || !targetDiscovered) return;
+      pairRequested = true;
+      proc.stdin.write(`pair ${macAddress}\n`);
+    };
+    const processPairingChunk = (chunk: string): void => {
+      const chunkLower = chunk.toLowerCase();
+      if (
+        normalizedPin &&
+        !pinSubmitted &&
+        (chunkLower.includes('pin code') ||
+          chunkLower.includes('request pin') ||
+          chunkLower.includes('enter passkey') ||
+          chunkLower.includes('passkey (number in 0-999999)') ||
+          chunkLower.includes('enter pass key'))
+      ) {
+        pinSubmitted = true;
+        proc.stdin.write(`${normalizedPin}\n`);
+      }
+      if (
+        !confirmSubmitted &&
+        (chunkLower.includes('confirm passkey') ||
+          chunkLower.includes('[agent] confirm') ||
+          chunkLower.includes('authorize service'))
+      ) {
+        confirmSubmitted = true;
+        proc.stdin.write('yes\n');
+      }
+      if (chunkLower.includes('pairing successful') || chunkLower.includes('failed to pair')) {
+        proc.stdin.write('scan off\n');
+        proc.stdin.write('quit\n');
+      }
+    };
+    proc.stdin.write('agent KeyboardOnly\n');
+    proc.stdin.write('default-agent\n');
+    proc.stdin.write('scan on\n');
+    proc.stdout.on('data', (data: Buffer) => {
+      const chunk = data.toString();
+      stdout += chunk;
+      const chunkLower = chunk.toLowerCase();
+      if (
+        !agentReady &&
+        (chunkLower.includes('default agent request successful') ||
+          chunkLower.includes('agent is already registered'))
+      ) {
+        agentReady = true;
+        requestPair();
+      }
+      if (!pairRequested) {
+        const discoveredTarget =
+          chunk.includes(macAddress) &&
+          (chunk.includes('Device') || chunk.includes('[NEW]') || chunk.includes('[CHG]'));
+        if (discoveredTarget) {
+          targetDiscovered = true;
+          requestPair();
+        }
+      }
+      if (chunk.includes('not available')) {
+        if (!pairRequested) {
+          requestPair();
+          return;
+        }
+        finishReject(new Error('Pairing failed: device not available. Re-scan and retry.'));
+        return;
+      }
+      processPairingChunk(chunk);
+    });
+    proc.stderr.on('data', (data: Buffer) => {
+      const chunk = data.toString();
+      stderr += chunk;
+      processPairingChunk(chunk);
+    });
+    proc.on('close', (code) => {
+      if (settled) return;
+      const pairingFailedByOutput =
+        stdout.includes('Failed to pair') ||
+        stdout.includes('AuthenticationCanceled') ||
+        stderr.includes('Failed to pair') ||
+        stderr.includes('AuthenticationCanceled');
+      const pairingSucceededByOutput = stdout.includes('Pairing successful');
+      if (!pairingFailedByOutput && (pairingSucceededByOutput || code === 0)) {
+        void trustDeviceBestEffort().then(() => {
+          if (settled) return;
+          console.debug('[IPC] bluetooth-pair success');
+          finishResolve();
+        });
+      } else {
+        console.warn('[IPC] bluetooth-pair failed:', stderr.trim() || `code ${code}`);
+        finishReject(
+          new Error(
+            stderr.trim() ||
+              (pairingFailedByOutput ? 'pair failed (bluetoothctl reported failure)' : '') ||
+              `pair failed with code ${code}`,
+          ),
+        );
+      }
+    });
+    proc.on('error', (err) => {
+      if (settled) return;
+      console.warn('[IPC] bluetooth-pair error:', sanitizeLogMessage(err?.message ?? String(err)));
+      finishReject(err instanceof Error ? err : new Error(String(err)));
+    });
+  });
+});
+
+// ─── IPC: Connect Bluetooth device (Linux) ────────────────────────────
+ipcMain.handle('bluetooth-connect', async (_event, macAddress: unknown) => {
+  if (typeof macAddress !== 'string') {
+    throw new Error('bluetooth-connect: macAddress must be a string');
+  }
+  if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macAddress)) {
+    throw new Error('bluetooth-connect: invalid MAC address format');
+  }
+  console.debug('[IPC] bluetooth-connect:', macAddress);
+  return new Promise<void>((resolve, reject) => {
+    const proc = spawn('bluetoothctl', ['connect', macAddress]);
+    let stderr = '';
+    proc.stdout.on('data', () => {
+      // drain
+    });
+    proc.stderr.on('data', (data: Buffer) => {
+      stderr += data.toString();
+    });
+    proc.on('close', (code) => {
+      if (code === 0) {
+        console.debug('[IPC] bluetooth-connect success');
+        resolve();
+      } else {
+        console.warn('[IPC] bluetooth-connect failed:', stderr.trim() || `code ${code}`);
+        reject(new Error(stderr.trim() || `connect failed with code ${code}`));
+      }
+    });
+    proc.on('error', (err) => {
+      console.warn(
+        '[IPC] bluetooth-connect error:',
+        sanitizeLogMessage(err?.message ?? String(err)),
+      );
+      reject(err);
+    });
+  });
+});
+
+// ─── IPC: Untrust Bluetooth device (Linux) ────────────────────────────
+// This is best-effort - failures are ignored
+ipcMain.handle('bluetooth-untrust', async (_event, macAddress: unknown) => {
+  if (typeof macAddress !== 'string') {
+    throw new Error('bluetooth-untrust: macAddress must be a string');
+  }
+  if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macAddress)) {
+    throw new Error('bluetooth-untrust: invalid MAC address format');
+  }
+  console.debug('[IPC] bluetooth-untrust:', macAddress);
+  return new Promise<void>((resolve) => {
+    const proc = spawn('bluetoothctl', ['untrust', macAddress]);
+    let stderr = '';
+    proc.stderr.on('data', (data: Buffer) => {
+      stderr += data.toString();
+    });
+    proc.on('close', (code) => {
+      // Ignore failure - untrust is best-effort, but log for debugging
+      if (code !== 0) {
+        console.debug(
+          '[IPC] bluetooth-untrust exited with code',
+          code,
+          'stderr:',
+          stderr.trim() || '(none)',
+        );
+      } else {
+        console.debug('[IPC] bluetooth-untrust done');
+      }
+      resolve();
+    });
+    proc.on('error', (err) => {
+      // Ignore error - untrust is best-effort, but log for debugging
+      console.debug(
+        '[IPC] bluetooth-untrust error:',
+        sanitizeLogMessage(err?.message ?? String(err)),
+      );
+      resolve();
+    });
+  });
+});
+
+ipcMain.handle('bluetooth-get-info', async (_event, macAddress: unknown) => {
+  if (typeof macAddress !== 'string') {
+    throw new Error('bluetooth-get-info: macAddress must be a string');
+  }
+  if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macAddress)) {
+    throw new Error('bluetooth-get-info: invalid MAC address format');
+  }
+  return new Promise<string>((resolve) => {
+    const proc = spawn('bluetoothctl', ['info', macAddress]);
+    let stdout = '';
+    let stderr = '';
+    proc.stdout.on('data', (data: Buffer) => {
+      stdout += data.toString();
+    });
+    proc.stderr.on('data', (data: Buffer) => {
+      stderr += data.toString();
+    });
+    proc.on('close', (code) => {
+      const output = (stdout.trim() || stderr.trim() || `code ${code}`).slice(-2000);
+      resolve(output);
+    });
+    proc.on('error', (err) => {
+      const msg = err?.message ?? String(err);
+      resolve(msg);
+    });
+  });
+});
+
+// ─── IPC: Provide Bluetooth PIN (Linux) ───────────────────────────────
+ipcMain.on('bluetooth-provide-pin', (_event, pin: unknown) => {
+  if (!pendingPairingCallback) {
+    console.warn('[IPC] bluetooth-provide-pin: no pending pairing callback');
+    return;
+  }
+  const pinStr = typeof pin === 'string' ? pin : '';
+  console.debug('[IPC] bluetooth-provide-pin:', pinStr.length > 0 ? '****' : '(empty)');
+  pendingPairingCallback({ pin: pinStr, confirmed: pinStr.length > 0 });
+  pendingPairingCallback = null;
+  // Reset retry count so next pairing starts fresh
+  pendingPairingRetryCount = 0;
+});
+
+// ─── IPC: Cancel Bluetooth pairing (Linux) ────────────────────────────
+ipcMain.on('bluetooth-cancel-pairing', () => {
+  if (pendingPairingCallback) {
+    console.debug('[IPC] bluetooth-cancel-pairing: cancelling');
+    pendingPairingCallback({ pin: '', confirmed: false }); // confirmed: false cancels
+    pendingPairingCallback = null;
+  }
+  // Reset retry count so next pairing starts fresh
+  pendingPairingRetryCount = 0;
+});
+
+// ─── IPC: Reset BLE pairing retry count (Linux) ───────────────────────────
+// Called when starting a new BLE connection so the first pairing attempt uses the default PIN
+ipcMain.on('ble-reset-pairing-retry-count', (_event, sessionKind?: unknown) => {
+  pendingPairingRetryCount = 0;
+  blePairingSessionKind = sessionKind === 'meshcore' ? 'meshcore' : 'meshtastic';
+});
+
 // ─── IPC: Connection status tracking (module-scope, not per-window) ─
 ipcMain.on('device-connected', () => {
   console.debug('[main] device-connected: isConnected = true');
@@ -1145,6 +1683,11 @@ ipcMain.handle('noble-ble-start-scan', async (_event, sessionId: unknown) => {
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-start-scan: sessionId must be meshtastic or meshcore');
   }
+  if (process.platform === 'linux') {
+    throw new Error(
+      'BLE scanning is not supported on Linux via Noble — use Web Bluetooth in the renderer',
+    );
+  }
   if (isQuitting) {
     console.debug('[main] noble-ble-start-scan: ignoring (app is quitting)');
     return;
@@ -1156,21 +1699,6 @@ ipcMain.handle('noble-ble-stop-scan', async (_event, sessionId: unknown) => {
     throw new Error('noble-ble-stop-scan: sessionId must be meshtastic or meshcore');
   }
   await nobleBleManager.stopScanning(sessionId);
-});
-ipcMain.handle('system:linux-ble-capability-status', () => {
-  if (process.platform !== 'linux') {
-    return {
-      platform: 'other' as const,
-      hasCapNetRaw: true,
-      detail: '',
-    };
-  }
-  const probe = probeLinuxBleCapabilityStatus();
-  return {
-    platform: 'linux' as const,
-    hasCapNetRaw: probe.hasBleCapabilities,
-    detail: probe.detail,
-  };
 });
 ipcMain.handle('noble-ble-connect', async (_event, sessionId: unknown, peripheralId: unknown) => {
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
@@ -2755,6 +3283,14 @@ void app.whenReady().then(() => {
 });
 
 app.on('before-quit', (event) => {
+  // Clean up any pending Bluetooth device selection to prevent callback leak
+  if (pendingBluetoothCallback) {
+    console.debug('[main] before-quit: cleaning up pending Bluetooth callback');
+    pendingBluetoothCallback('');
+    pendingBluetoothCallback = null;
+    lastBluetoothDeviceIds.clear();
+  }
+
   if (nobleQuitRetry) {
     isQuitting = true;
     closeDatabase();
@@ -2820,6 +3356,13 @@ app.on('will-quit', () => {
 app.on('quit', () => {});
 
 app.on('window-all-closed', () => {
+  // Clean up any pending Bluetooth device selection to prevent callback leak
+  if (pendingBluetoothCallback) {
+    console.debug('[main] window-all-closed: cleaning up pending Bluetooth callback');
+    pendingBluetoothCallback('');
+    pendingBluetoothCallback = null;
+    lastBluetoothDeviceIds.clear();
+  }
   const hasConnection = isConnected || isAnyMqttConnected();
   // On macOS: quit when user chose Quit, or when there's no connection (window closed with nothing to keep running for)
   if (process.platform !== 'darwin' || isQuitting || !hasConnection) {

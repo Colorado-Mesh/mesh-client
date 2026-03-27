@@ -30,7 +30,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **Known Bugs:**
 
-- **Linux BLE permissions** — BLE uses `@stoprocent/noble` (native BlueZ), which needs raw socket access (`cap_net_raw`) on the executable you launch. **From source on Linux, prefer `npm run linux`** (see [Linux Bluetooth (BLE) Permissions](docs/development-environment.md#linux-bluetooth-ble-permissions)). If capability setup is missing, the app reports `BLE_LINUX_CAPABILITY_MISSING`.
+- **Linux BLE** — uses Web Bluetooth (Chromium's built-in BLE API), with a user-visible picker and user gesture requirement to select a device. **MeshCore** may prompt for the radio’s PIN and run OS-level pairing (`bluetoothctl`) before the connection completes when BlueZ reports the device as not paired (see [docs/development-environment.md](docs/development-environment.md#linux-bluetooth-ble)).
 
 ---
 
@@ -104,7 +104,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **Connectivity**
 
-- **Bluetooth LE** — pair wirelessly; auto-reconnects on startup with no user gesture required (noble native BLE via BlueZ/CoreBluetooth/WinRT); last device name persists across sessions
+- **Bluetooth LE** — pair wirelessly; on macOS/Windows, startup auto-reconnect can run without a user gesture (Noble backend). On Linux, Web Bluetooth requires user gesture and picker selection.
 - **USB Serial** — plug in via USB; auto-reconnects silently on startup (saved port signature matches the same physical device across re-enumeration)
 - **WiFi / HTTP / TCP** — connect to network-enabled nodes; saves last address for quick reconnect
 - **Dual-mode** — both Meshtastic and MeshCore run simultaneously; use the protocol switcher pill in the header to switch which view is active (the inactive protocol stays connected in the background); per-protocol unread badges (Meshtastic = green, MeshCore = cyan); passive toast notifications when the inactive protocol receives messages
@@ -198,7 +198,7 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 **Transport Notes**
 
-- BLE: waits for GATT init (`connected` event) before issuing commands; includes nudge timeout for stuck `deviceQuery` on some devices. On **Windows**, **pair the MeshCore device in Settings → Bluetooth & devices** before connecting in the app; WinRT may need a bonded device for a stable Nordic UART session. A **second connect attempt** may run automatically after some transient GATT discovery errors.
+- BLE: waits for GATT init (`connected` event) before issuing commands; includes nudge timeout for stuck `deviceQuery` on some devices. On **Windows**, **pair the MeshCore device in Settings → Bluetooth & devices** before connecting in the app; WinRT may need a bonded device for a stable Nordic UART session. On **Linux**, the app checks BlueZ pairing and may prompt for the PIN **before** Web Bluetooth completes when the radio is not bonded. A **second connect attempt** may run automatically after some transient GATT discovery or handshake timeouts (retry reuses the granted device without a new picker gesture).
 - Serial: auto-reconnects on startup using a saved port signature so reconnect targets the same physical device when possible
 - TCP: connects to MeshCore companion radio on port **5000**
 - **MQTT (JSON v1):** The Connection tab MQTT card includes **Network Preset** buttons — **LetsMesh** (WebSocket on port 443, topic prefix `meshcore`; broker auth uses `@michaelhart/meshcore-decoder`’s `createAuthToken` — MQTT username `v1_<64-hex public key>`, password token with JWT `aud` matching the **MQTT server hostname** (e.g. `mqtt-us-v1.letsmesh.net` for the US preset); optional **Packet logger (Analyzer)** forwards RX packet summaries to the broker when enabled; see [docs/letsmesh-mqtt-auth.md](docs/letsmesh-mqtt-auth.md)), **Ripple Networks** (TLS on port 8883, same topic prefix, preset default credentials, and **Allow insecure TLS** for brokers that use a non–public CA), and **Custom** for your own broker
@@ -264,7 +264,8 @@ Both protocols run at the same time. Use the **Meshtastic / MeshCore** switcher 
 After a successful connection, Mesh-Client remembers your last device per protocol. On next launch:
 
 - **Serial** — auto-connects silently in the background (both protocols)
-- **Bluetooth** — auto-scans on launch and reconnects when the last device is discovered (no user gesture required)
+- **Bluetooth (macOS/Windows)** — auto-scans on launch and reconnects when the last device is discovered (no user gesture required)
+- **Bluetooth (Linux)** — Web Bluetooth requires a user gesture; click **Reconnect** or **Connect** to open the picker. **MeshCore:** if the device is not paired in BlueZ, enter the PIN from the radio when prompted (OS pairing runs before the connection finishes).
 - **WiFi / TCP** — a one-click reconnect card appears; click **Reconnect**
 - **MQTT** — auto-reconnects using saved broker settings (Meshtastic protobuf pipeline; MeshCore JSON v1 adapter — select transport when connecting)
 
@@ -296,17 +297,17 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 
 ### Tech Stack
 
-| Component  | Technology                                                                               |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| Desktop    | Electron                                                                                 |
-| UI         | React 19 + TypeScript                                                                    |
-| Styling    | Tailwind CSS v4                                                                          |
-| Meshtastic | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble |
-| MeshCore   | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                      |
-| Maps       | Leaflet + OpenStreetMap                                                                  |
-| Charts     | Recharts                                                                                 |
-| Database   | SQLite (node:sqlite built-in, via db-compat.ts shim)                                     |
-| Build      | esbuild + Vite + electron-builder                                                        |
+| Component  | Technology                                                                                                                         |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop    | Electron                                                                                                                           |
+| UI         | React 19 + TypeScript                                                                                                              |
+| Styling    | Tailwind CSS v4                                                                                                                    |
+| Meshtastic | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble (macOS/Windows) and Web Bluetooth (Linux) |
+| MeshCore   | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                |
+| Maps       | Leaflet + OpenStreetMap                                                                                                            |
+| Charts     | Recharts                                                                                                                           |
+| Database   | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                               |
+| Build      | esbuild + Vite + electron-builder                                                                                                  |
 
 ### Project Structure
 
@@ -320,7 +321,7 @@ mesh-client/
 ├── src/
 │   ├── main/
 │   │   ├── index.ts              # Window creation, BLE/Serial intercept, IPC (incl. meshcore TCP & MQTT)
-│   │   ├── noble-ble-manager.ts  # BLE via @stoprocent/noble (BlueZ); scan/connect IPC
+│   │   ├── noble-ble-manager.ts  # BLE via @stoprocent/noble (macOS/Windows); scan/connect IPC
 │   │   ├── meshcore-mqtt-adapter.ts  # MeshCore MQTT JSON v1 subscribe/publish
 │   │   ├── log-service.ts        # Log file, console patch, log panel IPC
 │   │   ├── sanitize-log-message.ts  # Log injection sanitization (CodeQL); use at call sites before appendLine
@@ -408,7 +409,7 @@ mesh-client/
 │   ├── entitlements.mac.plist    # macOS signing entitlements (main)
 │   └── entitlements.mac.inherit.plist  # macOS child-process entitlements
 ├── scripts/
-│   ├── rebuild-native.mjs        # Rebuilds @stoprocent/noble for Electron ABI (postinstall)
+│   ├── rebuild-native.mjs        # Rebuilds native modules for Electron ABI (postinstall)
 │   ├── wait-for-dev.mjs          # Waits for Vite dev server before launching Electron
 │   ├── check-log-injection.mjs   # Pre-commit: log call sites use sanitizeLogMessage (CodeQL)
 │   ├── check-db-migrations.mjs   # Pre-commit: migration / schema consistency

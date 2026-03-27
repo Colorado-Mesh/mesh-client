@@ -250,6 +250,11 @@ export interface NobleBleDevice {
 export type NobleBleSessionId = 'meshtastic' | 'meshcore';
 export type NobleBleConnectResult = { ok: true } | { ok: false; error: string };
 
+export interface WebBluetoothDevice {
+  deviceId: string;
+  deviceName: string;
+}
+
 export interface SerialPortInfo {
   portId: string;
   displayName: string;
@@ -476,6 +481,20 @@ declare global {
       onSerialPortsDiscovered: (cb: (ports: SerialPortInfo[]) => void) => () => void;
       selectSerialPort: (portId: string) => void;
       cancelSerialSelection: () => void;
+      onBluetoothDevicesDiscovered: (cb: (devices: NobleBleDevice[]) => void) => () => void;
+      selectBluetoothDevice: (deviceId: string) => void;
+      cancelBluetoothSelection: () => void;
+      bluetoothUnpair: (macAddress: string) => Promise<void>;
+      bluetoothStartScan: () => Promise<void>;
+      bluetoothStopScan: () => Promise<void>;
+      bluetoothPair: (macAddress: string, pin?: string) => Promise<void>;
+      bluetoothConnect: (macAddress: string) => Promise<void>;
+      bluetoothUntrust: (macAddress: string) => Promise<void>;
+      bluetoothGetInfo: (macAddress: string) => Promise<string>;
+      onBluetoothPinRequired: (cb: (data: { deviceId: string }) => void) => () => void;
+      provideBluetoothPin: (pin: string) => void;
+      cancelBluetoothPairing: () => void;
+      resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => void;
       clearSessionData: () => Promise<void>;
       notifyDeviceConnected: () => void;
       notifyDeviceDisconnected: () => void;

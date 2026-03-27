@@ -131,6 +131,10 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
   async function setupMeshcoreConnection(txBehavior: CharacteristicBehavior) {
     const mod = await import('./noble-ble-manager');
     const manager = new mod.NobleBleManager();
+    // In Linux CI, NobleBleManager skips session initialization at construction time.
+    // These behavior tests target Noble session logic directly, so seed sessions explicitly.
+    (manager as any).sessions.set('meshtastic', (manager as any).createSessionState());
+    (manager as any).sessions.set('meshcore', (manager as any).createSessionState());
     (manager as any).adapterReady = true;
     (manager as any).lastAdapterState = 'poweredOn';
 
@@ -189,6 +193,8 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
   it('fails connect when fromRadio supports neither notify nor read', async () => {
     const mod = await import('./noble-ble-manager');
     const manager = new mod.NobleBleManager();
+    (manager as any).sessions.set('meshtastic', (manager as any).createSessionState());
+    (manager as any).sessions.set('meshcore', (manager as any).createSessionState());
     (manager as any).adapterReady = true;
     (manager as any).lastAdapterState = 'poweredOn';
     const toRadio = new FakeCharacteristic(MESHCORE_RX_UUID, { properties: ['write'] });

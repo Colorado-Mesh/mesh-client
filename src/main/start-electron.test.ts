@@ -30,16 +30,14 @@ describe('start-electron wrapper helpers', () => {
     expect(mod.classifyElectronStartupError(err)).toBe('linux-display-missing');
   });
 
-  it('prints remediation text with rollback and ambient-cap commands', async () => {
+  it('prints remediation text for missing Linux ffmpeg library', async () => {
     // @ts-expect-error test import from scripts directory
     const mod = (await import('../../scripts/start-electron.mjs')) as {
       fedoraLibffmpegRemediation: () => string;
     };
     const text = mod.fedoraLibffmpegRemediation();
-    expect(text).toContain('sudo setcap -r ./node_modules/electron/dist/electron');
-    expect(text).toContain('--ambient-caps +net_raw');
-    expect(text).toContain('npm run linux');
-    expect(text).toContain('npm start -- -no-sandbox');
+    expect(text).toContain('libffmpeg.so could not be loaded');
+    expect(text).toContain('runtime dependencies');
   });
 
   it('prints remediation text for missing Linux display backend', async () => {
@@ -51,12 +49,6 @@ describe('start-electron wrapper helpers', () => {
     expect(text).toContain('Missing X server or $DISPLAY');
     expect(text).toContain('ELECTRON_OZONE_PLATFORM_HINT=x11 npm start');
     expect(text).toContain('DISPLAY=$DISPLAY WAYLAND_DISPLAY=$WAYLAND_DISPLAY');
-    expect(text).toContain('XAUTHORITY=$XAUTHORITY');
-    expect(text).toContain('sudo setpriv --reuid=$USER --regid=$(id -g)');
-    expect(text).toContain('npm run linux');
-    expect(text).toContain(
-      'bash -lc "export DISPLAY=$DISPLAY; export XAUTHORITY=$XAUTHORITY; npm start -- -no-sandbox"',
-    );
   });
 
   it('resolves macOS electron app binary path', async () => {

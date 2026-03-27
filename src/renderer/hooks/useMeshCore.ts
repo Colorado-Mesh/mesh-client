@@ -32,6 +32,7 @@ import {
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
+import { MeshcoreWebBluetoothConnection } from '../lib/meshcoreWebBluetoothConnection';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import {
   getPortSignature,
@@ -40,6 +41,7 @@ import {
   selectGrantedSerialPort,
 } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
+import { TransportWebBluetoothIpc } from '../lib/transportWebBluetoothIpc';
 import type {
   ChatMessage,
   DeviceState,
@@ -138,9 +140,33 @@ function rendererLikelyWin32(): boolean {
   return false;
 }
 
+function rendererLikelyLinux(): boolean {
+  try {
+    if (typeof process !== 'undefined' && process.platform === 'linux') return true;
+  } catch {
+    // catch-no-log-ok process access can throw in some renderer bundles; fall back to UA heuristics
+  }
+  if (typeof navigator !== 'undefined') {
+    const ua = navigator.userAgent ?? '';
+    if (/Linux/i.test(ua)) return true;
+    const plat = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
+      ?.platform;
+    if (plat && /Linux/i.test(plat)) return true;
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- navigator.platform is last-resort platform hint
+    if (navigator.platform && /Linux/i.test(navigator.platform)) return true;
+  }
+  return false;
+}
+
 /** WinRT + companion handshake can be slower than CoreBluetooth. */
-const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = rendererLikelyWin32() ? 45_000 : 20_000;
+const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = rendererLikelyWin32()
+  ? 45_000
+  : rendererLikelyLinux()
+    ? 60_000
+    : 20_000;
 const NOBLE_IPC_CONNECT_MAX_ATTEMPTS = 2;
+const WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS = 2;
+const WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS = 1_500;
 
 function serializeErrorLike(value: unknown): string {
   if (value instanceof Error) return value.message;
@@ -258,7 +284,6 @@ class IpcNobleConnection {
         }
 
         async write(bytes: Uint8Array) {
-          console.debug(`[IpcNobleConnection:${this.session}] write ${bytes.length} bytes`);
           await window.electronAPI.nobleBleToRadio(this.session, bytes);
         }
 
@@ -271,7 +296,6 @@ class IpcNobleConnection {
       this.inner = instance;
       const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
         if (sid !== sessionId) return;
-        console.debug(`[IpcNobleConnection:${sessionId}] fromRadio ${bytes.length} bytes`);
         const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes as ArrayBuffer);
         instance.onFrameReceived(frame);
       });
@@ -289,10 +313,21 @@ class IpcNobleConnection {
           NOBLE_IPC_CONNECT_TIMEOUT_MS,
           'MeshCore BLE IPC open',
         );
+        console.info(
+          `[IpcNobleConnection:${sessionId}] waiting for onConnected() with timeout=${NOBLE_IPC_HANDSHAKE_TIMEOUT_MS}ms`,
+        );
+        const handshakeStart = Date.now();
         await withTimeout(
-          instance.onConnected(),
+          instance.onConnected().then(() => {
+            console.info(
+              `[IpcNobleConnection:${sessionId}] onConnected() resolved after ${Date.now() - handshakeStart}ms`,
+            );
+          }),
           NOBLE_IPC_HANDSHAKE_TIMEOUT_MS,
           'MeshCore BLE protocol handshake',
+        );
+        console.info(
+          `[IpcNobleConnection:${sessionId}] handshake complete after ${Date.now() - handshakeStart}ms`,
         );
       } catch (err) {
         try {
@@ -718,6 +753,7 @@ export function useMeshCore() {
   const connRef = useRef<MeshCoreConnection | null>(null);
   const ipcTcpRef = useRef<IpcTcpConnection | null>(null);
   const ipcNobleRef = useRef<IpcNobleConnection | null>(null);
+  const webBluetoothTransportRef = useRef<TransportWebBluetoothIpc | null>(null);
   const bleConnectInProgressRef = useRef(false);
   /** Incremented on `disconnect()` so in-flight `initConn` can abort instead of timing out. */
   const meshcoreSetupGenerationRef = useRef(0);
@@ -1569,78 +1605,175 @@ export function useMeshCore() {
       if (type === 'ble') bleConnectInProgressRef.current = true;
       let conn: MeshCoreConnection | null = null;
       let serialRawPort: SerialPort | null = null;
+      /** Linux MeshCore uses renderer Web Bluetooth (not Noble IPC) — timeout copy must match. */
+      let meshcoreBleLinuxWebBluetooth = false;
 
       try {
         const setupGen = meshcoreSetupGenerationRef.current;
         if (type === 'ble') {
-          if (!blePeripheralId) {
-            throw new Error('BLE peripheral ID required');
-          }
-          let connected = false;
-          let lastBleError: unknown = null;
-          for (let attempt = 1; attempt <= NOBLE_IPC_CONNECT_MAX_ATTEMPTS; attempt++) {
-            const attemptStartedAt = Date.now();
-            console.debug(
-              `[useMeshCore] connect: BLE via Noble IPC opening... (attempt ${attempt}/${NOBLE_IPC_CONNECT_MAX_ATTEMPTS})`,
-            );
-            const nobleConn = new IpcNobleConnection(blePeripheralId, 'meshcore');
-            ipcNobleRef.current = nobleConn;
-            try {
-              await nobleConn.connect();
-              conn = nobleConn.connection as unknown as MeshCoreConnection;
-              connected = true;
-              if (attempt > 1) {
-                console.info(
-                  `[useMeshCore] connect: BLE via Noble IPC recovered on retry ${formatStructuredLogDetail(
+          const isLinux = navigator.userAgent.toLowerCase().includes('linux');
+          if (isLinux) {
+            meshcoreBleLinuxWebBluetooth = true;
+            console.debug('[useMeshCore] connect: BLE via Web Bluetooth (Linux)');
+            window.electronAPI.resetBlePairingRetryCount('meshcore');
+            let reuseWebBluetoothDeviceId: string | null = null;
+            for (let attempt = 1; attempt <= WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS; attempt++) {
+              const attemptStartedAt = Date.now();
+              const transport = new TransportWebBluetoothIpc('meshcore');
+              console.debug(
+                `[useMeshCore] connect: BLE via Web Bluetooth (Linux) opening... (attempt ${attempt}/${WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS})`,
+              );
+              try {
+                const meshcoreConn = new MeshcoreWebBluetoothConnection(transport);
+                await meshcoreConn.connect(reuseWebBluetoothDeviceId ?? undefined);
+                webBluetoothTransportRef.current = transport;
+                conn = meshcoreConn as unknown as MeshCoreConnection;
+                if (attempt > 1) {
+                  console.info(
+                    `[useMeshCore] connect: BLE via Web Bluetooth recovered on retry ${formatStructuredLogDetail(
+                      {
+                        attempt,
+                        maxAttempts: WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS,
+                        elapsedMs: Date.now() - attemptStartedAt,
+                      },
+                    )}`,
+                  );
+                }
+                console.info('[useMeshCore] connect: BLE via Web Bluetooth connected');
+                break;
+              } catch (bleErr) {
+                const activeDeviceInfo = transport.getDeviceInfo();
+                if (activeDeviceInfo?.deviceId) {
+                  reuseWebBluetoothDeviceId = activeDeviceInfo.deviceId;
+                } else {
+                  const grantedDeviceId = transport.getLastGrantedDeviceId();
+                  if (grantedDeviceId) {
+                    reuseWebBluetoothDeviceId = grantedDeviceId;
+                  }
+                }
+                // Clean up transport on failure before retry
+                try {
+                  await transport.disconnect();
+                } catch (cleanupErr) {
+                  console.debug(
+                    '[useMeshCore] connect: Web Bluetooth cleanup error on failure',
+                    cleanupErr,
+                  );
+                }
+
+                const rawBleMessage = serializeErrorLike(bleErr) || 'BLE connect failed';
+                const isTimeout = rawBleMessage.includes('timed out');
+                const isPairingError =
+                  bleErr instanceof Error &&
+                  (bleErr as Error & { isPairingRelated?: boolean }).isPairingRelated;
+                console.warn(
+                  `[useMeshCore] connect: BLE via Web Bluetooth attempt failed ${formatStructuredLogDetail(
                     {
                       attempt,
-                      maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                      maxAttempts: WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS,
+                      isTimeout,
+                      isPairingError,
                       elapsedMs: Date.now() - attemptStartedAt,
+                      message: rawBleMessage,
                     },
                   )}`,
                 );
+                webBluetoothTransportRef.current = null;
+
+                // Don't retry on pairing errors (user needs to fix pairing, not retry)
+                if (isPairingError || !isTimeout || attempt >= WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS) {
+                  throw bleErr;
+                }
+
+                // `requestDevice()` requires a user gesture; retries must reuse a granted device id.
+                if (!reuseWebBluetoothDeviceId) {
+                  throw new Error(
+                    'Bluetooth connection timed out before a device could be reused. Tap Connect again to retry.',
+                  );
+                }
+
+                console.debug(
+                  `[useMeshCore] connect: retrying BLE via Web Bluetooth after retryable failure ${formatStructuredLogDetail(
+                    {
+                      attempt,
+                      maxAttempts: WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS,
+                      retryDelayMs: WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS,
+                    },
+                  )}`,
+                );
+                await new Promise<void>((r) => setTimeout(r, WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS));
               }
-              break;
-            } catch (bleErr) {
-              lastBleError = bleErr;
-              const rawBleMessage = serializeErrorLike(bleErr) || 'BLE connect failed';
-              const stage = classifyMeshcoreBleTimeoutStage(rawBleMessage);
-              const isTimeout = stage !== 'unknown';
-              const isRetryable = isMeshcoreRetryableBleErrorMessage(rawBleMessage);
-              console.warn(
-                `[useMeshCore] connect: BLE Noble IPC attempt failed ${formatStructuredLogDetail({
-                  attempt,
-                  maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
-                  isTimeout,
-                  isRetryable,
-                  stage,
-                  elapsedMs: Date.now() - attemptStartedAt,
-                  message: rawBleMessage,
-                })}`,
-              );
-              ipcNobleRef.current?.cleanup();
-              ipcNobleRef.current = null;
-              if (!isRetryable || attempt >= NOBLE_IPC_CONNECT_MAX_ATTEMPTS) {
-                throw bleErr;
-              }
+            }
+          } else {
+            if (!blePeripheralId) {
+              throw new Error('BLE peripheral ID required');
+            }
+            let connected = false;
+            let lastBleError: unknown = null;
+            for (let attempt = 1; attempt <= NOBLE_IPC_CONNECT_MAX_ATTEMPTS; attempt++) {
+              const attemptStartedAt = Date.now();
               console.debug(
-                `[useMeshCore] connect: retrying BLE Noble IPC after retryable failure ${formatStructuredLogDetail(
-                  {
-                    nextAttempt: attempt + 1,
+                `[useMeshCore] connect: BLE via Noble IPC opening... (attempt ${attempt}/${NOBLE_IPC_CONNECT_MAX_ATTEMPTS})`,
+              );
+              const nobleConn = new IpcNobleConnection(blePeripheralId, 'meshcore');
+              ipcNobleRef.current = nobleConn;
+              try {
+                await nobleConn.connect();
+                conn = nobleConn.connection as unknown as MeshCoreConnection;
+                connected = true;
+                if (attempt > 1) {
+                  console.info(
+                    `[useMeshCore] connect: BLE via Noble IPC recovered on retry ${formatStructuredLogDetail(
+                      {
+                        attempt,
+                        maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                        elapsedMs: Date.now() - attemptStartedAt,
+                      },
+                    )}`,
+                  );
+                }
+                break;
+              } catch (bleErr) {
+                lastBleError = bleErr;
+                const rawBleMessage = serializeErrorLike(bleErr) || 'BLE connect failed';
+                const stage = classifyMeshcoreBleTimeoutStage(rawBleMessage);
+                const isTimeout = stage !== 'unknown';
+                const isRetryable = isMeshcoreRetryableBleErrorMessage(rawBleMessage);
+                console.warn(
+                  `[useMeshCore] connect: BLE Noble IPC attempt failed ${formatStructuredLogDetail({
+                    attempt,
                     maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
                     isTimeout,
+                    isRetryable,
                     stage,
-                  },
-                )}`,
-              );
-              // Brief pause before retry: gives BlueZ/WinRT time to release adapter state
-              // after a failed or timed-out connect attempt.
-              await new Promise<void>((r) => setTimeout(r, 1500));
+                    elapsedMs: Date.now() - attemptStartedAt,
+                    message: rawBleMessage,
+                  })}`,
+                );
+                ipcNobleRef.current?.cleanup();
+                ipcNobleRef.current = null;
+                if (!isRetryable || attempt >= NOBLE_IPC_CONNECT_MAX_ATTEMPTS) {
+                  throw bleErr;
+                }
+                console.debug(
+                  `[useMeshCore] connect: retrying BLE Noble IPC after retryable failure ${formatStructuredLogDetail(
+                    {
+                      nextAttempt: attempt + 1,
+                      maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                      isTimeout,
+                      stage,
+                    },
+                  )}`,
+                );
+                // Brief pause before retry: gives BlueZ/WinRT time to release adapter state
+                // after a failed or timed-out connect attempt.
+                await new Promise<void>((r) => setTimeout(r, 1500));
+              }
             }
-          }
-          if (!connected) {
-            if (lastBleError instanceof Error) throw lastBleError;
-            throw new Error('BLE connect failed');
+            if (!connected) {
+              if (lastBleError instanceof Error) throw lastBleError;
+              throw new Error('BLE connect failed');
+            }
           }
         } else if (type === 'serial') {
           console.debug('[useMeshCore] connect: serial requesting port...');
@@ -1743,8 +1876,11 @@ export function useMeshCore() {
             ? 'BLE connection failed (no error details from device). Try again or use Serial/USB.'
             : 'Connection failed';
         const displayMessage = safeMessage !== 'Connection failed' ? safeMessage : fallbackMessage;
-        const timeoutMessage =
-          bleTimeoutStage === 'protocol-handshake'
+        const timeoutMessage = meshcoreBleLinuxWebBluetooth
+          ? bleTimeoutStage === 'protocol-handshake'
+            ? 'MeshCore handshake timed out (Web Bluetooth). The radio may need a PIN paired with Linux first: use Remove & Re-pair Device and enter the PIN shown on the device, or pair with bluetoothctl, then tap Connect again.'
+            : 'Bluetooth connection timed out while opening MeshCore over Web Bluetooth. Retry, keep the device awake, power-cycle BLE on the radio, or use Serial/TCP.'
+          : bleTimeoutStage === 'protocol-handshake'
             ? 'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.'
             : 'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.';
         const normalizedErr = new Error(
@@ -1760,9 +1896,13 @@ export function useMeshCore() {
         );
         if (isBleConnectTimeout) {
           console.warn(
-            `[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback ${formatStructuredLogDetail(
-              { stage: bleTimeoutStage },
-            )}`,
+            meshcoreBleLinuxWebBluetooth
+              ? `[useMeshCore] connect: BLE Web Bluetooth timed out ${formatStructuredLogDetail({
+                  stage: bleTimeoutStage,
+                })}`
+              : `[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback ${formatStructuredLogDetail(
+                  { stage: bleTimeoutStage },
+                )}`,
           );
         }
         const errForLog = serializeErrorLike(err) || '(no error object)';
@@ -1919,6 +2059,10 @@ export function useMeshCore() {
     ipcTcpRef.current = null;
     ipcNobleRef.current?.cleanup();
     ipcNobleRef.current = null;
+    if (webBluetoothTransportRef.current) {
+      await webBluetoothTransportRef.current.disconnect();
+      webBluetoothTransportRef.current = null;
+    }
     connRef.current = null;
     pubKeyMapRef.current.clear();
     pubKeyPrefixMapRef.current.clear();

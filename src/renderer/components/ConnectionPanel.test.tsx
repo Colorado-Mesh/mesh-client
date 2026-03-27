@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { DeviceState } from '../lib/types';
@@ -160,59 +160,8 @@ describe('ConnectionPanel MQTT connect error', () => {
 });
 
 describe('ConnectionPanel BLE error humanization', () => {
-  it('shows startup Linux BLE capability warning before connect attempts', async () => {
-    vi.mocked(window.electronAPI.getLinuxBleCapabilityStatus).mockResolvedValueOnce({
-      platform: 'linux',
-      hasCapNetRaw: false,
-      detail: 'runtime CapEff=0 CapAmb=0',
-    });
-
-    render(
-      <ConnectionPanel
-        state={disconnectedState}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={vi.fn().mockResolvedValue(undefined)}
-        mqttStatus="disconnected"
-        protocol="meshtastic"
-        onProtocolChange={vi.fn()}
-      />,
-    );
-
-    expect(await screen.findByText(/Bluetooth permissions missing on Linux/i)).toBeInTheDocument();
-    expect(screen.getByText(/npm run linux/i)).toBeInTheDocument();
-  });
-
-  it('shows Linux setpriv-first guidance for classified Linux capability errors', async () => {
-    const user = userEvent.setup();
-    vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce(
-      new Error(
-        'BLE_LINUX_CAPABILITY_MISSING: Linux BLE scan permissions are missing or not applied',
-      ),
-    );
-
-    render(
-      <ConnectionPanel
-        state={disconnectedState}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={vi.fn().mockResolvedValue(undefined)}
-        mqttStatus="disconnected"
-        protocol="meshtastic"
-        onProtocolChange={vi.fn()}
-      />,
-    );
-
-    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
-    expect(radioCard).toBeTruthy();
-    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
-
-    expect(await screen.findByText(/Linux BLE permissions are missing/i)).toBeInTheDocument();
-    expect(screen.getByText(/npm run linux/i)).toBeInTheDocument();
-    expect(screen.getByText(/setpriv --reuid=\$USER/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/setcap -r \.\/node_modules\/electron\/dist\/electron/i),
-    ).toBeInTheDocument();
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it('shows Windows handshake guidance for MeshCore BLE handshake timeout/disconnect', async () => {
@@ -249,6 +198,10 @@ describe('ConnectionPanel BLE error humanization', () => {
 
   it('renders object-shaped BLE errors as JSON instead of [object Object]', async () => {
     const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
     vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce({
       reason: 'adapter glitch',
       code: 'BLE_OBJECT_ERR',
@@ -272,6 +225,7 @@ describe('ConnectionPanel BLE error humanization', () => {
 
     expect(await screen.findByText(/"reason":"adapter glitch"/)).toBeInTheDocument();
     expect(screen.queryByText(/\[object Object\]/)).not.toBeInTheDocument();
+    userAgentSpy.mockRestore();
   });
 
   it('shows Windows adapter guidance when BLE adapter is unavailable', async () => {
@@ -303,6 +257,74 @@ describe('ConnectionPanel BLE error humanization', () => {
     expect(
       await screen.findByText(/update your Bluetooth driver in Device Manager/i),
     ).toBeInTheDocument();
+    userAgentSpy.mockRestore();
+  });
+});
+
+describe('ConnectionPanel Linux BLE path', () => {
+  it('uses Web Bluetooth connect path on Linux instead of noble scanning', async () => {
+    const user = userEvent.setup();
+    vi.clearAllMocks();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+        onProtocolChange={vi.fn()}
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+    expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+    userAgentSpy.mockRestore();
+  });
+
+  it('keeps MeshCore PIN guidance in Linux BLE pairing-related errors', async () => {
+    const user = userEvent.setup();
+    vi.clearAllMocks();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const onConnect = vi
+      .fn()
+      .mockRejectedValue(
+        new Error(
+          'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout.',
+        ),
+      );
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+        onProtocolChange={vi.fn()}
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(await screen.findByText(/Bluetooth Companion mode/i)).toBeInTheDocument();
+    expect(screen.getByText(/paired with your computer using a PIN/i)).toBeInTheDocument();
     userAgentSpy.mockRestore();
   });
 });

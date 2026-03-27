@@ -2,7 +2,6 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import type {
   ElectronAPI,
-  LinuxBleCapabilityStatus,
   NobleBleConnectResult,
   NobleBleDevice,
   NobleBleSessionId,
@@ -291,8 +290,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('noble-ble-disconnect', sessionId),
   nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array): Promise<void> =>
     ipcRenderer.invoke('noble-ble-to-radio', sessionId, bytes),
-  getLinuxBleCapabilityStatus: (): Promise<LinuxBleCapabilityStatus> =>
-    ipcRenderer.invoke('system:linux-ble-capability-status'),
 
   // ─── Serial port selection ──────────────────────────────────────
   // Main process intercepts select-serial-port and sends the port
@@ -313,6 +310,79 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   cancelSerialSelection: () => {
     ipcRenderer.send('serial-port-cancelled');
+  },
+
+  // ─── Bluetooth device selection (Linux Web Bluetooth) ──────────────
+  // Main process intercepts select-bluetooth-device and sends the device
+  // list here. Renderer shows a picker, then calls selectBluetoothDevice.
+  onBluetoothDevicesDiscovered: (callback: (devices: NobleBleDevice[]) => void) => {
+    const handler = (_event: unknown, devices: NobleBleDevice[]) => {
+      callback(devices);
+    };
+    ipcRenderer.on('bluetooth-devices-discovered', handler);
+    return () => {
+      ipcRenderer.removeListener('bluetooth-devices-discovered', handler);
+    };
+  },
+
+  selectBluetoothDevice: (deviceId: string) => {
+    ipcRenderer.send('bluetooth-device-selected', deviceId);
+  },
+
+  cancelBluetoothSelection: () => {
+    ipcRenderer.send('bluetooth-device-cancelled');
+  },
+
+  // ─── Bluetooth pairing (Linux) ──────────────────────────────────────
+  // Unpair a device via bluetoothctl remove
+  bluetoothUnpair: (macAddress: string): Promise<void> =>
+    ipcRenderer.invoke('bluetooth-unpair', macAddress),
+
+  // Start BLE scan
+  bluetoothStartScan: (): Promise<void> => ipcRenderer.invoke('bluetooth-start-scan'),
+
+  // Stop BLE scan
+  bluetoothStopScan: (): Promise<void> => ipcRenderer.invoke('bluetooth-stop-scan'),
+
+  // Pair a device
+  bluetoothPair: (macAddress: string, pin?: string): Promise<void> =>
+    ipcRenderer.invoke('bluetooth-pair', macAddress, pin),
+
+  // Connect to a paired device
+  bluetoothConnect: (macAddress: string): Promise<void> =>
+    ipcRenderer.invoke('bluetooth-connect', macAddress),
+
+  // Untrust a device (best-effort, ignore failures)
+  bluetoothUntrust: (macAddress: string): Promise<void> =>
+    ipcRenderer.invoke('bluetooth-untrust', macAddress),
+
+  bluetoothGetInfo: (macAddress: string): Promise<string> =>
+    ipcRenderer.invoke('bluetooth-get-info', macAddress),
+
+  // Listen for PIN required event from main process
+  onBluetoothPinRequired: (callback: (data: { deviceId: string }) => void) => {
+    const handler = (_event: unknown, data: { deviceId: string }) => {
+      callback(data);
+    };
+    ipcRenderer.on('bluetooth-pin-required', handler);
+    return () => {
+      ipcRenderer.removeListener('bluetooth-pin-required', handler);
+    };
+  },
+
+  // Provide PIN for pairing
+  provideBluetoothPin: (pin: string) => {
+    ipcRenderer.send('bluetooth-provide-pin', pin);
+  },
+
+  // Cancel pending pairing
+  cancelBluetoothPairing: () => {
+    ipcRenderer.send('bluetooth-cancel-pairing');
+  },
+
+  // Reset pairing retry count (call before starting a new BLE connection)
+  resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => {
+    ipcRenderer.send('ble-reset-pairing-retry-count', sessionKind ?? 'meshtastic');
   },
 
   // ─── Session management ────────────────────────────────────────
