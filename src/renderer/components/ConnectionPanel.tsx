@@ -1518,38 +1518,40 @@ export default function ConnectionPanel({
                   Scanning for {protocol === 'meshcore' ? 'MeshCore' : 'Meshtastic'} devices...
                 </div>
               ) : (
-                bleDevices.map((device) => {
-                  const cache =
+                (() => {
+                  const bleDeviceNamesCache =
                     parseStoredJson<Record<string, string>>(
                       localStorage.getItem('mesh-client:bleDeviceNames'),
                       'ConnectionPanel bleDeviceNames list',
                     ) ?? {};
-                  const cached = cache[device.deviceId];
-                  const advertisedName = device.deviceName || null;
-                  const displayName = cached
-                    ? advertisedName && advertisedName !== cached
-                      ? `${cached} (${advertisedName})`
-                      : cached
-                    : (advertisedName ?? device.deviceId);
-                  const bleAriaLabel = `${displayName} ${device.deviceId}`;
-                  return (
-                    <button
-                      key={device.deviceId}
-                      type="button"
-                      aria-label={bleAriaLabel}
-                      onClick={() => {
-                        handleSelectBleDevice(device.deviceId);
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-secondary-dark transition-colors border-b border-gray-700 last:border-b-0"
-                    >
-                      <div className="text-sm text-gray-200 flex items-center gap-2">
-                        <ConnectionIcon type="ble" />
-                        {displayName}
-                      </div>
-                      <div className="text-xs text-muted font-mono ml-7">{device.deviceId}</div>
-                    </button>
-                  );
-                })
+                  return bleDevices.map((device) => {
+                    const cached = bleDeviceNamesCache[device.deviceId];
+                    const advertisedName = device.deviceName || null;
+                    const displayName = cached
+                      ? advertisedName && advertisedName !== cached
+                        ? `${cached} (${advertisedName})`
+                        : cached
+                      : (advertisedName ?? device.deviceId);
+                    const bleAriaLabel = `${displayName} ${device.deviceId}`;
+                    return (
+                      <button
+                        key={device.deviceId}
+                        type="button"
+                        aria-label={bleAriaLabel}
+                        onClick={() => {
+                          handleSelectBleDevice(device.deviceId);
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-secondary-dark transition-colors border-b border-gray-700 last:border-b-0"
+                      >
+                        <div className="text-sm text-gray-200 flex items-center gap-2">
+                          <ConnectionIcon type="ble" />
+                          {displayName}
+                        </div>
+                        <div className="text-xs text-muted font-mono ml-7">{device.deviceId}</div>
+                      </button>
+                    );
+                  });
+                })()
               )}
             </div>
             {bleDevices.some((d) => d.deviceName === 'AdaDFU') && (
