@@ -346,9 +346,8 @@ Log out/in after changing groups.
 
 Linux uses Web Bluetooth (Chromium's built-in BLE API) instead of `@stoprocent/noble`. This approach:
 
-- Requires no special permissions (setcap, setpriv, etc.)
-- Works within Chromium's sandbox
-- Requires the user to manually select their device via Chromium's native BLE picker
+- Requires no setcap/setuid workaround scripts
+- Requires the user to select a device from the in-app Bluetooth picker (backed by Chromium's chooser event)
 - Requires a user gesture (button click) to trigger device selection
 
 The app automatically enables `--enable-experimental-web-platform-features` on Linux at startup.
@@ -375,14 +374,13 @@ If you encounter pairing issues (e.g., "Connection attempt failed" or device was
    bluetoothctl power on
    ```
 
-### Sandbox and ARM notes
+### Linux launch notes
 
-The recommended Linux dev entry (`npm run linux`) already passes `-no-sandbox` to the packaged `npm start` flow.
-
-If app launch fails due to sandbox when using **hot reload** (`npm run dev`) on some environments:
+The supported dev and local run flows are:
 
 ```bash
-npm run dev -- --no-sandbox
+npm run dev
+npm start
 ```
 
 ARM (for example Raspberry Pi) may also require:
@@ -421,19 +419,19 @@ npm run rebuild
 Use:
 
 ```bash
-npm run build && npx electron . --no-sandbox --disable-gpu
+npm run build && npx electron . --disable-gpu
 ```
 
 Or:
 
 ```bash
-npm run electron:open -- --no-sandbox --disable-gpu
+npm run electron:open -- --disable-gpu
 ```
 
 Optional persistent mitigation:
 
 - `export MESH_CLIENT_DISABLE_GPU=1`
-- `ELECTRON_OZONE_PLATFORM_HINT=x11 npm run electron:open -- --no-sandbox`
+- `ELECTRON_OZONE_PLATFORM_HINT=x11 npm run electron:open`
 
 #### `Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED`
 

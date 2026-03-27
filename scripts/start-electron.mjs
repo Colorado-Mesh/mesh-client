@@ -45,14 +45,12 @@ export function classifyElectronStartupError(stderrText) {
   return null;
 }
 
-// Linux BLE is now handled via Web Bluetooth - no special setpriv needed
 export function fedoraLibffmpegRemediation() {
   return [
     '[mesh-client] Detected Linux startup failure: libffmpeg.so could not be loaded.',
-    '[mesh-client] This failure can happen on Fedora/glibc after applying setcap directly to Electron.',
-    '[mesh-client] Manual fix - remove file capability from the local Electron binary:',
-    '  sudo setcap -r ./node_modules/electron/dist/electron',
-    '[mesh-client] Keep file capabilities for packaged release binaries only (setcap on extracted executable).',
+    '[mesh-client] This can happen when required runtime libraries are unavailable.',
+    '[mesh-client] Verify your system has the Electron runtime dependencies installed.',
+    '[mesh-client] On Fedora/RHEL-based systems, ensure ffmpeg runtime libs are present.',
   ].join('\n');
 }
 
@@ -69,17 +67,13 @@ export function linuxDisplayMissingRemediation() {
 }
 
 export async function runStartElectron(argv = process.argv.slice(2)) {
-  // Web Bluetooth on Linux requires --no-sandbox so navigator.bluetooth is available in the
-  // renderer. Passing as CLI args (not app.commandLine.appendSwitch) ensures they are applied
-  // during Chromium's early bootstrap, preventing fatal crashes when chrome-sandbox exists but
-  // lacks root/setuid permissions (common in dev envs).
-  // --no-sandbox: disables all sandboxing (needed for Web Bluetooth API availability)
-  // --disable-setuid-sandbox: skips SUID helper entirely, uses seccomp-bpf sandbox instead
-  const linuxSandboxArgs =
-    process.platform === 'linux' && !argv.includes('--no-sandbox')
-      ? ['--no-sandbox', '--disable-setuid-sandbox']
+  // Prefer Chromium's namespace sandbox on Linux and skip only the SUID helper path.
+  // This avoids requiring root-owned chrome-sandbox setup in local/dev environments.
+  const linuxArgs =
+    process.platform === 'linux' && !argv.includes('--disable-setuid-sandbox')
+      ? ['--disable-setuid-sandbox']
       : [];
-  const child = spawn(resolveLocalElectronBin(), ['.', ...linuxSandboxArgs, ...argv], {
+  const child = spawn(resolveLocalElectronBin(), ['.', ...linuxArgs, ...argv], {
     cwd: projectRoot,
     stdio: ['inherit', 'inherit', 'pipe'],
     env: process.env,

@@ -260,3 +260,71 @@ describe('ConnectionPanel BLE error humanization', () => {
     userAgentSpy.mockRestore();
   });
 });
+
+describe('ConnectionPanel Linux BLE path', () => {
+  it('uses Web Bluetooth connect path on Linux instead of noble scanning', async () => {
+    const user = userEvent.setup();
+    vi.clearAllMocks();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+        onProtocolChange={vi.fn()}
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+    expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+    userAgentSpy.mockRestore();
+  });
+
+  it('keeps MeshCore PIN guidance in Linux BLE pairing-related errors', async () => {
+    const user = userEvent.setup();
+    vi.clearAllMocks();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const onConnect = vi
+      .fn()
+      .mockRejectedValue(
+        new Error(
+          'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout.',
+        ),
+      );
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+        onProtocolChange={vi.fn()}
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(await screen.findByText(/Bluetooth Companion mode/i)).toBeInTheDocument();
+    expect(screen.getByText(/paired with your computer using a PIN/i)).toBeInTheDocument();
+    userAgentSpy.mockRestore();
+  });
+});

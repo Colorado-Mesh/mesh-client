@@ -311,3 +311,37 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     );
   });
 });
+
+describe('useMeshCore Linux BLE routing', () => {
+  let userAgentSpy: { mockRestore: () => void } | null = null;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    userAgentSpy = vi
+      .spyOn(window.navigator, 'userAgent', 'get')
+      .mockReturnValue(
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+      );
+    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({ ok: true });
+  });
+
+  afterEach(() => {
+    userAgentSpy?.mockRestore();
+    userAgentSpy = null;
+  });
+
+  it('uses Web Bluetooth path on Linux and does not call Noble IPC connect', async () => {
+    const { result } = renderHook(() => useMeshCore());
+
+    await expect(
+      act(async () => {
+        // Linux path does not require a peripheral ID and should not touch noble IPC.
+        await result.current.connect('ble', undefined, undefined);
+      }),
+    ).rejects.toThrow(/Web Bluetooth is not available|navigator\.bluetooth/i);
+
+    expect(window.electronAPI.connectNobleBle).not.toHaveBeenCalled();
+  });
+});

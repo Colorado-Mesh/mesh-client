@@ -36,6 +36,7 @@ See [development-environment.md](development-environment.md#windows) for Python 
 **Linux-specific:**
 
 - The app uses Web Bluetooth (Chromium's built-in BLE API) which requires no special permissions.
+- Linux BLE uses the in-app Bluetooth picker (triggered from a button click); if no picker appears, restart the app and try Connect again.
 - If the Bluetooth adapter isn't detected, check: `systemctl status bluetooth` and `rfkill list`.
 - If device pairing fails with "Connection attempt failed", try the **"Remove & Re-pair Device"** button in the app, or manually remove via `bluetoothctl`:
   ```bash

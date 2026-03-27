@@ -30,7 +30,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **Known Bugs:**
 
-- **Linux BLE** — uses Web Bluetooth (Chromium's built-in BLE API), which works within the sandbox without special permissions. Requires user gesture to select device.
+- **Linux BLE** — uses Web Bluetooth (Chromium's built-in BLE API), with a user-visible picker and user gesture requirement to select a device.
 
 ---
 
@@ -104,7 +104,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **Connectivity**
 
-- **Bluetooth LE** — pair wirelessly; auto-reconnects on startup with no user gesture required (noble native BLE via BlueZ/CoreBluetooth/WinRT); last device name persists across sessions
+- **Bluetooth LE** — pair wirelessly; on macOS/Windows, startup auto-reconnect can run without a user gesture (Noble backend). On Linux, Web Bluetooth requires user gesture and picker selection.
 - **USB Serial** — plug in via USB; auto-reconnects silently on startup (saved port signature matches the same physical device across re-enumeration)
 - **WiFi / HTTP / TCP** — connect to network-enabled nodes; saves last address for quick reconnect
 - **Dual-mode** — both Meshtastic and MeshCore run simultaneously; use the protocol switcher pill in the header to switch which view is active (the inactive protocol stays connected in the background); per-protocol unread badges (Meshtastic = green, MeshCore = cyan); passive toast notifications when the inactive protocol receives messages
@@ -264,7 +264,8 @@ Both protocols run at the same time. Use the **Meshtastic / MeshCore** switcher 
 After a successful connection, Mesh-Client remembers your last device per protocol. On next launch:
 
 - **Serial** — auto-connects silently in the background (both protocols)
-- **Bluetooth** — auto-scans on launch and reconnects when the last device is discovered (no user gesture required)
+- **Bluetooth (macOS/Windows)** — auto-scans on launch and reconnects when the last device is discovered (no user gesture required)
+- **Bluetooth (Linux)** — Web Bluetooth requires a user gesture; click **Reconnect** or **Connect** to open the picker
 - **WiFi / TCP** — a one-click reconnect card appears; click **Reconnect**
 - **MQTT** — auto-reconnects using saved broker settings (Meshtastic protobuf pipeline; MeshCore JSON v1 adapter — select transport when connecting)
 
@@ -296,17 +297,17 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 
 ### Tech Stack
 
-| Component  | Technology                                                                               |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| Desktop    | Electron                                                                                 |
-| UI         | React 19 + TypeScript                                                                    |
-| Styling    | Tailwind CSS v4                                                                          |
-| Meshtastic | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble |
-| MeshCore   | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                      |
-| Maps       | Leaflet + OpenStreetMap                                                                  |
-| Charts     | Recharts                                                                                 |
-| Database   | SQLite (node:sqlite built-in, via db-compat.ts shim)                                     |
-| Build      | esbuild + Vite + electron-builder                                                        |
+| Component  | Technology                                                                                                                         |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop    | Electron                                                                                                                           |
+| UI         | React 19 + TypeScript                                                                                                              |
+| Styling    | Tailwind CSS v4                                                                                                                    |
+| Meshtastic | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble (macOS/Windows) and Web Bluetooth (Linux) |
+| MeshCore   | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                |
+| Maps       | Leaflet + OpenStreetMap                                                                                                            |
+| Charts     | Recharts                                                                                                                           |
+| Database   | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                               |
+| Build      | esbuild + Vite + electron-builder                                                                                                  |
 
 ### Project Structure
 
@@ -320,7 +321,7 @@ mesh-client/
 ├── src/
 │   ├── main/
 │   │   ├── index.ts              # Window creation, BLE/Serial intercept, IPC (incl. meshcore TCP & MQTT)
-│   │   ├── noble-ble-manager.ts  # BLE via @stoprocent/noble (BlueZ); scan/connect IPC
+│   │   ├── noble-ble-manager.ts  # BLE via @stoprocent/noble (macOS/Windows); scan/connect IPC
 │   │   ├── meshcore-mqtt-adapter.ts  # MeshCore MQTT JSON v1 subscribe/publish
 │   │   ├── log-service.ts        # Log file, console patch, log panel IPC
 │   │   ├── sanitize-log-message.ts  # Log injection sanitization (CodeQL); use at call sites before appendLine
@@ -408,7 +409,7 @@ mesh-client/
 │   ├── entitlements.mac.plist    # macOS signing entitlements (main)
 │   └── entitlements.mac.inherit.plist  # macOS child-process entitlements
 ├── scripts/
-│   ├── rebuild-native.mjs        # Rebuilds @stoprocent/noble for Electron ABI (postinstall)
+│   ├── rebuild-native.mjs        # Rebuilds native modules for Electron ABI (postinstall)
 │   ├── wait-for-dev.mjs          # Waits for Vite dev server before launching Electron
 │   ├── check-log-injection.mjs   # Pre-commit: log call sites use sanitizeLogMessage (CodeQL)
 │   ├── check-db-migrations.mjs   # Pre-commit: migration / schema consistency

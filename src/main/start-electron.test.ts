@@ -37,7 +37,7 @@ describe('start-electron wrapper helpers', () => {
     };
     const text = mod.fedoraLibffmpegRemediation();
     expect(text).toContain('libffmpeg.so could not be loaded');
-    expect(text).toContain('setcap -r');
+    expect(text).toContain('runtime dependencies');
   });
 
   it('prints remediation text for missing Linux display backend', async () => {
