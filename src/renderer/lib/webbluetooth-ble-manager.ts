@@ -287,7 +287,6 @@ export class WebBluetoothManager {
         GATT_CONNECT_TIMEOUT_MS,
         'GATT connect',
       );
-      console.debug(`[WebBluetooth:${this.sessionId}] gatt connected`);
     } catch (err) {
       const domErr = err as DOMException;
       const isPairing = isWebBluetoothPairingError(err);
