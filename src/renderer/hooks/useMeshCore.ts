@@ -284,7 +284,6 @@ class IpcNobleConnection {
         }
 
         async write(bytes: Uint8Array) {
-          console.debug(`[IpcNobleConnection:${this.session}] write ${bytes.length} bytes`);
           await window.electronAPI.nobleBleToRadio(this.session, bytes);
         }
 
@@ -297,7 +296,6 @@ class IpcNobleConnection {
       this.inner = instance;
       const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
         if (sid !== sessionId) return;
-        console.debug(`[IpcNobleConnection:${sessionId}] fromRadio ${bytes.length} bytes`);
         const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes as ArrayBuffer);
         instance.onFrameReceived(frame);
       });

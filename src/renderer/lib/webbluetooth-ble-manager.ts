@@ -101,7 +101,6 @@ export class WebBluetoothManager {
 
     this.toDevice = new WritableStream<Uint8Array>({
       write: async (chunk) => {
-        console.debug('[WebBluetoothManager] toRadio bytes', chunk.length);
         await this.writeToRadio(chunk);
       },
       close: () => {
@@ -244,9 +243,8 @@ export class WebBluetoothManager {
     return device;
   }
 
-  private enqueueFromRadioBytes(bytes: Uint8Array, source: 'notify' | 'read-pump'): void {
+  private enqueueFromRadioBytes(bytes: Uint8Array): void {
     if (bytes.length === 0) return;
-    console.debug(`[WebBluetooth:${this.sessionId}] fromRadio ${source}: ${bytes.length} bytes`);
     if (this._fromDeviceController) {
       this._fromDeviceController.enqueue({ type: 'packet', data: bytes });
     }
@@ -270,7 +268,7 @@ export class WebBluetoothManager {
       }
       if (!dataView.byteLength) break;
       const bytes = new Uint8Array(dataView.buffer, dataView.byteOffset, dataView.byteLength);
-      this.enqueueFromRadioBytes(bytes, 'read-pump');
+      this.enqueueFromRadioBytes(bytes);
       await Promise.resolve();
     }
   }
@@ -385,7 +383,7 @@ export class WebBluetoothManager {
       const value = target.value;
       if (value && value.byteLength > 0) {
         const slicedBytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-        this.enqueueFromRadioBytes(slicedBytes, 'notify');
+        this.enqueueFromRadioBytes(slicedBytes);
       }
     };
 

@@ -33,7 +33,6 @@ export class TransportWebBluetoothIpc implements Types.Transport {
 
     this.toDevice = new WritableStream<Uint8Array>({
       write: async (chunk) => {
-        console.debug('[TransportWebBluetoothIpc] toRadio bytes', chunk.length);
         if (this._bleManager) {
           await this._bleManager.writeToRadio(chunk);
         }
@@ -91,26 +90,16 @@ export class TransportWebBluetoothIpc implements Types.Transport {
   }
 
   private async _readLoop(reader: ReadableStreamDefaultReader<Types.DeviceOutput>): Promise<void> {
-    console.debug('[TransportWebBluetoothIpc] _readLoop: started');
     try {
       while (true) {
         const { done, value } = await reader.read();
-        console.debug('[TransportWebBluetoothIpc] _readLoop: read result', {
-          done,
-          hasValue: !!value,
-          hasController: !!this._fromDeviceController,
-        });
         if (done) {
-          console.debug('[TransportWebBluetoothIpc] _readLoop: done=true, exiting');
           break;
         }
         if (!this._fromDeviceController) {
-          console.debug('[TransportWebBluetoothIpc] _readLoop: controller is null, exiting');
           break;
         }
-        console.debug('[TransportWebBluetoothIpc] _readLoop: enqueuing', value.type, 'data');
         this._fromDeviceController.enqueue(value);
-        console.debug('[TransportWebBluetoothIpc] _readLoop: enqueue completed');
       }
     } catch (err) {
       console.error('[TransportWebBluetoothIpc] _readLoop: error:', err);
@@ -120,11 +109,10 @@ export class TransportWebBluetoothIpc implements Types.Transport {
       // Release the reader to prevent memory leaks
       try {
         reader.releaseLock();
-      } catch (releaseErr) {
-        console.debug('[TransportWebBluetoothIpc] _readLoop: error releasing reader:', releaseErr);
+      } catch {
+        // catch-no-log-ok releaseLock after stream teardown
       }
     }
-    console.debug('[TransportWebBluetoothIpc] _readLoop: exited');
   }
 
   async disconnect(): Promise<void> {

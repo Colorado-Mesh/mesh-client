@@ -941,15 +941,19 @@ function createWindow() {
     pendingBluetoothCallback = callback;
 
     if (isNewRequest) {
-      // Auto-cancel after 60s to prevent indefinite block if renderer unmounts mid-flow
+      // MeshCore Linux may need bluetoothctl pairing + PIN before resolving requestDevice();
+      // 60s was too short and left pendingBluetoothCallback null so selectBluetoothDevice was ignored.
+      const selectionStaleMs = 300_000;
       setTimeout(() => {
         if (pendingBluetoothCallback === callback) {
-          console.warn('[IPC] Bluetooth device selection stale after 60s — auto-cancelling');
+          console.warn(
+            `[IPC] Bluetooth device selection stale after ${selectionStaleMs / 1000}s — auto-cancelling`,
+          );
           pendingBluetoothCallback('');
           pendingBluetoothCallback = null;
           lastBluetoothDeviceIds.clear();
         }
-      }, 60_000);
+      }, selectionStaleMs);
     }
 
     console.debug(`[IPC] select-bluetooth-device: ${deviceList.length} device(s) found`);
@@ -1203,7 +1207,12 @@ ipcMain.on('serial-port-cancelled', () => {
 
 // ─── IPC: Bluetooth device selected by user (Linux Web Bluetooth) ────
 ipcMain.on('bluetooth-device-selected', (_event, deviceId: unknown) => {
-  if (!pendingBluetoothCallback) return;
+  if (!pendingBluetoothCallback) {
+    console.warn(
+      '[IPC] bluetooth-device-selected: no pending selection (ignored — may have timed out or already resolved)',
+    );
+    return;
+  }
   const id = typeof deviceId === 'string' ? deviceId : '';
   if (id !== '' && !lastBluetoothDeviceIds.has(id)) {
     console.warn('[IPC] bluetooth-device-selected: ignoring unknown deviceId');

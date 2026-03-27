@@ -220,6 +220,10 @@ function parseBluetoothctlPairedState(info: string): 'yes' | 'no' | 'unknown' {
   return 'unknown';
 }
 
+/** Shown when MeshCore Linux reconnect finds the saved device is not OS-paired (BlueZ). */
+const MESHCORE_LINUX_SAVED_UNPAIRED_HINT =
+  'Saved device is not paired in Linux Bluetooth — select it below to enter PIN and connect.';
+
 function shouldForgetGrantedWebBluetoothDevice(
   device: BluetoothDevice,
   macAddress: string,
@@ -505,6 +509,7 @@ export default function ConnectionPanel({
   const [connectionStage, setConnectionStage] = useState('');
   const [showRePairButton, setShowRePairButton] = useState(false);
   const [showPinPrompt, setShowPinPrompt] = useState(false);
+  const showPinPromptRef = useRef(false);
   const [manualPairingFallback, setManualPairingFallback] = useState(false);
   const [pinInputValue, setPinInputValue] = useState('');
   const pinPromptSeenSinceRePairRef = useRef(false);
@@ -659,6 +664,10 @@ export default function ConnectionPanel({
    * before resolving `requestDevice()` — otherwise GATT connects without OS pairing and fails.
    */
   const pendingMeshcoreLinuxWbMacRef = useRef<string | null>(null);
+  /** Linux Web Bluetooth: after the user picks a device, discovery must not reopen the embedded picker. */
+  const bleLinuxPickerSelectionResolvedRef = useRef(false);
+  /** MeshCore Linux reconnect: dedupe concurrent bluetoothGetInfo checks from repeated discovery events. */
+  const meshcoreLinuxReconnectPairingCheckRef = useRef(false);
   const lastConnectionBleDeviceNameFallbackRef = useRef(lastConnection?.bleDeviceName);
   lastConnectionBleDeviceNameFallbackRef.current = lastConnection?.bleDeviceName;
   /** Mount-only auto-connect reads latest props/state via refs so the effect can stay `[]`. */
@@ -680,9 +689,14 @@ export default function ConnectionPanel({
     pendingMeshcoreLinuxWbMacRef.current = null;
   }, [protocol]);
 
+  useEffect(() => {
+    showPinPromptRef.current = showPinPrompt;
+  }, [showPinPrompt]);
+
   // Update connection stage based on state transitions, and save last connection on success
   useEffect(() => {
     if (state.status === 'connecting') {
+      if (showPinPrompt) return;
       if (showBlePicker) setConnectionStage('Select your device below');
       else if (showSerialPicker) setConnectionStage('Select a serial port below');
       else if (connectionType === 'ble' && isAutoConnectingRef.current) {
@@ -736,6 +750,7 @@ export default function ConnectionPanel({
     state.status,
     state.connectionType,
     showBlePicker,
+    showPinPrompt,
     showSerialPicker,
     httpAddress,
     activeHostAddress,
@@ -792,12 +807,46 @@ export default function ConnectionPanel({
         lastId &&
         devices.some((d) => d.deviceId === lastId)
       ) {
+        // MeshCore must OS-pair before GATT (same as handleSelectBleDevice). Auto-selecting here
+        // skipped that gate and left reconnect stuck or broken for unpaired devices.
+        if (protocol === 'meshcore') {
+          if (meshcoreLinuxReconnectPairingCheckRef.current) return;
+          meshcoreLinuxReconnectPairingCheckRef.current = true;
+          void (async () => {
+            try {
+              const info = await window.electronAPI.bluetoothGetInfo(lastId);
+              const paired = parseBluetoothctlPairedState(info);
+              if (paired === 'yes') {
+                bleLinuxPickerSelectionResolvedRef.current = true;
+                setShowBlePicker(false);
+                setConnectionStage('Connecting to saved Bluetooth device…');
+                window.electronAPI.selectBluetoothDevice(lastId);
+                return;
+              }
+            } catch {
+              // catch-no-log-ok — show picker to complete MeshCore pairing flow
+            } finally {
+              meshcoreLinuxReconnectPairingCheckRef.current = false;
+            }
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setShowBlePicker(true);
+            setConnectionStage(MESHCORE_LINUX_SAVED_UNPAIRED_HINT);
+          })();
+          return;
+        }
+        bleLinuxPickerSelectionResolvedRef.current = true;
         setShowBlePicker(false);
         setConnectionStage('Connecting to saved Bluetooth device…');
         window.electronAPI.selectBluetoothDevice(lastId);
         return;
       }
-      if (connectionTypeRef.current === 'ble') {
+      const shouldShowEmbeddedPicker =
+        connectionTypeRef.current === 'ble' &&
+        !bleLinuxPickerSelectionResolvedRef.current &&
+        !showPinPromptRef.current &&
+        !pendingMeshcoreLinuxWbMacRef.current;
+      if (shouldShowEmbeddedPicker) {
         setShowBlePicker(true);
         setConnectionStage('Select your Bluetooth device below');
       }
@@ -957,6 +1006,7 @@ export default function ConnectionPanel({
   const handlePinCancel = useCallback(() => {
     if (pendingMeshcoreLinuxWbMacRef.current) {
       pendingMeshcoreLinuxWbMacRef.current = null;
+      bleLinuxPickerSelectionResolvedRef.current = false;
       window.electronAPI.cancelBluetoothSelection();
       setShowPinPrompt(false);
       setPinInputValue('');
@@ -1011,12 +1061,16 @@ export default function ConnectionPanel({
     setSerialPorts([]);
     setShowBlePicker(false);
     setShowSerialPicker(false);
+    bleLinuxPickerSelectionResolvedRef.current = false;
     setConnectionStage('Please wait...');
 
     if (connectionType === 'ble') {
       if (isLinux) {
         console.debug('[ConnectionPanel] handleConnect Linux BLE path');
         setConnectionStage('Select your Bluetooth device...');
+        // Same-tick IPC: select-bluetooth-device can fire before React commits connectionType;
+        // discovery uses connectionTypeRef for shouldShowEmbeddedPicker.
+        connectionTypeRef.current = 'ble';
         try {
           console.debug('[ConnectionPanel] handleConnect calling onConnect');
           await onConnect('ble', undefined);
@@ -1115,6 +1169,7 @@ export default function ConnectionPanel({
     }
     setShowBlePicker(false);
     setShowSerialPicker(false);
+    bleLinuxPickerSelectionResolvedRef.current = false;
     setConnecting(false);
     setConnectionStage('');
     // Ensure the underlying connection attempt is properly torn down
@@ -1144,6 +1199,9 @@ export default function ConnectionPanel({
       // Store MAC address for potential re-pairing on Linux
       lastSelectedBleMacRef.current = deviceId;
       setShowBlePicker(false);
+      if (isLinux) {
+        bleLinuxPickerSelectionResolvedRef.current = true;
+      }
       setShowRePairButton(false);
       if (isLinux && protocol === 'meshcore') {
         setConnectionStage('Checking Bluetooth pairing…');
@@ -1278,6 +1336,8 @@ export default function ConnectionPanel({
         setConnectionType('ble');
         setBleDevices([]);
         setShowBlePicker(false);
+        bleLinuxPickerSelectionResolvedRef.current = false;
+        meshcoreLinuxReconnectPairingCheckRef.current = false;
         isAutoConnectingRef.current = true;
         setIsAutoConnecting(true);
         setConnecting(true);
@@ -1285,6 +1345,8 @@ export default function ConnectionPanel({
           // Web Bluetooth path: use onConnect directly (NOT connectAutomatic which skips BLE for MeshCore)
           // This is a user gesture, so requestDevice() is allowed.
           setConnectionStage('Reconnecting to last Bluetooth device…');
+          // Same-tick IPC: discovery may run before setConnectionType('ble') commits; picker gating uses connectionTypeRef.
+          connectionTypeRef.current = 'ble';
           void onConnect('ble', undefined).catch((err: unknown) => {
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
@@ -1410,22 +1472,32 @@ export default function ConnectionPanel({
         <Spinner className="w-12 h-12 text-bright-green" />
         <div className="text-center space-y-2">
           <h2 className="text-xl font-semibold text-gray-200">
-            {showBlePicker
-              ? 'Scanning for Bluetooth devices…'
-              : isAutoConnecting
-                ? 'Auto-connecting…'
-                : 'Connecting…'}
+            {showPinPrompt
+              ? 'Pair with your device'
+              : showBlePicker
+                ? 'Scanning for Bluetooth devices…'
+                : isAutoConnecting
+                  ? 'Auto-connecting…'
+                  : 'Connecting…'}
           </h2>
           <div role="status" aria-live="polite" aria-atomic="true">
-            <p className="text-sm text-muted">{connectionStage}</p>
+            <p
+              className={
+                connectionStage === MESHCORE_LINUX_SAVED_UNPAIRED_HINT
+                  ? 'text-sm text-amber-200 border border-amber-500/45 bg-amber-950/40 rounded-lg px-4 py-3'
+                  : 'text-sm text-muted'
+              }
+            >
+              {connectionStage}
+            </p>
             <p className="mt-1 text-xs text-muted/80">
               For best results, stay on this tab until the device has finished connecting.
             </p>
           </div>
         </div>
 
-        {/* Embedded BLE Device Picker */}
-        {showBlePicker && (
+        {/* Embedded BLE Device Picker — hide while PIN entry is primary (Linux pairing / MeshCore pre-connect) */}
+        {showBlePicker && !showPinPrompt && (
           <div
             role="region"
             aria-labelledby="ble-device-picker-heading"
