@@ -654,7 +654,7 @@ function ChatPanel({
   const closeDmTab = useCallback(
     (nodeNum: number) => {
       setOpenDmTabs((prev) => prev.filter((n) => n !== nodeNum));
-      if (protocol === 'meshtastic' && inferredDmTabSet.has(nodeNum)) {
+      if (inferredDmTabSet.has(nodeNum)) {
         const dmCount = inferredDmTabs.get(nodeNum) ?? 0;
         setDismissedDmTabs((prev) => ({ ...prev, [nodeNum]: dmCount }));
       }
@@ -669,7 +669,7 @@ function ChatPanel({
         }
       }
     },
-    [activeDmNode, inferredDmTabSet, inferredDmTabs, protocol, visibleDmTabs],
+    [activeDmNode, inferredDmTabSet, inferredDmTabs, visibleDmTabs],
   );
 
   function formatTime(ts: number): string {
@@ -877,19 +877,17 @@ function ChatPanel({
               >
                 {getDmLabel(nodeNum)}
               </button>
-              {protocol === 'meshtastic' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeDmTab(nodeNum);
-                  }}
-                  aria-label="x"
-                  className="ml-0.5 text-muted hover:text-white text-[10px] leading-none"
-                  title="Close DM"
-                >
-                  x
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  closeDmTab(nodeNum);
+                }}
+                aria-label="x"
+                className="ml-0.5 text-muted hover:text-white text-[10px] leading-none"
+                title="Close DM"
+              >
+                x
+              </button>
             </div>
           ))
         )}

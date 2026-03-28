@@ -373,6 +373,114 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
   });
 
+  it('shows close button for inferred DM tabs in MeshCore', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshcore"
+          isConnected
+          myNodeNum={1}
+          nodes={
+            new Map([
+              [
+                2,
+                {
+                  node_id: 2,
+                  long_name: 'Alice',
+                  short_name: 'Alice',
+                  hw_model: '',
+                  snr: 0,
+                  battery: 0,
+                  last_heard: Date.now(),
+                  latitude: null,
+                  longitude: null,
+                },
+              ],
+            ])
+          }
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'Private hello',
+              channel: -1,
+              timestamp: Date.now(),
+              status: 'acked',
+              to: 1,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByTitle('Close DM')).toBeInTheDocument();
+  });
+
+  it('allows closing inferred DM tab in MeshCore and does not resurface without new messages', async () => {
+    const user = userEvent.setup();
+    const ts = Date.now();
+    const messages = [
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Private hello',
+        channel: -1,
+        timestamp: ts,
+        status: 'acked' as const,
+        to: 1,
+      },
+    ];
+    const nodes = new Map([
+      [
+        2,
+        {
+          node_id: 2,
+          long_name: 'Alice',
+          short_name: 'Alice',
+          hw_model: '',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+        },
+      ],
+    ]);
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshcore"
+          isConnected
+          myNodeNum={1}
+          nodes={nodes}
+          messages={messages}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+    await user.click(screen.getByTitle('Close DM'));
+    expect(screen.queryByRole('button', { name: 'Alice' })).not.toBeInTheDocument();
+
+    // Re-render with same messages — tab should stay dismissed
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshcore"
+          isConnected
+          myNodeNum={1}
+          nodes={nodes}
+          messages={messages}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Alice' })).not.toBeInTheDocument();
+  });
+
   it('shows role="alert" when onSend rejects', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn().mockRejectedValue(new Error('send failed'));
