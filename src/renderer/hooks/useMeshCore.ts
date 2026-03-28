@@ -771,6 +771,9 @@ export function useMeshCore() {
   const [meshcoreNodeTelemetry, setMeshcoreNodeTelemetry] = useState<
     Map<number, MeshCoreNodeTelemetry>
   >(new Map());
+  const [meshcoreTelemetryErrors, setMeshcoreTelemetryErrors] = useState<Map<number, string>>(
+    new Map(),
+  );
   const [meshcoreNeighbors, setMeshcoreNeighbors] = useState<Map<number, MeshCoreNeighborResult>>(
     new Map(),
   );
@@ -2167,6 +2170,7 @@ export function useMeshCore() {
     setMeshcoreTraceResults(new Map());
     setMeshcoreNodeStatus(new Map());
     setMeshcoreNodeTelemetry(new Map());
+    setMeshcoreTelemetryErrors(new Map());
     setMeshcoreNeighbors(new Map());
     setEnvironmentTelemetry([]);
     setState(INITIAL_STATE);
@@ -2634,12 +2638,33 @@ export function useMeshCore() {
   );
 
   const requestTelemetry = useCallback(async (nodeId: number) => {
+    const TELEMTRY_TIMEOUT_MS = 10000;
+    setMeshcoreTelemetryErrors((prev) => {
+      const next = new Map(prev);
+      next.delete(nodeId);
+      return next;
+    });
     const pubKey = pubKeyMapRef.current.get(nodeId);
-    if (!pubKey || !connRef.current) return;
+    if (!pubKey) {
+      setMeshcoreTelemetryErrors((prev) => {
+        const next = new Map(prev);
+        next.set(nodeId, 'Node not found (no encryption key)');
+        return next;
+      });
+      return;
+    }
+    if (!connRef.current) {
+      setMeshcoreTelemetryErrors((prev) => {
+        const next = new Map(prev);
+        next.set(nodeId, 'Not connected to device');
+        return next;
+      });
+      return;
+    }
     console.debug('[useMeshCore] requestTelemetry nodeId=', nodeId.toString(16).toUpperCase());
     try {
       await meshcoreTryRepeaterLogin(connRef.current, pubKey);
-      const raw = await connRef.current.getTelemetry(pubKey);
+      const raw = await connRef.current.getTelemetry(pubKey, TELEMTRY_TIMEOUT_MS);
       let entries: CayenneLppEntry[] = [];
       try {
         entries = CayenneLpp.parse(raw.lppSensorData) as CayenneLppEntry[];
@@ -2675,6 +2700,11 @@ export function useMeshCore() {
         next.set(nodeId, result);
         return next;
       });
+      setMeshcoreTelemetryErrors((prev) => {
+        const next = new Map(prev);
+        next.delete(nodeId);
+        return next;
+      });
       const hasEnv =
         result.temperature != null ||
         result.relativeHumidity != null ||
@@ -2690,7 +2720,18 @@ export function useMeshCore() {
         setEnvironmentTelemetry((prev) => [...prev, pt].slice(-MAX_ENV_TELEMETRY_POINTS));
       }
       console.debug('[useMeshCore] requestTelemetry result:', result);
-    } catch (e) {
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : String(e);
+      const friendlyErr = errMsg.toLowerCase().includes('timeout')
+        ? 'Request timed out'
+        : errMsg.toLowerCase().includes('auth') || errMsg.toLowerCase().includes('login')
+          ? 'Authentication failed'
+          : `Failed: ${errMsg}`;
+      setMeshcoreTelemetryErrors((prev) => {
+        const next = new Map(prev);
+        next.set(nodeId, friendlyErr);
+        return next;
+      });
       console.warn('[useMeshCore] requestTelemetry error', e);
     }
   }, []);
@@ -3094,6 +3135,7 @@ export function useMeshCore() {
     meshcoreTraceResults,
     meshcoreNodeStatus,
     meshcoreNodeTelemetry,
+    meshcoreTelemetryErrors,
     meshcoreNeighbors,
     manualAddContacts,
     // Stubs for interface compatibility

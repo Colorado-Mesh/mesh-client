@@ -1167,6 +1167,7 @@ export default function App() {
                           meshcoreNeighbors={meshcoreDevice.meshcoreNeighbors}
                           onRequestTelemetry={meshcoreDevice.requestTelemetry}
                           meshcoreTelemetry={meshcoreDevice.meshcoreNodeTelemetry}
+                          meshcoreTelemetryErrors={meshcoreDevice.meshcoreTelemetryErrors}
                           onSelectRepeater={(node) => {
                             setSelectedNodeId(node.node_id);
                           }}

@@ -37,6 +37,7 @@ interface Props {
   meshcoreNeighbors?: Map<number, MeshCoreNeighborResult>;
   onRequestTelemetry?: (nodeId: number) => Promise<void>;
   meshcoreTelemetry?: Map<number, MeshCoreNodeTelemetry>;
+  meshcoreTelemetryErrors?: Map<number, string>;
   onSelectRepeater?: (node: MeshNode) => void;
 }
 
@@ -134,6 +135,7 @@ export default function RepeatersPanel({
   meshcoreNeighbors,
   onRequestTelemetry,
   meshcoreTelemetry,
+  meshcoreTelemetryErrors,
   onSelectRepeater,
 }: Props) {
   const { addToast } = useToast();
@@ -505,6 +507,7 @@ export default function RepeatersPanel({
                 const isPathExpanded = expandedPath.has(node.node_id);
                 const neighborData = meshcoreNeighbors?.get(node.node_id);
                 const telemetryData = meshcoreTelemetry?.get(node.node_id);
+                const telemetryError = meshcoreTelemetryErrors?.get(node.node_id);
                 const hasTraceResult = traceResult && traceResult.hops.length > 0;
 
                 return (
@@ -800,13 +803,16 @@ export default function RepeatersPanel({
                                 )}
                             </div>
                           ) : (
-                            <div className="text-xs text-gray-500 space-y-1">
-                              <p>
-                                No telemetry response yet (timeout, auth, or repeater has no LPP
-                                sensors). Try Sensor (LPP) again.
-                              </p>
+                            <div className="text-xs space-y-1">
+                              {telemetryError ? (
+                                <p className="text-red-400">{telemetryError}</p>
+                              ) : (
+                                <p className="text-gray-500">
+                                  No telemetry response yet. Try Sensor (LPP) again.
+                                </p>
+                              )}
                               {node.latitude != null && node.longitude != null ? (
-                                <p>
+                                <p className="text-gray-500">
                                   Map position comes from advert/contact data, not sensor telemetry.
                                 </p>
                               ) : null}
