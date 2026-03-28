@@ -10,6 +10,7 @@ import {
 
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { MeshProtocol } from '../lib/types';
+import LogAnalyzeModal from './LogAnalyzeModal';
 
 const LOG_LEVEL_FILTERS_KEY = 'mesh-client:logLevelFilters';
 const LOG_PANEL_WIDTH_KEY = 'mesh-client:logPanelWidth';
@@ -149,6 +150,7 @@ export default function LogPanel({
   const [logClearError, setLogClearError] = useState<string | null>(null);
   const [logSource, setLogSource] = useState<'app' | 'device'>('app');
   const [panelWidth, setPanelWidth] = useState(readPanelWidth);
+  const [analyzeModalOpen, setAnalyzeModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
   const dragStartX = useRef(0);
@@ -413,11 +415,21 @@ export default function LogPanel({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={handleExport}
-              aria-label="Export log…"
+              onClick={() => {
+                setAnalyzeModalOpen(true);
+              }}
+              aria-label="Analyze log"
               className="flex-1 px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-gray-200"
             >
-              Export log…
+              Analyze
+            </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              aria-label="Export log…"
+              className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
+            >
+              Export
             </button>
             <button
               type="button"
@@ -425,7 +437,7 @@ export default function LogPanel({
               aria-label="Delete log"
               className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
             >
-              Delete log
+              Delete
             </button>
           </div>
           {logClearError && (
@@ -482,39 +494,63 @@ export default function LogPanel({
 
   if (isOverlay) {
     return (
-      <div
-        className="fixed inset-y-0 right-0 z-[1100] flex flex-col min-h-0 border-l border-gray-700 bg-deep-black w-full max-w-md"
-        role="complementary"
-        aria-label="Application log"
-        aria-labelledby="log-panel-landmark-title"
-      >
-        <div className="flex items-center justify-end shrink-0 px-2 py-1.5 border-b border-gray-700">
-          <button
-            type="button"
-            onClick={() => onClose?.()}
-            aria-label="Close"
-            className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
-          >
-            Close
-          </button>
+      <>
+        <div
+          className="fixed inset-y-0 right-0 z-[1100] flex flex-col min-h-0 border-l border-gray-700 bg-deep-black w-full max-w-md"
+          role="complementary"
+          aria-label="Application log"
+          aria-labelledby="log-panel-landmark-title"
+        >
+          <div className="flex items-center justify-end shrink-0 px-2 py-1.5 border-b border-gray-700">
+            <button
+              type="button"
+              onClick={() => onClose?.()}
+              aria-label="Close"
+              className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
+            >
+              Close
+            </button>
+          </div>
+          {panel}
         </div>
-        {panel}
-      </div>
+        {analyzeModalOpen && (
+          <LogAnalyzeModal
+            isOpen={analyzeModalOpen}
+            onClose={() => {
+              setAnalyzeModalOpen(false);
+            }}
+            entries={logSource === 'device' ? allDeviceLogs : appEntries}
+            protocol={protocol ?? 'meshtastic'}
+          />
+        )}
+      </>
     );
   }
 
   return (
-    <div
-      className="flex shrink-0 min-h-0 border-l border-gray-700 bg-deep-black"
-      style={{ width: panelWidth }}
-    >
-      <button
-        type="button"
-        aria-label="Drag to resize log panel"
-        className="w-1.5 shrink-0 cursor-col-resize hover:bg-slate-600 bg-gray-800/50 border-0 p-0 self-stretch"
-        onMouseDown={onResizeMouseDown}
-      />
-      {panel}
-    </div>
+    <>
+      <div
+        className="flex shrink-0 min-h-0 border-l border-gray-700 bg-deep-black"
+        style={{ width: panelWidth }}
+      >
+        <button
+          type="button"
+          aria-label="Drag to resize log panel"
+          className="w-1.5 shrink-0 cursor-col-resize hover:bg-slate-600 bg-gray-800/50 border-0 p-0 self-stretch"
+          onMouseDown={onResizeMouseDown}
+        />
+        {panel}
+      </div>
+      {analyzeModalOpen && (
+        <LogAnalyzeModal
+          isOpen={analyzeModalOpen}
+          onClose={() => {
+            setAnalyzeModalOpen(false);
+          }}
+          entries={logSource === 'device' ? allDeviceLogs : appEntries}
+          protocol={protocol ?? 'meshtastic'}
+        />
+      )}
+    </>
   );
 }
