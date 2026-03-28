@@ -10,6 +10,7 @@ import {
 
 import ChatPanel from './components/ChatPanel';
 import ConnectionPanel from './components/ConnectionPanel';
+import ContactGroupsModal from './components/ContactGroupsModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import LogPanel from './components/LogPanel';
@@ -20,6 +21,7 @@ import { LinkIcon } from './components/SignalBars';
 import Tabs from './components/Tabs';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
+import { useContactGroups } from './hooks/useContactGroups';
 import { useDevice } from './hooks/useDevice';
 import { useMeshCore } from './hooks/useMeshCore';
 import {
@@ -246,6 +248,10 @@ export default function App() {
 
   const meshtasticDevice = useDevice();
   const meshcoreDevice = useMeshCore();
+  const contactGroups = useContactGroups(
+    protocol === 'meshcore' ? meshcoreDevice.selfNodeId : null,
+  );
+  const [showGroupsModal, setShowGroupsModal] = useState(false);
   const device =
     protocol === 'meshcore'
       ? (meshcoreDevice as unknown as typeof meshtasticDevice)
@@ -1019,6 +1025,23 @@ export default function App() {
                       locationFilter={locationFilter}
                       onToggleFavorite={device.setNodeFavorited}
                       mode={protocol}
+                      groups={protocol === 'meshcore' ? contactGroups.groups : undefined}
+                      selectedGroupId={
+                        protocol === 'meshcore' ? contactGroups.selectedGroupId : undefined
+                      }
+                      onGroupChange={
+                        protocol === 'meshcore' ? contactGroups.setSelectedGroupId : undefined
+                      }
+                      onManageGroups={
+                        protocol === 'meshcore'
+                          ? () => {
+                              setShowGroupsModal(true);
+                            }
+                          : undefined
+                      }
+                      groupMemberIds={
+                        protocol === 'meshcore' ? contactGroups.groupMemberIds : undefined
+                      }
                     />
                   ) : null}
                 </div>
@@ -1408,6 +1431,24 @@ export default function App() {
             setActiveTab(1);
           }}
         />
+
+        {/* Contact Groups Modal */}
+        {showGroupsModal && protocol === 'meshcore' && (
+          <ContactGroupsModal
+            groups={contactGroups.groups}
+            contacts={meshcoreDevice.nodes}
+            onClose={() => {
+              setShowGroupsModal(false);
+            }}
+            onCreate={contactGroups.createGroup}
+            onRename={contactGroups.updateGroup}
+            onDelete={contactGroups.deleteGroup}
+            onAddMember={contactGroups.addMember}
+            onRemoveMember={contactGroups.removeMember}
+            onLoadMembers={contactGroups.loadMembers}
+            memberIds={contactGroups.groupMemberIds}
+          />
+        )}
 
         {/* Node Detail Modal — rendered outside main for proper z-indexing */}
         <NodeDetailModal

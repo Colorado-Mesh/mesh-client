@@ -85,6 +85,13 @@ const electronAPIMock = {
     savePositionHistory: vi.fn().mockResolvedValue(undefined),
     getPositionHistory: vi.fn().mockResolvedValue([]),
     clearPositionHistory: vi.fn().mockResolvedValue(undefined),
+    getContactGroups: vi.fn().mockResolvedValue([]),
+    createContactGroup: vi.fn().mockResolvedValue(1),
+    updateContactGroup: vi.fn().mockResolvedValue(undefined),
+    deleteContactGroup: vi.fn().mockResolvedValue(undefined),
+    addContactToGroup: vi.fn().mockResolvedValue(undefined),
+    removeContactFromGroup: vi.fn().mockResolvedValue(undefined),
+    getContactGroupMembers: vi.fn().mockResolvedValue([]),
   },
   mqtt: {
     connect: vi.fn().mockResolvedValue(undefined),

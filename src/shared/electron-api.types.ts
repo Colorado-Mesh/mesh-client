@@ -26,6 +26,12 @@ export interface SerialPort {
   productId?: string;
 }
 
+export interface ContactGroup {
+  group_id: number;
+  name: string;
+  member_count: number;
+}
+
 export interface LogEntry {
   ts: number;
   level: string;
@@ -143,6 +149,13 @@ export interface ElectronAPI {
     ) => Promise<unknown>;
     getPositionHistory: (sinceMs: number) => Promise<unknown>;
     clearPositionHistory: () => Promise<unknown>;
+    getContactGroups: (selfNodeId: number) => Promise<ContactGroup[]>;
+    createContactGroup: (selfNodeId: number, name: string) => Promise<number>;
+    updateContactGroup: (groupId: number, name: string) => Promise<void>;
+    deleteContactGroup: (groupId: number) => Promise<void>;
+    addContactToGroup: (groupId: number, contactNodeId: number) => Promise<void>;
+    removeContactFromGroup: (groupId: number, contactNodeId: number) => Promise<void>;
+    getContactGroupMembers: (groupId: number) => Promise<number[]>;
   };
 
   // ─── MQTT ────────────────────────────────────────────────────────────────────

@@ -125,6 +125,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ) => ipcRenderer.invoke('db:savePositionHistory', nodeId, lat, lon, recordedAt, source),
     getPositionHistory: (sinceMs: number) => ipcRenderer.invoke('db:getPositionHistory', sinceMs),
     clearPositionHistory: () => ipcRenderer.invoke('db:clearPositionHistory'),
+    getContactGroups: (selfNodeId: number) => ipcRenderer.invoke('db:getContactGroups', selfNodeId),
+    createContactGroup: (selfNodeId: number, name: string) =>
+      ipcRenderer.invoke('db:createContactGroup', selfNodeId, name),
+    updateContactGroup: (groupId: number, name: string) =>
+      ipcRenderer.invoke('db:updateContactGroup', groupId, name),
+    deleteContactGroup: (groupId: number) => ipcRenderer.invoke('db:deleteContactGroup', groupId),
+    addContactToGroup: (groupId: number, contactNodeId: number) =>
+      ipcRenderer.invoke('db:addContactToGroup', groupId, contactNodeId),
+    removeContactFromGroup: (groupId: number, contactNodeId: number) =>
+      ipcRenderer.invoke('db:removeContactFromGroup', groupId, contactNodeId),
+    getContactGroupMembers: (groupId: number) =>
+      ipcRenderer.invoke('db:getContactGroupMembers', groupId),
   },
 
   // ─── MQTT ──────────────────────────────────────────────────────

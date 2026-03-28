@@ -171,6 +171,7 @@ export class NodeSqliteDB {
       'synchronous',
       'busy_timeout',
       'user_version',
+      'foreign_keys',
     ]);
     const eqIdx = str.indexOf('=');
     if (eqIdx !== -1) {

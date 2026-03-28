@@ -393,6 +393,15 @@ declare global {
           }[]
         >;
         clearPositionHistory: () => Promise<unknown>;
+        getContactGroups: (
+          selfNodeId: number,
+        ) => Promise<{ group_id: number; name: string; member_count: number }[]>;
+        createContactGroup: (selfNodeId: number, name: string) => Promise<number>;
+        updateContactGroup: (groupId: number, name: string) => Promise<void>;
+        deleteContactGroup: (groupId: number) => Promise<void>;
+        addContactToGroup: (groupId: number, contactNodeId: number) => Promise<void>;
+        removeContactFromGroup: (groupId: number, contactNodeId: number) => Promise<void>;
+        getContactGroupMembers: (groupId: number) => Promise<number[]>;
       };
       mqtt: {
         connect: (settings: MQTTSettings) => Promise<void>;
