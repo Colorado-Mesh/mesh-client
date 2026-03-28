@@ -22,12 +22,6 @@ import { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 import { useToast } from './Toast';
 
-interface ImportResult {
-  imported: number;
-  skipped: number;
-  errors: string[];
-}
-
 interface Props {
   nodes: Map<number, MeshNode>;
   meshcoreNodeStatus: Map<number, MeshCoreRepeaterStatus>;
@@ -36,7 +30,6 @@ interface Props {
   meshcorePingErrors?: Map<number, string>;
   onRequestRepeaterStatus: (nodeId: number) => Promise<void>;
   onPing: (nodeId: number) => Promise<void>;
-  onImportRepeaters: () => Promise<ImportResult>;
   onDeleteRepeater: (nodeId: number) => Promise<void>;
   isConnected: boolean;
   onSendAdvert?: () => Promise<void>;
@@ -140,7 +133,6 @@ export default function RepeatersPanel({
   meshcorePingErrors,
   onRequestRepeaterStatus,
   onPing,
-  onImportRepeaters,
   onDeleteRepeater,
   isConnected,
   onSendAdvert,
@@ -166,7 +158,6 @@ export default function RepeatersPanel({
   const [pingLoadingSet, setPingLoadingSet] = useState<Set<number>>(new Set());
   const [deleteLoadingSet, setDeleteLoadingSet] = useState<Set<number>>(new Set());
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  const [importLoading, setImportLoading] = useState(false);
   const [advertLoading, setAdvertLoading] = useState(false);
   const [syncClockLoading, setSyncClockLoading] = useState(false);
   const [rebootConfirm, setRebootConfirm] = useState(false);
@@ -236,24 +227,6 @@ export default function RepeatersPanel({
       cancelled = true;
     };
   }, [isConnected, repeaterIdsKey, onRequestRepeaterStatus, remoteAuthReady]);
-
-  const handleImport = async () => {
-    setImportLoading(true);
-    try {
-      const result = await onImportRepeaters();
-      if (result.imported === 0 && result.skipped === 0 && result.errors.length === 0) return;
-      const msg =
-        result.errors.length > 0
-          ? `Imported ${result.imported}, skipped ${result.skipped}. Errors: ${result.errors.slice(0, 3).join('; ')}`
-          : `Imported ${result.imported} repeater${result.imported !== 1 ? 's' : ''}${result.skipped > 0 ? `, skipped ${result.skipped}` : ''}.`;
-      addToast(msg, result.errors.length > 0 ? 'error' : 'success');
-    } catch (e) {
-      console.warn('[RepeatersPanel] import failed:', e instanceof Error ? e.message : e);
-      addToast(`Import failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
-    } finally {
-      setImportLoading(false);
-    }
-  };
 
   const handleStatus = async (nodeId: number) => {
     if (!(await ensureConfigured())) return;
@@ -426,21 +399,7 @@ export default function RepeatersPanel({
             aria-label="Search repeaters"
             className="flex-1 min-w-[8rem] max-w-[20rem] px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
           />
-          <button
-            onClick={handleImport}
-            disabled={importLoading}
-            className="flex items-center gap-2 px-3 py-1.5 rounded bg-brand-green/20 text-brand-green border border-brand-green/30 hover:bg-brand-green/30 transition-colors text-sm font-medium disabled:opacity-50"
-          >
-            {importLoading ? (
-              <span className="w-3 h-3 border border-brand-green border-t-transparent rounded-full animate-spin inline-block" />
-            ) : null}
-            Import Repeaters
-          </button>
         </div>
-        <p className="text-xs text-gray-500 max-w-2xl">
-          Imported repeaters use the import time as Last heard until an RF advert or Ping / Status
-          updates it.
-        </p>
         <p className="text-xs text-gray-500 max-w-2xl">
           SNR, RSSI, uptime, and airtime come from the Status action (or auto-fetch while this panel
           is open). Hops and path history need Ping. MeshCore does not fill those columns from

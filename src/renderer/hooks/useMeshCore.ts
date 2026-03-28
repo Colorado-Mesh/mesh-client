@@ -2943,17 +2943,17 @@ export function useMeshCore() {
     }
   }, []);
 
-  const importRepeaters = useCallback(async (): Promise<{
+  const importContacts = useCallback(async (): Promise<{
     imported: number;
     skipped: number;
     errors: string[];
   }> => {
     const raw = await window.electronAPI.meshcore.openJsonFile();
     if (raw == null) {
-      console.debug('[useMeshCore] importRepeaters: file picker cancelled');
+      console.debug('[useMeshCore] importContacts: file picker cancelled');
       return { imported: 0, skipped: 0, errors: [] };
     }
-    console.debug('[useMeshCore] importRepeaters: file opened, length=', raw.length);
+    console.debug('[useMeshCore] importContacts: file opened, length=', raw.length);
 
     let parsed: unknown[];
     try {
@@ -2966,17 +2966,17 @@ export function useMeshCore() {
         if (arrays.length === 0) throw new Error('JSON contains no array of entries');
         parsed = arrays[0] as unknown[];
         console.debug(
-          '[useMeshCore] importRepeaters: found array under object key, length=',
+          '[useMeshCore] importContacts: found array under object key, length=',
           parsed.length,
         );
       } else {
         throw new Error('JSON root must be an array or an object containing an array');
       }
     } catch (e) {
-      console.warn('[useMeshCore] importRepeaters: parse error', e);
+      console.warn('[useMeshCore] importContacts: parse error', e);
       return { imported: 0, skipped: 0, errors: [e instanceof Error ? e.message : String(e)] };
     }
-    console.debug('[useMeshCore] importRepeaters: parsed', parsed.length, 'entries');
+    console.debug('[useMeshCore] importContacts: parsed', parsed.length, 'entries');
 
     function parsePublicKey(rawKey: string): Uint8Array | null {
       const s = rawKey.trim().replace(/-/g, '+').replace(/_/g, '/');
@@ -3006,7 +3006,7 @@ export function useMeshCore() {
 
     for (const r of parsed) {
       if (!r || typeof r !== 'object') {
-        console.debug('[useMeshCore] importRepeaters: skipping non-object entry', r);
+        console.debug('[useMeshCore] importContacts: skipping non-object entry', r);
         skipped++;
         continue;
       }
@@ -3020,13 +3020,13 @@ export function useMeshCore() {
       const name = firstString(rec.name, rec.label, rec.title, rec.node_name);
       const rawKey = firstString(rec.public_key, rec.pubkey, rec.key, rec.publicKey);
       if (!name || !rawKey) {
-        console.debug('[useMeshCore] importRepeaters: skipping entry missing name or key', rec);
+        console.debug('[useMeshCore] importContacts: skipping entry missing name or key', rec);
         skipped++;
         continue;
       }
       const pubKey = parsePublicKey(rawKey);
       if (!pubKey) {
-        console.warn('[useMeshCore] importRepeaters: invalid public key for', name, rawKey);
+        console.warn('[useMeshCore] importContacts: invalid public key for', name, rawKey);
         errors.push(`Skipped "${name}": invalid public key`);
         skipped++;
         continue;
@@ -3042,7 +3042,7 @@ export function useMeshCore() {
         rec.longitude ?? rec.lon ?? rec.lng ?? rec.adv_lon ?? rec.advLon,
       );
       console.debug(
-        '[useMeshCore] importRepeaters: valid entry',
+        '[useMeshCore] importContacts: valid entry',
         name,
         nodeId.toString(16).toUpperCase(),
       );
@@ -3052,7 +3052,7 @@ export function useMeshCore() {
     }
 
     console.debug(
-      '[useMeshCore] importRepeaters: imported=',
+      '[useMeshCore] importContacts: imported=',
       validEntries.length,
       'skipped=',
       skipped,
@@ -3069,7 +3069,7 @@ export function useMeshCore() {
           last_advert: number | null;
         }[];
       } catch (e: unknown) {
-        console.warn('[useMeshCore] importRepeaters: getMeshcoreContacts for last_advert merge', e);
+        console.warn('[useMeshCore] importContacts: getMeshcoreContacts for last_advert merge', e);
       }
       const dbLastAdvertById = new Map(dbRows.map((r) => [r.node_id, r.last_advert]));
       /** Built inside `setNodes` so we read merged `last_heard` before `nodesRef` catches up. */
@@ -3141,7 +3141,7 @@ export function useMeshCore() {
             nickname: name,
           })
           .catch((e: unknown) => {
-            console.warn('[useMeshCore] saveMeshcoreContact (import repeaters) error', e);
+            console.warn('[useMeshCore] saveMeshcoreContact (import contacts) error', e);
           });
       }
     }
@@ -3252,7 +3252,7 @@ export function useMeshCore() {
     requestRepeaterStatus,
     requestTelemetry,
     requestNeighbors,
-    importRepeaters,
+    importContacts,
     toggleManualAddContacts,
     setMeshcoreChannel,
     deleteMeshcoreChannel,

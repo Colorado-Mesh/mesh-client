@@ -1042,6 +1042,9 @@ export default function App() {
                       groupMemberIds={
                         protocol === 'meshcore' ? contactGroups.groupMemberIds : undefined
                       }
+                      onImportContacts={
+                        protocol === 'meshcore' ? meshcoreDevice.importContacts : undefined
+                      }
                     />
                   ) : null}
                 </div>
@@ -1159,7 +1162,6 @@ export default function App() {
                           meshcorePingErrors={meshcoreDevice.meshcorePingErrors}
                           onRequestRepeaterStatus={meshcoreDevice.requestRepeaterStatus}
                           onPing={meshcoreDevice.traceRoute}
-                          onImportRepeaters={meshcoreDevice.importRepeaters}
                           onDeleteRepeater={meshcoreDevice.deleteNode}
                           isConnected={isOperational}
                           onSendAdvert={meshcoreDevice.sendAdvert}

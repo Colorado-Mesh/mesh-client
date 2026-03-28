@@ -1,6 +1,6 @@
 /**
- * Repeater JSON import should persist a non-null last_advert so Last heard is not stuck at zero
- * when GPS is present (see meshcore repeater last-heard plan).
+ * Contact JSON import should persist a non-null last_advert so Last heard is not stuck at zero
+ * when GPS is present (see meshcore contact last-heard plan).
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,7 +21,7 @@ function pubKeyBytesFromHex(hex: string): Uint8Array {
 
 const IMPORT_NODE_ID = pubkeyToNodeId(pubKeyBytesFromHex(HEX32));
 
-describe('useMeshCore importRepeaters', () => {
+describe('useMeshCore importContacts', () => {
   beforeEach(() => {
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
@@ -29,7 +29,7 @@ describe('useMeshCore importRepeaters', () => {
     vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
   });
 
-  it('sets last_advert to import time for new repeaters and passes it to saveMeshcoreContact', async () => {
+  it('sets last_advert to import time for new contacts and passes it to saveMeshcoreContact', async () => {
     vi.mocked(window.electronAPI.meshcore.openJsonFile).mockResolvedValue(
       JSON.stringify([
         {
@@ -43,9 +43,9 @@ describe('useMeshCore importRepeaters', () => {
 
     const { result } = renderHook(() => useMeshCore());
 
-    let out: Awaited<ReturnType<typeof result.current.importRepeaters>>;
+    let out: Awaited<ReturnType<typeof result.current.importContacts>>;
     await act(async () => {
-      out = await result.current.importRepeaters();
+      out = await result.current.importContacts();
     });
 
     expect(out!.imported).toBe(1);
@@ -85,7 +85,7 @@ describe('useMeshCore importRepeaters', () => {
     const { result } = renderHook(() => useMeshCore());
 
     await act(async () => {
-      await result.current.importRepeaters();
+      await result.current.importContacts();
     });
 
     const firstHeard = result.current.nodes.get(IMPORT_NODE_ID)?.last_heard;
@@ -103,7 +103,7 @@ describe('useMeshCore importRepeaters', () => {
     vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockClear();
 
     await act(async () => {
-      await result.current.importRepeaters();
+      await result.current.importContacts();
     });
 
     expect(result.current.nodes.get(IMPORT_NODE_ID)?.long_name).toBe('Second name');

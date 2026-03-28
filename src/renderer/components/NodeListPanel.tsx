@@ -11,6 +11,13 @@ import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import SignalBars from './SignalBars';
+import { useToast } from './Toast';
+
+interface ImportContactsResult {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
 
 type SortField =
   | 'node_id'
@@ -109,6 +116,7 @@ interface Props {
   onGroupChange?: (id: number | null) => void;
   onManageGroups?: () => void;
   groupMemberIds?: Set<number>;
+  onImportContacts?: () => Promise<ImportContactsResult>;
 }
 
 export default function NodeListPanel({
@@ -124,7 +132,9 @@ export default function NodeListPanel({
   onGroupChange,
   onManageGroups,
   groupMemberIds,
+  onImportContacts,
 }: Props) {
+  const { addToast } = useToast();
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
@@ -132,6 +142,7 @@ export default function NodeListPanel({
   const [sortField, setSortField] = useState<SortField>('last_heard');
   const [sortAsc, setSortAsc] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [importLoading, setImportLoading] = useState(false);
 
   useEffect(() => {
     if (mode === 'meshcore' && MESHCORE_INAPPLICABLE_SORT_FIELDS.includes(sortField)) {
@@ -155,6 +166,25 @@ export default function NodeListPanel({
 
   const scrollToTop = () =>
     document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const handleImport = async () => {
+    if (!onImportContacts) return;
+    setImportLoading(true);
+    try {
+      const result = await onImportContacts();
+      if (result.imported === 0 && result.skipped === 0 && result.errors.length === 0) return;
+      const msg =
+        result.errors.length > 0
+          ? `Imported ${result.imported}, skipped ${result.skipped}. Errors: ${result.errors.slice(0, 3).join('; ')}`
+          : `Imported ${result.imported} contact${result.imported !== 1 ? 's' : ''}${result.skipped > 0 ? `, skipped ${result.skipped}` : ''}.`;
+      addToast(msg, result.errors.length > 0 ? 'error' : 'success');
+    } catch (e) {
+      console.warn('[NodeListPanel] import failed:', e instanceof Error ? e.message : e);
+      addToast(`Import failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
+    } finally {
+      setImportLoading(false);
+    }
+  };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -349,23 +379,39 @@ export default function NodeListPanel({
 
   return (
     <div className="flex flex-col min-h-0 h-full gap-3">
-      <div className="flex justify-between items-center gap-3 shrink-0">
-        <h2 className="text-xl font-semibold text-gray-200">
+      <div className="flex flex-col min-[480px]:flex-row flex-wrap items-stretch min-[480px]:items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-bright-green">
           {mode === 'meshcore' ? 'Contacts' : 'Node Database'} ({headerCountLabel})
         </h2>
-        <div className="flex items-center gap-2 flex-1 max-w-xs">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-            }}
-            placeholder={mode === 'meshcore' ? 'Search contacts…' : 'Search nodes…'}
-            aria-label={mode === 'meshcore' ? 'Search contacts' : 'Search nodes'}
-            className="flex-1 px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
-          />
-        </div>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+          }}
+          placeholder={mode === 'meshcore' ? 'Search contacts…' : 'Search nodes…'}
+          aria-label={mode === 'meshcore' ? 'Search contacts' : 'Search nodes'}
+          className="flex-1 min-w-[8rem] max-w-[20rem] px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
+        />
+        {mode === 'meshcore' && onImportContacts && (
+          <button
+            onClick={handleImport}
+            disabled={importLoading}
+            className="flex items-center gap-2 px-3 py-1.5 rounded bg-brand-green/20 text-brand-green border border-brand-green/30 hover:bg-brand-green/30 transition-colors text-sm font-medium disabled:opacity-50"
+          >
+            {importLoading ? (
+              <span className="w-3 h-3 border border-brand-green border-t-transparent rounded-full animate-spin inline-block" />
+            ) : null}
+            Import Contacts
+          </button>
+        )}
       </div>
+      {mode === 'meshcore' && (
+        <p className="text-xs text-gray-500 max-w-2xl">
+          Imported contacts use the import time as Last heard until an RF advert or Ping / Status
+          updates it.
+        </p>
+      )}
 
       {/* Group filter (MeshCore mode only) */}
       {mode === 'meshcore' && onManageGroups && (
