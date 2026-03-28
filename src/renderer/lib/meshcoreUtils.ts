@@ -116,6 +116,17 @@ export const CONTACT_TYPE_LABELS: Record<number, string> = {
   3: 'Room',
 };
 
+/** MeshCore roles excluded from user contact-group membership (infrastructure / rooms). */
+export const MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS: ReadonlySet<string> = new Set([
+  CONTACT_TYPE_LABELS[2],
+  CONTACT_TYPE_LABELS[3],
+]);
+
+export function isMeshcoreContactEligibleForUserGroup(node: Pick<MeshNode, 'hw_model'>): boolean {
+  const hw = node.hw_model ?? '';
+  return !MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS.has(hw);
+}
+
 interface MeshCoreContact {
   publicKey: Uint8Array;
   type: number;

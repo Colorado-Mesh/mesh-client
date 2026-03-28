@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isMeshcoreContactEligibleForUserGroup,
   isMeshcoreTransportStatusChatLine,
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreSelfInfoBwToDisplayKhz,
@@ -46,6 +47,23 @@ describe('meshcoreSelfInfoBwToDisplayKhz', () => {
 
   it('passes through kHz when firmware already uses kHz', () => {
     expect(meshcoreSelfInfoBwToDisplayKhz(250)).toBe(250);
+  });
+});
+
+describe('isMeshcoreContactEligibleForUserGroup', () => {
+  it('allows Chat and None-like types', () => {
+    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: 'Chat' })).toBe(true);
+    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: 'None' })).toBe(true);
+    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: 'Unknown' })).toBe(true);
+  });
+
+  it('excludes Repeater and Room', () => {
+    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: 'Repeater' })).toBe(false);
+    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: 'Room' })).toBe(false);
+  });
+
+  it('treats empty hw_model as eligible', () => {
+    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: '' })).toBe(true);
   });
 });
 

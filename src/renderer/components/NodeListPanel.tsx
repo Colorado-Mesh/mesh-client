@@ -380,22 +380,16 @@ export default function NodeListPanel({
             className="flex-1 px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
           >
             <option value="">All contacts</option>
-            <optgroup label="By type">
-              {BUILTIN_TYPE_FILTERS.map((f) => (
-                <option key={f.group_id} value={f.group_id}>
-                  {f.label}
-                </option>
-              ))}
-            </optgroup>
-            {groups && groups.length > 0 && (
-              <optgroup label="My groups">
-                {groups.map((g) => (
-                  <option key={g.group_id} value={g.group_id}>
-                    {g.name} ({g.member_count})
-                  </option>
-                ))}
-              </optgroup>
-            )}
+            {BUILTIN_TYPE_FILTERS.map((f) => (
+              <option key={f.group_id} value={f.group_id}>
+                Type: {f.label}
+              </option>
+            ))}
+            {groups?.map((g) => (
+              <option key={g.group_id} value={g.group_id}>
+                Group: {g.name} ({g.member_count})
+              </option>
+            ))}
           </select>
           <button
             type="button"

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
+import { isMeshcoreContactEligibleForUserGroup } from '../lib/meshcoreUtils';
 import type { MeshNode } from '../lib/types';
 
 interface ContactGroupsModalProps {
@@ -143,7 +144,7 @@ export default function ContactGroupsModal({
   }
 
   const sortedContacts = Array.from(contacts.values())
-    .filter((c) => c.node_id !== selfNodeId && c.hw_model !== 'Room')
+    .filter((c) => c.node_id !== selfNodeId && isMeshcoreContactEligibleForUserGroup(c))
     .sort((a, b) => (a.long_name || '').localeCompare(b.long_name || ''));
 
   return (
