@@ -382,7 +382,8 @@ mesh-client/
 │       ├── hooks/
 │       │   ├── useDevice.ts          # Meshtastic: device lifecycle, 3 transports, auto-reconnect
 │       │   ├── useMeshCore.ts        # MeshCore: BLE/Serial/TCP/MQTT, contacts, messages, ACK, trace, telemetry
-│       │   └── useContactGroups.ts   # MeshCore: contact groups state + IPC
+│       │   ├── useContactGroups.ts   # MeshCore: contact groups state + IPC
+│       │   └── useMeshcoreRepeaterRemoteAuth.tsx  # MeshCore: repeater remote auth session flow
 │       ├── stores/
 │       │   ├── diagnosticsStore.ts   # Anomalies, halo flags, MQTT ignore, foreign LoRa (both protocols)
 │       │   ├── mapViewportStore.ts   # Persisted map center/zoom
@@ -405,6 +406,8 @@ mesh-client/
 │       │   ├── appSettingsStorage.ts # Renderer app settings persistence helpers
 │       │   ├── defaultAppSettings.ts # Default app settings shape
 │       │   ├── logAnalyzer.ts        # Heuristic log analysis for connection issues
+│       │   ├── repeaterCommandService.ts  # MeshCore: prefix-token CLI command correlation, retry, timeout
+│       │   ├── meshcoreRepeaterSession.ts # MeshCore: per-repeater session state helper
 │       │   ├── radio/
 │       │   │   ├── BaseRadioProvider.ts  # ProtocolCapabilities; MESHTASTIC_CAPABILITIES, MESHCORE_CAPABILITIES
 │       │   │   └── providerFactory.ts    # useRadioProvider(protocol) — memoized capabilities
