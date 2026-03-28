@@ -83,6 +83,12 @@ export class MeshcoreWebBluetoothConnection extends Connection {
       }
     } catch (err) {
       console.warn('[MeshcoreWebBluetoothConnection] _readLoop error:', err);
+    } finally {
+      try {
+        this._fromDeviceReader?.releaseLock();
+      } catch {
+        // catch-no-log-ok releaseLock after stream teardown
+      }
     }
   }
 }

@@ -102,6 +102,8 @@ interface NobleBleSession {
   closing: boolean;
   /** Cleared on disconnect; avoids post-write timer firing after teardown. */
   postWriteReadPumpTimer: ReturnType<typeof setTimeout> | null;
+  /** Win32+MeshCore: timer to detect silent notify failure and fall back to read pump. */
+  notifyWatchdogTimer: ReturnType<typeof setTimeout> | null;
   /**
    * True when fromRadioChar delivers data via notifications and does not support GATT reads.
    * When set, the read pump and post-write read-pump timer are skipped entirely.
@@ -216,6 +218,7 @@ export class NobleBleManager extends EventEmitter {
       readPumpRequested: false,
       closing: false,
       postWriteReadPumpTimer: null,
+      notifyWatchdogTimer: null,
       fromRadioNotifyOnly: false,
       fromRadioDeliveryCount: 0,
       fromRadioDeliveryBytes: 0,
@@ -247,6 +250,10 @@ export class NobleBleManager extends EventEmitter {
     if (session.postWriteReadPumpTimer !== null) {
       clearTimeout(session.postWriteReadPumpTimer);
       session.postWriteReadPumpTimer = null;
+    }
+    if (session.notifyWatchdogTimer !== null) {
+      clearTimeout(session.notifyWatchdogTimer);
+      session.notifyWatchdogTimer = null;
     }
     session.connectedPeripheral = null;
     session.connectedPeripheralDisconnectHandler = null;
@@ -280,6 +287,10 @@ export class NobleBleManager extends EventEmitter {
     session.fromRadioDeliveryBytes += bytes.length;
     if (!session.firstPacketLogged && sessionId === 'meshcore') {
       session.firstPacketLogged = true;
+      if (session.notifyWatchdogTimer !== null) {
+        clearTimeout(session.notifyWatchdogTimer);
+        session.notifyWatchdogTimer = null;
+      }
       const latencyMs =
         session.connectStartedAtMs == null ? null : Date.now() - session.connectStartedAtMs;
       const hexDump = Array.from(bytes.subarray(0, Math.min(bytes.length, 50)))
@@ -297,7 +308,8 @@ export class NobleBleManager extends EventEmitter {
    * - Fallback mode (subscribe failed): always read — notify is not active.
    * - Darwin: skip reads when notify is active — CoreBluetooth delivers notifications reliably.
    * - MeshCore + Win32 + notify active: skip reads — WinRT returns "Protocol error" on NUS TX read while
-   *   notifications are enabled (logs: readPump-read-error). Rely on notify only.
+   *   notifications are enabled (logs: readPump-read-error). Rely on notify only. If notify is silent,
+   *   the notifyWatchdogTimer will clear fromRadioNotifyOnly after 5s and kick the pump as a fallback.
    * - Linux + MeshCore: use read pump as fallback — BlueZ may not reliably deliver notifications
    *   for some devices, causing handshake hangs (device sends data but notify events never fire).
    * - Other non-Darwin: keep read pump alongside notify as a safety net when noble drops notifies.
@@ -920,6 +932,17 @@ export class NobleBleManager extends EventEmitter {
           console.debug(
             `[BLE:${sessionId}] fromRadio strategy=notify-first (hasNotify=${fromRadioSupportsNotify} canRead=${fromRadioCanRead})`,
           );
+          if (IS_WIN32 && sessionId === 'meshcore') {
+            session.notifyWatchdogTimer = setTimeout(() => {
+              session.notifyWatchdogTimer = null;
+              if (session.closing || session.fromRadioDeliveryCount > 0) return;
+              console.warn(
+                `[BLE:meshcore] notify watchdog: no data in 5s on Win32; notify silent — enabling read-pump fallback`,
+              );
+              session.fromRadioNotifyOnly = false;
+              this.requestFromRadioReadPump(sessionId);
+            }, 5_000);
+          }
         } catch (err) {
           console.warn(
             `[BLE:${sessionId}] fromRadio subscribe failed; falling back to read-pump (hasNotify=${fromRadioSupportsNotify} canRead=${fromRadioCanRead}):`,

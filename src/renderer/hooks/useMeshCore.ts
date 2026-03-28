@@ -167,6 +167,10 @@ const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = rendererLikelyWin32()
 const NOBLE_IPC_CONNECT_MAX_ATTEMPTS = 2;
 const WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS = 2;
 const WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS = 1_500;
+// BlueZ GATT round-trips are significantly slower than macOS; use a longer timeout on Linux.
+const MESHCORE_INIT_TIMEOUT_MS = navigator.userAgent.toLowerCase().includes('linux')
+  ? 25_000
+  : 10_000;
 
 function serializeErrorLike(value: unknown): string {
   if (value instanceof Error) return value.message;
@@ -1526,7 +1530,7 @@ export function useMeshCore() {
 
       const contacts = await awaitUnlessMeshcoreSetupCancelled(
         setupGen,
-        withTimeout(conn.getContacts(), 10_000, 'getContacts'),
+        withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts'),
       );
       const newNodes = await awaitUnlessMeshcoreSetupCancelled(
         setupGen,
@@ -1537,7 +1541,7 @@ export function useMeshCore() {
 
       const rawChannels = await awaitUnlessMeshcoreSetupCancelled(
         setupGen,
-        withTimeout(conn.getChannels(), 10_000, 'getChannels'),
+        withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
       );
       setChannels(
         rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),

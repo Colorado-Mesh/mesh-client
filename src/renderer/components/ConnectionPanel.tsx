@@ -513,6 +513,8 @@ export default function ConnectionPanel({
   const [manualPairingFallback, setManualPairingFallback] = useState(false);
   const [pinInputValue, setPinInputValue] = useState('');
   const pinPromptSeenSinceRePairRef = useRef(false);
+  const [pinCountdown, setPinCountdown] = useState<number | null>(null);
+  const pinCountdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeHostAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
 
   // ─── MQTT settings state ───────────────────────────────────────
@@ -693,6 +695,18 @@ export default function ConnectionPanel({
     showPinPromptRef.current = showPinPrompt;
   }, [showPinPrompt]);
 
+  const stopPinCountdown = useCallback(() => {
+    if (pinCountdownIntervalRef.current) {
+      clearInterval(pinCountdownIntervalRef.current);
+      pinCountdownIntervalRef.current = null;
+    }
+    setPinCountdown(null);
+  }, []);
+
+  useEffect(() => {
+    if (!showPinPrompt) stopPinCountdown();
+  }, [showPinPrompt, stopPinCountdown]);
+
   // Update connection stage based on state transitions, and save last connection on success
   useEffect(() => {
     if (state.status === 'connecting') {
@@ -864,9 +878,25 @@ export default function ConnectionPanel({
       setManualPairingFallback(false);
       setPinInputValue('');
       setConnectionStage('Enter the PIN shown on your device');
+      // Start countdown: BlueZ pairing window is ~30s. Warn the user to enter quickly.
+      const CHROMIUM_PAIRING_COUNTDOWN_SECS = 25;
+      stopPinCountdown();
+      setPinCountdown(CHROMIUM_PAIRING_COUNTDOWN_SECS);
+      pinCountdownIntervalRef.current = setInterval(() => {
+        setPinCountdown((prev) => {
+          if (prev === null || prev <= 1) {
+            if (pinCountdownIntervalRef.current) {
+              clearInterval(pinCountdownIntervalRef.current);
+              pinCountdownIntervalRef.current = null;
+            }
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     });
     return cleanup;
-  }, [isLinux]);
+  }, [isLinux, stopPinCountdown]);
 
   // Handle re-pair button click: always capture PIN before re-pair actions.
   const handleRePair = useCallback(() => {
@@ -892,6 +922,7 @@ export default function ConnectionPanel({
 
   // Handle PIN submission for pairing
   const handlePinSubmit = useCallback(async () => {
+    stopPinCountdown();
     const normalizedPin = normalizeSixDigitPin(pinInputValue);
     if (!normalizedPin) {
       setError('PIN must be exactly 6 digits.');
@@ -1000,10 +1031,11 @@ export default function ConnectionPanel({
     setShowPinPrompt(false);
     setPinInputValue('');
     setConnectionStage('Pairing...');
-  }, [pinInputValue, manualPairingFallback, isLinux, protocol]);
+  }, [pinInputValue, manualPairingFallback, isLinux, protocol, stopPinCountdown]);
 
   // Handle PIN prompt cancel
   const handlePinCancel = useCallback(() => {
+    stopPinCountdown();
     if (pendingMeshcoreLinuxWbMacRef.current) {
       pendingMeshcoreLinuxWbMacRef.current = null;
       bleLinuxPickerSelectionResolvedRef.current = false;
@@ -1023,7 +1055,7 @@ export default function ConnectionPanel({
     setPinInputValue('');
     setConnecting(false);
     setConnectionStage('');
-  }, [manualPairingFallback]);
+  }, [manualPairingFallback, stopPinCountdown]);
 
   // Listen for serial ports discovered by main process
   useEffect(() => {
@@ -1646,6 +1678,13 @@ export default function ConnectionPanel({
         {showPinPrompt && (
           <div className="w-full max-w-4xl bg-blue-900/50 border border-blue-700 text-blue-300 px-4 py-3 rounded-lg">
             <p className="text-sm mb-2">Enter the PIN shown on your device:</p>
+            {pinCountdown !== null && (
+              <p
+                className={`text-xs mb-2 ${pinCountdown <= 10 ? 'text-red-400 font-semibold' : 'text-blue-400'}`}
+              >
+                {pinCountdown}s — enter PIN quickly, BlueZ pairing window is closing
+              </p>
+            )}
             <div className="flex gap-2">
               <input
                 type="text"
@@ -2465,6 +2504,13 @@ export default function ConnectionPanel({
         {showPinPrompt && (
           <div className="px-4 py-3 bg-blue-900/30 border-b border-blue-800 text-blue-200">
             <p className="text-sm mb-2">Enter the PIN shown on your device:</p>
+            {pinCountdown !== null && (
+              <p
+                className={`text-xs mb-2 ${pinCountdown <= 10 ? 'text-red-400 font-semibold' : 'text-blue-400'}`}
+              >
+                {pinCountdown}s — enter PIN quickly, BlueZ pairing window is closing
+              </p>
+            )}
             <div className="flex gap-2">
               <input
                 type="text"

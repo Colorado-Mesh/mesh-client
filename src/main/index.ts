@@ -958,7 +958,15 @@ function createWindow() {
 
     console.debug(`[IPC] select-bluetooth-device: ${deviceList.length} device(s) found`);
     lastBluetoothDeviceIds = new Set(deviceList.map((d) => d.deviceId));
-    mainWindow?.webContents.send(
+
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      console.warn('[IPC] select-bluetooth-device: mainWindow unavailable — cancelling selection');
+      pendingBluetoothCallback?.('');
+      pendingBluetoothCallback = null;
+      lastBluetoothDeviceIds.clear();
+      return;
+    }
+    mainWindow.webContents.send(
       'bluetooth-devices-discovered',
       deviceList.map((d) => ({ deviceId: d.deviceId, deviceName: d.deviceName })),
     );
@@ -988,11 +996,28 @@ function createWindow() {
           ? '(MeshCore or Meshtastic retry)'
           : '(Meshtastic retry)',
       );
+
+      if (!mainWindow || mainWindow.isDestroyed()) {
+        console.warn('[main] bluetooth-pairing: mainWindow unavailable — aborting pairing');
+        callback({ confirmed: false });
+        return;
+      }
+
+      const pairingTimeoutId = setTimeout(() => {
+        if (pendingPairingCallback) {
+          console.warn('[main] bluetooth-pairing: PIN prompt timed out after 120s — aborting');
+          pendingPairingCallback({ pin: '', confirmed: false });
+          pendingPairingCallback = null;
+          pendingPairingRetryCount = 0;
+        }
+      }, 120_000);
+
       pendingPairingCallback = (response: BluetoothPairingResponse) => {
+        clearTimeout(pairingTimeoutId);
         callback(response);
         pendingPairingCallback = null;
       };
-      mainWindow?.webContents.send('bluetooth-pin-required', {
+      mainWindow.webContents.send('bluetooth-pin-required', {
         deviceId: details.deviceId,
       });
     } else if (details.pairingKind === 'confirmPin') {
