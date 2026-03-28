@@ -264,6 +264,36 @@ export default function ModulePanel({
   const [paxEnabled, setPaxEnabled] = useState<boolean>(paxCfg.enabled ?? false);
   const [paxInterval, setPaxInterval] = useState<number>(paxCfg.paxcounterUpdateInterval ?? 0);
 
+  // ─── External Notification module ─────────────────────────────
+  const extNotifCfg = (moduleConfigs.externalNotification as any) ?? {};
+  const [extEnabled, setExtEnabled] = useState<boolean>(extNotifCfg.enabled ?? false);
+  const [extActive, setExtActive] = useState<boolean>(extNotifCfg.active ?? false);
+  const [extOutput, setExtOutput] = useState<number>(extNotifCfg.output ?? 0);
+  const [extOutputBuzzer, setExtOutputBuzzer] = useState<number>(extNotifCfg.outputBuzzer ?? 0);
+  const [extOutputVibra, setExtOutputVibra] = useState<number>(extNotifCfg.outputVibra ?? 0);
+  const [extOutputMs, setExtOutputMs] = useState<number>(extNotifCfg.outputMs ?? 1000);
+  const [extNagTimeout, setExtNagTimeout] = useState<number>(extNotifCfg.nagTimeout ?? 0);
+  const [extAlertMessage, setExtAlertMessage] = useState<boolean>(
+    extNotifCfg.alertMessage ?? false,
+  );
+  const [extAlertMessageBuzzer, setExtAlertMessageBuzzer] = useState<boolean>(
+    extNotifCfg.alertMessageBuzzer ?? false,
+  );
+  const [extAlertMessageVibra, setExtAlertMessageVibra] = useState<boolean>(
+    extNotifCfg.alertMessageVibra ?? false,
+  );
+  const [extAlertBell, setExtAlertBell] = useState<boolean>(extNotifCfg.alertBell ?? false);
+  const [extAlertBellBuzzer, setExtAlertBellBuzzer] = useState<boolean>(
+    extNotifCfg.alertBellBuzzer ?? false,
+  );
+  const [extAlertBellVibra, setExtAlertBellVibra] = useState<boolean>(
+    extNotifCfg.alertBellVibra ?? false,
+  );
+  const [extUsePwm, setExtUsePwm] = useState<boolean>(extNotifCfg.usePwm ?? false);
+  const [extUseI2sAsBuzzer, setExtUseI2sAsBuzzer] = useState<boolean>(
+    extNotifCfg.useI2sAsBuzzer ?? false,
+  );
+
   // ─── Ambient Lighting module ───────────────────────────────────
   const ambientCfg = (moduleConfigs.ambientLighting as any) ?? {};
   const [ambientLedState, setAmbientLedState] = useState<boolean>(ambientCfg.ledState ?? false);
@@ -474,6 +504,150 @@ export default function ModulePanel({
           min={0}
           unit="seconds"
           description="How often to broadcast the current state even without a change."
+        />
+      </ModuleSection>
+
+      {/* ═══ External Notification Module ═══ */}
+      <ModuleSection
+        title="External Notification Module"
+        onApply={() =>
+          applyModule('External Notification', 'externalNotification', {
+            enabled: extEnabled,
+            active: extActive,
+            output: extOutput,
+            outputBuzzer: extOutputBuzzer,
+            outputVibra: extOutputVibra,
+            outputMs: extOutputMs,
+            nagTimeout: extNagTimeout,
+            alertMessage: extAlertMessage,
+            alertMessageBuzzer: extAlertMessageBuzzer,
+            alertMessageVibra: extAlertMessageVibra,
+            alertBell: extAlertBell,
+            alertBellBuzzer: extAlertBellBuzzer,
+            alertBellVibra: extAlertBellVibra,
+            usePwm: extUsePwm,
+            useI2sAsBuzzer: extUseI2sAsBuzzer,
+          })
+        }
+        applying={applyingSection === 'External Notification'}
+        disabled={disabled}
+      >
+        <ConfigToggle
+          label="Module enabled"
+          checked={extEnabled}
+          onChange={setExtEnabled}
+          disabled={disabled}
+          description="Enable GPIO-based external alerts for buzzers, vibration motors, and LEDs."
+        />
+        <ConfigToggle
+          label="Active high"
+          checked={extActive}
+          onChange={setExtActive}
+          disabled={disabled || !extEnabled}
+          description="GPIO active level. On = active high (3.3 V triggers output); Off = active low."
+        />
+        <ConfigNumber
+          label="Primary output GPIO"
+          value={extOutput}
+          onChange={setExtOutput}
+          disabled={disabled || !extEnabled}
+          min={0}
+          max={48}
+          description="GPIO pin for primary notification output. 0 = unset."
+        />
+        <ConfigNumber
+          label="Buzzer GPIO"
+          value={extOutputBuzzer}
+          onChange={setExtOutputBuzzer}
+          disabled={disabled || !extEnabled}
+          min={0}
+          max={48}
+          description="GPIO pin for buzzer. 0 = unset."
+        />
+        <ConfigNumber
+          label="Vibration motor GPIO"
+          value={extOutputVibra}
+          onChange={setExtOutputVibra}
+          disabled={disabled || !extEnabled}
+          min={0}
+          max={48}
+          description="GPIO pin for vibration motor. 0 = unset."
+        />
+        <ConfigNumber
+          label="Output duration"
+          value={extOutputMs}
+          onChange={setExtOutputMs}
+          disabled={disabled || !extEnabled}
+          min={0}
+          max={32767}
+          unit="ms"
+          description="How long to keep the output active per alert (milliseconds)."
+        />
+        <ConfigNumber
+          label="Nag timeout"
+          value={extNagTimeout}
+          onChange={setExtNagTimeout}
+          disabled={disabled || !extEnabled}
+          min={0}
+          max={32767}
+          unit="seconds"
+          description="Keep repeating the alert for this many seconds. 0 = single trigger only."
+        />
+        <ConfigToggle
+          label="Alert on message"
+          checked={extAlertMessage}
+          onChange={setExtAlertMessage}
+          disabled={disabled || !extEnabled}
+          description="Trigger primary output GPIO when a text message is received."
+        />
+        <ConfigToggle
+          label="Buzzer on message"
+          checked={extAlertMessageBuzzer}
+          onChange={setExtAlertMessageBuzzer}
+          disabled={disabled || !extEnabled || !extAlertMessage}
+          description="Also trigger buzzer GPIO on incoming messages."
+        />
+        <ConfigToggle
+          label="Vibration on message"
+          checked={extAlertMessageVibra}
+          onChange={setExtAlertMessageVibra}
+          disabled={disabled || !extEnabled || !extAlertMessage}
+          description="Also trigger vibration GPIO on incoming messages."
+        />
+        <ConfigToggle
+          label="Alert on bell"
+          checked={extAlertBell}
+          onChange={setExtAlertBell}
+          disabled={disabled || !extEnabled}
+          description="Trigger primary output GPIO on bell / tapback signals."
+        />
+        <ConfigToggle
+          label="Buzzer on bell"
+          checked={extAlertBellBuzzer}
+          onChange={setExtAlertBellBuzzer}
+          disabled={disabled || !extEnabled || !extAlertBell}
+          description="Also trigger buzzer GPIO on bell signals."
+        />
+        <ConfigToggle
+          label="Vibration on bell"
+          checked={extAlertBellVibra}
+          onChange={setExtAlertBellVibra}
+          disabled={disabled || !extEnabled || !extAlertBell}
+          description="Also trigger vibration GPIO on bell signals."
+        />
+        <ConfigToggle
+          label="Use PWM buzzer mode"
+          checked={extUsePwm}
+          onChange={setExtUsePwm}
+          disabled={disabled || !extEnabled}
+          description="Use PWM frequency for tone-capable buzzers (e.g. RAK buzzer)."
+        />
+        <ConfigToggle
+          label="Use I2S as buzzer"
+          checked={extUseI2sAsBuzzer}
+          onChange={setExtUseI2sAsBuzzer}
+          disabled={disabled || !extEnabled}
+          description="Use I2S audio output as buzzer (T-Watch S3, T-Deck with speaker)."
         />
       </ModuleSection>
 
