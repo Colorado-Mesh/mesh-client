@@ -241,9 +241,10 @@ function shouldForgetGrantedWebBluetoothDevice(
   );
 }
 
-function normalizeSixDigitPin(raw: string): string | null {
+/** BLE pairing PIN: 1–6 digits (Linux Web Bluetooth / bluetoothctl; MeshCore may show shorter codes). */
+function normalizePairingPin(raw: string): string | null {
   const digits = raw.replace(/\D/g, '');
-  return /^\d{6}$/.test(digits) ? digits : null;
+  return /^\d{1,6}$/.test(digits) ? digits : null;
 }
 
 function loadLastConnection(p: MeshProtocol): LastConnection | null {
@@ -923,9 +924,9 @@ export default function ConnectionPanel({
   // Handle PIN submission for pairing
   const handlePinSubmit = useCallback(async () => {
     stopPinCountdown();
-    const normalizedPin = normalizeSixDigitPin(pinInputValue);
+    const normalizedPin = normalizePairingPin(pinInputValue);
     if (!normalizedPin) {
-      setError('PIN must be exactly 6 digits.');
+      setError('PIN must be 1–6 digits (use the code shown on the device).');
       return;
     }
     const pendingWbMac = pendingMeshcoreLinuxWbMacRef.current;
@@ -955,6 +956,7 @@ export default function ConnectionPanel({
       return;
     }
     const manualMac = lastSelectedBleMacRef.current;
+    // Explicit "Remove & Re-pair" only (Linux). Normal Cancel / disconnect never hits this — it does not run on Win/macOS.
     if (manualPairingFallback && isLinux && manualMac) {
       let scanStarted = false;
       try {
@@ -1028,9 +1030,9 @@ export default function ConnectionPanel({
     }
     console.debug('[ConnectionPanel] Providing PIN for pairing');
     window.electronAPI.provideBluetoothPin(normalizedPin);
+    setConnectionStage('Pairing...');
     setShowPinPrompt(false);
     setPinInputValue('');
-    setConnectionStage('Pairing...');
   }, [pinInputValue, manualPairingFallback, isLinux, protocol, stopPinCountdown]);
 
   // Handle PIN prompt cancel
@@ -1701,7 +1703,7 @@ export default function ConnectionPanel({
               <button
                 type="button"
                 onClick={handlePinSubmit}
-                disabled={!normalizeSixDigitPin(pinInputValue)}
+                disabled={!normalizePairingPin(pinInputValue)}
                 className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded disabled:opacity-50"
               >
                 Submit
@@ -2529,7 +2531,7 @@ export default function ConnectionPanel({
                 onClick={() => {
                   void handlePinSubmit();
                 }}
-                disabled={!normalizeSixDigitPin(pinInputValue)}
+                disabled={!normalizePairingPin(pinInputValue)}
                 className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded disabled:opacity-50"
               >
                 Submit

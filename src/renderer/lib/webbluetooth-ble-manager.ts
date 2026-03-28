@@ -431,6 +431,7 @@ export class WebBluetoothManager {
 
   async disconnect(): Promise<void> {
     if (!this.device) return;
+    // GATT disconnect only; do not call BluetoothDevice.forget() — that drops OS pairing/grants.
 
     try {
       if (this.fromRadioCharacteristic && this.fromRadioNotifyHandler) {

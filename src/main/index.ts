@@ -181,6 +181,8 @@ let pendingPairingRetryCount = 0;
 /** Which BLE stack is connecting; MeshCore must not auto-use Meshtastic default PIN on first pairing. */
 let blePairingSessionKind: 'meshtastic' | 'meshcore' = 'meshtastic';
 
+// Noble BLE pairing state (Win32 — no Chromium pairing handler available)
+
 let hasInstalledOsmReferrerHook = false;
 const OSM_HTTP_REFERRER = 'https://meshtastic-client.app/';
 
@@ -1258,7 +1260,8 @@ ipcMain.on('bluetooth-device-cancelled', () => {
   lastBluetoothDeviceIds.clear();
 });
 
-// ─── IPC: Unpair Bluetooth device (Linux) ─────────────────────────────
+// ─── IPC: Unpair Bluetooth device (Linux only — bluetoothctl remove) ──
+// Not used on routine disconnect; only ConnectionPanel manual re-pair flow.
 ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-unpair: macAddress must be a string');
@@ -1696,6 +1699,12 @@ nobleBleManager.on('connected', ({ sessionId }: { sessionId: NobleSessionId }) =
 nobleBleManager.on('disconnected', ({ sessionId }: { sessionId: NobleSessionId }) => {
   mainWindow?.webContents.send('noble-ble-disconnected', { sessionId });
 });
+nobleBleManager.on(
+  'connect-aborted',
+  ({ sessionId, message }: { sessionId: NobleSessionId; message: string }) => {
+    mainWindow?.webContents.send('noble-ble-connect-aborted', { sessionId, message });
+  },
+);
 nobleBleManager.on(
   'fromRadio',
   ({ sessionId, bytes }: { sessionId: NobleSessionId; bytes: Uint8Array }) => {

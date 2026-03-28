@@ -189,6 +189,8 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       async (promise: Promise<unknown>, ms: number, label: string) => {
         if (label === 'MeshCore BLE protocol handshake') {
           onDisconnected?.('meshcore');
+          // Handshake Promise.race rejects when disconnect fires; mock throws without awaiting it.
+          void promise.catch(() => {});
           throw new Error(`MeshCore BLE protocol handshake timed out after ${ms}ms`);
         }
         return promise;

@@ -298,6 +298,13 @@ class IpcNobleConnection {
 
       const instance = new NobleOverIpc(sessionId) as unknown as NobleIpcMeshcoreConnectionInstance;
       this.inner = instance;
+      /** Reject pending companion handshake when noble disconnects or aborts (e.g. Win32 pairing / watchdog). */
+      let rejectHandshakeOnDisconnect: ((err: Error) => void) | undefined;
+      const disconnectAbortsHandshake = new Promise<never>((_, reject) => {
+        rejectHandshakeOnDisconnect = reject;
+      });
+      // Guard against unhandled rejection if the outer withTimeout rejects before disconnect fires.
+      disconnectAbortsHandshake.catch(() => {});
       const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
         if (sid !== sessionId) return;
         const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes as ArrayBuffer);
@@ -307,8 +314,24 @@ class IpcNobleConnection {
         if (sid !== sessionId) return;
         console.warn(`[IpcNobleConnection:${sessionId}] peripheral disconnected`);
         instance.onDisconnected();
+        const r = rejectHandshakeOnDisconnect;
+        rejectHandshakeOnDisconnect = undefined;
+        r?.(
+          new Error(
+            'BLE peripheral disconnected during handshake (pairing step finished or link lost — retry connect)',
+          ),
+        );
       });
-      this.cleanupFns = [offData, offDisc];
+      const offAbort = window.electronAPI.onNobleBleConnectAborted(
+        ({ sessionId: sid, message }) => {
+          if (sid !== sessionId) return;
+          console.warn(`[IpcNobleConnection:${sessionId}] connect aborted by main: ${message}`);
+          const r = rejectHandshakeOnDisconnect;
+          rejectHandshakeOnDisconnect = undefined;
+          r?.(new Error(message));
+        },
+      );
+      this.cleanupFns = [offData, offDisc, offAbort];
       try {
         await withTimeout(
           window.electronAPI.connectNobleBle(sessionId, this.peripheralId).then((result) => {
@@ -318,15 +341,19 @@ class IpcNobleConnection {
           'MeshCore BLE IPC open',
         );
         console.info(
-          `[IpcNobleConnection:${sessionId}] waiting for onConnected() with timeout=${NOBLE_IPC_HANDSHAKE_TIMEOUT_MS}ms`,
+          `[IpcNobleConnection:${sessionId}] waiting on onConnected() (raced with disconnect) timeout=${NOBLE_IPC_HANDSHAKE_TIMEOUT_MS}ms`,
         );
         const handshakeStart = Date.now();
         await withTimeout(
-          instance.onConnected().then(() => {
-            console.info(
-              `[IpcNobleConnection:${sessionId}] onConnected() resolved after ${Date.now() - handshakeStart}ms`,
-            );
-          }),
+          Promise.race([
+            instance.onConnected().then(() => {
+              rejectHandshakeOnDisconnect = undefined;
+              console.info(
+                `[IpcNobleConnection:${sessionId}] onConnected() resolved after ${Date.now() - handshakeStart}ms`,
+              );
+            }),
+            disconnectAbortsHandshake,
+          ]),
           NOBLE_IPC_HANDSHAKE_TIMEOUT_MS,
           'MeshCore BLE protocol handshake',
         );
@@ -2047,6 +2074,8 @@ export function useMeshCore() {
 
   const disconnect = useCallback(async () => {
     console.debug('[useMeshCore] disconnect');
+    // Transport teardown only: GATT disconnect / noble IPC / TCP close. Never OS-unpair or
+    // BluetoothDevice.forget() here — pairing must survive disconnect so users can reconnect.
     meshcoreSetupGenerationRef.current += 1;
     // Cancel all pending ACK timers
     for (const { timeoutId } of pendingAcksRef.current.values()) {

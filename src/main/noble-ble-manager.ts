@@ -102,7 +102,7 @@ interface NobleBleSession {
   closing: boolean;
   /** Cleared on disconnect; avoids post-write timer firing after teardown. */
   postWriteReadPumpTimer: ReturnType<typeof setTimeout> | null;
-  /** Win32+MeshCore: timer to detect silent notify failure and fall back to read pump. */
+  /** Win32+MeshCore: timer to detect silent notify (pairing may be required; do not use read pump). */
   notifyWatchdogTimer: ReturnType<typeof setTimeout> | null;
   /**
    * True when fromRadioChar delivers data via notifications and does not support GATT reads.
@@ -307,9 +307,9 @@ export class NobleBleManager extends EventEmitter {
    * Whether to issue GATT reads on fromRadio (NUS TX / Meshtastic fromRadio) as a complement to notify.
    * - Fallback mode (subscribe failed): always read — notify is not active.
    * - Darwin: skip reads when notify is active — CoreBluetooth delivers notifications reliably.
-   * - MeshCore + Win32 + notify active: skip reads — WinRT returns "Protocol error" on NUS TX read while
-   *   notifications are enabled (logs: readPump-read-error). Rely on notify only. If notify is silent,
-   *   the notifyWatchdogTimer will clear fromRadioNotifyOnly after 5s and kick the pump as a fallback.
+   * - MeshCore + Win32 + notify active: skip reads — WinRT returns "Protocol error" on NUS TX GATT reads
+   *   (NUS TX is effectively notify-only). Rely on notify only. If notify is silent for 5s, we log
+   *   a hint to pair in Windows Settings first — we do not fall back to reads (that caused spurious protocol errors).
    * - Linux + MeshCore: use read pump as fallback — BlueZ may not reliably deliver notifications
    *   for some devices, causing handshake hangs (device sends data but notify events never fire).
    * - Other non-Darwin: keep read pump alongside notify as a safety net when noble drops notifies.
@@ -936,11 +936,10 @@ export class NobleBleManager extends EventEmitter {
             session.notifyWatchdogTimer = setTimeout(() => {
               session.notifyWatchdogTimer = null;
               if (session.closing || session.fromRadioDeliveryCount > 0) return;
-              console.warn(
-                `[BLE:meshcore] notify watchdog: no data in 5s on Win32; notify silent — enabling read-pump fallback`,
-              );
-              session.fromRadioNotifyOnly = false;
-              this.requestFromRadioReadPump(sessionId);
+              const msg =
+                'BLE notify silent on Windows: pair the radio in Windows Settings → Bluetooth first (use the PIN shown on the device), then retry Connect.';
+              console.warn(`[BLE:meshcore] notify watchdog: no data in 5s on Win32. ${msg}`);
+              this.emit('connect-aborted', { sessionId, message: msg });
             }, 5_000);
           }
         } catch (err) {
@@ -948,6 +947,14 @@ export class NobleBleManager extends EventEmitter {
             `[BLE:${sessionId}] fromRadio subscribe failed; falling back to read-pump (hasNotify=${fromRadioSupportsNotify} canRead=${fromRadioCanRead}):`,
             sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
           );
+          if (IS_WIN32 && sessionId === 'meshcore' && fromRadioSupportsNotify) {
+            console.warn(
+              `[BLE:meshcore] subscribe failed on Win32 with notify-capable NUS TX (read fallback would hit WinRT protocol errors). Pair the device in Windows Settings → Bluetooth first (PIN shown on the radio), then retry Connect.`,
+            );
+            throw new Error(
+              'BLE notify subscribe failed on Windows. Pair the device in Windows Settings (use the PIN on the device), then retry.',
+            );
+          }
         }
       }
       if (!fromRadioSubscribed) {

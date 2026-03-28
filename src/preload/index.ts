@@ -268,6 +268,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('noble-ble-disconnected', handler);
     return () => ipcRenderer.off('noble-ble-disconnected', handler);
   },
+  onNobleBleConnectAborted: (
+    cb: (payload: { sessionId: NobleBleSessionId; message: string }) => void,
+  ) => {
+    const handler = (_: unknown, payload: { sessionId: NobleBleSessionId; message: string }) => {
+      cb(payload);
+    };
+    ipcRenderer.on('noble-ble-connect-aborted', handler);
+    return () => ipcRenderer.off('noble-ble-connect-aborted', handler);
+  },
   onNobleBleFromRadio: (
     cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
   ) => {

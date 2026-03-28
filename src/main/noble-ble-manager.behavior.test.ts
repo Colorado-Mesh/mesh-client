@@ -173,14 +173,34 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
   });
 
   it('falls back to read-pump when subscribe fails on read+notify characteristics', async () => {
-    const { manager, fromRadio } = await setupMeshcoreConnection({
+    const mod = await import('./noble-ble-manager');
+    const manager = new mod.NobleBleManager();
+    (manager as any).sessions.set('meshtastic', (manager as any).createSessionState());
+    (manager as any).sessions.set('meshcore', (manager as any).createSessionState());
+    (manager as any).adapterReady = true;
+    (manager as any).lastAdapterState = 'poweredOn';
+
+    const toRadio = new FakeCharacteristic(MESHCORE_RX_UUID, { properties: ['write'] });
+    const fromRadio = new FakeCharacteristic(MESHCORE_TX_UUID, {
       properties: ['read', 'notify'],
       subscribeFails: true,
       readResults: [Buffer.from([9]), Buffer.alloc(0)],
     });
+    const peripheral = new FakePeripheral('meshcore-peripheral', [toRadio, fromRadio]);
+    (manager as any).knownPeripherals.set(peripheral.id, peripheral);
 
+    if (process.platform === 'win32') {
+      await expect(manager.connect('meshcore', peripheral.id)).rejects.toThrow(
+        /BLE notify subscribe failed on Windows/,
+      );
+      expect(fromRadio.subscribeCalls).toBe(1);
+      expect(fromRadio.readCalls).toBe(0);
+      return;
+    }
+
+    await manager.connect('meshcore', peripheral.id);
     expect(fromRadio.subscribeCalls).toBe(1);
-    // Initial connect path triggers one read-pump burst in fallback mode.
+    // Initial connect path triggers one read-pump burst in fallback mode (non-Windows).
     await wait(20);
     expect(fromRadio.readCalls).toBeGreaterThan(0);
 

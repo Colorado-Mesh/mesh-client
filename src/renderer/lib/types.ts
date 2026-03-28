@@ -466,6 +466,9 @@ declare global {
       onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => () => void;
       onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
       onNobleBleDisconnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
+      onNobleBleConnectAborted: (
+        cb: (payload: { sessionId: NobleBleSessionId; message: string }) => void,
+      ) => () => void;
       onNobleBleFromRadio: (
         cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
       ) => () => void;

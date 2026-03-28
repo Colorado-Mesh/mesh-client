@@ -24,7 +24,7 @@ const MESHCORE_RETRYABLE_GATT_DISCOVERY_FLAKES_RE =
 export function isMeshcoreRetryableBleErrorMessage(message: string): boolean {
   if (classifyMeshcoreBleTimeoutStage(message) !== 'unknown') return true;
   if (MESHCORE_RETRYABLE_GATT_DISCOVERY_FLAKES_RE.test(message)) return true;
-  return /already in progress|gatt server is disconnected|disconnected during gatt init|fromRadio characteristic supports neither notify nor read/i.test(
+  return /already in progress|gatt server is disconnected|disconnected during gatt init|disconnected during handshake|pairing step finished|fromRadio characteristic supports neither notify nor read/i.test(
     message,
   );
 }
