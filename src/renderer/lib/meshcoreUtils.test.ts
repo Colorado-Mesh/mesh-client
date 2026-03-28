@@ -1,10 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   isMeshcoreContactEligibleForUserGroup,
   isMeshcoreTransportStatusChatLine,
   meshcoreAppendRepeaterAuthHint,
+  meshcoreApplyRepeaterSessionAuth,
+  meshcoreApplyRepeaterSessionAuthSkip,
+  meshcoreClearRepeaterRemoteSessionAuth,
   meshcoreDeriveChannelKeyHexFromName,
+  meshcoreGetRepeaterSessionPassword,
+  meshcoreIsRepeaterRemoteAuthTouched,
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
 } from './meshcoreUtils';
@@ -78,6 +83,42 @@ describe('meshcoreDeriveChannelKeyHexFromName', () => {
     const a = await meshcoreDeriveChannelKeyHexFromName('#foo');
     const b = await meshcoreDeriveChannelKeyHexFromName('foo');
     expect(a).toBe(b);
+  });
+});
+
+describe('repeater session auth (in-memory)', () => {
+  beforeEach(() => {
+    meshcoreClearRepeaterRemoteSessionAuth();
+  });
+
+  it('starts untouched with empty password', () => {
+    expect(meshcoreIsRepeaterRemoteAuthTouched()).toBe(false);
+    expect(meshcoreGetRepeaterSessionPassword()).toBe('');
+  });
+
+  it('apply sets password and marks touched', () => {
+    meshcoreApplyRepeaterSessionAuth('s3cr3t');
+    expect(meshcoreIsRepeaterRemoteAuthTouched()).toBe(true);
+    expect(meshcoreGetRepeaterSessionPassword()).toBe('s3cr3t');
+  });
+
+  it('skip marks touched with empty password', () => {
+    meshcoreApplyRepeaterSessionAuthSkip();
+    expect(meshcoreIsRepeaterRemoteAuthTouched()).toBe(true);
+    expect(meshcoreGetRepeaterSessionPassword()).toBe('');
+  });
+
+  it('clear resets both touched and password', () => {
+    meshcoreApplyRepeaterSessionAuth('s3cr3t');
+    meshcoreClearRepeaterRemoteSessionAuth();
+    expect(meshcoreIsRepeaterRemoteAuthTouched()).toBe(false);
+    expect(meshcoreGetRepeaterSessionPassword()).toBe('');
+  });
+
+  it('password is never written to sessionStorage', () => {
+    meshcoreApplyRepeaterSessionAuth('topsecret');
+    expect(sessionStorage.getItem('meshclient:meshcoreRepeaterPassword')).toBeNull();
+    expect(sessionStorage.getItem('meshclient:meshcoreRepeaterAuthTouched')).toBeNull();
   });
 });
 

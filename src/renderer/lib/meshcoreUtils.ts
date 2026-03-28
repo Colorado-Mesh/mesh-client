@@ -190,9 +190,6 @@ export function meshcoreSelfInfoBwToDisplayKhz(bw: number): number {
   return Math.round(bw);
 }
 
-const MESHCORE_REPEATER_AUTH_TOUCHED = 'meshclient:meshcoreRepeaterAuthTouched';
-const MESHCORE_REPEATER_PASSWORD = 'meshclient:meshcoreRepeaterPassword';
-
 const REPEATER_AUTH_HINT =
   'Set or change the repeater admin password from the Repeaters panel (session only).';
 
@@ -202,60 +199,36 @@ const REPEATER_AUTH_HINT =
  */
 export const MESHCORE_RPC_SNR_RAW_TO_DB = 0.25;
 
-function sessionGet(key: string): string | null {
-  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') return null;
-  try {
-    return sessionStorage.getItem(key);
-  } catch {
-    // catch-no-log-ok sessionStorage private mode / quota — return null
-    return null;
-  }
-}
-
-function sessionSet(key: string, value: string): void {
-  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') return;
-  try {
-    sessionStorage.setItem(key, value);
-  } catch {
-    // catch-no-log-ok sessionStorage private mode / quota
-  }
-}
-
-function sessionRemove(key: string): void {
-  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') return;
-  try {
-    sessionStorage.removeItem(key);
-  } catch {
-    // catch-no-log-ok sessionStorage private mode / quota
-  }
-}
+// In-memory only — never written to any persistent or inspectable storage.
+let _repeaterAuthTouched = false;
+let _repeaterPassword = '';
 
 /** True after the user completed the Repeaters remote-auth step for this session (password or skip). */
 export function meshcoreIsRepeaterRemoteAuthTouched(): boolean {
-  return sessionGet(MESHCORE_REPEATER_AUTH_TOUCHED) === '1';
+  return _repeaterAuthTouched;
 }
 
 /** Session-only repeater admin password (for `login` before status/telemetry/neighbors). */
 export function meshcoreGetRepeaterSessionPassword(): string {
-  return sessionGet(MESHCORE_REPEATER_PASSWORD) ?? '';
+  return _repeaterPassword;
 }
 
 /** Store password and mark session auth as configured. */
 export function meshcoreApplyRepeaterSessionAuth(password: string): void {
-  sessionSet(MESHCORE_REPEATER_PASSWORD, password);
-  sessionSet(MESHCORE_REPEATER_AUTH_TOUCHED, '1');
+  _repeaterPassword = password;
+  _repeaterAuthTouched = true;
 }
 
 /** Mark session auth as configured with no password (repeaters without admin password). */
 export function meshcoreApplyRepeaterSessionAuthSkip(): void {
-  sessionSet(MESHCORE_REPEATER_PASSWORD, '');
-  sessionSet(MESHCORE_REPEATER_AUTH_TOUCHED, '1');
+  _repeaterPassword = '';
+  _repeaterAuthTouched = true;
 }
 
 /** Clear session repeater auth so the user can re-enter or skip again. */
 export function meshcoreClearRepeaterRemoteSessionAuth(): void {
-  sessionRemove(MESHCORE_REPEATER_AUTH_TOUCHED);
-  sessionRemove(MESHCORE_REPEATER_PASSWORD);
+  _repeaterAuthTouched = false;
+  _repeaterPassword = '';
 }
 
 /** Append guidance when an error is likely auth-related. */
