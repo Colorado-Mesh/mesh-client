@@ -181,6 +181,10 @@ let pendingPairingRetryCount = 0;
 /** Which BLE stack is connecting; MeshCore must not auto-use Meshtastic default PIN on first pairing. */
 let blePairingSessionKind: 'meshtastic' | 'meshcore' = 'meshtastic';
 
+// Noble BLE pairing state (Win32 — no Chromium pairing handler available)
+let pendingNoblePairingResolve: ((pin: string | null) => void) | null = null;
+let noblePairingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
 let hasInstalledOsmReferrerHook = false;
 const OSM_HTTP_REFERRER = 'https://meshtastic-client.app/';
 
@@ -1646,6 +1650,26 @@ ipcMain.on('bluetooth-provide-pin', (_event, pin: unknown) => {
   pendingPairingRetryCount = 0;
 });
 
+// ─── IPC: Noble BLE pairing (Win32) — provide PIN ────────────────────
+ipcMain.on('noble-ble-provide-pin', (_event, pin: unknown) => {
+  if (!pendingNoblePairingResolve) {
+    console.warn('[IPC] noble-ble-provide-pin: no pending pairing');
+    return;
+  }
+  const pinStr = typeof pin === 'string' ? pin : '';
+  console.debug('[IPC] noble-ble-provide-pin received');
+  pendingNoblePairingResolve(pinStr.length > 0 ? pinStr : null);
+  pendingNoblePairingResolve = null;
+});
+
+// ─── IPC: Noble BLE pairing (Win32) — cancel ─────────────────────────
+ipcMain.on('noble-ble-cancel-pairing', () => {
+  if (!pendingNoblePairingResolve) return;
+  console.debug('[IPC] noble-ble-cancel-pairing');
+  pendingNoblePairingResolve(null);
+  pendingNoblePairingResolve = null;
+});
+
 // ─── IPC: Cancel Bluetooth pairing (Linux) ────────────────────────────
 ipcMain.on('bluetooth-cancel-pairing', () => {
   if (pendingPairingCallback) {
@@ -1696,6 +1720,75 @@ nobleBleManager.on('connected', ({ sessionId }: { sessionId: NobleSessionId }) =
 nobleBleManager.on('disconnected', ({ sessionId }: { sessionId: NobleSessionId }) => {
   mainWindow?.webContents.send('noble-ble-disconnected', { sessionId });
 });
+// Win32: device requires pairing — prompt user for PIN, run WinRT pairing, then reconnect
+nobleBleManager.on(
+  'pairingRequired',
+  ({ sessionId, address }: { sessionId: NobleSessionId; address: string }) => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    console.debug('[main] noble BLE pairingRequired — prompting user for PIN', {
+      sessionId,
+      address,
+    });
+
+    // Clear any stale pending pairing from a previous attempt
+    if (pendingNoblePairingResolve) {
+      pendingNoblePairingResolve(null);
+      pendingNoblePairingResolve = null;
+    }
+    if (noblePairingTimeoutId) {
+      clearTimeout(noblePairingTimeoutId);
+      noblePairingTimeoutId = null;
+    }
+
+    const pinPromise = new Promise<string | null>((resolve) => {
+      pendingNoblePairingResolve = resolve;
+      noblePairingTimeoutId = setTimeout(() => {
+        console.warn('[main] noble BLE pairing: PIN prompt timed out after 120s — aborting');
+        resolve(null);
+        pendingNoblePairingResolve = null;
+        noblePairingTimeoutId = null;
+      }, 120_000);
+    });
+
+    void pinPromise.then(async (pin) => {
+      if (noblePairingTimeoutId) {
+        clearTimeout(noblePairingTimeoutId);
+        noblePairingTimeoutId = null;
+      }
+      if (!pin) {
+        console.debug('[main] noble BLE pairing: cancelled or timed out');
+        mainWindow?.webContents.send('noble-ble-pairing-result', {
+          success: false,
+          status: 'Cancelled',
+        });
+        return;
+      }
+      try {
+        const { pairBleDeviceWithPin } = await import('./windows-ble-pairing');
+        const result = await pairBleDeviceWithPin(address, pin);
+        console.debug('[main] noble BLE pairing result:', result.status);
+        mainWindow?.webContents.send('noble-ble-pairing-result', result);
+        if (result.success) {
+          // Disconnect so the renderer's retry loop reconnects with the now-paired device
+          await nobleBleManager.disconnect(sessionId).catch((e: unknown) => {
+            console.debug(
+              '[main] noble BLE disconnect after pairing (best-effort):',
+              e instanceof Error ? e.message : e,
+            );
+          });
+        }
+      } catch (err) {
+        console.error('[main] noble BLE pairing error:', err instanceof Error ? err.message : err); // log-injection-ok: error message from WinRT PowerShell result, not user input
+        mainWindow?.webContents.send('noble-ble-pairing-result', {
+          success: false,
+          status: 'Error',
+        });
+      }
+    });
+
+    mainWindow.webContents.send('noble-ble-pin-required', { address });
+  },
+);
 nobleBleManager.on(
   'fromRadio',
   ({ sessionId, bytes }: { sessionId: NobleSessionId; bytes: Uint8Array }) => {

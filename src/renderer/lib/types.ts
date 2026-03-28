@@ -495,6 +495,12 @@ declare global {
       provideBluetoothPin: (pin: string) => void;
       cancelBluetoothPairing: () => void;
       resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => void;
+      onNoblePinRequired: (cb: (data: { address: string }) => void) => () => void;
+      provideNobleBlePin: (pin: string) => void;
+      cancelNobleBlePin: () => void;
+      onNoblePairingResult: (
+        cb: (result: { success: boolean; status: string }) => void,
+      ) => () => void;
       clearSessionData: () => Promise<void>;
       notifyDeviceConnected: () => void;
       notifyDeviceDisconnected: () => void;

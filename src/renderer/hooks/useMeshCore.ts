@@ -757,6 +757,8 @@ export function useMeshCore() {
   const connRef = useRef<MeshCoreConnection | null>(null);
   const ipcTcpRef = useRef<IpcTcpConnection | null>(null);
   const ipcNobleRef = useRef<IpcNobleConnection | null>(null);
+  /** Set to true when Win32 noble BLE pairing succeeds; causes one extra retry after forced disconnect. */
+  const noblePairingJustCompletedRef = useRef(false);
   const webBluetoothTransportRef = useRef<TransportWebBluetoothIpc | null>(null);
   const bleConnectInProgressRef = useRef(false);
   /** Incremented on `disconnect()` so in-flight `initConn` can abort instead of timing out. */
@@ -790,6 +792,17 @@ export function useMeshCore() {
     return () => {
       meshcoreHookMountedRef.current = false;
     };
+  }, []);
+
+  // Win32: when noble BLE pairing succeeds, the main process disconnects the session so we
+  // can reconnect with the now-paired device. Flag the ref so the retry loop allows one extra attempt.
+  useEffect(() => {
+    if (rendererLikelyLinux()) return;
+    return window.electronAPI.onNoblePairingResult((result) => {
+      if (result.success) {
+        noblePairingJustCompletedRef.current = true;
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -1742,13 +1755,22 @@ export function useMeshCore() {
                 const rawBleMessage = serializeErrorLike(bleErr) || 'BLE connect failed';
                 const stage = classifyMeshcoreBleTimeoutStage(rawBleMessage);
                 const isTimeout = stage !== 'unknown';
-                const isRetryable = isMeshcoreRetryableBleErrorMessage(rawBleMessage);
+                // Allow one extra retry when noble BLE pairing just completed and the session was
+                // deliberately disconnected to force a reconnect with the now-paired device.
+                const isPairingReconnect = noblePairingJustCompletedRef.current;
+                if (isPairingReconnect) noblePairingJustCompletedRef.current = false;
+                const isRetryable =
+                  isPairingReconnect || isMeshcoreRetryableBleErrorMessage(rawBleMessage);
+                const effectiveMaxAttempts = isPairingReconnect
+                  ? NOBLE_IPC_CONNECT_MAX_ATTEMPTS + 1
+                  : NOBLE_IPC_CONNECT_MAX_ATTEMPTS;
                 console.warn(
                   `[useMeshCore] connect: BLE Noble IPC attempt failed ${formatStructuredLogDetail({
                     attempt,
-                    maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
+                    maxAttempts: effectiveMaxAttempts,
                     isTimeout,
                     isRetryable,
+                    ...(isPairingReconnect && { isPairingReconnect }),
                     stage,
                     elapsedMs: Date.now() - attemptStartedAt,
                     message: rawBleMessage,
@@ -1756,7 +1778,7 @@ export function useMeshCore() {
                 );
                 ipcNobleRef.current?.cleanup();
                 ipcNobleRef.current = null;
-                if (!isRetryable || attempt >= NOBLE_IPC_CONNECT_MAX_ATTEMPTS) {
+                if (!isRetryable || attempt >= effectiveMaxAttempts) {
                   throw bleErr;
                 }
                 console.debug(

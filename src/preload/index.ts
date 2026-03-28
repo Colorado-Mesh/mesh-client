@@ -385,6 +385,35 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('ble-reset-pairing-retry-count', sessionKind ?? 'meshtastic');
   },
 
+  // ─── Noble BLE pairing (Win32) ─────────────────────────────────────
+  onNoblePinRequired: (callback: (data: { address: string }) => void) => {
+    const handler = (_event: unknown, data: { address: string }) => {
+      callback(data);
+    };
+    ipcRenderer.on('noble-ble-pin-required', handler);
+    return () => {
+      ipcRenderer.removeListener('noble-ble-pin-required', handler);
+    };
+  },
+
+  provideNobleBlePin: (pin: string) => {
+    ipcRenderer.send('noble-ble-provide-pin', pin);
+  },
+
+  cancelNobleBlePin: () => {
+    ipcRenderer.send('noble-ble-cancel-pairing');
+  },
+
+  onNoblePairingResult: (callback: (result: { success: boolean; status: string }) => void) => {
+    const handler = (_event: unknown, result: { success: boolean; status: string }) => {
+      callback(result);
+    };
+    ipcRenderer.on('noble-ble-pairing-result', handler);
+    return () => {
+      ipcRenderer.removeListener('noble-ble-pairing-result', handler);
+    };
+  },
+
   // ─── Session management ────────────────────────────────────────
   clearSessionData: () => ipcRenderer.invoke('session:clearData'),
 

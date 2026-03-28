@@ -104,6 +104,12 @@ interface NobleBleSession {
   postWriteReadPumpTimer: ReturnType<typeof setTimeout> | null;
   /** Win32+MeshCore: timer to detect silent notify failure and fall back to read pump. */
   notifyWatchdogTimer: ReturnType<typeof setTimeout> | null;
+  /** True once the notify watchdog fires (subscribe succeeded but no data arrived in 5s). */
+  notifyWatchdogFired: boolean;
+  /** Win32+MeshCore: consecutive fromRadio read errors with no successful reads (pairing detection). */
+  consecutiveReadErrors: number;
+  /** True once pairingRequired has been emitted for this session to avoid duplicate events. */
+  pairingRequiredEmitted: boolean;
   /**
    * True when fromRadioChar delivers data via notifications and does not support GATT reads.
    * When set, the read pump and post-write read-pump timer are skipped entirely.
@@ -219,6 +225,9 @@ export class NobleBleManager extends EventEmitter {
       closing: false,
       postWriteReadPumpTimer: null,
       notifyWatchdogTimer: null,
+      notifyWatchdogFired: false,
+      consecutiveReadErrors: 0,
+      pairingRequiredEmitted: false,
       fromRadioNotifyOnly: false,
       fromRadioDeliveryCount: 0,
       fromRadioDeliveryBytes: 0,
@@ -255,6 +264,9 @@ export class NobleBleManager extends EventEmitter {
       clearTimeout(session.notifyWatchdogTimer);
       session.notifyWatchdogTimer = null;
     }
+    session.notifyWatchdogFired = false;
+    session.consecutiveReadErrors = 0;
+    session.pairingRequiredEmitted = false;
     session.connectedPeripheral = null;
     session.connectedPeripheralDisconnectHandler = null;
     session.toRadioChar = null;
@@ -369,6 +381,24 @@ export class NobleBleManager extends EventEmitter {
             if (meshcoreWinEarlyReadPoll && !session.closing) {
               session.readPumpRequested = true;
             }
+            // Detect likely pairing failure: subscribe succeeded but notify was silent (watchdog
+            // fired), and every read also fails. 3 consecutive errors is a strong pairing signal.
+            session.consecutiveReadErrors += 1;
+            if (
+              IS_WIN32 &&
+              sessionId === 'meshcore' &&
+              session.notifyWatchdogFired &&
+              !session.pairingRequiredEmitted &&
+              session.fromRadioDeliveryCount === 0 &&
+              session.consecutiveReadErrors >= 3
+            ) {
+              session.pairingRequiredEmitted = true;
+              const address: string = session.connectedPeripheral?.address ?? '';
+              console.warn(
+                `[BLE:meshcore] pairingRequired: ${session.consecutiveReadErrors} consecutive read errors after notify watchdog — address=${sanitizeLogMessage(address)}`,
+              );
+              this.emit('pairingRequired', { sessionId, address });
+            }
             // Back off before the outer while can re-trigger to avoid hammering a failing characteristic.
             await new Promise<void>((r) => setTimeout(r, 500));
             break;
@@ -380,6 +410,7 @@ export class NobleBleManager extends EventEmitter {
             }
             break;
           }
+          session.consecutiveReadErrors = 0;
           this.emitFromRadio(sessionId, new Uint8Array(Buffer.from(data)), 'read-pump');
           // Small floor delay between consecutive reads to avoid flooding the CBQueue.
           await new Promise<void>((r) => setTimeout(r, 10));
@@ -939,6 +970,7 @@ export class NobleBleManager extends EventEmitter {
               console.warn(
                 `[BLE:meshcore] notify watchdog: no data in 5s on Win32; notify silent — enabling read-pump fallback`,
               );
+              session.notifyWatchdogFired = true;
               session.fromRadioNotifyOnly = false;
               this.requestFromRadioReadPump(sessionId);
             }, 5_000);

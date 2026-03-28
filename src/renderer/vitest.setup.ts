@@ -180,6 +180,10 @@ const electronAPIMock = {
     onLine: vi.fn().mockReturnValue(() => {}),
     logDeviceConnection: vi.fn().mockResolvedValue(undefined),
   },
+  onNoblePinRequired: vi.fn().mockReturnValue(() => {}),
+  provideNobleBlePin: vi.fn(),
+  cancelNobleBlePin: vi.fn(),
+  onNoblePairingResult: vi.fn().mockReturnValue(() => {}),
 } satisfies ElectronAPI;
 
 vi.stubGlobal('electronAPI', electronAPIMock);

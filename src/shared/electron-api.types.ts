@@ -244,6 +244,12 @@ export interface ElectronAPI {
   provideBluetoothPin: (pin: string) => void;
   cancelBluetoothPairing: () => void;
   resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => void;
+  onNoblePinRequired: (callback: (data: { address: string }) => void) => () => void;
+  provideNobleBlePin: (pin: string) => void;
+  cancelNobleBlePin: () => void;
+  onNoblePairingResult: (
+    callback: (result: { success: boolean; status: string }) => void,
+  ) => () => void;
 
   // ─── Session management ──────────────────────────────────────────────────────
   clearSessionData: () => Promise<unknown>;
