@@ -20,13 +20,15 @@ import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
 import { isLetsMeshSettings } from '../lib/letsMeshJwt';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
+import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
   mergeMeshcoreChatStubNodes,
+  MESHCORE_RPC_SNR_RAW_TO_DB,
+  meshcoreAppendRepeaterAuthHint,
   meshcoreChatStubNodeIdFromDisplayName,
   meshcoreContactToMeshNode,
-  meshcoreGetRepeaterSessionPassword,
   meshcoreIsChatStubNodeId,
   meshcoreIsSyntheticPlaceholderPubKeyHex,
   meshcoreSyntheticPlaceholderPubKeyHex,
@@ -555,19 +557,6 @@ interface MeshCoreConnection {
   }>;
 }
 
-async function meshcoreTryRepeaterLogin(
-  conn: MeshCoreConnection,
-  pubKey: Uint8Array,
-): Promise<void> {
-  const password = meshcoreGetRepeaterSessionPassword().trim();
-  if (!password) return;
-  try {
-    await conn.login(pubKey, password, 2000);
-  } catch (e) {
-    console.warn('[useMeshCore] repeater login failed (continuing)', e);
-  }
-}
-
 interface MeshCoreContactRaw {
   publicKey: Uint8Array;
   type: number;
@@ -616,6 +605,7 @@ const INITIAL_STATE: DeviceState = {
 const MAX_DEVICE_LOGS = 500;
 const MESHCORE_STATUS_TIMEOUT_MS = 10000;
 const MESHCORE_TELEMETRY_TIMEOUT_MS = 10000;
+const MESHCORE_NEIGHBORS_TIMEOUT_MS = 10000;
 const MESHCORE_TRACE_TIMEOUT_MS = 15000;
 const MAX_TELEMETRY_POINTS = 50;
 
@@ -786,6 +776,9 @@ export function useMeshCore() {
   const [meshcoreStatusErrors, setMeshcoreStatusErrors] = useState<Map<number, string>>(new Map());
   const [meshcorePingErrors, setMeshcorePingErrors] = useState<Map<number, string>>(new Map());
   const [meshcoreNeighbors, setMeshcoreNeighbors] = useState<Map<number, MeshCoreNeighborResult>>(
+    new Map(),
+  );
+  const [meshcoreNeighborErrors, setMeshcoreNeighborErrors] = useState<Map<number, string>>(
     new Map(),
   );
   const [manualAddContacts, setManualAddContacts] = useState<boolean>(() => {
@@ -2620,9 +2613,10 @@ export function useMeshCore() {
       } catch (e: unknown) {
         const rawErr = e instanceof Error ? e.message : String(e);
         const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : 'request failed';
-        const friendlyErr = errMsg.toLowerCase().includes('timeout')
+        let friendlyErr = errMsg.toLowerCase().includes('timeout')
           ? `Request timed out (~${Math.round(MESHCORE_TRACE_TIMEOUT_MS / 1000)}s)`
           : `Failed: ${errMsg}`;
+        friendlyErr = meshcoreAppendRepeaterAuthHint(friendlyErr);
         setMeshcorePingErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, friendlyErr);
@@ -2663,13 +2657,14 @@ export function useMeshCore() {
         return next;
       });
       try {
-        await meshcoreTryRepeaterLogin(connRef.current, pubKey);
+        await meshcoreRepeaterTryLogin(connRef.current, pubKey);
         const raw = await connRef.current.getStatus(pubKey, MESHCORE_STATUS_TIMEOUT_MS);
+        const lastSnrDb = raw.last_snr * MESHCORE_RPC_SNR_RAW_TO_DB;
         const status: MeshCoreRepeaterStatus = {
           battMilliVolts: raw.batt_milli_volts,
           noiseFloor: raw.noise_floor,
           lastRssi: raw.last_rssi,
-          lastSnr: raw.last_snr,
+          lastSnr: lastSnrDb,
           nPacketsRecv: raw.n_packets_recv,
           nPacketsSent: raw.n_packets_sent,
           totalAirTimeSecs: raw.total_air_time_secs,
@@ -2692,14 +2687,14 @@ export function useMeshCore() {
           const cur = prev.get(nodeId);
           if (!cur) return prev;
           const next = new Map(prev);
-          next.set(nodeId, { ...cur, snr: raw.last_snr, rssi: raw.last_rssi });
+          next.set(nodeId, { ...cur, snr: lastSnrDb, rssi: raw.last_rssi });
           return next;
         });
         useRepeaterSignalStore.getState().recordSignal(nodeId, status.lastSnr);
         bumpMeshcoreNodeLastHeardFromRpc(nodeId);
-        if (Number.isFinite(raw.last_snr) && Number.isFinite(raw.last_rssi)) {
+        if (Number.isFinite(lastSnrDb) && Number.isFinite(raw.last_rssi)) {
           void window.electronAPI.db
-            .updateMeshcoreContactLastRf(nodeId, raw.last_snr, raw.last_rssi)
+            .updateMeshcoreContactLastRf(nodeId, lastSnrDb, raw.last_rssi)
             .catch((e: unknown) => {
               console.warn('[useMeshCore] updateMeshcoreContactLastRf error', e);
             });
@@ -2707,11 +2702,12 @@ export function useMeshCore() {
       } catch (e: unknown) {
         const rawErr = e instanceof Error ? e.message : String(e);
         const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : 'request failed';
-        const friendlyErr = errMsg.toLowerCase().includes('timeout')
+        let friendlyErr = errMsg.toLowerCase().includes('timeout')
           ? `Request timed out (~${Math.round(MESHCORE_STATUS_TIMEOUT_MS / 1000)}s)`
           : errMsg.toLowerCase().includes('auth') || errMsg.toLowerCase().includes('login')
             ? 'Authentication failed'
             : `Failed: ${errMsg}`;
+        friendlyErr = meshcoreAppendRepeaterAuthHint(friendlyErr);
         setMeshcoreStatusErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, friendlyErr);
@@ -2748,7 +2744,7 @@ export function useMeshCore() {
     }
     console.debug('[useMeshCore] requestTelemetry nodeId=', nodeId.toString(16).toUpperCase());
     try {
-      await meshcoreTryRepeaterLogin(connRef.current, pubKey);
+      await meshcoreRepeaterTryLogin(connRef.current, pubKey);
       const raw = await connRef.current.getTelemetry(pubKey, MESHCORE_TELEMETRY_TIMEOUT_MS);
       let entries: CayenneLppEntry[] = [];
       try {
@@ -2808,11 +2804,12 @@ export function useMeshCore() {
     } catch (e: unknown) {
       const rawErr = e instanceof Error ? e.message : String(e);
       const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : 'request failed';
-      const friendlyErr = errMsg.toLowerCase().includes('timeout')
+      let friendlyErr = errMsg.toLowerCase().includes('timeout')
         ? `Request timed out (~${Math.round(MESHCORE_TELEMETRY_TIMEOUT_MS / 1000)}s)`
         : errMsg.toLowerCase().includes('auth') || errMsg.toLowerCase().includes('login')
           ? 'Authentication failed'
           : `Failed: ${errMsg}`;
+      friendlyErr = meshcoreAppendRepeaterAuthHint(friendlyErr);
       setMeshcoreTelemetryErrors((prev) => {
         const next = new Map(prev);
         next.set(nodeId, friendlyErr);
@@ -2824,9 +2821,32 @@ export function useMeshCore() {
 
   const requestNeighbors = useCallback(async (nodeId: number) => {
     const pubKey = pubKeyMapRef.current.get(nodeId);
-    if (!pubKey || !connRef.current) return;
+    if (!pubKey) {
+      const msg = meshcoreAppendRepeaterAuthHint('Node not found (no encryption key)');
+      setMeshcoreNeighborErrors((prev) => {
+        const next = new Map(prev);
+        next.set(nodeId, msg);
+        return next;
+      });
+      throw new Error(msg);
+    }
+    if (!connRef.current) {
+      const msg = meshcoreAppendRepeaterAuthHint('Not connected to device');
+      setMeshcoreNeighborErrors((prev) => {
+        const next = new Map(prev);
+        next.set(nodeId, msg);
+        return next;
+      });
+      throw new Error(msg);
+    }
     console.debug('[useMeshCore] requestNeighbors nodeId=', nodeId.toString(16).toUpperCase());
+    setMeshcoreNeighborErrors((prev) => {
+      const next = new Map(prev);
+      next.delete(nodeId);
+      return next;
+    });
     try {
+      await meshcoreRepeaterTryLogin(connRef.current, pubKey);
       const raw = await connRef.current.getNeighbours(pubKey, 10, 0, 0, 6);
       const neighbours: MeshCoreNeighborEntry[] = raw.neighbours.map((nb) => {
         const prefixHex = Array.from(nb.publicKeyPrefix)
@@ -2851,14 +2871,33 @@ export function useMeshCore() {
         next.set(nodeId, result);
         return next;
       });
+      setMeshcoreNeighborErrors((prev) => {
+        const next = new Map(prev);
+        next.delete(nodeId);
+        return next;
+      });
       console.debug(
         '[useMeshCore] requestNeighbors result: total=',
         raw.totalNeighboursCount,
         'fetched=',
         neighbours.length,
       );
-    } catch (e) {
+    } catch (e: unknown) {
+      const rawErr = e instanceof Error ? e.message : String(e);
+      const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : 'request failed';
+      let friendlyErr = errMsg.toLowerCase().includes('timeout')
+        ? `Request timed out (~${Math.round(MESHCORE_NEIGHBORS_TIMEOUT_MS / 1000)}s)`
+        : errMsg.toLowerCase().includes('auth') || errMsg.toLowerCase().includes('login')
+          ? 'Authentication failed'
+          : `Failed: ${errMsg}`;
+      friendlyErr = meshcoreAppendRepeaterAuthHint(friendlyErr);
+      setMeshcoreNeighborErrors((prev) => {
+        const next = new Map(prev);
+        next.set(nodeId, friendlyErr);
+        return next;
+      });
       console.warn('[useMeshCore] requestNeighbors error', e);
+      throw new Error(friendlyErr);
     }
   }, []);
 
@@ -3225,6 +3264,7 @@ export function useMeshCore() {
     meshcoreTelemetryErrors,
     meshcorePingErrors,
     meshcoreNeighbors,
+    meshcoreNeighborErrors,
     manualAddContacts,
     // Stubs for interface compatibility
     mqttStatus,

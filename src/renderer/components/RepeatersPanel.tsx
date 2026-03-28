@@ -1,12 +1,19 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
 } from '../hooks/useMeshCore';
+import {
+  MeshcoreRepeaterRemoteAuthBanner,
+  useMeshcoreRepeaterRemoteAuth,
+} from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { formatCoordPair } from '../lib/coordUtils';
-import { meshcoreEnsureRepeaterRemoteAuthPrompt } from '../lib/meshcoreUtils';
+import {
+  meshcoreClearRepeaterRemoteSessionAuth,
+  meshcoreIsRepeaterRemoteAuthTouched,
+} from '../lib/meshcoreUtils';
 import { normalizeLastHeardMs } from '../lib/nodeStatus';
 import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
@@ -37,6 +44,7 @@ interface Props {
   onReboot?: () => Promise<void>;
   onRequestNeighbors?: (nodeId: number) => Promise<void>;
   meshcoreNeighbors?: Map<number, MeshCoreNeighborResult>;
+  meshcoreNeighborErrors?: Map<number, string>;
   onRequestTelemetry?: (nodeId: number) => Promise<void>;
   meshcoreTelemetry?: Map<number, MeshCoreNodeTelemetry>;
   meshcoreTelemetryErrors?: Map<number, string>;
@@ -140,12 +148,18 @@ export default function RepeatersPanel({
   onReboot,
   onRequestNeighbors,
   meshcoreNeighbors,
+  meshcoreNeighborErrors,
   onRequestTelemetry,
   meshcoreTelemetry,
   meshcoreTelemetryErrors,
   onSelectRepeater,
 }: Props) {
   const { addToast } = useToast();
+  const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
+  const [, setRemoteAuthEpoch] = useState(0);
+  const bumpRemoteAuthEpoch = useCallback(() => {
+    setRemoteAuthEpoch((n) => n + 1);
+  }, []);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const signalHistory = useRepeaterSignalStore((s) => s.history);
   const [statusLoadingSet, setStatusLoadingSet] = useState<Set<number>>(new Set());
@@ -191,8 +205,10 @@ export default function RepeatersPanel({
   const meshcoreStatusRef = useRef(meshcoreNodeStatus);
   meshcoreStatusRef.current = meshcoreNodeStatus;
 
+  const remoteAuthReady = meshcoreIsRepeaterRemoteAuthTouched();
+
   useEffect(() => {
-    if (!isConnected || repeaterIdsKey.length === 0) return;
+    if (!isConnected || repeaterIdsKey.length === 0 || !remoteAuthReady) return;
     let cancelled = false;
     const nodeIds = repeaterIdsKey
       .split(',')
@@ -219,7 +235,7 @@ export default function RepeatersPanel({
     return () => {
       cancelled = true;
     };
-  }, [isConnected, repeaterIdsKey, onRequestRepeaterStatus]);
+  }, [isConnected, repeaterIdsKey, onRequestRepeaterStatus, remoteAuthReady]);
 
   const handleImport = async () => {
     setImportLoading(true);
@@ -240,7 +256,7 @@ export default function RepeatersPanel({
   };
 
   const handleStatus = async (nodeId: number) => {
-    if (!meshcoreEnsureRepeaterRemoteAuthPrompt()) return;
+    if (!(await ensureConfigured())) return;
     setStatusLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
       await onRequestRepeaterStatus(nodeId);
@@ -345,7 +361,7 @@ export default function RepeatersPanel({
       });
       return;
     }
-    if (!meshcoreEnsureRepeaterRemoteAuthPrompt()) return;
+    if (!(await ensureConfigured())) return;
     setNeighborsLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
       await onRequestNeighbors?.(nodeId);
@@ -370,7 +386,7 @@ export default function RepeatersPanel({
       });
       return;
     }
-    if (!meshcoreEnsureRepeaterRemoteAuthPrompt()) return;
+    if (!(await ensureConfigured())) return;
     setExpandedTelemetry((prev) => new Set([...prev, nodeId]));
     setTelemetryLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
@@ -396,492 +412,539 @@ export default function RepeatersPanel({
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col min-[480px]:flex-row flex-wrap items-stretch min-[480px]:items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-bright-green">Repeaters</h2>
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-          }}
-          placeholder="Search repeaters…"
-          aria-label="Search repeaters"
-          className="flex-1 min-w-[8rem] max-w-[20rem] px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
-        />
-        <button
-          onClick={handleImport}
-          disabled={importLoading}
-          className="flex items-center gap-2 px-3 py-1.5 rounded bg-brand-green/20 text-brand-green border border-brand-green/30 hover:bg-brand-green/30 transition-colors text-sm font-medium disabled:opacity-50"
-        >
-          {importLoading ? (
-            <span className="w-3 h-3 border border-brand-green border-t-transparent rounded-full animate-spin inline-block" />
-          ) : null}
-          Import Repeaters
-        </button>
-      </div>
-      <p className="text-xs text-gray-500 max-w-2xl">
-        Imported repeaters use the import time as Last heard until an RF advert or Ping / Status
-        updates it.
-      </p>
-      <p className="text-xs text-gray-500 max-w-2xl">
-        SNR, RSSI, uptime, and airtime come from the Status action (or auto-fetch while this panel
-        is open). Hops and path history need Ping. MeshCore does not fill those columns from adverts
-        alone.
-      </p>
+    <>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col min-[480px]:flex-row flex-wrap items-stretch min-[480px]:items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-bright-green">Repeaters</h2>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+            }}
+            placeholder="Search repeaters…"
+            aria-label="Search repeaters"
+            className="flex-1 min-w-[8rem] max-w-[20rem] px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
+          />
+          <button
+            onClick={handleImport}
+            disabled={importLoading}
+            className="flex items-center gap-2 px-3 py-1.5 rounded bg-brand-green/20 text-brand-green border border-brand-green/30 hover:bg-brand-green/30 transition-colors text-sm font-medium disabled:opacity-50"
+          >
+            {importLoading ? (
+              <span className="w-3 h-3 border border-brand-green border-t-transparent rounded-full animate-spin inline-block" />
+            ) : null}
+            Import Repeaters
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 max-w-2xl">
+          Imported repeaters use the import time as Last heard until an RF advert or Ping / Status
+          updates it.
+        </p>
+        <p className="text-xs text-gray-500 max-w-2xl">
+          SNR, RSSI, uptime, and airtime come from the Status action (or auto-fetch while this panel
+          is open). Hops and path history need Ping. MeshCore does not fill those columns from
+          adverts alone.
+        </p>
 
-      {/* Device Action Bar */}
-      {(onSendAdvert || onSyncClock || onReboot) && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg border border-gray-700">
-          <span className="text-xs text-gray-400 mr-1">Device:</span>
-          {onSendAdvert && (
+        <MeshcoreRepeaterRemoteAuthBanner onConfigured={bumpRemoteAuthEpoch} />
+        {remoteAuthReady ? (
+          <div className="flex justify-end">
             <button
-              onClick={() => void handleSendAdvert()}
-              disabled={!isConnected || advertLoading}
-              className="px-3 py-1 rounded text-xs font-medium bg-brand-green/20 text-brand-green border border-brand-green/30 hover:bg-brand-green/30 transition-colors disabled:opacity-40"
-            >
-              {advertLoading ? (
-                <span className="w-3 h-3 border border-brand-green border-t-transparent rounded-full animate-spin inline-block" />
-              ) : (
-                'Flood Advert'
-              )}
-            </button>
-          )}
-          {onSyncClock && (
-            <button
-              onClick={() => void handleSyncClock()}
-              disabled={!isConnected || syncClockLoading}
-              className="px-3 py-1 rounded text-xs font-medium bg-blue-900/50 text-blue-300 border border-blue-700 hover:bg-blue-800/60 transition-colors disabled:opacity-40"
-            >
-              {syncClockLoading ? (
-                <span className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin inline-block" />
-              ) : (
-                'Sync Clock'
-              )}
-            </button>
-          )}
-          {onReboot && (
-            <button
-              onClick={() => void handleReboot()}
-              disabled={!isConnected || rebootLoading}
-              onBlur={() => {
-                setRebootConfirm(false);
+              type="button"
+              onClick={() => {
+                meshcoreClearRepeaterRemoteSessionAuth();
+                bumpRemoteAuthEpoch();
               }}
-              className="px-3 py-1 rounded text-xs font-medium bg-red-900/60 text-red-300 border border-red-700 hover:bg-red-800/60 transition-colors disabled:opacity-40"
+              className="text-xs text-amber-400/90 hover:text-amber-300 underline decoration-dotted"
             >
-              {rebootLoading ? (
-                <span className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
-              ) : rebootConfirm ? (
-                'Confirm Reboot?'
-              ) : (
-                'Reboot Device'
-              )}
+              Change session repeater password
             </button>
-          )}
-        </div>
-      )}
+          </div>
+        ) : null}
 
-      {repeaters.length === 0 ? (
-        <div className="text-gray-400 text-sm mt-8 text-center">
-          <p>No repeaters discovered yet.</p>
-          <p className="mt-1 text-gray-500">
-            Repeaters appear when contacts with type &ldquo;Repeater&rdquo; advertise. Use Import to
-            pre-load nicknames.
-          </p>
-        </div>
-      ) : repeatersFiltered.length === 0 ? (
-        <div className="text-gray-400 text-sm mt-4 text-center">
-          No repeaters match your search.
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-400 border-b border-gray-700">
-                <th className="py-2 pr-4 font-medium">Status</th>
-                <th className="py-2 pr-4 font-medium">Name</th>
-                <th className="py-2 pr-4 font-medium">Last Heard</th>
-                <th
-                  className="py-2 pr-4 font-medium"
-                  title="dB — from Request Status when available, else contact list"
-                >
-                  SNR
-                </th>
-                <th
-                  className="py-2 pr-4 font-medium"
-                  title="dBm — from Request Status when available, else contact list"
-                >
-                  RSSI
-                </th>
-                <th
-                  className="py-2 pr-4 font-medium"
-                  title="Hop count from last trace (Ping); MeshCore path differs from Meshtastic"
-                >
-                  Hops
-                </th>
-                <th className="py-2 pr-4 font-medium">Uptime</th>
-                <th className="py-2 pr-4 font-medium">Air%</th>
-                <th className="py-2 pr-4 font-medium">Path History</th>
-                <th className="py-2 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {repeatersFiltered.map((node) => {
-                const status = meshcoreNodeStatus.get(node.node_id);
-                const traceResult = meshcoreTraceResults.get(node.node_id);
-                const repeaterStatus = getRepeaterStatus(node.last_heard);
-                const history = signalHistory.get(node.node_id) ?? [];
-                const airPct =
-                  status?.totalAirTimeSecs && status?.totalUpTimeSecs
-                    ? ((status.totalAirTimeSecs / status.totalUpTimeSecs) * 100).toFixed(1)
-                    : null;
-                const isStatusLoading = statusLoadingSet.has(node.node_id);
-                const isPingLoading = pingLoadingSet.has(node.node_id);
-                const statusError = meshcoreStatusErrors?.get(node.node_id);
-                const pingError = meshcorePingErrors?.get(node.node_id);
-                const isDeleteLoading = deleteLoadingSet.has(node.node_id);
-                const isDeleteConfirm = deleteConfirmId === node.node_id;
-                const isNeighborsLoading = neighborsLoadingSet.has(node.node_id);
-                const isTelemetryLoading = telemetryLoadingSet.has(node.node_id);
-                const isNeighborsExpanded = expandedNeighbors.has(node.node_id);
-                const isTelemetryExpanded = expandedTelemetry.has(node.node_id);
-                const isPathExpanded = expandedPath.has(node.node_id);
-                const neighborData = meshcoreNeighbors?.get(node.node_id);
-                const telemetryData = meshcoreTelemetry?.get(node.node_id);
-                const telemetryError = meshcoreTelemetryErrors?.get(node.node_id);
-                const hasTraceResult = traceResult && traceResult.hops.length > 0;
+        {/* Device Action Bar */}
+        {(onSendAdvert || onSyncClock || onReboot) && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg border border-gray-700">
+            <span className="text-xs text-gray-400 mr-1">Device:</span>
+            {onSendAdvert && (
+              <button
+                onClick={() => void handleSendAdvert()}
+                disabled={!isConnected || advertLoading}
+                className="px-3 py-1 rounded text-xs font-medium bg-brand-green/20 text-brand-green border border-brand-green/30 hover:bg-brand-green/30 transition-colors disabled:opacity-40"
+              >
+                {advertLoading ? (
+                  <span className="w-3 h-3 border border-brand-green border-t-transparent rounded-full animate-spin inline-block" />
+                ) : (
+                  'Flood Advert'
+                )}
+              </button>
+            )}
+            {onSyncClock && (
+              <button
+                onClick={() => void handleSyncClock()}
+                disabled={!isConnected || syncClockLoading}
+                className="px-3 py-1 rounded text-xs font-medium bg-blue-900/50 text-blue-300 border border-blue-700 hover:bg-blue-800/60 transition-colors disabled:opacity-40"
+              >
+                {syncClockLoading ? (
+                  <span className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin inline-block" />
+                ) : (
+                  'Sync Clock'
+                )}
+              </button>
+            )}
+            {onReboot && (
+              <button
+                onClick={() => void handleReboot()}
+                disabled={!isConnected || rebootLoading}
+                onBlur={() => {
+                  setRebootConfirm(false);
+                }}
+                className="px-3 py-1 rounded text-xs font-medium bg-red-900/60 text-red-300 border border-red-700 hover:bg-red-800/60 transition-colors disabled:opacity-40"
+              >
+                {rebootLoading ? (
+                  <span className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
+                ) : rebootConfirm ? (
+                  'Confirm Reboot?'
+                ) : (
+                  'Reboot Device'
+                )}
+              </button>
+            )}
+          </div>
+        )}
 
-                return (
-                  <Fragment key={node.node_id}>
-                    <tr className="text-gray-300 hover:bg-gray-800/30">
-                      <td className="py-2 pr-4">
-                        <span className="flex items-center gap-1.5">
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              repeaterStatus === 'active'
-                                ? 'bg-green-500'
-                                : repeaterStatus === 'stale'
-                                  ? 'bg-amber-500'
-                                  : 'bg-gray-500'
-                            }`}
-                          />
-                          <span
-                            className={
-                              repeaterStatus === 'active'
-                                ? 'text-green-400 text-xs'
-                                : repeaterStatus === 'stale'
-                                  ? 'text-amber-400 text-xs'
-                                  : 'text-gray-500 text-xs'
-                            }
-                          >
-                            {repeaterStatus === 'active'
-                              ? 'Active'
-                              : repeaterStatus === 'stale'
-                                ? 'Stale'
-                                : '—'}
-                          </span>
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4 font-medium text-white">
-                        <button
-                          type="button"
-                          onClick={() => onSelectRepeater?.(node)}
-                          aria-label={node.long_name}
-                          className="text-left text-white hover:text-brand-green transition-colors underline decoration-transparent hover:decoration-brand-green/70 disabled:no-underline"
-                        >
-                          {node.long_name}
-                        </button>
-                      </td>
-                      <td className="py-2 pr-4 text-gray-400 text-xs">
-                        {formatRelativeTime(node.last_heard)}
-                      </td>
-                      <td
-                        className="py-2 pr-4"
-                        title={
-                          status !== undefined
-                            ? 'SNR from repeater status'
-                            : 'Contact SNR — use Status for live reading'
-                        }
-                      >
-                        {displayRepeaterSnr(node, status)}
-                      </td>
-                      <td
-                        className="py-2 pr-4"
-                        title={
-                          status !== undefined
-                            ? 'RSSI from repeater status'
-                            : 'Contact RSSI — use Status for live reading'
-                        }
-                      >
-                        {displayRepeaterRssi(node, status)}
-                      </td>
-                      <td className="py-2 pr-4">
-                        {traceResult ? (
-                          hasTraceResult ? (
-                            <button
-                              onClick={() => {
-                                togglePath(node.node_id);
-                              }}
-                              className="text-blue-400 hover:text-blue-300 underline decoration-dotted"
-                              title="Click to view path SNR detail"
-                            >
-                              {traceResult.hops.length}
-                            </button>
-                          ) : (
-                            traceResult.hops.length
-                          )
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                      <td className="py-2 pr-4">{formatUptime(status?.totalUpTimeSecs)}</td>
-                      <td className="py-2 pr-4">{airPct != null ? `${airPct}%` : '—'}</td>
-                      <td className="py-2 pr-4">
-                        <SignalSparkline points={history} />
-                      </td>
-                      <td className="py-2">
-                        <div className="flex flex-wrap gap-1">
-                          <button
-                            onClick={() => void handlePing(node.node_id)}
-                            disabled={!isConnected || isPingLoading}
-                            className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
-                              pingError
-                                ? 'bg-red-900/60 text-red-300 border border-red-700'
-                                : 'bg-blue-900/60 text-blue-300 border border-blue-700 hover:bg-blue-800/60'
-                            }`}
-                          >
-                            {isPingLoading ? (
-                              <span className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin inline-block" />
-                            ) : pingError ? (
-                              'Error'
-                            ) : (
-                              'Ping'
-                            )}
-                          </button>
-                          <button
-                            onClick={() => void handleStatus(node.node_id)}
-                            disabled={!isConnected || isStatusLoading}
-                            className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
-                              statusError
-                                ? 'bg-red-900/60 text-red-300 border border-red-700'
-                                : 'bg-gray-800 text-gray-300 border border-gray-600 hover:bg-gray-700'
-                            }`}
-                          >
-                            {isStatusLoading ? (
-                              <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
-                            ) : statusError ? (
-                              'Error'
-                            ) : (
-                              'Status'
-                            )}
-                          </button>
-                          {onRequestNeighbors && (
-                            <button
-                              onClick={() => void handleNeighbors(node.node_id)}
-                              disabled={!isConnected || isNeighborsLoading}
-                              className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
-                                isNeighborsExpanded
-                                  ? 'bg-purple-900/60 text-purple-300 border border-purple-700'
-                                  : 'bg-gray-800 text-gray-300 border border-gray-600 hover:bg-gray-700'
+        {repeaters.length === 0 ? (
+          <div className="text-gray-400 text-sm mt-8 text-center">
+            <p>No repeaters discovered yet.</p>
+            <p className="mt-1 text-gray-500">
+              Repeaters appear when contacts with type &ldquo;Repeater&rdquo; advertise. Use Import
+              to pre-load nicknames.
+            </p>
+          </div>
+        ) : repeatersFiltered.length === 0 ? (
+          <div className="text-gray-400 text-sm mt-4 text-center">
+            No repeaters match your search.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-400 border-b border-gray-700">
+                  <th className="py-2 pr-4 font-medium">Status</th>
+                  <th className="py-2 pr-4 font-medium">Name</th>
+                  <th className="py-2 pr-4 font-medium">Last Heard</th>
+                  <th
+                    className="py-2 pr-4 font-medium"
+                    title="dB — from Request Status when available, else contact list"
+                  >
+                    SNR
+                  </th>
+                  <th
+                    className="py-2 pr-4 font-medium"
+                    title="dBm — from Request Status when available, else contact list"
+                  >
+                    RSSI
+                  </th>
+                  <th
+                    className="py-2 pr-4 font-medium"
+                    title="Hop count from last trace (Ping); MeshCore path differs from Meshtastic"
+                  >
+                    Hops
+                  </th>
+                  <th className="py-2 pr-4 font-medium">Uptime</th>
+                  <th className="py-2 pr-4 font-medium">Air%</th>
+                  <th className="py-2 pr-4 font-medium">Path History</th>
+                  <th className="py-2 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {repeatersFiltered.map((node) => {
+                  const status = meshcoreNodeStatus.get(node.node_id);
+                  const traceResult = meshcoreTraceResults.get(node.node_id);
+                  const repeaterStatus = getRepeaterStatus(node.last_heard);
+                  const history = signalHistory.get(node.node_id) ?? [];
+                  const airPct =
+                    status?.totalAirTimeSecs && status?.totalUpTimeSecs
+                      ? ((status.totalAirTimeSecs / status.totalUpTimeSecs) * 100).toFixed(1)
+                      : null;
+                  const isStatusLoading = statusLoadingSet.has(node.node_id);
+                  const isPingLoading = pingLoadingSet.has(node.node_id);
+                  const statusError = meshcoreStatusErrors?.get(node.node_id);
+                  const pingError = meshcorePingErrors?.get(node.node_id);
+                  const isDeleteLoading = deleteLoadingSet.has(node.node_id);
+                  const isDeleteConfirm = deleteConfirmId === node.node_id;
+                  const isNeighborsLoading = neighborsLoadingSet.has(node.node_id);
+                  const isTelemetryLoading = telemetryLoadingSet.has(node.node_id);
+                  const isNeighborsExpanded = expandedNeighbors.has(node.node_id);
+                  const isTelemetryExpanded = expandedTelemetry.has(node.node_id);
+                  const isPathExpanded = expandedPath.has(node.node_id);
+                  const neighborError = meshcoreNeighborErrors?.get(node.node_id);
+                  const actionErrorSummary = [
+                    statusError && `Status: ${statusError}`,
+                    pingError && `Ping: ${pingError}`,
+                    neighborError && !isNeighborsExpanded && `Neighbors: ${neighborError}`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ');
+                  const neighborData = meshcoreNeighbors?.get(node.node_id);
+                  const telemetryData = meshcoreTelemetry?.get(node.node_id);
+                  const telemetryError = meshcoreTelemetryErrors?.get(node.node_id);
+                  const hasTraceResult = traceResult && traceResult.hops.length > 0;
+
+                  return (
+                    <Fragment key={node.node_id}>
+                      <tr className="text-gray-300 hover:bg-gray-800/30">
+                        <td className="py-2 pr-4">
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                repeaterStatus === 'active'
+                                  ? 'bg-green-500'
+                                  : repeaterStatus === 'stale'
+                                    ? 'bg-amber-500'
+                                    : 'bg-gray-500'
                               }`}
+                            />
+                            <span
+                              className={
+                                repeaterStatus === 'active'
+                                  ? 'text-green-400 text-xs'
+                                  : repeaterStatus === 'stale'
+                                    ? 'text-amber-400 text-xs'
+                                    : 'text-gray-500 text-xs'
+                              }
                             >
-                              {isNeighborsLoading ? (
-                                <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
-                              ) : (
-                                'Neighbors'
-                              )}
-                            </button>
+                              {repeaterStatus === 'active'
+                                ? 'Active'
+                                : repeaterStatus === 'stale'
+                                  ? 'Stale'
+                                  : '—'}
+                            </span>
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4 font-medium text-white">
+                          <button
+                            type="button"
+                            onClick={() => onSelectRepeater?.(node)}
+                            aria-label={node.long_name}
+                            className="text-left text-white hover:text-brand-green transition-colors underline decoration-transparent hover:decoration-brand-green/70 disabled:no-underline"
+                          >
+                            {node.long_name}
+                          </button>
+                        </td>
+                        <td className="py-2 pr-4 text-gray-400 text-xs">
+                          {formatRelativeTime(node.last_heard)}
+                        </td>
+                        <td
+                          className="py-2 pr-4"
+                          title={
+                            status !== undefined
+                              ? 'SNR from repeater status'
+                              : 'Contact SNR — use Status for live reading'
+                          }
+                        >
+                          {displayRepeaterSnr(node, status)}
+                        </td>
+                        <td
+                          className="py-2 pr-4"
+                          title={
+                            status !== undefined
+                              ? 'RSSI from repeater status'
+                              : 'Contact RSSI — use Status for live reading'
+                          }
+                        >
+                          {displayRepeaterRssi(node, status)}
+                        </td>
+                        <td className="py-2 pr-4">
+                          {traceResult ? (
+                            hasTraceResult ? (
+                              <button
+                                onClick={() => {
+                                  togglePath(node.node_id);
+                                }}
+                                className="text-blue-400 hover:text-blue-300 underline decoration-dotted"
+                                title="Click to view path SNR detail"
+                              >
+                                {traceResult.hops.length}
+                              </button>
+                            ) : (
+                              traceResult.hops.length
+                            )
+                          ) : (
+                            '—'
                           )}
-                          {onRequestTelemetry && (
+                        </td>
+                        <td className="py-2 pr-4">{formatUptime(status?.totalUpTimeSecs)}</td>
+                        <td className="py-2 pr-4">{airPct != null ? `${airPct}%` : '—'}</td>
+                        <td className="py-2 pr-4">
+                          <SignalSparkline points={history} />
+                        </td>
+                        <td className="py-2">
+                          <div className="flex flex-wrap gap-1">
                             <button
                               type="button"
-                              onClick={() => void handleTelemetry(node.node_id)}
-                              disabled={!isConnected || isTelemetryLoading}
-                              title="Cayenne LPP sensor payload (not advert GPS on the map)"
-                              aria-label="Sensor telemetry LPP"
+                              onClick={() => void handlePing(node.node_id)}
+                              disabled={!isConnected || isPingLoading}
+                              title={pingError ?? undefined}
+                              aria-label={pingError ? `Ping error: ${pingError}` : 'Ping trace'}
                               className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
-                                isTelemetryExpanded
-                                  ? 'bg-amber-900/60 text-amber-300 border border-amber-700'
+                                pingError
+                                  ? 'bg-red-900/60 text-red-300 border border-red-700'
+                                  : 'bg-blue-900/60 text-blue-300 border border-blue-700 hover:bg-blue-800/60'
+                              }`}
+                            >
+                              {isPingLoading ? (
+                                <span className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin inline-block" />
+                              ) : pingError ? (
+                                'Error'
+                              ) : (
+                                'Ping'
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleStatus(node.node_id)}
+                              disabled={!isConnected || isStatusLoading}
+                              title={statusError ?? undefined}
+                              aria-label={
+                                statusError ? `Status error: ${statusError}` : 'Request status'
+                              }
+                              className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
+                                statusError
+                                  ? 'bg-red-900/60 text-red-300 border border-red-700'
                                   : 'bg-gray-800 text-gray-300 border border-gray-600 hover:bg-gray-700'
                               }`}
                             >
-                              {isTelemetryLoading ? (
+                              {isStatusLoading ? (
                                 <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
+                              ) : statusError ? (
+                                'Error'
                               ) : (
-                                'Sensor (LPP)'
+                                'Status'
                               )}
                             </button>
-                          )}
-                          <button
-                            onClick={() => void handleDelete(node.node_id)}
-                            disabled={isDeleteLoading}
-                            onBlur={() => {
-                              if (isDeleteConfirm) setDeleteConfirmId(null);
-                            }}
-                            className="px-2 py-0.5 rounded text-xs font-medium bg-red-900/60 text-red-300 border border-red-700 hover:bg-red-800/60 transition-colors disabled:opacity-40"
-                          >
-                            {isDeleteLoading ? (
-                              <span className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
-                            ) : isDeleteConfirm ? (
-                              'Confirm?'
-                            ) : (
-                              'Remove'
-                            )}
-                          </button>
-                        </div>
-                        {(statusError || pingError) && (
-                          <div className="text-xs text-red-400 mt-1">
-                            {statusError && <span>Status: {statusError}</span>}
-                            {statusError && pingError && <span className="mx-2">|</span>}
-                            {pingError && <span>Ping: {pingError}</span>}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-
-                    {/* Path SNR detail row */}
-                    {isPathExpanded && traceResult && (
-                      <tr className="bg-gray-900/60">
-                        <td colSpan={10} className="px-4 py-2">
-                          <div className="flex items-center gap-1 text-xs flex-wrap">
-                            <span className="text-gray-400 mr-1">Path:</span>
-                            <span className="text-brand-green">● Me</span>
-                            {traceResult.hops.map((hop, i) => (
-                              <span key={i} className="flex items-center gap-1">
-                                <span className="text-gray-600">→</span>
-                                <span className="px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-300 font-mono">
-                                  {hop.snr > 0 ? '+' : ''}
-                                  {hop.snr.toFixed(2)} dB
-                                </span>
-                                <span className="text-gray-500">● Hop {i + 1}</span>
-                              </span>
-                            ))}
-                            <span className="text-gray-600">→</span>
-                            <span className="px-1.5 py-0.5 rounded bg-brand-green/20 text-brand-green font-mono">
-                              {traceResult.lastSnr > 0 ? '+' : ''}
-                              {traceResult.lastSnr.toFixed(2)} dB
-                            </span>
-                            <span className="text-white">▣ {node.long_name}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-
-                    {/* Neighbors detail row */}
-                    {isNeighborsExpanded && neighborData && (
-                      <tr className="bg-gray-900/60">
-                        <td colSpan={10} className="px-4 py-2">
-                          <p className="text-xs text-gray-400 mb-1">
-                            Neighbors ({neighborData.totalNeighboursCount} total):
-                          </p>
-                          {neighborData.neighbours.length === 0 ? (
-                            <p className="text-xs text-gray-600">No neighbors reported</p>
-                          ) : (
-                            <div className="flex flex-col gap-1">
-                              {neighborData.neighbours.map((nb, i) => {
-                                const name = nb.resolvedNodeId
-                                  ? (nodes.get(nb.resolvedNodeId)?.long_name ?? nb.prefixHex)
-                                  : nb.prefixHex;
-                                return (
-                                  <div key={i} className="flex items-center gap-3 text-xs">
-                                    <span className="font-mono text-gray-500">{nb.prefixHex}</span>
-                                    <span className="text-gray-300">[{name}]</span>
-                                    <SnrIndicator snr={nb.snr} />
-                                    <span className="text-gray-500">
-                                      Heard: {formatSecondsAgo(nb.heardSecondsAgo)}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )}
-
-                    {/* Telemetry detail row */}
-                    {isTelemetryExpanded && (
-                      <tr className="bg-gray-900/60">
-                        <td colSpan={10} className="px-4 py-2">
-                          {isTelemetryLoading ? (
-                            <p className="text-xs text-gray-500">Fetching telemetry…</p>
-                          ) : telemetryData ? (
-                            <div className="flex items-center gap-4 text-xs flex-wrap">
-                              {telemetryData.voltage != null && (
-                                <span className="text-amber-300">
-                                  Battery: {telemetryData.voltage.toFixed(2)}V
-                                </span>
-                              )}
-                              {telemetryData.temperature != null && (
-                                <span className="text-blue-300">
-                                  Temp: {telemetryData.temperature.toFixed(1)}°C
-                                </span>
-                              )}
-                              {telemetryData.relativeHumidity != null && (
-                                <span className="text-cyan-300">
-                                  Humidity: {telemetryData.relativeHumidity.toFixed(0)}%
-                                </span>
-                              )}
-                              {telemetryData.barometricPressure != null && (
-                                <span className="text-gray-300">
-                                  Pressure: {telemetryData.barometricPressure.toFixed(1)} hPa
-                                </span>
-                              )}
-                              {telemetryData.gps && (
-                                <span className="text-green-300">
-                                  GPS:{' '}
-                                  {formatCoordPair(
-                                    telemetryData.gps.latitude,
-                                    telemetryData.gps.longitude,
-                                    coordinateFormat,
-                                  )}
-                                  {telemetryData.gps.altitude
-                                    ? ` alt ${telemetryData.gps.altitude}m`
-                                    : ''}
-                                </span>
-                              )}
-                              {telemetryData.voltage == null &&
-                                telemetryData.temperature == null &&
-                                telemetryData.relativeHumidity == null &&
-                                telemetryData.barometricPressure == null &&
-                                !telemetryData.gps && (
-                                  <div className="flex flex-col gap-1 text-gray-500">
-                                    <span>No LPP sensor data in this response.</span>
-                                    {node.latitude != null && node.longitude != null ? (
-                                      <span>
-                                        Map position comes from advert/contact data, not this sensor
-                                        request.
-                                      </span>
-                                    ) : null}
-                                  </div>
+                            {onRequestNeighbors && (
+                              <button
+                                type="button"
+                                onClick={() => void handleNeighbors(node.node_id)}
+                                disabled={!isConnected || isNeighborsLoading}
+                                title={neighborError ?? undefined}
+                                aria-label={
+                                  neighborError && !isNeighborsExpanded
+                                    ? `Neighbors error: ${neighborError}`
+                                    : 'Repeater neighbors'
+                                }
+                                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
+                                  neighborError && !isNeighborsExpanded
+                                    ? 'bg-red-900/60 text-red-300 border border-red-700'
+                                    : isNeighborsExpanded
+                                      ? 'bg-purple-900/60 text-purple-300 border border-purple-700'
+                                      : 'bg-gray-800 text-gray-300 border border-gray-600 hover:bg-gray-700'
+                                }`}
+                              >
+                                {isNeighborsLoading ? (
+                                  <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
+                                ) : neighborError && !isNeighborsExpanded ? (
+                                  'Error'
+                                ) : (
+                                  'Neighbors'
                                 )}
-                            </div>
-                          ) : (
-                            <div className="text-xs space-y-1">
-                              {telemetryError ? (
-                                <p className="text-red-400">{telemetryError}</p>
+                              </button>
+                            )}
+                            {onRequestTelemetry && (
+                              <button
+                                type="button"
+                                onClick={() => void handleTelemetry(node.node_id)}
+                                disabled={!isConnected || isTelemetryLoading}
+                                title="Cayenne LPP sensor payload (not advert GPS on the map)"
+                                aria-label="Sensor telemetry LPP"
+                                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
+                                  isTelemetryExpanded
+                                    ? 'bg-amber-900/60 text-amber-300 border border-amber-700'
+                                    : 'bg-gray-800 text-gray-300 border border-gray-600 hover:bg-gray-700'
+                                }`}
+                              >
+                                {isTelemetryLoading ? (
+                                  <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
+                                ) : (
+                                  'Sensor (LPP)'
+                                )}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => void handleDelete(node.node_id)}
+                              disabled={isDeleteLoading}
+                              onBlur={() => {
+                                if (isDeleteConfirm) setDeleteConfirmId(null);
+                              }}
+                              className="px-2 py-0.5 rounded text-xs font-medium bg-red-900/60 text-red-300 border border-red-700 hover:bg-red-800/60 transition-colors disabled:opacity-40"
+                            >
+                              {isDeleteLoading ? (
+                                <span className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
+                              ) : isDeleteConfirm ? (
+                                'Confirm?'
                               ) : (
-                                <p className="text-gray-500">
-                                  No telemetry response yet. Try Sensor (LPP) again.
-                                </p>
+                                'Remove'
                               )}
-                              {node.latitude != null && node.longitude != null ? (
-                                <p className="text-gray-500">
-                                  Map position comes from advert/contact data, not sensor telemetry.
-                                </p>
-                              ) : null}
+                            </button>
+                          </div>
+                          {actionErrorSummary ? (
+                            <div className="text-xs text-red-400 mt-1" title={actionErrorSummary}>
+                              {actionErrorSummary}
                             </div>
-                          )}
+                          ) : null}
                         </td>
                       </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+
+                      {/* Path SNR detail row */}
+                      {isPathExpanded && traceResult && (
+                        <tr className="bg-gray-900/60">
+                          <td colSpan={10} className="px-4 py-2">
+                            <div className="flex items-center gap-1 text-xs flex-wrap">
+                              <span className="text-gray-400 mr-1">Path:</span>
+                              <span className="text-brand-green">● Me</span>
+                              {traceResult.hops.map((hop, i) => (
+                                <span key={i} className="flex items-center gap-1">
+                                  <span className="text-gray-600">→</span>
+                                  <span className="px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-300 font-mono">
+                                    {hop.snr > 0 ? '+' : ''}
+                                    {hop.snr.toFixed(2)} dB
+                                  </span>
+                                  <span className="text-gray-500">● Hop {i + 1}</span>
+                                </span>
+                              ))}
+                              <span className="text-gray-600">→</span>
+                              <span className="px-1.5 py-0.5 rounded bg-brand-green/20 text-brand-green font-mono">
+                                {traceResult.lastSnr > 0 ? '+' : ''}
+                                {traceResult.lastSnr.toFixed(2)} dB
+                              </span>
+                              <span className="text-white">▣ {node.long_name}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+
+                      {/* Neighbors detail row */}
+                      {isNeighborsExpanded && neighborData && (
+                        <tr className="bg-gray-900/60">
+                          <td colSpan={10} className="px-4 py-2">
+                            <p className="text-xs text-gray-400 mb-1">
+                              Neighbors ({neighborData.totalNeighboursCount} total):
+                            </p>
+                            {neighborData.neighbours.length === 0 ? (
+                              <p className="text-xs text-gray-600">No neighbors reported</p>
+                            ) : (
+                              <div className="flex flex-col gap-1">
+                                {neighborData.neighbours.map((nb, i) => {
+                                  const name = nb.resolvedNodeId
+                                    ? (nodes.get(nb.resolvedNodeId)?.long_name ?? nb.prefixHex)
+                                    : nb.prefixHex;
+                                  return (
+                                    <div key={i} className="flex items-center gap-3 text-xs">
+                                      <span className="font-mono text-gray-500">
+                                        {nb.prefixHex}
+                                      </span>
+                                      <span className="text-gray-300">[{name}]</span>
+                                      <SnrIndicator snr={nb.snr} />
+                                      <span className="text-gray-500">
+                                        Heard: {formatSecondsAgo(nb.heardSecondsAgo)}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+
+                      {/* Telemetry detail row */}
+                      {isTelemetryExpanded && (
+                        <tr className="bg-gray-900/60">
+                          <td colSpan={10} className="px-4 py-2">
+                            {isTelemetryLoading ? (
+                              <p className="text-xs text-gray-500">Fetching telemetry…</p>
+                            ) : telemetryData ? (
+                              <div className="flex items-center gap-4 text-xs flex-wrap">
+                                {telemetryData.voltage != null && (
+                                  <span className="text-amber-300">
+                                    Battery: {telemetryData.voltage.toFixed(2)}V
+                                  </span>
+                                )}
+                                {telemetryData.temperature != null && (
+                                  <span className="text-blue-300">
+                                    Temp: {telemetryData.temperature.toFixed(1)}°C
+                                  </span>
+                                )}
+                                {telemetryData.relativeHumidity != null && (
+                                  <span className="text-cyan-300">
+                                    Humidity: {telemetryData.relativeHumidity.toFixed(0)}%
+                                  </span>
+                                )}
+                                {telemetryData.barometricPressure != null && (
+                                  <span className="text-gray-300">
+                                    Pressure: {telemetryData.barometricPressure.toFixed(1)} hPa
+                                  </span>
+                                )}
+                                {telemetryData.gps && (
+                                  <span className="text-green-300">
+                                    GPS:{' '}
+                                    {formatCoordPair(
+                                      telemetryData.gps.latitude,
+                                      telemetryData.gps.longitude,
+                                      coordinateFormat,
+                                    )}
+                                    {telemetryData.gps.altitude
+                                      ? ` alt ${telemetryData.gps.altitude}m`
+                                      : ''}
+                                  </span>
+                                )}
+                                {telemetryData.voltage == null &&
+                                  telemetryData.temperature == null &&
+                                  telemetryData.relativeHumidity == null &&
+                                  telemetryData.barometricPressure == null &&
+                                  !telemetryData.gps && (
+                                    <div className="flex flex-col gap-1 text-gray-500">
+                                      <span>No LPP sensor data in this response.</span>
+                                      {node.latitude != null && node.longitude != null ? (
+                                        <span>
+                                          Map position comes from advert/contact data, not this
+                                          sensor request.
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  )}
+                              </div>
+                            ) : (
+                              <div className="text-xs space-y-1">
+                                {telemetryError ? (
+                                  <p className="text-red-400">{telemetryError}</p>
+                                ) : (
+                                  <p className="text-gray-500">
+                                    No telemetry response yet. Try Sensor (LPP) again.
+                                  </p>
+                                )}
+                                {node.latitude != null && node.longitude != null ? (
+                                  <p className="text-gray-500">
+                                    Map position comes from advert/contact data, not sensor
+                                    telemetry.
+                                  </p>
+                                ) : null}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      {RemoteAuthModal}
+    </>
   );
 }

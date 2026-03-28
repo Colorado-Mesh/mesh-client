@@ -1167,6 +1167,7 @@ export default function App() {
                           onReboot={meshcoreDevice.reboot}
                           onRequestNeighbors={meshcoreDevice.requestNeighbors}
                           meshcoreNeighbors={meshcoreDevice.meshcoreNeighbors}
+                          meshcoreNeighborErrors={meshcoreDevice.meshcoreNeighborErrors}
                           onRequestTelemetry={meshcoreDevice.requestTelemetry}
                           meshcoreTelemetry={meshcoreDevice.meshcoreNodeTelemetry}
                           meshcoreTelemetryErrors={meshcoreDevice.meshcoreTelemetryErrors}
@@ -1502,6 +1503,11 @@ export default function App() {
               : undefined
           }
           onRequestNeighbors={protocol === 'meshcore' ? meshcoreDevice.requestNeighbors : undefined}
+          meshcoreNeighborError={
+            protocol === 'meshcore' && selectedNode
+              ? meshcoreDevice.meshcoreNeighborErrors.get(selectedNode.node_id)
+              : undefined
+          }
         />
       </div>
     </ToastProvider>

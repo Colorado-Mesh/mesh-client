@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isMeshcoreContactEligibleForUserGroup,
   isMeshcoreTransportStatusChatLine,
+  meshcoreAppendRepeaterAuthHint,
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
@@ -77,5 +78,24 @@ describe('meshcoreDeriveChannelKeyHexFromName', () => {
     const a = await meshcoreDeriveChannelKeyHexFromName('#foo');
     const b = await meshcoreDeriveChannelKeyHexFromName('foo');
     expect(a).toBe(b);
+  });
+});
+
+describe('meshcoreAppendRepeaterAuthHint', () => {
+  it('appends hint for authentication failed', () => {
+    const out = meshcoreAppendRepeaterAuthHint('Authentication failed');
+    expect(out).toContain('Authentication failed');
+    expect(out).toContain('Repeaters panel');
+  });
+
+  it('leaves unrelated errors unchanged', () => {
+    expect(meshcoreAppendRepeaterAuthHint('Request timed out (~10s)')).toBe(
+      'Request timed out (~10s)',
+    );
+  });
+
+  it('does not double-append hint', () => {
+    const once = meshcoreAppendRepeaterAuthHint('Authentication failed');
+    expect(meshcoreAppendRepeaterAuthHint(once)).toBe(once);
   });
 });
