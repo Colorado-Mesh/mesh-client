@@ -39,6 +39,7 @@ const REQUIRED_CAPABILITY_KEYS: (keyof ProtocolCapabilities)[] = [
   'hasNodeDbReset',
   'hasFactoryReset',
   'hasFullPositionConfig',
+  'hasSecurityPanel',
 ];
 
 describe('ProtocolCapabilities contract', () => {
@@ -84,6 +85,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasPowerConfig": true,
         "hasRepeaterStatus": false,
         "hasRfStats": true,
+        "hasSecurityPanel": true,
         "hasShutdown": true,
         "hasTelemetryIntervalConfig": true,
         "hasTraceRoute": true,
@@ -118,6 +120,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasPowerConfig": false,
         "hasRepeaterStatus": true,
         "hasRfStats": false,
+        "hasSecurityPanel": false,
         "hasShutdown": false,
         "hasTelemetryIntervalConfig": false,
         "hasTraceRoute": true,

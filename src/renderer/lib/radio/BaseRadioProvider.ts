@@ -51,6 +51,8 @@ export interface ProtocolCapabilities {
   hasFactoryReset: boolean;
   /** Whether full GPS position config is available; false = fixed lat/lon only */
   hasFullPositionConfig: boolean;
+  /** Whether Security panel (PKI config) is available */
+  hasSecurityPanel: boolean;
 }
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
@@ -78,6 +80,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasNodeDbReset: true,
   hasFactoryReset: true,
   hasFullPositionConfig: true,
+  hasSecurityPanel: true,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -106,4 +109,5 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasNodeDbReset: false,
   hasFactoryReset: false,
   hasFullPositionConfig: false,
+  hasSecurityPanel: false,
 };

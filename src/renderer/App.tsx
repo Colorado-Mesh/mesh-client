@@ -54,6 +54,7 @@ import {
   readMeshcoreIdentity,
 } from './lib/letsMeshJwt';
 import { parseStoredJson } from './lib/parseStoredJson';
+import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
@@ -61,10 +62,20 @@ import type { ChatMessage, DeviceState, MeshProtocol, MQTTSettings, MQTTStatus }
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 
 // Tabs (0-indexed) that are disabled in MeshCore mode
-// Tab 6 (Telemetry) re-enabled — capabilities-aware rendering handles battery/signal differences
-// Tab 7 (Security) — Meshtastic-only (PKI config not supported by MeshCore)
-// Tab 9 (Diagnostics) re-enabled — foreign LoRa detection works in both Meshtastic and MeshCore modes
-const MESHCORE_DISABLED_TABS = new Set<number>([7]);
+// Security tab (index 7) is hidden for MeshCore since PKI config is not supported
+// These map tab index → required capability (undefined = always shown)
+const TAB_CAPABILITY_REQUIREMENTS: (keyof ProtocolCapabilities | undefined)[] = [
+  undefined, // Connection
+  undefined, // Chat
+  undefined, // Nodes
+  undefined, // Map
+  undefined, // Radio
+  undefined, // Modules
+  undefined, // Telemetry
+  'hasSecurityPanel', // Security
+  undefined, // App
+  undefined, // Diagnostics
+];
 
 const STATUS_COLOR: Record<string, string> = {
   disconnected: 'bg-red-500',
@@ -256,10 +267,31 @@ export default function App() {
 
   const capabilities = useRadioProvider(protocol);
 
-  const displayTabNames = useMemo(
-    () => TAB_NAMES.map((name, i) => (protocol === 'meshcore' && i === 5 ? 'Repeaters' : name)),
-    [protocol],
-  );
+  const { displayTabNames, tabIndexToPanelIndex } = useMemo(() => {
+    const filtered: { name: string; panelIndex: number }[] = [];
+    TAB_NAMES.forEach((name, panelIndex) => {
+      const requiredCap = TAB_CAPABILITY_REQUIREMENTS[panelIndex];
+      if (requiredCap === undefined || capabilities[requiredCap]) {
+        filtered.push({
+          name: panelIndex === 5 && protocol === 'meshcore' ? 'Repeaters' : name,
+          panelIndex,
+        });
+      }
+    });
+    return {
+      displayTabNames: filtered.map((t) => t.name),
+      tabIndexToPanelIndex: filtered.map((t) => t.panelIndex),
+    };
+  }, [protocol, capabilities]);
+
+  const activePanelIndex = tabIndexToPanelIndex[activeTab] ?? 0;
+
+  // Reset activeTab if it's out of bounds (e.g., switching to meshcore while on Security tab)
+  useEffect(() => {
+    if (activeTab >= displayTabNames.length) {
+      setActiveTab(0);
+    }
+  }, [activeTab, displayTabNames.length]);
 
   const handleProtocolChange = useCallback(
     (p: MeshProtocol) => {
@@ -863,13 +895,17 @@ export default function App() {
               active={activeTab}
               onChange={setActiveTab}
               chatUnread={protocol === 'meshtastic' ? meshtasticUnread : meshcoreUnread}
-              disabledTabs={protocol === 'meshcore' ? MESHCORE_DISABLED_TABS : undefined}
             />
 
             {/* Content */}
             <main className="flex-1 overflow-auto p-4 min-h-0">
               <ErrorBoundary>
-                <div id="panel-0" role="tabpanel" aria-labelledby="tab-0" hidden={activeTab !== 0}>
+                <div
+                  id="panel-0"
+                  role="tabpanel"
+                  aria-labelledby="tab-0"
+                  hidden={activePanelIndex !== 0}
+                >
                   {/* Both panels are always mounted so each protocol auto-connects at startup */}
                   <div hidden={protocol !== 'meshtastic'}>
                     <ConnectionPanel
@@ -940,7 +976,12 @@ export default function App() {
                     />
                   </div>
                 </div>
-                <div id="panel-1" role="tabpanel" aria-labelledby="tab-1" hidden={activeTab !== 1}>
+                <div
+                  id="panel-1"
+                  role="tabpanel"
+                  aria-labelledby="tab-1"
+                  hidden={activePanelIndex !== 1}
+                >
                   <ChatPanel
                     key={protocol}
                     messages={chatMessagesForPanel}
@@ -961,8 +1002,13 @@ export default function App() {
                     protocol={protocol}
                   />
                 </div>
-                <div id="panel-2" role="tabpanel" aria-labelledby="tab-2" hidden={activeTab !== 2}>
-                  {activeTab === 2 ? (
+                <div
+                  id="panel-2"
+                  role="tabpanel"
+                  aria-labelledby="tab-2"
+                  hidden={activePanelIndex !== 2}
+                >
+                  {activePanelIndex === 2 ? (
                     <NodeListPanel
                       nodes={nodesForUi}
                       myNodeNum={device.selfNodeId}
@@ -980,10 +1026,10 @@ export default function App() {
                   id="panel-3"
                   role="tabpanel"
                   aria-labelledby="tab-3"
-                  hidden={activeTab !== 3}
+                  hidden={activePanelIndex !== 3}
                   className="h-full"
                 >
-                  {activeTab === 3 ? (
+                  {activePanelIndex === 3 ? (
                     <ErrorBoundary>
                       <Suspense fallback={<PanelSkeleton />}>
                         <MapPanel
@@ -1005,8 +1051,13 @@ export default function App() {
                     </ErrorBoundary>
                   ) : null}
                 </div>
-                <div id="panel-4" role="tabpanel" aria-labelledby="tab-4" hidden={activeTab !== 4}>
-                  {activeTab === 4 ? (
+                <div
+                  id="panel-4"
+                  role="tabpanel"
+                  aria-labelledby="tab-4"
+                  hidden={activePanelIndex !== 4}
+                >
+                  {activePanelIndex === 4 ? (
                     <ErrorBoundary>
                       <Suspense fallback={<PanelSkeleton />}>
                         <RadioPanel
@@ -1068,8 +1119,13 @@ export default function App() {
                     </ErrorBoundary>
                   ) : null}
                 </div>
-                <div id="panel-5" role="tabpanel" aria-labelledby="tab-5" hidden={activeTab !== 5}>
-                  {activeTab === 5 && protocol === 'meshcore' ? (
+                <div
+                  id="panel-5"
+                  role="tabpanel"
+                  aria-labelledby="tab-5"
+                  hidden={activePanelIndex !== 5}
+                >
+                  {activePanelIndex === 5 && protocol === 'meshcore' ? (
                     <ErrorBoundary>
                       <Suspense fallback={<PanelSkeleton />}>
                         <RepeatersPanel
@@ -1095,7 +1151,7 @@ export default function App() {
                       </Suspense>
                     </ErrorBoundary>
                   ) : null}
-                  {activeTab === 5 && protocol !== 'meshcore' ? (
+                  {activePanelIndex === 5 && protocol !== 'meshcore' ? (
                     <ErrorBoundary>
                       <Suspense fallback={<PanelSkeleton />}>
                         <ModulePanel
@@ -1111,8 +1167,13 @@ export default function App() {
                     </ErrorBoundary>
                   ) : null}
                 </div>
-                <div id="panel-6" role="tabpanel" aria-labelledby="tab-6" hidden={activeTab !== 6}>
-                  {activeTab === 6 ? (
+                <div
+                  id="panel-6"
+                  role="tabpanel"
+                  aria-labelledby="tab-6"
+                  hidden={activePanelIndex !== 6}
+                >
+                  {activePanelIndex === 6 ? (
                     <ErrorBoundary>
                       <Suspense fallback={<PanelSkeleton />}>
                         <TelemetryPanel
@@ -1129,8 +1190,13 @@ export default function App() {
                     </ErrorBoundary>
                   ) : null}
                 </div>
-                <div id="panel-7" role="tabpanel" aria-labelledby="tab-7" hidden={activeTab !== 7}>
-                  {activeTab === 7 ? (
+                <div
+                  id="panel-7"
+                  role="tabpanel"
+                  aria-labelledby="tab-7"
+                  hidden={activePanelIndex !== 7}
+                >
+                  {activePanelIndex === 7 ? (
                     <ErrorBoundary>
                       <Suspense fallback={<PanelSkeleton />}>
                         <SecurityPanel
@@ -1143,8 +1209,13 @@ export default function App() {
                     </ErrorBoundary>
                   ) : null}
                 </div>
-                <div id="panel-8" role="tabpanel" aria-labelledby="tab-8" hidden={activeTab !== 8}>
-                  {activeTab === 8 ? (
+                <div
+                  id="panel-8"
+                  role="tabpanel"
+                  aria-labelledby="tab-8"
+                  hidden={activePanelIndex !== 8}
+                >
+                  {activePanelIndex === 8 ? (
                     <ErrorBoundary>
                       <Suspense fallback={<PanelSkeleton />}>
                         <AppPanel
@@ -1180,8 +1251,13 @@ export default function App() {
                     </ErrorBoundary>
                   ) : null}
                 </div>
-                <div id="panel-9" role="tabpanel" aria-labelledby="tab-9" hidden={activeTab !== 9}>
-                  {activeTab === 9 ? (
+                <div
+                  id="panel-9"
+                  role="tabpanel"
+                  aria-labelledby="tab-9"
+                  hidden={activePanelIndex !== 9}
+                >
+                  {activePanelIndex === 9 ? (
                     <ErrorBoundary>
                       <Suspense fallback={<PanelSkeleton />}>
                         <DiagnosticsPanel
