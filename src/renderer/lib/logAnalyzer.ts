@@ -99,7 +99,7 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     label: 'MQTT Reconnect Limit',
     patterns: [/Connection lost after \d+ reconnect attempt/i],
     recommendation:
-      'MQTT gave up after max reconnects. Confirm the broker is reachable, credentials and port (1883 / 8883 TLS) are correct, and firewalls allow outbound traffic.',
+      'MQTT gave up after max reconnects. Confirm the broker is reachable, credentials and port are correct, and firewalls allow outbound traffic.',
     severity: 'warning',
   },
   {
@@ -124,10 +124,7 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
   {
     id: 'ble-connect-race',
     label: 'BLE Connect Race/Timeout',
-    patterns: [
-      /waiting on onConnected.*raced with disconnect/i,
-      /IpcNobleConnection.*timeout.*onConnected/i,
-    ],
+    patterns: [/disconnect raced ahead of handshake/i, /IpcNobleConnection.*timeout.*onConnected/i],
     recommendation:
       'BLE handshake timed out or raced with disconnect. Check BLE connection stability and distance to device.',
     severity: 'warning',

@@ -64,7 +64,7 @@ describe('analyzeLogs', () => {
   it('detects BLE connect race/timeout for meshcore', () => {
     const entries: LogEntry[] = [
       makeEntry(
-        '[IpcNobleConnection:meshcore] waiting on onConnected() (raced with disconnect) timeout=20000ms',
+        '[IpcNobleConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
         'warn',
       ),
     ];
@@ -78,7 +78,7 @@ describe('analyzeLogs', () => {
   it('does not detect BLE connect race for meshtastic protocol', () => {
     const entries: LogEntry[] = [
       makeEntry(
-        '[IpcNobleConnection:meshcore] waiting on onConnected() (raced with disconnect) timeout=20000ms',
+        '[IpcNobleConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
         'warn',
       ),
     ];

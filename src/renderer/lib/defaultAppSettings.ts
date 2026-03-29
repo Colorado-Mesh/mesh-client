@@ -12,4 +12,5 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   distanceFilterMax: 500,
   distanceUnit: 'miles' as const,
   coordinateFormat: 'decimal' as const,
+  autoFloodAdvertIntervalHours: 12,
 };

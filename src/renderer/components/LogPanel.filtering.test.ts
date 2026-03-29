@@ -128,7 +128,7 @@ describe('isDeviceEntry — MeshCore protocol', () => {
       isDeviceEntry(
         entry(
           'main',
-          '[IpcNobleConnection:meshcore] waiting on onConnected() (raced with disconnect) timeout=20000ms',
+          '[IpcNobleConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
         ),
         'meshcore',
       ),
@@ -140,7 +140,7 @@ describe('isDeviceEntry — MeshCore protocol', () => {
       isDeviceEntry(
         entry(
           'main',
-          '[IpcNobleConnection:meshcore] waiting on onConnected() (raced with disconnect) timeout=20000ms',
+          '[IpcNobleConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
         ),
         'meshtastic',
       ),

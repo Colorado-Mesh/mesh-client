@@ -107,6 +107,7 @@ interface AppSettings {
   filterMqttOnly: boolean;
   messageLimitEnabled: boolean;
   messageLimitCount: number;
+  autoFloodAdvertIntervalHours: number;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -114,6 +115,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   filterMqttOnly: false,
   messageLimitEnabled: true,
   messageLimitCount: 1000,
+  autoFloodAdvertIntervalHours: DEFAULT_APP_SETTINGS_SHARED.autoFloodAdvertIntervalHours,
 };
 
 function loadSettings(): AppSettings {
@@ -140,6 +142,7 @@ interface Props {
   onNodesPruned?: () => void;
   onMessagesPruned?: () => void;
   onClearMeshcoreRepeaters?: () => Promise<void>;
+  onAutoFloodAdvertIntervalChange?: (hours: number) => void;
 }
 
 interface PendingAction {
@@ -167,6 +170,7 @@ export default function AppPanel({
   onNodesPruned,
   onMessagesPruned,
   onClearMeshcoreRepeaters,
+  onAutoFloodAdvertIntervalChange,
 }: Props) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const { addToast } = useToast();
@@ -434,6 +438,36 @@ export default function AppPanel({
             <p className="text-xs text-muted mt-2">
               When enabled, a live log stream appears on the right. Debug lines require the checkbox
               inside the log panel.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Flood Advert schedule (MeshCore only) */}
+      {protocol === 'meshcore' && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted">Flood Advert</h3>
+          <div className="bg-secondary-dark rounded-lg p-4 space-y-2">
+            <label htmlFor="flood-advert-interval" className="text-sm text-gray-300">
+              Automatically send a flood advert on a schedule:
+            </label>
+            <select
+              id="flood-advert-interval"
+              value={settings.autoFloodAdvertIntervalHours}
+              onChange={(e) => {
+                const hours = Number(e.target.value);
+                setSettings((prev) => ({ ...prev, autoFloodAdvertIntervalHours: hours }));
+                onAutoFloodAdvertIntervalChange?.(hours);
+              }}
+              className="w-full px-3 py-2 bg-deep-black rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
+            >
+              <option value={0}>Disabled</option>
+              <option value={12}>Every 12 hours</option>
+              <option value={24}>Every 24 hours</option>
+            </select>
+            <p className="text-xs text-muted">
+              Sends a flood advert when connected and repeats at the chosen interval to keep your
+              node visible on the mesh.
             </p>
           </div>
         </div>

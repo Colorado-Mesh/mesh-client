@@ -303,6 +303,18 @@ export default function App() {
     }
   }, []);
 
+  // ─── Auto flood advert interval (MeshCore) ───────────────────────
+  const [autoFloodAdvertIntervalHours, setAutoFloodAdvertIntervalHours] = useState(() => {
+    const parsed = parseStoredJson<{ autoFloodAdvertIntervalHours?: number }>(
+      getAppSettingsRaw(),
+      'App autoFloodAdvertIntervalHours init',
+    );
+    return (
+      parsed?.autoFloodAdvertIntervalHours ??
+      DEFAULT_APP_SETTINGS_SHARED.autoFloodAdvertIntervalHours
+    );
+  });
+
   // ─── Theme colors (localStorage overrides for @theme tokens) ─────
   useLayoutEffect(() => {
     applyThemeColors(loadThemeColors());
@@ -760,6 +772,31 @@ export default function App() {
     window.electronAPI.setTrayUnread(meshtasticUnread + meshcoreUnread);
   }, [meshtasticUnread, meshcoreUnread]);
 
+  // ─── Auto flood advert (MeshCore) ────────────────────────────────
+  const advertSentRef = useRef(false);
+
+  useEffect(() => {
+    if (protocol !== 'meshcore' || !isOperational || autoFloodAdvertIntervalHours <= 0) return;
+
+    if (!advertSentRef.current) {
+      advertSentRef.current = true;
+      void meshcoreDevice.sendAdvert().catch((e: unknown) => {
+        console.warn('[App] auto flood advert failed', e instanceof Error ? e.message : e);
+      });
+    }
+
+    const ms = autoFloodAdvertIntervalHours * 60 * 60 * 1000;
+    const id = setInterval(() => {
+      void meshcoreDevice.sendAdvert().catch((e: unknown) => {
+        console.warn('[App] auto flood advert failed', e instanceof Error ? e.message : e);
+      });
+    }, ms);
+
+    return () => {
+      clearInterval(id);
+    };
+  }, [protocol, isOperational, autoFloodAdvertIntervalHours, meshcoreDevice]);
+
   // Manual reconnect from banner
   const handleReconnect = useCallback(() => {
     const lastType = device.state.connectionType ?? 'ble';
@@ -1073,8 +1110,6 @@ export default function App() {
                         }
                         protocol="meshcore"
                         onProtocolChange={handleProtocolChange}
-                        onRefreshContacts={meshcoreDevice.refreshContacts}
-                        onSendAdvert={meshcoreDevice.sendAdvert}
                         firmwareCheckState={
                           protocol === 'meshcore' ? firmwareCheckState : undefined
                         }
@@ -1309,6 +1344,12 @@ export default function App() {
                               ? meshcoreDevice.clearAllMeshcoreContacts
                               : undefined
                           }
+                          onSendAdvert={
+                            protocol === 'meshcore' ? meshcoreDevice.sendAdvert : undefined
+                          }
+                          onSyncClock={
+                            protocol === 'meshcore' ? meshcoreDevice.syncClock : undefined
+                          }
                         />
                       </Suspense>
                     </ErrorBoundary>
@@ -1333,9 +1374,6 @@ export default function App() {
                           onPing={meshcoreDevice.traceRoute}
                           onDeleteRepeater={meshcoreDevice.deleteNode}
                           isConnected={isOperational}
-                          onSendAdvert={meshcoreDevice.sendAdvert}
-                          onSyncClock={meshcoreDevice.syncClock}
-                          onReboot={meshcoreDevice.reboot}
                           onRequestNeighbors={meshcoreDevice.requestNeighbors}
                           meshcoreNeighbors={meshcoreDevice.meshcoreNeighbors}
                           meshcoreNeighborErrors={meshcoreDevice.meshcoreNeighborErrors}
@@ -1462,6 +1500,7 @@ export default function App() {
                           onClearMeshcoreRepeaters={
                             protocol === 'meshcore' ? meshcoreDevice.clearAllRepeaters : undefined
                           }
+                          onAutoFloodAdvertIntervalChange={setAutoFloodAdvertIntervalHours}
                         />
                       </Suspense>
                     </ErrorBoundary>

@@ -33,9 +33,6 @@ interface Props {
   onPing: (nodeId: number) => Promise<void>;
   onDeleteRepeater: (nodeId: number) => Promise<void>;
   isConnected: boolean;
-  onSendAdvert?: () => Promise<void>;
-  onSyncClock?: () => Promise<void>;
-  onReboot?: () => Promise<void>;
   onRequestNeighbors?: (nodeId: number) => Promise<void>;
   meshcoreNeighbors?: Map<number, MeshCoreNeighborResult>;
   meshcoreNeighborErrors?: Map<number, string>;
@@ -140,9 +137,6 @@ export default function RepeatersPanel({
   onPing,
   onDeleteRepeater,
   isConnected,
-  onSendAdvert,
-  onSyncClock,
-  onReboot,
   onRequestNeighbors,
   meshcoreNeighbors,
   meshcoreNeighborErrors,
@@ -167,10 +161,6 @@ export default function RepeatersPanel({
   const [pingLoadingSet, setPingLoadingSet] = useState<Set<number>>(new Set());
   const [deleteLoadingSet, setDeleteLoadingSet] = useState<Set<number>>(new Set());
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  const [advertLoading, setAdvertLoading] = useState(false);
-  const [syncClockLoading, setSyncClockLoading] = useState(false);
-  const [rebootConfirm, setRebootConfirm] = useState(false);
-  const [rebootLoading, setRebootLoading] = useState(false);
   const [neighborsLoadingSet, setNeighborsLoadingSet] = useState<Set<number>>(new Set());
   const [telemetryLoadingSet, setTelemetryLoadingSet] = useState<Set<number>>(new Set());
   const [expandedNeighbors, setExpandedNeighbors] = useState<Set<number>>(new Set());
@@ -292,51 +282,6 @@ export default function RepeatersPanel({
         next.delete(nodeId);
         return next;
       });
-    }
-  };
-
-  const handleSendAdvert = async () => {
-    if (!onSendAdvert) return;
-    setAdvertLoading(true);
-    try {
-      await onSendAdvert();
-      addToast('Flood advert sent', 'success');
-    } catch (e) {
-      console.warn('[RepeatersPanel] sendAdvert failed:', e instanceof Error ? e.message : e);
-      addToast(`Advert failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
-    } finally {
-      setAdvertLoading(false);
-    }
-  };
-
-  const handleSyncClock = async () => {
-    if (!onSyncClock) return;
-    setSyncClockLoading(true);
-    try {
-      await onSyncClock();
-      addToast('Clock synced', 'success');
-    } catch (e) {
-      console.warn('[RepeatersPanel] syncClock failed:', e instanceof Error ? e.message : e);
-      addToast(`Sync failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
-    } finally {
-      setSyncClockLoading(false);
-    }
-  };
-
-  const handleReboot = async () => {
-    if (!rebootConfirm) {
-      setRebootConfirm(true);
-      return;
-    }
-    setRebootConfirm(false);
-    setRebootLoading(true);
-    try {
-      await onReboot?.();
-    } catch (e) {
-      console.warn('[RepeatersPanel] reboot failed:', e instanceof Error ? e.message : e);
-      addToast(`Reboot failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
-    } finally {
-      setRebootLoading(false);
     }
   };
 
@@ -500,57 +445,6 @@ export default function RepeatersPanel({
             </button>
           </div>
         ) : null}
-
-        {/* Device Action Bar */}
-        {(onSendAdvert || onSyncClock || onReboot) && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg border border-gray-700">
-            <span className="text-xs text-gray-400 mr-1">Device:</span>
-            {onSendAdvert && (
-              <button
-                onClick={() => void handleSendAdvert()}
-                disabled={!isConnected || advertLoading}
-                className="px-3 py-1 rounded text-xs font-medium bg-brand-green/20 text-brand-green border border-brand-green/30 hover:bg-brand-green/30 transition-colors disabled:opacity-40"
-              >
-                {advertLoading ? (
-                  <span className="w-3 h-3 border border-brand-green border-t-transparent rounded-full animate-spin inline-block" />
-                ) : (
-                  'Flood Advert'
-                )}
-              </button>
-            )}
-            {onSyncClock && (
-              <button
-                onClick={() => void handleSyncClock()}
-                disabled={!isConnected || syncClockLoading}
-                className="px-3 py-1 rounded text-xs font-medium bg-blue-900/50 text-blue-300 border border-blue-700 hover:bg-blue-800/60 transition-colors disabled:opacity-40"
-              >
-                {syncClockLoading ? (
-                  <span className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin inline-block" />
-                ) : (
-                  'Sync Clock'
-                )}
-              </button>
-            )}
-            {onReboot && (
-              <button
-                onClick={() => void handleReboot()}
-                disabled={!isConnected || rebootLoading}
-                onBlur={() => {
-                  setRebootConfirm(false);
-                }}
-                className="px-3 py-1 rounded text-xs font-medium bg-red-900/60 text-red-300 border border-red-700 hover:bg-red-800/60 transition-colors disabled:opacity-40"
-              >
-                {rebootLoading ? (
-                  <span className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
-                ) : rebootConfirm ? (
-                  'Confirm Reboot?'
-                ) : (
-                  'Reboot Device'
-                )}
-              </button>
-            )}
-          </div>
-        )}
 
         {repeaters.length === 0 ? (
           <div className="text-gray-400 text-sm mt-8 text-center">

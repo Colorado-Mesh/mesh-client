@@ -9,7 +9,7 @@ const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
   password: '',
   topicPrefix: 'meshcore',
   autoLaunch: false,
-  maxRetries: 5,
+  maxRetries: 3,
 };
 
 /** Read persisted MeshCore MQTT settings (same merge as ConnectionPanel). */

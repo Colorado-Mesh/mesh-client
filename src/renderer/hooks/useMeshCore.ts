@@ -4,7 +4,7 @@ import {
   SerialConnection,
   WebSerialConnection,
 } from '@liamcottle/meshcore.js';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
@@ -409,9 +409,16 @@ class IpcNobleConnection {
           NOBLE_IPC_CONNECT_TIMEOUT_MS,
           'MeshCore BLE IPC open',
         );
-        console.info(
-          `[IpcNobleConnection:${sessionId}] waiting on onConnected() (raced with disconnect) timeout=${NOBLE_IPC_HANDSHAKE_TIMEOUT_MS}ms`,
-        );
+        const disconnectAlreadyFired = rejectHandshakeOnDisconnect === undefined;
+        if (disconnectAlreadyFired) {
+          console.warn(
+            `[IpcNobleConnection:${sessionId}] disconnect raced ahead of handshake — will fail immediately`,
+          );
+        } else {
+          console.info(
+            `[IpcNobleConnection:${sessionId}] waiting on onConnected() timeout=${NOBLE_IPC_HANDSHAKE_TIMEOUT_MS}ms`,
+          );
+        }
         const handshakeStart = Date.now();
         await withTimeout(
           Promise.race([
@@ -1860,11 +1867,42 @@ export function useMeshCore() {
         const snr = d.lastSnr ?? 0;
         const rssi = d.lastRssi ?? 0;
         const now = Date.now();
+
+        // Extract sender ID and update known node's last_heard + signal metrics
+        let senderInfo = '';
+        if (d.raw instanceof Uint8Array && d.raw.length >= 8) {
+          const packetClass = classifyPayload(d.raw);
+          if (packetClass === 'meshtastic') {
+            const senderId = extractMeshtasticSenderId(d.raw);
+            if (senderId !== null) {
+              senderInfo = ` from=0x${senderId.toString(16)}`;
+              // If we know this node (and it's not ourselves), update last_heard + SNR/RSSI
+              if (senderId !== myNodeNumRef.current && nodesRef.current.has(senderId)) {
+                const nowSec = Math.floor(now / 1000);
+                setNodes((prev) => {
+                  const existing = prev.get(senderId);
+                  if (!existing) return prev;
+                  const next = new Map(prev);
+                  next.set(senderId, {
+                    ...existing,
+                    last_heard: nowSec,
+                    snr: snr,
+                    rssi: rssi,
+                  });
+                  return next;
+                });
+              }
+            }
+          } else if (packetClass === 'meshcore') {
+            senderInfo = ' [meshcore]';
+          }
+        }
+
         const entry: DeviceLogEntry = {
           ts: now,
-          level: 'info',
+          level: 'debug',
           source: 'meshcore',
-          message: `RX SNR=${snr.toFixed(2)}dB RSSI=${rssi}dBm`,
+          message: `RX${senderInfo} SNR=${snr.toFixed(2)}dB RSSI=${rssi}dBm`,
         };
         setDeviceLogs((prev) => {
           const next = [...prev, entry];
@@ -4065,149 +4103,220 @@ export function useMeshCore() {
     return pos;
   }, []);
 
-  return {
-    state,
-    nodes,
-    messages,
-    channels,
-    selfInfo,
-    connect,
-    disconnect,
-    sendMessage,
-    sendAdvert,
-    syncClock,
-    refreshContacts,
-    reboot,
-    deleteNode,
-    clearAllRepeaters,
-    clearAllMeshcoreContacts,
-    setOwner,
-    traceRoute,
-    requestRepeaterStatus,
-    requestTelemetry,
-    requestNeighbors,
-    importContacts,
-    toggleManualAddContacts,
-    setMeshcoreChannel,
-    deleteMeshcoreChannel,
-    deviceLogs,
-    meshcoreTraceResults,
-    meshcoreNodeStatus,
-    meshcoreStatusErrors,
-    meshcoreNodeTelemetry,
-    meshcoreTelemetryErrors,
-    meshcorePingErrors,
-    meshcoreNeighbors,
-    meshcoreNeighborErrors,
-    meshcoreCliHistories,
-    meshcoreCliErrors,
-    sendRepeaterCliCommand,
-    clearCliHistory,
-    manualAddContacts,
-    // Stubs for interface compatibility
-    mqttStatus,
-    selfNodeId: state.myNodeNum,
-    getNodes: useCallback(() => nodes, [nodes]),
-    getFullNodeLabel: useCallback(
-      (id: number) => nodes.get(id)?.long_name ?? id.toString(16).toUpperCase(),
-      [nodes],
-    ),
-    getPickerStyleNodeLabel: useCallback(
-      (id: number) => nodes.get(id)?.long_name ?? id.toString(16).toUpperCase(),
-      [nodes],
-    ),
-    traceRouteResults: new Map<number, { route: number[]; from: number }>(),
-    queueStatus: null,
-    neighborInfo: new Map<number, unknown>(),
-    waypoints: [] as unknown[],
-    telemetry,
-    signalTelemetry,
-    environmentTelemetry,
-    channelConfigs: [] as unknown[],
-    moduleConfigs: {} as Record<string, unknown>,
-    deviceOwner: selfInfo ? { longName: selfInfo.name, shortName: '', isLicensed: false } : null,
-    ourPosition,
-    gpsLoading: false,
-    telemetryEnabled: null,
-    sendReaction,
-    requestPosition: noopAsync,
-    setNodeFavorited,
-    shutdown: noopAsync,
-    factoryReset: noopAsync,
-    resetNodeDb: noopAsync,
-    commitConfig: noopAsync,
-    setConfig: noopAsync,
-    setDeviceChannel: noopAsync,
-    clearChannel: noopAsync,
-    rebootOta: noopAsync,
-    enterDfuMode: noopAsync,
-    factoryResetConfig: noopAsync,
-    sendWaypoint: noopAsync,
-    deleteWaypoint: noopAsync,
-    setModuleConfig: noopAsync,
-    setCannedMessages: noopAsync,
-    requestRefresh,
-    refreshOurPosition: refreshOurPositionNoop,
-    sendPositionToDevice: sendPositionToDeviceMeshCore,
-    updateGpsInterval: noopVoid,
-    refreshNodesFromDb: useCallback(async () => {
-      try {
-        const dbContacts = (await window.electronAPI.db.getMeshcoreContacts()) as {
-          node_id: number;
-          adv_name: string | null;
-          contact_type: number;
-          last_advert: number | null;
-          adv_lat: number | null;
-          adv_lon: number | null;
-          last_snr: number | null;
-          last_rssi: number | null;
-          favorited: number;
-        }[];
-        setNodes((prev) => {
-          const next = new Map(prev);
-          for (const row of dbContacts) {
-            if (!next.has(row.node_id)) {
-              next.set(row.node_id, {
-                node_id: row.node_id,
-                long_name: row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
-                short_name: '',
-                hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
-                battery: 0,
-                snr: row.last_snr ?? 0,
-                rssi: row.last_rssi ?? 0,
-                last_heard: row.last_advert ?? 0,
-                latitude: row.adv_lat ?? null,
-                longitude: row.adv_lon ?? null,
-                favorited: row.favorited === 1,
-              });
-            }
+  const getNodes = useCallback(() => nodes, [nodes]);
+  const getFullNodeLabel = useCallback(
+    (id: number) => nodes.get(id)?.long_name ?? id.toString(16).toUpperCase(),
+    [nodes],
+  );
+  const getPickerStyleNodeLabel = useCallback(
+    (id: number) => nodes.get(id)?.long_name ?? id.toString(16).toUpperCase(),
+    [nodes],
+  );
+  const refreshNodesFromDb = useCallback(async () => {
+    try {
+      const dbContacts = (await window.electronAPI.db.getMeshcoreContacts()) as {
+        node_id: number;
+        adv_name: string | null;
+        contact_type: number;
+        last_advert: number | null;
+        adv_lat: number | null;
+        adv_lon: number | null;
+        last_snr: number | null;
+        last_rssi: number | null;
+        favorited: number;
+      }[];
+      setNodes((prev) => {
+        const next = new Map(prev);
+        for (const row of dbContacts) {
+          if (!next.has(row.node_id)) {
+            next.set(row.node_id, {
+              node_id: row.node_id,
+              long_name: row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
+              short_name: '',
+              hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
+              battery: 0,
+              snr: row.last_snr ?? 0,
+              rssi: row.last_rssi ?? 0,
+              last_heard: row.last_advert ?? 0,
+              latitude: row.adv_lat ?? null,
+              longitude: row.adv_lon ?? null,
+              favorited: row.favorited === 1,
+            });
           }
-          return next;
-        });
-      } catch (e) {
-        console.warn('[useMeshCore] refreshNodesFromDb error', e);
-      }
-    }, []),
-    refreshMessagesFromDb: useCallback(async () => {
-      try {
-        const dbMsgs = (await window.electronAPI.db.getMeshcoreMessages(
-          undefined,
-          500,
-        )) as MeshcoreMessageDbRow[];
-        const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
-        setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
-        setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
-      } catch (e) {
-        console.warn('[useMeshCore] refreshMessagesFromDb error', e);
-      }
-    }, []),
-    connectAutomatic,
-    telemetryDeviceUpdateInterval: undefined as number | undefined,
-    setRadioParams,
-    meshcoreContactsForTelemetry,
-    meshcoreAutoadd,
-    applyMeshcoreContactAutoAdd,
-    refreshMeshcoreAutoaddFromDevice,
-    applyMeshcoreTelemetryPrivacyPolicy,
-  };
+        }
+        return next;
+      });
+    } catch (e) {
+      console.warn('[useMeshCore] refreshNodesFromDb error', e);
+    }
+  }, []);
+  const refreshMessagesFromDb = useCallback(async () => {
+    try {
+      const dbMsgs = (await window.electronAPI.db.getMeshcoreMessages(
+        undefined,
+        500,
+      )) as MeshcoreMessageDbRow[];
+      const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
+      setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
+      setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
+    } catch (e) {
+      console.warn('[useMeshCore] refreshMessagesFromDb error', e);
+    }
+  }, []);
+
+  return useMemo(
+    () => ({
+      state,
+      nodes,
+      messages,
+      channels,
+      selfInfo,
+      connect,
+      disconnect,
+      sendMessage,
+      sendAdvert,
+      syncClock,
+      refreshContacts,
+      reboot,
+      deleteNode,
+      clearAllRepeaters,
+      clearAllMeshcoreContacts,
+      setOwner,
+      traceRoute,
+      requestRepeaterStatus,
+      requestTelemetry,
+      requestNeighbors,
+      importContacts,
+      toggleManualAddContacts,
+      setMeshcoreChannel,
+      deleteMeshcoreChannel,
+      deviceLogs,
+      meshcoreTraceResults,
+      meshcoreNodeStatus,
+      meshcoreStatusErrors,
+      meshcoreNodeTelemetry,
+      meshcoreTelemetryErrors,
+      meshcorePingErrors,
+      meshcoreNeighbors,
+      meshcoreNeighborErrors,
+      meshcoreCliHistories,
+      meshcoreCliErrors,
+      sendRepeaterCliCommand,
+      clearCliHistory,
+      manualAddContacts,
+      mqttStatus,
+      selfNodeId: state.myNodeNum,
+      getNodes,
+      getFullNodeLabel,
+      getPickerStyleNodeLabel,
+      traceRouteResults: new Map<number, { route: number[]; from: number }>(),
+      queueStatus: null,
+      neighborInfo: new Map<number, unknown>(),
+      waypoints: [] as unknown[],
+      telemetry,
+      signalTelemetry,
+      environmentTelemetry,
+      channelConfigs: [] as unknown[],
+      moduleConfigs: {} as Record<string, unknown>,
+      deviceOwner: selfInfo ? { longName: selfInfo.name, shortName: '', isLicensed: false } : null,
+      ourPosition,
+      gpsLoading: false,
+      telemetryEnabled: null,
+      sendReaction,
+      requestPosition: noopAsync,
+      setNodeFavorited,
+      shutdown: noopAsync,
+      factoryReset: noopAsync,
+      resetNodeDb: noopAsync,
+      commitConfig: noopAsync,
+      setConfig: noopAsync,
+      setDeviceChannel: noopAsync,
+      clearChannel: noopAsync,
+      rebootOta: noopAsync,
+      enterDfuMode: noopAsync,
+      factoryResetConfig: noopAsync,
+      sendWaypoint: noopAsync,
+      deleteWaypoint: noopAsync,
+      setModuleConfig: noopAsync,
+      setCannedMessages: noopAsync,
+      requestRefresh,
+      refreshOurPosition: refreshOurPositionNoop,
+      sendPositionToDevice: sendPositionToDeviceMeshCore,
+      updateGpsInterval: noopVoid,
+      refreshNodesFromDb,
+      refreshMessagesFromDb,
+      connectAutomatic,
+      telemetryDeviceUpdateInterval: undefined as number | undefined,
+      setRadioParams,
+      meshcoreContactsForTelemetry,
+      meshcoreAutoadd,
+      applyMeshcoreContactAutoAdd,
+      refreshMeshcoreAutoaddFromDevice,
+      applyMeshcoreTelemetryPrivacyPolicy,
+    }),
+    [
+      state,
+      nodes,
+      messages,
+      channels,
+      selfInfo,
+      connect,
+      disconnect,
+      sendMessage,
+      getNodes,
+      getFullNodeLabel,
+      getPickerStyleNodeLabel,
+      refreshNodesFromDb,
+      refreshMessagesFromDb,
+      sendAdvert,
+      syncClock,
+      refreshContacts,
+      reboot,
+      deleteNode,
+      clearAllRepeaters,
+      clearAllMeshcoreContacts,
+      setOwner,
+      traceRoute,
+      requestRepeaterStatus,
+      requestTelemetry,
+      requestNeighbors,
+      importContacts,
+      toggleManualAddContacts,
+      setMeshcoreChannel,
+      deleteMeshcoreChannel,
+      deviceLogs,
+      meshcoreTraceResults,
+      meshcoreNodeStatus,
+      meshcoreStatusErrors,
+      meshcoreNodeTelemetry,
+      meshcoreTelemetryErrors,
+      meshcorePingErrors,
+      meshcoreNeighbors,
+      meshcoreNeighborErrors,
+      meshcoreCliHistories,
+      meshcoreCliErrors,
+      sendRepeaterCliCommand,
+      clearCliHistory,
+      manualAddContacts,
+      mqttStatus,
+      telemetry,
+      signalTelemetry,
+      environmentTelemetry,
+      ourPosition,
+      sendReaction,
+      setNodeFavorited,
+      requestRefresh,
+      refreshOurPositionNoop,
+      sendPositionToDeviceMeshCore,
+      noopVoid,
+      noopAsync,
+      connectAutomatic,
+      setRadioParams,
+      meshcoreContactsForTelemetry,
+      meshcoreAutoadd,
+      applyMeshcoreContactAutoAdd,
+      refreshMeshcoreAutoaddFromDevice,
+      applyMeshcoreTelemetryPrivacyPolicy,
+    ],
+  );
 }

@@ -415,3 +415,52 @@ describe('ConnectionPanel firmware status indicator', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 });
+
+describe("ConnectionPanel Meshtastic MQTT presets — Liam's server", () => {
+  function renderMeshtasticMqtt() {
+    return render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+        onProtocolChange={vi.fn()}
+      />,
+    );
+  }
+
+  it("clicking Liam's preset populates liamcottle.net credentials", async () => {
+    const user = userEvent.setup();
+    renderMeshtasticMqtt();
+
+    await user.click(screen.getByRole('button', { name: "Liam's" }));
+
+    expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe(
+      'mqtt.meshtastic.liamcottle.net',
+    );
+    expect(screen.getByLabelText<HTMLInputElement>(/^Port$/i).value).toBe('1883');
+    expect(screen.getByLabelText<HTMLInputElement>(/^Username$/i).value).toBe('uplink');
+  });
+
+  it("shows uplink-only warning when Liam's preset is active", async () => {
+    const user = userEvent.setup();
+    renderMeshtasticMqtt();
+
+    await user.click(screen.getByRole('button', { name: "Liam's" }));
+
+    expect(screen.getByText(/uplink-only/i)).toBeInTheDocument();
+  });
+
+  it('hides uplink-only warning for official presets', async () => {
+    const user = userEvent.setup();
+    renderMeshtasticMqtt();
+
+    // First activate Liam's, then switch away
+    await user.click(screen.getByRole('button', { name: "Liam's" }));
+    await user.click(screen.getByRole('button', { name: 'MQTT :1883' }));
+
+    expect(screen.queryByText(/uplink-only/i)).not.toBeInTheDocument();
+  });
+});

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS } from '@/shared/meshtasticMqttReconnect';
+import {
+  MQTT_DEFAULT_RECONNECT_ATTEMPTS,
+  MQTT_MAX_RECONNECT_ATTEMPTS,
+} from '@/shared/meshtasticMqttReconnect';
 
 import { MESHCORE_SETUP_ABORT_MESSAGE } from '../lib/bleConnectErrors';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
@@ -18,9 +21,10 @@ import {
 } from '../lib/letsMeshJwt';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
+  isLiamBrokerSettings,
   isMeshtasticOfficialBrokerSettings,
+  MESHTASTIC_LIAM_1883,
   MESHTASTIC_OFFICIAL_1883,
-  MESHTASTIC_OFFICIAL_8883,
   MESHTASTIC_OFFICIAL_PRESET_DEFAULTS,
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
@@ -38,7 +42,6 @@ import type {
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
-import { useToast } from './Toast';
 // ─── Last Connection (localStorage) ───────────────────────────────
 interface LastConnection {
   type: ConnectionType;
@@ -417,7 +420,7 @@ const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
   password: '',
   topicPrefix: 'meshcore',
   autoLaunch: false,
-  maxRetries: 5,
+  maxRetries: 3,
   meshcorePacketLoggerEnabled: false,
 };
 
@@ -438,10 +441,10 @@ function loadMqttSettings(): MQTTSettings {
   const raw = localStorage.getItem('mesh-client:mqttSettings');
   const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'ConnectionPanel loadMqttSettings');
   const merged = parsed ? { ...MQTT_DEFAULTS, ...parsed } : MQTT_DEFAULTS;
-  const r = merged.maxRetries ?? MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS;
+  const r = merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS;
   return {
     ...merged,
-    maxRetries: Math.min(MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS, Math.max(1, r)),
+    maxRetries: Math.min(MQTT_MAX_RECONNECT_ATTEMPTS, Math.max(1, r)),
   };
 }
 
@@ -486,8 +489,6 @@ interface Props {
     httpAddress?: string,
     blePeripheralId?: string,
   ) => Promise<void>;
-  onRefreshContacts?: () => Promise<void>;
-  onSendAdvert?: () => Promise<void>;
   onAutoConnect: (
     type: ConnectionType,
     httpAddress?: string,
@@ -508,8 +509,6 @@ interface Props {
 export default function ConnectionPanel({
   state,
   onConnect,
-  onRefreshContacts,
-  onSendAdvert,
   onAutoConnect,
   onDisconnect,
   mqttStatus,
@@ -538,23 +537,7 @@ export default function ConnectionPanel({
   const pinPromptSeenSinceRePairRef = useRef(false);
   const [pinCountdown, setPinCountdown] = useState<number | null>(null);
   const pinCountdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [advertLoading, setAdvertLoading] = useState(false);
-  const { addToast } = useToast();
   const activeHostAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
-
-  const handleSendAdvert = useCallback(async () => {
-    if (!onSendAdvert) return;
-    setAdvertLoading(true);
-    try {
-      await onSendAdvert();
-      addToast('Flood advert sent', 'success');
-    } catch (e) {
-      console.warn('[ConnectionPanel] sendAdvert failed:', e instanceof Error ? e.message : e);
-      addToast(`Advert failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
-    } finally {
-      setAdvertLoading(false);
-    }
-  }, [onSendAdvert, addToast]);
 
   // ─── MQTT settings state ───────────────────────────────────────
   const [mqttSettings, setMqttSettings] = useState<MQTTSettings>(loadMqttSettings);
@@ -571,15 +554,15 @@ export default function ConnectionPanel({
     if (saved === 'letsmesh' || saved === 'ripple') return saved;
     return 'custom';
   });
-  const [meshtasticPreset, setMeshtasticPreset] = useState<
-    'official-tls' | 'official-plain' | 'custom'
-  >(() => {
-    const s = loadMqttSettings();
-    if (!isMeshtasticOfficialBrokerSettings(s)) return 'custom';
-    if (s.port === 8883) return 'official-tls';
-    if (s.port === 1883) return 'official-plain';
-    return 'custom';
-  });
+  const [meshtasticPreset, setMeshtasticPreset] = useState<'official-plain' | 'liam' | 'custom'>(
+    () => {
+      const s = loadMqttSettings();
+      if (isLiamBrokerSettings(s)) return 'liam';
+      if (!isMeshtasticOfficialBrokerSettings(s)) return 'custom';
+      if (s.port === 1883) return 'official-plain';
+      return 'custom';
+    },
+  );
 
   // Persist Meshtastic MQTT settings with debounce
   useEffect(() => {
@@ -678,8 +661,11 @@ export default function ConnectionPanel({
     affectsPreset = true,
   ) => {
     if (affectsPreset) {
-      setMeshcorePreset('custom');
-      setMeshtasticPreset('custom');
+      if (protocol === 'meshcore') {
+        setMeshcorePreset('custom');
+      } else {
+        setMeshtasticPreset('custom');
+      }
     }
     setActiveMqttSettings((prev) => ({ ...prev, [key]: value }));
   };
@@ -1849,7 +1835,7 @@ export default function ConnectionPanel({
                 text={
                   protocol === 'meshcore'
                     ? 'Reconnect tries before giving up (1–20). Saved with settings; press Connect again after changing so the main process picks it up.'
-                    : `Meshtastic allows 1–${MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS}. Saved with settings; disconnect and Connect again so the running session uses the new value.`
+                    : `Both protocols allow 1–${MQTT_MAX_RECONNECT_ATTEMPTS}. Saved with settings; disconnect and Connect again so the running session uses the new value.`
                 }
               />
             </div>
@@ -1858,15 +1844,11 @@ export default function ConnectionPanel({
               type="number"
               aria-label="Max MQTT reconnect attempts"
               min={1}
-              max={protocol === 'meshcore' ? 20 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS}
-              value={
-                activeMqttSettings.maxRetries ??
-                (protocol === 'meshcore' ? 5 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS)
-              }
+              max={MQTT_MAX_RECONNECT_ATTEMPTS}
+              value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
               onChange={(e) => {
-                const fallback =
-                  protocol === 'meshcore' ? 5 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS;
-                const cap = protocol === 'meshcore' ? 20 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS;
+                const fallback = MQTT_DEFAULT_RECONNECT_ATTEMPTS;
+                const cap = MQTT_MAX_RECONNECT_ATTEMPTS;
                 const n = parseInt(e.target.value, 10);
                 const v = Number.isFinite(n) ? Math.min(cap, Math.max(1, n)) : fallback;
                 updateMqtt('maxRetries', v, false);
@@ -1907,8 +1889,8 @@ export default function ConnectionPanel({
               >
                 {(
                   [
-                    { id: 'official-tls' as const, label: 'TLS :8883' },
                     { id: 'official-plain' as const, label: 'MQTT :1883' },
+                    { id: 'liam' as const, label: "Liam's" },
                     { id: 'custom' as const, label: 'Custom' },
                   ] as const
                 ).map(({ id, label }) => (
@@ -1917,14 +1899,14 @@ export default function ConnectionPanel({
                     type="button"
                     onClick={() => {
                       setMeshtasticPreset(id);
-                      if (id === 'official-tls') {
-                        setMqttSettings({
-                          ...MESHTASTIC_OFFICIAL_8883,
-                          topicPrefix: mqttSettings.topicPrefix,
-                        });
-                      } else if (id === 'official-plain') {
+                      if (id === 'official-plain') {
                         setMqttSettings({
                           ...MESHTASTIC_OFFICIAL_1883,
+                          topicPrefix: mqttSettings.topicPrefix,
+                        });
+                      } else if (id === 'liam') {
+                        setMqttSettings({
+                          ...MESHTASTIC_LIAM_1883,
                           topicPrefix: mqttSettings.topicPrefix,
                         });
                       }
@@ -1939,6 +1921,12 @@ export default function ConnectionPanel({
                   </button>
                 ))}
               </div>
+              {meshtasticPreset === 'liam' && (
+                <p className="text-xs text-amber-400">
+                  Liam's server is uplink-only — your node appears on his map but you won't receive
+                  messages from it.
+                </p>
+              )}
             </div>
           )}
           {protocol === 'meshcore' && (
@@ -2209,7 +2197,15 @@ export default function ConnectionPanel({
               <label htmlFor="mqtt-topic-prefix" className="text-xs text-muted">
                 Topic Prefix
               </label>
-              <HelpTooltip text="Each country/region has its own Topic setting; please research the correct hierarchy. Example: Colorado is msh/US/CO" />
+              <HelpTooltip
+                text={
+                  protocol === 'meshtastic'
+                    ? 'msh/[Country]/[State], e.g. msh/CO/US'
+                    : meshcorePreset === 'letsmesh'
+                      ? 'meshcore/{IATA}, e.g. meshcore/DEN'
+                      : 'MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO'
+                }
+              />
             </div>
             <input
               id="mqtt-topic-prefix"
@@ -2231,7 +2227,7 @@ export default function ConnectionPanel({
                 text={
                   protocol === 'meshcore'
                     ? 'Reconnect attempts (1–20) before giving up.'
-                    : `Meshtastic reconnect attempts (1–${MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS}) before giving up.`
+                    : `Reconnect attempts (1–${MQTT_MAX_RECONNECT_ATTEMPTS}) before giving up.`
                 }
               />
             </div>
@@ -2239,15 +2235,11 @@ export default function ConnectionPanel({
               id="mqtt-max-retries"
               type="number"
               min={1}
-              max={protocol === 'meshcore' ? 20 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS}
-              value={
-                activeMqttSettings.maxRetries ??
-                (protocol === 'meshcore' ? 5 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS)
-              }
+              max={MQTT_MAX_RECONNECT_ATTEMPTS}
+              value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
               onChange={(e) => {
-                const fallback =
-                  protocol === 'meshcore' ? 5 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS;
-                const cap = protocol === 'meshcore' ? 20 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS;
+                const fallback = MQTT_DEFAULT_RECONNECT_ATTEMPTS;
+                const cap = MQTT_MAX_RECONNECT_ATTEMPTS;
                 const n = parseInt(e.target.value, 10);
                 const v = Number.isFinite(n) ? Math.min(cap, Math.max(1, n)) : fallback;
                 updateMqtt('maxRetries', v, false);
@@ -2464,32 +2456,6 @@ export default function ConnectionPanel({
             >
               Disconnect
             </button>
-            {onRefreshContacts && (
-              <button
-                onClick={onRefreshContacts}
-                className="w-full px-4 py-2.5 border border-purple-600 text-purple-400 hover:bg-purple-900/30 hover:text-purple-300 text-sm font-medium rounded-lg transition-colors"
-              >
-                Refresh Contacts
-              </button>
-            )}
-            {onSendAdvert && (
-              <button
-                type="button"
-                onClick={() => void handleSendAdvert()}
-                disabled={advertLoading || state.status === 'reconnecting'}
-                aria-label={advertLoading ? 'Sending advert' : 'Send flood advert'}
-                className="w-full px-4 py-2.5 border border-gray-600 text-gray-300 hover:bg-secondary-dark hover:text-gray-100 text-sm font-medium rounded-lg transition-colors disabled:opacity-40"
-              >
-                {advertLoading ? (
-                  <span
-                    className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin inline-block align-middle"
-                    aria-hidden
-                  />
-                ) : (
-                  'Send Advert'
-                )}
-              </button>
-            )}
           </div>
         </div>
 

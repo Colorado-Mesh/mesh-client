@@ -93,6 +93,8 @@ interface Props {
   meshcoreContactsShowRefreshControl?: boolean;
   onMeshcoreContactsShowRefreshControlChange?: (value: boolean) => void;
   onClearAllMeshcoreContacts?: () => Promise<void>;
+  onSendAdvert?: () => Promise<void>;
+  onSyncClock?: () => Promise<void>;
 }
 
 const REGIONS = [
@@ -508,6 +510,8 @@ export default function RadioPanel({
   meshcoreContactsShowRefreshControl = false,
   onMeshcoreContactsShowRefreshControlChange,
   onClearAllMeshcoreContacts,
+  onSendAdvert,
+  onSyncClock,
 }: Props) {
   // ─── User / Identity settings ─────────────────────────────────
   const [longName, setLongName] = useState('');
@@ -606,6 +610,8 @@ export default function RadioPanel({
   const { addToast } = useToast();
   const [applyingMeshcoreTelemetryPrivacy, setApplyingMeshcoreTelemetryPrivacy] = useState(false);
   const [applyingMeshcoreContactMgmt, setApplyingMeshcoreContactMgmt] = useState(false);
+  const [advertLoading, setAdvertLoading] = useState(false);
+  const [syncClockLoading, setSyncClockLoading] = useState(false);
 
   const disabled = !isConnected;
 
@@ -637,6 +643,34 @@ export default function RadioPanel({
   const executeWithConfirmation = useCallback((action: PendingAction) => {
     setPendingAction(action);
   }, []);
+
+  const handleSendAdvert = async () => {
+    if (!onSendAdvert) return;
+    setAdvertLoading(true);
+    try {
+      await onSendAdvert();
+      addToast('Flood advert sent', 'success');
+    } catch (e) {
+      console.warn('[RadioPanel] sendAdvert failed:', e instanceof Error ? e.message : e);
+      addToast(`Advert failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
+    } finally {
+      setAdvertLoading(false);
+    }
+  };
+
+  const handleSyncClock = async () => {
+    if (!onSyncClock) return;
+    setSyncClockLoading(true);
+    try {
+      await onSyncClock();
+      addToast('Clock synced', 'success');
+    } catch (e) {
+      console.warn('[RadioPanel] syncClock failed:', e instanceof Error ? e.message : e);
+      addToast(`Sync failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
+    } finally {
+      setSyncClockLoading(false);
+    }
+  };
 
   const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
@@ -1701,6 +1735,43 @@ export default function RadioPanel({
         <p>Changes are written to the device's flash memory and persist across reboots.</p>
         <p>The device may briefly restart after applying new LoRa or device settings.</p>
       </div>
+
+      {/* Device Actions (MeshCore) — non-destructive commands */}
+      {(onSendAdvert || onSyncClock) && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted">Device Actions</h3>
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg border border-gray-700">
+            {onSendAdvert && (
+              <button
+                type="button"
+                onClick={() => void handleSendAdvert()}
+                disabled={!isConnected || advertLoading}
+                className="px-3 py-1 rounded text-xs font-medium bg-brand-green/20 text-brand-green border border-brand-green/30 hover:bg-brand-green/30 transition-colors disabled:opacity-40"
+              >
+                {advertLoading ? (
+                  <span className="w-3 h-3 border border-brand-green border-t-transparent rounded-full animate-spin inline-block" />
+                ) : (
+                  'Flood Advert'
+                )}
+              </button>
+            )}
+            {onSyncClock && (
+              <button
+                type="button"
+                onClick={() => void handleSyncClock()}
+                disabled={!isConnected || syncClockLoading}
+                className="px-3 py-1 rounded text-xs font-medium bg-blue-900/50 text-blue-300 border border-blue-700 hover:bg-blue-800/60 transition-colors disabled:opacity-40"
+              >
+                {syncClockLoading ? (
+                  <span className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin inline-block" />
+                ) : (
+                  'Sync Clock'
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Device Commands — keep at bottom of Radio panel, directly above Danger Zone; do not reorder */}
       <div className="space-y-3">
