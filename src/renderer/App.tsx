@@ -773,12 +773,17 @@ export default function App() {
   }, [meshtasticUnread, meshcoreUnread]);
 
   // ─── Auto flood advert (MeshCore) ────────────────────────────────
+  const advertSentRef = useRef(false);
+
   useEffect(() => {
     if (protocol !== 'meshcore' || !isOperational || autoFloodAdvertIntervalHours <= 0) return;
 
-    void meshcoreDevice.sendAdvert().catch((e: unknown) => {
-      console.warn('[App] auto flood advert failed', e instanceof Error ? e.message : e);
-    });
+    if (!advertSentRef.current) {
+      advertSentRef.current = true;
+      void meshcoreDevice.sendAdvert().catch((e: unknown) => {
+        console.warn('[App] auto flood advert failed', e instanceof Error ? e.message : e);
+      });
+    }
 
     const ms = autoFloodAdvertIntervalHours * 60 * 60 * 1000;
     const id = setInterval(() => {
