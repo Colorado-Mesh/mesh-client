@@ -89,6 +89,101 @@ pnpm run docs:build
 pnpm run docs:serve
 ```
 
+### All Scripts Reference
+
+Complete reference of all npm scripts in `package.json`, organized by category.
+
+#### Build
+
+| Script                   | Description                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `build`                  | Full production build: main (minified) + preload + renderer                    |
+| `build:main`             | Build main process (no minify) → `dist-electron/main/index.js`                 |
+| `build:main:prod`        | Build main process (minified) → `dist-electron/main/index.js`                  |
+| `build:main:meta`        | Build main with metadata JSON (no minify) → `dist-electron/main/metafile.json` |
+| `build:main:minify-meta` | Build main with metadata JSON (minified) → `dist-electron/main/meta.json`      |
+| `build:main:size`        | Print main bundle size                                                         |
+| `build:preload`          | Build preload script → `dist-electron/preload/index.js`                        |
+| `build:renderer`         | Build renderer (React app) via Vite → `dist/`                                  |
+
+#### Run
+
+| Script              | Description                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `dev`               | Hot-reload dev mode: builds main/preload in watch mode + Vite dev server + Electron |
+| `start`             | Production-like local start: runs `build` then launches Electron                    |
+| `electron:open`     | Launch Electron (requires prior build)                                              |
+| `trace-deprecation` | Run with Node deprecation traces enabled                                            |
+
+#### Package (distributables)
+
+| Script               | Description                                |
+| -------------------- | ------------------------------------------ |
+| `dist`               | Build for current platform                 |
+| `dist:mac`           | Build macOS .dmg + .zip → `release/`       |
+| `dist:mac:publish`   | Build macOS and upload to release server   |
+| `dist:linux`         | Build Linux .AppImage + .deb → `release/`  |
+| `dist:linux:publish` | Build Linux and upload to release server   |
+| `dist:win`           | Build Windows .exe installer → `release/`  |
+| `dist:win:publish`   | Build Windows and upload to release server |
+
+#### Test
+
+| Script         | Description                   |
+| -------------- | ----------------------------- |
+| `test`         | Run tests in watch mode       |
+| `test:run`     | Run tests once (CI mode)      |
+| `test:verbose` | Run tests with verbose output |
+
+#### Lint / Format
+
+| Script         | Description                     |
+| -------------- | ------------------------------- |
+| `lint`         | Run ESLint (type-aware)         |
+| `lint:fix`     | Run ESLint with auto-fix        |
+| `format`       | Format all code via Prettier    |
+| `format:check` | Check formatting without fixing |
+
+#### Typecheck
+
+| Script      | Description                               |
+| ----------- | ----------------------------------------- |
+| `typecheck` | TypeScript check: renderer + main process |
+
+#### Quality Checks
+
+| Script                | Description                                                |
+| --------------------- | ---------------------------------------------------------- |
+| `check:log-injection` | Detect unsanitized user data in log calls                  |
+| `check:db-migrations` | Verify SQLite migrations are valid                         |
+| `check:ipc-contract`  | Verify IPC channel contracts between main/preload/renderer |
+
+#### Documentation
+
+| Script         | Description                         |
+| -------------- | ----------------------------------- |
+| `docs:install` | Install MkDocs Python dependencies  |
+| `docs:build`   | Build static docs to `site/`        |
+| `docs:serve`   | Serve docs locally with live reload |
+
+#### Setup / Helpers
+
+| Script             | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `setup:actionlint` | Install actionlint for GitHub workflow linting           |
+| `setup:build-deps` | Install native build dependencies                        |
+| `setup:dialout`    | Add user to dialout group for serial port access (Linux) |
+| `rebuild`          | Rebuild native Node modules for Electron                 |
+
+#### Lifecycle (automatic)
+
+| Script        | Description                            |
+| ------------- | -------------------------------------- |
+| `preinstall`  | Enforce pnpm as package manager        |
+| `postinstall` | Rebuild native modules + apply patches |
+| `prepare`     | Enable git hooks                       |
+| `predist`     | Dedupe packages before packaging       |
+
 ### 4) Test harness setup and local quality checks
 
 This section is the project test harness setup.
