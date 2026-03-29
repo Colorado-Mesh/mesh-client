@@ -61,6 +61,10 @@ export interface ProtocolCapabilities {
   hasSecurityPanel: boolean;
   /** Whether the TAK server panel is available (Meshtastic only) */
   hasTakPanel: boolean;
+  /** Node stale threshold in milliseconds (for node status UI) */
+  nodeStaleThresholdMs: number;
+  /** Node offline threshold in milliseconds (for node status UI) */
+  nodeOfflineThresholdMs: number;
 }
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
@@ -93,6 +97,8 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasFullPositionConfig: true,
   hasSecurityPanel: true,
   hasTakPanel: true,
+  nodeStaleThresholdMs: 3 * 60 * 60 * 1000, // 3 hours
+  nodeOfflineThresholdMs: 24 * 60 * 60 * 1000, // 24 hours
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -126,4 +132,6 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasFullPositionConfig: false,
   hasSecurityPanel: false,
   hasTakPanel: false,
+  nodeStaleThresholdMs: 24 * 60 * 60 * 1000, // 24 hours
+  nodeOfflineThresholdMs: 48 * 60 * 60 * 1000, // 48 hours
 };

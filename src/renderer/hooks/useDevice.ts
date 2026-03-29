@@ -1079,8 +1079,9 @@ export function useDevice() {
 
           const lastHeardMs =
             (info.lastHeard ?? 0) > 0 ? info.lastHeard! * 1000 : existing.last_heard;
-          const staleHopMs = 2 * 3_600_000; // align with nodeStatus STALE_MS
-          const lastHeardStale = lastHeardMs > 0 && Date.now() - lastHeardMs > staleHopMs;
+          const lastHeardStale =
+            lastHeardMs > 0 &&
+            Date.now() - lastHeardMs > MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs;
 
           const long_name = preferNonEmptyTrimmedString(info.user?.longName, existing.long_name);
           const short_name = meshtasticShortNameAfterClearingDefault(

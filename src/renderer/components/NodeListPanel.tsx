@@ -13,6 +13,7 @@ import {
   meshtasticContactGroupMatchesBuiltinRfMqtt,
 } from '../lib/meshtasticContactGroupUtils';
 import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib/nodeStatus';
+import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
 import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
@@ -154,6 +155,7 @@ export default function NodeListPanel({
   meshcorePublicKeyHexByNodeId,
 }: Props) {
   const { addToast } = useToast();
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(mode);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
@@ -554,15 +556,36 @@ export default function NodeListPanel({
       <div className="flex gap-3 text-xs text-muted shrink-0">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-brand-green inline-block" />
-          {nodeList.filter((n) => getNodeStatus(n.last_heard) === 'online').length} online
+          {
+            nodeList.filter(
+              (n) =>
+                getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                'online',
+            ).length
+          }{' '}
+          online
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-yellow-500 inline-block" />
-          {nodeList.filter((n) => getNodeStatus(n.last_heard) === 'stale').length} stale
+          {
+            nodeList.filter(
+              (n) =>
+                getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                'stale',
+            ).length
+          }{' '}
+          stale
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-gray-600 inline-block" />
-          {nodeList.filter((n) => getNodeStatus(n.last_heard) === 'offline').length} offline
+          {
+            nodeList.filter(
+              (n) =>
+                getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                'offline',
+            ).length
+          }{' '}
+          offline
         </span>
       </div>
 
@@ -839,7 +862,11 @@ export default function NodeListPanel({
             ) : (
               nodeList.map((node) => {
                 const isSelf = node.node_id === myNodeNum;
-                const status = getNodeStatus(node.last_heard);
+                const status = getNodeStatus(
+                  node.last_heard,
+                  nodeStaleThresholdMs,
+                  nodeOfflineThresholdMs,
+                );
                 const isMqttOnlyDimmed = ignoreMqttEnabled && !!node.heard_via_mqtt_only;
                 const rowOpacity = isMqttOnlyDimmed
                   ? 'opacity-50'
