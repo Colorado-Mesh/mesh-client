@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS } from '@/shared/meshtasticMqttReconnect';
+import {
+  MQTT_DEFAULT_RECONNECT_ATTEMPTS,
+  MQTT_MAX_RECONNECT_ATTEMPTS,
+} from '@/shared/meshtasticMqttReconnect';
 
 import { MESHCORE_SETUP_ABORT_MESSAGE } from '../lib/bleConnectErrors';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
@@ -419,7 +422,7 @@ const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
   password: '',
   topicPrefix: 'meshcore',
   autoLaunch: false,
-  maxRetries: 5,
+  maxRetries: 3,
   meshcorePacketLoggerEnabled: false,
 };
 
@@ -440,10 +443,10 @@ function loadMqttSettings(): MQTTSettings {
   const raw = localStorage.getItem('mesh-client:mqttSettings');
   const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'ConnectionPanel loadMqttSettings');
   const merged = parsed ? { ...MQTT_DEFAULTS, ...parsed } : MQTT_DEFAULTS;
-  const r = merged.maxRetries ?? MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS;
+  const r = merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS;
   return {
     ...merged,
-    maxRetries: Math.min(MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS, Math.max(1, r)),
+    maxRetries: Math.min(MQTT_MAX_RECONNECT_ATTEMPTS, Math.max(1, r)),
   };
 }
 
@@ -681,8 +684,11 @@ export default function ConnectionPanel({
     affectsPreset = true,
   ) => {
     if (affectsPreset) {
-      setMeshcorePreset('custom');
-      setMeshtasticPreset('custom');
+      if (protocol === 'meshcore') {
+        setMeshcorePreset('custom');
+      } else {
+        setMeshtasticPreset('custom');
+      }
     }
     setActiveMqttSettings((prev) => ({ ...prev, [key]: value }));
   };
@@ -1852,7 +1858,7 @@ export default function ConnectionPanel({
                 text={
                   protocol === 'meshcore'
                     ? 'Reconnect tries before giving up (1–20). Saved with settings; press Connect again after changing so the main process picks it up.'
-                    : `Meshtastic allows 1–${MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS}. Saved with settings; disconnect and Connect again so the running session uses the new value.`
+                    : `Both protocols allow 1–${MQTT_MAX_RECONNECT_ATTEMPTS}. Saved with settings; disconnect and Connect again so the running session uses the new value.`
                 }
               />
             </div>
@@ -1861,15 +1867,11 @@ export default function ConnectionPanel({
               type="number"
               aria-label="Max MQTT reconnect attempts"
               min={1}
-              max={protocol === 'meshcore' ? 20 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS}
-              value={
-                activeMqttSettings.maxRetries ??
-                (protocol === 'meshcore' ? 5 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS)
-              }
+              max={MQTT_MAX_RECONNECT_ATTEMPTS}
+              value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
               onChange={(e) => {
-                const fallback =
-                  protocol === 'meshcore' ? 5 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS;
-                const cap = protocol === 'meshcore' ? 20 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS;
+                const fallback = MQTT_DEFAULT_RECONNECT_ATTEMPTS;
+                const cap = MQTT_MAX_RECONNECT_ATTEMPTS;
                 const n = parseInt(e.target.value, 10);
                 const v = Number.isFinite(n) ? Math.min(cap, Math.max(1, n)) : fallback;
                 updateMqtt('maxRetries', v, false);
@@ -2246,7 +2248,7 @@ export default function ConnectionPanel({
                 text={
                   protocol === 'meshcore'
                     ? 'Reconnect attempts (1–20) before giving up.'
-                    : `Meshtastic reconnect attempts (1–${MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS}) before giving up.`
+                    : `Reconnect attempts (1–${MQTT_MAX_RECONNECT_ATTEMPTS}) before giving up.`
                 }
               />
             </div>
@@ -2254,15 +2256,11 @@ export default function ConnectionPanel({
               id="mqtt-max-retries"
               type="number"
               min={1}
-              max={protocol === 'meshcore' ? 20 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS}
-              value={
-                activeMqttSettings.maxRetries ??
-                (protocol === 'meshcore' ? 5 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS)
-              }
+              max={MQTT_MAX_RECONNECT_ATTEMPTS}
+              value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
               onChange={(e) => {
-                const fallback =
-                  protocol === 'meshcore' ? 5 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS;
-                const cap = protocol === 'meshcore' ? 20 : MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS;
+                const fallback = MQTT_DEFAULT_RECONNECT_ATTEMPTS;
+                const cap = MQTT_MAX_RECONNECT_ATTEMPTS;
                 const n = parseInt(e.target.value, 10);
                 const v = Number.isFinite(n) ? Math.min(cap, Math.max(1, n)) : fallback;
                 updateMqtt('maxRetries', v, false);

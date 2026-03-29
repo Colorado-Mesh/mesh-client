@@ -1,5 +1,5 @@
 import type { MQTTSettings } from '@/renderer/lib/types';
-import { MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS } from '@/shared/meshtasticMqttReconnect';
+import { MQTT_DEFAULT_RECONNECT_ATTEMPTS } from '@/shared/meshtasticMqttReconnect';
 
 export const MESHTASTIC_OFFICIAL_BROKER_HOST = 'mqtt.meshtastic.org';
 export const LIAM_BROKER_HOST = 'mqtt.meshtastic.liamcottle.net';
@@ -13,7 +13,7 @@ const MESHTASTIC_OFFICIAL_SHARED: Pick<
   password: 'large4cats',
   topicPrefix: 'msh/US/',
   autoLaunch: false,
-  maxRetries: MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS,
+  maxRetries: MQTT_DEFAULT_RECONNECT_ATTEMPTS,
 };
 
 /** Public broker — plaintext MQTT (port 1883). */
@@ -39,7 +39,7 @@ export const MESHTASTIC_LIAM_1883: MQTTSettings = {
   password: 'uplink',
   topicPrefix: 'msh/US/',
   autoLaunch: false,
-  maxRetries: MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS,
+  maxRetries: MQTT_DEFAULT_RECONNECT_ATTEMPTS,
 };
 
 export function isMeshtasticOfficialBrokerSettings(s: MQTTSettings): boolean {

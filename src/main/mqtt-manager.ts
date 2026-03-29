@@ -5,7 +5,10 @@ import { EventEmitter } from 'events';
 import * as mqtt from 'mqtt';
 
 import type { ChatMessage, MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
-import { MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS } from '../shared/meshtasticMqttReconnect';
+import {
+  MQTT_DEFAULT_RECONNECT_ATTEMPTS,
+  MQTT_MAX_RECONNECT_ATTEMPTS,
+} from '../shared/meshtasticMqttReconnect';
 import { meshtasticShortNameAfterClearingDefault } from '../shared/nodeNameUtils';
 import { sanitizeLogMessage } from './log-service';
 
@@ -272,8 +275,8 @@ export class MQTTManager extends EventEmitter {
       const maxRetries = Math.max(
         1,
         Math.min(
-          this.currentSettings?.maxRetries ?? MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS,
-          MESHTASTIC_MQTT_MAX_RECONNECT_ATTEMPTS,
+          this.currentSettings?.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS,
+          MQTT_MAX_RECONNECT_ATTEMPTS,
         ),
       );
       if (skipReconnect) return;

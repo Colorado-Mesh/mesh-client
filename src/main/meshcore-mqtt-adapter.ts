@@ -4,6 +4,10 @@ import * as mqtt from 'mqtt';
 import type { MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import type { MeshcoreMqttChatEnvelopeV1 } from '../shared/meshcoreMqttEnvelope';
 import { tryParseMeshcoreMqttChatEnvelope } from '../shared/meshcoreMqttEnvelope';
+import {
+  MQTT_DEFAULT_RECONNECT_ATTEMPTS,
+  MQTT_MAX_RECONNECT_ATTEMPTS,
+} from '../shared/meshtasticMqttReconnect';
 import { sanitizeLogMessage } from './log-service';
 
 export type { MeshcoreMqttChatEnvelopeV1 } from '../shared/meshcoreMqttEnvelope';
@@ -44,6 +48,9 @@ const MESHCORE_MQTT_WSS_PING_MS = 25_000;
  * `reschedulePing(true)` resets mqtt.js KeepaliveManager without relying on inbound ACK callbacks.
  */
 const MESHCORE_MQTT_RESCHEDULE_MS = 30_000;
+/** Reconnect delay base/cap — mirrors MQTTManager. */
+const MESHCORE_MQTT_RECONNECT_BACKOFF_BASE_MS = 500;
+const MESHCORE_MQTT_RECONNECT_BACKOFF_CAP_MS = 8_000;
 
 export class MeshcoreMqttAdapter extends EventEmitter {
   private client: mqtt.MqttClient | null = null;
@@ -57,6 +64,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   private firstMessageLogged = false;
   private wssPingTimer: ReturnType<typeof setInterval> | null = null;
   private keepaliveRescheduleTimer: ReturnType<typeof setInterval> | null = null;
+  private retryCount = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   getStatus(): MQTTStatus {
     return this.status;
@@ -87,6 +96,13 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     }
   }
 
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+
   /** Reset mqtt.js KeepaliveManager (WSS paths where wire PINGRESP/SUBACK are not observed in time). */
   private startKeepaliveReschedule(): void {
     this.clearKeepaliveReschedule();
@@ -103,10 +119,18 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     }, MESHCORE_MQTT_RESCHEDULE_MS);
   }
 
+  private setError(message: string): void {
+    this.status = 'error';
+    this.emit('status', 'error');
+    this.emit('error', message);
+  }
+
   disconnect(): void {
     this.clearConnectTimers();
     this.clearWssPing();
     this.clearKeepaliveReschedule();
+    this.clearReconnectTimer();
+    this.retryCount = 0;
     if (this.client) {
       try {
         this.client.removeAllListeners();
@@ -126,6 +150,20 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   connect(settings: MQTTSettings): void {
     this.disconnect();
     this.lastSettings = settings;
+    this.retryCount = 0;
+    this._doConnect(settings);
+  }
+
+  private _doConnect(settings: MQTTSettings): void {
+    if (this.client) {
+      try {
+        this.client.removeAllListeners();
+        this.client.end(true);
+      } catch {
+        // catch-no-log-ok forced end before reconnect
+      }
+      this.client = null;
+    }
     const clientId = `meshcore-mqtt-${Math.random().toString(36).slice(2, 10)}`;
     const useTls = settings.port === 8883;
     const rejectUnauthorizedTls = useTls ? !settings.tlsInsecure : false;
@@ -205,6 +243,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       }
       console.debug('[MeshcoreMqttAdapter] CONNACK received', new Date().toISOString());
       this.clientIdStr = this.client?.options?.clientId ?? '';
+      this.retryCount = 0;
       this.setStatus('connected');
       this.emit('clientId', this.clientIdStr);
       const base = normalizePrefix(settings.topicPrefix || 'msh');
@@ -282,9 +321,41 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       this.clearWssPing();
       this.clearKeepaliveReschedule();
       this.clearConnectTimers();
+      const skipReconnect =
+        this.status === 'disconnected' || this.status === 'error' || !this.lastSettings;
       if (this.status === 'connected' || this.status === 'connecting') {
         this.setStatus('disconnected');
       }
+      if (skipReconnect) return;
+
+      const maxRetries = Math.max(
+        1,
+        Math.min(
+          this.lastSettings!.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS,
+          MQTT_MAX_RECONNECT_ATTEMPTS,
+        ),
+      );
+      if (this.retryCount >= maxRetries) {
+        this.setError(
+          `Connection lost after ${maxRetries} reconnect attempt${maxRetries === 1 ? '' : 's'}`,
+        );
+        return;
+      }
+      this.retryCount++;
+      const backoff = Math.min(
+        MESHCORE_MQTT_RECONNECT_BACKOFF_BASE_MS * Math.pow(2, this.retryCount - 1),
+        MESHCORE_MQTT_RECONNECT_BACKOFF_CAP_MS,
+      );
+      console.warn(
+        `[MeshcoreMqttAdapter] Reconnecting in ${backoff}ms (attempt ${this.retryCount}/${maxRetries})`,
+      );
+      this.setStatus('connecting');
+      this.reconnectTimer = setTimeout(() => {
+        this.reconnectTimer = null;
+        if (this.status !== 'disconnected' && this.lastSettings) {
+          this._doConnect(this.lastSettings);
+        }
+      }, backoff);
     });
     this.client.on('offline', () => {
       console.warn('[MeshcoreMqttAdapter] client offline');
