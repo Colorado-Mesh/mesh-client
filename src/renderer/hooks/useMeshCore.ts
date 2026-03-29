@@ -1867,11 +1867,42 @@ export function useMeshCore() {
         const snr = d.lastSnr ?? 0;
         const rssi = d.lastRssi ?? 0;
         const now = Date.now();
+
+        // Extract sender ID and update known node's last_heard + signal metrics
+        let senderInfo = '';
+        if (d.raw instanceof Uint8Array && d.raw.length >= 8) {
+          const packetClass = classifyPayload(d.raw);
+          if (packetClass === 'meshtastic') {
+            const senderId = extractMeshtasticSenderId(d.raw);
+            if (senderId !== null) {
+              senderInfo = ` from=0x${senderId.toString(16)}`;
+              // If we know this node (and it's not ourselves), update last_heard + SNR/RSSI
+              if (senderId !== myNodeNumRef.current && nodesRef.current.has(senderId)) {
+                const nowSec = Math.floor(now / 1000);
+                setNodes((prev) => {
+                  const existing = prev.get(senderId);
+                  if (!existing) return prev;
+                  const next = new Map(prev);
+                  next.set(senderId, {
+                    ...existing,
+                    last_heard: nowSec,
+                    snr: snr,
+                    rssi: rssi,
+                  });
+                  return next;
+                });
+              }
+            }
+          } else if (packetClass === 'meshcore') {
+            senderInfo = ' [meshcore]';
+          }
+        }
+
         const entry: DeviceLogEntry = {
           ts: now,
-          level: 'info',
+          level: 'debug',
           source: 'meshcore',
-          message: `RX SNR=${snr.toFixed(2)}dB RSSI=${rssi}dBm`,
+          message: `RX${senderInfo} SNR=${snr.toFixed(2)}dB RSSI=${rssi}dBm`,
         };
         setDeviceLogs((prev) => {
           const next = [...prev, entry];
