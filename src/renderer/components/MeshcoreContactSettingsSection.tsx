@@ -93,17 +93,24 @@ export default function MeshcoreContactSettingsSection({
     hopsDirty;
 
   return (
-    <details className="rounded-xl border border-gray-600 bg-secondary-dark/40 p-4">
-      <summary className="cursor-pointer text-base font-medium text-gray-100">
-        Contact management
+    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
+      <summary className="px-4 py-3 cursor-pointer text-gray-200 font-medium flex items-center justify-between hover:bg-gray-800 rounded-lg transition-colors">
+        <span>Contact management</span>
+        <svg
+          className="w-4 h-4 text-muted group-open:rotate-180 transition-transform"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
       </summary>
-      <p className="mt-2 text-xs text-muted">
-        Controls how the companion radio adds contacts from heard adverts (MeshCore firmware). Auto
-        add selected types only applies when &quot;Auto add selected&quot; is on; overwrite and max
-        hops apply in both modes.
-      </p>
-
-      <div className="mt-4 space-y-4">
+      <div className="px-4 pb-4 space-y-4">
+        <p className="text-xs text-muted">
+          Controls how the companion radio adds contacts from heard adverts (MeshCore firmware).
+          Auto add selected types only applies when &quot;Auto add selected&quot; is on; overwrite
+          and max hops apply in both modes.
+        </p>
         <fieldset
           className="space-y-3 rounded-lg border border-gray-600/80 p-3"
           disabled={disabled || applying}

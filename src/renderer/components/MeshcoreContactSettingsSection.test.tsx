@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
 import { enrichMeshCoreSelfInfo } from '../lib/meshcoreTelemetryPrivacy';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
@@ -84,5 +85,67 @@ describe('MeshcoreContactSettingsSection', () => {
       expect(onClearAllContacts).toHaveBeenCalledTimes(1);
     });
     confirmSpy.mockRestore();
+  });
+});
+
+describe('MeshcoreContactSettingsSection consistency', () => {
+  it('details element has group class for chevron animation', () => {
+    renderWithToast(
+      <MeshcoreContactSettingsSection
+        selfInfo={minimalSelfInfo(false)}
+        autoadd={{ autoaddConfig: 0, autoaddMaxHops: 0 }}
+        disabled={false}
+        applying={false}
+        meshcoreContactsShowPublicKeys={false}
+        onMeshcoreContactsShowPublicKeysChange={vi.fn()}
+        meshcoreContactsShowRefreshControl={false}
+        onMeshcoreContactsShowRefreshControlChange={vi.fn()}
+        onApply={vi.fn()}
+      />,
+    );
+
+    const details = document.querySelector('details');
+    expect(details).not.toBeNull();
+    expect(details?.classList.contains('group')).toBe(true);
+  });
+
+  it('summary element contains SVG chevron for consistent dropdown marker', () => {
+    renderWithToast(
+      <MeshcoreContactSettingsSection
+        selfInfo={minimalSelfInfo(false)}
+        autoadd={{ autoaddConfig: 0, autoaddMaxHops: 0 }}
+        disabled={false}
+        applying={false}
+        meshcoreContactsShowPublicKeys={false}
+        onMeshcoreContactsShowPublicKeysChange={vi.fn()}
+        meshcoreContactsShowRefreshControl={false}
+        onMeshcoreContactsShowRefreshControlChange={vi.fn()}
+        onApply={vi.fn()}
+      />,
+    );
+
+    const summary = document.querySelector('summary');
+    expect(summary).not.toBeNull();
+    const svg = summary?.querySelector('svg');
+    expect(svg).not.toBeNull();
+    expect(svg?.classList.contains('group-open:rotate-180')).toBe(true);
+  });
+
+  it('has no axe violations', async () => {
+    const { container } = renderWithToast(
+      <MeshcoreContactSettingsSection
+        selfInfo={minimalSelfInfo(false)}
+        autoadd={{ autoaddConfig: 0, autoaddMaxHops: 0 }}
+        disabled={false}
+        applying={false}
+        meshcoreContactsShowPublicKeys={false}
+        onMeshcoreContactsShowPublicKeysChange={vi.fn()}
+        meshcoreContactsShowRefreshControl={false}
+        onMeshcoreContactsShowRefreshControlChange={vi.fn()}
+        onApply={vi.fn()}
+      />,
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });

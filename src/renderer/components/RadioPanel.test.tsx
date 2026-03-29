@@ -115,3 +115,43 @@ describe('ConfigNumber NaN guard', () => {
     expect(onChange.mock.calls.some(([v]) => Number.isNaN(v))).toBe(false);
   });
 });
+
+describe('RadioPanel collapsible section consistency', () => {
+  it('all details elements have group class for chevron animation', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          onApplyLoraParams={vi.fn().mockResolvedValue(undefined)}
+          loraConfig={{ freq: 915_000_000, bw: 125_000, sf: 12, cr: 5, txPower: 20 }}
+        />
+      </ToastProvider>,
+    );
+
+    const details = document.querySelectorAll('details');
+    expect(details.length).toBeGreaterThan(0);
+    details.forEach((d) => {
+      expect(d.classList.contains('group')).toBe(true);
+    });
+  });
+
+  it('all summary elements contain SVG chevron for consistent dropdown marker', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          onApplyLoraParams={vi.fn().mockResolvedValue(undefined)}
+          loraConfig={{ freq: 915_000_000, bw: 125_000, sf: 12, cr: 5, txPower: 20 }}
+        />
+      </ToastProvider>,
+    );
+
+    const summaries = document.querySelectorAll('summary');
+    expect(summaries.length).toBeGreaterThan(0);
+    summaries.forEach((s) => {
+      const svg = s.querySelector('svg');
+      expect(svg).not.toBeNull();
+      expect(svg?.classList.contains('group-open:rotate-180')).toBe(true);
+    });
+  });
+});

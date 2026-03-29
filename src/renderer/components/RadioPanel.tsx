@@ -2428,12 +2428,9 @@ function MeshcoreChannelSection({
   const showForm = editingIdx !== null || addingNew;
 
   return (
-    <details
-      ref={detailsRef}
-      className="group rounded-lg border border-gray-700/60 bg-secondary-dark/40 overflow-hidden"
-    >
-      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-gray-800/40 transition-colors">
-        <span className="text-sm font-semibold text-gray-200">Channels (MeshCore)</span>
+    <details ref={detailsRef} className="group bg-deep-black/50 rounded-lg border border-gray-700">
+      <summary className="px-4 py-3 cursor-pointer text-gray-200 font-medium flex items-center justify-between hover:bg-gray-800 rounded-lg transition-colors">
+        <span>Channels (MeshCore)</span>
         <svg
           className="w-4 h-4 text-muted group-open:rotate-180 transition-transform"
           fill="none"
@@ -2443,7 +2440,7 @@ function MeshcoreChannelSection({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </summary>
-      <div className="px-4 pb-4 space-y-3">
+      <div className="px-4 pb-4 space-y-4">
         {/* ── Channel List ── */}
         <div className="space-y-1">
           {channels.length === 0 && (

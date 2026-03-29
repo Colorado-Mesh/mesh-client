@@ -128,17 +128,25 @@ export default function MeshcoreTelemetryPrivacySection({
     meshcoreTriStateToTelemetryMode(env) !== selfInfo.telemetryModeEnv;
 
   return (
-    <details className="rounded-xl border border-gray-600 bg-secondary-dark/40 p-4">
-      <summary className="cursor-pointer text-base font-medium text-gray-100">
-        Telemetry privacy
+    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
+      <summary className="px-4 py-3 cursor-pointer text-gray-200 font-medium flex items-center justify-between hover:bg-gray-800 rounded-lg transition-colors">
+        <span>Telemetry privacy</span>
+        <svg
+          className="w-4 h-4 text-muted group-open:rotate-180 transition-transform"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
       </summary>
-      <p className="mt-2 text-xs text-muted">
-        Controls how your node responds to telemetry requests and what data is included (MeshCore
-        companion firmware). Per-contact permissions apply when you choose &quot;specific
-        contacts&quot;; edit contact flags from the reference MeshCore apps or a future contact
-        detail UI.
-      </p>
-      <div className="mt-4 space-y-4">
+      <div className="px-4 pb-4 space-y-4">
+        <p className="text-xs text-muted">
+          Controls how your node responds to telemetry requests and what data is included (MeshCore
+          companion firmware). Per-contact permissions apply when you choose &quot;specific
+          contacts&quot;; edit contact flags from the reference MeshCore apps or a future contact
+          detail UI.
+        </p>
         <TriStateRow
           title="Allow telemetry requests?"
           groupName="meshcore-telem-req"
