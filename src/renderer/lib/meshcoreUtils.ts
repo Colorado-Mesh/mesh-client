@@ -154,6 +154,69 @@ export function meshcoreContactToMeshNode(contact: MeshCoreContact): MeshNode {
   };
 }
 
+/** Result of mapping a heard RF advert (push 0x80) into UI + DB when the node is not yet a contact. */
+export interface MeshcoreMinimalAdvertNodeResult {
+  node: MeshNode;
+  lastHeardSec: number;
+  persistAdvLatDeg: number | null;
+  persistAdvLonDeg: number | null;
+  contactType: number;
+}
+
+/**
+ * Build a minimal {@link MeshNode} from an advert public key and optional companion fields.
+ * Returns null if the key is not a valid 32-byte MeshCore pubkey or folds to node id 0.
+ */
+export function meshcoreMinimalNodeFromAdvertEvent(
+  publicKey: Uint8Array,
+  opts: {
+    nowSec: number;
+    advLat?: number;
+    advLon?: number;
+    lastAdvert?: number;
+    contactType?: number;
+    advName?: string;
+  },
+): MeshcoreMinimalAdvertNodeResult | null {
+  if (publicKey.length !== 32) return null;
+  const nodeId = pubkeyToNodeId(publicKey);
+  if (nodeId === 0) return null;
+  const contactType =
+    typeof opts.contactType === 'number' && Number.isFinite(opts.contactType)
+      ? Math.max(0, Math.floor(opts.contactType))
+      : 0;
+  const hasLat =
+    typeof opts.advLat === 'number' && Number.isFinite(opts.advLat) && opts.advLat !== 0;
+  const hasLon =
+    typeof opts.advLon === 'number' && Number.isFinite(opts.advLon) && opts.advLon !== 0;
+  const lastHeardSec =
+    typeof opts.lastAdvert === 'number' && Number.isFinite(opts.lastAdvert) && opts.lastAdvert > 0
+      ? opts.lastAdvert
+      : opts.nowSec;
+  const latDeg = hasLat ? opts.advLat! / MESHCORE_COORD_SCALE : null;
+  const lonDeg = hasLon ? opts.advLon! / MESHCORE_COORD_SCALE : null;
+  const advNameTrim =
+    typeof opts.advName === 'string' && opts.advName.trim() ? opts.advName.trim() : '';
+  const node: MeshNode = {
+    node_id: nodeId,
+    long_name: advNameTrim || `Node-${nodeId.toString(16).toUpperCase()}`,
+    short_name: '',
+    hw_model: CONTACT_TYPE_LABELS[contactType] ?? 'Unknown',
+    snr: 0,
+    battery: 0,
+    last_heard: lastHeardSec,
+    latitude: latDeg,
+    longitude: lonDeg,
+  };
+  return {
+    node,
+    lastHeardSec,
+    persistAdvLatDeg: latDeg,
+    persistAdvLonDeg: lonDeg,
+    contactType,
+  };
+}
+
 /** MeshCore supports channel indices 0..39 (40 channels). */
 export const MESHCORE_CHANNEL_INDEX_MAX = 39;
 

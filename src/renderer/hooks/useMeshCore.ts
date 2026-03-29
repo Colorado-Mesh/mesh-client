@@ -35,6 +35,7 @@ import {
   meshcoreContactToMeshNode,
   meshcoreIsChatStubNodeId,
   meshcoreIsSyntheticPlaceholderPubKeyHex,
+  meshcoreMinimalNodeFromAdvertEvent,
   meshcoreSyntheticPlaceholderPubKeyHex,
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
@@ -1183,20 +1184,25 @@ export function useMeshCore() {
           advLat?: number;
           advLon?: number;
           lastAdvert?: number;
+          type?: number;
+          advName?: string;
         };
+        if (d.publicKey?.length !== 32) return;
         const nodeId = pubkeyToNodeId(d.publicKey);
+        if (nodeId === 0) return;
         const nowSec = Math.floor(Date.now() / 1000);
         console.debug('[useMeshCore] event 128: advert from', nodeId.toString(16).toUpperCase());
-        let persistLastAdvert = nowSec;
-        let persistLat: number | null = null;
-        let persistLon: number | null = null;
-        let didUpdateNode = false;
+        const persistOut = {
+          kind: 'none' as 'none' | 'insert' | 'update',
+          persistLastAdvert: nowSec,
+          persistLat: null as number | null,
+          persistLon: null as number | null,
+          insertContactType: 0,
+          insertAdvName: null as string | null,
+        };
         setNodes((prev) => {
           const existing = prev.get(nodeId);
-          if (!existing) return prev;
-          didUpdateNode = true;
           const nick = nicknameMapRef.current.get(nodeId);
-          const next = new Map(prev);
           const hasLat =
             typeof d.advLat === 'number' && Number.isFinite(d.advLat) && d.advLat !== 0;
           const hasLon =
@@ -1205,9 +1211,43 @@ export function useMeshCore() {
             typeof d.lastAdvert === 'number' && Number.isFinite(d.lastAdvert) && d.lastAdvert > 0
               ? d.lastAdvert
               : nowSec;
-          persistLastAdvert = lastHeard;
-          persistLat = hasLat ? d.advLat! / MESHCORE_COORD_SCALE : (existing.latitude ?? null);
-          persistLon = hasLon ? d.advLon! / MESHCORE_COORD_SCALE : (existing.longitude ?? null);
+          persistOut.persistLastAdvert = lastHeard;
+          if (!existing) {
+            const built = meshcoreMinimalNodeFromAdvertEvent(d.publicKey, {
+              nowSec,
+              advLat: d.advLat,
+              advLon: d.advLon,
+              lastAdvert: d.lastAdvert,
+              contactType: d.type,
+              advName: d.advName,
+            });
+            if (!built) return prev;
+            persistOut.kind = 'insert';
+            persistOut.persistLat = built.persistAdvLatDeg;
+            persistOut.persistLon = built.persistAdvLonDeg;
+            persistOut.insertContactType = built.contactType;
+            persistOut.insertAdvName =
+              typeof d.advName === 'string' && d.advName.trim() ? d.advName.trim() : null;
+            pubKeyMapRef.current.set(nodeId, d.publicKey);
+            const prefix = Array.from(d.publicKey.slice(0, 6))
+              .map((b) => b.toString(16).padStart(2, '0'))
+              .join('');
+            pubKeyPrefixMapRef.current.set(prefix, nodeId);
+            const nodeWithNick = nick
+              ? { ...built.node, long_name: nick, short_name: '' }
+              : built.node;
+            const next = new Map(prev);
+            next.set(nodeId, nodeWithNick);
+            return next;
+          }
+          persistOut.kind = 'update';
+          const next = new Map(prev);
+          persistOut.persistLat = hasLat
+            ? d.advLat! / MESHCORE_COORD_SCALE
+            : (existing.latitude ?? null);
+          persistOut.persistLon = hasLon
+            ? d.advLon! / MESHCORE_COORD_SCALE
+            : (existing.longitude ?? null);
           next.set(nodeId, {
             ...existing,
             last_heard: lastHeard,
@@ -1233,9 +1273,31 @@ export function useMeshCore() {
               d.advLon / MESHCORE_COORD_SCALE,
             );
         }
-        if (didUpdateNode) {
+        if (persistOut.kind === 'insert') {
           void window.electronAPI.db
-            .updateMeshcoreContactAdvert(nodeId, persistLastAdvert, persistLat, persistLon)
+            .saveMeshcoreContact({
+              node_id: nodeId,
+              public_key: Array.from(d.publicKey)
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join(''),
+              adv_name: persistOut.insertAdvName,
+              contact_type: persistOut.insertContactType,
+              last_advert: persistOut.persistLastAdvert,
+              adv_lat: persistOut.persistLat,
+              adv_lon: persistOut.persistLon,
+              nickname: null,
+            })
+            .catch((e: unknown) => {
+              console.warn('[useMeshCore] saveMeshcoreContact (event 128 new) error', e);
+            });
+        } else if (persistOut.kind === 'update') {
+          void window.electronAPI.db
+            .updateMeshcoreContactAdvert(
+              nodeId,
+              persistOut.persistLastAdvert,
+              persistOut.persistLat,
+              persistOut.persistLon,
+            )
             .catch((e: unknown) => {
               console.warn('[useMeshCore] updateMeshcoreContactAdvert error', e);
             });
@@ -1245,15 +1307,58 @@ export function useMeshCore() {
       // Push: path updated — event 0x81 = 129; update last_heard for that contact
       conn.on(129, (data: unknown) => {
         const d = data as { publicKey: Uint8Array };
+        if (d.publicKey?.length !== 32) return;
         const nodeId = pubkeyToNodeId(d.publicKey);
+        if (nodeId === 0) return;
+        const nowSec = Math.floor(Date.now() / 1000);
         console.debug('[useMeshCore] event 129: path update', nodeId.toString(16).toUpperCase());
+        const persist129 = {
+          kind: 'none' as 'none' | 'insert' | 'update',
+          persistLastAdvert: nowSec,
+        };
         setNodes((prev) => {
           const existing = prev.get(nodeId);
-          if (!existing) return prev;
+          const nick = nicknameMapRef.current.get(nodeId);
+          if (!existing) {
+            const built = meshcoreMinimalNodeFromAdvertEvent(d.publicKey, { nowSec });
+            if (!built) return prev;
+            persist129.kind = 'insert';
+            persist129.persistLastAdvert = built.lastHeardSec;
+            pubKeyMapRef.current.set(nodeId, d.publicKey);
+            const prefix = Array.from(d.publicKey.slice(0, 6))
+              .map((b) => b.toString(16).padStart(2, '0'))
+              .join('');
+            pubKeyPrefixMapRef.current.set(prefix, nodeId);
+            const nodeWithNick = nick
+              ? { ...built.node, long_name: nick, short_name: '' }
+              : built.node;
+            const next = new Map(prev);
+            next.set(nodeId, nodeWithNick);
+            return next;
+          }
+          persist129.kind = 'update';
           const next = new Map(prev);
-          next.set(nodeId, { ...existing, last_heard: Math.floor(Date.now() / 1000) });
+          next.set(nodeId, { ...existing, last_heard: nowSec });
           return next;
         });
+        if (persist129.kind === 'insert') {
+          void window.electronAPI.db
+            .saveMeshcoreContact({
+              node_id: nodeId,
+              public_key: Array.from(d.publicKey)
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join(''),
+              adv_name: null,
+              contact_type: 0,
+              last_advert: persist129.persistLastAdvert,
+              adv_lat: null,
+              adv_lon: null,
+              nickname: null,
+            })
+            .catch((e: unknown) => {
+              console.warn('[useMeshCore] saveMeshcoreContact (event 129 new) error', e);
+            });
+        }
       });
 
       // Push: send confirmed — event 0x82 = 130; resolve pending DM delivery
