@@ -22,12 +22,12 @@ fi
 
 git pull origin main
 
-# 3. Use npm to bump the version (this updates package.json and package-lock.json)
+# 3. Use pnpm to bump the version (this updates package.json and pnpm-lock.yaml)
 echo "Bumping version..."
-NEW_VERSION=$(npm version $VERSION_TYPE --no-git-tag-version)
+NEW_VERSION=$(pnpm version $VERSION_TYPE --no-git-tag-version)
 
 # 4. Commit the version bump
-git add package.json package-lock.json
+git add package.json pnpm-lock.yaml
 git commit -m "chore: release $NEW_VERSION"
 
 # 5. Create the git tag
