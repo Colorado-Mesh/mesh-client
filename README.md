@@ -102,6 +102,14 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 - Per-node redundancy score derived from the last 20 observed packets; `+N` echo count in the node list; collapsible Path History in node detail
 
+**TAK Server (CoT Gateway)** — Meshtastic only
+
+- **TAK** tab (between Security and App): broadcast mesh node positions as Cursor on Target (CoT) XML events over TLS TCP (port 8089)
+- Enables **ATAK, WinTAK, and iTAK clients** to see mesh nodes on their tactical maps
+- **Certificate management**: self-signed CA + server + client certificates via node-forge; regenerate anytime from the TAK tab
+- **Data package generator**: export ATAK-compatible (ca.pem, client.p12, connection.pref) for direct import on TAK devices
+- Auto-start option (off by default); status indicator in header when running
+
 ---
 
 ### Features Available on Both Protocols
@@ -160,16 +168,19 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pill in the header to bring MeshCore into view — the Meshtastic session stays connected in the background. **Meshtastic** shows **10** main tabs (including **Security**); **MeshCore** shows **9** (**Security** is hidden; the sixth tab is **Repeaters** instead of **Modules**). Network Diagnostics and the rest of the shell stay available.
+MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pill in the header to bring MeshCore into view — the Meshtastic session stays connected in the background. **Meshtastic** shows **11** main tabs (including **Security** and **TAK**); **MeshCore** shows **9** (**Security** is hidden; the sixth tab is **Repeaters** instead of **Modules**). Network Diagnostics and the rest of the shell stay available.
 
 **Contacts & Discovery**
 
 - Contact list with advert-based positions, contact types (Chat, Repeater, Room), and GPS coordinates persisted to SQLite; contacts seed from DB on reconnect as a fallback cache
 - **Favorite / pin** — persisted per contact in SQLite (`meshcore_contacts.favorited`)
-- **Contact groups** — create and manage groups from the **Nodes** toolbar; filter the list by group; built-in type filters; **Room** contacts are excluded from groups by default
+- **Contact groups** — protocol-neutral; create and manage groups from the **Nodes** toolbar; Meshtastic has built-in groups (**GPS**, **RF+MQTT**); filter the list by group; **Room** contacts excluded from user groups by default
 - **Import Contacts** — **Nodes** tab: bulk **JSON nickname import** to pre-fill contact names (not on the Repeaters panel)
 - **Refresh Contacts** — pull the full contact list from the device on demand
-- **Send Advert** — broadcast your node's presence (flood advert) to the mesh
+- **Show Public Keys** — toggle to display full public keys under contact names
+- **Contact Auto-Add** — configure auto-add mode (on/off), overwrite existing, max hops; apply settings to device
+- **Clear All Contacts** — destructive action with confirmation (Radio tab Danger Zone)
+- **Send Advert** — broadcast your node's presence (flood advert) to the mesh with loading state and toast feedback
 - **Manual Contact Approval** — toggle between auto-add (contacts appear automatically when heard) and manual-add (new contacts require approval before appearing); preference is persisted and re-applied on reconnect
 
 **Messaging**
@@ -351,7 +362,7 @@ mesh-client/
 │   └── renderer/
 │       ├── index.html            # HTML entry
 │       ├── main.tsx              # React entry point
-│       ├── App.tsx               # Shell: 10 tabs Meshtastic / 9 MeshCore (Security hidden; Modules vs Repeaters), Log panel, shortcuts
+│       ├── App.tsx               # Shell: 11 tabs Meshtastic / 9 MeshCore (TAK tab) (Security hidden; Modules vs Repeaters), Log panel, shortcuts
 │       ├── styles.css            # Global styles, theme variables
 │       ├── components/           # Panels and UI (many have co-located *.test.tsx)
 │       │   ├── ChatPanel.tsx         # Chat UI, DMs, emoji reactions, channel switching
@@ -364,12 +375,13 @@ mesh-client/
 │       │   ├── MapPanel.tsx          # Node positions on OpenStreetMap (Leaflet)
 │       │   ├── TelemetryPanel.tsx    # Battery/voltage/SNR charts (Recharts)
 │       │   ├── ModulePanel.tsx       # Meshtastic: modules tab (telemetry, MQTT, etc.)
-│       │   ├── ConnectionPanel.tsx   # BLE/Serial/HTTP/MQTT; protocol toggle; MeshCore manual contact toggle
+│       │   ├── ConnectionPanel.tsx   # BLE/Serial/HTTP/MQTT; protocol toggle; battery gauge; MeshCore contact settings
 │       │   ├── DiagnosticsPanel.tsx  # Health band + counts, diagnosticRows table, halos, max age
 │       │   ├── MeshCongestionAttributionBlock.tsx  # Shared mesh congestion / duplicate-traffic copy
 │       │   ├── LogPanel.tsx          # Live app log, Analyze modal, debug toggle, export/delete log file
 │       │   ├── RadioPanel.tsx        # Radio settings, position, GPS send; MeshCore: channels, Import Config JSON
 │       │   ├── RepeatersPanel.tsx    # MeshCore: repeater status/trace/neighbors/console (contacts: Nodes tab)
+│       │   ├── TakServerPanel.tsx      # TAK server: start/stop, settings, connected clients, data package export
 │       │   ├── AppPanel.tsx          # App settings, theme presets, GPS interval, database management
 │       │   ├── NodeDetailModal.tsx   # Node info overlay; MeshCore: trace, repeater status, telemetry, neighbors
 │       │   ├── NodeInfoBody.tsx      # Shared node info content (modal + map popup)
