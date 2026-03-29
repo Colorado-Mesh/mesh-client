@@ -249,7 +249,11 @@ function ChatPanel({
     }
   }, [channels, channel]);
   const [sending, setSending] = useState(false);
-  const [chatActionError, setChatActionError] = useState<string | null>(null);
+  /** Scoped to `viewKey` so a send error in one DM does not show on other tabs. */
+  const [chatActionError, setChatActionError] = useState<{
+    message: string;
+    viewKey: string;
+  } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
   const [showComposePicker, setShowComposePicker] = useState(false);
@@ -415,6 +419,25 @@ function ChatPanel({
   }, [openDmTabs, inferredDmTabs, dismissedDmTabs]);
 
   const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
+
+  /** Incoming DM messages per peer newer than persisted last-read for `dm:${peer}` (channel unread map skips DMs). */
+  const dmUnreadCounts = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const msg of regularMessages) {
+      if (msg.to == null) continue;
+      if (msg.isHistory) continue;
+      let peer: number | undefined;
+      if (msg.sender_id === myNodeNum && msg.to !== myNodeNum) peer = msg.to;
+      if (msg.to === myNodeNum && msg.sender_id !== myNodeNum) peer = msg.sender_id;
+      if (peer == null) continue;
+      if (msg.sender_id === myNodeNum) continue;
+      const lr = persistedLastRead[`dm:${peer}`] ?? 0;
+      if (msg.timestamp > lr) {
+        counts.set(peer, (counts.get(peer) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [regularMessages, myNodeNum, persistedLastRead]);
 
   // Lookup map for rendering quoted replies (packetId in Meshtastic, timestamp fallback in MeshCore)
   const messageByReplyKey = useMemo(() => {
@@ -613,7 +636,10 @@ function ChatPanel({
       setUnreadDividerTimestamp(0);
     } catch (err) {
       console.error('[ChatPanel] Send failed:', err);
-      setChatActionError(err instanceof Error ? err.message : 'Send failed');
+      setChatActionError({
+        message: err instanceof Error ? err.message : 'Send failed',
+        viewKey,
+      });
     } finally {
       setSending(false);
     }
@@ -627,7 +653,10 @@ function ChatPanel({
       await onReact(emojiCode, packetId, msgChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed:', err);
-      setChatActionError(err instanceof Error ? err.message : 'Reaction failed');
+      setChatActionError({
+        message: err instanceof Error ? err.message : 'Reaction failed',
+        viewKey,
+      });
     }
   };
 
@@ -856,43 +885,53 @@ function ChatPanel({
         {visibleDmTabs.length === 0 ? (
           <span className="text-[10px] text-gray-600 italic">No conversations</span>
         ) : (
-          visibleDmTabs.map((nodeNum) => (
-            <div
-              key={nodeNum}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
-                viewMode === 'dm' && activeDmNode === nodeNum
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-secondary-dark text-muted hover:text-gray-200'
-              }`}
-            >
-              <button
-                type="button"
-                aria-label={getDmLabel(nodeNum)}
-                className={`min-w-0 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
+          visibleDmTabs.map((nodeNum) => {
+            const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
+            const showDmUnreadBadge =
+              dmUnread > 0 && !(viewMode === 'dm' && activeDmNode === nodeNum);
+            return (
+              <div
+                key={nodeNum}
+                className={`relative flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
                   viewMode === 'dm' && activeDmNode === nodeNum
-                    ? 'text-white'
-                    : 'text-muted hover:text-gray-200'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-secondary-dark text-muted hover:text-gray-200'
                 }`}
-                onClick={() => {
-                  setActiveDmNode(nodeNum);
-                  setViewMode('dm');
-                }}
               >
-                {getDmLabel(nodeNum)}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  closeDmTab(nodeNum);
-                }}
-                aria-label="x"
-                className="ml-0.5 text-muted hover:text-white text-[10px] leading-none"
-                title="Close DM"
-              >
-                x
-              </button>
-            </div>
-          ))
+                <button
+                  type="button"
+                  aria-label={getDmLabel(nodeNum)}
+                  className={`min-w-0 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
+                    viewMode === 'dm' && activeDmNode === nodeNum
+                      ? 'text-white'
+                      : 'text-muted hover:text-gray-200'
+                  }`}
+                  onClick={() => {
+                    setActiveDmNode(nodeNum);
+                    setViewMode('dm');
+                  }}
+                >
+                  {getDmLabel(nodeNum)}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeDmTab(nodeNum);
+                  }}
+                  aria-label="x"
+                  className="ml-0.5 text-muted hover:text-white text-[10px] leading-none"
+                  title="Close DM"
+                >
+                  x
+                </button>
+                {showDmUnreadBadge && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                    {dmUnread > 99 ? '99+' : dmUnread}
+                  </span>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -1377,9 +1416,9 @@ function ChatPanel({
         </div>
       )}
 
-      {chatActionError && (
+      {chatActionError?.viewKey === viewKey && (
         <div role="alert" className="text-sm text-red-400 mt-2 px-1">
-          {chatActionError}
+          {chatActionError.message}
         </div>
       )}
 

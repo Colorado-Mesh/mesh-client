@@ -78,6 +78,35 @@ import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
 
+/** MeshCore expected ACK CRCs are uint32; meshcore.js / BLE may surface them as signed. Normalize for Map keys, React state, and SQLite packet_id. */
+function meshcoreDmAckKeyU32(crc: number): number {
+  return crc >>> 0;
+}
+
+/**
+ * Firmware `estTimeout` is sometimes only a few seconds; multi-hop / repeater paths often exceed
+ * that before event 130. Wait at least this long before marking outbound DM as failed.
+ */
+const MESHCORE_DM_ACK_TIMEOUT_MIN_MS = 45_000;
+
+/** Register pending DM ACK under every JS number the stack might use for the same CRC (signed vs unsigned). */
+function meshcorePendingDmAckMapKeys(ackCrc: number): number[] {
+  return Array.from(new Set([ackCrc, meshcoreDmAckKeyU32(ackCrc)]));
+}
+
+/** Try device-reported codes in both representations when looking up a pending send. */
+function meshcoreDeviceAckLookupKeys(codeFromDevice: number): number[] {
+  return Array.from(new Set([codeFromDevice, meshcoreDmAckKeyU32(codeFromDevice)]));
+}
+
+interface PendingDmAckEntry {
+  timeoutId: ReturnType<typeof setTimeout>;
+  /** Every `pendingAcksRef` key that references this entry. */
+  mapKeys: number[];
+  /** Same as `ChatMessage.packetId` / DB `packet_id` for this send (uint32). */
+  canonicalPacketIdU32: number;
+}
+
 function meshcoreContactRawFromDevice(c: MeshCoreContactRaw): MeshCoreContactRaw {
   const f = (c as { flags?: number }).flags;
   const flags = typeof f === 'number' && Number.isFinite(f) ? f & 0xff : 0;
@@ -859,10 +888,8 @@ export function useMeshCore() {
   const messagesRef = useRef<ChatMessage[]>([]);
   // Stable ref to own node ID so event listeners don't form stale closures
   const myNodeNumRef = useRef<number>(0);
-  // Pending ACK tracking: packetId → { nodeId, timeoutId }
-  const pendingAcksRef = useRef<Map<number, { timeoutId: ReturnType<typeof setTimeout> }>>(
-    new Map(),
-  );
+  // Pending ACK tracking: CRC key (raw and/or u32) → shared entry for one in-flight DM
+  const pendingAcksRef = useRef<Map<number, PendingDmAckEntry>>(new Map());
   /** MQTT-derived contacts persisted with a placeholder pubkey until 0x8A supplies a real key. */
   const mqttPlaceholderSavedRef = useRef<Set<number>>(new Set());
   const selfInfoRef = useRef<MeshCoreSelfInfo | null>(null);
@@ -1492,15 +1519,57 @@ export function useMeshCore() {
       // Push: send confirmed — event 0x82 = 130; resolve pending DM delivery
       conn.on(130, (data: unknown) => {
         const d = data as { ackCode: number; roundTrip?: number };
-        const pending = pendingAcksRef.current.get(d.ackCode);
-        if (!pending) return;
+        let pending: PendingDmAckEntry | undefined;
+        for (const lk of meshcoreDeviceAckLookupKeys(d.ackCode)) {
+          pending = pendingAcksRef.current.get(lk);
+          if (pending) break;
+        }
+        if (!pending) {
+          const lateKey = meshcoreDmAckKeyU32(d.ackCode);
+          const selfId = myNodeNumRef.current;
+          const hadLateOutbound = messagesRef.current.some(
+            (m) =>
+              m.packetId != null &&
+              meshcoreDmAckKeyU32(m.packetId) === lateKey &&
+              m.sender_id === selfId &&
+              m.to != null &&
+              (m.status === 'sending' || m.status === 'failed'),
+          );
+          if (hadLateOutbound) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.packetId != null &&
+                meshcoreDmAckKeyU32(m.packetId) === lateKey &&
+                m.sender_id === selfId &&
+                m.to != null &&
+                (m.status === 'sending' || m.status === 'failed')
+                  ? { ...m, status: 'acked' as const }
+                  : m,
+              ),
+            );
+            void window.electronAPI.db
+              .updateMeshcoreMessageStatus(lateKey, 'acked')
+              .catch((e: unknown) => {
+                console.warn('[useMeshCore] updateMeshcoreMessageStatus (late 130) error', e);
+              });
+            return;
+          }
+          return;
+        }
         clearTimeout(pending.timeoutId);
-        pendingAcksRef.current.delete(d.ackCode);
+        for (const k of pending.mapKeys) {
+          pendingAcksRef.current.delete(k);
+        }
+        const canon = pending.canonicalPacketIdU32;
         setMessages((prev) =>
-          prev.map((m) => (m.packetId === d.ackCode ? { ...m, status: 'acked' as const } : m)),
+          prev.map((m) =>
+            m.packetId != null && meshcoreDmAckKeyU32(m.packetId) === canon
+              ? { ...m, status: 'acked' as const }
+              : m,
+          ),
         );
         void window.electronAPI.db
-          .updateMeshcoreMessageStatus(d.ackCode, 'acked')
+          .updateMeshcoreMessageStatus(canon, 'acked')
           .catch((e: unknown) => {
             console.warn('[useMeshCore] updateMeshcoreMessageStatus error', e);
           });
@@ -2440,9 +2509,10 @@ export function useMeshCore() {
     // Transport teardown only: GATT disconnect / noble IPC / TCP close. Never OS-unpair or
     // BluetoothDevice.forget() here — pairing must survive disconnect so users can reconnect.
     meshcoreSetupGenerationRef.current += 1;
-    // Cancel all pending ACK timers
-    for (const { timeoutId } of pendingAcksRef.current.values()) {
-      clearTimeout(timeoutId);
+    // Cancel all pending ACK timers (each entry may be registered under multiple keys)
+    const ackEntries = new Set(pendingAcksRef.current.values());
+    for (const e of ackEntries) {
+      clearTimeout(e.timeoutId);
     }
     pendingAcksRef.current.clear();
     // Clear pending CLI commands
@@ -2511,14 +2581,16 @@ export function useMeshCore() {
         try {
           const result = await connRef.current.sendTextMessage(pubKey, text);
           const ackCrc = result?.expectedAckCrc;
-          const estTimeout = result?.estTimeout ?? 30_000;
+          const estTimeout = Math.max(result?.estTimeout ?? 30_000, MESHCORE_DM_ACK_TIMEOUT_MIN_MS);
 
           if (ackCrc !== undefined) {
+            const ackKey = meshcoreDmAckKeyU32(ackCrc);
+            const pendingMapKeys = meshcorePendingDmAckMapKeys(ackCrc);
             // Update the temp message with the real packetId
             setMessages((prev) =>
               prev.map((m) =>
                 m === tempMsg || (m.timestamp === sentAt && m.status === 'sending')
-                  ? { ...m, sender_id: myNodeNumRef.current, packetId: ackCrc }
+                  ? { ...m, sender_id: myNodeNumRef.current, packetId: ackKey }
                   : m,
               ),
             );
@@ -2531,7 +2603,7 @@ export function useMeshCore() {
                 channel_idx: channelIdx,
                 timestamp: sentAt,
                 status: 'sending',
-                packet_id: ackCrc,
+                packet_id: ackKey,
                 to_node: destNodeId,
               })
               .catch((e: unknown) => {
@@ -2540,21 +2612,32 @@ export function useMeshCore() {
 
             // Schedule failure timeout
             const timeoutId = setTimeout(() => {
-              pendingAcksRef.current.delete(ackCrc);
+              for (const k of pendingMapKeys) {
+                pendingAcksRef.current.delete(k);
+              }
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.packetId === ackCrc && m.status === 'sending'
+                  m.packetId != null &&
+                  meshcoreDmAckKeyU32(m.packetId) === ackKey &&
+                  m.status === 'sending'
                     ? { ...m, status: 'failed' as const }
                     : m,
                 ),
               );
               void window.electronAPI.db
-                .updateMeshcoreMessageStatus(ackCrc, 'failed')
+                .updateMeshcoreMessageStatus(ackKey, 'failed')
                 .catch((e: unknown) => {
                   console.warn('[useMeshCore] updateMeshcoreMessageStatus (timeout) error', e);
                 });
             }, estTimeout);
-            pendingAcksRef.current.set(ackCrc, { timeoutId });
+            const pendingEntry: PendingDmAckEntry = {
+              timeoutId,
+              mapKeys: pendingMapKeys,
+              canonicalPacketIdU32: ackKey,
+            };
+            for (const k of pendingMapKeys) {
+              pendingAcksRef.current.set(k, pendingEntry);
+            }
           } else {
             // No ackCrc — mark as acked immediately
             setMessages((prev) =>
