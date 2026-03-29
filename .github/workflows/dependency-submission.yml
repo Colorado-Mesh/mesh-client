@@ -9,8 +9,9 @@ on:
   pull_request:
     branches: [ main ]
 
+# Required permissions for the Dependency Submission API
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   submit-pypi:
