@@ -9,7 +9,6 @@
     "build:main:prod": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --minify",
     "build:main:meta": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --metafile=dist-electron/main/metafile.json",
     "build:main:size": "node scripts/print-main-bundle-size.mjs",
-    "build:main:compare-size": "pnpm run build:main --silent && node -e \"console.log('build:main (no minify)', require('fs').statSync('dist-electron/main/index.js').size, 'bytes')\" && pnpm run build:main:prod --silent && node -e \"console.log('build:main:prod (minify)', require('fs').statSync('dist-electron/main/index.js').size, 'bytes')\"",
     "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --outfile=dist-electron/preload/index.js --external:electron --format=cjs",
     "build:renderer": "vite build",
     "build": "pnpm run build:main:prod && pnpm run build:preload && pnpm run build:renderer",
