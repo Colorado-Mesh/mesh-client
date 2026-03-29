@@ -52,6 +52,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
     syncDeviceTime = vi.fn().mockResolvedValue(undefined);
     getBatteryVoltage = vi.fn().mockResolvedValue({ batteryMilliVolts: 4200 });
     sendTextMessage = sendTextMessageMock;
+    sendToRadioFrame = vi.fn().mockRejectedValue(new Error('mocked'));
   }
 
   class MockSerialConnection {
@@ -84,6 +85,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
     emit() {
       return undefined;
     }
+    sendToRadioFrame = vi.fn().mockRejectedValue(new Error('mocked'));
   }
 
   class MockConnection {

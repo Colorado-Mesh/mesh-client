@@ -35,6 +35,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
     getChannels = vi.fn().mockResolvedValue([]);
     syncDeviceTime = vi.fn().mockResolvedValue(undefined);
     getBatteryVoltage = vi.fn().mockResolvedValue({ batteryMilliVolts: 4200 });
+    sendToRadioFrame = vi.fn().mockRejectedValue(new Error('mocked'));
   }
 
   class MockSerialConnection {
@@ -79,6 +80,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
       void args;
       return undefined;
     }
+    sendToRadioFrame = vi.fn().mockRejectedValue(new Error('mocked'));
   }
 
   /** Base class for Noble-over-IPC (same surface as meshcore.js Connection). */
