@@ -118,13 +118,21 @@ function getCUColor(cu: number): string {
  * attribute values. Always pass internal computed values or wrap user-supplied
  * strings with `escapeSvgAttr` / `escapeSvgText` before interpolating.
  */
+const NODE_BADGE_PATHS: Record<string, string> = {
+  repeater:
+    'M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z',
+  room: 'M8,2H16A2,2 0 0,1 18,4V20A2,2 0 0,1 16,22H8A2,2 0 0,1 6,20V4A2,2 0 0,1 8,2M14,11A1,1 0 0,0 13,12A1,1 0 0,0 14,13A1,1 0 0,0 15,12A1,1 0 0,0 14,11Z',
+  sensor:
+    'M6.18,15.64A2.18,2.18 0 0,1 8.36,17.82C8.36,19 7.38,20 6.18,20C4.98,20 4,19 4,17.82A2.18,2.18 0 0,1 6.18,15.64M4,4.44A15.56,15.56 0 0,1 19.56,20H17.73A13.73,13.73 0 0,0 4,6.27V4.44M4,10.1A9.9,9.9 0 0,1 13.9,20H12.07A8.07,8.07 0 0,0 4,11.93V10.1Z',
+};
+
 function createMarkerIcon(
   color: string,
   isSelf: boolean,
   cu = 0,
   markerOpacity = 1,
   isMqttOnly = false,
-  isRepeater = false,
+  nodeBadge: 'repeater' | 'room' | 'sensor' | null = null,
 ): L.Icon {
   const haloPx = cu <= 0 ? 0 : Math.round((cu / 100) * 14);
   const haloColor = getCUColor(cu);
@@ -136,15 +144,16 @@ function createMarkerIcon(
     isMqttOnly
       ? `<circle cx="${c + 7}" cy="${c - 7}" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>`
       : '';
-  const repeaterBadge = (c: number) =>
-    isRepeater
-      ? `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#111827" stroke="#fff" stroke-width="1.2"/><text x="${c - 7}" y="${c - 4.5}" text-anchor="middle" fill="#f9fafb" font-family="system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="7.5" font-weight="700">R</text></g>`
-      : '';
+  const nodeBadgeSvg = (c: number) => {
+    const path = nodeBadge ? NODE_BADGE_PATHS[nodeBadge] : null;
+    if (!path) return '';
+    return `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#111827" stroke="#fff" stroke-width="1.2"/><path transform="translate(${c - 12},${c - 12}) scale(0.4167)" d="${path}" fill="#f9fafb"/></g>`;
+  };
 
   if (isSelf) {
     const total = 32 + 2 * haloPx;
     const c = total / 2;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<g transform="translate(${haloPx},${haloPx}) scale(${32 / 24})"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${escapeSvgAttr(color)}" stroke="#000" stroke-width="0.5"/></g>${mqttBadge(c)}${repeaterBadge(c)}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<g transform="translate(${haloPx},${haloPx}) scale(${32 / 24})"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${escapeSvgAttr(color)}" stroke="#000" stroke-width="0.5"/></g>${mqttBadge(c)}${nodeBadgeSvg(c)}</svg>`;
     return L.icon({
       iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
       iconSize: [total, total],
@@ -155,7 +164,7 @@ function createMarkerIcon(
 
   const total = 25 + 2 * haloPx;
   const c = total / 2;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<circle cx="${c}" cy="${c}" r="10.4" fill="${escapeSvgAttr(color)}" stroke="#000" stroke-width="1" opacity="0.9"/><circle cx="${c}" cy="${c}" r="4.2" fill="#fff" opacity="0.8"/>${mqttBadge(c)}${repeaterBadge(c)}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<circle cx="${c}" cy="${c}" r="10.4" fill="${escapeSvgAttr(color)}" stroke="#000" stroke-width="1" opacity="0.9"/><circle cx="${c}" cy="${c}" r="4.2" fill="#fff" opacity="0.8"/>${mqttBadge(c)}${nodeBadgeSvg(c)}</svg>`;
   return L.icon({
     iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
     iconSize: [total, total],
@@ -169,11 +178,11 @@ function getMarkerIcon(
   isSelf: boolean,
   cu: number,
   isMqttOnly = false,
-  isRepeater = false,
+  nodeBadge: 'repeater' | 'room' | 'sensor' | null = null,
 ): L.Icon {
   const color = status === 'online' ? '#9ae6b4' : status === 'stale' ? '#c4a864' : '#6b7280';
   const opacity = status === 'online' ? 1 : status === 'stale' ? 0.65 : 0.45;
-  return createMarkerIcon(color, isSelf, cu, opacity, isMqttOnly, isRepeater);
+  return createMarkerIcon(color, isSelf, cu, opacity, isMqttOnly, nodeBadge);
 }
 
 const PATH_COLORS = {
@@ -233,11 +242,18 @@ const MapMarker = memo(
   }: MapMarkerProps) {
     const status = getNodeStatus(node.last_heard);
     const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
-    const isRepeater = node.hw_model === 'Repeater';
+    const nodeBadge =
+      node.hw_model === 'Repeater'
+        ? ('repeater' as const)
+        : node.hw_model === 'Room'
+          ? ('room' as const)
+          : node.hw_model === 'Sensor'
+            ? ('sensor' as const)
+            : null;
 
     const icon = useMemo(
-      () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only, isRepeater),
-      [status, isSelf, cuForIcon, node.heard_via_mqtt_only, isRepeater],
+      () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge),
+      [status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge],
     );
 
     const shouldShowHalo = useMemo(

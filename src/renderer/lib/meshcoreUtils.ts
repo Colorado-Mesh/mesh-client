@@ -114,6 +114,7 @@ export const CONTACT_TYPE_LABELS: Record<number, string> = {
   1: 'Chat',
   2: 'Repeater',
   3: 'Room',
+  4: 'Sensor',
 };
 
 /** MeshCore roles excluded from user contact-group membership (infrastructure / rooms). */

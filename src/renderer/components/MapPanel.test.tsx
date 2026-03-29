@@ -69,7 +69,7 @@ const defaultFilter = {
 };
 
 describe('MapPanel accessibility', () => {
-  it('adds R badge to repeater map markers', () => {
+  it('adds wifi icon badge to repeater map markers', () => {
     leafletIconMock.mockClear();
     const nowSec = Math.floor(Date.now() / 1000);
     const nodes = new Map([
@@ -118,8 +118,12 @@ describe('MapPanel accessibility', () => {
     expect(markerIcons.length).toBeGreaterThan(0);
 
     const decodedSvgs = markerIcons.map((call) => decodeURIComponent(call.iconUrl!));
-    expect(decodedSvgs.some((svg) => svg.includes('>R</text>'))).toBe(true);
-    expect(decodedSvgs.some((svg) => !svg.includes('>R</text>'))).toBe(true);
+    // Repeater marker should include the wifi icon path inside a badge circle
+    expect(
+      decodedSvgs.some((svg) => svg.includes('scale(0.4167)') && svg.includes('M1 9l2 2c4.97')),
+    ).toBe(true);
+    // Non-repeater marker should not have the badge
+    expect(decodedSvgs.some((svg) => !svg.includes('scale(0.4167)'))).toBe(true);
   });
 
   it('root element has h-full so Leaflet container receives a non-zero height', () => {
