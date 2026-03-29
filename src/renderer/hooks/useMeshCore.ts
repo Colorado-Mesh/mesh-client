@@ -19,6 +19,10 @@ import { classifyPayload, extractMeshtasticSenderId } from '../lib/foreignLoraDe
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
 import { isLetsMeshSettings } from '../lib/letsMeshJwt';
+import {
+  buildMeshcoreChannelIncomingMessage,
+  normalizeMeshcoreIncomingText,
+} from '../lib/meshcoreChannelText';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
@@ -618,26 +622,6 @@ const MAX_TELEMETRY_POINTS = 50;
 
 const MAX_ENV_TELEMETRY_POINTS = 50;
 
-interface MeshcoreNormalizedText {
-  senderName?: string;
-  payload: string;
-}
-
-function normalizeMeshcoreIncomingText(rawText: string): MeshcoreNormalizedText {
-  const text = (rawText ?? '').trim();
-  if (!text) return { payload: '' };
-  const colonIdx = text.indexOf(':');
-  if (colonIdx <= 0) return { payload: text };
-  const senderCandidate = text.slice(0, colonIdx).trim();
-  let payload = text.slice(colonIdx + 1).trim();
-  if (!senderCandidate || !payload) return { payload: text };
-  const tapbackTargetMatch = /^@\[[^\]]+\]\s*(.+)$/u.exec(payload);
-  if (tapbackTargetMatch?.[1]) {
-    payload = tapbackTargetMatch[1].trim();
-  }
-  return { senderName: senderCandidate, payload };
-}
-
 function meshcoreMessageDedupeKey(msg: ChatMessage): string {
   const body = msg.meshcoreDedupeKey ?? msg.payload;
   return [
@@ -1046,16 +1030,18 @@ export function useMeshCore() {
             console.warn('[useMeshCore] saveMeshcoreContact (mqtt chat) error', e);
           });
       }
-      addMessage({
-        sender_id: resolvedId,
-        sender_name: displayName,
-        payload: m.text,
-        channel: m.channelIdx,
-        timestamp: ts,
-        status: 'acked',
-        receivedVia: 'mqtt',
-        meshcoreDedupeKey: m.text,
-      });
+      const normProbe = normalizeMeshcoreIncomingText(m.text);
+      const rawForBuild = normProbe.senderName ? m.text : `${displayName}: ${m.text}`;
+      addMessage(
+        buildMeshcoreChannelIncomingMessage(messagesRef.current, {
+          rawText: rawForBuild,
+          senderId: resolvedId,
+          displayName,
+          channel: m.channelIdx,
+          timestamp: ts,
+          receivedVia: 'mqtt',
+        }),
+      );
     });
     return off;
   }, [addMessage]);
@@ -1378,15 +1364,15 @@ export function useMeshCore() {
                   return next;
                 });
                 addMessage({
-                  sender_id: stubId,
-                  sender_name: displayName,
-                  payload: normalized.payload,
-                  channel: d.channelIdx,
-                  timestamp: d.senderTimestamp * 1000,
-                  status: 'acked',
-                  receivedVia: 'rf',
+                  ...buildMeshcoreChannelIncomingMessage(messagesRef.current, {
+                    rawText: d.text,
+                    senderId: stubId,
+                    displayName,
+                    channel: d.channelIdx,
+                    timestamp: d.senderTimestamp * 1000,
+                    receivedVia: 'rf',
+                  }),
                   isHistory: true,
-                  meshcoreDedupeKey: d.text,
                 });
               }
             }
@@ -1504,16 +1490,16 @@ export function useMeshCore() {
           );
           return next;
         });
-        addMessage({
-          sender_id: stubId,
-          sender_name: displayName,
-          payload: normalized.payload,
-          channel: d.channelIdx,
-          timestamp: d.senderTimestamp * 1000,
-          status: 'acked',
-          receivedVia: 'rf',
-          meshcoreDedupeKey: d.text,
-        });
+        addMessage(
+          buildMeshcoreChannelIncomingMessage(messagesRef.current, {
+            rawText: d.text,
+            senderId: stubId,
+            displayName,
+            channel: d.channelIdx,
+            timestamp: d.senderTimestamp * 1000,
+            receivedVia: 'rf',
+          }),
+        );
       });
 
       // Push: RF packet received — event 0x88 = 136; feed into device logs + signal telemetry.
@@ -2262,9 +2248,8 @@ export function useMeshCore() {
     console.debug('[useMeshCore] disconnect: complete');
   }, []);
 
-  // MeshCore transport does not support Meshtastic-style threaded replies (replyId); ChatPanel omits it.
   const sendMessage = useCallback(
-    async (text: string, channelIdx: number, destNodeId?: number) => {
+    async (text: string, channelIdx: number, destNodeId?: number, replyId?: number) => {
       if (!connRef.current) return;
       if (destNodeId !== undefined) {
         const pubKey = pubKeyMapRef.current.get(destNodeId);
@@ -2368,10 +2353,25 @@ export function useMeshCore() {
         }
       } else {
         const sentAt = Date.now();
+        let textToSend = text;
+        let replyField: number | undefined;
+        if (replyId != null && text.trim()) {
+          const parent = messagesRef.current.find(
+            (m) =>
+              !m.to &&
+              m.channel === channelIdx &&
+              (m.packetId === replyId || m.timestamp === replyId) &&
+              !(m.emoji != null && m.replyId != null),
+          );
+          if (parent) {
+            textToSend = `@[${parent.sender_name}] ${text}`;
+            replyField = replyId;
+          }
+        }
         try {
           const channelConn = connRef.current;
           if (channelConn) {
-            await channelConn.sendChannelTextMessage(channelIdx, text);
+            await channelConn.sendChannelTextMessage(channelIdx, textToSend);
             addMessage({
               sender_id: myNodeNumRef.current,
               sender_name: selfInfo?.name ?? 'Me',
@@ -2379,6 +2379,7 @@ export function useMeshCore() {
               channel: channelIdx,
               timestamp: sentAt,
               status: 'acked',
+              replyId: replyField,
             });
           } else if (mqttStatusRef.current === 'connected') {
             const mq = readMeshcoreMqttSettingsFromStorage();
@@ -2388,7 +2389,7 @@ export function useMeshCore() {
               return;
             }
             await window.electronAPI.mqtt.publishMeshcore({
-              text,
+              text: textToSend,
               channelIdx,
               senderNodeId: myNodeNumRef.current || undefined,
               senderName: selfInfo?.name,
@@ -2402,6 +2403,7 @@ export function useMeshCore() {
               timestamp: sentAt,
               status: 'acked',
               receivedVia: 'mqtt',
+              replyId: replyField,
             });
           }
         } catch (e) {

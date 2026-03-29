@@ -219,7 +219,7 @@ interface Props {
   onDmTargetConsumed?: () => void;
   isActive?: boolean;
   onGlobalSearch?: () => void;
-  /** When `meshcore`, show full names, hide redundant RF-only transport badge, block threaded replies. */
+  /** When `meshcore`, show full names, hide redundant RF-only transport badge. */
   protocol?: MeshProtocol;
 }
 
@@ -343,7 +343,7 @@ function ChatPanel({
   );
 
   useEffect(() => {
-    if (protocol === 'meshcore') setReplyTo(null);
+    setReplyTo(null);
   }, [protocol]);
 
   // Handle initialDmTarget from Nodes tab
@@ -365,12 +365,20 @@ function ChatPanel({
   // Separate regular messages from reaction messages
   const { regularMessages, reactionsByReplyId } = useMemo(() => {
     const regular: ChatMessage[] = [];
-    const reactions = new Map<number, { emoji: number; sender_name: string }[]>();
+    const reactions = new Map<
+      number,
+      { emoji: number; sender_id: number; sender_name: string; id?: number }[]
+    >();
 
     for (const msg of messages) {
       if (msg.emoji && msg.replyId) {
         const existing = reactions.get(msg.replyId) ?? [];
-        existing.push({ emoji: msg.emoji, sender_name: msg.sender_name });
+        existing.push({
+          emoji: msg.emoji,
+          sender_id: msg.sender_id,
+          sender_name: msg.sender_name,
+          id: msg.id,
+        });
         reactions.set(msg.replyId, existing);
       } else {
         regular.push(msg);
@@ -539,6 +547,13 @@ function ChatPanel({
     }
   }, []);
 
+  const scrollToQuotedParent = useCallback((replyKey: number) => {
+    const root = scrollContainerRef.current;
+    if (!root) return;
+    const el = root.querySelector(`[data-chat-message-key="${replyKey}"]`);
+    (el as HTMLElement | null)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, []);
+
   // Escape key handler
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -588,7 +603,8 @@ function ChatPanel({
       console.debug('[ChatPanel] handleSend');
       const sendChannel = channel === -1 ? 0 : channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
-      const sendOutcome = onSend(input.trim(), sendChannel, destination, replyTo?.packetId);
+      const replyKey = replyTo ? (replyTo.packetId ?? replyTo.timestamp) : undefined;
+      const sendOutcome = onSend(input.trim(), sendChannel, destination, replyKey);
       await Promise.resolve(sendOutcome);
       setInput('');
       setReplyTo(null);
@@ -679,23 +695,10 @@ function ChatPanel({
     });
   }
 
-  /** Group reactions by emoji code for a message key (packetId or timestamp fallback) */
-  function getGroupedReactions(messageKey: number | undefined) {
+  /** Flat reaction rows for a message key (chronological as stored). */
+  function getReactionRows(messageKey: number | undefined) {
     if (!messageKey) return [];
-    const reactions = reactionsByReplyId.get(messageKey);
-    if (!reactions) return [];
-
-    const grouped = new Map<number, string[]>();
-    for (const r of reactions) {
-      const existing = grouped.get(r.emoji) ?? [];
-      existing.push(r.sender_name);
-      grouped.set(r.emoji, existing);
-    }
-    return Array.from(grouped.entries()).map(([emoji, senders]) => ({
-      emoji,
-      count: senders.length,
-      tooltip: `${emojiDisplayLabel(emoji)}: ${senders.join(', ')}`,
-    }));
+    return reactionsByReplyId.get(messageKey) ?? [];
   }
 
   // Pre-compute day separator indices (avoids mutable variable during render)
@@ -943,7 +946,8 @@ function ChatPanel({
           filteredMessages.map((msg, i) => {
             const isOwn = msg.sender_id === myNodeNum;
             const isDm = !!msg.to;
-            const reactions = getGroupedReactions(msg.packetId ?? msg.timestamp);
+            const reactionRows = getReactionRows(msg.packetId ?? msg.timestamp);
+            const messageRowKey = msg.packetId ?? msg.timestamp;
             const showPicker = pickerOpenFor === (msg.packetId ?? msg.timestamp);
             const pickerOpensAbove = i >= filteredMessages.length - 3;
 
@@ -975,7 +979,10 @@ function ChatPanel({
                     <UnreadDivider />
                   </div>
                 )}
-                <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
+                  data-chat-message-key={messageRowKey}
+                >
                   {/* Bubble row */}
                   <div
                     className={`group/msg flex items-end gap-1 max-w-[80%] ${
@@ -1023,21 +1030,32 @@ function ChatPanel({
                         messageByReplyKey.has(msg.replyId) &&
                         (() => {
                           const orig = messageByReplyKey.get(msg.replyId)!;
+                          const quoteSnippet =
+                            orig.payload.length > 80
+                              ? orig.payload.slice(0, 80) + '…'
+                              : orig.payload;
+                          const quotedLabel =
+                            nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
+                            orig.sender_name;
                           return (
-                            <div className="flex gap-1.5 mb-1.5 opacity-80">
-                              <div className="w-0.5 rounded-full bg-gray-500 shrink-0" />
-                              <div className="min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                scrollToQuotedParent(msg.replyId!);
+                              }}
+                              className="flex gap-1.5 mb-1.5 w-full text-left rounded-lg border border-gray-600/50 bg-secondary-dark/50 px-2 py-1.5 hover:bg-secondary-dark/80 transition-colors"
+                              aria-label={`Jump to quoted message from ${quotedLabel}`}
+                            >
+                              <div className="w-0.5 rounded-full bg-gray-500 shrink-0 self-stretch min-h-[2rem]" />
+                              <div className="min-w-0 flex-1">
                                 <span className="text-[10px] font-semibold text-gray-400 block">
-                                  {nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
-                                    orig.sender_name}
+                                  {quotedLabel}
                                 </span>
                                 <span className="text-[11px] text-gray-500 block truncate">
-                                  {orig.payload.length > 80
-                                    ? orig.payload.slice(0, 80) + '…'
-                                    : orig.payload}
+                                  {quoteSnippet}
                                 </span>
                               </div>
-                            </div>
+                            </button>
                           );
                         })()}
 
@@ -1111,32 +1129,29 @@ function ChatPanel({
                     {/* Inline reaction trigger — visible on hover or focus-within */}
                     {isConnected && (
                       <div className="opacity-0 group-hover/msg:opacity-100 group-focus-within/msg:opacity-100 flex gap-0.5 transition-all shrink-0">
-                        {/* Reply (Meshtastic threaded replies; not supported on MeshCore transport) */}
-                        {protocol !== 'meshcore' && (
-                          <button
-                            onClick={() => {
-                              setReplyTo(msg);
-                              inputRef.current?.focus();
-                            }}
-                            className="text-gray-600 hover:text-blue-400 text-xs p-1 rounded"
-                            aria-label="Reply to message"
-                            title="Reply"
+                        <button
+                          onClick={() => {
+                            setReplyTo(msg);
+                            inputRef.current?.focus();
+                          }}
+                          className="text-gray-600 hover:text-blue-400 text-xs p-1 rounded"
+                          aria-label="Reply to message"
+                          title="Reply"
+                        >
+                          <svg
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
                           >
-                            <svg
-                              className="w-3.5 h-3.5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"
-                              />
-                            </svg>
-                          </button>
-                        )}
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"
+                            />
+                          </svg>
+                        </button>
                         {/* React */}
                         <button
                           onClick={() => {
@@ -1227,18 +1242,40 @@ function ChatPanel({
                   )}
 
                   {/* Reaction badges */}
-                  {reactions.length > 0 && (
-                    <div className={`flex gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                      {reactions.map((r) => (
-                        <span
-                          key={r.emoji}
-                          className="inline-flex items-center gap-0.5 bg-secondary-dark/80 border border-gray-600/50 rounded-full px-1.5 py-0.5 text-xs cursor-default"
-                          title={r.tooltip}
-                        >
-                          {emojiDisplayChar(r.emoji)}
-                          {r.count > 1 && <span className="text-muted text-[10px]">{r.count}</span>}
-                        </span>
-                      ))}
+                  {reactionRows.length > 0 && (
+                    <div
+                      className={`flex flex-row flex-wrap gap-1 mt-0.5 max-w-full ${
+                        isOwn ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {reactionRows.map((r, rIdx) => {
+                        const hideReactorLabel = !isOwn && r.sender_id === myNodeNum;
+                        const reactorLabel =
+                          nodeDisplayName(nodes.get(r.sender_id), protocol) || r.sender_name;
+                        const emojiChar = emojiDisplayChar(r.emoji);
+                        const reactionName = emojiDisplayLabel(r.emoji);
+                        const titleText = hideReactorLabel
+                          ? `${reactionName} (you)`
+                          : `${reactorLabel}: ${reactionName}`;
+                        const ariaLabel = hideReactorLabel
+                          ? `Your reaction: ${reactionName}`
+                          : `${reactorLabel} reacted with ${reactionName}`;
+                        return (
+                          <span
+                            key={r.id != null ? `r-${r.id}` : `r-${r.sender_id}-${r.emoji}-${rIdx}`}
+                            className="inline-flex items-center gap-1 bg-secondary-dark/80 border border-gray-600/50 rounded-full px-1.5 py-0.5 text-xs cursor-default max-w-[min(100%,14rem)]"
+                            title={titleText}
+                            aria-label={ariaLabel}
+                          >
+                            {!hideReactorLabel && (
+                              <span className="text-[10px] text-gray-400 truncate max-w-[5.5rem]">
+                                {reactorLabel}
+                              </span>
+                            )}
+                            <span className="shrink-0">{emojiChar}</span>
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -1303,7 +1340,7 @@ function ChatPanel({
       )}
 
       {/* Reply preview bar */}
-      {replyTo && protocol !== 'meshcore' && (
+      {replyTo && (
         <div className="flex items-center gap-2 px-3 py-1.5 mb-1 bg-secondary-dark/80 border border-gray-600/50 rounded-xl text-xs">
           <svg
             className="w-3 h-3 text-blue-400 shrink-0"

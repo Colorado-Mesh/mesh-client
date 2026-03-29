@@ -173,7 +173,7 @@ describe('useMeshCore mount hydration', () => {
       expect.objectContaining({
         received_via: 'mqtt',
         channel_idx: 0,
-        payload: 'SynthUser: synthetic inbound body',
+        payload: 'synthetic inbound body',
         timestamp: ts,
       }),
     );
