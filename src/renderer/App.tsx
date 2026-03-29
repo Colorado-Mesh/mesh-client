@@ -371,7 +371,7 @@ export default function App() {
 
   const handleResend = useCallback(
     (msg: ChatMessage) => {
-      device.sendMessage(msg.payload, msg.channel, msg.to ?? undefined);
+      device.sendMessage(msg.payload, msg.channel, msg.to ?? undefined, msg.replyId);
     },
     [device],
   );

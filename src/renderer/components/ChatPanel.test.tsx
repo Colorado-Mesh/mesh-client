@@ -532,6 +532,28 @@ describe('ChatPanel StatusBadge', () => {
     expect(screen.queryByText('USBno ACK')).not.toBeInTheDocument();
   });
 
+  it('passes full message to onResend so App can forward replyId', async () => {
+    const user = userEvent.setup();
+    const onResend = vi.fn();
+    const failedWithReply = {
+      ...failedMsg,
+      replyId: 4242,
+      packetId: 99,
+    };
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} onResend={onResend} messages={[failedWithReply]} />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByTitle('Resend message'));
+    expect(onResend).toHaveBeenCalledTimes(1);
+    expect(onResend.mock.calls[0][0]).toMatchObject({
+      payload: 'Hello',
+      replyId: 4242,
+      channel: 0,
+    });
+  });
+
   it('renders "BT ✓" with a space for BLE acked messages', () => {
     render(
       <ToastProvider>

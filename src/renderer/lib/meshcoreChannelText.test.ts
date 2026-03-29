@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
+  findMeshcoreDmReplyParent,
   meshcorePayloadIsTapbackEmojiOnly,
   normalizeMeshcoreIncomingText,
   parseMeshcorePlainBracketLine,
@@ -39,6 +40,100 @@ describe('parseMeshcorePlainBracketLine', () => {
 
   it('returns full string as payload when no bracket', () => {
     expect(parseMeshcorePlainBracketLine('hello')).toEqual({ payload: 'hello' });
+  });
+});
+
+describe('findMeshcoreDmReplyParent', () => {
+  const me = 100;
+  const peer = 200;
+  const t0 = 5_000_000;
+
+  it('finds parent by packetId in DM thread', () => {
+    const parent: ChatMessage = {
+      sender_id: peer,
+      sender_name: 'Alice',
+      payload: 'hi',
+      channel: -1,
+      timestamp: t0,
+      status: 'acked',
+      packetId: 4242,
+      to: me,
+    };
+    const found = findMeshcoreDmReplyParent([parent], {
+      peerNodeId: peer,
+      myNodeId: me,
+      replyKey: 4242,
+    });
+    expect(found).toBe(parent);
+    expect(found?.sender_name).toBe('Alice');
+  });
+
+  it('finds parent by timestamp when packetId absent', () => {
+    const parent: ChatMessage = {
+      sender_id: me,
+      sender_name: 'Me',
+      payload: 'out',
+      channel: -1,
+      timestamp: t0,
+      status: 'acked',
+      to: peer,
+    };
+    const found = findMeshcoreDmReplyParent([parent], {
+      peerNodeId: peer,
+      myNodeId: me,
+      replyKey: t0,
+    });
+    expect(found?.sender_name).toBe('Me');
+  });
+
+  it('skips reaction tapback rows', () => {
+    const textMsg: ChatMessage = {
+      sender_id: peer,
+      sender_name: 'Alice',
+      payload: 'yo',
+      channel: -1,
+      timestamp: t0,
+      status: 'acked',
+      packetId: 1,
+      to: me,
+    };
+    const reaction: ChatMessage = {
+      sender_id: peer,
+      sender_name: 'Alice',
+      payload: '👍',
+      channel: -1,
+      timestamp: t0 + 1,
+      status: 'acked',
+      packetId: 2,
+      emoji: 0x1f44d,
+      replyId: t0,
+      to: me,
+    };
+    const found = findMeshcoreDmReplyParent([reaction, textMsg], {
+      peerNodeId: peer,
+      myNodeId: me,
+      replyKey: 2,
+    });
+    expect(found).toBeUndefined();
+  });
+
+  it('returns undefined when replyKey is for another thread', () => {
+    const other: ChatMessage = {
+      sender_id: 999,
+      sender_name: 'Stranger',
+      payload: 'x',
+      channel: -1,
+      timestamp: t0,
+      status: 'acked',
+      packetId: 9,
+      to: me,
+    };
+    const found = findMeshcoreDmReplyParent([other], {
+      peerNodeId: peer,
+      myNodeId: me,
+      replyKey: 9,
+    });
+    expect(found).toBeUndefined();
   });
 });
 

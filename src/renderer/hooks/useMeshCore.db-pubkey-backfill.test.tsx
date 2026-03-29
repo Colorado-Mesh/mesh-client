@@ -144,6 +144,7 @@ function pubKeyBytesFromHex(hex: string): Uint8Array {
 
 const PEER_NODE_ID = pubkeyToNodeId(pubKeyBytesFromHex(PEER_PUBKEY_HEX));
 const SELF_PUBKEY = new Uint8Array(32).fill(0xcd);
+const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
 
 function makeMockSerialPort() {
   return {
@@ -213,5 +214,154 @@ describe('useMeshCore DB pubkey backfill for DM send', () => {
     expect(call0).toBeDefined();
     expect(call0?.[1]).toBe('hello-dm');
     expect(call0?.[0]).toEqual(pubKeyBytesFromHex(PEER_PUBKEY_HEX));
+
+    await waitFor(() => {
+      expect(window.electronAPI.db.saveMeshcoreMessage).toHaveBeenCalled();
+    });
+    expect(vi.mocked(window.electronAPI.db.saveMeshcoreMessage)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel_idx: -1,
+        payload: 'hello-dm',
+        to_node: PEER_NODE_ID,
+      }),
+    );
+  });
+});
+
+describe('useMeshCore DM reply (wire + persistence)', () => {
+  const contactRow = {
+    node_id: PEER_NODE_ID,
+    public_key: PEER_PUBKEY_HEX,
+    adv_name: 'PeerFromDb',
+    contact_type: 1,
+    last_advert: 1_700_000_000,
+    adv_lat: null,
+    adv_lon: null,
+    last_snr: null,
+    last_rssi: null,
+    favorited: 0,
+    nickname: null,
+  };
+
+  const dmParentFromPeer = {
+    id: 1,
+    sender_id: PEER_NODE_ID,
+    sender_name: 'Alice',
+    payload: 'parent line',
+    channel_idx: -1,
+    timestamp: 1_700_000_000_000,
+    status: 'acked',
+    packet_id: 77_777,
+    emoji: null as number | null,
+    reply_id: null as number | null,
+    to_node: MY_NODE_ID,
+    received_via: 'rf' as const,
+  };
+
+  function resetMocksAndBaseContacts(messagesFromDb: (typeof dmParentFromPeer)[]) {
+    vi.clearAllMocks();
+    getContactsMock.mockResolvedValue([]);
+    sendTextMessageMock.mockResolvedValue({ expectedAckCrc: 1, estTimeout: 30_000 });
+    getSelfInfoMock.mockResolvedValue({
+      name: 'SelfRadio',
+      publicKey: SELF_PUBKEY,
+      type: 1,
+      txPower: 22,
+      radioFreq: 902_000_000,
+    });
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue(messagesFromDb);
+    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([contactRow]);
+  }
+
+  it('prefixes DM text with @[sender_name] when replyId matches a hydrated DM parent', async () => {
+    resetMocksAndBaseContacts([dmParentFromPeer]);
+    const port = makeMockSerialPort();
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: {
+        requestPort: vi.fn().mockResolvedValue(port),
+      },
+    });
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await waitFor(() => {
+      expect(result.current.messages.length).toBe(1);
+    });
+
+    await act(async () => {
+      await result.current.connect('serial');
+    });
+
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    await act(async () => {
+      await result.current.sendMessage('hi', 0, PEER_NODE_ID, 77_777);
+    });
+
+    expect(sendTextMessageMock).toHaveBeenCalledWith(
+      pubKeyBytesFromHex(PEER_PUBKEY_HEX),
+      '@[Alice] hi',
+    );
+
+    await waitFor(() => {
+      expect(
+        vi.mocked(window.electronAPI.db.saveMeshcoreMessage).mock.calls.length,
+      ).toBeGreaterThan(0);
+    });
+    expect(vi.mocked(window.electronAPI.db.saveMeshcoreMessage)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel_idx: -1,
+        reply_id: 77_777,
+        payload: 'hi',
+        to_node: PEER_NODE_ID,
+      }),
+    );
+  });
+
+  it('sends plain DM payload when replyId does not match any thread message', async () => {
+    resetMocksAndBaseContacts([]);
+    const port = makeMockSerialPort();
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: {
+        requestPort: vi.fn().mockResolvedValue(port),
+      },
+    });
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await waitFor(() => {
+      expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
+    });
+
+    await act(async () => {
+      await result.current.connect('serial');
+    });
+
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    await act(async () => {
+      await result.current.sendMessage('hi', 0, PEER_NODE_ID, 99_999);
+    });
+
+    expect(sendTextMessageMock).toHaveBeenCalledWith(pubKeyBytesFromHex(PEER_PUBKEY_HEX), 'hi');
+
+    await waitFor(() => {
+      expect(
+        vi.mocked(window.electronAPI.db.saveMeshcoreMessage).mock.calls.length,
+      ).toBeGreaterThan(0);
+    });
+    expect(vi.mocked(window.electronAPI.db.saveMeshcoreMessage)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel_idx: -1,
+        reply_id: null,
+        payload: 'hi',
+      }),
+    );
   });
 });

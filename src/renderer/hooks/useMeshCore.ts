@@ -22,6 +22,7 @@ import { isLetsMeshSettings } from '../lib/letsMeshJwt';
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
+  findMeshcoreDmReplyParent,
   normalizeMeshcoreIncomingText,
 } from '../lib/meshcoreChannelText';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
@@ -2608,20 +2609,34 @@ export function useMeshCore() {
           );
         }
         const sentAt = Date.now();
-        // Optimistically add own message with 'sending' status
+        let textToSend = text;
+        let replyField: number | undefined;
+        if (replyId != null && text.trim()) {
+          const parent = findMeshcoreDmReplyParent(messagesRef.current, {
+            peerNodeId: destNodeId,
+            myNodeId: myNodeNumRef.current,
+            replyKey: replyId,
+          });
+          if (parent) {
+            textToSend = `@[${parent.sender_name}] ${text}`;
+            replyField = replyId;
+          }
+        }
+        // Optimistically add own message with 'sending' status (DM uses channel -1, not UI sendChannel)
         const tempMsg: ChatMessage = {
           sender_id: myNodeNumRef.current,
           sender_name: selfInfo?.name ?? 'Me',
           payload: text,
-          channel: channelIdx,
+          channel: -1,
           timestamp: sentAt,
           status: 'sending',
           to: destNodeId,
+          replyId: replyField,
         };
         setMessages((prev) => [...prev, tempMsg]);
 
         try {
-          const result = await connRef.current.sendTextMessage(pubKey, text);
+          const result = await connRef.current.sendTextMessage(pubKey, textToSend);
           const ackCrc = result?.expectedAckCrc;
           const estTimeout = Math.max(result?.estTimeout ?? 30_000, MESHCORE_DM_ACK_TIMEOUT_MIN_MS);
 
@@ -2642,10 +2657,11 @@ export function useMeshCore() {
                 sender_id: myNodeNumRef.current || null,
                 sender_name: selfInfo?.name ?? 'Me',
                 payload: text,
-                channel_idx: channelIdx,
+                channel_idx: -1,
                 timestamp: sentAt,
                 status: 'sending',
                 packet_id: ackKey,
+                reply_id: replyField ?? null,
                 to_node: destNodeId,
               })
               .catch((e: unknown) => {
@@ -2694,9 +2710,10 @@ export function useMeshCore() {
                 sender_id: myNodeNumRef.current || null,
                 sender_name: selfInfo?.name ?? 'Me',
                 payload: text,
-                channel_idx: channelIdx,
+                channel_idx: -1,
                 timestamp: sentAt,
                 status: 'acked',
+                reply_id: replyField ?? null,
                 to_node: destNodeId,
               })
               .catch((e: unknown) => {

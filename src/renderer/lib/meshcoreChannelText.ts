@@ -118,6 +118,30 @@ export function resolveMeshcoreBracketParentKeyDm(
   return best.packetId ?? best.timestamp;
 }
 
+/**
+ * Find the DM thread message referenced by `replyKey` (`packetId` or `timestamp`) when sending
+ * a reply. Excludes reaction rows (`emoji` + `replyId` both set).
+ */
+export function findMeshcoreDmReplyParent(
+  messages: readonly ChatMessage[],
+  opts: {
+    peerNodeId: number;
+    myNodeId: number;
+    replyKey: number;
+  },
+): ChatMessage | undefined {
+  return messages.find((m) => {
+    const inDmThread =
+      (m.sender_id === opts.peerNodeId && m.to === opts.myNodeId) ||
+      (m.sender_id === opts.myNodeId && m.to === opts.peerNodeId);
+    return (
+      inDmThread &&
+      (m.packetId === opts.replyKey || m.timestamp === opts.replyKey) &&
+      !(m.emoji != null && m.replyId != null)
+    );
+  });
+}
+
 export interface BuildMeshcoreChannelIncomingOpts {
   rawText: string;
   senderId: number;
