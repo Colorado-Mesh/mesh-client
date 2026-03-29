@@ -1,4 +1,4 @@
-import type { MeshNode } from './types';
+import type { ConnectionType, MeshNode } from './types';
 
 const MESHCORE_COORD_SCALE = 1e6;
 
@@ -128,6 +128,14 @@ export function meshcoreMilliVoltsToApproximateBatteryPercent(milliVolts: number
   const fullV = 4.2;
   const pct = ((v - emptyV) / (fullV - emptyV)) * 100;
   return Math.round(Math.min(100, Math.max(0, pct)));
+}
+
+/**
+ * MeshCore / meshcore.js expose only `batteryMilliVolts`—no charging or USB-powered flag (contrast: Meshtastic uses batteryLevel > 100).
+ * For UI we treat USB serial as likely VBUS/charging. BLE or TCP cannot indicate wall-charging without firmware support.
+ */
+export function meshcoreConnectionImpliesUsbPower(connectionType: ConnectionType | null): boolean {
+  return connectionType === 'serial';
 }
 
 /** MeshCore roles excluded from user contact-group membership (infrastructure / rooms). */

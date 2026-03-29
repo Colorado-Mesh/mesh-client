@@ -32,6 +32,7 @@ import {
   MESHCORE_RPC_SNR_RAW_TO_DB,
   meshcoreAppendRepeaterAuthHint,
   meshcoreChatStubNodeIdFromDisplayName,
+  meshcoreConnectionImpliesUsbPower,
   meshcoreContactToMeshNode,
   meshcoreIsChatStubNodeId,
   meshcoreIsSyntheticPlaceholderPubKeyHex,
@@ -418,6 +419,7 @@ class IpcNobleConnection {
   }
 }
 
+/** Self info from the radio; optional mV from `getBatteryVoltage()` — no charging flag in the MeshCore API. */
 export interface MeshCoreSelfInfo {
   name: string;
   publicKey: Uint8Array;
@@ -1000,19 +1002,24 @@ export function useMeshCore() {
     });
   }, [state.myNodeNum, selfInfo?.batteryMilliVolts]);
 
-  // Connection panel: mirror finite self voltage into DeviceState (omit until measured)
+  // Connection panel: meshcore.js exposes only millivolts—no charging bit (unlike Meshtastic batteryLevel > 100).
+  // We set batteryCharging from transport: USB serial usually means VBUS. BLE/TCP cannot detect wall charging.
   useEffect(() => {
     const mV = selfInfo?.batteryMilliVolts;
     if (mV == null || !Number.isFinite(mV)) {
       setState((prev) => {
-        if (prev.batteryPercent === undefined) return prev;
-        return { ...prev, batteryPercent: undefined };
+        if (prev.batteryPercent === undefined && prev.batteryCharging === undefined) return prev;
+        return { ...prev, batteryPercent: undefined, batteryCharging: undefined };
       });
       return;
     }
     const pct = meshcoreMilliVoltsToApproximateBatteryPercent(mV);
-    setState((prev) => (prev.batteryPercent === pct ? prev : { ...prev, batteryPercent: pct }));
-  }, [selfInfo?.batteryMilliVolts]);
+    const charging = meshcoreConnectionImpliesUsbPower(state.connectionType);
+    setState((prev) => {
+      if (prev.batteryPercent === pct && prev.batteryCharging === charging) return prev;
+      return { ...prev, batteryPercent: pct, batteryCharging: charging };
+    });
+  }, [selfInfo?.batteryMilliVolts, state.connectionType]);
 
   const addMessage = useCallback((msg: ChatMessage) => {
     const incomingKey = meshcoreMessageDedupeKey(msg);

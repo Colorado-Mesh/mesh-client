@@ -7,6 +7,7 @@ import {
   meshcoreApplyRepeaterSessionAuth,
   meshcoreApplyRepeaterSessionAuthSkip,
   meshcoreClearRepeaterRemoteSessionAuth,
+  meshcoreConnectionImpliesUsbPower,
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreGetRepeaterSessionPassword,
   meshcoreIsRepeaterRemoteAuthTouched,
@@ -128,6 +129,15 @@ describe('meshcoreMilliVoltsToApproximateBatteryPercent', () => {
     expect(meshcoreMilliVoltsToApproximateBatteryPercent(NaN)).toBe(0);
     expect(meshcoreMilliVoltsToApproximateBatteryPercent(0)).toBe(0);
     expect(meshcoreMilliVoltsToApproximateBatteryPercent(-100)).toBe(0);
+  });
+});
+
+describe('meshcoreConnectionImpliesUsbPower', () => {
+  it('is true only for serial (USB data link / typical VBUS)', () => {
+    expect(meshcoreConnectionImpliesUsbPower('serial')).toBe(true);
+    expect(meshcoreConnectionImpliesUsbPower('ble')).toBe(false);
+    expect(meshcoreConnectionImpliesUsbPower('http')).toBe(false);
+    expect(meshcoreConnectionImpliesUsbPower(null)).toBe(false);
   });
 });
 
