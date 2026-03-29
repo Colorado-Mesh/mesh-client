@@ -1,6 +1,4 @@
 /// <reference types="vite/client" />
-// Load before App so tab-panel chunks start fetching before the rest of App’s import graph runs.
-import './lazyTabPanels';
 import './styles.css';
 
 import { createRoot } from 'react-dom/client';

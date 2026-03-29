@@ -19,6 +19,8 @@ npm run format:check   # Prettier check only (no writes)
 npm run rebuild   # Rebuild native modules (@stoprocent/noble) for current Electron
 ```
 
+**Main process bundle:** `build:main` / `build:main:prod` use esbuild on `src/main/index.ts`. Large dependencies (`node-forge`, `jszip`, `mqtt`, `@meshtastic/protobufs`, `@bufbuild/protobuf`) are passed as `--external` so they are **not** concatenated into `dist-electron/main/index.js`; Node resolves them from `node_modules` at runtime (they remain packaged in the app asar). Analyze bundle composition with `npm run build:main:meta` (writes `dist-electron/main/metafile.json` for [esbuild’s metafile analyzer](https://esbuild.github.io/analytics/); it rebuilds `dist-electron/main/index.js` without minify — run `npm run build:main:prod` afterward if you need the minified main for `npm start` / `dist`). Compare dev vs minified outfile sizes with `npm run build:main:compare-size`.
+
 **Running CI locally:** With [act](https://github.com/nektos/act) installed, run `act --container-architecture linux/amd64` so Linux jobs use the correct architecture. The test-results artifact upload step is skipped when running under act (actor `nektos/act`); all other steps run as on GitHub.
 
 **actionlint:** Install [actionlint](https://github.com/rhysd/actionlint) so the pre-commit hook can lint GitHub Actions workflows.

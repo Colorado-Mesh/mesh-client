@@ -4,8 +4,11 @@
   "description": "Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows — BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, routing diagnostics, and keyboard-first workflows.",
   "main": "dist-electron/main/index.js",
   "scripts": {
-    "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --format=cjs",
-    "build:main:prod": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --format=cjs --minify",
+    "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs",
+    "build:main:prod": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --minify",
+    "build:main:meta": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --metafile=dist-electron/main/metafile.json",
+    "build:main:size": "node scripts/print-main-bundle-size.mjs",
+    "build:main:compare-size": "npm run build:main --silent && node -e \"console.log('build:main (no minify)', require('fs').statSync('dist-electron/main/index.js').size, 'bytes')\" && npm run build:main:prod --silent && node -e \"console.log('build:main:prod (minify)', require('fs').statSync('dist-electron/main/index.js').size, 'bytes')\"",
     "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --outfile=dist-electron/preload/index.js --external:electron --format=cjs",
     "build:renderer": "vite build",
     "build": "npm run build:main:prod && npm run build:preload && npm run build:renderer",
@@ -68,7 +71,6 @@
     "@axe-core/react": "^4.11.1",
     "@liamcottle/meshcore.js": "^1.12.0",
     "@meshtastic/core": "npm:@jsr/meshtastic__core@^2.6.6",
-    "@meshtastic/protobufs": "npm:@jsr/meshtastic__protobufs@^2.7.18",
     "@meshtastic/transport-http": "npm:@jsr/meshtastic__transport-http@^0.2.1",
     "@meshtastic/transport-web-serial": "npm:@jsr/meshtastic__transport-web-serial@^0.2.5",
     "@michaelhart/meshcore-decoder": "^0.2.7",
@@ -99,7 +101,6 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "jsdom": "^28.1.0",
     "leaflet": "^1.9.4",
-    "mqtt": "^5.15.0",
     "patch-package": "^8.0.1",
     "postcss": "^8.5.6",
     "prettier": "^3.8.1",
@@ -121,10 +122,13 @@
     "yauzl": "^3.2.1"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.6.1",
+    "@meshtastic/protobufs": "npm:@jsr/meshtastic__protobufs@^2.7.18",
     "@stoprocent/noble": "^2.3.17",
     "electron-updater": "^6.8.3",
     "jszip": "^3.10.1",
     "mgrs": "^2.1.0",
+    "mqtt": "^5.15.0",
     "node-forge": "^1.4.0",
     "systeminformation": "^5.25.0"
   }

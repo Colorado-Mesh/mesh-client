@@ -22,7 +22,7 @@ import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
-import type { TAKSettings } from '../shared/tak-types';
+import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import {
   addContactToGroup,
   closeDatabase,
@@ -61,7 +61,7 @@ import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { MQTTManager } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
-import { TakServerManager } from './tak-server-manager';
+import type { TakServerManager } from './tak-server-manager';
 import { getCheckNow, initUpdater } from './updater';
 
 // Route main-process console through log file + Log panel (must run before other code logs)
@@ -84,7 +84,38 @@ if (!app.requestSingleInstanceLock()) {
 const mqttManager = new MQTTManager();
 const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
 const nobleBleManager = new NobleBleManager();
-const takServerManager = new TakServerManager();
+
+/** TAK status before the lazy-loaded `TakServerManager` module is imported. */
+const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
+
+let takServerManager: TakServerManager | null = null;
+let takServerManagerLoadPromise: Promise<TakServerManager> | null = null;
+
+function attachTakForwarders(manager: TakServerManager): void {
+  manager.on('status', (status) => {
+    if (mainWindow) mainWindow.webContents.send('tak:status', status);
+    else console.debug('[main] tak:status dropped (mainWindow not ready)');
+  });
+  manager.on('client-connected', (client) => {
+    if (mainWindow) mainWindow.webContents.send('tak:clientConnected', client);
+    else console.debug('[main] tak:clientConnected dropped (mainWindow not ready)');
+  });
+  manager.on('client-disconnected', (clientId) => {
+    if (mainWindow) mainWindow.webContents.send('tak:clientDisconnected', clientId);
+    else console.debug('[main] tak:clientDisconnected dropped (mainWindow not ready)');
+  });
+}
+
+async function ensureTakServerManager(): Promise<TakServerManager> {
+  if (takServerManager) return takServerManager;
+  takServerManagerLoadPromise ??= import('./tak-server-manager').then((mod) => {
+    const manager = new mod.TakServerManager();
+    attachTakForwarders(manager);
+    takServerManager = manager;
+    return manager;
+  });
+  return takServerManagerLoadPromise;
+}
 
 /** Max bytes per MeshCore TCP IPC write (DoS guard). */
 const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024;
@@ -1848,7 +1879,7 @@ mqttManager.on('clientId', (id) => {
 mqttManager.on('nodeUpdate', (n) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:node-update', n);
   else console.debug('[main] mqtt:node-update dropped (mainWindow not ready)');
-  takServerManager.onNodeUpdate(n);
+  takServerManager?.onNodeUpdate(n);
 });
 mqttManager.on('message', (m) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:message', m);
@@ -1892,20 +1923,6 @@ meshcoreMqttAdapter.on('subscribeWarning', (msg) => {
 meshcoreMqttAdapter.on('chatMessage', (m) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:meshcore-chat', m);
   else console.debug('[main] mqtt:meshcore-chat dropped (mainWindow not ready)');
-});
-
-// ─── TAK: Forward manager events to renderer ────────────────────────
-takServerManager.on('status', (status) => {
-  if (mainWindow) mainWindow.webContents.send('tak:status', status);
-  else console.debug('[main] tak:status dropped (mainWindow not ready)');
-});
-takServerManager.on('client-connected', (client) => {
-  if (mainWindow) mainWindow.webContents.send('tak:clientConnected', client);
-  else console.debug('[main] tak:clientConnected dropped (mainWindow not ready)');
-});
-takServerManager.on('client-disconnected', (clientId) => {
-  if (mainWindow) mainWindow.webContents.send('tak:clientDisconnected', clientId);
-  else console.debug('[main] tak:clientDisconnected dropped (mainWindow not ready)');
 });
 
 // ─── IPC: MQTT connect/disconnect ───────────────────────────────────
@@ -3441,7 +3458,8 @@ ipcMain.handle('tak:start', async (_event, settings) => {
   try {
     console.debug('[IPC] tak:start');
     validateTakSettings(settings);
-    await takServerManager.start(settings);
+    const m = await ensureTakServerManager();
+    await m.start(settings);
   } catch (err) {
     console.error(
       '[IPC] tak:start failed:',
@@ -3453,21 +3471,22 @@ ipcMain.handle('tak:start', async (_event, settings) => {
 
 ipcMain.handle('tak:stop', () => {
   console.debug('[IPC] tak:stop');
-  takServerManager.stop();
+  takServerManager?.stop();
 });
 
 ipcMain.handle('tak:getStatus', () => {
-  return takServerManager.getStatus();
+  return takServerManager?.getStatus() ?? IDLE_TAK_STATUS;
 });
 
 ipcMain.handle('tak:getConnectedClients', () => {
-  return takServerManager.getConnectedClients();
+  return takServerManager?.getConnectedClients() ?? [];
 });
 
 ipcMain.handle('tak:generateDataPackage', async () => {
   try {
     console.debug('[IPC] tak:generateDataPackage');
-    await takServerManager.generateDataPackage();
+    const m = await ensureTakServerManager();
+    await m.generateDataPackage();
   } catch (err) {
     console.error(
       '[IPC] tak:generateDataPackage failed:',
@@ -3480,7 +3499,8 @@ ipcMain.handle('tak:generateDataPackage', async () => {
 ipcMain.handle('tak:regenerateCertificates', async () => {
   try {
     console.debug('[IPC] tak:regenerateCertificates');
-    await takServerManager.regenerateCertificates();
+    const m = await ensureTakServerManager();
+    await m.regenerateCertificates();
   } catch (err) {
     console.error(
       '[IPC] tak:regenerateCertificates failed:',
@@ -3490,13 +3510,14 @@ ipcMain.handle('tak:regenerateCertificates', async () => {
   }
 });
 
-ipcMain.handle('tak:pushNodeUpdate', (_event, node: unknown) => {
+ipcMain.handle('tak:pushNodeUpdate', async (_event, node: unknown) => {
   if (!node || typeof node !== 'object') throw new Error('tak:pushNodeUpdate: node must be object');
   const n = node as Record<string, unknown>;
   const nodeId = Number(n.node_id);
   if (!Number.isFinite(nodeId) || nodeId <= 0)
     throw new Error('tak:pushNodeUpdate: invalid node_id');
-  takServerManager.onNodeUpdate(n as Parameters<typeof takServerManager.onNodeUpdate>[0]);
+  const m = await ensureTakServerManager();
+  m.onNodeUpdate(n as Parameters<TakServerManager['onNodeUpdate']>[0]);
 });
 
 // ─── App lifecycle ─────────────────────────────────────────────────
@@ -3525,12 +3546,14 @@ void app.whenReady().then(() => {
         const saved = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8')) as unknown;
         validateTakSettings(saved);
         if (saved.autoStart) {
-          void takServerManager.start(saved).catch((e: unknown) => {
-            console.error(
-              '[TAK] Auto-start failed:',
-              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-            );
-          });
+          void ensureTakServerManager()
+            .then((m) => m.start(saved))
+            .catch((e: unknown) => {
+              console.error(
+                '[TAK] Auto-start failed:',
+                sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+              );
+            });
         }
       }
     } catch (e: unknown) {
@@ -3632,7 +3655,7 @@ app.on('before-quit', (event) => {
 
 app.on('will-quit', () => {
   try {
-    takServerManager.stop();
+    takServerManager?.stop();
   } catch (err) {
     console.debug(
       '[main] TAK server stop during will-quit (ignored):',

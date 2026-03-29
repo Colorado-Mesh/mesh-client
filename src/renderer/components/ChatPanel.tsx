@@ -177,7 +177,7 @@ function withoutDmNode(source: Record<number, number>, nodeNum: number): Record<
   ) as Record<number, number>;
 }
 
-interface Props {
+export interface ChatPanelProps {
   messages: ChatMessage[];
   channels: { index: number; name: string }[];
   myNodeNum: number;
@@ -219,7 +219,7 @@ function ChatPanel({
   isActive = true,
   onGlobalSearch,
   protocol = 'meshtastic',
-}: Props) {
+}: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [channel, setChannel] = useState(() => (channels.length > 0 ? channels[0].index : 0));
   useEffect(() => {
