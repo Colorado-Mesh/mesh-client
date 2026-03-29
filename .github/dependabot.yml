@@ -6,13 +6,11 @@ updates:
       interval: "weekly"
       day: "saturday"
     open-pull-requests-limit: 10
-    versioning-strategy: lockfile-only # Safer for Electron builds
+    versioning-strategy: lockfile-only
     groups:
-      # Grouping Electron specifically allows you to test it in isolation
       electron-framework:
         patterns:
           - "electron"
-      # Grouping everything else to reduce PR noise
       all-other-deps:
         patterns:
           - "*"
@@ -20,4 +18,16 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      # Group all GitHub Actions updates into one PR to reduce noise
+      all-actions:
+        patterns:
+          - "*"
