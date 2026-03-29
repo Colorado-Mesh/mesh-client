@@ -53,6 +53,50 @@ describe('analyzeLogs', () => {
     expect(bleCategory?.lastMessage).toBeTruthy();
   });
 
+  it('does not flag MQTT connection timeout as BLE issue', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[MQTT] Connection timeout (will reconnect): connack timeout', 'error'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'ble-connection')).toBeUndefined();
+  });
+
+  it('detects BLE connect race/timeout for meshcore', () => {
+    const entries: LogEntry[] = [
+      makeEntry(
+        '[IpcNobleConnection:meshcore] waiting on onConnected() (raced with disconnect) timeout=20000ms',
+        'warn',
+      ),
+    ];
+    const result = analyzeLogs(entries, 'meshcore');
+    const raceCategory = result.categories.find((c) => c.id === 'ble-connect-race');
+    expect(raceCategory).toBeDefined();
+    expect(raceCategory?.count).toBe(1);
+    expect(raceCategory?.severity).toBe('warning');
+  });
+
+  it('does not detect BLE connect race for meshtastic protocol', () => {
+    const entries: LogEntry[] = [
+      makeEntry(
+        '[IpcNobleConnection:meshcore] waiting on onConnected() (raced with disconnect) timeout=20000ms',
+        'warn',
+      ),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'ble-connect-race')).toBeUndefined();
+  });
+
+  it('does not flag BLE peripheral info state=disconnected as BLE issue', () => {
+    const entries: LogEntry[] = [
+      makeEntry(
+        '[BLE:meshcore] peripheral info — address= addressType=unknown rssi=-69 state=disconnected platform=darwin',
+        'log',
+      ),
+    ];
+    const result = analyzeLogs(entries, 'meshcore');
+    expect(result.categories.find((c) => c.id === 'ble-connection')).toBeUndefined();
+  });
+
   it('detects MQTT issues', () => {
     const entries: LogEntry[] = [
       makeEntry('MQTT Network error (will reconnect)'),
@@ -64,6 +108,39 @@ describe('analyzeLogs', () => {
     expect(mqttCategory).toBeDefined();
     expect(mqttCategory?.count).toBe(2);
     expect(mqttCategory?.severity).toBe('warning');
+  });
+
+  it('detects MQTT connection timeout', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[MQTT] Connection timeout (will reconnect): connack timeout', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    const mqttCategory = result.categories.find((c) => c.id === 'mqtt');
+    expect(mqttCategory).toBeDefined();
+    expect(mqttCategory?.count).toBe(1);
+  });
+
+  it('detects MQTT will reconnect messages', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[MQTT] Network error (will reconnect): socket hang up', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    const mqttCategory = result.categories.find((c) => c.id === 'mqtt');
+    expect(mqttCategory).toBeDefined();
+    expect(mqttCategory?.count).toBe(1);
+  });
+
+  it('detects MQTT issues with various formats including [MQTT] prefix', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[MQTT] Connection timeout (will reconnect): connack timeout', 'warn'),
+      makeEntry('[MQTT] Network error (will reconnect): socket hang up', 'warn'),
+      makeEntry('[MQTT] Fatal connection error: certificate has expired', 'error'),
+      makeEntry('[MQTT] Reconnecting in 500ms (attempt 1/3)', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    const mqttCategory = result.categories.find((c) => c.id === 'mqtt');
+    expect(mqttCategory).toBeDefined();
+    expect(mqttCategory?.count).toBe(4);
   });
 
   it('does not flag bare connection refused as MQTT', () => {

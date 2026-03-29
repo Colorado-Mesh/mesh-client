@@ -63,13 +63,12 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
       /gatt server is disconnected/i,
       /le-connection-abort/i,
       /gatt operation failed/i,
-      /BLE.*disconnect/i,
+      /BLE.*\s+disconnected?\b/i,
       /BLE.*fail/i,
       /BLE.*timeout/i,
       /Bluetooth.*unavailable/i,
       /Bluetooth.*fail/i,
-      /connection.*timeout/i,
-      /peripheral.*disconnect/i,
+      /peripheral.*\s+disconnected?\b/i,
     ],
     recommendation:
       'BLE connection unstable. Check distance to device and Bluetooth adapter status.',
@@ -79,8 +78,11 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     id: 'mqtt',
     label: 'MQTT Issues',
     patterns: [
-      /MQTT Network error/i,
-      /Fatal connection error/i,
+      /\[?MQTT\]?.*Network error/i,
+      /\[?MQTT\]?.*Connection timeout/i,
+      /\[?MQTT\]?.*will reconnect/i,
+      /\[?MQTT\]?.*Reconnecting in/i,
+      /\[MQTT\].*Fatal connection error/i,
       /Subscribe failed/i,
       /MQTT disconnected/i,
       /MQTT.*fail/i,
@@ -118,6 +120,18 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     ],
     recommendation: 'Connection handshake failed. Try reconnecting manually.',
     severity: 'error',
+  },
+  {
+    id: 'ble-connect-race',
+    label: 'BLE Connect Race/Timeout',
+    patterns: [
+      /waiting on onConnected.*raced with disconnect/i,
+      /IpcNobleConnection.*timeout.*onConnected/i,
+    ],
+    recommendation:
+      'BLE handshake timed out or raced with disconnect. Check BLE connection stability and distance to device.',
+    severity: 'warning',
+    protocols: ['meshcore'],
   },
   {
     id: 'auth-decrypt',

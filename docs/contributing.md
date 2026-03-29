@@ -9,18 +9,18 @@ contributor guide lives in the repository at
 ## Local Setup
 
 - Use Node 22 (`22.12.0+` recommended).
-- Install dependencies: `npm install`
-- Start dev mode: `npm run dev`
+- Install dependencies: `pnpm install`
+- Start dev mode: `pnpm run dev`
 
 ## Quality Checks
 
 Run these before opening a PR:
 
 ```bash
-npm run test:run
-npm run lint
-npm run typecheck
-npm run format:check
+pnpm run test:run
+pnpm run lint
+pnpm run typecheck
+pnpm run format:check
 ```
 
 ## Documentation Workflow
@@ -28,9 +28,9 @@ npm run format:check
 - Create/activate a local Python virtualenv first (required on many macOS setups):
   - macOS/Linux: `python3 -m venv .venv && source .venv/bin/activate`
   - Windows PowerShell: `py -3 -m venv .venv; .\.venv\Scripts\Activate.ps1`
-- Install docs deps: `npm run docs:install`
-- Build docs: `npm run docs:build`
-- Preview docs: `npm run docs:serve`
+- Install docs deps: `pnpm run docs:install`
+- Build docs: `pnpm run docs:build`
+- Preview docs: `pnpm run docs:serve`
 
 ## Pull Requests
 

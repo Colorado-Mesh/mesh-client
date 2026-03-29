@@ -33,12 +33,18 @@ export function mergeMeshcoreLastHeardFromAdvert(
   return Math.max(lastHeardToUnixSeconds(previousLastHeard ?? 0), 0);
 }
 
-export function getNodeStatus(lastHeard: number): NodeStatus {
+export function getNodeStatus(
+  lastHeard: number,
+  staleThresholdMs?: number,
+  offlineThresholdMs?: number,
+): NodeStatus {
   if (!lastHeard || !Number.isFinite(lastHeard)) return 'offline';
   const normalizedLastHeard = normalizeLastHeardMs(lastHeard);
   const diff = Date.now() - normalizedLastHeard;
-  if (diff < STALE_MS) return 'online';
-  if (diff < OFFLINE_MS) return 'stale';
+  const stale = staleThresholdMs ?? STALE_MS;
+  const offline = offlineThresholdMs ?? OFFLINE_MS;
+  if (diff <= stale) return 'online';
+  if (diff <= offline) return 'stale';
   return 'offline';
 }
 

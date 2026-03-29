@@ -19,6 +19,7 @@ import { getRoutingRowForNode, routingAnomalyNodeIds } from '../lib/diagnostics/
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
+import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { MeshNode, MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
@@ -240,7 +241,8 @@ const MapMarker = memo(
     nodes,
     protocol,
   }: MapMarkerProps) {
-    const status = getNodeStatus(node.last_heard);
+    const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
+    const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
     const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
     const nodeBadge =
       node.hw_model === 'Repeater'
@@ -552,6 +554,7 @@ export default function MapPanel({
   protocol = 'meshtastic',
 }: Props) {
   const homeNode = nodes.get(myNodeNum) ?? null;
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
 
   const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
@@ -726,7 +729,7 @@ export default function MapPanel({
       if (points.length < 2) continue;
       const node = nodes.get(nodeId);
       if (!node) continue;
-      const status = getNodeStatus(node.last_heard);
+      const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
       result.push({
         nodeId,
         positions: points.map((p) => [p.lat, p.lon]),
@@ -734,7 +737,7 @@ export default function MapPanel({
       });
     }
     return result;
-  }, [positionHistory, showPaths, nodes]);
+  }, [positionHistory, showPaths, nodes, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
 
   const savedViewport = useMapViewportStore((s) => s.viewport);
   const computedCenter: [number, number] =
@@ -754,10 +757,10 @@ export default function MapPanel({
   const statusCounts = useMemo(() => {
     const counts = { online: 0, stale: 0, offline: 0 };
     for (const n of nodesToRender) {
-      counts[getNodeStatus(n.last_heard)]++;
+      counts[getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs)]++;
     }
     return counts;
-  }, [nodesToRender]);
+  }, [nodesToRender, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
   return (
     <div
       className="h-full min-h-[500px] rounded-lg overflow-hidden border border-gray-700 relative"

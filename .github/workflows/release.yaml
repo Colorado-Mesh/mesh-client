@@ -21,31 +21,34 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            build_script: npm run dist:mac:publish
+            build_script: pnpm run dist:mac:publish
           - os: ubuntu-latest
-            build_script: npm run dist:linux:publish
+            build_script: pnpm run dist:linux:publish
           - os: windows-latest
-            build_script: npm run dist:win:publish
+            build_script: pnpm run dist:win:publish
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+
       - name: Install Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install Linux build dependencies
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install -y libudev-dev rpm
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Rebuild native dependencies
-        run: npm run rebuild
+        run: pnpm run rebuild
 
       - name: Build and Publish
         env:

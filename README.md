@@ -494,7 +494,7 @@ For a detailed explanation of every diagnostic output — routing anomalies, RF 
 
 For full local setup (shared requirements, npm/tooling install, test harness, and OS-specific steps/troubleshooting), see [docs/development-environment.md](docs/development-environment.md).
 
-Documentation uses MkDocs; if you are updating docs, install the MkDocs Python dependency (`npm run docs:install`) and run `npm run docs:build`.
+Documentation uses MkDocs; if you are updating docs, install the MkDocs Python dependency (`pnpm run docs:install`) and run `pnpm run docs:build`.
 
 For coding conventions and PR workflow, see [CONTRIBUTING.md](CONTRIBUTING.md).
 

@@ -47,11 +47,24 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
-  // meshcore-decoder's Emscripten glue sets ENVIRONMENT_IS_NODE using (process.type != "renderer").
-  // In Vite dev, process.type is often undefined, so undefined != "renderer" is true and the glue
-  // wrongly takes the Node branch (require("fs")) — browser error: cannot resolve module "fs".
-  // Electron's renderer already has process.type === "renderer"; this matches that.
   define: {
+    // Polyfill bare `process` — browser contexts don't have this global.
+    // @meshtastic/transport-web-serial's bundled core accesses process?.version and
+    // process.cwd() without browser-guarding, causing ReferenceError in the renderer.
+    // esbuild specificity: dotted-path defines (process.type below) take precedence
+    // over the bare identifier for their specific access pattern.
+    process: JSON.stringify({
+      type: 'renderer',
+      env: {},
+      version: '',
+      versions: {},
+      platform: '',
+      browser: true,
+    }),
+    // meshcore-decoder's Emscripten glue sets ENVIRONMENT_IS_NODE using (process.type != "renderer").
+    // In Vite dev, process.type is often undefined, so undefined != "renderer" is true and the glue
+    // wrongly takes the Node branch (require("fs")) — browser error: cannot resolve module "fs".
+    // Electron's renderer already has process.type === "renderer"; this matches that.
     'process.type': JSON.stringify('renderer'),
   },
   root: path.resolve(__dirname, 'src/renderer'),
@@ -62,10 +75,9 @@ export default defineConfig({
     sourcemap: false,
     chunkSizeWarningLimit: 700,
     rollupOptions: {
-      // Node built-ins for transitive deps. Do NOT list `fs` here — Rollup would emit bare
-      // `import "fs"` in the browser bundle and LetsMesh auth (meshcore-decoder WASM) fails at runtime.
-      // Use resolve.alias.fs → shims/node-fs-stub.ts instead.
-      external: ['net', 'stream', 'path', 'os', 'util', 'child_process'],
+      // All Node built-ins are redirected to browser-safe stubs via resolve.alias below.
+      // Do NOT list them as externals — Rollup would emit bare `import "stream"` etc.
+      // in the browser bundle which the renderer rejects at runtime.
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/'))
@@ -93,7 +105,17 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      // Node built-ins imported by transitive deps (e.g. @meshtastic/core 2.6.7 via
+      // @meshtastic/transport-web-serial). Listing them as rollup externals emits bare
+      // `import "os"` etc. which the browser rejects. Redirect to renderer-safe stubs instead.
       fs: path.resolve(__dirname, 'src/renderer/shims/node-fs-stub.ts'),
+      os: path.resolve(__dirname, 'src/renderer/shims/node-os-stub.ts'),
+      path: path.resolve(__dirname, 'src/renderer/shims/node-path-stub.ts'),
+      util: path.resolve(__dirname, 'src/renderer/shims/node-util-stub.ts'),
+      stream: path.resolve(__dirname, 'src/renderer/shims/node-stream-stub.ts'),
+      child_process: path.resolve(__dirname, 'src/renderer/shims/node-child-process-stub.ts'),
+      net: path.resolve(__dirname, 'src/renderer/shims/node-net-stub.ts'),
+      events: path.resolve(__dirname, 'src/renderer/shims/node-events-stub.ts'),
     },
   },
   css: {

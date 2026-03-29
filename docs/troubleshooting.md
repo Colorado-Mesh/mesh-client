@@ -4,7 +4,7 @@
 
 See [development-environment.md](development-environment.md#linux) for setup and troubleshooting details.
 
-### `npm install` fails on native module compilation
+### `pnpm install` fails on native module compilation
 
 See [development-environment.md](development-environment.md) for OS-specific prerequisite installation and troubleshooting.
 
@@ -77,8 +77,8 @@ xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
 ### App crashes on launch (macOS distributable)
 
 - **macOS 26 (Tahoe) + EXC_BREAKPOINT at launch**: electron-builder ad-hoc signing can crash during ElectronMain/V8 init before any app code runs. This repo sets `mac.identity: null` in `electron-builder.yml` so the packaged app is unsigned and avoids that re-sign path; first open may require **Right-click → Open** or clearing quarantine ([macOS: File is damaged…](#macos-file-is-damaged-and-cannot-be-opened) above). For notarized releases, set a real Developer ID in `mac.identity` and retest on macOS 26. See [electron#49522](https://github.com/electron/electron/issues/49522) and [electron-builder#9396](https://github.com/electron-userland/electron-builder/issues/9396).
-- This may also be a native module signing issue — try rebuilding: `npm run dist:mac`
-- If building from source: make sure `npm install` completed without errors
+- This may also be a native module signing issue — try rebuilding: `pnpm run dist:mac`
+- If building from source: make sure `pnpm install` completed without errors
 
 ### App shows "disconnected" but device is still on
 
@@ -93,13 +93,13 @@ Open the **Log** panel (right rail), enable **debug** if needed, reproduce the p
 
 `[permissions] checkHandler: media → denied` and `web-app-installation → denied` are expected. The app only uses **serial** and **geolocation** — media and web-app-installation are intentionally denied.
 
-### `npm run dist:mac` fails with `GH_TOKEN` / "Cannot cleanup"
+### `pnpm run dist:mac` fails with `GH_TOKEN` / "Cannot cleanup"
 
-electron-builder publishes to GitHub when it thinks it's in CI. Local builds use `--publish never` so artifacts land in `release/` without a token. Tag releases use `npm run dist:mac:publish` (and `:linux:publish` / `:win:publish`) with `GH_TOKEN` set — see `.github/workflows/release.yaml`.
+electron-builder publishes to GitHub when it thinks it's in CI. Local builds use `--publish never` so artifacts land in `release/` without a token. Tag releases use `pnpm run dist:mac:publish` (and `:linux:publish` / `:win:publish`) with `GH_TOKEN` set — see `.github/workflows/release.yaml`.
 
 ### `[DEP0190]` when running electron-builder
 
-Node deprecates `spawn(..., { shell: true })` with an args array. This project patches `app-builder-lib` via `patch-package` so macOS/Linux use `shell: false` for the npm dependency collector. Re-run `npm install` if you upgrade electron-builder and the warning returns.
+Node deprecates `spawn(..., { shell: true })` with an args array. This project patches `app-builder-lib` via `patch-package` so macOS/Linux use `shell: false` for the npm dependency collector. Re-run `pnpm install` if you upgrade electron-builder and the warning returns.
 
 ### `duplicate dependency references` during dist
 
@@ -110,23 +110,23 @@ npm's JSON tree lists hoisted packages with many duplicate refs (one per edge). 
 The app uses npm package overrides to force `follow-redirects` and `cacheable-request` onto versions that use the WHATWG URL API, which removes this warning. To trace the source of any deprecation, run:
 
 ```bash
-npm run trace-deprecation
+pnpm run trace-deprecation
 ```
 
 ### "A native module failed to load" dialog on startup
 
 **Cause**: `@stoprocent/noble` (or `@serialport/bindings-cpp`) was compiled for a different Electron ABI — common after an Electron or Node version change.
 
-**Fix**: Run `npm install` (the postinstall script rebuilds native modules for the correct ABI automatically).
+**Fix**: Run `pnpm install` (the postinstall script rebuilds native modules for the correct ABI automatically).
 
-- If you still see dlopen errors after switching machines or OSes, delete `node_modules` and run a clean `npm install`.
+- If you still see dlopen errors after switching machines or OSes, delete `node_modules` and run a clean `pnpm install`.
 - **Windows**: Also ensure the [Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) is installed.
 
 ### `dist:win` fails with "space in the path" or `EPERM` on native modules
 
 **Symptoms**
 
-- `Attempting to build a module with a space in the path` during `npm run dist:win` (or `npm run rebuild`).
+- `Attempting to build a module with a space in the path` during `pnpm run dist:win` (or `pnpm run rebuild`).
 - `EPERM: operation not permitted` when the rebuild tries to replace a locked `.node` file.
 
 **Cause**
@@ -136,9 +136,9 @@ npm run trace-deprecation
 
 **Fix**
 
-1. **Use a path without spaces** (strongly recommended): clone or copy the repo to e.g. `C:\dev\mesh-client`, then `npm install` and `npm run dist:win` from there.
+1. **Use a path without spaces** (strongly recommended): clone or copy the repo to e.g. `C:\dev\mesh-client`, then `pnpm install` and `pnpm run dist:win` from there.
 2. **Clear the lock before rebuild**: quit any running Mesh-Client/Electron dev instances, then delete the affected `build` folder under `node_modules` and retry.
-3. **Rebuild then dist**: `npm run rebuild` — if that succeeds, run `npm run dist:win`.
+3. **Rebuild then dist**: `pnpm run rebuild` — if that succeeds, run `pnpm run dist:win`.
 
 CI builds avoid both issues by using short paths and clean agents; local Windows builds need the same constraints.
 

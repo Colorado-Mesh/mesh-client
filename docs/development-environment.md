@@ -10,7 +10,7 @@ These requirements apply to all platforms.
 
 - Git
 - Node.js **22.12.0+** (match [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml); `CONTRIBUTING.md` recommends the same)
-- npm **9+**
+- pnpm **9+**
 - Python 3 + `pip` (needed for MkDocs documentation build)
 
 Verify:
@@ -18,7 +18,7 @@ Verify:
 ```bash
 git --version
 node --version
-npm --version
+pnpm --version
 ```
 
 ### MkDocs (documentation) tooling
@@ -33,67 +33,162 @@ Docs are built with MkDocs Material.
      - `py -3 -m venv .venv`
      - `.\.venv\Scripts\Activate.ps1`
 2. Install the docs dependencies:
-   - `npm run docs:install`
+   - `pnpm run docs:install`
    - or (manual): `python3 -m pip install -r docs/requirements.txt`
 3. Build locally:
-   - `npm run docs:build`
+   - `pnpm run docs:build`
 4. Preview locally:
-   - `npm run docs:serve`
+   - `pnpm run docs:serve`
 
-If `npm run docs:install` fails with `externally-managed-environment`, activate `.venv` and rerun.
+If `pnpm run docs:install` fails with `externally-managed-environment`, activate `.venv` and rerun.
 
 ### 2) Clone and install
 
 ```bash
 git clone https://github.com/Colorado-Mesh/mesh-client
 cd mesh-client
-npm install
+pnpm install
 ```
 
 If you are updating from an older clone, use a clean install when troubleshooting native module issues:
 
 ```bash
 rm -rf node_modules package-lock.json
-npm install
+pnpm install
 ```
 
 ### 3) Run the app
 
-- Dev mode (hot reload): `npm run dev`
-- Production-like local start: `npm start`
+- Dev mode (hot reload): `pnpm run dev`
+- Production-like local start: `pnpm start`
 
-### Common npm commands
+### Common pnpm commands
 
 Use these from the repository root:
 
 ```bash
 # App run/build
-npm run dev
-npm start
-npm run build
+pnpm run dev
+pnpm start
+pnpm run build
 
 # Platform packaging (binary artifacts in release/)
-npm run dist:mac
-npm run dist:linux
-npm run dist:win
+pnpm run dist:mac
+pnpm run dist:linux
+pnpm run dist:win
 
 # Quality checks
-npm run test:run
-npm run lint
-npm run typecheck
-npm run format:check
+pnpm run test:run
+pnpm run lint
+pnpm run typecheck
+pnpm run format:check
 
 # Docs
-npm run docs:install
-npm run docs:build
-npm run docs:serve
+pnpm run docs:install
+pnpm run docs:build
+pnpm run docs:serve
 ```
+
+### All Scripts Reference
+
+Complete reference of all npm scripts in `package.json`, organized by category.
+
+#### Build
+
+| Script                   | Description                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `build`                  | Full production build: main (minified) + preload + renderer                    |
+| `build:main`             | Build main process (no minify) → `dist-electron/main/index.js`                 |
+| `build:main:prod`        | Build main process (minified) → `dist-electron/main/index.js`                  |
+| `build:main:meta`        | Build main with metadata JSON (no minify) → `dist-electron/main/metafile.json` |
+| `build:main:minify-meta` | Build main with metadata JSON (minified) → `dist-electron/main/meta.json`      |
+| `build:main:size`        | Print main bundle size                                                         |
+| `build:preload`          | Build preload script → `dist-electron/preload/index.js`                        |
+| `build:renderer`         | Build renderer (React app) via Vite → `dist/`                                  |
+
+#### Run
+
+| Script              | Description                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `dev`               | Hot-reload dev mode: builds main/preload in watch mode + Vite dev server + Electron |
+| `start`             | Production-like local start: runs `build` then launches Electron                    |
+| `electron:open`     | Launch Electron (requires prior build)                                              |
+| `trace-deprecation` | Run with Node deprecation traces enabled                                            |
+
+#### Package (distributables)
+
+| Script               | Description                                |
+| -------------------- | ------------------------------------------ |
+| `dist`               | Build for current platform                 |
+| `dist:mac`           | Build macOS .dmg + .zip → `release/`       |
+| `dist:mac:publish`   | Build macOS and upload to release server   |
+| `dist:linux`         | Build Linux .AppImage + .deb → `release/`  |
+| `dist:linux:publish` | Build Linux and upload to release server   |
+| `dist:win`           | Build Windows .exe installer → `release/`  |
+| `dist:win:publish`   | Build Windows and upload to release server |
+
+#### Test
+
+| Script         | Description                   |
+| -------------- | ----------------------------- |
+| `test`         | Run tests in watch mode       |
+| `test:run`     | Run tests once (CI mode)      |
+| `test:verbose` | Run tests with verbose output |
+
+#### Lint / Format
+
+| Script         | Description                     |
+| -------------- | ------------------------------- |
+| `lint`         | Run ESLint (type-aware)         |
+| `lint:fix`     | Run ESLint with auto-fix        |
+| `format`       | Format all code via Prettier    |
+| `format:check` | Check formatting without fixing |
+
+#### Typecheck
+
+| Script      | Description                               |
+| ----------- | ----------------------------------------- |
+| `typecheck` | TypeScript check: renderer + main process |
+
+#### Quality Checks
+
+| Script                | Description                                                |
+| --------------------- | ---------------------------------------------------------- |
+| `check:log-injection` | Detect unsanitized user data in log calls                  |
+| `check:db-migrations` | Verify SQLite migrations are valid                         |
+| `check:ipc-contract`  | Verify IPC channel contracts between main/preload/renderer |
+
+#### Documentation
+
+| Script         | Description                         |
+| -------------- | ----------------------------------- |
+| `docs:install` | Install MkDocs Python dependencies  |
+| `docs:build`   | Build static docs to `site/`        |
+| `docs:serve`   | Serve docs locally with live reload |
+
+#### Setup / Helpers
+
+| Script             | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `setup:actionlint` | Install actionlint for GitHub workflow linting           |
+| `setup:build-deps` | Install native build dependencies                        |
+| `setup:dialout`    | Add user to dialout group for serial port access (Linux) |
+| `rebuild`          | Rebuild native Node modules for Electron                 |
+
+#### Lifecycle (automatic)
+
+| Script        | Description                            |
+| ------------- | -------------------------------------- |
+| `preinstall`  | Enforce pnpm as package manager        |
+| `postinstall` | Rebuild native modules + apply patches |
+| `prepare`     | Enable git hooks                       |
+| `predist`     | Dedupe packages before packaging       |
 
 ### 4) Test harness setup and local quality checks
 
 This section is the project test harness setup.
 
-Installed via `npm install` (from `package.json`):
+Installed via `pnpm install` (from `package.json`):
 
 - `vitest` and renderer/main test dependencies
 - `eslint`
@@ -102,39 +197,53 @@ Installed via `npm install` (from `package.json`):
 
 Not installed by npm (install separately when needed):
 
-- `actionlint` (recommended for workflow linting; run `npm run setup:actionlint` or install system-wide)
+- `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or install system-wide)
 - `docker` and `act` (only if you run GitHub Actions locally)
 - Python 3 + `venv` + MkDocs Python deps (for docs checks/builds)
 
 Run these quality checks before opening a PR:
 
 ```bash
-npm run test:run
-npm run lint
-npm run typecheck
-npm run format:check
+pnpm run test:run
+pnpm run lint
+pnpm run typecheck
+pnpm run format:check
 ```
 
 Other useful test commands:
 
 - `npm test` (watch mode)
-- `npm run test:verbose` (verbose failures)
+- `pnpm run test:verbose` (verbose failures)
 
 ### 5) Building a distributable
 
 Use the platform-specific packaging command:
 
 ```bash
-npm run dist:mac      # macOS -> .dmg + .zip in release/
-npm run dist:linux    # Linux -> .AppImage + .deb in release/
-npm run dist:win      # Windows -> .exe installer in release/
+pnpm run dist:mac      # macOS -> .dmg + .zip in release/
+pnpm run dist:linux    # Linux -> .AppImage + .deb in release/
+pnpm run dist:win      # Windows -> .exe installer in release/
 ```
 
 Output goes to the `release/` directory.
 
+### Build analysis
+
+To analyze the main process bundle size and composition:
+
+```bash
+pnpm run build:main:minify-meta
+```
+
+This generates `dist-electron/main/meta.json`. Upload this file to [esbuild's online analyzer](https://esbuild.github.io/analyze/) to visualize:
+
+- Bundle size by dependency
+- Code that could be externalized
+- Minification effectiveness
+
 ### 6) Git hooks and pre-commit behavior
 
-After `npm install`, repo hooks are enabled via `core.hooksPath` and pre-commit runs checks (format, lint, typecheck, audit, actionlint, tests).
+After `pnpm install`, repo hooks are enabled via `core.hooksPath` and pre-commit runs checks (format, lint, typecheck, audit, actionlint, tests).
 
 Emergency bypass is available:
 
@@ -160,14 +269,14 @@ act --container-architecture linux/amd64
 These scripts try to install optional tooling automatically. If they fail (for example, missing `sudo`/admin rights), follow the manual steps in this doc instead.
 
 1. Install `actionlint` (used by the git pre-commit hook):
-   - `npm run setup:actionlint`
+   - `pnpm run setup:actionlint`
    - This installs into `.githooks/bin` so the hook can find it.
 2. Install native build dependencies:
-   - `npm run setup:build-deps`
+   - `pnpm run setup:build-deps`
    - Linux/macOS: attempts to install what native builds need (requires sudo where applicable).
    - Windows: prints a message to install Visual Studio Build Tools manually.
 3. (Linux only) Fix serial port permissions:
-   - `npm run setup:dialout`
+   - `pnpm run setup:dialout`
    - Adds your user to the `dialout` group (requires sudo + re-login).
 
 ### 9) Optional editor/tooling
@@ -198,8 +307,8 @@ These scripts try to install optional tooling automatically. If they fail (for e
 ```bash
 git clone https://github.com/Colorado-Mesh/mesh-client
 cd mesh-client
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ### Bluetooth permissions
@@ -245,8 +354,8 @@ xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
 ```powershell
 git clone https://github.com/Colorado-Mesh/mesh-client
 cd mesh-client
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ### Serial device driver reminder
@@ -264,12 +373,12 @@ Fix:
 1. Install/confirm Visual Studio Build Tools with Desktop C++ workload.
 2. Upgrade node-gyp:
    ```bash
-   npm install node-gyp@latest -g
-   npm install node-gyp@latest --save-dev
+   pnpm install node-gyp@latest -g
+   pnpm install node-gyp@latest --save-dev
    ```
 3. Restart terminal and rerun:
    ```bash
-   npm install
+   pnpm install
    ```
 
 #### "Could not find any Python installation to use"
@@ -280,7 +389,7 @@ Fix:
 
 1. Install Python 3 and add it to PATH.
 2. Restart terminal.
-3. Retry `npm install` (or `npm run dist:win`).
+3. Retry `pnpm install` (or `pnpm run dist:win`).
 4. If still failing, set Python path with `npm config set python ...`.
 
 #### `dist:win` fails with path spaces or `EPERM`
@@ -289,8 +398,8 @@ Fix:
 - Close running Electron/Node processes before rebuild
 - Run:
   ```bash
-  npm run rebuild
-  npm run dist:win
+  pnpm run rebuild
+  pnpm run dist:win
   ```
 
 ## Linux
@@ -328,8 +437,8 @@ sudo dnf install python3 nspr nss
 ```bash
 git clone https://github.com/Colorado-Mesh/mesh-client
 cd mesh-client
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ### Serial permissions
@@ -384,8 +493,8 @@ If you encounter pairing issues (e.g., "Connection attempt failed" or device was
 The supported dev and local run flows are:
 
 ```bash
-npm run dev
-npm start
+pnpm run dev
+pnpm start
 ```
 
 ARM (for example Raspberry Pi) may also require:
@@ -405,18 +514,18 @@ npm config delete devdir --global
 unset npm_config_devdir NPM_CONFIG_DEVDIR
 ```
 
-#### SIGILL during `npm install` (`electron exited with signal SIGILL`)
+#### SIGILL during `pnpm install` (`electron exited with signal SIGILL`)
 
 Install without running Electron rebuild first:
 
 ```bash
-MESHTASTIC_SKIP_ELECTRON_REBUILD=1 npm install
+MESHTASTIC_SKIP_ELECTRON_REBUILD=1 pnpm install
 ```
 
 Then run rebuild on a host where Electron executes correctly:
 
 ```bash
-npm run rebuild
+pnpm run rebuild
 ```
 
 #### SIGSEGV on startup (`electron exited with signal SIGSEGV`)
@@ -424,19 +533,19 @@ npm run rebuild
 Use:
 
 ```bash
-npm run build && npx electron . --disable-gpu
+pnpm run build && npx electron . --disable-gpu
 ```
 
 Or:
 
 ```bash
-npm run electron:open -- --disable-gpu
+pnpm run electron:open -- --disable-gpu
 ```
 
 Optional persistent mitigation:
 
 - `export MESH_CLIENT_DISABLE_GPU=1`
-- `ELECTRON_OZONE_PLATFORM_HINT=x11 npm run electron:open`
+- `ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm run electron:open`
 
 #### `Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED`
 

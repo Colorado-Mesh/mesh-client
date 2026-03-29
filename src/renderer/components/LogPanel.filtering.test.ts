@@ -122,6 +122,48 @@ describe('isDeviceEntry — MeshCore protocol', () => {
       isDeviceEntry(entry('main', '[BLE:meshcore] connect coalesce await failed — x'), 'meshcore'),
     ).toBe(true);
   });
+
+  it('classifies [IpcNobleConnection:meshcore] message as MeshCore device entry', () => {
+    expect(
+      isDeviceEntry(
+        entry(
+          'main',
+          '[IpcNobleConnection:meshcore] waiting on onConnected() (raced with disconnect) timeout=20000ms',
+        ),
+        'meshcore',
+      ),
+    ).toBe(true);
+  });
+
+  it('does NOT classify [IpcNobleConnection:meshcore] message as Meshtastic device entry', () => {
+    expect(
+      isDeviceEntry(
+        entry(
+          'main',
+          '[IpcNobleConnection:meshcore] waiting on onConnected() (raced with disconnect) timeout=20000ms',
+        ),
+        'meshtastic',
+      ),
+    ).toBe(false);
+  });
+
+  it('classifies [IpcNobleConnection:meshtastic] message as Meshtastic device entry', () => {
+    expect(
+      isDeviceEntry(
+        entry('main', '[IpcNobleConnection:meshtastic] peripheral disconnected'),
+        'meshtastic',
+      ),
+    ).toBe(true);
+  });
+
+  it('does NOT classify [IpcNobleConnection:meshtastic] message as MeshCore device entry', () => {
+    expect(
+      isDeviceEntry(
+        entry('main', '[IpcNobleConnection:meshtastic] peripheral disconnected'),
+        'meshcore',
+      ),
+    ).toBe(false);
+  });
 });
 
 describe('isDeviceEntry — no protocol (fallback)', () => {

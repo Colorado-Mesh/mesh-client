@@ -2,12 +2,6 @@
 # Run format check, lint, and tests before every commit.
 # To skip in an emergency: git commit --no-verify
 
-# npm 11+ warns on unknown config keys; `devdir` is legacy (node-gyp) and is not an npm
-# option. Some environments set npm_config_devdir / NPM_CONFIG_DEVDIR — unset so hook
-# npm invocations do not spam: "Unknown env config devdir".
-unset npm_config_devdir 2>/dev/null
-unset NPM_CONFIG_DEVDIR 2>/dev/null
-
 # Ensure locally installed tooling (e.g. `actionlint`) is on PATH.
 REPO_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 if [ -d "$REPO_ROOT/.githooks/bin" ]; then
@@ -20,7 +14,7 @@ STAGED_LIST=$(mktemp)
 trap 'rm -f "$STAGED_LIST"' EXIT
 git diff --cached --name-only --diff-filter=ACM > "$STAGED_LIST" || exit 1
 
-npm run format || exit 1
+pnpm run format || exit 1
 
 if [ -s "$STAGED_LIST" ]; then
   while IFS= read -r f || [ -n "$f" ]; do
@@ -30,11 +24,11 @@ if [ -s "$STAGED_LIST" ]; then
   done < "$STAGED_LIST"
 fi
 
-npm run lint || exit 1
-npm run typecheck || exit 1
-npm run check:log-injection || exit 1
-npm run check:db-migrations || exit 1
-npm run check:ipc-contract || exit 1
-npm audit --audit-level=high || exit 1
+pnpm run lint || exit 1
+pnpm run typecheck || exit 1
+pnpm run check:log-injection || exit 1
+pnpm run check:db-migrations || exit 1
+pnpm run check:ipc-contract || exit 1
+pnpm audit --audit-level=high || exit 1
 actionlint || exit 1
-npm run test:run || exit 1
+pnpm run test:run || exit 1

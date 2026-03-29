@@ -3543,7 +3543,16 @@ void app.whenReady().then(() => {
     const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
     try {
       if (fs.existsSync(takSettingsPath)) {
-        const saved = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8')) as unknown;
+        const raw = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
+        // Backfill autoStart for settings files saved before the field was added.
+        if (
+          raw &&
+          typeof raw === 'object' &&
+          typeof (raw as Record<string, unknown>).autoStart !== 'boolean'
+        ) {
+          (raw as Record<string, unknown>).autoStart = false;
+        }
+        const saved = raw as unknown;
         validateTakSettings(saved);
         if (saved.autoStart) {
           void ensureTakServerManager()
