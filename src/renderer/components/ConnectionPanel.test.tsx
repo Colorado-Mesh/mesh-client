@@ -459,7 +459,7 @@ describe("ConnectionPanel Meshtastic MQTT presets — Liam's server", () => {
 
     // First activate Liam's, then switch away
     await user.click(screen.getByRole('button', { name: "Liam's" }));
-    await user.click(screen.getByRole('button', { name: 'TLS :8883' }));
+    await user.click(screen.getByRole('button', { name: 'MQTT :1883' }));
 
     expect(screen.queryByText(/uplink-only/i)).not.toBeInTheDocument();
   });

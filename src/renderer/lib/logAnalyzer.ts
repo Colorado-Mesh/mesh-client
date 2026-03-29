@@ -99,7 +99,7 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     label: 'MQTT Reconnect Limit',
     patterns: [/Connection lost after \d+ reconnect attempt/i],
     recommendation:
-      'MQTT gave up after max reconnects. Confirm the broker is reachable, credentials and port (1883 / 8883 TLS) are correct, and firewalls allow outbound traffic.',
+      'MQTT gave up after max reconnects. Confirm the broker is reachable, credentials and port are correct, and firewalls allow outbound traffic.',
     severity: 'warning',
   },
   {

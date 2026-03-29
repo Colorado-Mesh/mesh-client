@@ -25,7 +25,6 @@ import {
   isMeshtasticOfficialBrokerSettings,
   MESHTASTIC_LIAM_1883,
   MESHTASTIC_OFFICIAL_1883,
-  MESHTASTIC_OFFICIAL_8883,
   MESHTASTIC_OFFICIAL_PRESET_DEFAULTS,
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
@@ -576,16 +575,15 @@ export default function ConnectionPanel({
     if (saved === 'letsmesh' || saved === 'ripple') return saved;
     return 'custom';
   });
-  const [meshtasticPreset, setMeshtasticPreset] = useState<
-    'official-tls' | 'official-plain' | 'liam' | 'custom'
-  >(() => {
-    const s = loadMqttSettings();
-    if (isLiamBrokerSettings(s)) return 'liam';
-    if (!isMeshtasticOfficialBrokerSettings(s)) return 'custom';
-    if (s.port === 8883) return 'official-tls';
-    if (s.port === 1883) return 'official-plain';
-    return 'custom';
-  });
+  const [meshtasticPreset, setMeshtasticPreset] = useState<'official-plain' | 'liam' | 'custom'>(
+    () => {
+      const s = loadMqttSettings();
+      if (isLiamBrokerSettings(s)) return 'liam';
+      if (!isMeshtasticOfficialBrokerSettings(s)) return 'custom';
+      if (s.port === 1883) return 'official-plain';
+      return 'custom';
+    },
+  );
 
   // Persist Meshtastic MQTT settings with debounce
   useEffect(() => {
@@ -1912,7 +1910,6 @@ export default function ConnectionPanel({
               >
                 {(
                   [
-                    { id: 'official-tls' as const, label: 'TLS :8883' },
                     { id: 'official-plain' as const, label: 'MQTT :1883' },
                     { id: 'liam' as const, label: "Liam's" },
                     { id: 'custom' as const, label: 'Custom' },
@@ -1923,12 +1920,7 @@ export default function ConnectionPanel({
                     type="button"
                     onClick={() => {
                       setMeshtasticPreset(id);
-                      if (id === 'official-tls') {
-                        setMqttSettings({
-                          ...MESHTASTIC_OFFICIAL_8883,
-                          topicPrefix: mqttSettings.topicPrefix,
-                        });
-                      } else if (id === 'official-plain') {
+                      if (id === 'official-plain') {
                         setMqttSettings({
                           ...MESHTASTIC_OFFICIAL_1883,
                           topicPrefix: mqttSettings.topicPrefix,
@@ -2226,7 +2218,15 @@ export default function ConnectionPanel({
               <label htmlFor="mqtt-topic-prefix" className="text-xs text-muted">
                 Topic Prefix
               </label>
-              <HelpTooltip text="Each country/region has its own Topic setting; please research the correct hierarchy. Example: Colorado is msh/US/CO" />
+              <HelpTooltip
+                text={
+                  protocol === 'meshtastic'
+                    ? 'msh/[Country]/[State], e.g. msh/CO/US'
+                    : meshcorePreset === 'letsmesh'
+                      ? 'meshcore/{IATA}, e.g. meshcore/DEN'
+                      : 'MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO'
+                }
+              />
             </div>
             <input
               id="mqtt-topic-prefix"
