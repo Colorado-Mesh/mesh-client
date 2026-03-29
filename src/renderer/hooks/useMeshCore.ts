@@ -228,6 +228,8 @@ const WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS = 2;
 const WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS = 1_500;
 // Contact list streaming is O(N contacts) — use a generous timeout across all platforms.
 const MESHCORE_INIT_TIMEOUT_MS = 60_000;
+/** Companion Ok/Err for `sendFloodAdvert` — meshcore.js has no internal timeout. */
+const MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS = 25_000;
 
 function serializeErrorLike(value: unknown): string {
   if (value instanceof Error) return value.message;
@@ -2753,9 +2755,24 @@ export function useMeshCore() {
   }, [buildNodesFromContacts, selfInfo]);
 
   const sendAdvert = useCallback(async () => {
-    if (!connRef.current) return;
+    const conn = connRef.current;
+    if (!conn) {
+      throw new Error('Not connected to radio');
+    }
     console.debug('[useMeshCore] sendAdvert');
-    await connRef.current.sendFloodAdvert();
+    try {
+      await withTimeout(
+        conn.sendFloodAdvert(),
+        MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
+        'MeshCore send flood advert',
+      );
+    } catch (e: unknown) {
+      if (e == null || (e instanceof Error && e.message === '')) {
+        console.warn('[useMeshCore] sendAdvert: empty rejection from radio');
+        throw new Error('MeshCore advert rejected by radio');
+      }
+      throw e;
+    }
   }, []);
 
   const syncClock = useCallback(async () => {
