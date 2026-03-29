@@ -9,47 +9,47 @@ See [docs/development-environment.md](docs/development-environment.md) for full 
 **Node version:** Use **Node 22** (22.12.0+ recommended). CI (`.github/workflows/`) runs on Node 22 for build, test, and release; using the same version locally avoids environment drift and Linux-specific failures (e.g. native rebuilds) on older Node.
 
 ```bash
-npm install
-npm run dev       # Start in development mode
-npm run build     # Production build
-npm run lint      # Run ESLint (type-aware; see Code style below)
-npm run typecheck # TypeScript check (renderer + main/preload)
-npm run format    # Prettier write — ts, tsx, js, jsx, json, css, md
-npm run format:check   # Prettier check only (no writes)
-npm run rebuild   # Rebuild native modules (@stoprocent/noble) for current Electron
+pnpm install
+pnpm run dev       # Start in development mode
+pnpm run build     # Production build
+pnpm run lint      # Run ESLint (type-aware; see Code style below)
+pnpm run typecheck # TypeScript check (renderer + main/preload)
+pnpm run format    # Prettier write — ts, tsx, js, jsx, json, css, md
+pnpm run format:check   # Prettier check only (no writes)
+pnpm run rebuild   # Rebuild native modules (@stoprocent/noble) for current Electron
 ```
 
-**Main process bundle:** `build:main` / `build:main:prod` use esbuild on `src/main/index.ts`. Large dependencies (`node-forge`, `jszip`, `mqtt`, `@meshtastic/protobufs`, `@bufbuild/protobuf`) are passed as `--external` so they are **not** concatenated into `dist-electron/main/index.js`; Node resolves them from `node_modules` at runtime (they remain packaged in the app asar). Analyze bundle composition with `npm run build:main:meta` (writes `dist-electron/main/metafile.json` for [esbuild’s metafile analyzer](https://esbuild.github.io/analytics/); it rebuilds `dist-electron/main/index.js` without minify — run `npm run build:main:prod` afterward if you need the minified main for `npm start` / `dist`). Compare dev vs minified outfile sizes with `npm run build:main:compare-size`.
+**Main process bundle:** `build:main` / `build:main:prod` use esbuild on `src/main/index.ts`. Large dependencies (`node-forge`, `jszip`, `mqtt`, `@meshtastic/protobufs`, `@bufbuild/protobuf`) are passed as `--external` so they are **not** concatenated into `dist-electron/main/index.js`; Node resolves them from `node_modules` at runtime (they remain packaged in the app asar). Analyze bundle composition with `pnpm run build:main:meta` (writes `dist-electron/main/metafile.json` for [esbuild’s metafile analyzer](https://esbuild.github.io/analytics/); it rebuilds `dist-electron/main/index.js` without minify — run `pnpm run build:main:prod` afterward if you need the minified main for `pnpm start` / `dist`). Compare dev vs minified outfile sizes with `pnpm run build:main:compare-size`.
 
 **Running CI locally:** With [act](https://github.com/nektos/act) installed, run `act --container-architecture linux/amd64` so Linux jobs use the correct architecture. The test-results artifact upload step is skipped when running under act (actor `nektos/act`); all other steps run as on GitHub.
 
 **actionlint:** Install [actionlint](https://github.com/rhysd/actionlint) so the pre-commit hook can lint GitHub Actions workflows.
 
-Recommended (auto-install): `npm run setup:actionlint` (installs into `.githooks/bin` so the hook can find it).
+Recommended (auto-install): `pnpm run setup:actionlint` (installs into `.githooks/bin` so the hook can find it).
 
 Manual fallback:
 
 - macOS: `brew install actionlint`
 - Windows/Linux: see [releases](https://github.com/rhysd/actionlint/releases) for prebuilt binaries.
 
-After `npm install`, the repo’s git hooks are enabled (`core.hooksPath` → `.githooks`). On every commit, the **pre-commit** hook runs in order:
+After `pnpm install`, the repo’s git hooks are enabled (`core.hooksPath` → `.githooks`). On every commit, the **pre-commit** hook runs in order:
 
-1. **`npm run format`** — Prettier **writes** to matching files (not `format:check`).
+1. **`pnpm run format`** — Prettier **writes** to matching files (not `format:check`).
 2. **Re-stage** — Only files that were already staged are re-added, so unstaged WIP is not swept in.
-3. **`npm run lint`**
-4. **`npm run typecheck`** — TypeScript check for renderer and main/preload.
-5. **`npm run check:log-injection`** — Ensures main-process `console.*` calls do not pass raw error variables (`err`, `e`, `error`, `reason`) without `sanitizeLogMessage()` at the call site. See [Log injection (CodeQL js/log-injection)](#log-injection-codeql-jslog-injection) below.
-6. **`npm audit`** — Fails the commit if npm reports vulnerabilities.
+3. **`pnpm run lint`**
+4. **`pnpm run typecheck`** — TypeScript check for renderer and main/preload.
+5. **`pnpm run check:log-injection`** — Ensures main-process `console.*` calls do not pass raw error variables (`err`, `e`, `error`, `reason`) without `sanitizeLogMessage()` at the call site. See [Log injection (CodeQL js/log-injection)](#log-injection-codeql-jslog-injection) below.
+6. **`pnpm audit`** — Fails the commit if pnpm reports vulnerabilities.
 7. **`actionlint`** — Lints `.github/workflows/*.yml`; must be installed (see above).
-8. **`npm run test:run`** — Fails the commit if tests fail.
+8. **`pnpm run test:run`** — Fails the commit if tests fail.
 
 To skip the hook in an emergency: `git commit --no-verify`.
 
-If `@stoprocent/noble` or other native addons fail after changing Node or Electron versions, run `npm run rebuild` (same script as `postinstall`).
+If `@stoprocent/noble` or other native addons fail after changing Node or Electron versions, run `pnpm run rebuild` (same script as `postinstall`).
 
 **Windows**: If `dist:win` or `rebuild` fails with “space in the path” or `EPERM`, use a path **without spaces**, close Electron/Node processes, and see README troubleshooting. For “Could not find any Python installation to use”, install Python 3 and add it to PATH — see README Windows prerequisites and troubleshooting.
 
-**Linux sandbox / SIGILL**: If `npm install` fails with `electron exited with signal SIGILL`, use `MESHTASTIC_SKIP_ELECTRON_REBUILD=1 npm install`, then run `npm run rebuild` where the Electron binary runs (see README Linux troubleshooting).
+**Linux sandbox / SIGILL**: If `pnpm install` fails with `electron exited with signal SIGILL`, use `MESHTASTIC_SKIP_ELECTRON_REBUILD=1 pnpm install`, then run `pnpm run rebuild` where the Electron binary runs (see README Linux troubleshooting).
 
 **npm 11 — `Unknown env config "devdir"`:** npm only recognizes its own config keys. `devdir` is a legacy node-gyp setting; if it appears in `~/.npmrc` or as `npm_config_devdir` / `NPM_CONFIG_DEVDIR` in the environment (some IDEs or sandboxes inject it), npm 11 prints a warning. Fix:
 
@@ -60,7 +60,7 @@ The repo’s **pre-commit** hook unsets those variables before running npm so lo
 
 ## Code style
 
-Run `npm run lint` before pushing. ESLint is configured with:
+Run `pnpm run lint` before pushing. ESLint is configured with:
 
 - **Import order** — `eslint-plugin-simple-import-sort` on imports and exports; no duplicate imports; newline after imports.
 - **Type-only imports** — `@typescript-eslint/consistent-type-imports` (use `import type { … }` where appropriate).
@@ -263,9 +263,9 @@ If you are fixing a regression, always add or update a test that reproduces the 
 **Accessibility tests:** `src/renderer/vitest.setup.ts` registers **vitest-axe**. New or heavily changed panels should include a test that renders the component and asserts no axe violations, following existing component tests (e.g. `await axe(container)` and `expect(results).toHaveNoViolations()`).
 
 ```bash
-npm run test:run      # run once (also runs automatically on git commit)
-npm test              # watch mode
-npm run test:verbose  # verbose output with full violation details
+pnpm run test:run      # run once (also runs automatically on git commit)
+pnpm test              # watch mode
+pnpm run test:verbose  # verbose output with full violation details
 ```
 
 ## AI Tools Policy
@@ -281,7 +281,7 @@ AI coding assistants (Claude Code, GitHub Copilot, etc.) are welcome for brainst
 
 Every PR must be manually tested before review. No exceptions for "trivial" changes.
 
-1. Run the app locally and exercise the changed functionality end-to-end (`npm start`). On Linux, Bluetooth uses Web Bluetooth which requires no special setup.
+1. Run the app locally and exercise the changed functionality end-to-end (`pnpm start`). On Linux, Bluetooth uses Web Bluetooth which requires no special setup.
 2. Open Chrome DevTools for **both** the Main process (via the terminal) and the Renderer process (Ctrl/Cmd+Shift+I) — confirm no new errors or warnings.
 3. If you changed connection logic, test on an actual or emulated device if possible.
 
@@ -294,7 +294,7 @@ Before submitting a PR that touches IPC or the preload layer:
 - **Main→renderer events**: One-way `webContents.send` / `ipcRenderer.on` channels sometimes use **kebab-case** without a domain prefix (e.g. `bluetooth-devices-discovered`, `serial-ports-discovered`) for historical or Chromium-callback wiring. **Invoke** channels should stay `domain:action`; when adding new **events**, prefer a consistent prefix (e.g. `ble:devices-discovered`) if you are touching both main and preload anyway; otherwise document the channel in the preload API.
 - **Cross-platform UI**: Test or at minimum visually verify your changes on your platform; flag in the PR if you could not test on other OSes.
 - **Platform-specific error guidance**: Each transport has a `humanize*Error()` helper in `src/renderer/lib/connection.ts` (`humanizeBleError`, `humanizeSerialError`, `humanizeHttpError`). When adding new error paths for a transport, extend the relevant helper rather than inlining error strings in components. Use `process.platform` (injected via main-process IPC or `window.electronAPI.session`) to gate platform-specific copy: Linux `dialout` guidance for Serial; WinRT/Device Manager guidance for BLE on Windows; Bonjour/iTunes hint for HTTP `.local` resolution on Windows.
-- **Build check**: Confirm `npm run build` completes without errors.
+- **Build check**: Confirm `pnpm run build` completes without errors.
 
 ## Error boundaries and logging
 
@@ -326,10 +326,10 @@ GitHub Code scanning (CodeQL) reports **log injection** when user-controlled or 
 
 - **Helper:** `sanitizeLogMessage(message: unknown): string` in `src/main/log-service.ts` strips control characters (including newlines) and normalizes whitespace. Use it for every log message and source string that is derived from untrusted input.
 - **Example:** In `patchMainConsole()`, console overrides pass `sanitizeLogMessage(stringifyArgs(args))` into `appendLine()`, not `stringifyArgs(args)` alone.
-- **Before you commit:** If you added or changed any main-process logging (`src/main/**/*.ts`) that passes error-like values (e.g. `err`, `e`, `error`, `reason`) into `console.log` / `console.warn` / `console.error`, wrap the value in `sanitizeLogMessage(...)` at the call site. The pre-commit hook runs `npm run check:log-injection`, which flags such calls; fix any reported lines before committing.
-- **Local check:** Run `npm run check:log-injection` to scan `src/main` for unsanitized `console.*(..., err|e|error|reason)` patterns. To suppress a false positive, add `// log-injection-ok` with a short reason on the same line as the console call.
+- **Before you commit:** If you added or changed any main-process logging (`src/main/**/*.ts`) that passes error-like values (e.g. `err`, `e`, `error`, `reason`) into `console.log` / `console.warn` / `console.error`, wrap the value in `sanitizeLogMessage(...)` at the call site. The pre-commit hook runs `pnpm run check:log-injection`, which flags such calls; fix any reported lines before committing.
+- **Local check:** Run `pnpm run check:log-injection` to scan `src/main` for unsanitized `console.*(..., err|e|error|reason)` patterns. To suppress a false positive, add `// log-injection-ok` with a short reason on the same line as the console call.
 - **Checks:** Code scanning runs on push (GitHub default setup). If you add or change code that feeds into the log pipeline, ensure the **first** use of untrusted data in that path is wrapped in `sanitizeLogMessage()` at the call site.
-- **Tests:** When adding or changing code that feeds into the log pipeline (e.g. new call sites of `appendLine`, `console.*` in main, or renderer→main log forwarding), add or extend tests so that log injection is caught by the suite. Pre-commit runs `npm run test:run`, which includes `src/renderer/lib/sanitize-log-message.test.ts`: that file tests both `sanitizeLogMessage` and `sanitizeForLogSink` (used by the console overrides in log-service) and runs the log-injection script so that regressions fail the test run. Add or extend tests there (or equivalent) so regressions are caught. AI and reviewers should ensure such tests exist or are added.
+- **Tests:** When adding or changing code that feeds into the log pipeline (e.g. new call sites of `appendLine`, `console.*` in main, or renderer→main log forwarding), add or extend tests so that log injection is caught by the suite. Pre-commit runs `pnpm run test:run`, which includes `src/renderer/lib/sanitize-log-message.test.ts`: that file tests both `sanitizeLogMessage` and `sanitizeForLogSink` (used by the console overrides in log-service) and runs the log-injection script so that regressions fail the test run. Add or extend tests there (or equivalent) so regressions are caught. AI and reviewers should ensure such tests exist or are added.
 
 ### Network data written to file (CodeQL js/http-to-file-access)
 
@@ -343,7 +343,7 @@ Code scanning may report this query on `fs.promises.appendFile` / `fs.writeFileS
 
 ### Silent-catch check
 
-`scripts/check-silent-catches.mjs` scans `src/` for `catch` blocks that contain no `console.*` call, no rethrow, and no suppression comment. It runs automatically on every commit as part of `npm run test:run`.
+`scripts/check-silent-catches.mjs` scans `src/` for `catch` blocks that contain no `console.*` call, no rethrow, and no suppression comment. It runs automatically on every commit as part of `pnpm run test:run`.
 
 **Rule:** Every catch block must either log the error, rethrow it, or carry a suppression comment explaining why silence is intentional.
 
@@ -353,17 +353,17 @@ Code scanning may report this query on `fs.promises.appendFile` / `fs.writeFileS
 
 ### console.log check
 
-`scripts/check-console-log.mjs` bans bare `console.log()` calls in `src/`. All diagnostic trace output must use `console.debug` so users can filter it separately in the App Log panel (`debug` is hidden by default). `console.warn` and `console.error` are allowed. The check runs as part of `npm run test:run`.
+`scripts/check-console-log.mjs` bans bare `console.log()` calls in `src/`. All diagnostic trace output must use `console.debug` so users can filter it separately in the App Log panel (`debug` is hidden by default). `console.warn` and `console.error` are allowed. The check runs as part of `pnpm run test:run`.
 
 - **Suppression:** Add `// log-level-ok <reason>` on the same line to allow a specific `console.log` where promotion to `warn`/`error` would be misleading and `debug` would be too noisy to filter.
 
 ### XSS patterns check
 
-`scripts/check-xss-patterns.mjs` bans React's raw HTML injection prop, direct DOM `innerHTML` assignment, and dynamic code execution from all source files. There are zero current violations. The check has no suppression mechanism — if you believe an exception is warranted, discuss it with a maintainer before adding the pattern. The check runs as part of `npm run test:run`.
+`scripts/check-xss-patterns.mjs` bans React's raw HTML injection prop, direct DOM `innerHTML` assignment, and dynamic code execution from all source files. There are zero current violations. The check has no suppression mechanism — if you believe an exception is warranted, discuss it with a maintainer before adding the pattern. The check runs as part of `pnpm run test:run`.
 
 ### Log panel filter contract
 
-`scripts/check-log-panel-filter.mjs` scans `noble-ble-manager.ts`, `mqtt-manager.ts`, and `meshcore-mqtt-adapter.ts` for `[TAG]` prefixes in `console.*` calls and asserts each tag is handled by `isDeviceEntry()` in `LogPanel.tsx` (so device logs stay on the Device tab per protocol). It is invoked from `LogPanel.filtering.test.ts` as part of `npm run test:run`. When you add a new tagged log line in those files, extend the matching Meshtastic or MeshCore branch in `isDeviceEntry`.
+`scripts/check-log-panel-filter.mjs` scans `noble-ble-manager.ts`, `mqtt-manager.ts`, and `meshcore-mqtt-adapter.ts` for `[TAG]` prefixes in `console.*` calls and asserts each tag is handled by `isDeviceEntry()` in `LogPanel.tsx` (so device logs stay on the Device tab per protocol). It is invoked from `LogPanel.filtering.test.ts` as part of `pnpm run test:run`. When you add a new tagged log line in those files, extend the matching Meshtastic or MeshCore branch in `isDeviceEntry`.
 
 ### Renderer CSP and Vite build contracts
 
@@ -402,8 +402,8 @@ Fixes #35
 ## PR Process
 
 1. **Describe your changes** — What did you change and why? What did you test?
-2. **Update docs** — If you added or changed a feature, update README.md or relevant `/docs` files. If you touch docs content, create/activate a local Python virtualenv first (recommended on macOS/Homebrew Python; avoids `externally-managed-environment`), then install MkDocs deps (`npm run docs:install`) and run `npm run docs:build` before opening the PR.
-3. **Follow existing code style** — Run `npm run lint` (and let pre-commit run `format` or run `npm run format` yourself). Fix import-sort, type-imports, and hook dependency issues before pushing.
+2. **Update docs** — If you added or changed a feature, update README.md or relevant `/docs` files. If you touch docs content, create/activate a local Python virtualenv first (recommended on macOS/Homebrew Python; avoids `externally-managed-environment`), then install MkDocs deps (`pnpm run docs:install`) and run `pnpm run docs:build` before opening the PR.
+3. **Follow existing code style** — Run `pnpm run lint` (and let pre-commit run `format` or run `pnpm run format` yourself). Fix import-sort, type-imports, and hook dependency issues before pushing.
 4. **Keep scope tight** — Avoid refactoring unrelated code in the same PR. One concern per PR makes review faster.
 5. **Await review** — A maintainer will review and may request changes before merging.
 

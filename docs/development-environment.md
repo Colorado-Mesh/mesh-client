@@ -10,7 +10,7 @@ These requirements apply to all platforms.
 
 - Git
 - Node.js **22.12.0+** (match [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml); `CONTRIBUTING.md` recommends the same)
-- npm **9+**
+- pnpm **9+**
 - Python 3 + `pip` (needed for MkDocs documentation build)
 
 Verify:
@@ -18,7 +18,7 @@ Verify:
 ```bash
 git --version
 node --version
-npm --version
+pnpm --version
 ```
 
 ### MkDocs (documentation) tooling
@@ -62,7 +62,7 @@ pnpm install
 - Dev mode (hot reload): `pnpm run dev`
 - Production-like local start: `pnpm start`
 
-### Common npm commands
+### Common pnpm commands
 
 Use these from the repository root:
 
