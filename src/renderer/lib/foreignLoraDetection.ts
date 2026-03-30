@@ -84,18 +84,24 @@ export function extractMeshtasticSenderId(raw: Uint8Array): number | null {
 /** Rolling window packet counter for rate detection. */
 export class RollingRateCounter {
   private readonly windowMs: number;
+  private readonly cleanupThreshold: number;
   private timestamps: number[] = [];
 
-  constructor(windowMs: number) {
+  constructor(windowMs: number, cleanupThreshold = 100) {
     this.windowMs = windowMs;
+    this.cleanupThreshold = cleanupThreshold;
   }
 
   record(): void {
-    const now = Date.now();
-    this.timestamps.push(now);
-    const cutoff = now - this.windowMs;
-    this.timestamps = this.timestamps.filter((t) => t > cutoff);
-    // Hard cap: prevent unbounded growth if record() is called much faster than the window expires
+    this.timestamps.push(Date.now());
+    if (this.timestamps.length > this.cleanupThreshold) {
+      this.cleanup();
+    }
+  }
+
+  private cleanup(): void {
+    const cutoff = Date.now() - this.windowMs;
+    this.timestamps = this.timestamps.filter((t) => t >= cutoff);
     if (this.timestamps.length > 10_000) {
       this.timestamps = this.timestamps.slice(-10_000);
     }
@@ -103,9 +109,7 @@ export class RollingRateCounter {
 
   /** Returns packets per minute over the rolling window. */
   getRate(): number {
-    const now = Date.now();
-    const cutoff = now - this.windowMs;
-    const valid = this.timestamps.filter((t) => t > cutoff);
-    return (valid.length / this.windowMs) * 60_000;
+    this.cleanup();
+    return (this.timestamps.length / this.windowMs) * 60_000;
   }
 }

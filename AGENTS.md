@@ -100,6 +100,12 @@ pnpm run format && pnpm run lint && pnpm run typecheck && pnpm run test:run
 - **Time constants**: Extract time-related magic numbers to `src/renderer/lib/timeConstants.ts`. Use `MS_PER_SECOND`, `MS_PER_MINUTE`, `MS_PER_HOUR`, `MS_PER_DAY` instead of inline `60_000`, `3_600_000`, `86_400_000`.
 - **Other domains**: For domain-specific thresholds (e.g., timeouts, limits), define module-level constants with descriptive names.
 
+### Performance
+
+- **Avoid O(n) operations in hot paths**: Event handlers, packet processing, and high-frequency methods should not filter entire collections on every call. Use threshold-based cleanup instead.
+- **Lazy cleanup for rolling windows**: When maintaining time-based windows, only clean up when the collection exceeds a threshold rather than on every operation.
+- **Single cleanup method**: Extract cleanup logic into a private method called by both write operations (when threshold exceeded) and read operations (for accuracy).
+
 ### Error Handling
 
 - **Log levels**: Use `console.debug` for diagnostics; `warn` for recoverable; `error` before rethrow
