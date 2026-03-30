@@ -10,13 +10,13 @@ See [docs/development-environment.md](docs/development-environment.md) for full 
 
 ```bash
 pnpm install
-pnpm run dev       # Start in development mode
-pnpm run build     # Production build
-pnpm run lint      # Run ESLint (type-aware; see Code style below)
-pnpm run typecheck # TypeScript check (renderer + main/preload)
-pnpm run format    # Prettier write — ts, tsx, js, jsx, json, css, md
-pnpm run format:check   # Prettier check only (no writes)
-pnpm run rebuild   # Rebuild native modules (@stoprocent/noble) for current Electron
+pnpm run dev          # Start in development mode
+pnpm run build        # Production build
+pnpm run lint         # Run ESLint (type-aware; see Code style below)
+pnpm run typecheck    # TypeScript check (renderer + main/preload)
+pnpm run format       # Prettier write — ts, tsx, js, jsx, json, css, md
+pnpm run format:check # Prettier check only (no writes)
+pnpm run rebuild      # Rebuild native modules (@stoprocent/noble) for current Electron
 ```
 
 **Main process bundle:** `build:main` / `build:main:prod` use esbuild on `src/main/index.ts`. Large dependencies (`node-forge`, `jszip`, `mqtt`, `@meshtastic/protobufs`, `@bufbuild/protobuf`) are passed as `--external` so they are **not** concatenated into `dist-electron/main/index.js`; Node resolves them from `node_modules` at runtime (they remain packaged in the app asar). Analyze bundle composition with `pnpm run build:main:meta` (writes `dist-electron/main/metafile.json` for [esbuild’s metafile analyzer](https://esbuild.github.io/analytics/); it rebuilds `dist-electron/main/index.js` without minify — run `pnpm run build:main:prod` afterward if you need the minified main for `pnpm start` / `dist`). Compare dev vs minified outfile sizes with `pnpm run build:main:compare-size`.
@@ -309,9 +309,9 @@ If you are fixing a regression, always add or update a test that reproduces the 
 **Accessibility tests:** `src/renderer/vitest.setup.ts` registers **vitest-axe**. New or heavily changed panels should include a test that renders the component and asserts no axe violations, following existing component tests (e.g. `await axe(container)` and `expect(results).toHaveNoViolations()`).
 
 ```bash
-pnpm run test:run      # run once (also runs automatically on git commit)
-pnpm test              # watch mode
-pnpm run test:verbose  # verbose output with full violation details
+pnpm run test:run     # run once (also runs automatically on git commit)
+pnpm test             # watch mode
+pnpm run test:verbose # verbose output with full violation details
 ```
 
 ## AI Tools Policy

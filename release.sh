@@ -21,37 +21,37 @@ print_error() { echo -e "${RED}$1${NC}"; }
 detect_version_bump() {
   local last_tag="$1"
   local commits
-  commits=$(git log "$last_tag"..HEAD --pretty=format:"%s%n%b" 2>/dev/null || echo "")
-  
+  commits=$(git log "$last_tag"..HEAD --pretty=format:"%s%n%b" 2> /dev/null || echo "")
+
   if [ -z "$commits" ]; then
     echo "none"
     return
   fi
-  
+
   local has_breaking=false
   local has_feat=false
   local has_other=false
-  
+
   # Check for BREAKING CHANGE in commit bodies
   if echo "$commits" | grep -q "BREAKING CHANGE"; then
     has_breaking=true
   fi
-  
+
   # Check for conventional commit types with ! suffix (breaking)
   if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)!\s*:"; then
     has_breaking=true
   fi
-  
+
   # Check for feat commits
   if echo "$commits" | grep -qE "^feat\s*:"; then
     has_feat=true
   fi
-  
+
   # Check for any conventional commit (including fix, chore, docs, etc.)
   if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)\s*:"; then
     has_other=true
   fi
-  
+
   if [ "$has_breaking" = true ]; then
     echo "major"
   elif [ "$has_feat" = true ]; then
@@ -66,7 +66,7 @@ detect_version_bump() {
 # Function to get commit details for summary
 get_commit_summary() {
   local last_tag="$1"
-  git log "$last_tag"..HEAD --pretty=format:"%s" 2>/dev/null | head -20
+  git log "$last_tag"..HEAD --pretty=format:"%s" 2> /dev/null | head -20
 }
 
 # 1. Check if a version argument was provided or auto-detect
@@ -103,7 +103,7 @@ fi
 git pull origin main
 
 # 3. Get the last tag
-LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+LAST_TAG=$(git describe --tags --abbrev=0 2> /dev/null || echo "")
 if [ -z "$LAST_TAG" ]; then
   print_error "Error: No tags found. Please create an initial tag first."
   echo "Example: git tag v0.1.0 && git push origin v0.1.0"
@@ -111,7 +111,7 @@ if [ -z "$LAST_TAG" ]; then
 fi
 
 # 4. Check if there are commits since last tag
-COMMITS_SINCE_TAG=$(git log "$LAST_TAG"..HEAD --oneline 2>/dev/null || echo "")
+COMMITS_SINCE_TAG=$(git log "$LAST_TAG"..HEAD --oneline 2> /dev/null || echo "")
 if [ -z "$COMMITS_SINCE_TAG" ]; then
   print_error "Error: No commits since last tag ($LAST_TAG)."
   echo "Create some commits before releasing."

@@ -216,6 +216,7 @@ Installed via `pnpm install` (from `package.json`):
 - `eslint`
 - `typescript`
 - `prettier`
+- `prettier-plugin-sh`
 - `markdownlint-cli2`
 
 Not installed by npm (install separately when needed):
@@ -245,9 +246,9 @@ Other useful test commands:
 Use the platform-specific packaging command:
 
 ```bash
-pnpm run dist:mac      # macOS -> .dmg + .zip in release/
-pnpm run dist:linux    # Linux -> .AppImage + .deb in release/
-pnpm run dist:win      # Windows -> .exe installer in release/
+pnpm run dist:mac   # macOS -> .dmg + .zip in release/
+pnpm run dist:linux # Linux -> .AppImage + .deb in release/
+pnpm run dist:win   # Windows -> .exe installer in release/
 ```
 
 Output goes to the `release/` directory.
@@ -508,7 +509,7 @@ If you encounter pairing issues (e.g., "Connection attempt failed" or device was
    ```bash
    bluetoothctl
    # Inside bluetoothctl:
-   remove XX:XX:XX:XX:XX:XX  # Replace with your device MAC
+   remove XX:XX:XX:XX:XX:XX # Replace with your device MAC
    # Then re-pair from the app
    ```
 3. If the device still won't connect, power cycle Bluetooth:

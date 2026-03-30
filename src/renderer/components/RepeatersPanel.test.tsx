@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { MeshNode } from '../lib/types';
@@ -51,6 +51,15 @@ function makeBaseProps() {
 }
 
 describe('RepeatersPanel', () => {
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    warnSpy.mockClear();
+  });
   it('shows CLI interface button when onSendCliCommand is provided and connected', async () => {
     const { container } = render(
       <RepeatersPanel {...makeBaseProps()} onSendCliCommand={vi.fn().mockResolvedValue('ok')} />,
@@ -71,8 +80,6 @@ describe('RepeatersPanel', () => {
     const props = makeBaseProps();
     props.onRequestRepeaterStatus = vi.fn().mockRejectedValue(new Error('radio timeout'));
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
     render(<RepeatersPanel {...props} />);
     await userEvent.click(screen.getByRole('button', { name: 'Request status' }));
 
@@ -83,8 +90,6 @@ describe('RepeatersPanel', () => {
   it('shows error toast when ping fails', async () => {
     const props = makeBaseProps();
     props.onPing = vi.fn().mockRejectedValue(new Error('ping timeout'));
-
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     render(<RepeatersPanel {...props} />);
     await userEvent.click(screen.getByRole('button', { name: 'Ping trace' }));
@@ -112,14 +117,23 @@ describe('RepeatersPanel', () => {
     const props = makeBaseProps();
     const onRequestTelemetry = vi.fn().mockRejectedValue(new Error('telemetry fail'));
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
     render(<RepeatersPanel {...props} onRequestTelemetry={onRequestTelemetry} />);
     await userEvent.click(screen.getByRole('button', { name: 'Sensor telemetry LPP' }));
 
     expect(warnSpy).toHaveBeenCalled();
     expect(screen.queryByText(/Sensor telemetry/i)).not.toBeInTheDocument();
     expect(mockAddToast).toHaveBeenCalledWith(expect.stringContaining('telemetry fail'), 'error');
+  });
+
+  it('expands telemetry section when request succeeds', async () => {
+    const props = makeBaseProps();
+    const telemetryData = { temperature: 25.5, humidity: 60 };
+    const onRequestTelemetry = vi.fn().mockResolvedValue(telemetryData);
+
+    render(<RepeatersPanel {...props} onRequestTelemetry={onRequestTelemetry} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Sensor telemetry LPP' }));
+
+    expect(onRequestTelemetry).toHaveBeenCalledWith(repeater.node_id);
   });
 
   it('calls onSendCliCommand with trimmed input when Send is clicked', async () => {

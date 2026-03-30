@@ -13,21 +13,27 @@ Electron desktop app with three process boundaries:
 
 ```bash
 # Development
-pnpm run dev              # Start dev mode (vite + electron)
-pnpm run build           # Production build (all targets)
-pnpm start               # Build and start electron
+pnpm run dev   # Start dev mode (vite + electron)
+pnpm run build # Production build (all targets)
+pnpm start     # Build and start electron
 
 # Code quality
-pnpm run lint            # ESLint (type-aware)
-pnpm run lint:fix        # ESLint with auto-fix
-pnpm run format          # Prettier write
-pnpm run format:check    # Prettier check only
-pnpm run typecheck       # TypeScript (renderer + main)
+pnpm run lint         # ESLint (type-aware)
+pnpm run lint:fix     # ESLint with auto-fix
+pnpm run format       # Prettier write
+pnpm run format:check # Prettier check only
+pnpm run typecheck    # TypeScript (renderer + main)
+pnpm run lint:md      # Markdownlint for all .md files
+
+# Checks
+pnpm run check:log-injection # Verify no unsanitized error logging
+pnpm run check:db-migrations # Validate SQLite migrations
+pnpm run check:ipc-contract  # Verify preload/main API alignment
 
 # Testing
-pnpm test                # Vitest watch mode
-pnpm run test:run        # Run all tests once (CI mode)
-pnpm run test:verbose    # Verbose output
+pnpm test             # Vitest watch mode
+pnpm run test:run     # Run all tests once (CI mode)
+pnpm run test:verbose # Verbose output
 
 # Run single test file
 npx vitest run src/renderer/components/Button.test.tsx
@@ -82,6 +88,23 @@ pnpm run format && pnpm run lint && pnpm run typecheck && pnpm run test:run
 - Use `jsx-runtime` (no need to import React)
 - Accessibility: every interactive element needs `aria-label` (Electron hides text from AT)
 - Components must have accessible labels (axe tests enforce this)
+- **Null safety in JSX**: When displaying nullable values that were checked in a condition, use optional chaining for defense in depth. Example: `showLastHopSnr && node.snr?.toFixed(1)` not `showLastHopSnr && node.snr.toFixed(1)` — the value could change between condition check and render.
+
+### State Management (Zustand)
+
+- **Map selectors**: Selecting from a Map (e.g., `s.map.get(id) ?? DEFAULT`) subscribes to the entire Map. Prefer selecting the Map once and deriving with `useMemo`, or accept that any Map update triggers re-renders.
+- **Stable defaults**: Always define default values outside components (module level) to ensure stable reference equality: `const EMPTY_ARRAY: Item[] = []` — never inline `?? []` or `?? {}`.
+
+### Magic Numbers
+
+- **Time constants**: Extract time-related magic numbers to `src/renderer/lib/timeConstants.ts`. Use `MS_PER_SECOND`, `MS_PER_MINUTE`, `MS_PER_HOUR`, `MS_PER_DAY` instead of inline `60_000`, `3_600_000`, `86_400_000`.
+- **Other domains**: For domain-specific thresholds (e.g., timeouts, limits), define module-level constants with descriptive names.
+
+### Performance
+
+- **Avoid O(n) operations in hot paths**: Event handlers, packet processing, and high-frequency methods should not filter entire collections on every call. Use threshold-based cleanup instead.
+- **Lazy cleanup for rolling windows**: When maintaining time-based windows, only clean up when the collection exceeds a threshold rather than on every operation.
+- **Single cleanup method**: Extract cleanup logic into a private method called by both write operations (when threshold exceeded) and read operations (for accuracy).
 
 ### Error Handling
 
@@ -103,6 +126,8 @@ pnpm run format && pnpm run lint && pnpm run typecheck && pnpm run test:run
 - **Main tests**: `src/main/**/*.test.ts` (node environment)
 - **Accessibility**: Include axe tests for new panels (`expect(results).toHaveNoViolations()`)
 - **Contract tests**: Update when changing CSP, build config, IPC limits, or log filters
+- **Console spies**: Use `beforeEach`/`afterEach` hooks for shared spy setup rather than duplicating in each test; declare spy at describe scope, clear mocks in beforeEach
+- **Coverage**: Test both success and failure paths for async operations
 
 ## Project-Specific Rules
 
@@ -150,7 +175,7 @@ When creating a PR, the description **must** include details for **all commits**
 
 ## Pre-Commit Checklist
 
-1. `pnpm run format` — auto-formats staged files
+1. `pnpm run format` — auto-formats staged files (including `.sh` files)
 2. `pnpm run lint:md` — markdownlint fixes all .md files
 3. `pnpm run lint` — passes with no errors
 4. `pnpm run typecheck` — TypeScript compiles
@@ -167,7 +192,7 @@ When creating a PR, the description **must** include details for **all commits**
 - **Node version**: 22.x (CI uses 22.12.0+)
 - **Test environments**: renderer (jsdom), main (node)
 - **Path alias**: `@/` → `src/`
-- **Prettier config**: `.prettierrc`
+- **Prettier config**: `.prettierrc` (includes `prettier-plugin-sh` for shell scripts)
 - **ESLint config**: `eslint.config.mjs`
 - **Vitest config**: `vitest.config.ts`
 - **Native rebuild**: Run `pnpm run rebuild` after changing Node or Electron versions

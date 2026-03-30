@@ -43,7 +43,7 @@ See [development-environment.md](development-environment.md#windows) for Python 
   ```bash
   bluetoothctl
   # Inside bluetoothctl:
-  remove XX:XX:XX:XX:XX:XX  # Replace with your device MAC
+  remove XX:XX:XX:XX:XX:XX # Replace with your device MAC
   # Then re-pair from the app
   ```
 - For **Meshtastic** devices, the first Chromium pairing attempt may use PIN `123456`. For **MeshCore**, always use the PIN shown on the radio (and the pre-connect prompt when BlueZ reports not paired).
