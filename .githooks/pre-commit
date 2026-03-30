@@ -31,4 +31,5 @@ pnpm run check:db-migrations || exit 1
 pnpm run check:ipc-contract || exit 1
 pnpm audit --audit-level=high || exit 1
 actionlint || exit 1
+yamllint -f github -s . || exit 1
 pnpm run test:run || exit 1

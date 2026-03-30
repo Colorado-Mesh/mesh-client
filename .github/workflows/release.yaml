@@ -6,7 +6,7 @@ env:
 on:
   push:
     tags:
-      - 'v*' # Trigger only on version tags like v1.0.0
+      - 'v*'  # Trigger only on version tags like v1.0.0
   workflow_dispatch:
 
 jobs:
@@ -29,13 +29,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
 
       - name: Setup pnpm
         uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
 
       - name: Install Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6
         with:
           node-version: '22'
           cache: 'pnpm'

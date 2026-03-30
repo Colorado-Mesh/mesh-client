@@ -11,7 +11,7 @@ These requirements apply to all platforms.
 - Git
 - Node.js **22.12.0+** (match [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml); `CONTRIBUTING.md` recommends the same)
 - pnpm **10+**
-- Python 3 + `pip` (needed for MkDocs documentation build)
+- Python 3 + `pip` (needed for MkDocs documentation build and yamllint)
 
 Verify:
 
@@ -219,6 +219,7 @@ Installed via `pnpm install` (from `package.json`):
 Not installed by npm (install separately when needed):
 
 - `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or install system-wide)
+- `yamllint` (required for YAML linting; install via `pip install yamllint` or `brew install yamllint` on macOS)
 - `docker` and `act` (only if you run GitHub Actions locally)
 - Python 3 + `venv` + MkDocs Python deps (for docs checks/builds)
 
@@ -292,11 +293,15 @@ These scripts try to install optional tooling automatically. If they fail (for e
 1. Install `actionlint` (used by the git pre-commit hook):
    - `pnpm run setup:actionlint`
    - This installs into `.githooks/bin` so the hook can find it.
-2. Install native build dependencies:
+2. Install `yamllint` (required by the git pre-commit hook):
+   - Install manually via pip: `pip install yamllint`
+   - macOS alternative: `brew install yamllint`
+   - Linux alternative: `sudo apt install yamllint` (Debian/Ubuntu) or `sudo dnf install yamllint` (Fedora)
+3. Install native build dependencies:
    - `pnpm run setup:build-deps`
    - Linux/macOS: attempts to install what native builds need (requires sudo where applicable).
    - Windows: prints a message to install Visual Studio Build Tools manually.
-3. (Linux only) Fix serial port permissions:
+4. (Linux only) Fix serial port permissions:
    - `pnpm run setup:dialout`
    - Adds your user to the `dialout` group (requires sudo + re-login).
 

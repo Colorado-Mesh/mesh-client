@@ -66,7 +66,17 @@ Manual fallback:
 - macOS: `brew install actionlint`
 - Windows/Linux: see [releases](https://github.com/rhysd/actionlint/releases) for prebuilt binaries.
 
-After `pnpm install`, the repo’s git hooks are enabled (`core.hooksPath` → `.githooks`). On every commit, the **pre-commit** hook runs in order:
+**yamllint:** Install [yamllint](https://github.com/adrienverge/yamllint) so the pre-commit hook can lint YAML files.
+
+All platforms (requires Python): `pip install yamllint`
+
+Manual fallback:
+
+- macOS: `brew install yamllint`
+- Debian/Ubuntu: `sudo apt install yamllint`
+- Fedora: `sudo dnf install yamllint`
+
+After`pnpm install`, the repo's git hooks are enabled (`core.hooksPath` → `.githooks`). On every commit, the **pre-commit** hook runs in order:
 
 1. **`pnpm run format`** — Prettier **writes** to matching files (not `format:check`).
 2. **Re-stage** — Only files that were already staged are re-added, so unstaged WIP is not swept in.
@@ -75,7 +85,8 @@ After `pnpm install`, the repo’s git hooks are enabled (`core.hooksPath` → `
 5. **`pnpm run check:log-injection`** — Ensures main-process `console.*` calls do not pass raw error variables (`err`, `e`, `error`, `reason`) without `sanitizeLogMessage()` at the call site. See [Log injection (CodeQL js/log-injection)](#log-injection-codeql-jslog-injection) below.
 6. **`pnpm audit`** — Fails the commit if pnpm reports vulnerabilities.
 7. **`actionlint`** — Lints `.github/workflows/*.yml`; must be installed (see above).
-8. **`pnpm run test:run`** — Fails the commit if tests fail.
+8. **`yamllint`** — Lints all YAML files (`-f github -s`); must be installed (see above).
+9. **`pnpm run test:run`** — Fails the commit if tests fail.
 
 To skip the hook in an emergency: `git commit --no-verify`.
 
