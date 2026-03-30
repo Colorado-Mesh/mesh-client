@@ -138,9 +138,7 @@
       "electron-winstaller",
       "esbuild",
       "usb"
-    ],
-    "neverBuiltDependencies": [],
-    "patchedDependencies": {}
+    ]
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",
