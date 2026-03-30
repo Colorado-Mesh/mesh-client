@@ -491,13 +491,13 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 The classifier operates on raw LoRa payload bytes received by the radio before any decryption:
 
-| Rule                 | Byte condition                                                                                                            | Classification |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| MeshCore frame-start | `raw[0] === 0x3c` (`<` in ASCII)                                                                                          | `meshcore`     |
-| Meshtastic header    | bytes 0–3 = valid destId AND bytes 4–7 = valid senderId (both non-zero, non-broadcast `0xFFFFFFFF`, little-endian uint32) | `meshtastic`   |
-| Fallback             | everything else                                                                                                           | `unknown-lora` |
+| Rule                 | Byte condition                                                                                                                                                                                                        | Classification |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| MeshCore frame-start | `raw[0] === 0x3c` (`<` in ASCII)                                                                                                                                                                                      | `meshcore`     |
+| Meshtastic header    | `raw.length >= 16` AND bytes 0–3 = valid destId AND bytes 4–7 = valid senderId (both non-zero, non-broadcast `0xFFFFFFFF`) AND byte 12 flags: `hop_start` (bits [7:5]) ≥ 1 AND `hop_limit` (bits [2:0]) ≤ `hop_start` | `meshtastic`   |
+| Fallback             | everything else                                                                                                                                                                                                       | `unknown-lora` |
 
-The Meshtastic header check reflects the actual wire format: bytes 0–3 are the destination node ID and bytes 4–7 are the sender node ID. The non-zero, non-broadcast check filters out malformed packets.
+The Meshtastic header check requires the full 16-byte header (the actual Meshtastic LoRa minimum). Beyond the non-zero, non-broadcast ID check, byte 12 (the flags byte) is validated for structural consistency: `hop_limit` (bits [2:0]) must be ≤ `hop_start` (bits [7:5]), and `hop_start` must be ≥ 1. This eliminates false positives from MeshCore encrypted/relay packets whose first 8 bytes happen to look like valid Meshtastic node IDs, since MeshCore packets do not carry a conforming Meshtastic flags byte.
 
 **MeshCore log-pattern detection** (`containsMeshCorePattern()`): Device log messages mentioning decode failures and containing `0x3c` (or `<`) are matched via regex — this catches MeshCore traffic even when only the log stream is available (no raw packet data).
 

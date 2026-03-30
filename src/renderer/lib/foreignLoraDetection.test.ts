@@ -89,7 +89,7 @@ describe('classifyPayload', () => {
     expect(classifyPayload(new Uint8Array([0x3c]))).toBe('meshcore');
   });
 
-  it('classifies Meshtastic by 8-byte header with non-zero dest/sender', () => {
+  it('returns unknown-lora for 8-byte packet (too short for Meshtastic header)', () => {
     const header = new Uint8Array(8);
     const dest = 0x01020304;
     const sender = 0x05060708;
@@ -101,7 +101,59 @@ describe('classifyPayload', () => {
     header[5] = (sender >> 8) & 0xff;
     header[6] = (sender >> 16) & 0xff;
     header[7] = (sender >> 24) & 0xff;
-    expect(classifyPayload(header)).toBe('meshtastic');
+    expect(classifyPayload(header)).toBe('unknown-lora');
+  });
+
+  it('classifies Meshtastic with 16-byte header and valid flags (hop_start=3, hop_limit=3)', () => {
+    const packet = new Uint8Array(16);
+    const dest = 0x01020304;
+    const sender = 0x05060708;
+    packet[0] = dest & 0xff;
+    packet[1] = (dest >> 8) & 0xff;
+    packet[2] = (dest >> 16) & 0xff;
+    packet[3] = (dest >> 24) & 0xff;
+    packet[4] = sender & 0xff;
+    packet[5] = (sender >> 8) & 0xff;
+    packet[6] = (sender >> 16) & 0xff;
+    packet[7] = (sender >> 24) & 0xff;
+    // byte 12: flags — hop_start=3 (bits [7:5]=011), hop_limit=3 (bits [2:0]=011) → 0x63
+    packet[12] = 0x63;
+    expect(classifyPayload(packet)).toBe('meshtastic');
+  });
+
+  it('returns unknown-lora for 16-byte packet with invalid flags (hop_limit > hop_start)', () => {
+    const packet = new Uint8Array(16);
+    const dest = 0x01020304;
+    const sender = 0x05060708;
+    packet[0] = dest & 0xff;
+    packet[1] = (dest >> 8) & 0xff;
+    packet[2] = (dest >> 16) & 0xff;
+    packet[3] = (dest >> 24) & 0xff;
+    packet[4] = sender & 0xff;
+    packet[5] = (sender >> 8) & 0xff;
+    packet[6] = (sender >> 16) & 0xff;
+    packet[7] = (sender >> 24) & 0xff;
+    // byte 12: flags — hop_start=1 (bits [7:5]=001), hop_limit=3 (bits [2:0]=011) → 0x23
+    // hop_limit(3) > hop_start(1): structurally impossible in a real Meshtastic packet
+    packet[12] = 0x23;
+    expect(classifyPayload(packet)).toBe('unknown-lora');
+  });
+
+  it('returns unknown-lora for 8–15 byte packets (below Meshtastic header minimum)', () => {
+    const dest = 0x01020304;
+    const sender = 0x05060708;
+    for (const len of [8, 15]) {
+      const packet = new Uint8Array(len);
+      packet[0] = dest & 0xff;
+      packet[1] = (dest >> 8) & 0xff;
+      packet[2] = (dest >> 16) & 0xff;
+      packet[3] = (dest >> 24) & 0xff;
+      packet[4] = sender & 0xff;
+      packet[5] = (sender >> 8) & 0xff;
+      packet[6] = (sender >> 16) & 0xff;
+      packet[7] = (sender >> 24) & 0xff;
+      expect(classifyPayload(packet)).toBe('unknown-lora');
+    }
   });
 
   it('returns unknown-lora for short or non-matching payload', () => {
