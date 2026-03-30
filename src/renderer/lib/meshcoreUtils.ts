@@ -157,6 +157,7 @@ interface MeshCoreContact {
   advLat: number;
   advLon: number;
   flags?: number;
+  outPathLen?: number;
 }
 
 export function meshcoreContactToMeshNode(contact: MeshCoreContact): MeshNode {
@@ -173,6 +174,8 @@ export function meshcoreContactToMeshNode(contact: MeshCoreContact): MeshNode {
     last_heard: contact.lastAdvert,
     latitude: lat,
     longitude: lon,
+    hops_away:
+      contact.outPathLen != null && contact.outPathLen >= 0 ? contact.outPathLen : undefined,
   };
 }
 

@@ -520,6 +520,10 @@ export default function App() {
       window.electronAPI.db.migrateRfStubNodes().catch((e: unknown) => {
         console.warn('[App] startup migrateRfStubNodes failed', e);
       }),
+      // Delete nodes with last_heard = never (placeholder stubs with no data)
+      window.electronAPI.db.deleteNodesNeverHeard().catch((e: unknown) => {
+        console.warn('[App] startup deleteNodesNeverHeard failed', e);
+      }),
     ];
     if (s.autoPruneEnabled) {
       const days =
@@ -690,15 +694,33 @@ export default function App() {
     };
   }, [handleProtocolChange]);
 
-  // ─── Keyboard shortcuts: Cmd/Ctrl+1-9 for tabs, ? for help ───────────────
+  // ─── Keyboard shortcuts: Cmd/Ctrl+1-9, 0, A for tabs, ? for help ───────
+  // Shortcuts map to fixed tab positions across protocols:
+  // 1-9 = positions 0-8, 0 = position 9 (App), A = position 10 (Diagnostics)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const maxTab = displayTabNames.length - 1;
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         setSearchModalOpen(true);
       } else if ((e.metaKey || e.ctrlKey) && e.key >= '1' && e.key <= '9') {
-        e.preventDefault();
-        setActiveTab(parseInt(e.key, 10) - 1);
+        const targetIndex = parseInt(e.key, 10) - 1;
+        if (targetIndex <= maxTab) {
+          e.preventDefault();
+          setActiveTab(targetIndex);
+        }
+      } else if ((e.metaKey || e.ctrlKey) && e.key === '0') {
+        const targetIndex = 9;
+        if (targetIndex <= maxTab) {
+          e.preventDefault();
+          setActiveTab(targetIndex);
+        }
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
+        const targetIndex = 10;
+        if (targetIndex <= maxTab) {
+          e.preventDefault();
+          setActiveTab(targetIndex);
+        }
       } else if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const tag = (e.target as HTMLElement).tagName;
         if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
@@ -711,7 +733,7 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [displayTabNames.length]);
 
   // ─── Track Meshtastic messages arriving while inactive ──────────
   useEffect(() => {

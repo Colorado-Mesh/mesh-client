@@ -8,6 +8,8 @@ const DEFAULT_TAB_NAMES = [
   'Radio',
   'Modules',
   'Telemetry',
+  'Security',
+  'TAK',
   'App',
   'Diagnostics',
 ];
@@ -32,11 +34,26 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const shortcuts = useMemo(() => {
-    const names = tabNames ?? DEFAULT_TAB_NAMES;
-    const tabShortcuts = names.slice(0, 9).map((name, i) => ({
-      keys: `Cmd/Ctrl + ${i + 1}`,
-      action: `Switch to ${name} tab`,
-    }));
+    const currentNames = tabNames ?? DEFAULT_TAB_NAMES;
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A'];
+    const tabShortcuts = DEFAULT_TAB_NAMES.map((name, i) => {
+      const currentTabIndex = currentNames.indexOf(name);
+      const currentTabAtPosition = currentNames[i];
+      let suffix = '';
+      if (currentTabAtPosition !== name) {
+        if (i === 7 && currentTabIndex === -1) {
+          suffix = ' (not available in MeshCore)';
+        } else if (i === 8 && currentTabIndex === -1) {
+          suffix = ' (not available in MeshCore)';
+        } else if (i === 5 && currentTabAtPosition === 'Repeaters') {
+          suffix = ' (MeshCore: Repeaters)';
+        }
+      }
+      return {
+        keys: `Cmd/Ctrl + ${keys[i]}`,
+        action: `Switch to ${name} tab${suffix}`,
+      };
+    });
     return [...tabShortcuts, ...OTHER_SHORTCUTS];
   }, [tabNames]);
 
@@ -116,7 +133,7 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
             </svg>
           </button>
         </div>
-        <div className="px-5 py-4">
+        <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">
           <table className="w-full text-sm">
             <caption className="sr-only">Application keyboard shortcuts</caption>
             <thead>

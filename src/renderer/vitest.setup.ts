@@ -56,6 +56,7 @@ const electronAPIMock = {
     exportDb: vi.fn().mockResolvedValue(undefined),
     importDb: vi.fn().mockResolvedValue(undefined),
     deleteNodesByAge: vi.fn().mockResolvedValue(0),
+    deleteNodesNeverHeard: vi.fn().mockResolvedValue(0),
     pruneNodesByCount: vi.fn().mockResolvedValue(0),
     deleteNodesBatch: vi.fn().mockResolvedValue(0),
     clearMessagesByChannel: vi.fn().mockResolvedValue(undefined),

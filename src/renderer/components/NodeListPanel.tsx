@@ -9,9 +9,12 @@ import {
   MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS,
   MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS,
   MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT,
+  MESHTASTIC_CONTACT_GROUP_BUILTIN_ROUTER,
   meshtasticContactGroupMatchesBuiltinGps,
   meshtasticContactGroupMatchesBuiltinRfMqtt,
+  meshtasticContactGroupMatchesBuiltinRouter,
 } from '../lib/meshtasticContactGroupUtils';
+import { getNodeTypeIcon } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
@@ -57,7 +60,6 @@ const BUILTIN_TYPE_FILTERS = [
 const MESHCORE_INAPPLICABLE_SORT_FIELDS: readonly SortField[] = [
   'short_name',
   'role',
-  'hops_away',
   'via_mqtt',
   'rssi',
   'snr',
@@ -260,6 +262,8 @@ export default function NodeListPanel({
           list = list.filter((n) => meshtasticContactGroupMatchesBuiltinGps(n, myNodeNum));
         } else if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT) {
           list = list.filter((n) => meshtasticContactGroupMatchesBuiltinRfMqtt(n, myNodeNum));
+        } else if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_ROUTER) {
+          list = list.filter((n) => meshtasticContactGroupMatchesBuiltinRouter(n, myNodeNum));
         } else if (selectedGroupId > 0 && groupMemberIds) {
           list = list.filter((n) => groupMemberIds.has(n.node_id));
         }
@@ -679,20 +683,18 @@ export default function NodeListPanel({
                   Role <SortIcon field="role" sortField={sortField} sortAsc={sortAsc} />
                 </th>
               )}
-              {mode !== 'meshcore' && (
-                <th
-                  scope="col"
-                  aria-sort={
-                    sortField === 'hops_away' ? (sortAsc ? 'ascending' : 'descending') : 'none'
-                  }
-                  className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
-                  onClick={() => {
-                    handleSort('hops_away');
-                  }}
-                >
-                  Hops <SortIcon field="hops_away" sortField={sortField} sortAsc={sortAsc} />
-                </th>
-              )}
+              <th
+                scope="col"
+                aria-sort={
+                  sortField === 'hops_away' ? (sortAsc ? 'ascending' : 'descending') : 'none'
+                }
+                className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                onClick={() => {
+                  handleSort('hops_away');
+                }}
+              >
+                Hops <SortIcon field="hops_away" sortField={sortField} sortAsc={sortAsc} />
+              </th>
               {mode !== 'meshcore' && (
                 <th
                   scope="col"
@@ -1006,22 +1008,57 @@ export default function NodeListPanel({
                     <td className="px-3 py-2 text-muted">{formatTime(node.last_heard)}</td>
                     <td className="px-3 py-2 text-xs">
                       {mode === 'meshcore' ? (
-                        <span className="text-gray-300">{node.hw_model || '—'}</span>
+                        node.hw_model === 'Repeater' || node.hw_model === 'Room' ? (
+                          <span className="inline-flex items-center gap-1 text-gray-300">
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d={getNodeTypeIcon(node.hw_model) ?? ''} />
+                            </svg>
+                            {node.hw_model}
+                          </span>
+                        ) : node.hw_model === 'Chat' ? (
+                          <span className="inline-flex items-center gap-1 text-gray-300">
+                            <svg
+                              className="w-3.5 h-3.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <circle cx="12" cy="8" r="4" />
+                              <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" />
+                            </svg>
+                            Chat
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">{node.hw_model || '—'}</span>
+                        )
+                      ) : node.hw_model === 'Chat' ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                          <svg
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <circle cx="12" cy="8" r="4" />
+                            <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" />
+                          </svg>
+                          Chat
+                        </span>
                       ) : (
                         <RoleDisplay role={node.role} />
                       )}
                     </td>
-                    {mode !== 'meshcore' && (
-                      <td
-                        className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away === undefined || node.hops_away === null) ? 0 : node.hops_away) === 0 ? 'text-bright-green' : 'text-gray-300'}`}
-                      >
-                        {node.heard_via_mqtt_only ? (
-                          <span className="text-muted">—</span>
-                        ) : (
-                          (node.hops_away ?? (isSelf ? 0 : '-'))
-                        )}
-                      </td>
-                    )}
+                    <td
+                      className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away === undefined || node.hops_away === null) ? 0 : node.hops_away) === 0 ? 'text-bright-green' : 'text-gray-300'}`}
+                    >
+                      {node.heard_via_mqtt_only ? (
+                        <span className="text-muted">—</span>
+                      ) : (
+                        (node.hops_away ?? (isSelf ? 0 : '-'))
+                      )}
+                    </td>
                     {mode !== 'meshcore' && (
                       <td className="px-3 py-2 text-center text-gray-300 text-xs">
                         {node.heard_via_mqtt_only ? (

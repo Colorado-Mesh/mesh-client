@@ -27,7 +27,7 @@ The panel also shows a breakdown of error and warning counts, and a "This node" 
 
 ## 2. Routing Anomalies
 
-Routing anomaly detection runs on Meshtastic nodes only. MeshCore does not carry hop-count metadata so most routing anomaly types are skipped for MeshCore contacts.
+Routing anomaly detection runs on Meshtastic nodes. For MeshCore, hop-based anomalies require `hasHopCount` capability — if absent, they are skipped.
 
 Detection is run in priority order — first match wins:
 
@@ -81,7 +81,7 @@ If your GPS source is IP-geolocation (low accuracy), the distance threshold is d
 
 **Meaning:** Either the GPS coordinates are stale or wrong, or the hop-count metadata is unreliable for this node. The node's position data should be treated with suspicion.
 
-**Note:** Skipped for MeshCore nodes (hop count is not reported by that protocol).
+**Note:** Skipped for MeshCore nodes without `hasHopCount` capability.
 
 ---
 
@@ -471,7 +471,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 **Why this happens:** Most commonly seen when an MQTT-bridged node appears to have 0 hops — the MQTT message does not carry hop-count metadata, so the app may receive the node without a hop field, which defaults to 0. Per-node MQTT ignore resolves this in most cases. Can also indicate stale GPS where a node moved but has not updated its position.
 
-**MeshCore skip:** `capabilities?.hasHopCount === false` causes this check to be bypassed entirely. MeshCore firmware does not use the same hop-count field.
+**MeshCore skip:** `capabilities?.hasHopCount === false` causes this check to be bypassed entirely.
 
 ---
 

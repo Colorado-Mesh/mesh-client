@@ -267,13 +267,9 @@ process.on('unhandledRejection', (reason) => {
   }
 });
 
-app.on('browser-window-created', () => {});
-
 // ─── Bluetooth pairing handler (Linux only) ──────────────────────────
 // Note: Bluetooth pairing for Web Bluetooth is handled via session.setBluetoothPairingHandler()
 // which is set up after mainWindow creation. See the setup below near select-bluetooth-device.
-
-process.on('exit', () => {});
 
 // ─── IPC validation helpers (main process boundary) ───────────────────
 const MAX_PAYLOAD_LENGTH = 1024 * 1024; // 1MB cap for message payload
@@ -413,6 +409,11 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
     const f = Number(c.contact_flags);
     if (!Number.isInteger(f) || f < 0 || f > 255)
       throw new Error('db:saveMeshcoreContact: contact_flags must be 0–255');
+  }
+  if (c.hops_away != null) {
+    const h = Number(c.hops_away);
+    if (!Number.isInteger(h) || h < 0)
+      throw new Error('db:saveMeshcoreContact: hops_away must be a non-negative integer');
   }
 }
 
@@ -1213,15 +1214,10 @@ function createWindow() {
     });
   }
 
-  mainWindow.webContents.on('did-finish-load', () => {});
-  mainWindow.webContents.on('did-fail-load', () => {});
-
   mainWindow.on('closed', () => {
     setMainWindow(null);
     mainWindow = null;
   });
-  mainWindow.webContents.on('destroyed', () => {});
-
   // Handle window close event
   win.on('close', (event) => {
     if (!isQuitting && (isConnected || isAnyMqttConnected())) {
@@ -2480,11 +2476,33 @@ ipcMain.handle('db:deleteNode', (_event, nodeId: number) => {
   }
 });
 
+ipcMain.handle('db:deleteNodesNeverHeard', () => {
+  try {
+    const result = getDatabase()
+      .prepareOnce(
+        "DELETE FROM nodes WHERE (last_heard IS NULL OR last_heard = 0) AND (favorited IS NULL OR favorited = 0) AND source != 'meshcore'",
+      )
+      .run();
+    console.debug(`[IPC] db:deleteNodesNeverHeard: pruned ${result.changes} never-heard nodes`);
+    return result;
+  } catch (err) {
+    console.error(
+      '[IPC] db:deleteNodesNeverHeard failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
 ipcMain.handle('db:deleteNodesByAge', (_event, days: number) => {
   try {
     if (typeof days !== 'number' || days < 1 || !isFinite(days)) return { changes: 0 };
     const cutoff = Math.floor(Date.now() / 1000) - days * 86400;
-    const result = getDatabase().prepareOnce('DELETE FROM nodes WHERE last_heard < ?').run(cutoff);
+    const result = getDatabase()
+      .prepareOnce(
+        "DELETE FROM nodes WHERE (last_heard < ? OR last_heard IS NULL OR last_heard = 0) AND (favorited IS NULL OR favorited = 0) AND source != 'meshcore'",
+      )
+      .run(cutoff);
     console.debug(`[IPC] db:deleteNodesByAge: pruned ${result.changes} nodes older than ${days}d`);
     return result;
   } catch (err) {
@@ -2933,8 +2951,8 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
     return db
       .prepareOnce(
         'INSERT INTO meshcore_contacts ' +
-          '(node_id, public_key, adv_name, contact_type, last_advert, adv_lat, adv_lon, last_snr, last_rssi, favorited, nickname, contact_flags) ' +
-          'VALUES (@node_id, @public_key, @adv_name, @contact_type, @last_advert, @adv_lat, @adv_lon, @last_snr, @last_rssi, 0, @nickname, @contact_flags) ' +
+          '(node_id, public_key, adv_name, contact_type, last_advert, adv_lat, adv_lon, last_snr, last_rssi, favorited, nickname, contact_flags, hops_away) ' +
+          'VALUES (@node_id, @public_key, @adv_name, @contact_type, @last_advert, @adv_lat, @adv_lon, @last_snr, @last_rssi, 0, @nickname, @contact_flags, @hops_away) ' +
           'ON CONFLICT(node_id) DO UPDATE SET ' +
           'public_key = excluded.public_key, ' +
           'adv_name = excluded.adv_name, ' +
@@ -2946,7 +2964,8 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
           'last_rssi = excluded.last_rssi, ' +
           'favorited = meshcore_contacts.favorited, ' +
           'nickname = COALESCE(excluded.nickname, meshcore_contacts.nickname), ' +
-          'contact_flags = excluded.contact_flags',
+          'contact_flags = excluded.contact_flags, ' +
+          'hops_away = excluded.hops_away',
       )
       .run({
         node_id: Number(c.node_id),
@@ -2960,6 +2979,7 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
         last_rssi: c.last_rssi != null ? Number(c.last_rssi) : null,
         nickname: typeof c.nickname === 'string' ? c.nickname : null,
         contact_flags: c.contact_flags != null ? Number(c.contact_flags) : 0,
+        hops_away: c.hops_away != null ? Number(c.hops_away) : null,
       });
   } catch (err) {
     console.error(
@@ -3702,8 +3722,6 @@ app.on('will-quit', () => {
   // BLEManager and its CBqueue GCD dispatch queue — without that, the process cannot exit on macOS.
   app.exit(0);
 });
-
-app.on('quit', () => {});
 
 app.on('window-all-closed', () => {
   // Clean up any pending Bluetooth device selection to prevent callback leak

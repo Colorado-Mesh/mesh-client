@@ -322,6 +322,7 @@ declare global {
         exportDb: () => Promise<string | null>;
         importDb: () => Promise<{ nodesAdded: number; messagesAdded: number } | null>;
         deleteNodesByAge: (days: number) => Promise<unknown>;
+        deleteNodesNeverHeard: () => Promise<number>;
         pruneNodesByCount: (maxCount: number) => Promise<unknown>;
         deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
         clearMessagesByChannel: (channel: number) => Promise<unknown>;

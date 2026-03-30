@@ -124,7 +124,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasEnvironmentTelemetry": true,
         "hasFactoryReset": false,
         "hasFullPositionConfig": false,
-        "hasHopCount": false,
+        "hasHopCount": true,
         "hasModemPresets": false,
         "hasMqttHybrid": false,
         "hasNeighborInfo": false,

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { LocationFilter } from '../App';
-import { getAppSettingsRaw, setAppSettingsRaw } from '../lib/appSettingsStorage';
+import { getAppSettingsRaw, mergeAppSetting, setAppSettingsRaw } from '../lib/appSettingsStorage';
 import { formatCoordPair } from '../lib/coordUtils';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
 import type { OurPosition } from '../lib/gpsSource';
@@ -225,6 +225,7 @@ export default function AppPanel({
 
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+    mergeAppSetting(key, value, 'AppPanel updateSetting');
   };
 
   // ─── GPS refresh settings ────────────────────────────────────

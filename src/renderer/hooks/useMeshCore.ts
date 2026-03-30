@@ -123,10 +123,7 @@ function meshcoreContactRawFromDevice(c: MeshCoreContactRaw): MeshCoreContactRaw
   return { ...c, flags };
 }
 
-function contactToDbRow(
-  contact: MeshCoreContactRaw,
-  nickname?: string | null,
-): Parameters<typeof window.electronAPI.db.saveMeshcoreContact>[0] {
+function contactToDbRow(contact: MeshCoreContactRaw, nickname?: string | null) {
   return {
     node_id: pubkeyToNodeId(contact.publicKey),
     public_key: Array.from(contact.publicKey)
@@ -139,6 +136,7 @@ function contactToDbRow(
     adv_lon: contact.advLon !== 0 ? contact.advLon / MESHCORE_COORD_SCALE : null,
     nickname: nickname ?? null,
     contact_flags: contact.flags & 0xff,
+    hops_away: contact.outPathLen != null && contact.outPathLen >= 0 ? contact.outPathLen : null,
   };
 }
 
@@ -633,6 +631,7 @@ export interface MeshCoreContactRaw {
   advLat: number;
   advLon: number;
   flags: number;
+  outPathLen?: number;
 }
 
 interface MeshCoreChannelRaw {
@@ -654,6 +653,7 @@ interface MeshcoreContactDbRow {
   favorited: number;
   nickname: string | null;
   contact_flags: number | null;
+  hops_away: number | null;
 }
 
 interface DeviceLogEntry {
@@ -1257,6 +1257,7 @@ export function useMeshCore() {
               latitude: row.adv_lat ?? null,
               longitude: row.adv_lon ?? null,
               favorited: row.favorited === 1,
+              hops_away: row.hops_away ?? undefined,
             });
           }
         }
@@ -1299,6 +1300,7 @@ export function useMeshCore() {
             ...selfNode,
             long_name: displayLongName,
             short_name: displayShortName,
+            hops_away: 0,
             ...(fromSelfBattery ?? {}),
           });
         } else {
@@ -1313,6 +1315,7 @@ export function useMeshCore() {
             last_heard: Math.floor(Date.now() / 1000),
             latitude: null,
             longitude: null,
+            hops_away: 0,
             ...(fromSelfBattery?.voltage != null ? { voltage: fromSelfBattery.voltage } : {}),
           });
         }

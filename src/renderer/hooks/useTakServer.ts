@@ -35,8 +35,18 @@ export function useTakServer(): UseTakServerResult {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void window.electronAPI.tak.getStatus().then(setStatus);
-    void window.electronAPI.tak.getConnectedClients().then(setClients);
+    void window.electronAPI.tak
+      .getStatus()
+      .then(setStatus)
+      .catch((e: unknown) => {
+        setError(e instanceof Error ? e.message : String(e));
+      });
+    void window.electronAPI.tak
+      .getConnectedClients()
+      .then(setClients)
+      .catch((e: unknown) => {
+        setError(e instanceof Error ? e.message : String(e));
+      });
 
     const unsubStatus = window.electronAPI.tak.onStatus((s) => {
       setStatus(s);

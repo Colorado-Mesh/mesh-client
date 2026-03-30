@@ -7,9 +7,13 @@ export const MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS = -10;
 /** Built-in Meshtastic node-list group: heard on RF this session and also updated via MQTT (excludes self). */
 export const MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT = -11;
 
+/** Built-in Meshtastic node-list group: Router or Router Late (role 2 or 11). */
+export const MESHTASTIC_CONTACT_GROUP_BUILTIN_ROUTER = -12;
+
 export const MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS = [
   { group_id: MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS, label: 'GPS' },
   { group_id: MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT, label: 'RF+MQTT' },
+  { group_id: MESHTASTIC_CONTACT_GROUP_BUILTIN_ROUTER, label: 'Router' },
 ] as const;
 
 /**
@@ -46,4 +50,16 @@ export function isMeshtasticContactEligibleForUserGroup(
 ): boolean {
   if (selfNodeId == null || selfNodeId <= 0) return false;
   return node.node_id !== selfNodeId;
+}
+
+/**
+ * Meshtastic smart filter: Router (role 2) or Router Late (role 11).
+ * Self excluded.
+ */
+export function meshtasticContactGroupMatchesBuiltinRouter(
+  node: Pick<MeshNode, 'node_id' | 'role'>,
+  myNodeNum: number,
+): boolean {
+  if (myNodeNum > 0 && node.node_id === myNodeNum) return false;
+  return node.role === 2 || node.role === 11;
 }

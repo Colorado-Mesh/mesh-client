@@ -18,6 +18,7 @@ import { formatCoordPair } from '../lib/coordUtils';
 import { getRoutingRowForNode, routingAnomalyNodeIds } from '../lib/diagnostics/diagnosticRows';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
+import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { MeshNode, MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/types';
@@ -119,21 +120,13 @@ function getCUColor(cu: number): string {
  * attribute values. Always pass internal computed values or wrap user-supplied
  * strings with `escapeSvgAttr` / `escapeSvgText` before interpolating.
  */
-const NODE_BADGE_PATHS: Record<string, string> = {
-  repeater:
-    'M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z',
-  room: 'M8,2H16A2,2 0 0,1 18,4V20A2,2 0 0,1 16,22H8A2,2 0 0,1 6,20V4A2,2 0 0,1 8,2M14,11A1,1 0 0,0 13,12A1,1 0 0,0 14,13A1,1 0 0,0 15,12A1,1 0 0,0 14,11Z',
-  sensor:
-    'M6.18,15.64A2.18,2.18 0 0,1 8.36,17.82C8.36,19 7.38,20 6.18,20C4.98,20 4,19 4,17.82A2.18,2.18 0 0,1 6.18,15.64M4,4.44A15.56,15.56 0 0,1 19.56,20H17.73A13.73,13.73 0 0,0 4,6.27V4.44M4,10.1A9.9,9.9 0 0,1 13.9,20H12.07A8.07,8.07 0 0,0 4,11.93V10.1Z',
-};
-
 function createMarkerIcon(
   color: string,
   isSelf: boolean,
   cu = 0,
   markerOpacity = 1,
   isMqttOnly = false,
-  nodeBadge: 'repeater' | 'room' | 'sensor' | null = null,
+  nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = null,
 ): L.Icon {
   const haloPx = cu <= 0 ? 0 : Math.round((cu / 100) * 14);
   const haloColor = getCUColor(cu);
@@ -179,7 +172,7 @@ function getMarkerIcon(
   isSelf: boolean,
   cu: number,
   isMqttOnly = false,
-  nodeBadge: 'repeater' | 'room' | 'sensor' | null = null,
+  nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = null,
 ): L.Icon {
   const color = status === 'online' ? '#9ae6b4' : status === 'stale' ? '#c4a864' : '#6b7280';
   const opacity = status === 'online' ? 1 : status === 'stale' ? 0.65 : 0.45;
@@ -244,14 +237,15 @@ const MapMarker = memo(
     const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
     const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
     const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
-    const nodeBadge =
-      node.hw_model === 'Repeater'
-        ? ('repeater' as const)
-        : node.hw_model === 'Room'
-          ? ('room' as const)
-          : node.hw_model === 'Sensor'
-            ? ('sensor' as const)
-            : null;
+    const nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = (() => {
+      if (node.hw_model === 'Repeater') return 'repeater';
+      if (node.hw_model === 'Room') return 'room';
+      if (node.hw_model === 'Sensor') return 'sensor';
+      if (protocol === 'meshtastic' && node.role === 2) return 'repeater';
+      if (protocol === 'meshtastic' && node.role === 11) return 'clock';
+      if (protocol === 'meshtastic' && node.role === 12) return 'home';
+      return null;
+    })();
 
     const icon = useMemo(
       () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge),
@@ -568,7 +562,9 @@ export default function MapPanel({
 
   useEffect(() => {
     ensureMapStyles();
-    void loadHistoryFromDb();
+    void loadHistoryFromDb().catch((e: unknown) => {
+      console.warn('[MapPanel] loadHistoryFromDb failed:', String(e));
+    });
   }, [loadHistoryFromDb]);
 
   const nodesWithPosition = useMemo(() => {

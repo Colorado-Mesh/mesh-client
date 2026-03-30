@@ -1,3 +1,5 @@
+import { NODE_BADGE_PATHS } from './nodeIcons';
+
 interface RoleInfo {
   label: string;
   colorClass: string;
@@ -8,12 +10,7 @@ interface RoleInfo {
 const ROLE_INFO: Record<number, RoleInfo> = {
   0: { label: 'Client', colorClass: 'text-gray-400', isBadge: false },
   1: { label: 'Client Mute', colorClass: 'text-gray-500', isBadge: false },
-  2: {
-    label: 'Router',
-    colorClass: 'text-blue-300',
-    isBadge: true,
-    badgeClass: 'bg-blue-900/60 text-blue-300 border border-blue-700/40',
-  },
+  2: { label: 'Router', colorClass: 'text-gray-400', isBadge: false },
   3: { label: 'Router Client', colorClass: 'text-blue-400', isBadge: false },
   4: {
     label: 'Repeater',
@@ -42,18 +39,8 @@ const ROLE_INFO: Record<number, RoleInfo> = {
     isBadge: true,
     badgeClass: 'bg-red-950/70 text-red-200 border border-red-800/50',
   },
-  11: {
-    label: 'Router Late',
-    colorClass: 'text-sky-300',
-    isBadge: true,
-    badgeClass: 'bg-sky-900/60 text-sky-300 border border-sky-700/40',
-  },
-  12: {
-    label: 'Client Base',
-    colorClass: 'text-yellow-300',
-    isBadge: true,
-    badgeClass: 'bg-indigo-900/60 text-yellow-300 border border-indigo-700/40',
-  },
+  11: { label: 'Router Late', colorClass: 'text-gray-400', isBadge: false },
+  12: { label: 'Client Base', colorClass: 'text-gray-400', isBadge: false },
 };
 
 export function getRoleInfo(role: number | undefined): RoleInfo {
@@ -92,13 +79,10 @@ export function RoleIcon({ role }: { role: number | undefined }) {
           <line x1="21" y1="11" x2="15" y2="17" />
         </svg>
       );
-    case 2: // Router — TowerControl (broadcast tower)
+    case 2: // Router — wifi/signal-arc (matches meshcore repeater icon)
       return (
         <svg {...p}>
-          <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-          <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-          <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-          <line x1="12" y1="20" x2="12" y2="12" />
+          <path d={NODE_BADGE_PATHS.repeater} />
         </svg>
       );
     case 3: // Router Client — UserCog
@@ -174,11 +158,10 @@ export function RoleIcon({ role }: { role: number | undefined }) {
           <polyline points="12 6 12 12 16 14" />
         </svg>
       );
-    case 12: // Client Base — Home
+    case 12: // Client Base — MDI home-variant
       return (
-        <svg {...p}>
-          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
+        <svg {...p} fill="currentColor" stroke="none">
+          <path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 2.5L17 10v8h-2v-5H9v5H7v-8l5-4.5z" />
         </svg>
       );
     default: // Unknown — question mark in circle

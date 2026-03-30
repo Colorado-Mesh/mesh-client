@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     exportDb: () => ipcRenderer.invoke('db:export'),
     importDb: () => ipcRenderer.invoke('db:import'),
     deleteNodesByAge: (days: number) => ipcRenderer.invoke('db:deleteNodesByAge', days),
+    deleteNodesNeverHeard: () => ipcRenderer.invoke('db:deleteNodesNeverHeard'),
     pruneNodesByCount: (maxCount: number) => ipcRenderer.invoke('db:pruneNodesByCount', maxCount),
     deleteNodesBatch: (nodeIds: number[]) => ipcRenderer.invoke('db:deleteNodesBatch', nodeIds),
     clearMessagesByChannel: (channel: number) =>
@@ -94,6 +95,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       last_rssi?: number | null;
       nickname?: string | null;
       contact_flags?: number | null;
+      hops_away?: number | null;
     }) => ipcRenderer.invoke('db:saveMeshcoreContact', contact),
     updateMeshcoreContactAdvert: (
       nodeId: number,

@@ -103,7 +103,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   protocol: 'meshcore',
-  hasHopCount: false,
+  hasHopCount: true,
   hopLimitRange: [1, 64],
   /** MeshCore session is RF-first; MQTT bridge is optional and not shown as a node column. */
   hasMqttHybrid: false,

@@ -9,6 +9,51 @@ import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
 // When AI assistants modify the preload or main process, TypeScript will catch any drift
 // at the `typecheck` step in .githooks/pre-commit.
 
+// ─── Database types ───────────────────────────────────────────────────────────
+
+export interface SavedMessage {
+  id: number;
+  sender_id: number;
+  sender_name: string;
+  payload: string;
+  channel: number;
+  timestamp: number;
+  packetId: number | null;
+  status: string;
+  error: string | null;
+  emoji: number | null;
+  replyId: number | null;
+  to: number | undefined;
+  mqttStatus: string | null;
+  receivedVia: string | null;
+}
+
+export interface SavedNode {
+  node_id: number;
+  long_name: string | null;
+  short_name: string | null;
+  hw_model: string | null;
+  snr: number | null;
+  rssi: number | null;
+  battery: number | null;
+  last_heard: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  role: string | null;
+  hops_away: number | null;
+  via_mqtt: number | null;
+  voltage: number | null;
+  channel_utilization: number | null;
+  air_util_tx: number | null;
+  altitude: number | null;
+  favorited: number;
+  source: string;
+  num_packets_rx_bad: number | null;
+  num_rx_dupe: number | null;
+  num_packets_rx: number | null;
+  num_packets_tx: number | null;
+}
+
 // ─── Shared sub-types ─────────────────────────────────────────────────────────
 
 export interface NobleBleDevice {
@@ -54,7 +99,7 @@ export interface ElectronAPI {
       to?: number;
     }) => Promise<unknown>;
 
-    getMessages: (channel?: number, limit?: number) => Promise<unknown>;
+    getMessages: (channel?: number, limit?: number) => Promise<SavedMessage[]>;
 
     saveNode: (node: {
       node_id: number;
@@ -69,7 +114,7 @@ export interface ElectronAPI {
       longitude: number | null;
     }) => Promise<unknown>;
 
-    getNodes: () => Promise<unknown>;
+    getNodes: () => Promise<SavedNode[]>;
     clearMessages: () => Promise<unknown>;
     clearNodes: () => Promise<unknown>;
     deleteNode: (nodeId: number) => Promise<unknown>;
@@ -82,6 +127,7 @@ export interface ElectronAPI {
     exportDb: () => Promise<unknown>;
     importDb: () => Promise<unknown>;
     deleteNodesByAge: (days: number) => Promise<unknown>;
+    deleteNodesNeverHeard: () => Promise<unknown>;
     pruneNodesByCount: (maxCount: number) => Promise<unknown>;
     deleteNodesBatch: (nodeIds: number[]) => Promise<unknown>;
     clearMessagesByChannel: (channel: number) => Promise<unknown>;
@@ -121,6 +167,8 @@ export interface ElectronAPI {
       last_snr?: number | null;
       last_rssi?: number | null;
       nickname?: string | null;
+      contact_flags?: number | null;
+      hops_away?: number | null;
     }) => Promise<unknown>;
     updateMeshcoreContactAdvert: (
       nodeId: number,
@@ -345,7 +393,7 @@ export interface ElectronAPI {
     getConnectedClients: () => Promise<TAKClientInfo[]>;
     generateDataPackage: () => Promise<void>;
     regenerateCertificates: () => Promise<void>;
-    pushNodeUpdate: (node: Record<string, unknown>) => Promise<void>;
+    pushNodeUpdate: (node: { node_id: number } & Record<string, unknown>) => Promise<void>;
     onStatus: (cb: (status: TAKServerStatus) => void) => () => void;
     onClientConnected: (cb: (client: TAKClientInfo) => void) => () => void;
     onClientDisconnected: (cb: (clientId: string) => void) => () => void;
