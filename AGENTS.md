@@ -88,6 +88,17 @@ pnpm run format && pnpm run lint && pnpm run typecheck && pnpm run test:run
 - Use `jsx-runtime` (no need to import React)
 - Accessibility: every interactive element needs `aria-label` (Electron hides text from AT)
 - Components must have accessible labels (axe tests enforce this)
+- **Null safety in JSX**: When displaying nullable values that were checked in a condition, use optional chaining for defense in depth. Example: `showLastHopSnr && node.snr?.toFixed(1)` not `showLastHopSnr && node.snr.toFixed(1)` — the value could change between condition check and render.
+
+### State Management (Zustand)
+
+- **Map selectors**: Selecting from a Map (e.g., `s.map.get(id) ?? DEFAULT`) subscribes to the entire Map. Prefer selecting the Map once and deriving with `useMemo`, or accept that any Map update triggers re-renders.
+- **Stable defaults**: Always define default values outside components (module level) to ensure stable reference equality: `const EMPTY_ARRAY: Item[] = []` — never inline `?? []` or `?? {}`.
+
+### Magic Numbers
+
+- **Time constants**: Extract time-related magic numbers to `src/renderer/lib/timeConstants.ts`. Use `MS_PER_SECOND`, `MS_PER_MINUTE`, `MS_PER_HOUR`, `MS_PER_DAY` instead of inline `60_000`, `3_600_000`, `86_400_000`.
+- **Other domains**: For domain-specific thresholds (e.g., timeouts, limits), define module-level constants with descriptive names.
 
 ### Error Handling
 

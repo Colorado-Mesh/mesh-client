@@ -17,6 +17,7 @@ import {
 import { diagnoseConnectedNode, hasLocalStatsData } from '../lib/diagnostics/RFDiagnosticEngine';
 import type { OurPosition } from '../lib/gpsSource';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
+import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
 import type { DiagnosticRow, MeshNode } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -84,9 +85,9 @@ function InfoCircleIcon({ className }: { className?: string }) {
 function formatTime(ts: number): string {
   if (!ts) return '—';
   const diff = Date.now() - ts;
-  if (diff < 60_000) return 'Just now';
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  if (diff < MS_PER_MINUTE) return 'Just now';
+  if (diff < MS_PER_HOUR) return `${Math.floor(diff / MS_PER_MINUTE)}m ago`;
+  if (diff < MS_PER_DAY) return `${Math.floor(diff / MS_PER_HOUR)}h ago`;
   return new Date(ts).toLocaleDateString();
 }
 

@@ -20,6 +20,7 @@ import {
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { normalizeLastHeardMs } from '../lib/nodeStatus';
 import { RoleDisplay } from '../lib/roleInfo';
+import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
 import type { HopHistoryPoint, MeshNode, MeshProtocol, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
@@ -39,9 +40,9 @@ export function formatTime(ts: number): string {
   if (!ts) return 'Never';
   const normalizedTs = normalizeLastHeardMs(ts);
   const diff = Date.now() - normalizedTs;
-  if (diff < 60_000) return 'Just now';
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  if (diff < MS_PER_MINUTE) return 'Just now';
+  if (diff < MS_PER_HOUR) return `${Math.floor(diff / MS_PER_MINUTE)}m ago`;
+  if (diff < MS_PER_DAY) return `${Math.floor(diff / MS_PER_HOUR)}h ago`;
   return new Date(normalizedTs).toLocaleString();
 }
 
@@ -211,7 +212,11 @@ export default function NodeInfoBody({
         />
       )}
       {showLastHopSnr && !showSnr && (
-        <InfoRow label="Last-Hop SNR" value={`${node.snr.toFixed(1)} dB`} className={snrColor} />
+        <InfoRow
+          label="Last-Hop SNR"
+          value={`${node.snr?.toFixed(1) ?? '—'} dB`}
+          className={snrColor}
+        />
       )}
 
       {/* Battery — Meshtastic % ; MeshCore: voltage from local radio (self) + approximate % bar */}
