@@ -23,6 +23,12 @@ pnpm run lint:fix     # ESLint with auto-fix
 pnpm run format       # Prettier write
 pnpm run format:check # Prettier check only
 pnpm run typecheck    # TypeScript (renderer + main)
+pnpm run lint:md      # Markdownlint for all .md files
+
+# Checks
+pnpm run check:log-injection # Verify no unsanitized error logging
+pnpm run check:db-migrations # Validate SQLite migrations
+pnpm run check:ipc-contract  # Verify preload/main API alignment
 
 # Testing
 pnpm test             # Vitest watch mode
