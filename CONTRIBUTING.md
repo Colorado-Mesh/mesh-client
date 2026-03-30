@@ -76,17 +76,18 @@ Manual fallback:
 - Debian/Ubuntu: `sudo apt install yamllint`
 - Fedora: `sudo dnf install yamllint`
 
-After`pnpm install`, the repo's git hooks are enabled (`core.hooksPath` → `.githooks`). On every commit, the **pre-commit** hook runs in order:
+After `pnpm install`, the repo's git hooks are enabled (`core.hooksPath` → `.githooks`). On every commit, the **pre-commit** hook runs in order:
 
 1. **`pnpm run format`** — Prettier **writes** to matching files (not `format:check`).
-2. **Re-stage** — Only files that were already staged are re-added, so unstaged WIP is not swept in.
-3. **`pnpm run lint`**
-4. **`pnpm run typecheck`** — TypeScript check for renderer and main/preload.
-5. **`pnpm run check:log-injection`** — Ensures main-process `console.*` calls do not pass raw error variables (`err`, `e`, `error`, `reason`) without `sanitizeLogMessage()` at the call site. See [Log injection (CodeQL js/log-injection)](#log-injection-codeql-jslog-injection) below.
-6. **`pnpm audit`** — Fails the commit if pnpm reports vulnerabilities.
-7. **`actionlint`** — Lints `.github/workflows/*.yml`; must be installed (see above).
-8. **`yamllint`** — Lints all YAML files (`-f github -s`); must be installed (see above).
-9. **`pnpm run test:run`** — Fails the commit if tests fail.
+2. **`pnpm run lint:md`** — markdownlint-cli2 fixes all `.md` files (installed via devDependencies).
+3. **Re-stage** — Only files that were already staged are re-added, so unstaged WIP is not swept in.
+4. **`pnpm run lint`**
+5. **`pnpm run typecheck`** — TypeScript check for renderer and main/preload.
+6. **`pnpm run check:log-injection`** — Ensures main-process `console.*` calls do not pass raw error variables (`err`, `e`, `error`, `reason`) without `sanitizeLogMessage()` at the call site. See [Log injection (CodeQL js/log-injection)](#log-injection-codeql-jslog-injection) below.
+7. **`pnpm audit`** — Fails the commit if pnpm reports vulnerabilities.
+8. **`actionlint`** — Lints `.github/workflows/*.yml`; must be installed (see above).
+9. **`yamllint`** — Lints all YAML files (`-f github -s`); must be installed (see above).
+10. **`pnpm run test:run`** — Fails the commit if tests fail.
 
 To skip the hook in an emergency: `git commit --no-verify`.
 

@@ -137,12 +137,13 @@ Complete reference of all npm scripts in `package.json`, organized by category.
 
 #### Lint / Format
 
-| Script         | Description                     |
-| -------------- | ------------------------------- |
-| `lint`         | Run ESLint (type-aware)         |
-| `lint:fix`     | Run ESLint with auto-fix        |
-| `format`       | Format all code via Prettier    |
-| `format:check` | Check formatting without fixing |
+| Script         | Description                            |
+| -------------- | -------------------------------------- |
+| `lint`         | Run ESLint (type-aware)                |
+| `lint:fix`     | Run ESLint with auto-fix               |
+| `lint:md`      | Run markdownlint-cli2 on all .md files |
+| `format`       | Format all code via Prettier           |
+| `format:check` | Check formatting without fixing        |
 
 #### Typecheck
 
@@ -215,6 +216,7 @@ Installed via `pnpm install` (from `package.json`):
 - `eslint`
 - `typescript`
 - `prettier`
+- `markdownlint-cli2`
 
 Not installed by npm (install separately when needed):
 
@@ -228,6 +230,7 @@ Run these quality checks before opening a PR:
 ```bash
 pnpm run test:run
 pnpm run lint
+pnpm run lint:md
 pnpm run typecheck
 pnpm run format:check
 ```
