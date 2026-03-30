@@ -3,12 +3,23 @@ export type PacketClass = 'meshcore' | 'meshtastic' | 'unknown-lora';
 /** Fingerprint a raw LoRa payload into a packet class. */
 export function classifyPayload(raw: Uint8Array): PacketClass {
   if (raw[0] === 0x3c) return 'meshcore';
-  if (raw.length >= 8) {
+  // Meshtastic LoRa header is exactly 16 bytes: dest[4] + sender[4] + packetId[4] + flags[1] +
+  // channelHash[1] + nextHop[1] + relayNode[1]. Require the full header to avoid false positives
+  // from MeshCore encrypted/relay packets whose first 8 bytes resemble Meshtastic node IDs.
+  if (raw.length >= 16) {
     const destId = (raw[0] | (raw[1] << 8) | (raw[2] << 16) | (raw[3] << 24)) >>> 0;
     const senderId = (raw[4] | (raw[5] << 8) | (raw[6] << 16) | (raw[7] << 24)) >>> 0;
     const BROADCAST = 0xffffffff;
     if (destId !== 0 && destId !== BROADCAST && senderId !== 0 && senderId !== BROADCAST) {
-      return 'meshtastic';
+      // Validate the flags byte (byte 12): hop_limit (bits [2:0]) must be <= hop_start (bits [7:5]),
+      // and hop_start >= 1. This structural invariant holds for all valid Meshtastic packets —
+      // hop_limit starts at hop_start and decrements per relay — and rules out non-Meshtastic packets.
+      const flags = raw[12];
+      const hopLimit = flags & 0x07;
+      const hopStart = (flags >> 5) & 0x07;
+      if (hopStart >= 1 && hopLimit <= hopStart) {
+        return 'meshtastic';
+      }
     }
   }
   return 'unknown-lora';
