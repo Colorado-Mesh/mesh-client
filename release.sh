@@ -33,7 +33,7 @@ detect_version_bump() {
   local has_other=false
 
   # Check for BREAKING CHANGE in commit bodies
-  if echo "$commits" | grep -q "BREAKING CHANGE"; then
+  if echo "$commits" | grep -q "BREAKING CHANGE:"; then
     has_breaking=true
   fi
 
