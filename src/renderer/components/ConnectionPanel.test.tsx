@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
@@ -101,18 +101,9 @@ describe('ConnectionPanel accessibility', () => {
 });
 
 describe('ConnectionPanel MQTT connect error', () => {
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    consoleWarnSpy.mockRestore();
-  });
-
   it('surfaces error when mqtt.connect rejects', async () => {
     const user = userEvent.setup();
+    const consoleWarnSpy = vi.spyOn(console, 'warn');
     vi.mocked(window.electronAPI.mqtt.connect).mockRejectedValueOnce(new Error('broker refused'));
 
     render(
@@ -133,6 +124,11 @@ describe('ConnectionPanel MQTT connect error', () => {
     await user.click(connectBtn);
 
     expect(await screen.findByText('broker refused')).toBeInTheDocument();
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[ConnectionPanel]'),
+      expect.any(Error),
+    );
+    consoleWarnSpy.mockRestore();
   });
 
   it('does not run LetsMesh preset validation for Meshtastic when meshcore preset was letsmesh', async () => {
@@ -171,19 +167,9 @@ describe('ConnectionPanel MQTT connect error', () => {
 });
 
 describe('ConnectionPanel BLE error humanization', () => {
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    consoleWarnSpy.mockRestore();
-  });
-
   it('shows Windows handshake guidance for MeshCore BLE handshake timeout/disconnect', async () => {
     const user = userEvent.setup();
+    const consoleWarnSpy = vi.spyOn(console, 'warn');
     const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
     userAgentSpy.mockReturnValue(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
@@ -211,11 +197,17 @@ describe('ConnectionPanel BLE error humanization', () => {
     await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
 
     expect(await screen.findByText(/On Windows, toggle Bluetooth off\/on/i)).toBeInTheDocument();
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[ConnectionPanel]'),
+      expect.any(Error),
+    );
+    consoleWarnSpy.mockRestore();
     userAgentSpy.mockRestore();
   });
 
   it('renders object-shaped BLE errors as JSON instead of [object Object]', async () => {
     const user = userEvent.setup();
+    const consoleWarnSpy = vi.spyOn(console, 'warn');
     const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
     userAgentSpy.mockReturnValue(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
@@ -243,11 +235,17 @@ describe('ConnectionPanel BLE error humanization', () => {
 
     expect(await screen.findByText(/"reason":"adapter glitch"/)).toBeInTheDocument();
     expect(screen.queryByText(/\[object Object\]/)).not.toBeInTheDocument();
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[ConnectionPanel]'),
+      expect.objectContaining({ reason: 'adapter glitch', code: 'BLE_OBJECT_ERR' }),
+    );
+    consoleWarnSpy.mockRestore();
     userAgentSpy.mockRestore();
   });
 
   it('shows Windows adapter guidance when BLE adapter is unavailable', async () => {
     const user = userEvent.setup();
+    const consoleWarnSpy = vi.spyOn(console, 'warn');
     const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
     userAgentSpy.mockReturnValue(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
@@ -275,6 +273,11 @@ describe('ConnectionPanel BLE error humanization', () => {
     expect(
       await screen.findByText(/update your Bluetooth driver in Device Manager/i),
     ).toBeInTheDocument();
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[ConnectionPanel]'),
+      expect.any(Error),
+    );
+    consoleWarnSpy.mockRestore();
     userAgentSpy.mockRestore();
   });
 });

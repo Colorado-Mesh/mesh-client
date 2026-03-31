@@ -4,7 +4,7 @@
  * pub keys so DM send can resolve the destination pubkey.
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 
@@ -157,11 +157,8 @@ function makeMockSerialPort() {
 }
 
 describe('useMeshCore DB pubkey backfill for DM send', () => {
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     getContactsMock.mockResolvedValue([]);
     sendTextMessageMock.mockResolvedValue({ expectedAckCrc: 1, estTimeout: 30_000 });
     getSelfInfoMock.mockResolvedValue({
@@ -187,10 +184,6 @@ describe('useMeshCore DB pubkey backfill for DM send', () => {
         nickname: null,
       },
     ]);
-  });
-
-  afterEach(() => {
-    consoleWarnSpy.mockRestore();
   });
 
   it('allows sendMessage DM when getContacts is empty but SQLite has a full pubkey', async () => {
@@ -238,16 +231,6 @@ describe('useMeshCore DB pubkey backfill for DM send', () => {
 });
 
 describe('useMeshCore DM reply (wire + persistence)', () => {
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    consoleWarnSpy.mockRestore();
-  });
-
   const contactRow = {
     node_id: PEER_NODE_ID,
     public_key: PEER_PUBKEY_HEX,

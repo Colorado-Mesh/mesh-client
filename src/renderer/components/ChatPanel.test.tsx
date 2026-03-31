@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { MeshNode } from '../lib/types';
@@ -8,16 +8,6 @@ import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
 describe('ChatPanel accessibility', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    consoleErrorSpy.mockRestore();
-  });
-
   const defaultProps = {
     messages: [],
     channels: [{ index: 0, name: 'General' }],
@@ -493,6 +483,7 @@ describe('ChatPanel accessibility', () => {
 
   it('shows role="alert" when onSend rejects', async () => {
     const user = userEvent.setup();
+    const consoleErrorSpy = vi.spyOn(console, 'error');
     const onSend = vi.fn().mockRejectedValue(new Error('send failed'));
     render(
       <ToastProvider>
@@ -506,6 +497,11 @@ describe('ChatPanel accessibility', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('send failed');
     });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[ChatPanel]'),
+      expect.any(Error),
+    );
+    consoleErrorSpy.mockRestore();
   });
 });
 
