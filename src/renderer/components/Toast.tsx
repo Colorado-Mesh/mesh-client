@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ addToast }}>
       {children}
       {/* Toast container — fixed bottom-right */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+      <div className="pointer-events-none fixed right-4 bottom-4 z-50 flex flex-col gap-2">
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onDismiss={removeToast} />
         ))}
@@ -86,11 +86,11 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
 
   return (
     <div
-      className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-lg border shadow-lg backdrop-blur-sm text-sm transition-all duration-300 ${colors} ${
+      className={`pointer-events-auto flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm shadow-lg backdrop-blur-sm transition-all duration-300 ${colors} ${
         visible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
       }`}
     >
-      <span className="text-base shrink-0">{icon}</span>
+      <span className="shrink-0 text-base">{icon}</span>
       <span className="flex-1">{toast.message}</span>
       <button
         onClick={() => {
@@ -101,7 +101,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
           }, 300);
         }}
         aria-label="Dismiss"
-        className="text-muted hover:text-gray-200 ml-2 shrink-0 text-xs font-medium"
+        className="text-muted ml-2 shrink-0 text-xs font-medium hover:text-gray-200"
       >
         Dismiss
       </button>

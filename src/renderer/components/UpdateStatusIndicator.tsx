@@ -29,7 +29,7 @@ function IconSpinner({ className }: { className?: string }) {
 function IconUpToDate() {
   return (
     <svg
-      className="w-3.5 h-3.5 text-brand-green shrink-0"
+      className="text-brand-green h-3.5 w-3.5 shrink-0"
       aria-hidden="true"
       viewBox="0 0 24 24"
       fill="none"
@@ -48,7 +48,7 @@ function IconUpToDate() {
 function IconUpdateAvailable() {
   return (
     <svg
-      className="w-3.5 h-3.5 text-brand-green shrink-0"
+      className="text-brand-green h-3.5 w-3.5 shrink-0"
       aria-hidden="true"
       viewBox="0 0 24 24"
       fill="none"
@@ -67,7 +67,7 @@ function IconUpdateAvailable() {
 function IconRestart() {
   return (
     <svg
-      className="w-3.5 h-3.5 text-brand-green shrink-0"
+      className="text-brand-green h-3.5 w-3.5 shrink-0"
       aria-hidden="true"
       viewBox="0 0 24 24"
       fill="none"
@@ -86,7 +86,7 @@ function IconRestart() {
 function IconWarning() {
   return (
     <svg
-      className="w-3.5 h-3.5 text-amber-500 shrink-0"
+      className="h-3.5 w-3.5 shrink-0 text-amber-500"
       aria-hidden="true"
       viewBox="0 0 24 24"
       fill="currentColor"
@@ -117,7 +117,7 @@ export default function UpdateStatusIndicator({
     <span
       role="status"
       aria-live="polite"
-      className="inline-flex flex-wrap items-center justify-end gap-x-1 gap-y-0.5 min-w-0 max-w-full font-sans text-gray-300"
+      className="inline-flex max-w-full min-w-0 flex-wrap items-center justify-end gap-x-1 gap-y-0.5 font-sans text-gray-300"
     >
       {phase === 'idle' && (
         <>
@@ -130,7 +130,7 @@ export default function UpdateStatusIndicator({
         <button
           type="button"
           onClick={onCheck}
-          className="inline-flex items-center gap-1 min-w-0 text-gray-300 hover:text-gray-100 transition-colors cursor-pointer bg-transparent border-0 p-0 font-inherit"
+          className="font-inherit inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-gray-300 transition-colors hover:text-gray-100"
           title="Check for updates"
         >
           <IconUpToDate />
@@ -139,7 +139,7 @@ export default function UpdateStatusIndicator({
       )}
 
       {phase === 'available' && (
-        <span className="inline-flex items-center gap-1 min-w-0">
+        <span className="inline-flex min-w-0 items-center gap-1">
           <IconUpdateAvailable />
           {version != null ? <span className="tabular-nums">v{version}</span> : <span>Update</span>}
           {useReleasePage ? (
@@ -155,20 +155,20 @@ export default function UpdateStatusIndicator({
       )}
 
       {phase === 'downloading' && (
-        <span className="inline-flex items-center gap-1.5 min-w-0 max-w-[140px]">
-          <IconSpinner className="h-3.5 w-3.5 text-brand-green" />
-          <span className="h-1 flex-1 min-w-[48px] bg-gray-700 rounded-full overflow-hidden">
+        <span className="inline-flex max-w-[140px] min-w-0 items-center gap-1.5">
+          <IconSpinner className="text-brand-green h-3.5 w-3.5" />
+          <span className="h-1 min-w-[48px] flex-1 overflow-hidden rounded-full bg-gray-700">
             <span
-              className="block h-full bg-brand-green transition-all duration-300"
+              className="bg-brand-green block h-full transition-all duration-300"
               style={{ width: `${percent ?? 0}%` }}
             />
           </span>
-          <span className="tabular-nums shrink-0">{percent ?? 0}%</span>
+          <span className="shrink-0 tabular-nums">{percent ?? 0}%</span>
         </span>
       )}
 
       {phase === 'ready' && (
-        <span className="inline-flex items-center gap-1 min-w-0">
+        <span className="inline-flex min-w-0 items-center gap-1">
           <IconRestart />
           <button type="button" onClick={onInstall} className={linkBtn} title="Restart and install">
             Restart
@@ -180,7 +180,7 @@ export default function UpdateStatusIndicator({
         <button
           type="button"
           onClick={onCheck}
-          className="inline-flex items-center gap-1 min-w-0 text-gray-300 hover:text-gray-100 transition-colors cursor-pointer bg-transparent border-0 p-0 font-inherit"
+          className="font-inherit inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-gray-300 transition-colors hover:text-gray-100"
           title="Retry update check"
         >
           <IconWarning />

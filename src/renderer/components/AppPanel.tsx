@@ -63,25 +63,25 @@ function ConfirmModal({
       <button
         type="button"
         aria-label="Cancel"
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer border-0 p-0"
+        className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0 backdrop-blur-sm"
         onClick={onCancel}
       />
       {/* Modal */}
-      <div className="relative bg-deep-black border border-gray-600 rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6 space-y-4">
+      <div className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl">
         <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
-        <p className="text-sm text-muted leading-relaxed">{message}</p>
+        <p className="text-muted text-sm leading-relaxed">{message}</p>
         <div className="flex gap-3 pt-2">
           <button
             onClick={onCancel}
             aria-label="Cancel"
-            className="flex-1 px-4 py-2.5 bg-secondary-dark hover:bg-gray-600 text-gray-300 font-medium rounded-lg transition-colors text-sm"
+            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             aria-label={confirmLabel}
-            className={`flex-1 px-4 py-2.5 font-medium rounded-lg transition-colors text-sm text-white ${
+            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors ${
               danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'
             }`}
           >
@@ -410,13 +410,13 @@ export default function AppPanel({
   }, [pendingAction, addToast, onNodesPruned, onMessagesPruned]);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <h2 className="text-xl font-semibold text-gray-200">App Settings</h2>
 
       {/* Log panel visibility */}
       {onLogPanelVisibleChange && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted">Log panel</h3>
+          <h3 className="text-muted text-sm font-medium">Log panel</h3>
           <div className="bg-secondary-dark rounded-lg p-4">
             <div className="flex items-center gap-2">
               <input
@@ -431,12 +431,12 @@ export default function AppPanel({
               />
               <label
                 htmlFor="log-panel-visible-checkbox"
-                className="text-sm text-gray-300 cursor-pointer"
+                className="cursor-pointer text-sm text-gray-300"
               >
                 Show log panel (right side)
               </label>
             </div>
-            <p className="text-xs text-muted mt-2">
+            <p className="text-muted mt-2 text-xs">
               When enabled, a live log stream appears on the right. Debug lines require the checkbox
               inside the log panel.
             </p>
@@ -447,8 +447,8 @@ export default function AppPanel({
       {/* Flood Advert schedule (MeshCore only) */}
       {protocol === 'meshcore' && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted">Flood Advert</h3>
-          <div className="bg-secondary-dark rounded-lg p-4 space-y-2">
+          <h3 className="text-muted text-sm font-medium">Flood Advert</h3>
+          <div className="bg-secondary-dark space-y-2 rounded-lg p-4">
             <label htmlFor="flood-advert-interval" className="text-sm text-gray-300">
               Automatically send a flood advert on a schedule:
             </label>
@@ -460,13 +460,13 @@ export default function AppPanel({
                 setSettings((prev) => ({ ...prev, autoFloodAdvertIntervalHours: hours }));
                 onAutoFloodAdvertIntervalChange?.(hours);
               }}
-              className="w-full px-3 py-2 bg-deep-black rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none text-sm"
+              className="bg-deep-black focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
             >
               <option value={0}>Disabled</option>
               <option value={12}>Every 12 hours</option>
               <option value={24}>Every 24 hours</option>
             </select>
-            <p className="text-xs text-muted">
+            <p className="text-muted text-xs">
               Sends a flood advert when connected and repeats at the chosen interval to keep your
               node visible on the mesh.
             </p>
@@ -476,10 +476,10 @@ export default function AppPanel({
 
       {/* GPS / Location */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted">GPS / Location</h3>
-        <div className="bg-secondary-dark rounded-lg p-4 space-y-4">
+        <h3 className="text-muted text-sm font-medium">GPS / Location</h3>
+        <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
           {ourPosition && (
-            <p className="text-xs text-brand-green">
+            <p className="text-brand-green text-xs">
               {ourPosition.source === 'device'
                 ? `Device GPS: ${formatCoordPair(ourPosition.lat, ourPosition.lon, coordinateFormat)}`
                 : ourPosition.source === 'static'
@@ -489,16 +489,16 @@ export default function AppPanel({
                     : `IP location (city-level): ${formatCoordPair(ourPosition.lat, ourPosition.lon, coordinateFormat)}`}
             </p>
           )}
-          {!ourPosition && <p className="text-xs text-muted">No GPS position resolved yet.</p>}
+          {!ourPosition && <p className="text-muted text-xs">No GPS position resolved yet.</p>}
 
           {/* Static position override */}
-          <div className="space-y-2 pt-1 border-t border-gray-700">
-            <p className="text-xs text-muted leading-relaxed">
+          <div className="space-y-2 border-t border-gray-700 pt-1">
+            <p className="text-muted text-xs leading-relaxed">
               Set a precise static position. When saved, this overrides browser and IP-based
               location.
             </p>
             <div className="flex items-center gap-2">
-              <label htmlFor="apppanel-static-lat" className="text-sm text-gray-300 w-8">
+              <label htmlFor="apppanel-static-lat" className="w-8 text-sm text-gray-300">
                 Lat:
               </label>
               <input
@@ -513,9 +513,9 @@ export default function AppPanel({
                 }}
                 placeholder="e.g. 40.12345"
                 aria-label={`Lat: ${staticLatInput || 'e.g. 40.12345'}`}
-                className="flex-1 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
+                className="bg-deep-black focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
               />
-              <label htmlFor="apppanel-static-lon" className="text-sm text-gray-300 w-8">
+              <label htmlFor="apppanel-static-lon" className="w-8 text-sm text-gray-300">
                 Lon:
               </label>
               <input
@@ -530,14 +530,14 @@ export default function AppPanel({
                 }}
                 placeholder="e.g. -105.12345"
                 aria-label={`Lon: ${staticLonInput || 'e.g. -105.12345'}`}
-                className="flex-1 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
+                className="bg-deep-black focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
               />
             </div>
             <div className="flex gap-2">
               <button
                 onClick={saveStaticPosition}
                 aria-label="Save Static Position"
-                className="flex-1 px-3 py-1.5 bg-brand-green/20 text-brand-green hover:bg-brand-green/30 border border-brand-green/40 rounded text-sm font-medium transition-colors"
+                className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 border-brand-green/40 flex-1 rounded border px-3 py-1.5 text-sm font-medium transition-colors"
               >
                 Save Static Position
               </button>
@@ -545,7 +545,7 @@ export default function AppPanel({
                 <button
                   onClick={clearStaticPosition}
                   aria-label="Clear"
-                  className="px-3 py-1.5 bg-secondary-dark text-gray-400 hover:bg-gray-600 rounded text-sm font-medium transition-colors"
+                  className="bg-secondary-dark rounded px-3 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-600"
                 >
                   Clear
                 </button>
@@ -554,7 +554,7 @@ export default function AppPanel({
           </div>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="apppanel-gps-interval" className="text-sm text-gray-300 flex-1">
+            <label htmlFor="apppanel-gps-interval" className="flex-1 text-sm text-gray-300">
               Auto-refresh interval:
             </label>
             <select
@@ -565,7 +565,7 @@ export default function AppPanel({
               }}
               disabled={hasStaticPosition}
               aria-label={`Auto-refresh interval: ${GPS_REFRESH_INTERVAL_LABELS[gpsRefreshInterval] ?? gpsRefreshInterval}`}
-              className={`px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none ${hasStaticPosition ? 'opacity-40 cursor-not-allowed' : ''}`}
+              className={`bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none ${hasStaticPosition ? 'cursor-not-allowed opacity-40' : ''}`}
             >
               <option value={0}>Manual only</option>
               <option value={900}>Every 15 min</option>
@@ -575,12 +575,12 @@ export default function AppPanel({
             </select>
           </div>
           {hasStaticPosition && (
-            <p className="text-xs text-muted">
+            <p className="text-muted text-xs">
               Auto-refresh is disabled while a static position is active.
             </p>
           )}
           <div className="flex items-center gap-2">
-            <label htmlFor="apppanel-coord-format" className="text-sm text-gray-300 flex-1">
+            <label htmlFor="apppanel-coord-format" className="flex-1 text-sm text-gray-300">
               Coordinate format:
             </label>
             <select
@@ -592,7 +592,7 @@ export default function AppPanel({
                 useCoordFormatStore.getState().setCoordinateFormat(fmt);
               }}
               aria-label={`Coordinate format: ${settings.coordinateFormat === 'mgrs' ? 'MGRS' : 'Decimal Degrees'}`}
-              className="px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
+              className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
             >
               <option value="decimal">Decimal Degrees</option>
               <option value="mgrs">MGRS</option>
@@ -602,7 +602,7 @@ export default function AppPanel({
             onClick={() => onRefreshGps?.()}
             disabled={gpsLoading}
             aria-label={gpsLoading ? 'Refreshing...' : 'Refresh Now'}
-            className={`px-4 py-2 bg-secondary-dark text-gray-300 rounded-lg text-sm font-medium transition-colors ${gpsLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-600'}`}
+            className={`bg-secondary-dark rounded-lg px-4 py-2 text-sm font-medium text-gray-300 transition-colors ${gpsLoading ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-600'}`}
           >
             {gpsLoading ? 'Refreshing...' : 'Refresh Now'}
           </button>
@@ -611,9 +611,9 @@ export default function AppPanel({
 
       {/* Map & Node Filtering */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted">Map &amp; Node Filtering</h3>
-        <div className="bg-secondary-dark rounded-lg p-4 space-y-4">
-          <p className="text-xs text-muted leading-relaxed">
+        <h3 className="text-muted text-sm font-medium">Map &amp; Node Filtering</h3>
+        <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+          <p className="text-muted text-xs leading-relaxed">
             Hides nodes beyond a set distance from your device. Filtering is display-only — nodes
             remain in the database.
           </p>
@@ -628,7 +628,7 @@ export default function AppPanel({
               aria-label="Filter distant nodes from map and node list"
               className="accent-brand-green"
             />
-            <label htmlFor="distanceFilter" className="text-sm text-gray-300 cursor-pointer">
+            <label htmlFor="distanceFilter" className="cursor-pointer text-sm text-gray-300">
               Filter distant nodes from map and node list
             </label>
           </div>
@@ -646,7 +646,7 @@ export default function AppPanel({
               }}
               disabled={!settings.distanceFilterEnabled}
               aria-label={`Max distance: ${settings.distanceFilterMax}`}
-              className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
+              className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
             <label htmlFor="apppanel-distance-unit" className="text-sm text-gray-300">
               Unit:
@@ -659,7 +659,7 @@ export default function AppPanel({
               }}
               disabled={!settings.distanceFilterEnabled}
               aria-label={`Unit: ${settings.distanceUnit}`}
-              className="px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none disabled:opacity-40"
+              className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             >
               <option value="miles">miles</option>
               <option value="km">km</option>
@@ -674,12 +674,12 @@ export default function AppPanel({
                 homeNode.longitude != null &&
                 homeNode.longitude !== 0;
               return !homeHasLocation ? (
-                <p className="text-xs text-yellow-300 bg-yellow-900/30 border border-yellow-700 px-2 py-1.5 rounded">
+                <p className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-1.5 text-xs text-yellow-300">
                   Your device has no GPS fix — filter is enabled but all nodes are shown.
                 </p>
               ) : null;
             })()}
-          <p className="text-xs text-muted">Note: Requires your device to have a valid GPS fix.</p>
+          <p className="text-muted text-xs">Note: Requires your device to have a valid GPS fix.</p>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -691,7 +691,7 @@ export default function AppPanel({
               aria-label="Hide MQTT-only nodes from map and node list"
               className="accent-brand-green"
             />
-            <label htmlFor="filterMqttOnly" className="text-sm text-gray-300 cursor-pointer">
+            <label htmlFor="filterMqttOnly" className="cursor-pointer text-sm text-gray-300">
               Hide MQTT-only nodes from map and node list
             </label>
           </div>
@@ -706,12 +706,12 @@ export default function AppPanel({
               aria-label="Show movement paths"
               className="accent-brand-green"
             />
-            <label htmlFor="showMovementPaths" className="text-sm text-gray-300 cursor-pointer">
+            <label htmlFor="showMovementPaths" className="cursor-pointer text-sm text-gray-300">
               Show movement paths
             </label>
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="apppanel-history-window" className="text-sm text-gray-400 shrink-0">
+            <label htmlFor="apppanel-history-window" className="shrink-0 text-sm text-gray-400">
               Position history window:
             </label>
             <select
@@ -721,7 +721,7 @@ export default function AppPanel({
                 setHistoryWindow(Number(e.target.value));
               }}
               aria-label={`Position history window: ${HISTORY_WINDOW_LABELS[historyWindowHours] ?? historyWindowHours}`}
-              className="px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm focus:border-brand-green focus:outline-none"
+              className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
             >
               <option value={1}>1 hour</option>
               <option value={4}>4 hours</option>
@@ -735,8 +735,8 @@ export default function AppPanel({
 
       {/* Retention & limits (config only — destructive actions are in Danger Zone below) */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted">Retention &amp; limits</h3>
-        <div className="bg-secondary-dark rounded-lg p-4 space-y-4">
+        <h3 className="text-muted text-sm font-medium">Retention &amp; limits</h3>
+        <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
           {/* Auto-prune on startup */}
           <div className="flex items-center gap-2">
             <input
@@ -752,7 +752,7 @@ export default function AppPanel({
             <label
               id="apppanel-auto-prune-label"
               htmlFor="autoPrune"
-              className="text-sm text-gray-300 flex-1 cursor-pointer"
+              className="flex-1 cursor-pointer text-sm text-gray-300"
             >
               Auto-prune on startup, older than
             </label>
@@ -767,7 +767,7 @@ export default function AppPanel({
               disabled={!settings.autoPruneEnabled}
               aria-labelledby="apppanel-auto-prune-label"
               aria-label={`Auto-prune on startup, older than ${settings.autoPruneDays} days`}
-              className="w-20 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
+              className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">days</span>
           </div>
@@ -787,12 +787,12 @@ export default function AppPanel({
               />
               <label
                 htmlFor="pruneEmptyNames"
-                className="text-sm text-gray-300 flex-1 cursor-pointer"
+                className="flex-1 cursor-pointer text-sm text-gray-300"
               >
                 Remove unnamed nodes on startup
               </label>
             </div>
-            <p className="text-xs text-muted pl-6">
+            <p className="text-muted pl-6 text-xs">
               Includes MQTT-only placeholders that still use the default !hex ID; favorited nodes
               are kept.
             </p>
@@ -813,7 +813,7 @@ export default function AppPanel({
             <label
               id="apppanel-node-cap-label"
               htmlFor="nodeCap"
-              className="text-sm text-gray-300 flex-1 cursor-pointer"
+              className="flex-1 cursor-pointer text-sm text-gray-300"
             >
               Cap total nodes, keep newest
             </label>
@@ -828,15 +828,15 @@ export default function AppPanel({
               disabled={!settings.nodeCapEnabled}
               aria-labelledby="apppanel-node-cap-label"
               aria-label={`Cap total nodes, keep newest ${settings.nodeCapCount} nodes`}
-              className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
+              className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">nodes</span>
           </div>
         </div>
 
         {/* Message limit */}
-        <div className="bg-secondary-dark rounded-lg p-4 space-y-3">
-          <p className="text-xs text-muted leading-relaxed">
+        <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+          <p className="text-muted text-xs leading-relaxed">
             Limits how many messages are loaded from the database. Helps keep memory usage low on
             busy networks.
           </p>
@@ -854,7 +854,7 @@ export default function AppPanel({
             <label
               id="apppanel-message-limit-label"
               htmlFor="messageLimit"
-              className="text-sm text-gray-300 flex-1 cursor-pointer"
+              className="flex-1 cursor-pointer text-sm text-gray-300"
             >
               Limit messages loaded
             </label>
@@ -873,7 +873,7 @@ export default function AppPanel({
               disabled={!settings.messageLimitEnabled}
               aria-labelledby="apppanel-message-limit-label"
               aria-label={`Limit messages loaded ${settings.messageLimitCount} messages`}
-              className="w-24 px-2 py-1 bg-deep-black border border-gray-600 rounded text-gray-200 text-sm text-right focus:border-brand-green focus:outline-none disabled:opacity-40"
+              className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">messages</span>
           </div>
@@ -882,8 +882,8 @@ export default function AppPanel({
 
       {/* Data Management */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted">Data Management</h3>
-        <p className="text-xs text-muted">
+        <h3 className="text-muted text-sm font-medium">Data Management</h3>
+        <p className="text-muted text-xs">
           Export your local database (messages &amp; nodes) as a .db file, or import/merge another
           user's database into yours.
         </p>
@@ -905,7 +905,7 @@ export default function AppPanel({
                 );
               }
             }}
-            className="px-4 py-3 bg-secondary-dark text-gray-300 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+            className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
             Export Database
           </button>
@@ -930,7 +930,7 @@ export default function AppPanel({
                 );
               }
             }}
-            className="px-4 py-3 bg-secondary-dark text-gray-300 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+            className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
             Import &amp; Merge
           </button>
@@ -939,12 +939,12 @@ export default function AppPanel({
 
       {/* Appearance — collapsible; preset-only colors (no text input — Electron macOS menu warnings). */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-muted">Appearance</h3>
+        <h3 className="text-muted text-sm font-medium">Appearance</h3>
         <details className="group bg-secondary-dark rounded-lg border border-gray-700">
-          <summary className="px-4 py-3 cursor-pointer text-sm font-medium text-gray-200 flex items-center justify-between gap-2 hover:bg-gray-800/40 rounded-lg list-none [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800/40 [&::-webkit-details-marker]:hidden">
             <span>Color scheme</span>
             <svg
-              className="w-4 h-4 text-muted shrink-0 group-open:rotate-180 transition-transform"
+              className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -958,8 +958,8 @@ export default function AppPanel({
               />
             </svg>
           </summary>
-          <div className="px-4 pb-4 pt-1 space-y-3 border-t border-gray-700">
-            <p className="text-xs text-muted">
+          <div className="space-y-3 border-t border-gray-700 px-4 pt-1 pb-4">
+            <p className="text-muted text-xs">
               Changes apply immediately and persist. Hover a token name for where it is used.
             </p>
             {THEME_TOKEN_META.map((meta) => {
@@ -967,23 +967,23 @@ export default function AppPanel({
               return (
                 <div
                   key={meta.key}
-                  className="flex flex-wrap items-center gap-2 pb-2 border-b border-gray-600/80 last:border-0 last:pb-0"
+                  className="flex flex-wrap items-center gap-2 border-b border-gray-600/80 pb-2 last:border-0 last:pb-0"
                 >
                   <span
-                    className="w-6 h-6 rounded border border-gray-600 shrink-0"
+                    className="h-6 w-6 shrink-0 rounded border border-gray-600"
                     style={{ backgroundColor: hex }}
                     title={hex}
                     aria-hidden="true"
                   />
                   <div
                     id={`theme-color-heading-${meta.key}`}
-                    className="text-sm font-medium text-gray-200 shrink-0 min-w-[6.5rem] max-w-[9rem]"
+                    className="max-w-[9rem] min-w-[6.5rem] shrink-0 text-sm font-medium text-gray-200"
                     title={meta.description}
                   >
                     {meta.label}
                   </div>
                   <div
-                    className="flex flex-nowrap gap-1 overflow-x-auto max-w-full min-w-0 flex-1 py-0.5 [scrollbar-width:thin]"
+                    className="flex max-w-full min-w-0 flex-1 flex-nowrap gap-1 overflow-x-auto py-0.5 [scrollbar-width:thin]"
                     role="group"
                     aria-labelledby={`theme-color-heading-${meta.key}`}
                   >
@@ -999,9 +999,9 @@ export default function AppPanel({
                           onClick={() => {
                             commitThemeColor(meta.key, p.hex);
                           }}
-                          className={`w-6 h-6 rounded border shrink-0 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-brand-green/50 ${
+                          className={`focus:ring-brand-green/50 h-6 w-6 shrink-0 rounded border transition-transform hover:scale-110 focus:ring-2 focus:outline-none ${
                             selected
-                              ? 'ring-2 ring-brand-green ring-offset-1 ring-offset-secondary-dark'
+                              ? 'ring-brand-green ring-offset-secondary-dark ring-2 ring-offset-1'
                               : 'border-gray-600'
                           }`}
                           style={{ backgroundColor: p.hex }}
@@ -1020,7 +1020,7 @@ export default function AppPanel({
                 addToast('Colors reset to app defaults.', 'success');
               }}
               aria-label="Reset all colors to defaults"
-              className="w-full px-3 py-2 bg-deep-black hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-medium transition-colors border border-gray-600"
+              className="bg-deep-black w-full rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
             >
               Reset all colors to defaults
             </button>
@@ -1031,17 +1031,17 @@ export default function AppPanel({
       {/* Danger Zone — all destructive actions at bottom, red styling */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-red-400">Danger Zone</h3>
-        <div className="border border-red-900 rounded-lg p-4 space-y-4 bg-red-950/20">
+        <div className="space-y-4 rounded-lg border border-red-900 bg-red-950/20 p-4">
           <p className="text-xs text-red-400/80">
             These actions are permanent and cannot be undone. Confirm each step carefully.
           </p>
 
           {/* Diagnostics (in-memory reset) */}
           <div className="space-y-2">
-            <div className="text-xs font-medium text-red-400/90 uppercase tracking-wide">
+            <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
               Diagnostics
             </div>
-            <p className="text-xs text-muted leading-relaxed">
+            <p className="text-muted text-xs leading-relaxed">
               Clears in-memory routing anomalies, hop history, and packet stats. Rebuilds from new
               packets.
             </p>
@@ -1062,17 +1062,17 @@ export default function AppPanel({
                   },
                 });
               }}
-              className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
               Reset Diagnostics
             </button>
           </div>
 
-          <div className="border-t border-red-900/50 pt-4 space-y-2">
-            <div className="text-xs font-medium text-red-400/90 uppercase tracking-wide">
+          <div className="space-y-2 border-t border-red-900/50 pt-4">
+            <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
               GPS positions
             </div>
-            <p className="text-xs text-muted leading-relaxed">
+            <p className="text-muted text-xs leading-relaxed">
               Removes stored GPS coordinates from all nodes without deleting nodes. Positions
               repopulate as new data arrives.
             </p>
@@ -1092,17 +1092,17 @@ export default function AppPanel({
                   },
                 });
               }}
-              className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
               Clear GPS Data
             </button>
           </div>
 
-          <div className="border-t border-red-900/50 pt-4 space-y-2">
-            <div className="text-xs font-medium text-red-400/90 uppercase tracking-wide">
+          <div className="space-y-2 border-t border-red-900/50 pt-4">
+            <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
               Position History
             </div>
-            <p className="text-xs text-muted leading-relaxed">
+            <p className="text-muted text-xs leading-relaxed">
               Clears all persisted movement trail data and the current in-memory path overlay. New
               positions will resume tracking immediately.
             </p>
@@ -1123,15 +1123,15 @@ export default function AppPanel({
                   },
                 });
               }}
-              className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
               Clear Position History
             </button>
           </div>
 
           {/* Nodes */}
-          <div className="border-t border-red-900/50 pt-4 space-y-3">
-            <div className="text-xs font-medium text-red-400/90 uppercase tracking-wide">Nodes</div>
+          <div className="space-y-3 border-t border-red-900/50 pt-4">
+            <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">Nodes</div>
             <div className="flex flex-wrap items-center gap-2">
               <label htmlFor="apppanel-delete-age-days" className="text-sm text-gray-300">
                 Delete nodes last heard more than
@@ -1145,7 +1145,7 @@ export default function AppPanel({
                   setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1));
                 }}
                 aria-label={`Delete nodes last heard more than ${deleteAgeDays} days`}
-                className="w-20 px-2 py-1 bg-deep-black border border-red-800/60 rounded text-gray-200 text-sm text-right focus:border-red-500 focus:outline-none"
+                className="bg-deep-black w-20 rounded border border-red-800/60 px-2 py-1 text-right text-sm text-gray-200 focus:border-red-500 focus:outline-none"
               />
               <span className="text-sm text-gray-300">days</span>
               <button
@@ -1163,7 +1163,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="px-3 py-1.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded text-sm font-medium transition-colors whitespace-nowrap"
+                className="rounded border border-red-800 bg-red-900/50 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-red-300 transition-colors hover:bg-red-900/70"
               >
                 Delete Old Nodes
               </button>
@@ -1184,7 +1184,7 @@ export default function AppPanel({
                   },
                 });
               }}
-              className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors text-left"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
               Prune MQTT-only Nodes
             </button>
@@ -1204,7 +1204,7 @@ export default function AppPanel({
                   },
                 });
               }}
-              className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors text-left"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
               Prune Unnamed Nodes
             </button>
@@ -1232,10 +1232,10 @@ export default function AppPanel({
                   },
                 });
               }}
-              className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors text-left"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
               <div className="font-medium">Prune Zero/Null Island Nodes</div>
-              <div className="text-xs text-red-400/70 mt-0.5">
+              <div className="mt-0.5 text-xs text-red-400/70">
                 Removes nodes at or near 0°N, 0°E (invalid GPS).
               </div>
             </button>
@@ -1282,10 +1282,10 @@ export default function AppPanel({
                   },
                 });
               }}
-              className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors text-left"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
               <div className="font-medium">Prune Distant Nodes</div>
-              <div className="text-xs text-red-400/70 mt-0.5">
+              <div className="mt-0.5 text-xs text-red-400/70">
                 Beyond the distance threshold in Map &amp; Node Filtering. Requires a valid GPS
                 location.
               </div>
@@ -1305,19 +1305,19 @@ export default function AppPanel({
                   },
                 });
               }}
-              className="w-full px-4 py-2.5 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
               Clear All Nodes ({nodes.size})
             </button>
           </div>
 
           {/* Messages */}
-          <div className="border-t border-red-900/50 pt-4 space-y-2">
-            <div className="text-xs font-medium text-red-400/90 uppercase tracking-wide">
+          <div className="space-y-2 border-t border-red-900/50 pt-4">
+            <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
               Messages
             </div>
             <div className="flex items-center gap-2">
-              <label htmlFor="apppanel-clear-channel" className="text-sm text-gray-400 shrink-0">
+              <label htmlFor="apppanel-clear-channel" className="shrink-0 text-sm text-gray-400">
                 Channel:
               </label>
               <select
@@ -1327,7 +1327,7 @@ export default function AppPanel({
                   setClearChannelTarget(parseInt(e.target.value, 10));
                 }}
                 aria-label="Channel:"
-                className="flex-1 px-3 py-1.5 bg-deep-black border border-red-800/60 rounded-lg text-gray-200 text-sm focus:border-red-500 focus:outline-none"
+                className="bg-deep-black flex-1 rounded-lg border border-red-800/60 px-3 py-1.5 text-sm text-gray-200 focus:border-red-500 focus:outline-none"
               >
                 <option value={CLEAR_ALL_CHANNELS_VALUE}>All Channels</option>
                 {msgChannels.map((ch) => (
@@ -1368,7 +1368,7 @@ export default function AppPanel({
                   },
                 });
               }}
-              className="w-full px-4 py-3 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
               Clear Messages ({messageCount})
             </button>
@@ -1376,8 +1376,8 @@ export default function AppPanel({
 
           {/* MeshCore */}
           {onClearMeshcoreRepeaters && (
-            <div className="border-t border-red-900/50 pt-4 space-y-2">
-              <div className="text-xs font-medium text-red-400 uppercase tracking-wide">
+            <div className="space-y-2 border-t border-red-900/50 pt-4">
+              <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
                 MeshCore
               </div>
               <button
@@ -1394,7 +1394,7 @@ export default function AppPanel({
                     action: onClearMeshcoreRepeaters,
                   });
                 }}
-                className="w-full px-4 py-3 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
                 Clear All Repeaters
               </button>
@@ -1402,8 +1402,8 @@ export default function AppPanel({
           )}
 
           {/* Everything */}
-          <div className="border-t border-red-900/50 pt-4 space-y-2">
-            <div className="text-xs font-medium text-red-400 uppercase tracking-wide">
+          <div className="space-y-2 border-t border-red-900/50 pt-4">
+            <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
               Everything
             </div>
             <button
@@ -1424,7 +1424,7 @@ export default function AppPanel({
                   },
                 });
               }}
-              className="w-full px-4 py-3 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 rounded-lg text-sm font-medium transition-colors"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
               Clear All Local Data &amp; Cache
             </button>

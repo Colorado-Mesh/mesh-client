@@ -88,7 +88,7 @@ export default function LogAnalyzeModal({
       <button
         type="button"
         aria-label="Close dialog"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-pointer border-0 p-0"
+        className="absolute inset-0 cursor-pointer border-0 bg-black/50 p-0 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
@@ -96,19 +96,19 @@ export default function LogAnalyzeModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="log-analyze-title"
-        className="relative z-10 bg-deep-black border border-gray-700 rounded-xl max-w-lg w-full shadow-2xl max-h-[80vh] flex flex-col"
+        className="bg-deep-black relative z-10 flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl border border-gray-700 shadow-2xl"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700 shrink-0">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-700 px-5 py-4">
           <h2 id="log-analyze-title" className="text-lg font-semibold text-gray-100">
             Log Analysis
           </h2>
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1.5 rounded-lg hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors"
+            className="hover:bg-secondary-dark text-muted rounded-lg p-1.5 transition-colors hover:text-gray-200"
           >
             <svg
-              className="w-5 h-5"
+              className="h-5 w-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -119,7 +119,7 @@ export default function LogAnalyzeModal({
           </button>
         </div>
 
-        <div className="px-5 py-3 border-b border-gray-700 shrink-0">
+        <div className="shrink-0 border-b border-gray-700 px-5 py-3">
           <div className="flex items-center justify-between text-xs">
             <span className="text-gray-400">
               {result.totalEntries.toLocaleString()} entries
@@ -134,32 +134,32 @@ export default function LogAnalyzeModal({
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-5 py-4">
+        <div className="flex-1 overflow-y-auto px-5 py-4">
           {result.categories.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">
+            <p className="py-8 text-center text-gray-500">
               No issues detected in the current log view.
             </p>
           ) : (
             <div className="space-y-2">
               {result.categories.map((cat) => (
-                <div key={cat.id} className="py-2 px-3 rounded-lg bg-secondary-dark/50 space-y-1">
+                <div key={cat.id} className="bg-secondary-dark/50 space-y-1 rounded-lg px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-sm text-gray-200 shrink-0">{cat.label}</span>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="shrink-0 text-sm text-gray-200">{cat.label}</span>
                       <span
-                        className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${severityBadge(cat.severity)}`}
+                        className={`shrink-0 rounded px-1.5 py-0.5 text-xs ${severityBadge(cat.severity)}`}
                       >
                         {cat.severity}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-sm font-mono text-gray-300">{cat.count}</span>
-                      <span className="text-xs text-muted">{formatTimeAgo(cat.lastTs)}</span>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="font-mono text-sm text-gray-300">{cat.count}</span>
+                      <span className="text-muted text-xs">{formatTimeAgo(cat.lastTs)}</span>
                     </div>
                   </div>
                   {cat.lastMessage ? (
                     <p
-                      className="text-xs text-muted font-mono break-all pl-0.5"
+                      className="text-muted pl-0.5 font-mono text-xs break-all"
                       title={cat.lastMessage}
                     >
                       Last: {cat.lastMessage}
@@ -172,19 +172,19 @@ export default function LogAnalyzeModal({
         </div>
 
         {result.categories.length > 0 && (
-          <div className="px-5 py-4 border-t border-gray-700 shrink-0">
-            <h3 className="text-xs uppercase tracking-wide text-muted mb-2">Recommendations</h3>
+          <div className="shrink-0 border-t border-gray-700 px-5 py-4">
+            <h3 className="text-muted mb-2 text-xs tracking-wide uppercase">Recommendations</h3>
             <ul className="space-y-1.5">
               {dedupedRecs.map((row) => (
                 <li
                   key={row.recommendation}
-                  className="text-sm text-gray-300 flex items-start gap-2"
+                  className="flex items-start gap-2 text-sm text-gray-300"
                 >
                   <span className={`${severityColor(row.severity)} mt-0.5`}>•</span>
                   <span>
                     {row.recommendation}
                     {row.appliesToLabels.length > 1 ? (
-                      <span className="block text-xs text-muted mt-0.5">
+                      <span className="text-muted mt-0.5 block text-xs">
                         Applies to: {row.appliesToLabels.join(', ')}
                       </span>
                     ) : null}

@@ -62,7 +62,7 @@ describe('ConnectionPanel hardware event wiring', () => {
 
     const registeredCb = vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mock
       .calls[0]?.[0];
-    expect(registeredCb, 'callback must be registered').toBeDefined();
+    expect(registeredCb).toBeDefined();
     if (registeredCb === undefined) throw new Error('callback must be registered');
 
     const device: NobleBleDevice = { deviceId: 'ble-001', deviceName: 'Test Radio' };
@@ -179,7 +179,7 @@ describe('ConnectionPanel hardware event wiring', () => {
     render(<ConnectionPanel {...DEFAULT_PROPS} />);
 
     const registeredCb = vi.mocked(window.electronAPI.onSerialPortsDiscovered).mock.calls[0]?.[0];
-    expect(registeredCb, 'callback must be registered').toBeDefined();
+    expect(registeredCb).toBeDefined();
     if (registeredCb === undefined) throw new Error('callback must be registered');
 
     const ports: SerialPort[] = [

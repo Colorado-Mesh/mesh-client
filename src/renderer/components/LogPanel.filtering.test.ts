@@ -16,6 +16,7 @@ describe('log-panel filter contract', () => {
       stdio: 'pipe',
       cwd: projectRoot,
     });
+    expect(true).toBe(true);
   });
 });
 

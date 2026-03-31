@@ -63,8 +63,8 @@ export function InfoRow({
   className?: string;
 }) {
   return (
-    <div className="flex justify-between items-center py-2 border-b border-gray-700/50 last:border-b-0">
-      <span className="text-sm text-muted">{label}</span>
+    <div className="flex items-center justify-between border-b border-gray-700/50 py-2 last:border-b-0">
+      <span className="text-muted text-sm">{label}</span>
       <span className={`text-sm font-medium ${className || 'text-gray-200'}`}>{value}</span>
     </div>
   );
@@ -197,8 +197,8 @@ export default function NodeInfoBody({
       {protocol === 'meshcore' ? (
         <InfoRow label="Type" value={node.hw_model || '—'} />
       ) : (
-        <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
-          <span className="text-sm text-muted">Role</span>
+        <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
+          <span className="text-muted text-sm">Role</span>
           <RoleDisplay role={node.role} />
         </div>
       )}
@@ -222,11 +222,11 @@ export default function NodeInfoBody({
       {/* Battery — Meshtastic % ; MeshCore: voltage from local radio (self) + approximate % bar */}
       {protocol === 'meshcore' ? (
         node.voltage != null && node.voltage > 0 ? (
-          <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
-            <span className="text-sm text-muted">Battery</span>
+          <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
+            <span className="text-muted text-sm">Battery</span>
             <div className="flex items-center gap-2">
               {node.battery > 0 && (
-                <div className="w-16 h-2 bg-secondary-dark rounded-full overflow-hidden">
+                <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
                   <div
                     className={`h-full rounded-full transition-all ${
                       node.battery > 50
@@ -245,10 +245,10 @@ export default function NodeInfoBody({
             </div>
           </div>
         ) : node.battery > 0 ? (
-          <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
-            <span className="text-sm text-muted">Battery</span>
+          <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
+            <span className="text-muted text-sm">Battery</span>
             <div className="flex items-center gap-2">
-              <div className="w-16 h-2 bg-secondary-dark rounded-full overflow-hidden">
+              <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
                 <div
                   className={`h-full rounded-full transition-all ${
                     node.battery > 50
@@ -267,11 +267,11 @@ export default function NodeInfoBody({
           <InfoRow label="Battery" value="—" className="text-muted" />
         )
       ) : (
-        <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
-          <span className="text-sm text-muted">Battery</span>
+        <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
+          <span className="text-muted text-sm">Battery</span>
           <div className="flex items-center gap-2">
             {node.battery > 0 && (
-              <div className="w-16 h-2 bg-secondary-dark rounded-full overflow-hidden">
+              <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
                 <div
                   className={`h-full rounded-full transition-all ${
                     node.battery > 50
@@ -308,21 +308,21 @@ export default function NodeInfoBody({
           <InfoRow
             label="Position"
             value={formatCoordPair(node.latitude, node.longitude, coordinateFormat)}
-            className="text-gray-300 font-mono text-xs"
+            className="font-mono text-xs text-gray-300"
           />
         )}
 
       {/* GPS warning */}
       {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (
-        <div className="flex items-start gap-1.5 px-2 py-1.5 mt-1 rounded bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs">
+        <div className="mt-1 flex items-start gap-1.5 rounded border border-yellow-500/30 bg-yellow-500/10 px-2 py-1.5 text-xs text-yellow-400">
           <span>⚠</span>
           <span>GPS Warning: {node.lastPositionWarning}</span>
         </div>
       )}
 
       {/* Routing Health */}
-      <div className="mt-3 p-3 bg-primary-dark rounded-lg">
-        <div className="text-xs text-gray-400 mb-1.5">Routing Health</div>
+      <div className="bg-primary-dark mt-3 rounded-lg p-3">
+        <div className="mb-1.5 text-xs text-gray-400">Routing Health</div>
 
         {/* Remedy badge */}
         {(() => {
@@ -330,9 +330,9 @@ export default function NodeInfoBody({
           if (!remedy) return null;
           return (
             <div
-              className={`flex items-start gap-2 p-2 mb-2 rounded-lg text-xs border ${CATEGORY_STYLES[remedy.category]}`}
+              className={`mb-2 flex items-start gap-2 rounded-lg border p-2 text-xs ${CATEGORY_STYLES[remedy.category]}`}
             >
-              <span className="font-semibold shrink-0">{remedy.category}</span>
+              <span className="shrink-0 font-semibold">{remedy.category}</span>
               <span>{remedy.title}</span>
             </div>
           );
@@ -351,7 +351,7 @@ export default function NodeInfoBody({
           >
             {anomaly.severity === 'info' ? (
               <svg
-                className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                className="mt-0.5 h-3.5 w-3.5 shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -365,7 +365,7 @@ export default function NodeInfoBody({
               </svg>
             ) : (
               <svg
-                className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                className="mt-0.5 h-3.5 w-3.5 shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -379,21 +379,21 @@ export default function NodeInfoBody({
               </svg>
             )}
             <div>
-              <div className="font-medium mb-0.5">{offenseSummary}</div>
+              <div className="mb-0.5 font-medium">{offenseSummary}</div>
               <div className="text-gray-400">{anomaly.description}</div>
             </div>
           </div>
         ) : (
-          <div className="text-xs text-brand-green">No routing issues detected</div>
+          <div className="text-brand-green text-xs">No routing issues detected</div>
         )}
 
         {/* Stability metric */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-700/50">
+        <div className="mt-2 flex items-center justify-between border-t border-gray-700/50 pt-2">
           <span className="text-[10px] text-gray-500">Route stability (1h)</span>
           <span className={`text-xs font-medium ${stabilityColor}`}>
             {stability}
             {recentHour.length >= 2 && hopChanges > 0 && (
-              <span className="text-gray-500 font-normal ml-1">
+              <span className="ml-1 font-normal text-gray-500">
                 ({hopChanges} change{hopChanges !== 1 ? 's' : ''})
               </span>
             )}
@@ -417,8 +417,8 @@ export default function NodeInfoBody({
               .join(' ');
             return (
               <div className="mt-2">
-                <div className="text-[10px] text-gray-500 mb-0.5">Hop count — 24h</div>
-                <svg viewBox="0 0 200 40" className="w-full h-8 text-brand-green/60">
+                <div className="mb-0.5 text-[10px] text-gray-500">Hop count — 24h</div>
+                <svg viewBox="0 0 200 40" className="text-brand-green/60 h-8 w-full">
                   <polyline
                     points={points}
                     fill="none"
@@ -435,7 +435,7 @@ export default function NodeInfoBody({
         {/* Connection Health (packet redundancy) — only shown once echoes have been observed */}
         {nodeRedundancy && nodeRedundancy.maxPaths > 1 && (
           <div
-            className="mt-2 pt-2 border-t border-gray-700/50"
+            className="mt-2 border-t border-gray-700/50 pt-2"
             title="Based on same packet received via multiple paths (e.g. RF + MQTT or multiple RF receptions)."
           >
             <div className="flex items-center justify-between">
@@ -470,24 +470,24 @@ export default function NodeInfoBody({
                     onClick={() => {
                       setPathHistoryOpen((o) => !o);
                     }}
-                    className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
+                    className="flex items-center gap-1 text-[10px] text-gray-500 transition-colors hover:text-gray-300"
                   >
                     <span>{pathHistoryOpen ? '▾' : '▸'}</span>
                     Path History ({totalEchoes} echo{totalEchoes !== 1 ? 'es' : ''})
                   </button>
 
                   {pathHistoryOpen && (
-                    <div className="mt-1.5 flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1">
+                    <div className="mt-1.5 flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
                       {echoPackets.map((rec) => (
                         <div
                           key={rec.packetId}
-                          className="text-[10px] bg-deep-black/50 rounded p-1.5"
+                          className="bg-deep-black/50 rounded p-1.5 text-[10px]"
                         >
-                          <div className="text-gray-400 mb-0.5 font-mono">
+                          <div className="mb-0.5 font-mono text-gray-400">
                             #{rec.packetId.toString(16).toUpperCase()} — {rec.paths.length} paths
                           </div>
                           {rec.paths.map((p, i) => (
-                            <div key={i} className="text-gray-500 pl-1.5 leading-tight">
+                            <div key={i} className="pl-1.5 leading-tight text-gray-500">
                               {i === 0 ? 'Original' : `Echo ${i}`}:{' '}
                               <span
                                 className={
@@ -518,16 +518,16 @@ export default function NodeInfoBody({
 
       {/* Trace route result */}
       {traceRouteHops && (
-        <div className="mt-3 p-2 bg-primary-dark rounded-lg">
-          <div className="text-xs text-gray-400 mb-1">Route Path</div>
-          <div className="text-sm text-gray-200 flex flex-wrap items-center gap-1">
+        <div className="bg-primary-dark mt-3 rounded-lg p-2">
+          <div className="mb-1 text-xs text-gray-400">Route Path</div>
+          <div className="flex flex-wrap items-center gap-1 text-sm text-gray-200">
             {traceRouteHops.map((hop, i) => (
               <span key={i} className="flex items-center gap-1">
                 {i > 0 && <span className="text-gray-500">→</span>}
                 <span
                   className={
                     i === 0 || i === traceRouteHops.length - 1
-                      ? 'text-green-400 font-medium'
+                      ? 'font-medium text-green-400'
                       : 'text-gray-200'
                   }
                 >
@@ -547,7 +547,7 @@ export default function NodeInfoBody({
         node.env_lux !== undefined ||
         node.env_wind_speed !== undefined) && (
         <div className="mt-3 border-t border-gray-700 pt-3">
-          <div className="text-xs font-semibold text-gray-400 uppercase mb-1">Environment</div>
+          <div className="mb-1 text-xs font-semibold text-gray-400 uppercase">Environment</div>
           {node.env_temperature !== undefined && (
             <InfoRow
               label="Temperature"
@@ -665,12 +665,12 @@ function RFDiagnosticsSection({
         />
       )}
 
-      <div className="mt-3 p-3 bg-primary-dark rounded-lg">
-        <div className="flex items-center justify-between mb-2">
+      <div className="bg-primary-dark mt-3 rounded-lg p-3">
+        <div className="mb-2 flex items-center justify-between">
           <div className="text-xs text-gray-400">RF Diagnostics</div>
           {!noTelemetry && totalChecks !== null && (
             <span
-              className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+              className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
                 flagged === 0
                   ? 'bg-green-900/40 text-green-400'
                   : 'bg-orange-900/40 text-orange-400'
@@ -682,9 +682,9 @@ function RFDiagnosticsSection({
         </div>
 
         {noTelemetry ? (
-          <div className="text-xs text-muted">No node telemetry. Node diagnostics unavailable.</div>
+          <div className="text-muted text-xs">No node telemetry. Node diagnostics unavailable.</div>
         ) : flagged === 0 ? (
-          <div className="text-xs text-brand-green">All RF diagnostics OK</div>
+          <div className="text-brand-green text-xs">All RF diagnostics OK</div>
         ) : (
           <div className="flex flex-col gap-1.5">
             {findingsToShow!.map((f, i) => (
@@ -692,19 +692,19 @@ function RFDiagnosticsSection({
                 key={i}
                 className={`flex items-start gap-1.5 text-xs ${SEVERITY_STYLES[f.severity]}`}
               >
-                <span className="shrink-0 mt-0.5">{SEVERITY_ICON[f.severity]}</span>
+                <span className="mt-0.5 shrink-0">{SEVERITY_ICON[f.severity]}</span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1">
                     <span className="font-semibold">{f.condition}</span>
                     {f.isLastHop && (
-                      <span className="text-[10px] px-1 py-0 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      <span className="rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-[10px] text-blue-300">
                         Last-Hop SNR
                       </span>
                     )}
                   </div>
-                  <div className="text-gray-400 mt-0.5">— {f.cause}</div>
+                  <div className="mt-0.5 text-gray-400">— {f.cause}</div>
                   {(f.hints?.length ?? 0) > 0 && (
-                    <ul className="mt-1.5 pl-3 list-disc text-[10px] text-muted space-y-0.5">
+                    <ul className="text-muted mt-1.5 list-disc space-y-0.5 pl-3 text-[10px]">
                       {f.hints!.map((h, j) => (
                         <li key={j}>{h}</li>
                       ))}
@@ -713,7 +713,7 @@ function RFDiagnosticsSection({
                   {f.condition === 'LoRa Collision or Corruption' &&
                     isOurNode &&
                     !hasForeignLora && (
-                      <p className="mt-1.5 text-[10px] text-muted">
+                      <p className="text-muted mt-1.5 text-[10px]">
                         To detect MeshCore specifically, the device must log decode failures with
                         the packet&apos;s first byte (0x3c). Until then only the generic collision
                         message is available.

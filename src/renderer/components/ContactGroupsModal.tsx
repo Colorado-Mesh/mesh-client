@@ -169,7 +169,7 @@ export default function ContactGroupsModal({
       <button
         type="button"
         aria-label="Close dialog"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-pointer border-0 p-0"
+        className="absolute inset-0 cursor-pointer border-0 bg-black/50 p-0 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
@@ -177,22 +177,22 @@ export default function ContactGroupsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="groups-modal-title"
-        className="relative z-10 bg-deep-black border border-gray-700 rounded-xl max-w-lg w-full shadow-2xl flex flex-col max-h-[80vh]"
+        className="bg-deep-black relative z-10 flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl border border-gray-700 shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700 shrink-0">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-700 px-5 py-4">
           {managingGroup ? (
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setManagingGroup(null);
                 }}
                 aria-label="Back to groups"
-                className="p-1 rounded hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors shrink-0"
+                className="hover:bg-secondary-dark text-muted shrink-0 rounded p-1 transition-colors hover:text-gray-200"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="h-4 w-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -201,7 +201,7 @@ export default function ContactGroupsModal({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <h2 id="groups-modal-title" className="text-lg font-semibold text-gray-100 truncate">
+              <h2 id="groups-modal-title" className="truncate text-lg font-semibold text-gray-100">
                 {managingGroup.name}
               </h2>
             </div>
@@ -213,10 +213,10 @@ export default function ContactGroupsModal({
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1.5 rounded-lg hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors shrink-0"
+            className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
           >
             <svg
-              className="w-5 h-5"
+              className="h-5 w-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -228,20 +228,20 @@ export default function ContactGroupsModal({
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-3">
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
           {managingGroup ? (
             /* Member management view */
             <>
-              <p className="text-xs text-muted">
+              <p className="text-muted text-xs">
                 {memberIds.size} member{memberIds.size !== 1 ? 's' : ''}
               </p>
               {sortedContacts.length === 0 ? (
-                <p className="text-sm text-muted">No contacts yet.</p>
+                <p className="text-muted text-sm">No contacts yet.</p>
               ) : (
                 <ul className="flex flex-col gap-1">
                   {sortedContacts.map((contact) => (
                     <li key={contact.node_id}>
-                      <label className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-secondary-dark/50 cursor-pointer">
+                      <label className="hover:bg-secondary-dark/50 flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2">
                         <input
                           type="checkbox"
                           checked={memberIds.has(contact.node_id)}
@@ -249,7 +249,7 @@ export default function ContactGroupsModal({
                           disabled={busy}
                           className="accent-brand-green"
                         />
-                        <span className="text-sm text-gray-200 truncate">{contact.long_name}</span>
+                        <span className="truncate text-sm text-gray-200">{contact.long_name}</span>
                       </label>
                     </li>
                   ))}
@@ -273,13 +273,13 @@ export default function ContactGroupsModal({
                   placeholder="New group name…"
                   maxLength={100}
                   disabled={busy}
-                  className="flex-1 px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none disabled:opacity-50"
+                  className="bg-secondary-dark/80 focus:border-brand-green/50 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
                 />
                 <button
                   type="button"
                   onClick={() => void handleCreate()}
                   disabled={!newGroupName.trim() || busy}
-                  className="px-3 py-1.5 rounded-lg bg-brand-green/20 text-brand-green text-sm font-medium hover:bg-brand-green/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Add
                 </button>
@@ -287,13 +287,13 @@ export default function ContactGroupsModal({
 
               {/* Group list */}
               {groups.length === 0 ? (
-                <p className="text-sm text-muted">No groups yet. Create one above.</p>
+                <p className="text-muted text-sm">No groups yet. Create one above.</p>
               ) : (
                 <ul className="flex flex-col gap-1">
                   {groups.map((group) => (
                     <li
                       key={group.group_id}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary-dark/30"
+                      className="hover:bg-secondary-dark/30 flex items-center gap-2 rounded-lg px-3 py-2"
                     >
                       {editingGroupId === group.group_id ? (
                         <input
@@ -310,12 +310,12 @@ export default function ContactGroupsModal({
                           // eslint-disable-next-line jsx-a11y/no-autofocus
                           autoFocus
                           disabled={busy}
-                          className="flex-1 px-2 py-1 bg-secondary-dark rounded text-gray-200 text-sm border border-brand-green/50 focus:outline-none disabled:opacity-50"
+                          className="bg-secondary-dark border-brand-green/50 flex-1 rounded border px-2 py-1 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
                         />
                       ) : (
-                        <span className="flex-1 text-sm text-gray-200 truncate">
+                        <span className="flex-1 truncate text-sm text-gray-200">
                           {group.name}
-                          <span className="ml-1.5 text-xs text-muted">({group.member_count})</span>
+                          <span className="text-muted ml-1.5 text-xs">({group.member_count})</span>
                         </span>
                       )}
 
@@ -326,10 +326,10 @@ export default function ContactGroupsModal({
                             onClick={() => void handleRenameSubmit(group.group_id)}
                             disabled={!editingName.trim() || busy}
                             aria-label="Save name"
-                            className="p-1 rounded hover:bg-secondary-dark text-brand-green transition-colors disabled:opacity-40"
+                            className="hover:bg-secondary-dark text-brand-green rounded p-1 transition-colors disabled:opacity-40"
                           >
                             <svg
-                              className="w-4 h-4"
+                              className="h-4 w-4"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -348,10 +348,10 @@ export default function ContactGroupsModal({
                               setEditingGroupId(null);
                             }}
                             aria-label="Cancel rename"
-                            className="p-1 rounded hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors"
+                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
                           >
                             <svg
-                              className="w-4 h-4"
+                              className="h-4 w-4"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -372,10 +372,10 @@ export default function ContactGroupsModal({
                             onClick={() => void handleOpenMembers(group)}
                             aria-label={`Manage members of ${group.name}`}
                             title="Manage members"
-                            className="p-1 rounded hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors"
+                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
                           >
                             <svg
-                              className="w-4 h-4"
+                              className="h-4 w-4"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -396,10 +396,10 @@ export default function ContactGroupsModal({
                             }}
                             aria-label={`Rename ${group.name}`}
                             title="Rename"
-                            className="p-1 rounded hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors"
+                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
                           >
                             <svg
-                              className="w-4 h-4"
+                              className="h-4 w-4"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -419,7 +419,7 @@ export default function ContactGroupsModal({
                                 onClick={() => void handleDelete(group.group_id)}
                                 disabled={busy}
                                 aria-label="Confirm delete"
-                                className="px-2 py-0.5 rounded text-xs bg-red-600/30 text-red-400 hover:bg-red-600/50 transition-colors disabled:opacity-40"
+                                className="rounded bg-red-600/30 px-2 py-0.5 text-xs text-red-400 transition-colors hover:bg-red-600/50 disabled:opacity-40"
                               >
                                 Delete?
                               </button>
@@ -429,10 +429,10 @@ export default function ContactGroupsModal({
                                   setDeleteConfirmId(null);
                                 }}
                                 aria-label="Cancel delete"
-                                className="p-1 rounded hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors"
+                                className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
                               >
                                 <svg
-                                  className="w-4 h-4"
+                                  className="h-4 w-4"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                   stroke="currentColor"
@@ -454,10 +454,10 @@ export default function ContactGroupsModal({
                               }}
                               aria-label={`Delete ${group.name}`}
                               title="Delete group"
-                              className="p-1 rounded hover:bg-secondary-dark text-muted hover:text-red-400 transition-colors"
+                              className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-red-400"
                             >
                               <svg
-                                className="w-4 h-4"
+                                className="h-4 w-4"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"

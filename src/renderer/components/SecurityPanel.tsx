@@ -48,7 +48,7 @@ function isValidBase64Key(b64: string): boolean {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <h3 className="text-sm font-semibold text-gray-200 uppercase tracking-wide pb-2 border-b border-gray-700">
+    <h3 className="border-b border-gray-700 pb-2 text-sm font-semibold tracking-wide text-gray-200 uppercase">
       {title}
     </h3>
   );
@@ -90,7 +90,7 @@ function ConfigToggle({
           />
         </button>
       </div>
-      {description && <p className="text-xs text-muted">{description}</p>}
+      {description && <p className="text-muted text-xs">{description}</p>}
     </div>
   );
 }
@@ -111,7 +111,7 @@ function ApplyButton({
       type="button"
       onClick={onClick}
       disabled={disabled || applying}
-      className="w-full px-4 py-2 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
+      className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
     >
       {applying ? 'Applying...' : label}
     </button>
@@ -130,21 +130,21 @@ function ConfirmModal({
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-deep-black border border-gray-700 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4">
-        <p className="text-gray-200 text-sm">{message}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-deep-black mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-700 p-6">
+        <p className="text-sm text-gray-200">{message}</p>
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm rounded-lg transition-colors"
+            className="flex-1 rounded-lg bg-gray-700 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-600"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 px-4 py-2 bg-red-700 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex-1 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
           >
             Confirm
           </button>
@@ -332,9 +332,9 @@ export default function SecurityPanel({
   const privateKeyB64 = securityConfig ? bytesToBase64(securityConfig.privateKey) : '';
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-6">
+    <div className="h-full space-y-6 overflow-y-auto p-4">
       {!isConnected && (
-        <p className="text-sm text-muted text-center py-4">
+        <p className="text-muted py-4 text-center text-sm">
           Connect to a device to manage security settings.
         </p>
       )}
@@ -343,7 +343,7 @@ export default function SecurityPanel({
       <section className="space-y-4">
         <SectionHeader title="DM Keys" />
         <div className="space-y-1">
-          <label htmlFor="security-public-key" className="text-sm text-muted">
+          <label htmlFor="security-public-key" className="text-muted text-sm">
             Public Key
           </label>
           <input
@@ -351,11 +351,11 @@ export default function SecurityPanel({
             type="text"
             value={publicKeyB64}
             readOnly
-            className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 font-mono text-xs disabled:opacity-50"
+            className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
           />
         </div>
         <div className="space-y-1">
-          <label htmlFor="security-private-key" className="text-sm text-muted">
+          <label htmlFor="security-private-key" className="text-muted text-sm">
             Private Key
           </label>
           <div className="flex items-center gap-2">
@@ -364,7 +364,7 @@ export default function SecurityPanel({
               type={showPrivateKey ? 'text' : 'password'}
               value={privateKeyB64}
               readOnly
-              className="flex-1 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 font-mono text-xs disabled:opacity-50"
+              className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
             />
             <button
               type="button"
@@ -372,12 +372,12 @@ export default function SecurityPanel({
                 setShowPrivateKey((s) => !s);
               }}
               disabled={disabled}
-              className="px-3 py-2 text-xs text-muted hover:text-gray-300 disabled:opacity-50"
+              className="text-muted px-3 py-2 text-xs hover:text-gray-300 disabled:opacity-50"
             >
               {showPrivateKey ? 'Hide' : 'Show'}
             </button>
           </div>
-          <p className="text-xs text-muted">
+          <p className="text-muted text-xs">
             Keep your private key secret. It is used to encrypt direct messages.
           </p>
         </div>
@@ -387,7 +387,7 @@ export default function SecurityPanel({
             setPendingRegenerate(true);
           }}
           disabled={disabled || applyingRegen || !securityConfig}
-          className="w-full px-4 py-2 bg-yellow-700/40 hover:bg-yellow-700/60 border border-yellow-700/60 text-yellow-300 disabled:opacity-50 text-sm font-medium rounded-lg transition-colors"
+          className="w-full rounded-lg border border-yellow-700/60 bg-yellow-700/40 px-4 py-2 text-sm font-medium text-yellow-300 transition-colors hover:bg-yellow-700/60 disabled:opacity-50"
         >
           {applyingRegen ? 'Regenerating...' : 'Regenerate Keys'}
         </button>
@@ -396,7 +396,7 @@ export default function SecurityPanel({
       {/* ── Admin Keys ──────────────────────────────────────────── */}
       <section className="space-y-4">
         <SectionHeader title="Admin Keys" />
-        <p className="text-xs text-muted">
+        <p className="text-muted text-xs">
           Up to {MAX_ADMIN_KEYS} public keys authorized to send admin commands to this device. Each
           must be a base64-encoded 32-byte Curve25519 public key.
         </p>
@@ -417,7 +417,7 @@ export default function SecurityPanel({
                   }}
                   disabled={disabled}
                   placeholder="Base64-encoded 32-byte public key"
-                  className="flex-1 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 font-mono text-xs focus:border-brand-green focus:outline-none disabled:opacity-50"
+                  className="bg-secondary-dark focus:border-brand-green flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
                   aria-label={`Admin key ${i + 1}`}
                 />
                 <button
@@ -445,7 +445,7 @@ export default function SecurityPanel({
               setAdminKeyErrors([...adminKeyErrors, null]);
             }}
             disabled={disabled}
-            className="w-full px-4 py-2 border border-dashed border-gray-600 text-muted hover:text-gray-300 hover:border-gray-500 disabled:opacity-50 text-sm rounded-lg transition-colors"
+            className="text-muted w-full rounded-lg border border-dashed border-gray-600 px-4 py-2 text-sm transition-colors hover:border-gray-500 hover:text-gray-300 disabled:opacity-50"
           >
             + Add Admin Key
           </button>
@@ -512,13 +512,13 @@ export default function SecurityPanel({
         )}
         {safeStorageAvailable !== false && (
           <>
-            <p className="text-xs text-muted">
+            <p className="text-muted text-xs">
               Back up your DM keys to the system keychain (encrypted). You can restore them to the
               device at any time.
             </p>
-            <div className="flex items-center gap-2 text-xs text-muted">
+            <div className="text-muted flex items-center gap-2 text-xs">
               <span
-                className={`w-2 h-2 rounded-full ${backupAvailable ? 'bg-readable-green' : 'bg-gray-600'}`}
+                className={`h-2 w-2 rounded-full ${backupAvailable ? 'bg-readable-green' : 'bg-gray-600'}`}
               />
               {backupAvailable ? 'Backup available' : 'No backup stored'}
             </div>
@@ -529,7 +529,7 @@ export default function SecurityPanel({
                   void handleBackup();
                 }}
                 disabled={disabled || backupInProgress || !securityConfig}
-                className="flex-1 px-4 py-2 bg-secondary-dark hover:bg-gray-700 border border-gray-600 text-gray-200 disabled:opacity-50 text-sm rounded-lg transition-colors"
+                className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
               >
                 {backupInProgress ? 'Working...' : 'Backup Keys'}
               </button>
@@ -539,7 +539,7 @@ export default function SecurityPanel({
                   void handleRestore();
                 }}
                 disabled={disabled || backupInProgress || !backupAvailable}
-                className="flex-1 px-4 py-2 bg-secondary-dark hover:bg-gray-700 border border-gray-600 text-gray-200 disabled:opacity-50 text-sm rounded-lg transition-colors"
+                className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
               >
                 {backupInProgress ? 'Working...' : 'Restore Keys'}
               </button>

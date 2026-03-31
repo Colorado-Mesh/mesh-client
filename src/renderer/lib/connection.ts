@@ -304,13 +304,11 @@ export async function createConnection(
       throw new Error(`Unknown connection type: ${type}`);
   }
 
-  const device = new MeshDevice(transport as any);
-
   // NOTE: Do NOT call device.configure() here. It must be called AFTER
   // event subscriptions are set up in useDevice.ts, otherwise the initial
   // node/channel/config dump is emitted before any listeners exist.
 
-  return device;
+  return new MeshDevice(transport as any);
 }
 
 /**
@@ -346,8 +344,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
     if (sig.usbProductId != null) parts.push(`usbProductId=${sig.usbProductId}`);
     logMeshtasticDeviceConnection(parts.join(' '));
   }
-  const device = new MeshDevice(transport as any);
-  return device;
+  return new MeshDevice(transport as any);
 }
 
 /**

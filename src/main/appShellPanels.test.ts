@@ -24,10 +24,13 @@ describe('lazy panels and modals are mounted in App', () => {
     }
     expect(exports.length).toBeGreaterThan(0);
     for (const name of exports) {
-      expect(
-        APP_SOURCE.includes(`<${name}`),
-        `Expected App.tsx to render <${name} /> (lazy export from lazyTabPanels / lazyAppPanels / lazyModals)`,
-      ).toBe(true);
+      const found = APP_SOURCE.includes(`<${name}`);
+      expect(found).toBe(true);
+      if (!found) {
+        throw new Error(
+          `Expected App.tsx to render <${name} /> (lazy export from lazyTabPanels / lazyAppPanels / lazyModals)`,
+        );
+      }
     }
   });
 });

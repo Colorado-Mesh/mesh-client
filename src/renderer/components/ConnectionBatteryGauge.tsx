@@ -20,11 +20,11 @@ export default function ConnectionBatteryGauge({ percent, charging }: Props) {
       role="img"
       aria-label={charging ? `Battery ${percent} percent, charging` : `Battery ${percent} percent`}
     >
-      <div className="flex gap-0.5 items-center" aria-hidden="true">
+      <div className="flex items-center gap-0.5" aria-hidden="true">
         {[0, 1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="h-3 w-2 shrink-0 rounded-sm border border-gray-600/90 overflow-hidden bg-gray-800/50"
+            className="h-3 w-2 shrink-0 overflow-hidden rounded-sm border border-gray-600/90 bg-gray-800/50"
           >
             {i < filled ? <div className={`h-full w-full ${fillClass}`} /> : null}
           </div>
@@ -32,7 +32,7 @@ export default function ConnectionBatteryGauge({ percent, charging }: Props) {
       </div>
       {charging ? (
         <svg
-          className="w-4 h-4 shrink-0 text-green-500"
+          className="h-4 w-4 shrink-0 text-green-500"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"

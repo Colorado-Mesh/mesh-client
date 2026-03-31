@@ -96,6 +96,7 @@ describe('log-injection check (main process)', () => {
       stdio: 'pipe',
       cwd: projectRoot,
     });
+    expect(true).toBe(true);
   });
 });
 
@@ -107,6 +108,7 @@ describe('silent-catch check (main process + renderer)', () => {
       stdio: 'pipe',
       cwd: projectRoot,
     });
+    expect(true).toBe(true);
   });
 });
 
@@ -118,6 +120,7 @@ describe('console-log check (main process + renderer)', () => {
       stdio: 'pipe',
       cwd: projectRoot,
     });
+    expect(true).toBe(true);
   });
 });
 
@@ -129,5 +132,6 @@ describe('xss-patterns check (all source)', () => {
       stdio: 'pipe',
       cwd: projectRoot,
     });
+    expect(true).toBe(true);
   });
 });

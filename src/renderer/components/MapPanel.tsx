@@ -120,13 +120,15 @@ function getCUColor(cu: number): string {
  * attribute values. Always pass internal computed values or wrap user-supplied
  * strings with `escapeSvgAttr` / `escapeSvgText` before interpolating.
  */
+type NodeBadgeType = 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null;
+
 function createMarkerIcon(
   color: string,
   isSelf: boolean,
   cu = 0,
   markerOpacity = 1,
   isMqttOnly = false,
-  nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = null,
+  nodeBadge: NodeBadgeType = null,
 ): L.Icon {
   const haloPx = cu <= 0 ? 0 : Math.round((cu / 100) * 14);
   const haloColor = getCUColor(cu);
@@ -320,8 +322,8 @@ const MapMarker = memo(
           zIndexOffset={isSelf ? 1000 : 0}
         >
           <Popup>
-            <div className="px-4 py-3 max-h-[70vh] overflow-y-auto">
-              <div className="font-semibold text-gray-100 mb-2 flex items-center gap-1.5">
+            <div className="max-h-[70vh] overflow-y-auto px-4 py-3">
+              <div className="mb-2 flex items-center gap-1.5 font-semibold text-gray-100">
                 {isSelf && <span title="Your node">★</span>}
                 {node.long_name || `!${node.node_id.toString(16)}`}
                 {(() => {
@@ -329,7 +331,7 @@ const MapMarker = memo(
                   const displayName = node.long_name || shortId;
                   if (shortId === displayName.trim()) return null;
                   return (
-                    <span className="text-xs text-muted font-mono ml-1">
+                    <span className="text-muted ml-1 font-mono text-xs">
                       !{node.node_id.toString(16)}
                     </span>
                   );
@@ -485,7 +487,7 @@ function LocateMeControl({
             title="Show my location"
             aria-label="Show my location"
             aria-busy={loading}
-            className={`leaflet-bar-part border-0 bg-white p-0 cursor-pointer ${loading ? 'locating' : ''}`}
+            className={`leaflet-bar-part cursor-pointer border-0 bg-white p-0 ${loading ? 'locating' : ''}`}
             onClick={handleLocate}
           >
             <svg
@@ -600,10 +602,7 @@ export default function MapPanel({
         );
         if (d > maxKm) rejectReason = 'distance_filtered';
       }
-      if (rejectReason) {
-        return false;
-      }
-      return true;
+      return rejectReason === null;
     });
   }, [nodes, myNodeNum, locationFilter]);
 
@@ -759,22 +758,22 @@ export default function MapPanel({
   }, [nodesToRender, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
   return (
     <div
-      className="h-full min-h-[500px] rounded-lg overflow-hidden border border-gray-700 relative"
+      className="relative h-full min-h-[500px] overflow-hidden rounded-lg border border-gray-700"
       aria-label="Network map showing node positions"
     >
       {/* Controls overlay — top right */}
       <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
-        <div className="bg-deep-black/80 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-3 text-xs border border-gray-700">
+        <div className="bg-deep-black/80 flex items-center gap-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs backdrop-blur-sm">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-brand-green inline-block" />
+            <span className="bg-brand-green inline-block h-2 w-2 rounded-full" />
             {statusCounts.online}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-amber-500 inline-block opacity-60" />
+            <span className="inline-block h-2 w-2 rounded-full bg-amber-500 opacity-60" />
             {statusCounts.stale}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-gray-500 inline-block" />
+            <span className="inline-block h-2 w-2 rounded-full bg-gray-500" />
             {statusCounts.offline}
           </span>
         </div>
@@ -814,16 +813,16 @@ export default function MapPanel({
           [...waypoints.values()].map((wp) => (
             <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
               <Popup>
-                <div className="p-2 space-y-1">
-                  <div className="font-medium text-gray-100 text-sm">{wp.name || 'Waypoint'}</div>
+                <div className="space-y-1 p-2">
+                  <div className="text-sm font-medium text-gray-100">{wp.name || 'Waypoint'}</div>
                   {wp.description && <div className="text-xs text-gray-400">{wp.description}</div>}
-                  <div className="text-xs text-gray-500 font-mono">
+                  <div className="font-mono text-xs text-gray-500">
                     {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
                   </div>
                   {onDeleteWaypoint && (
                     <button
                       onClick={() => onDeleteWaypoint(wp.id)}
-                      className="mt-1 w-full px-2 py-1 text-xs bg-red-900/40 hover:bg-red-900/60 text-red-300 rounded border border-red-800/50 transition-colors"
+                      className="mt-1 w-full rounded border border-red-800/50 bg-red-900/40 px-2 py-1 text-xs text-red-300 transition-colors hover:bg-red-900/60"
                     >
                       Delete Waypoint
                     </button>
@@ -835,8 +834,8 @@ export default function MapPanel({
       </MapContainer>
 
       {nodesToRender.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="bg-deep-black/80 px-4 py-2 rounded-lg text-muted text-sm">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="bg-deep-black/80 text-muted rounded-lg px-4 py-2 text-sm">
             No nodes with GPS positions yet
           </div>
         </div>

@@ -50,7 +50,7 @@ function ConfigToggle({
           />
         </button>
       </div>
-      {description && <p className="text-xs text-muted">{description}</p>}
+      {description && <p className="text-muted text-xs">{description}</p>}
     </div>
   );
 }
@@ -76,7 +76,7 @@ function ConfigNumber({
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-sm text-muted">{label}</label>
+      <label className="text-muted text-sm">{label}</label>
       <div className="flex items-center gap-2">
         <input
           type="number"
@@ -89,11 +89,11 @@ function ConfigNumber({
           min={min}
           max={max}
           disabled={disabled}
-          className="w-28 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+          className="bg-secondary-dark focus:border-brand-green w-28 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
         />
-        {unit && <span className="text-sm text-muted">{unit}</span>}
+        {unit && <span className="text-muted text-sm">{unit}</span>}
       </div>
-      {description && <p className="text-xs text-muted">{description}</p>}
+      {description && <p className="text-muted text-xs">{description}</p>}
     </div>
   );
 }
@@ -116,7 +116,7 @@ function ConfigText({
   const [show, setShow] = useState(false);
   return (
     <div className="space-y-1">
-      <label className="text-sm text-muted">{label}</label>
+      <label className="text-muted text-sm">{label}</label>
       <div className="flex items-center gap-1">
         <input
           type={password && !show ? 'password' : 'text'}
@@ -125,7 +125,7 @@ function ConfigText({
             onChange(e.target.value);
           }}
           disabled={disabled}
-          className="flex-1 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+          className="bg-secondary-dark focus:border-brand-green flex-1 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
         />
         {password && (
           <button
@@ -133,13 +133,13 @@ function ConfigText({
             onClick={() => {
               setShow((s) => !s);
             }}
-            className="px-2 py-2 text-xs text-muted hover:text-gray-300"
+            className="text-muted px-2 py-2 text-xs hover:text-gray-300"
           >
             {show ? 'Hide' : 'Show'}
           </button>
         )}
       </div>
-      {description && <p className="text-xs text-muted">{description}</p>}
+      {description && <p className="text-muted text-xs">{description}</p>}
     </div>
   );
 }
@@ -159,10 +159,10 @@ function ModuleSection({
 }) {
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="px-4 py-3 cursor-pointer text-gray-200 font-medium flex items-center justify-between hover:bg-gray-800 rounded-lg transition-colors">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>{title}</span>
         <svg
-          className="w-4 h-4 text-muted group-open:rotate-180 transition-transform"
+          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -170,12 +170,12 @@ function ModuleSection({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </summary>
-      <div className="px-4 pb-4 space-y-4">
+      <div className="space-y-4 px-4 pb-4">
         {children}
         <button
           onClick={onApply}
           disabled={disabled || applying}
-          className="w-full px-4 py-2 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
+          className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
         >
           {applying ? 'Applying...' : `Apply ${title}`}
         </button>
@@ -360,17 +360,17 @@ export default function ModulePanel({
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4">
+    <div className="mx-auto max-w-5xl space-y-4">
       <h2 className="text-xl font-semibold text-gray-200">Module Configuration</h2>
 
       {!isConnected && (
-        <div className="bg-yellow-900/30 border border-yellow-700 text-yellow-300 px-4 py-2 rounded-lg text-sm">
+        <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
           Connect to a device to modify module configuration.
         </div>
       )}
 
       {Object.keys(moduleConfigs).length === 0 && isConnected && (
-        <div className="bg-deep-black/50 border border-gray-700 text-muted px-4 py-3 rounded-lg text-sm">
+        <div className="bg-deep-black/50 text-muted rounded-lg border border-gray-700 px-4 py-3 text-sm">
           Waiting for module config from device…
         </div>
       )}
@@ -398,7 +398,7 @@ export default function ModulePanel({
           description="Turn the onboard RGB LED on or off."
         />
         <div className="space-y-1">
-          <label htmlFor="module-ambient-color" className="text-sm text-muted">
+          <label htmlFor="module-ambient-color" className="text-muted text-sm">
             Color
           </label>
           <div className="flex items-center gap-3">
@@ -410,16 +410,16 @@ export default function ModulePanel({
                 handleAmbientColorChange(e.target.value);
               }}
               disabled={disabled || !ambientLedState}
-              className="h-9 w-16 cursor-pointer rounded border border-gray-600 bg-secondary-dark p-0.5 disabled:opacity-50"
+              className="bg-secondary-dark h-9 w-16 cursor-pointer rounded border border-gray-600 p-0.5 disabled:opacity-50"
             />
             <span className="font-mono text-sm text-gray-400">{ambientHex.toUpperCase()}</span>
-            <span className="text-xs text-muted">
+            <span className="text-muted text-xs">
               R:{ambientRed} G:{ambientGreen} B:{ambientBlue}
             </span>
           </div>
         </div>
         <div className="space-y-1">
-          <label htmlFor="module-ambient-current" className="text-sm text-muted">
+          <label htmlFor="module-ambient-current" className="text-muted text-sm">
             Brightness / current: {ambientCurrent}
           </label>
           <input
@@ -432,9 +432,9 @@ export default function ModulePanel({
               setAmbientCurrent(Number(e.target.value));
             }}
             disabled={disabled || !ambientLedState}
-            className="w-full accent-readable-green disabled:opacity-50"
+            className="accent-readable-green w-full disabled:opacity-50"
           />
-          <p className="text-xs text-muted">LED drive current (0–31). Higher = brighter.</p>
+          <p className="text-muted text-xs">LED drive current (0–31). Higher = brighter.</p>
         </div>
       </ModuleSection>
 
@@ -474,7 +474,7 @@ export default function ModulePanel({
           disabled={disabled}
         />
         <div className="space-y-1">
-          <label htmlFor="module-canned-messages" className="text-sm text-muted">
+          <label htmlFor="module-canned-messages" className="text-muted text-sm">
             Messages (one per line, max 30 chars each)
           </label>
           <textarea
@@ -487,9 +487,9 @@ export default function ModulePanel({
             rows={6}
             placeholder={'Hello\nOK\nOn my way\nNeed help'}
             spellCheck={false}
-            className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50 font-mono text-xs resize-y"
+            className="bg-secondary-dark focus:border-brand-green w-full resize-y rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
           />
-          <p className="text-xs text-muted">
+          <p className="text-muted text-xs">
             Enter one message per line. Used with the input peripheral buttons.
           </p>
         </div>
@@ -858,13 +858,13 @@ export default function ModulePanel({
           disabled={disabled}
         >
           <div className="space-y-1">
-            <label htmlFor="module-rtttl-preset" className="text-sm text-muted">
+            <label htmlFor="module-rtttl-preset" className="text-muted text-sm">
               Load preset
             </label>
             <select
               id="module-rtttl-preset"
               disabled={disabled}
-              className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50 text-sm"
+              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
               value=""
               onChange={(e) => {
                 if (e.target.value) setRingtoneText(e.target.value);
@@ -879,7 +879,7 @@ export default function ModulePanel({
             </select>
           </div>
           <div className="space-y-1">
-            <label htmlFor="module-rtttl-ringtone" className="text-sm text-muted">
+            <label htmlFor="module-rtttl-ringtone" className="text-muted text-sm">
               Ringtone string (RTTTL format)
             </label>
             <textarea
@@ -892,9 +892,9 @@ export default function ModulePanel({
               rows={4}
               placeholder="Name:d=4,o=5,b=120:notes..."
               spellCheck={false}
-              className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50 font-mono text-xs resize-y"
+              className="bg-secondary-dark focus:border-brand-green w-full resize-y rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
             />
-            <div className="flex justify-between text-xs text-muted">
+            <div className="text-muted flex justify-between text-xs">
               <span>
                 {ringtoneText.length > 0 && !isValidRtttl(ringtoneText) && (
                   <span className="text-red-400">
@@ -936,7 +936,7 @@ export default function ModulePanel({
           description="Echo received serial data back to sender."
         />
         <div className="space-y-1">
-          <label htmlFor="module-serial-baud" className="text-sm text-muted">
+          <label htmlFor="module-serial-baud" className="text-muted text-sm">
             Baud rate
           </label>
           <select
@@ -946,7 +946,7 @@ export default function ModulePanel({
               setSerialBaud(Number(e.target.value));
             }}
             disabled={disabled || !serialEnabled}
-            className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+            className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
           >
             {[9600, 19200, 38400, 57600, 115200, 230400].map((b) => (
               <option key={b} value={b}>

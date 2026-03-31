@@ -21,7 +21,7 @@ export function HelpTooltip({ text, children }: { text: string; children?: React
   return (
     <span
       ref={ref}
-      className="cursor-help inline-flex"
+      className="inline-flex cursor-help"
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard focus shows same tooltip as hover
       tabIndex={0}
       onMouseEnter={updatePosition}
@@ -43,7 +43,7 @@ export function HelpTooltip({ text, children }: { text: string; children?: React
             transform: pos.below ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
             zIndex: 9999,
           }}
-          className="w-64 rounded bg-gray-800 border border-gray-600 px-2.5 py-1.5 text-xs text-gray-200 shadow-lg pointer-events-none"
+          className="pointer-events-none w-64 rounded border border-gray-600 bg-gray-800 px-2.5 py-1.5 text-xs text-gray-200 shadow-lg"
         >
           {text}
         </span>

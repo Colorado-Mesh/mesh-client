@@ -103,7 +103,7 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
       <button
         type="button"
         aria-label="Close dialog"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-pointer border-0 p-0"
+        className="absolute inset-0 cursor-pointer border-0 bg-black/50 p-0 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
@@ -111,19 +111,19 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
         role="dialog"
         aria-modal="true"
         aria-labelledby="shortcuts-title"
-        className="relative z-10 bg-deep-black border border-gray-700 rounded-xl max-w-md w-full shadow-2xl"
+        className="bg-deep-black relative z-10 w-full max-w-md rounded-xl border border-gray-700 shadow-2xl"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700">
+        <div className="flex items-center justify-between border-b border-gray-700 px-5 py-4">
           <h2 id="shortcuts-title" className="text-lg font-semibold text-gray-100">
             Keyboard Shortcuts
           </h2>
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1.5 rounded-lg hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors"
+            className="hover:bg-secondary-dark text-muted rounded-lg p-1.5 transition-colors hover:text-gray-200"
           >
             <svg
-              className="w-5 h-5"
+              className="h-5 w-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -133,15 +133,15 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
             </svg>
           </button>
         </div>
-        <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">
+        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
           <table className="w-full text-sm">
             <caption className="sr-only">Application keyboard shortcuts</caption>
             <thead>
-              <tr className="text-left text-muted text-xs uppercase tracking-wider border-b border-gray-700">
+              <tr className="text-muted border-b border-gray-700 text-left text-xs tracking-wider uppercase">
                 <th scope="col" className="pb-2 font-medium">
                   Shortcut
                 </th>
-                <th scope="col" className="pb-2 font-medium pl-4">
+                <th scope="col" className="pb-2 pl-4 font-medium">
                   Action
                 </th>
               </tr>
@@ -150,7 +150,7 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
               {shortcuts.map(({ keys, action }) => (
                 <tr key={keys}>
                   <td className="py-2 pr-4">
-                    <kbd className="px-1.5 py-0.5 bg-secondary-dark border border-gray-600 rounded text-xs font-mono text-gray-300 whitespace-nowrap">
+                    <kbd className="bg-secondary-dark rounded border border-gray-600 px-1.5 py-0.5 font-mono text-xs whitespace-nowrap text-gray-300">
                       {keys}
                     </kbd>
                   </td>

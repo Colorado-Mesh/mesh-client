@@ -46,7 +46,7 @@ process.emitWarning = _warnSave; // restore after sqlite is loaded
  */
 function extractParamNames(sql: string): Set<string> {
   const names = new Set<string>();
-  for (const m of sql.matchAll(/[@:$]([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
+  for (const m of sql.matchAll(/[@:$]([a-zA-Z_]\w*)/g)) {
     names.add(m[1]);
   }
   return names;

@@ -159,14 +159,14 @@ export default function SearchModal({
       <button
         type="button"
         aria-label="Close search"
-        className="absolute inset-0 bg-black/60 cursor-pointer border-0 p-0"
+        className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-2xl mx-4 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl flex flex-col max-h-[60vh]">
+      <div className="relative z-10 mx-4 flex max-h-[60vh] w-full max-w-2xl flex-col rounded-xl border border-gray-700 bg-gray-900 shadow-2xl">
         {/* Input */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-700">
+        <div className="flex items-center gap-2 border-b border-gray-700 px-4 py-3">
           <svg
-            className="w-4 h-4 text-gray-400 shrink-0"
+            className="h-4 w-4 shrink-0 text-gray-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -188,14 +188,14 @@ export default function SearchModal({
             }}
             placeholder="Search all messages… (user:name, channel:name)"
             spellCheck={false}
-            className="flex-1 bg-transparent text-gray-200 text-sm focus:outline-none placeholder-gray-500"
+            className="flex-1 bg-transparent text-sm text-gray-200 placeholder-gray-500 focus:outline-none"
           />
           {loading && (
-            <span className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin shrink-0" />
+            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border border-gray-400 border-t-transparent" />
           )}
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-300 text-lg leading-none"
+            className="text-lg leading-none text-gray-500 hover:text-gray-300"
           >
             ×
           </button>
@@ -204,10 +204,10 @@ export default function SearchModal({
         {/* Results */}
         <div className="overflow-y-auto">
           {results.length === 0 && !loading && query.trim() && (
-            <p className="text-center text-gray-500 text-sm py-8">No results</p>
+            <p className="py-8 text-center text-sm text-gray-500">No results</p>
           )}
           {results.length === 0 && !query.trim() && (
-            <p className="text-center text-gray-600 text-sm py-8">
+            <p className="py-8 text-center text-sm text-gray-600">
               Type to search across all channels
             </p>
           )}
@@ -217,16 +217,16 @@ export default function SearchModal({
               onClick={() => {
                 handleResultClick(r);
               }}
-              className="w-full text-left px-4 py-3 border-b border-gray-800 hover:bg-gray-800/60 transition-colors"
+              className="w-full border-b border-gray-800 px-4 py-3 text-left transition-colors hover:bg-gray-800/60"
             >
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-xs px-1.5 py-0.5 rounded bg-brand-green/20 text-brand-green font-mono">
+              <div className="mb-0.5 flex items-center gap-2">
+                <span className="bg-brand-green/20 text-brand-green rounded px-1.5 py-0.5 font-mono text-xs">
                   {getChannelName(r.channel)}
                 </span>
                 <span className="text-xs text-gray-400">{getSenderName(r)}</span>
-                <span className="text-xs text-gray-600 ml-auto">{formatTs(r.timestamp)}</span>
+                <span className="ml-auto text-xs text-gray-600">{formatTs(r.timestamp)}</span>
               </div>
-              <p className="text-sm text-gray-300 truncate">
+              <p className="truncate text-sm text-gray-300">
                 {r.payload.length > 120 ? r.payload.slice(0, 120) + '…' : r.payload}
               </p>
             </button>
@@ -234,7 +234,7 @@ export default function SearchModal({
         </div>
 
         {results.length > 0 && (
-          <div className="px-4 py-2 text-xs text-gray-600 border-t border-gray-800">
+          <div className="border-t border-gray-800 px-4 py-2 text-xs text-gray-600">
             {results.length} result{results.length !== 1 ? 's' : ''} — click to navigate
           </div>
         )}

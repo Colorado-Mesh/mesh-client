@@ -125,7 +125,7 @@ describe('meshcore_messages dedup index and fresh DB version', () => {
   });
 
   it('createBaseTables defines meshcore_contacts.contact_flags', () => {
-    expect(DB_SOURCE).toMatch(/meshcore_contacts[\s\S]*contact_flags INTEGER DEFAULT 0/s);
+    expect(DB_SOURCE).toMatch(/meshcore_contacts.*contact_flags INTEGER DEFAULT 0/s);
   });
 
   it('fresh DB init stamps user_version 20 inside isFreshDb', () => {
@@ -135,6 +135,113 @@ describe('meshcore_messages dedup index and fresh DB version', () => {
   it('createBaseTables defines protocol-neutral contact_groups tables', () => {
     expect(DB_SOURCE).toMatch(/CREATE TABLE IF NOT EXISTS contact_groups/s);
     expect(DB_SOURCE).toMatch(/CREATE TABLE IF NOT EXISTS contact_group_members/s);
+  });
+});
+
+/**
+ * Tests for saveNode UPSERT — ensures partial node updates preserve existing data
+ * instead of overwriting with null/empty values.
+ */
+describe('saveNode UPSERT COALESCE preservation', () => {
+  const INDEX_SOURCE = readFileSync(join(__dirname, '../main/index.ts'), 'utf-8');
+
+  it('uses COALESCE for long_name to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /long_name = COALESCE\(NULLIF\(excluded\.long_name, ''\), nodes\.long_name\)/,
+    );
+  });
+
+  it('uses COALESCE for short_name to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /short_name = COALESCE\(NULLIF\(excluded\.short_name, ''\), nodes\.short_name\)/,
+    );
+  });
+
+  it('uses COALESCE for hw_model to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /hw_model = COALESCE\(NULLIF\(excluded\.hw_model, ''\), nodes\.hw_model\)/,
+    );
+  });
+
+  it('uses COALESCE for snr to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(/snr = COALESCE\(excluded\.snr, nodes\.snr\)/);
+  });
+
+  it('uses COALESCE for rssi to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(/rssi = COALESCE\(excluded\.rssi, nodes\.rssi\)/);
+  });
+
+  it('uses COALESCE for battery to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(/battery = COALESCE\(excluded\.battery, nodes\.battery\)/);
+  });
+
+  it('uses CASE for last_heard to only update when positive', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /last_heard = CASE WHEN excluded\.last_heard IS NOT NULL AND excluded\.last_heard > 0/,
+    );
+  });
+
+  it('uses CASE for latitude to only update when non-zero', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /latitude = CASE WHEN excluded\.latitude IS NOT NULL AND excluded\.latitude != 0/,
+    );
+  });
+
+  it('uses CASE for longitude to only update when non-zero', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /longitude = CASE WHEN excluded\.longitude IS NOT NULL AND excluded\.longitude != 0/,
+    );
+  });
+
+  it('uses COALESCE for voltage to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(/voltage = COALESCE\(excluded\.voltage, nodes\.voltage\)/);
+  });
+
+  it('uses COALESCE for altitude to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(/altitude = COALESCE\(excluded\.altitude, nodes\.altitude\)/);
+  });
+});
+
+/**
+ * Tests for saveMeshcoreContact UPSERT — ensures partial contact updates preserve existing data.
+ */
+describe('saveMeshcoreContact UPSERT COALESCE preservation', () => {
+  const INDEX_SOURCE = readFileSync(join(__dirname, '../main/index.ts'), 'utf-8');
+
+  it('uses COALESCE for adv_name to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /adv_name = COALESCE\(NULLIF\(excluded\.adv_name, ''\), meshcore_contacts\.adv_name\)/,
+    );
+  });
+
+  it('uses COALESCE for last_advert to only update when positive', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /last_advert = CASE WHEN excluded\.last_advert IS NOT NULL AND excluded\.last_advert > 0/,
+    );
+  });
+
+  it('uses COALESCE for adv_lat to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /adv_lat = CASE WHEN excluded\.adv_lat IS NOT NULL AND excluded\.adv_lat != 0/,
+    );
+  });
+
+  it('uses COALESCE for adv_lon to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /adv_lon = CASE WHEN excluded\.adv_lon IS NOT NULL AND excluded\.adv_lon != 0/,
+    );
+  });
+
+  it('uses COALESCE for last_snr to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /last_snr = COALESCE\(excluded\.last_snr, meshcore_contacts\.last_snr\)/,
+    );
+  });
+
+  it('uses COALESCE for last_rssi to preserve existing values', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /last_rssi = COALESCE\(excluded\.last_rssi, meshcore_contacts\.last_rssi\)/,
+    );
   });
 });
 

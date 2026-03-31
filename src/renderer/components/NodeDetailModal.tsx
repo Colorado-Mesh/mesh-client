@@ -217,32 +217,32 @@ export default function NodeDetailModal({
         <button
           type="button"
           aria-label="Close dialog"
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-pointer border-0 p-0"
+          className="absolute inset-0 cursor-pointer border-0 bg-black/50 p-0 backdrop-blur-sm"
           onClick={onClose}
         />
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="node-modal-title"
-          className="relative z-10 bg-deep-black border border-gray-700 rounded-xl max-w-md w-full max-h-[90vh] shadow-2xl flex flex-col min-h-0 overflow-hidden"
+          className="bg-deep-black relative z-10 flex max-h-[90vh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-xl border border-gray-700 shadow-2xl"
         >
           {/* Header */}
-          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-700">
+          <div className="flex shrink-0 items-center justify-between border-b border-gray-700 px-5 py-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 id="node-modal-title" className="text-lg font-semibold text-gray-100 truncate">
+                <h3 id="node-modal-title" className="truncate text-lg font-semibold text-gray-100">
                   {displayName}
                 </h3>
                 {mqttIgnoredNodes.has(node.node_id) && (
-                  <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
+                  <span className="shrink-0 rounded border border-yellow-500/30 bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-medium text-yellow-300">
                     MQTT Ignored
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-muted font-mono">{hexId}</span>
+              <div className="mt-0.5 flex items-center gap-2">
+                <span className="text-muted font-mono text-xs">{hexId}</span>
                 {node.hw_model && node.hw_model !== '0' && (
-                  <span className="text-xs text-muted">{node.hw_model}</span>
+                  <span className="text-muted text-xs">{node.hw_model}</span>
                 )}
               </div>
             </div>
@@ -250,7 +250,7 @@ export default function NodeDetailModal({
               onClick={() => {
                 onToggleFavorite(node.node_id, !node.favorited);
               }}
-              className="p-1.5 rounded-lg hover:bg-secondary-dark transition-colors shrink-0 mr-1"
+              className="hover:bg-secondary-dark mr-1 shrink-0 rounded-lg p-1.5 transition-colors"
               aria-label={node.favorited ? 'Remove from favorites' : 'Add to favorites'}
               aria-pressed={node.favorited}
             >
@@ -265,10 +265,10 @@ export default function NodeDetailModal({
               ref={closeButtonRef}
               onClick={onClose}
               aria-label="Close dialog"
-              className="p-1.5 rounded-lg hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors shrink-0"
+              className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
             >
               <svg
-                className="w-5 h-5"
+                className="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -280,7 +280,7 @@ export default function NodeDetailModal({
           </div>
 
           {/* Body — scrollable so long RF/diagnostics content fits on screen */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-3">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3">
             <NodeInfoBody
               node={node}
               homeNode={homeNode}
@@ -303,10 +303,10 @@ export default function NodeDetailModal({
             {/* MeshCore: trace path result */}
             {protocol === 'meshcore' && !isOurNode && meshcoreTraceResult && (
               <div className="mt-3 space-y-1">
-                <h4 className="text-xs font-medium text-muted uppercase tracking-wide">
+                <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
                   Path Trace
                 </h4>
-                <div className="bg-secondary-dark rounded p-2 space-y-1">
+                <div className="bg-secondary-dark space-y-1 rounded p-2">
                   {meshcoreTraceResult.hops.map((hop, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs">
                       <span className="text-muted">Hop {i + 1}</span>
@@ -317,7 +317,7 @@ export default function NodeDetailModal({
                       </span>
                     </div>
                   ))}
-                  <div className="flex items-center gap-2 text-xs border-t border-gray-700 pt-1">
+                  <div className="flex items-center gap-2 border-t border-gray-700 pt-1 text-xs">
                     <span className="text-muted">Last hop (dest)</span>
                     <span
                       className={`font-mono ${meshcoreTraceResult.lastSnr >= 5 ? 'text-green-400' : meshcoreTraceResult.lastSnr >= 0 ? 'text-yellow-400' : 'text-red-400'}`}
@@ -333,24 +333,24 @@ export default function NodeDetailModal({
             {protocol === 'meshcore' && !isOurNode && meshcoreNodeTelemetry && showTelemetry && (
               <div className="mt-3 space-y-1">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-medium text-muted uppercase tracking-wide">
+                  <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
                     Sensor telemetry (LPP)
                   </h4>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted">
+                    <span className="text-muted text-xs">
                       {new Date(meshcoreNodeTelemetry.fetchedAt).toLocaleTimeString()}
                     </span>
                     <button
                       onClick={() => {
                         setShowTelemetry(false);
                       }}
-                      className="text-xs text-muted hover:text-gray-300"
+                      className="text-muted text-xs hover:text-gray-300"
                     >
                       Hide
                     </button>
                   </div>
                 </div>
-                <div className="bg-secondary-dark rounded p-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
                   {meshcoreNodeTelemetry.temperature !== undefined && (
                     <>
                       <div className="text-muted">Temperature</div>
@@ -397,9 +397,9 @@ export default function NodeDetailModal({
                   )}
                   {meshcoreNodeTelemetry.entries.length === 0 && (
                     <>
-                      <div className="col-span-2 text-muted italic">No LPP sensor data</div>
+                      <div className="text-muted col-span-2 italic">No LPP sensor data</div>
                       {node.latitude != null && node.longitude != null ? (
-                        <div className="col-span-2 text-muted text-xs">
+                        <div className="text-muted col-span-2 text-xs">
                           Map position is from advert/contact data, not this request.
                         </div>
                       ) : null}
@@ -416,14 +416,14 @@ export default function NodeDetailModal({
               showMeshcoreNeighbors && (
                 <div className="mt-3 space-y-1">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-medium text-muted uppercase tracking-wide">
+                    <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
                       Neighbors ({meshcoreNeighbors.totalNeighboursCount})
                     </h4>
                     <button
                       onClick={() => {
                         setShowMeshcoreNeighbors(false);
                       }}
-                      className="text-xs text-muted hover:text-gray-300"
+                      className="text-muted text-xs hover:text-gray-300"
                     >
                       Hide
                     </button>
@@ -438,7 +438,7 @@ export default function NodeDetailModal({
                       return (
                         <div
                           key={i}
-                          className="flex items-center justify-between text-xs bg-secondary-dark rounded px-2 py-1"
+                          className="bg-secondary-dark flex items-center justify-between rounded px-2 py-1 text-xs"
                         >
                           <div>
                             <span className="text-gray-300">{label}</span>
@@ -451,7 +451,7 @@ export default function NodeDetailModal({
                       );
                     })}
                     {meshcoreNeighbors.neighbours.length === 0 && (
-                      <div className="text-xs text-muted italic px-2">No neighbors reported</div>
+                      <div className="text-muted px-2 text-xs italic">No neighbors reported</div>
                     )}
                   </div>
                 </div>
@@ -475,7 +475,7 @@ export default function NodeDetailModal({
                 };
                 return (
                   <div className="mt-3 space-y-2">
-                    <h4 className="text-xs font-medium text-orange-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <h4 className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-orange-400 uppercase">
                       <span aria-hidden="true">⚠</span>
                       Foreign LoRa Activity (last 90 min)
                     </h4>
@@ -490,7 +490,7 @@ export default function NodeDetailModal({
                       return (
                         <div
                           key={`${detection.packetClass}-${detection.lastSenderId ?? 'na'}-${detection.detectedAt}-${i}`}
-                          className="bg-secondary-dark rounded p-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs"
+                          className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs"
                         >
                           <div className="text-muted">Class</div>
                           <div className="text-gray-200">
@@ -543,19 +543,19 @@ export default function NodeDetailModal({
               showRepeaterStats && (
                 <div className="mt-3 space-y-1">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-medium text-muted uppercase tracking-wide">
+                    <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
                       Repeater Status
                     </h4>
                     <button
                       onClick={() => {
                         setShowRepeaterStats(false);
                       }}
-                      className="text-xs text-muted hover:text-gray-300"
+                      className="text-muted text-xs hover:text-gray-300"
                     >
                       Hide
                     </button>
                   </div>
-                  <div className="bg-secondary-dark rounded p-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
                     <div className="text-muted">Battery</div>
                     <div className="font-mono text-gray-200">
                       {(meshcoreRepeaterStatus.battMilliVolts / 1000).toFixed(2)} V
@@ -616,7 +616,7 @@ export default function NodeDetailModal({
               if (!record || record.neighbors.length === 0) return null;
               return (
                 <div className="space-y-2 px-5 pb-2">
-                  <h4 className="text-xs font-medium text-muted uppercase tracking-wide">
+                  <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
                     Neighbors ({record.neighbors.length})
                   </h4>
                   <div className="space-y-1">
@@ -626,10 +626,10 @@ export default function NodeDetailModal({
                       return (
                         <div
                           key={nb.nodeId}
-                          className="flex items-center justify-between text-xs bg-secondary-dark rounded px-2 py-1"
+                          className="bg-secondary-dark flex items-center justify-between rounded px-2 py-1 text-xs"
                         >
                           <span className="text-gray-300">{label}</span>
-                          <span className="text-gray-500 text-xs">
+                          <span className="text-xs text-gray-500">
                             {formatSecondsAgo(
                               Math.max(0, Math.floor(Date.now() / 1000 - nb.lastRxTime)),
                             )}
@@ -645,12 +645,12 @@ export default function NodeDetailModal({
 
           {/* Footer actions — omitted for directly connected node (no position/trace/message to self) */}
           {!isOurNode && (
-            <div className="shrink-0 px-5 py-3 border-t border-gray-700 flex items-center gap-2 flex-wrap">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-gray-700 px-5 py-3">
               {protocol !== 'meshcore' && (
                 <button
                   onClick={handleRequestPosition}
                   disabled={!isConnected || positionRequestedAt !== null}
-                  className="flex-1 min-w-[8rem] px-3 py-2 text-sm font-medium bg-secondary-dark hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-gray-200 rounded-lg transition-colors"
+                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   📍 Request Position
                 </button>
@@ -658,7 +658,7 @@ export default function NodeDetailModal({
               <button
                 onClick={handleTraceRoute}
                 disabled={!isConnected || traceRoutePending}
-                className="flex-1 min-w-[8rem] px-3 py-2 text-sm font-medium bg-secondary-dark hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-gray-200 rounded-lg transition-colors"
+                className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 🛤 {traceRoutePending ? 'Tracing...' : 'Trace Route'}
               </button>
@@ -679,7 +679,7 @@ export default function NodeDetailModal({
                     }
                   }}
                   disabled={!isConnected || repeaterStatusPending}
-                  className="flex-1 min-w-[8rem] px-3 py-2 text-sm font-medium bg-secondary-dark hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-gray-200 rounded-lg transition-colors"
+                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   📊 {repeaterStatusPending ? 'Requesting...' : 'Request Status'}
                 </button>
@@ -706,7 +706,7 @@ export default function NodeDetailModal({
                     }
                   }}
                   disabled={!isConnected || telemetryPending}
-                  className="flex-1 min-w-[8rem] px-3 py-2 text-sm font-medium bg-secondary-dark hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-gray-200 rounded-lg transition-colors"
+                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   🌡 {telemetryPending ? 'Requesting...' : 'Sensor telemetry'}
                 </button>
@@ -730,7 +730,7 @@ export default function NodeDetailModal({
                     }
                   }}
                   disabled={!isConnected || neighborsPending}
-                  className="flex-1 min-w-[8rem] px-3 py-2 text-sm font-medium bg-secondary-dark hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-gray-200 rounded-lg transition-colors"
+                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   🔗 {neighborsPending ? 'Requesting...' : 'Get Neighbors'}
                 </button>
@@ -742,7 +742,7 @@ export default function NodeDetailModal({
                     onClose();
                   }}
                   disabled={!isConnected}
-                  className="flex-1 min-w-[8rem] px-3 py-2 text-sm font-medium bg-purple-700/50 hover:bg-purple-600/50 disabled:opacity-40 disabled:cursor-not-allowed text-purple-300 rounded-lg transition-colors"
+                  className="min-w-[8rem] flex-1 rounded-lg bg-purple-700/50 px-3 py-2 text-sm font-medium text-purple-300 transition-colors hover:bg-purple-600/50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   💬 Message
                 </button>
@@ -751,10 +751,10 @@ export default function NodeDetailModal({
           )}
 
           {/* MQTT Ignore toggle */}
-          <div className="shrink-0 px-5 py-2 border-t border-gray-700/50 flex items-center justify-between gap-3">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-700/50 px-5 py-2">
             <div>
               <div className="text-xs font-medium text-gray-300">MQTT Ignore</div>
-              <div className="text-xs text-muted">
+              <div className="text-muted text-xs">
                 Exclude this node's MQTT data from diagnostics
               </div>
             </div>
@@ -784,7 +784,7 @@ export default function NodeDetailModal({
           {/* Action status */}
           {actionStatus && (
             <div className="shrink-0 px-5 pb-3">
-              <div className="text-xs text-muted text-center">{actionStatus}</div>
+              <div className="text-muted text-center text-xs">{actionStatus}</div>
             </div>
           )}
 
@@ -795,13 +795,13 @@ export default function NodeDetailModal({
                 onClick={() => {
                   setShowDeleteConfirm(true);
                 }}
-                className="w-full mt-2 px-3 py-2 text-sm font-medium bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 rounded-lg transition-colors border border-red-900/50"
+                className="mt-2 w-full rounded-lg border border-red-900/50 bg-red-900/30 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/50 hover:text-red-300"
               >
                 Delete Node
               </button>
             ) : (
-              <div className="mt-2 p-3 bg-red-900/20 border border-red-900/50 rounded-lg">
-                <p className="text-xs text-red-300 mb-2">
+              <div className="mt-2 rounded-lg border border-red-900/50 bg-red-900/20 p-3">
+                <p className="mb-2 text-xs text-red-300">
                   Remove this node from local database? It will reappear when it broadcasts again.
                 </p>
                 <div className="flex gap-2">
@@ -809,13 +809,13 @@ export default function NodeDetailModal({
                     onClick={() => {
                       setShowDeleteConfirm(false);
                     }}
-                    className="flex-1 px-3 py-1.5 text-xs bg-secondary-dark hover:bg-gray-600 text-gray-300 rounded transition-colors"
+                    className="bg-secondary-dark flex-1 rounded px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-600"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={() => onDeleteNode(node.node_id).then(onClose)}
-                    className="flex-1 px-3 py-1.5 text-xs bg-red-800 hover:bg-red-700 text-white rounded transition-colors"
+                    className="flex-1 rounded bg-red-800 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-700"
                   >
                     Confirm Delete
                   </button>

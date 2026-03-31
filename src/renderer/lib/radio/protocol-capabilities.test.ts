@@ -60,13 +60,13 @@ describe('ProtocolCapabilities contract', () => {
 
   it('MESHTASTIC_CAPABILITIES has all required keys', () => {
     for (const key of REQUIRED_CAPABILITY_KEYS) {
-      expect(MESHTASTIC_CAPABILITIES, `missing key: ${key}`).toHaveProperty(key);
+      expect(MESHTASTIC_CAPABILITIES).toHaveProperty(key);
     }
   });
 
   it('MESHCORE_CAPABILITIES has all required keys', () => {
     for (const key of REQUIRED_CAPABILITY_KEYS) {
-      expect(MESHCORE_CAPABILITIES, `missing key: ${key}`).toHaveProperty(key);
+      expect(MESHCORE_CAPABILITIES).toHaveProperty(key);
     }
   });
 

@@ -18,8 +18,8 @@ function RepeaterRemoteAuthFields({
   passwordInputId: string;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-end">
-      <div className="flex-1 min-w-[12rem] space-y-1">
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="min-w-[12rem] flex-1 space-y-1">
         <label htmlFor={passwordInputId} className="text-xs text-gray-400">
           Repeater admin password (optional)
         </label>
@@ -33,7 +33,7 @@ function RepeaterRemoteAuthFields({
           }}
           disabled={disabled}
           placeholder="Leave empty if repeaters have no admin password"
-          className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 text-sm border border-gray-600 focus:border-brand-green/50 focus:outline-none disabled:opacity-50"
+          className="bg-secondary-dark focus:border-brand-green/50 w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
         />
       </div>
     </div>
@@ -49,7 +49,7 @@ export function MeshcoreRepeaterRemoteAuthBanner({ onConfigured }: { onConfigure
 
   return (
     <div
-      className="rounded-lg border border-amber-700/50 bg-amber-950/30 px-3 py-3 space-y-3"
+      className="space-y-3 rounded-lg border border-amber-700/50 bg-amber-950/30 px-3 py-3"
       role="region"
       aria-label="Repeater remote access"
     >
@@ -69,7 +69,7 @@ export function MeshcoreRepeaterRemoteAuthBanner({ onConfigured }: { onConfigure
             meshcoreApplyRepeaterSessionAuthSkip();
             onConfigured();
           }}
-          className="px-3 py-1.5 rounded text-xs font-medium bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600 transition-colors"
+          className="rounded border border-gray-600 bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors hover:bg-gray-600"
         >
           Continue without password
         </button>
@@ -79,7 +79,7 @@ export function MeshcoreRepeaterRemoteAuthBanner({ onConfigured }: { onConfigure
             meshcoreApplyRepeaterSessionAuth(password);
             onConfigured();
           }}
-          className="px-3 py-1.5 rounded text-xs font-medium bg-brand-green/20 text-brand-green border border-brand-green/40 hover:bg-brand-green/30 transition-colors"
+          className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-3 py-1.5 text-xs font-medium transition-colors"
         >
           Save for this session
         </button>
@@ -125,7 +125,7 @@ export function useMeshcoreRepeaterRemoteAuth() {
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 border-0 bg-black/60 cursor-default p-0"
+        className="absolute inset-0 cursor-default border-0 bg-black/60 p-0"
         aria-label="Cancel repeater password dialog"
         onClick={() => {
           finishModal(false, 'cancel', '');
@@ -135,7 +135,7 @@ export function useMeshcoreRepeaterRemoteAuth() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="repeater-remote-auth-title"
-        className="relative z-10 w-full max-w-md rounded-lg border border-gray-600 bg-gray-900 shadow-xl p-4 space-y-3"
+        className="relative z-10 w-full max-w-md space-y-3 rounded-lg border border-gray-600 bg-gray-900 p-4 shadow-xl"
       >
         <h2 id="repeater-remote-auth-title" className="text-base font-semibold text-white">
           Repeater admin password
@@ -182,18 +182,18 @@ function ModalAuthBody({
         onPasswordChange={setPassword}
         passwordInputId={passwordId}
       />
-      <div className="flex flex-wrap gap-2 justify-end pt-2">
+      <div className="flex flex-wrap justify-end gap-2 pt-2">
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1.5 rounded text-xs font-medium bg-gray-800 text-gray-300 border border-gray-600 hover:bg-gray-700"
+          className="rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700"
         >
           Cancel
         </button>
         <button
           type="button"
           onClick={onSkip}
-          className="px-3 py-1.5 rounded text-xs font-medium bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600"
+          className="rounded border border-gray-600 bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-600"
         >
           No password
         </button>
@@ -202,7 +202,7 @@ function ModalAuthBody({
           onClick={() => {
             onSave(password);
           }}
-          className="px-3 py-1.5 rounded text-xs font-medium bg-brand-green/20 text-brand-green border border-brand-green/40 hover:bg-brand-green/30"
+          className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-3 py-1.5 text-xs font-medium"
         >
           Continue
         </button>

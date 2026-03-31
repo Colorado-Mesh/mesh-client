@@ -56,7 +56,7 @@ function TriStateRow({
           return (
             <div
               key={opt.id}
-              className={`flex gap-2 rounded-md p-1.5 hover:bg-secondary-dark/50 ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+              className={`hover:bg-secondary-dark/50 flex gap-2 rounded-md p-1.5 ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
             >
               <input
                 id={inputId}
@@ -75,7 +75,7 @@ function TriStateRow({
                 className={`flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5 ${disabled ? 'cursor-not-allowed' : ''}`}
               >
                 <span className="text-sm text-gray-200">{opt.label}</span>
-                <span className="text-xs text-muted">{opt.sub}</span>
+                <span className="text-muted text-xs">{opt.sub}</span>
               </label>
             </div>
           );
@@ -129,10 +129,10 @@ export default function MeshcoreTelemetryPrivacySection({
 
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="px-4 py-3 cursor-pointer text-gray-200 font-medium flex items-center justify-between hover:bg-gray-800 rounded-lg transition-colors">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>Telemetry privacy</span>
         <svg
-          className="w-4 h-4 text-muted group-open:rotate-180 transition-transform"
+          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -140,8 +140,8 @@ export default function MeshcoreTelemetryPrivacySection({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </summary>
-      <div className="px-4 pb-4 space-y-4">
-        <p className="text-xs text-muted">
+      <div className="space-y-4 px-4 pb-4">
+        <p className="text-muted text-xs">
           Controls how your node responds to telemetry requests and what data is included (MeshCore
           companion firmware). Per-contact permissions apply when you choose &quot;specific
           contacts&quot;; edit contact flags from the reference MeshCore apps or a future contact
@@ -193,7 +193,7 @@ export default function MeshcoreTelemetryPrivacySection({
               telemetryModeEnv: meshcoreTriStateToTelemetryMode(env),
             })
           }
-          className="rounded-lg bg-brand-green px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+          className="bg-brand-green rounded-lg px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
         >
           {applying ? 'Applying…' : 'Apply telemetry privacy'}
         </button>

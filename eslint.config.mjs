@@ -6,6 +6,10 @@ import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
+import security from 'eslint-plugin-security';
+import vitest from 'eslint-plugin-vitest';
+import noSecrets from 'eslint-plugin-no-secrets';
+import electron from 'eslint-plugin-electron';
 
 export default tseslint.config(
   {
@@ -128,7 +132,7 @@ export default tseslint.config(
       'no-redeclare': 'off',
     },
   },
-  // Renderer: React (jsx-runtime) + React Hooks + jsx-a11y
+  // Renderer: React (jsx-runtime) + React Hooks + jsxA11y
   {
     files: ['src/renderer/**/*.{ts,tsx}'],
     plugins: {
@@ -151,6 +155,62 @@ export default tseslint.config(
       ...jsxA11y.flatConfigs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       'react-hooks/exhaustive-deps': 'error',
+    },
+  },
+  // Security plugin: Node.js security patterns
+  {
+    plugins: {
+      security,
+    },
+    rules: {
+      ...security.configs.recommended.rules,
+      // Disable rules with high false positive rate in this codebase
+      'security/detect-object-injection': 'off', // Common pattern for data structures
+      'security/detect-non-literal-fs-filename': 'off', // Scripts use variable paths intentionally
+      'security/detect-non-literal-regexp': 'off', // Dynamic regex patterns are expected
+      'security/detect-unsafe-regex': 'off', // Too many false positives for safe patterns
+    },
+  },
+  // No-secrets: detect hardcoded secrets/API keys
+  {
+    plugins: {
+      'no-secrets': noSecrets,
+    },
+    rules: {
+      'no-secrets/no-secrets': [
+        'error',
+        {
+          // Increase tolerance to reduce false positives on function names
+          tolerance: 4.5,
+          // Ignore common patterns that are not secrets
+          ignoreIdentifiers: ['MESHTASTIC_SKIP_ELECTRON_REBUILD'],
+          ignoreContent: [
+            // Environment variable names
+            '^[A-Z_]+$',
+          ],
+          ignoreModules: true,
+          ignoreCase: false,
+        },
+      ],
+    },
+  },
+  // Vitest: test-specific rules
+  {
+    files: ['**/*.test.{ts,tsx}'],
+    ...vitest.configs.recommended,
+  },
+  // Electron: main/preload process security
+  {
+    files: ['src/main/**/*.ts', 'src/preload/**/*.ts'],
+    plugins: {
+      electron,
+    },
+    rules: {
+      'electron/no-callbacks': 'error',
+      'electron/no-deprecated-apis': 'error',
+      'electron/no-deprecated-props': 'error',
+      'electron/no-deprecated-arguments': 'off',
+      'electron/default-value-changed': 'warn',
     },
   },
 );

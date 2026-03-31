@@ -746,7 +746,7 @@ export function mergeDatabase(sourcePath: string) {
     const sourceNodes = sourceDb.prepare('SELECT * FROM nodes').all() as any[];
     const sourceMessages = sourceDb.prepare('SELECT * FROM messages').all() as any[];
 
-    const result = targetDb.transaction(() => {
+    return targetDb.transaction(() => {
       let nodesAdded = 0;
       let messagesAdded = 0;
 
@@ -821,8 +821,6 @@ export function mergeDatabase(sourcePath: string) {
 
       return { nodesAdded, messagesAdded };
     })();
-
-    return result;
   } catch (err) {
     console.error(
       '[db] Merge failed:',

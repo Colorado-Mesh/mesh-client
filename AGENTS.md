@@ -29,6 +29,7 @@ pnpm run lint:md      # Markdownlint for all .md files
 pnpm run check:log-injection # Verify no unsanitized error logging
 pnpm run check:db-migrations # Validate SQLite migrations
 pnpm run check:ipc-contract  # Verify preload/main API alignment
+pnpm run check:licenses      # Show license summary for dependencies
 
 # Testing
 pnpm test             # Vitest watch mode
@@ -80,6 +81,18 @@ pnpm run format && pnpm run lint && pnpm run typecheck && pnpm run test:run
 - **Constants**: SCREAMING_SNAKE_CASE for true constants
 - **Types/Interfaces**: PascalCase with descriptive names
 - **Files**: PascalCase for components, camelCase for utilities
+
+### ESLint Plugins
+
+ESLint is configured with multiple plugins for code quality and security:
+
+- **`eslint-plugin-security`** — Node.js security patterns (detects unsafe file operations, regex issues, etc.)
+- **`eslint-plugin-vitest`** — Vitest-specific test rules (valid assertions, expect usage)
+- **`eslint-plugin-no-secrets`** — Detects potential hardcoded secrets/API keys
+- **`eslint-plugin-electron`** — Electron-specific security rules (IPC safety, contextBridge patterns)
+- **`license-checker-rseidelsohn`** — License compliance check (runs via `pnpm run check:licenses`)
+
+Run `pnpm run lint` to see all violations. Pre-commit enforces these rules.
 
 ### React
 
@@ -182,10 +195,11 @@ When creating a PR, the description **must** include details for **all commits**
 5. `pnpm run check:log-injection` — no unsanitized error logging
 6. `pnpm run check:db-migrations` — SQLite migrations valid; run when touching `database.ts`
 7. `pnpm run check:ipc-contract` — preload/main API alignment
-8. `pnpm audit --audit-level=high` — no high/critical vulnerabilities
-9. `actionlint` — GitHub workflow linting
-10. `yamllint -f github -s .` — YAML linting
-11. `pnpm run test:run` — all tests pass
+8. `pnpm run check:licenses` — license summary for dependencies
+9. `pnpm audit --audit-level=high` — no high/critical vulnerabilities
+10. `actionlint` — GitHub workflow linting
+11. `yamllint -f github -s .` — YAML linting
+12. `pnpm run test:run` — all tests pass
 
 ## Quick Reference
 

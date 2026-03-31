@@ -175,14 +175,14 @@ export default function TelemetryPanel({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-200">Telemetry</h2>
         <div className="flex items-center gap-2">
           {showEnvironment && hasTemp && (
             <button
               onClick={onToggleFahrenheit}
               title="Toggle temperature unit"
-              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-300"
+              className="rounded bg-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-600"
             >
               {useFahrenheit ? '°F' : '°C'}
             </button>
@@ -192,11 +192,11 @@ export default function TelemetryPanel({
             environmentTelemetry.length > 0) && (
             <button
               onClick={handleExportCsv}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-medium rounded-lg transition-colors"
+              className="flex items-center gap-1.5 rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
               title="Export telemetry data as CSV"
             >
               <svg
-                className="w-4 h-4"
+                className="h-4 w-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -218,7 +218,7 @@ export default function TelemetryPanel({
       {telemetry.length === 0 &&
       signalTelemetry.length === 0 &&
       environmentTelemetry.length === 0 ? (
-        <div className="text-center text-muted py-12">
+        <div className="text-muted py-12 text-center">
           {isConnected
             ? 'No telemetry data yet. Waiting for data from device…'
             : 'No telemetry data yet. Connect to a device to see real-time metrics.'}
@@ -228,7 +228,7 @@ export default function TelemetryPanel({
           {/* Battery / Voltage Chart */}
           {hasBatteryData && (
             <div className="bg-deep-black rounded-lg p-4">
-              <h3 className="text-sm font-medium text-muted mb-3">Battery & Voltage</h3>
+              <h3 className="text-muted mb-3 text-sm font-medium">Battery & Voltage</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -294,7 +294,7 @@ export default function TelemetryPanel({
           {/* Signal Quality Chart */}
           {hasSignalData && (
             <div className="bg-deep-black rounded-lg p-4">
-              <h3 className="text-sm font-medium text-muted mb-3">Signal Quality</h3>
+              <h3 className="text-muted mb-3 text-sm font-medium">Signal Quality</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={signalChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -358,7 +358,7 @@ export default function TelemetryPanel({
           {/* Temperature & Humidity Chart */}
           {showEnvironment && (hasTemp || hasHumidity) && (
             <div className="bg-deep-black rounded-lg p-4">
-              <h3 className="text-sm font-medium text-muted mb-3">
+              <h3 className="text-muted mb-3 text-sm font-medium">
                 Temperature {hasHumidity ? '& Humidity' : ''}
               </h3>
               <ResponsiveContainer width="100%" height={250}>
@@ -433,7 +433,7 @@ export default function TelemetryPanel({
           {/* Barometric Pressure Chart */}
           {showEnvironment && hasPressure && (
             <div className="bg-deep-black rounded-lg p-4">
-              <h3 className="text-sm font-medium text-muted mb-3">Barometric Pressure</h3>
+              <h3 className="text-muted mb-3 text-sm font-medium">Barometric Pressure</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={envChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -475,7 +475,7 @@ export default function TelemetryPanel({
           {/* Air Quality (IAQ) Chart */}
           {showEnvironment && hasIaq && (
             <div className="bg-deep-black rounded-lg p-4">
-              <h3 className="text-sm font-medium text-muted mb-3">Air Quality (IAQ)</h3>
+              <h3 className="text-muted mb-3 text-sm font-medium">Air Quality (IAQ)</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={envChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -515,7 +515,7 @@ export default function TelemetryPanel({
             </div>
           )}
 
-          <div className="text-xs text-gray-600 text-center">
+          <div className="text-center text-xs text-gray-600">
             Battery: {telemetry.length} pts &nbsp;·&nbsp; Signal: {signalTelemetry.length} pts
             {environmentTelemetry.length > 0 && (
               <> &nbsp;·&nbsp; Env: {environmentTelemetry.length} pts</>

@@ -30,13 +30,13 @@ describe('emptyNode', () => {
     expect(node.node_id).toBe(0x12345678);
   });
 
-  it('initializes numeric fields to zero', () => {
+  it('initializes numeric fields to zero and coordinates to null', () => {
     const node = emptyNode(0x1);
     expect(node.snr).toBe(0);
     expect(node.battery).toBe(0);
     expect(node.last_heard).toBe(0);
-    expect(node.latitude).toBe(0);
-    expect(node.longitude).toBe(0);
+    expect(node.latitude).toBe(null);
+    expect(node.longitude).toBe(null);
   });
 
   it('produces different long names for different node IDs', () => {

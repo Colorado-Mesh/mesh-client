@@ -8,5 +8,5 @@
   "bracketSpacing": true,
   "arrowParens": "always",
   "endOfLine": "lf",
-  "plugins": ["prettier-plugin-sh"]
+  "plugins": ["prettier-plugin-tailwindcss", "prettier-plugin-sh"]
 }

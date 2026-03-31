@@ -102,7 +102,7 @@ function displayRepeaterRssi(node: MeshNode, status: MeshCoreRepeaterStatus | un
 }
 
 function SignalSparkline({ points }: { points: { ts: number; snr: number }[] }) {
-  if (points.length < 2) return <span className="text-gray-600 text-xs">—</span>;
+  if (points.length < 2) return <span className="text-xs text-gray-600">—</span>;
   const W = 80,
     H = 24;
   const snrs = points.map((p) => p.snr);
@@ -411,8 +411,8 @@ export default function RepeatersPanel({
   return (
     <>
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col min-[480px]:flex-row flex-wrap items-stretch min-[480px]:items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-bright-green">Repeaters</h2>
+        <div className="flex flex-col flex-wrap items-stretch justify-between gap-3 min-[480px]:flex-row min-[480px]:items-center">
+          <h2 className="text-bright-green text-lg font-semibold">Repeaters</h2>
           <input
             type="search"
             value={searchQuery}
@@ -421,10 +421,10 @@ export default function RepeatersPanel({
             }}
             placeholder="Search repeaters…"
             aria-label="Search repeaters"
-            className="flex-1 min-w-[8rem] max-w-[20rem] px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
+            className="bg-secondary-dark/80 focus:border-brand-green/50 max-w-[20rem] min-w-[8rem] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
           />
         </div>
-        <p className="text-xs text-gray-500 max-w-2xl">
+        <p className="max-w-2xl text-xs text-gray-500">
           SNR, RSSI, uptime, and airtime come from the Status action (or auto-fetch while this panel
           is open). Hops and path history need Ping. MeshCore does not fill those columns from
           adverts alone.
@@ -439,7 +439,7 @@ export default function RepeatersPanel({
                 meshcoreClearRepeaterRemoteSessionAuth();
                 bumpRemoteAuthEpoch();
               }}
-              className="text-xs text-amber-400/90 hover:text-amber-300 underline decoration-dotted"
+              className="text-xs text-amber-400/90 underline decoration-dotted hover:text-amber-300"
             >
               Change session repeater password
             </button>
@@ -447,7 +447,7 @@ export default function RepeatersPanel({
         ) : null}
 
         {repeaters.length === 0 ? (
-          <div className="text-gray-400 text-sm mt-8 text-center">
+          <div className="mt-8 text-center text-sm text-gray-400">
             <p>No repeaters discovered yet.</p>
             <p className="mt-1 text-gray-500">
               Repeaters appear when contacts with type &ldquo;Repeater&rdquo; advertise. Use{' '}
@@ -456,14 +456,14 @@ export default function RepeatersPanel({
             </p>
           </div>
         ) : repeatersFiltered.length === 0 ? (
-          <div className="text-gray-400 text-sm mt-4 text-center">
+          <div className="mt-4 text-center text-sm text-gray-400">
             No repeaters match your search.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-400 border-b border-gray-700">
+                <tr className="border-b border-gray-700 text-left text-gray-400">
                   <th className="py-2 pr-4 font-medium">Status</th>
                   <th className="py-2 pr-4 font-medium">Name</th>
                   <th className="py-2 pr-4 font-medium">Last Heard</th>
@@ -537,7 +537,7 @@ export default function RepeatersPanel({
                         <td className="py-2 pr-4">
                           <span className="flex items-center gap-1.5">
                             <span
-                              className={`w-2 h-2 rounded-full ${
+                              className={`h-2 w-2 rounded-full ${
                                 repeaterStatus === 'active'
                                   ? 'bg-green-500'
                                   : repeaterStatus === 'stale'
@@ -548,10 +548,10 @@ export default function RepeatersPanel({
                             <span
                               className={
                                 repeaterStatus === 'active'
-                                  ? 'text-green-400 text-xs'
+                                  ? 'text-xs text-green-400'
                                   : repeaterStatus === 'stale'
-                                    ? 'text-amber-400 text-xs'
-                                    : 'text-gray-500 text-xs'
+                                    ? 'text-xs text-amber-400'
+                                    : 'text-xs text-gray-500'
                               }
                             >
                               {repeaterStatus === 'active'
@@ -567,12 +567,12 @@ export default function RepeatersPanel({
                             type="button"
                             onClick={() => onSelectRepeater?.(node)}
                             aria-label={node.long_name}
-                            className="text-left text-white hover:text-brand-green transition-colors underline decoration-transparent hover:decoration-brand-green/70 disabled:no-underline"
+                            className="hover:text-brand-green hover:decoration-brand-green/70 text-left text-white underline decoration-transparent transition-colors disabled:no-underline"
                           >
                             {node.long_name}
                           </button>
                         </td>
-                        <td className="py-2 pr-4 text-gray-400 text-xs">
+                        <td className="py-2 pr-4 text-xs text-gray-400">
                           {formatRelativeTime(node.last_heard)}
                         </td>
                         <td
@@ -602,7 +602,7 @@ export default function RepeatersPanel({
                                 onClick={() => {
                                   togglePath(node.node_id);
                                 }}
-                                className="text-blue-400 hover:text-blue-300 underline decoration-dotted"
+                                className="text-blue-400 underline decoration-dotted hover:text-blue-300"
                                 title="Click to view path SNR detail"
                               >
                                 {traceResult.hops.length}
@@ -627,14 +627,14 @@ export default function RepeatersPanel({
                               disabled={!isConnected || isPingLoading}
                               title={pingError ?? undefined}
                               aria-label={pingError ? `Ping error: ${pingError}` : 'Ping trace'}
-                              className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
+                              className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
                                 pingError
-                                  ? 'bg-red-900/60 text-red-300 border border-red-700'
-                                  : 'bg-blue-900/60 text-blue-300 border border-blue-700 hover:bg-blue-800/60'
+                                  ? 'border border-red-700 bg-red-900/60 text-red-300'
+                                  : 'border border-blue-700 bg-blue-900/60 text-blue-300 hover:bg-blue-800/60'
                               }`}
                             >
                               {isPingLoading ? (
-                                <span className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin inline-block" />
+                                <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
                               ) : pingError ? (
                                 'Error'
                               ) : (
@@ -649,14 +649,14 @@ export default function RepeatersPanel({
                               aria-label={
                                 statusError ? `Status error: ${statusError}` : 'Request status'
                               }
-                              className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
+                              className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
                                 statusError
-                                  ? 'bg-red-900/60 text-red-300 border border-red-700'
-                                  : 'bg-gray-800 text-gray-300 border border-gray-600 hover:bg-gray-700'
+                                  ? 'border border-red-700 bg-red-900/60 text-red-300'
+                                  : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
                               }`}
                             >
                               {isStatusLoading ? (
-                                <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
+                                <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
                               ) : statusError ? (
                                 'Error'
                               ) : (
@@ -674,16 +674,16 @@ export default function RepeatersPanel({
                                     ? `Neighbors error: ${neighborError}`
                                     : 'Repeater neighbors'
                                 }
-                                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
+                                className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
                                   neighborError && !isNeighborsExpanded
-                                    ? 'bg-red-900/60 text-red-300 border border-red-700'
+                                    ? 'border border-red-700 bg-red-900/60 text-red-300'
                                     : isNeighborsExpanded
-                                      ? 'bg-purple-900/60 text-purple-300 border border-purple-700'
-                                      : 'bg-gray-800 text-gray-300 border border-gray-600 hover:bg-gray-700'
+                                      ? 'border border-purple-700 bg-purple-900/60 text-purple-300'
+                                      : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
                                 }`}
                               >
                                 {isNeighborsLoading ? (
-                                  <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
+                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
                                 ) : neighborError && !isNeighborsExpanded ? (
                                   'Error'
                                 ) : (
@@ -698,14 +698,14 @@ export default function RepeatersPanel({
                                 disabled={!isConnected || isTelemetryLoading}
                                 title="Cayenne LPP sensor payload (not advert GPS on the map)"
                                 aria-label="Sensor telemetry LPP"
-                                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
+                                className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
                                   isTelemetryExpanded
-                                    ? 'bg-amber-900/60 text-amber-300 border border-amber-700'
-                                    : 'bg-gray-800 text-gray-300 border border-gray-600 hover:bg-gray-700'
+                                    ? 'border border-amber-700 bg-amber-900/60 text-amber-300'
+                                    : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
                                 }`}
                               >
                                 {isTelemetryLoading ? (
-                                  <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
+                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
                                 ) : (
                                   'Sensor (LPP)'
                                 )}
@@ -720,10 +720,10 @@ export default function RepeatersPanel({
                                 disabled={!isConnected}
                                 title="Open CLI interface"
                                 aria-label="CLI interface"
-                                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
+                                className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
                                   isCliExpanded
-                                    ? 'bg-cyan-900/60 text-cyan-300 border border-cyan-700'
-                                    : 'bg-gray-800 text-gray-300 border border-gray-600 hover:bg-gray-700'
+                                    ? 'border border-cyan-700 bg-cyan-900/60 text-cyan-300'
+                                    : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
                                 }`}
                               >
                                 CLI
@@ -735,10 +735,10 @@ export default function RepeatersPanel({
                               onBlur={() => {
                                 if (isDeleteConfirm) setDeleteConfirmId(null);
                               }}
-                              className="px-2 py-0.5 rounded text-xs font-medium bg-red-900/60 text-red-300 border border-red-700 hover:bg-red-800/60 transition-colors disabled:opacity-40"
+                              className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
                             >
                               {isDeleteLoading ? (
-                                <span className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
+                                <span className="inline-block h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
                               ) : isDeleteConfirm ? (
                                 'Confirm?'
                               ) : (
@@ -747,7 +747,7 @@ export default function RepeatersPanel({
                             </button>
                           </div>
                           {actionErrorSummary ? (
-                            <div className="text-xs text-red-400 mt-1" title={actionErrorSummary}>
+                            <div className="mt-1 text-xs text-red-400" title={actionErrorSummary}>
                               {actionErrorSummary}
                             </div>
                           ) : null}
@@ -758,13 +758,13 @@ export default function RepeatersPanel({
                       {isPathExpanded && traceResult && (
                         <tr className="bg-gray-900/60">
                           <td colSpan={10} className="px-4 py-2">
-                            <div className="flex items-center gap-1 text-xs flex-wrap">
-                              <span className="text-gray-400 mr-1">Path:</span>
+                            <div className="flex flex-wrap items-center gap-1 text-xs">
+                              <span className="mr-1 text-gray-400">Path:</span>
                               <span className="text-brand-green">● Me</span>
                               {traceResult.hops.map((hop, i) => (
                                 <span key={i} className="flex items-center gap-1">
                                   <span className="text-gray-600">→</span>
-                                  <span className="px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-300 font-mono">
+                                  <span className="rounded bg-blue-900/40 px-1.5 py-0.5 font-mono text-blue-300">
                                     {hop.snr > 0 ? '+' : ''}
                                     {hop.snr.toFixed(2)} dB
                                   </span>
@@ -772,7 +772,7 @@ export default function RepeatersPanel({
                                 </span>
                               ))}
                               <span className="text-gray-600">→</span>
-                              <span className="px-1.5 py-0.5 rounded bg-brand-green/20 text-brand-green font-mono">
+                              <span className="bg-brand-green/20 text-brand-green rounded px-1.5 py-0.5 font-mono">
                                 {traceResult.lastSnr > 0 ? '+' : ''}
                                 {traceResult.lastSnr.toFixed(2)} dB
                               </span>
@@ -786,7 +786,7 @@ export default function RepeatersPanel({
                       {isNeighborsExpanded && neighborData && (
                         <tr className="bg-gray-900/60">
                           <td colSpan={10} className="px-4 py-2">
-                            <p className="text-xs text-gray-400 mb-1">
+                            <p className="mb-1 text-xs text-gray-400">
                               Neighbors ({neighborData.totalNeighboursCount} total):
                             </p>
                             {neighborData.neighbours.length === 0 ? (
@@ -823,7 +823,7 @@ export default function RepeatersPanel({
                             {isTelemetryLoading ? (
                               <p className="text-xs text-gray-500">Fetching telemetry…</p>
                             ) : telemetryData ? (
-                              <div className="flex items-center gap-4 text-xs flex-wrap">
+                              <div className="flex flex-wrap items-center gap-4 text-xs">
                                 {telemetryData.voltage != null && (
                                   <span className="text-amber-300">
                                     Battery: {telemetryData.voltage.toFixed(2)}V
@@ -874,7 +874,7 @@ export default function RepeatersPanel({
                                   )}
                               </div>
                             ) : (
-                              <div className="text-xs space-y-1">
+                              <div className="space-y-1 text-xs">
                                 {telemetryError ? (
                                   <p className="text-red-400">{telemetryError}</p>
                                 ) : (
@@ -915,7 +915,7 @@ export default function RepeatersPanel({
                                   }}
                                   placeholder="Enter command..."
                                   disabled={!isConnected || isCliLoading}
-                                  className="flex-1 min-w-[200px] px-2 py-1 bg-gray-800 rounded text-sm text-gray-200 border border-gray-600 focus:border-cyan-500 focus:outline-none disabled:opacity-40"
+                                  className="min-w-[200px] flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1 text-sm text-gray-200 focus:border-cyan-500 focus:outline-none disabled:opacity-40"
                                   aria-label="CLI command input"
                                 />
                                 <button
@@ -936,17 +936,17 @@ export default function RepeatersPanel({
                                     isCliLoading ||
                                     !cliInputValues.get(node.node_id)?.trim()
                                   }
-                                  className="px-3 py-1 rounded text-xs font-medium bg-cyan-900/60 text-cyan-300 border border-cyan-700 hover:bg-cyan-800/60 transition-colors disabled:opacity-40"
+                                  className="rounded border border-cyan-700 bg-cyan-900/60 px-3 py-1 text-xs font-medium text-cyan-300 transition-colors hover:bg-cyan-800/60 disabled:opacity-40"
                                 >
                                   {isCliLoading ? (
-                                    <span className="w-3 h-3 border border-cyan-400 border-t-transparent rounded-full animate-spin inline-block" />
+                                    <span className="inline-block h-3 w-3 animate-spin rounded-full border border-cyan-400 border-t-transparent" />
                                   ) : (
                                     'Send'
                                   )}
                                 </button>
                               </div>
                               <div className="flex flex-wrap gap-1">
-                                <span className="text-xs text-gray-500 mr-1">Quick:</span>
+                                <span className="mr-1 text-xs text-gray-500">Quick:</span>
                                 {[
                                   'name',
                                   'radio',
@@ -961,7 +961,7 @@ export default function RepeatersPanel({
                                     type="button"
                                     onClick={() => void handleCliQuickCommand(node.node_id, cmd)}
                                     disabled={!isConnected || isCliLoading}
-                                    className="px-1.5 py-0.5 rounded text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-40"
+                                    className="rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-300 hover:bg-gray-600 disabled:opacity-40"
                                   >
                                     {cmd}
                                   </button>
@@ -975,7 +975,7 @@ export default function RepeatersPanel({
                                     onChange={() => {
                                       toggleCliRoutingMode(node.node_id);
                                     }}
-                                    className="w-3 h-3"
+                                    className="h-3 w-3"
                                   />
                                   <span>Use saved path</span>
                                 </label>
@@ -984,12 +984,12 @@ export default function RepeatersPanel({
                                   onClick={() => {
                                     handleCliClear(node.node_id);
                                   }}
-                                  className="text-xs text-gray-500 hover:text-gray-300 underline"
+                                  className="text-xs text-gray-500 underline hover:text-gray-300"
                                 >
                                   Clear history
                                 </button>
                               </div>
-                              <div className="max-h-40 overflow-y-auto bg-gray-950/50 rounded border border-gray-700">
+                              <div className="max-h-40 overflow-y-auto rounded border border-gray-700 bg-gray-950/50">
                                 {cliHistory.length === 0 ? (
                                   <div className="px-2 py-1 text-xs text-gray-500 italic">
                                     No commands yet
@@ -998,7 +998,7 @@ export default function RepeatersPanel({
                                   cliHistory.map((entry, idx) => (
                                     <div
                                       key={`${entry.timestamp}-${idx}`}
-                                      className={`px-2 py-0.5 text-xs font-mono ${
+                                      className={`px-2 py-0.5 font-mono text-xs ${
                                         entry.type === 'sent' ? 'text-cyan-300' : 'text-gray-300'
                                       }`}
                                     >

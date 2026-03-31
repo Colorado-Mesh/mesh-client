@@ -103,15 +103,29 @@ export interface ElectronAPI {
 
     saveNode: (node: {
       node_id: number;
-      long_name: string;
-      short_name: string;
-      hw_model: string;
-      snr: number;
-      rssi?: number;
-      battery: number;
-      last_heard: number;
+      long_name: string | null;
+      short_name: string | null;
+      hw_model: string | null;
+      snr: number | null;
+      rssi?: number | null;
+      battery: number | null;
+      last_heard: number | null;
       latitude: number | null;
       longitude: number | null;
+      role?: number | string | null;
+      hops_away?: number | null;
+      via_mqtt?: boolean | number | null;
+      voltage?: number | null;
+      channel_utilization?: number | null;
+      air_util_tx?: number | null;
+      altitude?: number | null;
+      source?: string | null;
+      num_packets_rx_bad?: number | null;
+      num_rx_dupe?: number | null;
+      num_packets_rx?: number | null;
+      num_packets_tx?: number | null;
+      heard_via_mqtt_only?: boolean;
+      [key: string]: unknown;
     }) => Promise<unknown>;
 
     getNodes: () => Promise<SavedNode[]>;

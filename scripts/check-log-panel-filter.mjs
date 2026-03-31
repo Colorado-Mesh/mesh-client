@@ -33,9 +33,7 @@ const DEVICE_FILES = {
     path.join(ROOT, 'src', 'main', 'noble-ble-manager.ts'),
     path.join(ROOT, 'src', 'main', 'mqtt-manager.ts'),
   ],
-  meshcore: [
-    path.join(ROOT, 'src', 'main', 'meshcore-mqtt-adapter.ts'),
-  ],
+  meshcore: [path.join(ROOT, 'src', 'main', 'meshcore-mqtt-adapter.ts')],
 };
 
 const SUPPRESSED = /\/\/\s*log-filter-ok\b/;
@@ -84,10 +82,15 @@ function extractFilteredTagsForProtocol(logPanelSource, protocol) {
   let inBlock = false;
   let blockEnd = -1;
   for (; i < logPanelSource.length; i++) {
-    if (logPanelSource[i] === '{') { depth++; inBlock = true; }
-    else if (logPanelSource[i] === '}') {
+    if (logPanelSource[i] === '{') {
+      depth++;
+      inBlock = true;
+    } else if (logPanelSource[i] === '}') {
       depth--;
-      if (inBlock && depth === 0) { blockEnd = i; break; }
+      if (inBlock && depth === 0) {
+        blockEnd = i;
+        break;
+      }
     }
   }
   if (blockEnd === -1) return new Set();
@@ -125,7 +128,9 @@ function main() {
     return;
   }
 
-  console.error('check-log-panel-filter: unregistered [TAG] prefixes found in device source files.\n');
+  console.error(
+    'check-log-panel-filter: unregistered [TAG] prefixes found in device source files.\n',
+  );
   console.error('These tags appear in console.* calls but are missing from isDeviceEntry() in');
   console.error('LogPanel.tsx. Without registration, these logs leak into the App log panel.\n');
   for (const { protocol, tag, file, line } of violations) {
@@ -133,7 +138,9 @@ function main() {
   }
   console.error('\nAdd the tag to isDeviceEntry() in src/renderer/components/LogPanel.tsx,');
   console.error('then add a test for it in LogPanel.filtering.test.ts.');
-  console.error('To suppress (tag intentionally omitted), add // log-filter-ok <reason> to the call site.');
+  console.error(
+    'To suppress (tag intentionally omitted), add // log-filter-ok <reason> to the call site.',
+  );
   process.exit(1);
 }
 

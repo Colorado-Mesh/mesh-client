@@ -43,10 +43,10 @@ export default function RefreshButton({
       onClick={handleClick}
       disabled={disabled || spinning}
       title="Refresh"
-      className="p-1.5 rounded-full hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      className="rounded-full p-1.5 transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
     >
       <svg
-        className={`w-5 h-5 text-gray-400 ${spinning ? 'animate-spin' : ''}`}
+        className={`h-5 w-5 text-gray-400 ${spinning ? 'animate-spin' : ''}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"

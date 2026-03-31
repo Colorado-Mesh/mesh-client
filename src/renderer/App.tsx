@@ -190,7 +190,7 @@ function DialogLazyFallback() {
 function TakStatusIcon({ running }: { running: boolean }) {
   const color = running ? 'text-brand-green' : 'text-gray-400';
   return (
-    <svg aria-hidden="true" className={`w-4 h-4 ${color}`} viewBox="0 0 24 24" fill="currentColor">
+    <svg aria-hidden="true" className={`h-4 w-4 ${color}`} viewBox="0 0 24 24" fill="currentColor">
       <path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M3.05,13H1V11H3.05C3.5,6.83 6.83,3.5 11,3.05V1H13V3.05C17.17,3.5 20.5,6.83 20.95,11H23V13H20.95C20.5,17.17 17.17,20.5 13,20.95V23H11V20.95C6.83,20.5 3.5,17.17 3.05,13M12,5A7,7 0 0,0 5,12A7,7 0 0,0 12,19A7,7 0 0,0 19,12A7,7 0 0,0 12,5Z" />
     </svg>
   );
@@ -207,7 +207,7 @@ function MqttGlobeIcon({ status }: { status: MQTTStatus }) {
           : 'text-gray-400';
   return (
     <svg
-      className={`w-4 h-4 ${color}`}
+      className={`h-4 w-4 ${color}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -884,10 +884,10 @@ export default function App() {
         protocol={protocol}
         onResult={handleFirmwareResult}
       />
-      <div className="flex flex-col h-screen">
+      <div className="flex h-screen flex-col">
         {/* Header */}
         <header
-          className={`relative flex flex-row items-center gap-2 px-4 py-2 bg-deep-black border-b xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:items-center xl:gap-0 ${
+          className={`bg-deep-black relative flex flex-row items-center gap-2 border-b px-4 py-2 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:items-center xl:gap-0 ${
             isConfigured
               ? protocol === 'meshcore'
                 ? 'border-cyan-500/20'
@@ -896,10 +896,10 @@ export default function App() {
           }`}
         >
           <div className="flex min-w-0 items-center gap-3 xl:justify-self-start">
-            <h1 className="min-w-0 truncate text-lg font-bold text-bright-green tracking-wide">
+            <h1 className="text-bright-green min-w-0 truncate text-lg font-bold tracking-wide">
               Colorado Mesh
             </h1>
-            <span className="shrink-0 text-xs text-muted">Mesh Client</span>
+            <span className="text-muted shrink-0 text-xs">Mesh Client</span>
           </div>
 
           <div className="flex min-w-0 flex-1 justify-center xl:flex-none xl:justify-self-center">
@@ -907,7 +907,7 @@ export default function App() {
             <div
               role="group"
               aria-label="Protocol switcher"
-              className="flex shrink-0 items-center rounded-full overflow-hidden border border-gray-600 text-xs font-mono"
+              className="flex shrink-0 items-center overflow-hidden rounded-full border border-gray-600 font-mono text-xs"
             >
               <button
                 type="button"
@@ -919,17 +919,17 @@ export default function App() {
                 className={`px-3 py-0.5 transition-colors ${
                   protocol === 'meshtastic'
                     ? 'bg-brand-green/20 text-brand-green'
-                    : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+                    : 'text-gray-500 hover:bg-gray-800 hover:text-gray-300'
                 }`}
               >
                 (M) Meshtastic
                 {meshtasticUnread > 0 && protocol !== 'meshtastic' && (
-                  <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.1rem] h-4 px-0.5 rounded-full bg-brand-green/30 text-brand-green text-[10px] font-bold animate-pulse">
+                  <span className="bg-brand-green/30 text-brand-green ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold">
                     {meshtasticUnread > 99 ? '99+' : meshtasticUnread}
                   </span>
                 )}
               </button>
-              <div className="w-px h-4 bg-gray-600" aria-hidden="true" />
+              <div className="h-4 w-px bg-gray-600" aria-hidden="true" />
               <button
                 type="button"
                 aria-pressed={protocol === 'meshcore'}
@@ -940,12 +940,12 @@ export default function App() {
                 className={`px-3 py-0.5 transition-colors ${
                   protocol === 'meshcore'
                     ? 'bg-cyan-600/20 text-cyan-400'
-                    : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+                    : 'text-gray-500 hover:bg-gray-800 hover:text-gray-300'
                 }`}
               >
                 (MC) MeshCore
                 {meshcoreUnread > 0 && protocol !== 'meshcore' && (
-                  <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.1rem] h-4 px-0.5 rounded-full bg-cyan-600/30 text-cyan-400 text-[10px] font-bold animate-pulse">
+                  <span className="ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-600/30 px-0.5 text-[10px] font-bold text-cyan-400">
                     {meshcoreUnread > 99 ? '99+' : meshcoreUnread}
                   </span>
                 )}
@@ -955,7 +955,7 @@ export default function App() {
 
           <div className="flex min-w-0 shrink-0 items-center justify-end gap-2 xl:justify-self-end">
             {capabilities.hasTakPanel && (
-              <div className="flex items-center gap-1.5 mr-3 pr-3 border-r border-gray-700">
+              <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
                 <TakStatusIcon running={takStatus.running} />
                 <span
                   aria-label={`TAK server ${takStatus.running ? 'running' : 'stopped'}`}
@@ -965,7 +965,7 @@ export default function App() {
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-1.5 mr-3 pr-3 border-r border-gray-700">
+            <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
               <MqttGlobeIcon status={device.mqttStatus ?? 'disconnected'} />
               <span
                 aria-label={`MQTT ${device.mqttStatus ?? 'disconnected'}`}
@@ -973,7 +973,7 @@ export default function App() {
                   device.mqttStatus === 'connected'
                     ? 'text-brand-green'
                     : device.mqttStatus === 'connecting'
-                      ? 'text-yellow-400 animate-pulse'
+                      ? 'animate-pulse text-yellow-400'
                       : device.mqttStatus === 'error'
                         ? 'text-red-400'
                         : 'text-gray-500'
@@ -982,9 +982,9 @@ export default function App() {
                 MQTT {device.mqttStatus ?? 'disconnected'}
               </span>
             </div>
-            {isConnectedOrOperational && <LinkIcon className="w-4 h-4" aria-hidden="true" />}
+            {isConnectedOrOperational && <LinkIcon className="h-4 w-4" aria-hidden="true" />}
             <div
-              className={`w-2.5 h-2.5 rounded-full ${statusColor}`}
+              className={`h-2.5 w-2.5 rounded-full ${statusColor}`}
               aria-hidden="true"
               title={device.state.status}
             />
@@ -993,11 +993,11 @@ export default function App() {
                 aria-label={`${device.state.status}${device.state.connectionType ? ` (${device.state.connectionType.toUpperCase()})` : ''}`}
                 className={`text-xs capitalize ${
                   device.state.status === 'connecting'
-                    ? 'text-yellow-400 animate-pulse'
+                    ? 'animate-pulse text-yellow-400'
                     : device.state.status === 'stale'
-                      ? 'text-yellow-400 animate-pulse'
+                      ? 'animate-pulse text-yellow-400'
                       : device.state.status === 'reconnecting'
-                        ? 'text-orange-400 animate-pulse'
+                        ? 'animate-pulse text-orange-400'
                         : 'text-muted'
                 }`}
               >
@@ -1010,7 +1010,7 @@ export default function App() {
             {device.state.myNodeNum > 0 && (
               <span
                 aria-label={`Node: ${device.getPickerStyleNodeLabel(device.state.myNodeNum)}`}
-                className="text-xs text-muted ml-2 whitespace-nowrap"
+                className="text-muted ml-2 text-xs whitespace-nowrap"
               >
                 Node: {device.getPickerStyleNodeLabel(device.state.myNodeNum)}
               </span>
@@ -1019,7 +1019,7 @@ export default function App() {
             {queueShowBadge && device.queueStatus && (
               <div
                 aria-label={`Q: ${queueUsed}/${device.queueStatus.maxlen}`}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${queueColorClass}`}
+                className={`flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${queueColorClass}`}
                 title={`Queue: ${queueUsed}/${device.queueStatus.maxlen} used`}
               >
                 Q: {queueUsed}/{device.queueStatus.maxlen}
@@ -1040,7 +1040,7 @@ export default function App() {
           <div
             role="status"
             aria-live="polite"
-            className="flex items-center justify-between gap-3 px-4 py-2 bg-gray-900 border-b border-gray-700 text-sm"
+            className="flex items-center justify-between gap-3 border-b border-gray-700 bg-gray-900 px-4 py-2 text-sm"
           >
             <span className="text-gray-300">
               Telemetry is disabled on this device. Enabling device metrics helps the mesh and this
@@ -1052,15 +1052,15 @@ export default function App() {
                 setTelemetryNoticeDismissed(true);
               }}
               aria-label="Dismiss"
-              className="shrink-0 text-gray-500 hover:text-gray-300 transition-colors text-xs font-medium px-2 py-1 rounded border border-gray-600 hover:border-gray-500"
+              className="shrink-0 rounded border border-gray-600 px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:border-gray-500 hover:text-gray-300"
             >
               Dismiss
             </button>
           </div>
         )}
 
-        <div className="flex flex-1 min-h-0 flex-col">
-          <div className="flex flex-col flex-1 min-w-0 min-h-0">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             {/* Tabs */}
             <Tabs
               tabs={displayTabNames}
@@ -1070,7 +1070,7 @@ export default function App() {
             />
 
             {/* Content */}
-            <main className="flex-1 overflow-auto p-4 min-h-0">
+            <main className="min-h-0 flex-1 overflow-auto p-4">
               <ErrorBoundary>
                 <div
                   id="panel-0"
@@ -1558,7 +1558,7 @@ export default function App() {
             </main>
 
             {/* Footer — same centering idea as header: 1fr | auto | 1fr so middle stays true center */}
-            <footer className="px-4 py-1.5 bg-deep-black border-t border-gray-700 text-[11px] text-muted grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-4 shrink-0">
+            <footer className="bg-deep-black text-muted grid shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-4 border-t border-gray-700 px-4 py-1.5 text-[11px]">
               <span className="min-w-0">
                 A Project by{' '}
                 <a
@@ -1600,14 +1600,14 @@ export default function App() {
                 aria-label="Keyboard shortcuts (?)"
                 aria-haspopup="dialog"
                 title="Keyboard shortcuts (?)"
-                className="shrink-0 justify-self-center inline-flex items-center gap-1 px-3 py-0.5 rounded-full border border-gray-600 text-xs font-mono text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors"
+                className="inline-flex shrink-0 items-center gap-1 justify-self-center rounded-full border border-gray-600 px-3 py-0.5 font-mono text-xs text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
               >
                 Shortcuts
-                <span className="text-[10px] font-mono text-gray-400" aria-hidden="true">
+                <span className="font-mono text-[10px] text-gray-400" aria-hidden="true">
                   ?
                 </span>
               </button>
-              <span className="justify-self-end text-right whitespace-nowrap tabular-nums inline-flex items-center gap-2 flex-wrap justify-end">
+              <span className="inline-flex flex-wrap items-center justify-end gap-2 justify-self-end text-right whitespace-nowrap tabular-nums">
                 <span>
                   {nodesForUi.size} {nodeCountLabel} | {device.messages.length} messages
                 </span>
@@ -1953,16 +1953,16 @@ function ConnectionBanner({
 }) {
   if (status === 'stale') {
     return (
-      <div className="bg-yellow-900/80 border-b border-yellow-700 px-4 py-2 flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-yellow-700 bg-yellow-900/80 px-4 py-2">
         <div className="flex items-center gap-2">
           <span className="text-yellow-400">⚠</span>
-          <span className="text-yellow-200 text-sm">
+          <span className="text-sm text-yellow-200">
             Connection may be lost — no data received recently
           </span>
         </div>
         <button
           onClick={onReconnect}
-          className="text-yellow-300 text-sm font-medium hover:text-yellow-100 underline"
+          className="text-sm font-medium text-yellow-300 underline hover:text-yellow-100"
         >
           Reconnect
         </button>
@@ -1972,9 +1972,9 @@ function ConnectionBanner({
 
   if (status === 'reconnecting') {
     return (
-      <div className="bg-orange-900/80 border-b border-orange-700 px-4 py-2 flex items-center gap-2">
-        <span className="text-orange-400 animate-spin inline-block">⟳</span>
-        <span className="text-orange-200 text-sm animate-pulse">
+      <div className="flex items-center gap-2 border-b border-orange-700 bg-orange-900/80 px-4 py-2">
+        <span className="inline-block animate-spin text-orange-400">⟳</span>
+        <span className="animate-pulse text-sm text-orange-200">
           Reconnecting... attempt {reconnectAttempt ?? 1}/5
         </span>
       </div>

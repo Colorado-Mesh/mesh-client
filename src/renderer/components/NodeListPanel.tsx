@@ -83,7 +83,7 @@ function SortIcon({
   if (sortField !== field) {
     return (
       <svg
-        className="w-3 h-3 text-gray-600 ml-1 inline"
+        className="ml-1 inline h-3 w-3 text-gray-600"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -99,7 +99,7 @@ function SortIcon({
   }
   return (
     <svg
-      className="w-3 h-3 text-bright-green ml-1 inline"
+      className="text-bright-green ml-1 inline h-3 w-3"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -429,10 +429,10 @@ export default function NodeListPanel({
   }
 
   return (
-    <div className="flex flex-col min-h-0 h-full gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-3">
       {/* 1fr | auto | 1fr keeps the search visually centered on wide screens (matches MeshCore’s title | search | import row). */}
-      <div className="grid grid-cols-1 min-[480px]:grid-cols-[1fr_auto_1fr] gap-3 items-center">
-        <h2 className="text-lg font-semibold text-bright-green min-[480px]:justify-self-start">
+      <div className="grid grid-cols-1 items-center gap-3 min-[480px]:grid-cols-[1fr_auto_1fr]">
+        <h2 className="text-bright-green text-lg font-semibold min-[480px]:justify-self-start">
           {mode === 'meshcore' ? 'Contacts' : 'Node Database'} ({headerCountLabel})
         </h2>
         <input
@@ -443,9 +443,9 @@ export default function NodeListPanel({
           }}
           placeholder={mode === 'meshcore' ? 'Search contacts…' : 'Search nodes…'}
           aria-label={mode === 'meshcore' ? 'Search contacts' : 'Search nodes'}
-          className="w-full min-w-[8rem] max-w-[20rem] min-[480px]:justify-self-center px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
+          className="bg-secondary-dark/80 focus:border-brand-green/50 w-full max-w-[20rem] min-w-[8rem] rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none min-[480px]:justify-self-center"
         />
-        <div className="flex justify-stretch min-[480px]:justify-end gap-2 flex-wrap">
+        <div className="flex flex-wrap justify-stretch gap-2 min-[480px]:justify-end">
           {mode === 'meshcore' && meshcoreShowRefreshControl && onRefreshContacts ? (
             <button
               type="button"
@@ -454,10 +454,10 @@ export default function NodeListPanel({
               }}
               disabled={refreshLoading}
               aria-label="Refresh contacts from radio"
-              className="flex w-full min-[480px]:w-auto items-center justify-center gap-2 px-3 py-1.5 rounded border border-purple-600 text-purple-400 hover:bg-purple-900/30 hover:text-purple-300 transition-colors text-sm font-medium disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded border border-purple-600 px-3 py-1.5 text-sm font-medium text-purple-400 transition-colors hover:bg-purple-900/30 hover:text-purple-300 disabled:opacity-50 min-[480px]:w-auto"
             >
               {refreshLoading ? (
-                <span className="w-3 h-3 border border-purple-400 border-t-transparent rounded-full animate-spin inline-block" />
+                <span className="inline-block h-3 w-3 animate-spin rounded-full border border-purple-400 border-t-transparent" />
               ) : null}
               Refresh
             </button>
@@ -466,20 +466,20 @@ export default function NodeListPanel({
             <button
               onClick={handleImport}
               disabled={importLoading}
-              className="flex w-full min-[480px]:w-auto items-center justify-center gap-2 px-3 py-1.5 rounded bg-brand-green/20 text-brand-green border border-brand-green/30 hover:bg-brand-green/30 transition-colors text-sm font-medium disabled:opacity-50"
+              className="bg-brand-green/20 text-brand-green border-brand-green/30 hover:bg-brand-green/30 flex w-full items-center justify-center gap-2 rounded border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 min-[480px]:w-auto"
             >
               {importLoading ? (
-                <span className="w-3 h-3 border border-brand-green border-t-transparent rounded-full animate-spin inline-block" />
+                <span className="border-brand-green inline-block h-3 w-3 animate-spin rounded-full border border-t-transparent" />
               ) : null}
               Import Contacts
             </button>
           ) : (
-            <div className="hidden min-[480px]:block min-w-0" aria-hidden />
+            <div className="hidden min-w-0 min-[480px]:block" aria-hidden />
           )}
         </div>
       </div>
       {mode === 'meshcore' && (
-        <p className="text-xs text-gray-500 max-w-2xl">
+        <p className="max-w-2xl text-xs text-gray-500">
           Imported contacts use the import time as Last heard until an RF advert or Ping / Status
           updates it.
         </p>
@@ -487,7 +487,7 @@ export default function NodeListPanel({
 
       {/* Group filter (MeshCore + Meshtastic when contactGroupsEnabled) */}
       {contactGroupsEnabled && onManageGroups && (
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
           <select
             value={selectedGroupId ?? ''}
             onChange={(e) => {
@@ -495,7 +495,7 @@ export default function NodeListPanel({
               onGroupChange?.(val === '' ? null : Number(val));
             }}
             aria-label="Filter by contact group"
-            className="flex-1 px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
+            className="bg-secondary-dark/80 focus:border-brand-green/50 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
           >
             <option value="">{mode === 'meshcore' ? 'All contacts' : 'All nodes'}</option>
             {mode === 'meshcore'
@@ -520,10 +520,10 @@ export default function NodeListPanel({
             onClick={onManageGroups}
             aria-label="Manage contact groups"
             title="Manage groups"
-            className="p-1.5 rounded-lg hover:bg-secondary-dark text-muted hover:text-gray-200 transition-colors shrink-0"
+            className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
           >
             <svg
-              className="w-4 h-4"
+              className="h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -546,21 +546,21 @@ export default function NodeListPanel({
 
       {/* Distance filter status */}
       {filterStatus === 'no-gps' && (
-        <div className="bg-yellow-900/30 border border-yellow-700 text-yellow-300 px-3 py-2 rounded-lg text-xs shrink-0">
+        <div className="shrink-0 rounded-lg border border-yellow-700 bg-yellow-900/30 px-3 py-2 text-xs text-yellow-300">
           Distance filter is enabled but your device has no GPS fix — all nodes are shown.
         </div>
       )}
       {filterStatus !== null && filterStatus !== 'no-gps' && filterStatus.hidden > 0 && (
-        <div className="bg-brand-green/10 border border-brand-green/30 text-brand-green px-3 py-2 rounded-lg text-xs shrink-0">
+        <div className="bg-brand-green/10 border-brand-green/30 text-brand-green shrink-0 rounded-lg border px-3 py-2 text-xs">
           Distance filter active — {filterStatus.hidden} node{filterStatus.hidden !== 1 ? 's' : ''}{' '}
           hidden beyond {locationFilter.maxDistance} {locationFilter.unit}.
         </div>
       )}
 
       {/* Online / Stale / Offline summary */}
-      <div className="flex gap-3 text-xs text-muted shrink-0">
+      <div className="text-muted flex shrink-0 gap-3 text-xs">
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-brand-green inline-block" />
+          <span className="bg-brand-green inline-block h-2 w-2 rounded-full" />
           {
             nodeList.filter(
               (n) =>
@@ -571,7 +571,7 @@ export default function NodeListPanel({
           online
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-yellow-500 inline-block" />
+          <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
           {
             nodeList.filter(
               (n) =>
@@ -582,7 +582,7 @@ export default function NodeListPanel({
           stale
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-gray-600 inline-block" />
+          <span className="inline-block h-2 w-2 rounded-full bg-gray-600" />
           {
             nodeList.filter(
               (n) =>
@@ -601,11 +601,11 @@ export default function NodeListPanel({
         >
           <caption className="sr-only">Connected mesh nodes</caption>
           <thead>
-            <tr className="bg-deep-black text-muted text-left sticky top-0 z-10 whitespace-nowrap">
-              <th scope="col" className="px-3 py-2 w-8">
+            <tr className="bg-deep-black text-muted sticky top-0 z-10 text-left whitespace-nowrap">
+              <th scope="col" className="w-8 px-3 py-2">
                 <span className="sr-only">Status</span>
               </th>
-              <th scope="col" className="px-2 py-2 w-6" title="Favorites">
+              <th scope="col" className="w-6 px-2 py-2" title="Favorites">
                 <span className="sr-only">Favorite</span>
               </th>
               <th
@@ -613,7 +613,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'node_id' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
+                className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
                 onClick={() => {
                   handleSort('node_id');
                 }}
@@ -625,7 +625,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'long_name' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
+                className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
                 onClick={() => {
                   handleSort('long_name');
                 }}
@@ -638,7 +638,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'short_name' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
+                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
                   onClick={() => {
                     handleSort('short_name');
                   }}
@@ -651,7 +651,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'last_heard' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
+                className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
                 onClick={() => {
                   handleSort('last_heard');
                 }}
@@ -664,7 +664,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'hw_model' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
+                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
                   onClick={() => {
                     handleSort('hw_model');
                   }}
@@ -676,7 +676,7 @@ export default function NodeListPanel({
                 <th
                   scope="col"
                   aria-sort={sortField === 'role' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
-                  className="px-3 py-2 cursor-pointer hover:text-gray-200 transition-colors select-none"
+                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
                   onClick={() => {
                     handleSort('role');
                   }}
@@ -689,7 +689,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'hops_away' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                 onClick={() => {
                   handleSort('hops_away');
                 }}
@@ -702,7 +702,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'via_mqtt' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="px-3 py-2 text-center cursor-pointer hover:text-gray-200 transition-colors select-none"
+                  className="cursor-pointer px-3 py-2 text-center transition-colors select-none hover:text-gray-200"
                   onClick={() => {
                     handleSort('via_mqtt');
                   }}
@@ -715,7 +715,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'latitude' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                 onClick={() => {
                   handleSort('latitude');
                 }}
@@ -729,7 +729,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'longitude' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                  className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                   onClick={() => {
                     handleSort('longitude');
                   }}
@@ -744,7 +744,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'rssi' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                     onClick={() => {
                       handleSort('rssi');
                     }}
@@ -756,7 +756,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'snr' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                     onClick={() => {
                       handleSort('snr');
                     }}
@@ -771,7 +771,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'battery' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                 onClick={() => {
                   handleSort('battery');
                 }}
@@ -785,7 +785,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'voltage' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                     onClick={() => {
                       handleSort('voltage');
                     }}
@@ -801,7 +801,7 @@ export default function NodeListPanel({
                           : 'descending'
                         : 'none'
                     }
-                    className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                     onClick={() => {
                       handleSort('channel_utilization');
                     }}
@@ -814,7 +814,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'air_util_tx' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                     onClick={() => {
                       handleSort('air_util_tx');
                     }}
@@ -826,7 +826,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'altitude' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                     onClick={() => {
                       handleSort('altitude');
                     }}
@@ -838,7 +838,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'redundancy' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="px-3 py-2 text-right cursor-pointer hover:text-gray-200 transition-colors select-none"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
                     onClick={() => {
                       handleSort('redundancy');
                     }}
@@ -855,7 +855,7 @@ export default function NodeListPanel({
               <tr>
                 <td
                   colSpan={(mode === 'meshcore' ? 9 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0)}
-                  className="text-center text-muted py-8"
+                  className="text-muted py-8 text-center"
                 >
                   {searchQuery
                     ? 'No nodes match your search.'
@@ -885,15 +885,15 @@ export default function NodeListPanel({
                     onClick={() => {
                       onNodeClick(node);
                     }}
-                    className={`cursor-pointer hover:bg-secondary-dark/50 transition-colors ${rowOpacity} ${
-                      isSelf ? 'bg-brand-green/5 border-l-2 border-l-brand-green' : ''
+                    className={`hover:bg-secondary-dark/50 cursor-pointer transition-colors ${rowOpacity} ${
+                      isSelf ? 'bg-brand-green/5 border-l-brand-green border-l-2' : ''
                     }`}
                   >
                     {/* Status indicator */}
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
                         <span
-                          className={`w-2 h-2 rounded-full ${
+                          className={`h-2 w-2 rounded-full ${
                             status === 'online'
                               ? 'bg-brand-green'
                               : status === 'stale'
@@ -911,7 +911,7 @@ export default function NodeListPanel({
                         />
                         {isSelf && (
                           <span
-                            className="text-[10px] text-bright-green font-bold"
+                            className="text-bright-green text-[10px] font-bold"
                             title="This is your node"
                           >
                             ★
@@ -948,18 +948,18 @@ export default function NodeListPanel({
                         </button>
                       )}
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs text-muted">
+                    <td className="text-muted px-3 py-2 font-mono text-xs">
                       !{node.node_id.toString(16)}
                     </td>
                     <td
                       className={`px-3 py-2 ${isSelf ? 'text-bright-green font-medium' : 'text-gray-200'} ${isMqttOnlyDimmed ? 'line-through' : ''}`}
                     >
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="inline-flex items-center gap-1 min-w-0">
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <span className="inline-flex min-w-0 items-center gap-1">
                           <span className="truncate">
                             {node.long_name || '-'}
                             {isSelf && (
-                              <span className="text-[10px] text-bright-green/60 ml-1.5">(you)</span>
+                              <span className="text-bright-green/60 ml-1.5 text-[10px]">(you)</span>
                             )}
                           </span>
                           {!isSelf &&
@@ -968,7 +968,7 @@ export default function NodeListPanel({
                               if (!routingRow) return null;
                               return (
                                 <svg
-                                  className={`w-4 h-4 shrink-0 ${
+                                  className={`h-4 w-4 shrink-0 ${
                                     routingRow.severity === 'error'
                                       ? 'text-red-400'
                                       : routingRow.severity === 'info'
@@ -993,7 +993,7 @@ export default function NodeListPanel({
                         {mode === 'meshcore' &&
                           meshcoreShowPublicKeys &&
                           meshcorePublicKeyHexByNodeId?.get(node.node_id) && (
-                            <span className="font-mono text-[10px] text-muted break-all whitespace-normal">
+                            <span className="text-muted font-mono text-[10px] break-all whitespace-normal">
                               {meshcorePublicKeyHexByNodeId.get(node.node_id)}
                             </span>
                           )}
@@ -1006,12 +1006,12 @@ export default function NodeListPanel({
                         {node.short_name || '-'}
                       </td>
                     )}
-                    <td className="px-3 py-2 text-muted">{formatTime(node.last_heard)}</td>
+                    <td className="text-muted px-3 py-2">{formatTime(node.last_heard)}</td>
                     <td className="px-3 py-2 text-xs">
                       {mode === 'meshcore' ? (
                         node.hw_model === 'Repeater' || node.hw_model === 'Room' ? (
                           <span className="inline-flex items-center gap-1 text-gray-300">
-                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                            <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                               <path d={getNodeTypeIcon(node.hw_model) ?? ''} />
                             </svg>
                             {node.hw_model}
@@ -1019,7 +1019,7 @@ export default function NodeListPanel({
                         ) : node.hw_model === 'Chat' ? (
                           <span className="inline-flex items-center gap-1 text-gray-300">
                             <svg
-                              className="w-3.5 h-3.5"
+                              className="h-3.5 w-3.5"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -1036,7 +1036,7 @@ export default function NodeListPanel({
                       ) : node.hw_model === 'Chat' ? (
                         <span className="inline-flex items-center gap-1 text-xs text-gray-400">
                           <svg
-                            className="w-3.5 h-3.5"
+                            className="h-3.5 w-3.5"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -1052,7 +1052,7 @@ export default function NodeListPanel({
                       )}
                     </td>
                     <td
-                      className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away === undefined || node.hops_away === null) ? 0 : node.hops_away) === 0 ? 'text-bright-green' : 'text-gray-300'}`}
+                      className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away ?? 0)) === 0 ? 'text-bright-green' : 'text-gray-300'}`}
                     >
                       {node.heard_via_mqtt_only ? (
                         <span className="text-muted">—</span>
@@ -1061,7 +1061,7 @@ export default function NodeListPanel({
                       )}
                     </td>
                     {mode !== 'meshcore' && (
-                      <td className="px-3 py-2 text-center text-gray-300 text-xs">
+                      <td className="px-3 py-2 text-center text-xs text-gray-300">
                         {node.heard_via_mqtt_only ? (
                           <span title="Heard only via MQTT" className="text-blue-400">
                             🌐
@@ -1071,7 +1071,7 @@ export default function NodeListPanel({
                             🌐
                           </span>
                         ) : node.via_mqtt ? (
-                          <span title="Relay uses MQTT" className="text-gray-400 text-xs">
+                          <span title="Relay uses MQTT" className="text-xs text-gray-400">
                             relay
                           </span>
                         ) : (
@@ -1087,11 +1087,11 @@ export default function NodeListPanel({
                       );
                       return (
                         <>
-                          <td className="px-3 py-2 text-right font-mono text-xs text-muted">
+                          <td className="text-muted px-3 py-2 text-right font-mono text-xs">
                             {latCell}
                           </td>
                           {coordinateFormat !== 'mgrs' && (
-                            <td className="px-3 py-2 text-right font-mono text-xs text-muted">
+                            <td className="text-muted px-3 py-2 text-right font-mono text-xs">
                               {lonCell}
                             </td>
                           )}
@@ -1116,7 +1116,7 @@ export default function NodeListPanel({
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-2 text-right font-mono text-xs text-muted">
+                        <td className="text-muted px-3 py-2 text-right font-mono text-xs">
                           {node.heard_via_mqtt_only
                             ? '—'
                             : isSelf || snrMeaningfulForNodeDiagnostics(node)
@@ -1130,7 +1130,7 @@ export default function NodeListPanel({
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         {node.battery > 0 && (
-                          <div className="w-10 h-1.5 bg-secondary-dark rounded-full overflow-hidden">
+                          <div className="bg-secondary-dark h-1.5 w-10 overflow-hidden rounded-full">
                             <div
                               className={`h-full rounded-full ${
                                 node.battery > 50
@@ -1162,18 +1162,18 @@ export default function NodeListPanel({
                     </td>
                     {mode !== 'meshcore' && (
                       <>
-                        <td className="px-3 py-2 text-right text-gray-300 text-xs">
+                        <td className="px-3 py-2 text-right text-xs text-gray-300">
                           {node.voltage != null ? `${node.voltage.toFixed(2)} V` : '-'}
                         </td>
-                        <td className="px-3 py-2 text-right text-gray-300 text-xs">
+                        <td className="px-3 py-2 text-right text-xs text-gray-300">
                           {node.channel_utilization != null
                             ? `${node.channel_utilization.toFixed(1)}%`
                             : '-'}
                         </td>
-                        <td className="px-3 py-2 text-right text-gray-300 text-xs">
+                        <td className="px-3 py-2 text-right text-xs text-gray-300">
                           {node.air_util_tx != null ? `${node.air_util_tx.toFixed(1)}%` : '-'}
                         </td>
-                        <td className="px-3 py-2 text-right text-gray-300 text-xs">
+                        <td className="px-3 py-2 text-right text-xs text-gray-300">
                           {node.altitude != null && node.altitude !== 0
                             ? `${node.altitude} m`
                             : '-'}
@@ -1183,7 +1183,7 @@ export default function NodeListPanel({
                           const echoes = red ? red.maxPaths - 1 : 0;
                           return (
                             <td
-                              className={`px-3 py-2 text-right text-xs font-mono ${
+                              className={`px-3 py-2 text-right font-mono text-xs ${
                                 echoes >= 3
                                   ? 'text-lime-400'
                                   : echoes > 0
@@ -1208,7 +1208,7 @@ export default function NodeListPanel({
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 bg-brand-green text-deep-black text-xs font-bold px-3 py-2 rounded-full shadow-lg hover:bg-bright-green transition-colors"
+          className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-6 bottom-6 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
           title="Back to top"
         >
           ↑ Top

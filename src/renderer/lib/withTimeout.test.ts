@@ -19,9 +19,9 @@ describe('withTimeout', () => {
     vi.useFakeTimers();
     try {
       const p = withTimeout(new Promise(() => {}), 1000, 'slow');
-      const assertRejected = expect(p).rejects.toThrow(/slow timed out after 1000ms/);
-      await vi.advanceTimersByTimeAsync(1000);
-      await assertRejected;
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- fire-and-forget timer advance
+      vi.advanceTimersByTimeAsync(1000);
+      await expect(p).rejects.toThrow(/slow timed out after 1000ms/);
       expect(vi.getTimerCount()).toBe(0);
     } finally {
       vi.useRealTimers();

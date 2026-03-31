@@ -714,10 +714,7 @@ function mergeMeshcoreDbHydrationWithLive(
 ): ChatMessage[] {
   const dbLoose = new Set(fromDb.map(meshcoreLoosePersistenceMatchKey));
   const inFlight = prev.filter((m) => {
-    if (m.id != null) {
-      if (fromDb.some((d) => d.id === m.id)) return false;
-      return true;
-    }
+    if (m.id != null) return !fromDb.some((d) => d.id === m.id);
     return !dbLoose.has(meshcoreLoosePersistenceMatchKey(m));
   });
   const merged = [...fromDb, ...inFlight];
@@ -919,6 +916,19 @@ export function useMeshCore() {
   const lastPacketLogPublishFailureLogAtRef = useRef(0);
   const meshcoreHookMountedRef = useRef(true);
   const repeaterCommandServiceRef = useRef<RepeaterCommandService | null>(null);
+  /** Debounced contacts refresh after path updates (event 129). */
+  const meshcoreContactsRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const buildNodesFromContactsRef = useRef<
+    | ((
+        contacts: MeshCoreContactRaw[],
+        opts?: {
+          self?: MeshCoreSelfInfo | null;
+          myNodeId?: number;
+          previousNodes?: Map<number, MeshNode>;
+        },
+      ) => Promise<Map<number, MeshNode>>)
+    | null
+  >(null);
 
   const addCliHistoryEntry = useCallback((nodeId: number, entry: CliHistoryEntry) => {
     setMeshcoreCliHistories((prev) => {
@@ -970,13 +980,12 @@ export function useMeshCore() {
   }, [mqttStatus]);
 
   useEffect(() => {
-    const offStatus = window.electronAPI.mqtt.onStatus(({ status: s, protocol }) => {
+    return window.electronAPI.mqtt.onStatus(({ status: s, protocol }) => {
       if (protocol !== 'meshcore') return;
       const st = s;
       mqttStatusRef.current = st;
       setMqttStatus(st);
     });
-    return offStatus;
   }, []);
 
   // Load persisted MeshCore contacts + messages from DB on mount (no device required — matches Meshtastic).
@@ -1111,7 +1120,7 @@ export function useMeshCore() {
   }, []);
 
   useEffect(() => {
-    const off = window.electronAPI.mqtt.onMeshcoreChat((raw: unknown) => {
+    return window.electronAPI.mqtt.onMeshcoreChat((raw: unknown) => {
       const m = raw as {
         text?: string;
         channelIdx?: number;
@@ -1179,7 +1188,6 @@ export function useMeshCore() {
         }),
       );
     });
-    return off;
   }, [addMessage]);
 
   const updateNode = useCallback((node: MeshNode) => {
@@ -1325,6 +1333,10 @@ export function useMeshCore() {
     },
     [],
   );
+
+  useEffect(() => {
+    buildNodesFromContactsRef.current = buildNodesFromContacts;
+  }, [buildNodesFromContacts]);
 
   const setupEventListeners = useCallback(
     (conn: MeshCoreConnection) => {
@@ -1544,6 +1556,30 @@ export function useMeshCore() {
               console.warn('[useMeshCore] saveMeshcoreContact (event 129 new) error', e);
             });
         }
+        // Path updates may change hop counts; debounced contacts refresh to fetch updated outPathLen
+        if (meshcoreContactsRefreshTimerRef.current) {
+          clearTimeout(meshcoreContactsRefreshTimerRef.current);
+        }
+        meshcoreContactsRefreshTimerRef.current = setTimeout(() => {
+          void (async () => {
+            if (!connRef.current) return;
+            const buildFn = buildNodesFromContactsRef.current;
+            if (!buildFn) return;
+            try {
+              const contactsRaw = await connRef.current.getContacts();
+              const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
+              setMeshcoreContactsForTelemetry(contacts);
+              const newNodes = await buildFn(contacts, {
+                self: selfInfoRef.current,
+                myNodeId: myNodeNumRef.current,
+                previousNodes: nodesRef.current,
+              });
+              setNodes((prev) => mergeMeshcoreChatStubNodes(prev, newNodes));
+            } catch (e) {
+              console.warn('[useMeshCore] debounced contacts refresh error', e);
+            }
+          })();
+        }, 3000);
       });
 
       // Push: send confirmed — event 0x82 = 130; resolve pending DM delivery
@@ -1974,6 +2010,11 @@ export function useMeshCore() {
 
       conn.on('disconnected', () => {
         setState((prev) => ({ ...prev, status: 'disconnected' }));
+        // Clear pending contacts refresh timer
+        if (meshcoreContactsRefreshTimerRef.current) {
+          clearTimeout(meshcoreContactsRefreshTimerRef.current);
+          meshcoreContactsRefreshTimerRef.current = null;
+        }
         // Release the underlying transport (serial port lock, BLE IPC session) so the
         // next connect attempt can open it cleanly. Without this, an unexpected
         // device-side disconnect leaves the raw SerialPort open at the browser level
@@ -3066,30 +3107,26 @@ export function useMeshCore() {
         console.debug('[useMeshCore] setRadioParams succeeded');
       } catch (e) {
         console.error('[useMeshCore] setRadioParams threw:', e);
-        const err =
-          e === undefined || (e instanceof Error && !e.message)
-            ? new Error(
-                'Failed to apply radio settings. The device may not support changing radio parameters over this connection.',
-              )
-            : e instanceof Error
-              ? e
-              : new Error(typeof e === 'string' ? e : 'Unknown error');
-        throw err;
+        throw e === undefined || (e instanceof Error && !e.message)
+          ? new Error(
+              'Failed to apply radio settings. The device may not support changing radio parameters over this connection.',
+            )
+          : e instanceof Error
+            ? e
+            : new Error(typeof e === 'string' ? e : 'Unknown error');
       }
       try {
         await connRef.current.setTxPower(p.txPower);
         console.debug('[useMeshCore] setTxPower succeeded');
       } catch (e) {
         console.error('[useMeshCore] setTxPower threw:', e);
-        const err =
-          e === undefined || (e instanceof Error && !e.message)
-            ? new Error(
-                'Failed to set TX power. The device may not support changing it over this connection.',
-              )
-            : e instanceof Error
-              ? e
-              : new Error(typeof e === 'string' ? e : 'Unknown error');
-        throw err;
+        throw e === undefined || (e instanceof Error && !e.message)
+          ? new Error(
+              'Failed to set TX power. The device may not support changing it over this connection.',
+            )
+          : e instanceof Error
+            ? e
+            : new Error(typeof e === 'string' ? e : 'Unknown error');
       }
       setSelfInfo((prev) =>
         prev
@@ -3148,15 +3185,13 @@ export function useMeshCore() {
         }
       } catch (e) {
         console.error('[useMeshCore] setAdvertLatLong failed', { lat, lon, latInt, lonInt }, e);
-        const err =
-          e === undefined || (e instanceof Error && !e.message)
-            ? new Error(
-                'Device rejected position update — check that the device supports setting coordinates',
-              )
-            : e instanceof Error
-              ? e
-              : new Error(typeof e === 'string' ? e : 'Unknown error');
-        throw err;
+        throw e === undefined || (e instanceof Error && !e.message)
+          ? new Error(
+              'Device rejected position update — check that the device supports setting coordinates',
+            )
+          : e instanceof Error
+            ? e
+            : new Error(typeof e === 'string' ? e : 'Unknown error');
       }
     },
     [selfInfo?.name, selfInfo?.type],

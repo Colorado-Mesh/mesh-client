@@ -7,22 +7,26 @@ export interface LogEntry {
   message: string;
 }
 
+export type LogSeverity = 'error' | 'warning' | 'info';
+
 export interface PatternCategory {
   id: string;
   label: string;
   patterns: RegExp[];
   recommendation: string;
-  severity: 'error' | 'warning' | 'info';
+  severity: LogSeverity;
   protocols?: MeshProtocol[];
   /** When true, only warn/error level entries can match (reduces false positives on debug noise). */
   requireWarnOrError?: boolean;
 }
 
+type CategorySeverity = 'error' | 'warning' | 'info';
+
 export interface CategoryFinding {
   id: string;
   label: string;
   count: number;
-  severity: 'error' | 'warning' | 'info';
+  severity: CategorySeverity;
   recommendation: string;
   lastTs: number;
   /** Truncated message from the most recent matching line. */
@@ -269,7 +273,7 @@ export function analyzeLogs(entries: LogEntry[], protocol: MeshProtocol): Analys
     const matchingEntries = entries.filter((e) => matchesCategory(e, category));
     if (matchingEntries.length === 0) continue;
 
-    const lastEntry = matchingEntries.reduce((a, b) => (a.ts >= b.ts ? a : b));
+    const lastEntry = matchingEntries.reduce((a, b) => (a.ts >= b.ts ? a : b), matchingEntries[0]);
     const lastTs = lastEntry.ts;
     const lastMessage = truncateLastMessage(lastEntry.message);
 

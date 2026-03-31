@@ -224,7 +224,7 @@ export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledT
     <div
       role="tablist"
       aria-label="Application panels"
-      className="flex bg-deep-black border-b border-gray-700 px-2 gap-1"
+      className="bg-deep-black flex gap-1 border-b border-gray-700 px-2"
     >
       {tabs.map((name, i) => {
         const showChatBadge = name === 'Chat' && chatUnread > 0;
@@ -246,18 +246,18 @@ export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledT
               if (!isDisabled) onChange(i);
             }}
             title={isDisabled ? 'Not available in MeshCore mode' : undefined}
-            className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors rounded-t-md ${
+            className={`relative flex items-center gap-1.5 rounded-t-md px-3 py-2.5 text-sm font-medium transition-colors ${
               isDisabled
-                ? 'text-gray-600 cursor-not-allowed opacity-50'
+                ? 'cursor-not-allowed text-gray-600 opacity-50'
                 : safeActive === i
-                  ? 'bg-gray-900 text-bright-green border-b-2 border-bright-green'
-                  : 'text-muted hover:text-gray-200 hover:bg-secondary-dark'
+                  ? 'text-bright-green border-bright-green border-b-2 bg-gray-900'
+                  : 'text-muted hover:bg-secondary-dark hover:text-gray-200'
             }`}
           >
             <TabIcon name={name} />
             {name}
             {showChatBadge && (
-              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                 {chatUnread > 99 ? '99+' : chatUnread}
               </span>
             )}

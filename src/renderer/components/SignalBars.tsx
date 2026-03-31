@@ -31,7 +31,7 @@ const NO_DATA_COLOR = '#4b5563';
 
 export default function SignalBars({ rssi, isSelf, className }: Props) {
   if (isSelf) {
-    return <LinkIcon className={className ?? 'w-4 h-4'} />;
+    return <LinkIcon className={className ?? 'h-4 w-4'} />;
   }
 
   const level = rssiToSignalLevel(rssi);

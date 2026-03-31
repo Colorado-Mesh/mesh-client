@@ -169,7 +169,7 @@ function ConfigSelect({
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5">
-        <label className="text-sm text-muted">{label}</label>
+        <label className="text-muted text-sm">{label}</label>
         {tooltip && <HelpTooltip text={tooltip} />}
       </div>
       <select
@@ -180,7 +180,7 @@ function ConfigSelect({
           onChange(n);
         }}
         disabled={disabled}
-        className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+        className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -188,7 +188,7 @@ function ConfigSelect({
           </option>
         ))}
       </select>
-      {description && <p className="text-xs text-muted">{description}</p>}
+      {description && <p className="text-muted text-xs">{description}</p>}
     </div>
   );
 }
@@ -210,24 +210,24 @@ function ConfigToggle({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <label className="text-sm text-muted">{label}</label>
+        <label className="text-muted text-sm">{label}</label>
         <button
           onClick={() => {
             onChange(!checked);
           }}
           disabled={disabled}
-          className={`relative w-10 h-5 rounded-full transition-colors disabled:opacity-50 ${
+          className={`relative h-5 w-10 rounded-full transition-colors disabled:opacity-50 ${
             checked ? 'bg-brand-green' : 'bg-gray-600'
           }`}
         >
           <span
-            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+            className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
               checked ? 'translate-x-5' : 'translate-x-0'
             }`}
           />
         </button>
       </div>
-      {description && <p className="text-xs text-muted">{description}</p>}
+      {description && <p className="text-muted text-xs">{description}</p>}
     </div>
   );
 }
@@ -257,7 +257,7 @@ export function ConfigNumber({
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5">
-        <label className="text-sm text-muted">{label}</label>
+        <label className="text-muted text-sm">{label}</label>
         {tooltip && <HelpTooltip text={tooltip} />}
       </div>
       <div className="flex items-center gap-2">
@@ -272,11 +272,11 @@ export function ConfigNumber({
           min={min}
           max={max}
           disabled={disabled}
-          className="w-28 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+          className="bg-secondary-dark focus:border-brand-green w-28 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
         />
-        {unit && <span className="text-sm text-muted">{unit}</span>}
+        {unit && <span className="text-muted text-sm">{unit}</span>}
       </div>
-      {description && <p className="text-xs text-muted">{description}</p>}
+      {description && <p className="text-muted text-xs">{description}</p>}
     </div>
   );
 }
@@ -297,10 +297,10 @@ function ConfigSection({
 }) {
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="px-4 py-3 cursor-pointer text-gray-200 font-medium flex items-center justify-between hover:bg-gray-800 rounded-lg transition-colors">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>{title}</span>
         <svg
-          className="w-4 h-4 text-muted group-open:rotate-180 transition-transform"
+          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -308,13 +308,13 @@ function ConfigSection({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </summary>
-      <div className="px-4 pb-4 space-y-4">
+      <div className="space-y-4 px-4 pb-4">
         {children}
         {onApply && (
           <button
             onClick={onApply}
             disabled={disabled || applying}
-            className="w-full px-4 py-2 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
+            className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
           >
             {applying ? 'Applying...' : `Apply ${title}`}
           </button>
@@ -394,22 +394,22 @@ function ConfirmModal({
       <button
         type="button"
         aria-label="Cancel"
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer border-0 p-0"
+        className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0 backdrop-blur-sm"
         onClick={onCancel}
       />
-      <div className="relative bg-deep-black border border-gray-600 rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6 space-y-4">
+      <div className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl">
         <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
-        <p className="text-sm text-muted leading-relaxed">{message}</p>
+        <p className="text-muted text-sm leading-relaxed">{message}</p>
         <div className="flex gap-3 pt-2">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2.5 bg-secondary-dark hover:bg-gray-600 text-gray-300 font-medium rounded-lg transition-colors text-sm"
+            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className={`flex-1 px-4 py-2.5 font-medium rounded-lg transition-colors text-sm text-white ${
+            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors ${
               danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'
             }`}
           >
@@ -434,7 +434,7 @@ function WifiPasswordField({
   const wifiPwdId = useId();
   return (
     <div className="space-y-1">
-      <label htmlFor={wifiPwdId} className="text-sm text-muted">
+      <label htmlFor={wifiPwdId} className="text-muted text-sm">
         WiFi Password
       </label>
       <div className="flex items-center gap-1">
@@ -448,7 +448,7 @@ function WifiPasswordField({
           disabled={disabled}
           placeholder="Password"
           maxLength={64}
-          className="flex-1 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+          className="bg-secondary-dark focus:border-brand-green flex-1 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
         />
         <button
           type="button"
@@ -456,7 +456,7 @@ function WifiPasswordField({
             setShow((s) => !s);
           }}
           disabled={disabled}
-          className="px-2 py-2 text-xs text-muted hover:text-gray-300 disabled:opacity-50"
+          className="text-muted px-2 py-2 text-xs hover:text-gray-300 disabled:opacity-50"
         >
           {show ? 'Hide' : 'Show'}
         </button>
@@ -840,7 +840,7 @@ export default function RadioPanel({
   }, [addToast, onSetOwner, onApplyLoraParams, shortName, isLicensed, bandwidth, radioFreqHz]);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4">
+    <div className="mx-auto max-w-5xl space-y-4">
       <h2 className="text-xl font-semibold text-gray-200">Radio Configuration</h2>
 
       {capabilities?.protocol === 'meshcore' && (
@@ -848,7 +848,7 @@ export default function RadioPanel({
           <button
             type="button"
             onClick={handleImportConfig}
-            className="px-3 py-1.5 text-sm bg-secondary-dark hover:bg-gray-700 text-gray-300 border border-gray-600 rounded-lg transition-colors"
+            className="bg-secondary-dark rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-300 transition-colors hover:bg-gray-700"
           >
             Import Config JSON
           </button>
@@ -856,7 +856,7 @@ export default function RadioPanel({
       )}
 
       {!isConnected && (
-        <div className="bg-yellow-900/30 border border-yellow-700 text-yellow-300 px-4 py-2 rounded-lg text-sm">
+        <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
           Connect to a device to modify configuration.
         </div>
       )}
@@ -990,7 +990,7 @@ export default function RadioPanel({
         disabled={disabled || !onSetOwner}
       >
         <div className="space-y-1">
-          <label htmlFor="radio-long-name" className="text-sm text-muted">
+          <label htmlFor="radio-long-name" className="text-muted text-sm">
             {capabilities?.protocol === 'meshcore' ? 'Name' : 'Long Name'}
           </label>
           <input
@@ -1007,9 +1007,9 @@ export default function RadioPanel({
             maxLength={capabilities?.protocol === 'meshcore' ? undefined : 39}
             disabled={disabled}
             placeholder="Your Name"
-            className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+            className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
           />
-          <p className="text-xs text-muted">
+          <p className="text-muted text-xs">
             {capabilities?.protocol === 'meshcore'
               ? 'Advertised node name (emoji supported)'
               : 'Display name (max 39 chars)'}
@@ -1018,7 +1018,7 @@ export default function RadioPanel({
         {capabilities?.protocol !== 'meshcore' && (
           <>
             <div className="space-y-1">
-              <label htmlFor="radio-short-name" className="text-sm text-muted">
+              <label htmlFor="radio-short-name" className="text-muted text-sm">
                 Short Name
               </label>
               <input
@@ -1031,9 +1031,9 @@ export default function RadioPanel({
                 maxLength={4}
                 disabled={disabled}
                 placeholder="NAME"
-                className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
               />
-              <p className="text-xs text-muted">
+              <p className="text-muted text-xs">
                 Short identifier shown on tiny displays (max 4 chars)
               </p>
             </div>
@@ -1113,7 +1113,7 @@ export default function RadioPanel({
           disabled={disabled}
         >
           <div className="space-y-1">
-            <label htmlFor="radio-freq-mhz" className="text-sm text-muted">
+            <label htmlFor="radio-freq-mhz" className="text-muted text-sm">
               Frequency (MHz)
             </label>
             <input
@@ -1128,11 +1128,11 @@ export default function RadioPanel({
               min={150}
               max={960}
               disabled={disabled || applyingSection !== null}
-              className="w-36 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+              className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
             />
-            <p className="text-xs text-muted">Operating frequency. Check local regulations.</p>
+            <p className="text-muted text-xs">Operating frequency. Check local regulations.</p>
           </div>
-          <div className="space-y-4 pl-3 border-l border-gray-700">
+          <div className="space-y-4 border-l border-gray-700 pl-3">
             <ConfigSelect
               label="Bandwidth"
               value={bandwidth}
@@ -1231,7 +1231,7 @@ export default function RadioPanel({
               disabled={disabled || applyingSection !== null}
             />
           ) : (
-            <div className="space-y-4 pl-3 border-l border-gray-700">
+            <div className="space-y-4 border-l border-gray-700 pl-3">
               <ConfigSelect
                 label="Bandwidth"
                 value={bandwidth}
@@ -1291,7 +1291,7 @@ export default function RadioPanel({
             </div>
           )}
           <div className="space-y-1">
-            <label htmlFor="radio-hop-limit" className="text-sm text-muted">
+            <label htmlFor="radio-hop-limit" className="text-muted text-sm">
               Hop Limit
             </label>
             <div className="flex items-center gap-3">
@@ -1307,9 +1307,9 @@ export default function RadioPanel({
                 disabled={disabled || applyingSection !== null}
                 className="flex-1 accent-green-500 disabled:opacity-50"
               />
-              <span className="text-gray-200 font-mono text-lg w-6 text-center">{hopLimit}</span>
+              <span className="w-6 text-center font-mono text-lg text-gray-200">{hopLimit}</span>
             </div>
-            <p className="text-xs text-muted">
+            <p className="text-muted text-xs">
               Number of times a message can be relayed (1–7). Higher = more reach, more airtime.
               Default: 3.
             </p>
@@ -1389,7 +1389,7 @@ export default function RadioPanel({
               description="Only broadcast position when you have moved enough or enough time has passed."
             />
             {smartPositionEnabled && (
-              <div className="space-y-4 pl-3 border-l border-gray-700">
+              <div className="space-y-4 border-l border-gray-700 pl-3">
                 <ConfigNumber
                   label="Min distance to trigger"
                   value={smartPositionMinDistance}
@@ -1420,8 +1420,8 @@ export default function RadioPanel({
         {/* For Meshtastic: lat/lon shown when fixedPosition toggle is on */}
         {/* For MeshCore: lat/lon always shown (fixed position is the only option) */}
         {(fixedPosition || capabilities?.hasFullPositionConfig === false) && (
-          <div className="space-y-3 pt-2 border-t border-gray-700">
-            <p className="text-xs text-muted">
+          <div className="space-y-3 border-t border-gray-700 pt-2">
+            <p className="text-muted text-xs">
               Set coordinates to send to the device.
               {ourPosition && (
                 <button
@@ -1430,14 +1430,14 @@ export default function RadioPanel({
                     setLatStr(String(ourPosition.lat));
                     setLonStr(String(ourPosition.lon));
                   }}
-                  className="ml-2 text-brand-green underline hover:opacity-80"
+                  className="text-brand-green ml-2 underline hover:opacity-80"
                 >
                   Use current GPS
                 </button>
               )}
             </p>
             <div className="space-y-1">
-              <label htmlFor="radio-fixed-lat" className="text-sm text-muted">
+              <label htmlFor="radio-fixed-lat" className="text-muted text-sm">
                 Latitude
               </label>
               <input
@@ -1450,11 +1450,11 @@ export default function RadioPanel({
                 }}
                 disabled={disabled || applyingSection !== null}
                 placeholder="0.000000"
-                className="w-36 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="radio-fixed-lon" className="text-sm text-muted">
+              <label htmlFor="radio-fixed-lon" className="text-muted text-sm">
                 Longitude
               </label>
               <input
@@ -1467,11 +1467,11 @@ export default function RadioPanel({
                 }}
                 disabled={disabled || applyingSection !== null}
                 placeholder="0.000000"
-                className="w-36 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="radio-fixed-alt" className="text-sm text-muted">
+              <label htmlFor="radio-fixed-alt" className="text-muted text-sm">
                 Altitude (m)
               </label>
               <input
@@ -1484,7 +1484,7 @@ export default function RadioPanel({
                 }}
                 disabled={disabled || applyingSection !== null}
                 placeholder="0"
-                className="w-36 px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
               />
             </div>
             <button
@@ -1511,7 +1511,7 @@ export default function RadioPanel({
                 }
               }}
               disabled={disabled || !onSendPositionToDevice}
-              className="w-full px-4 py-2 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-sm font-medium rounded-lg transition-colors"
+              className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
             >
               Send Position to Device
             </button>
@@ -1667,7 +1667,7 @@ export default function RadioPanel({
             description="Enable the device's WiFi radio. Requires reboot to take effect."
           />
           <div className="space-y-1">
-            <label htmlFor="radio-wifi-ssid" className="text-sm text-muted">
+            <label htmlFor="radio-wifi-ssid" className="text-muted text-sm">
               WiFi SSID
             </label>
             <input
@@ -1680,7 +1680,7 @@ export default function RadioPanel({
               disabled={disabled || !wifiEnabled || applyingSection !== null}
               placeholder="Network name"
               maxLength={33}
-              className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
             />
           </div>
           <WifiPasswordField
@@ -1689,7 +1689,7 @@ export default function RadioPanel({
             disabled={disabled || !wifiEnabled || applyingSection !== null}
           />
           <div className="space-y-1">
-            <label htmlFor="radio-ntp-server" className="text-sm text-muted">
+            <label htmlFor="radio-ntp-server" className="text-muted text-sm">
               NTP Server
             </label>
             <input
@@ -1701,9 +1701,9 @@ export default function RadioPanel({
               }}
               disabled={disabled || applyingSection !== null}
               placeholder="0.pool.ntp.org"
-              className="w-full px-3 py-2 bg-secondary-dark rounded-lg text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
             />
-            <p className="text-xs text-muted">Leave empty for default NTP server.</p>
+            <p className="text-muted text-xs">Leave empty for default NTP server.</p>
           </div>
           <ConfigToggle
             label="Ethernet enabled"
@@ -1718,11 +1718,11 @@ export default function RadioPanel({
       {/* Status */}
       {status && (
         <div
-          className={`px-4 py-2 rounded-lg text-sm ${
+          className={`rounded-lg px-4 py-2 text-sm ${
             status.includes('Failed')
-              ? 'bg-red-900/50 border border-red-700 text-red-300'
+              ? 'border border-red-700 bg-red-900/50 text-red-300'
               : status.includes('success')
-                ? 'bg-brand-green/10 border border-brand-green text-bright-green'
+                ? 'bg-brand-green/10 border-brand-green text-bright-green border'
                 : 'bg-deep-black text-muted'
           }`}
         >
@@ -1731,7 +1731,7 @@ export default function RadioPanel({
       )}
 
       {/* Info */}
-      <div className="bg-deep-black rounded-lg p-4 text-sm text-muted space-y-1">
+      <div className="bg-deep-black text-muted space-y-1 rounded-lg p-4 text-sm">
         <p>Changes are written to the device's flash memory and persist across reboots.</p>
         <p>The device may briefly restart after applying new LoRa or device settings.</p>
       </div>
@@ -1739,17 +1739,17 @@ export default function RadioPanel({
       {/* Device Actions (MeshCore) — non-destructive commands */}
       {(onSendAdvert || onSyncClock) && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted">Device Actions</h3>
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg border border-gray-700">
+          <h3 className="text-muted text-sm font-medium">Device Actions</h3>
+          <div className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2">
             {onSendAdvert && (
               <button
                 type="button"
                 onClick={() => void handleSendAdvert()}
                 disabled={!isConnected || advertLoading}
-                className="px-3 py-1 rounded text-xs font-medium bg-brand-green/20 text-brand-green border border-brand-green/30 hover:bg-brand-green/30 transition-colors disabled:opacity-40"
+                className="bg-brand-green/20 text-brand-green border-brand-green/30 hover:bg-brand-green/30 rounded border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-40"
               >
                 {advertLoading ? (
-                  <span className="w-3 h-3 border border-brand-green border-t-transparent rounded-full animate-spin inline-block" />
+                  <span className="border-brand-green inline-block h-3 w-3 animate-spin rounded-full border border-t-transparent" />
                 ) : (
                   'Flood Advert'
                 )}
@@ -1760,10 +1760,10 @@ export default function RadioPanel({
                 type="button"
                 onClick={() => void handleSyncClock()}
                 disabled={!isConnected || syncClockLoading}
-                className="px-3 py-1 rounded text-xs font-medium bg-blue-900/50 text-blue-300 border border-blue-700 hover:bg-blue-800/60 transition-colors disabled:opacity-40"
+                className="rounded border border-blue-700 bg-blue-900/50 px-3 py-1 text-xs font-medium text-blue-300 transition-colors hover:bg-blue-800/60 disabled:opacity-40"
               >
                 {syncClockLoading ? (
-                  <span className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin inline-block" />
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
                 ) : (
                   'Sync Clock'
                 )}
@@ -1776,7 +1776,7 @@ export default function RadioPanel({
       {/* Device Commands — keep at bottom of Radio panel, directly above Danger Zone; do not reorder */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-orange-400">Device Commands</h3>
-        <div className="border border-orange-900 rounded-lg p-4 space-y-2">
+        <div className="space-y-2 rounded-lg border border-orange-900 p-4">
           <p className="text-xs text-orange-400/80">
             These actions affect the connected device immediately (reboot, shutdown, firmware modes,
             etc.).
@@ -1795,7 +1795,7 @@ export default function RadioPanel({
                 });
               }}
               disabled={!isConnected || !onEnterDfu}
-              className="px-4 py-3 bg-orange-900/30 text-orange-200 hover:bg-orange-900/50 border border-orange-800/60 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+              className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
             >
               Enter DFU Mode
             </button>
@@ -1813,7 +1813,7 @@ export default function RadioPanel({
                 });
               }}
               disabled={!isConnected}
-              className="px-4 py-3 bg-orange-900/30 text-orange-200 hover:bg-orange-900/50 border border-orange-800/60 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+              className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
             >
               Reboot
             </button>
@@ -1831,7 +1831,7 @@ export default function RadioPanel({
                 });
               }}
               disabled={!isConnected || !onRebootOta}
-              className="px-4 py-3 bg-orange-900/30 text-orange-200 hover:bg-orange-900/50 border border-orange-800/60 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+              className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
             >
               Reboot to OTA
             </button>
@@ -1850,7 +1850,7 @@ export default function RadioPanel({
                   });
                 }}
                 disabled={!isConnected}
-                className="px-4 py-3 bg-orange-900/30 text-orange-200 hover:bg-orange-900/50 border border-orange-800/60 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+                className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
               >
                 Reset NodeDB
               </button>
@@ -1870,7 +1870,7 @@ export default function RadioPanel({
                   });
                 }}
                 disabled={!isConnected}
-                className="px-4 py-3 bg-orange-900/30 text-orange-200 hover:bg-orange-900/50 border border-orange-800/60 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+                className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
               >
                 Shutdown
               </button>
@@ -1883,7 +1883,7 @@ export default function RadioPanel({
       {capabilities?.hasFactoryReset !== false && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-red-400">Danger Zone</h3>
-          <div className="border border-red-900 rounded-lg p-4 space-y-2">
+          <div className="space-y-2 rounded-lg border border-red-900 p-4">
             <p className="text-xs text-red-400/80">
               These actions are permanent and cannot be undone.
             </p>
@@ -1901,7 +1901,7 @@ export default function RadioPanel({
                 });
               }}
               disabled={!isConnected || !onFactoryResetConfig}
-              className="w-full px-4 py-3 bg-red-900/40 text-red-300 hover:bg-red-900/60 border border-red-800/60 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+              className="w-full rounded-lg border border-red-800/60 bg-red-900/40 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/60 disabled:opacity-50"
             >
               Factory Reset Config Only
             </button>
@@ -1919,7 +1919,7 @@ export default function RadioPanel({
                 });
               }}
               disabled={!isConnected}
-              className="w-full px-4 py-3 bg-red-900/50 text-red-300 hover:bg-red-900/70 border border-red-800 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70 disabled:opacity-50"
             >
               Factory Reset Device
             </button>
@@ -1958,8 +1958,8 @@ function getSecurityLevel(cfg: ChannelConfig): SecurityLevel {
 function SecurityIcon({ level }: { level: SecurityLevel }) {
   if (level === 'encrypted') {
     return (
-      <span title="AES encrypted" className="text-green-400 flex items-center">
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <span title="AES encrypted" className="flex items-center text-green-400">
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -1977,9 +1977,9 @@ function SecurityIcon({ level }: { level: SecurityLevel }) {
         ? 'Unencrypted + location data'
         : 'No encryption';
   return (
-    <span title={tooltip} className="text-yellow-500 flex items-center gap-0.5">
+    <span title={tooltip} className="flex items-center gap-0.5 text-yellow-500">
       <svg
-        className={`w-3.5 h-3.5 ${level !== 'open' ? 'text-red-400' : ''}`}
+        className={`h-3.5 w-3.5 ${level !== 'open' ? 'text-red-400' : ''}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -1993,7 +1993,7 @@ function SecurityIcon({ level }: { level: SecurityLevel }) {
       </svg>
       {level === 'open-location-uplink' && (
         <svg
-          className="w-3.5 h-3.5 text-red-400"
+          className="h-3.5 w-3.5 text-red-400"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -2140,10 +2140,10 @@ function ChannelSection({
 
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="px-4 py-3 cursor-pointer text-gray-200 font-medium flex items-center justify-between hover:bg-gray-800 rounded-lg transition-colors">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>Channels</span>
         <svg
-          className="w-4 h-4 text-muted group-open:rotate-180 transition-transform"
+          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -2151,7 +2151,7 @@ function ChannelSection({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </summary>
-      <div className="px-4 pb-4 space-y-3">
+      <div className="space-y-3 px-4 pb-4">
         {/* ── Channel List ── */}
         <div className="space-y-1">
           {slots.map((cfg, i) => {
@@ -2164,15 +2164,15 @@ function ChannelSection({
                 onClick={() => {
                   setSelectedIndex(i);
                 }}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
                   isSelected
-                    ? 'bg-gray-700 border border-gray-500'
+                    ? 'border border-gray-500 bg-gray-700'
                     : 'bg-deep-black/60 border border-gray-700/50 hover:bg-gray-800'
                 }`}
               >
                 {/* Index badge */}
                 <span
-                  className={`text-xs font-mono px-1.5 py-0.5 rounded font-bold ${
+                  className={`rounded px-1.5 py-0.5 font-mono text-xs font-bold ${
                     i === 0 ? 'bg-blue-900/60 text-blue-300' : 'bg-gray-700 text-gray-400'
                   }`}
                 >
@@ -2186,12 +2186,12 @@ function ChannelSection({
                 </span>
                 {/* Role badge */}
                 <span
-                  className={`text-xs px-1.5 py-0.5 rounded ${
+                  className={`rounded px-1.5 py-0.5 text-xs ${
                     role === 1
                       ? 'bg-brand-green/10 text-bright-green'
                       : role === 2
                         ? 'bg-blue-900/50 text-blue-400'
-                        : 'bg-gray-800 text-muted'
+                        : 'text-muted bg-gray-800'
                   }`}
                 >
                   {CHANNEL_ROLES.find((r) => r.value === role)?.label ?? 'Disabled'}
@@ -2205,16 +2205,16 @@ function ChannelSection({
 
         {/* ── Edit Form ── */}
         {selectedIndex !== null && (
-          <div className="mt-3 p-3 bg-deep-black/60 rounded-lg border border-gray-600 space-y-3">
+          <div className="bg-deep-black/60 mt-3 space-y-3 rounded-lg border border-gray-600 p-3">
             <h4 className="text-sm font-medium text-gray-200">Edit Channel {selectedIndex}</h4>
 
             {/* Name */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label htmlFor="radio-mt-ch-name" className="text-xs text-muted">
+                <label htmlFor="radio-mt-ch-name" className="text-muted text-xs">
                   Name
                 </label>
-                <span className="text-xs text-muted">{editName.length}/11</span>
+                <span className="text-muted text-xs">{editName.length}/11</span>
               </div>
               <input
                 id="radio-mt-ch-name"
@@ -2226,14 +2226,14 @@ function ChannelSection({
                 maxLength={11}
                 disabled={disabled}
                 placeholder={selectedIndex === 0 ? 'Primary' : 'Channel name'}
-                className="w-full px-2 py-1.5 bg-secondary-dark rounded text-sm text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
               />
             </div>
 
             {/* Role — locked for ch0 */}
             {selectedIndex !== 0 && (
               <div className="space-y-1">
-                <label htmlFor="radio-mt-ch-role" className="text-xs text-muted">
+                <label htmlFor="radio-mt-ch-role" className="text-muted text-xs">
                   Role
                 </label>
                 <select
@@ -2243,7 +2243,7 @@ function ChannelSection({
                     setEditRole(Number(e.target.value));
                   }}
                   disabled={disabled}
-                  className="w-full px-2 py-1.5 bg-secondary-dark rounded text-sm text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                  className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
                 >
                   <option value={0}>Disabled</option>
                   <option value={2}>Secondary</option>
@@ -2254,7 +2254,7 @@ function ChannelSection({
             {/* Key Size */}
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
-                <label htmlFor="radio-mt-ch-key-size" className="text-xs text-muted">
+                <label htmlFor="radio-mt-ch-key-size" className="text-muted text-xs">
                   Key Size
                 </label>
                 <HelpTooltip text="None = no encryption. Simple = default Meshtastic key (shared by all default-config devices — not private). AES-128/256 = custom private key. All nodes on this channel must use the same key." />
@@ -2266,7 +2266,7 @@ function ChannelSection({
                   handleKeySizeChange(e.target.value as KeySize);
                 }}
                 disabled={disabled}
-                className="w-full px-2 py-1.5 bg-secondary-dark rounded text-sm text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
               >
                 <option value="none">None (no encryption)</option>
                 <option value="simple">Simple (default Meshtastic key)</option>
@@ -2278,7 +2278,7 @@ function ChannelSection({
             {/* Encryption Key */}
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
-                <label htmlFor="radio-mt-ch-psk" className="text-xs text-muted">
+                <label htmlFor="radio-mt-ch-psk" className="text-muted text-xs">
                   Encryption Key (base64)
                 </label>
                 <HelpTooltip text="Base64-encoded encryption key. AES-128 = 16 bytes (24 base64 chars). AES-256 = 32 bytes (44 base64 chars). Use 'Generate' for a random key, or paste a shared key from another node." />
@@ -2295,7 +2295,7 @@ function ChannelSection({
                   disabled={disabled || !isAesKey}
                   readOnly={!isAesKey}
                   placeholder="base64..."
-                  className="flex-1 px-2 py-1.5 bg-secondary-dark rounded text-xs font-mono text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50 read-only:opacity-60"
+                  className="bg-secondary-dark focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1.5 font-mono text-xs text-gray-200 read-only:opacity-60 focus:outline-none disabled:opacity-50"
                 />
                 {isAesKey && (
                   <button
@@ -2305,7 +2305,7 @@ function ChannelSection({
                       );
                     }}
                     disabled={disabled}
-                    className="px-2 py-1.5 text-xs bg-secondary-dark text-muted hover:text-gray-200 rounded border border-gray-600 disabled:opacity-50 whitespace-nowrap"
+                    className="bg-secondary-dark text-muted rounded border border-gray-600 px-2 py-1.5 text-xs whitespace-nowrap hover:text-gray-200 disabled:opacity-50"
                     title="Generate random key"
                   >
                     Regenerate
@@ -2335,7 +2335,7 @@ function ChannelSection({
 
             {/* Position Precision */}
             <div className="space-y-1">
-              <label htmlFor="radio-mt-ch-pos-precision" className="text-xs text-muted">
+              <label htmlFor="radio-mt-ch-pos-precision" className="text-muted text-xs">
                 Position Precision (0 = no location)
               </label>
               <input
@@ -2348,7 +2348,7 @@ function ChannelSection({
                 min={0}
                 max={32}
                 disabled={disabled}
-                className="w-28 px-2 py-1.5 bg-secondary-dark rounded text-sm text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                className="bg-secondary-dark focus:border-brand-green w-28 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
               />
             </div>
 
@@ -2357,14 +2357,14 @@ function ChannelSection({
               <button
                 onClick={saveChannel}
                 disabled={disabled || saving}
-                className="flex-1 px-3 py-1.5 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-xs font-medium rounded transition-colors"
+                className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
               >
                 {saving ? 'Saving...' : 'Save Channel'}
               </button>
               <button
                 onClick={resetChannel}
                 disabled={disabled || saving}
-                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-300 text-xs font-medium rounded transition-colors"
+                className="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600 disabled:opacity-50"
                 title={selectedIndex === 0 ? 'Reset to defaults' : 'Disable channel'}
               >
                 Reset
@@ -2373,7 +2373,7 @@ function ChannelSection({
           </div>
         )}
 
-        <p className="text-xs text-muted">
+        <p className="text-muted text-xs">
           Select a channel to edit. AES-128/256 keys are shown in base64 (Meshtastic convention).
         </p>
       </div>
@@ -2500,10 +2500,10 @@ function MeshcoreChannelSection({
 
   return (
     <details ref={detailsRef} className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="px-4 py-3 cursor-pointer text-gray-200 font-medium flex items-center justify-between hover:bg-gray-800 rounded-lg transition-colors">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>Channels (MeshCore)</span>
         <svg
-          className="w-4 h-4 text-muted group-open:rotate-180 transition-transform"
+          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -2511,26 +2511,26 @@ function MeshcoreChannelSection({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </summary>
-      <div className="px-4 pb-4 space-y-4">
+      <div className="space-y-4 px-4 pb-4">
         {/* ── Channel List ── */}
         <div className="space-y-1">
           {channels.length === 0 && (
-            <p className="text-xs text-muted italic">No channels configured.</p>
+            <p className="text-muted text-xs italic">No channels configured.</p>
           )}
           {channels.map((ch) => {
             const revealed = revealedIdx.has(ch.index);
             return (
               <div
                 key={ch.index}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-deep-black/60 border border-gray-700/50"
+                className="bg-deep-black/60 flex items-center gap-2 rounded-lg border border-gray-700/50 px-3 py-2"
               >
-                <span className="text-xs font-mono px-1.5 py-0.5 rounded font-bold bg-gray-700 text-gray-400">
+                <span className="rounded bg-gray-700 px-1.5 py-0.5 font-mono text-xs font-bold text-gray-400">
                   {ch.index}
                 </span>
                 <span className="flex-1 text-sm text-gray-200">
                   {ch.name || `Channel ${ch.index}`}
                 </span>
-                <span className="text-xs font-mono text-muted">
+                <span className="text-muted font-mono text-xs">
                   {revealed ? bytesToHex(ch.secret) : '••••••••••••••••'}
                 </span>
                 <button
@@ -2542,7 +2542,7 @@ function MeshcoreChannelSection({
                       return next;
                     });
                   }}
-                  className="text-xs text-muted hover:text-gray-300 px-1"
+                  className="text-muted px-1 text-xs hover:text-gray-300"
                   title={revealed ? 'Hide key' : 'Reveal key'}
                 >
                   {revealed ? 'Hide' : 'Show'}
@@ -2554,7 +2554,7 @@ function MeshcoreChannelSection({
                     openEdit(ch);
                   }}
                   disabled={disabled}
-                  className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50 px-1"
+                  className="px-1 text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"
                 >
                   Edit
                 </button>
@@ -2571,7 +2571,7 @@ function MeshcoreChannelSection({
                       onClick={() => {
                         setConfirmDeleteIdx(null);
                       }}
-                      className="text-xs text-muted hover:text-gray-300"
+                      className="text-muted text-xs hover:text-gray-300"
                     >
                       Cancel
                     </button>
@@ -2582,7 +2582,7 @@ function MeshcoreChannelSection({
                       setConfirmDeleteIdx(ch.index);
                     }}
                     disabled={disabled || saving}
-                    className="text-xs text-red-500 hover:text-red-400 disabled:opacity-50 px-1"
+                    className="px-1 text-xs text-red-500 hover:text-red-400 disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -2596,7 +2596,7 @@ function MeshcoreChannelSection({
         {showForm && (
           <div
             ref={formRef}
-            className="mt-3 p-3 bg-deep-black/60 rounded-lg border border-gray-600 space-y-3"
+            className="bg-deep-black/60 mt-3 space-y-3 rounded-lg border border-gray-600 p-3"
           >
             <h4 className="text-sm font-medium text-gray-200">
               {addingNew ? 'Add Channel' : `Edit Channel ${editingIdx}`}
@@ -2604,7 +2604,7 @@ function MeshcoreChannelSection({
 
             {addingNew && (
               <div className="space-y-1">
-                <label htmlFor="radio-mc-ch-idx" className="text-xs text-muted">
+                <label htmlFor="radio-mc-ch-idx" className="text-muted text-xs">
                   Index (0–{MESHCORE_CHANNEL_INDEX_MAX})
                 </label>
                 <input
@@ -2617,13 +2617,13 @@ function MeshcoreChannelSection({
                   min={0}
                   max={MESHCORE_CHANNEL_INDEX_MAX}
                   disabled={disabled}
-                  className="w-20 px-2 py-1.5 bg-secondary-dark rounded text-sm text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                  className="bg-secondary-dark focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
                 />
               </div>
             )}
 
             <div className="space-y-1">
-              <label htmlFor="radio-mc-ch-name" className="text-xs text-muted">
+              <label htmlFor="radio-mc-ch-name" className="text-muted text-xs">
                 Name
               </label>
               <input
@@ -2635,13 +2635,13 @@ function MeshcoreChannelSection({
                 }}
                 maxLength={11}
                 disabled={disabled}
-                className="w-full px-2 py-1.5 bg-secondary-dark rounded text-sm text-gray-200 border border-gray-600 focus:border-brand-green focus:outline-none disabled:opacity-50"
+                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
               />
             </div>
 
             <div className="space-y-1">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <label htmlFor="radio-mc-ch-key" className="text-xs text-muted">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label htmlFor="radio-mc-ch-key" className="text-muted text-xs">
                   Key (32 hex chars = 16 bytes)
                 </label>
                 <div className="flex gap-2">
@@ -2651,7 +2651,7 @@ function MeshcoreChannelSection({
                       void handleDeriveKeyFromChannelName();
                     }}
                     disabled={disabled || deriveKeyBusy || !editName.trim()}
-                    className="text-xs text-brand-green hover:text-bright-green disabled:opacity-50 px-1"
+                    className="text-brand-green hover:text-bright-green px-1 text-xs disabled:opacity-50"
                     title="Set key from SHA-256(name) first 16 bytes (MeshCore #channels)"
                   >
                     {deriveKeyBusy ? 'Deriving…' : 'Derive from name'}
@@ -2675,10 +2675,10 @@ function MeshcoreChannelSection({
                 maxLength={32}
                 placeholder="00000000000000000000000000000000"
                 disabled={disabled}
-                className={`w-full px-2 py-1.5 bg-secondary-dark rounded text-sm font-mono border focus:outline-none disabled:opacity-50 ${
+                className={`bg-secondary-dark w-full rounded border px-2 py-1.5 font-mono text-sm focus:outline-none disabled:opacity-50 ${
                   editKeyHex.length > 0 && !isValidHex
                     ? 'border-red-500 text-red-400'
-                    : 'border-gray-600 text-gray-200 focus:border-brand-green'
+                    : 'focus:border-brand-green border-gray-600 text-gray-200'
                 }`}
               />
               {editKeyHex.length > 0 && !isValidHex && (
@@ -2690,7 +2690,7 @@ function MeshcoreChannelSection({
               <button
                 onClick={handleSave}
                 disabled={disabled || saving || !isValidHex || (addingNew && newIdx === '')}
-                className="flex-1 px-3 py-1.5 bg-readable-green hover:bg-readable-green/90 disabled:bg-gray-600 disabled:text-muted text-white text-xs font-medium rounded transition-colors"
+                className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
               >
                 {saving ? 'Saving...' : 'Save'}
               </button>
@@ -2699,7 +2699,7 @@ function MeshcoreChannelSection({
                   setEditingIdx(null);
                   setAddingNew(false);
                 }}
-                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs font-medium rounded transition-colors"
+                className="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600"
               >
                 Cancel
               </button>
@@ -2711,13 +2711,13 @@ function MeshcoreChannelSection({
           <button
             onClick={openAdd}
             disabled={disabled}
-            className="w-full px-3 py-1.5 border border-dashed border-gray-600 hover:border-gray-400 text-xs text-muted hover:text-gray-300 rounded transition-colors disabled:opacity-50"
+            className="text-muted w-full rounded border border-dashed border-gray-600 px-3 py-1.5 text-xs transition-colors hover:border-gray-400 hover:text-gray-300 disabled:opacity-50"
           >
             + Add Channel
           </button>
         )}
 
-        <p className="text-xs text-muted">
+        <p className="text-muted text-xs">
           Keys are 128-bit (16 bytes), shown as 32 hex characters. Up to{' '}
           {MESHCORE_CHANNEL_INDEX_MAX + 1} channels (indices 0–{MESHCORE_CHANNEL_INDEX_MAX}). For
           #channels, use &quot;Derive from name&quot; (SHA-256 of the name with a leading #).

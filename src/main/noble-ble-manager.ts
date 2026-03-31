@@ -66,7 +66,7 @@ function meshcoreNusRxScore(char: { properties?: unknown }): number {
 
 function meshcorePickBestChar(candidates: any[], score: (c: any) => number): any {
   if (candidates.length === 0) return null;
-  return candidates.reduce((best, c) => (score(c) > score(best) ? c : best));
+  return candidates.reduce((best, c) => (score(c) > score(best) ? c : best), candidates[0]);
 }
 
 function formatBleDisconnectReason(reason: unknown): string {

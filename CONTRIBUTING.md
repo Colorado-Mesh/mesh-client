@@ -84,10 +84,13 @@ After `pnpm install`, the repo's git hooks are enabled (`core.hooksPath` → `.g
 4. **`pnpm run lint`**
 5. **`pnpm run typecheck`** — TypeScript check for renderer and main/preload.
 6. **`pnpm run check:log-injection`** — Ensures main-process `console.*` calls do not pass raw error variables (`err`, `e`, `error`, `reason`) without `sanitizeLogMessage()` at the call site. See [Log injection (CodeQL js/log-injection)](#log-injection-codeql-jslog-injection) below.
-7. **`pnpm audit`** — Fails the commit if pnpm reports vulnerabilities.
-8. **`actionlint`** — Lints `.github/workflows/*.yml`; must be installed (see above).
-9. **`yamllint`** — Lints all YAML files (`-f github -s`); must be installed (see above).
-10. **`pnpm run test:run`** — Fails the commit if tests fail.
+7. **`pnpm run check:db-migrations`** — Validates SQLite migrations when touching `database.ts`.
+8. **`pnpm run check:ipc-contract`** — Verifies preload/main API alignment.
+9. **`pnpm run check:licenses`** — Shows license summary for dependencies.
+10. **`pnpm audit`** — Fails the commit if pnpm reports vulnerabilities.
+11. **`actionlint`** — Lints `.github/workflows/*.yml`; must be installed (see above).
+12. **`yamllint`** — Lints all YAML files (`-f github -s`); must be installed (see above).
+13. **`pnpm run test:run`** — Fails the commit if tests fail.
 
 To skip the hook in an emergency: `git commit --no-verify`.
 
@@ -111,6 +114,10 @@ Run `pnpm run lint` before pushing. ESLint is configured with:
 - **Import order** — `eslint-plugin-simple-import-sort` on imports and exports; no duplicate imports; newline after imports.
 - **Type-only imports** — `@typescript-eslint/consistent-type-imports` (use `import type { … }` where appropriate).
 - **TypeScript (type-aware)** — `eslint.config.mjs` enables `typescript-eslint` `recommendedTypeChecked`, `stylisticTypeChecked`, and `strictTypeChecked` using both `tsconfig.json` and `tsconfig.main.json`. Renderer TSX adds `eslint-plugin-react` (jsx-runtime), `eslint-plugin-jsx-a11y`, and `react-hooks`. `scripts/**` uses `disableTypeChecked` so one-off scripts are not tied to the full program. A few strict rules are intentionally relaxed to keep signal high without churn (see the file): e.g. `no-unsafe-*` off at the project level, `no-unnecessary-condition` off for DOM/runtime patterns, `no-misused-promises` with `checksVoidReturn.attributes: false` for React event handlers, and `prefer-nullish-coalescing` with `ignorePrimitives` / mixed logical expressions.
+- **Security** — `eslint-plugin-security` detects Node.js security patterns (unsafe file operations, regex issues, etc.).
+- **Vitest** — `eslint-plugin-vitest` enforces test-specific rules (valid assertions, expect usage).
+- **Secrets detection** — `eslint-plugin-no-secrets` flags potential hardcoded secrets/API keys.
+- **Electron** — `eslint-plugin-electron` enforces Electron-specific security rules (contextBridge patterns, IPC safety).
 - **Renderer only** — `react-hooks/exhaustive-deps` is an **error**; fix dependency arrays rather than disabling. **Exception:** If an effect must _not_ re-run when a dependency changes (e.g. intentional one-shot on mount, or avoiding stale closure without widening deps), you may use `eslint-disable-next-line react-hooks/exhaustive-deps` **only** with an inline comment on the same line or immediately above explaining why (what is intentionally omitted and why). Prefer refs or splitting effects first; disable as a last resort.
 - **Ignored by lint** — `scripts/**`, `dist-electron/**`, and `*.config.*` files are excluded; change those configs only when needed.
 

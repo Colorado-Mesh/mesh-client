@@ -130,13 +130,13 @@ export function sanitizeHexDraft(input: string): string {
   if (trimmed.startsWith('#')) {
     const rest = trimmed
       .slice(1)
-      .replace(/[^0-9a-fA-F]/gi, '')
+      .replace(/[^0-9a-f]/gi, '')
       .slice(0, 6)
       .toLowerCase();
     return rest ? `#${rest}` : '#';
   }
   // No #: only accept if every character is a hex digit (prefix # for user)
-  if (!/^[0-9a-fA-F]*$/i.test(trimmed)) return '#';
+  if (!/^[0-9a-f]*$/i.test(trimmed)) return '#';
   const digits = trimmed.slice(0, 6).toLowerCase();
   return digits ? `#${digits}` : '#';
 }

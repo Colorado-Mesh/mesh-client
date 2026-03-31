@@ -94,10 +94,10 @@ export default function MeshcoreContactSettingsSection({
 
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="px-4 py-3 cursor-pointer text-gray-200 font-medium flex items-center justify-between hover:bg-gray-800 rounded-lg transition-colors">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>Contact management</span>
         <svg
-          className="w-4 h-4 text-muted group-open:rotate-180 transition-transform"
+          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -105,8 +105,8 @@ export default function MeshcoreContactSettingsSection({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </summary>
-      <div className="px-4 pb-4 space-y-4">
-        <p className="text-xs text-muted">
+      <div className="space-y-4 px-4 pb-4">
+        <p className="text-muted text-xs">
           Controls how the companion radio adds contacts from heard adverts (MeshCore firmware).
           Auto add selected types only applies when &quot;Auto add selected&quot; is on; overwrite
           and max hops apply in both modes.
@@ -116,7 +116,7 @@ export default function MeshcoreContactSettingsSection({
           disabled={disabled || applying}
         >
           <legend className="px-1 text-sm font-medium text-gray-200">Auto add mode</legend>
-          <div className="flex gap-2 rounded-md p-1.5 hover:bg-secondary-dark/50">
+          <div className="hover:bg-secondary-dark/50 flex gap-2 rounded-md p-1.5">
             <input
               id={`${modeGroupId}-all`}
               type="radio"
@@ -133,12 +133,12 @@ export default function MeshcoreContactSettingsSection({
               className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5"
             >
               <span className="text-sm text-gray-200">Auto add all</span>
-              <span className="text-xs text-muted">
+              <span className="text-muted text-xs">
                 All received adverts can be added to contacts.
               </span>
             </label>
           </div>
-          <div className="flex gap-2 rounded-md p-1.5 hover:bg-secondary-dark/50">
+          <div className="hover:bg-secondary-dark/50 flex gap-2 rounded-md p-1.5">
             <input
               id={`${modeGroupId}-selected`}
               type="radio"
@@ -155,7 +155,7 @@ export default function MeshcoreContactSettingsSection({
               className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5"
             >
               <span className="text-sm text-gray-200">Auto add selected</span>
-              <span className="text-xs text-muted">
+              <span className="text-muted text-xs">
                 Only the contact types you enable below are auto-added.
               </span>
             </label>
@@ -207,7 +207,7 @@ export default function MeshcoreContactSettingsSection({
             <label htmlFor="meshcore-overwrite-oldest" className="text-sm text-gray-200">
               Overwrite oldest
             </label>
-            <p className="text-xs text-muted mt-0.5">
+            <p className="text-muted mt-0.5 text-xs">
               When the contact list is full, replace the oldest non-favourite contact with new ones.
             </p>
           </div>
@@ -228,7 +228,7 @@ export default function MeshcoreContactSettingsSection({
           <label htmlFor="meshcore-autoadd-max-hops" className="text-sm text-gray-200">
             Auto add max hops
           </label>
-          <p className="text-xs text-muted">
+          <p className="text-muted text-xs">
             Only auto-add if the advert path has at most this many hops. Leave blank for no limit.
             (0–{Math.min(63, MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX)}; device may clamp to{' '}
             {MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX}.)
@@ -244,7 +244,7 @@ export default function MeshcoreContactSettingsSection({
               setHopsError(null);
             }}
             disabled={disabled || applying}
-            className="w-full rounded-lg border border-gray-600 bg-secondary-dark px-3 py-2 text-sm text-gray-200 focus:border-brand-green focus:outline-none disabled:opacity-50"
+            className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
             aria-invalid={Boolean(hopsError || hopsParse.error)}
             aria-describedby={
               hopsError || hopsParse.error ? 'meshcore-autoadd-hops-err' : undefined
@@ -257,14 +257,14 @@ export default function MeshcoreContactSettingsSection({
           )}
         </div>
 
-        <div className="border-t border-gray-600/80 pt-4 space-y-3">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+        <div className="space-y-3 border-t border-gray-600/80 pt-4">
+          <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">
             Contacts list (app)
           </p>
           <div className="flex items-center justify-between gap-3">
             <div>
               <span className="text-sm text-gray-200">Show refresh control</span>
-              <p className="text-xs text-muted mt-0.5">
+              <p className="text-muted mt-0.5 text-xs">
                 Show a refresh button on the Contacts tab (desktop substitute for pull-to-refresh).
               </p>
             </div>
@@ -282,7 +282,7 @@ export default function MeshcoreContactSettingsSection({
           <div className="flex items-center justify-between gap-3">
             <div>
               <span className="text-sm text-gray-200">Show public keys</span>
-              <p className="text-xs text-muted mt-0.5">
+              <p className="text-muted mt-0.5 text-xs">
                 Show each contact&apos;s public key under the name.
               </p>
             </div>
@@ -318,14 +318,14 @@ export default function MeshcoreContactSettingsSection({
               maxHopsWire: wire,
             });
           }}
-          className="rounded-lg bg-brand-green px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+          className="bg-brand-green rounded-lg px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
         >
           {applying ? 'Applying…' : 'Apply contact management'}
         </button>
 
         {onClearAllContacts ? (
           <div className="border-t border-red-900/50 pt-4">
-            <p className="text-xs text-muted mb-2">
+            <p className="text-muted mb-2 text-xs">
               Remove every contact from the radio and clear the app&apos;s contact database. This
               cannot be undone.
             </p>

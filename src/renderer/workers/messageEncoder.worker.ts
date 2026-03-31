@@ -18,7 +18,8 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
   if (!ALLOWED_ORIGINS.includes(event.origin)) {
     return;
   }
-  const { data } = event;
+  const data: unknown = event.data;
+  // @typescript-eslint/no-floating-promises: worker onmessage is fire-and-forget
   if (typeof data !== 'object' || data === null || !('type' in data)) {
     return;
   }
@@ -26,7 +27,7 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
     return;
   }
 
-  const cmd = data;
+  const cmd = data as WorkerCommand;
 
   try {
     const decodedPayload: {

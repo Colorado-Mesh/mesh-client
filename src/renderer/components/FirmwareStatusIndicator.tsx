@@ -27,7 +27,7 @@ function IconSpinner() {
 function IconUpToDate() {
   return (
     <svg
-      className="h-3 w-3 shrink-0 text-brand-green"
+      className="text-brand-green h-3 w-3 shrink-0"
       aria-hidden="true"
       viewBox="0 0 24 24"
       fill="none"
@@ -83,7 +83,7 @@ export default function FirmwareStatusIndicator({ phase, latestVersion, onOpenRe
     <button
       type="button"
       onClick={onOpenReleases}
-      className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors cursor-pointer bg-transparent border-0 p-0 font-inherit text-[11px]"
+      className="font-inherit inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[11px] text-amber-400 transition-colors hover:text-amber-300"
       aria-label={
         latestVersion ? `Firmware update available: v${latestVersion}` : 'Firmware update available'
       }

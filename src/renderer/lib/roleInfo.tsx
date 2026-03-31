@@ -177,13 +177,13 @@ export function RoleIcon({ role }: { role: number | undefined }) {
 
 export function RoleDisplay({ role }: { role: number | undefined }) {
   if (role === undefined) {
-    return <span className="text-gray-600 text-xs">-</span>;
+    return <span className="text-xs text-gray-600">-</span>;
   }
   const info = getRoleInfo(role);
   if (info.isBadge && info.badgeClass) {
     return (
       <span
-        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${info.badgeClass}`}
+        className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium ${info.badgeClass}`}
       >
         <RoleIcon role={role} />
         {info.label}

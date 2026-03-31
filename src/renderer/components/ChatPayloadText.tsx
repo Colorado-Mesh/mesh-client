@@ -13,7 +13,7 @@ function highlightCaseInsensitive(text: string, query: string): ReactNode {
     <>
       {parts.map((part, i) =>
         part.toLowerCase() === lowerQuery ? (
-          <mark key={i} className="bg-yellow-500/40 text-yellow-200 rounded px-0.5">
+          <mark key={i} className="rounded bg-yellow-500/40 px-0.5 text-yellow-200">
             {part}
           </mark>
         ) : (
@@ -41,7 +41,7 @@ export function ChatPayloadText({ text, query }: ChatPayloadTextProps) {
         seg.kind === 'mention' ? (
           <span
             key={`m-${i}`}
-            className="inline-flex max-w-full align-baseline rounded-md border border-cyan-500/35 bg-cyan-500/15 px-1 py-px text-cyan-100/95 text-[0.92em] font-medium leading-snug mx-0.5 first:ml-0"
+            className="mx-0.5 inline-flex max-w-full rounded-md border border-cyan-500/35 bg-cyan-500/15 px-1 py-px align-baseline text-[0.92em] leading-snug font-medium text-cyan-100/95 first:ml-0"
             title={seg.label ? `@${seg.label}` : 'Mention'}
             aria-label={seg.label ? `Mention ${seg.label}` : 'Empty mention'}
           >

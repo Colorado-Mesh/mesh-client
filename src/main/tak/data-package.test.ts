@@ -1,3 +1,4 @@
+/* eslint-disable no-secrets/no-secrets */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({

@@ -6,6 +6,7 @@ import {
   ipcMain,
   Menu,
   MenuItem,
+  type NativeImage,
   nativeImage,
   Notification,
   powerMonitor,
@@ -87,6 +88,9 @@ const nobleBleManager = new NobleBleManager();
 
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
+
+/** MAC address format: XX:XX:XX:XX:XX:XX */
+const MAC_ADDRESS_REGEX = /^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/;
 
 let takServerManager: TakServerManager | null = null;
 let takServerManagerLoadPromise: Promise<TakServerManager> | null = null;
@@ -861,6 +865,7 @@ function createWindow() {
     icon: getAppIconPath(),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
+      webviewTag: false,
       contextIsolation: true,
       nodeIntegration: false,
       // Inline misspelling marks and context-menu suggestions (all platforms). macOS app menu
@@ -1125,10 +1130,7 @@ function createWindow() {
   // Bluetooth uses select-bluetooth-device above. Without a handler, Chromium can
   // show a blank overlay for device permission prompts.
   mainWindow.webContents.session.setDevicePermissionHandler((details) => {
-    if (details.deviceType === 'serial') {
-      return true;
-    }
-    return false;
+    return details.deviceType === 'serial';
   });
 
   if (!hasInstalledOsmReferrerHook) {
@@ -1247,9 +1249,14 @@ ipcMain.on('set-tray-unread', (_event, count: unknown) => {
   const hasUnread = n > 0;
   if (_lastTrayUnreadVariant !== hasUnread) {
     _lastTrayUnreadVariant = hasUnread;
-    const img = hasUnread
-      ? (_cachedTrayIconUnread ??= buildTrayIcon(true))
-      : (_cachedTrayIconRead ??= buildTrayIcon(false));
+    let img: NativeImage;
+    if (hasUnread) {
+      _cachedTrayIconUnread ??= buildTrayIcon(true);
+      img = _cachedTrayIconUnread;
+    } else {
+      _cachedTrayIconRead ??= buildTrayIcon(false);
+      img = _cachedTrayIconRead;
+    }
     tray?.setImage(img);
   }
   tray?.setToolTip(hasUnread ? `Mesh-Client (${n} unread)` : 'Mesh-Client');
@@ -1325,7 +1332,7 @@ ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
     throw new Error('bluetooth-unpair: macAddress must be a string');
   }
   // Validate MAC format (XX:XX:XX:XX:XX:XX)
-  if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macAddress)) {
+  if (!MAC_ADDRESS_REGEX.test(macAddress)) {
     throw new Error('bluetooth-unpair: invalid MAC address format');
   }
 
@@ -1409,7 +1416,7 @@ ipcMain.handle('bluetooth-pair', async (_event, macAddress: unknown, pin: unknow
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-pair: macAddress must be a string');
   }
-  if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macAddress)) {
+  if (!MAC_ADDRESS_REGEX.test(macAddress)) {
     throw new Error('bluetooth-pair: invalid MAC address format');
   }
   let normalizedPin: string | undefined;
@@ -1592,7 +1599,7 @@ ipcMain.handle('bluetooth-connect', async (_event, macAddress: unknown) => {
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-connect: macAddress must be a string');
   }
-  if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macAddress)) {
+  if (!MAC_ADDRESS_REGEX.test(macAddress)) {
     throw new Error('bluetooth-connect: invalid MAC address format');
   }
   console.debug('[IPC] bluetooth-connect:', macAddress);
@@ -1630,7 +1637,7 @@ ipcMain.handle('bluetooth-untrust', async (_event, macAddress: unknown) => {
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-untrust: macAddress must be a string');
   }
-  if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macAddress)) {
+  if (!MAC_ADDRESS_REGEX.test(macAddress)) {
     throw new Error('bluetooth-untrust: invalid MAC address format');
   }
   console.debug('[IPC] bluetooth-untrust:', macAddress);
@@ -1669,7 +1676,7 @@ ipcMain.handle('bluetooth-get-info', async (_event, macAddress: unknown) => {
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-get-info: macAddress must be a string');
   }
-  if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macAddress)) {
+  if (!MAC_ADDRESS_REGEX.test(macAddress)) {
     throw new Error('bluetooth-get-info: invalid MAC address format');
   }
   return new Promise<string>((resolve) => {
@@ -2296,7 +2303,7 @@ ipcMain.handle('db:getMessages', (_event, channel?: number, limit = 200) => {
          packet_id AS packetId, status, error, emoji, reply_id AS replyId, to_node,
          mqtt_status AS mqttStatus, received_via AS receivedVia`;
     let rows: any[];
-    if (channel !== undefined && channel !== null) {
+    if (channel != null) {
       const ch = safeNonNegativeInt(channel);
       rows = db
         .prepareOnce(
@@ -2333,22 +2340,22 @@ ipcMain.handle('db:saveNode', (_event, node) => {
         COALESCE((SELECT favorited FROM nodes WHERE node_id = @node_id), 0),
         @source, @num_packets_rx_bad, @num_rx_dupe, @num_packets_rx, @num_packets_tx)
       ON CONFLICT(node_id) DO UPDATE SET
-        long_name = excluded.long_name,
-        short_name = excluded.short_name,
-        hw_model = excluded.hw_model,
-        snr = excluded.snr,
-        rssi = excluded.rssi,
-        battery = excluded.battery,
-        last_heard = excluded.last_heard,
-        latitude = excluded.latitude,
-        longitude = excluded.longitude,
-        role = excluded.role,
-        hops_away = excluded.hops_away,
-        via_mqtt = excluded.via_mqtt,
-        voltage = excluded.voltage,
-        channel_utilization = excluded.channel_utilization,
-        air_util_tx = excluded.air_util_tx,
-        altitude = excluded.altitude,
+        long_name = COALESCE(NULLIF(excluded.long_name, ''), nodes.long_name),
+        short_name = COALESCE(NULLIF(excluded.short_name, ''), nodes.short_name),
+        hw_model = COALESCE(NULLIF(excluded.hw_model, ''), nodes.hw_model),
+        snr = COALESCE(excluded.snr, nodes.snr),
+        rssi = COALESCE(excluded.rssi, nodes.rssi),
+        battery = COALESCE(excluded.battery, nodes.battery),
+        last_heard = CASE WHEN excluded.last_heard IS NOT NULL AND excluded.last_heard > 0 THEN excluded.last_heard ELSE nodes.last_heard END,
+        latitude = CASE WHEN excluded.latitude IS NOT NULL AND excluded.latitude != 0 THEN excluded.latitude ELSE nodes.latitude END,
+        longitude = CASE WHEN excluded.longitude IS NOT NULL AND excluded.longitude != 0 THEN excluded.longitude ELSE nodes.longitude END,
+        role = COALESCE(excluded.role, nodes.role),
+        hops_away = COALESCE(excluded.hops_away, nodes.hops_away),
+        via_mqtt = COALESCE(excluded.via_mqtt, nodes.via_mqtt),
+        voltage = COALESCE(excluded.voltage, nodes.voltage),
+        channel_utilization = COALESCE(excluded.channel_utilization, nodes.channel_utilization),
+        air_util_tx = COALESCE(excluded.air_util_tx, nodes.air_util_tx),
+        altitude = COALESCE(excluded.altitude, nodes.altitude),
         source = CASE WHEN excluded.source = 'rf' THEN 'rf' ELSE COALESCE((SELECT source FROM nodes WHERE node_id = excluded.node_id), 'mqtt') END,
         num_packets_rx_bad = COALESCE(excluded.num_packets_rx_bad, num_packets_rx_bad),
         num_rx_dupe = COALESCE(excluded.num_rx_dupe, num_rx_dupe),
@@ -2728,8 +2735,7 @@ ipcMain.handle('db:import', async () => {
       properties: ['openFile'],
     });
     if (!result.canceled && result.filePaths.length > 0) {
-      const summary = mergeDatabase(result.filePaths[0]);
-      return summary;
+      return mergeDatabase(result.filePaths[0]);
     }
     return null;
   } catch (err) {
@@ -2837,7 +2843,7 @@ ipcMain.handle('db:getMeshcoreMessages', (_event, channelIdx?: number, limit = 2
     // outgoing messages use Date.now() while RF inbound uses the radio's clock; if the device
     // time lags, ORDER BY timestamp DESC kept "recent" sends but dropped inbound rows from the
     // LIMIT window. Reversed DESC→ASC yields oldest-first within the N most recently stored rows.
-    if (channelIdx !== undefined && channelIdx !== null) {
+    if (channelIdx != null) {
       const ch = typeof channelIdx === 'number' ? Math.trunc(channelIdx) : 0;
       const rows = db
         .prepareOnce(
@@ -2955,17 +2961,17 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
           'VALUES (@node_id, @public_key, @adv_name, @contact_type, @last_advert, @adv_lat, @adv_lon, @last_snr, @last_rssi, 0, @nickname, @contact_flags, @hops_away) ' +
           'ON CONFLICT(node_id) DO UPDATE SET ' +
           'public_key = excluded.public_key, ' +
-          'adv_name = excluded.adv_name, ' +
-          'contact_type = excluded.contact_type, ' +
-          'last_advert = excluded.last_advert, ' +
-          'adv_lat = excluded.adv_lat, ' +
-          'adv_lon = excluded.adv_lon, ' +
-          'last_snr = excluded.last_snr, ' +
-          'last_rssi = excluded.last_rssi, ' +
+          "adv_name = COALESCE(NULLIF(excluded.adv_name, ''), meshcore_contacts.adv_name), " +
+          'contact_type = COALESCE(excluded.contact_type, meshcore_contacts.contact_type), ' +
+          'last_advert = CASE WHEN excluded.last_advert IS NOT NULL AND excluded.last_advert > 0 THEN excluded.last_advert ELSE meshcore_contacts.last_advert END, ' +
+          'adv_lat = CASE WHEN excluded.adv_lat IS NOT NULL AND excluded.adv_lat != 0 THEN excluded.adv_lat ELSE meshcore_contacts.adv_lat END, ' +
+          'adv_lon = CASE WHEN excluded.adv_lon IS NOT NULL AND excluded.adv_lon != 0 THEN excluded.adv_lon ELSE meshcore_contacts.adv_lon END, ' +
+          'last_snr = COALESCE(excluded.last_snr, meshcore_contacts.last_snr), ' +
+          'last_rssi = COALESCE(excluded.last_rssi, meshcore_contacts.last_rssi), ' +
           'favorited = meshcore_contacts.favorited, ' +
           'nickname = COALESCE(excluded.nickname, meshcore_contacts.nickname), ' +
-          'contact_flags = excluded.contact_flags, ' +
-          'hops_away = excluded.hops_away',
+          'contact_flags = COALESCE(excluded.contact_flags, meshcore_contacts.contact_flags), ' +
+          'hops_away = COALESCE(excluded.hops_away, meshcore_contacts.hops_away)',
       )
       .run({
         node_id: Number(c.node_id),
