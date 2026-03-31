@@ -562,6 +562,13 @@ interface MeshCoreConnection {
   reboot(): Promise<void>;
   getBatteryVoltage(): Promise<{ batteryMilliVolts: number }>;
   syncDeviceTime(): Promise<void>;
+  getDeviceTime(): Promise<{ time: number }>;
+  setDeviceTime(epochSecs: number): Promise<void>;
+  deviceQuery(appTargetVer: number): Promise<{
+    firmwareVer: number;
+    firmware_build_date: string;
+    manufacturerModel: string;
+  }>;
   tracePath(
     pubKeys: Uint8Array[],
     extraTimeoutMillis?: number,
@@ -616,11 +623,31 @@ interface MeshCoreConnection {
   setAutoAddContacts(): Promise<void>;
   setManualAddContacts(): Promise<void>;
   sendToRadioFrame(data: Uint8Array): Promise<void>;
-  deviceQuery(appTargetVer: number): Promise<{
-    firmwareVer: number;
-    firmware_build_date: string;
-    manufacturerModel: string;
-  }>;
+  // Contact import/export
+  importContact(advertBytes: Uint8Array): Promise<void>;
+  exportContact(pubKey?: Uint8Array | null): Promise<Uint8Array>;
+  shareContact(pubKey: Uint8Array): Promise<void>;
+  // Contact path management
+  resetPath(pubKey: Uint8Array): Promise<void>;
+  // Statistics
+  getStats(statsType: number): Promise<Record<string, unknown>>;
+  getStatsCore(): Promise<Record<string, unknown>>;
+  getStatsRadio(): Promise<Record<string, unknown>>;
+  getStatsPackets(): Promise<Record<string, unknown>>;
+  // Channel data
+  sendChannelData(
+    channelIdx: number,
+    pathLen: number,
+    path: Uint8Array,
+    dataType: number,
+    payload: Uint8Array,
+  ): Promise<void>;
+  // Cryptographic operations
+  sign(data: Uint8Array): Promise<Uint8Array>;
+  exportPrivateKey(): Promise<Uint8Array>;
+  importPrivateKey(privateKey: Uint8Array): Promise<void>;
+  // Waiting messages
+  syncNextMessage(): Promise<unknown>;
 }
 
 export interface MeshCoreContactRaw {
@@ -632,6 +659,7 @@ export interface MeshCoreContactRaw {
   advLon: number;
   flags: number;
   outPathLen?: number;
+  outPath?: Uint8Array;
 }
 
 interface MeshCoreChannelRaw {
@@ -4102,6 +4130,255 @@ export function useMeshCore() {
     [addMessage, selfInfo?.name],
   );
 
+  // ─── MeshCore Device Time ────────────────────────────────────────
+  const getDeviceTime = useCallback(async (): Promise<number | null> => {
+    const conn = connRef.current;
+    if (!conn) return null;
+    try {
+      const result = await conn.getDeviceTime();
+      return result?.time ?? null;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] getDeviceTime error', e);
+      return null;
+    }
+  }, []);
+
+  const syncDeviceTime = useCallback(async () => {
+    const conn = connRef.current;
+    if (!conn) return;
+    try {
+      await conn.setDeviceTime(Math.floor(Date.now() / 1000));
+      console.debug('[useMeshCore] syncDeviceTime succeeded');
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] syncDeviceTime error', e);
+      throw e;
+    }
+  }, []);
+
+  // ─── MeshCore Device Query ─────────────────────────────────────
+  const getDeviceInfo = useCallback(
+    async (appTargetVer?: number): Promise<Record<string, unknown> | null> => {
+      const conn = connRef.current;
+      if (!conn) return null;
+      try {
+        const result = await conn.deviceQuery(appTargetVer ?? 0);
+        return result as Record<string, unknown>;
+      } catch (e: unknown) {
+        console.warn('[useMeshCore] getDeviceInfo error', e);
+        return null;
+      }
+    },
+    [],
+  );
+
+  // ─── MeshCore Contact Import/Export ───────────────────────────
+  const importContact = useCallback(
+    async (advertBytes: Uint8Array): Promise<boolean> => {
+      const conn = connRef.current;
+      if (!conn) return false;
+      try {
+        await conn.importContact(advertBytes);
+        console.debug('[useMeshCore] importContact succeeded');
+        await refreshContacts();
+        return true;
+      } catch (e: unknown) {
+        console.warn('[useMeshCore] importContact error', e);
+        return false;
+      }
+    },
+    [refreshContacts],
+  );
+
+  const exportContact = useCallback(async (nodeId: number): Promise<Uint8Array | null> => {
+    const conn = connRef.current;
+    if (!conn) return null;
+    const pubKey = pubKeyMapRef.current.get(nodeId);
+    if (!pubKey) {
+      console.warn('[useMeshCore] exportContact: no public key for node', nodeId);
+      return null;
+    }
+    try {
+      const result = await conn.exportContact(pubKey);
+      return result;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] exportContact error', e);
+      return null;
+    }
+  }, []);
+
+  const shareContact = useCallback(async (nodeId: number): Promise<boolean> => {
+    const conn = connRef.current;
+    if (!conn) return false;
+    const pubKey = pubKeyMapRef.current.get(nodeId);
+    if (!pubKey) {
+      console.warn('[useMeshCore] shareContact: no public key for node', nodeId);
+      return false;
+    }
+    try {
+      await conn.shareContact(pubKey);
+      console.debug('[useMeshCore] shareContact succeeded');
+      return true;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] shareContact error', e);
+      return false;
+    }
+  }, []);
+
+  // ─── MeshCore Contact Path Management ──────────────────────────
+  // Note: setContactPath requires full contact object from meshcore.js.
+  // Use resetContactPath to clear path, or implement setContactPath with contact data.
+  const setContactPath = useCallback(async (nodeId: number, path: number[]): Promise<boolean> => {
+    const conn = connRef.current;
+    if (!conn) return false;
+    const pubKey = pubKeyMapRef.current.get(nodeId);
+    if (!pubKey) {
+      console.warn('[useMeshCore] setContactPath: no public key for node', nodeId);
+      return false;
+    }
+    // Reset the path first, then if we had full contact data we would call setContactPath
+    // For now, we reset and log a warning that the full path cannot be set without contact data
+    console.debug(
+      '[useMeshCore] setContactPath: resetting path (full path setting requires contact data)',
+      path,
+    );
+    try {
+      await conn.resetPath(pubKey);
+      return true;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] setContactPath error', e);
+      return false;
+    }
+  }, []);
+
+  const resetContactPath = useCallback(async (nodeId: number): Promise<boolean> => {
+    const conn = connRef.current;
+    if (!conn) return false;
+    const pubKey = pubKeyMapRef.current.get(nodeId);
+    if (!pubKey) {
+      console.warn('[useMeshCore] resetContactPath: no public key for node', nodeId);
+      return false;
+    }
+    try {
+      await conn.resetPath(pubKey);
+      console.debug('[useMeshCore] resetContactPath succeeded');
+      return true;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] resetContactPath error', e);
+      return false;
+    }
+  }, []);
+
+  // ─── MeshCore Statistics ───────────────────────────────────────
+  const getRadioStats = useCallback(async (): Promise<Record<string, unknown> | null> => {
+    const conn = connRef.current;
+    if (!conn) return null;
+    try {
+      const result = await conn.getStatsRadio();
+      return result;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] getRadioStats error', e);
+      return null;
+    }
+  }, []);
+
+  const getPacketStats = useCallback(async (): Promise<Record<string, unknown> | null> => {
+    const conn = connRef.current;
+    if (!conn) return null;
+    try {
+      const result = await conn.getStatsPackets();
+      return result;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] getPacketStats error', e);
+      return null;
+    }
+  }, []);
+
+  // ─── MeshCore Channel Data ──────────────────────────────────────
+  const sendChannelData = useCallback(
+    async (
+      channelIdx: number,
+      pathLen: number,
+      path: Uint8Array,
+      dataType: number,
+      payload: Uint8Array,
+    ): Promise<boolean> => {
+      const conn = connRef.current;
+      if (!conn) return false;
+      try {
+        await conn.sendChannelData(channelIdx, pathLen, path, dataType, payload);
+        console.debug('[useMeshCore] sendChannelData succeeded');
+        return true;
+      } catch (e: unknown) {
+        console.warn('[useMeshCore] sendChannelData error', e);
+        return false;
+      }
+    },
+    [],
+  );
+
+  // ─── MeshCore Cryptographic Operations ───────────────────────────
+  const signData = useCallback(async (data: Uint8Array): Promise<Uint8Array | null> => {
+    const conn = connRef.current;
+    if (!conn) return null;
+    try {
+      const signature = await conn.sign(data);
+      return signature;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] signData error', e);
+      return null;
+    }
+  }, []);
+
+  const exportPrivateKey = useCallback(async (): Promise<Uint8Array | null> => {
+    const conn = connRef.current;
+    if (!conn) return null;
+    try {
+      const key = await conn.exportPrivateKey();
+      return key;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] exportPrivateKey error', e);
+      return null;
+    }
+  }, []);
+
+  const importPrivateKey = useCallback(async (privateKey: Uint8Array): Promise<boolean> => {
+    const conn = connRef.current;
+    if (!conn) return false;
+    try {
+      await conn.importPrivateKey(privateKey);
+      console.debug('[useMeshCore] importPrivateKey succeeded');
+      return true;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] importPrivateKey error', e);
+      return false;
+    }
+  }, []);
+
+  // ─── MeshCore Waiting Messages ───────────────────────────────────
+  const getWaitingMessages = useCallback(async (): Promise<unknown[] | null> => {
+    const conn = connRef.current;
+    if (!conn) return null;
+    try {
+      const messages = await conn.getWaitingMessages();
+      return messages;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] getWaitingMessages error', e);
+      return null;
+    }
+  }, []);
+
+  const syncNextMessage = useCallback(async (): Promise<unknown> => {
+    const conn = connRef.current;
+    if (!conn) return null;
+    try {
+      const msg = await conn.syncNextMessage();
+      return msg;
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] syncNextMessage error', e);
+      return null;
+    }
+  }, []);
+
   // No-op stubs to satisfy the same interface shape used in App.tsx
   const noopAsync = useCallback(async () => {}, []);
   const noopVoid = useCallback(() => {}, []);
@@ -4291,6 +4568,23 @@ export function useMeshCore() {
       applyMeshcoreContactAutoAdd,
       refreshMeshcoreAutoaddFromDevice,
       applyMeshcoreTelemetryPrivacyPolicy,
+      // MeshCore new methods
+      getDeviceTime,
+      syncDeviceTime,
+      getDeviceInfo,
+      importContact,
+      exportContact,
+      shareContact,
+      setContactPath,
+      resetContactPath,
+      getRadioStats,
+      getPacketStats,
+      sendChannelData,
+      signData,
+      exportPrivateKey,
+      importPrivateKey,
+      getWaitingMessages,
+      syncNextMessage,
     }),
     [
       state,
@@ -4355,6 +4649,23 @@ export function useMeshCore() {
       applyMeshcoreContactAutoAdd,
       refreshMeshcoreAutoaddFromDevice,
       applyMeshcoreTelemetryPrivacyPolicy,
+      // MeshCore new methods
+      getDeviceTime,
+      syncDeviceTime,
+      getDeviceInfo,
+      importContact,
+      exportContact,
+      shareContact,
+      setContactPath,
+      resetContactPath,
+      getRadioStats,
+      getPacketStats,
+      sendChannelData,
+      signData,
+      exportPrivateKey,
+      importPrivateKey,
+      getWaitingMessages,
+      syncNextMessage,
     ],
   );
 }

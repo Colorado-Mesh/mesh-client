@@ -17,6 +17,10 @@ interface Props {
   onCommit: () => Promise<void>;
   isConnected: boolean;
   securityConfig: SecurityConfig | null;
+  protocol?: 'meshtastic' | 'meshcore';
+  onSignData?: (data: Uint8Array) => Promise<Uint8Array | null>;
+  onExportPrivateKey?: () => Promise<Uint8Array | null>;
+  onImportPrivateKey?: (privateKey: Uint8Array) => Promise<boolean>;
 }
 
 const KEY_BACKUP_STORAGE_KEY = 'mesh-client:key-backup';
@@ -161,6 +165,10 @@ export default function SecurityPanel({
   onCommit,
   isConnected,
   securityConfig,
+  protocol,
+  onSignData,
+  onExportPrivateKey,
+  onImportPrivateKey,
 }: Props) {
   const { addToast } = useToast();
   const disabled = !isConnected;
@@ -188,6 +196,15 @@ export default function SecurityPanel({
   const [backupAvailable, setBackupAvailable] = useState(false);
   const [safeStorageAvailable, setSafeStorageAvailable] = useState<boolean | null>(null);
   const [backupInProgress, setBackupInProgress] = useState(false);
+
+  // ── MeshCore crypto state
+  const [signDataInput, setSignDataInput] = useState('');
+  const [signDataResult, setSignDataResult] = useState<string | null>(null);
+  const [signInProgress, setSignInProgress] = useState(false);
+  const [exportedPrivateKey, setExportedPrivateKey] = useState<string | null>(null);
+  const [exportInProgress, setExportInProgress] = useState(false);
+  const [importKeyInput, setImportKeyInput] = useState('');
+  const [importInProgress, setImportInProgress] = useState(false);
 
   // Sync local state from device config when it arrives
   useEffect(() => {
@@ -327,6 +344,69 @@ export default function SecurityPanel({
       setBackupInProgress(false);
     }
   }, [safeStorageAvailable, applyConfig, addToast]);
+
+  // ── MeshCore: Sign data
+  const handleSignData = useCallback(async () => {
+    if (!onSignData || !signDataInput.trim()) return;
+    setSignInProgress(true);
+    setSignDataResult(null);
+    try {
+      const dataBytes = new TextEncoder().encode(signDataInput);
+      const signature = await onSignData(dataBytes);
+      if (signature) {
+        setSignDataResult(bytesToBase64(signature));
+        addToast('Data signed successfully.', 'success');
+      } else {
+        addToast('Sign operation returned no result.', 'error');
+      }
+    } catch (err) {
+      console.warn('[SecurityPanel] handleSignData', err);
+      addToast(`Sign failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+    } finally {
+      setSignInProgress(false);
+    }
+  }, [onSignData, signDataInput, addToast]);
+
+  // ── MeshCore: Export private key
+  const handleExportPrivateKey = useCallback(async () => {
+    if (!onExportPrivateKey) return;
+    setExportInProgress(true);
+    try {
+      const key = await onExportPrivateKey();
+      if (key) {
+        setExportedPrivateKey(bytesToBase64(key));
+        addToast('Private key exported.', 'success');
+      } else {
+        addToast('Export returned no key.', 'error');
+      }
+    } catch (err) {
+      console.warn('[SecurityPanel] handleExportPrivateKey', err);
+      addToast(`Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+    } finally {
+      setExportInProgress(false);
+    }
+  }, [onExportPrivateKey, addToast]);
+
+  // ── MeshCore: Import private key
+  const handleImportPrivateKey = useCallback(async () => {
+    if (!onImportPrivateKey || !importKeyInput.trim()) return;
+    setImportInProgress(true);
+    try {
+      const keyBytes = base64ToBytes(importKeyInput.trim());
+      const success = await onImportPrivateKey(keyBytes);
+      if (success) {
+        addToast('Private key imported. Restart may be required.', 'success');
+        setImportKeyInput('');
+      } else {
+        addToast('Import failed.', 'error');
+      }
+    } catch (err) {
+      console.warn('[SecurityPanel] handleImportPrivateKey', err);
+      addToast(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+    } finally {
+      setImportInProgress(false);
+    }
+  }, [onImportPrivateKey, importKeyInput, addToast]);
 
   const publicKeyB64 = securityConfig ? bytesToBase64(securityConfig.publicKey) : '';
   const privateKeyB64 = securityConfig ? bytesToBase64(securityConfig.privateKey) : '';
@@ -547,6 +627,111 @@ export default function SecurityPanel({
           </>
         )}
       </section>
+
+      {/* ── MeshCore Crypto Operations ───────────────────────────────── */}
+      {protocol === 'meshcore' && (onSignData || onExportPrivateKey || onImportPrivateKey) && (
+        <section className="space-y-4">
+          <SectionHeader title="MeshCore Cryptography" />
+          <p className="text-muted text-xs">
+            Sign data with your device key, or export/import your private key for backup.
+          </p>
+
+          {/* Sign Data */}
+          {onSignData && (
+            <div className="space-y-2">
+              <label htmlFor="meshcore-sign-input" className="text-muted text-sm">
+                Sign Data
+              </label>
+              <textarea
+                id="meshcore-sign-input"
+                value={signDataInput}
+                onChange={(e) => {
+                  setSignDataInput(e.target.value);
+                }}
+                placeholder="Enter text to sign..."
+                disabled={disabled || signInProgress}
+                className="bg-secondary-dark focus:ring-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:ring-1 focus:outline-none disabled:opacity-50"
+                rows={2}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  void handleSignData();
+                }}
+                disabled={disabled || signInProgress || !signDataInput.trim()}
+                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+              >
+                {signInProgress ? 'Signing...' : 'Sign Data'}
+              </button>
+              {signDataResult && (
+                <div className="space-y-1">
+                  <span className="text-muted text-xs">Signature (Base64)</span>
+                  <div className="bg-secondary-dark rounded border border-gray-600 p-2 font-mono text-xs break-all text-gray-200">
+                    {signDataResult}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Export Private Key */}
+          {onExportPrivateKey && (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void handleExportPrivateKey();
+                }}
+                disabled={disabled || exportInProgress}
+                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+              >
+                {exportInProgress ? 'Exporting...' : 'Export Private Key'}
+              </button>
+              {exportedPrivateKey && (
+                <div className="space-y-1">
+                  <span className="text-muted text-xs">Private Key (Base64)</span>
+                  <div className="bg-secondary-dark rounded border border-gray-600 p-2 font-mono text-xs break-all text-gray-200">
+                    {exportedPrivateKey}
+                  </div>
+                  <p className="text-xs text-yellow-400">
+                    Keep this key secure. Anyone with access can decrypt your private messages.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Import Private Key */}
+          {onImportPrivateKey && (
+            <div className="space-y-2">
+              <label htmlFor="meshcore-import-key" className="text-muted text-sm">
+                Import Private Key
+              </label>
+              <textarea
+                id="meshcore-import-key"
+                value={importKeyInput}
+                onChange={(e) => {
+                  setImportKeyInput(e.target.value);
+                }}
+                placeholder="Paste base64-encoded private key..."
+                disabled={disabled || importInProgress}
+                className="bg-secondary-dark focus:ring-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:ring-1 focus:outline-none disabled:opacity-50"
+                rows={2}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  void handleImportPrivateKey();
+                }}
+                disabled={disabled || importInProgress || !importKeyInput.trim()}
+                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+              >
+                {importInProgress ? 'Importing...' : 'Import Private Key'}
+              </button>
+            </div>
+          )}
+        </section>
+      )}
 
       {pendingRegenerate && (
         <ConfirmModal

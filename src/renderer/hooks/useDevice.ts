@@ -205,6 +205,50 @@ export function useDevice() {
     adminChannelEnabled: boolean;
   } | null>(null);
 
+  // ─── Additional packet type state ─────────────────────────────────
+  const [remoteHardwareMessages, setRemoteHardwareMessages] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+  const [audioMessages, setAudioMessages] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+  const [detectionSensorEvents, setDetectionSensorEvents] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+  const [pingResponses, setPingResponses] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }>
+  >(new Map());
+  const [ipTunnelMessages, setIpTunnelMessages] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+  const [paxCounterData, setPaxCounterData] = useState<
+    Map<number, { from: number; count: number; timestamp: number }>
+  >(new Map());
+  const [serialMessages, setSerialMessages] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+  const [storeForwardMessages, setStoreForwardMessages] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+  const [rangeTestPackets, setRangeTestPackets] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+  const [zpsMessages, setZpsMessages] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+  const [simulatorPackets, setSimulatorPackets] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+  const [atakMessages, setAtakMessages] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+  const [mapReports, setMapReports] = useState<
+    Map<number, { from: number; data: unknown; timestamp: number }>
+  >(new Map());
+  const [privateMessages, setPrivateMessages] = useState<
+    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+  >(new Map());
+
   // Keep nodesRef in sync with state
   const updateNodes = useCallback(
     (updater: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => {
@@ -1684,6 +1728,245 @@ export function useDevice() {
       });
       unsubscribesRef.current.push(unsubModuleConfig);
 
+      // ─── Remote Hardware packets ──────────────────────────────────
+      const unsubRemoteHardware = device.events.onRemoteHardwarePacket.subscribe((packet) => {
+        touchLastData();
+        const data = packet.data as { raw?: Uint8Array };
+        setRemoteHardwareMessages((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-10),
+            { from, data: data.raw ?? new Uint8Array(), timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubRemoteHardware);
+
+      // ─── Audio packets ─────────────────────────────────────────────
+      const unsubAudio = device.events.onAudioPacket.subscribe((packet) => {
+        touchLastData();
+        setAudioMessages((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-50),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubAudio);
+
+      // ─── Detection Sensor packets ─────────────────────────────────
+      const unsubDetectionSensor = device.events.onDetectionSensorPacket.subscribe((packet) => {
+        touchLastData();
+        setDetectionSensorEvents((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-100),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubDetectionSensor);
+
+      // ─── Ping/Reply packets ───────────────────────────────────────
+      const unsubPing = device.events.onPingPacket.subscribe((packet) => {
+        touchLastData();
+        setPingResponses((prev) => {
+          const updated = new Map(prev);
+          updated.set(packet.from, {
+            from: packet.from,
+            data: packet.data,
+            timestamp: Date.now(),
+          });
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubPing);
+
+      // ─── IP Tunnel packets ─────────────────────────────────────────
+      const unsubIpTunnel = device.events.onIpTunnelPacket.subscribe((packet) => {
+        touchLastData();
+        setIpTunnelMessages((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-100),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubIpTunnel);
+
+      // ─── PaxCounter packets ───────────────────────────────────────
+      const unsubPaxcounter = device.events.onPaxcounterPacket.subscribe((packet) => {
+        touchLastData();
+        const pax = packet.data as { count?: number };
+        setPaxCounterData((prev) => {
+          const updated = new Map(prev);
+          updated.set(packet.from, {
+            from: packet.from,
+            count: pax.count ?? 0,
+            timestamp: Date.now(),
+          });
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubPaxcounter);
+
+      // ─── Serial packets ───────────────────────────────────────────
+      const unsubSerial = device.events.onSerialPacket.subscribe((packet) => {
+        touchLastData();
+        setSerialMessages((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-100),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubSerial);
+
+      // ─── Store & Forward packets ───────────────────────────────────
+      const unsubStoreForward = device.events.onStoreForwardPacket.subscribe((packet) => {
+        touchLastData();
+        setStoreForwardMessages((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-50),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubStoreForward);
+
+      // ─── Range Test packets ────────────────────────────────────────
+      const unsubRangeTest = device.events.onRangeTestPacket.subscribe((packet) => {
+        touchLastData();
+        setRangeTestPackets((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-100),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubRangeTest);
+
+      // ─── ZPS packets ───────────────────────────────────────────────
+      const unsubZps = device.events.onZpsPacket.subscribe((packet) => {
+        touchLastData();
+        setZpsMessages((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-50),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubZps);
+
+      // ─── Simulator packets ────────────────────────────────────────
+      const unsubSimulator = device.events.onSimulatorPacket.subscribe((packet) => {
+        touchLastData();
+        setSimulatorPackets((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-50),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubSimulator);
+
+      // ─── ATAK Plugin packets ───────────────────────────────────────
+      const unsubAtakPlugin = device.events.onAtakPluginPacket.subscribe((packet) => {
+        touchLastData();
+        setAtakMessages((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-100),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubAtakPlugin);
+
+      // ─── Map Report packets ────────────────────────────────────────
+      const unsubMapReport = device.events.onMapReportPacket.subscribe((packet) => {
+        touchLastData();
+        setMapReports((prev) => {
+          const updated = new Map(prev);
+          updated.set(packet.from, {
+            from: packet.from,
+            data: packet.data,
+            timestamp: Date.now(),
+          });
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubMapReport);
+
+      // ─── Private App packets ───────────────────────────────────────
+      const unsubPrivate = device.events.onPrivatePacket.subscribe((packet) => {
+        touchLastData();
+        setPrivateMessages((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-50),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubPrivate);
+
+      // ─── ATAK Forwarder packets ────────────────────────────────────
+      const unsubAtakForwarder = device.events.onAtakForwarderPacket.subscribe((packet) => {
+        touchLastData();
+        setAtakMessages((prev) => {
+          const updated = new Map(prev);
+          const from = packet.from;
+          const existing = updated.get(from) ?? [];
+          updated.set(from, [
+            ...existing.slice(-100),
+            { from, data: packet.data, timestamp: Date.now() },
+          ]);
+          return updated;
+        });
+      });
+      unsubscribesRef.current.push(unsubAtakForwarder);
+
       // ─── Noble BLE disconnect detection ────────────────────────
       if (type === 'ble') {
         const unsubNobleDisconnect = window.electronAPI.onNobleBleDisconnected((sessionId) => {
@@ -2566,6 +2849,21 @@ export function useDevice() {
     ringtone,
     setRingtone,
     securityConfig,
+    // ─── Additional packet type state ───────────────────────────────
+    remoteHardwareMessages,
+    audioMessages,
+    detectionSensorEvents,
+    pingResponses,
+    ipTunnelMessages,
+    paxCounterData,
+    serialMessages,
+    storeForwardMessages,
+    rangeTestPackets,
+    zpsMessages,
+    simulatorPackets,
+    atakMessages,
+    mapReports,
+    privateMessages,
   };
 }
 

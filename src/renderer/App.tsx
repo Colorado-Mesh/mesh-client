@@ -1466,6 +1466,14 @@ export default function App() {
                           onCommit={device.commitConfig}
                           isConnected={isOperational}
                           securityConfig={device.securityConfig}
+                          protocol={protocol}
+                          onSignData={protocol === 'meshcore' ? meshcoreDevice.signData : undefined}
+                          onExportPrivateKey={
+                            protocol === 'meshcore' ? meshcoreDevice.exportPrivateKey : undefined
+                          }
+                          onImportPrivateKey={
+                            protocol === 'meshcore' ? meshcoreDevice.importPrivateKey : undefined
+                          }
                         />
                       </Suspense>
                     </ErrorBoundary>

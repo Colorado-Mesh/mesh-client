@@ -61,6 +61,30 @@ export interface ProtocolCapabilities {
   hasSecurityPanel: boolean;
   /** Whether the TAK server panel is available (Meshtastic only) */
   hasTakPanel: boolean;
+  /** Whether Remote Hardware (GPIO) control is available */
+  hasRemoteHardware: boolean;
+  /** Whether Serial Bridge is available */
+  hasSerial: boolean;
+  /** Whether Range Test packets are available */
+  hasRangeTest: boolean;
+  /** Whether Pax Counter (people counter) is available */
+  hasPaxCounter: boolean;
+  /** Whether Audio packets are available */
+  hasAudio: boolean;
+  /** Whether IP Tunnel is available */
+  hasIpTunnel: boolean;
+  /** Whether Detection Sensor packets are available */
+  hasDetectionSensor: boolean;
+  /** Whether Store & Forward is available */
+  hasStoreForward: boolean;
+  /** Whether ATAK Plugin integration is available */
+  hasAtakPlugin: boolean;
+  /** Whether Map Report packets are available */
+  hasMapReport: boolean;
+  /** Whether contact import/export is available (MeshCore) */
+  hasContactImportExport: boolean;
+  /** Whether cryptographic signing/key export is available (MeshCore) */
+  hasCryptoOperations: boolean;
   /** Node stale threshold in milliseconds (for node status UI) */
   nodeStaleThresholdMs: number;
   /** Node offline threshold in milliseconds (for node status UI) */
@@ -97,6 +121,18 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasFullPositionConfig: true,
   hasSecurityPanel: true,
   hasTakPanel: true,
+  hasRemoteHardware: true,
+  hasSerial: true,
+  hasRangeTest: true,
+  hasPaxCounter: true,
+  hasAudio: true,
+  hasIpTunnel: true,
+  hasDetectionSensor: true,
+  hasStoreForward: true,
+  hasAtakPlugin: true,
+  hasMapReport: true,
+  hasContactImportExport: false,
+  hasCryptoOperations: true,
   nodeStaleThresholdMs: 3 * 60 * 60 * 1000, // 3 hours
   nodeOfflineThresholdMs: 24 * 60 * 60 * 1000, // 24 hours
 };
@@ -132,6 +168,18 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasFullPositionConfig: false,
   hasSecurityPanel: false,
   hasTakPanel: false,
+  hasRemoteHardware: false,
+  hasSerial: false,
+  hasRangeTest: false,
+  hasPaxCounter: false,
+  hasAudio: false,
+  hasIpTunnel: false,
+  hasDetectionSensor: false,
+  hasStoreForward: false,
+  hasAtakPlugin: false,
+  hasMapReport: false,
+  hasContactImportExport: true,
+  hasCryptoOperations: true,
   nodeStaleThresholdMs: 24 * 60 * 60 * 1000, // 24 hours
   nodeOfflineThresholdMs: 48 * 60 * 60 * 1000, // 48 hours
 };
