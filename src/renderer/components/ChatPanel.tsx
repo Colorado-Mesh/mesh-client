@@ -200,6 +200,8 @@ export interface ChatPanelProps {
   onGlobalSearch?: () => void;
   /** When `meshcore`, show full names, hide redundant RF-only transport badge. */
   protocol?: MeshProtocol;
+  /** Import contact from advert bytes (MeshCore only) */
+  onImportContact?: (data: Uint8Array) => Promise<boolean>;
 }
 
 function ChatPanel({
@@ -219,6 +221,7 @@ function ChatPanel({
   isActive = true,
   onGlobalSearch,
   protocol = 'meshtastic',
+  onImportContact,
 }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [channel, setChannel] = useState(() => (channels.length > 0 ? channels[0].index : 0));
@@ -228,7 +231,6 @@ function ChatPanel({
     }
   }, [channels, channel]);
   const [sending, setSending] = useState(false);
-  /** Scoped to `viewKey` so a send error in one DM does not show on other tabs. */
   const [chatActionError, setChatActionError] = useState<{
     message: string;
     viewKey: string;
@@ -239,10 +241,12 @@ function ChatPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Two-section UI state — load DM tabs from localStorage for restart persistence
   const [viewMode, setViewMode] = useState<'channels' | 'dm'>('channels');
@@ -645,6 +649,31 @@ function ChatPanel({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       void handleSend();
+    }
+  };
+
+  const handleImportContact = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onImportContact) return;
+    try {
+      const buffer = await file.arrayBuffer();
+      const data = new Uint8Array(buffer);
+      const success = await onImportContact(data);
+      if (success) {
+        setChatActionError({ message: 'Contact imported successfully', viewKey });
+      } else {
+        setChatActionError({ message: 'Failed to import contact', viewKey });
+      }
+    } catch (err) {
+      console.error('[ChatPanel] Import contact failed:', err);
+      setChatActionError({
+        message: err instanceof Error ? err.message : 'Import failed',
+        viewKey,
+      });
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -1462,6 +1491,45 @@ function ChatPanel({
       {/* Character count — only show near limit */}
       {input.length > 180 && (
         <div className="text-muted mt-1 text-right text-xs">{input.length}/228</div>
+      )}
+
+      {/* Advanced section for MeshCore */}
+      {protocol === 'meshcore' && onImportContact && (
+        <div className="mt-2 space-y-2">
+          <button
+            onClick={() => {
+              setShowAdvanced((prev) => !prev);
+            }}
+            className="text-muted text-xs hover:text-gray-300"
+          >
+            {showAdvanced ? '▼' : '▶'} Advanced
+          </button>
+          {showAdvanced && (
+            <div className="bg-secondary-dark/50 space-y-3 rounded-lg border border-gray-700 p-3">
+              <div className="space-y-1">
+                <span className="text-muted text-xs">Import Contact</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".qr,.bin,*/*"
+                    onChange={handleImportContact}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                    }}
+                    disabled={!isConnected}
+                    className="bg-secondary-dark rounded border border-gray-600 px-3 py-1 text-xs text-gray-200 hover:bg-gray-600 disabled:bg-gray-700 disabled:opacity-50"
+                  >
+                    Import advert file...
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

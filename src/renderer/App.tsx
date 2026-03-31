@@ -1174,6 +1174,9 @@ export default function App() {
                         isActive={activePanelIndex === 1}
                         onGlobalSearch={handleOpenGlobalSearch}
                         protocol={protocol}
+                        onImportContact={
+                          protocol === 'meshcore' ? meshcoreDevice.importContact : undefined
+                        }
                       />
                     </Suspense>
                   </div>
@@ -1424,6 +1427,11 @@ export default function App() {
                           ringtone={device.ringtone}
                           onCommit={device.commitConfig}
                           isConnected={isOperational}
+                          storeForwardMessages={device.storeForwardMessages}
+                          rangeTestPackets={device.rangeTestPackets}
+                          serialMessages={device.serialMessages}
+                          remoteHardwareMessages={device.remoteHardwareMessages}
+                          ipTunnelMessages={device.ipTunnelMessages}
                         />
                       </Suspense>
                     </ErrorBoundary>
@@ -1488,7 +1496,10 @@ export default function App() {
                   {activePanelIndex === 8 ? (
                     <ErrorBoundary>
                       <Suspense fallback={<PanelSkeleton />}>
-                        <TakServerPanel />
+                        <TakServerPanel
+                          atakMessages={device.atakMessages}
+                          capabilities={capabilities}
+                        />
                       </Suspense>
                     </ErrorBoundary>
                   ) : null}
@@ -1789,6 +1800,7 @@ export default function App() {
               detectionSensorEvents={
                 protocol === 'meshtastic' ? device.detectionSensorEvents : undefined
               }
+              mapReports={protocol === 'meshtastic' ? device.mapReports : undefined}
               onExportContact={protocol === 'meshcore' ? meshcoreDevice.exportContact : undefined}
               onShareContact={protocol === 'meshcore' ? meshcoreDevice.shareContact : undefined}
             />

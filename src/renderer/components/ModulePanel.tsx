@@ -1,6 +1,14 @@
 import { useState } from 'react';
 
+import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
+
 import { useToast } from './Toast';
+
+interface PacketMessage {
+  from: number;
+  data: Uint8Array;
+  timestamp: number;
+}
 
 interface Props {
   moduleConfigs: Record<string, unknown>;
@@ -10,6 +18,11 @@ interface Props {
   ringtone?: string;
   onCommit: () => Promise<void>;
   isConnected: boolean;
+  storeForwardMessages?: Map<number, PacketMessage[]>;
+  rangeTestPackets?: Map<number, PacketMessage[]>;
+  serialMessages?: Map<number, PacketMessage[]>;
+  remoteHardwareMessages?: Map<number, PacketMessage[]>;
+  ipTunnelMessages?: Map<number, PacketMessage[]>;
 }
 
 // ─── Reusable config components (same pattern as RadioPanel) ─────
@@ -211,6 +224,35 @@ function isValidRtttl(s: string): boolean {
   );
 }
 
+function formatTimeAgo(ts: number): string {
+  if (!ts) return '—';
+  const diff = Date.now() - ts;
+  if (diff < MS_PER_MINUTE) return 'Just now';
+  return `${Math.floor(diff / MS_PER_MINUTE)}m ago`;
+}
+
+function ModuleStatus({
+  packets,
+  label,
+}: {
+  packets?: Map<number, { from: number; data: Uint8Array; timestamp: number }[]>;
+  label: string;
+}) {
+  if (!packets || packets.size === 0) return null;
+  const total = Array.from(packets.values()).reduce((sum, arr) => sum + arr.length, 0);
+  const latest = Math.max(
+    ...Array.from(packets.values()).flatMap((arr) => arr.map((p) => p.timestamp)),
+  );
+  return (
+    <div className="rounded bg-gray-800/50 px-3 py-2 text-xs">
+      <span className="text-gray-400">
+        {label}: {total} packets from {packets.size} node{packets.size !== 1 ? 's' : ''} (last{' '}
+        {formatTimeAgo(latest)})
+      </span>
+    </div>
+  );
+}
+
 export default function ModulePanel({
   moduleConfigs,
   onSetModuleConfig,
@@ -219,6 +261,11 @@ export default function ModulePanel({
   ringtone,
   onCommit,
   isConnected,
+  storeForwardMessages,
+  rangeTestPackets,
+  serialMessages,
+  remoteHardwareMessages,
+  ipTunnelMessages,
 }: Props) {
   const { addToast } = useToast();
   const disabled = !isConnected;
@@ -812,6 +859,7 @@ export default function ModulePanel({
         applying={applyingSection === 'Range Test'}
         disabled={disabled}
       >
+        <ModuleStatus packets={rangeTestPackets} label="Range test" />
         <ConfigToggle
           label="Range test enabled"
           checked={rangeEnabled}
@@ -921,6 +969,7 @@ export default function ModulePanel({
         applying={applyingSection === 'Serial Module'}
         disabled={disabled}
       >
+        <ModuleStatus packets={serialMessages} label="Serial" />
         <ConfigToggle
           label="Serial module enabled"
           checked={serialEnabled}
@@ -972,6 +1021,7 @@ export default function ModulePanel({
         applying={applyingSection === 'Store & Forward'}
         disabled={disabled}
       >
+        <ModuleStatus packets={storeForwardMessages} label="Received S&F" />
         <ConfigToggle
           label="Store & Forward enabled"
           checked={sfEnabled}
@@ -1067,6 +1117,38 @@ export default function ModulePanel({
           onChange={setTelAirQualityEnabled}
           disabled={disabled}
         />
+      </ModuleSection>
+
+      {/* ═══ Remote Hardware (GPIO) ═══ */}
+      <ModuleSection
+        title="Remote Hardware"
+        onApply={() => {
+          addToast('Remote Hardware requires device-side GPIO configuration.', 'info');
+        }}
+        applying={false}
+        disabled={disabled}
+      >
+        <ModuleStatus packets={remoteHardwareMessages} label="GPIO" />
+        <p className="text-muted text-xs">
+          GPIO messages are received automatically when enabled on the device. Configure GPIO pins
+          in the device hardware settings.
+        </p>
+      </ModuleSection>
+
+      {/* ═══ IP Tunnel ═══ */}
+      <ModuleSection
+        title="IP Tunnel"
+        onApply={() => {
+          addToast('IP Tunnel requires device-side network configuration.', 'info');
+        }}
+        applying={false}
+        disabled={disabled}
+      >
+        <ModuleStatus packets={ipTunnelMessages} label="IP Tunnel" />
+        <p className="text-muted text-xs">
+          IP Tunnel packets forward network traffic through the mesh. Configure tunnel settings in
+          the device network configuration.
+        </p>
       </ModuleSection>
     </div>
   );

@@ -41,6 +41,8 @@ interface NodeDetailModalProps {
   paxCounterData?: Map<number, { from: number; count: number; timestamp: number }>;
   /** DetectionSensor events from Meshtastic (raw bytes per node) */
   detectionSensorEvents?: Map<number, { from: number; data: Uint8Array; timestamp: number }[]>;
+  /** MapReport data from Meshtastic (location/position reports per node) */
+  mapReports?: Map<number, { from: number; data: unknown; timestamp: number }>;
   /** Export contact advert bytes (MeshCore only) */
   onExportContact?: (nodeId: number) => Promise<Uint8Array | null>;
   /** Share contact via mesh (MeshCore only) */
@@ -72,6 +74,7 @@ export default function NodeDetailModal({
   meshcoreNeighborError,
   paxCounterData,
   detectionSensorEvents,
+  mapReports,
   onExportContact,
   onShareContact,
 }: NodeDetailModalProps) {
@@ -710,6 +713,33 @@ export default function NodeDetailModal({
                       {Array.from(latestEvent.data)
                         .map((b) => b.toString(16).padStart(2, '0'))
                         .join(' ')}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+          {/* Map Report section (Meshtastic only) */}
+          {protocol === 'meshtastic' &&
+            mapReports &&
+            (() => {
+              const mapReport = mapReports.get(node.node_id);
+              if (!mapReport) return null;
+              return (
+                <div className="space-y-2 px-5 pb-2">
+                  <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                    Map Report
+                  </h4>
+                  <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                    <div className="text-muted">Last Report</div>
+                    <div className="font-mono text-gray-200">
+                      {formatSecondsAgo(
+                        Math.max(0, Math.floor((Date.now() - mapReport.timestamp) / 1000)),
+                      )}
+                    </div>
+                    <div className="text-muted">Data</div>
+                    <div className="font-mono text-gray-200">
+                      {mapReport.data ? JSON.stringify(mapReport.data).slice(0, 50) : 'N/A'}
                     </div>
                   </div>
                 </div>

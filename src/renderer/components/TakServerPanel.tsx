@@ -1,8 +1,16 @@
 import { useId, useState } from 'react';
 
+import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
+import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 import type { TAKSettings } from '@/shared/tak-types';
 
 import { useTakServer } from '../hooks/useTakServer';
+
+interface AtakMessage {
+  from: number;
+  data: Uint8Array;
+  timestamp: number;
+}
 
 function formatDuration(connectedAt: number): string {
   const ms = Date.now() - connectedAt;
@@ -13,7 +21,19 @@ function formatDuration(connectedAt: number): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
-export default function TakServerPanel() {
+function formatTimeAgo(ts: number): string {
+  if (!ts) return '—';
+  const diff = Date.now() - ts;
+  if (diff < MS_PER_MINUTE) return 'Just now';
+  return `${Math.floor(diff / MS_PER_MINUTE)}m ago`;
+}
+
+interface Props {
+  atakMessages?: Map<number, AtakMessage[]>;
+  capabilities?: ProtocolCapabilities;
+}
+
+export default function TakServerPanel({ atakMessages, capabilities }: Props) {
   const id = useId();
   const {
     status,
@@ -218,6 +238,30 @@ export default function TakServerPanel() {
               ))}
             </ul>
           )}
+        </div>
+      )}
+
+      {/* ATAK Plugin Messages from Mesh */}
+      {capabilities?.hasAtakPlugin && atakMessages && atakMessages.size > 0 && (
+        <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-gray-300">
+            ATAK Plugin Messages (
+            {Array.from(atakMessages.values()).reduce((sum, arr) => sum + arr.length, 0)})
+          </h3>
+          <p className="text-xs text-gray-400">
+            ATAK plugin packets received from mesh nodes with ATAK plugin enabled.
+          </p>
+          <ul className="space-y-1.5">
+            {Array.from(atakMessages.entries()).map(([nodeId, messages]) => (
+              <li key={nodeId} className="flex items-center gap-2 text-xs text-gray-300">
+                <span className="font-mono">!{nodeId.toString(16).padStart(8, '0')}</span>
+                <span className="text-gray-500">
+                  {messages.length} packet{messages.length !== 1 ? 's' : ''} · last{' '}
+                  {formatTimeAgo(messages[messages.length - 1]?.timestamp ?? 0)}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
