@@ -479,7 +479,7 @@ describe('onMessage — unknown PSK falls back to minimal update', () => {
     manager = new MQTTManager();
   });
 
-  it('emits minimal update with cached names when decryption fails', () => {
+  it('does not emit update when decryption fails', () => {
     const nodeId = 0xdeadbeef;
     const packetId = 0x00000020;
 
@@ -507,16 +507,11 @@ describe('onMessage — unknown PSK falls back to minimal update', () => {
 
     (manager as any).onMessage('msh/US/2/e/CustomChan/!deadbeef', payload);
 
-    expect(updates).toHaveLength(1);
-    const u = updates[0] as Record<string, unknown>;
-    expect(u.node_id).toBe(nodeId);
-    expect(u.long_name).toBe('Cached Name');
-    expect(u.short_name).toBe('CACH');
-    expect(u.hw_model).toBe('41');
-    expect(u.from_mqtt).toBe(true);
+    // No updates should be emitted when decryption fails - we don't add unknown nodes
+    expect(updates).toHaveLength(0);
   });
 
-  it('emits minimal update without name fields for a brand-new unknown-PSK node', () => {
+  it('does not emit update for brand-new unknown-PSK node', () => {
     const nodeId = 0x99aabbcc;
     const packetId = 0x00000021;
 
@@ -533,11 +528,8 @@ describe('onMessage — unknown PSK falls back to minimal update', () => {
     manager.on('nodeUpdate', (u) => updates.push(u));
     (manager as any).onMessage('msh/US/2/e/CustomChan/!99aabbcc', payload);
 
-    const u = updates[0] as Record<string, unknown>;
-    expect(u.node_id).toBe(nodeId);
-    expect(u.long_name).toBeUndefined();
-    expect(u.short_name).toBeUndefined();
-    expect(u.from_mqtt).toBe(true);
+    // No updates should be emitted when decryption fails - we don't add unknown nodes
+    expect(updates).toHaveLength(0);
   });
 });
 

@@ -580,28 +580,37 @@ export class MQTTManager extends EventEmitter {
     if (cleanBytes.length === 0) return;
 
     if (cleanBytes[0] === 0x7b) {
+      console.debug(`[MQTT] JSON message received, topic=${topic} bytes=${cleanBytes.length}`); // log-filter-ok Meshtastic MQTT logs → App log panel
       try {
         const parsed = JSON.parse(new TextDecoder().decode(cleanBytes));
         this.handleJsonMessage(parsed, topic);
       } catch {
-        console.debug(
-          '[MQTT] non-JSON payload ignored, topic=%s bytes=%d',
-          topic,
-          cleanBytes.length,
-        );
+        console.debug(`[MQTT] JSON parse failed, topic=${topic} bytes=${cleanBytes.length}`); // log-filter-ok Meshtastic MQTT logs → App log panel
       }
       return;
     }
 
-    if (cleanBytes[0] !== 0x0a) return;
+    if (cleanBytes[0] !== 0x0a) {
+      console.debug(
+        `[MQTT] Unknown message format, firstByte=0x${cleanBytes[0].toString(16)} topic=${topic} bytes=${cleanBytes.length}`,
+      ); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return;
+    }
 
     try {
       const envelope = fromBinary(ServiceEnvelopeSchema, cleanBytes);
       const packet = envelope.packet;
-      if (!packet?.from) return;
+      if (!packet?.from) {
+        console.debug(`[MQTT] ServiceEnvelope has no packet.from, topic=${topic}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+        return;
+      }
 
       const nodeId = packet.from;
       const packetId = packet.id;
+
+      console.debug(
+        `[MQTT] Binary packet: nodeId=0x${nodeId.toString(16)} packetId=0x${packetId.toString(16)} topic=${topic}`,
+      ); // log-filter-ok Meshtastic MQTT logs → App log panel
 
       if (packetId && this.isDuplicate(packetId)) return;
 
@@ -612,33 +621,149 @@ export class MQTTManager extends EventEmitter {
           portnum?: number;
           payload?: Uint8Array;
         };
+        console.debug(
+          `[MQTT] Decoded payload: portnum=${decoded.portnum} nodeId=0x${nodeId.toString(16)}`,
+        ); // log-filter-ok Meshtastic MQTT logs → App log panel
         this.handleDecoded(nodeId, packetId, decoded);
       } else if (payloadCase === 'encrypted') {
         const encrypted = packet.payloadVariant.value;
         const decodedData = this.tryDecryptAllKeys(encrypted, packetId, nodeId);
         if (decodedData) {
+          console.debug(
+            `[MQTT] Decryption succeeded: portnum=${decodedData.portnum} nodeId=0x${nodeId.toString(16)}`,
+          ); // log-filter-ok Meshtastic MQTT logs → App log panel
           this.handleDecoded(nodeId, packetId, decodedData);
         } else {
-          this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-          this.emitMinimalNodeUpdate(nodeId);
+          console.debug(
+            `[MQTT] Decryption failed: nodeId=${nodeId} packetId=${packetId} — not adding to nodes`,
+          ); // log-filter-ok Meshtastic MQTT logs → App log panel
         }
+      } else {
+        console.debug(
+          `[MQTT] Unknown payloadVariant case: ${payloadCase} nodeId=0x${nodeId.toString(16)}`,
+        ); // log-filter-ok Meshtastic MQTT logs → App log panel
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      // Public msh/# feeds carry JSON, corrupt, or non-Meshtastic binary; first byte 0x0a is not
-      // sufficient proof of ServiceEnvelope. Debug only — avoids dual-mode log spam.
       console.debug(
         '[MQTT] ServiceEnvelope decode failed:',
         sanitizeLogMessage(msg),
         '| Topic:',
         sanitizeLogMessage(topic),
-      );
+      ); // log-filter-ok Meshtastic MQTT logs → App log panel
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSON path; params reserved for future routing
-  private handleJsonMessage(_parsed: unknown, _topic: string): void {
-    // Silent: JSON messages handled without logging
+  private handleJsonMessage(parsed: unknown, topic: string): void {
+    if (!parsed || typeof parsed !== 'object') return;
+
+    const json = parsed as Record<string, unknown>;
+
+    // Log raw JSON for debugging - truncate if too long
+    const jsonStr = JSON.stringify(json).slice(0, 500);
+    console.debug(`[MQTT] JSON content: ${jsonStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+
+    const type = json.type as string | undefined;
+
+    if (type === 'nodeinfo' || type === 'USER') {
+      this.handleJsonNodeInfo(json, topic);
+      return;
+    }
+
+    const portnumRaw = json.portnum as number | undefined;
+    if (portnumRaw === PortNum.NODEINFO_APP) {
+      this.handleJsonNodeInfo(json, topic);
+      return;
+    }
+
+    // Also check if this JSON directly contains user fields (longName, shortName, etc.)
+    // without being wrapped in a "user" or "payload" object
+    if (
+      json.longName !== undefined ||
+      json.long_name !== undefined ||
+      json.shortName !== undefined ||
+      json.short_name !== undefined
+    ) {
+      this.handleJsonNodeInfo(json, topic);
+      return;
+    }
+
+    console.debug(
+      `[MQTT] JSON message unhandled: type="${type}" portnum=${portnumRaw} topic=${topic}`,
+    ); // log-filter-ok Meshtastic MQTT logs → App log panel
+  }
+
+  private handleJsonNodeInfo(json: Record<string, unknown>, topic: string): void {
+    const from = json.from as string | undefined;
+    if (!from) {
+      console.debug(`[MQTT] JSON nodeinfo missing "from" field, topic=${topic}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return;
+    }
+
+    let nodeId: number;
+    if (from.startsWith('!')) {
+      const hex = from.slice(1);
+      nodeId = parseInt(hex, 16);
+      if (isNaN(nodeId)) {
+        console.debug(`[MQTT] JSON nodeinfo invalid from hex: ${from}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+        return;
+      }
+    } else {
+      const parsed = parseInt(from, 10);
+      if (isNaN(parsed)) {
+        console.debug(`[MQTT] JSON nodeinfo invalid from: ${from}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+        return;
+      }
+      nodeId = parsed;
+    }
+
+    const user = json.user as Record<string, unknown> | undefined;
+    const payload = json.payload as Record<string, unknown> | undefined;
+    const userData = user ?? payload;
+
+    if (!userData || typeof userData !== 'object') {
+      console.debug(`[MQTT] JSON nodeinfo missing user/payload, nodeId=0x${nodeId.toString(16)}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return;
+    }
+
+    const longName = (userData.longName ??
+      userData.long_name ??
+      userData.long_name ??
+      '') as string;
+    const shortName = (userData.shortName ??
+      userData.short_name ??
+      userData.short_name ??
+      '') as string;
+    const hwModelNum = userData.hwModel ?? userData.hw_model ?? userData.hwModel ?? 0;
+    const hwModel = typeof hwModelNum === 'number' ? hwModelNum : 0;
+    const role = userData.role as number | undefined;
+
+    console.debug(
+      `[MQTT] JSON nodeinfo: nodeId=0x${nodeId.toString(16)} longName="${longName}" shortName="${shortName}" role=${role}`,
+    ); // log-filter-ok Meshtastic MQTT logs → App log panel
+
+    const now = Date.now();
+    const processedShortName = meshtasticShortNameAfterClearingDefault(longName, shortName, nodeId);
+
+    const nodeUpdate: Partial<MeshNode> & { node_id: number; from_mqtt: boolean } = {
+      node_id: nodeId,
+      long_name: longName,
+      short_name: processedShortName,
+      hw_model: String(hwModel),
+      role: role ?? 0,
+      last_heard: now,
+      from_mqtt: true,
+    };
+
+    this.upsertNodeCache({
+      node_id: nodeId,
+      long_name: nodeUpdate.long_name,
+      short_name: nodeUpdate.short_name,
+      hw_model: nodeUpdate.hw_model,
+      last_heard: now,
+    });
+
+    this.emit('nodeUpdate', nodeUpdate);
   }
 
   private handleDecoded(
@@ -668,6 +793,9 @@ export class MQTTManager extends EventEmitter {
           last_heard: now,
           from_mqtt: true,
         };
+        console.debug(
+          `[MQTT] NODEINFO_APP: nodeId=0x${nodeId.toString(16)} longName="${long_name}" shortName="${short_name}" role=${user.role} hwModel=${user.hwModel}`,
+        ); // log-filter-ok Meshtastic MQTT logs → App log panel
         this.upsertNodeCache({
           node_id: nodeId,
           long_name: nodeUpdate.long_name,
@@ -818,7 +946,12 @@ export class MQTTManager extends EventEmitter {
     packetId: number,
     from: number,
   ): { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number } | null {
-    for (const key of [DEFAULT_PSK, ...this.extraPsks]) {
+    const allKeys = [DEFAULT_PSK, ...this.extraPsks];
+    console.debug(
+      `[MQTT] Decrypt attempt: trying ${allKeys.length} PSKs (1 default + ${this.extraPsks.length} custom) for nodeId=0x${from.toString(16)}`,
+    ); // log-filter-ok Meshtastic MQTT logs → App log panel
+    for (let i = 0; i < allKeys.length; i++) {
+      const key = allKeys[i];
       const raw = this.tryDecryptWithKey(encrypted, packetId, from, key);
       if (!raw) continue;
       try {
@@ -830,7 +963,9 @@ export class MQTTManager extends EventEmitter {
         };
       } catch {
         // Wrong PSK produces garbage bytes that fail protobuf decode — try next key
-        console.debug('[MQTT] decrypt attempt failed (wrong key), trying next'); // log-filter-ok Meshtastic MQTT logs → App log panel
+        console.debug(
+          `[MQTT] decrypt attempt ${i + 1}/${allKeys.length} failed (protobuf decode error)`,
+        ); // log-filter-ok Meshtastic MQTT logs → App log panel
       }
     }
     return null;
