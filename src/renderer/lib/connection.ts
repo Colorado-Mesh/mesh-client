@@ -1,5 +1,4 @@
 import { MeshDevice } from '@meshtastic/core';
-import { TransportHTTP } from '@meshtastic/transport-http';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
 import { isMainProcessBleTimeoutMessage } from './bleConnectErrors';
@@ -8,55 +7,19 @@ import {
   persistSerialPortIdentity,
   selectGrantedSerialPort,
 } from './serialPortSignature';
+import { TransportHttpIpc } from './transportHttpIpc';
 import { TransportNobleIpc } from './transportNobleIpc';
 import { TransportWebBluetoothIpc } from './transportWebBluetoothIpc';
 import type { ConnectionType, NobleBleSessionId } from './types';
 
 // HTTP base connection: timeouts and retries to avoid hanging on slow mDNS or flaky networks.
 const HTTP_CONNECT_TIMEOUT_MS = 15_000;
-const HTTP_PREFLIGHT_RETRIES = 3;
-const HTTP_PREFLIGHT_RETRY_DELAY_MS = 2_000;
 const BLE_CONNECT_MAX_ATTEMPTS = 2;
 const BLE_CONNECT_RETRY_DELAY_MS = 1_500;
 
 function logMeshtasticDeviceConnection(detail: string): void {
   const fn = window.electronAPI?.log?.logDeviceConnection;
   if (typeof fn === 'function') void fn(detail);
-}
-
-function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
-  const ac = new AbortController();
-  const t = setTimeout(() => {
-    ac.abort();
-  }, timeoutMs);
-  return fetch(url, { signal: ac.signal }).finally(() => {
-    clearTimeout(t);
-  });
-}
-
-async function httpPreflightWithRetries(connectionUrl: string): Promise<void> {
-  const reportUrl = `${connectionUrl}/json/report`;
-  let lastErr: Error | null = null;
-  for (let attempt = 1; attempt <= HTTP_PREFLIGHT_RETRIES; attempt++) {
-    try {
-      const res = await fetchWithTimeout(reportUrl, HTTP_CONNECT_TIMEOUT_MS);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return;
-    } catch (err) {
-      lastErr = err instanceof Error ? err : new Error(String(err));
-      console.debug(
-        `[connection] HTTP preflight attempt ${attempt}/${HTTP_PREFLIGHT_RETRIES} failed: ${lastErr.message}`,
-      );
-      if (attempt < HTTP_PREFLIGHT_RETRIES) {
-        await new Promise((r) => setTimeout(r, HTTP_PREFLIGHT_RETRY_DELAY_MS));
-      }
-    }
-  }
-  const msg =
-    lastErr?.name === 'AbortError'
-      ? `Connection timed out after ${HTTP_CONNECT_TIMEOUT_MS / 1000}s. Try the device's IP address if you use meshtastic.local.`
-      : (lastErr?.message ?? 'Connection failed');
-  throw new Error(msg);
 }
 
 /**
@@ -267,22 +230,16 @@ export async function createConnection(
 
     case 'http': {
       if (!httpAddress) throw new Error('HTTP address required');
-      // TransportHTTP.create() expects a raw hostname/IP, not a full URL.
-      // It constructs http:// or https:// internally based on the tls flag.
-      // Strip protocol if the user provided one.
       let host = httpAddress.trim();
       const useTls = host.startsWith('https://');
       host = host.replace(/^https?:\/\//, '');
-      // Strip trailing slashes
       host = host.replace(/\/+$/, '');
-      // Normalize bare IPv6 addresses - browsers require brackets: [fe80::1]
       if (host.includes(':') && !host.startsWith('[')) {
         host = `[${host}]`;
       }
       console.debug(`[connection] createConnection: http address=${host} tls=${useTls}`);
-      const connectionUrl = `${useTls ? 'https' : 'http'}://${host}`;
-      await httpPreflightWithRetries(connectionUrl);
-      const createPromise = TransportHTTP.create(host, useTls);
+      const transport = new TransportHttpIpc(host, useTls);
+      const connectPromise = transport.connect();
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => {
           reject(
@@ -290,14 +247,11 @@ export async function createConnection(
           );
         }, HTTP_CONNECT_TIMEOUT_MS),
       );
-      transport = await Promise.race([createPromise, timeoutPromise]);
-      {
-        const httpPort = useTls ? 443 : 80;
-        logMeshtasticDeviceConnection(
-          `transport=http stack=meshtastic host=${host} tls=${useTls} port=${httpPort}`,
-        );
-      }
-      break;
+      await Promise.race([connectPromise, timeoutPromise]);
+      logMeshtasticDeviceConnection(
+        `transport=http stack=meshtastic host=${host} tls=${useTls} port=${useTls ? 443 : 80}`,
+      );
+      return new MeshDevice(transport as any);
     }
 
     default:

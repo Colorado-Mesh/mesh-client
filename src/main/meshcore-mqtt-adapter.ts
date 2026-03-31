@@ -34,8 +34,8 @@ const MESHCORE_MQTT_CONNECT_ACK_MS = 30_000;
 /** Send WebSocket-level ping frames so LB/proxy idle timers see traffic at ~15s intervals. */
 const MESHCORE_MQTT_WSS_PING_MS = 15_000;
 /** Reconnect delay base/cap — mirrors MQTTManager. */
-const MESHCORE_MQTT_RECONNECT_BACKOFF_BASE_MS = 500;
-const MESHCORE_MQTT_RECONNECT_BACKOFF_CAP_MS = 8_000;
+const MESHCORE_MQTT_RECONNECT_IMMEDIATE_MS = 500;
+const MESHCORE_MQTT_RECONNECT_10_MINUTE_DELAY_MS = 600_000;
 
 export class MeshcoreMqttAdapter extends EventEmitter {
   private client: mqtt.MqttClient | null = null;
@@ -315,12 +315,12 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         return;
       }
       this.retryCount++;
-      const backoff = Math.min(
-        MESHCORE_MQTT_RECONNECT_BACKOFF_BASE_MS * Math.pow(2, this.retryCount - 1),
-        MESHCORE_MQTT_RECONNECT_BACKOFF_CAP_MS,
-      );
+      const delay =
+        this.retryCount === 1
+          ? MESHCORE_MQTT_RECONNECT_IMMEDIATE_MS
+          : MESHCORE_MQTT_RECONNECT_10_MINUTE_DELAY_MS;
       console.warn(
-        `[MeshcoreMqttAdapter] Reconnecting in ${backoff}ms (attempt ${this.retryCount}/${maxRetries})`,
+        `[MeshcoreMqttAdapter] Reconnecting in ${delay}ms (attempt ${this.retryCount}/${maxRetries})`,
       );
       this.setStatus('connecting');
       this.reconnectTimer = setTimeout(() => {
@@ -328,7 +328,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         if (this.status !== 'disconnected' && this.lastSettings) {
           this._doConnect(this.lastSettings);
         }
-      }, backoff);
+      }, delay);
     });
     this.client.on('offline', () => {
       console.warn('[MeshcoreMqttAdapter] client offline');

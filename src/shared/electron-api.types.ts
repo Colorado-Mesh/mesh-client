@@ -400,6 +400,15 @@ export interface ElectronAPI {
     openJsonFile: () => Promise<string | null>;
   };
 
+  // ─── Meshtastic HTTP bridge ───────────────────────────────────────────────────
+  http: {
+    preflight: (host: string, tls: boolean) => Promise<void>;
+    connect: (host: string, tls: boolean) => Promise<void>;
+    write: (bytes: number[]) => Promise<void>;
+    disconnect: () => Promise<void>;
+    onData: (cb: (bytes: Uint8Array) => void) => () => void;
+  };
+
   // ─── TAK server ──────────────────────────────────────────────────────────────
   tak: {
     start: (settings: TAKSettings) => Promise<void>;

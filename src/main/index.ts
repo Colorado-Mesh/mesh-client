@@ -3495,6 +3495,118 @@ ipcMain.handle('meshcore:tcp-disconnect', () => {
   }
 });
 
+// ─── Meshtastic HTTP bridge ─────────────────────────────────────────
+let httpDevice: {
+  host: string;
+  tls: boolean;
+  intervalId: NodeJS.Timeout;
+} | null = null;
+
+const HTTP_FETCH_INTERVAL_MS = 3000;
+const MAX_HOST_LENGTH = 253;
+
+async function httpPreflight(host: string, tls: boolean): Promise<void> {
+  const protocol = tls ? 'https' : 'http';
+  const url = `${protocol}://${host}/json/report`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+}
+
+async function httpWriteToRadio(host: string, tls: boolean, data: Uint8Array): Promise<void> {
+  const protocol = tls ? 'https' : 'http';
+  await fetch(`${protocol}://${host}/api/v1/toradio`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/x-protobuf',
+    },
+    body: Buffer.from(data),
+  });
+}
+
+ipcMain.handle('http:preflight', async (_event, host: string, tls: boolean) => {
+  if (typeof host !== 'string' || host.length === 0 || host.length > MAX_HOST_LENGTH) {
+    throw new Error('Invalid host');
+  }
+  if (typeof tls !== 'boolean') {
+    throw new Error('Invalid tls');
+  }
+  await httpPreflight(host, tls);
+});
+
+ipcMain.handle('http:connect', async (_event, host: string, tls: boolean) => {
+  if (typeof host !== 'string' || host.length === 0 || host.length > MAX_HOST_LENGTH) {
+    throw new Error('Invalid host');
+  }
+  if (typeof tls !== 'boolean') {
+    throw new Error('Invalid tls');
+  }
+  if (httpDevice) {
+    clearInterval(httpDevice.intervalId);
+    httpDevice = null;
+  }
+  await httpPreflight(host, tls);
+  let controller: { enqueue: (chunk: { type: string; data: Uint8Array }) => void };
+  void new ReadableStream({
+    start(ctrl) {
+      controller = ctrl;
+    },
+  });
+  const intervalId = setInterval(() => {
+    void (async () => {
+      try {
+        const protocol = tls ? 'https' : 'http';
+        let readBuffer = new ArrayBuffer(1);
+        while (readBuffer.byteLength > 0) {
+          const response = await fetch(`${protocol}://${host}/api/v1/fromradio?all=false`, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/x-protobuf',
+            },
+          });
+          readBuffer = await response.arrayBuffer();
+          if (readBuffer.byteLength > 0) {
+            const data = new Uint8Array(readBuffer);
+            controller.enqueue({
+              type: 'packet',
+              data,
+            });
+            mainWindow?.webContents.send('http:data', data);
+          }
+        }
+      } catch (err) {
+        console.debug(
+          '[IPC] http:connect read error:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+      }
+    })();
+  }, HTTP_FETCH_INTERVAL_MS);
+  httpDevice = { host, tls, intervalId };
+  logDeviceConnection(
+    `transport=http stack=meshtastic host=${sanitizeLogMessage(host)} tls=${tls}`,
+  );
+});
+
+ipcMain.handle('http:write', async (_event, data: number[]) => {
+  if (!httpDevice) {
+    throw new Error('http:write: no active connection');
+  }
+  if (!Array.isArray(data)) {
+    throw new Error('http:write: invalid data');
+  }
+  await httpWriteToRadio(httpDevice.host, httpDevice.tls, new Uint8Array(data));
+});
+
+ipcMain.handle('http:disconnect', () => {
+  if (httpDevice) {
+    console.debug('[IPC] http:disconnect');
+    clearInterval(httpDevice.intervalId);
+    httpDevice = null;
+  }
+});
+
 // ─── IPC: TAK server ───────────────────────────────────────────────
 ipcMain.handle('tak:start', async (_event, settings) => {
   try {

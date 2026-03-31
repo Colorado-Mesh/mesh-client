@@ -489,6 +489,13 @@ declare global {
         };
         openJsonFile: () => Promise<string | null>;
       };
+      http: {
+        preflight: (host: string, tls: boolean) => Promise<void>;
+        connect: (host: string, tls: boolean) => Promise<void>;
+        write: (bytes: number[]) => Promise<void>;
+        disconnect: () => Promise<void>;
+        onData: (cb: (bytes: Uint8Array) => void) => () => void;
+      };
       onNobleBleAdapterState: (cb: (state: string) => void) => () => void;
       onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => () => void;
       onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;

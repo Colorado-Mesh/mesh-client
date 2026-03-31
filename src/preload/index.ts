@@ -574,6 +574,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
     openJsonFile: (): Promise<string | null> => ipcRenderer.invoke('meshcore:openJsonFile'),
   },
 
+  // ─── Meshtastic HTTP bridge ───────────────────────────────────────
+  http: {
+    preflight: (host: string, tls: boolean): Promise<void> =>
+      ipcRenderer.invoke('http:preflight', host, tls),
+    connect: (host: string, tls: boolean): Promise<void> =>
+      ipcRenderer.invoke('http:connect', host, tls),
+    write: (bytes: number[]): Promise<void> => ipcRenderer.invoke('http:write', bytes),
+    disconnect: (): Promise<void> => ipcRenderer.invoke('http:disconnect'),
+    onData: (cb: (bytes: Uint8Array) => void): (() => void) => {
+      const handler = (_: unknown, bytes: Uint8Array) => {
+        cb(bytes);
+      };
+      ipcRenderer.on('http:data', handler);
+      return () => ipcRenderer.off('http:data', handler);
+    },
+  },
+
   // ─── TAK server ──────────────────────────────────────────────────
   tak: {
     start: (settings: TAKSettings): Promise<void> => ipcRenderer.invoke('tak:start', settings),

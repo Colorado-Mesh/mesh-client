@@ -78,10 +78,8 @@ const BROADCAST_ID = 0xffffffff >>> 0;
 /** TCP/TLS/WSS + MQTT CONNACK window — shorter than MeshCore so bad brokers fail fast in UI. */
 const MESHTASTIC_MQTT_CONNECT_ACK_MS = 12_000;
 /** Reconnect delay after `close`: 0.5s → 1s → 2s → … capped (was 2s base, 60s cap). */
-const MESHTASTIC_MQTT_RECONNECT_BACKOFF_BASE_MS = 500;
-const MESHTASTIC_MQTT_RECONNECT_BACKOFF_CAP_MS = 8_000;
-/** After `connack timeout`, next attempt starts quickly instead of waiting for backoff. */
 const MESHTASTIC_MQTT_RECONNECT_AFTER_CONNACK_TIMEOUT_MS = 250;
+const MESHTASTIC_MQTT_RECONNECT_10_MINUTE_DELAY_MS = 600_000;
 /** Send WebSocket-level ping frames so LB/proxy idle timers see traffic before the first MQTT PINGREQ. */
 const MESHTASTIC_MQTT_WSS_PING_MS = 25_000;
 /**
@@ -289,13 +287,14 @@ export class MQTTManager extends EventEmitter {
       }
 
       this.retryCount++;
-      const backoff = Math.min(
-        MESHTASTIC_MQTT_RECONNECT_BACKOFF_BASE_MS * Math.pow(2, this.retryCount - 1),
-        MESHTASTIC_MQTT_RECONNECT_BACKOFF_CAP_MS,
-      );
       const useFast = this.preferFastMqttReconnect;
       this.preferFastMqttReconnect = false;
-      const delay = useFast ? MESHTASTIC_MQTT_RECONNECT_AFTER_CONNACK_TIMEOUT_MS : backoff;
+      let delay: number;
+      if (this.retryCount === 1 && useFast) {
+        delay = MESHTASTIC_MQTT_RECONNECT_AFTER_CONNACK_TIMEOUT_MS;
+      } else {
+        delay = MESHTASTIC_MQTT_RECONNECT_10_MINUTE_DELAY_MS;
+      }
       console.warn(`[MQTT] Reconnecting in ${delay}ms (attempt ${this.retryCount}/${maxRetries})`); // log-filter-ok Meshtastic MQTT logs → App log panel
       this.setStatus('connecting');
 

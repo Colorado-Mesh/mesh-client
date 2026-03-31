@@ -183,6 +183,13 @@ const electronAPIMock = {
     },
     openJsonFile: vi.fn().mockResolvedValue(null),
   },
+  http: {
+    preflight: vi.fn().mockResolvedValue(undefined),
+    connect: vi.fn().mockResolvedValue(undefined),
+    write: vi.fn().mockResolvedValue(undefined),
+    disconnect: vi.fn().mockResolvedValue(undefined),
+    onData: vi.fn().mockReturnValue(() => {}),
+  },
   log: {
     getPath: vi.fn().mockResolvedValue('/tmp/test.log'),
     getRecentLines: vi.fn().mockResolvedValue([]),
