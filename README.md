@@ -75,13 +75,14 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **MQTT**
 
-- Subscribe to a broker to receive mesh traffic over the internet; AES-128-CTR decryption, automatic RF deduplication, exponential-backoff reconnect, and an **active node cache** that periodically refreshes presence information so MQTT-only and RF+MQTT nodes stay visible even when your radio is offline
+- Subscribe to a broker to receive mesh traffic over the internet; AES-128-CTR decryption, automatic RF deduplication, **10-minute reconnect delay after failed attempts** (recovers faster on connack timeout), and an **active node cache** that periodically refreshes presence information so MQTT-only and RF+MQTT nodes stay visible even when your radio is offline
 - Transport indicator (RF / MQTT / both) on received messages; MQTT messages are shown in chat but not rebroadcast over RF
 - Enter your broker URL, topic, and optional credentials in the MQTT section of the Connection tab; settings persist across sessions
 
 **Module Configuration**
 
 - Telemetry module (device, environment, air quality intervals), MQTT relay settings, Canned Messages, Serial module, Range Test, Store & Forward, Detection Sensor, Pax Counter, **External Notification**, **Ambient Lighting**, and **RTTTL** (ringtone) — all editable from the Modules tab; module sections are listed **alphabetically**
+- **Module status displays** — Range Test, Serial, Store & Forward, Remote Hardware (GPIO), and IP Tunnel show packet counts and last-received timestamps when the corresponding module is enabled on the device
 
 **Security (PKI)** — Meshtastic only
 
@@ -113,6 +114,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - **Certificate management**: self-signed CA + server + client certificates via node-forge; regenerate anytime from the TAK tab
 - **Data package generator**: export ATAK-compatible (ca.pem, client.p12, connection.pref) for direct import on TAK devices
 - Auto-start option (off by default); status indicator in header when running
+- **ATAK Plugin Messages** — incoming ATAK plugin packets from mesh nodes are displayed in the TAK tab with sender node and packet counts
 
 ---
 
@@ -139,7 +141,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - Node list with SNR, battery, GPS, last heard — **signal bars** appear only for direct (0-hop) RF neighbors; multi-hop and MQTT-only paths omit bars; SNR in traces and neighbor views uses **color-coded quality** (good / marginal / poor)
 - **Cross-Protocol Signal Analyzer** — foreign LoRa traffic detection (non-mesh packets); shown in Node Detail when present
 - Distance filter, favorite/pin nodes, device role icons
-- Node Detail Modal: DM, trace route with per-hop display, delete node, neighbor info
+- Node Detail Modal: DM, trace route with per-hop display, delete node, neighbor info, **Map Report** (Meshtastic), PaxCounter, Detection Sensor, **export/share contact** (MeshCore)
 
 **Map & Position**
 
