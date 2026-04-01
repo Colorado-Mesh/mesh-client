@@ -150,7 +150,11 @@ fi
 
 git pull origin main
 
-# 3. Get the last tag
+# 3. Update dependencies
+print_header "Updating dependencies..."
+pnpm update
+
+# 4. Get the last tag
 LAST_TAG=$(git describe --tags --abbrev=0 2> /dev/null || echo "")
 if [ -z "$LAST_TAG" ]; then
   print_error "Error: No tags found. Please create an initial tag first."
@@ -158,7 +162,7 @@ if [ -z "$LAST_TAG" ]; then
   exit 1
 fi
 
-# 4. Check if there are commits since last tag
+# 5. Check if there are commits since last tag
 COMMITS_SINCE_TAG=$(git log "$LAST_TAG"..HEAD --oneline 2> /dev/null || echo "")
 if [ -z "$COMMITS_SINCE_TAG" ]; then
   print_error "Error: No commits since last tag ($LAST_TAG)."
@@ -166,14 +170,14 @@ if [ -z "$COMMITS_SINCE_TAG" ]; then
   exit 1
 fi
 
-# 5. Detect or use provided version type
+# 6. Detect or use provided version type
 if [ "$AUTO_DETECT" = true ]; then
   DETECTED_BUMP=$(detect_version_bump "$LAST_TAG")
 else
   DETECTED_BUMP="provided"
 fi
 
-# 6. Get current version from package.json
+# 7. Get current version from package.json
 CURRENT_VERSION=$(node -p "require('./package.json').version")
 
 # 7. Calculate new version preview

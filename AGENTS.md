@@ -173,6 +173,15 @@ Run `pnpm run lint` to see all violations. Pre-commit enforces these rules.
 - **Accessibility**: Include axe tests for new panels (`expect(results).toHaveNoViolations()`)
 - **Contract tests**: Update when changing CSP, build config, IPC limits, or log filters
 - **Console spies**: Use `beforeEach`/`afterEach` hooks for shared spy setup rather than duplicating in each test; declare spy at describe scope, clear mocks in beforeEach
+- **Silent console output**: When testing code that logs errors (e.g., `console.warn` in error handlers), always mock the console method before spying to prevent stderr noise:
+  ```typescript
+  const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  ```
+  For module-level setup that logs during initialization, add at the top of the test file:
+  ```typescript
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  ```
 - **Coverage**: Test both success and failure paths for async operations
 
 ## Project-Specific Rules

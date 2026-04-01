@@ -8,6 +8,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 
+vi.spyOn(console, 'warn').mockImplementation(() => {});
+vi.spyOn(console, 'error').mockImplementation(() => {});
+
 const sendTextMessageMock = vi.fn().mockResolvedValue({
   expectedAckCrc: 1,
   estTimeout: 30_000,

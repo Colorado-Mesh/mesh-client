@@ -103,7 +103,7 @@ describe('ConnectionPanel accessibility', () => {
 describe('ConnectionPanel MQTT connect error', () => {
   it('surfaces error when mqtt.connect rejects', async () => {
     const user = userEvent.setup();
-    const consoleWarnSpy = vi.spyOn(console, 'warn');
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.mocked(window.electronAPI.mqtt.connect).mockRejectedValueOnce(new Error('broker refused'));
 
     render(
@@ -169,7 +169,7 @@ describe('ConnectionPanel MQTT connect error', () => {
 describe('ConnectionPanel BLE error humanization', () => {
   it('shows Windows handshake guidance for MeshCore BLE handshake timeout/disconnect', async () => {
     const user = userEvent.setup();
-    const consoleWarnSpy = vi.spyOn(console, 'warn');
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
     userAgentSpy.mockReturnValue(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
@@ -207,7 +207,7 @@ describe('ConnectionPanel BLE error humanization', () => {
 
   it('renders object-shaped BLE errors as JSON instead of [object Object]', async () => {
     const user = userEvent.setup();
-    const consoleWarnSpy = vi.spyOn(console, 'warn');
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
     userAgentSpy.mockReturnValue(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
@@ -245,7 +245,7 @@ describe('ConnectionPanel BLE error humanization', () => {
 
   it('shows Windows adapter guidance when BLE adapter is unavailable', async () => {
     const user = userEvent.setup();
-    const consoleWarnSpy = vi.spyOn(console, 'warn');
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
     userAgentSpy.mockReturnValue(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',

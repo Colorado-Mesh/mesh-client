@@ -15,7 +15,7 @@ describe('LogPanel accessibility', () => {
 
   it('shows role="alert" when clear log rejects', async () => {
     const user = userEvent.setup();
-    const consoleWarnSpy = vi.spyOn(console, 'warn');
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.mocked(window.electronAPI.log.clear).mockRejectedValueOnce(new Error('clear failed'));
     render(<LogPanel />);
     await act(async () => {});

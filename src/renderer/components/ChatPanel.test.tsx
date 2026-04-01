@@ -483,7 +483,7 @@ describe('ChatPanel accessibility', () => {
 
   it('shows role="alert" when onSend rejects', async () => {
     const user = userEvent.setup();
-    const consoleErrorSpy = vi.spyOn(console, 'error');
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const onSend = vi.fn().mockRejectedValue(new Error('send failed'));
     render(
       <ToastProvider>
