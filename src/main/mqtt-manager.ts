@@ -607,10 +607,6 @@ export class MQTTManager extends EventEmitter {
       const nodeId = packet.from;
       const packetId = packet.id;
 
-      console.debug(
-        `[MQTT] Binary packet: nodeId=0x${nodeId.toString(16)} packetId=0x${packetId.toString(16)} topic=${topic}`,
-      ); // log-filter-ok Meshtastic MQTT logs → App log panel
-
       if (packetId && this.isDuplicate(packetId)) return;
 
       const payloadCase = packet.payloadVariant?.case;
@@ -632,15 +628,7 @@ export class MQTTManager extends EventEmitter {
             `[MQTT] Decryption succeeded: portnum=${decodedData.portnum} nodeId=0x${nodeId.toString(16)}`,
           ); // log-filter-ok Meshtastic MQTT logs → App log panel
           this.handleDecoded(nodeId, packetId, decodedData);
-        } else {
-          console.debug(
-            `[MQTT] Decryption failed: nodeId=${nodeId} packetId=${packetId} — not adding to nodes`,
-          ); // log-filter-ok Meshtastic MQTT logs → App log panel
         }
-      } else {
-        console.debug(
-          `[MQTT] Unknown payloadVariant case: ${payloadCase} nodeId=0x${nodeId.toString(16)}`,
-        ); // log-filter-ok Meshtastic MQTT logs → App log panel
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
