@@ -60,3 +60,11 @@ For development setup and local build/test workflow, see:
 - **Project**
   - [License](license.md)
   - [Credits](credits.md)
+
+---
+
+## Frequently Asked Questions
+
+### Is there a way to add a hashtag channel?
+
+Yes. When adding or editing a channel in the **Radio** tab, click **"Derive from name"** and make sure the channel name includes the `#` prefix (e.g., `#general`). This generates the PSK from the SHA-256 hash of the name with the leading `#`.
