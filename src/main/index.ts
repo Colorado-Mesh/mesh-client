@@ -1929,6 +1929,55 @@ meshcoreMqttAdapter.on('chatMessage', (m) => {
   else console.debug('[main] mqtt:meshcore-chat dropped (mainWindow not ready)');
 });
 
+meshcoreMqttAdapter.on(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, (serverHost: string) => {
+  const doRefresh = async () => {
+    try {
+      const tokenInfo = meshcoreMqttAdapter.getTokenInfo(serverHost);
+      if (!tokenInfo) {
+        console.warn(
+          '[main] meshcoreMqttAdapter proactive token refresh: no token info for',
+          serverHost,
+        );
+        return;
+      }
+      // @ts-expect-error - refreshMeshcoreToken exists in preload but type inference doesn't find it
+      const result = await window.electronAPI.mqtt.refreshMeshcoreToken(serverHost);
+      if (result) {
+        meshcoreMqttAdapter.updateToken(result.token, result.expiresAt);
+      }
+    } catch (e) {
+      console.warn(
+        '[main] meshcoreMqttAdapter proactive token refresh failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+    }
+  };
+  void doRefresh();
+});
+
+meshcoreMqttAdapter.on(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, () => {
+  const doRefresh = async () => {
+    try {
+      const settings = meshcoreMqttAdapter.getSettings();
+      if (!settings) {
+        console.warn('[main] meshcoreMqttAdapter token refresh needed: no settings');
+        return;
+      }
+      // @ts-expect-error - refreshMeshcoreToken exists in preload but type inference doesn't find it
+      const result = await window.electronAPI.mqtt.refreshMeshcoreToken(settings.server);
+      if (result) {
+        meshcoreMqttAdapter.updateToken(result.token, result.expiresAt);
+      }
+    } catch (e) {
+      console.warn(
+        '[main] meshcoreMqttAdapter token refresh needed failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+    }
+  };
+  void doRefresh();
+});
+
 // ─── IPC: MQTT connect/disconnect ───────────────────────────────────
 ipcMain.handle('mqtt:connect', (_event, settings) => {
   try {
@@ -1982,6 +2031,33 @@ ipcMain.handle('mqtt:getClientId', (_event, protocol?: 'meshtastic' | 'meshcore'
     throw err;
   }
 });
+ipcMain.handle('mqtt:refreshMeshcoreToken', (_event, serverHost: string) => {
+  try {
+    console.debug('[IPC] mqtt:refreshMeshcoreToken', serverHost);
+    return meshcoreMqttAdapter.getTokenInfo(serverHost);
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:refreshMeshcoreToken failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+ipcMain.handle(
+  'mqtt:updateMeshcoreToken',
+  (_event, { token, expiresAt }: { token: string; expiresAt: number }) => {
+    try {
+      console.debug('[IPC] mqtt:updateMeshcoreToken', expiresAt);
+      meshcoreMqttAdapter.updateToken(token, expiresAt);
+    } catch (err) {
+      console.error(
+        '[IPC] mqtt:updateMeshcoreToken failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  },
+);
 ipcMain.handle('mqtt:publish', (_event, args) => {
   try {
     console.debug('[IPC] mqtt:publish');

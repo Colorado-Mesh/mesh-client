@@ -592,10 +592,12 @@ export default function App() {
                 try {
                   const u = letsMeshMqttUsernameFromIdentity(identity);
                   if (u) connectSettings.username = u;
-                  connectSettings.password = await generateLetsMeshAuthToken(
+                  const { token, expiresAt } = await generateLetsMeshAuthToken(
                     identity,
                     connectSettings.server,
                   );
+                  connectSettings.password = token;
+                  connectSettings.tokenExpiresAt = expiresAt;
                 } catch (e) {
                   console.warn('[App] LetsMesh auth token auto-launch generation failed', e);
                   return;

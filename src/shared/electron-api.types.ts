@@ -293,6 +293,10 @@ export interface ElectronAPI {
       rawHex?: string;
     }) => Promise<unknown>;
     onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
+    refreshMeshcoreToken: (
+      serverHost: string,
+    ) => Promise<{ token: string; expiresAt: number } | null>;
+    updateMeshcoreToken: (token: string, expiresAt: number) => Promise<void>;
   };
 
   // ─── Noble BLE ───────────────────────────────────────────────────────────────

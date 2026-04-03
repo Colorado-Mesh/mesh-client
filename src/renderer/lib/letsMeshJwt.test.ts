@@ -47,7 +47,9 @@ describe('letsMeshJwt', () => {
       public_key: sampleKeyPair.publicKey,
       private_key: sampleKeyPair.privateKey,
     };
-    const token = await generateLetsMeshAuthToken(identity, LETSMESH_HOST_US);
+    const { token, expiresAt } = await generateLetsMeshAuthToken(identity, LETSMESH_HOST_US);
+    expect(typeof expiresAt).toBe('number');
+    expect(expiresAt).toBeGreaterThan(Date.now());
     const verified = await verifyAuthToken(token, sampleKeyPair.publicKey);
     expect(verified).not.toBeNull();
     expect(verified?.publicKey.toUpperCase()).toBe(sampleKeyPair.publicKey.toUpperCase());
@@ -60,7 +62,9 @@ describe('letsMeshJwt', () => {
       public_key: sampleKeyPair.publicKey,
       private_key: seedOnly,
     };
-    const token = await generateLetsMeshAuthToken(identity, LETSMESH_HOST_EU);
+    const { token, expiresAt } = await generateLetsMeshAuthToken(identity, LETSMESH_HOST_EU);
+    expect(typeof expiresAt).toBe('number');
+    expect(expiresAt).toBeGreaterThan(Date.now());
     const verified = await verifyAuthToken(token, sampleKeyPair.publicKey);
     expect(verified).not.toBeNull();
     expect(verified?.aud).toBe(LETSMESH_HOST_EU);

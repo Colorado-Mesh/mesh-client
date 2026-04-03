@@ -56,6 +56,16 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   private wssRescheduleTimer: ReturnType<typeof setInterval> | null = null;
   private lastConnected: number | null = null;
   private disconnectCount = 0;
+  private tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Grace period before expiry to trigger proactive refresh (5 minutes in ms). */
+  private static readonly TOKEN_GRACE_PERIOD_MS = 5 * 60 * 1000;
+  /** Proactive refresh schedule (50 minutes in ms = 90% of 60-minute token). */
+  private static readonly PROACTIVE_REFRESH_MS = 54 * 60 * 1000;
+
+  /** Event emitted when token needs refresh (before reconnect). */
+  static readonly EVENT_TOKEN_REFRESH_NEEDED = 'tokenRefreshNeeded';
+  /** Event emitted when proactive token refresh should occur. */
+  static readonly EVENT_PROACTIVE_TOKEN_REFRESH = 'proactiveTokenRefresh';
 
   getStatus(): MQTTStatus {
     return this.status;
@@ -63,6 +73,60 @@ export class MeshcoreMqttAdapter extends EventEmitter {
 
   getClientId(): string {
     return this.clientIdStr;
+  }
+
+  getSettings(): MQTTSettings | null {
+    return this.lastSettings;
+  }
+
+  getTokenInfo(serverHost: string): { token: string; expiresAt: number } | null {
+    const settings = this.lastSettings;
+    if (!settings?.server || settings.server !== serverHost) return null;
+    const expiresAt = settings.tokenExpiresAt;
+    if (!expiresAt || !settings.password) return null;
+    return { token: settings.password, expiresAt };
+  }
+
+  updateToken(token: string, expiresAt: number): void {
+    if (this.lastSettings) {
+      this.lastSettings.password = token;
+      this.lastSettings.tokenExpiresAt = expiresAt;
+    }
+    this.clearTokenRefreshTimer();
+    if (this.status === 'connected') {
+      this.scheduleTokenRefresh();
+    }
+  }
+
+  private clearTokenRefreshTimer(): void {
+    if (this.tokenRefreshTimer) {
+      clearTimeout(this.tokenRefreshTimer);
+      this.tokenRefreshTimer = null;
+    }
+  }
+
+  private scheduleTokenRefresh(): void {
+    this.clearTokenRefreshTimer();
+    const expiresAt = this.lastSettings?.tokenExpiresAt;
+    if (!expiresAt || this.status !== 'connected') return;
+    const now = Date.now();
+    const timeUntilExpiry = expiresAt - now;
+    if (timeUntilExpiry <= MeshcoreMqttAdapter.TOKEN_GRACE_PERIOD_MS) {
+      return;
+    }
+    const refreshAt = Math.max(0, timeUntilExpiry - MeshcoreMqttAdapter.TOKEN_GRACE_PERIOD_MS);
+    const scheduleMs = Math.min(refreshAt, MeshcoreMqttAdapter.PROACTIVE_REFRESH_MS);
+    this.tokenRefreshTimer = setTimeout(() => {
+      if (this.status !== 'connected' || !this.lastSettings) return;
+      this.emit(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, this.lastSettings.server);
+    }, scheduleMs);
+  }
+
+  private needsTokenRefresh(): boolean {
+    const expiresAt = this.lastSettings?.tokenExpiresAt;
+    if (!expiresAt) return false;
+    const now = Date.now();
+    return expiresAt - now <= MeshcoreMqttAdapter.TOKEN_GRACE_PERIOD_MS;
   }
 
   private clearConnectTimers(): void {
@@ -114,6 +178,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   }
 
   disconnect(): void {
+    this.clearTokenRefreshTimer();
     this.clearConnectTimers();
     this.clearWssPing();
     this.clearWssReschedule();
@@ -280,6 +345,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         // Also start the 60s reschedule timer
         this.startWssReschedule();
       }
+      // Schedule proactive token refresh
+      this.scheduleTokenRefresh();
     });
     this.client.on('packetsend', (packet) => {
       if (packet.cmd === 'pingreq') {
@@ -331,6 +398,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.client.on('close', () => {
       this.clearWssPing();
       this.clearWssReschedule();
+      this.clearTokenRefreshTimer();
       this.clearConnectTimers();
       const now = Date.now();
       this.disconnectCount++;
@@ -359,6 +427,12 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         );
         return;
       }
+
+      if (this.needsTokenRefresh()) {
+        console.debug('[MeshcoreMqttAdapter] Token stale, emitting refresh event before reconnect');
+        this.emit(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED);
+      }
+
       this.retryCount++;
       const delay =
         this.retryCount === 1

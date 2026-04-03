@@ -421,6 +421,7 @@ const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
   autoLaunch: false,
   maxRetries: 3,
   meshcorePacketLoggerEnabled: false,
+  tokenExpiresAt: undefined,
 };
 
 function migrateMqttSettingsOnce(): void {
@@ -2311,10 +2312,12 @@ export default function ConnectionPanel({
                     try {
                       const u = letsMeshMqttUsernameFromIdentity(identity);
                       if (u) settings.username = u;
-                      settings.password = await generateLetsMeshAuthToken(
+                      const { token, expiresAt } = await generateLetsMeshAuthToken(
                         identity,
                         settings.server,
                       );
+                      settings.password = token;
+                      settings.tokenExpiresAt = expiresAt;
                     } catch (e) {
                       const msg = e instanceof Error ? e.message : String(e);
                       setMqttError(`Auth token generation failed: ${msg}`);

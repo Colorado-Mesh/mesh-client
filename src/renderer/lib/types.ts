@@ -175,6 +175,8 @@ export interface MQTTSettings {
    * `{topicPrefix}/meshcore/packets` for the Analyzer (meshcoretomqtt-shaped JSON). Default false.
    */
   meshcorePacketLoggerEnabled?: boolean;
+  /** Epoch milliseconds when the JWT token expires. Used for proactive refresh. */
+  tokenExpiresAt?: number;
 }
 
 export type MQTTStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
