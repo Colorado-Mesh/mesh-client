@@ -676,6 +676,27 @@ export default function App() {
     }
   }, []);
 
+  // ─── LetsMesh JWT proactive/reactive refresh ──────────────────────
+  useEffect(() => {
+    const off = window.electronAPI.mqtt.onRequestTokenRefresh((serverHost) => {
+      const doRefresh = async () => {
+        try {
+          const identity = readMeshcoreIdentity();
+          if (!identity?.private_key || !identity?.public_key) {
+            console.warn('[App] token refresh requested but no identity available');
+            return;
+          }
+          const { token, expiresAt } = await generateLetsMeshAuthToken(identity, serverHost);
+          await window.electronAPI.mqtt.updateMeshcoreToken(token, expiresAt);
+        } catch (e) {
+          console.warn('[App] token refresh failed', e);
+        }
+      };
+      void doRefresh();
+    });
+    return off;
+  }, []);
+
   // ─── Auto-update event subscriptions ─────────────────────────────
   useEffect(() => {
     const offAvailable = window.electronAPI.update.onAvailable((info) => {

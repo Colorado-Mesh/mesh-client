@@ -298,6 +298,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('mqtt:refreshMeshcoreToken', serverHost),
     updateMeshcoreToken: (token: string, expiresAt: number): Promise<void> =>
       ipcRenderer.invoke('mqtt:updateMeshcoreToken', { token, expiresAt }),
+    onRequestTokenRefresh: (cb: (serverHost: string) => void): (() => void) => {
+      const handler = (_: unknown, serverHost: string) => {
+        cb(serverHost);
+      };
+      ipcRenderer.on('mqtt:requestTokenRefresh', handler);
+      return () => ipcRenderer.off('mqtt:requestTokenRefresh', handler);
+    },
   },
 
   // ─── Noble BLE ──────────────────────────────────────────────────

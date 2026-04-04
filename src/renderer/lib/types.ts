@@ -490,6 +490,11 @@ declare global {
           rawHex?: string;
         }) => Promise<void>;
         onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
+        refreshMeshcoreToken: (
+          serverHost: string,
+        ) => Promise<{ token: string; expiresAt: number } | null>;
+        updateMeshcoreToken: (token: string, expiresAt: number) => Promise<void>;
+        onRequestTokenRefresh: (cb: (serverHost: string) => void) => () => void;
       };
       meshcore: {
         tcp: {

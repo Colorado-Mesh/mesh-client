@@ -57,10 +57,15 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   private lastConnected: number | null = null;
   private disconnectCount = 0;
   private tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+  /** True when a token refresh was requested on close — hold reconnect until updateToken() fires. */
+  private pendingReconnect = false;
+  private pendingReconnectTimer: ReturnType<typeof setTimeout> | null = null;
   /** Grace period before expiry to trigger proactive refresh (5 minutes in ms). */
   private static readonly TOKEN_GRACE_PERIOD_MS = 5 * 60 * 1000;
   /** Proactive refresh schedule (50 minutes in ms = 90% of 60-minute token). */
   private static readonly PROACTIVE_REFRESH_MS = 54 * 60 * 1000;
+  /** Safety timeout: if renderer never responds to token refresh request, reconnect anyway. */
+  private static readonly PENDING_RECONNECT_TIMEOUT_MS = 10_000;
 
   /** Event emitted when token needs refresh (before reconnect). */
   static readonly EVENT_TOKEN_REFRESH_NEEDED = 'tokenRefreshNeeded';
@@ -95,6 +100,15 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.clearTokenRefreshTimer();
     if (this.status === 'connected') {
       this.scheduleTokenRefresh();
+    }
+    if (this.pendingReconnect && this.lastSettings) {
+      this.pendingReconnect = false;
+      if (this.pendingReconnectTimer) {
+        clearTimeout(this.pendingReconnectTimer);
+        this.pendingReconnectTimer = null;
+      }
+      console.debug('[MeshcoreMqttAdapter] Token updated, triggering pending reconnect');
+      this._doConnect(this.lastSettings);
     }
   }
 
@@ -183,6 +197,11 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.clearWssPing();
     this.clearWssReschedule();
     this.clearReconnectTimer();
+    this.pendingReconnect = false;
+    if (this.pendingReconnectTimer) {
+      clearTimeout(this.pendingReconnectTimer);
+      this.pendingReconnectTimer = null;
+    }
     this.retryCount = 0;
     if (this.client) {
       try {
@@ -430,7 +449,19 @@ export class MeshcoreMqttAdapter extends EventEmitter {
 
       if (this.needsTokenRefresh()) {
         console.debug('[MeshcoreMqttAdapter] Token stale, emitting refresh event before reconnect');
-        this.emit(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED);
+        this.pendingReconnect = true;
+        this.emit(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, this.lastSettings?.server ?? '');
+        this.pendingReconnectTimer = setTimeout(() => {
+          if (this.pendingReconnect && this.lastSettings) {
+            console.warn(
+              '[MeshcoreMqttAdapter] Token refresh timed out, reconnecting with existing token',
+            );
+            this.pendingReconnect = false;
+            this.pendingReconnectTimer = null;
+            this._doConnect(this.lastSettings);
+          }
+        }, MeshcoreMqttAdapter.PENDING_RECONNECT_TIMEOUT_MS);
+        return;
       }
 
       this.retryCount++;

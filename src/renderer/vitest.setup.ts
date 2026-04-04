@@ -119,6 +119,7 @@ const electronAPIMock = {
     onMeshcoreChat: vi.fn().mockReturnValue(() => {}),
     refreshMeshcoreToken: vi.fn().mockResolvedValue(null),
     updateMeshcoreToken: vi.fn().mockResolvedValue(undefined),
+    onRequestTokenRefresh: vi.fn().mockReturnValue(() => {}),
   },
   onNobleBleAdapterState: vi.fn().mockReturnValue(() => {}),
   onNobleBleDeviceDiscovered: vi.fn().mockReturnValue(() => {}),

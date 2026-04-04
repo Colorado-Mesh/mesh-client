@@ -1930,52 +1930,19 @@ meshcoreMqttAdapter.on('chatMessage', (m) => {
 });
 
 meshcoreMqttAdapter.on(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, (serverHost: string) => {
-  const doRefresh = async () => {
-    try {
-      const tokenInfo = meshcoreMqttAdapter.getTokenInfo(serverHost);
-      if (!tokenInfo) {
-        console.warn(
-          '[main] meshcoreMqttAdapter proactive token refresh: no token info for',
-          serverHost,
-        );
-        return;
-      }
-      // @ts-expect-error - refreshMeshcoreToken exists in preload but type inference doesn't find it
-      const result = await window.electronAPI.mqtt.refreshMeshcoreToken(serverHost);
-      if (result) {
-        meshcoreMqttAdapter.updateToken(result.token, result.expiresAt);
-      }
-    } catch (e) {
-      console.warn(
-        '[main] meshcoreMqttAdapter proactive token refresh failed',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    }
-  };
-  void doRefresh();
+  if (mainWindow) {
+    mainWindow.webContents.send('mqtt:requestTokenRefresh', serverHost);
+  } else {
+    console.warn('[main] proactive token refresh: mainWindow not ready');
+  }
 });
 
-meshcoreMqttAdapter.on(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, () => {
-  const doRefresh = async () => {
-    try {
-      const settings = meshcoreMqttAdapter.getSettings();
-      if (!settings) {
-        console.warn('[main] meshcoreMqttAdapter token refresh needed: no settings');
-        return;
-      }
-      // @ts-expect-error - refreshMeshcoreToken exists in preload but type inference doesn't find it
-      const result = await window.electronAPI.mqtt.refreshMeshcoreToken(settings.server);
-      if (result) {
-        meshcoreMqttAdapter.updateToken(result.token, result.expiresAt);
-      }
-    } catch (e) {
-      console.warn(
-        '[main] meshcoreMqttAdapter token refresh needed failed',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    }
-  };
-  void doRefresh();
+meshcoreMqttAdapter.on(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, (serverHost: string) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('mqtt:requestTokenRefresh', serverHost);
+  } else {
+    console.warn('[main] token refresh needed: mainWindow not ready');
+  }
 });
 
 // ─── IPC: MQTT connect/disconnect ───────────────────────────────────
