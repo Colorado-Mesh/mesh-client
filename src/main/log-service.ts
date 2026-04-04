@@ -37,6 +37,8 @@ export function logDeviceConnection(detail: string): void {
 }
 
 const LOG_FILENAME = 'mesh-client.log';
+const LOG_BACKUP_FILENAME = 'mesh-client.log.1';
+const LOG_MAX_BYTES = 100 * 1024 * 1024; // 100 MB
 const MAX_LINE_LENGTH = 8192;
 const MAX_IPC_MESSAGE_LENGTH = 4096;
 const RECENT_MAX = 1500;
@@ -156,18 +158,37 @@ export function appendLine(level: LogLevel, source: string, message: string): vo
   }
 
   const diskLine = sanitizeLogPayloadForDisk(line);
-  appendChain = appendChain
-    .then(() => fs.promises.appendFile(getLogFilePath(), diskLine, 'utf8'))
-    .catch((e: unknown) => {
-      original.debug('[log-service] appendFile failed, retry writeFileSync', e);
-      try {
-        fs.writeFileSync(getLogFilePath(), diskLine, { encoding: 'utf8' });
-      } catch (e2) {
-        original.debug('[log-service] writeFileSync retry failed', e2);
-      }
-    });
+  // Debug messages are kept in the in-memory buffer and broadcast to the renderer
+  // Log panel in all environments, but are not written to disk in production builds
+  // to reduce noise and disk usage.
+  if (level !== 'debug' || !app.isPackaged) {
+    appendChain = appendChain
+      .then(() => rotateLogIfNeeded())
+      .then(() => fs.promises.appendFile(getLogFilePath(), diskLine, 'utf8'))
+      .catch((e: unknown) => {
+        original.debug('[log-service] appendFile failed, retry writeFileSync', e);
+        try {
+          fs.writeFileSync(getLogFilePath(), diskLine, { encoding: 'utf8' });
+        } catch (e2) {
+          original.debug('[log-service] writeFileSync retry failed', e2);
+        }
+      });
+  }
 
   broadcastLine(ts, level, source, message);
+}
+
+async function rotateLogIfNeeded(): Promise<void> {
+  const p = getLogFilePath();
+  try {
+    const stat = await fs.promises.stat(p);
+    if (stat.size >= LOG_MAX_BYTES) {
+      const backup = path.join(path.dirname(p), LOG_BACKUP_FILENAME);
+      await fs.promises.rename(p, backup);
+    }
+  } catch {
+    // catch-no-log-ok: stat throws when the file doesn't exist yet; rotation skipped
+  }
 }
 
 function broadcastLine(ts: number, level: LogLevel, source: string, message: string): void {

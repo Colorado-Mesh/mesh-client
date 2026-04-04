@@ -874,6 +874,9 @@ function createWindow() {
       // Inline misspelling marks and context-menu suggestions (all platforms). macOS app menu
       // stays minimal (no role-based Edit menu) to reduce WeakPtr menu-bridge noise.
       spellcheck: true,
+      // Security note: experimentalFeatures enables the Web Bluetooth and Web Serial APIs
+      // required for direct device communication. These APIs are permission-gated via
+      // setPermissionCheckHandler/setPermissionRequestHandler (serial + geolocation only).
       experimentalFeatures: true,
     },
   });
@@ -3584,6 +3587,10 @@ ipcMain.handle('meshcore:tcp-write', (_event, bytes: number[]) => {
       ),
     );
   }
+  // Validate each element is a valid byte value so Uint8Array coercion is not silently lossy.
+  if (!bytes.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) {
+    return Promise.reject(new Error('meshcore:tcp-write: byte values must be integers 0-255'));
+  }
   if (!meshcoreTcpSocket) {
     const msg = 'meshcore:tcp-write: no active socket';
     console.warn(`[IPC] ${msg}`);
@@ -3620,6 +3627,23 @@ let httpDevice: {
 const HTTP_FETCH_INTERVAL_MS = 3000;
 const MAX_HOST_LENGTH = 253;
 
+/**
+ * Hostname validation: accepts DNS labels (a-z, 0-9, hyphens) and dotted IPv4 quads.
+ * Rejects hostnames with leading/trailing hyphens per RFC 1123.
+ * An empty string or anything over 253 chars is caught separately by the caller.
+ */
+const VALID_HOSTNAME_RE =
+  /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
+
+function validateHttpHost(host: unknown): asserts host is string {
+  if (typeof host !== 'string' || host.length === 0 || host.length > MAX_HOST_LENGTH) {
+    throw new Error('Invalid host');
+  }
+  if (!VALID_HOSTNAME_RE.test(host)) {
+    throw new Error('Invalid host format');
+  }
+}
+
 async function httpPreflight(host: string, tls: boolean): Promise<void> {
   const protocol = tls ? 'https' : 'http';
   const url = `${protocol}://${host}/json/report`;
@@ -3640,20 +3664,16 @@ async function httpWriteToRadio(host: string, tls: boolean, data: Uint8Array): P
   });
 }
 
-ipcMain.handle('http:preflight', async (_event, host: string, tls: boolean) => {
-  if (typeof host !== 'string' || host.length === 0 || host.length > MAX_HOST_LENGTH) {
-    throw new Error('Invalid host');
-  }
+ipcMain.handle('http:preflight', async (_event, host: unknown, tls: unknown) => {
+  validateHttpHost(host);
   if (typeof tls !== 'boolean') {
     throw new Error('Invalid tls');
   }
   await httpPreflight(host, tls);
 });
 
-ipcMain.handle('http:connect', async (_event, host: string, tls: boolean) => {
-  if (typeof host !== 'string' || host.length === 0 || host.length > MAX_HOST_LENGTH) {
-    throw new Error('Invalid host');
-  }
+ipcMain.handle('http:connect', async (_event, host: unknown, tls: unknown) => {
+  validateHttpHost(host);
   if (typeof tls !== 'boolean') {
     throw new Error('Invalid tls');
   }
