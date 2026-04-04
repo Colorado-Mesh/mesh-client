@@ -924,7 +924,7 @@ export default function AppPanel({
                 onChange={(e) => {
                   updateSetting('meshcoreAutoPruneEnabled', e.target.checked);
                 }}
-                aria-label="Auto-prune contacts on startup, older than"
+                aria-label="Auto-prune unheard contacts on startup, older than"
                 className="accent-brand-green"
               />
               <label
@@ -932,7 +932,7 @@ export default function AppPanel({
                 htmlFor="meshcoreAutoPrune"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Auto-prune contacts on startup, older than
+                Auto-prune unheard contacts on startup, older than
               </label>
               <input
                 id="apppanel-meshcore-auto-prune-days"
@@ -947,7 +947,7 @@ export default function AppPanel({
                 }}
                 disabled={!settings.meshcoreAutoPruneEnabled}
                 aria-labelledby="apppanel-meshcore-auto-prune-label"
-                aria-label={`Auto-prune contacts on startup, older than ${settings.meshcoreAutoPruneDays} days`}
+                aria-label={`Auto-prune unheard contacts on startup, older than ${settings.meshcoreAutoPruneDays} days`}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">days</span>
