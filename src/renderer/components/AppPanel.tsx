@@ -5,8 +5,9 @@ import { getAppSettingsRaw, mergeAppSetting, setAppSettingsRaw } from '../lib/ap
 import { formatCoordPair } from '../lib/coordUtils';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
 import type { OurPosition } from '../lib/gpsSource';
-import { haversineDistanceKm } from '../lib/nodeStatus';
+import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { useRadioProvider } from '../lib/radio/providerFactory';
 import {
   applyThemeColors,
   DEFAULT_THEME_COLORS,
@@ -181,6 +182,8 @@ export default function AppPanel({
   const setHistoryWindow = usePositionHistoryStore((s) => s.setHistoryWindow);
   const clearHistory = usePositionHistoryStore((s) => s.clearHistory);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
+
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
@@ -1288,6 +1291,43 @@ export default function AppPanel({
               <div className="mt-0.5 text-xs text-red-400/70">
                 Beyond the distance threshold in Map &amp; Node Filtering. Requires a valid GPS
                 location.
+              </div>
+            </button>
+            <button
+              type="button"
+              aria-label="Prune Offline Nodes that have not been heard within the offline threshold"
+              onClick={() => {
+                const offlineNodes = Array.from(nodes.values()).filter(
+                  (n) =>
+                    n.node_id !== myNodeNum &&
+                    !n.favorited &&
+                    getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                      'offline',
+                );
+                if (offlineNodes.length === 0) {
+                  addToast('No offline nodes found.', 'success');
+                  return;
+                }
+                const offlineDays = Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000));
+                executeWithConfirmation({
+                  name: 'Prune Offline Nodes',
+                  title: 'Prune Offline Nodes',
+                  message: `This will permanently delete ${offlineNodes.length} node${offlineNodes.length !== 1 ? 's' : ''} not heard in over ${offlineDays} day${offlineDays !== 1 ? 's' : ''}. This cannot be undone.`,
+                  confirmLabel: `Delete ${offlineNodes.length} Node${offlineNodes.length !== 1 ? 's' : ''}`,
+                  danger: true,
+                  action: async () => {
+                    await window.electronAPI.db.deleteNodesBatch(
+                      offlineNodes.map((n) => n.node_id),
+                    );
+                  },
+                });
+              }}
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+            >
+              <div className="font-medium">Prune Offline Nodes</div>
+              <div className="mt-0.5 text-xs text-red-400/70">
+                Not heard in over {Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000))} days.
+                Favorited nodes are excluded.
               </div>
             </button>
             <button

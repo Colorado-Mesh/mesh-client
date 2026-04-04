@@ -128,8 +128,8 @@ describe('ProtocolCapabilities contract', () => {
           1,
           7,
         ],
-        "nodeOfflineThresholdMs": 86400000,
-        "nodeStaleThresholdMs": 10800000,
+        "nodeOfflineThresholdMs": 604800000,
+        "nodeStaleThresholdMs": 7200000,
         "protocol": "meshtastic",
       }
     `);
@@ -181,8 +181,8 @@ describe('ProtocolCapabilities contract', () => {
           1,
           64,
         ],
-        "nodeOfflineThresholdMs": 172800000,
-        "nodeStaleThresholdMs": 86400000,
+        "nodeOfflineThresholdMs": 345600000,
+        "nodeStaleThresholdMs": 172800000,
         "protocol": "meshcore",
       }
     `);

@@ -1,6 +1,6 @@
 // Time thresholds for node freshness
 const STALE_MS = 2 * 3_600_000; // 2 hours
-const OFFLINE_MS = 72 * 3_600_000; // 72 hours
+const OFFLINE_MS = 7 * 24 * 3_600_000; // 7 days
 
 export type NodeStatus = 'online' | 'stale' | 'offline';
 

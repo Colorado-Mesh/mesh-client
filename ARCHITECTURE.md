@@ -83,7 +83,7 @@ mesh-client/
 │       │   ├── foreignLoraDetection.ts   # Cross-protocol: classify payload, foreign LoRa, RSSI/SNR
 │       │   ├── meshcoreUtils.ts      # MeshCore: pubkeyToNodeId, meshcoreContactToMeshNode, contact types
 │       │   ├── gpsSource.ts          # GPS waterfall: device → geolocation → null
-│       │   ├── nodeStatus.ts         # Node freshness: online <2 h, stale 2–72 h, offline 72 h+
+│       │   ├── nodeStatus.ts         # Node freshness: Meshtastic online <2 h, stale 2 h-7 d, offline >7 d; MeshCore online <48 h, stale 48-96 h, offline >96 h
 │       │   ├── coordUtils.ts         # Coordinate conversion helpers
 │       │   ├── reactions.ts          # Emoji reaction helpers
 │       │   ├── roleInfo.tsx          # Node role display metadata

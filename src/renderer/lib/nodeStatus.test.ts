@@ -69,37 +69,37 @@ describe('getNodeStatus', () => {
     expect(getNodeStatus(oneHourAgo, staleThreshold, offlineThreshold)).toBe('online');
   });
 
-  it('MeshCore thresholds: online <= 24h, stale > 24h <= 48h, offline > 48h', () => {
-    const meshcoreStale = 24 * 60 * 60 * 1000;
-    const meshcoreOffline = 48 * 60 * 60 * 1000;
+  it('MeshCore thresholds: online <= 48h, stale > 48h <= 96h, offline > 96h', () => {
+    const meshcoreStale = 48 * 60 * 60 * 1000;
+    const meshcoreOffline = 96 * 60 * 60 * 1000;
 
-    const exactly24hAgo = Date.now() - meshcoreStale + 1000;
-    expect(getNodeStatus(exactly24hAgo, meshcoreStale, meshcoreOffline)).toBe('online');
+    const exactly48hAgo = Date.now() - meshcoreStale + 1000;
+    expect(getNodeStatus(exactly48hAgo, meshcoreStale, meshcoreOffline)).toBe('online');
 
-    const oneSecondOver24h = Date.now() - meshcoreStale - 1000;
-    expect(getNodeStatus(oneSecondOver24h, meshcoreStale, meshcoreOffline)).toBe('stale');
+    const oneSecondOver48h = Date.now() - meshcoreStale - 1000;
+    expect(getNodeStatus(oneSecondOver48h, meshcoreStale, meshcoreOffline)).toBe('stale');
 
-    const exactly48hAgo = Date.now() - meshcoreOffline + 1000;
-    expect(getNodeStatus(exactly48hAgo, meshcoreStale, meshcoreOffline)).toBe('stale');
+    const exactly96hAgo = Date.now() - meshcoreOffline + 1000;
+    expect(getNodeStatus(exactly96hAgo, meshcoreStale, meshcoreOffline)).toBe('stale');
 
-    const oneSecondOver48h = Date.now() - meshcoreOffline - 1000;
-    expect(getNodeStatus(oneSecondOver48h, meshcoreStale, meshcoreOffline)).toBe('offline');
+    const oneSecondOver96h = Date.now() - meshcoreOffline - 1000;
+    expect(getNodeStatus(oneSecondOver96h, meshcoreStale, meshcoreOffline)).toBe('offline');
   });
 
-  it('Meshtastic thresholds: online <= 3h, stale > 3h <= 24h, offline > 24h', () => {
-    const meshtasticStale = 3 * 60 * 60 * 1000;
-    const meshtasticOffline = 24 * 60 * 60 * 1000;
+  it('Meshtastic thresholds: online <= 2h, stale > 2h <= 7d, offline > 7d', () => {
+    const meshtasticStale = 2 * 60 * 60 * 1000;
+    const meshtasticOffline = 7 * 24 * 60 * 60 * 1000;
 
-    const exactly3hAgo = Date.now() - meshtasticStale + 1000;
-    expect(getNodeStatus(exactly3hAgo, meshtasticStale, meshtasticOffline)).toBe('online');
+    const exactly2hAgo = Date.now() - meshtasticStale + 1000;
+    expect(getNodeStatus(exactly2hAgo, meshtasticStale, meshtasticOffline)).toBe('online');
 
-    const oneSecondOver3h = Date.now() - meshtasticStale - 1000;
-    expect(getNodeStatus(oneSecondOver3h, meshtasticStale, meshtasticOffline)).toBe('stale');
+    const oneSecondOver2h = Date.now() - meshtasticStale - 1000;
+    expect(getNodeStatus(oneSecondOver2h, meshtasticStale, meshtasticOffline)).toBe('stale');
 
-    const exactly24hAgo = Date.now() - meshtasticOffline + 1000;
-    expect(getNodeStatus(exactly24hAgo, meshtasticStale, meshtasticOffline)).toBe('stale');
+    const exactly7dAgo = Date.now() - meshtasticOffline + 1000;
+    expect(getNodeStatus(exactly7dAgo, meshtasticStale, meshtasticOffline)).toBe('stale');
 
-    const oneSecondOver24h = Date.now() - meshtasticOffline - 1000;
-    expect(getNodeStatus(oneSecondOver24h, meshtasticStale, meshtasticOffline)).toBe('offline');
+    const oneSecondOver7d = Date.now() - meshtasticOffline - 1000;
+    expect(getNodeStatus(oneSecondOver7d, meshtasticStale, meshtasticOffline)).toBe('offline');
   });
 });

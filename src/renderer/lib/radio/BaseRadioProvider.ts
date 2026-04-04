@@ -133,8 +133,8 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasMapReport: true,
   hasContactImportExport: false,
   hasCryptoOperations: true,
-  nodeStaleThresholdMs: 3 * 60 * 60 * 1000, // 3 hours
-  nodeOfflineThresholdMs: 24 * 60 * 60 * 1000, // 24 hours
+  nodeStaleThresholdMs: 2 * 60 * 60 * 1000, // 2 hours
+  nodeOfflineThresholdMs: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -180,6 +180,6 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasMapReport: false,
   hasContactImportExport: true,
   hasCryptoOperations: true,
-  nodeStaleThresholdMs: 24 * 60 * 60 * 1000, // 24 hours
-  nodeOfflineThresholdMs: 48 * 60 * 60 * 1000, // 48 hours
+  nodeStaleThresholdMs: 48 * 60 * 60 * 1000, // 48 hours
+  nodeOfflineThresholdMs: 96 * 60 * 60 * 1000, // 96 hours
 };
