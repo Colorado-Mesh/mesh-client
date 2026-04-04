@@ -1167,10 +1167,11 @@ export function useDevice() {
             }
           }
 
-          const lastHeardMs =
-            (info.lastHeard ?? 0) > 0
-              ? info.lastHeard! * 1000
-              : existing.last_heard || (nodeNum === myNodeNumRef.current ? Date.now() : 0);
+          const lastHeardMs = computeNodeInfoLastHeardMs(
+            info.lastHeard,
+            existing.last_heard,
+            nodeNum === myNodeNumRef.current,
+          );
           const lastHeardStale =
             lastHeardMs > 0 &&
             Date.now() - lastHeardMs > MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs;
@@ -2958,6 +2959,16 @@ export function emptyNode(nodeId: number): MeshNode {
     latitude: null,
     longitude: null,
   };
+}
+
+export function computeNodeInfoLastHeardMs(
+  infoLastHeard: number | undefined,
+  existingLastHeard: number,
+  isSelf: boolean,
+): number {
+  return (infoLastHeard ?? 0) > 0
+    ? infoLastHeard! * 1000
+    : existingLastHeard || (isSelf ? Date.now() : 0);
 }
 
 export function createChatStubNode(nodeId: number, source: 'rf' | 'mqtt'): MeshNode {

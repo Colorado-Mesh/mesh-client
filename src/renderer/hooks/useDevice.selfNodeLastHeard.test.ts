@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getNodeStatus } from '../lib/nodeStatus';
-import { emptyNode } from './useDevice';
+import { computeNodeInfoLastHeardMs, emptyNode } from './useDevice';
 
 const MY_NODE_NUM = 0xdeadbeef;
 
@@ -37,24 +37,12 @@ describe('self-node last_heard initialisation (#272)', () => {
 
   it('fallback to Date.now() for self when info.lastHeard and existing.last_heard are both 0', () => {
     // Simulates the onNodeInfoPacket fallback for the self node.
-    const infoLastHeard = 0;
-    const existingLastHeard = 0;
-    const isSelf = true;
-
-    const lastHeardMs =
-      infoLastHeard > 0 ? infoLastHeard * 1000 : existingLastHeard || (isSelf ? Date.now() : 0);
-
+    const lastHeardMs = computeNodeInfoLastHeardMs(0, 0, true);
     expect(getNodeStatus(lastHeardMs)).toBe('online');
   });
 
   it('non-self node with info.lastHeard=0 and existing=0 stays offline', () => {
-    const infoLastHeard = 0;
-    const existingLastHeard = 0;
-    const isSelf = false;
-
-    const lastHeardMs =
-      infoLastHeard > 0 ? infoLastHeard * 1000 : existingLastHeard || (isSelf ? Date.now() : 0);
-
+    const lastHeardMs = computeNodeInfoLastHeardMs(0, 0, false);
     expect(getNodeStatus(lastHeardMs)).toBe('offline');
   });
 });
