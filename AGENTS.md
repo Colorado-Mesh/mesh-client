@@ -61,3 +61,87 @@ Before writing code, read [ARCHITECTURE.md](ARCHITECTURE.md) to understand the c
 - **Remote Tracking:** Ensure operations are tracked against the correct remote (`Colorado-Mesh/meshtastic-client`).
 - **Pre-PR Sweep:** Update `README.md`, bump versions if warranted, and group metadata changes into a single commit before opening a PR.
 - **PR Descriptions:** When executing `gh pr create`, the description MUST include details for all commits in the branch (`git log origin/main..HEAD --oneline`), not just the most recent one.
+
+## 9. Diagnostics Debugging
+
+- **Engines:** `lib/diagnostics/` — `RoutingDiagnosticEngine.ts` (hop anomalies), `RFDiagnosticEngine.ts` (RF), `RemediationEngine.ts` (fixes).
+- **Store:** `diagnosticsStore.ts` holds routing rows, RF rows, foreign LoRa, MQTT ignore, packet redundancy.
+- **Adding a finding:** Extend `DiagnosticRow` in `types.ts`, add detector in engine, add to store via `replaceRoutingRowsFromMap` or `replaceRfRowsForNode`.
+- **TTL:** Routing 24h, RF 1h — configure in `diagnosticRows.ts`.
+- **Debug:** Add `console.debug` in detector. Check store in DevTools. Routing requires GPS on both nodes.
+
+## 10. Bug Fix Workflow
+
+1. **Reproduce:** Developer runs `pnpm start` and exercises the failing path. Report findings to AI.
+2. **Locate:** Search error text in `main/*.ts` or `renderer/**/*.tsx`.
+3. **Log:** Add `console.debug` only if needed to trace execution flow.
+4. **Fix:** Apply minimum change needed.
+5. **Test:** Add test in same directory (`*.test.ts` or `*.test.tsx`).
+6. **Verify:** Run `npx vitest run <test-file>` and `pnpm run lint`.
+
+- Connection bugs: `useDevice.ts` / `useMeshCore.ts`.
+- UI state bugs: matching store in `stores/`.
+- IPC failures: `index.ts`.
+
+## 11. Protocol-Specific Work
+
+- **Meshtastic:** `useDevice.ts` + `createConnection()` in `connection.ts`.
+- **MeshCore:** `useMeshCore.ts` + `MeshCoreConnection` from `@liamcottle/meshcore.js`.
+- **Capability gating:** Use `useRadioProvider(protocol)` from `providerFactory.ts`. Returns `ProtocolCapabilities`.
+- **Never:** Compare `protocol === 'meshcore'` strings.
+
+## 12. Database Changes
+
+- **Schema:** SQLite with WAL mode. Version in `db.pragma('user_version')`.
+- **Migration:** Add `migration_N()` in `database.ts`, increment version.
+- **API:** Use `db-compat.ts` (wraps `node:sqlite`). Never `better-sqlite3`.
+- **Test:** Run `pnpm run check:db-migrations` after changes.
+
+## 13. BLE/Serial Communication
+
+- **Meshtastic BLE:** `connection.ts` → `createBleConnection()` → `TransportManager`.
+- **MeshCore BLE:** macOS/Windows: `noble-ble-manager.ts`. Linux: Web Bluetooth via `TransportWebBluetoothIpc`.
+- **Serial:** `createSerialConnection()` in `connection.ts`. Port identity: `serialPortSignature.ts`.
+- **Errors:** `humanizeBleError`, `humanizeSerialError`, `humanizeHttpError` in `connection.ts`.
+- **Reconnect:** Watchdog in `useDevice.ts` (BLE_STALE_THRESHOLD_MS, BLE_DEAD_THRESHOLD_MS).
+
+## 14. MQTT
+
+- **Meshtastic:** `mqtt-manager.ts`. Handles AES decryption, protobuf decode, dedup (10-min window in `seenPacketIds`).
+- **MeshCore:** `meshcore-mqtt-adapter.ts`. JSON v1 envelope format.
+- **Debug:** Tagged logs `[MQTT]` in mqtt-manager.ts. Check `MQTTStatus` in UI.
+
+## 15. UI Component Development
+
+- **Location:** `components/*.tsx`. Tests co-located as `*.test.tsx`.
+- **State:** Use Zustand stores in `stores/`. Define defaults at module level.
+- **Rules:** Every interactive element needs `aria-label`. Functional components only. No `dangerouslySetInnerHTML`.
+- **Adding a panel:** Add to `lazyTabPanels.ts` or `lazyAppPanels.ts`. Gate via `ProtocolCapabilities`.
+
+## 16. IPC/Preload Extensions
+
+- **Types:** Define in `electron-api.types.ts`.
+- **Handler:** Add in `index.ts` with namespaced channel (`db:*`, `mqtt:*`, `meshcore:*`, etc.).
+- **Expose:** Add to `preload/index.ts` via `contextBridge.exposeInMainWorld`.
+- **Contract test:** Update `index.contract.test.ts` if changing CSP, IPC limits, or log filters.
+- **Never:** Expose `ipcRenderer` directly.
+
+## 17. Zustand Store Changes
+
+- **Location:** `stores/*.ts`.
+- **Pattern:** `create<Name>((set, get) => ({ ... }))`. Define defaults at module level.
+- **Persistence:** Use `persist` middleware for localStorage. For SQLite, call IPC from an effect.
+- **Subscriptions:** Prefer selecting specific fields (`useStore(s => s.field)`) over entire store.
+
+## 18. Common Issues Reference
+
+| Issue                  | Where to look                              |
+| ---------------------- | ------------------------------------------ |
+| Connection fails       | `useDevice.ts` / `useMeshCore.ts`          |
+| Messages not sending   | `useDevice.sendText` / `useMeshCore...`    |
+| UI not updating        | Zustand store, React useEffect dependency  |
+| BLE timeout            | `noble-ble-manager.ts`, `bleConnectErrors` |
+| Serial port not found  | `serialPortSignature.ts`                   |
+| MQTT reconnect loop    | `mqtt-manager.ts`                          |
+| Database error         | `database.ts` migrations                   |
+| Log panel missing data | `log-service.ts`, check `[TAG]` prefixes   |
