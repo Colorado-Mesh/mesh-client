@@ -609,6 +609,10 @@ export class MQTTManager extends EventEmitter {
 
       if (packetId && this.isDuplicate(packetId)) return;
 
+      const hopStart = packet.hopStart ?? 0;
+      const hopLimit = packet.hopLimit ?? 0;
+      const hopsAway = hopStart > 0 && hopLimit <= hopStart ? hopStart - hopLimit : undefined;
+
       const payloadCase = packet.payloadVariant?.case;
 
       if (payloadCase === 'decoded') {
@@ -619,7 +623,7 @@ export class MQTTManager extends EventEmitter {
         console.debug(
           `[MQTT] Decoded payload: portnum=${decoded.portnum} nodeId=0x${nodeId.toString(16)}`,
         ); // log-filter-ok Meshtastic MQTT logs → App log panel
-        this.handleDecoded(nodeId, packetId, decoded);
+        this.handleDecoded(nodeId, packetId, decoded, hopsAway);
       } else if (payloadCase === 'encrypted') {
         const encrypted = packet.payloadVariant.value;
         const decodedData = this.tryDecryptAllKeys(encrypted, packetId, nodeId);
@@ -627,7 +631,7 @@ export class MQTTManager extends EventEmitter {
           console.debug(
             `[MQTT] Decryption succeeded: portnum=${decodedData.portnum} nodeId=0x${nodeId.toString(16)}`,
           ); // log-filter-ok Meshtastic MQTT logs → App log panel
-          this.handleDecoded(nodeId, packetId, decodedData);
+          this.handleDecoded(nodeId, packetId, decodedData, hopsAway);
         }
       }
     } catch (err) {
@@ -662,6 +666,16 @@ export class MQTTManager extends EventEmitter {
       return;
     }
 
+    if (type === 'telemetry' || type === 'TELEMETRY') {
+      this.handleJsonTelemetry(json, topic);
+      return;
+    }
+
+    if (type === 'neighborinfo' || type === 'NEIGHBORINFO') {
+      this.handleJsonNeighborInfo(json, topic);
+      return;
+    }
+
     const portnumRaw = json.portnum as number | undefined;
     if (portnumRaw === PortNum.NODEINFO_APP) {
       this.handleJsonNodeInfo(json, topic);
@@ -685,38 +699,50 @@ export class MQTTManager extends EventEmitter {
     ); // log-filter-ok Meshtastic MQTT logs → App log panel
   }
 
-  private handleJsonNodeInfo(json: Record<string, unknown>, topic: string): void {
-    const from = json.from as string | undefined;
-    if (!from) {
-      console.debug(`[MQTT] JSON nodeinfo missing "from" field, topic=${topic}`); // log-filter-ok Meshtastic MQTT logs → App log panel
-      return;
+  /**
+   * Parse a node ID from the "from" field of a JSON MQTT message.
+   * Meshtastic firmware may send `from` as a decimal integer, a hex string
+   * prefixed with "!" (e.g. "!abcd1234"), or a decimal string.
+   * Returns null when the field is missing or unparseable.
+   */
+  private parseFromNodeId(fromRaw: unknown, handler: string): number | null {
+    if (fromRaw == null) {
+      console.debug(`[MQTT] JSON ${handler} missing "from" field`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return null;
     }
-
-    let nodeId: number;
-    if (from.startsWith('!')) {
-      const hex = from.slice(1);
-      nodeId = parseInt(hex, 16);
+    if (typeof fromRaw === 'number') {
+      return fromRaw;
+    }
+    if (typeof fromRaw !== 'string') {
+      console.debug(`[MQTT] JSON ${handler} unexpected from type: ${typeof fromRaw}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return null;
+    }
+    const fromStr = fromRaw;
+    if (fromStr.startsWith('!')) {
+      const nodeId = parseInt(fromStr.slice(1), 16);
       if (isNaN(nodeId)) {
-        console.debug(`[MQTT] JSON nodeinfo invalid from hex: ${from}`); // log-filter-ok Meshtastic MQTT logs → App log panel
-        return;
+        console.debug(`[MQTT] JSON ${handler} invalid from hex: ${fromStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+        return null;
       }
-    } else {
-      const parsed = parseInt(from, 10);
-      if (isNaN(parsed)) {
-        console.debug(`[MQTT] JSON nodeinfo invalid from: ${from}`); // log-filter-ok Meshtastic MQTT logs → App log panel
-        return;
-      }
-      nodeId = parsed;
+      return nodeId;
     }
+    const nodeId = parseInt(fromStr, 10);
+    if (isNaN(nodeId)) {
+      console.debug(`[MQTT] JSON ${handler} invalid from: ${fromStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return null;
+    }
+    return nodeId;
+  }
+
+  private handleJsonNodeInfo(json: Record<string, unknown>, topic: string): void {
+    const nodeId = this.parseFromNodeId(json.from, `nodeinfo topic=${topic}`);
+    if (nodeId === null) return;
 
     const user = json.user as Record<string, unknown> | undefined;
     const payload = json.payload as Record<string, unknown> | undefined;
-    const userData = user ?? payload;
-
-    if (!userData || typeof userData !== 'object') {
-      console.debug(`[MQTT] JSON nodeinfo missing user/payload, nodeId=0x${nodeId.toString(16)}`); // log-filter-ok Meshtastic MQTT logs → App log panel
-      return;
-    }
+    // Fall back to the root JSON object when node info fields are at the top level
+    // (no "user" or "payload" wrapper) — some firmware versions omit the wrapper.
+    const userData = user ?? payload ?? json;
 
     const longName = (userData.longName ??
       userData.long_name ??
@@ -742,7 +768,7 @@ export class MQTTManager extends EventEmitter {
       long_name: longName,
       short_name: processedShortName,
       hw_model: String(hwModel),
-      role: role ?? 0,
+      ...(role !== undefined && { role }),
       last_heard: now,
       from_mqtt: true,
     };
@@ -759,28 +785,8 @@ export class MQTTManager extends EventEmitter {
   }
 
   private handleJsonPosition(json: Record<string, unknown>, topic: string): void {
-    const from = json.from as string | undefined;
-    if (!from) {
-      console.debug(`[MQTT] JSON position missing "from" field, topic=${topic}`); // log-filter-ok Meshtastic MQTT logs → App log panel
-      return;
-    }
-
-    let nodeId: number;
-    if (from.startsWith('!')) {
-      const hex = from.slice(1);
-      nodeId = parseInt(hex, 16);
-      if (isNaN(nodeId)) {
-        console.debug(`[MQTT] JSON position invalid from hex: ${from}`); // log-filter-ok Meshtastic MQTT logs → App log panel
-        return;
-      }
-    } else {
-      const parsed = parseInt(from, 10);
-      if (isNaN(parsed)) {
-        console.debug(`[MQTT] JSON position invalid from: ${from}`); // log-filter-ok Meshtastic MQTT logs → App log panel
-        return;
-      }
-      nodeId = parsed;
-    }
+    const nodeId = this.parseFromNodeId(json.from, `position topic=${topic}`);
+    if (nodeId === null) return;
 
     const jsonPayload = json.payload as Record<string, unknown> | undefined;
     const data = jsonPayload ?? json;
@@ -840,10 +846,83 @@ export class MQTTManager extends EventEmitter {
     }
   }
 
+  private handleJsonTelemetry(json: Record<string, unknown>, topic: string): void {
+    const nodeId = this.parseFromNodeId(json.from, `telemetry topic=${topic}`);
+    if (nodeId === null) return;
+
+    const payload = json.payload as Record<string, unknown> | undefined;
+    if (!payload) {
+      console.debug(`[MQTT] JSON telemetry missing payload, nodeId=0x${nodeId.toString(16)}`); // log-filter-ok
+      return;
+    }
+
+    const battery_level = payload.battery_level as number | undefined;
+    const voltage = payload.voltage as number | undefined;
+    const air_util_tx = payload.air_util_tx as number | undefined;
+    const channel_utilization = payload.channel_utilization as number | undefined;
+    const uptime_seconds = payload.uptime_seconds as number | undefined;
+
+    console.debug(
+      `[MQTT] JSON telemetry: nodeId=0x${nodeId.toString(16)} battery=${battery_level} voltage=${voltage} air_util_tx=${air_util_tx} channel_util=${channel_utilization} uptime=${uptime_seconds}`,
+    ); // log-filter-ok Meshtastic MQTT logs -> App log panel
+
+    const now = Date.now();
+
+    this.emit('nodeUpdate', {
+      node_id: nodeId,
+      battery: battery_level,
+      voltage,
+      air_util_tx,
+      channel_utilization,
+      last_heard: now,
+      from_mqtt: true,
+    });
+  }
+
+  private handleJsonNeighborInfo(json: Record<string, unknown>, topic: string): void {
+    const nodeId = this.parseFromNodeId(json.from, `neighborinfo topic=${topic}`);
+    if (nodeId === null) return;
+
+    const payload = json.payload as Record<string, unknown> | undefined;
+    if (!payload) {
+      console.debug(`[MQTT] JSON neighborinfo missing payload, nodeId=0x${nodeId.toString(16)}`); // log-filter-ok
+      return;
+    }
+
+    const neighbors = payload.neighbors as { node_id: number; snr: number }[] | undefined;
+    if (!neighbors) {
+      console.debug(
+        `[MQTT] JSON neighborinfo missing neighbors array, nodeId=0x${nodeId.toString(16)}`,
+      ); // log-filter-ok
+      return;
+    }
+
+    console.debug(
+      `[MQTT] JSON neighborinfo: nodeId=0x${nodeId.toString(16)} neighbors=${neighbors.length}`,
+    ); // log-filter-ok Meshtastic MQTT logs -> App log panel
+
+    const now = Date.now();
+
+    // Convert to MeshNeighbor format (camelCase)
+    const meshNeighbors = neighbors.map((n) => ({
+      nodeId: n.node_id,
+      snr: n.snr,
+      lastRxTime: now,
+    }));
+
+    this.emit('nodeUpdate', {
+      node_id: nodeId,
+      neighbors: meshNeighbors,
+      last_heard: now,
+      from_mqtt: true,
+    });
+  }
+
   private handleDecoded(
     nodeId: number,
     packetId: number,
     data: { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number },
+    hopsAway?: number,
   ): void {
     const portnum = data.portnum ?? 0;
     const payload = data.payload;
@@ -866,6 +945,7 @@ export class MQTTManager extends EventEmitter {
           role: user.role,
           last_heard: now,
           from_mqtt: true,
+          ...(hopsAway !== undefined && { hops_away: hopsAway }),
         };
         console.debug(
           `[MQTT] NODEINFO_APP: nodeId=0x${nodeId.toString(16)} longName="${long_name}" shortName="${short_name}" role=${user.role} hwModel=${user.hwModel}`,
@@ -885,7 +965,7 @@ export class MQTTManager extends EventEmitter {
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway);
       }
     } else if (portnum === PortNum.POSITION_APP && payload) {
       try {
@@ -901,6 +981,7 @@ export class MQTTManager extends EventEmitter {
             positionWarning: warning,
             last_heard: Date.now(),
             from_mqtt: true,
+            ...(hopsAway !== undefined && { hops_away: hopsAway }),
           });
         } else if (pos.latitudeI || pos.longitudeI) {
           const now = Date.now();
@@ -923,11 +1004,12 @@ export class MQTTManager extends EventEmitter {
             last_heard: now,
             from_mqtt: true,
             positionWarning: null,
+            ...(hopsAway !== undefined && { hops_away: hopsAway }),
           };
           this.emit('nodeUpdate', nodeUpdate);
         } else {
           this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-          this.emitMinimalNodeUpdate(nodeId);
+          this.emitMinimalNodeUpdate(nodeId, hopsAway);
         }
       } catch (e) {
         console.warn(
@@ -936,7 +1018,7 @@ export class MQTTManager extends EventEmitter {
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway);
       }
     } else if (portnum === PortNum.TEXT_MESSAGE_APP && (payload?.length || data.emoji)) {
       try {
@@ -956,7 +1038,7 @@ export class MQTTManager extends EventEmitter {
         };
         this.emit('message', msg);
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway);
       } catch (e) {
         console.warn(
           '[MQTT] TextMessage parse failed for node',
@@ -964,16 +1046,16 @@ export class MQTTManager extends EventEmitter {
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway);
       }
     } else {
       // Unknown portnum — at least track the node as seen
       this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-      this.emitMinimalNodeUpdate(nodeId);
+      this.emitMinimalNodeUpdate(nodeId, hopsAway);
     }
   }
 
-  private emitMinimalNodeUpdate(nodeId: number): void {
+  private emitMinimalNodeUpdate(nodeId: number, hopsAway?: number): void {
     const cached = this.nodeCache.get(nodeId);
     this.emit('nodeUpdate', {
       node_id: nodeId,
@@ -982,6 +1064,7 @@ export class MQTTManager extends EventEmitter {
       ...(cached?.long_name && { long_name: cached.long_name }),
       ...(cached?.short_name && { short_name: cached.short_name }),
       ...(cached?.hw_model && { hw_model: cached.hw_model }),
+      ...(hopsAway !== undefined && { hops_away: hopsAway }),
     });
   }
 

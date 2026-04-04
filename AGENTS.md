@@ -1,326 +1,147 @@
 # AGENTS.md — Coding Guidelines for AI Assistants
 
-## Before Writing Code
+Before writing code, read [ARCHITECTURE.md](ARCHITECTURE.md) to understand the codebase map and data flow.
 
-- Read all relevant files first. Never edit blind.
-- Understand the full requirement before writing anything.
-- Check for CONTRIBUTING.md: Before starting any development, read CONTRIBUTING.md if it exists. Adhere strictly to the project-specific guidelines found there.
+## 1. Strict AI Operational Guardrails (Read First)
 
-## While Writing Code
+- **The 2-Strike Rule:** If a test, build step, command, or script fails more than TWICE with the exact same error, STOP EDITING IMMEDIATELY. Explain the error and explicitly ask for guidance. Do not attempt a third fix.
+- **Zero Hallucination Policy:** Do not hallucinate functions, variables, missing files, or imports. If context is missing, STOP and ask. Never assume the structure of unread files.
+- **Verify Before Writing:** Before modifying any file, you MUST use tools (e.g., `read` or `grep`) to confirm the target lines and logic actually exist. Do not blindly patch based on outdated context.
+- **Output Restrictions:** No sycophantic openers or closing fluff. No em dashes, smart quotes, or Unicode. ASCII only. Be concise. If unsure, say so. Never guess.
+- **Git Restrictions:** Never push to a remote, force-push, or use `--no-verify` unless explicitly commanded. Always confirm before destructive operations (e.g., `reset --hard`, `branch -D`).
 
-- Test after writing. Never leave code untested.
-- Fix errors before moving on. Never skip failures.
-- Use the project's existing tooling - don't introduce new formatters or linters.
+## 2. Scope & Workflow Execution
 
-## Before Declaring Done
+- **Pre-Flight:** Read all relevant files and `CONTRIBUTING.md` before writing anything. Understand the full requirement.
+- **Scope Control:** Only make changes directly requested. Do not refactor, add features, reformat, or add comments/types to code outside the scope of the prompt.
+- **Testing Mandate:** Test after writing. Never leave code untested. Fix errors before moving on. Never declare a task "done" without a passing test.
+- **Resilient Architect Principle:** Ensure state integrity if a failure occurs mid-execution. Document the failure point, fallback, and logging strategy for stateful/I/O-bound logic.
 
-- Never declare done without a passing test.
+## 3. Architecture & Domain Specifics
 
-## Output
+- **Process Boundaries:** Electron desktop app with three boundaries: `src/main/` (Node.js, SQLite, BLE, MQTT), `src/preload/` (Context bridge), and `src/renderer/` (React 19, Vite, Zustand).
+- **Dual-Protocol:** Support both `meshtastic` and `meshcore` protocols. Gate UI features via `ProtocolCapabilities`. Use `useRadioProvider(protocol)` rather than string comparisons.
+- **Diagnostics Integration:** When modifying networking/routing logic, ensure compatibility with the Diagnostics panel and routing anomaly detection mechanisms (e.g., Hop Goblins, Hidden Terminals).
+- **Package Management:** Strictly use `pnpm` for all operations to maintain our established launch speed benchmarks.
+- **Technology Bans:** Do not introduce, suggest, or integrate any cryptocurrency-based technologies, dependencies, or services under any circumstances.
 
-- No sycophantic openers or closing fluff.
-- No em dashes, smart quotes, or Unicode. ASCII only.
-- Be concise. If unsure, say so. Never guess.
+## 4. Code Style & Standards
 
-## Scope Control
+- **Formatting:** Prettier strictly enforced. Semi: always, Quotes: single, Trailing commas: all, Print width: 100, Tab width: 2 spaces, End of line: LF.
+- **TypeScript:** Strict mode enabled. Avoid `any`; use `unknown` with type guards. Export types explicitly and prefer interfaces over type aliases.
+- **React:** Functional components only. `react-hooks/exhaustive-deps` is an error-level rule. Use optional chaining (`?.`) for nullable values in JSX. Every interactive element requires an `aria-label`.
+- **State (Zustand):** Define default values outside components at the module level for stable reference equality. Avoid subscribing to entire Maps if only a single ID is needed.
+- **Magic Numbers:** Extract time constants to `src/renderer/lib/timeConstants.ts` (e.g., `MS_PER_SECOND`). Define domain-specific thresholds at the module level.
+- **Performance:** Avoid O(n) operations in hot paths. Extract lazy cleanup logic into private methods triggered only when a collection exceeds a threshold.
 
-- Only make changes directly requested or clearly necessary to complete the task.
-- Do not refactor, add features, or "improve" code outside the scope of what was asked.
-- Do not add comments, docstrings, or type annotations to code you didn't change.
-- Do not add error handling for scenarios that can't happen -- trust internal code and framework guarantees.
-- Don't reformat code outside the scope of changes.
+## 5. Security & Error Handling
 
-## Architecture
+- **Error Handling:** Never swallow errors. Every catch must log, rethrow, or have `// catch-no-log-ok <reason>`. Prefer Result Types over deep try/catch nesting.
+- **Logging:** Use `console.debug` for diagnostics, `warn` for recoverable, `error` before rethrow. No bare `console.log`.
+- **Log Injection Validation:** Sanitize user-controlled data with `sanitizeLogMessage()` at the call site before passing to `appendLine()` or any logger.
+- **IPC Safety:** Never expose `ipcRenderer` directly. Use namespaced channels (e.g., `db:*`). Expose minimal API surface via `contextBridge`.
+- **System Boundaries:** Banned `exec`/`execSync` (use spawn APIs). No `dangerouslySetInnerHTML` or `eval()`. Validate inputs at system boundaries but do not over-validate internal code.
 
-Electron desktop app with three process boundaries:
+## 6. Testing Protocols
 
-- `src/main/` — Node.js main process: BLE (noble), serial, SQLite (`database.ts`), MQTT (`mqtt-manager.ts`), IPC handlers, auto-updater
-- `src/preload/` — Context bridge exposing minimal typed IPC surface to renderer via `contextBridge`
-- `src/renderer/` — React 19 UI (Vite, jsdom); hooks, components, stores (Zustand), lib utilities
-- `src/shared/` — Types and constants shared across all processes
+- **Environments:** Renderer tests use jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main tests use node (`src/main/**/*.test.ts`).
+- **Console Mocking:** When testing code that logs errors, mock the console method before spying to prevent stderr noise (e.g., `vi.spyOn(console, 'warn').mockImplementation(() => {});`). Use `beforeEach` for shared setup.
+- **Contract Tests:** Update `src/main/index.contract.test.ts` when changing CSP, build config, IPC limits, or log filters.
 
-## Build / Lint / Test Commands
+## 7. Commands & CI Checks
 
-```bash
-# Development
-pnpm run dev   # Start dev mode (vite + electron)
-pnpm run build # Production build (all targets)
-pnpm start     # Build and start electron
+- **Development:** `pnpm run dev` (dev mode), `pnpm run build` (production build), `pnpm start` (build & start).
+- **Quality:** `pnpm run lint` (ESLint), `pnpm run format` (Prettier), `pnpm run typecheck`, `pnpm run lint:md`.
+- **Validation:** `pnpm run check:log-injection`, `pnpm run check:db-migrations`, `pnpm run check:ipc-contract`, `pnpm run check:licenses`.
+- **Testing:** `pnpm test` (watch), `pnpm run test:run` (CI mode). Example single file: `pnpm dlx vitest run src/main/database.test.ts`.
 
-# Code quality
-pnpm run lint         # ESLint (type-aware)
-pnpm run lint:fix     # ESLint with auto-fix
-pnpm run format       # Prettier write
-pnpm run format:check # Prettier check only
-pnpm run typecheck    # TypeScript (renderer + main)
-pnpm run lint:md      # Markdownlint for all .md files
+## 8. Git & PR Workflow
 
-# Checks
-pnpm run check:log-injection # Verify no unsanitized error logging
-pnpm run check:db-migrations # Validate SQLite migrations
-pnpm run check:ipc-contract  # Verify preload/main API alignment
-pnpm run check:licenses      # Show license summary for dependencies
+- **Commits:** Use Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
+- **Remote Tracking:** Ensure operations are tracked against the correct remote (`Colorado-Mesh/meshtastic-client`).
+- **Pre-PR Sweep:** Update `README.md`, bump versions if warranted, and group metadata changes into a single commit before opening a PR.
+- **PR Descriptions:** When executing `gh pr create`, the description MUST include details for all commits in the branch (`git log origin/main..HEAD --oneline`), not just the most recent one.
 
-# Testing
-pnpm test             # Vitest watch mode
-pnpm run test:run     # Run all tests once (CI mode)
-pnpm run test:verbose # Verbose output
+## 9. Diagnostics Debugging
 
-# Run single test file
-npx vitest run src/renderer/components/Button.test.tsx
-npx vitest run src/main/database.test.ts
+- **Engines:** `lib/diagnostics/` — `RoutingDiagnosticEngine.ts` (hop anomalies), `RFDiagnosticEngine.ts` (RF), `RemediationEngine.ts` (fixes).
+- **Store:** `diagnosticsStore.ts` holds routing rows, RF rows, foreign LoRa, MQTT ignore, packet redundancy.
+- **Adding a finding:** Extend `DiagnosticRow` in `types.ts`, add detector in engine, add to store via `replaceRoutingRowsFromMap` or `replaceRfRowsForNode`.
+- **TTL:** Routing 24h, RF 1h — configure in `diagnosticRows.ts`.
+- **Debug:** Add `console.debug` in detector. Check store in DevTools. Routing requires GPS on both nodes.
 
-# Run tests matching pattern
-npx vitest run --reporter=verbose -t "should render"
+## 10. Bug Fix Workflow
 
-# Pre-commit hooks (run automatically on git commit)
-pnpm run format && pnpm run lint && pnpm run typecheck && pnpm run test:run
-```
+1. **Reproduce:** Developer runs `pnpm start` and exercises the failing path. Report findings to AI.
+2. **Locate:** Search error text in `main/*.ts` or `renderer/**/*.tsx`.
+3. **Log:** Add `console.debug` only if needed to trace execution flow.
+4. **Fix:** Apply minimum change needed.
+5. **Test:** Add test in same directory (`*.test.ts` or `*.test.tsx`).
+6. **Verify:** Run `pnpm dlx vitest run <test-file>` and `pnpm run lint`.
 
-## Code Style
+- Connection bugs: `useDevice.ts` / `useMeshCore.ts`.
+- UI state bugs: matching store in `stores/`.
+- IPC failures: `index.ts`.
 
-### Formatting (Prettier)
+## 11. Protocol-Specific Work
 
-- **Semi**: always
-- **Quotes**: single
-- **Trailing commas**: all
-- **Print width**: 100
-- **Tab width**: 2 spaces (no tabs)
-- **End of line**: LF
+- **Meshtastic:** `useDevice.ts` + `createConnection()` in `connection.ts`.
+- **MeshCore:** `useMeshCore.ts` + `MeshCoreConnection` from `@liamcottle/meshcore.js`.
+- **Capability gating:** Use `useRadioProvider(protocol)` from `providerFactory.ts`. Returns `ProtocolCapabilities`.
+- **Never:** Compare `protocol === 'meshcore'` strings.
 
-### Imports
+## 12. Database Changes
 
-- Use `@/` path alias for `src/` imports (e.g., `@/renderer/components/Button`)
-- Sort imports automatically (`eslint-plugin-simple-import-sort`)
-- Use `import type { ... }` for type-only imports (enforced by ESLint)
-- Group: external deps → internal aliases → relative imports
+- **Schema:** SQLite with WAL mode. Version in `db.pragma('user_version')`.
+- **Migration:** Add `migration_N()` in `database.ts`, increment version.
+- **API:** Use `db-compat.ts` (wraps `node:sqlite`). Never `better-sqlite3`.
+- **Test:** Run `pnpm run check:db-migrations` after changes.
 
-### TypeScript
+## 13. BLE/Serial Communication
 
-- **Strict mode enabled** — no implicit any
-- Renderer uses `tsconfig.json` (ESNext, bundler resolution, JSX)
-- Main/preload uses `tsconfig.main.json` (CommonJS, Node resolution)
-- Avoid `any` — use `unknown` with type guards
-- Export types explicitly; prefer interfaces over type aliases for objects
-
-### Naming Conventions
-
-- **Components**: PascalCase (e.g., `ConnectionPanel.tsx`)
-- **Hooks**: camelCase starting with `use` (e.g., `useDevice.ts`)
-- **Utils/helpers**: camelCase (e.g., `parseStoredJson.ts`)
-- **Constants**: SCREAMING_SNAKE_CASE for true constants
-- **Types/Interfaces**: PascalCase with descriptive names
-- **Files**: PascalCase for components, camelCase for utilities
-
-### ESLint Plugins
-
-ESLint is configured with multiple plugins for code quality and security:
-
-- **`eslint-plugin-security`** — Node.js security patterns (detects unsafe file operations, regex issues, etc.)
-- **`eslint-plugin-vitest`** — Vitest-specific test rules (valid assertions, expect usage)
-- **`eslint-plugin-no-secrets`** — Detects potential hardcoded secrets/API keys
-- **`eslint-plugin-electron`** — Electron-specific security rules (IPC safety, contextBridge patterns)
-- **`license-checker-rseidelsohn`** — License compliance check (runs via `pnpm run check:licenses`)
-
-Run `pnpm run lint` to see all violations. Pre-commit enforces these rules.
-
-### React
-
-- Functional components with hooks
-- `react-hooks/exhaustive-deps` is **error** level — fix dependency arrays
-- Use `jsx-runtime` (no need to import React)
-- Accessibility: every interactive element needs `aria-label` (Electron hides text from AT)
-- Components must have accessible labels (axe tests enforce this)
-- **Null safety in JSX**: When displaying nullable values that were checked in a condition, use optional chaining for defense in depth. Example: `showLastHopSnr && node.snr?.toFixed(1)` not `showLastHopSnr && node.snr.toFixed(1)` — the value could change between condition check and render.
-
-### State Management (Zustand)
-
-- **Map selectors**: Selecting from a Map (e.g., `s.map.get(id) ?? DEFAULT`) subscribes to the entire Map. Prefer selecting the Map once and deriving with `useMemo`, or accept that any Map update triggers re-renders.
-- **Stable defaults**: Always define default values outside components (module level) to ensure stable reference equality: `const EMPTY_ARRAY: Item[] = []` — never inline `?? []` or `?? {}`.
-
-### Magic Numbers
-
-- **Time constants**: Extract time-related magic numbers to `src/renderer/lib/timeConstants.ts`. Use `MS_PER_SECOND`, `MS_PER_MINUTE`, `MS_PER_HOUR`, `MS_PER_DAY` instead of inline `60_000`, `3_600_000`, `86_400_000`.
-- **Other domains**: For domain-specific thresholds (e.g., timeouts, limits), define module-level constants with descriptive names.
-
-### Performance
-
-- **Avoid O(n) operations in hot paths**: Event handlers, packet processing, and high-frequency methods should not filter entire collections on every call. Use threshold-based cleanup instead.
-- **Lazy cleanup for rolling windows**: When maintaining time-based windows, only clean up when the collection exceeds a threshold rather than on every operation.
-- **Single cleanup method**: Extract cleanup logic into a private method called by both write operations (when threshold exceeded) and read operations (for accuracy).
-
-### Error Handling
-
-- **Log levels**: Use `console.debug` for diagnostics; `warn` for recoverable; `error` before rethrow
-- **Never swallow errors**: Every catch must log, rethrow, or have `// catch-no-log-ok <reason>`
-- **No bare `console.log`**: Use `console.debug` (enforced by pre-commit)
-- **Log injection**: Sanitize user-controlled data with `sanitizeLogMessage()` at call site before passing to `appendLine()` or any logger
-
-### Security
-
-- **IPC**: Never expose `ipcRenderer` directly; use namespaced channels (`db:*`, `mqtt:*`, `meshcore:*`)
-- **Preload**: Expose minimal API surface via `contextBridge`
-- **XSS**: No `dangerouslySetInnerHTML`, no `innerHTML` assignment, no `eval()`
-- **Child process**: Banned `exec`/`execSync`; use spawn-style APIs
-- **OWASP awareness**: Avoid SQL injection, XSS, command injection, insecure deserialization
-- **Validate input**: At system boundaries (user input, external APIs). Don't over-validate internal code.
-- **Never commit secrets**: Don't commit credentials, API keys, or tokens -- even to non-production branches.
-
-### Testing
-
-- **Renderer tests**: `src/renderer/**/*.test.{ts,tsx}` (jsdom environment)
-- **Main tests**: `src/main/**/*.test.ts` (node environment)
-- **Accessibility**: Include axe tests for new panels (`expect(results).toHaveNoViolations()`)
-- **Contract tests**: Update when changing CSP, build config, IPC limits, or log filters
-- **Console spies**: Use `beforeEach`/`afterEach` hooks for shared spy setup rather than duplicating in each test; declare spy at describe scope, clear mocks in beforeEach
-- **Silent console output**: When testing code that logs errors (e.g., `console.warn` in error handlers), always mock the console method before spying to prevent stderr noise:
-  ```typescript
-  const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  ```
-  For module-level setup that logs during initialization, add at the top of the test file:
-  ```typescript
-  vi.spyOn(console, 'warn').mockImplementation(() => {});
-  vi.spyOn(console, 'error').mockImplementation(() => {});
-  ```
-- **Coverage**: Test both success and failure paths for async operations
-
-## Project-Specific Rules
-
-### Dual-Protocol Architecture
-
-- Support both `meshtastic` and `meshcore` protocols
-- Gate UI features via `ProtocolCapabilities` (never string compare `protocol === 'meshcore'`)
-- Use `useRadioProvider(protocol)` to get capabilities object
-
-### Electron IPC Channels
-
-- **Invoke handlers**: Use `domain:action` naming (e.g., `db:query`, `mqtt:publish`)
-- **Main→renderer events**: Prefer consistent prefixes (e.g., `ble:devices-discovered`)
-- Add handler in main, preload namespace, AND `Window.electronAPI` type declaration
-- **Contract tests**: Update `src/main/index.contract.test.ts` when adding or renaming channels
-
-### Log Injection (CodeQL)
-
-When logging user-controlled data:
-
-```typescript
-// CORRECT: sanitize at call site
-appendLine('info', 'main', sanitizeLogMessage(userInput));
-
-// INCORRECT: sanitizing inside appendLine doesn't clear CodeQL taint
-appendLine('info', 'main', userInput); // CodeQL will flag this
-```
-
-### Commit Style
-
-Use Conventional Commits:
-
-- `feat:` new feature
-- `fix:` bug fix
-- `docs:` documentation
-- `chore:` maintenance/config
-- `refactor:` code change (neither fix nor feature)
-- `test:` adding/updating tests
-
-For `feat:` and `fix:`, include issue reference in footer if applicable.
-
-### Pull Requests
-
-When creating a PR, the description **must** include details for **all commits** in the branch, not just the most recent one. Use `git log origin/main..HEAD --oneline` to see all commits that will be included in the PR.
-
-## Git Safety
-
-- Never push to remote unless the user explicitly asks.
-- Never force-push unless the user explicitly requests it and confirms.
-- Never use `--no-verify` to skip hooks -- fix the underlying issue instead.
-- Always confirm before destructive git operations (reset --hard, branch -D, etc.).
-
-## PR Workflow
-
-### Pre-PR Metadata Sweep
-
-Before creating a PR, verify the project's footprint is accurate:
-
-- **Docs**: Update README.md and relevant `/docs` files for any logic or API changes.
-- **Versioning**: If the scope warrants a bump, update version strings in `package.json`, `pyproject.toml`, `setup.py`, `requirements.txt`, or `electron-builder.yml` as applicable.
-- **Credits** _(if the project maintains them)_: Add new contributors to `CREDITS.md` or the `contributors` field in `package.json`.
-- **Commit**: Group metadata changes into a single commit, e.g., `docs: update metadata for PR`.
-- **Push**: Ensure the remote branch is up to date before opening the PR.
-
-### PR Creation (gh pr create)
-
-- Link the PR to any relevant issues.
-- Confirm the diff looks correct with `gh pr diff` if uncertain.
-
-## Engineering Principles
-
-When executing `/plan` or proposing code changes, adhere to the "Resilient Architect" framework. Code must be optimized for both success and failure.
-
-### Failure-Aware Planning
-
-Before implementation, evaluate the plan for:
-
-- **Blast Radius:** If this specific function/service fails, what else breaks? Decouple where possible.
-- **Defensive Guardrails:** Use circuit breakers, timeouts, and fallbacks for all I/O, network requests, and heavy computations.
-- **State Integrity:** Ensure that a failure mid-execution does not leave the system in an inconsistent or "zombie" state.
-
-### The "Gracious Exit" Requirement
-
-For non-trivial, stateful, or I/O-bound logic blocks, document in comments or the plan:
-
-- **Failure Point:** Identification of what could go wrong (e.g., "Third-party API timeout").
-- **Fallback:** The immediate alternative (e.g., "Return stale cache" or "Show simplified UI").
-- **Logging:** Ensure errors are caught with enough context to debug without crashing the process.
-
-### Coding Standards for Failure
-
-- **Prefer Result Types:** Favor explicit error handling over deep try/catch nesting.
-- **No Silent Failures:** Never "swallow" an error. If a failure occurs, it must be handled, logged, or reported to the user gracefully.
-- **Graceful Degradation:** The UI/UX should remain interactive even if a secondary feature fails to load.
-
-## Pre-Commit Checklist
-
-1. `pnpm run format` — auto-formats staged files (including `.sh` files)
-2. `pnpm run lint:md` — markdownlint fixes all .md files
-3. `pnpm run lint` — passes with no errors
-4. `pnpm run typecheck` — TypeScript compiles
-5. `pnpm run check:log-injection` — no unsanitized error logging
-6. `pnpm run check:db-migrations` — SQLite migrations valid; run when touching `database.ts`
-7. `pnpm run check:ipc-contract` — preload/main API alignment
-8. `pnpm run check:licenses` — license summary for dependencies
-9. `pnpm audit --audit-level=high` — no high/critical vulnerabilities
-10. `actionlint` — GitHub workflow linting
-11. `yamllint -f github -s .` — YAML linting
-12. `pnpm run test:run` — all tests pass
-
-## Quick Reference
-
-- **Node version**: 22.x (CI uses 22.12.0+)
-- **Test environments**: renderer (jsdom), main (node)
-- **Path alias**: `@/` → `src/`
-- **Prettier config**: `.prettierrc` (includes `prettier-plugin-sh` for shell scripts)
-- **ESLint config**: `eslint.config.mjs`
-- **Vitest config**: `vitest.config.ts`
-- **Native rebuild**: Run `pnpm run rebuild` after changing Node or Electron versions
-- **Actionlint**: Install with `pnpm run setup:actionlint` — commits fail without it
-
----
-
-# Strict AI Operational Guardrails
-
-## 1. The 2-Strike Loop-Breaking Rule
-
-- If a test, build step, command, or script fails more than TWICE with the exact same error, **STOP EDITING IMMEDIATELY**.
-- Do not attempt a third fix. Do not guess.
-- Explain the error to the user and explicitly ask for guidance or missing context.
-
-## 3. Zero Hallucination Policy
-
-- Do not hallucinate functions, variables, missing files, or imports.
-- If a dependency, file, or piece of context is missing, **STOP** and ask the user to provide it.
-- Never assume the structure of a file you haven't read.
-
-## 4. Verify Before Writing (Build Mode)
-
-- Before modifying any file in Build mode, you MUST use your tools (like `read` or `grep`) to confirm the target lines and logic actually exist.
-- Do not blindly write or patch files based on outdated context.
+- **Meshtastic BLE:** `connection.ts` → `createBleConnection()` → `TransportManager`.
+- **MeshCore BLE:** macOS/Windows: `noble-ble-manager.ts`. Linux: Web Bluetooth via `TransportWebBluetoothIpc`.
+- **Serial:** `createSerialConnection()` in `connection.ts`. Port identity: `serialPortSignature.ts`.
+- **Errors:** `humanizeBleError`, `humanizeSerialError`, `humanizeHttpError` in `connection.ts`.
+- **Reconnect:** Watchdog in `useDevice.ts` (BLE_STALE_THRESHOLD_MS, BLE_DEAD_THRESHOLD_MS).
+
+## 14. MQTT
+
+- **Meshtastic:** `mqtt-manager.ts`. Handles AES decryption, protobuf decode, dedup (10-min window in `seenPacketIds`).
+- **MeshCore:** `meshcore-mqtt-adapter.ts`. JSON v1 envelope format.
+- **Debug:** Tagged logs `[MQTT]` in mqtt-manager.ts. Check `MQTTStatus` in UI.
+
+## 15. UI Component Development
+
+- **Location:** `components/*.tsx`. Tests co-located as `*.test.tsx`.
+- **State:** Use Zustand stores in `stores/`. Define defaults at module level.
+- **Rules:** Every interactive element needs `aria-label`. Functional components only. No `dangerouslySetInnerHTML`.
+- **Adding a panel:** Add to `lazyTabPanels.ts` or `lazyAppPanels.ts`. Gate via `ProtocolCapabilities`.
+
+## 16. IPC/Preload Extensions
+
+- **Types:** Define in `electron-api.types.ts`.
+- **Handler:** Add in `index.ts` with namespaced channel (`db:*`, `mqtt:*`, `meshcore:*`, etc.).
+- **Expose:** Add to `preload/index.ts` via `contextBridge.exposeInMainWorld`.
+- **Contract test:** Update `index.contract.test.ts` if changing CSP, IPC limits, or log filters.
+- **Never:** Expose `ipcRenderer` directly.
+
+## 17. Zustand Store Changes
+
+- **Location:** `stores/*.ts`.
+- **Pattern:** `create<Name>((set, get) => ({ ... }))`. Define defaults at module level.
+- **Persistence:** Use `persist` middleware for localStorage. For SQLite, call IPC from an effect.
+- **Subscriptions:** Prefer selecting specific fields (`useStore(s => s.field)`) over entire store.
+
+## 18. Common Issues Reference
+
+| Issue                  | Where to look                              |
+| ---------------------- | ------------------------------------------ |
+| Connection fails       | `useDevice.ts` / `useMeshCore.ts`          |
+| Messages not sending   | `useDevice.sendText` / `useMeshCore...`    |
+| UI not updating        | Zustand store, React useEffect dependency  |
+| BLE timeout            | `noble-ble-manager.ts`, `bleConnectErrors` |
+| Serial port not found  | `serialPortSignature.ts`                   |
+| MQTT reconnect loop    | `mqtt-manager.ts`                          |
+| Database error         | `database.ts` migrations                   |
+| Log panel missing data | `log-service.ts`, check `[TAG]` prefixes   |

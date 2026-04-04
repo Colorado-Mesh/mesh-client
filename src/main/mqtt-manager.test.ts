@@ -65,8 +65,10 @@ function buildDecodedEnvelope(options: {
   packetId: number;
   dataBytes: Uint8Array;
   channelName?: string;
+  hopStart?: number;
+  hopLimit?: number;
 }): Buffer {
-  const { nodeId, packetId, dataBytes, channelName = 'LongFast' } = options;
+  const { nodeId, packetId, dataBytes, channelName = 'LongFast', hopStart, hopLimit } = options;
   const data = fromBinary(DataSchema, dataBytes);
   const packet = create(MeshPacketSchema, {
     from: nodeId,
@@ -77,6 +79,8 @@ function buildDecodedEnvelope(options: {
       case: 'decoded',
       value: data,
     },
+    ...(hopStart !== undefined && { hopStart }),
+    ...(hopLimit !== undefined && { hopLimit }),
   });
   const gatewayId = `!${nodeId.toString(16).padStart(8, '0')}`;
   const envelope = create(ServiceEnvelopeSchema, {
@@ -855,5 +859,243 @@ describe('onMessage — JSON position', () => {
     expect(update.node_id).toBe(nodeId);
     expect(update.latitude).toBe(35.0);
     expect(update.longitude).toBe(-90.0);
+  });
+
+  it('handles JSON position with numeric from field (Meshtastic firmware JSON format)', () => {
+    const nodeId = 0x12ab34cd;
+    const json = {
+      type: 'position',
+      from: nodeId, // number, not string
+      latitude: 39.7392,
+      longitude: -104.9903,
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!12ab34cd', payload);
+
+    expect(updates).toHaveLength(1);
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.latitude).toBe(39.7392);
+    expect(update.longitude).toBe(-104.9903);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// onMessage — JSON nodeinfo
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('onMessage — JSON nodeinfo', () => {
+  let manager: MQTTManager;
+
+  beforeEach(() => {
+    manager = new MQTTManager();
+  });
+
+  it('emits nodeUpdate from JSON USER message with user wrapper', () => {
+    const nodeId = 0xdeadbeef;
+    const json = {
+      type: 'USER',
+      from: `!${nodeId.toString(16)}`,
+      user: {
+        longName: 'Test Node',
+        shortName: 'TST',
+        hwModel: 'TBEAM',
+        role: 0,
+      },
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/2/json/LongFast/!deadbeef', payload);
+
+    expect(updates).toHaveLength(1);
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.long_name).toBe('Test Node');
+    expect(update.short_name).toBe('TST');
+  });
+
+  it('handles JSON nodeinfo with numeric from field (Meshtastic firmware JSON format)', () => {
+    const nodeId = 0x11223344;
+    const json = {
+      type: 'USER',
+      from: nodeId, // number, not string
+      user: {
+        longName: 'Numeric From Node',
+        shortName: 'NFN',
+      },
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/2/json/LongFast/!11223344', payload);
+
+    expect(updates).toHaveLength(1);
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.long_name).toBe('Numeric From Node');
+    expect(update.short_name).toBe('NFN');
+  });
+
+  it('handles JSON nodeinfo with root-level name fields (no user/payload wrapper)', () => {
+    const nodeId = 0xaabbccdd;
+    // Some firmware versions emit longName/shortName at the root without a "user" wrapper
+    const json = {
+      from: nodeId,
+      longName: 'Root Level Node',
+      shortName: 'RLN',
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/2/json/LongFast/!aabbccdd', payload);
+
+    expect(updates).toHaveLength(1);
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.long_name).toBe('Root Level Node');
+    expect(update.short_name).toBe('RLN');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// onMessage — binary MQTT hop count (issue #271)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('onMessage — binary MQTT hop count', () => {
+  let manager: MQTTManager;
+
+  beforeEach(() => {
+    manager = new MQTTManager();
+  });
+
+  it('emits hops_away from hopStart and hopLimit in a binary NODEINFO packet', () => {
+    const nodeId = 0x11223344;
+    const packetId = 0x00000020;
+
+    const user = create(UserSchema, {
+      id: `!${nodeId.toString(16)}`,
+      longName: 'Hop Node',
+      shortName: 'HOP',
+    });
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.NODEINFO_APP,
+        payload: toBinary(UserSchema, user),
+      }),
+    );
+
+    // hopStart=3, hopLimit=2 => 1 hop away from the MQTT bridge
+    const payload = buildDecodedEnvelope({ nodeId, packetId, dataBytes, hopStart: 3, hopLimit: 2 });
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!11223344', payload);
+
+    expect(updates).toHaveLength(1);
+    const u = updates[0] as Record<string, unknown>;
+    expect(u.node_id).toBe(nodeId);
+    expect(u.hops_away).toBe(1);
+  });
+
+  it('does not emit hops_away when hopStart is 0', () => {
+    const nodeId = 0x55667788;
+    const packetId = 0x00000021;
+
+    const user = create(UserSchema, {
+      id: `!${nodeId.toString(16)}`,
+      longName: 'No Hop Node',
+      shortName: 'NHN',
+    });
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.NODEINFO_APP,
+        payload: toBinary(UserSchema, user),
+      }),
+    );
+
+    // hopStart=0 means no valid hop data
+    const payload = buildDecodedEnvelope({ nodeId, packetId, dataBytes, hopStart: 0, hopLimit: 0 });
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!55667788', payload);
+
+    expect(updates).toHaveLength(1);
+    const u = updates[0] as Record<string, unknown>;
+    expect(u.node_id).toBe(nodeId);
+    expect(u.hops_away).toBeUndefined();
+  });
+
+  it('does not emit hops_away when hopLimit exceeds hopStart (invalid)', () => {
+    const nodeId = 0x99aabbcc;
+    const packetId = 0x00000022;
+
+    const user = create(UserSchema, {
+      id: `!${nodeId.toString(16)}`,
+      longName: 'Bad Hop Node',
+      shortName: 'BHN',
+    });
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.NODEINFO_APP,
+        payload: toBinary(UserSchema, user),
+      }),
+    );
+
+    // hopLimit > hopStart is an invalid/corrupt packet
+    const payload = buildDecodedEnvelope({ nodeId, packetId, dataBytes, hopStart: 2, hopLimit: 3 });
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!99aabbcc', payload);
+
+    expect(updates).toHaveLength(1);
+    const u = updates[0] as Record<string, unknown>;
+    expect(u.node_id).toBe(nodeId);
+    expect(u.hops_away).toBeUndefined();
+  });
+
+  it('emits hops_away=0 when hopStart equals hopLimit (node directly at the MQTT bridge)', () => {
+    const nodeId = 0xddeeff00;
+    const packetId = 0x00000023;
+
+    const user = create(UserSchema, {
+      id: `!${nodeId.toString(16)}`,
+      longName: 'Direct Node',
+      shortName: 'DIR',
+    });
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.NODEINFO_APP,
+        payload: toBinary(UserSchema, user),
+      }),
+    );
+
+    // hopStart=3, hopLimit=3 => 0 hops (directly heard by MQTT bridge)
+    const payload = buildDecodedEnvelope({ nodeId, packetId, dataBytes, hopStart: 3, hopLimit: 3 });
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!ddeeff00', payload);
+
+    expect(updates).toHaveLength(1);
+    const u = updates[0] as Record<string, unknown>;
+    expect(u.node_id).toBe(nodeId);
+    expect(u.hops_away).toBe(0);
   });
 });

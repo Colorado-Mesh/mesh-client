@@ -30,6 +30,7 @@ import type {
   ConnectionType,
   DeviceState,
   EnvironmentTelemetryPoint,
+  MeshNeighbor,
   MeshNode,
   MeshWaypoint,
   MQTTStatus,
@@ -506,6 +507,9 @@ export function useDevice() {
             ),
             role: parseNodeRole(n.role),
             favorited: Boolean(n.favorited),
+            // Restore MQTT-only status from persisted source so these nodes show
+            // the globe indicator and suppressed hop count until heard via RF.
+            heard_via_mqtt_only: n.source === 'mqtt',
           });
         }
         nodesRef.current = nodeMap;
@@ -580,10 +584,36 @@ export function useDevice() {
       const nodeUpdate = rawNode as Partial<MeshNode> & {
         node_id: number;
         from_mqtt?: boolean;
+        protocol?: 'meshtastic' | 'meshcore';
         positionWarning?: string | null;
+        neighbors?: MeshNeighbor[];
       };
       if (!nodeUpdate.node_id) return;
+
+      // Skip if protocol doesn't match current mode (backward compat: no protocol = process)
+      if (nodeUpdate.protocol && nodeUpdate.protocol !== getStoredMeshProtocol()) {
+        return;
+      }
+
       console.debug(`[useDevice] MQTT node update: nodeId=${nodeUpdate.node_id}`);
+
+      // Handle neighbor info from MQTT
+      if (nodeUpdate.neighbors && nodeUpdate.neighbors.length > 0) {
+        setNeighborInfo((prev) => {
+          const existing = prev.get(nodeUpdate.node_id);
+          // Only merge if no RF neighbor info exists
+          if (existing && existing.neighbors.length > 0) {
+            return prev;
+          }
+          const updated = new Map(prev);
+          updated.set(nodeUpdate.node_id, {
+            nodeId: nodeUpdate.node_id,
+            neighbors: nodeUpdate.neighbors ?? [],
+            timestamp: Date.now(),
+          });
+          return updated;
+        });
+      }
 
       updateNodes((prev) => {
         const existing = prev.get(nodeUpdate.node_id) ?? emptyNode(nodeUpdate.node_id);
@@ -599,8 +629,7 @@ export function useDevice() {
         };
         // Don't overwrite RF signal data with MQTT-sourced node data
         if (!heardViaRF) {
-          // MQTT-only: suppress RF metrics
-          node.hops_away = existing.hops_away;
+          // MQTT-only: suppress device-local RF metrics; hops_away from binary MQTT is valid
           node.snr = existing.snr;
           node.rssi = existing.rssi;
         }
@@ -880,7 +909,7 @@ export function useDevice() {
           if (virtualNodeId !== info.myNodeNum) updated.delete(virtualNodeId);
           const existing = updated.get(info.myNodeNum);
           if (!existing) {
-            const selfNode = { ...emptyNode(info.myNodeNum), hops_away: 0 };
+            const selfNode = { ...emptyNode(info.myNodeNum), hops_away: 0, last_heard: Date.now() };
             updated.set(info.myNodeNum, selfNode);
           } else {
             const selfNode = { ...existing, hops_away: 0 };
@@ -906,6 +935,21 @@ export function useDevice() {
         if (dataPacket.portnum !== Portnums.PortNum.TEXT_MESSAGE_APP) return;
 
         ensureNodeExists(meshPacket.from, 'rf');
+
+        // Bump last_heard for the sender on live (non-replay) packets.
+        if (!isConfiguringRef.current && meshPacket.from) {
+          updateNodes((prev) => {
+            const existing = prev.get(meshPacket.from);
+            if (!existing) return prev;
+            const now = meshPacket.rxTime ? meshPacket.rxTime * 1000 : Date.now();
+            if (now <= (existing.last_heard || 0)) return prev;
+            const next = new Map(prev);
+            const updated = { ...existing, last_heard: now };
+            next.set(meshPacket.from, updated);
+            void window.electronAPI.db.saveNode(updated);
+            return next;
+          });
+        }
 
         touchLastData();
         const isEcho = meshPacket.from === myNodeNumRef.current;
@@ -1123,8 +1167,11 @@ export function useDevice() {
             }
           }
 
-          const lastHeardMs =
-            (info.lastHeard ?? 0) > 0 ? info.lastHeard! * 1000 : existing.last_heard;
+          const lastHeardMs = computeNodeInfoLastHeardMs(
+            info.lastHeard,
+            existing.last_heard,
+            nodeNum === myNodeNumRef.current,
+          );
           const lastHeardStale =
             lastHeardMs > 0 &&
             Date.now() - lastHeardMs > MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs;
@@ -2549,6 +2596,9 @@ export function useDevice() {
             ),
             role: parseNodeRole(n.role),
             favorited: Boolean(n.favorited),
+            // Restore MQTT-only status from persisted source so these nodes show
+            // the globe indicator and suppressed hop count until heard via RF.
+            heard_via_mqtt_only: n.source === 'mqtt',
           });
         }
         console.debug(`[useDevice] refreshNodesFromDb: loaded ${nodeMap.size} nodes`);
@@ -2909,6 +2959,16 @@ export function emptyNode(nodeId: number): MeshNode {
     latitude: null,
     longitude: null,
   };
+}
+
+export function computeNodeInfoLastHeardMs(
+  infoLastHeard: number | undefined,
+  existingLastHeard: number,
+  isSelf: boolean,
+): number {
+  return (infoLastHeard ?? 0) > 0
+    ? infoLastHeard! * 1000
+    : existingLastHeard || (isSelf ? Date.now() : 0);
 }
 
 export function createChatStubNode(nodeId: number, source: 'rf' | 'mqtt'): MeshNode {

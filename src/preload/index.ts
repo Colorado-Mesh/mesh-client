@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import type {
   ElectronAPI,
+  MeshNode,
   NobleBleConnectResult,
   NobleBleDevice,
   NobleBleSessionId,
@@ -73,6 +74,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteNodesBySource: (source: string) => ipcRenderer.invoke('db:deleteNodesBySource', source),
     migrateRfStubNodes: () => ipcRenderer.invoke('db:migrateRfStubNodes'),
     deleteNodesWithoutLongname: () => ipcRenderer.invoke('db:deleteNodesWithoutLongname'),
+    prunePositionHistory: (days: number) => ipcRenderer.invoke('db:prunePositionHistory', days),
     clearNodePositions: () => ipcRenderer.invoke('db:clearNodePositions'),
     updateMessageReceivedVia: (packetId: number) =>
       ipcRenderer.invoke('db:updateMessageReceivedVia', packetId),
@@ -139,6 +141,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearMeshcoreMessagesByChannel: (channelIdx: number) =>
       ipcRenderer.invoke('db:clearMeshcoreMessagesByChannel', channelIdx),
     clearMeshcoreContacts: () => ipcRenderer.invoke('db:clearMeshcoreContacts'),
+    deleteMeshcoreContactsNeverAdvertised: () =>
+      ipcRenderer.invoke('db:deleteMeshcoreContactsNeverAdvertised'),
+    deleteMeshcoreContactsByAge: (days: number) =>
+      ipcRenderer.invoke('db:deleteMeshcoreContactsByAge', days),
+    pruneMeshcoreContactsByCount: (maxCount: number) =>
+      ipcRenderer.invoke('db:pruneMeshcoreContactsByCount', maxCount),
     clearMeshcoreRepeaters: () => ipcRenderer.invoke('db:clearMeshcoreRepeaters'),
     updateMeshcoreContactNickname: (nodeId: number, nickname: string | null) =>
       ipcRenderer.invoke('db:updateMeshcoreContactNickname', nodeId, nickname),
@@ -207,9 +215,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('mqtt:warning', handler);
       return () => ipcRenderer.off('mqtt:warning', handler);
     },
-    onNodeUpdate: (cb: (node: unknown) => void) => {
+    onNodeUpdate: (
+      cb: (
+        node: Partial<MeshNode> & { node_id: number; protocol?: 'meshtastic' | 'meshcore' },
+      ) => void,
+    ) => {
       const handler = (_: unknown, n: unknown) => {
-        cb(n);
+        cb(n as Partial<MeshNode> & { node_id: number; protocol?: 'meshtastic' | 'meshcore' });
       };
       ipcRenderer.on('mqtt:node-update', handler);
       return () => ipcRenderer.off('mqtt:node-update', handler);
@@ -279,6 +291,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
       };
       ipcRenderer.on('mqtt:meshcore-chat', handler);
       return () => ipcRenderer.off('mqtt:meshcore-chat', handler);
+    },
+    refreshMeshcoreToken: (
+      serverHost: string,
+    ): Promise<{ token: string; expiresAt: number } | null> =>
+      ipcRenderer.invoke('mqtt:refreshMeshcoreToken', serverHost),
+    updateMeshcoreToken: (token: string, expiresAt: number): Promise<void> =>
+      ipcRenderer.invoke('mqtt:updateMeshcoreToken', { token, expiresAt }),
+    onRequestTokenRefresh: (cb: (serverHost: string) => void): (() => void) => {
+      const handler = (_: unknown, serverHost: string) => {
+        cb(serverHost);
+      };
+      ipcRenderer.on('mqtt:requestTokenRefresh', handler);
+      return () => ipcRenderer.off('mqtt:requestTokenRefresh', handler);
     },
   },
 

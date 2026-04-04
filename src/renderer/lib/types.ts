@@ -136,6 +136,8 @@ export interface MeshNode {
   env_lux?: number;
   env_wind_speed?: number;
   env_wind_direction?: number;
+  // Neighbor info from MQTT (session-only)
+  neighbors?: MeshNeighbor[];
 }
 
 export type RemediationCategory = 'Configuration' | 'Physical' | 'Hardware' | 'Software';
@@ -173,6 +175,8 @@ export interface MQTTSettings {
    * `{topicPrefix}/meshcore/packets` for the Analyzer (meshcoretomqtt-shaped JSON). Default false.
    */
   meshcorePacketLoggerEnabled?: boolean;
+  /** Epoch milliseconds when the JWT token expires. Used for proactive refresh. */
+  tokenExpiresAt?: number;
 }
 
 export type MQTTStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -333,6 +337,7 @@ declare global {
         deleteNodesBySource: (source: string) => Promise<number>;
         migrateRfStubNodes: () => Promise<number>;
         deleteNodesWithoutLongname: () => Promise<number>;
+        prunePositionHistory: (days: number) => Promise<number>;
         clearNodePositions: () => Promise<unknown>;
         updateMessageReceivedVia: (packetId: number) => Promise<unknown>;
         saveMeshcoreMessage: (message: {
@@ -384,6 +389,9 @@ declare global {
         getMeshcoreMessageChannels: () => Promise<{ channel: number }[]>;
         clearMeshcoreMessagesByChannel: (channelIdx: number) => Promise<unknown>;
         clearMeshcoreContacts: () => Promise<unknown>;
+        deleteMeshcoreContactsNeverAdvertised: () => Promise<number>;
+        deleteMeshcoreContactsByAge: (days: number) => Promise<number>;
+        pruneMeshcoreContactsByCount: (maxCount: number) => Promise<number>;
         clearMeshcoreRepeaters: () => Promise<unknown>;
         updateMeshcoreContactNickname: (
           nodeId: number,
@@ -433,7 +441,11 @@ declare global {
         onWarning: (
           cb: (payload: { warning: string; protocol: 'meshtastic' | 'meshcore' }) => void,
         ) => () => void;
-        onNodeUpdate: (cb: (node: Partial<MeshNode> & { node_id: number }) => void) => () => void;
+        onNodeUpdate: (
+          cb: (
+            node: Partial<MeshNode> & { node_id: number; protocol?: 'meshtastic' | 'meshcore' },
+          ) => void,
+        ) => () => void;
         onMessage: (cb: (msg: Omit<ChatMessage, 'id'>) => void) => () => void;
         onClientId: (
           cb: (payload: { clientId: string; protocol: 'meshtastic' | 'meshcore' }) => void,
@@ -478,6 +490,11 @@ declare global {
           rawHex?: string;
         }) => Promise<void>;
         onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
+        refreshMeshcoreToken: (
+          serverHost: string,
+        ) => Promise<{ token: string; expiresAt: number } | null>;
+        updateMeshcoreToken: (token: string, expiresAt: number) => Promise<void>;
+        onRequestTokenRefresh: (cb: (serverHost: string) => void) => () => void;
       };
       meshcore: {
         tcp: {

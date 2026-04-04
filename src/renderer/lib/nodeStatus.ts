@@ -1,6 +1,6 @@
 // Time thresholds for node freshness
 const STALE_MS = 2 * 3_600_000; // 2 hours
-const OFFLINE_MS = 72 * 3_600_000; // 72 hours
+const OFFLINE_MS = 7 * 24 * 3_600_000; // 7 days
 
 export type NodeStatus = 'online' | 'stale' | 'offline';
 
@@ -17,9 +17,9 @@ export function lastHeardToUnixSeconds(lastHeard: number): number {
 }
 
 /**
- * Prefer device `lastAdvert` when it is a positive Unix time (seconds). Otherwise keep the
- * best previous `last_heard` from live events (adverts, paths, RPC) so `refreshContacts` does
- * not wipe freshness when the radio reports `lastAdvert: 0`.
+ * Return the most-recent last_heard in Unix seconds. Takes the maximum of the device's
+ * `lastAdvert` and any previous `last_heard` from live events (DMs, channel messages, paths)
+ * so that live-event freshness is never overwritten by a stale advert value from the radio.
  */
 export function mergeMeshcoreLastHeardFromAdvert(
   advertSec: number | null | undefined,
@@ -29,8 +29,8 @@ export function mergeMeshcoreLastHeardFromAdvert(
     typeof advertSec === 'number' && Number.isFinite(advertSec) && advertSec > 0
       ? Math.floor(advertSec)
       : 0;
-  if (device > 0) return device;
-  return Math.max(lastHeardToUnixSeconds(previousLastHeard ?? 0), 0);
+  const prev = Math.max(lastHeardToUnixSeconds(previousLastHeard ?? 0), 0);
+  return Math.max(device, prev);
 }
 
 export function getNodeStatus(

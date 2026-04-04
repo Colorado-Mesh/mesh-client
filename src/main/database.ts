@@ -6,8 +6,7 @@ import { escapeSqlLikePattern } from '../shared/sqlLikeEscape';
 import { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 
-/** Drop position_history rows older than this window on DB open. */
-const POSITION_HISTORY_PRUNE_MS = 30 * 24 * 60 * 60 * 1000;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 let db: NodeSqliteDB | null = null;
 
@@ -90,21 +89,49 @@ export function getDatabase(): NodeSqliteDB {
   return db;
 }
 
-/** Run after first paint so startup does not block on large DELETE scans. */
-export function runDeferredPositionHistoryPrune(): void {
-  try {
-    const d = getDatabase();
-    const cutoff = Date.now() - POSITION_HISTORY_PRUNE_MS;
-    const pruned = d.prepareOnce('DELETE FROM position_history WHERE recorded_at < ?').run(cutoff);
-    if (pruned.changes > 0) {
-      console.debug(`[db] Pruned ${pruned.changes} old position_history rows`);
-    }
-  } catch (e) {
-    console.warn(
-      '[db] position_history prune failed (non-fatal):',
-      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-    );
-  }
+export function prunePositionHistory(days: number): number {
+  const d = getDatabase();
+  const cutoff = Date.now() - days * MS_PER_DAY;
+  const result = d.prepareOnce('DELETE FROM position_history WHERE recorded_at < ?').run(cutoff);
+  return Number(result.changes);
+}
+
+export function deleteMeshcoreContactsNeverAdvertised(): number {
+  const d = getDatabase();
+  const result = d
+    .prepareOnce(
+      'DELETE FROM meshcore_contacts WHERE last_advert IS NULL AND (favorited IS NULL OR favorited = 0)',
+    )
+    .run();
+  return Number(result.changes);
+}
+
+export function deleteMeshcoreContactsByAge(days: number): number {
+  const d = getDatabase();
+  const cutoff = Date.now() - days * MS_PER_DAY;
+  const result = d
+    .prepareOnce(
+      'DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
+    )
+    .run(cutoff);
+  return Number(result.changes);
+}
+
+export function pruneMeshcoreContactsByCount(maxCount: number): number {
+  const d = getDatabase();
+  const total = (
+    d.prepareOnce('SELECT COUNT(*) as cnt FROM meshcore_contacts').get() as { cnt: number }
+  ).cnt;
+  if (total <= maxCount) return 0;
+  const result = d
+    .prepareOnce(
+      'DELETE FROM meshcore_contacts WHERE node_id IN (' +
+        'SELECT node_id FROM meshcore_contacts WHERE (favorited IS NULL OR favorited = 0) ' +
+        'ORDER BY COALESCE(last_advert, 0) ASC LIMIT ?' +
+        ')',
+    )
+    .run(total - maxCount);
+  return Number(result.changes);
 }
 
 function createBaseTables(): void {

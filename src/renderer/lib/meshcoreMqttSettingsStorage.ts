@@ -10,6 +10,7 @@ const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
   topicPrefix: 'meshcore',
   autoLaunch: false,
   maxRetries: 3,
+  tokenExpiresAt: undefined,
 };
 
 /** Read persisted MeshCore MQTT settings (same merge as ConnectionPanel). */

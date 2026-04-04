@@ -29,6 +29,8 @@ import {
   closeDatabase,
   createContactGroup,
   deleteContactGroup,
+  deleteMeshcoreContactsByAge,
+  deleteMeshcoreContactsNeverAdvertised,
   deleteNodesBySource,
   deleteNodesWithoutLongname,
   exportDatabase,
@@ -38,8 +40,9 @@ import {
   initDatabase,
   mergeDatabase,
   migrateRfStubNodes,
+  pruneMeshcoreContactsByCount,
+  prunePositionHistory,
   removeContactFromGroup,
-  runDeferredPositionHistoryPrune,
   searchMeshcoreMessages,
   searchMessages,
   updateContactGroup,
@@ -895,9 +898,6 @@ function createWindow() {
   configureRendererSpellcheck(win.webContents.session);
   win.webContents.once('did-finish-load', () => {
     configureRendererSpellcheck(win.webContents.session);
-    setImmediate(() => {
-      runDeferredPositionHistoryPrune();
-    });
   });
 
   // Electron does not show any context menu by default — we must call menu.popup().
@@ -1880,7 +1880,8 @@ mqttManager.on('clientId', (id) => {
     );
 });
 mqttManager.on('nodeUpdate', (n) => {
-  if (mainWindow) mainWindow.webContents.send('mqtt:node-update', n);
+  if (mainWindow)
+    mainWindow.webContents.send('mqtt:node-update', { ...n, protocol: 'meshtastic' as const });
   else console.debug('[main] mqtt:node-update dropped (mainWindow not ready)');
   takServerManager?.onNodeUpdate(n);
 });
@@ -1926,6 +1927,22 @@ meshcoreMqttAdapter.on('subscribeWarning', (msg) => {
 meshcoreMqttAdapter.on('chatMessage', (m) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:meshcore-chat', m);
   else console.debug('[main] mqtt:meshcore-chat dropped (mainWindow not ready)');
+});
+
+meshcoreMqttAdapter.on(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, (serverHost: string) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('mqtt:requestTokenRefresh', serverHost);
+  } else {
+    console.warn('[main] proactive token refresh: mainWindow not ready');
+  }
+});
+
+meshcoreMqttAdapter.on(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, (serverHost: string) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('mqtt:requestTokenRefresh', serverHost);
+  } else {
+    console.warn('[main] token refresh needed: mainWindow not ready');
+  }
 });
 
 // ─── IPC: MQTT connect/disconnect ───────────────────────────────────
@@ -1981,6 +1998,33 @@ ipcMain.handle('mqtt:getClientId', (_event, protocol?: 'meshtastic' | 'meshcore'
     throw err;
   }
 });
+ipcMain.handle('mqtt:refreshMeshcoreToken', (_event, serverHost: string) => {
+  try {
+    console.debug('[IPC] mqtt:refreshMeshcoreToken', serverHost);
+    return meshcoreMqttAdapter.getTokenInfo(serverHost);
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:refreshMeshcoreToken failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+ipcMain.handle(
+  'mqtt:updateMeshcoreToken',
+  (_event, { token, expiresAt }: { token: string; expiresAt: number }) => {
+    try {
+      console.debug('[IPC] mqtt:updateMeshcoreToken', expiresAt);
+      meshcoreMqttAdapter.updateToken(token, expiresAt);
+    } catch (err) {
+      console.error(
+        '[IPC] mqtt:updateMeshcoreToken failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  },
+);
 ipcMain.handle('mqtt:publish', (_event, args) => {
   try {
     console.debug('[IPC] mqtt:publish');
@@ -2636,6 +2680,77 @@ ipcMain.handle('db:deleteNodesWithoutLongname', () => {
   } catch (err) {
     console.error(
       '[IPC] db:deleteNodesWithoutLongname failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:prunePositionHistory', (_event, days: number) => {
+  try {
+    const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
+    const changes = prunePositionHistory(safeDays);
+    if (changes > 0) {
+      console.debug(
+        `[IPC] db:prunePositionHistory: pruned ${changes} rows older than ${safeDays}d`,
+      );
+    }
+    return changes;
+  } catch (err) {
+    console.error(
+      '[IPC] db:prunePositionHistory failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:deleteMeshcoreContactsNeverAdvertised', () => {
+  try {
+    const changes = deleteMeshcoreContactsNeverAdvertised();
+    if (changes > 0) {
+      console.debug(`[IPC] db:deleteMeshcoreContactsNeverAdvertised: removed ${changes} contacts`);
+    }
+    return changes;
+  } catch (err) {
+    console.error(
+      '[IPC] db:deleteMeshcoreContactsNeverAdvertised failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:deleteMeshcoreContactsByAge', (_event, days: number) => {
+  try {
+    const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
+    const changes = deleteMeshcoreContactsByAge(safeDays);
+    if (changes > 0) {
+      console.debug(
+        `[IPC] db:deleteMeshcoreContactsByAge: removed ${changes} contacts older than ${safeDays}d`,
+      );
+    }
+    return changes;
+  } catch (err) {
+    console.error(
+      '[IPC] db:deleteMeshcoreContactsByAge failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:pruneMeshcoreContactsByCount', (_event, maxCount: number) => {
+  try {
+    const safeMax = typeof maxCount === 'number' && maxCount > 0 ? Math.floor(maxCount) : 5000;
+    const changes = pruneMeshcoreContactsByCount(safeMax);
+    if (changes > 0) {
+      console.debug(`[IPC] db:pruneMeshcoreContactsByCount: removed ${changes} excess contacts`);
+    }
+    return changes;
+  } catch (err) {
+    console.error(
+      '[IPC] db:pruneMeshcoreContactsByCount failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

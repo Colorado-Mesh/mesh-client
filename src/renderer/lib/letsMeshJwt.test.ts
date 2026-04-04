@@ -8,6 +8,7 @@ import {
   LETSMESH_HOST_US,
   letsMeshJwtAudience,
   letsMeshMqttUsernameFromIdentity,
+  MESHMAPPER_HOST,
 } from './letsMeshJwt';
 
 // Sample key pair from @michaelhart/meshcore-decoder tests (auth-token.test.ts)
@@ -36,6 +37,10 @@ describe('letsMeshJwt', () => {
     expect(isLetsMeshSettings('mqtt.example.com')).toBe(false);
   });
 
+  it('isLetsMeshSettings matches MeshMapper host', () => {
+    expect(isLetsMeshSettings(MESHMAPPER_HOST)).toBe(true);
+  });
+
   it('letsMeshJwtAudience uses trimmed MQTT server hostname as aud', () => {
     expect(letsMeshJwtAudience(LETSMESH_HOST_US)).toBe(LETSMESH_HOST_US);
     expect(letsMeshJwtAudience(LETSMESH_HOST_EU)).toBe(LETSMESH_HOST_EU);
@@ -47,7 +52,9 @@ describe('letsMeshJwt', () => {
       public_key: sampleKeyPair.publicKey,
       private_key: sampleKeyPair.privateKey,
     };
-    const token = await generateLetsMeshAuthToken(identity, LETSMESH_HOST_US);
+    const { token, expiresAt } = await generateLetsMeshAuthToken(identity, LETSMESH_HOST_US);
+    expect(typeof expiresAt).toBe('number');
+    expect(expiresAt).toBeGreaterThan(Date.now());
     const verified = await verifyAuthToken(token, sampleKeyPair.publicKey);
     expect(verified).not.toBeNull();
     expect(verified?.publicKey.toUpperCase()).toBe(sampleKeyPair.publicKey.toUpperCase());
@@ -60,7 +67,9 @@ describe('letsMeshJwt', () => {
       public_key: sampleKeyPair.publicKey,
       private_key: seedOnly,
     };
-    const token = await generateLetsMeshAuthToken(identity, LETSMESH_HOST_EU);
+    const { token, expiresAt } = await generateLetsMeshAuthToken(identity, LETSMESH_HOST_EU);
+    expect(typeof expiresAt).toBe('number');
+    expect(expiresAt).toBeGreaterThan(Date.now());
     const verified = await verifyAuthToken(token, sampleKeyPair.publicKey);
     expect(verified).not.toBeNull();
     expect(verified?.aud).toBe(LETSMESH_HOST_EU);

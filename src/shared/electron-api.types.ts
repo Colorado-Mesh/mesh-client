@@ -1,5 +1,8 @@
 // Single source of truth for the Electron context bridge API surface.
+import type { MeshNode } from '../renderer/lib/types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
+
+export type { MeshNode };
 //
 // Rules for maintaining this file:
 // - Every method here must have a matching ipcMain.handle/on in src/main/index.ts
@@ -150,6 +153,7 @@ export interface ElectronAPI {
     deleteNodesBySource: (source: string) => Promise<unknown>;
     migrateRfStubNodes: () => Promise<unknown>;
     deleteNodesWithoutLongname: () => Promise<unknown>;
+    prunePositionHistory: (days: number) => Promise<unknown>;
     clearNodePositions: () => Promise<unknown>;
     updateMessageReceivedVia: (packetId: number) => Promise<unknown>;
 
@@ -203,6 +207,9 @@ export interface ElectronAPI {
     getMeshcoreMessageChannels: () => Promise<{ channel: number }[]>;
     clearMeshcoreMessagesByChannel: (channelIdx: number) => Promise<unknown>;
     clearMeshcoreContacts: () => Promise<unknown>;
+    deleteMeshcoreContactsNeverAdvertised: () => Promise<unknown>;
+    deleteMeshcoreContactsByAge: (days: number) => Promise<unknown>;
+    pruneMeshcoreContactsByCount: (maxCount: number) => Promise<unknown>;
     clearMeshcoreRepeaters: () => Promise<unknown>;
     updateMeshcoreContactNickname: (nodeId: number, nickname: string | null) => Promise<unknown>;
     updateMeshcoreContactFavorited: (
@@ -241,7 +248,11 @@ export interface ElectronAPI {
     onWarning: (
       cb: (payload: { warning: string; protocol: 'meshtastic' | 'meshcore' }) => void,
     ) => () => void;
-    onNodeUpdate: (cb: (node: unknown) => void) => () => void;
+    onNodeUpdate: (
+      cb: (
+        node: Partial<MeshNode> & { node_id: number; protocol?: 'meshtastic' | 'meshcore' },
+      ) => void,
+    ) => () => void;
     onMessage: (cb: (msg: unknown) => void) => () => void;
     onClientId: (
       cb: (payload: { clientId: string; protocol: 'meshtastic' | 'meshcore' }) => void,
@@ -286,6 +297,11 @@ export interface ElectronAPI {
       rawHex?: string;
     }) => Promise<unknown>;
     onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
+    refreshMeshcoreToken: (
+      serverHost: string,
+    ) => Promise<{ token: string; expiresAt: number } | null>;
+    updateMeshcoreToken: (token: string, expiresAt: number) => Promise<void>;
+    onRequestTokenRefresh: (cb: (serverHost: string) => void) => () => void;
   };
 
   // ─── Noble BLE ───────────────────────────────────────────────────────────────

@@ -5,8 +5,9 @@ import { getAppSettingsRaw, mergeAppSetting, setAppSettingsRaw } from '../lib/ap
 import { formatCoordPair } from '../lib/coordUtils';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
 import type { OurPosition } from '../lib/gpsSource';
-import { haversineDistanceKm } from '../lib/nodeStatus';
+import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { useRadioProvider } from '../lib/radio/providerFactory';
 import {
   applyThemeColors,
   DEFAULT_THEME_COLORS,
@@ -100,6 +101,13 @@ interface AppSettings {
   pruneEmptyNamesEnabled: boolean;
   nodeCapEnabled: boolean;
   nodeCapCount: number;
+  positionHistoryPruneEnabled: boolean;
+  positionHistoryPruneDays: number;
+  meshcoreAutoPruneEnabled: boolean;
+  meshcoreAutoPruneDays: number;
+  meshcoreContactCapEnabled: boolean;
+  meshcoreContactCapCount: number;
+  meshcoreDeleteNeverAdvertised: boolean;
   distanceFilterEnabled: boolean;
   distanceFilterMax: number;
   distanceUnit: 'miles' | 'km';
@@ -181,6 +189,8 @@ export default function AppPanel({
   const setHistoryWindow = usePositionHistoryStore((s) => s.setHistoryWindow);
   const clearHistory = usePositionHistoryStore((s) => s.clearHistory);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
+
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
@@ -736,103 +746,252 @@ export default function AppPanel({
       {/* Retention & limits (config only — destructive actions are in Danger Zone below) */}
       <div className="space-y-3">
         <h3 className="text-muted text-sm font-medium">Retention &amp; limits</h3>
-        <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
-          {/* Auto-prune on startup */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="autoPrune"
-              checked={settings.autoPruneEnabled}
-              onChange={(e) => {
-                updateSetting('autoPruneEnabled', e.target.checked);
-              }}
-              aria-label="Auto-prune on startup, older than"
-              className="accent-brand-green"
-            />
-            <label
-              id="apppanel-auto-prune-label"
-              htmlFor="autoPrune"
-              className="flex-1 cursor-pointer text-sm text-gray-300"
-            >
-              Auto-prune on startup, older than
-            </label>
-            <input
-              id="apppanel-auto-prune-days"
-              type="number"
-              min={1}
-              value={settings.autoPruneDays}
-              onChange={(e) => {
-                updateSetting('autoPruneDays', Math.max(1, parseInt(e.target.value) || 1));
-              }}
-              disabled={!settings.autoPruneEnabled}
-              aria-labelledby="apppanel-auto-prune-label"
-              aria-label={`Auto-prune on startup, older than ${settings.autoPruneDays} days`}
-              className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
-            />
-            <span className="text-sm text-gray-300">days</span>
-          </div>
 
-          {/* Prune unnamed nodes on startup */}
-          <div className="space-y-1">
+        {/* Meshtastic node retention */}
+        {protocol !== 'meshcore' && (
+          <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+            {/* Auto-prune nodes on startup */}
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id="pruneEmptyNames"
-                checked={settings.pruneEmptyNamesEnabled}
+                id="autoPrune"
+                checked={settings.autoPruneEnabled}
                 onChange={(e) => {
-                  updateSetting('pruneEmptyNamesEnabled', e.target.checked);
+                  updateSetting('autoPruneEnabled', e.target.checked);
                 }}
-                aria-label="Remove unnamed nodes on startup"
+                aria-label="Auto-prune nodes on startup, older than"
                 className="accent-brand-green"
               />
               <label
-                htmlFor="pruneEmptyNames"
+                id="apppanel-auto-prune-label"
+                htmlFor="autoPrune"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Remove unnamed nodes on startup
+                Auto-prune nodes on startup, older than
               </label>
+              <input
+                id="apppanel-auto-prune-days"
+                type="number"
+                min={1}
+                value={settings.autoPruneDays}
+                onChange={(e) => {
+                  updateSetting('autoPruneDays', Math.max(1, parseInt(e.target.value) || 1));
+                }}
+                disabled={!settings.autoPruneEnabled}
+                aria-labelledby="apppanel-auto-prune-label"
+                aria-label={`Auto-prune nodes on startup, older than ${settings.autoPruneDays} days`}
+                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              />
+              <span className="text-sm text-gray-300">days</span>
             </div>
-            <p className="text-muted pl-6 text-xs">
-              Includes MQTT-only placeholders that still use the default !hex ID; favorited nodes
-              are kept.
-            </p>
-          </div>
 
-          {/* Node cap */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="nodeCap"
-              checked={settings.nodeCapEnabled}
-              onChange={(e) => {
-                updateSetting('nodeCapEnabled', e.target.checked);
-              }}
-              aria-label="Cap total nodes, keep newest"
-              className="accent-brand-green"
-            />
-            <label
-              id="apppanel-node-cap-label"
-              htmlFor="nodeCap"
-              className="flex-1 cursor-pointer text-sm text-gray-300"
-            >
-              Cap total nodes, keep newest
-            </label>
-            <input
-              id="apppanel-node-cap-count"
-              type="number"
-              min={1}
-              value={settings.nodeCapCount}
-              onChange={(e) => {
-                updateSetting('nodeCapCount', Math.max(1, parseInt(e.target.value) || 1));
-              }}
-              disabled={!settings.nodeCapEnabled}
-              aria-labelledby="apppanel-node-cap-label"
-              aria-label={`Cap total nodes, keep newest ${settings.nodeCapCount} nodes`}
-              className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
-            />
-            <span className="text-sm text-gray-300">nodes</span>
+            {/* Prune unnamed nodes on startup */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="pruneEmptyNames"
+                  checked={settings.pruneEmptyNamesEnabled}
+                  onChange={(e) => {
+                    updateSetting('pruneEmptyNamesEnabled', e.target.checked);
+                  }}
+                  aria-label="Remove unnamed nodes on startup"
+                  className="accent-brand-green"
+                />
+                <label
+                  htmlFor="pruneEmptyNames"
+                  className="flex-1 cursor-pointer text-sm text-gray-300"
+                >
+                  Remove unnamed nodes on startup
+                </label>
+              </div>
+              <p className="text-muted pl-6 text-xs">
+                Includes MQTT-only placeholders that still use the default !hex ID; favorited nodes
+                are kept.
+              </p>
+            </div>
+
+            {/* Node cap */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="nodeCap"
+                checked={settings.nodeCapEnabled}
+                onChange={(e) => {
+                  updateSetting('nodeCapEnabled', e.target.checked);
+                }}
+                aria-label="Cap total nodes, keep newest"
+                className="accent-brand-green"
+              />
+              <label
+                id="apppanel-node-cap-label"
+                htmlFor="nodeCap"
+                className="flex-1 cursor-pointer text-sm text-gray-300"
+              >
+                Cap total nodes, keep newest
+              </label>
+              <input
+                id="apppanel-node-cap-count"
+                type="number"
+                min={1}
+                value={settings.nodeCapCount}
+                onChange={(e) => {
+                  updateSetting('nodeCapCount', Math.max(1, parseInt(e.target.value) || 1));
+                }}
+                disabled={!settings.nodeCapEnabled}
+                aria-labelledby="apppanel-node-cap-label"
+                aria-label={`Cap total nodes, keep newest ${settings.nodeCapCount} nodes`}
+                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              />
+              <span className="text-sm text-gray-300">nodes</span>
+            </div>
+
+            {/* Position history prune */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="positionHistoryPrune"
+                checked={settings.positionHistoryPruneEnabled}
+                onChange={(e) => {
+                  updateSetting('positionHistoryPruneEnabled', e.target.checked);
+                }}
+                aria-label="Auto-prune position history on startup, older than"
+                className="accent-brand-green"
+              />
+              <label
+                id="apppanel-position-history-prune-label"
+                htmlFor="positionHistoryPrune"
+                className="flex-1 cursor-pointer text-sm text-gray-300"
+              >
+                Auto-prune position history on startup, older than
+              </label>
+              <input
+                id="apppanel-position-history-prune-days"
+                type="number"
+                min={1}
+                value={settings.positionHistoryPruneDays}
+                onChange={(e) => {
+                  updateSetting(
+                    'positionHistoryPruneDays',
+                    Math.max(1, parseInt(e.target.value) || 1),
+                  );
+                }}
+                disabled={!settings.positionHistoryPruneEnabled}
+                aria-labelledby="apppanel-position-history-prune-label"
+                aria-label={`Auto-prune position history on startup, older than ${settings.positionHistoryPruneDays} days`}
+                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              />
+              <span className="text-sm text-gray-300">days</span>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* MeshCore contact retention */}
+        {protocol === 'meshcore' && (
+          <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+            {/* Delete contacts that never advertised */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="meshcoreDeleteNeverAdvertised"
+                  checked={settings.meshcoreDeleteNeverAdvertised}
+                  onChange={(e) => {
+                    updateSetting('meshcoreDeleteNeverAdvertised', e.target.checked);
+                  }}
+                  aria-label="Remove contacts that have never advertised on startup"
+                  className="accent-brand-green"
+                />
+                <label
+                  htmlFor="meshcoreDeleteNeverAdvertised"
+                  className="flex-1 cursor-pointer text-sm text-gray-300"
+                >
+                  Remove contacts that have never advertised on startup
+                </label>
+              </div>
+              <p className="text-muted pl-6 text-xs">
+                Removes stale placeholder contacts with no advert history; favorited contacts are
+                kept.
+              </p>
+            </div>
+
+            {/* Auto-prune contacts by age */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="meshcoreAutoPrune"
+                checked={settings.meshcoreAutoPruneEnabled}
+                onChange={(e) => {
+                  updateSetting('meshcoreAutoPruneEnabled', e.target.checked);
+                }}
+                aria-label="Auto-prune unheard contacts on startup, older than"
+                className="accent-brand-green"
+              />
+              <label
+                id="apppanel-meshcore-auto-prune-label"
+                htmlFor="meshcoreAutoPrune"
+                className="flex-1 cursor-pointer text-sm text-gray-300"
+              >
+                Auto-prune unheard contacts on startup, older than
+              </label>
+              <input
+                id="apppanel-meshcore-auto-prune-days"
+                type="number"
+                min={1}
+                value={settings.meshcoreAutoPruneDays}
+                onChange={(e) => {
+                  updateSetting(
+                    'meshcoreAutoPruneDays',
+                    Math.max(1, parseInt(e.target.value) || 1),
+                  );
+                }}
+                disabled={!settings.meshcoreAutoPruneEnabled}
+                aria-labelledby="apppanel-meshcore-auto-prune-label"
+                aria-label={`Auto-prune unheard contacts on startup, older than ${settings.meshcoreAutoPruneDays} days`}
+                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              />
+              <span className="text-sm text-gray-300">days</span>
+            </div>
+
+            {/* Contact cap */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="meshcoreContactCap"
+                checked={settings.meshcoreContactCapEnabled}
+                onChange={(e) => {
+                  updateSetting('meshcoreContactCapEnabled', e.target.checked);
+                }}
+                aria-label="Cap total contacts, keep most recently seen"
+                className="accent-brand-green"
+              />
+              <label
+                id="apppanel-meshcore-contact-cap-label"
+                htmlFor="meshcoreContactCap"
+                className="flex-1 cursor-pointer text-sm text-gray-300"
+              >
+                Cap total contacts, keep most recently seen
+              </label>
+              <input
+                id="apppanel-meshcore-contact-cap-count"
+                type="number"
+                min={1}
+                value={settings.meshcoreContactCapCount}
+                onChange={(e) => {
+                  updateSetting(
+                    'meshcoreContactCapCount',
+                    Math.max(1, parseInt(e.target.value) || 1),
+                  );
+                }}
+                disabled={!settings.meshcoreContactCapEnabled}
+                aria-labelledby="apppanel-meshcore-contact-cap-label"
+                aria-label={`Cap total contacts, keep most recently seen ${settings.meshcoreContactCapCount} contacts`}
+                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              />
+              <span className="text-sm text-gray-300">contacts</span>
+            </div>
+          </div>
+        )}
 
         {/* Message limit */}
         <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
@@ -1210,19 +1369,19 @@ export default function AppPanel({
             </button>
             <button
               type="button"
-              aria-label="Prune Zero/Null Island Nodes Removes nodes at or near 0°N, 0°E (invalid GPS)."
+              aria-label="Prune No-Fix / Zero Island Nodes Removes nodes with null or near-zero coordinates (no GPS fix or at 0 deg N, 0 deg E)."
               onClick={() => {
                 const zeroIslandNodes = Array.from(nodes.values()).filter(
                   (n) => Math.abs(n.latitude ?? 0) < 0.5 && Math.abs(n.longitude ?? 0) < 0.5,
                 );
                 if (zeroIslandNodes.length === 0) {
-                  addToast('No zero/null island nodes found.', 'success');
+                  addToast('No no-fix or zero-island nodes found.', 'success');
                   return;
                 }
                 executeWithConfirmation({
-                  name: 'Prune Zero Island Nodes',
-                  title: 'Prune Zero/Null Island Nodes',
-                  message: `This will permanently delete ${zeroIslandNodes.length} node${zeroIslandNodes.length !== 1 ? 's' : ''} with coordinates at or near 0°N, 0°E (invalid GPS). This cannot be undone.`,
+                  name: 'Prune No-Fix / Zero Island Nodes',
+                  title: 'Prune No-Fix / Zero Island Nodes',
+                  message: `This will permanently delete ${zeroIslandNodes.length} node${zeroIslandNodes.length !== 1 ? 's' : ''} with null or near-zero coordinates (no GPS fix or Zero Island). This cannot be undone.`,
                   confirmLabel: `Delete ${zeroIslandNodes.length} Node${zeroIslandNodes.length !== 1 ? 's' : ''}`,
                   danger: true,
                   action: async () => {
@@ -1234,9 +1393,9 @@ export default function AppPanel({
               }}
               className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
             >
-              <div className="font-medium">Prune Zero/Null Island Nodes</div>
+              <div className="font-medium">Prune No-Fix / Zero Island Nodes</div>
               <div className="mt-0.5 text-xs text-red-400/70">
-                Removes nodes at or near 0°N, 0°E (invalid GPS).
+                Removes nodes with no GPS fix (null coords) or near 0°N, 0°E.
               </div>
             </button>
             <button
@@ -1288,6 +1447,43 @@ export default function AppPanel({
               <div className="mt-0.5 text-xs text-red-400/70">
                 Beyond the distance threshold in Map &amp; Node Filtering. Requires a valid GPS
                 location.
+              </div>
+            </button>
+            <button
+              type="button"
+              aria-label="Prune Offline Nodes that have not been heard within the offline threshold"
+              onClick={() => {
+                const offlineNodes = Array.from(nodes.values()).filter(
+                  (n) =>
+                    n.node_id !== myNodeNum &&
+                    !n.favorited &&
+                    getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                      'offline',
+                );
+                if (offlineNodes.length === 0) {
+                  addToast('No offline nodes found.', 'success');
+                  return;
+                }
+                const offlineDays = Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000));
+                executeWithConfirmation({
+                  name: 'Prune Offline Nodes',
+                  title: 'Prune Offline Nodes',
+                  message: `This will permanently delete ${offlineNodes.length} node${offlineNodes.length !== 1 ? 's' : ''} not heard in over ${offlineDays} day${offlineDays !== 1 ? 's' : ''}. This cannot be undone.`,
+                  confirmLabel: `Delete ${offlineNodes.length} Node${offlineNodes.length !== 1 ? 's' : ''}`,
+                  danger: true,
+                  action: async () => {
+                    await window.electronAPI.db.deleteNodesBatch(
+                      offlineNodes.map((n) => n.node_id),
+                    );
+                  },
+                });
+              }}
+              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+            >
+              <div className="font-medium">Prune Offline Nodes</div>
+              <div className="mt-0.5 text-xs text-red-400/70">
+                Not heard in over {Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000))} days.
+                Favorited nodes are excluded.
               </div>
             </button>
             <button

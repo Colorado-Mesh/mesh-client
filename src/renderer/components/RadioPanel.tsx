@@ -1137,8 +1137,8 @@ export default function RadioPanel({
               label="Bandwidth"
               value={bandwidth}
               options={[
-                { value: 31, label: '31.25 kHz' },
-                { value: 62, label: '62.5 kHz' },
+                { value: 31.25, label: '31.25 kHz' },
+                { value: 62.5, label: '62.5 kHz' },
                 { value: 125, label: '125 kHz' },
                 { value: 250, label: '250 kHz' },
                 { value: 500, label: '500 kHz' },
@@ -1236,8 +1236,8 @@ export default function RadioPanel({
                 label="Bandwidth"
                 value={bandwidth}
                 options={[
-                  { value: 31, label: '31.25 kHz' },
-                  { value: 62, label: '62.5 kHz' },
+                  { value: 31.25, label: '31.25 kHz' },
+                  { value: 62.5, label: '62.5 kHz' },
                   { value: 125, label: '125 kHz' },
                   { value: 250, label: '250 kHz' },
                   { value: 500, label: '500 kHz' },

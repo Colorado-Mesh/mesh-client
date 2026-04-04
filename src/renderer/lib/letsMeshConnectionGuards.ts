@@ -10,7 +10,7 @@ export function validateLetsMeshPresetConnect(settings: MQTTSettings): string | 
     return 'LetsMesh requires port 443.';
   }
   if (!isLetsMeshSettings(settings.server)) {
-    return 'LetsMesh preset only supports mqtt-us-v1.letsmesh.net or mqtt-eu-v1.letsmesh.net. Use Custom for other brokers.';
+    return 'LetsMesh / MeshMapper preset only supports known device-signing brokers. Use Custom for other brokers.';
   }
   return null;
 }

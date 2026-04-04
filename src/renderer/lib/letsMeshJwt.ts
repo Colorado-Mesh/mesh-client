@@ -2,14 +2,17 @@
 export const LETSMESH_HOST_US = 'mqtt-us-v1.letsmesh.net';
 /** EU LetsMesh broker (WebSocket TLS on 443). */
 export const LETSMESH_HOST_EU = 'mqtt-eu-v1.letsmesh.net';
+/** MeshMapper broker (WebSocket TLS on 443). */
+export const MESHMAPPER_HOST = 'mqtt.meshmapper.cc';
 
 /** @deprecated Use {@link LETSMESH_HOST_US} */
 export const LETSMESH_HOST = LETSMESH_HOST_US;
 
-const LETSMESH_HOSTS = new Set([LETSMESH_HOST_US, LETSMESH_HOST_EU]);
+/** All device-signing MQTT brokers (WebSocket TLS on 443, JWT auth). */
+const DEVICE_SIGNING_HOSTS = new Set([LETSMESH_HOST_US, LETSMESH_HOST_EU, MESHMAPPER_HOST]);
 
 export function isLetsMeshSettings(server: string): boolean {
-  return LETSMESH_HOSTS.has(server.trim());
+  return DEVICE_SIGNING_HOSTS.has(server.trim());
 }
 
 /**
@@ -103,26 +106,29 @@ function meshcoreOrlpPrivateKeyHex(
 /**
  * Generate a LetsMesh MQTT password token compatible with meshcore-mqtt-broker / verifyAuthToken.
  * Uses {@link letsMeshJwtAudience} for `aud`.
+ * @returns Object with the JWT token and expiration timestamp (epoch ms).
  */
 export async function generateLetsMeshAuthToken(
   identity: { private_key?: string | number[]; public_key?: string | number[] },
   serverHost: string,
-): Promise<string> {
+): Promise<{ token: string; expiresAt: number }> {
   const pub = normalizePublicKeyHex(identity.public_key);
   const priv = meshcoreOrlpPrivateKeyHex(identity.private_key, pub);
   if (!pub) throw new Error('LetsMesh auth: public key missing or invalid');
   if (!priv) throw new Error('LetsMesh auth: private key missing or invalid');
   const { createAuthToken } = await import('@michaelhart/meshcore-decoder');
   const now = Math.floor(Date.now() / 1000);
+  const exp = now + 3600;
   const aud = letsMeshJwtAudience(serverHost);
-  return createAuthToken(
+  const token = await createAuthToken(
     {
       publicKey: pub.toUpperCase(),
       aud,
       iat: now,
-      exp: now + 3600,
+      exp,
     },
     priv,
     pub,
   );
+  return { token, expiresAt: exp * 1000 };
 }

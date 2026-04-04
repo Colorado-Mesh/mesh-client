@@ -275,8 +275,8 @@ export function meshcoreSelfInfoFreqToDisplayHz(freq: number): number {
  */
 export function meshcoreSelfInfoBwToDisplayKhz(bw: number): number {
   if (!Number.isFinite(bw) || bw <= 0) return 250;
-  if (bw >= 1000) return Math.round(bw / 1000);
-  return Math.round(bw);
+  if (bw >= 1000) return bw / 1000;
+  return bw;
 }
 
 const REPEATER_AUTH_HINT =

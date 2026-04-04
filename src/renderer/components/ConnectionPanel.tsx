@@ -17,6 +17,7 @@ import {
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
   letsMeshMqttUsernameFromIdentity,
+  MESHMAPPER_HOST,
   readMeshcoreIdentity,
 } from '../lib/letsMeshJwt';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
@@ -421,6 +422,7 @@ const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
   autoLaunch: false,
   maxRetries: 3,
   meshcorePacketLoggerEnabled: false,
+  tokenExpiresAt: undefined,
 };
 
 function migrateMqttSettingsOnce(): void {
@@ -548,9 +550,11 @@ export default function ConnectionPanel({
   const [mqttClientId, setMqttClientId] = useState('');
   const mqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const meshcoreMqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [meshcorePreset, setMeshcorePreset] = useState<'letsmesh' | 'ripple' | 'custom'>(() => {
+  const [meshcorePreset, setMeshcorePreset] = useState<
+    'letsmesh' | 'meshmapper' | 'ripple' | 'custom'
+  >(() => {
     const saved = localStorage.getItem('mesh-client:mqttPreset:meshcore');
-    if (saved === 'letsmesh' || saved === 'ripple') return saved;
+    if (saved === 'letsmesh' || saved === 'meshmapper' || saved === 'ripple') return saved;
     return 'custom';
   });
   const [meshtasticPreset, setMeshtasticPreset] = useState<'official-plain' | 'liam' | 'custom'>(
@@ -639,7 +643,11 @@ export default function ConnectionPanel({
   // Keep LetsMesh MQTT username in sync with imported MeshCore identity (v1_<64-hex public key>).
   useEffect(() => {
     const syncLetsMeshUsername = () => {
-      if (protocol !== 'meshcore' || meshcorePreset !== 'letsmesh') return;
+      if (
+        protocol !== 'meshcore' ||
+        (meshcorePreset !== 'letsmesh' && meshcorePreset !== 'meshmapper')
+      )
+        return;
       const u = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
       if (!u) return;
       setMeshcoreMqttSettings((prev) => (prev.username === u ? prev : { ...prev, username: u }));
@@ -1937,6 +1945,7 @@ export default function ConnectionPanel({
                 {(
                   [
                     { id: 'letsmesh', label: 'LetsMesh' },
+                    { id: 'meshmapper', label: 'MeshMapper' },
                     { id: 'ripple', label: 'Ripple Networks' },
                     { id: 'custom', label: 'Custom' },
                   ] as const
@@ -1952,6 +1961,19 @@ export default function ConnectionPanel({
                         setMeshcoreMqttSettings((prev) => ({
                           ...prev,
                           server: LETSMESH_HOST_US,
+                          port: 443,
+                          topicPrefix: 'meshcore',
+                          useWebSocket: true,
+                          keepalive: 30,
+                          username: fromIdentity || prev.username,
+                          password: '',
+                        }));
+                      } else if (id === 'meshmapper') {
+                        const fromIdentity =
+                          letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                        setMeshcoreMqttSettings((prev) => ({
+                          ...prev,
+                          server: MESHMAPPER_HOST,
                           port: 443,
                           topicPrefix: 'meshcore',
                           useWebSocket: true,
@@ -2105,49 +2127,52 @@ export default function ConnectionPanel({
             </label>
           </div>
           {protocol === 'meshcore' &&
-            meshcorePreset === 'letsmesh' &&
+            (meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper') &&
             letsMeshPresetConfigurationDeviation(meshcoreMqttSettings) && (
               <div className="rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2 text-xs text-amber-200/90">
-                Public LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or
-                mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.
+                {meshcorePreset === 'letsmesh'
+                  ? 'LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.'
+                  : 'MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.cc. Reset the preset or switch to Custom for other brokers.'}
               </div>
             )}
-          {protocol === 'meshcore' && meshcorePreset === 'letsmesh' && (
-            <div
-              className={`flex items-start gap-2 rounded border px-2 py-2 text-xs ${
-                readMeshcoreIdentity()?.private_key
-                  ? 'border-brand-green/40 bg-brand-green/10 text-brand-green/90'
-                  : 'border-amber-700/50 bg-amber-900/20 text-amber-200/90'
-              }`}
-            >
-              {(() => {
-                const id = readMeshcoreIdentity();
-                return id?.private_key && id?.public_key
-                  ? 'Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex). JWT audience matches the Server hostname.'
-                  : 'No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually. JWT audience in the token must match the Server hostname.';
-              })()}
-            </div>
-          )}
-          {protocol === 'meshcore' && meshcorePreset === 'letsmesh' && (
-            <div className="bg-secondary-dark/40 flex items-start gap-2 rounded border border-gray-600/50 px-2 py-2 text-xs text-gray-300">
-              <input
-                type="checkbox"
-                id="meshcore-packet-logger"
-                checked={meshcoreMqttSettings.meshcorePacketLoggerEnabled ?? false}
-                onChange={(e) => {
-                  updateMqtt('meshcorePacketLoggerEnabled', e.target.checked);
-                }}
-                className="accent-brand-green mt-0.5 shrink-0"
-              />
-              <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
-                Packet logger (LetsMesh Analyzer) — when connected to your radio and MQTT, forward
-                RX packet summaries to{' '}
-                <code className="text-gray-400">{`{topicPrefix}/meshcore/packets`}</code> in the
-                same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to
-                share heard air traffic with the public analyzer.
-              </label>
-            </div>
-          )}
+          {protocol === 'meshcore' &&
+            (meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper') && (
+              <div
+                className={`flex items-start gap-2 rounded border px-2 py-2 text-xs ${
+                  readMeshcoreIdentity()?.private_key
+                    ? 'border-brand-green/40 bg-brand-green/10 text-brand-green/90'
+                    : 'border-amber-700/50 bg-amber-900/20 text-amber-200/90'
+                }`}
+              >
+                {(() => {
+                  const id = readMeshcoreIdentity();
+                  return id?.private_key && id?.public_key
+                    ? 'Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex). JWT audience matches the Server hostname.'
+                    : 'No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually. JWT audience in the token must match the Server hostname.';
+                })()}
+              </div>
+            )}
+          {protocol === 'meshcore' &&
+            (meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper') && (
+              <div className="bg-secondary-dark/40 flex items-start gap-2 rounded border border-gray-600/50 px-2 py-2 text-xs text-gray-300">
+                <input
+                  type="checkbox"
+                  id="meshcore-packet-logger"
+                  checked={meshcoreMqttSettings.meshcorePacketLoggerEnabled ?? false}
+                  onChange={(e) => {
+                    updateMqtt('meshcorePacketLoggerEnabled', e.target.checked);
+                  }}
+                  className="accent-brand-green mt-0.5 shrink-0"
+                />
+                <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
+                  Packet logger (LetsMesh Analyzer) — when connected to your radio and MQTT, forward
+                  RX packet summaries to{' '}
+                  <code className="text-gray-400">{`{topicPrefix}/meshcore/packets`}</code> in the
+                  same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to
+                  share heard air traffic with the public analyzer.
+                </label>
+              </div>
+            )}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <label htmlFor="mqtt-username" className="text-muted text-xs">
@@ -2199,7 +2224,7 @@ export default function ConnectionPanel({
                 text={
                   protocol === 'meshtastic'
                     ? 'msh/[Country]/[State], e.g. msh/CO/US'
-                    : meshcorePreset === 'letsmesh'
+                    : meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper'
                       ? 'meshcore/{IATA}, e.g. meshcore/DEN'
                       : 'MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO'
                 }
@@ -2292,7 +2317,10 @@ export default function ConnectionPanel({
                   ...activeMqttSettings,
                   mqttTransportProtocol: protocol === 'meshcore' ? 'meshcore' : 'meshtastic',
                 };
-                if (protocol === 'meshcore' && meshcorePreset === 'letsmesh') {
+                if (
+                  protocol === 'meshcore' &&
+                  (meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper')
+                ) {
                   const presetErr = validateLetsMeshPresetConnect(settings);
                   if (presetErr) {
                     setMqttError(presetErr);
@@ -2311,10 +2339,12 @@ export default function ConnectionPanel({
                     try {
                       const u = letsMeshMqttUsernameFromIdentity(identity);
                       if (u) settings.username = u;
-                      settings.password = await generateLetsMeshAuthToken(
+                      const { token, expiresAt } = await generateLetsMeshAuthToken(
                         identity,
                         settings.server,
                       );
+                      settings.password = token;
+                      settings.tokenExpiresAt = expiresAt;
                     } catch (e) {
                       const msg = e instanceof Error ? e.message : String(e);
                       setMqttError(`Auth token generation failed: ${msg}`);
