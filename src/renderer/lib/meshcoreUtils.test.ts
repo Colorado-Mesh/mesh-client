@@ -108,6 +108,18 @@ describe('meshcoreSelfInfoBwToDisplayKhz', () => {
   it('passes through kHz when firmware already uses kHz', () => {
     expect(meshcoreSelfInfoBwToDisplayKhz(250)).toBe(250);
   });
+
+  it('converts 62500 Hz to 62.5 kHz without rounding', () => {
+    expect(meshcoreSelfInfoBwToDisplayKhz(62_500)).toBe(62.5);
+  });
+
+  it('converts 31250 Hz to 31.25 kHz without rounding', () => {
+    expect(meshcoreSelfInfoBwToDisplayKhz(31_250)).toBe(31.25);
+  });
+
+  it('passes through 62.5 kHz float from firmware', () => {
+    expect(meshcoreSelfInfoBwToDisplayKhz(62.5)).toBe(62.5);
+  });
 });
 
 describe('meshcoreMilliVoltsToApproximateBatteryPercent', () => {
