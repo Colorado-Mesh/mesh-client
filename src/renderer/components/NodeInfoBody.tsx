@@ -70,6 +70,66 @@ export function InfoRow({
   );
 }
 
+function NodeSourceBadge({ node, protocol }: { node: MeshNode; protocol?: MeshProtocol }) {
+  // MeshCore nodes are always RF
+  const via: 'rf' | 'mqtt' | 'both' =
+    protocol === 'meshcore'
+      ? 'rf'
+      : node.heard_via_mqtt_only
+        ? 'mqtt'
+        : node.heard_via_mqtt
+          ? 'both'
+          : 'rf';
+
+  const rfIcon = (
+    <svg
+      className="h-3 w-3 text-blue-400"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <title>RF</title>
+      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+      <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+      <circle cx="12" cy="20" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+  const mqttIcon = (
+    <svg
+      className="h-3 w-3 text-purple-400"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <title>MQTT</title>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+
+  if (via === 'both') {
+    return (
+      <span className="flex items-center gap-1" title="Received via RF + MQTT">
+        {rfIcon}
+        {mqttIcon}
+      </span>
+    );
+  }
+  return via === 'rf' ? (
+    <span title="Received via RF">{rfIcon}</span>
+  ) : (
+    <span title="Received via MQTT">{mqttIcon}</span>
+  );
+}
+
 function iaqLabel(iaq: number): string {
   if (iaq <= 50) return 'Excellent';
   if (iaq <= 100) return 'Good';
@@ -300,6 +360,14 @@ export default function NodeInfoBody({
         value={isOurNode ? 0 : (node.hops_away ?? '—')}
         className={(isOurNode ? 0 : node.hops_away) === 0 ? 'text-bright-green' : 'text-gray-300'}
       />
+
+      {/* Source (RF / MQTT) — Meshtastic only; MeshCore is always RF */}
+      {!isOurNode && (
+        <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
+          <span className="text-muted text-sm">Source</span>
+          <NodeSourceBadge node={node} protocol={protocol} />
+        </div>
+      )}
 
       {/* Location */}
       {node.latitude != null &&
