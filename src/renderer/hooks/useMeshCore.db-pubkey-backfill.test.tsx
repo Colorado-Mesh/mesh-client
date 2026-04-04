@@ -11,8 +11,14 @@ import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 vi.spyOn(console, 'warn').mockImplementation(() => {});
 vi.spyOn(console, 'error').mockImplementation(() => {});
 
+const MOCK_ACK_CRC = 1;
+const MOCK_PUBKEY_FILL_VALUE = 0xcd;
+const MOCK_USB_VENDOR_ID = 0x1234;
+const MOCK_USB_PRODUCT_ID = 0x5678;
+const MOCK_LAST_ADVERT_TIMESTAMP = 1_700_000_000;
+
 const sendTextMessageMock = vi.fn().mockResolvedValue({
-  expectedAckCrc: 1,
+  expectedAckCrc: MOCK_ACK_CRC,
   estTimeout: 30_000,
 });
 const getContactsMock = vi.fn().mockResolvedValue([]);
@@ -148,14 +154,16 @@ function pubKeyBytesFromHex(hex: string): Uint8Array {
 }
 
 const PEER_NODE_ID = pubkeyToNodeId(pubKeyBytesFromHex(PEER_PUBKEY_HEX));
-const SELF_PUBKEY = new Uint8Array(32).fill(0xcd);
+const SELF_PUBKEY = new Uint8Array(32).fill(MOCK_PUBKEY_FILL_VALUE);
 const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
 
 function makeMockSerialPort() {
   return {
     open: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
-    getInfo: vi.fn().mockReturnValue({ usbVendorId: 0x1234, usbProductId: 0x5678 }),
+    getInfo: vi
+      .fn()
+      .mockReturnValue({ usbVendorId: MOCK_USB_VENDOR_ID, usbProductId: MOCK_USB_PRODUCT_ID }),
   };
 }
 
@@ -163,7 +171,7 @@ describe('useMeshCore DB pubkey backfill for DM send', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getContactsMock.mockResolvedValue([]);
-    sendTextMessageMock.mockResolvedValue({ expectedAckCrc: 1, estTimeout: 30_000 });
+    sendTextMessageMock.mockResolvedValue({ expectedAckCrc: MOCK_ACK_CRC, estTimeout: 30_000 });
     getSelfInfoMock.mockResolvedValue({
       name: 'SelfRadio',
       publicKey: SELF_PUBKEY,
@@ -178,7 +186,7 @@ describe('useMeshCore DB pubkey backfill for DM send', () => {
         public_key: PEER_PUBKEY_HEX,
         adv_name: 'PeerFromDb',
         contact_type: 1,
-        last_advert: 1_700_000_000,
+        last_advert: MOCK_LAST_ADVERT_TIMESTAMP,
         adv_lat: null,
         adv_lon: null,
         last_snr: null,
@@ -239,7 +247,7 @@ describe('useMeshCore DM reply (wire + persistence)', () => {
     public_key: PEER_PUBKEY_HEX,
     adv_name: 'PeerFromDb',
     contact_type: 1,
-    last_advert: 1_700_000_000,
+    last_advert: MOCK_LAST_ADVERT_TIMESTAMP,
     adv_lat: null,
     adv_lon: null,
     last_snr: null,
@@ -266,7 +274,7 @@ describe('useMeshCore DM reply (wire + persistence)', () => {
   function resetMocksAndBaseContacts(messagesFromDb: (typeof dmParentFromPeer)[]) {
     vi.clearAllMocks();
     getContactsMock.mockResolvedValue([]);
-    sendTextMessageMock.mockResolvedValue({ expectedAckCrc: 1, estTimeout: 30_000 });
+    sendTextMessageMock.mockResolvedValue({ expectedAckCrc: MOCK_ACK_CRC, estTimeout: 30_000 });
     getSelfInfoMock.mockResolvedValue({
       name: 'SelfRadio',
       publicKey: SELF_PUBKEY,

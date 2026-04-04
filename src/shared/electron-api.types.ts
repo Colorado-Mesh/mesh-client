@@ -141,26 +141,26 @@ export interface ElectronAPI {
       error?: string,
       mqttStatus?: string,
     ) => Promise<unknown>;
-    exportDb: () => Promise<unknown>;
-    importDb: () => Promise<unknown>;
+    exportDb: () => Promise<string | null>;
+    importDb: () => Promise<{ nodesAdded: number; messagesAdded: number } | null>;
     deleteNodesByAge: (days: number) => Promise<unknown>;
-    deleteNodesNeverHeard: () => Promise<unknown>;
     pruneNodesByCount: (maxCount: number) => Promise<unknown>;
-    deleteNodesBatch: (nodeIds: number[]) => Promise<unknown>;
+    deleteNodesNeverHeard: () => Promise<number>;
+    deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
     clearMessagesByChannel: (channel: number) => Promise<unknown>;
-    getMessageChannels: () => Promise<unknown>;
+    getMessageChannels: () => Promise<{ channel: number }[]>;
     setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<unknown>;
-    deleteNodesBySource: (source: string) => Promise<unknown>;
-    migrateRfStubNodes: () => Promise<unknown>;
-    deleteNodesWithoutLongname: () => Promise<unknown>;
-    prunePositionHistory: (days: number) => Promise<unknown>;
+    deleteNodesBySource: (source: string) => Promise<number>;
+    migrateRfStubNodes: () => Promise<number>;
+    deleteNodesWithoutLongname: () => Promise<number>;
+    prunePositionHistory: (days: number) => Promise<number>;
     clearNodePositions: () => Promise<unknown>;
     updateMessageReceivedVia: (packetId: number) => Promise<unknown>;
 
-    getMeshcoreMessages: (channelIdx?: number, limit?: number) => Promise<unknown>;
-    searchMessages: (query: string, limit?: number) => Promise<unknown>;
-    searchMeshcoreMessages: (query: string, limit?: number) => Promise<unknown>;
-    getMeshcoreContacts: () => Promise<unknown>;
+    getMeshcoreMessages: (channelIdx?: number, limit?: number) => Promise<unknown[]>;
+    searchMessages: (query: string, limit?: number) => Promise<unknown[]>;
+    searchMeshcoreMessages: (query: string, limit?: number) => Promise<unknown[]>;
+    getMeshcoreContacts: () => Promise<unknown[]>;
     saveMeshcoreMessage: (message: {
       sender_id?: number | null;
       sender_name?: string | null;
@@ -224,7 +224,15 @@ export interface ElectronAPI {
       recordedAt: number,
       source: string,
     ) => Promise<unknown>;
-    getPositionHistory: (sinceMs: number) => Promise<unknown>;
+    getPositionHistory: (sinceMs: number) => Promise<
+      {
+        node_id: number;
+        latitude: number;
+        longitude: number;
+        recorded_at: number;
+        source: string;
+      }[]
+    >;
     clearPositionHistory: () => Promise<unknown>;
     getContactGroups: (selfNodeId: number) => Promise<ContactGroup[]>;
     createContactGroup: (selfNodeId: number, name: string) => Promise<number>;
