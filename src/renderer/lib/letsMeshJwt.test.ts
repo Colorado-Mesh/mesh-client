@@ -8,6 +8,7 @@ import {
   LETSMESH_HOST_US,
   letsMeshJwtAudience,
   letsMeshMqttUsernameFromIdentity,
+  MESHMAPPER_HOST,
 } from './letsMeshJwt';
 
 // Sample key pair from @michaelhart/meshcore-decoder tests (auth-token.test.ts)
@@ -34,6 +35,10 @@ describe('letsMeshJwt', () => {
     expect(isLetsMeshSettings(LETSMESH_HOST_US)).toBe(true);
     expect(isLetsMeshSettings(LETSMESH_HOST_EU)).toBe(true);
     expect(isLetsMeshSettings('mqtt.example.com')).toBe(false);
+  });
+
+  it('isLetsMeshSettings matches MeshMapper host', () => {
+    expect(isLetsMeshSettings(MESHMAPPER_HOST)).toBe(true);
   });
 
   it('letsMeshJwtAudience uses trimmed MQTT server hostname as aud', () => {

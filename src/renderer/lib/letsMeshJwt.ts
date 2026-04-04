@@ -2,14 +2,17 @@
 export const LETSMESH_HOST_US = 'mqtt-us-v1.letsmesh.net';
 /** EU LetsMesh broker (WebSocket TLS on 443). */
 export const LETSMESH_HOST_EU = 'mqtt-eu-v1.letsmesh.net';
+/** MeshMapper broker (WebSocket TLS on 443). */
+export const MESHMAPPER_HOST = 'mqtt.meshmapper.cc';
 
 /** @deprecated Use {@link LETSMESH_HOST_US} */
 export const LETSMESH_HOST = LETSMESH_HOST_US;
 
-const LETSMESH_HOSTS = new Set([LETSMESH_HOST_US, LETSMESH_HOST_EU]);
+/** All device-signing MQTT brokers (WebSocket TLS on 443, JWT auth). */
+const DEVICE_SIGNING_HOSTS = new Set([LETSMESH_HOST_US, LETSMESH_HOST_EU, MESHMAPPER_HOST]);
 
 export function isLetsMeshSettings(server: string): boolean {
-  return LETSMESH_HOSTS.has(server.trim());
+  return DEVICE_SIGNING_HOSTS.has(server.trim());
 }
 
 /**

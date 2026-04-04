@@ -5,7 +5,7 @@ import {
   validateLetsMeshManualCredentials,
   validateLetsMeshPresetConnect,
 } from './letsMeshConnectionGuards';
-import { LETSMESH_HOST_US } from './letsMeshJwt';
+import { LETSMESH_HOST_US, MESHMAPPER_HOST } from './letsMeshJwt';
 import type { MQTTSettings } from './types';
 
 const base: MQTTSettings = {
@@ -48,6 +48,15 @@ describe('validateLetsMeshPresetConnect', () => {
         server: 'mqtt.example.com',
       }),
     ).toContain('Custom');
+  });
+
+  it('accepts MeshMapper server', () => {
+    expect(
+      validateLetsMeshPresetConnect({
+        ...base,
+        server: MESHMAPPER_HOST,
+      }),
+    ).toBeNull();
   });
 });
 
