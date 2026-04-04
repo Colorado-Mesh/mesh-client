@@ -4,8 +4,8 @@
   "description": "Cross-platform Meshtastic desktop client - BLE, Serial, HTTP, and MQTT support",
   "main": "dist-electron/main/index.js",
   "scripts": {
-    "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --format=cjs",
-    "build:main:prod": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --format=cjs --minify",
+    "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:@meshtastic/protobufs --external:@bufbuild/protobuf --format=cjs",
+    "build:main:prod": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:@meshtastic/protobufs --external:@bufbuild/protobuf --format=cjs --minify",
     "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --outfile=dist-electron/preload/index.js --external:electron --format=cjs",
     "build:renderer": "vite build",
     "build": "pnpm run build:main:prod && pnpm run build:preload && pnpm run build:renderer",
@@ -62,7 +62,7 @@
     "@axe-core/react": "^4.11.1",
     "@liamcottle/meshcore.js": "^1.12.0",
     "@meshtastic/core": "pnpm:@jsr/meshtastic__core@^2.6.6",
-    "@meshtastic/protobufs": "pnpm:@jsr/meshtastic__protobufs@^2.7.18",
+    "@meshtastic/protobufs": "link:pnpm:@jsr/meshtastic__protobufs@^2.7.18",
     "@meshtastic/transport-http": "pnpm:@jsr/meshtastic__transport-http@^0.2.1",
     "@meshtastic/transport-web-serial": "pnpm:@jsr/meshtastic__transport-web-serial@^0.2.5",
     "@tailwindcss/postcss": "^4.2.0",
@@ -88,8 +88,8 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "jsdom": "^28.1.0",
-    "mqtt": "^5.15.0",
     "leaflet": "^1.9.4",
+    "mqtt": "^5.15.0",
     "patch-package": "^8.0.1",
     "postcss": "^8.5.6",
     "prettier": "^3.8.1",
@@ -111,6 +111,7 @@
     "yauzl": "^3.2.1"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.11.0",
     "@stoprocent/noble": "^2.3.17",
     "electron-updater": "^6.8.3",
     "systeminformation": "^5.25.0"
