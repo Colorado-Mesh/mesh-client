@@ -42,11 +42,6 @@ describe('deleteNodesWithoutLongname SQL', () => {
     expect(stmt).toContain("printf('!%08x', node_id)");
   });
 
-  it("prunes MQTT placeholder stubs (OR source = 'mqtt') while preserving RF stubs", () => {
-    expect(DB_SOURCE).toContain("OR source = 'mqtt'");
-    expect(DB_SOURCE).toContain('source IS NULL OR TRIM(source) =');
-  });
-
   it('does not delete favorited nodes', () => {
     expect(DB_SOURCE).toMatch(/favorited IS NULL OR favorited = 0/);
   });

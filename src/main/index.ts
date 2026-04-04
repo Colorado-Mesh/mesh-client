@@ -2400,7 +2400,7 @@ ipcMain.handle('db:saveNode', (_event, node) => {
         channel_utilization = COALESCE(excluded.channel_utilization, nodes.channel_utilization),
         air_util_tx = COALESCE(excluded.air_util_tx, nodes.air_util_tx),
         altitude = COALESCE(excluded.altitude, nodes.altitude),
-        source = CASE WHEN excluded.source = 'rf' THEN 'rf' ELSE COALESCE((SELECT source FROM nodes WHERE node_id = excluded.node_id), 'mqtt') END,
+        source = COALESCE(excluded.source, nodes.source, 'rf'),
         num_packets_rx_bad = COALESCE(excluded.num_packets_rx_bad, num_packets_rx_bad),
         num_rx_dupe = COALESCE(excluded.num_rx_dupe, num_rx_dupe),
         num_packets_rx = COALESCE(excluded.num_packets_rx, num_packets_rx),

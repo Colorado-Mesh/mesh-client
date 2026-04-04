@@ -901,7 +901,7 @@ export function deleteNodesWithoutLongname(): number {
   const db = getDatabase();
   const result = db
     .prepare(
-      "DELETE FROM nodes WHERE (long_name IS NULL OR TRIM(long_name) = '' OR long_name = printf('!%08x', node_id)) AND (source IS NULL OR TRIM(source) = '' OR source = 'mqtt') AND (favorited IS NULL OR favorited = 0)",
+      "DELETE FROM nodes WHERE (long_name IS NULL OR TRIM(long_name) = '' OR long_name = printf('!%08x', node_id) OR (long_name LIKE '!%' AND (role IS NULL OR TRIM(role) = ''))) AND (favorited IS NULL OR favorited = 0)",
     )
     .run();
   return Number(result.changes);
