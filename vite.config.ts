@@ -23,6 +23,10 @@ export default defineConfig({
     'process.env': {},
     'process.version': JSON.stringify(process.version),
     'process.platform': JSON.stringify(process.platform),
+    // Stub os module to prevent "browser-external" errors
+    'os.hostname': '() => "mesh-client"',
+    'os.type': '() => "browser"',
+    'os.platform': '() => "browser"',
   },
   build: {
     outDir: path.resolve(__dirname, '../../dist-electron/renderer'),
