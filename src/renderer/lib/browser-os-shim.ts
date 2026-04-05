@@ -1,0 +1,11 @@
+export const hostname = 'mesh-client';
+export const type = 'browser';
+export const platform = 'browser';
+export const release = '';
+export const arch = '';
+export const totalmem = 0;
+export const freemem = 0;
+export const cpus = [];
+export const networkInterfaces = {};
+export const uptime = 0;
+export const EOL = '\n';

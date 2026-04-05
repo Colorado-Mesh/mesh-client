@@ -20,16 +20,12 @@ export default defineConfig({
   },
   define: {
     // Dynamically shim process based on the current OS building the app
-    'process.env': {},
+    'process.env': '{}',
     'process.version': JSON.stringify(process.version),
     'process.platform': JSON.stringify(process.platform),
-    // Stub os module to prevent "browser-external" errors
-    'os.hostname': '"mesh-client"',
-    'os.type': '"browser"',
-    'os.platform': '"browser"',
   },
   build: {
-    outDir: path.resolve(__dirname, '../../dist-electron/renderer'),
+    outDir: path.resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
     commonjsOptions: {
       include: [/node_modules/],
@@ -37,9 +33,9 @@ export default defineConfig({
       transformMixedEsModules: true,
     },
     rollupOptions: {
-      // Node built-ins that appear in transitive deps (serialport, meshcore tcp_connection)
-      // are already externalized by Vite; list them explicitly to suppress the auto-externalize warnings.
-      external: ['net', 'stream', 'fs', 'path', 'os', 'util', 'child_process'],
+      // All Node built-ins are redirected to browser-safe stubs via resolve.alias below.
+      // Do NOT list them as externals — Rollup would emit bare `import "os"` etc.
+      // in the browser bundle which the renderer rejects at runtime.
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/'))
@@ -66,6 +62,17 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      // Node built-ins imported by transitive deps (e.g. @meshtastic/core 2.6.7 via
+      // @meshtastic/transport-web-serial). Listing them as rollup externals emits bare
+      // `import "os"` etc. which the browser rejects. Redirect to renderer-safe stubs instead.
+      fs: path.resolve(__dirname, 'src/renderer/shims/node-fs-stub.ts'),
+      os: path.resolve(__dirname, 'src/renderer/shims/node-os-stub.ts'),
+      path: path.resolve(__dirname, 'src/renderer/shims/node-path-stub.ts'),
+      util: path.resolve(__dirname, 'src/renderer/shims/node-util-stub.ts'),
+      stream: path.resolve(__dirname, 'src/renderer/shims/node-stream-stub.ts'),
+      child_process: path.resolve(__dirname, 'src/renderer/shims/node-child-process-stub.ts'),
+      net: path.resolve(__dirname, 'src/renderer/shims/node-net-stub.ts'),
+      events: path.resolve(__dirname, 'src/renderer/shims/node-events-stub.ts'),
     },
   },
   css: {

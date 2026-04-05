@@ -879,12 +879,6 @@ function createWindow() {
   } else {
     const indexPath = path.join(__dirname, '../../dist/renderer/index.html');
     const indexUrl = pathToFileURL(indexPath).toString();
-    // Startup diagnostics for troubleshooting packaged app issues
-    console.debug('[Startup] app.isPackaged:', app.isPackaged);
-    console.debug('[Startup] __dirname:', sanitizeLogMessage(__dirname));
-    console.debug('[Startup] Renderer path:', sanitizeLogMessage(indexPath));
-    console.debug('[Startup] process.resourcesPath:', sanitizeLogMessage(process.resourcesPath));
-    console.debug('[Startup] userData:', sanitizeLogMessage(app.getPath('userData')));
     // Use loadURL with an explicit HTTP referrer so OpenStreetMap tile requests
     // from the packaged app include a valid Referer header and comply with the
     // OSM tile usage policy for web-style traffic.
