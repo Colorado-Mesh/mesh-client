@@ -154,6 +154,10 @@ git pull origin main
 print_header "Updating dependencies..."
 pnpm update
 
+# Ensure lockfile is deduped after update
+print_header "Deduplicating dependencies..."
+pnpm dedupe
+
 # 4. Get the last tag
 LAST_TAG=$(git describe --tags --abbrev=0 2> /dev/null || echo "")
 if [ -z "$LAST_TAG" ]; then
@@ -237,7 +241,7 @@ else
 fi
 
 echo ""
-echo -e "${BOLD}Continue with release?${NC} [y/N]"
+echo -e "${BOLD}Continue with pre-flight validation?${NC} [y/N]"
 read -r CONFIRM
 
 if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
@@ -245,22 +249,136 @@ if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
   exit 0
 fi
 
+# 9. PRE-FLIGHT VALIDATION - Run all checks before making any changes
+print_header "Running pre-flight validation..."
+
+# Check formatting
+echo "Checking code formatting..."
+if ! pnpm run format:check; then
+  print_error "Code formatting check failed. Run 'pnpm run format' to fix."
+  exit 1
+fi
+
+# Check markdown
+echo "Checking markdown formatting..."
+if ! pnpm run lint:md; then
+  print_error "Markdown lint check failed."
+  exit 1
+fi
+
+# Lint code
+echo "Running ESLint..."
+if ! pnpm run lint; then
+  print_error "ESLint check failed."
+  exit 1
+fi
+
+# Type checking
+echo "Running TypeScript type checking..."
+if ! pnpm run typecheck; then
+  print_error "TypeScript type check failed."
+  exit 1
+fi
+
+# Security checks
+echo "Running security checks..."
+if ! pnpm run check:log-injection; then
+  print_error "Log injection check failed."
+  exit 1
+fi
+
+if ! pnpm run check:db-migrations; then
+  print_error "Database migration check failed."
+  exit 1
+fi
+
+if ! pnpm run check:ipc-contract; then
+  print_error "IPC contract check failed."
+  exit 1
+fi
+
+if ! pnpm run check:licenses; then
+  print_error "License check failed."
+  exit 1
+fi
+
+# Dependency checks
+echo "Checking dependencies..."
+if ! pnpm dedupe --check; then
+  print_error "Dependency deduplication check failed. Run 'pnpm dedupe' to fix."
+  exit 1
+fi
+
+if ! pnpm audit --audit-level=high; then
+  print_error "Security audit failed. Address high-severity vulnerabilities."
+  exit 1
+fi
+
+# Check for Node.js deprecation warnings
+echo "Checking for Node.js deprecation warnings..."
+DEPRECATION_OUTPUT=$(NODE_OPTIONS="--trace-deprecation" pnpm version patch --no-git-tag-version --dry-run 2>&1 || true)
+if echo "$DEPRECATION_OUTPUT" | grep -q "DEP0187"; then
+  print_error "Found Node.js deprecation warning about fs.existsSync. This will cause the release to fail."
+  print_error "Please fix the deprecation warning before proceeding with release."
+  exit 1
+fi
+
+# GitHub Actions validation
+echo "Validating GitHub Actions..."
+if ! command -v actionlint > /dev/null 2>&1; then
+  print_warning "actionlint not found, skipping GitHub Actions validation"
+else
+  if ! actionlint; then
+    print_error "GitHub Actions validation failed."
+    exit 1
+  fi
+fi
+
+# YAML validation
+echo "Validating YAML files..."
+if ! command -v yamllint > /dev/null 2>&1; then
+  print_warning "yamllint not found, skipping YAML validation"
+else
+  if ! yamllint -f github -s .; then
+    print_error "YAML validation failed."
+    exit 1
+  fi
+fi
+
+# Tests
+echo "Running tests..."
+if ! pnpm run test:run; then
+  print_error "Tests failed."
+  exit 1
+fi
+
+print_success "All pre-flight checks passed!"
+
+echo ""
+echo -e "${BOLD}All validations passed. Proceed with actual release?${NC} [y/N]"
+read -r FINAL_CONFIRM
+
+if [ "$FINAL_CONFIRM" != "y" ] && [ "$FINAL_CONFIRM" != "Y" ]; then
+  print_warning "Release cancelled after successful validation."
+  exit 0
+fi
+
 # ====================== Generate release notes ======================
 generate_release_notes "$LAST_TAG" "v$NEW_VERSION_PREVIEW"
 
-# 9. Bump version
+# 10. Bump version
 print_header "Bumping version..."
 NEW_VERSION=$(pnpm version "$VERSION_TYPE" --no-git-tag-version)
 
-# 10. Commit the version bump
+# 11. Commit the version bump
 git add package.json pnpm-lock.yaml
 git commit -m "chore: release $NEW_VERSION"
 
-# 11. Create the git tag
+# 12. Create the git tag
 print_header "Creating tag $NEW_VERSION..."
 git tag "$NEW_VERSION"
 
-# 12. Push to GitHub
+# 13. Push to GitHub
 print_header "Pushing to GitHub..."
 git push origin main
 git push origin "$NEW_VERSION"
