@@ -1,40 +1,84 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'path';
 
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+/** Emscripten glue fetches `orlp-ed25519.wasm` relative to the page; it is not inlined by Vite. */
+const ORLP_WASM_NAME = 'orlp-ed25519.wasm';
+const ORLP_WASM_SRC = path.resolve(
+  __dirname,
+  `node_modules/@michaelhart/meshcore-decoder/lib/${ORLP_WASM_NAME}`,
+);
+
+function meshcoreOrlpWasmPlugin(): import('vite').Plugin {
+  return {
+    name: 'meshcore-orlp-wasm',
+    configureServer(server) {
+      if (!existsSync(ORLP_WASM_SRC)) return;
+      server.middlewares.use((req, res, next) => {
+        const url = req.url?.split('?')[0] ?? '';
+        if (url === `/${ORLP_WASM_NAME}` || url.endsWith(`/${ORLP_WASM_NAME}`)) {
+          try {
+            const buf = readFileSync(ORLP_WASM_SRC);
+            res.setHeader('Content-Type', 'application/wasm');
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
+            res.end(buf);
+          } catch {
+            res.statusCode = 404;
+            res.end();
+          }
+          return;
+        }
+        next();
+      });
+    },
+    writeBundle() {
+      if (!existsSync(ORLP_WASM_SRC)) return;
+      const buf = readFileSync(ORLP_WASM_SRC);
+      // Next to index.html (relative URL "orlp-ed25519.wasm" from document)
+      writeFileSync(path.resolve(__dirname, 'dist/renderer', ORLP_WASM_NAME), buf);
+      // Some Emscripten builds resolve WASM relative to the JS chunk in assets/
+      writeFileSync(path.resolve(__dirname, 'dist/renderer/assets', ORLP_WASM_NAME), buf);
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), meshcoreOrlpWasmPlugin()],
   worker: {
     format: 'es',
   },
+  define: {
+    // Polyfill bare `process` — browser contexts don't have this global.
+    // @meshtastic/transport-web-serial's bundled core accesses process?.version and
+    // process.cwd() without browser-guarding, causing ReferenceError in the renderer.
+    // esbuild specificity: dotted-path defines (process.type below) take precedence
+    // over the bare identifier for their specific access pattern.
+    process: JSON.stringify({
+      type: 'renderer',
+      env: {},
+      version: '',
+      versions: {},
+      platform: '',
+      browser: true,
+    }),
+    // meshcore-decoder's Emscripten glue sets ENVIRONMENT_IS_NODE using (process.type != "renderer").
+    // In Vite dev, process.type is often undefined, so undefined != "renderer" is true and the glue
+    // wrongly takes the Node branch (require("fs")) — browser error: cannot resolve module "fs".
+    // Electron's renderer already has process.type === "renderer"; this matches that.
+    'process.type': JSON.stringify('renderer'),
+  },
   root: path.resolve(__dirname, 'src/renderer'),
   base: './',
-  optimizeDeps: {
-    // Add the transport libraries to the include list
-    include: [
-      '@meshtastic/protobufs',
-      '@bufbuild/protobuf',
-      '@meshtastic/transport-http',
-      '@meshtastic/transport-web-serial',
-    ],
-  },
-  define: {
-    // Dynamically shim process based on the current OS building the app
-    'process.env': '{}',
-    'process.version': JSON.stringify(process.version),
-    'process.platform': JSON.stringify(process.platform),
-  },
   build: {
     outDir: path.resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
-    commonjsOptions: {
-      include: [/node_modules/],
-      // Ensure the protobuf libraries can be transformed if they use CJS
-      transformMixedEsModules: true,
-    },
+    sourcemap: false,
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       // All Node built-ins are redirected to browser-safe stubs via resolve.alias below.
-      // Do NOT list them as externals — Rollup would emit bare `import "os"` etc.
+      // Do NOT list them as externals — Rollup would emit bare `import "stream"` etc.
       // in the browser bundle which the renderer rejects at runtime.
       output: {
         manualChunks(id) {
