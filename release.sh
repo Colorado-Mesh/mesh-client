@@ -24,7 +24,7 @@ git pull origin main
 
 # 3. Use npm to bump the version (this updates package.json and package-lock.json)
 echo "Bumping version..."
-NEW_VERSION=$(npm version $VERSION_TYPE --no-git-tag-version)
+NEW_VERSION=$(pnpm version $VERSION_TYPE --no-git-tag-version)
 
 # 4. Commit the version bump
 git add package.json package-lock.json
