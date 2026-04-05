@@ -12,10 +12,9 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@meshtastic/protobufs": ["node_modules/@meshtastic/protobufs/_dist/mod"]
+      "@/*": ["src/*"]
     }
   },
-  "include": ["src/main/**/*", "src/preload/**/*", "src/shared/**/*"],
+  "include": ["src/main/**/*", "src/preload/**/*", "src/shared/**/*", "src/main/types/**/*"],
   "exclude": ["node_modules", "dist"]
 }

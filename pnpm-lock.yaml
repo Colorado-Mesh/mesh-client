@@ -11,6 +11,18 @@ importers:
       '@bufbuild/protobuf':
         specifier: ^2.11.0
         version: 2.11.0
+      '@meshtastic/core':
+        specifier: ^2.6.7
+        version: 2.6.7(buffer@6.0.3)
+      '@meshtastic/protobufs':
+        specifier: ^2.7.18
+        version: 2.7.18
+      '@meshtastic/transport-http':
+        specifier: ^0.2.5
+        version: 0.2.5(buffer@6.0.3)
+      '@meshtastic/transport-web-serial':
+        specifier: ^0.2.5
+        version: 0.2.5(buffer@6.0.3)
       '@stoprocent/noble':
         specifier: ^2.3.17
         version: 2.4.0
@@ -27,18 +39,6 @@ importers:
       '@liamcottle/meshcore.js':
         specifier: ^1.12.0
         version: 1.13.0
-      '@meshtastic/core':
-        specifier: pnpm:@jsr/meshtastic__core@^2.6.6
-        version: link:pnpm:@jsr/meshtastic__core@^2.6.6
-      '@meshtastic/protobufs':
-        specifier: link:pnpm:@jsr/meshtastic__protobufs@^2.7.18
-        version: link:pnpm:@jsr/meshtastic__protobufs@^2.7.18
-      '@meshtastic/transport-http':
-        specifier: pnpm:@jsr/meshtastic__transport-http@^0.2.1
-        version: link:pnpm:@jsr/meshtastic__transport-http@^0.2.1
-      '@meshtastic/transport-web-serial':
-        specifier: pnpm:@jsr/meshtastic__transport-web-serial@^0.2.5
-        version: link:pnpm:@jsr/meshtastic__transport-web-serial@^0.2.5
       '@tailwindcss/postcss':
         specifier: ^4.2.0
         version: 4.2.2
@@ -769,6 +769,18 @@ packages:
     resolution: {integrity: sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q==}
     engines: {node: '>= 10.0.0'}
 
+  '@meshtastic/core@2.6.7':
+    resolution: {integrity: sha512-0iP/gfzhqVWBzTpJNn2dHp2BiUSQq5xPUDCtssBqI9Y/X64sQ2cPDCKoyGsFPn8VXrJG3B/lQd/yPhg0GytATA==}
+
+  '@meshtastic/protobufs@2.7.18':
+    resolution: {integrity: sha512-bTeO7scTU2xxUdK6RIqKwkF2U2KEYY3LsgCvVbV4lID09FSt8fXJ152/LQhib6EmLClX5+/nso4glmXo7cgqxg==}
+
+  '@meshtastic/transport-http@0.2.5':
+    resolution: {integrity: sha512-iYB6e8fqO0sFQBoiw46tGO0cGql4SsVkEreaOl4GXtuH/2rQB2d0gfJtHYNH8JpZhCjulKJPq5ISfFXe959MTA==}
+
+  '@meshtastic/transport-web-serial@0.2.5':
+    resolution: {integrity: sha512-AaIEfHONjcBK9HgDtg2Mtmq+3jgVIJfTIISxKfXmN3EdhH1WNhu9d6ZI3VSB9T8KD7Bz8wzgQZmcyDIU89tUyQ==}
+
   '@noble/curves@1.9.7':
     resolution: {integrity: sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==}
     engines: {node: ^14.21.3 || >=16}
@@ -1320,6 +1332,9 @@ packages:
   '@types/verror@1.10.11':
     resolution: {integrity: sha512-RlDm9K7+o5stv0Co8i8ZRGxDbrTxhJtgjqjFyVh/tXQyl/rYtTKlnTvZ88oSTeYREWurwx20Js4kTuKCsFkUtg==}
 
+  '@types/w3c-web-serial@1.0.8':
+    resolution: {integrity: sha512-QQOT+bxQJhRGXoZDZGLs3ksLud1dMNnMiSQtBA0w8KXvLpXX4oM4TZb6J0GgJ8UbCaHo5s9/4VQT8uXy9JER2A==}
+
   '@types/w3c-web-usb@1.0.14':
     resolution: {integrity: sha512-Qu3Nn6JFuF4+sHKYl+IcX9vYiI40ogleXzFFSxoE1W94rG98o/kXs8uJ0QSfFzuwBCZWlGfUGpPkgwuuX4PchA==}
 
@@ -1773,6 +1788,15 @@ packages:
 
   crc@3.8.0:
     resolution: {integrity: sha512-iX3mfgcTMIq3ZKLIsVFAbv7+Mc10kxabAGQb8HvjA1o3T1PIYprbakQ65d3I+2HGHt6nSKkM9PYjgoJO2KcFBQ==}
+
+  crc@4.3.2:
+    resolution: {integrity: sha512-uGDHf4KLLh2zsHa8D8hIQ1H/HtFQhyHrc0uhHBcoKGol/Xnb+MPYfUMw7cvON6ze/GUESTudKayDcJC5HnJv1A==}
+    engines: {node: '>=12'}
+    peerDependencies:
+      buffer: '>=6.0.3'
+    peerDependenciesMeta:
+      buffer:
+        optional: true
 
   cross-dirname@0.1.0:
     resolution: {integrity: sha512-+R08/oI0nl3vfPcqftZRpytksBXDzOUveBq/NBVx0sUp1axwzPQrKinNx5yd5sxPu8j1wIy8AfnVQ+5eFdha6Q==}
@@ -4601,6 +4625,29 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@meshtastic/core@2.6.7(buffer@6.0.3)':
+    dependencies:
+      crc: 4.3.2(buffer@6.0.3)
+    transitivePeerDependencies:
+      - buffer
+
+  '@meshtastic/protobufs@2.7.18':
+    dependencies:
+      '@bufbuild/protobuf': 2.11.0
+
+  '@meshtastic/transport-http@0.2.5(buffer@6.0.3)':
+    dependencies:
+      '@meshtastic/core': 2.6.7(buffer@6.0.3)
+    transitivePeerDependencies:
+      - buffer
+
+  '@meshtastic/transport-web-serial@0.2.5(buffer@6.0.3)':
+    dependencies:
+      '@meshtastic/core': 2.6.7(buffer@6.0.3)
+      '@types/w3c-web-serial': 1.0.8
+    transitivePeerDependencies:
+      - buffer
+
   '@noble/curves@1.9.7':
     dependencies:
       '@noble/hashes': 1.8.0
@@ -5089,6 +5136,8 @@ snapshots:
 
   '@types/verror@1.10.11':
     optional: true
+
+  '@types/w3c-web-serial@1.0.8': {}
 
   '@types/w3c-web-usb@1.0.14':
     optional: true
@@ -5659,6 +5708,10 @@ snapshots:
     dependencies:
       buffer: 5.7.1
     optional: true
+
+  crc@4.3.2(buffer@6.0.3):
+    optionalDependencies:
+      buffer: 6.0.3
 
   cross-dirname@0.1.0:
     optional: true

@@ -7,9 +7,9 @@
     "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:@meshtastic/protobufs --external:@bufbuild/protobuf --format=cjs",
     "build:main:prod": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:@meshtastic/protobufs --external:@bufbuild/protobuf --format=cjs --minify",
     "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --outfile=dist-electron/preload/index.js --external:electron --format=cjs",
+    "dev": "concurrently \"pnpm run build:main --watch\" \"pnpm run build:preload --watch\" \"vite\" \"node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
     "build:renderer": "vite build",
     "build": "pnpm run build:main:prod && pnpm run build:preload && pnpm run build:renderer",
-    "dev": "concurrently \"pnpm run build:main -- --watch\" \"pnpm run build:preload -- --watch\" \"vite\" \"node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
     "start": "pnpm run build && electron .",
     "electron:open": "electron .",
     "trace-deprecation": "pnpm run build && NODE_OPTIONS='--trace-deprecation' electron .",
@@ -61,10 +61,6 @@
   "devDependencies": {
     "@axe-core/react": "^4.11.1",
     "@liamcottle/meshcore.js": "^1.12.0",
-    "@meshtastic/core": "pnpm:@jsr/meshtastic__core@^2.6.6",
-    "@meshtastic/protobufs": "link:pnpm:@jsr/meshtastic__protobufs@^2.7.18",
-    "@meshtastic/transport-http": "pnpm:@jsr/meshtastic__transport-http@^0.2.1",
-    "@meshtastic/transport-web-serial": "pnpm:@jsr/meshtastic__transport-web-serial@^0.2.5",
     "@tailwindcss/postcss": "^4.2.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -112,6 +108,10 @@
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",
+    "@meshtastic/core": "^2.6.7",
+    "@meshtastic/protobufs": "^2.7.18",
+    "@meshtastic/transport-http": "^0.2.5",
+    "@meshtastic/transport-web-serial": "^0.2.5",
     "@stoprocent/noble": "^2.3.17",
     "electron-updater": "^6.8.3",
     "systeminformation": "^5.25.0"

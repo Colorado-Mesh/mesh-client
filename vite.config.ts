@@ -9,9 +9,30 @@ export default defineConfig({
   },
   root: path.resolve(__dirname, 'src/renderer'),
   base: './',
+  optimizeDeps: {
+    // Add the transport libraries to the include list
+    include: [
+      '@meshtastic/protobufs',
+      '@bufbuild/protobuf',
+      '@meshtastic/transport-http',
+      '@meshtastic/transport-web-serial',
+    ],
+  },
+  define: {
+    // Dynamically shim process based on the current OS building the app
+    'process.env': {},
+    'process.version': JSON.stringify(process.version),
+    'process.platform': JSON.stringify(process.platform),
+    'import_os.hostname': '(() => "mesh-client-user")',
+  },
   build: {
-    outDir: path.resolve(__dirname, 'dist/renderer'),
+    outDir: path.resolve(__dirname, '../../dist-electron/renderer'),
     emptyOutDir: true,
+    commonjsOptions: {
+      include: [/node_modules/],
+      // Ensure the protobuf libraries can be transformed if they use CJS
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       // Node built-ins that appear in transitive deps (serialport, meshcore tcp_connection)
       // are already externalized by Vite; list them explicitly to suppress the auto-externalize warnings.
