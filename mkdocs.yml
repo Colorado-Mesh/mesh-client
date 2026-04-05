@@ -1,0 +1,47 @@
+site_name: Colorado Mesh Client
+repo_url: https://github.com/Colorado-Mesh/mesh-client
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - search.suggest
+    - search.highlight
+
+nav:
+  - Home: index.md
+  - Engineering:
+      - Development Guide: development-environment.md
+      - Contributing: contributing.md
+      - Accessibility: accessibility-checklist.md
+      - CI/CD: ci-cd.md
+      - Release Process: release-process.md
+  - MeshCore Roadmap:
+      - Deferred Epics: meshcore-deferred-epics.md
+      - Feature Parity: meshcore-meshtastic-parity.md
+      - MQTT Auth: letsmesh-mqtt-auth.md
+  - Support:
+      - Diagnostics: diagnostics.md
+      - Troubleshooting: troubleshooting.md
+      - Community:
+          - Discord: https://discord.com/invite/McChKR5NpS
+          - Website: https://coloradomesh.org/
+  - Project:
+      - License: license.md
+      - Credits: credits.md

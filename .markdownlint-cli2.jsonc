@@ -1,0 +1,3 @@
+{
+  "ignores": ["node_modules/**", ".cursor/**", "site/**", "release/**"],
+}

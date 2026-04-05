@@ -1,0 +1,43 @@
+name: Publish Docs
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.x
+      - run: pip install -r docs/requirements.txt
+      - run: cp README.md docs/index.md
+      - run: cp CONTRIBUTING.md docs/contributing.md
+      - name: Rewrite synced doc links for MkDocs root
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def rewrite(path: Path) -> None:
+              text = path.read_text(encoding="utf-8")
+
+              # Convert repo docs-relative links to MkDocs page-relative links.
+              text = re.sub(r"\]\(docs/([^)]+)\)", r"](\1)", text)
+              text = re.sub(r'src="docs/([^"]+)"', r'src="\1"', text)
+
+              path.write_text(text, encoding="utf-8")
+
+          rewrite(Path("docs/index.md"))
+          rewrite(Path("docs/contributing.md"))
+          PY
+      - run: mkdocs gh-deploy --force
