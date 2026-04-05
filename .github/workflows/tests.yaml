@@ -1,5 +1,8 @@
 name: Tests
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches: [main]
@@ -15,9 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
@@ -31,7 +35,7 @@ jobs:
 
       - name: Upload test results
         if: always() && github.actor != 'nektos/act'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: vitest-report
           path: test-results/

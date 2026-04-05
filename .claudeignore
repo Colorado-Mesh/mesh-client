@@ -6,7 +6,6 @@
 .aider*
 .claude/
 .cursor/
-CLAUDE.md
 Thumbs.db
 dist/
 dist-electron/

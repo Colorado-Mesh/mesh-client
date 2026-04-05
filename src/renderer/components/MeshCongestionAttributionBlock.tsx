@@ -22,13 +22,13 @@ export default function MeshCongestionAttributionBlock({
   if (lines.length === 0 && originators.length === 0) return null;
 
   return (
-    <div className={`${className} p-3 bg-primary-dark rounded-lg border border-orange-500/20`}>
-      <div className="text-xs font-medium text-orange-300 mb-2">
+    <div className={`${className} bg-primary-dark rounded-lg border border-orange-500/20 p-3`}>
+      <div className="mb-2 text-xs font-medium text-orange-300">
         Why you&apos;re seeing duplicate traffic
       </div>
-      {scopeSubtitle && <div className="text-[10px] text-muted mb-2">{scopeSubtitle}</div>}
+      {scopeSubtitle && <div className="text-muted mb-2 text-[10px]">{scopeSubtitle}</div>}
       {lines.length > 0 && (
-        <div className="flex flex-col gap-2 text-[10px] text-muted">
+        <div className="text-muted flex flex-col gap-2 text-[10px]">
           {lines.map((line, j) => (
             <p key={j} className="leading-relaxed">
               {line}
@@ -37,8 +37,8 @@ export default function MeshCongestionAttributionBlock({
         </div>
       )}
       {originators.length > 0 && (
-        <div className={lines.length > 0 ? 'mt-3 pt-2 border-t border-orange-500/20' : ''}>
-          <div className="text-[10px] font-medium text-orange-200/90 mb-1.5">
+        <div className={lines.length > 0 ? 'mt-3 border-t border-orange-500/20 pt-2' : ''}>
+          <div className="mb-1.5 text-[10px] font-medium text-orange-200/90">
             Most RF duplicate-prone traffic lately (by originator — not which relay)
           </div>
           <ul className="space-y-1">

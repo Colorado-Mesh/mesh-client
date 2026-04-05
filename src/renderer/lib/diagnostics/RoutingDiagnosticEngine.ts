@@ -69,11 +69,10 @@ export function detectBadRoute(
   // Very close node taking many hops
   if (
     (!ignoreMqtt || !node.heard_via_mqtt_only) &&
-    homeNode &&
-    homeNode.latitude &&
-    homeNode.longitude &&
-    node.latitude &&
-    node.longitude
+    homeNode?.latitude != null &&
+    homeNode?.longitude != null &&
+    node.latitude != null &&
+    node.longitude != null
   ) {
     const distKm = haversineDistanceKm(
       homeNode.latitude,

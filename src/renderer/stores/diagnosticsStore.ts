@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
 import {
   DEFAULT_RF_DIAGNOSTIC_MAX_AGE_MS,
   DEFAULT_ROUTING_DIAGNOSTIC_MAX_AGE_MS,
@@ -170,9 +171,9 @@ function isValidDiagnosticRow(r: unknown): r is DiagnosticRow {
   return false;
 }
 
-/** Routing diagnostic max age from adminSettings (hours); default 24. */
+/** Routing diagnostic max age from app settings (hours); default 24. */
 function loadRoutingDiagnosticMaxAgeMs(): number {
-  const raw = localStorage.getItem('mesh-client:adminSettings');
+  const raw = getAppSettingsRaw();
   const o = parseStoredJson<{ diagnosticRowsMaxAgeHours?: number }>(
     raw,
     'diagnosticsStore loadRoutingDiagnosticMaxAgeMs',
@@ -198,8 +199,12 @@ function loadDiagnosticRowsSnapshot(): { rows: DiagnosticRow[]; savedAt: number 
     raw,
     'diagnosticsStore loadDiagnosticRowsSnapshot',
   );
-  if (!parsed || parsed.v !== 1 || !Array.isArray(parsed.rows)) return null;
+  if (parsed?.v !== 1 || !Array.isArray(parsed.rows)) return null;
   let rows = parsed.rows.filter(isValidDiagnosticRow);
+  const droppedCount = parsed.rows.length - rows.length;
+  if (droppedCount > 0) {
+    console.warn(`[diagnosticsStore] dropped ${droppedCount} invalid diagnostic rows on load`);
+  }
   if (rows.length === 0 && parsed.rows.length > 0) return null;
   const now = Date.now();
   rows = pruneDiagnosticRowsByAge(
@@ -318,37 +323,26 @@ interface DiagnosticsState {
 let analysisTimer: ReturnType<typeof setTimeout> | null = null;
 const pendingAnalyses = new Map<number, { node: MeshNode; homeNode: MeshNode | null }>();
 
-function loadAdminBool(key: string): boolean {
-  const raw = localStorage.getItem('mesh-client:adminSettings');
-  const o = parseStoredJson<Record<string, unknown>>(raw, 'diagnosticsStore loadAdminBool');
+function loadPersistedBool(key: string): boolean {
+  const raw = getAppSettingsRaw();
+  const o = parseStoredJson<Record<string, unknown>>(raw, 'diagnosticsStore loadPersistedBool');
   if (!o) return false;
   return (o[key] ?? false) as boolean;
 }
 
 function loadEnvMode(): EnvMode {
-  const raw = localStorage.getItem('mesh-client:adminSettings');
+  const raw = getAppSettingsRaw();
   const o = parseStoredJson<{ envMode?: string }>(raw, 'diagnosticsStore loadEnvMode');
   const val = o?.envMode;
   if (val === 'city' || val === 'canyon') return val;
   return 'standard';
 }
 
-function saveAdminKey(key: string, value: unknown): void {
-  try {
-    const raw = localStorage.getItem('mesh-client:adminSettings');
-    const s =
-      parseStoredJson<Record<string, unknown>>(raw, 'diagnosticsStore saveAdminKey read') ?? {};
-    localStorage.setItem('mesh-client:adminSettings', JSON.stringify({ ...s, [key]: value }));
-  } catch (e) {
-    console.warn('[diagnosticsStore] saveAdminKey failed', key, e);
-  }
-}
-
 function loadMqttIgnoredNodes(): Set<number> {
   const raw = localStorage.getItem('mesh-client:mqttIgnoredNodes');
   const arr = parseStoredJson<unknown>(raw, 'diagnosticsStore loadMqttIgnoredNodes');
   if (Array.isArray(arr) && arr.every((n) => typeof n === 'number')) {
-    return new Set<number>(arr as number[]);
+    return new Set<number>(arr);
   }
   return new Set();
 }
@@ -372,9 +366,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   packetStats: new Map(),
   packetCache: new Map(),
   nodeRedundancy: new Map(),
-  congestionHalosEnabled: loadAdminBool('congestionHalosEnabled'),
-  anomalyHalosEnabled: loadAdminBool('anomalyHalosEnabled'),
-  ignoreMqttEnabled: loadAdminBool('ignoreMqttEnabled'),
+  congestionHalosEnabled: loadPersistedBool('congestionHalosEnabled'),
+  anomalyHalosEnabled: loadPersistedBool('anomalyHalosEnabled'),
+  ignoreMqttEnabled: loadPersistedBool('ignoreMqttEnabled'),
   mqttIgnoredNodes: loadMqttIgnoredNodes(),
   ourPositionSource: null,
   envMode: loadEnvMode(),
@@ -736,17 +730,21 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   },
 
   setCongestionHalosEnabled(enabled: boolean) {
-    saveAdminKey('congestionHalosEnabled', enabled);
+    mergeAppSetting(
+      'congestionHalosEnabled',
+      enabled,
+      'diagnosticsStore setCongestionHalosEnabled',
+    );
     set({ congestionHalosEnabled: enabled });
   },
 
   setAnomalyHalosEnabled(enabled: boolean) {
-    saveAdminKey('anomalyHalosEnabled', enabled);
+    mergeAppSetting('anomalyHalosEnabled', enabled, 'diagnosticsStore setAnomalyHalosEnabled');
     set({ anomalyHalosEnabled: enabled });
   },
 
   setIgnoreMqttEnabled(enabled: boolean) {
-    saveAdminKey('ignoreMqttEnabled', enabled);
+    mergeAppSetting('ignoreMqttEnabled', enabled, 'diagnosticsStore setIgnoreMqttEnabled');
     set({ ignoreMqttEnabled: enabled });
   },
 
@@ -765,14 +763,18 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   },
 
   setEnvMode(mode: EnvMode) {
-    saveAdminKey('envMode', mode);
+    mergeAppSetting('envMode', mode, 'diagnosticsStore setEnvMode');
     set({ envMode: mode });
   },
 
   setDiagnosticRowsMaxAgeHours(hours: number) {
     const h = Math.round(hours);
     if (!Number.isFinite(h) || h < 1 || h > 168) return;
-    saveAdminKey('diagnosticRowsMaxAgeHours', h);
+    mergeAppSetting(
+      'diagnosticRowsMaxAgeHours',
+      h,
+      'diagnosticsStore setDiagnosticRowsMaxAgeHours',
+    );
     const now = Date.now();
     set((s) => ({
       diagnosticRowsMaxAgeHours: h,

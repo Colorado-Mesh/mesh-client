@@ -3,10 +3,10 @@
 .aider*
 .claude/
 .cursor/
-CLAUDE.md
 Thumbs.db
 dist-electron/
 dist/
+meta.json
 node_modules/
 release/
 test-results/

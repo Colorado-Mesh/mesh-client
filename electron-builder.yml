@@ -9,12 +9,12 @@ files:
   - node_modules/**/*
   - package.json
 asarUnpack:
-  - "node_modules/systeminformation/**/*"
-  - "node_modules/@stoprocent/**/*"
+  - 'node_modules/systeminformation/**/*'
+  - 'node_modules/@stoprocent/**/*'
 publish:
   provider: github
   owner: Colorado-Mesh
-  repo: meshtastic-client
+  repo: mesh-client
 extraResources:
   - from: resources/icons/win/colorado-mesh.ico
     to: colorado-mesh.ico
@@ -39,7 +39,7 @@ mac:
   preAutoEntitlements: true
   helperBundleId: com.mesh-client.app.helper
   extendInfo:
-    NSBluetoothAlwaysUsageDescription: "Mesh-client needs Bluetooth to communicate with Meshtastic devices."
+    NSBluetoothAlwaysUsageDescription: 'Mesh-client needs Bluetooth to communicate with Meshtastic devices.'
   target:
     - dmg
     - zip
@@ -64,11 +64,13 @@ linux:
   icon: resources/icons/linux/
   desktop:
     entry:
-      StartupWMClass: "com.mesh-client.app"
-      Categories: "Utility;Network;"
+      StartupWMClass: 'com.mesh-client.app'
+      Categories: 'Utility;Network;'
   extraResources:
     - from: ./copyright
       to: usr/share/doc/mesh-client/copyright
+deb:
+rpm:
 win:
   target:
     - target: nsis

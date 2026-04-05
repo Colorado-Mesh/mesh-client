@@ -14,16 +14,28 @@ import {
 } from 'react-leaflet';
 
 import type { LocationFilter } from '../App';
+import { formatCoordPair } from '../lib/coordUtils';
 import { getRoutingRowForNode, routingAnomalyNodeIds } from '../lib/diagnostics/diagnosticRows';
+import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
+import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
-import type { MeshNode, MeshWaypoint, NodeAnomaly } from '../lib/types';
+import { useRadioProvider } from '../lib/radio/providerFactory';
+import type { MeshNode, MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
+import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import NodeInfoBody from './NodeInfoBody';
 import { useToast } from './Toast';
+
+const WAYPOINT_MARKER_ICON = L.divIcon({
+  className: '',
+  html: `<div style="background:#f59e0b;border:2px solid #fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;">📍</div>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
 
 // ─── Map styles (anomaly halos + dark popup) ──────────────────────────────────
 
@@ -101,33 +113,43 @@ function getCUColor(cu: number): string {
   return '#ef4444';
 }
 
+/**
+ * Build a Leaflet SVG marker icon.
+ *
+ * SECURITY: `color` and any future string parameters are interpolated into SVG
+ * attribute values. Always pass internal computed values or wrap user-supplied
+ * strings with `escapeSvgAttr` / `escapeSvgText` before interpolating.
+ */
+type NodeBadgeType = 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null;
+
 function createMarkerIcon(
   color: string,
   isSelf: boolean,
   cu = 0,
   markerOpacity = 1,
   isMqttOnly = false,
-  isRepeater = false,
+  nodeBadge: NodeBadgeType = null,
 ): L.Icon {
   const haloPx = cu <= 0 ? 0 : Math.round((cu / 100) * 14);
   const haloColor = getCUColor(cu);
   const halo = (c: number) =>
     haloPx > 0
-      ? `<circle cx="${c}" cy="${c}" r="${c - 0.5}" fill="${haloColor}" opacity="0.4"/>`
+      ? `<circle cx="${c}" cy="${c}" r="${c - 0.5}" fill="${escapeSvgAttr(haloColor)}" opacity="0.4"/>`
       : '';
   const mqttBadge = (c: number) =>
     isMqttOnly
       ? `<circle cx="${c + 7}" cy="${c - 7}" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>`
       : '';
-  const repeaterBadge = (c: number) =>
-    isRepeater
-      ? `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#111827" stroke="#fff" stroke-width="1.2"/><text x="${c - 7}" y="${c - 4.5}" text-anchor="middle" fill="#f9fafb" font-family="system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="7.5" font-weight="700">R</text></g>`
-      : '';
+  const nodeBadgeSvg = (c: number) => {
+    const path = nodeBadge ? NODE_BADGE_PATHS[nodeBadge] : null;
+    if (!path) return '';
+    return `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#111827" stroke="#fff" stroke-width="1.2"/><path transform="translate(${c - 12},${c - 12}) scale(0.4167)" d="${path}" fill="#f9fafb"/></g>`;
+  };
 
   if (isSelf) {
     const total = 32 + 2 * haloPx;
     const c = total / 2;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<g transform="translate(${haloPx},${haloPx}) scale(${32 / 24})"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${color}" stroke="#000" stroke-width="0.5"/></g>${mqttBadge(c)}${repeaterBadge(c)}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<g transform="translate(${haloPx},${haloPx}) scale(${32 / 24})"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${escapeSvgAttr(color)}" stroke="#000" stroke-width="0.5"/></g>${mqttBadge(c)}${nodeBadgeSvg(c)}</svg>`;
     return L.icon({
       iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
       iconSize: [total, total],
@@ -138,7 +160,7 @@ function createMarkerIcon(
 
   const total = 25 + 2 * haloPx;
   const c = total / 2;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<circle cx="${c}" cy="${c}" r="10.4" fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/><circle cx="${c}" cy="${c}" r="4.2" fill="#fff" opacity="0.8"/>${mqttBadge(c)}${repeaterBadge(c)}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<circle cx="${c}" cy="${c}" r="10.4" fill="${escapeSvgAttr(color)}" stroke="#000" stroke-width="1" opacity="0.9"/><circle cx="${c}" cy="${c}" r="4.2" fill="#fff" opacity="0.8"/>${mqttBadge(c)}${nodeBadgeSvg(c)}</svg>`;
   return L.icon({
     iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
     iconSize: [total, total],
@@ -152,11 +174,11 @@ function getMarkerIcon(
   isSelf: boolean,
   cu: number,
   isMqttOnly = false,
-  isRepeater = false,
+  nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = null,
 ): L.Icon {
   const color = status === 'online' ? '#9ae6b4' : status === 'stale' ? '#c4a864' : '#6b7280';
   const opacity = status === 'online' ? 1 : status === 'stale' ? 0.65 : 0.45;
-  return createMarkerIcon(color, isSelf, cu, opacity, isMqttOnly, isRepeater);
+  return createMarkerIcon(color, isSelf, cu, opacity, isMqttOnly, nodeBadge);
 }
 
 const PATH_COLORS = {
@@ -199,6 +221,7 @@ interface MapMarkerProps {
   homeNode?: MeshNode | null;
   haloCenterOffset?: [number, number];
   nodes: Map<number, MeshNode>;
+  protocol: MeshProtocol;
 }
 
 const MapMarker = memo(
@@ -211,14 +234,24 @@ const MapMarker = memo(
     homeNode,
     haloCenterOffset = [0, 0],
     nodes,
+    protocol,
   }: MapMarkerProps) {
-    const status = getNodeStatus(node.last_heard);
+    const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
+    const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
     const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
-    const isRepeater = node.hw_model === 'Repeater';
+    const nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = (() => {
+      if (node.hw_model === 'Repeater') return 'repeater';
+      if (node.hw_model === 'Room') return 'room';
+      if (node.hw_model === 'Sensor') return 'sensor';
+      if (protocol === 'meshtastic' && node.role === 2) return 'repeater';
+      if (protocol === 'meshtastic' && node.role === 11) return 'clock';
+      if (protocol === 'meshtastic' && node.role === 12) return 'home';
+      return null;
+    })();
 
     const icon = useMemo(
-      () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only, isRepeater),
-      [status, isSelf, cuForIcon, node.heard_via_mqtt_only, isRepeater],
+      () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge),
+      [status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge],
     );
 
     const shouldShowHalo = useMemo(
@@ -289,8 +322,8 @@ const MapMarker = memo(
           zIndexOffset={isSelf ? 1000 : 0}
         >
           <Popup>
-            <div className="px-4 py-3 max-h-[70vh] overflow-y-auto">
-              <div className="font-semibold text-gray-100 mb-2 flex items-center gap-1.5">
+            <div className="max-h-[70vh] overflow-y-auto px-4 py-3">
+              <div className="mb-2 flex items-center gap-1.5 font-semibold text-gray-100">
                 {isSelf && <span title="Your node">★</span>}
                 {node.long_name || `!${node.node_id.toString(16)}`}
                 {(() => {
@@ -298,13 +331,13 @@ const MapMarker = memo(
                   const displayName = node.long_name || shortId;
                   if (shortId === displayName.trim()) return null;
                   return (
-                    <span className="text-xs text-muted font-mono ml-1">
+                    <span className="text-muted ml-1 font-mono text-xs">
                       !{node.node_id.toString(16)}
                     </span>
                   );
                 })()}
               </div>
-              <NodeInfoBody node={node} homeNode={homeNode} nodes={nodes} />
+              <NodeInfoBody node={node} homeNode={homeNode} nodes={nodes} protocol={protocol} />
             </div>
           </Popup>
         </Marker>
@@ -321,7 +354,8 @@ const MapMarker = memo(
     prev.anomaly?.type === next.anomaly?.type &&
     prev.anomaly?.severity === next.anomaly?.severity &&
     prev.haloCenterOffset?.[0] === next.haloCenterOffset?.[0] &&
-    prev.haloCenterOffset?.[1] === next.haloCenterOffset?.[1],
+    prev.haloCenterOffset?.[1] === next.haloCenterOffset?.[1] &&
+    prev.protocol === next.protocol,
 );
 
 // 1941 Ute Creek Dr, Longmont CO — used when there are no GPS coordinates
@@ -374,8 +408,7 @@ function ViewportSaver({ hasAnyPositions }: { hasAnyPositions: boolean }) {
       const next = { center: [center.lat, center.lng] as [number, number], zoom };
       const current = useMapViewportStore.getState().viewport;
       if (
-        current &&
-        current.zoom === next.zoom &&
+        current?.zoom === next.zoom &&
         Math.abs(current.center[0] - next.center[0]) < VIEWPORT_EPS &&
         Math.abs(current.center[1] - next.center[1]) < VIEWPORT_EPS
       ) {
@@ -454,7 +487,7 @@ function LocateMeControl({
             title="Show my location"
             aria-label="Show my location"
             aria-busy={loading}
-            className={`leaflet-bar-part border-0 bg-white p-0 cursor-pointer ${loading ? 'locating' : ''}`}
+            className={`leaflet-bar-part cursor-pointer border-0 bg-white p-0 ${loading ? 'locating' : ''}`}
             onClick={handleLocate}
           >
             <svg
@@ -503,6 +536,7 @@ interface Props {
     ch?: number,
   ) => Promise<void>;
   onDeleteWaypoint?: (id: number) => Promise<void>;
+  protocol?: MeshProtocol;
 }
 
 export default function MapPanel({
@@ -513,28 +547,32 @@ export default function MapPanel({
   onLocateMe,
   waypoints,
   onDeleteWaypoint,
+  protocol = 'meshtastic',
 }: Props) {
   const homeNode = nodes.get(myNodeNum) ?? null;
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
 
   const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const routingNodeIds = useMemo(() => routingAnomalyNodeIds(diagnosticRows), [diagnosticRows]);
 
+  const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const positionHistory = usePositionHistoryStore((s) => s.history);
   const showPaths = usePositionHistoryStore((s) => s.showPaths);
   const loadHistoryFromDb = usePositionHistoryStore((s) => s.loadHistoryFromDb);
 
   useEffect(() => {
     ensureMapStyles();
-    loadHistoryFromDb();
+    void loadHistoryFromDb().catch((e: unknown) => {
+      console.warn('[MapPanel] loadHistoryFromDb failed:', String(e));
+    });
   }, [loadHistoryFromDb]);
 
   const nodesWithPosition = useMemo(() => {
     const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
     const homeHasLocation =
-      homeNode &&
-      homeNode.latitude != null &&
+      homeNode?.latitude != null &&
       homeNode.latitude !== 0 &&
       homeNode.longitude != null &&
       homeNode.longitude !== 0;
@@ -557,17 +595,14 @@ export default function MapPanel({
       }
       if (!rejectReason && locationFilter.enabled && homeHasLocation) {
         const d = haversineDistanceKm(
-          homeNode!.latitude!,
-          homeNode!.longitude!,
+          homeNode.latitude!,
+          homeNode.longitude!,
           n.latitude!,
           n.longitude!,
         );
         if (d > maxKm) rejectReason = 'distance_filtered';
       }
-      if (rejectReason) {
-        return false;
-      }
-      return true;
+      return rejectReason === null;
     });
   }, [nodes, myNodeNum, locationFilter]);
 
@@ -578,8 +613,7 @@ export default function MapPanel({
       if (idSet.has(nodeId)) continue;
       const node = nodes.get(nodeId);
       if (
-        !node ||
-        node.latitude == null ||
+        node?.latitude == null ||
         node.longitude == null ||
         !(Math.abs(node.latitude) > 0.0001 || Math.abs(node.longitude) > 0.0001)
       )
@@ -644,7 +678,10 @@ export default function MapPanel({
     return {
       node_id: myNodeNum,
       long_name: longName,
-      short_name: homeNode?.short_name || longName.slice(0, 4),
+      short_name:
+        protocol === 'meshcore'
+          ? (homeNode?.short_name ?? '')
+          : homeNode?.short_name || longName.slice(0, 4),
       hw_model: homeNode?.hw_model ?? 'Unknown',
       battery: homeNode?.battery ?? 0,
       snr: homeNode?.snr ?? 0,
@@ -656,7 +693,7 @@ export default function MapPanel({
       heard_via_mqtt_only: homeNode?.heard_via_mqtt_only,
       channel_utilization: homeNode?.channel_utilization,
     };
-  }, [selfInNodesToRender, ourPosition, homeNode, myNodeNum]);
+  }, [selfInNodesToRender, ourPosition, homeNode, myNodeNum, protocol]);
 
   const nodesWithStatusAndHaloOffsetForRender = useMemo(() => {
     if (!selfFallbackNode) return nodesWithStatusAndHaloOffset;
@@ -678,20 +715,24 @@ export default function MapPanel({
 
   const movingNodePaths = useMemo(() => {
     if (!showPaths) return [];
-    const result: { nodeId: number; positions: [number, number][]; color: string }[] = [];
+    const result: {
+      nodeId: number;
+      positions: [number, number][];
+      pathOptions: { color: string; weight: number; opacity: number };
+    }[] = [];
     for (const [nodeId, points] of positionHistory) {
       if (points.length < 2) continue;
       const node = nodes.get(nodeId);
       if (!node) continue;
-      const status = getNodeStatus(node.last_heard);
+      const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
       result.push({
         nodeId,
         positions: points.map((p) => [p.lat, p.lon]),
-        color: PATH_COLORS[status],
+        pathOptions: { color: PATH_COLORS[status], weight: 3, opacity: 0.65 },
       });
     }
     return result;
-  }, [positionHistory, showPaths, nodes]);
+  }, [positionHistory, showPaths, nodes, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
 
   const savedViewport = useMapViewportStore((s) => s.viewport);
   const computedCenter: [number, number] =
@@ -711,28 +752,28 @@ export default function MapPanel({
   const statusCounts = useMemo(() => {
     const counts = { online: 0, stale: 0, offline: 0 };
     for (const n of nodesToRender) {
-      counts[getNodeStatus(n.last_heard)]++;
+      counts[getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs)]++;
     }
     return counts;
-  }, [nodesToRender]);
+  }, [nodesToRender, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
   return (
     <div
-      className="h-full min-h-[500px] rounded-lg overflow-hidden border border-gray-700 relative"
+      className="relative h-full min-h-[500px] overflow-hidden rounded-lg border border-gray-700"
       aria-label="Network map showing node positions"
     >
       {/* Controls overlay — top right */}
       <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
-        <div className="bg-deep-black/80 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-3 text-xs border border-gray-700">
+        <div className="bg-deep-black/80 flex items-center gap-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs backdrop-blur-sm">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-brand-green inline-block" />
+            <span className="bg-brand-green inline-block h-2 w-2 rounded-full" />
             {statusCounts.online}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-amber-500 inline-block opacity-60" />
+            <span className="inline-block h-2 w-2 rounded-full bg-amber-500 opacity-60" />
             {statusCounts.stale}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-gray-500 inline-block" />
+            <span className="inline-block h-2 w-2 rounded-full bg-gray-500" />
             {statusCounts.offline}
           </span>
         </div>
@@ -751,12 +792,8 @@ export default function MapPanel({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
-        {movingNodePaths.map(({ nodeId, positions: pathPositions, color }) => (
-          <Polyline
-            key={`path-${nodeId}`}
-            positions={pathPositions}
-            pathOptions={{ color, weight: 3, opacity: 0.65 }}
-          />
+        {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
+          <Polyline key={`path-${nodeId}`} positions={pathPositions} pathOptions={pathOptions} />
         ))}
         {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
           <MapMarker
@@ -769,31 +806,23 @@ export default function MapPanel({
             homeNode={homeNode}
             haloCenterOffset={haloCenterOffset}
             nodes={nodes}
+            protocol={protocol}
           />
         ))}
         {waypoints &&
           [...waypoints.values()].map((wp) => (
-            <Marker
-              key={wp.id}
-              position={[wp.latitude, wp.longitude]}
-              icon={L.divIcon({
-                className: '',
-                html: `<div style="background:#f59e0b;border:2px solid #fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;">📍</div>`,
-                iconSize: [18, 18],
-                iconAnchor: [9, 9],
-              })}
-            >
+            <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
               <Popup>
-                <div className="p-2 space-y-1">
-                  <div className="font-medium text-gray-100 text-sm">{wp.name || 'Waypoint'}</div>
+                <div className="space-y-1 p-2">
+                  <div className="text-sm font-medium text-gray-100">{wp.name || 'Waypoint'}</div>
                   {wp.description && <div className="text-xs text-gray-400">{wp.description}</div>}
-                  <div className="text-xs text-gray-500 font-mono">
-                    {wp.latitude.toFixed(5)}, {wp.longitude.toFixed(5)}
+                  <div className="font-mono text-xs text-gray-500">
+                    {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
                   </div>
                   {onDeleteWaypoint && (
                     <button
                       onClick={() => onDeleteWaypoint(wp.id)}
-                      className="mt-1 w-full px-2 py-1 text-xs bg-red-900/40 hover:bg-red-900/60 text-red-300 rounded border border-red-800/50 transition-colors"
+                      className="mt-1 w-full rounded border border-red-800/50 bg-red-900/40 px-2 py-1 text-xs text-red-300 transition-colors hover:bg-red-900/60"
                     >
                       Delete Waypoint
                     </button>
@@ -805,8 +834,8 @@ export default function MapPanel({
       </MapContainer>
 
       {nodesToRender.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="bg-deep-black/80 px-4 py-2 rounded-lg text-muted text-sm">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="bg-deep-black/80 text-muted rounded-lg px-4 py-2 text-sm">
             No nodes with GPS positions yet
           </div>
         </div>

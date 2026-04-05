@@ -65,8 +65,10 @@ function buildDecodedEnvelope(options: {
   packetId: number;
   dataBytes: Uint8Array;
   channelName?: string;
+  hopStart?: number;
+  hopLimit?: number;
 }): Buffer {
-  const { nodeId, packetId, dataBytes, channelName = 'LongFast' } = options;
+  const { nodeId, packetId, dataBytes, channelName = 'LongFast', hopStart, hopLimit } = options;
   const data = fromBinary(DataSchema, dataBytes);
   const packet = create(MeshPacketSchema, {
     from: nodeId,
@@ -77,6 +79,8 @@ function buildDecodedEnvelope(options: {
       case: 'decoded',
       value: data,
     },
+    ...(hopStart !== undefined && { hopStart }),
+    ...(hopLimit !== undefined && { hopLimit }),
   });
   const gatewayId = `!${nodeId.toString(16).padStart(8, '0')}`;
   const envelope = create(ServiceEnvelopeSchema, {
@@ -110,7 +114,7 @@ describe('parsePsk', () => {
     expect(result).not.toBeNull();
     expect(result!.length).toBe(16);
     expect(result![0]).toBe(0x01);
-    expect(result!.slice(1).every((b) => b === 0)).toBe(true);
+    expect(result!.subarray(1).every((b) => b === 0)).toBe(true);
   });
 
   it('truncates a key longer than 16 bytes to 16 bytes', () => {
@@ -479,7 +483,7 @@ describe('onMessage — unknown PSK falls back to minimal update', () => {
     manager = new MQTTManager();
   });
 
-  it('emits minimal update with cached names when decryption fails', () => {
+  it('does not emit update when decryption fails', () => {
     const nodeId = 0xdeadbeef;
     const packetId = 0x00000020;
 
@@ -507,16 +511,11 @@ describe('onMessage — unknown PSK falls back to minimal update', () => {
 
     (manager as any).onMessage('msh/US/2/e/CustomChan/!deadbeef', payload);
 
-    expect(updates).toHaveLength(1);
-    const u = updates[0] as Record<string, unknown>;
-    expect(u.node_id).toBe(nodeId);
-    expect(u.long_name).toBe('Cached Name');
-    expect(u.short_name).toBe('CACH');
-    expect(u.hw_model).toBe('41');
-    expect(u.from_mqtt).toBe(true);
+    // No updates should be emitted when decryption fails - we don't add unknown nodes
+    expect(updates).toHaveLength(0);
   });
 
-  it('emits minimal update without name fields for a brand-new unknown-PSK node', () => {
+  it('does not emit update for brand-new unknown-PSK node', () => {
     const nodeId = 0x99aabbcc;
     const packetId = 0x00000021;
 
@@ -533,11 +532,8 @@ describe('onMessage — unknown PSK falls back to minimal update', () => {
     manager.on('nodeUpdate', (u) => updates.push(u));
     (manager as any).onMessage('msh/US/2/e/CustomChan/!99aabbcc', payload);
 
-    const u = updates[0] as Record<string, unknown>;
-    expect(u.node_id).toBe(nodeId);
-    expect(u.long_name).toBeUndefined();
-    expect(u.short_name).toBeUndefined();
-    expect(u.from_mqtt).toBe(true);
+    // No updates should be emitted when decryption fails - we don't add unknown nodes
+    expect(updates).toHaveLength(0);
   });
 });
 
@@ -664,5 +660,442 @@ describe('onMessage — decoded (unencrypted) packet', () => {
     const u = updates[0] as Record<string, unknown>;
     expect(u.long_name).toBe('Decoded Node');
     expect(u.short_name).toBe('DEC');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// onMessage — JSON position messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('onMessage — JSON position', () => {
+  let manager: MQTTManager;
+
+  beforeEach(() => {
+    manager = new MQTTManager();
+  });
+
+  it('handles JSON position with latitudeI/longitudeI fields', () => {
+    const nodeId = 0x698524e8;
+    const json = {
+      type: 'position',
+      from: `!${nodeId.toString(16)}`,
+      latitudeI: 40_000_000,
+      longitudeI: -105_000_000,
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!698524e8', payload);
+
+    expect(updates).toHaveLength(1);
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.latitude).toBeCloseTo(4.0, 3);
+    expect(update.longitude).toBeCloseTo(-10.5, 3);
+    expect(update.from_mqtt).toBe(true);
+  });
+
+  it('handles JSON position with direct latitude/longitude fields', () => {
+    const nodeId = 0x12345678;
+    const json = {
+      type: 'position',
+      from: `!${nodeId.toString(16)}`,
+      latitude: 39.7392,
+      longitude: -104.9903,
+      altitude: 1608,
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!12345678', payload);
+
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.latitude).toBe(39.7392);
+    expect(update.longitude).toBe(-104.9903);
+    expect(update.altitude).toBe(1608);
+  });
+
+  it('handles JSON position with snake_case latitude_i/longitude_i', () => {
+    const nodeId = 0xdeadbeef;
+    const json = {
+      type: 'position',
+      from: `!${nodeId.toString(16)}`,
+      latitude_i: 33_500_000,
+      longitude_i: -112_000_000,
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/AZ/2/json/LongFast/!deadbeef', payload);
+
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.latitude).toBeCloseTo(3.35, 2);
+    expect(update.longitude).toBeCloseTo(-11.2, 1);
+  });
+
+  it('handles JSON position with payload wrapper', () => {
+    const nodeId = 0xaabbccdd;
+    const json = {
+      type: 'position',
+      from: `!${nodeId.toString(16)}`,
+      payload: {
+        latitudeI: 50_000_000,
+        longitudeI: -80_000_000,
+        altitude: 100,
+      },
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/NC/2/json/LongFast/!aabbccdd', payload);
+
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.latitude).toBeCloseTo(5.0, 1);
+    expect(update.longitude).toBeCloseTo(-8.0, 1);
+    expect(update.altitude).toBe(100);
+  });
+
+  it('handles JSON position with from as decimal string', () => {
+    const nodeId = 0x12345678;
+    const json = {
+      type: 'position',
+      from: nodeId.toString(10),
+      latitude: 40.0,
+      longitude: -105.0,
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!12345678', payload);
+
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.latitude).toBe(40.0);
+  });
+
+  it('emits positionWarning for invalid coordinates (0,0)', () => {
+    const nodeId = 0x11111111;
+    const json = {
+      type: 'position',
+      from: `!${nodeId.toString(16)}`,
+      latitude: 0,
+      longitude: 0,
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!11111111', payload);
+
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.positionWarning).toBe('No GPS fix (0°, 0°)');
+    expect(update.latitude).toBeUndefined();
+    expect(update.longitude).toBeUndefined();
+  });
+
+  it('ignores JSON position missing from field', () => {
+    const json = {
+      type: 'position',
+      latitude: 40.0,
+      longitude: -105.0,
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!00000000', payload);
+
+    expect(updates).toHaveLength(0);
+  });
+
+  it('ignores JSON position with invalid from hex', () => {
+    const json = {
+      type: 'position',
+      from: '!notvalid',
+      latitude: 40.0,
+      longitude: -105.0,
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!00000000', payload);
+
+    expect(updates).toHaveLength(0);
+  });
+
+  it('handles POSITION type (uppercase)', () => {
+    const nodeId = 0x22222222;
+    const json = {
+      type: 'POSITION',
+      from: `!${nodeId.toString(16)}`,
+      latitude: 35.0,
+      longitude: -90.0,
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!22222222', payload);
+
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.latitude).toBe(35.0);
+    expect(update.longitude).toBe(-90.0);
+  });
+
+  it('handles JSON position with numeric from field (Meshtastic firmware JSON format)', () => {
+    const nodeId = 0x12ab34cd;
+    const json = {
+      type: 'position',
+      from: nodeId, // number, not string
+      latitude: 39.7392,
+      longitude: -104.9903,
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!12ab34cd', payload);
+
+    expect(updates).toHaveLength(1);
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.latitude).toBe(39.7392);
+    expect(update.longitude).toBe(-104.9903);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// onMessage — JSON nodeinfo
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('onMessage — JSON nodeinfo', () => {
+  let manager: MQTTManager;
+
+  beforeEach(() => {
+    manager = new MQTTManager();
+  });
+
+  it('emits nodeUpdate from JSON USER message with user wrapper', () => {
+    const nodeId = 0xdeadbeef;
+    const json = {
+      type: 'USER',
+      from: `!${nodeId.toString(16)}`,
+      user: {
+        longName: 'Test Node',
+        shortName: 'TST',
+        hwModel: 'TBEAM',
+        role: 0,
+      },
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/2/json/LongFast/!deadbeef', payload);
+
+    expect(updates).toHaveLength(1);
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.long_name).toBe('Test Node');
+    expect(update.short_name).toBe('TST');
+  });
+
+  it('handles JSON nodeinfo with numeric from field (Meshtastic firmware JSON format)', () => {
+    const nodeId = 0x11223344;
+    const json = {
+      type: 'USER',
+      from: nodeId, // number, not string
+      user: {
+        longName: 'Numeric From Node',
+        shortName: 'NFN',
+      },
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/2/json/LongFast/!11223344', payload);
+
+    expect(updates).toHaveLength(1);
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.long_name).toBe('Numeric From Node');
+    expect(update.short_name).toBe('NFN');
+  });
+
+  it('handles JSON nodeinfo with root-level name fields (no user/payload wrapper)', () => {
+    const nodeId = 0xaabbccdd;
+    // Some firmware versions emit longName/shortName at the root without a "user" wrapper
+    const json = {
+      from: nodeId,
+      longName: 'Root Level Node',
+      shortName: 'RLN',
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/2/json/LongFast/!aabbccdd', payload);
+
+    expect(updates).toHaveLength(1);
+    const update = updates[0] as Record<string, unknown>;
+    expect(update.node_id).toBe(nodeId);
+    expect(update.long_name).toBe('Root Level Node');
+    expect(update.short_name).toBe('RLN');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// onMessage — binary MQTT hop count (issue #271)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('onMessage — binary MQTT hop count', () => {
+  let manager: MQTTManager;
+
+  beforeEach(() => {
+    manager = new MQTTManager();
+  });
+
+  it('emits hops_away from hopStart and hopLimit in a binary NODEINFO packet', () => {
+    const nodeId = 0x11223344;
+    const packetId = 0x00000020;
+
+    const user = create(UserSchema, {
+      id: `!${nodeId.toString(16)}`,
+      longName: 'Hop Node',
+      shortName: 'HOP',
+    });
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.NODEINFO_APP,
+        payload: toBinary(UserSchema, user),
+      }),
+    );
+
+    // hopStart=3, hopLimit=2 => 1 hop away from the MQTT bridge
+    const payload = buildDecodedEnvelope({ nodeId, packetId, dataBytes, hopStart: 3, hopLimit: 2 });
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!11223344', payload);
+
+    expect(updates).toHaveLength(1);
+    const u = updates[0] as Record<string, unknown>;
+    expect(u.node_id).toBe(nodeId);
+    expect(u.hops_away).toBe(1);
+  });
+
+  it('does not emit hops_away when hopStart is 0', () => {
+    const nodeId = 0x55667788;
+    const packetId = 0x00000021;
+
+    const user = create(UserSchema, {
+      id: `!${nodeId.toString(16)}`,
+      longName: 'No Hop Node',
+      shortName: 'NHN',
+    });
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.NODEINFO_APP,
+        payload: toBinary(UserSchema, user),
+      }),
+    );
+
+    // hopStart=0 means no valid hop data
+    const payload = buildDecodedEnvelope({ nodeId, packetId, dataBytes, hopStart: 0, hopLimit: 0 });
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!55667788', payload);
+
+    expect(updates).toHaveLength(1);
+    const u = updates[0] as Record<string, unknown>;
+    expect(u.node_id).toBe(nodeId);
+    expect(u.hops_away).toBeUndefined();
+  });
+
+  it('does not emit hops_away when hopLimit exceeds hopStart (invalid)', () => {
+    const nodeId = 0x99aabbcc;
+    const packetId = 0x00000022;
+
+    const user = create(UserSchema, {
+      id: `!${nodeId.toString(16)}`,
+      longName: 'Bad Hop Node',
+      shortName: 'BHN',
+    });
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.NODEINFO_APP,
+        payload: toBinary(UserSchema, user),
+      }),
+    );
+
+    // hopLimit > hopStart is an invalid/corrupt packet
+    const payload = buildDecodedEnvelope({ nodeId, packetId, dataBytes, hopStart: 2, hopLimit: 3 });
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!99aabbcc', payload);
+
+    expect(updates).toHaveLength(1);
+    const u = updates[0] as Record<string, unknown>;
+    expect(u.node_id).toBe(nodeId);
+    expect(u.hops_away).toBeUndefined();
+  });
+
+  it('emits hops_away=0 when hopStart equals hopLimit (node directly at the MQTT bridge)', () => {
+    const nodeId = 0xddeeff00;
+    const packetId = 0x00000023;
+
+    const user = create(UserSchema, {
+      id: `!${nodeId.toString(16)}`,
+      longName: 'Direct Node',
+      shortName: 'DIR',
+    });
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.NODEINFO_APP,
+        payload: toBinary(UserSchema, user),
+      }),
+    );
+
+    // hopStart=3, hopLimit=3 => 0 hops (directly heard by MQTT bridge)
+    const payload = buildDecodedEnvelope({ nodeId, packetId, dataBytes, hopStart: 3, hopLimit: 3 });
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!ddeeff00', payload);
+
+    expect(updates).toHaveLength(1);
+    const u = updates[0] as Record<string, unknown>;
+    expect(u.node_id).toBe(nodeId);
+    expect(u.hops_away).toBe(0);
   });
 });

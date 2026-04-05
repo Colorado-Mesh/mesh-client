@@ -5,6 +5,11 @@ import { EventEmitter } from 'events';
 import * as mqtt from 'mqtt';
 
 import type { ChatMessage, MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
+import {
+  MQTT_DEFAULT_RECONNECT_ATTEMPTS,
+  MQTT_MAX_RECONNECT_ATTEMPTS,
+} from '../shared/meshtasticMqttReconnect';
+import { meshtasticShortNameAfterClearingDefault } from '../shared/nodeNameUtils';
 import { sanitizeLogMessage } from './log-service';
 
 const { ServiceEnvelopeSchema } = MqttProto;
@@ -70,6 +75,19 @@ function coordWarning(lat: number, lon: number): string | null {
 
 const BROADCAST_ID = 0xffffffff >>> 0;
 
+/** TCP/TLS/WSS + MQTT CONNACK window — shorter than MeshCore so bad brokers fail fast in UI. */
+const MESHTASTIC_MQTT_CONNECT_ACK_MS = 12_000;
+/** Reconnect delay after `close`: 0.5s → 1s → 2s → … capped (was 2s base, 60s cap). */
+const MESHTASTIC_MQTT_RECONNECT_AFTER_CONNACK_TIMEOUT_MS = 250;
+const MESHTASTIC_MQTT_RECONNECT_10_MINUTE_DELAY_MS = 600_000;
+/** Send WebSocket-level ping frames so LB/proxy idle timers see traffic before the first MQTT PINGREQ. */
+const MESHTASTIC_MQTT_WSS_PING_MS = 25_000;
+/**
+ * Periodic reschedulePing(true) resets mqtt.js KeepaliveManager without waiting for PINGRESP/SUBACK
+ * on proxied WSS paths (LetsMesh broker).
+ */
+const MESHTASTIC_MQTT_RESCHEDULE_MS = 30_000;
+
 export class MQTTManager extends EventEmitter {
   private client: mqtt.MqttClient | null = null;
   private status: MQTTStatus = 'disconnected';
@@ -81,6 +99,12 @@ export class MQTTManager extends EventEmitter {
   private clientId = '';
   /** Parsed additional PSKs from settings.channelPsks, tried after DEFAULT_PSK. */
   private extraPsks: Buffer[] = [];
+  private wssPingTimer: ReturnType<typeof setInterval> | null = null;
+  private keepaliveRescheduleTimer: ReturnType<typeof setInterval> | null = null;
+  /** Wall time at start of last `_doConnect` (CONNACK timing in connect logs). */
+  private meshtasticConnectT0 = 0;
+  /** After `connack timeout`, reconnect with {@link MESHTASTIC_MQTT_RECONNECT_AFTER_CONNACK_TIMEOUT_MS}. */
+  private preferFastMqttReconnect = false;
 
   connect(settings: MQTTSettings): void {
     // Disconnect any existing connection first
@@ -98,17 +122,31 @@ export class MQTTManager extends EventEmitter {
   private _doConnect(settings: MQTTSettings): void {
     this.clientId = `meshtastic-electron-${Math.random().toString(36).slice(2, 8)}`;
     const clientId = this.clientId;
+    this.meshtasticConnectT0 = Date.now();
+    const hostTrim = settings.server.trim();
 
     // Port 8883 is the conventional MQTT-over-TLS port: use mqtts and verify certs unless tlsInsecure is set.
     const useTls = settings.port === 8883;
     const rejectUnauthorized = useTls ? !settings.tlsInsecure : false;
 
+    const logUrl = settings.useWebSocket
+      ? `${settings.port === 443 || settings.tlsInsecure !== true ? 'wss' : 'ws'}://${hostTrim}:${settings.port}/mqtt`
+      : useTls
+        ? `mqtts://${hostTrim}:${settings.port}`
+        : `mqtt://${hostTrim}:${settings.port}`;
+    console.debug(
+      '[MQTT] connect start',
+      sanitizeLogMessage(logUrl),
+      'ws:',
+      settings.useWebSocket === true,
+    );
+
     let connectOpts: mqtt.IClientOptions;
     if (settings.useWebSocket) {
       const wsScheme = settings.port === 443 || settings.tlsInsecure !== true ? 'wss' : 'ws';
       connectOpts = {
-        protocol: wsScheme as 'wss' | 'ws',
-        host: settings.server.trim(),
+        protocol: wsScheme,
+        host: hostTrim,
         port: settings.port,
         path: '/mqtt',
         clientId,
@@ -116,14 +154,17 @@ export class MQTTManager extends EventEmitter {
         password: settings.password || undefined,
         clean: true,
         keepalive: 60,
-        connectTimeout: 30_000,
+        connectTimeout: MESHTASTIC_MQTT_CONNECT_ACK_MS,
         reconnectPeriod: 0,
+        protocolVersion: 4, // force MQTT 3.1.1; avoids v5 negotiation issues
         rejectUnauthorized: settings.port === 443 ? true : rejectUnauthorized,
+        // Prefer IPv4 when DNS returns AAAA first but the path is broken (same as MeshcoreMqttAdapter).
+        wsOptions: { family: 4 },
       };
       this.client = mqtt.connect(connectOpts);
     } else {
       connectOpts = {
-        host: settings.server,
+        host: hostTrim,
         port: settings.port,
         protocol: useTls ? 'mqtts' : 'mqtt',
         protocolVersion: 4, // force MQTT 3.1.1; avoids v5 negotiation issues
@@ -132,7 +173,7 @@ export class MQTTManager extends EventEmitter {
         password: settings.password || undefined,
         clean: true,
         keepalive: 60,
-        connectTimeout: 30_000,
+        connectTimeout: MESHTASTIC_MQTT_CONNECT_ACK_MS,
         reconnectPeriod: 0,
         rejectUnauthorized,
       };
@@ -140,6 +181,7 @@ export class MQTTManager extends EventEmitter {
     }
 
     this.client.on('connect', () => {
+      console.debug('[MQTT] CONNACK received', `${Date.now() - this.meshtasticConnectT0}ms`); // log-filter-ok Meshtastic MQTT logs → App log panel
       this.setStatus('connected');
       this.emit('clientId', this.clientId);
 
@@ -164,15 +206,28 @@ export class MQTTManager extends EventEmitter {
               sanitizeLogMessage(err.message),
             );
           } else {
-            console.error('[MQTT] Subscribe failed:', sanitizeLogMessage(err.message));
+            console.error('[MQTT] Subscribe failed:', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
             this.setError(`Subscribe failed: ${err.message}`);
           }
         } else {
           // Only reset retry count after a fully stable connection + subscribe
           this.retryCount = 0;
-          console.debug('[MQTT] Subscribed to', topic);
+          console.debug('[MQTT] Subscribed to', topic); // log-filter-ok Meshtastic MQTT logs → App log panel
         }
       });
+
+      if (settings.useWebSocket) {
+        this.clearWssPing();
+        this.wssPingTimer = setInterval(() => {
+          const s = this.client?.stream as { ping?: () => void } | undefined;
+          try {
+            s?.ping?.();
+          } catch {
+            // catch-no-log-ok ws ping after teardown
+          }
+        }, MESHTASTIC_MQTT_WSS_PING_MS);
+        this.startKeepaliveReschedule();
+      }
     });
 
     this.client.on('message', (topic: string, payload: Buffer | string) => {
@@ -183,23 +238,47 @@ export class MQTTManager extends EventEmitter {
       // Transient network errors will trigger 'close' → our backoff handler; don't
       // flip status to "error" for them — that would hide the "connecting" state.
       const code = String(err.code ?? '');
-      const isTransient =
+      const isCodeTransient =
         code === 'ECONNRESET' ||
         code === 'ECONNREFUSED' ||
         code === 'ETIMEDOUT' ||
         code === 'ENOTFOUND';
+      // mqtt.js emits these with no .code; they're transient broker/proxy conditions.
+      const isMsgTransient =
+        err.message === 'Keepalive timeout' || err.message === 'connack timeout';
+      const isTransient = isCodeTransient || isMsgTransient;
+      if (err.message === 'connack timeout') {
+        this.preferFastMqttReconnect = true;
+      }
       if (isTransient) {
-        console.warn('[MQTT] Network error (will reconnect):', sanitizeLogMessage(err.message));
+        if (isMsgTransient) {
+          console.warn(
+            '[MQTT] Connection timeout (will reconnect):',
+            sanitizeLogMessage(err.message),
+          );
+        } else {
+          console.warn('[MQTT] Network error (will reconnect):', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
+        }
       } else {
-        console.error('[MQTT] Fatal connection error:', sanitizeLogMessage(err.message));
+        console.error('[MQTT] Fatal connection error:', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
         this.setError(err.message);
       }
     });
 
     this.client.on('close', () => {
-      if (this.status === 'disconnected' || !this.currentSettings) return;
+      this.clearWssPing();
+      this.clearKeepaliveReschedule();
+      const skipReconnect =
+        this.status === 'disconnected' || this.status === 'error' || !this.currentSettings;
+      const maxRetries = Math.max(
+        1,
+        Math.min(
+          this.currentSettings?.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS,
+          MQTT_MAX_RECONNECT_ATTEMPTS,
+        ),
+      );
+      if (skipReconnect) return;
 
-      const maxRetries = this.currentSettings.maxRetries ?? 5;
       if (this.retryCount >= maxRetries) {
         this.setError(
           `Connection lost after ${maxRetries} reconnect attempt${maxRetries === 1 ? '' : 's'}`,
@@ -208,8 +287,15 @@ export class MQTTManager extends EventEmitter {
       }
 
       this.retryCount++;
-      const delay = Math.min(2000 * Math.pow(2, this.retryCount - 1), 60_000);
-      console.warn(`[MQTT] Reconnecting in ${delay}ms (attempt ${this.retryCount}/${maxRetries})`);
+      const useFast = this.preferFastMqttReconnect;
+      this.preferFastMqttReconnect = false;
+      let delay: number;
+      if (this.retryCount === 1 && useFast) {
+        delay = MESHTASTIC_MQTT_RECONNECT_AFTER_CONNACK_TIMEOUT_MS;
+      } else {
+        delay = MESHTASTIC_MQTT_RECONNECT_10_MINUTE_DELAY_MS;
+      }
+      console.warn(`[MQTT] Reconnecting in ${delay}ms (attempt ${this.retryCount}/${maxRetries})`); // log-filter-ok Meshtastic MQTT logs → App log panel
       this.setStatus('connecting');
 
       this.reconnectTimer = setTimeout(() => {
@@ -225,6 +311,35 @@ export class MQTTManager extends EventEmitter {
         this.setStatus('connecting');
       }
     });
+  }
+
+  private clearWssPing(): void {
+    if (this.wssPingTimer) {
+      clearInterval(this.wssPingTimer);
+      this.wssPingTimer = null;
+    }
+  }
+
+  private clearKeepaliveReschedule(): void {
+    if (this.keepaliveRescheduleTimer) {
+      clearInterval(this.keepaliveRescheduleTimer);
+      this.keepaliveRescheduleTimer = null;
+    }
+  }
+
+  private startKeepaliveReschedule(): void {
+    this.clearKeepaliveReschedule();
+    this.keepaliveRescheduleTimer = setInterval(() => {
+      if (!this.client?.connected) return;
+      try {
+        this.client.reschedulePing(true);
+      } catch (e) {
+        console.debug(
+          '[MQTT] reschedulePing failed',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
+    }, MESHTASTIC_MQTT_RESCHEDULE_MS);
   }
 
   /**
@@ -244,9 +359,9 @@ export class MQTTManager extends EventEmitter {
     const packetId = (Math.random() * 0xffffffff) >>> 0;
     this.seenPacketIds.set(packetId, Date.now() + DEDUP_TTL_MS);
 
-    const fromId = Number(from) >>> 0;
-    const toId = Number(to) >>> 0;
-    const channelId = Number(channel) >>> 0;
+    const fromId = from >>> 0;
+    const toId = to >>> 0;
+    const channelId = channel >>> 0;
 
     const nonce = Buffer.alloc(16, 0);
     nonce.writeUInt32LE(packetId >>> 0, 0);
@@ -289,9 +404,9 @@ export class MQTTManager extends EventEmitter {
       replyId,
     } = options;
 
-    const fromId = Number(from) >>> 0;
-    const destId = Number(destination) >>> 0;
-    const channelId = Number(channel) >>> 0;
+    const fromId = from >>> 0;
+    const destId = destination >>> 0;
+    const channelId = channel >>> 0;
 
     const data = create(DataSchema, {
       portnum: PortNum.TEXT_MESSAGE_APP,
@@ -369,10 +484,13 @@ export class MQTTManager extends EventEmitter {
   }
 
   disconnect(): void {
+    this.preferFastMqttReconnect = false;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+    this.clearWssPing();
+    this.clearKeepaliveReschedule();
     this.currentSettings = null;
     this.retryCount = 0;
     if (this.client) {
@@ -404,11 +522,19 @@ export class MQTTManager extends EventEmitter {
 
   private isDuplicate(packetId: number): boolean {
     const now = Date.now();
-    // Cleanup expired entries occasionally
+    // Cleanup expired entries occasionally — collect first, then delete to avoid iterator mutation
     if (this.seenPacketIds.size > 10_000) {
+      const expired: number[] = [];
       for (const [id, expiry] of this.seenPacketIds) {
-        if (expiry < now) this.seenPacketIds.delete(id);
+        if (expiry < now) expired.push(id);
       }
+      for (const id of expired) this.seenPacketIds.delete(id);
+    }
+    // Hard cap: if the map is still very large after cleanup, clear it entirely to prevent
+    // unbounded memory growth from a malicious or misbehaving broker.
+    if (this.seenPacketIds.size > 50_000) {
+      console.warn('[MQTT] seenPacketIds exceeded 50k entries after cleanup — clearing dedup map'); // log-filter-ok Meshtastic MQTT logs → App log panel
+      this.seenPacketIds.clear();
     }
     if (this.seenPacketIds.has(packetId)) {
       const expiry = this.seenPacketIds.get(packetId)!;
@@ -449,73 +575,354 @@ export class MQTTManager extends EventEmitter {
   }
 
   private onMessage(topic: string, payload: Buffer | string): void {
-    const cleanBytes = Uint8Array.from(Buffer.from(payload));
+    const cleanBytes = new Uint8Array(Buffer.isBuffer(payload) ? payload : Buffer.from(payload));
     if (cleanBytes.length === 0) return;
 
     if (cleanBytes[0] === 0x7b) {
+      console.debug(`[MQTT] JSON message received, topic=${topic} bytes=${cleanBytes.length}`); // log-filter-ok Meshtastic MQTT logs → App log panel
       try {
         const parsed = JSON.parse(new TextDecoder().decode(cleanBytes));
         this.handleJsonMessage(parsed, topic);
       } catch {
-        console.debug(
-          '[MQTT] non-JSON payload ignored, topic=%s bytes=%d',
-          topic,
-          cleanBytes.length,
-        );
+        console.debug(`[MQTT] JSON parse failed, topic=${topic} bytes=${cleanBytes.length}`); // log-filter-ok Meshtastic MQTT logs → App log panel
       }
       return;
     }
 
-    if (cleanBytes[0] !== 0x0a) return;
+    if (cleanBytes[0] !== 0x0a) {
+      console.debug(
+        `[MQTT] Unknown message format, firstByte=0x${cleanBytes[0].toString(16)} topic=${topic} bytes=${cleanBytes.length}`,
+      ); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return;
+    }
 
     try {
       const envelope = fromBinary(ServiceEnvelopeSchema, cleanBytes);
       const packet = envelope.packet;
-      if (!packet?.from) return;
+      if (!packet?.from) {
+        console.debug(`[MQTT] ServiceEnvelope has no packet.from, topic=${topic}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+        return;
+      }
 
       const nodeId = packet.from;
       const packetId = packet.id;
 
       if (packetId && this.isDuplicate(packetId)) return;
 
+      const hopStart = packet.hopStart ?? 0;
+      const hopLimit = packet.hopLimit ?? 0;
+      const hopsAway = hopStart > 0 && hopLimit <= hopStart ? hopStart - hopLimit : undefined;
+
       const payloadCase = packet.payloadVariant?.case;
 
       if (payloadCase === 'decoded') {
-        const decoded = packet.payloadVariant!.value as {
+        const decoded = packet.payloadVariant.value as {
           portnum?: number;
           payload?: Uint8Array;
         };
-        this.handleDecoded(nodeId, packetId, decoded);
+        console.debug(
+          `[MQTT] Decoded payload: portnum=${decoded.portnum} nodeId=0x${nodeId.toString(16)}`,
+        ); // log-filter-ok Meshtastic MQTT logs → App log panel
+        this.handleDecoded(nodeId, packetId, decoded, hopsAway);
       } else if (payloadCase === 'encrypted') {
-        const encrypted = packet.payloadVariant!.value as Uint8Array;
+        const encrypted = packet.payloadVariant.value;
         const decodedData = this.tryDecryptAllKeys(encrypted, packetId, nodeId);
         if (decodedData) {
-          this.handleDecoded(nodeId, packetId, decodedData);
-        } else {
-          this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-          this.emitMinimalNodeUpdate(nodeId);
+          console.debug(
+            `[MQTT] Decryption succeeded: portnum=${decodedData.portnum} nodeId=0x${nodeId.toString(16)}`,
+          ); // log-filter-ok Meshtastic MQTT logs → App log panel
+          this.handleDecoded(nodeId, packetId, decodedData, hopsAway);
         }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(
+      console.debug(
         '[MQTT] ServiceEnvelope decode failed:',
         sanitizeLogMessage(msg),
         '| Topic:',
         sanitizeLogMessage(topic),
-      );
+      ); // log-filter-ok Meshtastic MQTT logs → App log panel
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSON path; params reserved for future routing
-  private handleJsonMessage(_parsed: unknown, _topic: string): void {
-    // Silent: JSON messages handled without logging
+  private handleJsonMessage(parsed: unknown, topic: string): void {
+    if (!parsed || typeof parsed !== 'object') return;
+
+    const json = parsed as Record<string, unknown>;
+
+    // Log raw JSON for debugging - truncate if too long
+    const jsonStr = JSON.stringify(json).slice(0, 500);
+    console.debug(`[MQTT] JSON content: ${jsonStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+
+    const type = json.type as string | undefined;
+
+    if (type === 'nodeinfo' || type === 'USER') {
+      this.handleJsonNodeInfo(json, topic);
+      return;
+    }
+
+    if (type === 'position' || type === 'POSITION') {
+      this.handleJsonPosition(json, topic);
+      return;
+    }
+
+    if (type === 'telemetry' || type === 'TELEMETRY') {
+      this.handleJsonTelemetry(json, topic);
+      return;
+    }
+
+    if (type === 'neighborinfo' || type === 'NEIGHBORINFO') {
+      this.handleJsonNeighborInfo(json, topic);
+      return;
+    }
+
+    const portnumRaw = json.portnum as number | undefined;
+    if (portnumRaw === PortNum.NODEINFO_APP) {
+      this.handleJsonNodeInfo(json, topic);
+      return;
+    }
+
+    // Also check if this JSON directly contains user fields (longName, shortName, etc.)
+    // without being wrapped in a "user" or "payload" object
+    if (
+      json.longName !== undefined ||
+      json.long_name !== undefined ||
+      json.shortName !== undefined ||
+      json.short_name !== undefined
+    ) {
+      this.handleJsonNodeInfo(json, topic);
+      return;
+    }
+
+    console.debug(
+      `[MQTT] JSON message unhandled: type="${type}" portnum=${portnumRaw} topic=${topic}`,
+    ); // log-filter-ok Meshtastic MQTT logs → App log panel
+  }
+
+  /**
+   * Parse a node ID from the "from" field of a JSON MQTT message.
+   * Meshtastic firmware may send `from` as a decimal integer, a hex string
+   * prefixed with "!" (e.g. "!abcd1234"), or a decimal string.
+   * Returns null when the field is missing or unparseable.
+   */
+  private parseFromNodeId(fromRaw: unknown, handler: string): number | null {
+    if (fromRaw == null) {
+      console.debug(`[MQTT] JSON ${handler} missing "from" field`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return null;
+    }
+    if (typeof fromRaw === 'number') {
+      return fromRaw;
+    }
+    if (typeof fromRaw !== 'string') {
+      console.debug(`[MQTT] JSON ${handler} unexpected from type: ${typeof fromRaw}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return null;
+    }
+    const fromStr = fromRaw;
+    if (fromStr.startsWith('!')) {
+      const nodeId = parseInt(fromStr.slice(1), 16);
+      if (isNaN(nodeId)) {
+        console.debug(`[MQTT] JSON ${handler} invalid from hex: ${fromStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+        return null;
+      }
+      return nodeId;
+    }
+    const nodeId = parseInt(fromStr, 10);
+    if (isNaN(nodeId)) {
+      console.debug(`[MQTT] JSON ${handler} invalid from: ${fromStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return null;
+    }
+    return nodeId;
+  }
+
+  private handleJsonNodeInfo(json: Record<string, unknown>, topic: string): void {
+    const nodeId = this.parseFromNodeId(json.from, `nodeinfo topic=${topic}`);
+    if (nodeId === null) return;
+
+    const user = json.user as Record<string, unknown> | undefined;
+    const payload = json.payload as Record<string, unknown> | undefined;
+    // Fall back to the root JSON object when node info fields are at the top level
+    // (no "user" or "payload" wrapper) — some firmware versions omit the wrapper.
+    const userData = user ?? payload ?? json;
+
+    const longName = (userData.longName ??
+      userData.long_name ??
+      userData.long_name ??
+      '') as string;
+    const shortName = (userData.shortName ??
+      userData.short_name ??
+      userData.short_name ??
+      '') as string;
+    const hwModelNum = userData.hwModel ?? userData.hw_model ?? userData.hwModel ?? 0;
+    const hwModel = typeof hwModelNum === 'number' ? hwModelNum : 0;
+    const role = userData.role as number | undefined;
+
+    console.debug(
+      `[MQTT] JSON nodeinfo: nodeId=0x${nodeId.toString(16)} longName="${longName}" shortName="${shortName}" role=${role}`,
+    ); // log-filter-ok Meshtastic MQTT logs → App log panel
+
+    const now = Date.now();
+    const processedShortName = meshtasticShortNameAfterClearingDefault(longName, shortName, nodeId);
+
+    const nodeUpdate: Partial<MeshNode> & { node_id: number; from_mqtt: boolean } = {
+      node_id: nodeId,
+      long_name: longName,
+      short_name: processedShortName,
+      hw_model: String(hwModel),
+      ...(role !== undefined && { role }),
+      last_heard: now,
+      from_mqtt: true,
+    };
+
+    this.upsertNodeCache({
+      node_id: nodeId,
+      long_name: nodeUpdate.long_name,
+      short_name: nodeUpdate.short_name,
+      hw_model: nodeUpdate.hw_model,
+      last_heard: now,
+    });
+
+    this.emit('nodeUpdate', nodeUpdate);
+  }
+
+  private handleJsonPosition(json: Record<string, unknown>, topic: string): void {
+    const nodeId = this.parseFromNodeId(json.from, `position topic=${topic}`);
+    if (nodeId === null) return;
+
+    const jsonPayload = json.payload as Record<string, unknown> | undefined;
+    const data = jsonPayload ?? json;
+
+    const latitudeI = (data.latitudeI ?? data.latitude_i) as number | undefined;
+    const longitudeI = (data.longitudeI ?? data.longitude_i) as number | undefined;
+    const altitude = data.altitude as number | undefined;
+
+    const latRaw = (data.latitude ?? data.lat) as number | undefined;
+    const lonRaw = (data.longitude ?? data.lon) as number | undefined;
+
+    let lat: number | undefined;
+    let lon: number | undefined;
+
+    if (latitudeI !== undefined && longitudeI !== undefined) {
+      lat = latitudeI / 1e7;
+      lon = longitudeI / 1e7;
+    } else if (latRaw !== undefined && lonRaw !== undefined) {
+      lat = latRaw;
+      lon = lonRaw;
+    }
+
+    if (lat === undefined || lon === undefined) {
+      this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
+      this.emitMinimalNodeUpdate(nodeId);
+      return;
+    }
+
+    const warning = coordWarning(lat, lon);
+    const now = Date.now();
+
+    if (warning) {
+      this.upsertNodeCache({ node_id: nodeId, last_heard: now });
+      this.emit('nodeUpdate', {
+        node_id: nodeId,
+        positionWarning: warning,
+        last_heard: now,
+        from_mqtt: true,
+      });
+    } else {
+      this.upsertNodeCache({
+        node_id: nodeId,
+        last_heard: now,
+        latitude: lat,
+        longitude: lon,
+        altitude,
+      });
+      this.emit('nodeUpdate', {
+        node_id: nodeId,
+        latitude: lat,
+        longitude: lon,
+        altitude,
+        last_heard: now,
+        from_mqtt: true,
+        positionWarning: null,
+      });
+    }
+  }
+
+  private handleJsonTelemetry(json: Record<string, unknown>, topic: string): void {
+    const nodeId = this.parseFromNodeId(json.from, `telemetry topic=${topic}`);
+    if (nodeId === null) return;
+
+    const payload = json.payload as Record<string, unknown> | undefined;
+    if (!payload) {
+      console.debug(`[MQTT] JSON telemetry missing payload, nodeId=0x${nodeId.toString(16)}`); // log-filter-ok
+      return;
+    }
+
+    const battery_level = payload.battery_level as number | undefined;
+    const voltage = payload.voltage as number | undefined;
+    const air_util_tx = payload.air_util_tx as number | undefined;
+    const channel_utilization = payload.channel_utilization as number | undefined;
+    const uptime_seconds = payload.uptime_seconds as number | undefined;
+
+    console.debug(
+      `[MQTT] JSON telemetry: nodeId=0x${nodeId.toString(16)} battery=${battery_level} voltage=${voltage} air_util_tx=${air_util_tx} channel_util=${channel_utilization} uptime=${uptime_seconds}`,
+    ); // log-filter-ok Meshtastic MQTT logs -> App log panel
+
+    const now = Date.now();
+
+    this.emit('nodeUpdate', {
+      node_id: nodeId,
+      battery: battery_level,
+      voltage,
+      air_util_tx,
+      channel_utilization,
+      last_heard: now,
+      from_mqtt: true,
+    });
+  }
+
+  private handleJsonNeighborInfo(json: Record<string, unknown>, topic: string): void {
+    const nodeId = this.parseFromNodeId(json.from, `neighborinfo topic=${topic}`);
+    if (nodeId === null) return;
+
+    const payload = json.payload as Record<string, unknown> | undefined;
+    if (!payload) {
+      console.debug(`[MQTT] JSON neighborinfo missing payload, nodeId=0x${nodeId.toString(16)}`); // log-filter-ok
+      return;
+    }
+
+    const neighbors = payload.neighbors as { node_id: number; snr: number }[] | undefined;
+    if (!neighbors) {
+      console.debug(
+        `[MQTT] JSON neighborinfo missing neighbors array, nodeId=0x${nodeId.toString(16)}`,
+      ); // log-filter-ok
+      return;
+    }
+
+    console.debug(
+      `[MQTT] JSON neighborinfo: nodeId=0x${nodeId.toString(16)} neighbors=${neighbors.length}`,
+    ); // log-filter-ok Meshtastic MQTT logs -> App log panel
+
+    const now = Date.now();
+
+    // Convert to MeshNeighbor format (camelCase)
+    const meshNeighbors = neighbors.map((n) => ({
+      nodeId: n.node_id,
+      snr: n.snr,
+      lastRxTime: now,
+    }));
+
+    this.emit('nodeUpdate', {
+      node_id: nodeId,
+      neighbors: meshNeighbors,
+      last_heard: now,
+      from_mqtt: true,
+    });
   }
 
   private handleDecoded(
     nodeId: number,
     packetId: number,
     data: { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number },
+    hopsAway?: number,
   ): void {
     const portnum = data.portnum ?? 0;
     const payload = data.payload;
@@ -524,14 +931,25 @@ export class MQTTManager extends EventEmitter {
       try {
         const user = fromBinary(UserSchema, payload);
         const now = Date.now();
+        const long_name = user.longName || '';
+        const short_name = meshtasticShortNameAfterClearingDefault(
+          long_name,
+          user.shortName || '',
+          nodeId,
+        );
         const nodeUpdate: Partial<MeshNode> & { node_id: number; from_mqtt: boolean } = {
           node_id: nodeId,
-          long_name: user.longName || '',
-          short_name: user.shortName || '',
+          long_name,
+          short_name,
           hw_model: String(user.hwModel ?? ''),
+          role: user.role,
           last_heard: now,
           from_mqtt: true,
+          ...(hopsAway !== undefined && { hops_away: hopsAway }),
         };
+        console.debug(
+          `[MQTT] NODEINFO_APP: nodeId=0x${nodeId.toString(16)} longName="${long_name}" shortName="${short_name}" role=${user.role} hwModel=${user.hwModel}`,
+        ); // log-filter-ok Meshtastic MQTT logs → App log panel
         this.upsertNodeCache({
           node_id: nodeId,
           long_name: nodeUpdate.long_name,
@@ -547,7 +965,7 @@ export class MQTTManager extends EventEmitter {
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway);
       }
     } else if (portnum === PortNum.POSITION_APP && payload) {
       try {
@@ -563,6 +981,7 @@ export class MQTTManager extends EventEmitter {
             positionWarning: warning,
             last_heard: Date.now(),
             from_mqtt: true,
+            ...(hopsAway !== undefined && { hops_away: hopsAway }),
           });
         } else if (pos.latitudeI || pos.longitudeI) {
           const now = Date.now();
@@ -585,11 +1004,12 @@ export class MQTTManager extends EventEmitter {
             last_heard: now,
             from_mqtt: true,
             positionWarning: null,
+            ...(hopsAway !== undefined && { hops_away: hopsAway }),
           };
           this.emit('nodeUpdate', nodeUpdate);
         } else {
           this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-          this.emitMinimalNodeUpdate(nodeId);
+          this.emitMinimalNodeUpdate(nodeId, hopsAway);
         }
       } catch (e) {
         console.warn(
@@ -598,7 +1018,7 @@ export class MQTTManager extends EventEmitter {
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway);
       }
     } else if (portnum === PortNum.TEXT_MESSAGE_APP && (payload?.length || data.emoji)) {
       try {
@@ -618,7 +1038,7 @@ export class MQTTManager extends EventEmitter {
         };
         this.emit('message', msg);
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway);
       } catch (e) {
         console.warn(
           '[MQTT] TextMessage parse failed for node',
@@ -626,16 +1046,16 @@ export class MQTTManager extends EventEmitter {
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway);
       }
     } else {
       // Unknown portnum — at least track the node as seen
       this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-      this.emitMinimalNodeUpdate(nodeId);
+      this.emitMinimalNodeUpdate(nodeId, hopsAway);
     }
   }
 
-  private emitMinimalNodeUpdate(nodeId: number): void {
+  private emitMinimalNodeUpdate(nodeId: number, hopsAway?: number): void {
     const cached = this.nodeCache.get(nodeId);
     this.emit('nodeUpdate', {
       node_id: nodeId,
@@ -644,6 +1064,7 @@ export class MQTTManager extends EventEmitter {
       ...(cached?.long_name && { long_name: cached.long_name }),
       ...(cached?.short_name && { short_name: cached.short_name }),
       ...(cached?.hw_model && { hw_model: cached.hw_model }),
+      ...(hopsAway !== undefined && { hops_away: hopsAway }),
     });
   }
 
@@ -663,7 +1084,7 @@ export class MQTTManager extends EventEmitter {
       // AES-128-CTR nonce: packetId (4 bytes LE) + from (4 bytes LE) + 8 zero bytes
       const nonce = Buffer.alloc(16, 0);
       nonce.writeUInt32LE(packetId >>> 0, 0);
-      nonce.writeUInt32LE(Number(from) >>> 0, 4);
+      nonce.writeUInt32LE(from >>> 0, 4);
       const decipher = createDecipheriv('aes-128-ctr', key, nonce);
       return Buffer.concat([decipher.update(Buffer.from(encrypted)), decipher.final()]);
     } catch {
@@ -682,7 +1103,12 @@ export class MQTTManager extends EventEmitter {
     packetId: number,
     from: number,
   ): { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number } | null {
-    for (const key of [DEFAULT_PSK, ...this.extraPsks]) {
+    const allKeys = [DEFAULT_PSK, ...this.extraPsks];
+    console.debug(
+      `[MQTT] Decrypt attempt: trying ${allKeys.length} PSKs (1 default + ${this.extraPsks.length} custom) for nodeId=0x${from.toString(16)}`,
+    ); // log-filter-ok Meshtastic MQTT logs → App log panel
+    for (let i = 0; i < allKeys.length; i++) {
+      const key = allKeys[i];
       const raw = this.tryDecryptWithKey(encrypted, packetId, from, key);
       if (!raw) continue;
       try {
@@ -694,7 +1120,9 @@ export class MQTTManager extends EventEmitter {
         };
       } catch {
         // Wrong PSK produces garbage bytes that fail protobuf decode — try next key
-        console.debug('[MQTT] decrypt attempt failed (wrong key), trying next');
+        console.debug(
+          `[MQTT] decrypt attempt ${i + 1}/${allKeys.length} failed (protobuf decode error)`,
+        ); // log-filter-ok Meshtastic MQTT logs → App log panel
       }
     }
     return null;

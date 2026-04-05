@@ -121,6 +121,23 @@ function TabIcon({ name }: { name: string }) {
           />
         </svg>
       );
+    case 'Security':
+      return (
+        <svg
+          aria-hidden="true"
+          className={cls}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
+        </svg>
+      );
     case 'App':
       return (
         <svg
@@ -155,17 +172,59 @@ function TabIcon({ name }: { name: string }) {
           />
         </svg>
       );
+    case 'Modules':
+      return (
+        <svg
+          aria-hidden="true"
+          className={cls}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"
+          />
+        </svg>
+      );
+    case 'Repeaters':
+      return (
+        <svg
+          aria-hidden="true"
+          className={cls}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"
+          />
+        </svg>
+      );
+    case 'TAK':
+      return (
+        <svg aria-hidden="true" className={cls} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M3.05,13H1V11H3.05C3.5,6.83 6.83,3.5 11,3.05V1H13V3.05C17.17,3.5 20.5,6.83 20.95,11H23V13H20.95C20.5,17.17 17.17,20.5 13,20.95V23H11V20.95C6.83,20.5 3.5,17.17 3.05,13M12,5A7,7 0 0,0 5,12A7,7 0 0,0 12,19A7,7 0 0,0 19,12A7,7 0 0,0 12,5Z" />
+        </svg>
+      );
     default:
       return null;
   }
 }
 
 export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledTabs }: TabsProps) {
+  const safeActive = tabs.length === 0 ? 0 : Math.max(0, Math.min(active, tabs.length - 1));
+
   return (
     <div
       role="tablist"
       aria-label="Application panels"
-      className="flex bg-deep-black border-b border-gray-700 px-2 gap-1"
+      className="bg-deep-black flex gap-1 border-b border-gray-700 px-2"
     >
       {tabs.map((name, i) => {
         const showChatBadge = name === 'Chat' && chatUnread > 0;
@@ -175,28 +234,30 @@ export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledT
           : name;
         return (
           <button
-            key={name}
+            key={`${i}-${name}`}
             type="button"
             role="tab"
             aria-label={tabAriaLabel}
-            aria-selected={active === i}
+            aria-selected={safeActive === i}
             aria-controls={`panel-${i}`}
             id={`tab-${i}`}
             disabled={isDisabled}
-            onClick={() => !isDisabled && onChange(i)}
+            onClick={() => {
+              if (!isDisabled) onChange(i);
+            }}
             title={isDisabled ? 'Not available in MeshCore mode' : undefined}
-            className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors rounded-t-md ${
+            className={`relative flex items-center gap-1.5 rounded-t-md px-3 py-2.5 text-sm font-medium transition-colors ${
               isDisabled
-                ? 'text-gray-600 cursor-not-allowed opacity-50'
-                : active === i
-                  ? 'bg-gray-900 text-bright-green border-b-2 border-bright-green'
-                  : 'text-muted hover:text-gray-200 hover:bg-secondary-dark'
+                ? 'cursor-not-allowed text-gray-600 opacity-50'
+                : safeActive === i
+                  ? 'text-bright-green border-bright-green border-b-2 bg-gray-900'
+                  : 'text-muted hover:bg-secondary-dark hover:text-gray-200'
             }`}
           >
             <TabIcon name={name} />
             {name}
             {showChatBadge && (
-              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                 {chatUnread > 99 ? '99+' : chatUnread}
               </span>
             )}

@@ -2,8 +2,11 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { escapeSqlLikePattern } from '../shared/sqlLikeEscape';
 import { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 let db: NodeSqliteDB | null = null;
 
@@ -39,6 +42,7 @@ export function initDatabase(): void {
     db.pragma('journal_mode = WAL');
     db.pragma('synchronous = NORMAL');
     db.pragma('busy_timeout = 5000');
+    db.pragma('foreign_keys = ON');
 
     // Detect fresh DB before running setup (user_version = 0, no tables yet)
     const isFreshDb =
@@ -59,26 +63,12 @@ export function initDatabase(): void {
            WHERE packet_id IS NOT NULL`,
           )
           .run();
-        db!.pragma('user_version = 14');
+        db!.pragma('user_version = 20');
       } else {
         runMigrations();
       }
     });
     setup();
-
-    // Prune position_history rows older than 30 days on startup
-    try {
-      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      const pruned = db.prepare('DELETE FROM position_history WHERE recorded_at < ?').run(cutoff);
-      if (pruned.changes > 0) {
-        console.debug(`[db] Pruned ${pruned.changes} old position_history rows`);
-      }
-    } catch (e) {
-      console.warn(
-        '[db] position_history prune failed (non-fatal):',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    }
 
     const version = db.pragma('user_version', { simple: true });
     console.debug(
@@ -95,7 +85,53 @@ export function initDatabase(): void {
 
 export function getDatabase(): NodeSqliteDB {
   if (!db) initDatabase();
-  return db!;
+  if (!db) throw new Error('[db] Database failed to initialize');
+  return db;
+}
+
+export function prunePositionHistory(days: number): number {
+  const d = getDatabase();
+  const cutoff = Date.now() - days * MS_PER_DAY;
+  const result = d.prepareOnce('DELETE FROM position_history WHERE recorded_at < ?').run(cutoff);
+  return Number(result.changes);
+}
+
+export function deleteMeshcoreContactsNeverAdvertised(): number {
+  const d = getDatabase();
+  const result = d
+    .prepareOnce(
+      'DELETE FROM meshcore_contacts WHERE last_advert IS NULL AND (favorited IS NULL OR favorited = 0)',
+    )
+    .run();
+  return Number(result.changes);
+}
+
+export function deleteMeshcoreContactsByAge(days: number): number {
+  const d = getDatabase();
+  const cutoff = Date.now() - days * MS_PER_DAY;
+  const result = d
+    .prepareOnce(
+      'DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
+    )
+    .run(cutoff);
+  return Number(result.changes);
+}
+
+export function pruneMeshcoreContactsByCount(maxCount: number): number {
+  const d = getDatabase();
+  const total = (
+    d.prepareOnce('SELECT COUNT(*) as cnt FROM meshcore_contacts').get() as { cnt: number }
+  ).cnt;
+  if (total <= maxCount) return 0;
+  const result = d
+    .prepareOnce(
+      'DELETE FROM meshcore_contacts WHERE node_id IN (' +
+        'SELECT node_id FROM meshcore_contacts WHERE (favorited IS NULL OR favorited = 0) ' +
+        'ORDER BY COALESCE(last_advert, 0) ASC LIMIT ?' +
+        ')',
+    )
+    .run(total - maxCount);
+  return Number(result.changes);
 }
 
 function createBaseTables(): void {
@@ -146,6 +182,7 @@ function createBaseTables(): void {
 
       CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
       CREATE INDEX IF NOT EXISTS idx_messages_channel_ts ON messages(channel, timestamp DESC);
+      CREATE INDEX IF NOT EXISTS idx_messages_packet_id ON messages(packet_id);
       CREATE INDEX IF NOT EXISTS idx_nodes_last_heard ON nodes(last_heard);
 
       CREATE TABLE IF NOT EXISTS meshcore_contacts (
@@ -159,7 +196,8 @@ function createBaseTables(): void {
         last_snr     REAL,
         last_rssi    REAL,
         favorited    INTEGER DEFAULT 0,
-        nickname     TEXT
+        nickname     TEXT,
+        contact_flags INTEGER DEFAULT 0
       );
 
       CREATE TABLE IF NOT EXISTS meshcore_messages (
@@ -178,8 +216,9 @@ function createBaseTables(): void {
       );
 
       CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_mc_msgs_channel_id ON meshcore_messages(channel_idx, id DESC);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup
-        ON meshcore_messages(sender_id, timestamp, channel_idx)
+        ON meshcore_messages(sender_id, timestamp, channel_idx, payload)
         WHERE sender_id IS NOT NULL;
 
       CREATE TABLE IF NOT EXISTS position_history (
@@ -192,6 +231,21 @@ function createBaseTables(): void {
       );
       CREATE INDEX IF NOT EXISTS idx_position_history_node_time
         ON position_history(node_id, recorded_at);
+      CREATE INDEX IF NOT EXISTS idx_position_history_time ON position_history(recorded_at);
+
+      CREATE TABLE IF NOT EXISTS contact_groups (
+        group_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+        self_node_id  INTEGER NOT NULL,
+        name          TEXT    NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_contact_groups_self ON contact_groups(self_node_id);
+
+      CREATE TABLE IF NOT EXISTS contact_group_members (
+        group_id         INTEGER NOT NULL
+          REFERENCES contact_groups(group_id) ON DELETE CASCADE,
+        contact_node_id  INTEGER NOT NULL,
+        PRIMARY KEY (group_id, contact_node_id)
+      );
     `);
   } catch (error) {
     console.error(
@@ -528,11 +582,166 @@ function runMigrations(): void {
       throw new Error(`Migration v17 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
+
+  if (userVersion < 18) {
+    try {
+      db!
+        .prepare(
+          `CREATE TABLE IF NOT EXISTS meshcore_contact_groups (
+             group_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+             self_node_id  INTEGER NOT NULL,
+             name          TEXT    NOT NULL
+           )`,
+        )
+        .run();
+      db!
+        .prepare(`CREATE INDEX IF NOT EXISTS idx_mcg_self ON meshcore_contact_groups(self_node_id)`)
+        .run();
+      db!
+        .prepare(
+          `CREATE TABLE IF NOT EXISTS meshcore_contact_group_members (
+             group_id         INTEGER NOT NULL
+               REFERENCES meshcore_contact_groups(group_id) ON DELETE CASCADE,
+             contact_node_id  INTEGER NOT NULL,
+             PRIMARY KEY (group_id, contact_node_id)
+           )`,
+        )
+        .run();
+      db!.pragma('user_version = 18');
+    } catch (e) {
+      console.error(
+        '[db] migration v18 failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw new Error(`Migration v18 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 19) {
+    try {
+      const columns = db!.prepare('PRAGMA table_info(meshcore_contacts)').all() as {
+        name: string;
+      }[];
+      if (!columns.some((c) => c.name === 'contact_flags')) {
+        db!
+          .prepare('ALTER TABLE meshcore_contacts ADD COLUMN contact_flags INTEGER DEFAULT 0')
+          .run();
+      }
+      db!.pragma('user_version = 19');
+    } catch (e) {
+      console.error(
+        '[db] migration v19 failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw new Error(`Migration v19 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 20) {
+    try {
+      const hasLegacy = db!
+        .prepare(
+          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='meshcore_contact_groups' LIMIT 1",
+        )
+        .get();
+      const hasNew = db!
+        .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='contact_groups' LIMIT 1")
+        .get();
+
+      if (hasLegacy) {
+        if (!hasNew) {
+          db!
+            .prepare(
+              `CREATE TABLE contact_groups (
+                 group_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                 self_node_id  INTEGER NOT NULL,
+                 name          TEXT    NOT NULL
+               )`,
+            )
+            .run();
+          db!
+            .prepare(
+              `CREATE TABLE contact_group_members (
+                 group_id         INTEGER NOT NULL
+                   REFERENCES contact_groups(group_id) ON DELETE CASCADE,
+                 contact_node_id  INTEGER NOT NULL,
+                 PRIMARY KEY (group_id, contact_node_id)
+               )`,
+            )
+            .run();
+        } else {
+          db!.prepare('DELETE FROM contact_group_members').run();
+          db!.prepare('DELETE FROM contact_groups').run();
+        }
+        db!.prepare('INSERT INTO contact_groups SELECT * FROM meshcore_contact_groups').run();
+        db!
+          .prepare('INSERT INTO contact_group_members SELECT * FROM meshcore_contact_group_members')
+          .run();
+        db!.prepare('DROP TABLE IF EXISTS meshcore_contact_group_members').run();
+        db!.prepare('DROP TABLE IF EXISTS meshcore_contact_groups').run();
+        db!
+          .prepare(
+            'CREATE INDEX IF NOT EXISTS idx_contact_groups_self ON contact_groups(self_node_id)',
+          )
+          .run();
+      } else if (!hasNew) {
+        db!
+          .prepare(
+            `CREATE TABLE IF NOT EXISTS contact_groups (
+               group_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+               self_node_id  INTEGER NOT NULL,
+               name          TEXT    NOT NULL
+             )`,
+          )
+          .run();
+        db!
+          .prepare(
+            `CREATE TABLE IF NOT EXISTS contact_group_members (
+               group_id         INTEGER NOT NULL
+                 REFERENCES contact_groups(group_id) ON DELETE CASCADE,
+               contact_node_id  INTEGER NOT NULL,
+               PRIMARY KEY (group_id, contact_node_id)
+             )`,
+          )
+          .run();
+        db!
+          .prepare(
+            'CREATE INDEX IF NOT EXISTS idx_contact_groups_self ON contact_groups(self_node_id)',
+          )
+          .run();
+      }
+      db!.pragma('user_version = 20');
+    } catch (e) {
+      console.error(
+        '[db] migration v20 failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw new Error(`Migration v20 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 21) {
+    try {
+      const cols = db!.prepare('PRAGMA table_info(meshcore_contacts)').all() as {
+        name: string;
+      }[];
+      if (!cols.some((c) => c.name === 'hops_away')) {
+        db!.prepare('ALTER TABLE meshcore_contacts ADD COLUMN hops_away INTEGER').run();
+      }
+      db!.pragma('user_version = 21');
+    } catch (e) {
+      console.error(
+        '[db] migration v21 failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw new Error(`Migration v21 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
 }
 
 /** Export DB to a file. Best-effort for very large databases; may take a long time with no progress callback. */
-export async function exportDatabase(destPath: string): Promise<void> {
-  await getDatabase().backup(destPath);
+export function exportDatabase(destPath: string): void {
+  getDatabase().backup(destPath);
 }
 
 const MAX_MERGE_FILE_BYTES = 500 * 1024 * 1024; // 500 MB
@@ -564,7 +773,7 @@ export function mergeDatabase(sourcePath: string) {
     const sourceNodes = sourceDb.prepare('SELECT * FROM nodes').all() as any[];
     const sourceMessages = sourceDb.prepare('SELECT * FROM messages').all() as any[];
 
-    const result = targetDb.transaction(() => {
+    return targetDb.transaction(() => {
       let nodesAdded = 0;
       let messagesAdded = 0;
 
@@ -625,7 +834,7 @@ export function mergeDatabase(sourcePath: string) {
             );
             continue;
           }
-          if (!checkMessage.get(senderId as number, timestamp as number, payload as string)) {
+          if (!checkMessage.get(senderId as number, timestamp as number, payload)) {
             insertMessage.run(msg);
             messagesAdded++;
           }
@@ -639,8 +848,6 @@ export function mergeDatabase(sourcePath: string) {
 
       return { nodesAdded, messagesAdded };
     })();
-
-    return result;
   } catch (err) {
     console.error(
       '[db] Merge failed:',
@@ -654,22 +861,22 @@ export function mergeDatabase(sourcePath: string) {
 
 export function searchMessages(query: string, limit = 50): unknown[] {
   const db = getDatabase();
-  const like = `%${query}%`;
+  const like = `%${escapeSqlLikePattern(query)}%`;
   return db
     .prepare(
       `SELECT id, sender_id, sender_name, payload, channel, timestamp, to_node
-       FROM messages WHERE payload LIKE ? ORDER BY timestamp DESC LIMIT ?`,
+       FROM messages WHERE payload LIKE ? ESCAPE '\\' ORDER BY timestamp DESC LIMIT ?`,
     )
     .all(like, limit);
 }
 
 export function searchMeshcoreMessages(query: string, limit = 50): unknown[] {
   const db = getDatabase();
-  const like = `%${query}%`;
+  const like = `%${escapeSqlLikePattern(query)}%`;
   return db
     .prepare(
       `SELECT id, sender_id, sender_name, payload, channel_idx, timestamp, to_node
-       FROM meshcore_messages WHERE payload LIKE ? ORDER BY timestamp DESC LIMIT ?`,
+       FROM meshcore_messages WHERE payload LIKE ? ESCAPE '\\' ORDER BY timestamp DESC LIMIT ?`,
     )
     .all(like, limit);
 }
@@ -680,14 +887,76 @@ export function deleteNodesBySource(source: string): number {
   return Number(result.changes);
 }
 
+export function migrateRfStubNodes(): number {
+  const db = getDatabase();
+  const result = db
+    .prepare(
+      "UPDATE nodes SET long_name = substr(long_name, 4), short_name = '' WHERE long_name LIKE 'RF !________'",
+    )
+    .run();
+  return Number(result.changes);
+}
+
 export function deleteNodesWithoutLongname(): number {
   const db = getDatabase();
   const result = db
     .prepare(
-      "DELETE FROM nodes WHERE long_name IS NULL OR TRIM(long_name) = '' OR long_name = printf('!%08x', node_id)",
+      "DELETE FROM nodes WHERE (long_name IS NULL OR TRIM(long_name) = '' OR long_name = printf('!%08x', node_id) OR (long_name LIKE '!%' AND (role IS NULL OR TRIM(role) = ''))) AND (favorited IS NULL OR favorited = 0)",
     )
     .run();
   return Number(result.changes);
+}
+
+export function getContactGroups(
+  selfNodeId: number,
+): { group_id: number; name: string; member_count: number }[] {
+  return getDatabase()
+    .prepare(
+      `SELECT g.group_id, g.name, COUNT(m.contact_node_id) AS member_count
+         FROM contact_groups g
+         LEFT JOIN contact_group_members m ON m.group_id = g.group_id
+        WHERE g.self_node_id = ?
+        GROUP BY g.group_id
+        ORDER BY g.name ASC`,
+    )
+    .all(selfNodeId) as { group_id: number; name: string; member_count: number }[];
+}
+
+export function createContactGroup(selfNodeId: number, name: string): number {
+  const result = getDatabase()
+    .prepare(`INSERT INTO contact_groups (self_node_id, name) VALUES (?, ?)`)
+    .run(selfNodeId, name);
+  return Number(result.lastInsertRowid);
+}
+
+export function updateContactGroup(groupId: number, name: string): void {
+  getDatabase().prepare(`UPDATE contact_groups SET name = ? WHERE group_id = ?`).run(name, groupId);
+}
+
+export function deleteContactGroup(groupId: number): void {
+  getDatabase().prepare(`DELETE FROM contact_groups WHERE group_id = ?`).run(groupId);
+}
+
+export function addContactToGroup(groupId: number, contactNodeId: number): void {
+  getDatabase()
+    .prepare(
+      `INSERT OR IGNORE INTO contact_group_members (group_id, contact_node_id)
+       VALUES (?, ?)`,
+    )
+    .run(groupId, contactNodeId);
+}
+
+export function removeContactFromGroup(groupId: number, contactNodeId: number): void {
+  getDatabase()
+    .prepare(`DELETE FROM contact_group_members WHERE group_id = ? AND contact_node_id = ?`)
+    .run(groupId, contactNodeId);
+}
+
+export function getContactGroupMembers(groupId: number): number[] {
+  const rows = getDatabase()
+    .prepare(`SELECT contact_node_id FROM contact_group_members WHERE group_id = ?`)
+    .all(groupId) as { contact_node_id: number }[];
+  return rows.map((r) => r.contact_node_id);
 }
 
 export function closeDatabase(): void {

@@ -1,18 +1,18 @@
 import type { MeshDevice } from '@meshtastic/core';
-import type { MutableRefObject } from 'react';
+import type { RefObject } from 'react';
 
 import type { StatusUpdateEvent } from './types';
 
 const BROADCAST_ADDR = 0xffffffff;
 
 export interface TransportManagerDeps {
-  deviceRef: MutableRefObject<MeshDevice | null>;
-  myNodeNumRef: MutableRefObject<number>;
-  mqttStatusRef: MutableRefObject<string>;
-  channelConfigsRef: MutableRefObject<{ index: number; uplinkEnabled?: boolean }[]>;
+  deviceRef: RefObject<MeshDevice | null>;
+  myNodeNumRef: RefObject<number>;
+  mqttStatusRef: RefObject<string>;
+  channelConfigsRef: RefObject<{ index: number; uplinkEnabled?: boolean }[]>;
   isDuplicate: (packetId: number) => boolean;
   /** Stored as a ref so TransportManager always calls the latest handler across re-renders */
-  onStatusUpdateRef: MutableRefObject<(event: StatusUpdateEvent) => void>;
+  onStatusUpdateRef: RefObject<(event: StatusUpdateEvent) => void>;
 }
 
 export class TransportManager {
@@ -53,7 +53,7 @@ export class TransportManager {
       window.electronAPI.mqtt
         .publish({
           text,
-          from: Number(from),
+          from,
           channel,
           destination: destination ?? BROADCAST_ADDR,
           channelName: 'LongFast',

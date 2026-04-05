@@ -104,7 +104,7 @@ const BARE_HEX6 = /^[0-9a-fA-F]{6}$/;
 export function normalizeHex(input: string): string | null {
   let s = input.trim();
   if (!s) return null;
-  if (s[0] !== '#') {
+  if (!s.startsWith('#')) {
     if (BARE_HEX3.test(s) || BARE_HEX6.test(s)) s = `#${s}`;
     else return null;
   }
@@ -130,13 +130,13 @@ export function sanitizeHexDraft(input: string): string {
   if (trimmed.startsWith('#')) {
     const rest = trimmed
       .slice(1)
-      .replace(/[^0-9a-fA-F]/gi, '')
+      .replace(/[^0-9a-f]/gi, '')
       .slice(0, 6)
       .toLowerCase();
     return rest ? `#${rest}` : '#';
   }
   // No #: only accept if every character is a hex digit (prefix # for user)
-  if (!/^[0-9a-fA-F]*$/i.test(trimmed)) return '#';
+  if (!/^[0-9a-f]*$/i.test(trimmed)) return '#';
   const digits = trimmed.slice(0, 6).toLowerCase();
   return digits ? `#${digits}` : '#';
 }

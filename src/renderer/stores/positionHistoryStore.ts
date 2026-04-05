@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
 import { haversineDistanceKm } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { PositionPoint } from '../lib/types';
@@ -8,7 +9,7 @@ const MOVEMENT_THRESHOLD_KM = 0.01; // 10 metres — filters GPS jitter
 
 function loadShowPaths(): boolean {
   const o = parseStoredJson<{ showMovementPaths?: boolean }>(
-    localStorage.getItem('mesh-client:adminSettings'),
+    getAppSettingsRaw(),
     'positionHistoryStore loadShowPaths',
   );
   return o?.showMovementPaths !== false; // default true
@@ -16,7 +17,7 @@ function loadShowPaths(): boolean {
 
 function loadHistoryWindowHours(): number {
   const o = parseStoredJson<{ positionHistoryWindowHours?: number }>(
-    localStorage.getItem('mesh-client:adminSettings'),
+    getAppSettingsRaw(),
     'positionHistoryStore loadHistoryWindowHours',
   );
   const v = o?.positionHistoryWindowHours;
@@ -45,26 +46,33 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
     const existing = get().history.get(nodeId) ?? [];
     const pruned = existing.filter((p) => p.t > now - windowMs);
     const last = pruned.at(-1);
+    let added = false;
     if (!last || haversineDistanceKm(last.lat, last.lon, lat, lon) >= MOVEMENT_THRESHOLD_KM) {
       pruned.push({ t: now, lat, lon });
+      added = true;
       // Fire-and-forget DB write; never block the position update
       try {
-        window.electronAPI.db.savePositionHistory(nodeId, lat, lon, now, source).catch((err) => {
-          console.warn('[positionHistory] DB write failed:', err);
-        });
+        window.electronAPI.db
+          .savePositionHistory(nodeId, lat, lon, now, source)
+          .catch((err: unknown) => {
+            console.warn('[positionHistory] DB write failed:', err);
+          });
       } catch {
         // catch-no-log-ok electronAPI not available in test/storybook contexts
       }
     }
-    const newHistory = new Map(get().history);
-    newHistory.set(nodeId, pruned);
-    set({ history: newHistory });
+    const shortenedByWindow = pruned.length !== existing.length;
+    if (added || shortenedByWindow) {
+      const newHistory = new Map(get().history);
+      newHistory.set(nodeId, pruned);
+      set({ history: newHistory });
+    }
   },
 
   clearHistory() {
     set({ history: new Map() });
     try {
-      window.electronAPI.db.clearPositionHistory().catch((err) => {
+      window.electronAPI.db.clearPositionHistory().catch((err: unknown) => {
         console.warn('[positionHistory] clearPositionHistory DB failed:', err);
       });
     } catch (e) {
@@ -73,36 +81,15 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
   },
 
   setShowPaths(enabled) {
-    try {
-      const raw = localStorage.getItem('mesh-client:adminSettings');
-      const o =
-        parseStoredJson<Record<string, unknown>>(raw, 'positionHistoryStore setShowPaths') ?? {};
-      localStorage.setItem(
-        'mesh-client:adminSettings',
-        JSON.stringify({ ...o, showMovementPaths: enabled }),
-      );
-    } catch {
-      // catch-no-log-ok localStorage quota or private mode — non-critical setting
-    }
+    mergeAppSetting('showMovementPaths', enabled, 'positionHistoryStore setShowPaths');
     set({ showPaths: enabled });
   },
 
   setHistoryWindow(hours) {
-    try {
-      const raw = localStorage.getItem('mesh-client:adminSettings');
-      const o =
-        parseStoredJson<Record<string, unknown>>(raw, 'positionHistoryStore setHistoryWindow') ??
-        {};
-      localStorage.setItem(
-        'mesh-client:adminSettings',
-        JSON.stringify({ ...o, positionHistoryWindowHours: hours }),
-      );
-    } catch {
-      // catch-no-log-ok localStorage quota or private mode — non-critical setting
-    }
+    mergeAppSetting('positionHistoryWindowHours', hours, 'positionHistoryStore setHistoryWindow');
     set({ historyWindowHours: hours });
     // Reload history from DB with the new window
-    get().loadHistoryFromDb();
+    void get().loadHistoryFromDb();
   },
 
   async loadHistoryFromDb() {

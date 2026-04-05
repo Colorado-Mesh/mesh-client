@@ -8,7 +8,11 @@ import { execFileSync } from 'child_process';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
-import { sanitizeForLogSink, sanitizeLogMessage } from '@/main/sanitize-log-message';
+import {
+  sanitizeForLogSink,
+  sanitizeLogMessage,
+  sanitizeLogPayloadForDisk,
+} from '@/main/sanitize-log-message';
 
 describe('sanitizeLogMessage', () => {
   it('strips newlines and keeps output on one line', () => {
@@ -63,6 +67,27 @@ describe('sanitizeForLogSink (console path, CodeQL pattern)', () => {
   });
 });
 
+describe('sanitizeLogPayloadForDisk (log file sink, CodeQL http-to-file path)', () => {
+  it('preserves a trailing newline for a single formatted line', () => {
+    const line = '2026-01-01T00:00:00.000Z [log] [main] hello\n';
+    expect(sanitizeLogPayloadForDisk(line)).toBe(line);
+  });
+
+  it('sanitizes each logical line and keeps newline boundaries between segments', () => {
+    const forged = 'line1\nline2\n[INJECTED]\nline3\n';
+    expect(sanitizeLogPayloadForDisk(forged)).toBe('line1\nline2\n[INJECTED]\nline3\n');
+  });
+
+  it('collapses CR/LF inside a segment (per-line sink sanitization)', () => {
+    expect(sanitizeLogPayloadForDisk('a\rb\n')).toBe('a b\n');
+  });
+
+  it('is stable on already-sanitized multiline payloads', () => {
+    const once = sanitizeLogPayloadForDisk('a\nb\n');
+    expect(sanitizeLogPayloadForDisk(once)).toBe(once);
+  });
+});
+
 describe('log-injection check (main process)', () => {
   it('main process has no unsanitized console.*(..., err|e|error|reason) calls', () => {
     const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
@@ -71,6 +96,7 @@ describe('log-injection check (main process)', () => {
       stdio: 'pipe',
       cwd: projectRoot,
     });
+    expect(true).toBe(true);
   });
 });
 
@@ -82,6 +108,7 @@ describe('silent-catch check (main process + renderer)', () => {
       stdio: 'pipe',
       cwd: projectRoot,
     });
+    expect(true).toBe(true);
   });
 });
 
@@ -93,6 +120,7 @@ describe('console-log check (main process + renderer)', () => {
       stdio: 'pipe',
       cwd: projectRoot,
     });
+    expect(true).toBe(true);
   });
 });
 
@@ -104,5 +132,6 @@ describe('xss-patterns check (all source)', () => {
       stdio: 'pipe',
       cwd: projectRoot,
     });
+    expect(true).toBe(true);
   });
 });

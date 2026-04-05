@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: Mesh-client
-Source: https://github.com/Colorado-Mesh/meshtastic-client
+Source: https://github.com/Colorado-Mesh/mesh-client
 
 Files: *
 Copyright: 2026 Mesh-Client Contributors

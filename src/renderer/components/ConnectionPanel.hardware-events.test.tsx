@@ -10,8 +10,11 @@
  * - Changing payload property names (deviceId → device_id, portId → port_id, etc.)
  * - Forgetting to return / call the cleanup unsubscribe function on unmount
  * - Disconnecting the serial port listener from state update
+ * - BLE discovery opening the picker while Connection Type is serial (cross-panel scan)
  */
-import { act, render } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { flushSync } from 'react-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { NobleBleDevice, SerialPort } from '@/shared/electron-api.types';
@@ -59,15 +62,16 @@ describe('ConnectionPanel hardware event wiring', () => {
 
     const registeredCb = vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mock
       .calls[0]?.[0];
-    expect(registeredCb, 'callback must be registered').toBeDefined();
+    expect(registeredCb).toBeDefined();
+    if (registeredCb === undefined) throw new Error('callback must be registered');
 
     const device: NobleBleDevice = { deviceId: 'ble-001', deviceName: 'Test Radio' };
     // Must not throw — validates payload shape is consumed correctly
-    expect(() =>
-      act(() => {
-        registeredCb!(device);
-      }),
-    ).not.toThrow();
+    act(() => {
+      flushSync(() => {
+        registeredCb(device);
+      });
+    });
   });
 
   it('deduplicates BLE devices by deviceId on repeated discovery', () => {
@@ -103,6 +107,67 @@ describe('ConnectionPanel hardware event wiring', () => {
     expect(unsub).toHaveBeenCalled();
   });
 
+  it('does not open BLE picker when a device is discovered during USB Serial connect (cross-panel scan)', async () => {
+    const user = userEvent.setup();
+    let capturedCb: ((device: NobleBleDevice) => void) | undefined;
+    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+
+    const onConnect = vi.fn(() => new Promise<void>(() => {}));
+
+    render(<ConnectionPanel {...DEFAULT_PROPS} protocol="meshcore" onConnect={onConnect} />);
+
+    const connectionField = screen
+      .getByRole('radiogroup', { name: 'Connection Type' })
+      .closest('fieldset')?.parentElement;
+    expect(connectionField).toBeTruthy();
+    await user.click(within(connectionField!).getByRole('radio', { name: /USB Serial/i }));
+    await user.click(within(connectionField!).getByRole('button', { name: /^Connect$/i }));
+
+    expect(onConnect).toHaveBeenCalled();
+    expect(capturedCb).toBeDefined();
+
+    act(() => {
+      capturedCb!({ deviceId: 'foreign-ble-device', deviceName: 'Other Radio' });
+    });
+
+    expect(screen.queryByText('Select Bluetooth Device')).not.toBeInTheDocument();
+  });
+
+  it('opens BLE picker when a device is discovered during manual Bluetooth scan', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    let capturedCb: ((device: NobleBleDevice) => void) | undefined;
+    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+
+    render(<ConnectionPanel {...DEFAULT_PROPS} />);
+
+    const connectionField = screen
+      .getByRole('radiogroup', { name: 'Connection Type' })
+      .closest('fieldset')?.parentElement;
+    expect(connectionField).toBeTruthy();
+    await user.click(within(connectionField!).getByRole('radio', { name: /Bluetooth/i }));
+    await user.click(within(connectionField!).getByRole('button', { name: /^Connect$/i }));
+
+    expect(window.electronAPI.startNobleBleScanning).toHaveBeenCalled();
+    expect(capturedCb).toBeDefined();
+
+    act(() => {
+      capturedCb!({ deviceId: 'dev-1', deviceName: 'Test Radio' });
+    });
+
+    expect(screen.getByText('Select Bluetooth Device')).toBeInTheDocument();
+    userAgentSpy.mockRestore();
+  });
+
   // ─── Serial port discovery ─────────────────────────────────────────────────
 
   it('registers onSerialPortsDiscovered listener on mount', () => {
@@ -114,7 +179,8 @@ describe('ConnectionPanel hardware event wiring', () => {
     render(<ConnectionPanel {...DEFAULT_PROPS} />);
 
     const registeredCb = vi.mocked(window.electronAPI.onSerialPortsDiscovered).mock.calls[0]?.[0];
-    expect(registeredCb, 'callback must be registered').toBeDefined();
+    expect(registeredCb).toBeDefined();
+    if (registeredCb === undefined) throw new Error('callback must be registered');
 
     const ports: SerialPort[] = [
       { portId: 'port-1', displayName: 'Meshtastic USB', portName: '/dev/ttyUSB0' },
@@ -127,11 +193,11 @@ describe('ConnectionPanel hardware event wiring', () => {
       },
     ];
     // Must not throw — validates payload shape including optional fields
-    expect(() =>
-      act(() => {
-        registeredCb!(ports);
-      }),
-    ).not.toThrow();
+    act(() => {
+      flushSync(() => {
+        registeredCb(ports);
+      });
+    });
   });
 
   it('onSerialPortsDiscovered handles empty port list without crashing', () => {
@@ -139,11 +205,12 @@ describe('ConnectionPanel hardware event wiring', () => {
 
     const registeredCb = vi.mocked(window.electronAPI.onSerialPortsDiscovered).mock.calls[0]?.[0];
     expect(registeredCb).toBeDefined();
-    expect(() =>
-      act(() => {
-        registeredCb!([]);
-      }),
-    ).not.toThrow();
+    if (registeredCb === undefined) throw new Error('callback must be registered');
+    act(() => {
+      flushSync(() => {
+        registeredCb([]);
+      });
+    });
   });
 
   it('unsubscribes onSerialPortsDiscovered listener on unmount', () => {

@@ -1,4 +1,8 @@
 // Single source of truth for the Electron context bridge API surface.
+import type { MeshNode } from '../renderer/lib/types';
+import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
+
+export type { MeshNode };
 //
 // Rules for maintaining this file:
 // - Every method here must have a matching ipcMain.handle/on in src/main/index.ts
@@ -8,6 +12,51 @@
 // When AI assistants modify the preload or main process, TypeScript will catch any drift
 // at the `typecheck` step in .githooks/pre-commit.
 
+// ─── Database types ───────────────────────────────────────────────────────────
+
+export interface SavedMessage {
+  id: number;
+  sender_id: number;
+  sender_name: string;
+  payload: string;
+  channel: number;
+  timestamp: number;
+  packetId: number | null;
+  status: string;
+  error: string | null;
+  emoji: number | null;
+  replyId: number | null;
+  to: number | undefined;
+  mqttStatus: string | null;
+  receivedVia: string | null;
+}
+
+export interface SavedNode {
+  node_id: number;
+  long_name: string | null;
+  short_name: string | null;
+  hw_model: string | null;
+  snr: number | null;
+  rssi: number | null;
+  battery: number | null;
+  last_heard: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  role: string | null;
+  hops_away: number | null;
+  via_mqtt: number | null;
+  voltage: number | null;
+  channel_utilization: number | null;
+  air_util_tx: number | null;
+  altitude: number | null;
+  favorited: number;
+  source: string;
+  num_packets_rx_bad: number | null;
+  num_rx_dupe: number | null;
+  num_packets_rx: number | null;
+  num_packets_tx: number | null;
+}
+
 // ─── Shared sub-types ─────────────────────────────────────────────────────────
 
 export interface NobleBleDevice {
@@ -16,6 +65,7 @@ export interface NobleBleDevice {
 }
 
 export type NobleBleSessionId = 'meshtastic' | 'meshcore';
+export type NobleBleConnectResult = { ok: true } | { ok: false; error: string };
 
 export interface SerialPort {
   portId: string;
@@ -23,6 +73,12 @@ export interface SerialPort {
   portName: string;
   vendorId?: string;
   productId?: string;
+}
+
+export interface ContactGroup {
+  group_id: number;
+  name: string;
+  member_count: number;
 }
 
 export interface LogEntry {
@@ -46,22 +102,36 @@ export interface ElectronAPI {
       to?: number;
     }) => Promise<unknown>;
 
-    getMessages: (channel?: number, limit?: number) => Promise<unknown>;
+    getMessages: (channel?: number, limit?: number) => Promise<SavedMessage[]>;
 
     saveNode: (node: {
       node_id: number;
-      long_name: string;
-      short_name: string;
-      hw_model: string;
-      snr: number;
-      rssi?: number;
-      battery: number;
-      last_heard: number;
+      long_name: string | null;
+      short_name: string | null;
+      hw_model: string | null;
+      snr: number | null;
+      rssi?: number | null;
+      battery: number | null;
+      last_heard: number | null;
       latitude: number | null;
       longitude: number | null;
+      role?: number | string | null;
+      hops_away?: number | null;
+      via_mqtt?: boolean | number | null;
+      voltage?: number | null;
+      channel_utilization?: number | null;
+      air_util_tx?: number | null;
+      altitude?: number | null;
+      source?: string | null;
+      num_packets_rx_bad?: number | null;
+      num_rx_dupe?: number | null;
+      num_packets_rx?: number | null;
+      num_packets_tx?: number | null;
+      heard_via_mqtt_only?: boolean;
+      [key: string]: unknown;
     }) => Promise<unknown>;
 
-    getNodes: () => Promise<unknown>;
+    getNodes: () => Promise<SavedNode[]>;
     clearMessages: () => Promise<unknown>;
     clearNodes: () => Promise<unknown>;
     deleteNode: (nodeId: number) => Promise<unknown>;
@@ -71,23 +141,26 @@ export interface ElectronAPI {
       error?: string,
       mqttStatus?: string,
     ) => Promise<unknown>;
-    exportDb: () => Promise<unknown>;
-    importDb: () => Promise<unknown>;
+    exportDb: () => Promise<string | null>;
+    importDb: () => Promise<{ nodesAdded: number; messagesAdded: number } | null>;
     deleteNodesByAge: (days: number) => Promise<unknown>;
     pruneNodesByCount: (maxCount: number) => Promise<unknown>;
-    deleteNodesBatch: (nodeIds: number[]) => Promise<unknown>;
+    deleteNodesNeverHeard: () => Promise<number>;
+    deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
     clearMessagesByChannel: (channel: number) => Promise<unknown>;
-    getMessageChannels: () => Promise<unknown>;
+    getMessageChannels: () => Promise<{ channel: number }[]>;
     setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<unknown>;
-    deleteNodesBySource: (source: string) => Promise<unknown>;
-    deleteNodesWithoutLongname: () => Promise<unknown>;
+    deleteNodesBySource: (source: string) => Promise<number>;
+    migrateRfStubNodes: () => Promise<number>;
+    deleteNodesWithoutLongname: () => Promise<number>;
+    prunePositionHistory: (days: number) => Promise<number>;
     clearNodePositions: () => Promise<unknown>;
     updateMessageReceivedVia: (packetId: number) => Promise<unknown>;
 
-    getMeshcoreMessages: (channelIdx?: number, limit?: number) => Promise<unknown>;
-    searchMessages: (query: string, limit?: number) => Promise<unknown>;
-    searchMeshcoreMessages: (query: string, limit?: number) => Promise<unknown>;
-    getMeshcoreContacts: () => Promise<unknown>;
+    getMeshcoreMessages: (channelIdx?: number, limit?: number) => Promise<unknown[]>;
+    searchMessages: (query: string, limit?: number) => Promise<unknown[]>;
+    searchMeshcoreMessages: (query: string, limit?: number) => Promise<unknown[]>;
+    getMeshcoreContacts: () => Promise<unknown[]>;
     saveMeshcoreMessage: (message: {
       sender_id?: number | null;
       sender_name?: string | null;
@@ -112,17 +185,31 @@ export interface ElectronAPI {
       last_snr?: number | null;
       last_rssi?: number | null;
       nickname?: string | null;
+      contact_flags?: number | null;
+      hops_away?: number | null;
     }) => Promise<unknown>;
     updateMeshcoreContactAdvert: (
       nodeId: number,
       lastAdvert: number | null,
       advLat: number | null,
       advLon: number | null,
+      advName?: string | null,
+    ) => Promise<unknown>;
+    updateMeshcoreContactType: (nodeId: number, contactType: number) => Promise<unknown>;
+    updateMeshcoreContactLastRf: (
+      nodeId: number,
+      lastSnr: number,
+      lastRssi: number,
     ) => Promise<unknown>;
     updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<unknown>;
     deleteMeshcoreContact: (nodeId: number) => Promise<unknown>;
     clearMeshcoreMessages: () => Promise<unknown>;
+    getMeshcoreMessageChannels: () => Promise<{ channel: number }[]>;
+    clearMeshcoreMessagesByChannel: (channelIdx: number) => Promise<unknown>;
     clearMeshcoreContacts: () => Promise<unknown>;
+    deleteMeshcoreContactsNeverAdvertised: () => Promise<unknown>;
+    deleteMeshcoreContactsByAge: (days: number) => Promise<unknown>;
+    pruneMeshcoreContactsByCount: (maxCount: number) => Promise<unknown>;
     clearMeshcoreRepeaters: () => Promise<unknown>;
     updateMeshcoreContactNickname: (nodeId: number, nickname: string | null) => Promise<unknown>;
     updateMeshcoreContactFavorited: (
@@ -137,20 +224,48 @@ export interface ElectronAPI {
       recordedAt: number,
       source: string,
     ) => Promise<unknown>;
-    getPositionHistory: (sinceMs: number) => Promise<unknown>;
+    getPositionHistory: (sinceMs: number) => Promise<
+      {
+        node_id: number;
+        latitude: number;
+        longitude: number;
+        recorded_at: number;
+        source: string;
+      }[]
+    >;
     clearPositionHistory: () => Promise<unknown>;
+    getContactGroups: (selfNodeId: number) => Promise<ContactGroup[]>;
+    createContactGroup: (selfNodeId: number, name: string) => Promise<number>;
+    updateContactGroup: (groupId: number, name: string) => Promise<void>;
+    deleteContactGroup: (groupId: number) => Promise<void>;
+    addContactToGroup: (groupId: number, contactNodeId: number) => Promise<void>;
+    removeContactFromGroup: (groupId: number, contactNodeId: number) => Promise<void>;
+    getContactGroupMembers: (groupId: number) => Promise<number[]>;
   };
 
   // ─── MQTT ────────────────────────────────────────────────────────────────────
   mqtt: {
     connect: (settings: unknown) => Promise<unknown>;
-    disconnect: () => Promise<unknown>;
-    onStatus: (cb: (status: string) => void) => () => void;
-    onError: (cb: (message: string) => void) => () => void;
-    onNodeUpdate: (cb: (node: unknown) => void) => () => void;
+    disconnect: (protocol?: 'meshtastic' | 'meshcore') => Promise<unknown>;
+    onStatus: (
+      cb: (payload: { status: string; protocol: 'meshtastic' | 'meshcore' }) => void,
+    ) => () => void;
+    onError: (
+      cb: (payload: { error: string; protocol: 'meshtastic' | 'meshcore' }) => void,
+    ) => () => void;
+    onWarning: (
+      cb: (payload: { warning: string; protocol: 'meshtastic' | 'meshcore' }) => void,
+    ) => () => void;
+    onNodeUpdate: (
+      cb: (
+        node: Partial<MeshNode> & { node_id: number; protocol?: 'meshtastic' | 'meshcore' },
+      ) => void,
+    ) => () => void;
     onMessage: (cb: (msg: unknown) => void) => () => void;
-    onClientId: (cb: (id: string) => void) => () => void;
-    getClientId: () => Promise<string>;
+    onClientId: (
+      cb: (payload: { clientId: string; protocol: 'meshtastic' | 'meshcore' }) => void,
+    ) => () => void;
+    getClientId: (protocol?: 'meshtastic' | 'meshcore') => Promise<string>;
     getCachedNodes: () => Promise<unknown>;
     publish: (args: {
       text: string;
@@ -183,7 +298,18 @@ export interface ElectronAPI {
       senderNodeId?: number;
       timestamp?: number;
     }) => Promise<unknown>;
+    publishMeshcorePacketLog: (args: {
+      origin: string;
+      snr: number;
+      rssi: number;
+      rawHex?: string;
+    }) => Promise<unknown>;
     onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
+    refreshMeshcoreToken: (
+      serverHost: string,
+    ) => Promise<{ token: string; expiresAt: number } | null>;
+    updateMeshcoreToken: (token: string, expiresAt: number) => Promise<void>;
+    onRequestTokenRefresh: (cb: (serverHost: string) => void) => () => void;
   };
 
   // ─── Noble BLE ───────────────────────────────────────────────────────────────
@@ -191,12 +317,18 @@ export interface ElectronAPI {
   onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => () => void;
   onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
   onNobleBleDisconnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
+  onNobleBleConnectAborted: (
+    cb: (payload: { sessionId: NobleBleSessionId; message: string }) => void,
+  ) => () => void;
   onNobleBleFromRadio: (
     cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
   ) => () => void;
   startNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<void>;
   stopNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<void>;
-  connectNobleBle: (sessionId: NobleBleSessionId, peripheralId: string) => Promise<void>;
+  connectNobleBle: (
+    sessionId: NobleBleSessionId,
+    peripheralId: string,
+  ) => Promise<NobleBleConnectResult>;
   disconnectNobleBle: (sessionId: NobleBleSessionId) => Promise<void>;
   nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array) => Promise<void>;
 
@@ -204,6 +336,24 @@ export interface ElectronAPI {
   onSerialPortsDiscovered: (callback: (ports: SerialPort[]) => void) => () => void;
   selectSerialPort: (portId: string) => void;
   cancelSerialSelection: () => void;
+
+  // ─── Bluetooth device selection (Linux Web Bluetooth) ────────────────────────
+  onBluetoothDevicesDiscovered: (callback: (devices: NobleBleDevice[]) => void) => () => void;
+  selectBluetoothDevice: (deviceId: string) => void;
+  cancelBluetoothSelection: () => void;
+
+  // ─── Bluetooth pairing (Linux) ──────────────────────────────────────────────
+  bluetoothUnpair: (macAddress: string) => Promise<void>;
+  bluetoothStartScan: () => Promise<void>;
+  bluetoothStopScan: () => Promise<void>;
+  bluetoothPair: (macAddress: string, pin?: string) => Promise<void>;
+  bluetoothConnect: (macAddress: string) => Promise<void>;
+  bluetoothUntrust: (macAddress: string) => Promise<void>;
+  bluetoothGetInfo: (macAddress: string) => Promise<string>;
+  onBluetoothPinRequired: (callback: (data: { deviceId: string }) => void) => () => void;
+  provideBluetoothPin: (pin: string) => void;
+  cancelBluetoothPairing: () => void;
+  resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => void;
 
   // ─── Session management ──────────────────────────────────────────────────────
   clearSessionData: () => Promise<unknown>;
@@ -268,10 +418,33 @@ export interface ElectronAPI {
       connect: (host: string, port: number) => Promise<unknown>;
       write: (bytes: number[]) => Promise<unknown>;
       disconnect: () => Promise<unknown>;
-      onData: (cb: (bytes: number[]) => void) => () => void;
+      onData: (cb: (bytes: Uint8Array) => void) => () => void;
       onDisconnected: (cb: () => void) => () => void;
     };
     openJsonFile: () => Promise<string | null>;
+  };
+
+  // ─── Meshtastic HTTP bridge ───────────────────────────────────────────────────
+  http: {
+    preflight: (host: string, tls: boolean) => Promise<void>;
+    connect: (host: string, tls: boolean) => Promise<void>;
+    write: (bytes: number[]) => Promise<void>;
+    disconnect: () => Promise<void>;
+    onData: (cb: (bytes: Uint8Array) => void) => () => void;
+  };
+
+  // ─── TAK server ──────────────────────────────────────────────────────────────
+  tak: {
+    start: (settings: TAKSettings) => Promise<void>;
+    stop: () => Promise<void>;
+    getStatus: () => Promise<TAKServerStatus>;
+    getConnectedClients: () => Promise<TAKClientInfo[]>;
+    generateDataPackage: () => Promise<void>;
+    regenerateCertificates: () => Promise<void>;
+    pushNodeUpdate: (node: { node_id: number } & Record<string, unknown>) => Promise<void>;
+    onStatus: (cb: (status: TAKServerStatus) => void) => () => void;
+    onClientConnected: (cb: (client: TAKClientInfo) => void) => () => void;
+    onClientDisconnected: (cb: (clientId: string) => void) => () => void;
   };
 
   // ─── Log panel ───────────────────────────────────────────────────────────────
@@ -281,5 +454,7 @@ export interface ElectronAPI {
     clear: () => Promise<unknown>;
     export: () => Promise<string | null>;
     onLine: (cb: (entry: LogEntry) => void) => () => void;
+    /** Main-process log line: `[Connection] …` + runtime tag (sanitized in main). */
+    logDeviceConnection: (detail: string) => Promise<void>;
   };
 }

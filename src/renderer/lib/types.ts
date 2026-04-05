@@ -1,3 +1,7 @@
+import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
+
+export type { TAKClientInfo, TAKServerStatus, TAKSettings };
+
 export type ConnectionType = 'ble' | 'serial' | 'http';
 
 export type MeshProtocol = 'meshtastic' | 'meshcore';
@@ -132,6 +136,8 @@ export interface MeshNode {
   env_lux?: number;
   env_wind_speed?: number;
   env_wind_direction?: number;
+  // Neighbor info from MQTT (session-only)
+  neighbors?: MeshNeighbor[];
 }
 
 export type RemediationCategory = 'Configuration' | 'Physical' | 'Hardware' | 'Software';
@@ -162,6 +168,15 @@ export interface MQTTSettings {
   mqttTransportProtocol?: 'meshtastic' | 'meshcore';
   /** Use ws:// or wss:// transport instead of mqtt:// / mqtts:// (required for port 443 on LetsMesh). */
   useWebSocket?: boolean;
+  /** MQTT keepalive interval in seconds. Defaults to 60 for TCP/TLS, 30 for WebSocket. */
+  keepalive?: number;
+  /**
+   * When true (MeshCore MQTT + LetsMesh public broker), forward RX packet summaries to
+   * `{topicPrefix}/meshcore/packets` for the Analyzer (meshcoretomqtt-shaped JSON). Default false.
+   */
+  meshcorePacketLoggerEnabled?: boolean;
+  /** Epoch milliseconds when the JWT token expires. Used for proactive refresh. */
+  tokenExpiresAt?: number;
 }
 
 export type MQTTStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -236,6 +251,9 @@ export interface DeviceState {
   reconnectAttempt?: number;
   lastDataReceived?: number;
   firmwareVersion?: string;
+  /** 0–100 from device metrics; omit until first reading */
+  batteryPercent?: number;
+  batteryCharging?: boolean;
 }
 
 export interface NobleBleDevice {
@@ -243,6 +261,12 @@ export interface NobleBleDevice {
   deviceName: string;
 }
 export type NobleBleSessionId = 'meshtastic' | 'meshcore';
+export type NobleBleConnectResult = { ok: true } | { ok: false; error: string };
+
+export interface WebBluetoothDevice {
+  deviceId: string;
+  deviceName: string;
+}
 
 export interface SerialPortInfo {
   portId: string;
@@ -250,6 +274,12 @@ export interface SerialPortInfo {
   portName: string;
   vendorId?: string;
   productId?: string;
+}
+
+export interface LinuxBleCapabilityStatus {
+  platform: 'linux' | 'other';
+  hasCapNetRaw: boolean;
+  detail: string;
 }
 
 export interface MeshWaypoint {
@@ -298,13 +328,16 @@ declare global {
         exportDb: () => Promise<string | null>;
         importDb: () => Promise<{ nodesAdded: number; messagesAdded: number } | null>;
         deleteNodesByAge: (days: number) => Promise<unknown>;
+        deleteNodesNeverHeard: () => Promise<number>;
         pruneNodesByCount: (maxCount: number) => Promise<unknown>;
         deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
         clearMessagesByChannel: (channel: number) => Promise<unknown>;
         getMessageChannels: () => Promise<{ channel: number }[]>;
         setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<unknown>;
         deleteNodesBySource: (source: string) => Promise<number>;
+        migrateRfStubNodes: () => Promise<number>;
         deleteNodesWithoutLongname: () => Promise<number>;
+        prunePositionHistory: (days: number) => Promise<number>;
         clearNodePositions: () => Promise<unknown>;
         updateMessageReceivedVia: (packetId: number) => Promise<unknown>;
         saveMeshcoreMessage: (message: {
@@ -331,6 +364,7 @@ declare global {
           last_snr?: number | null;
           last_rssi?: number | null;
           nickname?: string | null;
+          contact_flags?: number | null;
         }) => Promise<unknown>;
         updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<unknown>;
         updateMeshcoreContactAdvert: (
@@ -338,6 +372,13 @@ declare global {
           lastAdvert: number | null,
           advLat: number | null,
           advLon: number | null,
+          advName?: string | null,
+        ) => Promise<unknown>;
+        updateMeshcoreContactType: (nodeId: number, contactType: number) => Promise<unknown>;
+        updateMeshcoreContactLastRf: (
+          nodeId: number,
+          lastSnr: number,
+          lastRssi: number,
         ) => Promise<unknown>;
         getMeshcoreMessages: (channelIdx?: number, limit?: number) => Promise<unknown[]>;
         searchMessages: (query: string, limit?: number) => Promise<unknown[]>;
@@ -345,7 +386,12 @@ declare global {
         getMeshcoreContacts: () => Promise<unknown[]>;
         deleteMeshcoreContact: (nodeId: number) => Promise<unknown>;
         clearMeshcoreMessages: () => Promise<unknown>;
+        getMeshcoreMessageChannels: () => Promise<{ channel: number }[]>;
+        clearMeshcoreMessagesByChannel: (channelIdx: number) => Promise<unknown>;
         clearMeshcoreContacts: () => Promise<unknown>;
+        deleteMeshcoreContactsNeverAdvertised: () => Promise<number>;
+        deleteMeshcoreContactsByAge: (days: number) => Promise<number>;
+        pruneMeshcoreContactsByCount: (maxCount: number) => Promise<number>;
         clearMeshcoreRepeaters: () => Promise<unknown>;
         updateMeshcoreContactNickname: (
           nodeId: number,
@@ -373,16 +419,38 @@ declare global {
           }[]
         >;
         clearPositionHistory: () => Promise<unknown>;
+        getContactGroups: (
+          selfNodeId: number,
+        ) => Promise<{ group_id: number; name: string; member_count: number }[]>;
+        createContactGroup: (selfNodeId: number, name: string) => Promise<number>;
+        updateContactGroup: (groupId: number, name: string) => Promise<void>;
+        deleteContactGroup: (groupId: number) => Promise<void>;
+        addContactToGroup: (groupId: number, contactNodeId: number) => Promise<void>;
+        removeContactFromGroup: (groupId: number, contactNodeId: number) => Promise<void>;
+        getContactGroupMembers: (groupId: number) => Promise<number[]>;
       };
       mqtt: {
         connect: (settings: MQTTSettings) => Promise<void>;
-        disconnect: () => Promise<void>;
-        onStatus: (cb: (status: MQTTStatus) => void) => () => void;
-        onError: (cb: (message: string) => void) => () => void;
-        onNodeUpdate: (cb: (node: Partial<MeshNode> & { node_id: number }) => void) => () => void;
+        disconnect: (protocol?: 'meshtastic' | 'meshcore') => Promise<void>;
+        onStatus: (
+          cb: (payload: { status: MQTTStatus; protocol: 'meshtastic' | 'meshcore' }) => void,
+        ) => () => void;
+        onError: (
+          cb: (payload: { error: string; protocol: 'meshtastic' | 'meshcore' }) => void,
+        ) => () => void;
+        onWarning: (
+          cb: (payload: { warning: string; protocol: 'meshtastic' | 'meshcore' }) => void,
+        ) => () => void;
+        onNodeUpdate: (
+          cb: (
+            node: Partial<MeshNode> & { node_id: number; protocol?: 'meshtastic' | 'meshcore' },
+          ) => void,
+        ) => () => void;
         onMessage: (cb: (msg: Omit<ChatMessage, 'id'>) => void) => () => void;
-        onClientId: (cb: (id: string) => void) => () => void;
-        getClientId: () => Promise<string>;
+        onClientId: (
+          cb: (payload: { clientId: string; protocol: 'meshtastic' | 'meshcore' }) => void,
+        ) => () => void;
+        getClientId: (protocol?: 'meshtastic' | 'meshcore') => Promise<string>;
         getCachedNodes: () => Promise<CachedNode[]>;
         publish: (args: {
           text: string;
@@ -415,33 +483,72 @@ declare global {
           senderNodeId?: number;
           timestamp?: number;
         }) => Promise<void>;
+        publishMeshcorePacketLog: (args: {
+          origin: string;
+          snr: number;
+          rssi: number;
+          rawHex?: string;
+        }) => Promise<void>;
         onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
+        refreshMeshcoreToken: (
+          serverHost: string,
+        ) => Promise<{ token: string; expiresAt: number } | null>;
+        updateMeshcoreToken: (token: string, expiresAt: number) => Promise<void>;
+        onRequestTokenRefresh: (cb: (serverHost: string) => void) => () => void;
       };
       meshcore: {
         tcp: {
           connect: (host: string, port: number) => Promise<void>;
           write: (bytes: number[]) => Promise<void>;
           disconnect: () => Promise<void>;
-          onData: (cb: (bytes: number[]) => void) => () => void;
+          onData: (cb: (bytes: Uint8Array) => void) => () => void;
           onDisconnected: (cb: () => void) => () => void;
         };
         openJsonFile: () => Promise<string | null>;
+      };
+      http: {
+        preflight: (host: string, tls: boolean) => Promise<void>;
+        connect: (host: string, tls: boolean) => Promise<void>;
+        write: (bytes: number[]) => Promise<void>;
+        disconnect: () => Promise<void>;
+        onData: (cb: (bytes: Uint8Array) => void) => () => void;
       };
       onNobleBleAdapterState: (cb: (state: string) => void) => () => void;
       onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => () => void;
       onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
       onNobleBleDisconnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
+      onNobleBleConnectAborted: (
+        cb: (payload: { sessionId: NobleBleSessionId; message: string }) => void,
+      ) => () => void;
       onNobleBleFromRadio: (
         cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
       ) => () => void;
       startNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<void>;
       stopNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<void>;
-      connectNobleBle: (sessionId: NobleBleSessionId, peripheralId: string) => Promise<void>;
+      connectNobleBle: (
+        sessionId: NobleBleSessionId,
+        peripheralId: string,
+      ) => Promise<NobleBleConnectResult>;
       disconnectNobleBle: (sessionId: NobleBleSessionId) => Promise<void>;
       nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array) => Promise<void>;
+      getLinuxBleCapabilityStatus: () => Promise<LinuxBleCapabilityStatus>;
       onSerialPortsDiscovered: (cb: (ports: SerialPortInfo[]) => void) => () => void;
       selectSerialPort: (portId: string) => void;
       cancelSerialSelection: () => void;
+      onBluetoothDevicesDiscovered: (cb: (devices: NobleBleDevice[]) => void) => () => void;
+      selectBluetoothDevice: (deviceId: string) => void;
+      cancelBluetoothSelection: () => void;
+      bluetoothUnpair: (macAddress: string) => Promise<void>;
+      bluetoothStartScan: () => Promise<void>;
+      bluetoothStopScan: () => Promise<void>;
+      bluetoothPair: (macAddress: string, pin?: string) => Promise<void>;
+      bluetoothConnect: (macAddress: string) => Promise<void>;
+      bluetoothUntrust: (macAddress: string) => Promise<void>;
+      bluetoothGetInfo: (macAddress: string) => Promise<string>;
+      onBluetoothPinRequired: (cb: (data: { deviceId: string }) => void) => () => void;
+      provideBluetoothPin: (pin: string) => void;
+      cancelBluetoothPairing: () => void;
+      resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => void;
       clearSessionData: () => Promise<void>;
       notifyDeviceConnected: () => void;
       notifyDeviceDisconnected: () => void;
@@ -457,6 +564,7 @@ declare global {
         onLine: (
           cb: (entry: { ts: number; level: string; source: string; message: string }) => void,
         ) => () => void;
+        logDeviceConnection: (detail: string) => Promise<void>;
       };
       update: {
         check: () => Promise<void>;
@@ -475,6 +583,23 @@ declare global {
         onProgress: (cb: (info: { percent: number }) => void) => () => void;
         onDownloaded: (cb: () => void) => () => void;
         onError: (cb: (info: { message: string }) => void) => () => void;
+      };
+      safeStorage: {
+        encrypt: (plaintext: string) => Promise<string | null>;
+        decrypt: (ciphertext: string) => Promise<string | null>;
+        isAvailable: () => Promise<boolean>;
+      };
+      tak: {
+        start: (settings: TAKSettings) => Promise<void>;
+        stop: () => Promise<void>;
+        getStatus: () => Promise<TAKServerStatus>;
+        getConnectedClients: () => Promise<TAKClientInfo[]>;
+        generateDataPackage: () => Promise<void>;
+        regenerateCertificates: () => Promise<void>;
+        pushNodeUpdate: (node: Record<string, unknown>) => Promise<void>;
+        onStatus: (cb: (status: TAKServerStatus) => void) => () => void;
+        onClientConnected: (cb: (client: TAKClientInfo) => void) => () => void;
+        onClientDisconnected: (cb: (clientId: string) => void) => () => void;
       };
     };
   }

@@ -15,21 +15,19 @@ const ALLOWED_ORIGINS = [
 ];
 
 self.onmessage = (event: MessageEvent<WorkerCommand>) => {
-  if (!event || !ALLOWED_ORIGINS.includes(event.origin)) {
+  if (!ALLOWED_ORIGINS.includes(event.origin)) {
     return;
   }
-  if (
-    typeof event.data !== 'object' ||
-    event.data === null ||
-    !('type' in event.data) ||
-    (event.data as { type?: string }).type !== 'ENCODE_MESSAGE'
-  ) {
+  const data: unknown = event.data;
+  // @typescript-eslint/no-floating-promises: worker onmessage is fire-and-forget
+  if (typeof data !== 'object' || data === null || !('type' in data)) {
+    return;
+  }
+  if (data.type !== 'ENCODE_MESSAGE') {
     return;
   }
 
-  const cmd = event.data;
-
-  if (cmd.type !== 'ENCODE_MESSAGE') return;
+  const cmd = data as WorkerCommand;
 
   try {
     const decodedPayload: {
@@ -60,7 +58,7 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
       },
     };
 
-    const buffer = toBinary(Mesh.ToRadioSchema, toRadio as any).buffer as ArrayBuffer;
+    const buffer = toBinary(Mesh.ToRadioSchema, toRadio as any).buffer;
 
     const reply: WorkerEvent = { type: 'ENCODED', id: cmd.id, buffer };
     (self as unknown as Worker).postMessage(reply, [buffer]);

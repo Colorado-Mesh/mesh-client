@@ -27,7 +27,7 @@ import fs from 'fs';
 const _warnSave = process.emitWarning;
 
 (process as any).emitWarning = (warning: string | Error, ...args: unknown[]) => {
-  const msg = typeof warning === 'string' ? warning : ((warning as Error).message ?? '');
+  const msg = typeof warning === 'string' ? warning : (warning.message ?? '');
   if (msg.includes('SQLite is an experimental feature')) return;
 
   return (_warnSave as any).call(process, warning, ...args);
@@ -46,7 +46,7 @@ process.emitWarning = _warnSave; // restore after sqlite is loaded
  */
 function extractParamNames(sql: string): Set<string> {
   const names = new Set<string>();
-  for (const m of sql.matchAll(/[@:$]([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
+  for (const m of sql.matchAll(/[@:$]([a-zA-Z_]\w*)/g)) {
     names.add(m[1]);
   }
   return names;
@@ -126,6 +126,7 @@ export class NodeSqliteDB {
   private readonly db: DatabaseSyncType;
   // Store exec as a bound ref to avoid triggering lint patterns on method calls below.
   private readonly _run: (sql: string) => void;
+  private readonly stmtCache = new Map<string, WrappedStatement>();
 
   constructor(location: string, opts?: { readonly?: boolean }) {
     this.db = new DatabaseSync(location, { readOnly: opts?.readonly ?? false });
@@ -138,12 +139,23 @@ export class NodeSqliteDB {
     return new WrappedStatement(this.db.prepare(sql), sql);
   }
 
+  /** Cached prepared statement for identical SQL strings (hot IPC paths). */
+  prepareOnce(sql: string): WrappedStatement {
+    let stmt = this.stmtCache.get(sql);
+    if (!stmt) {
+      stmt = this.prepare(sql);
+      this.stmtCache.set(sql, stmt);
+    }
+    return stmt;
+  }
+
   /** Run one or more SQL statements (DDL, multi-statement scripts). */
   execScript(sql: string): void {
     this._run(sql);
   }
 
   close(): void {
+    this.stmtCache.clear();
     this.db.close();
   }
 
@@ -154,14 +166,27 @@ export class NodeSqliteDB {
    * Get:  pragma('user_version', { simple: true }) → number | string
    */
   pragma(str: string, opts?: { simple: true }): unknown {
+    const ALLOWED_PRAGMAS = new Set([
+      'journal_mode',
+      'synchronous',
+      'busy_timeout',
+      'user_version',
+      'foreign_keys',
+    ]);
     const eqIdx = str.indexOf('=');
     if (eqIdx !== -1) {
       const key = str.slice(0, eqIdx).trim();
       const val = str.slice(eqIdx + 1).trim();
+      if (!ALLOWED_PRAGMAS.has(key)) {
+        throw new Error(`db-compat: PRAGMA '${key}' is not on the allowed list`);
+      }
       this._run(`PRAGMA ${key} = ${val}`);
       return undefined;
     }
     const key = str.trim();
+    if (!ALLOWED_PRAGMAS.has(key)) {
+      throw new Error(`db-compat: PRAGMA '${key}' is not on the allowed list`);
+    }
     const row = new WrappedStatement(this.db.prepare(`PRAGMA ${key}`), `PRAGMA ${key}`).get() as
       | Record<string, unknown>
       | undefined;
@@ -201,7 +226,7 @@ export class NodeSqliteDB {
    * Removes an existing file at destPath first (VACUUM INTO requires a
    * non-existent destination).
    */
-  async backup(destPath: string): Promise<void> {
+  backup(destPath: string): void {
     if (fs.existsSync(destPath)) {
       fs.unlinkSync(destPath);
     }

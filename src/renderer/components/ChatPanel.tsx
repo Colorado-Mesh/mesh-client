@@ -1,8 +1,26 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  dismissedDmTabsStorageKey,
+  lastReadStorageKey,
+  loadOpenDmTabsInitial,
+  loadPersistedLastReadInitial,
+  openDmTabsStorageKey,
+} from '../lib/chatPanelProtocolStorage';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayChar, emojiDisplayLabel } from '../lib/reactions';
-import type { ChatMessage, MeshNode } from '../lib/types';
+import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
+
+/** Meshtastic prefers short_name; MeshCore shows full companion names (long_name). */
+function nodeDisplayName(node: MeshNode | undefined, protocol: MeshProtocol): string {
+  if (!node) return '';
+  if (protocol === 'meshcore') {
+    return node.long_name || node.short_name || '';
+  }
+  return node.short_name || node.long_name || '';
+}
+import { ChatPayloadText } from './ChatPayloadText';
+import { HelpTooltip } from './HelpTooltip';
 
 function StatusBadge({
   status,
@@ -47,17 +65,18 @@ function StatusBadge({
     status === 'sending' ? 'Sending...' : status === 'acked' ? 'Delivered' : failedReason
   }`;
   return (
-    <span className={`text-[10px] ${colorClass} cursor-help`} title={tooltip}>
-      {label}
-      {icon}
-    </span>
+    <HelpTooltip text={tooltip}>
+      <span className={`text-[10px] ${colorClass}`}>
+        {label} {icon}
+      </span>
+    </HelpTooltip>
   );
 }
 
 function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
   const rfIcon = (
     <svg
-      className="w-3 h-3 text-blue-400"
+      className="h-3 w-3 text-blue-400"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -74,7 +93,7 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
   );
   const mqttIcon = (
     <svg
-      className="w-3 h-3 text-purple-400"
+      className="h-3 w-3 text-purple-400"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -140,33 +159,11 @@ function getDayKey(ts: number): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-/** Highlight search matches in text */
-function HighlightText({ text, query }: { text: string; query: string }) {
-  if (!query.trim()) return <>{text}</>;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const splitRegex = new RegExp(`(${escaped})`, 'gi');
-  const parts = text.split(splitRegex);
-  const lowerQuery = query.toLowerCase();
-  return (
-    <>
-      {parts.map((part, i) =>
-        part.toLowerCase() === lowerQuery ? (
-          <mark key={i} className="bg-yellow-500/40 text-yellow-200 rounded px-0.5">
-            {part}
-          </mark>
-        ) : (
-          <span key={i}>{part}</span>
-        ),
-      )}
-    </>
-  );
-}
-
 function UnreadDivider() {
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 border-t border-red-500/50" />
-      <span className="text-[10px] text-red-400 font-semibold uppercase tracking-wider shrink-0 bg-red-500/10 border border-red-500/30 rounded-full px-2.5 py-0.5">
+      <span className="shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-red-400 uppercase">
         New messages
       </span>
       <div className="flex-1 border-t border-red-500/50" />
@@ -174,11 +171,22 @@ function UnreadDivider() {
   );
 }
 
-interface Props {
+function withoutDmNode(source: Record<number, number>, nodeNum: number): Record<number, number> {
+  return Object.fromEntries(
+    Object.entries(source).filter(([key]) => Number(key) !== nodeNum),
+  ) as Record<number, number>;
+}
+
+export interface ChatPanelProps {
   messages: ChatMessage[];
   channels: { index: number; name: string }[];
   myNodeNum: number;
-  onSend: (text: string, channel: number, destination?: number, replyId?: number) => void;
+  onSend: (
+    text: string,
+    channel: number,
+    destination?: number,
+    replyId?: number,
+  ) => void | Promise<void>;
   onReact: (emoji: number, replyId: number, channel: number) => Promise<void>;
   onResend: (msg: ChatMessage) => void;
   onNodeClick: (nodeNum: number) => void;
@@ -190,9 +198,11 @@ interface Props {
   onDmTargetConsumed?: () => void;
   isActive?: boolean;
   onGlobalSearch?: () => void;
+  /** When `meshcore`, show full names, hide redundant RF-only transport badge. */
+  protocol?: MeshProtocol;
 }
 
-export default function ChatPanel({
+function ChatPanel({
   messages,
   channels,
   myNodeNum,
@@ -208,7 +218,8 @@ export default function ChatPanel({
   onDmTargetConsumed,
   isActive = true,
   onGlobalSearch,
-}: Props) {
+  protocol = 'meshtastic',
+}: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [channel, setChannel] = useState(() => (channels.length > 0 ? channels[0].index : 0));
   useEffect(() => {
@@ -217,6 +228,10 @@ export default function ChatPanel({
     }
   }, [channels, channel]);
   const [sending, setSending] = useState(false);
+  const [chatActionError, setChatActionError] = useState<{
+    message: string;
+    viewKey: string;
+  } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
   const [showComposePicker, setShowComposePicker] = useState(false);
@@ -230,44 +245,54 @@ export default function ChatPanel({
 
   // Two-section UI state — load DM tabs from localStorage for restart persistence
   const [viewMode, setViewMode] = useState<'channels' | 'dm'>('channels');
-  const [openDmTabs, setOpenDmTabs] = useState<number[]>(() => {
-    const parsed = parseStoredJson<unknown>(
-      localStorage.getItem('mesh-client:openDmTabs'),
-      'ChatPanel openDmTabs',
-    );
-    if (Array.isArray(parsed) && parsed.every((n: unknown) => typeof n === 'number')) {
-      return parsed;
-    }
-    return [];
-  });
+  const [openDmTabs, setOpenDmTabs] = useState<number[]>(() => loadOpenDmTabsInitial(protocol));
   const openDmTabsRef = useRef(openDmTabs);
   openDmTabsRef.current = openDmTabs;
   const channelsRef = useRef(channels);
   channelsRef.current = channels;
   const [activeDmNode, setActiveDmNode] = useState<number | null>(null);
+  const [dismissedDmTabs, setDismissedDmTabs] = useState<Record<number, number>>(() => {
+    const raw = localStorage.getItem(dismissedDmTabsStorageKey(protocol));
+    const parsed = parseStoredJson<Record<string, number>>(raw, 'ChatPanel dismissedDmTabs');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out: Record<number, number> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      const node = Number(key);
+      if (!Number.isFinite(node) || typeof value !== 'number') continue;
+      // Back-compat: older versions stored `Date.now()` here (ms since epoch).
+      // We now store an inferred DM message-count. If the value looks like a timestamp,
+      // treat it as "dismissed nothing" so conversations can resurface.
+      const looksLikeTimestamp = value > 10_000_000_000;
+      out[node] = looksLikeTimestamp ? 0 : value;
+    }
+    return out;
+  });
 
   // Persist openDmTabs to localStorage whenever it changes
   useEffect(() => {
     try {
-      localStorage.setItem('mesh-client:openDmTabs', JSON.stringify(openDmTabs));
+      localStorage.setItem(openDmTabsStorageKey(protocol), JSON.stringify(openDmTabs));
     } catch (e) {
       console.warn('[ChatPanel] persist openDmTabs failed', e);
     }
-  }, [openDmTabs]);
+  }, [openDmTabs, protocol]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(dismissedDmTabsStorageKey(protocol), JSON.stringify(dismissedDmTabs));
+    } catch (e) {
+      console.warn('[ChatPanel] persist dismissedDmTabs failed', e);
+    }
+  }, [dismissedDmTabs, protocol]);
 
   // Track unread counts per channel
   const lastReadRef = useRef<Map<number, number>>(new Map());
   const [unreadCounts, setUnreadCounts] = useState<Map<number, number>>(new Map());
 
   // Persisted lastRead: { "ch:0": timestamp, "ch:2": ..., "dm:12345678": ... }
-  const [persistedLastRead, setPersistedLastRead] = useState<Record<string, number>>(() => {
-    const parsed = parseStoredJson<Record<string, number>>(
-      localStorage.getItem('mesh-client:lastRead'),
-      'ChatPanel lastRead',
-    );
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
-    return {};
-  });
+  const [persistedLastRead, setPersistedLastRead] = useState<Record<string, number>>(() =>
+    loadPersistedLastReadInitial(protocol),
+  );
   // Ref mirror — lets view-switch effect read latest value without adding it to deps
   const persistedLastReadRef = useRef(persistedLastRead);
   persistedLastReadRef.current = persistedLastRead;
@@ -284,19 +309,24 @@ export default function ChatPanel({
   // Persist lastRead timestamps to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('mesh-client:lastRead', JSON.stringify(persistedLastRead));
+      localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify(persistedLastRead));
     } catch (e) {
       console.warn('[ChatPanel] persist lastRead failed', e);
     }
-  }, [persistedLastRead]);
+  }, [persistedLastRead, protocol]);
 
   const getDmLabel = useCallback(
     (nodeNum: number) => {
       const node = nodes.get(nodeNum);
-      return node?.short_name || node?.long_name || `!${nodeNum.toString(16)}`;
+      const label = nodeDisplayName(node, protocol);
+      return label || `!${nodeNum.toString(16)}`;
     },
-    [nodes],
+    [nodes, protocol],
   );
+
+  useEffect(() => {
+    setReplyTo(null);
+  }, [protocol]);
 
   // Handle initialDmTarget from Nodes tab
   useEffect(() => {
@@ -304,6 +334,10 @@ export default function ChatPanel({
       if (!openDmTabsRef.current.includes(initialDmTarget)) {
         setOpenDmTabs((prev) => [...prev, initialDmTarget]);
       }
+      setDismissedDmTabs((prev) => {
+        if (!(initialDmTarget in prev)) return prev;
+        return withoutDmNode(prev, initialDmTarget);
+      });
       setActiveDmNode(initialDmTarget);
       setViewMode('dm');
       onDmTargetConsumed?.();
@@ -313,12 +347,20 @@ export default function ChatPanel({
   // Separate regular messages from reaction messages
   const { regularMessages, reactionsByReplyId } = useMemo(() => {
     const regular: ChatMessage[] = [];
-    const reactions = new Map<number, { emoji: number; sender_name: string }[]>();
+    const reactions = new Map<
+      number,
+      { emoji: number; sender_id: number; sender_name: string; id?: number }[]
+    >();
 
     for (const msg of messages) {
       if (msg.emoji && msg.replyId) {
-        const existing = reactions.get(msg.replyId) || [];
-        existing.push({ emoji: msg.emoji, sender_name: msg.sender_name });
+        const existing = reactions.get(msg.replyId) ?? [];
+        existing.push({
+          emoji: msg.emoji,
+          sender_id: msg.sender_id,
+          sender_name: msg.sender_name,
+          id: msg.id,
+        });
         reactions.set(msg.replyId, existing);
       } else {
         regular.push(msg);
@@ -326,6 +368,54 @@ export default function ChatPanel({
     }
     return { regularMessages: regular, reactionsByReplyId: reactions };
   }, [messages]);
+
+  const inferredDmTabs = useMemo(() => {
+    const peers = new Map<number, number>();
+    for (const msg of regularMessages) {
+      if (msg.to == null) continue;
+      // Mirror the DM thread filter in `filteredMessages`:
+      // - outgoing: sender_id == me, to == peer
+      // - incoming: sender_id == peer, to == me
+      let peer: number | undefined;
+      if (msg.sender_id === myNodeNum && msg.to !== myNodeNum) peer = msg.to;
+      if (msg.to === myNodeNum && msg.sender_id !== myNodeNum) peer = msg.sender_id;
+      if (peer == null) continue;
+      peers.set(peer, (peers.get(peer) ?? 0) + 1);
+    }
+    return peers;
+  }, [regularMessages, myNodeNum]);
+
+  const visibleDmTabs = useMemo(() => {
+    const all = new Set(openDmTabs);
+    for (const [nodeNum, dmCount] of inferredDmTabs) {
+      const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
+      if (dmCount > dismissedCount) {
+        all.add(nodeNum);
+      }
+    }
+    return Array.from(all);
+  }, [openDmTabs, inferredDmTabs, dismissedDmTabs]);
+
+  const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
+
+  /** Incoming DM messages per peer newer than persisted last-read for `dm:${peer}` (channel unread map skips DMs). */
+  const dmUnreadCounts = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const msg of regularMessages) {
+      if (msg.to == null) continue;
+      if (msg.isHistory) continue;
+      let peer: number | undefined;
+      if (msg.sender_id === myNodeNum && msg.to !== myNodeNum) peer = msg.to;
+      if (msg.to === myNodeNum && msg.sender_id !== myNodeNum) peer = msg.sender_id;
+      if (peer == null) continue;
+      if (msg.sender_id === myNodeNum) continue;
+      const lr = persistedLastRead[`dm:${peer}`] ?? 0;
+      if (msg.timestamp > lr) {
+        counts.set(peer, (counts.get(peer) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [regularMessages, myNodeNum, persistedLastRead]);
 
   // Lookup map for rendering quoted replies (packetId in Meshtastic, timestamp fallback in MeshCore)
   const messageByReplyKey = useMemo(() => {
@@ -458,6 +548,13 @@ export default function ChatPanel({
     }
   }, []);
 
+  const scrollToQuotedParent = useCallback((replyKey: number) => {
+    const root = scrollContainerRef.current;
+    if (!root) return;
+    const el = root.querySelector(`[data-chat-message-key="${replyKey}"]`);
+    (el as HTMLElement | null)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, []);
+
   // Escape key handler
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -474,7 +571,9 @@ export default function ChatPanel({
       }
     };
     document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, [showSearch, viewMode, replyTo]);
 
   // Toggle search with Cmd+F / Ctrl+F
@@ -486,7 +585,9 @@ export default function ChatPanel({
       }
     };
     window.addEventListener('keydown', handleKeys);
-    return () => window.removeEventListener('keydown', handleKeys);
+    return () => {
+      window.removeEventListener('keydown', handleKeys);
+    };
   }, []);
 
   useEffect(() => {
@@ -498,11 +599,14 @@ export default function ChatPanel({
   const handleSend = async () => {
     if (!input.trim() || !isConnected || sending) return;
     setSending(true);
+    setChatActionError(null);
     try {
       console.debug('[ChatPanel] handleSend');
       const sendChannel = channel === -1 ? 0 : channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
-      await onSend(input.trim(), sendChannel, destination, replyTo?.packetId);
+      const replyKey = replyTo ? (replyTo.packetId ?? replyTo.timestamp) : undefined;
+      const sendOutcome = onSend(input.trim(), sendChannel, destination, replyKey);
+      await Promise.resolve(sendOutcome);
       setInput('');
       setReplyTo(null);
       const now = Date.now();
@@ -510,25 +614,36 @@ export default function ChatPanel({
       setUnreadDividerTimestamp(0);
     } catch (err) {
       console.error('[ChatPanel] Send failed:', err);
+      setChatActionError({
+        message: err instanceof Error ? err.message : 'Send failed',
+        viewKey,
+      });
     } finally {
       setSending(false);
     }
   };
 
   const handleReact = async (emojiCode: number, packetId: number, msgChannel: number) => {
+    // Match handleSend: UI uses channel -1 as "primary"; MeshCore/Meshtastic send expects 0.
+    const sendChannel = msgChannel === -1 ? 0 : msgChannel;
     setPickerOpenFor(null);
+    setChatActionError(null);
     try {
-      console.debug('[ChatPanel] handleReact', emojiCode, packetId, msgChannel);
-      await onReact(emojiCode, packetId, msgChannel);
+      console.debug('[ChatPanel] handleReact', emojiCode, packetId, sendChannel);
+      await onReact(emojiCode, packetId, sendChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed:', err);
+      setChatActionError({
+        message: err instanceof Error ? err.message : 'Reaction failed',
+        viewKey,
+      });
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
@@ -552,6 +667,10 @@ export default function ChatPanel({
   // Open a DM tab for a node
   const openDmTo = useCallback((nodeNum: number) => {
     setOpenDmTabs((prev) => (prev.includes(nodeNum) ? prev : [...prev, nodeNum]));
+    setDismissedDmTabs((prev) => {
+      if (!(nodeNum in prev)) return prev;
+      return withoutDmNode(prev, nodeNum);
+    });
     setActiveDmNode(nodeNum);
     setViewMode('dm');
   }, []);
@@ -560,9 +679,13 @@ export default function ChatPanel({
   const closeDmTab = useCallback(
     (nodeNum: number) => {
       setOpenDmTabs((prev) => prev.filter((n) => n !== nodeNum));
+      if (inferredDmTabSet.has(nodeNum)) {
+        const dmCount = inferredDmTabs.get(nodeNum) ?? 0;
+        setDismissedDmTabs((prev) => ({ ...prev, [nodeNum]: dmCount }));
+      }
       if (activeDmNode === nodeNum) {
         // Switch to next tab or back to channels
-        const remaining = openDmTabs.filter((n) => n !== nodeNum);
+        const remaining = visibleDmTabs.filter((n) => n !== nodeNum);
         if (remaining.length > 0) {
           setActiveDmNode(remaining[remaining.length - 1]);
         } else {
@@ -571,7 +694,7 @@ export default function ChatPanel({
         }
       }
     },
-    [activeDmNode, openDmTabs],
+    [activeDmNode, inferredDmTabSet, inferredDmTabs, visibleDmTabs],
   );
 
   function formatTime(ts: number): string {
@@ -581,23 +704,10 @@ export default function ChatPanel({
     });
   }
 
-  /** Group reactions by emoji code for a message key (packetId or timestamp fallback) */
-  function getGroupedReactions(messageKey: number | undefined) {
+  /** Flat reaction rows for a message key (chronological as stored). */
+  function getReactionRows(messageKey: number | undefined) {
     if (!messageKey) return [];
-    const reactions = reactionsByReplyId.get(messageKey);
-    if (!reactions) return [];
-
-    const grouped = new Map<number, string[]>();
-    for (const r of reactions) {
-      const existing = grouped.get(r.emoji) || [];
-      existing.push(r.sender_name);
-      grouped.set(r.emoji, existing);
-    }
-    return Array.from(grouped.entries()).map(([emoji, senders]) => ({
-      emoji,
-      count: senders.length,
-      tooltip: `${emojiDisplayLabel(emoji)}: ${senders.join(', ')}`,
-    }));
+    return reactionsByReplyId.get(messageKey) ?? [];
   }
 
   // Pre-compute day separator indices (avoids mutable variable during render)
@@ -640,10 +750,10 @@ export default function ChatPanel({
   );
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-10rem)]">
+    <div className="flex h-full max-h-[calc(100vh-10rem)] flex-col">
       {/* Row 1 — Channel selector + Search toggle */}
-      <div className={`flex items-center gap-2 mb-1 ${viewMode === 'dm' ? 'opacity-50' : ''}`}>
-        <span className="text-[10px] text-muted font-medium uppercase tracking-wider mr-1">
+      <div className={`mb-1 flex items-center gap-2 ${viewMode === 'dm' ? 'opacity-50' : ''}`}>
+        <span className="text-muted mr-1 text-[10px] font-medium tracking-wider uppercase">
           Channels
         </span>
         <button
@@ -652,7 +762,7 @@ export default function ChatPanel({
             setChannel(-1);
             setViewMode('channels');
           }}
-          className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
             viewMode === 'channels' && channel === -1
               ? 'bg-readable-green text-white'
               : 'bg-secondary-dark text-muted hover:text-gray-200'
@@ -674,7 +784,7 @@ export default function ChatPanel({
                 setChannel(ch.index);
                 setViewMode('channels');
               }}
-              className={`relative px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+              className={`relative rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                 viewMode === 'channels' && channel === ch.index
                   ? 'bg-readable-green text-white'
                   : 'bg-secondary-dark text-muted hover:text-gray-200'
@@ -682,7 +792,7 @@ export default function ChatPanel({
             >
               {ch.name}
               {unread > 0 && !(viewMode === 'channels' && channel === ch.index) && (
-                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                   {unread > 99 ? '99+' : unread}
                 </span>
               )}
@@ -694,16 +804,18 @@ export default function ChatPanel({
 
         {/* Search toggle */}
         <button
-          onClick={() => setShowSearch(!showSearch)}
+          onClick={() => {
+            setShowSearch(!showSearch);
+          }}
           aria-pressed={showSearch}
           aria-label="Search messages"
-          className={`p-1.5 rounded-lg transition-colors ${
+          className={`rounded-lg p-1.5 transition-colors ${
             showSearch ? 'bg-brand-green/20 text-bright-green' : 'text-muted hover:text-gray-300'
           }`}
           title="Search messages (Cmd+F)"
         >
           <svg
-            className="w-4 h-4"
+            className="h-4 w-4"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -721,11 +833,11 @@ export default function ChatPanel({
           <button
             onClick={onGlobalSearch}
             aria-label="Search all channels"
-            className="p-1.5 rounded-lg transition-colors text-muted hover:text-gray-300"
+            className="text-muted rounded-lg p-1.5 transition-colors hover:text-gray-300"
             title="Search all channels (Cmd+Shift+F)"
           >
             <svg
-              className="w-4 h-4"
+              className="h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -745,49 +857,61 @@ export default function ChatPanel({
 
       {/* Row 2 — DM tabs */}
       <div
-        className={`flex items-center gap-2 mb-2 min-h-[28px] ${viewMode === 'channels' ? 'opacity-50' : ''}`}
+        className={`mb-2 flex min-h-[28px] items-center gap-2 ${viewMode === 'channels' ? 'opacity-50' : ''}`}
       >
-        <span className="text-[10px] text-muted font-medium uppercase tracking-wider mr-1">
+        <span className="text-muted mr-1 text-[10px] font-medium tracking-wider uppercase">
           DMs
         </span>
-        {openDmTabs.length === 0 ? (
+        {visibleDmTabs.length === 0 ? (
           <span className="text-[10px] text-gray-600 italic">No conversations</span>
         ) : (
-          openDmTabs.map((nodeNum) => (
-            <div
-              key={nodeNum}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
-                viewMode === 'dm' && activeDmNode === nodeNum
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-secondary-dark text-muted hover:text-gray-200'
-              }`}
-            >
-              <button
-                type="button"
-                aria-label={getDmLabel(nodeNum)}
-                className={`min-w-0 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
+          visibleDmTabs.map((nodeNum) => {
+            const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
+            const showDmUnreadBadge =
+              dmUnread > 0 && !(viewMode === 'dm' && activeDmNode === nodeNum);
+            return (
+              <div
+                key={nodeNum}
+                className={`relative flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                   viewMode === 'dm' && activeDmNode === nodeNum
-                    ? 'text-white'
-                    : 'text-muted hover:text-gray-200'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-secondary-dark text-muted hover:text-gray-200'
                 }`}
-                onClick={() => {
-                  setActiveDmNode(nodeNum);
-                  setViewMode('dm');
-                }}
               >
-                {getDmLabel(nodeNum)}
-              </button>
-              <button
-                type="button"
-                onClick={() => closeDmTab(nodeNum)}
-                aria-label="x"
-                className="ml-0.5 text-muted hover:text-white text-[10px] leading-none"
-                title="Close DM"
-              >
-                x
-              </button>
-            </div>
-          ))
+                <button
+                  type="button"
+                  aria-label={getDmLabel(nodeNum)}
+                  className={`min-w-0 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
+                    viewMode === 'dm' && activeDmNode === nodeNum
+                      ? 'text-white'
+                      : 'text-muted hover:text-gray-200'
+                  }`}
+                  onClick={() => {
+                    setActiveDmNode(nodeNum);
+                    setViewMode('dm');
+                  }}
+                >
+                  {getDmLabel(nodeNum)}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeDmTab(nodeNum);
+                  }}
+                  aria-label="x"
+                  className="text-muted ml-0.5 text-[10px] leading-none hover:text-white"
+                  title="Close DM"
+                >
+                  x
+                </button>
+                {showDmUnreadBadge && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                    {dmUnread > 99 ? '99+' : dmUnread}
+                  </span>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -798,14 +922,16 @@ export default function ChatPanel({
             ref={searchInputRef}
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+            }}
             placeholder="Search messages..."
             aria-label="Search messages..."
             spellCheck={false}
-            className="w-full px-3 py-1.5 bg-secondary-dark/80 rounded-lg text-gray-200 text-sm border border-gray-600/50 focus:border-brand-green/50 focus:outline-none"
+            className="bg-secondary-dark/80 focus:border-brand-green/50 w-full rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
           />
           {searchQuery && (
-            <div className="text-xs text-muted mt-1">
+            <div className="text-muted mt-1 text-xs">
               {filteredMessages.length} result{filteredMessages.length !== 1 ? 's' : ''}
             </div>
           )}
@@ -814,7 +940,7 @@ export default function ChatPanel({
 
       {/* Disconnected overlay */}
       {!isConnected && (
-        <div className="bg-deep-black/60 border border-gray-700 rounded-xl p-4 mb-2 text-center">
+        <div className="bg-deep-black/60 mb-2 rounded-xl border border-gray-700 p-4 text-center">
           <p className="text-muted text-sm">Not connected — messages are read-only</p>
         </div>
       )}
@@ -823,10 +949,10 @@ export default function ChatPanel({
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto bg-deep-black/50 rounded-xl p-3 space-y-1.5 min-h-0 relative"
+        className="bg-deep-black/50 relative min-h-0 flex-1 space-y-1.5 overflow-y-auto rounded-xl p-3"
       >
         {filteredMessages.length === 0 ? (
-          <div className="text-center text-muted py-12">
+          <div className="text-muted py-12 text-center">
             {searchQuery
               ? 'No messages match your search.'
               : isDmMode
@@ -839,19 +965,19 @@ export default function ChatPanel({
           filteredMessages.map((msg, i) => {
             const isOwn = msg.sender_id === myNodeNum;
             const isDm = !!msg.to;
-            const reactions = getGroupedReactions(msg.packetId ?? msg.timestamp);
+            const reactionRows = getReactionRows(msg.packetId ?? msg.timestamp);
+            const messageRowKey = msg.packetId ?? msg.timestamp;
             const showPicker = pickerOpenFor === (msg.packetId ?? msg.timestamp);
             const pickerOpensAbove = i >= filteredMessages.length - 3;
 
             const senderNode = nodes.get(msg.sender_id);
-            const displaySenderName =
-              senderNode?.short_name || senderNode?.long_name || msg.sender_name;
+            const displaySenderName = nodeDisplayName(senderNode, protocol) || msg.sender_name;
 
             // Day separator
             const daySeparator = daySeparatorIndices.has(i) ? (
               <div className="flex items-center gap-3 py-2">
                 <div className="flex-1 border-t border-gray-700" />
-                <span className="text-xs text-muted font-medium shrink-0">
+                <span className="text-muted shrink-0 text-xs font-medium">
                   {formatDayLabel(msg.timestamp)}
                 </span>
                 <div className="flex-1 border-t border-gray-700" />
@@ -872,39 +998,44 @@ export default function ChatPanel({
                     <UnreadDivider />
                   </div>
                 )}
-                <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
+                  data-chat-message-key={messageRowKey}
+                >
                   {/* Bubble row */}
                   <div
-                    className={`group/msg flex items-end gap-1 max-w-[80%] ${
+                    className={`group/msg flex max-w-[80%] items-end gap-1 ${
                       isOwn ? 'flex-row-reverse' : 'flex-row'
                     }`}
                   >
                     {/* Message bubble */}
                     <div
-                      className={`rounded-2xl px-3 py-2 min-w-0 ${
+                      className={`min-w-0 rounded-2xl px-3 py-2 ${
                         isDm
                           ? isOwn
-                            ? 'rounded-br-sm bg-purple-600/20 border border-purple-500/30'
-                            : 'rounded-bl-sm bg-purple-700/20 border border-purple-600/30'
+                            ? 'rounded-br-sm border border-purple-500/30 bg-purple-600/20'
+                            : 'rounded-bl-sm border border-purple-600/30 bg-purple-700/20'
                           : isOwn
-                            ? 'rounded-br-sm bg-blue-600/20 border border-blue-500/30'
-                            : 'rounded-bl-sm bg-secondary-dark/50 border border-gray-600/30'
+                            ? 'rounded-br-sm border border-blue-500/30 bg-blue-600/20'
+                            : 'bg-secondary-dark/50 rounded-bl-sm border border-gray-600/30'
                       }`}
                     >
                       {/* Header: sender name (clickable) + DM indicator + time */}
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="mb-0.5 flex items-center gap-2">
                         <button
-                          onClick={() => onNodeClick(msg.sender_id)}
-                          className={`text-xs font-semibold cursor-pointer hover:underline ${
+                          onClick={() => {
+                            onNodeClick(msg.sender_id);
+                          }}
+                          className={`cursor-pointer text-xs font-semibold hover:underline ${
                             isDm ? 'text-purple-400' : isOwn ? 'text-blue-400' : 'text-bright-green'
                           }`}
                         >
                           {displaySenderName}
                         </button>
                         {isDm && (
-                          <span className="text-[10px] text-purple-400/70 font-medium">DM</span>
+                          <span className="text-[10px] font-medium text-purple-400/70">DM</span>
                         )}
-                        <span className="text-[10px] text-muted/70">
+                        <span className="text-muted/70 text-[10px]">
                           {formatTime(msg.timestamp)}
                         </span>
                         {channels.length > 1 && !isDm && (
@@ -918,51 +1049,65 @@ export default function ChatPanel({
                         messageByReplyKey.has(msg.replyId) &&
                         (() => {
                           const orig = messageByReplyKey.get(msg.replyId)!;
+                          const quoteSnippet =
+                            orig.payload.length > 80
+                              ? orig.payload.slice(0, 80) + '…'
+                              : orig.payload;
+                          const quotedLabel =
+                            nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
+                            orig.sender_name;
                           return (
-                            <div className="flex gap-1.5 mb-1.5 opacity-80">
-                              <div className="w-0.5 rounded-full bg-gray-500 shrink-0" />
-                              <div className="min-w-0">
-                                <span className="text-[10px] font-semibold text-gray-400 block">
-                                  {nodes.get(orig.sender_id)?.short_name ||
-                                    nodes.get(orig.sender_id)?.long_name ||
-                                    orig.sender_name}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                scrollToQuotedParent(msg.replyId!);
+                              }}
+                              className="bg-secondary-dark/50 hover:bg-secondary-dark/80 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left transition-colors"
+                              aria-label={`Jump to quoted message from ${quotedLabel}`}
+                            >
+                              <div className="min-h-[2rem] w-0.5 shrink-0 self-stretch rounded-full bg-gray-500" />
+                              <div className="min-w-0 flex-1">
+                                <span className="block text-[10px] font-semibold text-gray-400">
+                                  {quotedLabel}
                                 </span>
-                                <span className="text-[11px] text-gray-500 block truncate">
-                                  {orig.payload.length > 80
-                                    ? orig.payload.slice(0, 80) + '…'
-                                    : orig.payload}
+                                <span className="block truncate text-[11px] text-gray-500">
+                                  {quoteSnippet}
                                 </span>
                               </div>
-                            </div>
+                            </button>
                           );
                         })()}
 
                       {/* Message text with optional search highlight */}
-                      <p className="text-sm text-gray-200 break-words leading-relaxed">
-                        <HighlightText text={msg.payload} query={searchQuery} />
+                      <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
+                        <ChatPayloadText text={msg.payload} query={searchQuery} />
                       </p>
 
-                      {/* Transport indicator for incoming messages */}
-                      {!isOwn && msg.receivedVia && (
-                        <div className="flex items-center justify-end mt-0.5">
-                          <TransportBadge via={msg.receivedVia} />
-                        </div>
-                      )}
+                      {/* Transport indicator for incoming messages (MeshCore is RF-first; hide redundant RF-only badge) */}
+                      {!isOwn &&
+                        msg.receivedVia &&
+                        (protocol !== 'meshcore' ||
+                          msg.receivedVia === 'mqtt' ||
+                          msg.receivedVia === 'both') && (
+                          <div className="mt-0.5 flex items-center justify-end">
+                            <TransportBadge via={msg.receivedVia} />
+                          </div>
+                        )}
 
                       {/* Delivery status for own messages */}
                       {isOwn && (msg.status || msg.mqttStatus) && (
-                        <div className="flex items-center justify-end gap-1 mt-0.5">
+                        <div className="mt-0.5 flex items-center justify-end gap-1">
                           {isOwn && msg.status === 'failed' && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onResend(msg);
                               }}
-                              className="text-gray-500 hover:text-gray-300 transition-colors"
+                              className="text-gray-500 transition-colors hover:text-gray-300"
                               title="Resend message"
                             >
                               <svg
-                                className="w-3.5 h-3.5"
+                                className="h-3.5 w-3.5"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -1002,19 +1147,18 @@ export default function ChatPanel({
 
                     {/* Inline reaction trigger — visible on hover or focus-within */}
                     {isConnected && (
-                      <div className="opacity-0 group-hover/msg:opacity-100 group-focus-within/msg:opacity-100 flex gap-0.5 transition-all shrink-0">
-                        {/* Reply */}
+                      <div className="flex shrink-0 gap-0.5 opacity-0 transition-all group-focus-within/msg:opacity-100 group-hover/msg:opacity-100">
                         <button
                           onClick={() => {
                             setReplyTo(msg);
                             inputRef.current?.focus();
                           }}
-                          className="text-gray-600 hover:text-blue-400 text-xs p-1 rounded"
+                          className="rounded p-1 text-xs text-gray-600 hover:text-blue-400"
                           aria-label="Reply to message"
                           title="Reply"
                         >
                           <svg
-                            className="w-3.5 h-3.5"
+                            className="h-3.5 w-3.5"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -1029,15 +1173,15 @@ export default function ChatPanel({
                         </button>
                         {/* React */}
                         <button
-                          onClick={() =>
-                            setPickerOpenFor(showPicker ? null : (msg.packetId ?? msg.timestamp))
-                          }
-                          className="text-gray-600 hover:text-gray-300 text-xs p-1 rounded"
+                          onClick={() => {
+                            setPickerOpenFor(showPicker ? null : (msg.packetId ?? msg.timestamp));
+                          }}
+                          className="rounded p-1 text-xs text-gray-600 hover:text-gray-300"
                           aria-label="Add reaction"
                           title="React"
                         >
                           <svg
-                            className="w-3.5 h-3.5"
+                            className="h-3.5 w-3.5"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -1053,12 +1197,14 @@ export default function ChatPanel({
                         {/* Quick DM */}
                         {!isOwn && (
                           <button
-                            onClick={() => openDmTo(msg.sender_id)}
-                            className="text-gray-600 hover:text-purple-400 text-xs p-1 rounded"
+                            onClick={() => {
+                              openDmTo(msg.sender_id);
+                            }}
+                            className="rounded p-1 text-xs text-gray-600 hover:text-purple-400"
                             title={`Direct message ${msg.sender_name}`}
                           >
                             <svg
-                              className="w-3.5 h-3.5"
+                              className="h-3.5 w-3.5"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -1079,8 +1225,8 @@ export default function ChatPanel({
                   {/* Emoji picker */}
                   {showPicker && (
                     <div
-                      className={`flex flex-col gap-0.5 bg-secondary-dark border border-gray-600 rounded-xl px-2 py-1.5 shadow-lg ${
-                        pickerOpensAbove ? 'mb-1 order-first' : 'mt-1'
+                      className={`bg-secondary-dark flex flex-col gap-0.5 rounded-xl border border-gray-600 px-2 py-1.5 shadow-lg ${
+                        pickerOpensAbove ? 'order-first mb-1' : 'mt-1'
                       } ${isOwn ? 'self-end' : 'self-start'}`}
                     >
                       <div className="flex gap-1">
@@ -1090,21 +1236,21 @@ export default function ChatPanel({
                             onClick={() =>
                               handleReact(re.code, msg.packetId ?? msg.timestamp, msg.channel)
                             }
-                            className="hover:scale-125 transition-transform text-lg px-0.5"
+                            className="px-0.5 text-lg transition-transform hover:scale-125"
                             title={re.name}
                           >
                             {re.label}
                           </button>
                         ))}
                       </div>
-                      <div className="flex gap-1 justify-center">
+                      <div className="flex justify-center gap-1">
                         {REACTION_EMOJIS.slice(6).map((re) => (
                           <button
                             key={re.code}
                             onClick={() =>
                               handleReact(re.code, msg.packetId ?? msg.timestamp, msg.channel)
                             }
-                            className="hover:scale-125 transition-transform text-lg px-0.5"
+                            className="px-0.5 text-lg transition-transform hover:scale-125"
                             title={re.name}
                           >
                             {re.label}
@@ -1115,18 +1261,40 @@ export default function ChatPanel({
                   )}
 
                   {/* Reaction badges */}
-                  {reactions.length > 0 && (
-                    <div className={`flex gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                      {reactions.map((r) => (
-                        <span
-                          key={r.emoji}
-                          className="inline-flex items-center gap-0.5 bg-secondary-dark/80 border border-gray-600/50 rounded-full px-1.5 py-0.5 text-xs cursor-default"
-                          title={r.tooltip}
-                        >
-                          {emojiDisplayChar(r.emoji)}
-                          {r.count > 1 && <span className="text-muted text-[10px]">{r.count}</span>}
-                        </span>
-                      ))}
+                  {reactionRows.length > 0 && (
+                    <div
+                      className={`mt-0.5 flex max-w-full flex-row flex-wrap gap-1 ${
+                        isOwn ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {reactionRows.map((r, rIdx) => {
+                        const hideReactorLabel = !isOwn && r.sender_id === myNodeNum;
+                        const reactorLabel =
+                          nodeDisplayName(nodes.get(r.sender_id), protocol) || r.sender_name;
+                        const emojiChar = emojiDisplayChar(r.emoji);
+                        const reactionName = emojiDisplayLabel(r.emoji);
+                        const titleText = hideReactorLabel
+                          ? `${reactionName} (you)`
+                          : `${reactorLabel}: ${reactionName}`;
+                        const ariaLabel = hideReactorLabel
+                          ? `Your reaction: ${reactionName}`
+                          : `${reactorLabel} reacted with ${reactionName}`;
+                        return (
+                          <span
+                            key={r.id != null ? `r-${r.id}` : `r-${r.sender_id}-${r.emoji}-${rIdx}`}
+                            className="bg-secondary-dark/80 inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border border-gray-600/50 px-1.5 py-0.5 text-xs"
+                            title={titleText}
+                            aria-label={ariaLabel}
+                          >
+                            {!hideReactorLabel && (
+                              <span className="max-w-[5.5rem] truncate text-[10px] text-gray-400">
+                                {reactorLabel}
+                              </span>
+                            )}
+                            <span className="shrink-0">{emojiChar}</span>
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -1140,10 +1308,10 @@ export default function ChatPanel({
         {showScrollButton && (
           <button
             onClick={scrollToUnreadOrBottom}
-            className="sticky bottom-2 left-1/2 -translate-x-1/2 bg-secondary-dark hover:bg-gray-600 text-gray-300 rounded-full px-3 py-1.5 text-xs font-medium shadow-lg border border-gray-600 transition-all flex items-center gap-1.5 z-10"
+            className="bg-secondary-dark sticky bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
           >
             <svg
-              className="w-3.5 h-3.5"
+              className="h-3.5 w-3.5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -1158,25 +1326,29 @@ export default function ChatPanel({
 
       {/* Compose emoji picker — renders above the input row */}
       {showComposePicker && (
-        <div className="flex flex-col gap-0.5 bg-secondary-dark border border-gray-600 rounded-xl px-2 py-1.5 mb-1 shadow-lg self-start">
+        <div className="bg-secondary-dark mb-1 flex flex-col gap-0.5 self-start rounded-xl border border-gray-600 px-2 py-1.5 shadow-lg">
           <div className="flex gap-1">
             {REACTION_EMOJIS.slice(0, 6).map((re) => (
               <button
                 key={re.code}
-                onClick={() => insertEmojiAtCursor(re.code)}
-                className="hover:scale-125 transition-transform text-lg px-0.5"
+                onClick={() => {
+                  insertEmojiAtCursor(re.code);
+                }}
+                className="px-0.5 text-lg transition-transform hover:scale-125"
                 title={re.name}
               >
                 {re.label}
               </button>
             ))}
           </div>
-          <div className="flex gap-1 justify-center">
+          <div className="flex justify-center gap-1">
             {REACTION_EMOJIS.slice(6).map((re) => (
               <button
                 key={re.code}
-                onClick={() => insertEmojiAtCursor(re.code)}
-                className="hover:scale-125 transition-transform text-lg px-0.5"
+                onClick={() => {
+                  insertEmojiAtCursor(re.code);
+                }}
+                className="px-0.5 text-lg transition-transform hover:scale-125"
                 title={re.name}
               >
                 {re.label}
@@ -1188,9 +1360,9 @@ export default function ChatPanel({
 
       {/* Reply preview bar */}
       {replyTo && (
-        <div className="flex items-center gap-2 px-3 py-1.5 mb-1 bg-secondary-dark/80 border border-gray-600/50 rounded-xl text-xs">
+        <div className="bg-secondary-dark/80 mb-1 flex items-center gap-2 rounded-xl border border-gray-600/50 px-3 py-1.5 text-xs">
           <svg
-            className="w-3 h-3 text-blue-400 shrink-0"
+            className="h-3 w-3 shrink-0 text-blue-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -1204,10 +1376,8 @@ export default function ChatPanel({
           </svg>
           <span className="text-gray-400">
             Replying to{' '}
-            <span className="text-gray-200 font-medium">
-              {nodes.get(replyTo.sender_id)?.short_name ||
-                nodes.get(replyTo.sender_id)?.long_name ||
-                replyTo.sender_name}
+            <span className="font-medium text-gray-200">
+              {nodeDisplayName(nodes.get(replyTo.sender_id), protocol) || replyTo.sender_name}
             </span>
             :
           </span>
@@ -1215,8 +1385,10 @@ export default function ChatPanel({
             {replyTo.payload.length > 60 ? replyTo.payload.slice(0, 60) + '…' : replyTo.payload}
           </span>
           <button
-            onClick={() => setReplyTo(null)}
-            className="text-muted hover:text-gray-200 ml-1 leading-none"
+            onClick={() => {
+              setReplyTo(null);
+            }}
+            className="text-muted ml-1 leading-none hover:text-gray-200"
             title="Cancel reply"
           >
             ×
@@ -1224,13 +1396,22 @@ export default function ChatPanel({
         </div>
       )}
 
+      {chatActionError?.viewKey === viewKey && (
+        <div role="alert" className="mt-2 px-1 text-sm text-red-400">
+          {chatActionError.message}
+        </div>
+      )}
+
       {/* Input area — textarea so Chromium applies spellcheck (single-line inputs often skip it) */}
-      <div className="flex gap-2 mt-2">
+      <div className="mt-2 flex gap-2">
         <textarea
           ref={inputRef}
           rows={1}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            setChatActionError(null);
+          }}
           onKeyDown={handleKeyDown}
           spellCheck
           lang={
@@ -1239,24 +1420,26 @@ export default function ChatPanel({
           enterKeyHint="send"
           placeholder={composePlaceholder}
           aria-label={composePlaceholder}
-          className={`flex-1 min-h-[42px] max-h-32 px-4 py-2.5 rounded-xl text-gray-200 border focus:outline-none transition-colors resize-none overflow-y-auto ${
+          className={`max-h-32 min-h-[42px] flex-1 resize-none overflow-y-auto rounded-xl border px-4 py-2.5 text-gray-200 transition-colors focus:outline-none ${
             !isConnected || sending ? 'opacity-60' : ''
           } ${
             isDmMode
-              ? 'bg-purple-900/20 border-purple-600/50 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30'
-              : 'bg-secondary-dark/80 border-gray-600/50 focus:border-brand-green/50 focus:ring-1 focus:ring-brand-green/30'
+              ? 'border-purple-600/50 bg-purple-900/20 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30'
+              : 'bg-secondary-dark/80 focus:border-brand-green/50 focus:ring-brand-green/30 border-gray-600/50 focus:ring-1'
           }`}
           maxLength={228}
         />
         {/* Compose emoji picker toggle */}
         <button
-          onClick={() => setShowComposePicker((prev) => !prev)}
+          onClick={() => {
+            setShowComposePicker((prev) => !prev);
+          }}
           disabled={!isConnected || sending}
           aria-label="😊"
-          className={`px-2.5 py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
+          className={`rounded-xl px-2.5 py-2.5 transition-colors disabled:opacity-50 ${
             showComposePicker
               ? 'bg-brand-green/20 text-bright-green'
-              : 'bg-secondary-dark/80 text-muted hover:text-gray-300 border border-gray-600/50'
+              : 'bg-secondary-dark/80 text-muted border border-gray-600/50 hover:text-gray-300'
           }`}
           title="Insert emoji"
         >
@@ -1266,10 +1449,10 @@ export default function ChatPanel({
           onClick={handleSend}
           disabled={!isConnected || !input.trim() || sending}
           aria-label={sending ? '...' : isDmMode ? 'DM' : 'Send'}
-          className={`px-5 py-2.5 font-medium rounded-xl transition-colors ${
+          className={`rounded-xl px-5 py-2.5 font-medium transition-colors ${
             isDmMode
-              ? 'bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:text-muted text-white'
-              : 'bg-[#4CAF50] hover:bg-[#43A047] disabled:bg-gray-600 disabled:text-muted text-white'
+              ? 'disabled:text-muted bg-purple-600 text-white hover:bg-purple-500 disabled:bg-gray-600'
+              : 'disabled:text-muted bg-[#4CAF50] text-white hover:bg-[#43A047] disabled:bg-gray-600'
           }`}
         >
           {sending ? '...' : isDmMode ? 'DM' : 'Send'}
@@ -1277,8 +1460,10 @@ export default function ChatPanel({
       </div>
       {/* Character count — only show near limit */}
       {input.length > 180 && (
-        <div className="text-xs text-muted mt-1 text-right">{input.length}/228</div>
+        <div className="text-muted mt-1 text-right text-xs">{input.length}/228</div>
       )}
     </div>
   );
 }
+
+export default memo(ChatPanel);

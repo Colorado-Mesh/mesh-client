@@ -1,13 +1,16 @@
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   type MouseEvent as ReactMouseEvent,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { MeshProtocol } from '../lib/types';
+import LogAnalyzeModal from './LogAnalyzeModal';
 
 const LOG_LEVEL_FILTERS_KEY = 'mesh-client:logLevelFilters';
 const LOG_PANEL_WIDTH_KEY = 'mesh-client:logPanelWidth';
@@ -48,9 +51,9 @@ function readLevelFilters(): LevelFilters {
   const o = parseStoredJson<Record<string, boolean>>(raw, 'LogPanel readLevelFilters');
   if (!o) return { ...DEFAULT_LEVEL_FILTERS };
   return {
-    logInfo: o.logInfo !== false,
-    warnError: o.warnError !== false,
-    debug: o.debug === true,
+    logInfo: o.logInfo,
+    warnError: o.warnError,
+    debug: o.debug,
   };
 }
 
@@ -70,24 +73,41 @@ function levelVisible(level: string, f: LevelFilters): boolean {
 }
 
 /** Returns true for log entries that originated from the given protocol's device library or hook. */
-function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean {
+export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean {
   if (protocol === 'meshtastic') {
     return (
+      entry.source === 'sdk' ||
       entry.source.includes('meshtastic') ||
       entry.message.includes('[iMeshDevice]') ||
-      entry.message.includes('[TransportNobleIpc]')
+      entry.message.includes('[TransportNobleIpc]') ||
+      entry.message.includes('[NobleBleManager]') ||
+      entry.message.includes('[BLE:') ||
+      entry.message.includes('[BLE:meshcore]') ||
+      entry.message.includes('[IpcNobleConnection:meshtastic]')
     );
   }
   if (protocol === 'meshcore') {
-    return entry.source.includes('meshcore') || entry.message.includes('[useMeshCore]');
+    return (
+      entry.source.includes('meshcore') ||
+      entry.message.includes('[useMeshCore]') ||
+      entry.message.includes('[MeshcoreMqttAdapter]') ||
+      entry.message.includes('[BLE:meshcore]') ||
+      entry.message.includes('[IpcNobleConnection:meshcore]')
+    );
   }
   // No protocol: show all device entries (fallback)
   return (
+    entry.source === 'sdk' ||
     entry.source.includes('meshtastic') ||
     entry.source.includes('meshcore') ||
     entry.message.includes('[iMeshDevice]') ||
     entry.message.includes('[useMeshCore]') ||
-    entry.message.includes('[TransportNobleIpc]')
+    entry.message.includes('[TransportNobleIpc]') ||
+    entry.message.includes('[MeshcoreMqttAdapter]') ||
+    entry.message.includes('[NobleBleManager]') ||
+    entry.message.includes('[BLE:') ||
+    entry.message.includes('[BLE:meshcore]') ||
+    entry.message.includes('[IpcNobleConnection:')
   );
 }
 
@@ -130,8 +150,10 @@ export default function LogPanel({
 }) {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [levelFilters, setLevelFiltersState] = useState<LevelFilters>(readLevelFilters);
+  const [logClearError, setLogClearError] = useState<string | null>(null);
   const [logSource, setLogSource] = useState<'app' | 'device'>('app');
   const [panelWidth, setPanelWidth] = useState(readPanelWidth);
+  const [analyzeModalOpen, setAnalyzeModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
   const dragStartX = useRef(0);
@@ -140,7 +162,7 @@ export default function LogPanel({
   useEffect(() => {
     let off: (() => void) | null = null;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const recent = await window.electronAPI.log.getRecentLines();
         if (cancelled) return;
@@ -198,20 +220,44 @@ export default function LogPanel({
   }, []);
 
   const handleDelete = useCallback(async () => {
-    await window.electronAPI.log.clear();
-    setEntries([]);
+    setLogClearError(null);
+    try {
+      await window.electronAPI.log.clear();
+      setEntries([]);
+    } catch (e) {
+      console.warn('[LogPanel] clear log failed', e);
+      setLogClearError(e instanceof Error ? e.message : 'Could not clear log');
+    }
   }, []);
 
-  const libraryEntries = entries.filter((e) => isDeviceEntry(e, protocol));
-  const appEntries = entries.filter((e) => !isDeviceEntry(e, protocol));
-  const allDeviceLogs: LogEntry[] = [...(deviceLogs ?? []), ...libraryEntries].sort(
-    (a, b) => a.ts - b.ts,
+  const libraryEntries = useMemo(
+    () => entries.filter((e) => isDeviceEntry(e, protocol)),
+    [entries, protocol],
+  );
+  // Dual-mode: exclude device entries from BOTH protocols so neither leaks into the app view.
+  const appEntries = useMemo(
+    () => entries.filter((e) => !isDeviceEntry(e, 'meshtastic') && !isDeviceEntry(e, 'meshcore')),
+    [entries],
+  );
+  const allDeviceLogs: LogEntry[] = useMemo(
+    () => [...(deviceLogs ?? []), ...libraryEntries].sort((a, b) => a.ts - b.ts),
+    [deviceLogs, libraryEntries],
   );
 
-  const visibleLines: LogEntry[] =
-    logSource === 'device'
-      ? allDeviceLogs.filter((e) => levelVisible(e.level, levelFilters))
-      : appEntries.filter((e) => levelVisible(e.level, levelFilters));
+  const visibleLines: LogEntry[] = useMemo(
+    () =>
+      logSource === 'device'
+        ? allDeviceLogs.filter((e) => levelVisible(e.level, levelFilters))
+        : appEntries.filter((e) => levelVisible(e.level, levelFilters)),
+    [logSource, allDeviceLogs, appEntries, levelFilters],
+  );
+
+  const logVirtualizer = useVirtualizer({
+    count: visibleLines.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 18,
+    overscan: 16,
+  });
 
   const onResizeMouseDown = useCallback(
     (e: ReactMouseEvent) => {
@@ -261,27 +307,29 @@ export default function LogPanel({
 
   const panel = (
     <aside
-      className="flex flex-col flex-1 min-w-0 min-h-0"
+      className="flex min-h-0 min-w-0 flex-1 flex-col"
       aria-label="Application log"
       aria-labelledby="log-panel-landmark-title"
     >
       <h2 id="log-panel-landmark-title" className="sr-only">
         Application log
       </h2>
-      <div className="px-2 py-2 border-b border-gray-700 flex flex-col gap-2">
+      <div className="flex flex-col gap-2 border-b border-gray-700 px-2 py-2">
         <div className="space-y-1">
-          <span className="text-[10px] text-muted uppercase tracking-wide">Show levels</span>
+          <span className="text-muted text-[10px] tracking-wide uppercase">Show levels</span>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <input
                 id="log-filter-loginfo"
                 type="checkbox"
                 checked={levelFilters.logInfo}
-                onChange={(e) => setFilter('logInfo', e.target.checked)}
+                onChange={(e) => {
+                  setFilter('logInfo', e.target.checked);
+                }}
                 aria-label="Log / Info"
                 className="rounded border-gray-600"
               />
-              <label htmlFor="log-filter-loginfo" className="text-xs text-muted cursor-pointer">
+              <label htmlFor="log-filter-loginfo" className="text-muted cursor-pointer text-xs">
                 Log / Info
               </label>
             </div>
@@ -290,11 +338,13 @@ export default function LogPanel({
                 id="log-filter-warn"
                 type="checkbox"
                 checked={levelFilters.warnError}
-                onChange={(e) => setFilter('warnError', e.target.checked)}
+                onChange={(e) => {
+                  setFilter('warnError', e.target.checked);
+                }}
                 aria-label="Warn / Error"
                 className="rounded border-gray-600"
               />
-              <label htmlFor="log-filter-warn" className="text-xs text-muted cursor-pointer">
+              <label htmlFor="log-filter-warn" className="text-muted cursor-pointer text-xs">
                 Warn / Error
               </label>
             </div>
@@ -303,35 +353,41 @@ export default function LogPanel({
                 id="log-filter-debug"
                 type="checkbox"
                 checked={levelFilters.debug}
-                onChange={(e) => setFilter('debug', e.target.checked)}
+                onChange={(e) => {
+                  setFilter('debug', e.target.checked);
+                }}
                 aria-label="Debug"
                 className="rounded border-gray-600"
               />
-              <label htmlFor="log-filter-debug" className="text-xs text-muted cursor-pointer">
+              <label htmlFor="log-filter-debug" className="text-muted cursor-pointer text-xs">
                 Debug
               </label>
             </div>
           </div>
-          <p className="text-[10px] text-muted leading-snug">
+          <p className="text-muted text-[10px] leading-snug">
             All levels are still written to the log file; filters only affect this panel.
           </p>
         </div>
         <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
-          <span className="text-[10px] text-muted uppercase tracking-wide">Source</span>
-          <div className="flex gap-1 ml-auto">
+          <span className="text-muted text-[10px] tracking-wide uppercase">Source</span>
+          <div className="ml-auto flex gap-1">
             <button
               type="button"
-              onClick={() => setLogSource('app')}
+              onClick={() => {
+                setLogSource('app');
+              }}
               aria-label={`App (${appEntries.length})`}
-              className={`px-2 py-0.5 text-[10px] rounded ${logSource === 'app' ? 'bg-brand-green/20 text-brand-green border border-brand-green/40' : 'bg-slate-800 text-gray-400 border border-gray-700'}`}
+              className={`rounded px-2 py-0.5 text-[10px] ${logSource === 'app' ? 'bg-brand-green/20 text-brand-green border-brand-green/40 border' : 'border border-gray-700 bg-slate-800 text-gray-400'}`}
             >
               App ({appEntries.length})
             </button>
             <button
               type="button"
-              onClick={() => setLogSource('device')}
+              onClick={() => {
+                setLogSource('device');
+              }}
               aria-label={`Device (${allDeviceLogs.length})`}
-              className={`px-2 py-0.5 text-[10px] rounded ${logSource === 'device' ? 'bg-brand-green/20 text-brand-green border border-brand-green/40' : 'bg-slate-800 text-gray-400 border border-gray-700'}`}
+              className={`rounded px-2 py-0.5 text-[10px] ${logSource === 'device' ? 'bg-brand-green/20 text-brand-green border-brand-green/40 border' : 'border border-gray-700 bg-slate-800 text-gray-400'}`}
             >
               Device ({allDeviceLogs.length})
             </button>
@@ -343,7 +399,7 @@ export default function LogPanel({
               type="button"
               onClick={narrow}
               aria-label="−"
-              className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
+              className="rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
             >
               −
             </button>
@@ -351,36 +407,53 @@ export default function LogPanel({
               type="button"
               onClick={widen}
               aria-label="+"
-              className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
+              className="rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
             >
               +
             </button>
-            <span className="text-[10px] text-muted flex-1 text-right">{panelWidth}px</span>
+            <span className="text-muted flex-1 text-right text-[10px]">{panelWidth}px</span>
           </div>
         )}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleExport}
-            aria-label="Export log…"
-            className="flex-1 px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-gray-200"
-          >
-            Export log…
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            aria-label="Delete log"
-            className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
-          >
-            Delete log
-          </button>
+        <div className="flex flex-col gap-1">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setAnalyzeModalOpen(true);
+              }}
+              aria-label="Analyze log"
+              className="flex-1 rounded bg-slate-700 px-2 py-1 text-xs text-gray-200 hover:bg-slate-600"
+            >
+              Analyze
+            </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              aria-label="Export log…"
+              className="rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
+            >
+              Export
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              aria-label="Delete log"
+              className="rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
+            >
+              Delete
+            </button>
+          </div>
+          {logClearError && (
+            <div role="alert" className="text-[10px] text-red-400">
+              {logClearError}
+            </div>
+          )}
         </div>
       </div>
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="flex-1 overflow-auto p-2 font-mono text-[10px] leading-tight text-gray-400 min-h-0"
+        className="min-h-0 flex-1 overflow-auto p-2 font-mono text-[10px] leading-tight text-gray-400"
         role="log"
         aria-live="polite"
         aria-relevant="additions"
@@ -400,17 +473,23 @@ export default function LogPanel({
                   : 'No device lines match the current filters.'}
           </span>
         ) : (
-          visibleLines.map((entry, i) => {
-            const line = formatEntry(entry);
-            return (
-              <div
-                key={`${i}-${entry.ts}-${line.slice(0, 40)}`}
-                className="whitespace-pre-wrap break-all"
-              >
-                {line}
-              </div>
-            );
-          })
+          <div className="relative w-full" style={{ height: `${logVirtualizer.getTotalSize()}px` }}>
+            {logVirtualizer.getVirtualItems().map((vi) => {
+              const entry = visibleLines[vi.index];
+              const line = formatEntry(entry);
+              return (
+                <div
+                  key={`${vi.index}-${entry.ts}-${line.slice(0, 40)}`}
+                  data-index={vi.index}
+                  ref={logVirtualizer.measureElement}
+                  className="absolute top-0 left-0 w-full break-all whitespace-pre-wrap"
+                  style={{ transform: `translateY(${vi.start}px)` }}
+                >
+                  {line}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </aside>
@@ -418,39 +497,63 @@ export default function LogPanel({
 
   if (isOverlay) {
     return (
-      <div
-        className="fixed inset-y-0 right-0 z-[1100] flex flex-col min-h-0 border-l border-gray-700 bg-deep-black w-full max-w-md"
-        role="complementary"
-        aria-label="Application log"
-        aria-labelledby="log-panel-landmark-title"
-      >
-        <div className="flex items-center justify-end shrink-0 px-2 py-1.5 border-b border-gray-700">
-          <button
-            type="button"
-            onClick={() => onClose?.()}
-            aria-label="Close"
-            className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-gray-300 border border-gray-600"
-          >
-            Close
-          </button>
+      <>
+        <div
+          className="bg-deep-black fixed inset-y-0 right-0 z-[1100] flex min-h-0 w-full max-w-md flex-col border-l border-gray-700"
+          role="complementary"
+          aria-label="Application log"
+          aria-labelledby="log-panel-landmark-title"
+        >
+          <div className="flex shrink-0 items-center justify-end border-b border-gray-700 px-2 py-1.5">
+            <button
+              type="button"
+              onClick={() => onClose?.()}
+              aria-label="Close"
+              className="rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
+            >
+              Close
+            </button>
+          </div>
+          {panel}
         </div>
-        {panel}
-      </div>
+        {analyzeModalOpen && (
+          <LogAnalyzeModal
+            isOpen={analyzeModalOpen}
+            onClose={() => {
+              setAnalyzeModalOpen(false);
+            }}
+            entries={logSource === 'device' ? allDeviceLogs : appEntries}
+            protocol={protocol ?? 'meshtastic'}
+          />
+        )}
+      </>
     );
   }
 
   return (
-    <div
-      className="flex shrink-0 min-h-0 border-l border-gray-700 bg-deep-black"
-      style={{ width: panelWidth }}
-    >
-      <button
-        type="button"
-        aria-label="Drag to resize log panel"
-        className="w-1.5 shrink-0 cursor-col-resize hover:bg-slate-600 bg-gray-800/50 border-0 p-0 self-stretch"
-        onMouseDown={onResizeMouseDown}
-      />
-      {panel}
-    </div>
+    <>
+      <div
+        className="bg-deep-black flex min-h-0 shrink-0 border-l border-gray-700"
+        style={{ width: panelWidth }}
+      >
+        <button
+          type="button"
+          aria-label="Drag to resize log panel"
+          className="w-1.5 shrink-0 cursor-col-resize self-stretch border-0 bg-gray-800/50 p-0 hover:bg-slate-600"
+          onMouseDown={onResizeMouseDown}
+        />
+        {panel}
+      </div>
+      {analyzeModalOpen && (
+        <LogAnalyzeModal
+          isOpen={analyzeModalOpen}
+          onClose={() => {
+            setAnalyzeModalOpen(false);
+          }}
+          entries={logSource === 'device' ? allDeviceLogs : appEntries}
+          protocol={protocol ?? 'meshtastic'}
+        />
+      )}
+    </>
   );
 }

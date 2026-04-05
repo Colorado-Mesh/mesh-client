@@ -43,6 +43,12 @@ export interface ProtocolCapabilities {
   hasWifiConfig: boolean;
   /** Whether telemetry device metrics update interval config is available */
   hasTelemetryIntervalConfig: boolean;
+  /** User-defined contact groups + built-in filters on the Nodes/Contacts list */
+  hasUserManagedContactGroups: boolean;
+  /** MeshCore companion: contact auto-add / manual mode and related Radio UI */
+  hasCompanionContactManagementConfig: boolean;
+  /** MeshCore companion: telemetry request / location / environment privacy (NodePrefs telemetry modes) */
+  hasCompanionTelemetryPrivacyConfig: boolean;
   /** Whether shutdown button is available */
   hasShutdown: boolean;
   /** Whether Reset NodeDB button is available */
@@ -51,6 +57,38 @@ export interface ProtocolCapabilities {
   hasFactoryReset: boolean;
   /** Whether full GPS position config is available; false = fixed lat/lon only */
   hasFullPositionConfig: boolean;
+  /** Whether Security panel (PKI config) is available */
+  hasSecurityPanel: boolean;
+  /** Whether the TAK server panel is available (Meshtastic only) */
+  hasTakPanel: boolean;
+  /** Whether Remote Hardware (GPIO) control is available */
+  hasRemoteHardware: boolean;
+  /** Whether Serial Bridge is available */
+  hasSerial: boolean;
+  /** Whether Range Test packets are available */
+  hasRangeTest: boolean;
+  /** Whether Pax Counter (people counter) is available */
+  hasPaxCounter: boolean;
+  /** Whether Audio packets are available */
+  hasAudio: boolean;
+  /** Whether IP Tunnel is available */
+  hasIpTunnel: boolean;
+  /** Whether Detection Sensor packets are available */
+  hasDetectionSensor: boolean;
+  /** Whether Store & Forward is available */
+  hasStoreForward: boolean;
+  /** Whether ATAK Plugin integration is available */
+  hasAtakPlugin: boolean;
+  /** Whether Map Report packets are available */
+  hasMapReport: boolean;
+  /** Whether contact import/export is available (MeshCore) */
+  hasContactImportExport: boolean;
+  /** Whether cryptographic signing/key export is available (MeshCore) */
+  hasCryptoOperations: boolean;
+  /** Node stale threshold in milliseconds (for node status UI) */
+  nodeStaleThresholdMs: number;
+  /** Node offline threshold in milliseconds (for node status UI) */
+  nodeOfflineThresholdMs: number;
 }
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
@@ -74,17 +112,37 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasPowerConfig: true,
   hasWifiConfig: true,
   hasTelemetryIntervalConfig: true,
+  hasUserManagedContactGroups: true,
+  hasCompanionContactManagementConfig: false,
+  hasCompanionTelemetryPrivacyConfig: false,
   hasShutdown: true,
   hasNodeDbReset: true,
   hasFactoryReset: true,
   hasFullPositionConfig: true,
+  hasSecurityPanel: true,
+  hasTakPanel: true,
+  hasRemoteHardware: true,
+  hasSerial: true,
+  hasRangeTest: true,
+  hasPaxCounter: true,
+  hasAudio: true,
+  hasIpTunnel: true,
+  hasDetectionSensor: true,
+  hasStoreForward: true,
+  hasAtakPlugin: true,
+  hasMapReport: true,
+  hasContactImportExport: false,
+  hasCryptoOperations: true,
+  nodeStaleThresholdMs: 2 * 60 * 60 * 1000, // 2 hours
+  nodeOfflineThresholdMs: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   protocol: 'meshcore',
-  hasHopCount: false,
+  hasHopCount: true,
   hopLimitRange: [1, 64],
-  hasMqttHybrid: true,
+  /** MeshCore session is RF-first; MQTT bridge is optional and not shown as a node column. */
+  hasMqttHybrid: false,
   hasEnvironmentTelemetry: true,
   hasRfStats: false,
   hasNeighborInfo: false,
@@ -101,8 +159,27 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasPowerConfig: false,
   hasWifiConfig: false,
   hasTelemetryIntervalConfig: false,
+  hasUserManagedContactGroups: true,
+  hasCompanionContactManagementConfig: true,
+  hasCompanionTelemetryPrivacyConfig: true,
   hasShutdown: false,
   hasNodeDbReset: false,
   hasFactoryReset: false,
   hasFullPositionConfig: false,
+  hasSecurityPanel: false,
+  hasTakPanel: false,
+  hasRemoteHardware: false,
+  hasSerial: false,
+  hasRangeTest: false,
+  hasPaxCounter: false,
+  hasAudio: false,
+  hasIpTunnel: false,
+  hasDetectionSensor: false,
+  hasStoreForward: false,
+  hasAtakPlugin: false,
+  hasMapReport: false,
+  hasContactImportExport: true,
+  hasCryptoOperations: true,
+  nodeStaleThresholdMs: 48 * 60 * 60 * 1000, // 48 hours
+  nodeOfflineThresholdMs: 96 * 60 * 60 * 1000, // 96 hours
 };

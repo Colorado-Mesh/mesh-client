@@ -64,7 +64,9 @@ export async function resolveOurPosition(
   // 4. IP-based geolocation (city-level, no API key required)
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
+    const timer = setTimeout(() => {
+      controller.abort();
+    }, 5000);
     const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
     clearTimeout(timer);
     if (res.ok) {

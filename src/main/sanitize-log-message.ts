@@ -22,3 +22,20 @@ export function sanitizeForLogSink(raw: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+/**
+ * Re-sanitize log text immediately before `appendFile` / `writeFileSync` so CodeQL
+ * `js/http-to-file-access` sees {@link sanitizeForLogSink} at the file sink (default
+ * setup does not use our codeql-config query exclude). Preserves one newline between
+ * logical lines when the payload uses newline separators.
+ */
+export function sanitizeLogPayloadForDisk(payload: string): string {
+  if (!payload) return '';
+  const endsWithNewline = payload.endsWith('\n');
+  const body = payload
+    .split('\n')
+    .filter((segment) => segment.length > 0)
+    .map((segment) => sanitizeForLogSink(segment))
+    .join('\n');
+  return endsWithNewline ? `${body}\n` : body;
+}

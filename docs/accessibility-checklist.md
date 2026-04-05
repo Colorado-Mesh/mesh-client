@@ -8,13 +8,14 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
 
 - [ ] Tab through every interactive element in order (no skips, no traps outside modals)
 - [ ] Shift+Tab reverses correctly
-- [ ] All 8 tabs (Cmd/Ctrl+1-8) switch panels correctly
+- [ ] **Meshtastic:** `Cmd/Ctrl+1`–`9` map to the **first nine** main tabs only; **Diagnostics** (tenth tab) has **no** number shortcut — verify it is still reachable from the tab strip and that order matches labels
+- [ ] **MeshCore:** nine visible tabs — `Cmd/Ctrl+1`–`9` should cover all main tabs; verify each shortcut selects the expected panel
 - [ ] `?` button opens Keyboard Shortcuts modal; Escape closes it; focus returns to `?` button
 - [ ] Keyboard shortcuts modal table is readable by screen reader in correct order
 - [ ] Modals: Tab cycles only within modal; Escape closes
 - [ ] Dropdown menus: arrow keys navigate options
 - [ ] Chat inline actions (reply/react/DM) reachable without mouse (focus-within visible)
-- [ ] Cmd/Ctrl+F opens message search; Escape closes it
+- [ ] Cmd/Ctrl+Shift+F opens message search; Escape closes it
 - [ ] Sortable table columns activatable with Enter/Space
 - [ ] Slider (hop limit) adjustable with arrow keys
 - [ ] Focus indicator visible at all times (no invisible focus)

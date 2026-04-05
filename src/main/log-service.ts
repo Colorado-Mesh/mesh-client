@@ -1,13 +1,44 @@
+import { release as osRelease } from 'node:os';
+
 import type { BrowserWindow } from 'electron';
 import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
-import { sanitizeForLogSink, sanitizeLogMessage } from './sanitize-log-message';
+import {
+  sanitizeForLogSink,
+  sanitizeLogMessage,
+  sanitizeLogPayloadForDisk,
+} from './sanitize-log-message';
 
 export { sanitizeLogMessage };
 
-const LOG_FILENAME = 'meshtastic-client.log';
+/** Compact OS/runtime fields for startup and per-device connection lines (main process). */
+export function formatRuntimeLogTag(): string {
+  const appVersion =
+    typeof app !== 'undefined' && typeof app.getVersion === 'function'
+      ? app.getVersion()
+      : 'unknown';
+  const packaged =
+    typeof app !== 'undefined' && typeof app.isPackaged === 'boolean' ? app.isPackaged : false;
+  return `platform=${process.platform} arch=${process.arch} os=${osRelease()} electron=${process.versions.electron} node=${process.versions.node} app=${appVersion} packaged=${packaged}`;
+}
+
+/**
+ * One line per device connect: `[Connection] …` plus {@link formatRuntimeLogTag}.
+ * Pass only trusted or pre-sanitized fragments in `detail`; the full line is sanitized again in {@link appendLine}.
+ */
+export function logDeviceConnection(detail: string): void {
+  appendLine(
+    'debug',
+    'main',
+    `[Connection] ${sanitizeLogMessage(detail)} ${formatRuntimeLogTag()}`,
+  );
+}
+
+const LOG_FILENAME = 'mesh-client.log';
+const LOG_BACKUP_FILENAME = 'mesh-client.log.1';
+const LOG_MAX_BYTES = 100 * 1024 * 1024; // 100 MB
 const MAX_LINE_LENGTH = 8192;
 const MAX_IPC_MESSAGE_LENGTH = 4096;
 const RECENT_MAX = 1500;
@@ -72,10 +103,9 @@ function flushPendingBuffer(): void {
   if (pendingBuffer.length === 0) return;
   const lines = pendingBuffer.splice(0, pendingBuffer.length);
   const p = getLogFilePath();
-  const data = lines.join('');
+  const data = sanitizeLogPayloadForDisk(lines.join(''));
   appendChain = appendChain.then(() =>
-    // codeql[js/http-to-file-access] -- data is joined formatLine outputs; each line was built after sanitizeLogMessage in appendLine.
-    fs.promises.appendFile(p, data, 'utf8').catch((e) => {
+    fs.promises.appendFile(p, data, 'utf8').catch((e: unknown) => {
       original.debug('[log-service] flushPendingBuffer appendFile failed', e);
     }),
   );
@@ -127,22 +157,38 @@ export function appendLine(level: LogLevel, source: string, message: string): vo
     return;
   }
 
-  appendChain = appendChain
-    .then(() =>
-      // codeql[js/http-to-file-access] -- line is built only from sanitizeLogMessage(message/source) + fixed path; not raw network payload.
-      fs.promises.appendFile(getLogFilePath(), line, 'utf8'),
-    )
-    .catch((e) => {
-      original.debug('[log-service] appendFile failed, retry writeFileSync', e);
-      try {
-        // codeql[js/http-to-file-access] -- same as appendFile above; retry path only.
-        fs.writeFileSync(getLogFilePath(), line, { encoding: 'utf8' });
-      } catch (e2) {
-        original.debug('[log-service] writeFileSync retry failed', e2);
-      }
-    });
+  const diskLine = sanitizeLogPayloadForDisk(line);
+  // Debug messages are kept in the in-memory buffer and broadcast to the renderer
+  // Log panel in all environments, but are not written to disk in production builds
+  // to reduce noise and disk usage.
+  if (level !== 'debug' || !app.isPackaged) {
+    appendChain = appendChain
+      .then(() => rotateLogIfNeeded())
+      .then(() => fs.promises.appendFile(getLogFilePath(), diskLine, 'utf8'))
+      .catch((e: unknown) => {
+        original.debug('[log-service] appendFile failed, retry writeFileSync', e);
+        try {
+          fs.writeFileSync(getLogFilePath(), diskLine, { encoding: 'utf8' });
+        } catch (e2) {
+          original.debug('[log-service] writeFileSync retry failed', e2);
+        }
+      });
+  }
 
   broadcastLine(ts, level, source, message);
+}
+
+async function rotateLogIfNeeded(): Promise<void> {
+  const p = getLogFilePath();
+  try {
+    const stat = await fs.promises.stat(p);
+    if (stat.size >= LOG_MAX_BYTES) {
+      const backup = path.join(path.dirname(p), LOG_BACKUP_FILENAME);
+      await fs.promises.rename(p, backup);
+    }
+  } catch {
+    // catch-no-log-ok: stat throws when the file doesn't exist yet; rotation skipped
+  }
 }
 
 function broadcastLine(ts: number, level: LogLevel, source: string, message: string): void {
@@ -201,7 +247,7 @@ function stringifyArgs(args: unknown[]): string {
           return JSON.stringify(a);
         } catch (e) {
           original.debug('[log-service] stringifyArgs JSON.stringify failed', e);
-          return String(a);
+          return '[unserializable]';
         }
       }
       return String(a);

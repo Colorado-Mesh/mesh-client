@@ -43,7 +43,6 @@ function meshcoreOrlpWasmPlugin(): import('vite').Plugin {
     },
   };
 }
-
 export default defineConfig({
   plugins: [react(), meshcoreOrlpWasmPlugin()],
   worker: {
@@ -99,6 +98,7 @@ export default defineConfig({
           if (id.includes('node_modules/@meshtastic') || id.includes('node_modules/protobufjs'))
             return 'meshtastic';
           if (id.includes('node_modules/@liamcottle/meshcore')) return 'meshcore';
+          if (id.includes('node_modules/@michaelhart/meshcore-decoder')) return 'meshcore-decoder';
         },
       },
     },

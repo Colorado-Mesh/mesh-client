@@ -1,3 +1,36 @@
+import { forward as mgrsForward } from 'mgrs';
+
+export type CoordinateFormat = 'decimal' | 'mgrs';
+
+export function formatCoordPair(lat: number, lon: number, format: CoordinateFormat): string {
+  if (format === 'mgrs') {
+    try {
+      return mgrsForward([lon, lat]); // mgrs API takes [lon, lat]
+    } catch {
+      // catch-no-log-ok polar coords and UPS zone not representable in MGRS; fall back to decimal
+    }
+  }
+  return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+}
+
+export function formatCoordColumns(
+  lat: number | null | undefined,
+  lon: number | null | undefined,
+  format: CoordinateFormat,
+): { latCell: string; lonCell: string } {
+  if (lat == null || lon == null || (lat === 0 && lon === 0)) {
+    return { latCell: '-', lonCell: '-' };
+  }
+  if (format === 'mgrs') {
+    try {
+      return { latCell: mgrsForward([lon, lat]), lonCell: '-' };
+    } catch {
+      // catch-no-log-ok polar coords and UPS zone not representable in MGRS; fall back to decimal
+    }
+  }
+  return { latCell: lat.toFixed(4), lonCell: lon.toFixed(4) };
+}
+
 export interface CoordValidation {
   valid: boolean;
   warning?: string;

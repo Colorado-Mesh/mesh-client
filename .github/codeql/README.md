@@ -12,15 +12,17 @@ So the previous workflow that ran `github/codeql-action` with a custom `config-f
 
 Default setup already runs JavaScript/TypeScript analysis on push/PR; no separate workflow is required for scanning to occur.
 
-## Using the custom config (`codeql-config.yml`)
+## `js/http-to-file-access` and `codeql-config.yml`
 
-`codeql-config.yml` excludes the `js/http-to-file-access` query to avoid false positives in our log service (see comments in that file). That only applies when analysis is driven by **advanced setup** with this config.
+[`js/http-to-file-access`](https://codeql.github.com/codeql-query-help/javascript/js-http-to-file-access/) is a path-problem query whose sink is the **data argument** to `appendFile` / `writeFileSync` (a narrow source span), not the whole statement. GitHub’s `// codeql[query-id]` suppression logic matches alerts whose location is a **whole line** (`startcolumn`/`endcolumn` zero); it does **not** suppress these argument-level sinks, so inline comments do not clear the alert.
 
-If you need that exclusion in automated runs:
+[`codeql-config.yml`](./codeql-config.yml) **excludes** `js/http-to-file-access` because our disk writes are sanitized log lines to a fixed path, not arbitrary remote-to-file backdoors.
 
-1. In the repo **Settings → Code security and analysis → Code scanning**, **disable** CodeQL default setup (switch to advanced / disable default).
-2. Restore a CodeQL workflow that runs `github/codeql-action/init` with  
-   `config-file: ./.github/codeql/codeql-config.yml`  
-   and `analyze` as before (use `github/codeql-action@v4` when adding it back).
+**Important:** **Default setup does not read `codeql-config.yml`.** With default setup only, alerts may still appear until you **dismiss** them in the Security / PR UI (false positive, with justification pointing to CONTRIBUTING) **or** switch to **advanced** CodeQL and pass this config.
 
-Do not run both default setup and a CodeQL workflow that uploads SARIF—GitHub will reject the upload.
+## Using advanced setup with `codeql-config.yml`
+
+1. In **Settings → Code security and analysis → Code scanning**, disable CodeQL default setup (so SARIF from Actions is accepted).
+2. Add a workflow that runs `github/codeql-action/init@v4` with `config-file: ./.github/codeql/codeql-config.yml` and `analyze` as documented.
+
+Do not run both default setup and a CodeQL workflow that uploads SARIF for the same scope—GitHub will reject the upload.

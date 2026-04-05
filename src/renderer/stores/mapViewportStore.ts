@@ -12,5 +12,7 @@ interface MapViewportState {
 
 export const useMapViewportStore = create<MapViewportState>((set) => ({
   viewport: null,
-  setViewport: (viewport) => set({ viewport }),
+  setViewport: (viewport) => {
+    set({ viewport });
+  },
 }));

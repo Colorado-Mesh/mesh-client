@@ -30,7 +30,6 @@ export class TransportNobleIpc implements Types.Transport {
         this._fromDeviceController = controller;
         this._fromRadioUnsub = window.electronAPI.onNobleBleFromRadio(({ sessionId, bytes }) => {
           if (sessionId !== this.sessionId) return;
-          console.debug('[TransportNobleIpc] fromRadio bytes', bytes.length);
           if (this._fromDeviceController) {
             this._fromDeviceController.enqueue({ type: 'packet', data: bytes });
           }
@@ -48,7 +47,6 @@ export class TransportNobleIpc implements Types.Transport {
     // toDevice: WritableStream that forwards bytes to noble via IPC
     this.toDevice = new WritableStream<Uint8Array>({
       write: async (chunk) => {
-        console.debug('[TransportNobleIpc] toRadio bytes', chunk.length);
         await window.electronAPI.nobleBleToRadio(this.sessionId, chunk);
       },
       close: () => {

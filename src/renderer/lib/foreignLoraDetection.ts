@@ -8,7 +8,20 @@ export function classifyPayload(raw: Uint8Array): PacketClass {
     const senderId = (raw[4] | (raw[5] << 8) | (raw[6] << 16) | (raw[7] << 24)) >>> 0;
     const BROADCAST = 0xffffffff;
     if (destId !== 0 && destId !== BROADCAST && senderId !== 0 && senderId !== BROADCAST) {
-      return 'meshtastic';
+      if (raw.length >= 16) {
+        // Full 16-byte Meshtastic header available: validate the flags byte (byte 12) to reduce
+        // false positives from MeshCore encrypted packets whose first 8 bytes resemble node IDs.
+        // hop_limit (bits [2:0]) must be <= hop_start (bits [7:5]); hop_start=0 is valid for
+        // direct-only devices (hop_limit=0).
+        const flags = raw[12];
+        const hopLimit = flags & 0x07;
+        const hopStart = (flags >> 5) & 0x07;
+        if (hopLimit <= hopStart) return 'meshtastic';
+      } else {
+        // 8-15 byte payload: MeshCore frames always begin with 0x3c (caught above), so a
+        // non-0x3c payload this short with valid IDs is reliably Meshtastic.
+        return 'meshtastic';
+      }
     }
   }
   return 'unknown-lora';
@@ -73,24 +86,32 @@ export function extractMeshtasticSenderId(raw: Uint8Array): number | null {
 /** Rolling window packet counter for rate detection. */
 export class RollingRateCounter {
   private readonly windowMs: number;
+  private readonly cleanupThreshold: number;
   private timestamps: number[] = [];
 
-  constructor(windowMs: number) {
+  constructor(windowMs: number, cleanupThreshold = 100) {
     this.windowMs = windowMs;
+    this.cleanupThreshold = cleanupThreshold;
   }
 
   record(): void {
-    const now = Date.now();
-    this.timestamps.push(now);
-    const cutoff = now - this.windowMs;
-    this.timestamps = this.timestamps.filter((t) => t > cutoff);
+    this.timestamps.push(Date.now());
+    if (this.timestamps.length > this.cleanupThreshold) {
+      this.cleanup();
+    }
+  }
+
+  private cleanup(): void {
+    const cutoff = Date.now() - this.windowMs;
+    this.timestamps = this.timestamps.filter((t) => t >= cutoff);
+    if (this.timestamps.length > 10_000) {
+      this.timestamps = this.timestamps.slice(-10_000);
+    }
   }
 
   /** Returns packets per minute over the rolling window. */
   getRate(): number {
-    const now = Date.now();
-    const cutoff = now - this.windowMs;
-    const valid = this.timestamps.filter((t) => t > cutoff);
-    return (valid.length / this.windowMs) * 60_000;
+    this.cleanup();
+    return (this.timestamps.length / this.windowMs) * 60_000;
   }
 }

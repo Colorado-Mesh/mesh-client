@@ -88,7 +88,9 @@ export function initUpdater(win: BrowserWindow): void {
         send('update:error', { message: msg });
       }
     };
-    checkNow = doCheck;
+    checkNow = () => {
+      void doCheck();
+    };
 
     // Auto-check on startup is triggered from the renderer (respects user preference).
     ipcMain.handle('update:check', doCheck);
@@ -140,7 +142,7 @@ export function initUpdater(win: BrowserWindow): void {
         } else {
           send('update:not-available');
         }
-      } catch (e) {
+      } catch (e: unknown) {
         console.warn(
           '[updater] GitHub API fetch failed:',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
@@ -148,7 +150,9 @@ export function initUpdater(win: BrowserWindow): void {
         send('update:error', { message: 'Update check failed — check network connection' });
       }
     };
-    checkNow = doCheck;
+    checkNow = () => {
+      void doCheck();
+    };
 
     // Auto-check on startup is triggered from the renderer (respects user preference).
     // In dev mode, download/install are no-ops; just expose the handlers.
@@ -166,8 +170,16 @@ export function initUpdater(win: BrowserWindow): void {
   ipcMain.handle('update:open-releases', async (_event, url?: string) => {
     try {
       console.debug('[IPC] update:open-releases');
+      let parsedUrl: URL | null = null;
+      try {
+        if (typeof url === 'string') parsedUrl = new URL(url);
+      } catch {
+        // catch-no-log-ok — invalid URL falls through to RELEASES_URL
+      }
       const target =
-        typeof url === 'string' && url.startsWith('https://github.com/') ? url : RELEASES_URL;
+        parsedUrl?.hostname === 'github.com' && parsedUrl.protocol === 'https:'
+          ? url!
+          : RELEASES_URL;
       await shell.openExternal(target);
     } catch (err) {
       console.error(

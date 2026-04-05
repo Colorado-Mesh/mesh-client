@@ -35,10 +35,29 @@ const REQUIRED_CAPABILITY_KEYS: (keyof ProtocolCapabilities)[] = [
   'hasPowerConfig',
   'hasWifiConfig',
   'hasTelemetryIntervalConfig',
+  'hasUserManagedContactGroups',
+  'hasCompanionContactManagementConfig',
+  'hasCompanionTelemetryPrivacyConfig',
   'hasShutdown',
   'hasNodeDbReset',
   'hasFactoryReset',
   'hasFullPositionConfig',
+  'hasSecurityPanel',
+  'hasTakPanel',
+  'hasRemoteHardware',
+  'hasSerial',
+  'hasRangeTest',
+  'hasPaxCounter',
+  'hasAudio',
+  'hasIpTunnel',
+  'hasDetectionSensor',
+  'hasStoreForward',
+  'hasAtakPlugin',
+  'hasMapReport',
+  'hasContactImportExport',
+  'hasCryptoOperations',
+  'nodeStaleThresholdMs',
+  'nodeOfflineThresholdMs',
 ];
 
 describe('ProtocolCapabilities contract', () => {
@@ -53,45 +72,64 @@ describe('ProtocolCapabilities contract', () => {
 
   it('MESHTASTIC_CAPABILITIES has all required keys', () => {
     for (const key of REQUIRED_CAPABILITY_KEYS) {
-      expect(MESHTASTIC_CAPABILITIES, `missing key: ${key}`).toHaveProperty(key);
+      expect(MESHTASTIC_CAPABILITIES).toHaveProperty(key);
     }
   });
 
   it('MESHCORE_CAPABILITIES has all required keys', () => {
     for (const key of REQUIRED_CAPABILITY_KEYS) {
-      expect(MESHCORE_CAPABILITIES, `missing key: ${key}`).toHaveProperty(key);
+      expect(MESHCORE_CAPABILITIES).toHaveProperty(key);
     }
   });
 
   it('MESHTASTIC_CAPABILITIES exact values are stable', () => {
     expect(MESHTASTIC_CAPABILITIES).toMatchInlineSnapshot(`
       {
+        "hasAtakPlugin": true,
+        "hasAudio": true,
         "hasBatteryTelemetry": true,
         "hasBluetoothConfig": true,
         "hasChannelConfig": true,
+        "hasCompanionContactManagementConfig": false,
+        "hasCompanionTelemetryPrivacyConfig": false,
+        "hasContactImportExport": false,
+        "hasCryptoOperations": true,
+        "hasDetectionSensor": true,
         "hasDeviceRoleConfig": true,
         "hasDisplayConfig": true,
         "hasEnvironmentTelemetry": true,
         "hasFactoryReset": true,
         "hasFullPositionConfig": true,
         "hasHopCount": true,
+        "hasIpTunnel": true,
+        "hasMapReport": true,
         "hasModemPresets": true,
         "hasMqttHybrid": true,
         "hasNeighborInfo": true,
         "hasNodeDbReset": true,
         "hasOnDemandNodeStatus": false,
+        "hasPaxCounter": true,
         "hasPerHopSnr": false,
         "hasPowerConfig": true,
+        "hasRangeTest": true,
+        "hasRemoteHardware": true,
         "hasRepeaterStatus": false,
         "hasRfStats": true,
+        "hasSecurityPanel": true,
+        "hasSerial": true,
         "hasShutdown": true,
+        "hasStoreForward": true,
+        "hasTakPanel": true,
         "hasTelemetryIntervalConfig": true,
         "hasTraceRoute": true,
+        "hasUserManagedContactGroups": true,
         "hasWifiConfig": true,
         "hopLimitRange": [
           1,
           7,
         ],
+        "nodeOfflineThresholdMs": 604800000,
+        "nodeStaleThresholdMs": 7200000,
         "protocol": "meshtastic",
       }
     `);
@@ -100,32 +138,51 @@ describe('ProtocolCapabilities contract', () => {
   it('MESHCORE_CAPABILITIES exact values are stable', () => {
     expect(MESHCORE_CAPABILITIES).toMatchInlineSnapshot(`
       {
+        "hasAtakPlugin": false,
+        "hasAudio": false,
         "hasBatteryTelemetry": true,
         "hasBluetoothConfig": false,
         "hasChannelConfig": false,
+        "hasCompanionContactManagementConfig": true,
+        "hasCompanionTelemetryPrivacyConfig": true,
+        "hasContactImportExport": true,
+        "hasCryptoOperations": true,
+        "hasDetectionSensor": false,
         "hasDeviceRoleConfig": false,
         "hasDisplayConfig": false,
         "hasEnvironmentTelemetry": true,
         "hasFactoryReset": false,
         "hasFullPositionConfig": false,
-        "hasHopCount": false,
+        "hasHopCount": true,
+        "hasIpTunnel": false,
+        "hasMapReport": false,
         "hasModemPresets": false,
-        "hasMqttHybrid": true,
+        "hasMqttHybrid": false,
         "hasNeighborInfo": false,
         "hasNodeDbReset": false,
         "hasOnDemandNodeStatus": true,
+        "hasPaxCounter": false,
         "hasPerHopSnr": true,
         "hasPowerConfig": false,
+        "hasRangeTest": false,
+        "hasRemoteHardware": false,
         "hasRepeaterStatus": true,
         "hasRfStats": false,
+        "hasSecurityPanel": false,
+        "hasSerial": false,
         "hasShutdown": false,
+        "hasStoreForward": false,
+        "hasTakPanel": false,
         "hasTelemetryIntervalConfig": false,
         "hasTraceRoute": true,
+        "hasUserManagedContactGroups": true,
         "hasWifiConfig": false,
         "hopLimitRange": [
           1,
           64,
         ],
+        "nodeOfflineThresholdMs": 345600000,
+        "nodeStaleThresholdMs": 172800000,
         "protocol": "meshcore",
       }
     `);
