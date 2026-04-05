@@ -563,7 +563,7 @@ pnpm run rebuild
 Use:
 
 ```bash
-pnpm run build && npx electron . --disable-gpu
+pnpm run build && pnpm dlx electron . --disable-gpu
 ```
 
 Or:
