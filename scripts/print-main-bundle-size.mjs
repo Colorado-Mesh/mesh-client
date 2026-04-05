@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Prints byte size of dist-electron/main/index.js after a build.
- * Usage: npm run build:main --silent && node scripts/print-main-bundle-size.mjs
+ * Usage: pnpm run build:main --silent && node scripts/print-main-bundle-size.mjs
  */
 import fs from 'fs';
 import path from 'path';

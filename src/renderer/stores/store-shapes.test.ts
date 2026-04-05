@@ -6,7 +6,7 @@
  * drops, renames, or adds state properties without updating consumers.
  *
  * When a property is intentionally added or removed, update the snapshot:
- *   npm run test:run -- --update-snapshots
+ *   pnpm run test:run -- --update-snapshots
  */
 import { afterEach, describe, expect, it } from 'vitest';
 

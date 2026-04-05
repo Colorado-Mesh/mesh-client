@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'path';
 
 import { defineConfig } from 'vite';
@@ -15,6 +15,7 @@ function meshcoreOrlpWasmPlugin(): import('vite').Plugin {
   return {
     name: 'meshcore-orlp-wasm',
     configureServer(server) {
+      if (!existsSync(ORLP_WASM_SRC)) return;
       server.middlewares.use((req, res, next) => {
         const url = req.url?.split('?')[0] ?? '';
         if (url === `/${ORLP_WASM_NAME}` || url.endsWith(`/${ORLP_WASM_NAME}`)) {
@@ -33,6 +34,7 @@ function meshcoreOrlpWasmPlugin(): import('vite').Plugin {
       });
     },
     writeBundle() {
+      if (!existsSync(ORLP_WASM_SRC)) return;
       const buf = readFileSync(ORLP_WASM_SRC);
       // Next to index.html (relative URL "orlp-ed25519.wasm" from document)
       writeFileSync(path.resolve(__dirname, 'dist/renderer', ORLP_WASM_NAME), buf);
@@ -41,7 +43,6 @@ function meshcoreOrlpWasmPlugin(): import('vite').Plugin {
     },
   };
 }
-
 export default defineConfig({
   plugins: [react(), meshcoreOrlpWasmPlugin()],
   worker: {

@@ -7,7 +7,7 @@
  * drop a field from the interface without updating both presets.
  *
  * When a capability is intentionally added or changed, update the snapshot:
- *   npm run test:run -- --update-snapshots
+ *   pnpm run test:run -- --update-snapshots
  */
 import { describe, expect, it } from 'vitest';
 

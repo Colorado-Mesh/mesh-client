@@ -946,6 +946,10 @@ export function useMeshCore() {
   const repeaterCommandServiceRef = useRef<RepeaterCommandService | null>(null);
   /** Debounced contacts refresh after path updates (event 129). */
   const meshcoreContactsRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Periodic poll for waiting messages when event 131 may have been missed. */
+  const meshcoreWaitingMessagesPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** Stable ref to the current connection's processWaitingMessages fn (set by setupEventListeners). */
+  const processWaitingMessagesRef = useRef<(() => Promise<void>) | null>(null);
   const buildNodesFromContactsRef = useRef<
     | ((
         contacts: MeshCoreContactRaw[],
@@ -984,6 +988,10 @@ export function useMeshCore() {
     meshcoreHookMountedRef.current = true;
     return () => {
       meshcoreHookMountedRef.current = false;
+      if (meshcoreWaitingMessagesPollRef.current) {
+        clearInterval(meshcoreWaitingMessagesPollRef.current);
+        meshcoreWaitingMessagesPollRef.current = null;
+      }
     };
   }, []);
 
@@ -1825,6 +1833,7 @@ export function useMeshCore() {
         }
         console.debug('[useMeshCore] event 131: message waiting, fetched', arr.length, 'messages');
       };
+      processWaitingMessagesRef.current = processWaitingMessages;
       conn.on(131, () => {
         void (async () => {
           try {
@@ -2080,6 +2089,11 @@ export function useMeshCore() {
           clearTimeout(meshcoreContactsRefreshTimerRef.current);
           meshcoreContactsRefreshTimerRef.current = null;
         }
+        // Clear waiting messages poll
+        if (meshcoreWaitingMessagesPollRef.current) {
+          clearInterval(meshcoreWaitingMessagesPollRef.current);
+          meshcoreWaitingMessagesPollRef.current = null;
+        }
         // Release the underlying transport (serial port lock, BLE IPC session) so the
         // next connect attempt can open it cleanly. Without this, an unexpected
         // device-side disconnect leaves the raw SerialPort open at the browser level
@@ -2272,6 +2286,25 @@ export function useMeshCore() {
           console.warn('[useMeshCore] refreshMeshcoreAutoaddFromDevice (init) error', e);
         }),
       );
+
+      // Proactively fetch any messages that queued while disconnected.
+      // Mirrors what event 131 does, but covers reconnects where the event was missed.
+      try {
+        await processWaitingMessagesRef.current?.();
+      } catch (e) {
+        console.warn('[useMeshCore] initConn: proactive getWaitingMessages failed', e);
+      }
+
+      // Periodic safety-net poll in case the device never re-sends event 131.
+      const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * 60 * 1_000;
+      if (meshcoreWaitingMessagesPollRef.current)
+        clearInterval(meshcoreWaitingMessagesPollRef.current);
+      meshcoreWaitingMessagesPollRef.current = setInterval(() => {
+        if (!meshcoreHookMountedRef.current) return;
+        void processWaitingMessagesRef.current?.().catch((e: unknown) => {
+          console.warn('[useMeshCore] periodic getWaitingMessages failed', e);
+        });
+      }, MESHCORE_WAITING_MESSAGES_POLL_MS);
     },
     [
       awaitUnlessMeshcoreSetupCancelled,

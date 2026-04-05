@@ -91,7 +91,7 @@ pnpm run docs:serve
 
 ### All Scripts Reference
 
-Complete reference of all npm scripts in `package.json`, organized by category.
+Complete reference of all pnpm scripts in `package.json`, organized by category.
 
 #### Build
 
@@ -190,7 +190,7 @@ Complete reference of all npm scripts in `package.json`, organized by category.
 Automated dependency updates are configured in `.github/dependabot.yml`:
 
 - **Schedule:** Weekly on Saturdays
-- **npm dependencies:** Grouped PRs — `electron` separate, all other npm deps together
+- **pnpm dependencies:** Grouped PRs — `electron` separate, all other deps together
 - **GitHub Actions:** Grouped into one PR
 
 **Testing Dependabot PRs locally:**
@@ -219,7 +219,7 @@ Installed via `pnpm install` (from `package.json`):
 - `prettier-plugin-sh`
 - `markdownlint-cli2`
 
-Not installed by npm (install separately when needed):
+Not installed by pnpm (install separately when needed):
 
 - `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or install system-wide)
 - `yamllint` (required for YAML linting; install via `pip install yamllint` or `brew install yamllint` on macOS)
@@ -563,7 +563,7 @@ pnpm run rebuild
 Use:
 
 ```bash
-pnpm run build && npx electron . --disable-gpu
+pnpm run build && pnpm dlx electron . --disable-gpu
 ```
 
 Or:

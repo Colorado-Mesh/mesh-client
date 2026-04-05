@@ -1177,8 +1177,8 @@ function createWindow() {
     try {
       const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
       const hint = isDev
-        ? 'Ensure the dev server is running (npm run dev) and the URL is reachable.'
-        : 'The app bundle may be missing or damaged. Try reinstalling or run from source with npm run build && npm start.';
+        ? 'Ensure the dev server is running (pnpm run dev) and the URL is reachable.'
+        : 'The app bundle may be missing or damaged. Try reinstalling or run from source with pnpm run build && pnpm start.';
       dialog.showErrorBox(
         'Mesh-Client — Failed to Load',
         `Could not load the application UI (code ${errorCode}: ${errorDesc}).\n\n${hint}\n\nURL: ${validatedURL}`,
@@ -1205,12 +1205,6 @@ function createWindow() {
   } else {
     const indexPath = path.join(__dirname, '../../dist/renderer/index.html');
     const indexUrl = pathToFileURL(indexPath).toString();
-    // Startup diagnostics for troubleshooting packaged app issues
-    console.debug('[Startup] app.isPackaged:', app.isPackaged);
-    console.debug('[Startup] __dirname:', sanitizeLogMessage(__dirname));
-    console.debug('[Startup] Renderer path:', sanitizeLogMessage(indexPath));
-    console.debug('[Startup] process.resourcesPath:', sanitizeLogMessage(process.resourcesPath));
-    console.debug('[Startup] userData:', sanitizeLogMessage(app.getPath('userData')));
     // Use loadURL with an explicit HTTP referrer so OpenStreetMap tile requests
     // from the packaged app include a valid Referer header and comply with the
     // OSM tile usage policy for web-style traffic.
@@ -3890,7 +3884,7 @@ void app.whenReady().then(() => {
     const isNativeModuleError =
       error instanceof Error && (error as NodeJS.ErrnoException).code === 'ERR_DLOPEN_FAILED';
     const message = isNativeModuleError
-      ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "npm install" in the project directory, then restart.\n\nDetails: ${error.message}`
+      ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
       : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
     dialog.showErrorBox('Mesh-Client — Startup Error', message);
     app.quit();

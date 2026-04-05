@@ -1,0 +1,11 @@
+allowBuilds:
+  '@meshtastic/core': true
+  '@meshtastic/transport-http': true
+  '@meshtastic/transport-web-serial': true
+  '@serialport/bindings-cpp': true
+  '@stoprocent/bluetooth-hci-socket': true
+  '@stoprocent/noble': true
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+  usb: true

@@ -62,7 +62,7 @@ export function linuxDisplayMissingRemediation() {
     '[mesh-client] If already in a desktop session, verify display environment variables:',
     '  echo "DISPLAY=$DISPLAY WAYLAND_DISPLAY=$WAYLAND_DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE"',
     '[mesh-client] For Wayland sessions, forcing X11 may help:',
-    '  ELECTRON_OZONE_PLATFORM_HINT=x11 npm start',
+    '  ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm start',
   ].join('\n');
 }
 

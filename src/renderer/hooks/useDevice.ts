@@ -3,6 +3,11 @@ import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/protobufs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+type ChannelType = Parameters<MeshDevice['setChannel']>[0];
+type PositionType = Parameters<MeshDevice['setPosition']>[0];
+type UserType = Parameters<MeshDevice['setOwner']>[0];
+type WaypointType = Parameters<MeshDevice['sendWaypoint']>[0];
+
 import {
   meshtasticShortNameAfterClearingDefault,
   preferNonEmptyTrimmedString,
@@ -2453,7 +2458,7 @@ export function useDevice() {
             positionPrecision: args.settings.positionPrecision,
           }),
         }),
-      });
+      }) as ChannelType;
       await deviceRef.current.setChannel(channel);
     },
     [],
@@ -2471,7 +2476,7 @@ export function useDevice() {
         longName: owner.longName,
         shortName: owner.shortName,
         isLicensed: owner.isLicensed,
-      });
+      }) as UserType;
       await deviceRef.current.setOwner(user);
     },
     [],
@@ -2524,7 +2529,7 @@ export function useDevice() {
         icon: wp.icon ?? 0,
         lockedTo: wp.lockedTo ?? 0,
         expire: wp.expire ?? 0,
-      });
+      }) as WaypointType;
       await deviceRef.current.sendWaypoint(waypoint, dest, channel);
     },
     [],
@@ -2532,7 +2537,7 @@ export function useDevice() {
 
   const deleteWaypoint = useCallback(async (id: number) => {
     if (!deviceRef.current) return;
-    const waypoint = create(Mesh.WaypointSchema, { id, expire: 1 });
+    const waypoint = create(Mesh.WaypointSchema, { id, expire: 1 }) as WaypointType;
     await deviceRef.current.sendWaypoint(waypoint, 0xffffffff, 0);
   }, []);
 
@@ -2715,7 +2720,7 @@ export function useDevice() {
                 latitudeI: Math.round(pos.lat * 1e7),
                 longitudeI: Math.round(pos.lon * 1e7),
                 time: Math.floor(Date.now() / 1000),
-              }),
+              }) as PositionType,
             )
             .catch((e: unknown) => {
               console.debug('[useDevice] setPosition non-fatal', e);
@@ -2745,7 +2750,7 @@ export function useDevice() {
         longitudeI: Math.round(lon * 1e7),
         altitude: alt ?? 0,
         time: Math.floor(Date.now() / 1000),
-      }),
+      }) as PositionType,
     );
   }, []);
 

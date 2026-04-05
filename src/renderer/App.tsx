@@ -990,7 +990,7 @@ export default function App() {
                 className={`px-3 py-0.5 transition-colors ${
                   protocol === 'meshtastic'
                     ? 'bg-brand-green/20 text-brand-green'
-                    : 'text-gray-500 hover:bg-gray-800 hover:text-gray-300'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
                 }`}
               >
                 (M) Meshtastic
@@ -1011,7 +1011,7 @@ export default function App() {
                 className={`px-3 py-0.5 transition-colors ${
                   protocol === 'meshcore'
                     ? 'bg-cyan-600/20 text-cyan-400'
-                    : 'text-gray-500 hover:bg-gray-800 hover:text-gray-300'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
                 }`}
               >
                 (MC) MeshCore
@@ -1030,7 +1030,7 @@ export default function App() {
                 <TakStatusIcon running={takStatus.running} />
                 <span
                   aria-label={`TAK server ${takStatus.running ? 'running' : 'stopped'}`}
-                  className={`text-xs ${takStatus.running ? 'text-brand-green' : 'text-gray-500'}`}
+                  className={`text-xs ${takStatus.running ? 'text-brand-green' : 'text-gray-400'}`}
                 >
                   TAK {takStatus.running ? 'running' : 'stopped'}
                 </span>
@@ -1047,7 +1047,7 @@ export default function App() {
                       ? 'animate-pulse text-yellow-400'
                       : device.mqttStatus === 'error'
                         ? 'text-red-400'
-                        : 'text-gray-500'
+                        : 'text-gray-400'
                 }`}
               >
                 MQTT {device.mqttStatus ?? 'disconnected'}
@@ -1123,7 +1123,7 @@ export default function App() {
                 setTelemetryNoticeDismissed(true);
               }}
               aria-label="Dismiss"
-              className="shrink-0 rounded border border-gray-600 px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:border-gray-500 hover:text-gray-300"
+              className="shrink-0 rounded border border-gray-600 px-2 py-1 text-xs font-medium text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-300"
             >
               Dismiss
             </button>
@@ -1133,12 +1133,14 @@ export default function App() {
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             {/* Tabs */}
-            <Tabs
-              tabs={displayTabNames}
-              active={activeTab}
-              onChange={setActiveTab}
-              chatUnread={protocol === 'meshtastic' ? meshtasticUnread : meshcoreUnread}
-            />
+            <nav aria-label="Application panels">
+              <Tabs
+                tabs={displayTabNames}
+                active={activeTab}
+                onChange={setActiveTab}
+                chatUnread={protocol === 'meshtastic' ? meshtasticUnread : meshcoreUnread}
+              />
+            </nav>
 
             {/* Content */}
             <main className="min-h-0 flex-1 overflow-auto p-4">
@@ -1687,7 +1689,7 @@ export default function App() {
                 aria-label="Keyboard shortcuts (?)"
                 aria-haspopup="dialog"
                 title="Keyboard shortcuts (?)"
-                className="inline-flex shrink-0 items-center gap-1 justify-self-center rounded-full border border-gray-600 px-3 py-0.5 font-mono text-xs text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
+                className="inline-flex shrink-0 items-center gap-1 justify-self-center rounded-full border border-gray-600 px-3 py-0.5 font-mono text-xs text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-300"
               >
                 Shortcuts
                 <span className="font-mono text-[10px] text-gray-400" aria-hidden="true">

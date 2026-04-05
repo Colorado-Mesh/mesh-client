@@ -19,7 +19,7 @@ const electronVersion = require(path.join(projectRoot, "node_modules/electron/pa
 if (process.env.MESHTASTIC_SKIP_ELECTRON_REBUILD === "1") {
   console.warn(
     "MESHTASTIC_SKIP_ELECTRON_REBUILD=1 — skipping native rebuild. " +
-      "@stoprocent/noble may not match Electron until you run: npm run postinstall",
+      "@stoprocent/noble may not match Electron until you run: pnpm run postinstall",
   );
   process.exit(0);
 }
@@ -36,9 +36,9 @@ if (process.platform === "linux") {
         "Electron binary exited with SIGILL (illegal instruction). Common in sandboxes or CPUs without instructions the prebuilt binary expects.",
       );
       console.error(
-        "To finish npm install without running Electron: MESHTASTIC_SKIP_ELECTRON_REBUILD=1 npm install",
+        "To finish pnpm install without running Electron: MESHTASTIC_SKIP_ELECTRON_REBUILD=1 pnpm install",
       );
-      console.error("Then run npm install on a full Linux host where electron --version succeeds.");
+      console.error("Then run pnpm install on a full Linux host where electron --version succeeds.");
       process.exit(1);
     }
   }
@@ -54,7 +54,7 @@ const installAppDepsJs = path.join(
   "install-app-deps.js",
 );
 if (!fs.existsSync(installAppDepsJs)) {
-  console.error("electron-builder install-app-deps not found; run npm install first.");
+  console.error("electron-builder install-app-deps not found; run pnpm install first.");
   process.exit(1);
 }
 const result = spawnSync(process.execPath, [installAppDepsJs], {

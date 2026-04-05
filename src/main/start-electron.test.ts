@@ -47,7 +47,7 @@ describe('start-electron wrapper helpers', () => {
     };
     const text = mod.linuxDisplayMissingRemediation();
     expect(text).toContain('Missing X server or $DISPLAY');
-    expect(text).toContain('ELECTRON_OZONE_PLATFORM_HINT=x11 npm start');
+    expect(text).toContain('ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm start');
     expect(text).toContain('DISPLAY=$DISPLAY WAYLAND_DISPLAY=$WAYLAND_DISPLAY');
   });
 

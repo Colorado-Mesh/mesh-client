@@ -24,7 +24,7 @@ for (const c of candidates) {
 }
 
 console.error(
-  "Failed to install MkDocs deps. Install Python 3 + pip and run: npm run docs:install",
+  "Failed to install MkDocs deps. Install Python 3 + pip and run: pnpm run docs:install",
 );
 process.exit(1);
 
