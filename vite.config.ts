@@ -23,7 +23,6 @@ export default defineConfig({
     'process.env': {},
     'process.version': JSON.stringify(process.version),
     'process.platform': JSON.stringify(process.platform),
-    'import_os.hostname': '(() => "mesh-client-user")',
   },
   build: {
     outDir: path.resolve(__dirname, '../../dist-electron/renderer'),

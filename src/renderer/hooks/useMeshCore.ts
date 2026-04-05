@@ -1348,7 +1348,8 @@ export function useMeshCore() {
           await initConn(conn);
           console.debug('[useMeshCore] connectAutomatic serial: connected');
         } catch (err) {
-          console.error('[useMeshCore] connectAutomatic serial error', err);
+          const message = err instanceof Error ? err.message : String(err ?? 'Unknown error');
+          console.error('[useMeshCore] connectAutomatic serial error:', message);
           setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
           throw err;
         }

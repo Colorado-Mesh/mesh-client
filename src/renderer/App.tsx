@@ -540,7 +540,7 @@ export default function App() {
                 aria-label={
                   device.mqttStatus === 'connected' ? 'MQTT connected' : 'MQTT disconnected'
                 }
-                className={`text-xs ${device.mqttStatus === 'connected' ? 'text-brand-green' : 'text-gray-500'}`}
+                className={`text-xs ${device.mqttStatus === 'connected' ? 'text-brand-green' : 'text-gray-400'}`}
               >
                 MQTT {device.mqttStatus === 'connected' ? 'connected' : 'disconnected'}
               </span>
@@ -629,13 +629,15 @@ export default function App() {
         <div className="flex flex-1 min-h-0 flex-col">
           <div className="flex flex-col flex-1 min-w-0 min-h-0">
             {/* Tabs */}
-            <Tabs
-              tabs={displayTabNames}
-              active={activeTab}
-              onChange={setActiveTab}
-              chatUnread={chatUnread}
-              disabledTabs={protocol === 'meshcore' ? MESHCORE_DISABLED_TABS : undefined}
-            />
+            <nav aria-label="Application panels">
+              <Tabs
+                tabs={displayTabNames}
+                active={activeTab}
+                onChange={setActiveTab}
+                chatUnread={chatUnread}
+                disabledTabs={protocol === 'meshcore' ? MESHCORE_DISABLED_TABS : undefined}
+              />
+            </nav>
 
             {/* Content */}
             <main className="flex-1 overflow-auto p-4 min-h-0">
@@ -922,7 +924,7 @@ export default function App() {
                 onClick={() => setShowShortcuts(true)}
                 aria-label="Shortcuts ?"
                 aria-haspopup="dialog"
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-slate-700 bg-slate-800/40 text-gray-500 hover:text-gray-300 hover:border-slate-600 transition-colors text-[11px] font-medium"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-slate-700 bg-slate-800/40 text-gray-400 hover:text-gray-300 hover:border-slate-600 transition-colors text-[11px] font-medium"
                 title="Keyboard shortcuts (?)"
               >
                 Shortcuts{' '}
