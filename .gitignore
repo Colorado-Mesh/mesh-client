@@ -3,6 +3,7 @@
 .aider*
 .claude/
 .cursor/
+.windsurfrules
 Thumbs.db
 dist-electron/
 dist/
