@@ -72,7 +72,6 @@ linux:
 deb:
 rpm:
 win:
-  asar: false
   target:
     - target: nsis
       arch:

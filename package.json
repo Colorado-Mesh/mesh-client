@@ -167,6 +167,9 @@
       "tar": "^7.5.11",
       "yauzl": "^3.2.1"
     },
+    "patchedDependencies": {
+      "readable-stream@4.7.0": "patches/readable-stream@4.7.0.patch"
+    },
     "minimumReleaseAgeExclude": [
       "lodash",
       "lodash-es"
