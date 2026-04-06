@@ -29,7 +29,7 @@ interface NodeDetailModalProps {
   neighborInfo?: Map<number, NeighborInfoRecord>;
   useFahrenheit?: boolean;
   protocol?: MeshProtocol;
-  meshcoreTraceResult?: { hops: { snr: number }[]; lastSnr: number };
+  meshcoreTraceResult?: { pathLen: number; pathSnrs: number[]; lastSnr: number };
   meshcoreRepeaterStatus?: MeshCoreRepeaterStatus;
   onRequestRepeaterStatus?: (nodeId: number) => Promise<void>;
   meshcoreNodeTelemetry?: MeshCoreNodeTelemetry;
@@ -260,6 +260,14 @@ export default function NodeDetailModal({
               </div>
               <div className="mt-0.5 flex items-center gap-2">
                 <span className="text-muted font-mono text-xs">{hexId}</span>
+                {node.hops_away != null && (
+                  <span
+                    className={`text-xs ${node.hops_away === 0 ? 'text-bright-green' : 'text-gray-400'}`}
+                    title="Hops away (path length)"
+                  >
+                    {node.hops_away} hop{node.hops_away !== 1 ? 's' : ''}
+                  </span>
+                )}
                 {node.hw_model && node.hw_model !== '0' && (
                   <span className="text-muted text-xs">{node.hw_model}</span>
                 )}
@@ -326,13 +334,13 @@ export default function NodeDetailModal({
                   Path Trace
                 </h4>
                 <div className="bg-secondary-dark space-y-1 rounded p-2">
-                  {meshcoreTraceResult.hops.map((hop, i) => (
+                  {meshcoreTraceResult.pathSnrs.map((hop, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs">
                       <span className="text-muted">Hop {i + 1}</span>
                       <span
-                        className={`font-mono ${hop.snr >= 5 ? 'text-green-400' : hop.snr >= 0 ? 'text-yellow-400' : 'text-red-400'}`}
+                        className={`font-mono ${hop >= 5 ? 'text-green-400' : hop >= 0 ? 'text-yellow-400' : 'text-red-400'}`}
                       >
-                        {hop.snr.toFixed(2)} dB
+                        {hop.toFixed(2)} dB
                       </span>
                     </div>
                   ))}

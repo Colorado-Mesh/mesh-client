@@ -28,7 +28,10 @@ interface Props {
   nodes: Map<number, MeshNode>;
   meshcoreNodeStatus: Map<number, MeshCoreRepeaterStatus>;
   meshcoreStatusErrors?: Map<number, string>;
-  meshcoreTraceResults: Map<number, { hops: { snr: number }[]; lastSnr: number }>;
+  meshcoreTraceResults: Map<
+    number,
+    { pathLen: number; pathHashes: number[]; pathSnrs: number[]; lastSnr: number; tag: number }
+  >;
   meshcorePingErrors?: Map<number, string>;
   onRequestRepeaterStatus: (nodeId: number) => Promise<void>;
   onPing: (nodeId: number) => Promise<void>;
@@ -47,14 +50,22 @@ interface Props {
   onClearCliHistory?: (nodeId: number) => void;
 }
 
-function formatRelativeTime(lastHeard: number | null | undefined): string {
+function formatRelativeTime(
+  lastHeard: number | null | undefined,
+  nodeId?: number,
+  nodeName?: string,
+): string {
   if (!lastHeard) return 'Never';
   const lastMs = normalizeLastHeardMs(lastHeard);
   if (!lastMs) return 'Never';
   const ageMs = Date.now() - lastMs;
   const ageSec = Math.floor(ageMs / 1000);
   if (ageSec < 0) {
-    console.warn('[formatRelativeTime] future timestamp detected:', { lastHeard, lastMs, ageSec });
+    const timeDeltaSec = Math.abs(ageSec);
+    if (timeDeltaSec > 60)
+      console.warn(
+        `[formatRelativeTime] future timestamp detected: node=${nodeName ?? nodeId?.toString(16) ?? 'unknown'}, timeDelta=${timeDeltaSec}s, lastHeard=${lastHeard}, lastMs=${lastMs}`,
+      );
   }
   const clampedSec = Math.max(0, ageSec);
   if (clampedSec < 60) return 'Just now';
@@ -109,7 +120,7 @@ function SignalSparkline({ points }: { points: { ts: number; snr: number }[] }) 
     .map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(p.ts).toFixed(1)},${toY(p.snr).toFixed(1)}`)
     .join(' ');
   const latest = points[points.length - 1];
-  const tooltip = `${latest.snr.toFixed(1)} dB · ${formatRelativeTime(latest.ts / 1000)}`;
+  const tooltip = `${latest.snr.toFixed(1)} dB · ${formatRelativeTime(latest.ts / 1000, undefined, 'signal history')}`;
   return (
     <svg width={W} height={H} className="text-brand-green">
       <title>{tooltip}</title>
@@ -489,7 +500,7 @@ export default function RepeatersPanel({
                   const neighborData = meshcoreNeighbors?.get(node.node_id);
                   const telemetryData = meshcoreTelemetry?.get(node.node_id);
                   const telemetryError = meshcoreTelemetryErrors?.get(node.node_id);
-                  const hasTraceResult = traceResult && traceResult.hops.length > 0;
+                  const hasTraceResult = traceResult && traceResult.pathLen > 0;
 
                   return (
                     <Fragment key={node.node_id}>
@@ -533,7 +544,7 @@ export default function RepeatersPanel({
                           </button>
                         </td>
                         <td className="py-2 pr-4 text-xs text-gray-400">
-                          {formatRelativeTime(node.last_heard)}
+                          {formatRelativeTime(node.last_heard, node.node_id, node.long_name)}
                         </td>
                         <td
                           className="py-2 pr-4"
@@ -563,15 +574,14 @@ export default function RepeatersPanel({
                                   togglePath(node.node_id);
                                 }}
                                 className="text-blue-400 underline decoration-dotted hover:text-blue-300"
-                                title="Click to view path SNR detail"
                               >
-                                {traceResult.hops.length}
+                                {traceResult.pathLen} hops
                               </button>
                             ) : (
-                              traceResult.hops.length
+                              <span className="text-gray-500">—</span>
                             )
                           ) : (
-                            '—'
+                            <span className="text-gray-500">—</span>
                           )}
                         </td>
                         <td className="py-2 pr-4">{formatUptime(status?.totalUpTimeSecs)}</td>
@@ -721,12 +731,12 @@ export default function RepeatersPanel({
                             <div className="flex flex-wrap items-center gap-1 text-xs">
                               <span className="mr-1 text-gray-400">Path:</span>
                               <span className="text-brand-green">● Me</span>
-                              {traceResult.hops.map((hop, i) => (
+                              {traceResult.pathSnrs?.map((hop, i) => (
                                 <span key={i} className="flex items-center gap-1">
                                   <span className="text-gray-600">→</span>
                                   <span className="rounded bg-blue-900/40 px-1.5 py-0.5 font-mono text-blue-300">
-                                    {hop.snr > 0 ? '+' : ''}
-                                    {hop.snr.toFixed(2)} dB
+                                    {hop > 0 ? '+' : ''}
+                                    {hop.toFixed(2)} dB
                                   </span>
                                   <span className="text-gray-500">● Hop {i + 1}</span>
                                 </span>
