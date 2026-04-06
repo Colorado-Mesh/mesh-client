@@ -1,31 +1,28 @@
-name: Build/Release Electron App
+name: Build Binaries (no release)
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 jobs:
-  release:
+  build:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: ${{ github.workspace }}
     permissions:
-      contents: write
+      contents: read
     strategy:
       matrix:
         include:
           - os: macos-latest
-            build_script: pnpm run dist:mac:publish
+            build_script: pnpm run dist:mac
           - os: ubuntu-latest
-            build_script: pnpm run dist:linux:publish
+            build_script: pnpm run dist:linux
           - os: windows-latest
-            build_script: pnpm run dist:win:publish
+            build_script: pnpm run dist:win
 
     steps:
       - name: Checkout code
@@ -50,14 +47,9 @@ jobs:
       - name: Rebuild native dependencies
         run: pnpm run rebuild
 
-      - name: Build and Publish
-        env:
-          # electron-publish reads GH_TOKEN; GITHUB_TOKEN alone is not used for uploads
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # dist:*:publish scripts run electron-builder with --publish always
+      - name: Build
         run: ${{ matrix.build_script }}
 
-      # Keep artificates for 30 days when we manually build
       - name: Upload macOS Artifact
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
