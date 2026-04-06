@@ -62,9 +62,10 @@ function formatRelativeTime(
   const ageSec = Math.floor(ageMs / 1000);
   if (ageSec < 0) {
     const timeDeltaSec = Math.abs(ageSec);
-    console.warn(
-      `[formatRelativeTime] future timestamp detected: node=${nodeName ?? nodeId?.toString(16) ?? 'unknown'}, timeDelta=${timeDeltaSec}s, lastHeard=${lastHeard}, lastMs=${lastMs}`,
-    );
+    if (timeDeltaSec > 60)
+      console.warn(
+        `[formatRelativeTime] future timestamp detected: node=${nodeName ?? nodeId?.toString(16) ?? 'unknown'}, timeDelta=${timeDeltaSec}s, lastHeard=${lastHeard}, lastMs=${lastMs}`,
+      );
   }
   const clampedSec = Math.max(0, ageSec);
   if (clampedSec < 60) return 'Just now';
