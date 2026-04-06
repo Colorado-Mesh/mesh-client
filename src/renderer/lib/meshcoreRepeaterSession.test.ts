@@ -15,7 +15,7 @@ describe('meshcoreRepeaterTryLogin', () => {
     const pubKey = new Uint8Array(32);
     await meshcoreRepeaterTryLogin(conn, pubKey);
     expect(login).toHaveBeenCalledTimes(1);
-    expect(login).toHaveBeenCalledWith(pubKey, 'secret', 2000);
+    expect(login).toHaveBeenCalledWith(pubKey, 'secret', 10000);
     meshcoreClearRepeaterRemoteSessionAuth();
   });
 
