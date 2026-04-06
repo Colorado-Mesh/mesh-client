@@ -50,14 +50,21 @@ interface Props {
   onClearCliHistory?: (nodeId: number) => void;
 }
 
-function formatRelativeTime(lastHeard: number | null | undefined): string {
+function formatRelativeTime(
+  lastHeard: number | null | undefined,
+  nodeId?: number,
+  nodeName?: string,
+): string {
   if (!lastHeard) return 'Never';
   const lastMs = normalizeLastHeardMs(lastHeard);
   if (!lastMs) return 'Never';
   const ageMs = Date.now() - lastMs;
   const ageSec = Math.floor(ageMs / 1000);
   if (ageSec < 0) {
-    console.warn('[formatRelativeTime] future timestamp detected:', { lastHeard, lastMs, ageSec });
+    const timeDeltaSec = Math.abs(ageSec);
+    console.warn(
+      `[formatRelativeTime] future timestamp detected: node=${nodeName ?? nodeId?.toString(16) ?? 'unknown'}, timeDelta=${timeDeltaSec}s, lastHeard=${lastHeard}, lastMs=${lastMs}`,
+    );
   }
   const clampedSec = Math.max(0, ageSec);
   if (clampedSec < 60) return 'Just now';
@@ -112,7 +119,7 @@ function SignalSparkline({ points }: { points: { ts: number; snr: number }[] }) 
     .map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(p.ts).toFixed(1)},${toY(p.snr).toFixed(1)}`)
     .join(' ');
   const latest = points[points.length - 1];
-  const tooltip = `${latest.snr.toFixed(1)} dB · ${formatRelativeTime(latest.ts / 1000)}`;
+  const tooltip = `${latest.snr.toFixed(1)} dB · ${formatRelativeTime(latest.ts / 1000, undefined, 'signal history')}`;
   return (
     <svg width={W} height={H} className="text-brand-green">
       <title>{tooltip}</title>
@@ -536,7 +543,7 @@ export default function RepeatersPanel({
                           </button>
                         </td>
                         <td className="py-2 pr-4 text-xs text-gray-400">
-                          {formatRelativeTime(node.last_heard)}
+                          {formatRelativeTime(node.last_heard, node.node_id, node.long_name)}
                         </td>
                         <td
                           className="py-2 pr-4"
