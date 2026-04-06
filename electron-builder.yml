@@ -1,5 +1,9 @@
 appId: com.mesh-client.app
 productName: Mesh-client
+extraMetadata:
+  dependencies:
+    process: '*'
+    ms: '*'
 directories:
   buildResources: resources
   output: release
@@ -72,10 +76,6 @@ linux:
 deb:
 rpm:
 win:
-  extraMetadata:
-    dependencies:
-      process: '*'
-      ms: '*'
   target:
     - target: nsis
       arch:
