@@ -46,8 +46,8 @@
     "dist:linux:publish": "pnpm dedupe && pnpm run build && electron-builder --linux --x64 --arm64 --publish always",
     "dist:mac": "pnpm dedupe && pnpm run build && electron-builder --mac --publish never",
     "dist:mac:publish": "pnpm dedupe && pnpm run build && electron-builder --mac --publish always",
-    "dist:win": "pnpm dedupe && pnpm run build && electron-builder --win --publish never",
-    "dist:win:publish": "pnpm dedupe && pnpm run build && electron-builder --win --publish always",
+    "dist:win": "pnpm dedupe && pnpm run build && pnpm install --config.node-linker=hoisted && electron-builder --win --publish never && pnpm install",
+    "dist:win:publish": "pnpm dedupe && pnpm run build && pnpm install --config.node-linker=hoisted && electron-builder --win --publish always && pnpm install",
     "docs:build": "node scripts/run-mkdocs.mjs build",
     "docs:install": "node scripts/install-mkdocs-deps.mjs",
     "docs:serve": "node scripts/run-mkdocs.mjs serve",
@@ -166,9 +166,6 @@
       "smol-toml": "^1.6.1",
       "tar": "^7.5.11",
       "yauzl": "^3.2.1"
-    },
-    "patchedDependencies": {
-      "readable-stream@4.7.0": "patches/readable-stream@4.7.0.patch"
     },
     "minimumReleaseAgeExclude": [
       "lodash",

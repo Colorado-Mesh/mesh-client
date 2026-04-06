@@ -99,7 +99,7 @@ electron-builder publishes to GitHub when it thinks it's in CI. Local builds use
 
 ### `[DEP0190]` when running electron-builder
 
-Node deprecates `spawn(..., { shell: true })` with an args array. This project patches `app-builder-lib` via `patch-package` so macOS/Linux use `shell: false` for the npm dependency collector. Re-run `pnpm install` if you upgrade electron-builder and the warning returns.
+Node deprecates `spawn(..., { shell: true })` with an args array. This project uses pnpm's native patching via `patchedDependencies` to patch `app-builder-lib` so macOS/Linux use `shell: false` for the npm dependency collector. Re-run `pnpm install` if you upgrade electron-builder and the warning returns.
 
 ### `duplicate dependency references` during dist
 

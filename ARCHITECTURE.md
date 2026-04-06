@@ -126,7 +126,7 @@ mesh-client/
 │   ├── check-silent-catches.mjs
 │   ├── check-xss-patterns.mjs
 │   └── letsmesh-mqtt-probe.mjs   # Optional LetsMesh / MQTT debugging
-├── patches/                     # patch-package patches (e.g. electron-builder)
+├── pnpm-patches/                 # pnpm native patches (e.g. electron-builder)
 ├── docs/
 │   ├── accessibility-checklist.md
 │   ├── credits.md               # Authors, contributors, community, and libraries

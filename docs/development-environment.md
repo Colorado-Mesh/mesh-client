@@ -388,6 +388,10 @@ pnpm install
 pnpm run dev
 ```
 
+### Windows packaging note
+
+The Windows build (`dist:win`) uses pnpm's `node-linker=hoisted` mode to work around asar packaging issues on Windows. The build command automatically reinstalls with hoisted mode, packages, then restores the default structure.
+
 ### Serial device driver reminder
 
 If serial ports do not appear, install the right USB UART driver (for example CH340/CH341, CP210x, or FTDI).
