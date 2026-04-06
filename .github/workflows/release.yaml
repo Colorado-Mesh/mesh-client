@@ -57,32 +57,39 @@ jobs:
         # dist:*:publish scripts run electron-builder with --publish always
         run: ${{ matrix.build_script }}
 
+      # Keep artificates for 30 days when we manually build
       - name: Upload macOS Artifact
-        if: matrix.os == 'macos-latest' && github.event_name == 'workflow_dispatch'
+        if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
           name: mesh-client-macos-${{ github.sha }}
           path: |
-            release/mac/*.dmg
-            release/mac/arm64/*.dmg
+            dist/*.dmg
+            dist/*.zip
+            dist/mac/**/*.dmg
+            dist/mac/**/*.zip
           retention-days: 30
 
       - name: Upload Linux Artifact
-        if: matrix.os == 'ubuntu-latest' && github.event_name == 'workflow_dispatch'
+        if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: mesh-client-linux-${{ github.sha }}
           path: |
-            release/linux/*.AppImage
-            release/linux/*.rpm
+            dist/*.AppImage
+            dist/*.rpm
+            dist/*.deb
+            dist/linux-unpacked/**/*
           retention-days: 30
 
       - name: Upload Windows Artifact
-        if: matrix.os == 'windows-latest' && github.event_name == 'workflow_dispatch'
+        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: mesh-client-windows-${{ github.sha }}
           path: |
-            release/*.exe
-            release/win-unpacked/**/*
+            dist/*.exe
+            dist/win-unpacked/**/*
+            dist/win-arm64-unpacked/**/*
+            dist/win-x64-unpacked/**/*
           retention-days: 30
