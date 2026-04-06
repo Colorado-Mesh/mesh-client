@@ -64,10 +64,14 @@ jobs:
         with:
           name: mesh-client-macos-${{ github.sha }}
           path: |
-            dist/*.dmg
-            dist/*.zip
             dist/mac/**/*.dmg
             dist/mac/**/*.zip
+            dist/mac-arm64/**/*.dmg
+            dist/mac-arm64/**/*.zip
+            dist/mac-universal/**/*.dmg
+            dist/mac-universal/**/*.zip
+            dist/*.dmg
+            dist/*.zip
           retention-days: 30
 
       - name: Upload Linux Artifact
@@ -80,6 +84,9 @@ jobs:
             dist/*.rpm
             dist/*.deb
             dist/linux-unpacked/**/*
+            dist/linux/**/*.AppImage
+            dist/linux/**/*.rpm
+            dist/linux/**/*.deb
           retention-days: 30
 
       - name: Upload Windows Artifact
@@ -93,3 +100,7 @@ jobs:
             dist/win-arm64-unpacked/**/*
             dist/win-x64-unpacked/**/*
           retention-days: 30
+
+      - name: Debug - List dist contents
+        run: ls -laR dist
+        if: always()
