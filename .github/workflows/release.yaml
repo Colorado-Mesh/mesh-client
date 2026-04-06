@@ -100,7 +100,3 @@ jobs:
             dist/win-arm64-unpacked/**/*
             dist/win-x64-unpacked/**/*
           retention-days: 30
-
-      - name: Debug - List dist contents
-        run: ls -laR dist
-        if: always()

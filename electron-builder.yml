@@ -72,6 +72,10 @@ linux:
 deb:
 rpm:
 win:
+  extraMetadata:
+    dependencies:
+      process: '*'
+      ms: '*'
   target:
     - target: nsis
       arch:
