@@ -27,10 +27,10 @@
   "main": "dist-electron/main/index.js",
   "scripts": {
     "build": "pnpm run build:main:prod && pnpm run build:preload && pnpm run build:renderer",
-    "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:ms --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs",
-    "build:main:meta": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:ms --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --metafile=dist-electron/main/metafile.json",
-    "build:main:minify-meta": "esbuild src/main/index.ts --bundle --platform=node --minify --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:ms --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --metafile=dist-electron/main/meta.json",
-    "build:main:prod": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:ms --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --minify",
+    "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs",
+    "build:main:meta": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --metafile=dist-electron/main/metafile.json",
+    "build:main:minify-meta": "esbuild src/main/index.ts --bundle --platform=node --minify --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --metafile=dist-electron/main/meta.json",
+    "build:main:prod": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --minify",
     "build:main:size": "node scripts/print-main-bundle-size.mjs",
     "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --outfile=dist-electron/preload/index.js --external:electron --format=cjs",
     "build:renderer": "vite build",
@@ -168,6 +168,7 @@
       "yauzl": "^3.2.1"
     },
     "patchedDependencies": {
+      "debug@4.4.3": "patches/debug@4.4.3.patch",
       "readable-stream@4.7.0": "patches/readable-stream@4.7.0.patch"
     },
     "minimumReleaseAgeExclude": [

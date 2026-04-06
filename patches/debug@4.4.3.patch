@@ -1,0 +1,88 @@
+diff --git a/src/common.js b/src/common.js
+index 141cb578b7722324d8e1799b2a41bac473f6a9c1..bcddc91e56239059a1d336c141560e4fd7ae5f3f 100644
+--- a/src/common.js
++++ b/src/common.js
+@@ -11,7 +11,82 @@ function setup(env) {
+ 	createDebug.disable = disable;
+ 	createDebug.enable = enable;
+ 	createDebug.enabled = enabled;
+-	createDebug.humanize = require('ms');
++	createDebug.humanize = (function () {
++		var s = 1000;
++		var m = s * 60;
++		var h = m * 60;
++		var d = h * 24;
++		var w = d * 7;
++		var y = d * 365.25;
++		function parse(str) {
++			str = String(str);
++			if (str.length > 100) {
++				return;
++			}
++			var match = str.match(/^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i);
++			if (!match) {
++				return;
++			}
++			var n = parseFloat(match[1]);
++			var type = (match[2] || 'ms').toLowerCase();
++			switch (type) {
++				case 'years': case 'year': case 'yrs': case 'yr': case 'y': return n * y;
++				case 'weeks': case 'week': case 'w': return n * w;
++				case 'days': case 'day': case 'd': return n * d;
++				case 'hours': case 'hour': case 'hrs': case 'hr': case 'h': return n * h;
++				case 'minutes': case 'minute': case 'mins': case 'min': case 'm': return n * m;
++				case 'seconds': case 'second': case 'secs': case 'sec': case 's': return n * s;
++				case 'milliseconds': case 'millisecond': case 'msecs': case 'msec': case 'ms': return n;
++				default: return undefined;
++			}
++		}
++		function fmtShort(ms) {
++			var msAbs = Math.abs(ms);
++			if (msAbs >= d) {
++				return Math.round(ms / d) + 'd';
++			}
++			if (msAbs >= h) {
++				return Math.round(ms / h) + 'h';
++			}
++			if (msAbs >= m) {
++				return Math.round(ms / m) + 'm';
++			}
++			if (msAbs >= s) {
++				return Math.round(ms / s) + 's';
++			}
++			return ms + 'ms';
++		}
++		function fmtLong(ms) {
++			var msAbs = Math.abs(ms);
++			function plural(ms, msAbs, n, name) {
++				return Math.round(ms / n) + ' ' + name + (msAbs >= n * 1.5 ? 's' : '');
++			}
++			if (msAbs >= d) {
++				return plural(ms, msAbs, d, 'day');
++			}
++			if (msAbs >= h) {
++				return plural(ms, msAbs, h, 'hour');
++			}
++			if (msAbs >= m) {
++				return plural(ms, msAbs, m, 'minute');
++			}
++			if (msAbs >= s) {
++				return plural(ms, msAbs, s, 'second');
++			}
++			return ms + ' ms';
++		}
++		return function (val, options) {
++			options = options || {};
++			var type = typeof val;
++			if (type === 'string' && val.length > 0) {
++				return parse(val);
++			}
++			if (type === 'number' && isFinite(val)) {
++				return options.long ? fmtLong(val) : fmtShort(val);
++			}
++			throw new Error('val is not a non-empty string or a valid number. val=' + JSON.stringify(val));
++		};
++	}());
+ 	createDebug.destroy = destroy;
+ 
+ 	Object.keys(env).forEach(key => {
