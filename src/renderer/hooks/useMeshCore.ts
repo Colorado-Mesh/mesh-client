@@ -615,6 +615,7 @@ interface MeshCoreConnection {
     offset?: number,
     orderBy?: number,
     pubKeyPrefixLength?: number,
+    extraTimeoutMillis?: number,
   ): Promise<{
     totalNeighboursCount: number;
     neighbours: { publicKeyPrefix: Uint8Array; heardSecondsAgo: number; snr: number }[];
@@ -701,10 +702,10 @@ const INITIAL_STATE: DeviceState = {
 };
 
 const MAX_DEVICE_LOGS = 500;
-const MESHCORE_STATUS_TIMEOUT_MS = 10000;
-const MESHCORE_TELEMETRY_TIMEOUT_MS = 10000;
-const MESHCORE_NEIGHBORS_TIMEOUT_MS = 10000;
-const MESHCORE_TRACE_TIMEOUT_MS = 15000;
+const MESHCORE_STATUS_TIMEOUT_MS = 30000;
+const MESHCORE_TELEMETRY_TIMEOUT_MS = 30000;
+const MESHCORE_NEIGHBORS_TIMEOUT_MS = 30000;
+const MESHCORE_TRACE_TIMEOUT_MS = 60000;
 const MAX_TELEMETRY_POINTS = 50;
 
 const MAX_ENV_TELEMETRY_POINTS = 50;
@@ -3351,8 +3352,8 @@ export function useMeshCore() {
           next.set(nodeId, {
             pathLen: result.pathLen,
             pathHashes: result.pathHashes ?? [],
-            pathSnrs: result.pathSnrs ?? [],
-            lastSnr: result.lastSnr * 0.25,
+            pathSnrs: (result.pathSnrs ?? []).map((s) => s * MESHCORE_RPC_SNR_RAW_TO_DB),
+            lastSnr: result.lastSnr * MESHCORE_RPC_SNR_RAW_TO_DB,
             tag: result.tag,
           });
           return next;
@@ -3365,7 +3366,9 @@ export function useMeshCore() {
           next.set(nodeId, { ...existing, hops_away: result.pathLen });
           return next;
         });
-        useRepeaterSignalStore.getState().recordSignal(nodeId, result.lastSnr * 0.25);
+        useRepeaterSignalStore
+          .getState()
+          .recordSignal(nodeId, result.lastSnr * MESHCORE_RPC_SNR_RAW_TO_DB);
         bumpMeshcoreNodeLastHeardFromRpc(nodeId);
       } catch (e: unknown) {
         const rawErr = e instanceof Error ? e.message : String(e);
@@ -3604,7 +3607,14 @@ export function useMeshCore() {
     });
     try {
       await meshcoreRepeaterTryLogin(connRef.current, pubKey);
-      const raw = await connRef.current.getNeighbours(pubKey, 10, 0, 0, 6);
+      const raw = await connRef.current.getNeighbours(
+        pubKey,
+        10,
+        0,
+        0,
+        6,
+        MESHCORE_NEIGHBORS_TIMEOUT_MS,
+      );
       const neighbours: MeshCoreNeighborEntry[] = raw.neighbours.map((nb) => {
         const prefixHex = Array.from(nb.publicKeyPrefix)
           .map((b) => b.toString(16).padStart(2, '0'))
@@ -3615,7 +3625,7 @@ export function useMeshCore() {
           prefixHex,
           resolvedNodeId,
           heardSecondsAgo: nb.heardSecondsAgo,
-          snr: nb.snr,
+          snr: nb.snr * MESHCORE_RPC_SNR_RAW_TO_DB,
         };
       });
       const result: MeshCoreNeighborResult = {
