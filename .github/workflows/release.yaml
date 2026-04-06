@@ -61,20 +61,20 @@ jobs:
         if: matrix.os == 'macos-latest' && github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: mesh-client-macos
+          name: mesh-client-macos-${{ github.sha }}
           path: |
-            dist/mac/*.dmg
-            dist/mac/arm64/*.dmg
+            release/mac/*.dmg
+            release/mac/arm64/*.dmg
           retention-days: 30
 
       - name: Upload Linux Artifact
         if: matrix.os == 'ubuntu-latest' && github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: mesh-client-linux
+          name: mesh-client-linux-${{ github.sha }}
           path: |
-            dist/linux/*.AppImage
-            dist/linux/*.rpm
+            release/linux/*.AppImage
+            release/linux/*.rpm
           retention-days: 30
 
       - name: Upload Windows Artifact
@@ -83,6 +83,6 @@ jobs:
         with:
           name: mesh-client-windows-${{ github.sha }}
           path: |
-            dist/*.exe
-            dist/win-unpacked/**/*
+            release/*.exe
+            release/win-unpacked/**/*
           retention-days: 30
