@@ -95,15 +95,15 @@ describe('RepeaterCommandService', () => {
         new Uint8Array(32),
         new Uint8Array(32),
         new Uint8Array(32),
-      ]); // 17 hops = 10000 + 17*2000 = 44000
-      expect(timeoutWithHops).toBe(44000);
+      ]); // 17 hops = 30000 + 17*2000 = 64000
+      expect(timeoutWithHops).toBe(64000);
     });
 
     it('should include message size in dynamic timeout', () => {
-      const smallTimeout = service.calculateTimeout([], 100); // 10000 + 100 = 10100 -> Max(10100, 30000) = 30000
-      const largeTimeout = service.calculateTimeout([], 100000); // 10000 + 100000 = 110000
+      const smallTimeout = service.calculateTimeout([], 100); // 30000 + 100 = 30100 -> Max(30100, 30000) = 30000
+      const largeTimeout = service.calculateTimeout([], 100000); // 30000 + 100000 = 130000
       expect(smallTimeout).toBe(30000);
-      expect(largeTimeout).toBe(110000);
+      expect(largeTimeout).toBe(130000);
     });
   });
 

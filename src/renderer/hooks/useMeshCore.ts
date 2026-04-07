@@ -46,6 +46,8 @@ import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
   mergeMeshcoreChatStubNodes,
+  MESHCORE_CONTACTS_WARNING_THRESHOLD,
+  MESHCORE_MAX_CONTACTS,
   MESHCORE_RPC_SNR_RAW_TO_DB,
   meshcoreAppendRepeaterAuthHint,
   meshcoreChatStubNodeIdFromDisplayName,
@@ -123,7 +125,12 @@ function meshcoreContactRawFromDevice(c: MeshCoreContactRaw): MeshCoreContactRaw
   return { ...c, flags };
 }
 
-function contactToDbRow(contact: MeshCoreContactRaw, nickname?: string | null) {
+function contactToDbRow(
+  contact: MeshCoreContactRaw,
+  nickname?: string | null,
+  onRadio?: number,
+  lastSyncedFromRadio?: string | null,
+) {
   return {
     node_id: pubkeyToNodeId(contact.publicKey),
     public_key: Array.from(contact.publicKey)
@@ -137,6 +144,8 @@ function contactToDbRow(contact: MeshCoreContactRaw, nickname?: string | null) {
     nickname: nickname ?? null,
     contact_flags: contact.flags & 0xff,
     hops_away: contact.outPathLen != null && contact.outPathLen >= 0 ? contact.outPathLen : null,
+    on_radio: onRadio ?? 0,
+    last_synced_from_radio: lastSyncedFromRadio ?? null,
   };
 }
 
@@ -683,6 +692,8 @@ interface MeshcoreContactDbRow {
   nickname: string | null;
   contact_flags: number | null;
   hops_away: number | null;
+  on_radio: number;
+  last_synced_from_radio: string | null;
 }
 
 interface DeviceLogEntry {
@@ -702,10 +713,13 @@ const INITIAL_STATE: DeviceState = {
 };
 
 const MAX_DEVICE_LOGS = 500;
-const MESHCORE_STATUS_TIMEOUT_MS = 60000;
-const MESHCORE_TELEMETRY_TIMEOUT_MS = 60000;
-const MESHCORE_NEIGHBORS_TIMEOUT_MS = 60000;
-const MESHCORE_TRACE_TIMEOUT_MS = 60000;
+
+// MeshCore timeout constants - all derived from base timeout for consistency
+const MESHCORE_BASE_TIMEOUT_MS = 30000;
+const MESHCORE_STATUS_TIMEOUT_MS = MESHCORE_BASE_TIMEOUT_MS * 2; // 60000ms
+const MESHCORE_TELEMETRY_TIMEOUT_MS = MESHCORE_BASE_TIMEOUT_MS * 2; // 60000ms
+const MESHCORE_NEIGHBORS_TIMEOUT_MS = MESHCORE_BASE_TIMEOUT_MS * 2; // 60000ms
+const MESHCORE_TRACE_TIMEOUT_MS = MESHCORE_BASE_TIMEOUT_MS * 2; // 60000ms
 const MAX_TELEMETRY_POINTS = 50;
 
 const MAX_ENV_TELEMETRY_POINTS = 50;
@@ -1247,6 +1261,8 @@ export function useMeshCore() {
         myNodeId?: number;
         /** Prior UI node map so `last_heard` from live events is preserved when device sends `lastAdvert: 0`. */
         previousNodes?: Map<number, MeshNode>;
+        /** If true, save contacts with on_radio=1. */
+        contactsFromRadio?: boolean;
       },
     ): Promise<Map<number, MeshNode>> => {
       const prevSnap = opts?.previousNodes ?? new Map<number, MeshNode>();
@@ -1275,8 +1291,11 @@ export function useMeshCore() {
           .map((b) => b.toString(16).padStart(2, '0'))
           .join('');
         pubKeyPrefixMapRef.current.set(prefix, node.node_id);
+        // Save with on_radio=1 when contacts came from radio
+        const now = new Date().toISOString();
+        const onRadio = opts?.contactsFromRadio ? 1 : 0;
         void window.electronAPI.db
-          .saveMeshcoreContact(contactToDbRow(contact))
+          .saveMeshcoreContact(contactToDbRow(contact, undefined, onRadio, now))
           .catch((e: unknown) => {
             console.warn('[useMeshCore] saveMeshcoreContact error', e);
           });
@@ -3034,6 +3053,9 @@ export function useMeshCore() {
   const refreshContacts = useCallback(async () => {
     if (!connRef.current) return;
     try {
+      // Mark all existing contacts as not on radio before refreshing
+      await window.electronAPI.db.markAllMeshcoreContactsOffRadio();
+
       const contactsRaw = await connRef.current.getContacts();
       const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
       setMeshcoreContactsForTelemetry(contacts);
@@ -3041,9 +3063,17 @@ export function useMeshCore() {
         self: selfInfo,
         myNodeId: myNodeNumRef.current,
         previousNodes: nodesRef.current,
+        contactsFromRadio: true, // Signal to save with on_radio=1
       });
       setNodes((prev) => mergeMeshcoreChatStubNodes(prev, newNodes));
       console.debug('[useMeshCore] refreshContacts: loaded', contacts.length);
+
+      // Warn if approaching contact limit
+      if (contacts.length > MESHCORE_CONTACTS_WARNING_THRESHOLD) {
+        console.warn(
+          `[useMeshCore] refreshContacts: radio contacts near limit (${contacts.length}/${MESHCORE_MAX_CONTACTS})`,
+        );
+      }
     } catch (e) {
       console.error('[useMeshCore] refreshContacts error', e);
     }
@@ -3138,6 +3168,71 @@ export function useMeshCore() {
     await window.electronAPI.db.deleteMeshcoreContact(nodeId).catch((e: unknown) => {
       console.warn('[useMeshCore] deleteMeshcoreContact error', e);
     });
+  }, []);
+
+  const getMeshcoreContactCount = useCallback(async (): Promise<number> => {
+    try {
+      return await window.electronAPI.db.getMeshcoreContactCount();
+    } catch (e) {
+      console.warn('[useMeshCore] getMeshcoreContactCount error', e);
+      return 0;
+    }
+  }, []);
+
+  const addContactToRadio = useCallback(async (nodeId: number): Promise<boolean> => {
+    const conn = connRef.current;
+    if (!conn) {
+      throw new Error('Not connected to radio');
+    }
+    const pubKey = pubKeyMapRef.current.get(nodeId);
+    if (!pubKey) {
+      throw new Error('No public key for node');
+    }
+    try {
+      await (conn as any).addOrUpdateContact(pubKey, 0, 0, 0, new Uint8Array(), '', 0, 0, 0);
+      await window.electronAPI.db.saveMeshcoreContact({
+        node_id: nodeId,
+        public_key: Array.from(pubKey)
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
+        on_radio: 1,
+        last_synced_from_radio: new Date().toISOString(),
+      });
+      console.debug('[useMeshCore] addContactToRadio: added', nodeId.toString(16).toUpperCase());
+      return true;
+    } catch (e) {
+      console.warn('[useMeshCore] addContactToRadio error', e);
+      throw e;
+    }
+  }, []);
+
+  const removeContactFromRadio = useCallback(async (nodeId: number): Promise<boolean> => {
+    const conn = connRef.current;
+    if (!conn) {
+      throw new Error('Not connected to radio');
+    }
+    const pubKey = pubKeyMapRef.current.get(nodeId);
+    if (!pubKey) {
+      throw new Error('No public key for node');
+    }
+    try {
+      await conn.removeContact(pubKey);
+      await window.electronAPI.db.saveMeshcoreContact({
+        node_id: nodeId,
+        public_key: Array.from(pubKey)
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
+        on_radio: 0,
+      });
+      console.debug(
+        '[useMeshCore] removeContactFromRadio: removed',
+        nodeId.toString(16).toUpperCase(),
+      );
+      return true;
+    } catch (e) {
+      console.warn('[useMeshCore] removeContactFromRadio error', e);
+      throw e;
+    }
   }, []);
 
   const clearAllRepeaters = useCallback(async () => {

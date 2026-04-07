@@ -24,9 +24,10 @@ export interface RepeaterCommandServiceOptions {
   perHopTimeoutMs?: number;
 }
 
-const DEFAULT_TIMEOUT_MS = 30000;
+// Base timeout constants - aligned with MeshCore timeouts for consistency
+const BASE_TIMEOUT_MS = 30000;
+const DEFAULT_TIMEOUT_MS = BASE_TIMEOUT_MS;
 const MAX_RETRIES = 5;
-const BASE_TIMEOUT_MS = 10000;
 const PER_HOP_TIMEOUT_MS = 2000;
 
 export class RepeaterCommandService {
