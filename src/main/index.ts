@@ -126,6 +126,10 @@ async function ensureTakServerManager(): Promise<TakServerManager> {
 
 /** Max bytes per MeshCore TCP IPC write (DoS guard). */
 const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024;
+/** Min node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
+const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
+/** Max node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
+const MESHCORE_CHAT_STUB_ID_MAX = 0xafffffff >>> 0;
 /** Max bytes per BLE write IPC (DoS guard). */
 const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512;
 
@@ -421,6 +425,16 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
     const h = Number(c.hops_away);
     if (!Number.isInteger(h) || h < 0)
       throw new Error('db:saveMeshcoreContact: hops_away must be a non-negative integer');
+  }
+  if (c.on_radio != null) {
+    const o = Number(c.on_radio);
+    if (o !== 0 && o !== 1) throw new Error('db:saveMeshcoreContact: on_radio must be 0 or 1');
+  }
+  if (
+    c.last_synced_from_radio != null &&
+    (typeof c.last_synced_from_radio !== 'string' || c.last_synced_from_radio.length > 128)
+  ) {
+    throw new Error('db:saveMeshcoreContact: last_synced_from_radio must be a string <= 128');
   }
 }
 
@@ -3069,8 +3083,8 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
     return db
       .prepareOnce(
         'INSERT INTO meshcore_contacts ' +
-          '(node_id, public_key, adv_name, contact_type, last_advert, adv_lat, adv_lon, last_snr, last_rssi, favorited, nickname, contact_flags, hops_away) ' +
-          'VALUES (@node_id, @public_key, @adv_name, @contact_type, @last_advert, @adv_lat, @adv_lon, @last_snr, @last_rssi, 0, @nickname, @contact_flags, @hops_away) ' +
+          '(node_id, public_key, adv_name, contact_type, last_advert, adv_lat, adv_lon, last_snr, last_rssi, favorited, nickname, contact_flags, hops_away, on_radio, last_synced_from_radio) ' +
+          'VALUES (@node_id, @public_key, @adv_name, @contact_type, @last_advert, @adv_lat, @adv_lon, @last_snr, @last_rssi, 0, @nickname, @contact_flags, @hops_away, @on_radio, @last_synced_from_radio) ' +
           'ON CONFLICT(node_id) DO UPDATE SET ' +
           'public_key = excluded.public_key, ' +
           "adv_name = COALESCE(NULLIF(excluded.adv_name, ''), meshcore_contacts.adv_name), " +
@@ -3083,7 +3097,9 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
           'favorited = meshcore_contacts.favorited, ' +
           'nickname = COALESCE(excluded.nickname, meshcore_contacts.nickname), ' +
           'contact_flags = COALESCE(excluded.contact_flags, meshcore_contacts.contact_flags), ' +
-          'hops_away = COALESCE(excluded.hops_away, meshcore_contacts.hops_away)',
+          'hops_away = COALESCE(excluded.hops_away, meshcore_contacts.hops_away), ' +
+          'on_radio = excluded.on_radio, ' +
+          'last_synced_from_radio = excluded.last_synced_from_radio',
       )
       .run({
         node_id: Number(c.node_id),
@@ -3098,6 +3114,9 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
         nickname: typeof c.nickname === 'string' ? c.nickname : null,
         contact_flags: c.contact_flags != null ? Number(c.contact_flags) : 0,
         hops_away: c.hops_away != null ? Number(c.hops_away) : null,
+        on_radio: c.on_radio != null ? Number(c.on_radio) : null,
+        last_synced_from_radio:
+          typeof c.last_synced_from_radio === 'string' ? c.last_synced_from_radio : null,
       });
   } catch (err) {
     console.error(
@@ -3287,6 +3306,101 @@ ipcMain.handle('db:clearMeshcoreRepeaters', () => {
   } catch (err) {
     console.error(
       '[IPC] db:clearMeshcoreRepeaters failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+// Marks all contacts as not on radio (on_radio = 0).
+ipcMain.handle('db:markAllMeshcoreContactsOffRadio', () => {
+  try {
+    return getDatabase().prepareOnce('UPDATE meshcore_contacts SET on_radio = 0').run();
+  } catch (err) {
+    console.error(
+      '[IPC] db:markAllMeshcoreContactsOffRadio failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+// Returns count of contacts currently marked as on_radio = 1.
+ipcMain.handle('db:getMeshcoreContactCount', () => {
+  try {
+    const result = getDatabase()
+      .prepareOnce('SELECT COUNT(*) as cnt FROM meshcore_contacts WHERE on_radio = 1')
+      .get() as { cnt: number };
+    return result.cnt;
+  } catch (err) {
+    console.error(
+      '[IPC] db:getMeshcoreContactCount failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+// Deletes contacts without pubkey, excluding chat stub nodes. Returns { deleted, excludedStubCount }.
+ipcMain.handle('db:deleteMeshcoreContactsWithoutPubkey', () => {
+  try {
+    const db = getDatabase();
+    // Count stubs that would be excluded (for reporting)
+    const stubCountResult = db
+      .prepareOnce(
+        `SELECT COUNT(*) as cnt FROM meshcore_contacts
+         WHERE (public_key IS NULL OR public_key = '')
+         AND node_id >= ? AND node_id <= ?`,
+      )
+      .get(MESHCORE_CHAT_STUB_ID_MIN, MESHCORE_CHAT_STUB_ID_MAX) as { cnt: number };
+    const excludedStubCount = stubCountResult.cnt;
+    // Delete non-stub contacts without pubkey
+    const result = db
+      .prepareOnce(
+        `DELETE FROM meshcore_contacts
+         WHERE (public_key IS NULL OR public_key = '')
+         AND NOT (node_id >= ? AND node_id <= ?)`,
+      )
+      .run(MESHCORE_CHAT_STUB_ID_MIN, MESHCORE_CHAT_STUB_ID_MAX);
+    return { deleted: result.changes, excludedStubCount };
+  } catch (err) {
+    console.error(
+      '[IPC] db:deleteMeshcoreContactsWithoutPubkey failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+// Offloads all contacts with pubkey from radio (sets on_radio = 0). Returns count offloaded.
+ipcMain.handle('db:offloadAllMeshcoreContacts', () => {
+  try {
+    const result = getDatabase()
+      .prepareOnce(
+        `UPDATE meshcore_contacts SET on_radio = 0
+         WHERE on_radio = 1 AND public_key IS NOT NULL AND public_key != ''`,
+      )
+      .run();
+    return result.changes;
+  } catch (err) {
+    console.error(
+      '[IPC] db:offloadAllMeshcoreContacts failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+// Get a single contact by node_id (returns on_radio status).
+ipcMain.handle('db:getMeshcoreContactById', (_event, nodeId: number) => {
+  try {
+    const id = safeNonNegativeInt(nodeId);
+    return getDatabase()
+      .prepareOnce('SELECT node_id, public_key, on_radio FROM meshcore_contacts WHERE node_id = ?')
+      .get(id);
+  } catch (err) {
+    console.error(
+      '[IPC] db:getMeshcoreContactById failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

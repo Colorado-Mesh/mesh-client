@@ -634,6 +634,8 @@ export function useDevice() {
           long_name: preferNonEmptyTrimmedString(nodeUpdate.long_name, existing.long_name, {
             nodeId: nodeUpdate.node_id,
           }),
+          // Explicitly handle role to ensure it's properly updated from MQTT
+          role: nodeUpdate.role ?? existing.role,
         };
         // Don't overwrite RF signal data with MQTT-sourced node data
         if (!heardViaRF) {
@@ -2969,6 +2971,7 @@ export function emptyNode(nodeId: number): MeshNode {
     last_heard: 0,
     latitude: null,
     longitude: null,
+    role: undefined,
   };
 }
 

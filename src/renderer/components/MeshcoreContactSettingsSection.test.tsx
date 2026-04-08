@@ -46,10 +46,6 @@ describe('MeshcoreContactSettingsSection', () => {
     await user.click(screen.getByText('Contact management'));
     await user.click(screen.getByRole('radio', { name: /Auto add selected/i }));
 
-    const applyBtn = screen.getByRole('button', { name: 'Apply contact management' });
-    expect(applyBtn).not.toBeDisabled();
-    await user.click(applyBtn);
-
     expect(onApply).toHaveBeenCalledTimes(1);
     expect(onApply.mock.calls[0][0]).toMatchObject({
       autoAddAll: false,

@@ -238,6 +238,14 @@ describe('saveMeshcoreContact UPSERT COALESCE preservation', () => {
       /last_rssi = COALESCE\(excluded\.last_rssi, meshcore_contacts\.last_rssi\)/,
     );
   });
+
+  it('uses excluded.on_radio directly to overwrite existing values', () => {
+    expect(INDEX_SOURCE).toMatch(/on_radio = excluded\.on_radio/);
+  });
+
+  it('uses excluded.last_synced_from_radio directly to overwrite existing values', () => {
+    expect(INDEX_SOURCE).toMatch(/last_synced_from_radio = excluded\.last_synced_from_radio/);
+  });
 });
 
 describe('escapeSqlLikePattern', () => {

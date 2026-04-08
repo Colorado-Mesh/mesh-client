@@ -20,7 +20,7 @@ export async function meshcoreRepeaterTryLogin(
   const password = meshcoreGetRepeaterSessionPassword().trim();
   if (!password) return;
   try {
-    await conn.login(pubKey, password, 2000);
+    await conn.login(pubKey, password, 10000);
   } catch (e) {
     console.warn('[meshcoreRepeaterSession] repeater login failed (continuing)', e);
   }

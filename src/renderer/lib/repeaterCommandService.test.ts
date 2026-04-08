@@ -73,7 +73,7 @@ describe('RepeaterCommandService', () => {
   describe('calculateTimeout', () => {
     it('should return minimum timeout for empty path and small message', () => {
       const timeout = service.calculateTimeout([]);
-      expect(timeout).toBe(10000);
+      expect(timeout).toBe(30000);
     });
 
     it('should return dynamic timeout when it exceeds minimum', () => {
@@ -95,15 +95,15 @@ describe('RepeaterCommandService', () => {
         new Uint8Array(32),
         new Uint8Array(32),
         new Uint8Array(32),
-      ]); // 17 hops = 2000 + 17*500 = 10500
-      expect(timeoutWithHops).toBe(10500);
+      ]); // 17 hops = 30000 + 17*2000 = 64000
+      expect(timeoutWithHops).toBe(64000);
     });
 
     it('should include message size in dynamic timeout', () => {
-      const smallTimeout = service.calculateTimeout([], 100); // 2000 + 100 = 2100-> not enough to exceed 10000
-      const largeTimeout = service.calculateTimeout([], 100000); // 2000 + 100000 = 102000
-      expect(smallTimeout).toBe(10000);
-      expect(largeTimeout).toBe(102000);
+      const smallTimeout = service.calculateTimeout([], 100);
+      const largeTimeout = service.calculateTimeout([], 100000);
+      expect(smallTimeout).toBe(30100);
+      expect(largeTimeout).toBe(130000);
     });
   });
 

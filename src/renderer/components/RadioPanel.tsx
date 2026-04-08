@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
-import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../hooks/useMeshCore';
+import {
+  type MeshCoreContactRaw,
+  type MeshCoreSelfInfo,
+  serializeErrorLike,
+} from '../hooks/useMeshCore';
 import type { OurPosition } from '../lib/gpsSource';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
 import {
   MESHCORE_CHANNEL_INDEX_MAX,
+  MESHCORE_MAX_CONTACTS,
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
@@ -147,6 +152,68 @@ const DISPLAY_UNITS = [
   { value: 0, label: 'Metric' },
   { value: 1, label: 'Imperial' },
 ];
+
+/** Contact count badge with offload button for MeshCore */
+function ContactCountBadge() {
+  const [contactCount, setContactCount] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { addToast } = useToast();
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetch = async () => {
+      try {
+        const count = await window.electronAPI.db.getMeshcoreContactCount();
+        if (!cancelled) setContactCount(count);
+      } catch {
+        // catch-no-log-ok handle gracefully - show as unknown
+        if (!cancelled) setContactCount(null);
+      }
+    };
+    void fetch();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleOffload = async () => {
+    setLoading(true);
+    try {
+      const count = await window.electronAPI.db.offloadAllMeshcoreContacts();
+      setContactCount((prev) => (prev !== null ? 0 : prev));
+      addToast(`Offloaded ${count} contacts to database.`, 'success');
+    } catch (e) {
+      console.warn('[RadioPanel] offloadAllMeshcoreContacts error', e);
+      addToast('Failed to offload contacts.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isNearCapacity = contactCount !== null && contactCount >= 300;
+
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={`font-mono text-xs ${isNearCapacity ? 'text-red-400' : 'text-gray-400'}`}
+        title={`${contactCount ?? '?'} / ${MESHCORE_MAX_CONTACTS} contacts on radio`}
+      >
+        {contactCount ?? '?'}/{MESHCORE_MAX_CONTACTS}
+      </span>
+      {contactCount !== null && contactCount > 0 && (
+        <button
+          type="button"
+          onClick={handleOffload}
+          disabled={loading}
+          className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50 disabled:opacity-40"
+          title="Remove all contacts from radio, keep in database"
+        >
+          {loading ? '...' : 'Offload'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 /** Reusable select component */
 function ConfigSelect({
@@ -1737,7 +1804,7 @@ export default function RadioPanel({
       </div>
 
       {/* Device Actions (MeshCore) — non-destructive commands */}
-      {(onSendAdvert || onSyncClock) && (
+      {(onSendAdvert || onSyncClock || capabilities?.protocol === 'meshcore') && (
         <div className="space-y-3">
           <h3 className="text-muted text-sm font-medium">Device Actions</h3>
           <div className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2">
@@ -1769,6 +1836,7 @@ export default function RadioPanel({
                 )}
               </button>
             )}
+            {capabilities?.protocol === 'meshcore' && <ContactCountBadge />}
           </div>
         </div>
       )}
@@ -2462,13 +2530,18 @@ function MeshcoreChannelSection({
     const idx = addingNew ? parseInt(newIdx, 10) : editingIdx!;
     if (isNaN(idx) || idx < 0 || idx > MESHCORE_CHANNEL_INDEX_MAX) return;
     if (!isValidHex) return;
+    const finalName = editName.trim();
+    if (!finalName) {
+      alert('Channel name must not be empty.');
+      return;
+    }
     setSaving(true);
     try {
-      await onSetChannel(idx, editName, hexToBytes(editKeyHex));
+      await onSetChannel(idx, finalName, hexToBytes(editKeyHex));
       setEditingIdx(null);
       setAddingNew(false);
     } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
+      const errorMsg = serializeErrorLike(e) || 'Unknown error';
       console.warn('[MeshcoreChannelSection] save failed', { error: e, errorMessage: errorMsg });
       // Show error to user - could add toast notification here
       alert(`Failed to save channel: ${errorMsg}`);

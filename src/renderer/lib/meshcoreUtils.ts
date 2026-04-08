@@ -6,6 +6,13 @@ const MESHCORE_COORD_SCALE = 1e6;
 export const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
 export const MESHCORE_CHAT_STUB_ID_MAX = 0xafffffff >>> 0;
 
+/** Max contacts supported by MeshCore radio firmware. */
+export const MESHCORE_MAX_CONTACTS = 350;
+/** Warning threshold when radio contact count approaches max. */
+export const MESHCORE_CONTACTS_WARNING_THRESHOLD = 320;
+/** Critical threshold when radio contact count is near capacity. */
+export const MESHCORE_CONTACTS_CRITICAL_THRESHOLD = 300;
+
 const SYNTH_PLACEHOLDER_PUBKEY_MARKER_HEX = '4d434854'; // "MCHT"
 
 /**
@@ -284,7 +291,7 @@ const REPEATER_AUTH_HINT =
 
 /**
  * Raw SNR from MeshCore `getStatus` / `tracePath` uses the same quarter-dB scaling as trace hops.
- * @see tracePath mapping in useMeshCore (`lastSnr * 0.25`)
+ * @see tracePath mapping in useMeshCore (`lastSnr * MESHCORE_RPC_SNR_RAW_TO_DB`)
  */
 export const MESHCORE_RPC_SNR_RAW_TO_DB = 0.25;
 

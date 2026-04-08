@@ -74,23 +74,23 @@ export default function MeshcoreContactSettingsSection({
     setHopsError(null);
   }, [selfInfo.manualAddContacts, autoadd?.autoaddConfig, autoadd?.autoaddMaxHops]);
 
-  const deviceAutoAddAll = !selfInfo.manualAddContacts;
-  const deviceBits = splitAutoaddConfigByte(autoadd?.autoaddConfig ?? 0);
-  const deviceHops = autoadd?.autoaddMaxHops ?? 0;
-  const hopsParse = parseMaxHopsInput(maxHopsInput);
-  const deviceHopsInput = deviceHops === 0 ? '' : String(deviceHops);
-  const hopsDirty = hopsParse.error
-    ? maxHopsInput.trim() !== deviceHopsInput.trim()
-    : hopsParse.wire !== deviceHops;
-
-  const dirty =
-    autoAddAll !== deviceAutoAddAll ||
-    overwriteOldest !== deviceBits.overwriteOldest ||
-    chat !== deviceBits.chat ||
-    repeater !== deviceBits.repeater ||
-    roomServer !== deviceBits.roomServer ||
-    sensor !== deviceBits.sensor ||
-    hopsDirty;
+  const triggerApply = (overrides: Partial<Parameters<typeof onApply>[0]> = {}) => {
+    const { wire, error } = parseMaxHopsInput(maxHopsInput);
+    if (error) {
+      setHopsError(error);
+      return;
+    }
+    void onApply({
+      autoAddAll,
+      overwriteOldest,
+      chat,
+      repeater,
+      roomServer,
+      sensor,
+      maxHopsWire: wire,
+      ...overrides,
+    });
+  };
 
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
@@ -124,6 +124,7 @@ export default function MeshcoreContactSettingsSection({
               checked={autoAddAll}
               onChange={() => {
                 setAutoAddAll(true);
+                triggerApply({ autoAddAll: true });
               }}
               disabled={disabled || applying}
               className="mt-1"
@@ -146,6 +147,7 @@ export default function MeshcoreContactSettingsSection({
               checked={!autoAddAll}
               onChange={() => {
                 setAutoAddAll(false);
+                triggerApply({ autoAddAll: false });
               }}
               disabled={disabled || applying}
               className="mt-1"
@@ -168,20 +170,42 @@ export default function MeshcoreContactSettingsSection({
         >
           <p className="text-xs font-medium text-gray-300">Auto-add types (selected mode only)</p>
           {[
-            { id: 'meshcore-autoadd-chat', label: 'Chat users', checked: chat, onChange: setChat },
+            {
+              id: 'meshcore-autoadd-chat',
+              label: 'Chat users',
+              checked: chat,
+              onChange: (val: boolean) => {
+                setChat(val);
+                triggerApply({ chat: val });
+              },
+            },
             {
               id: 'meshcore-autoadd-rep',
               label: 'Repeaters',
               checked: repeater,
-              onChange: setRepeater,
+              onChange: (val: boolean) => {
+                setRepeater(val);
+                triggerApply({ repeater: val });
+              },
             },
             {
               id: 'meshcore-autoadd-room',
               label: 'Room servers',
               checked: roomServer,
-              onChange: setRoomServer,
+              onChange: (val: boolean) => {
+                setRoomServer(val);
+                triggerApply({ roomServer: val });
+              },
             },
-            { id: 'meshcore-autoadd-sens', label: 'Sensors', checked: sensor, onChange: setSensor },
+            {
+              id: 'meshcore-autoadd-sens',
+              label: 'Sensors',
+              checked: sensor,
+              onChange: (val: boolean) => {
+                setSensor(val);
+                triggerApply({ sensor: val });
+              },
+            },
           ].map((row) => (
             <div key={row.id} className="flex items-center justify-between gap-3">
               <label htmlFor={row.id} className="text-sm text-gray-200">
@@ -216,7 +240,9 @@ export default function MeshcoreContactSettingsSection({
             type="checkbox"
             checked={overwriteOldest}
             onChange={(e) => {
-              setOverwriteOldest(e.target.checked);
+              const val = e.target.checked;
+              setOverwriteOldest(val);
+              triggerApply({ overwriteOldest: val });
             }}
             disabled={disabled || applying}
             className="h-4 w-4 shrink-0"
@@ -243,16 +269,22 @@ export default function MeshcoreContactSettingsSection({
               setMaxHopsInput(e.target.value);
               setHopsError(null);
             }}
+            onBlur={() => {
+              triggerApply();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                triggerApply();
+              }
+            }}
             disabled={disabled || applying}
             className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
-            aria-invalid={Boolean(hopsError || hopsParse.error)}
-            aria-describedby={
-              hopsError || hopsParse.error ? 'meshcore-autoadd-hops-err' : undefined
-            }
+            aria-invalid={Boolean(hopsError)}
+            aria-describedby={hopsError ? 'meshcore-autoadd-hops-err' : undefined}
           />
-          {(hopsError || hopsParse.error) && (
+          {hopsError && (
             <p id="meshcore-autoadd-hops-err" className="text-xs text-red-400">
-              {hopsError ?? hopsParse.error}
+              {hopsError}
             </p>
           )}
         </div>
@@ -298,30 +330,6 @@ export default function MeshcoreContactSettingsSection({
             />
           </div>
         </div>
-
-        <button
-          type="button"
-          disabled={disabled || applying || !dirty || Boolean(hopsParse.error)}
-          onClick={() => {
-            const { wire, error } = parseMaxHopsInput(maxHopsInput);
-            if (error) {
-              setHopsError(error);
-              return;
-            }
-            void onApply({
-              autoAddAll,
-              overwriteOldest,
-              chat,
-              repeater,
-              roomServer,
-              sensor,
-              maxHopsWire: wire,
-            });
-          }}
-          className="bg-brand-green rounded-lg px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
-        >
-          {applying ? 'Applying…' : 'Apply contact management'}
-        </button>
 
         {onClearAllContacts ? (
           <div className="border-t border-red-900/50 pt-4">

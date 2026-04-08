@@ -118,6 +118,7 @@ export interface MeshNode {
   air_util_tx?: number;
   altitude?: number;
   favorited?: boolean;
+  on_radio?: boolean;
   // MQTT source tracking
   heard_via_mqtt_only?: boolean; // session-only: true if never heard via RF this session
   heard_via_mqtt?: boolean; // session-only: true if any MQTT update was received this session
@@ -365,6 +366,8 @@ declare global {
           last_rssi?: number | null;
           nickname?: string | null;
           contact_flags?: number | null;
+          on_radio?: number;
+          last_synced_from_radio?: string | null;
         }) => Promise<unknown>;
         updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<unknown>;
         updateMeshcoreContactAdvert: (
@@ -393,6 +396,18 @@ declare global {
         deleteMeshcoreContactsByAge: (days: number) => Promise<number>;
         pruneMeshcoreContactsByCount: (maxCount: number) => Promise<number>;
         clearMeshcoreRepeaters: () => Promise<unknown>;
+        markAllMeshcoreContactsOffRadio: () => Promise<unknown>;
+        getMeshcoreContactCount: () => Promise<number>;
+        deleteMeshcoreContactsWithoutPubkey: () => Promise<{
+          deleted: number;
+          excludedStubCount: number;
+        }>;
+        offloadAllMeshcoreContacts: () => Promise<number>;
+        getMeshcoreContactById: (nodeId: number) => Promise<{
+          node_id: number;
+          public_key: string;
+          on_radio: number;
+        } | null>;
         updateMeshcoreContactNickname: (
           nodeId: number,
           nickname: string | null,

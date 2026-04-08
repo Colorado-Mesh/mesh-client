@@ -737,6 +737,27 @@ function runMigrations(): void {
       throw new Error(`Migration v21 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
+
+  if (userVersion < 22) {
+    try {
+      const cols = db!.prepare('PRAGMA table_info(meshcore_contacts)').all() as {
+        name: string;
+      }[];
+      if (!cols.some((c) => c.name === 'on_radio')) {
+        db!.prepare('ALTER TABLE meshcore_contacts ADD COLUMN on_radio INTEGER DEFAULT 0').run();
+      }
+      if (!cols.some((c) => c.name === 'last_synced_from_radio')) {
+        db!.prepare('ALTER TABLE meshcore_contacts ADD COLUMN last_synced_from_radio TEXT').run();
+      }
+      db!.pragma('user_version = 22');
+    } catch (e) {
+      console.error(
+        '[db] migration v22 failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw new Error(`Migration v22 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
 }
 
 /** Export DB to a file. Best-effort for very large databases; may take a long time with no progress callback. */

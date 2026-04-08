@@ -255,11 +255,21 @@ export default function NodeInfoBody({
       )}
 
       {protocol === 'meshcore' ? (
-        <InfoRow label="Type" value={node.hw_model || '—'} />
+        <InfoRow label="Type" value={node.hw_model || '---'} />
       ) : (
         <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
           <span className="text-muted text-sm">Role</span>
-          <RoleDisplay role={node.role} />
+          <div className="flex items-center gap-2">
+            <RoleDisplay role={node.role} />
+            {!node.short_name && !node.long_name && node.role === undefined && (
+              <span
+                className="text-[10px] text-gray-500"
+                title="Waiting for complete NodeInfo packet"
+              >
+                (pending)
+              </span>
+            )}
+          </div>
         </div>
       )}
 

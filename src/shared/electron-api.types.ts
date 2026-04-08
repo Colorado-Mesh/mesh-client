@@ -187,6 +187,8 @@ export interface ElectronAPI {
       nickname?: string | null;
       contact_flags?: number | null;
       hops_away?: number | null;
+      on_radio?: number | null;
+      last_synced_from_radio?: string | null;
     }) => Promise<unknown>;
     updateMeshcoreContactAdvert: (
       nodeId: number,
@@ -211,6 +213,14 @@ export interface ElectronAPI {
     deleteMeshcoreContactsByAge: (days: number) => Promise<unknown>;
     pruneMeshcoreContactsByCount: (maxCount: number) => Promise<unknown>;
     clearMeshcoreRepeaters: () => Promise<unknown>;
+    markAllMeshcoreContactsOffRadio: () => Promise<unknown>;
+    getMeshcoreContactCount: () => Promise<number>;
+    deleteMeshcoreContactsWithoutPubkey: () => Promise<{
+      deleted: number;
+      excludedStubCount: number;
+    }>;
+    offloadAllMeshcoreContacts: () => Promise<number>;
+    getMeshcoreContactById: (nodeId: number) => Promise<unknown>;
     updateMeshcoreContactNickname: (nodeId: number, nickname: string | null) => Promise<unknown>;
     updateMeshcoreContactFavorited: (
       nodeId: number,

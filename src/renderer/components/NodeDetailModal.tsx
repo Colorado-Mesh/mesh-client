@@ -7,6 +7,12 @@ import type {
 } from '../hooks/useMeshCore';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { formatCoordPair } from '../lib/coordUtils';
+import {
+  MESHCORE_CHAT_STUB_ID_MAX,
+  MESHCORE_CHAT_STUB_ID_MIN,
+  MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
+  MESHCORE_MAX_CONTACTS,
+} from '../lib/meshcoreUtils';
 import type { MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -92,6 +98,9 @@ export default function NodeDetailModal({
   const [showMeshcoreNeighbors, setShowMeshcoreNeighbors] = useState(false);
   const [exportContactPending, setExportContactPending] = useState(false);
   const [shareContactPending, setShareContactPending] = useState(false);
+  const [radioContactCount, setRadioContactCount] = useState<number | null>(null);
+  const [contactOnRadio, setContactOnRadio] = useState<boolean | null>(null);
+  const [addRemoveLoading, setAddRemoveLoading] = useState(false);
   const mqttIgnoredNodes = useDiagnosticsStore((s) => s.mqttIgnoredNodes);
   const setNodeMqttIgnored = useDiagnosticsStore((s) => s.setNodeMqttIgnored);
   const getForeignLoraDetectionsList = useDiagnosticsStore((s) => s.getForeignLoraDetectionsList);
@@ -188,6 +197,52 @@ export default function NodeDetailModal({
     }
   }, [meshcoreNeighbors]);
 
+  // Fetch on_radio status and contact count for MeshCore
+  const [contactPubkey, setContactPubkey] = useState<string | null>(null);
+  useEffect(() => {
+    if (protocol !== 'meshcore' || !node) {
+      setContactOnRadio(null);
+      setRadioContactCount(null);
+      setContactPubkey(null);
+      return;
+    }
+    let cancelled = false;
+    const fetchStatus = async () => {
+      try {
+        const contact = await window.electronAPI.db.getMeshcoreContactById(node.node_id);
+        if (!cancelled) {
+          if (contact && 'on_radio' in contact) {
+            // on_radio: 1 = on radio, 0 = only in DB, null = treat as on radio (legacy data)
+            setContactOnRadio(contact.on_radio !== 0);
+            setContactPubkey(contact.public_key ?? null);
+          } else {
+            setContactOnRadio(true);
+            setContactPubkey(null);
+          }
+        }
+      } catch {
+        // catch-no-log-ok handle gracefully - show as unknown
+        if (!cancelled) {
+          setContactOnRadio(null);
+          setContactPubkey(null);
+        }
+      }
+      try {
+        const count = await window.electronAPI.db.getMeshcoreContactCount();
+        if (!cancelled) {
+          setRadioContactCount(count);
+        }
+      } catch {
+        // catch-no-log-ok handle gracefully - show as unknown
+        if (!cancelled) setRadioContactCount(null);
+      }
+    };
+    void fetchStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [protocol, node]);
+
   // 60-second timeout for trace route
   useEffect(() => {
     if (!traceRoutePending) return;
@@ -203,6 +258,8 @@ export default function NodeDetailModal({
   if (!node) return null;
 
   const hexId = `!${node.node_id.toString(16)}`;
+  // Check if this appears to be a node with incomplete data (empty names and no role)
+  const isIncomplete = !node.short_name && !node.long_name && node.role === undefined;
   const displayName = node.short_name || node.long_name || hexId;
   const isOurNode = node.node_id === homeNode?.node_id;
 
@@ -257,6 +314,14 @@ export default function NodeDetailModal({
                     MQTT Ignored
                   </span>
                 )}
+                {isIncomplete && (
+                  <span
+                    className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
+                    title="Node data incomplete - waiting for full NodeInfo packet"
+                  >
+                    Loading...
+                  </span>
+                )}
               </div>
               <div className="mt-0.5 flex items-center gap-2">
                 <span className="text-muted font-mono text-xs">{hexId}</span>
@@ -271,6 +336,60 @@ export default function NodeDetailModal({
                 {node.hw_model && node.hw_model !== '0' && (
                   <span className="text-muted text-xs">{node.hw_model}</span>
                 )}
+                {/* MeshCore contact status badges */}
+                {protocol === 'meshcore' && contactPubkey && (
+                  <span
+                    className="shrink-0 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-300"
+                    title="Has public key - can send DMs"
+                  >
+                    🔑 DM
+                  </span>
+                )}
+                {protocol === 'meshcore' &&
+                  node.node_id >= MESHCORE_CHAT_STUB_ID_MIN &&
+                  node.node_id <= MESHCORE_CHAT_STUB_ID_MAX && (
+                    <span
+                      className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
+                      title="Chat-only node (no public key)"
+                    >
+                      📢 Chat
+                    </span>
+                  )}
+                {protocol === 'meshcore' && contactOnRadio === false && contactPubkey && (
+                  <span
+                    className="shrink-0 rounded border border-orange-500/30 bg-orange-500/20 px-1.5 py-0.5 text-[10px] font-medium text-orange-300"
+                    title="Contact stored in database only, not on radio"
+                  >
+                    Only in DB
+                  </span>
+                )}
+                {protocol === 'meshcore' && contactOnRadio === true && contactPubkey && (
+                  <span
+                    className="shrink-0 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-300"
+                    title="Contact synced: stored in database and on radio"
+                  >
+                    Synced
+                  </span>
+                )}
+                {protocol === 'meshcore' && contactOnRadio === true && !contactPubkey && (
+                  <span
+                    className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
+                    title="Contact on radio but not yet fully stored in database"
+                  >
+                    On Radio
+                  </span>
+                )}
+                {protocol === 'meshcore' &&
+                  radioContactCount !== null &&
+                  typeof MESHCORE_CONTACTS_CRITICAL_THRESHOLD === 'number' &&
+                  radioContactCount >= MESHCORE_CONTACTS_CRITICAL_THRESHOLD && (
+                    <span
+                      className="shrink-0 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-[10px] font-medium text-red-300"
+                      title={`Radio near capacity: ${radioContactCount}/${MESHCORE_MAX_CONTACTS ?? 'unknown'}`}
+                    >
+                      ⚠️ {radioContactCount}/{MESHCORE_MAX_CONTACTS ?? 'unknown'}
+                    </span>
+                  )}
               </div>
             </div>
             <button
@@ -852,7 +971,12 @@ export default function NodeDetailModal({
                     onMessageNode(node.node_id);
                     onClose();
                   }}
-                  disabled={!isConnected}
+                  disabled={!isConnected || (protocol === 'meshcore' && !contactPubkey)}
+                  title={
+                    protocol === 'meshcore' && !contactPubkey
+                      ? 'Cannot message: no encryption key. Wait for a full contact exchange or refresh contacts.'
+                      : undefined
+                  }
                   className="min-w-[8rem] flex-1 rounded-lg bg-purple-700/50 px-3 py-2 text-sm font-medium text-purple-300 transition-colors hover:bg-purple-600/50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   💬 Message
@@ -913,6 +1037,65 @@ export default function NodeDetailModal({
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   📨 {shareContactPending ? 'Sharing...' : 'Share Contact'}
+                </button>
+              )}
+              {protocol === 'meshcore' && contactPubkey && contactOnRadio === false && (
+                <button
+                  onClick={async () => {
+                    setAddRemoveLoading(true);
+                    setActionStatus('Adding to radio...');
+                    try {
+                      await window.electronAPI.db.saveMeshcoreContact({
+                        node_id: node.node_id,
+                        public_key: contactPubkey,
+                        on_radio: 1,
+                        last_synced_from_radio: new Date().toISOString(),
+                      });
+                      setContactOnRadio(true);
+                      // Refresh count
+                      const count = await window.electronAPI.db.getMeshcoreContactCount();
+                      setRadioContactCount(count);
+                      setActionStatus(null);
+                    } catch (e) {
+                      console.warn('[NodeDetailModal] addToRadio failed', e);
+                      setActionStatus(e instanceof Error ? e.message : 'Add to radio failed');
+                    } finally {
+                      setAddRemoveLoading(false);
+                    }
+                  }}
+                  disabled={!isConnected || addRemoveLoading}
+                  className="min-w-[8rem] flex-1 rounded-lg bg-green-900/50 px-3 py-2 text-sm font-medium text-green-300 transition-colors hover:bg-green-800/50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  ➕ {addRemoveLoading ? 'Adding...' : 'Add to Radio'}
+                </button>
+              )}
+              {protocol === 'meshcore' && contactPubkey && contactOnRadio === true && (
+                <button
+                  onClick={async () => {
+                    setAddRemoveLoading(true);
+                    setActionStatus('Removing from radio...');
+                    try {
+                      await window.electronAPI.db.saveMeshcoreContact({
+                        node_id: node.node_id,
+                        public_key: contactPubkey,
+                        on_radio: 0,
+                      });
+                      setContactOnRadio(false);
+                      // Refresh count
+                      const count = await window.electronAPI.db.getMeshcoreContactCount();
+                      setRadioContactCount(count);
+                      setActionStatus(null);
+                    } catch (e) {
+                      console.warn('[NodeDetailModal] removeFromRadio failed', e);
+                      setActionStatus(e instanceof Error ? e.message : 'Remove from radio failed');
+                    } finally {
+                      setAddRemoveLoading(false);
+                    }
+                  }}
+                  disabled={!isConnected || addRemoveLoading}
+                  className="min-w-[8rem] flex-1 rounded-lg bg-orange-900/50 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-800/50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  ➖ {addRemoveLoading ? 'Removing...' : 'Remove from Radio'}
                 </button>
               )}
             </div>
