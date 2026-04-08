@@ -87,6 +87,13 @@ const electronAPIMock = {
     deleteMeshcoreContactsByAge: vi.fn().mockResolvedValue(0),
     pruneMeshcoreContactsByCount: vi.fn().mockResolvedValue(0),
     clearMeshcoreRepeaters: vi.fn().mockResolvedValue(undefined),
+    markAllMeshcoreContactsOffRadio: vi.fn().mockResolvedValue(undefined),
+    getMeshcoreContactCount: vi.fn().mockResolvedValue(0),
+    deleteMeshcoreContactsWithoutPubkey: vi
+      .fn()
+      .mockResolvedValue({ deleted: 0, excludedStubCount: 0 }),
+    offloadAllMeshcoreContacts: vi.fn().mockResolvedValue(0),
+    getMeshcoreContactById: vi.fn().mockResolvedValue(undefined),
     updateMeshcoreContactNickname: vi.fn().mockResolvedValue(undefined),
     updateMeshcoreContactFavorited: vi.fn().mockResolvedValue(undefined),
     savePositionHistory: vi.fn().mockResolvedValue(undefined),

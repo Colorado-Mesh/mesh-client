@@ -1505,6 +1505,38 @@ export default function AppPanel({
             >
               Clear All Nodes ({nodes.size})
             </button>
+
+            {/* MeshCore contacts cleanup */}
+            {protocol === 'meshcore' && (
+              <button
+                type="button"
+                aria-label="Delete All Nodes Without Pubkeys"
+                onClick={() => {
+                  executeWithConfirmation({
+                    name: 'Delete Contacts Without Pubkeys',
+                    title: 'Delete Contacts Without Pubkeys',
+                    message:
+                      'This will permanently delete all MeshCore contacts from the database that have no public key. Chat stub nodes (created from messages) will be excluded. This cannot be undone.',
+                    confirmLabel: 'Delete',
+                    danger: true,
+                    action: async () => {
+                      const result =
+                        await window.electronAPI.db.deleteMeshcoreContactsWithoutPubkey();
+                      addToast(
+                        `Deleted ${result.deleted} contacts. ${result.excludedStubCount} chat stub nodes excluded.`,
+                        'success',
+                      );
+                    },
+                  });
+                }}
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+              >
+                <div className="font-medium">Delete Contacts Without Pubkeys</div>
+                <div className="mt-0.5 text-xs text-red-400/70">
+                  Excludes chat stub nodes created from messages.
+                </div>
+              </button>
+            )}
           </div>
 
           {/* Messages */}

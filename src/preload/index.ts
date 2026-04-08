@@ -148,6 +148,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     pruneMeshcoreContactsByCount: (maxCount: number) =>
       ipcRenderer.invoke('db:pruneMeshcoreContactsByCount', maxCount),
     clearMeshcoreRepeaters: () => ipcRenderer.invoke('db:clearMeshcoreRepeaters'),
+    markAllMeshcoreContactsOffRadio: () => ipcRenderer.invoke('db:markAllMeshcoreContactsOffRadio'),
+    getMeshcoreContactCount: () => ipcRenderer.invoke('db:getMeshcoreContactCount'),
+    deleteMeshcoreContactsWithoutPubkey: () =>
+      ipcRenderer.invoke('db:deleteMeshcoreContactsWithoutPubkey'),
+    offloadAllMeshcoreContacts: () => ipcRenderer.invoke('db:offloadAllMeshcoreContacts'),
+    getMeshcoreContactById: (nodeId: number) =>
+      ipcRenderer.invoke('db:getMeshcoreContactById', nodeId),
     updateMeshcoreContactNickname: (nodeId: number, nickname: string | null) =>
       ipcRenderer.invoke('db:updateMeshcoreContactNickname', nodeId, nickname),
     updateMeshcoreContactFavorited: (

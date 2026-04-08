@@ -365,6 +365,8 @@ declare global {
           last_rssi?: number | null;
           nickname?: string | null;
           contact_flags?: number | null;
+          on_radio?: number;
+          last_synced_from_radio?: string | null;
         }) => Promise<unknown>;
         updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<unknown>;
         updateMeshcoreContactAdvert: (
@@ -393,6 +395,18 @@ declare global {
         deleteMeshcoreContactsByAge: (days: number) => Promise<number>;
         pruneMeshcoreContactsByCount: (maxCount: number) => Promise<number>;
         clearMeshcoreRepeaters: () => Promise<unknown>;
+        markAllMeshcoreContactsOffRadio: () => Promise<unknown>;
+        getMeshcoreContactCount: () => Promise<number>;
+        deleteMeshcoreContactsWithoutPubkey: () => Promise<{
+          deleted: number;
+          excludedStubCount: number;
+        }>;
+        offloadAllMeshcoreContacts: () => Promise<number>;
+        getMeshcoreContactById: (nodeId: number) => Promise<{
+          node_id: number;
+          public_key: string;
+          on_radio: number;
+        } | null>;
         updateMeshcoreContactNickname: (
           nodeId: number,
           nickname: string | null,

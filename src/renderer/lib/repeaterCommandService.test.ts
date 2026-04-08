@@ -100,9 +100,9 @@ describe('RepeaterCommandService', () => {
     });
 
     it('should include message size in dynamic timeout', () => {
-      const smallTimeout = service.calculateTimeout([], 100); // 30000 + 100 = 30100 -> Max(30100, 30000) = 30000
-      const largeTimeout = service.calculateTimeout([], 100000); // 30000 + 100000 = 130000
-      expect(smallTimeout).toBe(30000);
+      const smallTimeout = service.calculateTimeout([], 100);
+      const largeTimeout = service.calculateTimeout([], 100000);
+      expect(smallTimeout).toBe(30100);
       expect(largeTimeout).toBe(130000);
     });
   });

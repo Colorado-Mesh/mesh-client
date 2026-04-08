@@ -215,6 +215,7 @@ export default function NodeDetailModal({
           setContactPubkey(contact?.public_key ?? null);
         }
       } catch {
+        // catch-no-log-ok handle gracefully - show as unknown
         if (!cancelled) {
           setContactOnRadio(null);
           setContactPubkey(null);
@@ -226,6 +227,7 @@ export default function NodeDetailModal({
           setRadioContactCount(count);
         }
       } catch {
+        // catch-no-log-ok handle gracefully - show as unknown
         if (!cancelled) setRadioContactCount(null);
       }
     };
@@ -357,12 +359,13 @@ export default function NodeDetailModal({
                 )}
                 {protocol === 'meshcore' &&
                   radioContactCount !== null &&
+                  typeof MESHCORE_CONTACTS_CRITICAL_THRESHOLD === 'number' &&
                   radioContactCount >= MESHCORE_CONTACTS_CRITICAL_THRESHOLD && (
                     <span
                       className="shrink-0 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-[10px] font-medium text-red-300"
-                      title={`Radio near capacity: ${radioContactCount}/${MESHCORE_MAX_CONTACTS}`}
+                      title={`Radio near capacity: ${radioContactCount}/${MESHCORE_MAX_CONTACTS ?? 'unknown'}`}
                     >
-                      ⚠️ {radioContactCount}/{MESHCORE_MAX_CONTACTS}
+                      ⚠️ {radioContactCount}/{MESHCORE_MAX_CONTACTS ?? 'unknown'}
                     </span>
                   )}
               </div>
