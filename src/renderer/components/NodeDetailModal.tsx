@@ -211,8 +211,14 @@ export default function NodeDetailModal({
       try {
         const contact = await window.electronAPI.db.getMeshcoreContactById(node.node_id);
         if (!cancelled) {
-          setContactOnRadio(contact?.on_radio === 1);
-          setContactPubkey(contact?.public_key ?? null);
+          if (contact && 'on_radio' in contact) {
+            // on_radio: 1 = on radio, 0 = only in DB, null = treat as on radio (legacy data)
+            setContactOnRadio(contact.on_radio !== 0);
+            setContactPubkey(contact.public_key ?? null);
+          } else {
+            setContactOnRadio(true);
+            setContactPubkey(null);
+          }
         }
       } catch {
         // catch-no-log-ok handle gracefully - show as unknown

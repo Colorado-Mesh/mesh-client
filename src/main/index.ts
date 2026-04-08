@@ -3098,8 +3098,8 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
           'nickname = COALESCE(excluded.nickname, meshcore_contacts.nickname), ' +
           'contact_flags = COALESCE(excluded.contact_flags, meshcore_contacts.contact_flags), ' +
           'hops_away = COALESCE(excluded.hops_away, meshcore_contacts.hops_away), ' +
-          'on_radio = COALESCE(excluded.on_radio, meshcore_contacts.on_radio), ' +
-          'last_synced_from_radio = COALESCE(excluded.last_synced_from_radio, meshcore_contacts.last_synced_from_radio)',
+          'on_radio = excluded.on_radio, ' +
+          'last_synced_from_radio = excluded.last_synced_from_radio',
       )
       .run({
         node_id: Number(c.node_id),

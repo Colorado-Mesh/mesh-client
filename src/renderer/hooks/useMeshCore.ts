@@ -128,7 +128,7 @@ function meshcoreContactRawFromDevice(c: MeshCoreContactRaw): MeshCoreContactRaw
 function contactToDbRow(
   contact: MeshCoreContactRaw,
   nickname?: string | null,
-  onRadio?: number,
+  onRadio = 0,
   lastSyncedFromRadio?: string | null,
 ) {
   return {
@@ -1238,6 +1238,7 @@ export function useMeshCore() {
             contact_type: 1,
             last_advert: tsSec,
             nickname: null,
+            on_radio: 0,
           })
           .catch((e: unknown) => {
             console.warn('[useMeshCore] saveMeshcoreContact (mqtt chat) error', e);
@@ -1579,6 +1580,7 @@ export function useMeshCore() {
               adv_lat: persistOut.persistLat,
               adv_lon: persistOut.persistLon,
               nickname: null,
+              on_radio: 1,
             })
             .catch((e: unknown) => {
               console.warn('[useMeshCore] saveMeshcoreContact (event 128 new) error', e);
@@ -1655,6 +1657,7 @@ export function useMeshCore() {
               adv_lat: null,
               adv_lon: null,
               nickname: null,
+              on_radio: 1,
             })
             .catch((e: unknown) => {
               console.warn('[useMeshCore] saveMeshcoreContact (event 129 new) error', e);
@@ -1774,7 +1777,7 @@ export function useMeshCore() {
         );
         updateNode(nodeWithNick);
         void window.electronAPI.db
-          .saveMeshcoreContact(contactToDbRow(d, nick ?? null))
+          .saveMeshcoreContact(contactToDbRow(d, nick ?? null, 1))
           .catch((e: unknown) => {
             console.warn('[useMeshCore] saveMeshcoreContact (event 138) error', e);
           });
@@ -4223,6 +4226,7 @@ export function useMeshCore() {
             last_snr: null,
             last_rssi: null,
             nickname: name,
+            on_radio: 0,
           })
           .catch((e: unknown) => {
             console.warn('[useMeshCore] saveMeshcoreContact (import contacts) error', e);

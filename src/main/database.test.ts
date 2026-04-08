@@ -239,16 +239,12 @@ describe('saveMeshcoreContact UPSERT COALESCE preservation', () => {
     );
   });
 
-  it('uses COALESCE for on_radio to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
-      /on_radio = COALESCE\(excluded\.on_radio, meshcore_contacts\.on_radio\)/,
-    );
+  it('uses excluded.on_radio directly to overwrite existing values', () => {
+    expect(INDEX_SOURCE).toMatch(/on_radio = excluded\.on_radio/);
   });
 
-  it('uses COALESCE for last_synced_from_radio to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
-      /last_synced_from_radio = COALESCE\(excluded\.last_synced_from_radio, meshcore_contacts\.last_synced_from_radio\)/,
-    );
+  it('uses excluded.last_synced_from_radio directly to overwrite existing values', () => {
+    expect(INDEX_SOURCE).toMatch(/last_synced_from_radio = excluded\.last_synced_from_radio/);
   });
 });
 
