@@ -950,6 +950,9 @@ export default function NodeListPanel({
                     </td>
                     <td className="text-muted px-3 py-2 font-mono text-xs">
                       !{node.node_id.toString(16)}
+                      {mode === 'meshcore' && meshcorePublicKeyHexByNodeId?.has(node.node_id) && (
+                        <span className="ml-1">🔑</span>
+                      )}
                     </td>
                     <td
                       className={`px-3 py-2 ${isSelf ? 'text-bright-green font-medium' : 'text-gray-200'} ${isMqttOnlyDimmed ? 'line-through' : ''}`}
