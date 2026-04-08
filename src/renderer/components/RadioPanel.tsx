@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
-import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../hooks/useMeshCore';
+import {
+  type MeshCoreContactRaw,
+  type MeshCoreSelfInfo,
+  serializeErrorLike,
+} from '../hooks/useMeshCore';
 import type { OurPosition } from '../lib/gpsSource';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
 import {
@@ -2526,13 +2530,18 @@ function MeshcoreChannelSection({
     const idx = addingNew ? parseInt(newIdx, 10) : editingIdx!;
     if (isNaN(idx) || idx < 0 || idx > MESHCORE_CHANNEL_INDEX_MAX) return;
     if (!isValidHex) return;
+    const finalName = editName.trim();
+    if (!finalName) {
+      alert('Channel name must not be empty.');
+      return;
+    }
     setSaving(true);
     try {
-      await onSetChannel(idx, editName, hexToBytes(editKeyHex));
+      await onSetChannel(idx, finalName, hexToBytes(editKeyHex));
       setEditingIdx(null);
       setAddingNew(false);
     } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
+      const errorMsg = serializeErrorLike(e) || 'Unknown error';
       console.warn('[MeshcoreChannelSection] save failed', { error: e, errorMessage: errorMsg });
       // Show error to user - could add toast notification here
       alert(`Failed to save channel: ${errorMsg}`);

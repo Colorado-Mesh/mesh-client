@@ -248,7 +248,7 @@ const MESHCORE_INIT_TIMEOUT_MS = 60_000;
 /** Companion Ok/Err for `sendFloodAdvert` — meshcore.js has no internal timeout. */
 const MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS = 25_000;
 
-function serializeErrorLike(value: unknown): string {
+export function serializeErrorLike(value: unknown): string {
   if (value instanceof Error) return value.message;
   if (typeof value === 'string') return value;
   if (value == null) return '';
@@ -3997,23 +3997,23 @@ export function useMeshCore() {
           .map((b) => b.toString(16).padStart(2, '0'))
           .join(''),
       });
-      await connRef.current.setChannel(idx, name, secret);
+      await withTimeout(connRef.current.setChannel(idx, name, secret), 10_000, 'setChannel');
       console.debug('[useMeshCore] setMeshcoreChannel device API success, updating local state');
       setChannels((prev) => {
         const next = prev.filter((c) => c.index !== idx);
         return [...next, { index: idx, name, secret }].sort((a, b) => a.index - b.index);
       });
     } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
+      const error = normalizeMeshCoreError(e, 'Failed to save channel to device');
       console.warn('[useMeshCore] setMeshcoreChannel error', {
         error: e,
-        errorMessage: errorMsg,
+        errorMessage: error.message,
         errorType: typeof e,
         idx,
         name,
         secretLength: secret?.length,
       });
-      throw e; // Re-throw so the UI can handle it properly
+      throw error;
     }
   }, []);
 
