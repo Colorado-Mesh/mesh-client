@@ -177,7 +177,9 @@ function createBaseTables(): void {
         num_packets_rx_bad INTEGER,
         num_rx_dupe INTEGER,
         num_packets_rx INTEGER,
-        num_packets_tx INTEGER
+        num_packets_tx INTEGER,
+        hops INTEGER,
+        path TEXT
       );
 
       CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
@@ -758,6 +760,27 @@ function runMigrations(): void {
       throw new Error(`Migration v22 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
+
+  if (userVersion < 23) {
+    try {
+      const cols = db!.prepare('PRAGMA table_info(nodes)').all() as {
+        name: string;
+      }[];
+      if (!cols.some((c) => c.name === 'hops')) {
+        db!.prepare('ALTER TABLE nodes ADD COLUMN hops INTEGER').run();
+      }
+      if (!cols.some((c) => c.name === 'path')) {
+        db!.prepare('ALTER TABLE nodes ADD COLUMN path TEXT').run();
+      }
+      db!.pragma('user_version = 23');
+    } catch (e) {
+      console.error(
+        '[db] migration v23 failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw new Error(`Migration v23 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
 }
 
 /** Export DB to a file. Best-effort for very large databases; may take a long time with no progress callback. */
@@ -993,4 +1016,28 @@ export function closeDatabase(): void {
       db = null;
     }
   }
+}
+
+export function upsertNodePath(
+  nodeId: number,
+  lastHeard: number,
+  hops: number,
+  path: number[],
+): void {
+  const d = getDatabase();
+  const pathJson = JSON.stringify(path);
+
+  d.prepareOnce(
+    `
+    INSERT INTO nodes (node_id, last_heard, hops, path)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(node_id) DO UPDATE SET
+        hops = excluded.hops,
+        path = excluded.path,
+        last_heard = excluded.last_heard
+    WHERE excluded.hops < nodes.hops 
+       OR excluded.last_heard > (nodes.last_heard + 300)
+       OR nodes.hops IS NULL
+  `,
+  ).run(nodeId, lastHeard, hops, pathJson);
 }

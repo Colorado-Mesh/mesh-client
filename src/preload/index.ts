@@ -54,7 +54,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       [key: string]: unknown;
     }) => ipcRenderer.invoke('db:saveNode', node),
 
+    saveNodePath: (nodeId: number, lastHeard: number, buffer: Buffer) =>
+      ipcRenderer.invoke('db:saveNodePath', nodeId, lastHeard, buffer),
+
     getNodes: () => ipcRenderer.invoke('db:getNodes'),
+
     clearMessages: () => ipcRenderer.invoke('db:clearMessages'),
     clearNodes: () => ipcRenderer.invoke('db:clearNodes'),
     deleteNode: (nodeId: number) => ipcRenderer.invoke('db:deleteNode', nodeId),

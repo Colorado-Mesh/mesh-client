@@ -46,6 +46,7 @@ import {
   searchMeshcoreMessages,
   searchMessages,
   updateContactGroup,
+  upsertNodePath,
 } from './database';
 import { getGpsFix } from './gps';
 import {
@@ -62,6 +63,7 @@ import {
   setMainWindow,
 } from './log-service';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
+import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { MQTTManager } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
@@ -2436,6 +2438,23 @@ ipcMain.handle('db:saveNode', (_event, node) => {
   } catch (err) {
     console.error(
       '[IPC] db:saveNode failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:saveNodePath', (_event, nodeId: number, lastHeard: number, buffer: Buffer) => {
+  try {
+    if (!isPathPacket(buffer)) {
+      throw new Error('Not a PATH packet');
+    }
+    const { hops, path } = decodePathPayload(buffer);
+    upsertNodePath(nodeId, lastHeard, hops, path);
+    return { success: true, hops, path };
+  } catch (err) {
+    console.error(
+      '[IPC] db:saveNodePath failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

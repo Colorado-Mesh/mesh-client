@@ -55,6 +55,8 @@ export interface SavedNode {
   num_rx_dupe: number | null;
   num_packets_rx: number | null;
   num_packets_tx: number | null;
+  hops: number | null;
+  path: string | null;
 }
 
 // ─── Shared sub-types ─────────────────────────────────────────────────────────
@@ -130,6 +132,8 @@ export interface ElectronAPI {
       heard_via_mqtt_only?: boolean;
       [key: string]: unknown;
     }) => Promise<unknown>;
+
+    saveNodePath: (nodeId: number, lastHeard: number, buffer: Buffer) => Promise<unknown>;
 
     getNodes: () => Promise<SavedNode[]>;
     clearMessages: () => Promise<unknown>;

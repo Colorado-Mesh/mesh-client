@@ -119,6 +119,9 @@ export interface MeshNode {
   altitude?: number;
   favorited?: boolean;
   on_radio?: boolean;
+  // MeshCore routing info
+  hops?: number;
+  path?: number[];
   // MQTT source tracking
   heard_via_mqtt_only?: boolean; // session-only: true if never heard via RF this session
   heard_via_mqtt?: boolean; // session-only: true if any MQTT update was received this session
