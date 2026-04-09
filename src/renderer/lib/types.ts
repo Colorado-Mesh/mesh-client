@@ -132,6 +132,8 @@ export interface MeshNode {
   num_rx_dupe?: number;
   num_packets_rx?: number;
   num_packets_tx?: number;
+  // MeshCore local stats (connected node only, from getStats*())
+  meshcore_local_stats?: MeshCoreLocalStats;
   // Environmental sensor data (session-only, last received reading)
   env_temperature?: number;
   env_humidity?: number;
@@ -142,6 +144,30 @@ export interface MeshNode {
   env_wind_direction?: number;
   // Neighbor info from MQTT (session-only)
   neighbors?: MeshNeighbor[];
+}
+
+export interface MeshCoreLocalStats {
+  // Type 0 (Core)
+  batteryMilliVolts: number;
+  uptimeSecs: number;
+  queueLen: number;
+  // Type 1 (Radio)
+  noiseFloor: number;
+  lastRssi: number;
+  lastSnr: number;
+  txAirSecs: number;
+  rxAirSecs: number;
+  // Type 2 (Packets)
+  recv: number;
+  sent: number;
+  nSentFlood: number;
+  nSentDirect: number;
+  nRecvFlood: number;
+  nRecvDirect: number;
+  nRecvErrors?: number;
+  // Computed
+  channelUtilization?: number;
+  airUtilTx?: number;
 }
 
 export type RemediationCategory = 'Configuration' | 'Physical' | 'Hardware' | 'Software';

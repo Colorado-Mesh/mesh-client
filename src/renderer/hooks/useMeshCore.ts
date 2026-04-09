@@ -81,6 +81,7 @@ import type {
   ChatMessage,
   DeviceState,
   EnvironmentTelemetryPoint,
+  MeshCoreLocalStats,
   MeshNode,
   MQTTStatus,
   NobleBleSessionId,
@@ -982,6 +983,106 @@ export function useMeshCore() {
   const meshcoreWaitingMessagesPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Stable ref to the current connection's processWaitingMessages fn (set by setupEventListeners). */
   const processWaitingMessagesRef = useRef<(() => Promise<void>) | null>(null);
+  /** Previous txAirSecs value for calculating channel utilization delta. */
+  const prevTxAirSecsRef = useRef<number | null>(null);
+  /** Previous timestamp for calculating channel utilization delta. */
+  const prevStatsTimestampRef = useRef<number | null>(null);
+  /** Periodic poll for local radio stats (every 60s). */
+  const meshcoreStatsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /** Fetch and update local radio stats (core, radio, packet). Called by requestRefresh and on connect. */
+  const fetchAndUpdateLocalStats = useCallback(async () => {
+    const conn = connRef.current;
+    if (!conn) return;
+    try {
+      const [coreStats, radioStats, packetStats] = await Promise.all([
+        conn.getStatsCore(),
+        conn.getStatsRadio(),
+        conn.getStatsPackets(),
+      ]);
+
+      const core = coreStats as { batteryMilliVolts: number; uptimeSecs: number; queueLen: number };
+      const radio = radioStats as {
+        noiseFloor: number;
+        lastRssi: number;
+        lastSnr: number;
+        txAirSecs: number;
+        rxAirSecs: number;
+      };
+      const packet = packetStats as {
+        recv: number;
+        sent: number;
+        nSentFlood: number;
+        nSentDirect: number;
+        nRecvFlood: number;
+        nRecvDirect: number;
+        nRecvErrors?: number;
+      };
+
+      setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts: core.batteryMilliVolts } : prev));
+
+      setState((prev) => ({
+        ...prev,
+        queueStatus: { free: 256 - core.queueLen, maxlen: 256, res: 0 },
+      }));
+
+      const now = Date.now();
+      let channelUtilization: number | undefined;
+      let airUtilTx: number | undefined;
+
+      if (prevTxAirSecsRef.current !== null && prevStatsTimestampRef.current !== null) {
+        const deltaTxAirSecs = radio.txAirSecs - prevTxAirSecsRef.current;
+        const deltaTimeSecs = (now - prevStatsTimestampRef.current) / 1000;
+        if (deltaTimeSecs > 0 && deltaTxAirSecs >= 0) {
+          airUtilTx = (deltaTxAirSecs / deltaTimeSecs) * 100;
+          channelUtilization = airUtilTx;
+        }
+      }
+
+      prevTxAirSecsRef.current = radio.txAirSecs;
+      prevStatsTimestampRef.current = now;
+
+      const localStats: MeshCoreLocalStats = {
+        batteryMilliVolts: core.batteryMilliVolts,
+        uptimeSecs: core.uptimeSecs,
+        queueLen: core.queueLen,
+        noiseFloor: radio.noiseFloor,
+        lastRssi: radio.lastRssi,
+        lastSnr: radio.lastSnr,
+        txAirSecs: radio.txAirSecs,
+        rxAirSecs: radio.rxAirSecs,
+        recv: packet.recv,
+        sent: packet.sent,
+        nSentFlood: packet.nSentFlood,
+        nSentDirect: packet.nSentDirect,
+        nRecvFlood: packet.nRecvFlood,
+        nRecvDirect: packet.nRecvDirect,
+        nRecvErrors: packet.nRecvErrors,
+        channelUtilization,
+        airUtilTx,
+      };
+
+      const myNodeId = myNodeNumRef.current;
+      if (myNodeId > 0) {
+        setNodes((prev) => {
+          const node = prev.get(myNodeId);
+          if (!node) return prev;
+          const updated = new Map(prev);
+          updated.set(myNodeId, {
+            ...node,
+            voltage: core.batteryMilliVolts / 1000,
+            channel_utilization: channelUtilization ?? node.channel_utilization,
+            air_util_tx: airUtilTx ?? node.air_util_tx,
+            meshcore_local_stats: localStats,
+          });
+          return updated;
+        });
+      }
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] fetchAndUpdateLocalStats error', e);
+    }
+  }, []);
+
   const buildNodesFromContactsRef = useRef<
     | ((
         contacts: MeshCoreContactRaw[],
@@ -1024,6 +1125,10 @@ export function useMeshCore() {
         clearInterval(meshcoreWaitingMessagesPollRef.current);
         meshcoreWaitingMessagesPollRef.current = null;
       }
+      if (meshcoreStatsPollRef.current) {
+        clearInterval(meshcoreStatsPollRef.current);
+        meshcoreStatsPollRef.current = null;
+      }
     };
   }, []);
 
@@ -1042,6 +1147,31 @@ export function useMeshCore() {
   useEffect(() => {
     myNodeNumRef.current = state.myNodeNum;
   }, [state.myNodeNum]);
+
+  // Start stats polling when connected
+  useEffect(() => {
+    if (state.status === 'configured') {
+      const MESHCORE_STATS_POLL_MS = 60 * 1_000;
+      if (meshcoreStatsPollRef.current) clearInterval(meshcoreStatsPollRef.current);
+      meshcoreStatsPollRef.current = setInterval(() => {
+        if (!meshcoreHookMountedRef.current) return;
+        void fetchAndUpdateLocalStats().catch((e: unknown) => {
+          console.warn('[useMeshCore] periodic stats poll failed', e);
+        });
+      }, MESHCORE_STATS_POLL_MS);
+
+      // Initial stats fetch on connect
+      void fetchAndUpdateLocalStats().catch((e: unknown) => {
+        console.warn('[useMeshCore] initial stats fetch failed', e);
+      });
+    }
+    return () => {
+      if (meshcoreStatsPollRef.current) {
+        clearInterval(meshcoreStatsPollRef.current);
+        meshcoreStatsPollRef.current = null;
+      }
+    };
+  }, [state.status, fetchAndUpdateLocalStats]);
 
   useEffect(() => {
     mqttStatusRef.current = mqttStatus;
@@ -2867,6 +2997,12 @@ export function useMeshCore() {
     setMeshcoreCliErrors(new Map());
     setEnvironmentTelemetry([]);
     setState(INITIAL_STATE);
+    if (meshcoreStatsPollRef.current) {
+      clearInterval(meshcoreStatsPollRef.current);
+      meshcoreStatsPollRef.current = null;
+    }
+    prevTxAirSecsRef.current = null;
+    prevStatsTimestampRef.current = null;
     console.debug('[useMeshCore] disconnect: complete');
   }, []);
 
@@ -4586,15 +4722,8 @@ export function useMeshCore() {
   const noopVoid = useCallback(() => {}, []);
 
   const requestRefresh = useCallback(async () => {
-    const conn = connRef.current;
-    if (!conn) return;
-    try {
-      const { batteryMilliVolts } = await conn.getBatteryVoltage();
-      setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts } : prev));
-    } catch (e: unknown) {
-      console.warn('[useMeshCore] requestRefresh getBatteryVoltage error', e);
-    }
-  }, []);
+    await fetchAndUpdateLocalStats();
+  }, [fetchAndUpdateLocalStats]);
 
   const refreshOurPositionNoop = useCallback(async () => {
     const myNode = nodesRef.current.get(myNodeNumRef.current);
@@ -4688,6 +4817,7 @@ export function useMeshCore() {
       messages,
       channels,
       selfInfo,
+      meshcoreLocalStats: nodesRef.current.get(myNodeNumRef.current)?.meshcore_local_stats ?? null,
       connect,
       disconnect,
       sendMessage,

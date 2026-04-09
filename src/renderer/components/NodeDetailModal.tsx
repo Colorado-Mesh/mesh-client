@@ -13,7 +13,7 @@ import {
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_MAX_CONTACTS,
 } from '../lib/meshcoreUtils';
-import type { MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
+import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
@@ -53,6 +53,8 @@ interface NodeDetailModalProps {
   onExportContact?: (nodeId: number) => Promise<Uint8Array | null>;
   /** Share contact via mesh (MeshCore only) */
   onShareContact?: (nodeId: number) => Promise<boolean>;
+  /** Local stats for MeshCore connected node (Type 1 & 2) */
+  meshcoreLocalStats?: MeshCoreLocalStats | null;
 }
 
 export default function NodeDetailModal({
@@ -83,6 +85,7 @@ export default function NodeDetailModal({
   mapReports,
   onExportContact,
   onShareContact,
+  meshcoreLocalStats,
 }: NodeDetailModalProps) {
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
@@ -788,6 +791,61 @@ export default function NodeDetailModal({
                 </div>
               );
             })()}
+
+          {/* MeshCore Local Stats section (for connected node only) */}
+          {protocol === 'meshcore' && meshcoreLocalStats && (
+            <div className="space-y-2 px-5 pb-2">
+              <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                Radio Stats (Local)
+              </h4>
+              <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                <div className="text-muted">Noise Floor</div>
+                <div className="font-mono text-gray-200">{meshcoreLocalStats.noiseFloor} dBm</div>
+                <div className="text-muted">Last RSSI</div>
+                <div className="font-mono text-gray-200">{meshcoreLocalStats.lastRssi} dBm</div>
+                <div className="text-muted">Last SNR</div>
+                <div className="font-mono text-gray-200">
+                  {meshcoreLocalStats.lastSnr.toFixed(2)} dB
+                </div>
+                <div className="text-muted">TX Air Time</div>
+                <div className="font-mono text-gray-200">{meshcoreLocalStats.txAirSecs}s</div>
+                <div className="text-muted">RX Air Time</div>
+                <div className="font-mono text-gray-200">{meshcoreLocalStats.rxAirSecs}s</div>
+                <div className="text-muted">Uptime</div>
+                <div className="font-mono text-gray-200">
+                  {Math.floor(meshcoreLocalStats.uptimeSecs / 3600)}h{' '}
+                  {Math.floor((meshcoreLocalStats.uptimeSecs % 3600) / 60)}m
+                </div>
+              </div>
+
+              <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                Packets (Local)
+              </h4>
+              <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                <div className="text-muted">Sent (Flood / Direct)</div>
+                <div className="font-mono text-gray-200">
+                  {meshcoreLocalStats.nSentFlood} / {meshcoreLocalStats.nSentDirect}
+                </div>
+                <div className="text-muted">Recv (Flood / Direct)</div>
+                <div className="font-mono text-gray-200">
+                  {meshcoreLocalStats.nRecvFlood} / {meshcoreLocalStats.nRecvDirect}
+                </div>
+                <div className="text-muted">Total Sent</div>
+                <div className="font-mono text-gray-200">{meshcoreLocalStats.sent}</div>
+                <div className="text-muted">Total Recv</div>
+                <div className="font-mono text-gray-200">{meshcoreLocalStats.recv}</div>
+                {meshcoreLocalStats.nRecvErrors !== undefined &&
+                  meshcoreLocalStats.nRecvErrors !== null && (
+                    <>
+                      <div className="text-muted">RX Errors</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreLocalStats.nRecvErrors}
+                      </div>
+                    </>
+                  )}
+              </div>
+            </div>
+          )}
 
           {/* PaxCounter section (Meshtastic only) */}
           {protocol === 'meshtastic' &&

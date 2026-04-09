@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
-import type { EnvironmentTelemetryPoint, TelemetryPoint } from '../lib/types';
+import type { EnvironmentTelemetryPoint, MeshCoreLocalStats, TelemetryPoint } from '../lib/types';
 import RefreshButton from './RefreshButton';
 
 function toF(c: number) {
@@ -28,6 +28,11 @@ interface Props {
   isConnected: boolean;
   /** Protocol capabilities — hides environment section when not supported. */
   capabilities?: ProtocolCapabilities;
+  /** MeshCore packet stats for packets chart */
+  meshcorePacketStats?: Pick<
+    MeshCoreLocalStats,
+    'sent' | 'recv' | 'nSentFlood' | 'nSentDirect' | 'nRecvFlood' | 'nRecvDirect'
+  > | null;
 }
 
 export default function TelemetryPanel({
@@ -39,8 +44,10 @@ export default function TelemetryPanel({
   onRefresh,
   isConnected,
   capabilities,
+  meshcorePacketStats,
 }: Props) {
   const showEnvironment = capabilities?.hasEnvironmentTelemetry !== false;
+  const showPacketStats = capabilities?.hasRfStats === true && meshcorePacketStats != null;
   const chartData = useMemo(
     () =>
       telemetry.map((t, i) => ({
@@ -217,7 +224,8 @@ export default function TelemetryPanel({
 
       {telemetry.length === 0 &&
       signalTelemetry.length === 0 &&
-      environmentTelemetry.length === 0 ? (
+      environmentTelemetry.length === 0 &&
+      !showPacketStats ? (
         <div className="text-muted py-12 text-center">
           {isConnected
             ? 'No telemetry data yet. Waiting for data from device…'
@@ -512,6 +520,49 @@ export default function TelemetryPanel({
                   />
                 </LineChart>
               </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* MeshCore Packet Stats Chart */}
+          {showPacketStats && (
+            <div className="bg-deep-black rounded-lg p-4">
+              <h3 className="text-muted mb-3 text-sm font-medium">Packets (MeshCore)</h3>
+              <div className="mb-4 grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-cyan-400">{meshcorePacketStats.sent}</div>
+                  <div className="text-xs text-gray-500">Sent</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-400">
+                    {meshcorePacketStats.recv}
+                  </div>
+                  <div className="text-xs text-gray-500">Received</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-cyan-600">
+                    {meshcorePacketStats.nSentFlood}
+                  </div>
+                  <div className="text-xs text-gray-500">Flood</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-cyan-600">
+                    {meshcorePacketStats.nSentDirect}
+                  </div>
+                  <div className="text-xs text-gray-500">Direct</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-purple-600">
+                    {meshcorePacketStats.nRecvFlood}
+                  </div>
+                  <div className="text-xs text-gray-500">Flood</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-purple-600">
+                    {meshcorePacketStats.nRecvDirect}
+                  </div>
+                  <div className="text-xs text-gray-500">Direct</div>
+                </div>
+              </div>
             </div>
           )}
 

@@ -4,6 +4,7 @@ import './styles.css';
 import { createRoot } from 'react-dom/client';
 
 import App from './App';
+import ErrorBoundary from './components/ErrorBoundary';
 
 if (import.meta.env.DEV) {
   void import('react').then((React) =>
@@ -13,4 +14,8 @@ if (import.meta.env.DEV) {
   );
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>,
+);
