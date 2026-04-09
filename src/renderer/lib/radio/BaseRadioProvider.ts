@@ -144,7 +144,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   /** MeshCore session is RF-first; MQTT bridge is optional and not shown as a node column. */
   hasMqttHybrid: false,
   hasEnvironmentTelemetry: true,
-  hasRfStats: false,
+  hasRfStats: true,
   hasNeighborInfo: false,
   hasChannelConfig: false,
   hasModemPresets: false,

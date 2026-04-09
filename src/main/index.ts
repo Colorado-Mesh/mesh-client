@@ -46,6 +46,7 @@ import {
   searchMeshcoreMessages,
   searchMessages,
   updateContactGroup,
+  upsertNodePath,
 } from './database';
 import { getGpsFix } from './gps';
 import {
@@ -62,6 +63,7 @@ import {
   setMainWindow,
 } from './log-service';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
+import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { MQTTManager } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
@@ -2442,6 +2444,23 @@ ipcMain.handle('db:saveNode', (_event, node) => {
   }
 });
 
+ipcMain.handle('db:saveNodePath', (_event, nodeId: number, lastHeard: number, buffer: Buffer) => {
+  try {
+    if (!isPathPacket(buffer)) {
+      throw new Error('Not a PATH packet');
+    }
+    const { hops, path } = decodePathPayload(buffer);
+    upsertNodePath(nodeId, lastHeard, hops, path);
+    return { success: true, hops, path };
+  } catch (err) {
+    console.error(
+      '[IPC] db:saveNodePath failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
 ipcMain.handle('db:setNodeFavorited', (_event, nodeId: number, favorited: boolean) => {
   try {
     const id = safeNonNegativeInt(nodeId);
@@ -3086,7 +3105,7 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
           '(node_id, public_key, adv_name, contact_type, last_advert, adv_lat, adv_lon, last_snr, last_rssi, favorited, nickname, contact_flags, hops_away, on_radio, last_synced_from_radio) ' +
           'VALUES (@node_id, @public_key, @adv_name, @contact_type, @last_advert, @adv_lat, @adv_lon, @last_snr, @last_rssi, 0, @nickname, @contact_flags, @hops_away, @on_radio, @last_synced_from_radio) ' +
           'ON CONFLICT(node_id) DO UPDATE SET ' +
-          'public_key = excluded.public_key, ' +
+          "public_key = CASE WHEN excluded.public_key IS NOT NULL AND excluded.public_key != '' AND LENGTH(excluded.public_key) = 64 THEN excluded.public_key ELSE meshcore_contacts.public_key END, " +
           "adv_name = COALESCE(NULLIF(excluded.adv_name, ''), meshcore_contacts.adv_name), " +
           'contact_type = COALESCE(excluded.contact_type, meshcore_contacts.contact_type), ' +
           'last_advert = CASE WHEN excluded.last_advert IS NOT NULL AND excluded.last_advert > 0 THEN excluded.last_advert ELSE meshcore_contacts.last_advert END, ' +

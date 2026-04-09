@@ -125,13 +125,22 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     if (!expiresAt || this.status !== 'connected') return;
     const now = Date.now();
     const timeUntilExpiry = expiresAt - now;
-    if (timeUntilExpiry <= MeshcoreMqttAdapter.TOKEN_GRACE_PERIOD_MS) {
-      return;
-    }
+    // Schedule proactive refresh at fixed offset before expiry (5 min), cap at 54 min max
     const refreshAt = Math.max(0, timeUntilExpiry - MeshcoreMqttAdapter.TOKEN_GRACE_PERIOD_MS);
     const scheduleMs = Math.min(refreshAt, MeshcoreMqttAdapter.PROACTIVE_REFRESH_MS);
+    if (scheduleMs <= 0) {
+      console.debug(
+        '[MeshcoreMqttAdapter] token already within grace period, skipping proactive refresh schedule',
+      );
+      return;
+    }
+    console.debug(
+      '[MeshcoreMqttAdapter] scheduling proactive token refresh',
+      `in ${Math.round(scheduleMs / 1000 / 60)}min (expires in ${Math.round(timeUntilExpiry / 1000 / 60)}min)`,
+    );
     this.tokenRefreshTimer = setTimeout(() => {
       if (this.status !== 'connected' || !this.lastSettings) return;
+      console.debug('[MeshcoreMqttAdapter] proactive token refresh fired');
       this.emit(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, this.lastSettings.server);
     }, scheduleMs);
   }
@@ -417,7 +426,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.client.on('close', () => {
       this.clearWssPing();
       this.clearWssReschedule();
-      this.clearTokenRefreshTimer();
       this.clearConnectTimers();
       const now = Date.now();
       this.disconnectCount++;

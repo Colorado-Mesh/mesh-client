@@ -1525,6 +1525,9 @@ export default function App() {
                           onRefresh={device.requestRefresh}
                           isConnected={isOperational}
                           capabilities={capabilities}
+                          meshcorePacketStats={
+                            protocol === 'meshcore' ? meshcoreDevice.meshcoreLocalStats : null
+                          }
                         />
                       </Suspense>
                     </ErrorBoundary>
@@ -1873,6 +1876,11 @@ export default function App() {
               mapReports={protocol === 'meshtastic' ? device.mapReports : undefined}
               onExportContact={protocol === 'meshcore' ? meshcoreDevice.exportContact : undefined}
               onShareContact={protocol === 'meshcore' ? meshcoreDevice.shareContact : undefined}
+              meshcoreLocalStats={
+                protocol === 'meshcore' && selectedNode?.node_id === meshcoreDevice.state.myNodeNum
+                  ? meshcoreDevice.meshcoreLocalStats
+                  : null
+              }
             />
           </Suspense>
         )}

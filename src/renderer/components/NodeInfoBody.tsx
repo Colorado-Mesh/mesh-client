@@ -371,6 +371,37 @@ export default function NodeInfoBody({
         className={(isOurNode ? 0 : node.hops_away) === 0 ? 'text-bright-green' : 'text-gray-300'}
       />
 
+      {/* Channel Utilization — Meshtastic only */}
+      {protocol === 'meshtastic' &&
+        (node.channel_utilization != null || node.air_util_tx != null) && (
+          <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
+            <span className="text-muted text-sm">Channel Util</span>
+            <div className="flex items-center gap-2 font-mono text-sm text-gray-200">
+              {node.channel_utilization != null && (
+                <span>
+                  RX:{' '}
+                  <span
+                    className={node.channel_utilization > 50 ? 'text-yellow-400' : 'text-gray-200'}
+                  >
+                    {node.channel_utilization.toFixed(1)}%
+                  </span>
+                </span>
+              )}
+              {node.channel_utilization != null && node.air_util_tx != null && (
+                <span className="text-gray-600">|</span>
+              )}
+              {node.air_util_tx != null && (
+                <span>
+                  TX:{' '}
+                  <span className={node.air_util_tx > 50 ? 'text-yellow-400' : 'text-gray-200'}>
+                    {node.air_util_tx.toFixed(1)}%
+                  </span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
       {/* Source (RF / MQTT) — Meshtastic only; MeshCore is always RF */}
       {!isOurNode && (
         <div className="flex items-center justify-between border-b border-gray-700/50 py-2">

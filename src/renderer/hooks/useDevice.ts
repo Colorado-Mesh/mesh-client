@@ -515,6 +515,11 @@ export function useDevice() {
             // Restore MQTT-only status from persisted source so these nodes show
             // the globe indicator and suppressed hop count until heard via RF.
             heard_via_mqtt_only: n.source === 'mqtt',
+            // MeshCore path/hop data
+            hops: n.hops ?? undefined,
+            path: typeof n.path === 'string' ? JSON.parse(n.path) : undefined,
+            // If hops (MeshCore) is present, use it for hops_away display, fallback to meshtastic hops_away
+            hops_away: n.hops ?? n.hops_away ?? undefined,
           });
         }
         nodesRef.current = nodeMap;
@@ -636,7 +641,13 @@ export function useDevice() {
           }),
           // Explicitly handle role to ensure it's properly updated from MQTT
           role: nodeUpdate.role ?? existing.role,
+          // MeshCore routing info: derive hops from path if needed
+          hops: nodeUpdate.hops ?? (nodeUpdate.path ? nodeUpdate.path.length : existing.hops),
+          path: nodeUpdate.path ?? existing.path,
         };
+        // Ensure hops_away is updated for UI consistency
+        node.hops_away = node.hops ?? nodeUpdate.hops_away ?? existing.hops_away;
+
         // Don't overwrite RF signal data with MQTT-sourced node data
         if (!heardViaRF) {
           // MQTT-only: suppress device-local RF metrics; hops_away from binary MQTT is valid
@@ -2613,6 +2624,11 @@ export function useDevice() {
             // Restore MQTT-only status from persisted source so these nodes show
             // the globe indicator and suppressed hop count until heard via RF.
             heard_via_mqtt_only: n.source === 'mqtt',
+            // MeshCore path/hop data
+            hops: n.hops ?? undefined,
+            path: typeof n.path === 'string' ? JSON.parse(n.path) : undefined,
+            // If hops (MeshCore) is present, use it for hops_away display, fallback to meshtastic hops_away
+            hops_away: n.hops ?? n.hops_away ?? undefined,
           });
         }
         console.debug(`[useDevice] refreshNodesFromDb: loaded ${nodeMap.size} nodes`);

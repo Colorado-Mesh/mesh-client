@@ -167,7 +167,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasRangeTest": false,
         "hasRemoteHardware": false,
         "hasRepeaterStatus": true,
-        "hasRfStats": false,
+        "hasRfStats": true,
         "hasSecurityPanel": false,
         "hasSerial": false,
         "hasShutdown": false,

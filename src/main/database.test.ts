@@ -246,6 +246,12 @@ describe('saveMeshcoreContact UPSERT COALESCE preservation', () => {
   it('uses excluded.last_synced_from_radio directly to overwrite existing values', () => {
     expect(INDEX_SOURCE).toMatch(/last_synced_from_radio = excluded\.last_synced_from_radio/);
   });
+
+  it('preserves public_key when incoming is empty or invalid', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /public_key = CASE WHEN excluded\.public_key IS NOT NULL AND excluded\.public_key != '' AND LENGTH\(excluded\.public_key\) = 64 THEN excluded\.public_key ELSE meshcore_contacts\.public_key END/,
+    );
+  });
 });
 
 describe('escapeSqlLikePattern', () => {

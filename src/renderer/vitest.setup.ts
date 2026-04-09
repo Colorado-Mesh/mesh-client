@@ -48,6 +48,7 @@ const electronAPIMock = {
     saveMessage: vi.fn().mockResolvedValue(undefined),
     getMessages: vi.fn().mockResolvedValue([]),
     saveNode: vi.fn().mockResolvedValue(undefined),
+    saveNodePath: vi.fn().mockResolvedValue(undefined),
     getNodes: vi.fn().mockResolvedValue([]),
     clearMessages: vi.fn().mockResolvedValue(undefined),
     clearNodes: vi.fn().mockResolvedValue(undefined),
