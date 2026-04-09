@@ -35,3 +35,9 @@ Import identity under **Radio**, or set **Custom** and paste username `v1_<publi
 [LetsMesh](https://www.letsmesh.net/) positions public MQTT as part of the **MeshCore Analyzer** ecosystem: clients contribute **observed** traffic (e.g. packet captures) for the map and web UI—similar to [meshcoretomqtt](https://github.com/Andrew-a-g/meshcoretomqtt) (topics such as `meshcore/packets` with JSON metadata).
 
 In mesh-client, **LetsMesh public brokers** are **not** used for MQTT-only channel chat when no radio is connected. Optional **Packet logger (LetsMesh Analyzer)** (off by default) publishes RX summaries from the radio to `{topicPrefix}/meshcore/packets` using a meshcoretomqtt-style JSON shape (see [`MeshcoreMqttAdapter.publishPacketLog`](../src/main/meshcore-mqtt-adapter.ts)). Confirm broker ACLs and [observer onboarding](https://analyzer.letsmesh.net/observer/onboard) expectations with current operator docs.
+
+## Proactive JWT refresh
+
+mesh-client proactively refreshes the JWT token **before** it expires to avoid connection drops. The client schedules a refresh **6 minutes before** the token's `exp` claim when connected. The refresh runs regardless of whether the mesh radio is active — MQTT-only connections also benefit.
+
+If the refresh fails, the client falls back to on-demand refresh (token is regenerated on next connect attempt after expiry).

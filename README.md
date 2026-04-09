@@ -141,7 +141,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - Node list with SNR, battery, GPS, last heard — **signal bars** appear only for direct (0-hop) RF neighbors; multi-hop and MQTT-only paths omit bars; SNR in traces and neighbor views uses **color-coded quality** (good / marginal / poor)
 - **Cross-Protocol Signal Analyzer** — foreign LoRa traffic detection (non-mesh packets); shown in Node Detail when present
 - Distance filter, favorite/pin nodes, device role icons
-- Node Detail Modal: DM, trace route with per-hop display, delete node, neighbor info, **Map Report** (Meshtastic), PaxCounter, Detection Sensor, **export/share contact** (MeshCore)
+- Node Detail Modal: DM, trace route with per-hop display, delete node, neighbor info, **Map Report** (Meshtastic), PaxCounter, Detection Sensor, **channel utilization** (Meshtastic), **export/share contact** (MeshCore)
 
 **Map & Position**
 
