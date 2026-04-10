@@ -1143,7 +1143,7 @@ export default function App() {
             </nav>
 
             {/* Content */}
-            <main className="min-h-0 flex-1 overflow-auto p-4">
+            <div role="main" className="min-h-0 flex-1 overflow-auto p-4">
               <ErrorBoundary>
                 <div
                   id="panel-0"
@@ -1647,7 +1647,7 @@ export default function App() {
                   ) : null}
                 </div>
               </ErrorBoundary>
-            </main>
+            </div>
 
             {/* Footer — same centering idea as header: 1fr | auto | 1fr so middle stays true center */}
             <footer className="bg-deep-black text-muted grid shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-4 border-t border-gray-700 px-4 py-1.5 text-[11px]">
