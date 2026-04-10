@@ -53,7 +53,11 @@ export function mergeMeshcoreChatStubNodes(
 ): Map<number, MeshNode> {
   const next = new Map(deviceNodes);
   for (const [id, node] of prev) {
-    if (meshcoreIsChatStubNodeId(id) && !deviceNodes.has(id)) {
+    if (meshcoreIsChatStubNodeId(id)) {
+      const deviceNode = deviceNodes.get(id);
+      if (deviceNode && deviceNode.hw_model !== 'Chat') continue;
+    }
+    if (!deviceNodes.has(id)) {
       next.set(id, node);
     }
   }

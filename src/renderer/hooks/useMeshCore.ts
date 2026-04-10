@@ -1424,7 +1424,10 @@ export function useMeshCore() {
         const prevNode = prevSnap.get(node.node_id);
         const prevHwModel = prevNode?.hw_model;
         const mergedHwModel =
-          prevHwModel && prevHwModel !== 'None' && prevHwModel !== 'Unknown'
+          prevHwModel &&
+          prevHwModel !== 'None' &&
+          prevHwModel !== 'Unknown' &&
+          prevHwModel !== 'Chat'
             ? prevHwModel
             : node.hw_model;
         if (mergedHwModel !== node.hw_model) {
