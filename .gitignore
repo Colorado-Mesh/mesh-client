@@ -4,6 +4,7 @@
 .claude/
 .cursor/
 .windsurfrules
+.wolf/
 Thumbs.db
 dist-electron/
 dist/
