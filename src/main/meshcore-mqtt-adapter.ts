@@ -41,6 +41,11 @@ const MESHCORE_MQTT_RECONNECT_10_MINUTE_DELAY_MS = 600_000;
  * on proxied WSS paths (LetsMesh broker) — same as MQTTManager.
  */
 const MESHCORE_MQTT_RESCHEDULE_MS = 30_000;
+/**
+ * A session that lasted this long is considered stable. When the next disconnect occurs after a
+ * stable session, retryCount resets to 0 so the full retry budget is available again.
+ */
+const MESHCORE_MQTT_CONNECTION_STABLE_THRESHOLD_MS = 30_000;
 
 export class MeshcoreMqttAdapter extends EventEmitter {
   private client: mqtt.MqttClient | null = null;
@@ -68,8 +73,11 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   private static readonly TOKEN_GRACE_PERIOD_MS = 5 * 60 * 1000;
   /** Proactive refresh schedule (50 minutes in ms = 90% of 60-minute token). */
   private static readonly PROACTIVE_REFRESH_MS = 54 * 60 * 1000;
-  /** Safety timeout: if renderer never responds to token refresh request, reconnect anyway. */
-  private static readonly PENDING_RECONNECT_TIMEOUT_MS = 10_000;
+  /**
+   * Safety timeout: if renderer never responds to token refresh request, reconnect anyway.
+   * 15s to allow for cold dynamic-import of @michaelhart/meshcore-decoder in the renderer.
+   */
+  private static readonly PENDING_RECONNECT_TIMEOUT_MS = 15_000;
 
   /** Event emitted when token needs refresh (before reconnect). */
   static readonly EVENT_TOKEN_REFRESH_NEEDED = 'tokenRefreshNeeded';
@@ -147,13 +155,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       console.debug('[MeshcoreMqttAdapter] proactive token refresh fired');
       this.emit(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, this.lastSettings.server);
     }, scheduleMs);
-  }
-
-  private needsTokenRefresh(): boolean {
-    const expiresAt = this.lastSettings?.tokenExpiresAt;
-    if (!expiresAt) return false;
-    const now = Date.now();
-    return expiresAt - now <= MeshcoreMqttAdapter.TOKEN_GRACE_PERIOD_MS;
   }
 
   private clearConnectTimers(): void {
@@ -241,6 +242,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   }
 
   private _doConnect(settings: MQTTSettings): void {
+    // Clear any stale connectAckTimer from a previous _doConnect call so the old watchdog
+    // cannot tear down the new client 30s later (Bug 3 fix).
+    this.clearConnectTimers();
     if (this.client) {
       try {
         this.client.removeAllListeners();
@@ -327,9 +331,16 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         clearTimeout(this.connectAckTimer);
         this.connectAckTimer = null;
       }
-      console.debug('[MeshcoreMqttAdapter] CONNACK received', new Date().toISOString());
+      // retryCount is NOT reset here — it resets only after a stable session (>= 30s) in the
+      // close handler. Resetting on CONNACK alone caused perpetual "attempt 1/N" loops because
+      // some brokers (LetsMesh) send CONNACK(0) then validate JWT asynchronously and close
+      // immediately, causing retryCount to reset on every cycle.
+      console.debug(
+        '[MeshcoreMqttAdapter] CONNACK received',
+        new Date().toISOString(),
+        `retryCount=${this.retryCount}`,
+      );
       this.clientIdStr = this.client?.options?.clientId ?? '';
-      this.retryCount = 0;
       this.lastConnected = Date.now();
       this.setStatus('connected');
       this.emit('clientId', this.clientIdStr);
@@ -446,6 +457,14 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       }
       if (skipReconnect) return;
 
+      // Bug 1b fix: reset retry budget only when the session was genuinely stable (>= 30s).
+      // Resetting on CONNACK alone allowed brokers that send CONNACK then immediately drop
+      // (e.g. async JWT validation) to trap the adapter in a perpetual "attempt 1/N" loop.
+      const isStableSession = sessionDuration >= MESHCORE_MQTT_CONNECTION_STABLE_THRESHOLD_MS;
+      if (isStableSession) {
+        this.retryCount = 0;
+      }
+
       const maxRetries = Math.max(
         1,
         Math.min(
@@ -453,15 +472,29 @@ export class MeshcoreMqttAdapter extends EventEmitter {
           MQTT_MAX_RECONNECT_ATTEMPTS,
         ),
       );
-      if (this.retryCount >= maxRetries) {
+
+      // Bug 4 fix: increment retryCount BEFORE the token-refresh branch so that the max-retry
+      // guard fires even when we always enter the refresh path (JWT brokers).
+      this.retryCount++;
+
+      const isJwtBroker = !!this.lastSettings?.tokenExpiresAt;
+      console.debug(
+        `[MeshcoreMqttAdapter] close: session=${Math.round(sessionDuration / 1000)}s stable=${isStableSession} attempt=${this.retryCount}/${maxRetries} jwtBroker=${isJwtBroker}`,
+      );
+
+      if (this.retryCount > maxRetries) {
         this.setError(
           `Connection lost after ${maxRetries} reconnect attempt${maxRetries === 1 ? '' : 's'}`,
         );
         return;
       }
 
-      if (this.needsTokenRefresh()) {
-        console.debug('[MeshcoreMqttAdapter] Token stale, emitting refresh event before reconnect');
+      // Bug 2 fix: for JWT-auth brokers (tokenExpiresAt set) always request a fresh token before
+      // reconnecting — not only when within the 5-min grace window. meshcoretomqtt generates a
+      // new token on every reconnect; reusing a stale/rejected token on every attempt is the
+      // second cause of the infinite reconnect loop.
+      if (isJwtBroker) {
+        console.debug('[MeshcoreMqttAdapter] JWT broker: requesting fresh token before reconnect');
         this.pendingReconnect = true;
         this.emit(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, this.lastSettings?.server ?? '');
         this.pendingReconnectTimer = setTimeout(() => {
@@ -477,10 +510,11 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         return;
       }
 
-      this.retryCount++;
+      // Bug 6 fix: add jitter to the first reconnect to avoid thundering herd on broker restart.
+      const jitterMs = Math.floor(Math.random() * 2000);
       const delay =
         this.retryCount === 1
-          ? MESHCORE_MQTT_RECONNECT_IMMEDIATE_MS
+          ? MESHCORE_MQTT_RECONNECT_IMMEDIATE_MS + jitterMs
           : MESHCORE_MQTT_RECONNECT_10_MINUTE_DELAY_MS;
       console.warn(
         `[MeshcoreMqttAdapter] Reconnecting in ${delay}ms (attempt ${this.retryCount}/${maxRetries})`,
@@ -488,7 +522,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       this.setStatus('connecting');
       this.reconnectTimer = setTimeout(() => {
         this.reconnectTimer = null;
-        if (this.status !== 'disconnected' && this.lastSettings) {
+        // Bug 5 fix: check status === 'connecting', not !== 'disconnected', so a manual
+        // connect() call during the window does not trigger a second _doConnect().
+        if (this.status === 'connecting' && this.lastSettings) {
           this._doConnect(this.lastSettings);
         }
       }, delay);
