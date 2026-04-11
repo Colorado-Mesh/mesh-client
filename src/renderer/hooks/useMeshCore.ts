@@ -644,10 +644,10 @@ interface MeshCoreConnection {
   // Contact path management
   resetPath(pubKey: Uint8Array): Promise<void>;
   // Statistics
-  getStats(statsType: number): Promise<Record<string, unknown>>;
-  getStatsCore(): Promise<Record<string, unknown>>;
-  getStatsRadio(): Promise<Record<string, unknown>>;
-  getStatsPackets(): Promise<Record<string, unknown>>;
+  getStats(statsType: number): Promise<MeshCoreStatsResponse<Record<string, unknown>>>;
+  getStatsCore(): Promise<MeshCoreStatsResponse<MeshCoreCoreStatsData>>;
+  getStatsRadio(): Promise<MeshCoreStatsResponse<MeshCoreRadioStatsData>>;
+  getStatsPackets(): Promise<MeshCoreStatsResponse<MeshCorePacketStatsData>>;
   // Channel data
   sendChannelData(
     channelIdx: number,
@@ -705,6 +705,36 @@ interface DeviceLogEntry {
   level: string;
   source: string;
   message: string;
+}
+
+interface MeshCoreCoreStatsData {
+  batteryMilliVolts: number;
+  uptimeSecs: number;
+  queueLen: number;
+}
+
+interface MeshCoreRadioStatsData {
+  noiseFloor: number;
+  lastRssi: number;
+  lastSnr: number;
+  txAirSecs: number;
+  rxAirSecs: number;
+}
+
+interface MeshCorePacketStatsData {
+  recv: number;
+  sent: number;
+  nSentFlood: number;
+  nSentDirect: number;
+  nRecvFlood: number;
+  nRecvDirect: number;
+  nRecvErrors?: number | null;
+}
+
+interface MeshCoreStatsResponse<TData> {
+  type: number;
+  raw: Uint8Array;
+  data: TData;
 }
 
 const MANUAL_CONTACTS_KEY = 'mesh-client:meshcoreManualContacts';
@@ -1011,31 +1041,11 @@ export function useMeshCore() {
         conn.getStatsPackets(),
       ]);
 
-      const core = coreStats as {
-        batteryMilliVolts: number;
-        uptimeSecs: number;
-        curr_tx_queue_len: number;
-      };
-
-      const queueLen = core.curr_tx_queue_len;
+      const core = coreStats.data;
+      const queueLen = core.queueLen;
       setQueueStatus({ free: 256 - queueLen, maxlen: 256, res: 0 });
-
-      const radio = radioStats as {
-        noiseFloor: number;
-        lastRssi: number;
-        lastSnr: number;
-        txAirSecs: number;
-        rxAirSecs: number;
-      };
-      const packet = packetStats as {
-        recv: number;
-        sent: number;
-        nSentFlood: number;
-        nSentDirect: number;
-        nRecvFlood: number;
-        nRecvDirect: number;
-        nRecvErrors?: number;
-      };
+      const radio = radioStats.data;
+      const packet = packetStats.data;
 
       const now = Date.now();
       let channelUtilization: number | undefined;
@@ -1068,22 +1078,35 @@ export function useMeshCore() {
         nSentDirect: packet.nSentDirect,
         nRecvFlood: packet.nRecvFlood,
         nRecvDirect: packet.nRecvDirect,
-        nRecvErrors: packet.nRecvErrors,
+        nRecvErrors: packet.nRecvErrors ?? undefined,
         channelUtilization,
         airUtilTx,
       };
 
-      const myNodeId = myNodeNumRef.current;
+      const myNodeId = myNodeNumRef.current || state.myNodeNum;
       if (myNodeId > 0) {
         setNodes((prev) => {
-          const node = prev.get(myNodeId);
-          if (!node) return prev;
           const updated = new Map(prev);
+          const node = prev.get(myNodeId);
+          const fallbackName =
+            selfInfoRef.current?.name?.trim() || `Node-${myNodeId.toString(16).toUpperCase()}`;
           updated.set(myNodeId, {
-            ...node,
+            ...(node ?? {
+              node_id: myNodeId,
+              long_name: fallbackName,
+              short_name: '',
+              hw_model: 'Unknown',
+              battery: meshcoreMilliVoltsToApproximateBatteryPercent(core.batteryMilliVolts),
+              snr: radio.lastSnr,
+              rssi: radio.lastRssi,
+              last_heard: Math.floor(now / 1000),
+              latitude: null,
+              longitude: null,
+              hops_away: 0,
+            }),
             voltage: core.batteryMilliVolts / 1000,
-            channel_utilization: channelUtilization ?? node.channel_utilization,
-            air_util_tx: airUtilTx ?? node.air_util_tx,
+            channel_utilization: channelUtilization ?? node?.channel_utilization,
+            air_util_tx: airUtilTx ?? node?.air_util_tx,
             meshcore_local_stats: localStats,
           });
           return updated;
@@ -1092,7 +1115,7 @@ export function useMeshCore() {
     } catch (e: unknown) {
       console.warn('[useMeshCore] fetchAndUpdateLocalStats error', e);
     }
-  }, []);
+  }, [state.myNodeNum]);
 
   const buildNodesFromContactsRef = useRef<
     | ((
@@ -1182,7 +1205,7 @@ export function useMeshCore() {
         meshcoreStatsPollRef.current = null;
       }
     };
-  }, [state.status, fetchAndUpdateLocalStats]);
+  }, [state.status, state.myNodeNum, fetchAndUpdateLocalStats]);
 
   useEffect(() => {
     mqttStatusRef.current = mqttStatus;
@@ -4678,29 +4701,31 @@ export function useMeshCore() {
   }, []);
 
   // ─── MeshCore Statistics ───────────────────────────────────────
-  const getRadioStats = useCallback(async (): Promise<Record<string, unknown> | null> => {
-    const conn = connRef.current;
-    if (!conn) return null;
-    try {
-      const result = await conn.getStatsRadio();
-      return result;
-    } catch (e: unknown) {
-      console.warn('[useMeshCore] getRadioStats error', e);
-      return null;
-    }
-  }, []);
+  const getRadioStats =
+    useCallback(async (): Promise<MeshCoreStatsResponse<MeshCoreRadioStatsData> | null> => {
+      const conn = connRef.current;
+      if (!conn) return null;
+      try {
+        const result = await conn.getStatsRadio();
+        return result;
+      } catch (e: unknown) {
+        console.warn('[useMeshCore] getRadioStats error', e);
+        return null;
+      }
+    }, []);
 
-  const getPacketStats = useCallback(async (): Promise<Record<string, unknown> | null> => {
-    const conn = connRef.current;
-    if (!conn) return null;
-    try {
-      const result = await conn.getStatsPackets();
-      return result;
-    } catch (e: unknown) {
-      console.warn('[useMeshCore] getPacketStats error', e);
-      return null;
-    }
-  }, []);
+  const getPacketStats =
+    useCallback(async (): Promise<MeshCoreStatsResponse<MeshCorePacketStatsData> | null> => {
+      const conn = connRef.current;
+      if (!conn) return null;
+      try {
+        const result = await conn.getStatsPackets();
+        return result;
+      } catch (e: unknown) {
+        console.warn('[useMeshCore] getPacketStats error', e);
+        return null;
+      }
+    }, []);
 
   // ─── MeshCore Channel Data ──────────────────────────────────────
   const sendChannelData = useCallback(
