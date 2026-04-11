@@ -306,3 +306,75 @@ UI features are gated via `ProtocolCapabilities`. Each protocol exposes differen
 - MeshCore: Repeaters panel, Contact Groups, different MQTT adapter
 
 Use `useRadioProvider(protocol)` to access protocol-specific capabilities.
+
+---
+
+## AI assistant quick reference
+
+Condensed maps for debugging and edits. Policy (style, security, git) lives in [AGENTS.md](AGENTS.md). For subprocess, DOM, and injection rules not repeated here, follow project security guidance and Cursor rules.
+
+### Diagnostics
+
+- **Engines:** `lib/diagnostics/` — `RoutingDiagnosticEngine.ts` (hop anomalies), `RFDiagnosticEngine.ts` (RF), `RemediationEngine.ts` (fixes).
+- **Store:** `diagnosticsStore.ts` — routing rows, RF rows, foreign LoRa, MQTT ignore, packet redundancy.
+- **New finding:** Extend `DiagnosticRow` in `types.ts`, add detector in the engine, wire store via `replaceRoutingRowsFromMap` or `replaceRfRowsForNode`.
+- **TTL:** Routing 24h, RF 1h — `diagnosticRows.ts`.
+- **Debug:** `console.debug` in detectors; inspect store in DevTools. Routing anomalies need GPS on both nodes.
+
+### Bug fix workflow
+
+1. Reproduce (`pnpm start` on the failing path); report what you see.
+2. Locate: search error text under `src/main/` or `src/renderer/`.
+3. Add `console.debug` only if tracing needs it.
+4. Minimal fix; co-locate tests (`*.test.ts` / `*.test.tsx`).
+5. Verify: `pnpm dlx vitest run <test-file>` and `pnpm run lint`.
+
+**Where to look first:** connection — `useDevice.ts` / `useMeshCore.ts`; UI state — relevant `stores/*`; IPC — `src/main/index.ts`.
+
+### Protocols
+
+- **Meshtastic:** `useDevice.ts`, `createConnection()` in `connection.ts`.
+- **MeshCore:** `useMeshCore.ts`, `MeshCoreConnection` from `@liamcottle/meshcore.js`.
+- **Gating:** `useRadioProvider(protocol)` / `ProtocolCapabilities` in `providerFactory.ts`. Do not compare raw `protocol === 'meshcore'` strings.
+
+### Database
+
+- SQLite WAL; version via `db.pragma('user_version')`.
+- Migrations: `migration_N()` in `database.ts`, bump version.
+- API: `db-compat.ts` over `node:sqlite` (not `better-sqlite3`).
+- After schema changes: `pnpm run check:db-migrations`.
+
+### BLE and serial
+
+- **Meshtastic BLE:** `connection.ts` → `createBleConnection()` → `TransportManager`.
+- **MeshCore BLE:** macOS/Windows — `noble-ble-manager.ts`; Linux — Web Bluetooth via `TransportWebBluetoothIpc`.
+- **Serial:** `createSerialConnection()` in `connection.ts`; port identity — `serialPortSignature.ts`.
+- **Errors:** `humanizeBleError`, `humanizeSerialError`, `humanizeHttpError` in `connection.ts`.
+- **Reconnect:** `useDevice.ts` watchdog (`BLE_STALE_THRESHOLD_MS`, `BLE_DEAD_THRESHOLD_MS`).
+
+### MQTT
+
+- **Meshtastic:** `mqtt-manager.ts` — AES decrypt, protobuf decode, dedup (~10 min in `seenPacketIds`).
+- **MeshCore:** `meshcore-mqtt-adapter.ts` — JSON v1 envelope.
+- **Debug:** `[MQTT]` logs in `mqtt-manager.ts`; `MQTTStatus` in UI.
+
+### UI components
+
+- **Panels:** `src/renderer/components/*.tsx`; tests co-located `*.test.tsx`.
+- **New tab/panel:** `lazyTabPanels.ts` or `lazyAppPanels.ts`; gate with `ProtocolCapabilities`.
+- **Stores:** `stores/*.ts` — module-level defaults; `persist` vs SQLite via IPC as elsewhere in the app.
+
+### IPC and preload
+
+- Types: `electron-api.types.ts` (shared). Handlers: namespaced channels in `src/main/index.ts`. Preload: `preload/index.ts` via `contextBridge` (see **Adding a New IPC Channel** above). Contract tests: `src/main/index.contract.test.ts` when CSP, IPC limits, build, or log filters change.
+
+### Common issues
+
+- **Connection fails:** `useDevice.ts`, `useMeshCore.ts`
+- **Messages not sending:** `useDevice.sendText`, MeshCore send paths in `useMeshCore`
+- **UI not updating:** Zustand store, `useEffect` deps
+- **BLE timeout:** `noble-ble-manager.ts`, `bleConnectErrors`
+- **Serial port not found:** `serialPortSignature.ts`
+- **MQTT reconnect loop:** `mqtt-manager.ts`
+- **Database error:** `database.ts` migrations
+- **Log panel missing lines:** `log-service.ts`, `[TAG]` prefixes
