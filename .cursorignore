@@ -1,5 +1,11 @@
+# Cursor indexing exclusions (see AGENTS.md section 9).
+# Aligns with .claudeignore where possible. Logs under .cursor/ stay openable via explicit path or @.
+
 # From .gitignore + dependency/build/lock/log exclusions
 # (node_modules etc. are ignored by default; reference explicitly when needed.)
+
+# Local Cursor plugin/debug logs (large; keep out of default index)
+.cursor/*.log
 
 *.db
 .DS_Store
@@ -16,4 +22,3 @@ test-results/
 # Dependency and build artifacts
 coverage/
 .next/
-

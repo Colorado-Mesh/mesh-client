@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing. See [docs/development-environment.md](docs/development-environment.md) for setup.
 
+**Coding style, testing, accessibility, security, IPC, and AI workflow:** follow [AGENTS.md](AGENTS.md). This file focuses on human setup, hooks, and PR flow.
+
 ## Quick Commands
 
 ```bash
@@ -28,40 +30,17 @@ Before each commit, the hook runs (order matters):
 
 Skip in emergency: `git commit --no-verify`.
 
-## Accessibility
-
-Every interactive element needs `aria-label`. Key rules:
-
-- `<button>` icon-only: `aria-label="Action description"`
-- `<input>` / `<select>`: `<label htmlFor="id">` or `aria-label`
-- Modal: `role="dialog" aria-modal="true"`
-- Error: `role="alert"`
-
-## Testing
-
-```bash
-pnpm run test:run # Run once
-pnpm test         # Watch mode
-```
-
-Renderer tests use jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main tests use node (`src/main/**/*.test.ts`).
-
 ## PR Process
 
 1. Describe your changes and what you tested
 2. Update docs if needed
-3. Run `pnpm run lint` and `pnpm run test:run` first
+3. Run the checks you need before review (at minimum what the pre-commit hook runs, especially `pnpm run lint` and `pnpm run test:run`)
 4. Keep PR scope tight
 5. A maintainer will review
 
-## AI Tools
+## AI-assisted contributions
 
-AI assistants (Claude Code, GitHub Copilot, Gemini CLI, etc.) are welcome for brainstorming and drafts. This project is [OpenWolf-native](https://openwolf.com/) for optimized AI context management. If you are using an AI assistant to help you contribute:
-
-- **Follow OpenWolf Protocols**: Point your AI at `.wolf/OPENWOLF.md` every session to ensure it respects project-specific patterns and do-not-repeat rules.
-- **Review Every Line**: All AI-generated code must be reviewed and tested by a human before merging.
-- **IPC Security**: Never accept AI-generated IPC code without understanding it — Electron IPC security is a known weak spot.
-- **Note Briefly**: Briefly note in the PR if you used an AI tool and which one.
+Follow [AGENTS.md](AGENTS.md) for all conventions. Review every line of AI-generated code before merging. Do not accept AI-generated IPC or preload changes without understanding them (Electron IPC is a common weak spot). You may note briefly in the PR if you used an AI tool.
 
 ---
 

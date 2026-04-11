@@ -1,6 +1,6 @@
 # AGENTS.md — Coding Guidelines for AI Assistants
 
-Before substantive changes, skim [ARCHITECTURE.md](ARCHITECTURE.md) for layout and data flow. Read `CONTRIBUTING.md` and relevant source before editing.
+Before substantive changes, skim [ARCHITECTURE.md](ARCHITECTURE.md) for layout and data flow. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup and pre-commit hooks. **Conventions, testing, and security expectations are in this file.** Read relevant source before editing.
 
 ## 1. Strict AI Operational Guardrails (Read First)
 
@@ -50,3 +50,18 @@ Use **pnpm**; full script list is in `package.json`. Before PR: `pnpm run lint`,
 Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`). Remote: `Colorado-Mesh/meshtastic-client`. Pre-PR: refresh `README`/version metadata as needed; `gh pr create` descriptions must cover **all** commits on the branch (`git log origin/main..HEAD --oneline`), not only the last one.
 
 Subsystem maps, diagnostics detail, and troubleshooting: **AI assistant quick reference** in [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## 9. Cursor / Claude indexing and debug logs
+
+[`.cursorignore`](.cursorignore) and [`.claudeignore`](.claudeignore) exclude noisy paths (build output, dependencies, and **Cursor debug logs under `.cursor/`**) so they are less likely to pollute default context. Ignored paths may still be read when you **open the file**, **paste an excerpt**, or **reference an explicit path** in chat (tool behavior can differ by product; prefer small excerpts for very large logs).
+
+## 10. Efficient AI sessions (token use)
+
+- Prefer a **fresh chat** for a new task when the thread is long or off-topic.
+- Prefer **`@` single files** or small folders over whole `src/`.
+- While iterating, run **single-file tests**: `pnpm dlx vitest run path/to/file.test.ts` instead of the full suite when possible.
+- Avoid pasting **full CI logs**; use the failing file/line and the last screenful of output.
+
+## 11. Maintainer notes: global rules and Cursor team kit
+
+Keep **global Cursor user rules** short; long preferences belong here or in [CONTRIBUTING.md](CONTRIBUTING.md) / [ARCHITECTURE.md](ARCHITECTURE.md). If you use **Cursor team kit** or many always-on `.mdc` rules, periodically **merge overlaps** and mark rarely needed rules as **requestable** instead of always-on to reduce fixed context size.

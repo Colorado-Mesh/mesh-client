@@ -1,3 +1,7 @@
+# Claude Code indexing exclusions (see AGENTS.md section 9).
+# Aligns with .cursorignore where possible. Narrow .cursor log patterns keep logs out of default
+# context but still allow reading them via explicit path, open file, or paste.
+
 # From .gitignore + dependency/build/lock/log exclusions
 # (node_modules etc. are ignored by default; reference explicitly when needed.)
 
@@ -5,7 +9,6 @@
 .DS_Store
 .aider*
 .claude/
-.cursor/
 Thumbs.db
 dist/
 dist-electron/
@@ -19,4 +22,6 @@ coverage/
 
 # Lock files and large non-source files
 package-lock.json
-*.log
+
+# Local Cursor debug logs only (replaces blanket .cursor/ and global *.log so repo/app logs stay available)
+.cursor/*.log
