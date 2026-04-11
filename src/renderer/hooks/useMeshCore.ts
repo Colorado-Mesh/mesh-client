@@ -898,6 +898,11 @@ function mergeStubNodesFromMeshcoreMessages(
 
 export function useMeshCore() {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
+  const [queueStatus, setQueueStatus] = useState<{
+    free: number;
+    maxlen: number;
+    res: number;
+  } | null>(null);
   const [nodes, setNodes] = useState<Map<number, MeshNode>>(new Map());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [channels, setChannels] = useState<{ index: number; name: string; secret: Uint8Array }[]>(
@@ -1024,10 +1029,7 @@ export function useMeshCore() {
 
       setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts: core.batteryMilliVolts } : prev));
 
-      setState((prev) => ({
-        ...prev,
-        queueStatus: { free: 256 - core.queueLen, maxlen: 256, res: 0 },
-      }));
+      setQueueStatus({ free: 256 - core.queueLen, maxlen: 256, res: 0 });
 
       const now = Date.now();
       let channelUtilization: number | undefined;
@@ -4900,7 +4902,7 @@ export function useMeshCore() {
       getFullNodeLabel,
       getPickerStyleNodeLabel,
       traceRouteResults: new Map<number, { route: number[]; from: number }>(),
-      queueStatus: null,
+      queueStatus,
       neighborInfo: new Map<number, unknown>(),
       waypoints: [] as unknown[],
       telemetry,
@@ -5006,6 +5008,7 @@ export function useMeshCore() {
       clearCliHistory,
       manualAddContacts,
       mqttStatus,
+      queueStatus,
       telemetry,
       signalTelemetry,
       environmentTelemetry,
