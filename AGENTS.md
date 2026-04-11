@@ -1,11 +1,4 @@
 # AGENTS.md — Coding Guidelines for AI Assistants
-
-# OpenWolf
-
-@.wolf/OPENWOLF.md
-
-Before writing code, read [ARCHITECTURE.md](ARCHITECTURE.md) to understand the codebase map and data flow.
-
 ## 1. Strict AI Operational Guardrails (Read First)
 
 - **The 2-Strike Rule:** If a test, build step, command, or script fails more than TWICE with the exact same error, STOP EDITING IMMEDIATELY. Explain the error and explicitly ask for guidance. Do not attempt a third fix.
