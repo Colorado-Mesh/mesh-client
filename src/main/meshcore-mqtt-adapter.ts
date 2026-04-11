@@ -33,7 +33,6 @@ function buildMeshcoreUrlForLog(settings: MQTTSettings): string {
 const MESHCORE_MQTT_CONNECT_ACK_MS = 30_000;
 /** Send WebSocket-level ping frames so LB/proxy idle timers see traffic at ~10s intervals. */
 const MESHCORE_MQTT_WSS_PING_MS = 10_000;
-const MESHCORE_MQTT_RESCHEDULE_MS = 60_000;
 /** Reconnect delay base/cap — mirrors MQTTManager. */
 const MESHCORE_MQTT_RECONNECT_IMMEDIATE_MS = 500;
 const MESHCORE_MQTT_RECONNECT_10_MINUTE_DELAY_MS = 600_000;
@@ -53,7 +52,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   private pingRespLogged = false;
   private retryCount = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  private wssRescheduleTimer: ReturnType<typeof setInterval> | null = null;
   private lastConnected: number | null = null;
   private disconnectCount = 0;
   private tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null;
@@ -173,27 +171,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     }
   }
 
-  private clearWssReschedule(): void {
-    if (this.wssRescheduleTimer) {
-      clearInterval(this.wssRescheduleTimer);
-      this.wssRescheduleTimer = null;
-    }
-  }
-
-  private startWssReschedule(): void {
-    this.clearWssReschedule();
-    this.wssRescheduleTimer = setInterval(() => {
-      if (!this.client?.connected) return;
-      const s = this.client?.stream as { ping?: () => void; _reschedule?: () => void } | undefined;
-      try {
-        s?.ping?.();
-        s?._reschedule?.();
-      } catch {
-        // catch-no-log-ok ws ping after teardown
-      }
-    }, MESHCORE_MQTT_RESCHEDULE_MS);
-  }
-
   private setError(message: string): void {
     this.status = 'error';
     this.emit('status', 'error');
@@ -204,7 +181,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.clearTokenRefreshTimer();
     this.clearConnectTimers();
     this.clearWssPing();
-    this.clearWssReschedule();
     this.clearReconnectTimer();
     this.pendingReconnect = false;
     if (this.pendingReconnectTimer) {
@@ -252,9 +228,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
 
     // Match MQTTManager: WebSocket uses mqtt.connect({ protocol, host, port, path, … }) — not
     // mqtt.connect(urlString, opts), which can hang or mis-handle TLS in Node mqtt.js.
-    // For WebSocket, set keepalive=0 to disable MQTT PINGREQ (broker doesn't respond to PINGRESP);
-    // rely on WebSocket-level ping frames (MESHCORE_MQTT_WSS_PING_MS) to keep connection alive.
-    const keepaliveSec = settings.useWebSocket ? 0 : (settings.keepalive ?? 60);
+    // Use MQTT keepalive for both WebSocket and raw TCP; letsmesh requires PINGREQ every 60s.
+    // WebSocket-level pings (MESHCORE_MQTT_WSS_PING_MS) additionally keep LB/proxy paths alive.
+    const keepaliveSec = settings.keepalive ?? 60;
     let connectOpts: mqtt.IClientOptions = {
       clientId,
       username: settings.username || undefined,
@@ -358,9 +334,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
           );
         });
       }, 500);
-      // Start periodic rescheduling for keepalive
+      // WebSocket-level pings keep LB/proxy paths alive independent of MQTT keepalive
       if (settings.useWebSocket) {
-        // Fast ping every 10s to keep LB/proxy connections alive
+        // Ping every 10s so intermediary idle timers stay reset
         this.clearWssPing();
         this.wssPingTimer = setInterval(() => {
           const s = this.client?.stream as { ping?: () => void } | undefined;
@@ -370,8 +346,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
             // catch-no-log-ok ws ping after teardown
           }
         }, MESHCORE_MQTT_WSS_PING_MS);
-        // Also start the 60s reschedule timer
-        this.startWssReschedule();
       }
       // Schedule proactive token refresh
       this.scheduleTokenRefresh();
@@ -425,7 +399,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     });
     this.client.on('close', () => {
       this.clearWssPing();
-      this.clearWssReschedule();
       this.clearConnectTimers();
       const now = Date.now();
       this.disconnectCount++;
