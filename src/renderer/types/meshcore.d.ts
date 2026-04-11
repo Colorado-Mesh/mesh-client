@@ -160,7 +160,6 @@ declare module '@liamcottle/meshcore.js' {
       offset?: number,
       orderBy?: number,
       pubKeyPrefixLength?: number,
-      extraTimeoutMillis?: number,
     ): Promise<{
       totalNeighboursCount: number;
       neighbours: { publicKeyPrefix: Uint8Array; heardSecondsAgo: number; snr: number }[];

@@ -79,7 +79,7 @@ export class RepeaterCommandService {
       timeoutMs?: number;
       maxRetries?: number;
     },
-  ): { token: string; promise: Promise<string> } {
+  ): { token: string; promise: Promise<string>; timeoutMs: number } {
     const token = options?.token ?? this.generateToken();
     const timeoutMs = options?.timeoutMs ?? this.calculateTimeout(path, command.length);
     const maxRetries = options?.maxRetries ?? this.maxRetries;
@@ -111,7 +111,7 @@ export class RepeaterCommandService {
     };
 
     this.pendingCommands.set(token, pending);
-    return { token, promise };
+    return { token, promise, timeoutMs };
   }
 
   handleResponse(rawResponse: string): boolean {
