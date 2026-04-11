@@ -1,0 +1,26 @@
+# Gemini CLI indexing exclusions (derived from .claudeignore)
+# Reduces mandatory context tokens by ignoring large/noisy paths.
+
+*.db
+.DS_Store
+.aider*
+.claude/
+.gemini/
+Thumbs.db
+dist/
+dist-electron/
+node_modules/
+release/
+test-results/
+
+# Dependency and build artifacts
+coverage/
+.next/
+
+# Lock files and large non-source files
+package-lock.json
+pnpm-lock.yaml
+
+# Local debug logs
+.cursor/*.log
+.gemini/*.log
