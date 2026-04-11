@@ -92,6 +92,10 @@ const STATUS_COLOR: Record<string, string> = {
   reconnecting: 'bg-orange-500 animate-pulse',
 };
 
+/** Header queue badge (MeshCore): `title` tooltip and extended aria-label. */
+const MESHCORE_QUEUE_TOOLTIP =
+  'Because MeshCore sends messages rapidly, and we poll every 30 seconds, this should always be 0. If not 0, there is congestion.';
+
 const TAB_NAMES = [
   'Connection',
   'Chat',
@@ -1090,9 +1094,13 @@ export default function App() {
             {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
             {queueShowBadge && device.queueStatus && (
               <div
-                aria-label={`Q: ${queueUsed}/${device.queueStatus.maxlen}`}
+                aria-label={
+                  protocol === 'meshcore'
+                    ? `Q: ${queueUsed}/${device.queueStatus.maxlen}. ${MESHCORE_QUEUE_TOOLTIP}`
+                    : `Q: ${queueUsed}/${device.queueStatus.maxlen}`
+                }
+                title={protocol === 'meshcore' ? MESHCORE_QUEUE_TOOLTIP : undefined}
                 className={`flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${queueColorClass}`}
-                title={`Queue: ${queueUsed}/${device.queueStatus.maxlen} used`}
               >
                 Q: {queueUsed}/{device.queueStatus.maxlen}
               </div>

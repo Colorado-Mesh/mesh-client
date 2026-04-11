@@ -33,6 +33,7 @@ import {
   meshcoreCoerceRadioRxFrame,
   parseAutoaddConfigResponse,
 } from '../lib/meshcoreContactAutoAdd';
+import { queueLenFromMeshCoreCoreStatsRaw } from '../lib/meshcoreCoreStatsQueue';
 import {
   buildMeshcoreGetNeighboursRequest,
   parseMeshcoreGetNeighboursResponse,
@@ -1038,7 +1039,7 @@ export function useMeshCore() {
   const prevTxAirSecsRef = useRef<number | null>(null);
   /** Previous timestamp for calculating channel utilization delta. */
   const prevStatsTimestampRef = useRef<number | null>(null);
-  /** Periodic poll for local radio stats (every 60s). */
+  /** Periodic poll for local radio stats (see MESHCORE_STATS_POLL_MS in stats effect). */
   const meshcoreStatsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /** Fetch and update local radio stats (core, radio, packet). Called by requestRefresh and on connect. */
@@ -1054,8 +1055,14 @@ export function useMeshCore() {
     }
 
     const core = coreStats.data;
-    const queueLen = core.queueLen;
-    setQueueStatus({ free: 256 - queueLen, maxlen: 256, res: 0 });
+    // STATS CORE queue_len = PacketManager outbound total (MeshCore stats_binary_frames.md).
+    // Do not merge conn.getStatus(self): companion CMD_SEND_STATUS_REQ resolves the pubkey via
+    // lookupContactByPubKey; self is often not a contact row, so the request fails with NOT_FOUND.
+    const queueLenCapped = Math.min(
+      queueLenFromMeshCoreCoreStatsRaw(coreStats.raw, core.queueLen),
+      256,
+    );
+    setQueueStatus({ free: 256 - queueLenCapped, maxlen: 256, res: 0 });
 
     let radioStats: Awaited<ReturnType<MeshCoreConnection['getStatsRadio']>>;
     let packetStats: Awaited<ReturnType<MeshCoreConnection['getStatsPackets']>>;
@@ -1088,7 +1095,7 @@ export function useMeshCore() {
     const localStats: MeshCoreLocalStats = {
       batteryMilliVolts: core.batteryMilliVolts,
       uptimeSecs: core.uptimeSecs,
-      queueLen,
+      queueLen: queueLenCapped,
       noiseFloor: radio.noiseFloor,
       lastRssi: radio.lastRssi,
       lastSnr: radio.lastSnr,

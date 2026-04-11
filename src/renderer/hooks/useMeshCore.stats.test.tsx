@@ -163,11 +163,17 @@ describe('useMeshCore stats parsing', () => {
     });
     getStatsCoreMock.mockResolvedValue({
       type: 0,
-      raw: new Uint8Array([0]),
+      raw: (() => {
+        const r = new Uint8Array(9);
+        r[6] = 5;
+        r[7] = 0;
+        r[8] = 7; // true queue per MeshCore stats_binary_frames (meshcore.js .data.queueLen reads err low byte)
+        return r;
+      })(),
       data: {
         batteryMilliVolts: 4123,
         uptimeSecs: 456,
-        queueLen: 7,
+        queueLen: 5,
       },
     });
     getStatsRadioMock.mockResolvedValue({
