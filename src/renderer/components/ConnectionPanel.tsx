@@ -1964,7 +1964,7 @@ export default function ConnectionPanel({
                           port: 443,
                           topicPrefix: 'meshcore',
                           useWebSocket: true,
-                          keepalive: 30,
+                          keepalive: 60,
                           username: fromIdentity || prev.username,
                           password: '',
                         }));
@@ -1977,7 +1977,7 @@ export default function ConnectionPanel({
                           port: 443,
                           topicPrefix: 'meshcore',
                           useWebSocket: true,
-                          keepalive: 30,
+                          keepalive: 60,
                           username: fromIdentity || prev.username,
                           password: '',
                         }));
@@ -2020,7 +2020,7 @@ export default function ConnectionPanel({
                         server: LETSMESH_HOST_US,
                         port: 443,
                         useWebSocket: true,
-                        keepalive: 30,
+                        keepalive: 60,
                         topicPrefix: 'meshcore',
                         username: fromIdentity || prev.username,
                       }));
@@ -2042,7 +2042,7 @@ export default function ConnectionPanel({
                         server: LETSMESH_HOST_EU,
                         port: 443,
                         useWebSocket: true,
-                        keepalive: 30,
+                        keepalive: 60,
                         topicPrefix: 'meshcore',
                         username: fromIdentity || prev.username,
                       }));
