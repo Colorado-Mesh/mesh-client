@@ -802,6 +802,44 @@ function runMigrations(): void {
       throw new Error(`Migration v23 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
+
+  if (userVersion < 24) {
+    try {
+      const tableExists = db!
+        .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='meshcore_trace_history'")
+        .get();
+      if (tableExists) {
+        const cols = db!.prepare('PRAGMA table_info(meshcore_trace_history)').all() as {
+          name: string;
+        }[];
+        if (!cols.some((c) => c.name === 'id')) {
+          db!.execScript(`
+            CREATE TABLE meshcore_trace_history_new (
+              id         INTEGER PRIMARY KEY AUTOINCREMENT,
+              node_id    INTEGER NOT NULL,
+              timestamp  INTEGER NOT NULL,
+              path_len   INTEGER,
+              path_snrs  TEXT,
+              last_snr   REAL,
+              tag        INTEGER
+            );
+            INSERT INTO meshcore_trace_history_new (node_id, timestamp, path_len, path_snrs, last_snr, tag)
+              SELECT node_id, timestamp, path_len, path_snrs, last_snr, tag FROM meshcore_trace_history;
+            DROP TABLE meshcore_trace_history;
+            ALTER TABLE meshcore_trace_history_new RENAME TO meshcore_trace_history;
+            CREATE INDEX IF NOT EXISTS idx_meshcore_trace_history_node_id ON meshcore_trace_history(node_id);
+          `);
+        }
+      }
+      db!.pragma('user_version = 24');
+    } catch (e) {
+      console.error(
+        '[db] migration v24 failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw new Error(`Migration v24 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
 }
 
 /** Export DB to a file. Best-effort for very large databases; may take a long time with no progress callback. */
@@ -1084,7 +1122,10 @@ export interface MeshCoreTraceHistoryRow {
 export function getMeshcoreTraceHistory(nodeId: number): MeshCoreTraceHistoryRow[] {
   const d = getDatabase();
   const rows = d
-    .prepare('SELECT * FROM meshcore_trace_history WHERE node_id = ? ORDER BY timestamp DESC')
+    .prepare(
+      `SELECT rowid AS id, node_id, timestamp, path_len, path_snrs, last_snr, tag
+       FROM meshcore_trace_history WHERE node_id = ? ORDER BY timestamp DESC`,
+    )
     .all(nodeId) as MeshCoreTraceHistoryRow[];
   return rows;
 }
@@ -1137,8 +1178,8 @@ export function saveMeshcoreTraceHistory(
   const MAX_TRACES_PER_NODE = 5;
   d.prepareOnce(
     `DELETE FROM meshcore_trace_history
-     WHERE node_id = ? AND id NOT IN (
-       SELECT id FROM meshcore_trace_history
+     WHERE node_id = ? AND rowid NOT IN (
+       SELECT rowid FROM meshcore_trace_history
        WHERE node_id = ?
         ORDER BY timestamp DESC
         LIMIT ?

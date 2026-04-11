@@ -133,6 +133,27 @@ describe('meshcore_messages dedup index and fresh DB version', () => {
   });
 });
 
+describe('meshcore_trace_history schema and retention', () => {
+  it('migration v24 rebuilds meshcore_trace_history when id column is missing', () => {
+    expect(DB_SOURCE).toMatch(/userVersion < 24/);
+    expect(DB_SOURCE).toMatch(/meshcore_trace_history_new/);
+  });
+
+  it('saveMeshcoreTraceHistory prune uses rowid so retention works without id column', () => {
+    const match =
+      /DELETE FROM meshcore_trace_history[\s\S]*?WHERE node_id = \? AND rowid NOT IN \([\s\S]*?SELECT rowid FROM meshcore_trace_history/s.exec(
+        DB_SOURCE,
+      );
+    expect(match).not.toBeNull();
+  });
+
+  it('getMeshcoreTraceHistory selects rowid as id for stable row ids', () => {
+    expect(DB_SOURCE).toMatch(
+      /SELECT rowid AS id, node_id, timestamp, path_len, path_snrs, last_snr, tag\s+FROM meshcore_trace_history/s,
+    );
+  });
+});
+
 /**
  * Tests for saveNode UPSERT — ensures partial node updates preserve existing data
  * instead of overwriting with null/empty values.
