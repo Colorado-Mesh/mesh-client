@@ -967,6 +967,8 @@ export function useMeshCore() {
   const pubKeyPrefixMapRef = useRef<Map<string, number>>(new Map());
   // Full pubKey → nodeId for sending
   const pubKeyMapRef = useRef<Map<number, Uint8Array>>(new Map());
+  // nodeId → outPath bytes (sliced to outPathLen) for tracePath calls
+  const outPathMapRef = useRef<Map<number, Uint8Array>>(new Map());
   // nodeId → nickname (from JSON import or DB)
   const nicknameMapRef = useRef<Map<number, string>>(new Map());
   // Stable ref to current nodes so event listeners don't form stale closures
@@ -1423,6 +1425,7 @@ export function useMeshCore() {
       const nextNodes = new Map<number, MeshNode>();
       pubKeyMapRef.current.clear();
       pubKeyPrefixMapRef.current.clear();
+      outPathMapRef.current.clear();
       for (const contact of contacts) {
         const base = meshcoreContactToMeshNode(contact);
         const last_heard = mergeMeshcoreLastHeardFromAdvert(
@@ -1444,6 +1447,11 @@ export function useMeshCore() {
         }
         nextNodes.set(node.node_id, node);
         pubKeyMapRef.current.set(node.node_id, contact.publicKey);
+        const contactPathLen = contact.outPathLen ?? 0;
+        outPathMapRef.current.set(
+          node.node_id,
+          contact.outPath?.slice(0, contactPathLen) ?? new Uint8Array(0),
+        );
         const prefix = Array.from(contact.publicKey.slice(0, 6))
           .map((b) => b.toString(16).padStart(2, '0'))
           .join('');
@@ -1922,6 +1930,11 @@ export function useMeshCore() {
         const d = meshcoreContactRawFromDevice(data as MeshCoreContactRaw);
         const node = meshcoreContactToMeshNode(d);
         pubKeyMapRef.current.set(node.node_id, d.publicKey);
+        const evt138PathLen = d.outPathLen ?? 0;
+        outPathMapRef.current.set(
+          node.node_id,
+          d.outPath?.slice(0, evt138PathLen) ?? new Uint8Array(0),
+        );
         const prefix = Array.from(d.publicKey.slice(0, 6))
           .map((b) => b.toString(16).padStart(2, '0'))
           .join('');
@@ -3005,6 +3018,7 @@ export function useMeshCore() {
     connRef.current = null;
     pubKeyMapRef.current.clear();
     pubKeyPrefixMapRef.current.clear();
+    outPathMapRef.current.clear();
     nicknameMapRef.current.clear();
     setNodes(new Map());
     setMessages([]);
@@ -3420,6 +3434,7 @@ export function useMeshCore() {
     const pk = pubKeyMapRef.current.get(myId);
     pubKeyMapRef.current.clear();
     pubKeyPrefixMapRef.current.clear();
+    outPathMapRef.current.clear();
     if (pk && myId !== 0) {
       pubKeyMapRef.current.set(myId, pk);
       const prefix = Array.from(pk.slice(0, 6))
@@ -3590,6 +3605,7 @@ export function useMeshCore() {
         });
         return;
       }
+      const outPath = outPathMapRef.current.get(nodeId) ?? new Uint8Array(0);
       console.debug('[useMeshCore] traceRoute nodeId=', nodeId.toString(16).toUpperCase());
       setMeshcorePingErrors((prev) => {
         const next = new Map(prev);
@@ -3597,7 +3613,7 @@ export function useMeshCore() {
         return next;
       });
       try {
-        const result = await connRef.current.tracePath(pubKey, MESHCORE_TRACE_TIMEOUT_MS);
+        const result = await connRef.current.tracePath(outPath, MESHCORE_TRACE_TIMEOUT_MS);
         const convertedSnrs = (result.pathSnrs ?? []).map((s) => s * MESHCORE_RPC_SNR_RAW_TO_DB);
         const convertedLastSnr = result.lastSnr;
         setMeshcoreTraceResults((prev) => {
