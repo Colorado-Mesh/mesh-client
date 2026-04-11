@@ -1826,12 +1826,14 @@ export function useMeshCore() {
       });
 
       // Push: send confirmed — event 0x82 = 130; resolve pending DM delivery
+      // ackCode: 0x80 = RESP_CODE_ACK (success), 0x81 = RESP_CODE_NACK (failure)
       conn.on(130, (data: unknown) => {
         const d = data as { ackCode: number; roundTrip?: number };
         if (typeof d.ackCode !== 'number' || !Number.isFinite(d.ackCode)) {
           console.warn('[useMeshCore] event 130: non-numeric ackCode', d.ackCode);
           return;
         }
+        const isNack = d.ackCode === 0x81 || d.ackCode === 129; // 0x81 or signed representation
         let pending: PendingDmAckEntry | undefined;
         for (const lk of meshcoreDeviceAckLookupKeys(d.ackCode)) {
           pending = pendingAcksRef.current.get(lk);
@@ -1850,9 +1852,12 @@ export function useMeshCore() {
           );
           if (hadLateOutbound) {
             console.debug(
-              '[useMeshCore] event 130: late ACK matched, ackCode',
+              isNack
+                ? '[useMeshCore] event 130: late NACK received, marking failed'
+                : '[useMeshCore] event 130: late ACK received, marking acked',
               d.ackCode.toString(16),
             );
+            const newStatus = isNack ? 'failed' : 'acked';
             setMessages((prev) =>
               prev.map((m) =>
                 m.packetId != null &&
@@ -1860,19 +1865,19 @@ export function useMeshCore() {
                 m.sender_id === selfId &&
                 m.to != null &&
                 (m.status === 'sending' || m.status === 'failed')
-                  ? { ...m, status: 'acked' as const }
+                  ? { ...m, status: newStatus as typeof m.status }
                   : m,
               ),
             );
             void window.electronAPI.db
-              .updateMeshcoreMessageStatus(lateKey, 'acked')
+              .updateMeshcoreMessageStatus(lateKey, newStatus)
               .catch((e: unknown) => {
                 console.warn('[useMeshCore] updateMeshcoreMessageStatus (late 130) error', e);
               });
             return;
           }
           console.debug(
-            '[useMeshCore] event 130: orphaned ACK (no pending, no late match), ackCode',
+            '[useMeshCore] event 130: orphaned ACK/NACK (no pending, no late match), ackCode',
             d.ackCode.toString(16),
           );
           return;
@@ -1882,15 +1887,25 @@ export function useMeshCore() {
           pendingAcksRef.current.delete(k);
         }
         const canon = pending.canonicalPacketIdU32;
+        const newStatus = isNack ? 'failed' : 'acked';
+        console.debug(
+          isNack
+            ? '[useMeshCore] event 130: NACK received for DM, marking failed'
+            : '[useMeshCore] event 130: ACK received for DM, marking acked',
+          'packetId',
+          canon.toString(16),
+          'roundTrip',
+          d.roundTrip,
+        );
         setMessages((prev) =>
           prev.map((m) =>
             m.packetId != null && meshcoreDmAckKeyU32(m.packetId) === canon
-              ? { ...m, status: 'acked' as const }
+              ? { ...m, status: newStatus as typeof m.status }
               : m,
           ),
         );
         void window.electronAPI.db
-          .updateMeshcoreMessageStatus(canon, 'acked')
+          .updateMeshcoreMessageStatus(canon, newStatus)
           .catch((e: unknown) => {
             console.warn('[useMeshCore] updateMeshcoreMessageStatus error', e);
           });
@@ -3052,10 +3067,20 @@ export function useMeshCore() {
         };
         setMessages((prev) => [...prev, tempMsg]);
 
+        // Calculate dynamic timeout based on hop count for multi-hop paths
+        const destNode = nodesRef.current.get(destNodeId);
+        const hopsAway = destNode?.hops_away ?? 0;
+        const hopBasedTimeoutMs = 3000 + hopsAway * 2500; // 3s base + 2.5s per hop
+
         try {
           const result = await connRef.current.sendTextMessage(pubKey, textToSend);
           const ackCrc = result?.expectedAckCrc;
-          const estTimeout = Math.max(result?.estTimeout ?? 30_000, MESHCORE_DM_ACK_TIMEOUT_MIN_MS);
+          // Use max of: firmware estimate, hop-based calculation, minimum floor
+          const estTimeout = Math.max(
+            result?.estTimeout ?? 30_000,
+            hopBasedTimeoutMs,
+            MESHCORE_DM_ACK_TIMEOUT_MIN_MS,
+          );
 
           if (ackCrc !== undefined) {
             const ackKey = meshcoreDmAckKeyU32(ackCrc);
