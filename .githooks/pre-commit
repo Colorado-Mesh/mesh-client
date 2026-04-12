@@ -8,33 +8,38 @@ if [ -d "$REPO_ROOT/.githooks/bin" ]; then
   export PATH="$REPO_ROOT/.githooks/bin:$PATH"
 fi
 
+fail() {
+  printf 'pre-commit: FAILED — %s\n' "$1" >&2
+  exit 1
+}
+
 # Capture paths already staged so we only re-stage those after format. Using
 # git add -u would stage every tracked modification and sweep in unstaged WIP.
 STAGED_LIST=$(mktemp)
 trap 'rm -f "$STAGED_LIST"' EXIT
-git diff --cached --name-only --diff-filter=ACM > "$STAGED_LIST" || exit 1
+git diff --cached --name-only --diff-filter=ACM > "$STAGED_LIST" || fail 'git diff --cached (staged file list)'
 
-pnpm run format || exit 1
-pnpm run lint:md || exit 1
+pnpm run format || fail 'pnpm run format'
+pnpm run lint:md || fail 'pnpm run lint:md'
 
 if [ -s "$STAGED_LIST" ]; then
   while IFS= read -r f || [ -n "$f" ]; do
     [ -n "$f" ] || continue
     [ -e "$f" ] || continue
-    git add -- "$f" || exit 1
+    git add -- "$f" || fail 'git add (re-stage after format)'
   done < "$STAGED_LIST"
 fi
 
-pnpm run lint || exit 1
-pnpm run typecheck || exit 1
-pnpm run check:log-injection || exit 1
-pnpm run check:db-migrations || exit 1
-pnpm run check:ipc-contract || exit 1
-pnpm run check:licenses || exit 1
-pnpm dedupe || exit 1
+pnpm run lint || fail 'pnpm run lint'
+pnpm run typecheck || fail 'pnpm run typecheck'
+pnpm run check:log-injection || fail 'pnpm run check:log-injection'
+pnpm run check:db-migrations || fail 'pnpm run check:db-migrations'
+pnpm run check:ipc-contract || fail 'pnpm run check:ipc-contract'
+pnpm run check:licenses || fail 'pnpm run check:licenses'
+pnpm dedupe || fail 'pnpm dedupe'
 # Stage lockfile changes after dedupe
-git add pnpm-lock.yaml || exit 1
-pnpm audit --audit-level=high || exit 1
-actionlint || exit 1
-yamllint -f github -s . || exit 1
-pnpm run test:run || exit 1
+git add pnpm-lock.yaml || fail 'git add pnpm-lock.yaml'
+pnpm audit --audit-level=high || fail 'pnpm audit --audit-level=high'
+actionlint || fail 'actionlint'
+yamllint -f github -s . || fail 'yamllint'
+pnpm run test:run -- --bail 1 || fail 'pnpm run test:run'
