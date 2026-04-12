@@ -11,7 +11,6 @@ contributor guide lives in the repository at
 - Use Node 22 (`22.12.0+` recommended).
 - Install dependencies: `pnpm install`
 - Start dev mode: `pnpm run dev`
-- **AI-Native Development**: This project uses [OpenWolf](https://openwolf.com/) to optimize AI assistant performance. If you are using an AI to help, see the [OpenWolf section in the Dev Guide](development-environment.md#ai-native-development-openwolf).
 
 ## Quality Checks
 

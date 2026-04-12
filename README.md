@@ -358,8 +358,6 @@ For a detailed explanation of every diagnostic output — routing anomalies, RF 
 
 ## Contributing / Development
 
-This project is [OpenWolf-native](https://openwolf.com/) for optimized AI context management. If you are using an AI assistant to help you contribute, see the [AI-Native Development section](docs/development-environment.md#ai-native-development-openwolf) in the Dev Guide.
-
 For full local setup (shared requirements, npm/tooling install, test harness, and OS-specific steps/troubleshooting), see [docs/development-environment.md](docs/development-environment.md).
 
 Documentation uses MkDocs; if you are updating docs, install the MkDocs Python dependency (`pnpm run docs:install`) and run `pnpm run docs:build`.
