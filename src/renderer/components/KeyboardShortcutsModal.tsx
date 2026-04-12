@@ -12,6 +12,7 @@ const DEFAULT_TAB_NAMES = [
   'TAK',
   'App',
   'Diagnostics',
+  'Raw Packets',
 ];
 
 const OTHER_SHORTCUTS = [
@@ -35,7 +36,7 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
 
   const shortcuts = useMemo(() => {
     const currentNames = tabNames ?? DEFAULT_TAB_NAMES;
-    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A'];
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A', 'S'];
     const tabShortcuts = DEFAULT_TAB_NAMES.map((name, i) => {
       const currentTabIndex = currentNames.indexOf(name);
       const currentTabAtPosition = currentNames[i];
@@ -47,6 +48,8 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
           suffix = ' (not available in MeshCore)';
         } else if (i === 5 && currentTabAtPosition === 'Repeaters') {
           suffix = ' (MeshCore: Repeaters)';
+        } else if (i === 11 && currentTabIndex === -1) {
+          suffix = ' (not available in Meshtastic)';
         }
       }
       return {

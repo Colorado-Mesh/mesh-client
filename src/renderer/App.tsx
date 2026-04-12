@@ -776,9 +776,9 @@ export default function App() {
     };
   }, [handleProtocolChange]);
 
-  // ─── Keyboard shortcuts: Cmd/Ctrl+1-9, 0, A for tabs, ? for help ───────
+  // ─── Keyboard shortcuts: Cmd/Ctrl+1-9, 0, A, S for tabs, ? for help ───────
   // Shortcuts map to fixed tab positions across protocols:
-  // 1-9 = positions 0-8, 0 = position 9 (App), A = position 10 (Diagnostics)
+  // 1-9 = positions 0-8, 0 = position 9 (App), A = position 10 (Diagnostics), S = position 11 (Raw Packets)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const maxTab = displayTabNames.length - 1;
@@ -799,6 +799,12 @@ export default function App() {
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
         const targetIndex = 10;
+        if (targetIndex <= maxTab) {
+          e.preventDefault();
+          setActiveTab(targetIndex);
+        }
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        const targetIndex = 11;
         if (targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
