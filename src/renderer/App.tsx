@@ -59,6 +59,7 @@ import {
   readMeshcoreIdentity,
 } from './lib/letsMeshJwt';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
+import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './lib/meshtasticMqttTlsMigration';
 import { nodeLongNameOrHexLabel } from './lib/nodeLongNameOrHex';
 import { parseStoredJson } from './lib/parseStoredJson';
@@ -455,7 +456,10 @@ export default function App() {
   const isConfigured = device.state.status === 'configured';
   const isOperational = isConfigured || device.state.status === 'stale';
   const isConnectedOrOperational = isOperational || device.state.status === 'connected';
-  const selectedNode = selectedNodeId ? (nodesForUi.get(selectedNodeId) ?? null) : null;
+  const selectedNode = useMemo(() => {
+    if (selectedNodeId == null) return null;
+    return nodesForUi.get(selectedNodeId) ?? meshNodeStubForDetailModal(selectedNodeId);
+  }, [selectedNodeId, nodesForUi]);
 
   const handleResend = useCallback(
     (msg: ChatMessage) => {

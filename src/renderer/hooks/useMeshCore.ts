@@ -40,6 +40,7 @@ import {
   parseMeshcoreGetNeighboursResponse,
 } from '../lib/meshcoreGetNeighboursBinary';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
+import { meshcoreRawPacketResolveFromNodeId } from '../lib/meshcoreRawPacketSender';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
   buildMeshcoreSetOtherParamsFrame,
@@ -2388,12 +2389,9 @@ export function useMeshCore() {
             routeTypeString = pkt.route_type_string;
             payloadTypeString = pkt.payload_type_string;
             hopCount = pkt.getPathHashCount();
-            if (pClass === 'meshcore' && pkt.payload.length >= 6) {
-              const prefix = Array.from(pkt.payload.subarray(0, 6))
-                .map((b) => b.toString(16).padStart(2, '0'))
-                .join('');
-              const id = pubKeyPrefixMapRef.current.get(prefix) ?? 0;
-              if (id !== 0) fromNodeId = id;
+            if (pClass === 'meshcore') {
+              const id = meshcoreRawPacketResolveFromNodeId(pkt, pubKeyPrefixMapRef.current);
+              if (id != null) fromNodeId = id;
             }
           } catch {
             // catch-no-log-ok non-MeshCore packet (meshtastic or unknown) — leave route fields null

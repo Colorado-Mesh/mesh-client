@@ -11,6 +11,9 @@ const ROUTE_LABEL: Record<string, string> = {
   TRANSPORT_DIRECT: 'T_DIRECT',
 };
 
+/** Sender column: Meshtastic long names can be ~36 chars; flex so the row shares space without a 120px cap. */
+const RAW_PACKET_NAME_COL = 'min-w-0 flex-1 max-w-[min(28rem,50vw)]';
+
 function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))
@@ -211,28 +214,30 @@ function MeshcoreRow({
   const name =
     p.fromNodeId != null ? (
       onNodeClick ? (
-        <button
-          type="button"
-          className="max-w-[120px] shrink-0 truncate text-left text-cyan-200/90 underline-offset-2 hover:underline"
-          title={label ?? undefined}
-          aria-label={`Open node details for ${label ?? p.fromNodeId}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onNodeClick(p.fromNodeId!);
-          }}
-        >
-          {label}
-        </button>
+        <div className={RAW_PACKET_NAME_COL}>
+          <button
+            type="button"
+            className="block w-full min-w-0 truncate text-left text-cyan-200/90 underline-offset-2 hover:underline"
+            title={label ?? undefined}
+            aria-label={`Open node details for ${label ?? p.fromNodeId}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onNodeClick(p.fromNodeId!);
+            }}
+          >
+            {label}
+          </button>
+        </div>
       ) : (
         <span
-          className="max-w-[120px] shrink-0 truncate text-cyan-200/90"
+          className={`${RAW_PACKET_NAME_COL} truncate text-cyan-200/90`}
           title={label ?? undefined}
         >
           {label}
         </span>
       )
     ) : (
-      <span className="text-muted w-[120px] shrink-0">—</span>
+      <span className="text-muted shrink-0">—</span>
     );
   return (
     <>
@@ -271,28 +276,30 @@ function MeshtasticRow({
   const name =
     p.fromNodeId != null ? (
       onNodeClick ? (
-        <button
-          type="button"
-          className="max-w-[120px] shrink-0 truncate text-left text-cyan-200/90 underline-offset-2 hover:underline"
-          title={label ?? undefined}
-          aria-label={`Open node details for ${label ?? p.fromNodeId}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onNodeClick(p.fromNodeId!);
-          }}
-        >
-          {label}
-        </button>
+        <div className={RAW_PACKET_NAME_COL}>
+          <button
+            type="button"
+            className="block w-full min-w-0 truncate text-left text-cyan-200/90 underline-offset-2 hover:underline"
+            title={label ?? undefined}
+            aria-label={`Open node details for ${label ?? p.fromNodeId}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onNodeClick(p.fromNodeId!);
+            }}
+          >
+            {label}
+          </button>
+        </div>
       ) : (
         <span
-          className="max-w-[120px] shrink-0 truncate text-cyan-200/90"
+          className={`${RAW_PACKET_NAME_COL} truncate text-cyan-200/90`}
           title={label ?? undefined}
         >
           {label}
         </span>
       )
     ) : (
-      <span className="text-muted w-[120px] shrink-0">—</span>
+      <span className="text-muted shrink-0">—</span>
     );
   return (
     <>

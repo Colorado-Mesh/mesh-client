@@ -1,6 +1,12 @@
 /** Ring-buffer size for Raw Packets tab (MeshCore LOG_RX_DATA and Meshtastic onMeshPacket). */
 export const MAX_RAW_PACKET_LOG_ENTRIES = 2500;
 
+/**
+ * MeshCore header payload type bits 2–5 (`PAYLOAD_TYPE_ADVERT`). Inner payload begins with a
+ * 32-byte Ed25519 public key per MeshCore `docs/payloads.md`.
+ */
+export const MESHCORE_PAYLOAD_TYPE_ADVERT = 4;
+
 /** Meshtastic row for the raw packet log (protobuf-serialized mesh packet). */
 export interface MeshtasticRawPacketEntry {
   ts: number;
