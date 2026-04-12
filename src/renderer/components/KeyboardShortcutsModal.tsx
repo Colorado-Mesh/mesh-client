@@ -48,8 +48,6 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
           suffix = ' (not available in MeshCore)';
         } else if (i === 5 && currentTabAtPosition === 'Repeaters') {
           suffix = ' (MeshCore: Repeaters)';
-        } else if (i === 11 && currentTabIndex === -1) {
-          suffix = ' (not available in Meshtastic)';
         }
       }
       return {
@@ -162,6 +160,11 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
               ))}
             </tbody>
           </table>
+          <p className="text-muted mt-3 text-xs leading-relaxed">
+            Cmd/Ctrl+0, A, and S switch to the App, Diagnostics, and Raw Packets tabs by name when
+            those tabs are visible (not by fixed slot, so shortcuts stay correct when some tabs are
+            hidden).
+          </p>
         </div>
       </div>
     </div>

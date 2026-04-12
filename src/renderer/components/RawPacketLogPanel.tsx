@@ -26,6 +26,7 @@ interface MeshcoreProps {
   packets: RxPacketEntry[];
   onClear: () => void;
   getNodeLabel: (nodeId: number) => string;
+  onNodeClick?: (nodeId: number) => void;
 }
 
 interface MeshtasticProps {
@@ -33,12 +34,13 @@ interface MeshtasticProps {
   packets: MeshtasticRawPacketEntry[];
   onClear: () => void;
   getNodeLabel: (nodeId: number) => string;
+  onNodeClick?: (nodeId: number) => void;
 }
 
 type Props = MeshcoreProps | MeshtasticProps;
 
 export default function RawPacketLogPanel(props: Props) {
-  const { variant, packets, onClear, getNodeLabel } = props;
+  const { variant, packets, onClear, getNodeLabel, onNodeClick } = props;
   const [filter, setFilter] = useState('');
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -143,6 +145,10 @@ export default function RawPacketLogPanel(props: Props) {
                   ? (filtered as RxPacketEntry[])[vi.index].raw.length
                   : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
 
+              const toggleExpand = () => {
+                setExpandedIdx(isExpanded ? null : vi.index);
+              };
+
               return (
                 <div
                   key={`${vi.index}-${variant === 'meshcore' ? (filtered as RxPacketEntry[])[vi.index].ts : (filtered as MeshtasticRawPacketEntry[])[vi.index].ts}`}
@@ -151,27 +157,28 @@ export default function RawPacketLogPanel(props: Props) {
                   className="absolute top-0 left-0 w-full border-b border-gray-800"
                   style={{ transform: `translateY(${vi.start}px)` }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setExpandedIdx(isExpanded ? null : vi.index);
-                    }}
-                    className="flex w-full items-start gap-2 px-3 py-1.5 text-left hover:bg-slate-800/60"
-                    aria-expanded={isExpanded}
-                  >
-                    {variant === 'meshcore' ? (
-                      <MeshcoreRow
-                        p={(filtered as RxPacketEntry[])[vi.index]}
-                        getNodeLabel={getNodeLabel}
-                      />
-                    ) : (
-                      <MeshtasticRow
-                        p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
-                        getNodeLabel={getNodeLabel}
-                      />
-                    )}
-                    <span className="text-muted shrink-0 text-[10px]">{byteLen}B</span>
-                  </button>
+                  <div className="flex w-full items-start">
+                    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row expands hex on click; node name uses inner button + stopPropagation */}
+                    <div
+                      className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-3 py-1.5 text-left hover:bg-slate-800/60"
+                      onClick={toggleExpand}
+                    >
+                      {variant === 'meshcore' ? (
+                        <MeshcoreRow
+                          p={(filtered as RxPacketEntry[])[vi.index]}
+                          getNodeLabel={getNodeLabel}
+                          onNodeClick={onNodeClick}
+                        />
+                      ) : (
+                        <MeshtasticRow
+                          p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
+                          getNodeLabel={getNodeLabel}
+                          onNodeClick={onNodeClick}
+                        />
+                      )}
+                    </div>
+                    <span className="text-muted shrink-0 px-3 py-1.5 text-[10px]">{byteLen}B</span>
+                  </div>
                   {isExpanded && (
                     <div className="bg-slate-900/60 px-3 pb-2">
                       <p className="text-muted mb-1 text-[10px]">Raw hex ({byteLen} bytes):</p>
@@ -191,21 +198,39 @@ export default function RawPacketLogPanel(props: Props) {
 function MeshcoreRow({
   p,
   getNodeLabel,
+  onNodeClick,
 }: {
   p: RxPacketEntry;
   getNodeLabel: (nodeId: number) => string;
+  onNodeClick?: (nodeId: number) => void;
 }) {
   const routeLabel =
     p.routeTypeString != null ? (ROUTE_LABEL[p.routeTypeString] ?? p.routeTypeString) : '?';
   const payloadLabel = p.payloadTypeString ?? '?';
+  const label = p.fromNodeId != null ? getNodeLabel(p.fromNodeId) : null;
   const name =
     p.fromNodeId != null ? (
-      <span
-        className="max-w-[120px] shrink-0 truncate text-cyan-200/90"
-        title={getNodeLabel(p.fromNodeId)}
-      >
-        {getNodeLabel(p.fromNodeId)}
-      </span>
+      onNodeClick ? (
+        <button
+          type="button"
+          className="max-w-[120px] shrink-0 truncate text-left text-cyan-200/90 underline-offset-2 hover:underline"
+          title={label ?? undefined}
+          aria-label={`Open node details for ${label ?? p.fromNodeId}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onNodeClick(p.fromNodeId!);
+          }}
+        >
+          {label}
+        </button>
+      ) : (
+        <span
+          className="max-w-[120px] shrink-0 truncate text-cyan-200/90"
+          title={label ?? undefined}
+        >
+          {label}
+        </span>
+      )
     ) : (
       <span className="text-muted w-[120px] shrink-0">—</span>
     );
@@ -236,18 +261,36 @@ function MeshcoreRow({
 function MeshtasticRow({
   p,
   getNodeLabel,
+  onNodeClick,
 }: {
   p: MeshtasticRawPacketEntry;
   getNodeLabel: (nodeId: number) => string;
+  onNodeClick?: (nodeId: number) => void;
 }) {
+  const label = p.fromNodeId != null ? getNodeLabel(p.fromNodeId) : null;
   const name =
     p.fromNodeId != null ? (
-      <span
-        className="max-w-[120px] shrink-0 truncate text-cyan-200/90"
-        title={getNodeLabel(p.fromNodeId)}
-      >
-        {getNodeLabel(p.fromNodeId)}
-      </span>
+      onNodeClick ? (
+        <button
+          type="button"
+          className="max-w-[120px] shrink-0 truncate text-left text-cyan-200/90 underline-offset-2 hover:underline"
+          title={label ?? undefined}
+          aria-label={`Open node details for ${label ?? p.fromNodeId}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onNodeClick(p.fromNodeId!);
+          }}
+        >
+          {label}
+        </button>
+      ) : (
+        <span
+          className="max-w-[120px] shrink-0 truncate text-cyan-200/90"
+          title={label ?? undefined}
+        >
+          {label}
+        </span>
+      )
     ) : (
       <span className="text-muted w-[120px] shrink-0">—</span>
     );

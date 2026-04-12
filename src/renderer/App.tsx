@@ -60,6 +60,7 @@ import {
 } from './lib/letsMeshJwt';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './lib/meshtasticMqttTlsMigration';
+import { nodeLongNameOrHexLabel } from './lib/nodeLongNameOrHex';
 import { parseStoredJson } from './lib/parseStoredJson';
 import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
@@ -360,6 +361,10 @@ export default function App() {
   meshtasticMyNodeNumRef.current = meshtasticDevice.state.myNodeNum;
   meshcoreSelfIdRef.current = meshcoreDevice.selfNodeId;
   const nodesForUi = protocol === 'meshcore' ? meshcoreDevice.nodes : meshtasticDevice.nodes;
+  const rawPacketGetNodeLabel = useCallback(
+    (id: number) => nodeLongNameOrHexLabel(nodesForUi.get(id), id),
+    [nodesForUi],
+  );
   const nodeCountLabel = protocol === 'meshcore' ? 'contacts' : 'nodes';
 
   const meshcorePublicKeyHexByNodeId = useMemo(() => {
@@ -777,8 +782,8 @@ export default function App() {
   }, [handleProtocolChange]);
 
   // ─── Keyboard shortcuts: Cmd/Ctrl+1-9, 0, A, S for tabs, ? for help ───────
-  // Shortcuts map to fixed tab positions across protocols:
-  // 1-9 = positions 0-8, 0 = position 9 (App), A = position 10 (Diagnostics), S = position 11 (Raw Packets)
+  // 1–9 = first nine visible tabs (indices 0–8). Cmd+0 / A / S jump by tab *name*
+  // (App, Diagnostics, Raw Packets) so indices stay correct when Security/TAK are hidden.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const maxTab = displayTabNames.length - 1;
@@ -792,20 +797,20 @@ export default function App() {
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key === '0') {
-        const targetIndex = 9;
-        if (targetIndex <= maxTab) {
+        const targetIndex = displayTabNames.indexOf('App');
+        if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
-        const targetIndex = 10;
-        if (targetIndex <= maxTab) {
+        const targetIndex = displayTabNames.indexOf('Diagnostics');
+        if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-        const targetIndex = 11;
-        if (targetIndex <= maxTab) {
+        const targetIndex = displayTabNames.indexOf('Raw Packets');
+        if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
@@ -821,7 +826,7 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [displayTabNames.length]);
+  }, [displayTabNames]);
 
   // ─── Track Meshtastic messages arriving while inactive ──────────
   useEffect(() => {
@@ -1682,14 +1687,16 @@ export default function App() {
                             variant="meshcore"
                             packets={meshcoreDevice.rawPackets}
                             onClear={meshcoreDevice.clearRawPackets}
-                            getNodeLabel={meshcoreDevice.getPickerStyleNodeLabel}
+                            getNodeLabel={rawPacketGetNodeLabel}
+                            onNodeClick={setSelectedNodeId}
                           />
                         ) : (
                           <RawPacketLogPanel
                             variant="meshtastic"
                             packets={meshtasticDevice.rawPackets}
                             onClear={meshtasticDevice.clearRawPackets}
-                            getNodeLabel={meshtasticDevice.getPickerStyleNodeLabel}
+                            getNodeLabel={rawPacketGetNodeLabel}
+                            onNodeClick={setSelectedNodeId}
                           />
                         )}
                       </Suspense>
