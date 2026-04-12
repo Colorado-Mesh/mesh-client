@@ -463,6 +463,40 @@ declare global {
           }[]
         >;
         clearPositionHistory: () => Promise<unknown>;
+        saveMeshcoreHopHistory: (
+          nodeId: number,
+          timestamp: number,
+          hops: number | null,
+          snr: number | null,
+          rssi: number | null,
+        ) => Promise<boolean>;
+        getMeshcoreHopHistory: (nodeId: number) => Promise<{
+          node_id: number;
+          timestamp: number;
+          hops: number | null;
+          snr: number | null;
+          rssi: number | null;
+        } | null>;
+        saveMeshcoreTraceHistory: (
+          nodeId: number,
+          timestamp: number,
+          pathLen: number | null,
+          pathSnrs: number[],
+          lastSnr: number | null,
+          tag: number,
+        ) => Promise<boolean>;
+        getMeshcoreTraceHistory: (nodeId: number) => Promise<
+          {
+            id: number;
+            node_id: number;
+            timestamp: number;
+            path_len: number | null;
+            path_snrs: string | null;
+            last_snr: number | null;
+            tag: number | null;
+          }[]
+        >;
+        pruneMeshcorePathHistory: (nodeId: number) => Promise<boolean>;
         getContactGroups: (
           selfNodeId: number,
         ) => Promise<{ group_id: number; name: string; member_count: number }[]>;

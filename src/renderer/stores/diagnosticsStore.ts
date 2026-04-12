@@ -436,30 +436,11 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   },
 
   loadMeshcorePathHistory(nodeId: number) {
-    const dbApi = window.electronAPI?.db as {
-      getMeshcoreHopHistory?: (nodeId: number) => Promise<{
-        node_id: number;
-        timestamp: number;
-        hops: number | null;
-        snr: number | null;
-        rssi: number | null;
-      } | null>;
-      getMeshcoreTraceHistory?: (nodeId: number) => Promise<
-        {
-          id: number;
-          node_id: number;
-          timestamp: number;
-          path_len: number | null;
-          path_snrs: string | null;
-          last_snr: number | null;
-          tag: number | null;
-        }[]
-      >;
-    } | null;
+    const dbApi = window.electronAPI?.db;
     if (!dbApi) return;
     try {
       dbApi
-        .getMeshcoreHopHistory?.(nodeId)
+        .getMeshcoreHopHistory(nodeId)
         .then((hopRow) => {
           if (hopRow) {
             set((state) => {
@@ -482,7 +463,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     }
     try {
       dbApi
-        .getMeshcoreTraceHistory?.(nodeId)
+        .getMeshcoreTraceHistory(nodeId)
         .then((traceRows) => {
           if (traceRows && traceRows.length > 0) {
             const parsed = traceRows.map((traceRow) => ({

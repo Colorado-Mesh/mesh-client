@@ -270,14 +270,17 @@ export interface ElectronAPI {
       lastSnr: number | null,
       tag: number,
     ) => Promise<boolean>;
-    getMeshcoreTraceHistory: (nodeId: number) => Promise<{
-      node_id: number;
-      timestamp: number;
-      path_len: number | null;
-      path_snrs: string | null;
-      last_snr: number | null;
-      tag: number | null;
-    } | null>;
+    getMeshcoreTraceHistory: (nodeId: number) => Promise<
+      {
+        id: number;
+        node_id: number;
+        timestamp: number;
+        path_len: number | null;
+        path_snrs: string | null;
+        last_snr: number | null;
+        tag: number | null;
+      }[]
+    >;
     pruneMeshcorePathHistory: (nodeId: number) => Promise<boolean>;
     getContactGroups: (selfNodeId: number) => Promise<ContactGroup[]>;
     createContactGroup: (selfNodeId: number, name: string) => Promise<number>;

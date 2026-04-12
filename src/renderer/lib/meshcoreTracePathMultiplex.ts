@@ -53,6 +53,10 @@ function getMuxState(conn: object): MuxState {
 
     const p = pendingByTag.get(tagUnsigned) ?? pendingByTag.get(tagSigned);
     if (!p) {
+      console.debug(
+        '[meshcoreTracePathMultiplex] TraceData with no pending trace, tag=',
+        tagUnsigned.toString(16),
+      );
       return;
     }
 

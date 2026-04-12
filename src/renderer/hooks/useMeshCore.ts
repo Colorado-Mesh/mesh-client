@@ -3353,9 +3353,6 @@ export function useMeshCore() {
       // Mark all existing contacts as not on radio before refreshing
       await window.electronAPI.db.markAllMeshcoreContactsOffRadio();
 
-      // Mark all existing contacts as not on radio before refreshing
-      await window.electronAPI.db.markAllMeshcoreContactsOffRadio();
-
       const contactsRaw = await connRef.current.getContacts();
       const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
       setMeshcoreContactsForTelemetry(contacts);
@@ -3367,13 +3364,6 @@ export function useMeshCore() {
       });
       setNodes((prev) => mergeMeshcoreChatStubNodes(prev, newNodes));
       console.debug('[useMeshCore] refreshContacts: loaded', contacts.length);
-
-      // Warn if approaching contact limit
-      if (contacts.length > MESHCORE_CONTACTS_WARNING_THRESHOLD) {
-        console.warn(
-          `[useMeshCore] refreshContacts: radio contacts near limit (${contacts.length}/${MESHCORE_MAX_CONTACTS})`,
-        );
-      }
 
       // Warn if approaching contact limit
       if (contacts.length > MESHCORE_CONTACTS_WARNING_THRESHOLD) {
