@@ -135,7 +135,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasMapReport: true,
   hasContactImportExport: false,
   hasCryptoOperations: true,
-  hasRawPacketLog: false,
+  hasRawPacketLog: true,
   nodeStaleThresholdMs: 2 * 60 * 60 * 1000, // 2 hours
   nodeOfflineThresholdMs: 7 * 24 * 60 * 60 * 1000, // 7 days
 };

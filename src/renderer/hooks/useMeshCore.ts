@@ -77,6 +77,7 @@ import {
 import { MeshcoreWebBluetoothConnection } from '../lib/meshcoreWebBluetoothConnection';
 import { lastHeardToUnixSeconds, mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { MAX_RAW_PACKET_LOG_ENTRIES } from '../lib/rawPacketLogConstants';
 import {
   type CliHistoryEntry,
   createRepeaterCommandService,
@@ -773,7 +774,6 @@ const INITIAL_STATE: DeviceState = {
 };
 
 const MAX_DEVICE_LOGS = 500;
-const MAX_RAW_PACKETS = 2500;
 
 export interface RxPacketEntry {
   ts: number;
@@ -783,6 +783,8 @@ export interface RxPacketEntry {
   routeTypeString: string | null;
   payloadTypeString: string | null;
   hopCount: number;
+  /** Resolved when Meshtastic frame or MeshCore payload prefix matches a known contact */
+  fromNodeId: number | null;
 }
 
 /** Repeater RPCs (tracePath, getStatus, getTelemetry, sendBinaryRequest neighbours). */
@@ -2373,16 +2375,28 @@ export function useMeshCore() {
 
         // Raw packet log: decode MeshCore packets for the RawPacketLogPanel.
         if (d.raw instanceof Uint8Array && d.raw.length > 0) {
+          const pClass = classifyPayload(d.raw);
           let routeTypeString: string | null = null;
           let payloadTypeString: string | null = null;
           let hopCount = 0;
+          let fromNodeId: number | null = null;
+          if (pClass === 'meshtastic') {
+            fromNodeId = extractMeshtasticSenderId(d.raw);
+          }
           try {
             const pkt = Packet.fromBytes(d.raw);
             routeTypeString = pkt.route_type_string;
             payloadTypeString = pkt.payload_type_string;
             hopCount = pkt.getPathHashCount();
+            if (pClass === 'meshcore' && pkt.payload.length >= 6) {
+              const prefix = Array.from(pkt.payload.subarray(0, 6))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
+              const id = pubKeyPrefixMapRef.current.get(prefix) ?? 0;
+              if (id !== 0) fromNodeId = id;
+            }
           } catch {
-            // catch-no-log-ok non-MeshCore packet (meshtastic or unknown) — leave fields null
+            // catch-no-log-ok non-MeshCore packet (meshtastic or unknown) — leave route fields null
           }
           const rxEntry: RxPacketEntry = {
             ts: now,
@@ -2392,10 +2406,13 @@ export function useMeshCore() {
             routeTypeString,
             payloadTypeString,
             hopCount,
+            fromNodeId,
           };
           setRawPackets((prev) => {
             const next = [...prev, rxEntry];
-            return next.length > MAX_RAW_PACKETS ? next.slice(next.length - MAX_RAW_PACKETS) : next;
+            return next.length > MAX_RAW_PACKET_LOG_ENTRIES
+              ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
+              : next;
           });
         }
 

@@ -113,7 +113,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasPerHopSnr": false,
         "hasPowerConfig": true,
         "hasRangeTest": true,
-        "hasRawPacketLog": false,
+        "hasRawPacketLog": true,
         "hasRemoteHardware": true,
         "hasRepeaterStatus": false,
         "hasRfStats": true,

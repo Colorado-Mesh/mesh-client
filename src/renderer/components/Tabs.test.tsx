@@ -37,4 +37,11 @@ describe('Tabs', () => {
     await user.click(screen.getByRole('tab', { name: 'B' }));
     expect(onChange).toHaveBeenCalledWith(1);
   });
+
+  it('renders an icon for Raw Packets tab', () => {
+    const onChange = vi.fn();
+    render(<Tabs tabs={['Raw Packets']} active={0} onChange={onChange} />);
+    const tab = screen.getByRole('tab', { name: 'Raw Packets' });
+    expect(tab.querySelector('svg')).toBeInTheDocument();
+  });
 });

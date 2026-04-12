@@ -2,6 +2,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import type { RxPacketEntry } from '../hooks/useMeshCore';
+import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 
 const ROUTE_LABEL: Record<string, string> = {
   FLOOD: 'FLOOD',
@@ -20,13 +21,24 @@ function formatTs(ts: number): string {
   return new Date(ts).toISOString().slice(11, 23);
 }
 
-export default function RawPacketLogPanel({
-  packets,
-  onClear,
-}: {
+interface MeshcoreProps {
+  variant: 'meshcore';
   packets: RxPacketEntry[];
   onClear: () => void;
-}) {
+  getNodeLabel: (nodeId: number) => string;
+}
+
+interface MeshtasticProps {
+  variant: 'meshtastic';
+  packets: MeshtasticRawPacketEntry[];
+  onClear: () => void;
+  getNodeLabel: (nodeId: number) => string;
+}
+
+type Props = MeshcoreProps | MeshtasticProps;
+
+export default function RawPacketLogPanel(props: Props) {
+  const { variant, packets, onClear, getNodeLabel } = props;
   const [filter, setFilter] = useState('');
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -35,13 +47,24 @@ export default function RawPacketLogPanel({
   const filtered = useMemo(() => {
     if (!filter.trim()) return packets;
     const q = filter.trim().toUpperCase();
+    const f = filter.trim().toLowerCase();
+    if (variant === 'meshcore') {
+      return packets.filter(
+        (p) =>
+          (p.routeTypeString ?? '').includes(q) ||
+          (p.payloadTypeString ?? '').includes(q) ||
+          toHex(p.raw).includes(f) ||
+          (p.fromNodeId != null && getNodeLabel(p.fromNodeId).toUpperCase().includes(q)),
+      );
+    }
     return packets.filter(
       (p) =>
-        (p.routeTypeString ?? '').includes(q) ||
-        (p.payloadTypeString ?? '').includes(q) ||
-        toHex(p.raw).includes(filter.trim().toLowerCase()),
+        (p.portLabel ?? '').includes(q) ||
+        toHex(p.raw).includes(f) ||
+        (p.viaMqtt && 'mqtt'.includes(f)) ||
+        (p.fromNodeId != null && getNodeLabel(p.fromNodeId).toUpperCase().includes(q)),
     );
-  }, [packets, filter]);
+  }, [packets, filter, variant, getNodeLabel]);
 
   const virtualizer = useVirtualizer({
     count: filtered.length,
@@ -61,12 +84,17 @@ export default function RawPacketLogPanel({
     onClear();
   }, [onClear]);
 
+  const emptyMessage =
+    variant === 'meshcore'
+      ? 'No RF packets received yet. Connect to a MeshCore device to capture packets.'
+      : 'No mesh packets received yet. Connect to a Meshtastic device to capture packets.';
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-2 border-b border-gray-700 px-3 py-2">
         <input
           type="search"
-          placeholder="Filter by type or hex..."
+          placeholder="Filter by type, name, or hex..."
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
@@ -88,7 +116,7 @@ export default function RawPacketLogPanel({
 
       {packets.length === 0 ? (
         <div className="text-muted flex flex-1 items-center justify-center text-xs">
-          No RF packets received yet. Connect to a MeshCore device to capture packets.
+          {emptyMessage}
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-muted flex flex-1 items-center justify-center text-xs">
@@ -105,18 +133,19 @@ export default function RawPacketLogPanel({
         >
           <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
             {virtualizer.getVirtualItems().map((vi) => {
-              const p = filtered[vi.index];
               const isExpanded = expandedIdx === vi.index;
-              const routeLabel =
-                p.routeTypeString != null
-                  ? (ROUTE_LABEL[p.routeTypeString] ?? p.routeTypeString)
-                  : '?';
-              const payloadLabel = p.payloadTypeString ?? '?';
-              const hexRaw = toHex(p.raw);
+              const hexRaw =
+                variant === 'meshcore'
+                  ? toHex((filtered as RxPacketEntry[])[vi.index].raw)
+                  : toHex((filtered as MeshtasticRawPacketEntry[])[vi.index].raw);
+              const byteLen =
+                variant === 'meshcore'
+                  ? (filtered as RxPacketEntry[])[vi.index].raw.length
+                  : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
 
               return (
                 <div
-                  key={`${vi.index}-${p.ts}`}
+                  key={`${vi.index}-${variant === 'meshcore' ? (filtered as RxPacketEntry[])[vi.index].ts : (filtered as MeshtasticRawPacketEntry[])[vi.index].ts}`}
                   data-index={vi.index}
                   ref={virtualizer.measureElement}
                   className="absolute top-0 left-0 w-full border-b border-gray-800"
@@ -130,31 +159,22 @@ export default function RawPacketLogPanel({
                     className="flex w-full items-start gap-2 px-3 py-1.5 text-left hover:bg-slate-800/60"
                     aria-expanded={isExpanded}
                   >
-                    <span className="text-muted w-[90px] shrink-0 text-[10px]">
-                      {formatTs(p.ts)}
-                    </span>
-                    <span
-                      className={`w-[72px] shrink-0 rounded px-1 text-[10px] font-semibold ${
-                        p.routeTypeString === 'FLOOD' || p.routeTypeString === 'TRANSPORT_FLOOD'
-                          ? 'bg-blue-900/50 text-blue-300'
-                          : p.routeTypeString === 'DIRECT' ||
-                              p.routeTypeString === 'TRANSPORT_DIRECT'
-                            ? 'bg-green-900/50 text-green-300'
-                            : 'bg-gray-700 text-gray-400'
-                      }`}
-                    >
-                      {routeLabel}
-                    </span>
-                    <span className="w-[80px] shrink-0 text-yellow-300/80">{payloadLabel}</span>
-                    <span className="text-muted flex-1">
-                      {p.hopCount > 0 ? `hops=${p.hopCount} ` : ''}
-                      SNR={p.snr.toFixed(1)} RSSI={p.rssi}
-                    </span>
-                    <span className="text-muted shrink-0 text-[10px]">{p.raw.length}B</span>
+                    {variant === 'meshcore' ? (
+                      <MeshcoreRow
+                        p={(filtered as RxPacketEntry[])[vi.index]}
+                        getNodeLabel={getNodeLabel}
+                      />
+                    ) : (
+                      <MeshtasticRow
+                        p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
+                        getNodeLabel={getNodeLabel}
+                      />
+                    )}
+                    <span className="text-muted shrink-0 text-[10px]">{byteLen}B</span>
                   </button>
                   {isExpanded && (
                     <div className="bg-slate-900/60 px-3 pb-2">
-                      <p className="text-muted mb-1 text-[10px]">Raw hex ({p.raw.length} bytes):</p>
+                      <p className="text-muted mb-1 text-[10px]">Raw hex ({byteLen} bytes):</p>
                       <p className="text-[10px] break-all text-gray-400">{hexRaw}</p>
                     </div>
                   )}
@@ -165,5 +185,89 @@ export default function RawPacketLogPanel({
         </div>
       )}
     </div>
+  );
+}
+
+function MeshcoreRow({
+  p,
+  getNodeLabel,
+}: {
+  p: RxPacketEntry;
+  getNodeLabel: (nodeId: number) => string;
+}) {
+  const routeLabel =
+    p.routeTypeString != null ? (ROUTE_LABEL[p.routeTypeString] ?? p.routeTypeString) : '?';
+  const payloadLabel = p.payloadTypeString ?? '?';
+  const name =
+    p.fromNodeId != null ? (
+      <span
+        className="max-w-[120px] shrink-0 truncate text-cyan-200/90"
+        title={getNodeLabel(p.fromNodeId)}
+      >
+        {getNodeLabel(p.fromNodeId)}
+      </span>
+    ) : (
+      <span className="text-muted w-[120px] shrink-0">—</span>
+    );
+  return (
+    <>
+      <span className="text-muted w-[90px] shrink-0 text-[10px]">{formatTs(p.ts)}</span>
+      {name}
+      <span
+        className={`w-[72px] shrink-0 rounded px-1 text-[10px] font-semibold ${
+          p.routeTypeString === 'FLOOD' || p.routeTypeString === 'TRANSPORT_FLOOD'
+            ? 'bg-blue-900/50 text-blue-300'
+            : p.routeTypeString === 'DIRECT' || p.routeTypeString === 'TRANSPORT_DIRECT'
+              ? 'bg-green-900/50 text-green-300'
+              : 'bg-gray-700 text-gray-400'
+        }`}
+      >
+        {routeLabel}
+      </span>
+      <span className="w-[80px] shrink-0 text-yellow-300/80">{payloadLabel}</span>
+      <span className="text-muted min-w-0 flex-1">
+        {p.hopCount > 0 ? `hops=${p.hopCount} ` : ''}
+        SNR={p.snr.toFixed(1)} RSSI={p.rssi}
+      </span>
+    </>
+  );
+}
+
+function MeshtasticRow({
+  p,
+  getNodeLabel,
+}: {
+  p: MeshtasticRawPacketEntry;
+  getNodeLabel: (nodeId: number) => string;
+}) {
+  const name =
+    p.fromNodeId != null ? (
+      <span
+        className="max-w-[120px] shrink-0 truncate text-cyan-200/90"
+        title={getNodeLabel(p.fromNodeId)}
+      >
+        {getNodeLabel(p.fromNodeId)}
+      </span>
+    ) : (
+      <span className="text-muted w-[120px] shrink-0">—</span>
+    );
+  return (
+    <>
+      <span className="text-muted w-[90px] shrink-0 text-[10px]">{formatTs(p.ts)}</span>
+      {name}
+      <span className="w-[100px] shrink-0 truncate text-amber-200/90" title={p.portLabel}>
+        {p.portLabel}
+      </span>
+      <span
+        className={`w-[52px] shrink-0 rounded px-1 text-[10px] font-semibold ${
+          p.viaMqtt ? 'bg-purple-900/50 text-purple-200' : 'bg-slate-700 text-slate-200'
+        }`}
+      >
+        {p.viaMqtt ? 'MQTT' : 'RF'}
+      </span>
+      <span className="text-muted min-w-0 flex-1">
+        SNR={p.snr.toFixed(1)} RSSI={p.rssi}
+      </span>
+    </>
   );
 }

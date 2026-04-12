@@ -1674,13 +1674,24 @@ export default function App() {
                   aria-labelledby="tab-11"
                   hidden={activePanelIndex !== 11}
                 >
-                  {activePanelIndex === 11 && protocol === 'meshcore' ? (
+                  {activePanelIndex === 11 && capabilities.hasRawPacketLog ? (
                     <ErrorBoundary>
                       <Suspense fallback={<PanelSkeleton />}>
-                        <RawPacketLogPanel
-                          packets={meshcoreDevice.rawPackets}
-                          onClear={meshcoreDevice.clearRawPackets}
-                        />
+                        {protocol === 'meshcore' ? (
+                          <RawPacketLogPanel
+                            variant="meshcore"
+                            packets={meshcoreDevice.rawPackets}
+                            onClear={meshcoreDevice.clearRawPackets}
+                            getNodeLabel={meshcoreDevice.getPickerStyleNodeLabel}
+                          />
+                        ) : (
+                          <RawPacketLogPanel
+                            variant="meshtastic"
+                            packets={meshtasticDevice.rawPackets}
+                            onClear={meshtasticDevice.clearRawPackets}
+                            getNodeLabel={meshtasticDevice.getPickerStyleNodeLabel}
+                          />
+                        )}
                       </Suspense>
                     </ErrorBoundary>
                   ) : null}
