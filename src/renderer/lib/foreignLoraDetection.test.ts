@@ -100,10 +100,11 @@ describe('classifyPayload', () => {
     expect(classifyPayload(raw)).toBe('meshcore');
   });
 
-  it('classifies Meshtastic with 8-byte packet and valid IDs (MeshCore path-prefix is handled first)', () => {
+  /** Sender chosen so byte 5 (MeshCore path_length when read as RF header) is 0xff → path underrun; MeshCore parse fails, Meshtastic heuristic still matches. */
+  it('classifies Meshtastic with 8-byte packet and valid IDs (MeshCore parse runs first when applicable)', () => {
     const header = new Uint8Array(8);
     const dest = 0x01020304;
-    const sender = 0x05060708;
+    const sender = 0x1234ff78;
     header[0] = dest & 0xff;
     header[1] = (dest >> 8) & 0xff;
     header[2] = (dest >> 16) & 0xff;
@@ -118,7 +119,7 @@ describe('classifyPayload', () => {
   it('classifies Meshtastic with 16-byte header and valid flags (hop_start=3, hop_limit=3)', () => {
     const packet = new Uint8Array(16);
     const dest = 0x01020304;
-    const sender = 0x05060708;
+    const sender = 0x1234ff78;
     packet[0] = dest & 0xff;
     packet[1] = (dest >> 8) & 0xff;
     packet[2] = (dest >> 16) & 0xff;
@@ -135,7 +136,7 @@ describe('classifyPayload', () => {
   it('does not classify as Meshtastic when flags are invalid; may still be MeshCore RF', () => {
     const packet = new Uint8Array(16);
     const dest = 0x01020304;
-    const sender = 0x05060708;
+    const sender = 0x1234ff78;
     packet[0] = dest & 0xff;
     packet[1] = (dest >> 8) & 0xff;
     packet[2] = (dest >> 16) & 0xff;
@@ -152,7 +153,7 @@ describe('classifyPayload', () => {
 
   it('classifies Meshtastic for 8-15 byte packets with valid IDs (short MeshCore frames start with 0x3c)', () => {
     const dest = 0x01020304;
-    const sender = 0x05060708;
+    const sender = 0x1234ff78;
     for (const len of [8, 15]) {
       const packet = new Uint8Array(len);
       packet[0] = dest & 0xff;
@@ -170,7 +171,7 @@ describe('classifyPayload', () => {
   it('classifies Meshtastic for 16-byte packet with hop_start=0 hop_limit=0 (direct-only device)', () => {
     const packet = new Uint8Array(16);
     const dest = 0x01020304;
-    const sender = 0x05060708;
+    const sender = 0x1234ff78;
     packet[0] = dest & 0xff;
     packet[1] = (dest >> 8) & 0xff;
     packet[2] = (dest >> 16) & 0xff;
@@ -187,7 +188,8 @@ describe('classifyPayload', () => {
 
   it('returns unknown-lora for short or non-matching payload', () => {
     expect(classifyPayload(new Uint8Array([0x00]))).toBe('unknown-lora');
-    expect(classifyPayload(new Uint8Array([0x0a, 0, 0, 0, 0, 0, 0, 0]))).toBe('unknown-lora');
+    // 2 bytes: MeshCore path decode fails (transport flood needs more bytes); not 0x3c; Meshtastic needs 8+.
+    expect(classifyPayload(new Uint8Array([0x08, 0x00]))).toBe('unknown-lora');
     expect(classifyPayload(new Uint8Array([]))).toBe('unknown-lora');
   });
 });
@@ -237,13 +239,13 @@ describe('extractMeshtasticSenderId', () => {
 });
 
 /**
- * MeshCore LOG_RX must always run `parseMeshCoreRfPacket`; `classifyPayload` can label the same
- * bytes as `meshtastic` (short dest/src heuristic) and must not gate the sniffer decode.
+ * Buffers can match the Meshtastic dest/src heuristic and still be valid MeshCore RF;
+ * `classifyPayload` must prioritize a successful MeshCore parse.
  */
 describe('MeshCore RF log (classifier vs parse)', () => {
-  it('classifies TRANSPORT_FLOOD+TRACE sample as meshtastic but in-house MeshCore parse still succeeds', () => {
+  it('labels TRANSPORT_FLOOD+TRACE as meshcore when parse succeeds (Meshtastic heuristic also matches)', () => {
     const buffer = new Uint8Array([0x24, 0x34, 0x12, 0x78, 0x56, 0x02, 0x11, 0x22]);
-    expect(classifyPayload(buffer)).toBe('meshtastic');
+    expect(classifyPayload(buffer)).toBe('meshcore');
     const p = parseMeshCoreRfPacket(buffer);
     expect(p.ok).toBe(true);
     if (!p.ok) return;
