@@ -309,19 +309,6 @@ These scripts try to install optional tooling automatically. If they fail (for e
    - `pnpm run setup:dialout`
    - Adds your user to the `dialout` group (requires sudo + re-login).
 
-### AI-Native Development (OpenWolf)
-
-This project uses [OpenWolf](https://openwolf.com/) for AI-native context management. OpenWolf maintains a set of project-specific files in the `.wolf/` directory to help AI assistants (like Claude Code, GitHub Copilot, and Gemini CLI) understand the codebase more efficiently while minimizing token usage.
-
-Key files in the `.wolf/` directory:
-
-- **`.wolf/anatomy.md`**: A project structure map with 2-3 line descriptions and token estimates for every file. This helps AI assistants navigate without reading every full file.
-- **`.wolf/cerebrum.md`**: A repository of project-specific patterns, past mistakes (do-not-repeat), and user preferences.
-- **`.wolf/memory.md`**: A persistent session history that tracks changes and context across multiple AI interactions.
-- **`.wolf/buglog.json`**: A shared database of known bugs and their root causes, helping AI assistants identify and fix issues faster.
-
-If you are using an AI assistant to contribute to this project, it is highly recommended to point it at `.wolf/OPENWOLF.md` to ensure it follows the project's AI-native protocols.
-
 ### 9) Optional editor/tooling
 
 - VS Code (or Cursor) with TypeScript + ESLint support

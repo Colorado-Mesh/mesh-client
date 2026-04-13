@@ -246,6 +246,8 @@ export interface ChatMessage {
   isHistory?: boolean;
   /** Full raw line from device/MQTT for dedupe only (not persisted); avoids collapsing same-second identical payloads. */
   meshcoreDedupeKey?: string;
+  /** CRC-32 RF packet fingerprint (8 hex), when persisted from capture metadata */
+  rxPacketFingerprintHex?: string;
 }
 
 export interface TelemetryPoint {
@@ -382,7 +384,13 @@ declare global {
           reply_id?: number | null;
           to_node?: number | null;
           received_via?: string | null;
+          rx_packet_fingerprint?: string | null;
         }) => Promise<unknown>;
+        updateMeshcoreContactRfTransport: (
+          nodeId: number,
+          transportScope: number | null,
+          transportReturn: number | null,
+        ) => Promise<unknown>;
         saveMeshcoreContact: (contact: {
           node_id: number;
           public_key: string;
@@ -497,6 +505,39 @@ declare global {
           }[]
         >;
         pruneMeshcorePathHistory: (nodeId: number) => Promise<boolean>;
+        upsertMeshcorePathHistory: (
+          nodeId: number,
+          pathHash: string,
+          hopCount: number,
+          pathBytes: number[],
+          wasFloodDiscovery: boolean,
+          routeWeight: number,
+        ) => Promise<boolean>;
+        recordMeshcorePathOutcome: (
+          nodeId: number,
+          pathHash: string,
+          success: boolean,
+          tripTimeMs?: number,
+        ) => Promise<boolean>;
+        getMeshcorePathHistory: (nodeId: number) => Promise<
+          {
+            id: number;
+            node_id: number;
+            path_hash: string;
+            hop_count: number;
+            path_bytes: string;
+            was_flood_discovery: number;
+            success_count: number;
+            failure_count: number;
+            trip_time_ms: number;
+            route_weight: number;
+            last_success_ts: number | null;
+            created_at: number;
+            updated_at: number;
+          }[]
+        >;
+        deleteMeshcorePathHistoryForNode: (nodeId: number) => Promise<boolean>;
+        deleteAllMeshcorePathHistory: () => Promise<boolean>;
         getContactGroups: (
           selfNodeId: number,
         ) => Promise<{ group_id: number; name: string; member_count: number }[]>;

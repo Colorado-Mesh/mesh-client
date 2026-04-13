@@ -174,7 +174,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pill in the header to bring MeshCore into view — the Meshtastic session stays connected in the background. **Meshtastic** shows **11** main tabs (including **Security** and **TAK**); **MeshCore** shows **9** (**Security** is hidden; the sixth tab is **Repeaters** instead of **Modules**). Network Diagnostics and the rest of the shell stay available.
+MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pill in the header to bring MeshCore into view — the Meshtastic session stays connected in the background. **Meshtastic** shows **12** main tabs (including **Security** and **TAK**); **MeshCore** shows **10** (**Security** and **TAK** are hidden; the sixth tab is **Repeaters** instead of **Modules**). **Sniffer** is available in both protocol modes. Network Diagnostics and the rest of the shell stay available.
 
 - **Transmit queue** — header badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 
@@ -223,6 +223,12 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 - Battery voltage from device `selfInfo`; per-packet signal telemetry (SNR/RSSI) from RF event 0x88 — visible in the Telemetry tab
 - **Environment charts** (temperature, humidity, barometric pressure, etc.) in the Telemetry tab when pulled Cayenne LPP data is available — same panel as Meshtastic environment telemetry
+- **Raw Packet Log** (**Sniffer** tab) — **MeshCore:** real-time virtualized log of RF packets from the `LOG_RX_DATA` push event (0x88), with route type, payload type, hop count, SNR, RSSI, optional resolved node name, and expandable raw hex; **Meshtastic:** log of received mesh packets (protobuf) with port/type, RF vs MQTT, SNR, RSSI, node name, and expandable hex; filter by type, name, or hex; **Clear** resets the log; ring-buffer capped at **2,500** entries per protocol
+
+**Device Control**
+
+- **Reboot** — Radio tab Danger Zone; issues `reboot()` to the connected MeshCore device with a protocol-aware confirmation message
+- _Not available for MeshCore_ (not implemented in the meshcore.js library): shutdown, factory reset, reset NodeDB, reboot-to-OTA, enter DFU mode
 
 **Transport Notes**
 
@@ -337,8 +343,8 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 | Maps       | Leaflet + OpenStreetMap                                                                                                            |
 | Charts     | Recharts                                                                                                                           |
 | Database   | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                               |
-| AI Context | [OpenWolf](https://openwolf.com/) (.wolf/ context management)                                                                      |
-| Build      | esbuild + Vite + electron-builder                                                                                                  |
+
+| Build | esbuild + Vite + electron-builder |
 
 ### Architecture
 
@@ -351,8 +357,6 @@ For a detailed explanation of every diagnostic output — routing anomalies, RF 
 ---
 
 ## Contributing / Development
-
-This project is [OpenWolf-native](https://openwolf.com/) for optimized AI context management. If you are using an AI assistant to help you contribute, see the [AI-Native Development section](docs/development-environment.md#ai-native-development-openwolf) in the Dev Guide.
 
 For full local setup (shared requirements, npm/tooling install, test harness, and OS-specific steps/troubleshooting), see [docs/development-environment.md](docs/development-environment.md).
 

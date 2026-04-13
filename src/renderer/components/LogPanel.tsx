@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 
+import { formatLogTimeOfDay } from '../../shared/formatLogTimestamp';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { MeshProtocol } from '../lib/types';
 import LogAnalyzeModal from './LogAnalyzeModal';
@@ -112,7 +113,7 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
 }
 
 function formatEntry(entry: LogEntry): string {
-  const ts = new Date(entry.ts).toISOString().slice(11, 23);
+  const ts = formatLogTimeOfDay(entry.ts);
   return `${ts} [${entry.level}] ${entry.message}`;
 }
 

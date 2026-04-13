@@ -12,3 +12,9 @@ export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
  * multiplex must reject so `runSerialized` does not stall and pending tags are cleared.
  */
 export const MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS = 45_000;
+
+/**
+ * Raw packet log: startup (and similar) can deliver two distinct LOG_RX frames for the same node's
+ * FLOOD ADVERT within seconds; coalesce so the sniffer shows one row (newest wins).
+ */
+export const MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS = 8_000;

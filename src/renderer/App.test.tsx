@@ -43,6 +43,8 @@ const { createMeshCoreMock, getStoredMeshProtocolMock, useMeshCoreMock, useRadio
       getNodes: vi.fn(),
       selfNodeId: 0,
       meshcoreLocalStats: null,
+      rawPackets: [],
+      clearRawPackets: vi.fn(),
       sendAdvert: vi.fn().mockResolvedValue(undefined),
       syncClock: vi.fn().mockResolvedValue(undefined),
       importContacts: vi.fn().mockResolvedValue(undefined),

@@ -31,6 +31,7 @@ import {
   MapPanel,
   ModulePanel,
   RadioPanel,
+  RawPacketLogPanel,
   RepeatersPanel,
   SecurityPanel,
   TakServerPanel,
@@ -58,7 +59,9 @@ import {
   readMeshcoreIdentity,
 } from './lib/letsMeshJwt';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
+import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './lib/meshtasticMqttTlsMigration';
+import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { parseStoredJson } from './lib/parseStoredJson';
 import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
@@ -82,6 +85,7 @@ const TAB_CAPABILITY_REQUIREMENTS: (keyof ProtocolCapabilities | undefined)[] = 
   'hasTakPanel', // TAK
   undefined, // App
   undefined, // Diagnostics
+  'hasRawPacketLog', // Sniffer (keyboard help: Packet Sniffer)
 ];
 
 const STATUS_COLOR: Record<string, string> = {
@@ -111,6 +115,7 @@ const TAB_NAMES = [
   'TAK',
   'App',
   'Diagnostics',
+  'Sniffer',
 ];
 
 export interface LocationFilter {
@@ -357,6 +362,10 @@ export default function App() {
   meshtasticMyNodeNumRef.current = meshtasticDevice.state.myNodeNum;
   meshcoreSelfIdRef.current = meshcoreDevice.selfNodeId;
   const nodesForUi = protocol === 'meshcore' ? meshcoreDevice.nodes : meshtasticDevice.nodes;
+  const rawPacketGetNodeLabel = useCallback(
+    (id: number) => nodeLabelForRawPacket(nodesForUi.get(id), id, protocol),
+    [nodesForUi, protocol],
+  );
   const nodeCountLabel = protocol === 'meshcore' ? 'contacts' : 'nodes';
 
   const meshcorePublicKeyHexByNodeId = useMemo(() => {
@@ -447,7 +456,10 @@ export default function App() {
   const isConfigured = device.state.status === 'configured';
   const isOperational = isConfigured || device.state.status === 'stale';
   const isConnectedOrOperational = isOperational || device.state.status === 'connected';
-  const selectedNode = selectedNodeId ? (nodesForUi.get(selectedNodeId) ?? null) : null;
+  const selectedNode = useMemo(() => {
+    if (selectedNodeId == null) return null;
+    return nodesForUi.get(selectedNodeId) ?? meshNodeStubForDetailModal(selectedNodeId);
+  }, [selectedNodeId, nodesForUi]);
 
   const handleResend = useCallback(
     (msg: ChatMessage) => {
@@ -773,9 +785,9 @@ export default function App() {
     };
   }, [handleProtocolChange]);
 
-  // ─── Keyboard shortcuts: Cmd/Ctrl+1-9, 0, A for tabs, ? for help ───────
-  // Shortcuts map to fixed tab positions across protocols:
-  // 1-9 = positions 0-8, 0 = position 9 (App), A = position 10 (Diagnostics)
+  // ─── Keyboard shortcuts: Cmd/Ctrl+1-9, 0, A, S for tabs, ? for help ───────
+  // 1–9 = first nine visible tabs (indices 0–8). Cmd+0 / A / S jump by tab *name*
+  // (App, Diagnostics, Sniffer) so indices stay correct when Security/TAK are hidden.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const maxTab = displayTabNames.length - 1;
@@ -789,14 +801,20 @@ export default function App() {
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key === '0') {
-        const targetIndex = 9;
-        if (targetIndex <= maxTab) {
+        const targetIndex = displayTabNames.indexOf('App');
+        if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
-        const targetIndex = 10;
-        if (targetIndex <= maxTab) {
+        const targetIndex = displayTabNames.indexOf('Diagnostics');
+        if (targetIndex >= 0 && targetIndex <= maxTab) {
+          e.preventDefault();
+          setActiveTab(targetIndex);
+        }
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        const targetIndex = displayTabNames.indexOf('Sniffer');
+        if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
@@ -812,7 +830,7 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [displayTabNames.length]);
+  }, [displayTabNames]);
 
   // ─── Track Meshtastic messages arriving while inactive ──────────
   useEffect(() => {
@@ -1357,7 +1375,9 @@ export default function App() {
                           channelConfigs={device.channelConfigs}
                           isConnected={isOperational}
                           telemetryDeviceUpdateInterval={device.telemetryDeviceUpdateInterval}
-                          onReboot={device.reboot}
+                          onReboot={
+                            protocol === 'meshcore' ? () => meshcoreDevice.reboot() : device.reboot
+                          }
                           onShutdown={device.shutdown}
                           onFactoryReset={device.factoryReset}
                           onResetNodeDb={device.resetNodeDb}
@@ -1653,6 +1673,36 @@ export default function App() {
                           }}
                           capabilities={capabilities}
                         />
+                      </Suspense>
+                    </ErrorBoundary>
+                  ) : null}
+                </div>
+                <div
+                  id="panel-11"
+                  role="tabpanel"
+                  aria-labelledby="tab-11"
+                  hidden={activePanelIndex !== 11}
+                >
+                  {activePanelIndex === 11 && capabilities.hasRawPacketLog ? (
+                    <ErrorBoundary>
+                      <Suspense fallback={<PanelSkeleton />}>
+                        {protocol === 'meshcore' ? (
+                          <RawPacketLogPanel
+                            variant="meshcore"
+                            packets={meshcoreDevice.rawPackets}
+                            onClear={meshcoreDevice.clearRawPackets}
+                            getNodeLabel={rawPacketGetNodeLabel}
+                            onNodeClick={setSelectedNodeId}
+                          />
+                        ) : (
+                          <RawPacketLogPanel
+                            variant="meshtastic"
+                            packets={meshtasticDevice.rawPackets}
+                            onClear={meshtasticDevice.clearRawPackets}
+                            getNodeLabel={rawPacketGetNodeLabel}
+                            onNodeClick={setSelectedNodeId}
+                          />
+                        )}
                       </Suspense>
                     </ErrorBoundary>
                   ) : null}

@@ -25,6 +25,10 @@ import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
+import {
+  MAX_RAW_PACKET_LOG_ENTRIES,
+  type MeshtasticRawPacketEntry,
+} from '../lib/rawPacketLogConstants';
 import { normalizeReactionEmoji } from '../lib/reactions';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
@@ -90,6 +94,23 @@ function getOrCreateVirtualNodeId(): number {
   }
   localStorage.setItem(key, String(id));
   return id;
+}
+
+function meshtasticRawPacketPortLabel(packet: unknown): string {
+  const p = packet as {
+    payloadVariant?: { case?: string; value?: { portnum?: number } };
+  };
+  const variant = p.payloadVariant?.case;
+  if (variant === 'decoded') {
+    const portnum = p.payloadVariant?.value?.portnum;
+    if (typeof portnum === 'number') {
+      const found = Object.entries(Portnums.PortNum).find(([, v]) => v === portnum);
+      return found ? found[0] : `PORT_${portnum}`;
+    }
+    return 'decoded';
+  }
+  if (variant === 'encrypted') return 'encrypted';
+  return variant ?? '?';
 }
 
 const MQTT_ONLY_VIRTUAL_LONG_NAME = 'MQTT-only Virtual Address';
@@ -198,6 +219,7 @@ export function useDevice() {
   const [deviceLogs, setDeviceLogs] = useState<
     { message: string; time: number; source: string; level: number }[]
   >([]);
+  const [rawPackets, setRawPackets] = useState<MeshtasticRawPacketEntry[]>([]);
   const [neighborInfo, setNeighborInfo] = useState<Map<number, NeighborInfoRecord>>(new Map());
   const [waypoints, setWaypoints] = useState<Map<number, MeshWaypoint>>(new Map());
   const [moduleConfigs, setModuleConfigs] = useState<Record<string, unknown>>({});
@@ -1569,6 +1591,30 @@ export function useDevice() {
           hopStart?: number;
           viaMqtt?: boolean;
         };
+
+        if (getStoredMeshProtocol() === 'meshtastic' && mp.from) {
+          try {
+            const raw = toBinary(Mesh.MeshPacketSchema, packet as never);
+            const entry: MeshtasticRawPacketEntry = {
+              ts: Date.now(),
+              snr: mp.rxSnr ?? 0,
+              rssi: mp.rxRssi ?? 0,
+              raw,
+              fromNodeId: mp.from,
+              portLabel: meshtasticRawPacketPortLabel(packet),
+              viaMqtt: mp.viaMqtt === true,
+            };
+            setRawPackets((prev) => {
+              const next = [...prev, entry];
+              return next.length > MAX_RAW_PACKET_LOG_ENTRIES
+                ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
+                : next;
+            });
+          } catch (e) {
+            console.debug('[useDevice] raw packet log entry failed', e);
+          }
+        }
+
         if (!mp.from) return;
 
         const hopStart = mp.hopStart ?? 0;
@@ -2869,6 +2915,10 @@ export function useDevice() {
 
   const getNodes = useCallback(() => nodesRef.current, []);
 
+  const clearRawPackets = useCallback(() => {
+    setRawPackets([]);
+  }, []);
+
   return {
     state,
     mqttStatus,
@@ -2917,6 +2967,8 @@ export function useDevice() {
     setOwner,
     queueStatus,
     deviceLogs,
+    rawPackets,
+    clearRawPackets,
     neighborInfo,
     waypoints,
     rebootOta,

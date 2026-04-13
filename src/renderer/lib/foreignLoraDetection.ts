@@ -1,8 +1,25 @@
+import { parseMeshCoreRfPacket } from '../../shared/meshcoreRfPacketParse';
+
 export type PacketClass = 'meshcore' | 'meshtastic' | 'unknown-lora';
 
-/** Fingerprint a raw LoRa payload into a packet class. */
+/**
+ * Fingerprint a raw LoRa payload into a packet class.
+ * MeshCore is determined by successful `parseMeshCoreRfPacket` (structural validation) before
+ * Meshtastic byte heuristics, so frames that look like Meshtastic dest/src but are valid MeshCore
+ * on-air layouts are labeled `meshcore`.
+ */
 export function classifyPayload(raw: Uint8Array): PacketClass {
-  if (raw[0] === 0x3c) return 'meshcore';
+  if (raw.length === 0) return 'unknown-lora';
+
+  if (parseMeshCoreRfPacket(raw).ok) {
+    return 'meshcore';
+  }
+
+  // Legacy marker for truncated captures / minimal buffers that do not survive full path decode.
+  if (raw[0] === 0x3c) {
+    return 'meshcore';
+  }
+
   if (raw.length >= 8) {
     const destId = (raw[0] | (raw[1] << 8) | (raw[2] << 16) | (raw[3] << 24)) >>> 0;
     const senderId = (raw[4] | (raw[5] << 8) | (raw[6] << 16) | (raw[7] << 24)) >>> 0;
@@ -18,12 +35,11 @@ export function classifyPayload(raw: Uint8Array): PacketClass {
         const hopStart = (flags >> 5) & 0x07;
         if (hopLimit <= hopStart) return 'meshtastic';
       } else {
-        // 8-15 byte payload: MeshCore frames always begin with 0x3c (caught above), so a
-        // non-0x3c payload this short with valid IDs is reliably Meshtastic.
         return 'meshtastic';
       }
     }
   }
+
   return 'unknown-lora';
 }
 
@@ -81,6 +97,19 @@ export function extractMeshtasticSenderId(raw: Uint8Array): number | null {
   const id = (raw[4] | (raw[5] << 8) | (raw[6] << 16) | (raw[7] << 24)) >>> 0;
   if (id === 0 || id === 0xffffffff) return null;
   return id;
+}
+
+/**
+ * Raw packet log: only treat bytes 4–7 as Meshtastic `from` when the buffer did **not** parse as
+ * MeshCore. If `parseMeshCoreRfPacket` succeeded, those offsets are MeshCore path/payload — not
+ * Meshtastic node IDs.
+ */
+export function meshtasticSenderIdForRawLogFallback(
+  meshcoreParseOk: boolean,
+  raw: Uint8Array,
+): number | null {
+  if (meshcoreParseOk) return null;
+  return extractMeshtasticSenderId(raw);
 }
 
 /** Rolling window packet counter for rate detection. */

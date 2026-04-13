@@ -5,6 +5,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { formatLogFileTimestamp } from '../shared/formatLogTimestamp';
 import {
   sanitizeForLogSink,
   sanitizeLogMessage,
@@ -113,7 +114,7 @@ function flushPendingBuffer(): void {
 
 function formatLine(ts: number, level: LogLevel, source: string, message: string): string {
   const safe = message.length > MAX_LINE_LENGTH ? message.slice(0, MAX_LINE_LENGTH) + '…' : message;
-  return `${new Date(ts).toISOString()} [${level}] [${source}] ${safe}\n`;
+  return `${formatLogFileTimestamp(ts)} [${level}] [${source}] ${safe}\n`;
 }
 
 /**

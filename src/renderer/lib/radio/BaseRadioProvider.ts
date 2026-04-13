@@ -85,6 +85,8 @@ export interface ProtocolCapabilities {
   hasContactImportExport: boolean;
   /** Whether cryptographic signing/key export is available (MeshCore) */
   hasCryptoOperations: boolean;
+  /** Whether the raw RF packet log viewer is available (MeshCore LOG_RX_DATA) */
+  hasRawPacketLog: boolean;
   /** Node stale threshold in milliseconds (for node status UI) */
   nodeStaleThresholdMs: number;
   /** Node offline threshold in milliseconds (for node status UI) */
@@ -133,6 +135,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasMapReport: true,
   hasContactImportExport: false,
   hasCryptoOperations: true,
+  hasRawPacketLog: true,
   nodeStaleThresholdMs: 2 * 60 * 60 * 1000, // 2 hours
   nodeOfflineThresholdMs: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
@@ -180,6 +183,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasMapReport: false,
   hasContactImportExport: true,
   hasCryptoOperations: true,
+  hasRawPacketLog: true,
   nodeStaleThresholdMs: 48 * 60 * 60 * 1000, // 48 hours
   nodeOfflineThresholdMs: 96 * 60 * 60 * 1000, // 96 hours
 };

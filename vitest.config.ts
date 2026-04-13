@@ -32,7 +32,7 @@ export default defineConfig({
           name: 'main',
           globals: true,
           environment: 'node',
-          include: ['src/main/**/*.test.ts'],
+          include: ['src/main/**/*.test.ts', 'src/shared/**/*.test.ts'],
         },
         resolve: {
           alias: { '@': resolve(__dirname, 'src') },

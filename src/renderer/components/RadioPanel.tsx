@@ -1875,7 +1875,9 @@ export default function RadioPanel({
                   name: 'Reboot',
                   title: 'Reboot Device',
                   message:
-                    'This will reboot the connected Meshtastic device. It will briefly go offline during restart.',
+                    capabilities?.protocol === 'meshcore'
+                      ? 'This will reboot the connected MeshCore device. It will briefly go offline during restart.'
+                      : 'This will reboot the connected Meshtastic device. It will briefly go offline during restart.',
                   confirmLabel: 'Reboot',
                   action: () => onReboot(2),
                 });

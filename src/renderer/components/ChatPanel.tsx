@@ -7,18 +7,10 @@ import {
   loadPersistedLastReadInitial,
   openDmTabsStorageKey,
 } from '../lib/chatPanelProtocolStorage';
+import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayChar, emojiDisplayLabel } from '../lib/reactions';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
-
-/** Meshtastic prefers short_name; MeshCore shows full companion names (long_name). */
-function nodeDisplayName(node: MeshNode | undefined, protocol: MeshProtocol): string {
-  if (!node) return '';
-  if (protocol === 'meshcore') {
-    return node.long_name || node.short_name || '';
-  }
-  return node.short_name || node.long_name || '';
-}
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 

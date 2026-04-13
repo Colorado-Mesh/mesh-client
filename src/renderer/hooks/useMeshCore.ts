@@ -9,13 +9,18 @@ import { flushSync } from 'react-dom';
 
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 
+import { parseMeshCoreRfPacket } from '../../shared/meshcoreRfPacketParse';
 import { withTimeout } from '../../shared/withTimeout';
 import {
   classifyMeshcoreBleTimeoutStage,
   isMeshcoreRetryableBleErrorMessage,
   MESHCORE_SETUP_ABORT_MESSAGE,
 } from '../lib/bleConnectErrors';
-import { classifyPayload, extractMeshtasticSenderId } from '../lib/foreignLoraDetection';
+import {
+  classifyPayload,
+  extractMeshtasticSenderId,
+  meshtasticSenderIdForRawLogFallback,
+} from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
 import { isLetsMeshSettings } from '../lib/letsMeshJwt';
@@ -39,6 +44,11 @@ import {
   parseMeshcoreGetNeighboursResponse,
 } from '../lib/meshcoreGetNeighboursBinary';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
+import {
+  meshcoreRawPacketLogFromBytesFallback,
+  meshcoreRawPacketResolveFromParsed,
+} from '../lib/meshcoreRawPacketSender';
+import { shouldCoalesceSelfFloodAdvert } from '../lib/meshcoreRawSelfFloodAdvertCoalesce';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
   buildMeshcoreSetOtherParamsFrame,
@@ -76,6 +86,7 @@ import {
 import { MeshcoreWebBluetoothConnection } from '../lib/meshcoreWebBluetoothConnection';
 import { lastHeardToUnixSeconds, mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { MAX_RAW_PACKET_LOG_ENTRIES } from '../lib/rawPacketLogConstants';
 import {
   type CliHistoryEntry,
   createRepeaterCommandService,
@@ -89,7 +100,10 @@ import {
   selectGrantedSerialPort,
 } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
-import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
+import {
+  MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS,
+  MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+} from '../lib/timeConstants';
 import { TransportWebBluetoothIpc } from '../lib/transportWebBluetoothIpc';
 import type {
   ChatMessage,
@@ -102,6 +116,7 @@ import type {
   TelemetryPoint,
 } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
 
@@ -132,6 +147,10 @@ interface PendingDmAckEntry {
   mapKeys: number[];
   /** Same as `ChatMessage.packetId` / DB `packet_id` for this send (uint32). */
   canonicalPacketIdU32: number;
+  /** Destination node for path outcome attribution. */
+  destNodeId?: number;
+  /** Path hash of the route used for this send (empty string = flood). */
+  pathHash?: string;
 }
 
 function meshcoreContactRawFromDevice(c: MeshCoreContactRaw): MeshCoreContactRaw {
@@ -191,6 +210,7 @@ function messageToDbRow(
     reply_id: msg.replyId ?? null,
     to_node: msg.to ?? null,
     received_via,
+    rx_packet_fingerprint: msg.rxPacketFingerprintHex ?? null,
   };
 }
 
@@ -768,6 +788,27 @@ const INITIAL_STATE: DeviceState = {
 
 const MAX_DEVICE_LOGS = 500;
 
+export interface RxPacketEntry {
+  ts: number;
+  snr: number;
+  rssi: number;
+  raw: Uint8Array;
+  routeTypeString: string | null;
+  payloadTypeString: string | null;
+  hopCount: number;
+  /** Resolved when Meshtastic frame or MeshCore payload prefix matches a known contact */
+  fromNodeId: number | null;
+  /** CRC-32 fingerprint (8 hex chars), same as optional DB `rx_packet_fingerprint` on messages */
+  messageFingerprintHex: string | null;
+  transportScopeCode: number | null;
+  transportReturnCode: number | null;
+  advertName: string | null;
+  advertLat: number | null;
+  advertLon: number | null;
+  advertTimestampSec: number | null;
+  parseOk: boolean;
+}
+
 /** Repeater RPCs (tracePath, getStatus, getTelemetry, sendBinaryRequest neighbours). */
 const MESHCORE_REPEATER_RPC_TIMEOUT_MS = 120_000;
 const MESHCORE_STATUS_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
@@ -864,6 +905,7 @@ interface MeshcoreMessageDbRow {
   reply_id: number | null;
   to_node: number | null;
   received_via?: string | null;
+  rx_packet_fingerprint?: string | null;
 }
 
 /**
@@ -933,6 +975,11 @@ function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): ChatMess
       to: r.to_node ?? undefined,
       receivedVia: meshcoreReceivedViaFromDb(r.received_via),
       isHistory: true,
+      rxPacketFingerprintHex:
+        typeof r.rx_packet_fingerprint === 'string' &&
+        /^[0-9A-Fa-f]{8}$/.test(r.rx_packet_fingerprint)
+          ? r.rx_packet_fingerprint.toUpperCase()
+          : undefined,
     });
   }
   return mapped;
@@ -987,6 +1034,7 @@ export function useMeshCore() {
   const [meshcoreAutoadd, setMeshcoreAutoadd] = useState<MeshcoreAutoaddWireState | null>(null);
   const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
   const [deviceLogs, setDeviceLogs] = useState<DeviceLogEntry[]>([]);
+  const [rawPackets, setRawPackets] = useState<RxPacketEntry[]>([]);
   const [telemetry, setTelemetry] = useState<TelemetryPoint[]>([]);
   const [signalTelemetry, setSignalTelemetry] = useState<TelemetryPoint[]>([]);
   const [meshcoreTraceResults, setMeshcoreTraceResults] = useState<
@@ -1060,6 +1108,8 @@ export function useMeshCore() {
   const repeaterRemoteRpcRef = useRef(createRepeaterRemoteRpcQueue());
   /** Debounced contacts refresh after path updates (event 129). */
   const meshcoreContactsRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** NodeIds that fired event 129 since last debounced contacts refresh (for path history recording). */
+  const meshcorePathUpdatePendingRef = useRef<Set<number>>(new Set());
   /** Periodic poll for waiting messages when event 131 may have been missed. */
   const meshcoreWaitingMessagesPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Stable ref to the current connection's processWaitingMessages fn (set by setupEventListeners). */
@@ -1893,6 +1943,8 @@ export function useMeshCore() {
               console.warn('[useMeshCore] saveMeshcoreContact (event 129 new) error', e);
             });
         }
+        // Accumulate nodeIds for path history recording after the debounced refresh
+        meshcorePathUpdatePendingRef.current.add(nodeId);
         // Path updates may change hop counts; debounced contacts refresh to fetch updated outPathLen
         if (meshcoreContactsRefreshTimerRef.current) {
           clearTimeout(meshcoreContactsRefreshTimerRef.current);
@@ -1912,6 +1964,22 @@ export function useMeshCore() {
                 previousNodes: nodesRef.current,
               });
               setNodes((prev) => mergeMeshcoreChatStubNodes(prev, newNodes));
+              // Record path history for any nodeIds that triggered event 129
+              const pendingIds = meshcorePathUpdatePendingRef.current;
+              meshcorePathUpdatePendingRef.current = new Set();
+              for (const contact of contacts) {
+                const cNodeId = pubkeyToNodeId(contact.publicKey);
+                if (!pendingIds.has(cNodeId)) continue;
+                const pathLen = contact.outPathLen ?? 0;
+                const pathBytes =
+                  contact.outPath && pathLen > 0
+                    ? Array.from(contact.outPath.slice(0, pathLen + 1))
+                    : [];
+                if (pathBytes.length > 0) {
+                  const hops = newNodes.get(cNodeId)?.hops_away ?? 0;
+                  usePathHistoryStore.getState().recordPathUpdated(cNodeId, pathBytes, hops, false);
+                }
+              }
             } catch (e) {
               console.warn('[useMeshCore] debounced contacts refresh error', e);
             }
@@ -1979,6 +2047,16 @@ export function useMeshCore() {
         clearTimeout(pending.timeoutId);
         for (const k of pending.mapKeys) {
           pendingAcksRef.current.delete(k);
+        }
+        if (pending.destNodeId != null && pending.pathHash != null) {
+          usePathHistoryStore
+            .getState()
+            .recordOutcome(
+              pending.destNodeId,
+              pending.pathHash,
+              !isNack,
+              !isNack && typeof d.roundTrip === 'number' ? d.roundTrip : undefined,
+            );
         }
         const canon = pending.canonicalPacketIdU32;
         const newStatus = isNack ? 'failed' : 'acked';
@@ -2279,13 +2357,14 @@ export function useMeshCore() {
         const snr = d.lastSnr ?? 0;
         const rssi = d.lastRssi ?? 0;
         const now = Date.now();
+        const rawU8 = d.raw instanceof Uint8Array && d.raw.length > 0 ? d.raw : null;
+        const loraPacketClass = rawU8 ? classifyPayload(rawU8) : null;
 
         // Extract sender ID and update known node's last_heard + signal metrics
         let senderInfo = '';
-        if (d.raw instanceof Uint8Array && d.raw.length >= 8) {
-          const packetClass = classifyPayload(d.raw);
-          if (packetClass === 'meshtastic') {
-            const senderId = extractMeshtasticSenderId(d.raw);
+        if (rawU8 && rawU8.length >= 8 && loraPacketClass != null) {
+          if (loraPacketClass === 'meshtastic') {
+            const senderId = extractMeshtasticSenderId(rawU8);
             if (senderId !== null) {
               senderInfo = ` from=0x${senderId.toString(16)}`;
               // If we know this node (and it's not ourselves), update last_heard + SNR/RSSI
@@ -2305,7 +2384,7 @@ export function useMeshCore() {
                 });
               }
             }
-          } else if (packetClass === 'meshcore') {
+          } else if (loraPacketClass === 'meshcore') {
             senderInfo = ' [meshcore]';
           }
         }
@@ -2323,21 +2402,125 @@ export function useMeshCore() {
         const sigPoint: TelemetryPoint = { timestamp: now, snr, rssi };
         setSignalTelemetry((prev) => [...prev, sigPoint].slice(-MAX_TELEMETRY_POINTS));
 
+        // Raw packet log: always run MeshCore in-house parse on this path (LOG_RX is MeshCore RF only).
+        // Do not gate on classifyPayload — Meshtastic-shaped heuristics can mis-label MeshCore frames.
+        if (rawU8) {
+          let routeTypeString: string | null = null;
+          let payloadTypeString: string | null = null;
+          let hopCount = 0;
+          let fromNodeId: number | null = null;
+          let messageFingerprintHex: string | null = null;
+          let transportScopeCode: number | null = null;
+          let transportReturnCode: number | null = null;
+          let advertName: string | null = null;
+          let advertLat: number | null = null;
+          let advertLon: number | null = null;
+          let advertTimestampSec: number | null = null;
+          let parseOk = false;
+
+          const parsed = parseMeshCoreRfPacket(rawU8);
+          if (parsed.ok) {
+            parseOk = true;
+            routeTypeString = parsed.routeTypeString;
+            payloadTypeString = parsed.payloadTypeString;
+            hopCount = parsed.hopCount;
+            messageFingerprintHex = parsed.messageFingerprintHex;
+            if (parsed.transportCodes) {
+              transportScopeCode = parsed.transportCodes[0];
+              transportReturnCode = parsed.transportCodes[1];
+            }
+            if (parsed.advert) {
+              advertName = parsed.advert.name.length > 0 ? parsed.advert.name : null;
+              advertLat = parsed.advert.latitudeDeg;
+              advertLon = parsed.advert.longitudeDeg;
+              advertTimestampSec = parsed.advert.timestampSec;
+            }
+            const id = meshcoreRawPacketResolveFromParsed(parsed, pubKeyPrefixMapRef.current);
+            if (id != null) {
+              fromNodeId = id;
+              if (parsed.transportCodes) {
+                void window.electronAPI.db
+                  .updateMeshcoreContactRfTransport(
+                    id,
+                    parsed.transportCodes[0],
+                    parsed.transportCodes[1],
+                  )
+                  .catch((e: unknown) => {
+                    console.warn('[useMeshCore] updateMeshcoreContactRfTransport error', e);
+                  });
+              }
+            }
+          } else {
+            const fb = meshcoreRawPacketLogFromBytesFallback(rawU8, pubKeyPrefixMapRef.current);
+            if (fb) {
+              routeTypeString = fb.routeTypeString;
+              payloadTypeString = fb.payloadTypeString;
+              hopCount = fb.hopCount;
+              if (fb.fromNodeId != null) fromNodeId = fb.fromNodeId;
+            }
+          }
+
+          if (fromNodeId == null) {
+            const mtId = meshtasticSenderIdForRawLogFallback(parseOk, rawU8);
+            if (mtId != null) fromNodeId = mtId;
+          }
+          const rxEntry: RxPacketEntry = {
+            ts: now,
+            snr,
+            rssi,
+            raw: rawU8,
+            routeTypeString,
+            payloadTypeString,
+            hopCount,
+            fromNodeId,
+            messageFingerprintHex,
+            transportScopeCode,
+            transportReturnCode,
+            advertName,
+            advertLat,
+            advertLon,
+            advertTimestampSec,
+            parseOk,
+          };
+          setRawPackets((prev) => {
+            const myId = myNodeNumRef.current;
+            const last = prev[prev.length - 1];
+            if (
+              myId !== 0 &&
+              shouldCoalesceSelfFloodAdvert(
+                last,
+                rxEntry,
+                myId,
+                MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS,
+              )
+            ) {
+              const next = [...prev.slice(0, -1), rxEntry];
+              return next.length > MAX_RAW_PACKET_LOG_ENTRIES
+                ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
+                : next;
+            }
+            const next = [...prev, rxEntry];
+            return next.length > MAX_RAW_PACKET_LOG_ENTRIES
+              ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
+              : next;
+          });
+        }
+
         // Foreign LoRa fingerprinting: only flag non-MeshCore packets as foreign (requires known self node ID)
         if (
           getStoredMeshProtocol() === 'meshcore' &&
           myNodeNumRef.current !== 0 &&
-          d.raw instanceof Uint8Array &&
-          d.raw.length > 0
+          rawU8 &&
+          loraPacketClass != null
         ) {
-          const packetClass = classifyPayload(d.raw);
-          if (packetClass !== 'meshcore') {
-            const senderId = packetClass === 'meshtastic' ? extractMeshtasticSenderId(d.raw) : null;
+          if (loraPacketClass !== 'meshcore') {
+            const senderId =
+              loraPacketClass === 'meshtastic' ? extractMeshtasticSenderId(rawU8) : null;
             useDiagnosticsStore
               .getState()
               .recordForeignLora(
                 myNodeNumRef.current,
-                packetClass,
+                loraPacketClass,
                 rssi || undefined,
                 snr || undefined,
                 senderId ?? undefined,
@@ -2357,8 +2540,8 @@ export function useMeshCore() {
             lastPacketLogAtRef.current = now;
             const origin = selfInfoRef.current?.name ?? 'mesh-client';
             let rawHex: string | undefined;
-            if (d.raw instanceof Uint8Array && d.raw.length > 0) {
-              rawHex = Array.from(d.raw, (b) => b.toString(16).padStart(2, '0')).join('');
+            if (rawU8) {
+              rawHex = Array.from(rawU8, (b) => b.toString(16).padStart(2, '0')).join('');
             }
             void window.electronAPI.mqtt
               .publishMeshcorePacketLog({
@@ -3221,10 +3404,23 @@ export function useMeshCore() {
                 console.warn('[useMeshCore] saveMeshcoreMessage (outgoing) error', e);
               });
 
+            // Capture outbound path for delivery outcome attribution
+            const outPathRaw = outPathMapRef.current.get(destNodeId);
+            const sendPathBytes = outPathRaw && outPathRaw.length > 0 ? Array.from(outPathRaw) : [];
+            const sendPathHash = sendPathBytes.length > 0 ? computePathHash(sendPathBytes) : '';
+            if (sendPathBytes.length > 0) {
+              usePathHistoryStore
+                .getState()
+                .recordPathUpdated(destNodeId, sendPathBytes, hopsAway, false);
+            }
+
             // Schedule failure timeout
             const timeoutId = setTimeout(() => {
               for (const k of pendingMapKeys) {
                 pendingAcksRef.current.delete(k);
+              }
+              if (sendPathHash) {
+                usePathHistoryStore.getState().recordOutcome(destNodeId, sendPathHash, false);
               }
               setMessages((prev) =>
                 prev.map((m) =>
@@ -3245,6 +3441,8 @@ export function useMeshCore() {
               timeoutId,
               mapKeys: pendingMapKeys,
               canonicalPacketIdU32: ackKey,
+              destNodeId,
+              pathHash: sendPathHash,
             };
             for (const k of pendingMapKeys) {
               pendingAcksRef.current.set(k, pendingEntry);
@@ -3465,6 +3663,10 @@ export function useMeshCore() {
     await window.electronAPI.db.deleteMeshcoreContact(nodeId).catch((e: unknown) => {
       console.warn('[useMeshCore] deleteMeshcoreContact error', e);
     });
+  }, []);
+
+  const clearRawPackets = useCallback(() => {
+    setRawPackets([]);
   }, []);
 
   const clearAllRepeaters = useCallback(async () => {
@@ -5039,6 +5241,8 @@ export function useMeshCore() {
       setMeshcoreChannel,
       deleteMeshcoreChannel,
       deviceLogs,
+      rawPackets,
+      clearRawPackets,
       meshcoreTraceResults,
       meshcoreNodeStatus,
       meshcoreStatusErrors,
@@ -5155,6 +5359,8 @@ export function useMeshCore() {
       setMeshcoreChannel,
       deleteMeshcoreChannel,
       deviceLogs,
+      rawPackets,
+      clearRawPackets,
       meshcoreTraceResults,
       meshcoreNodeStatus,
       meshcoreStatusErrors,

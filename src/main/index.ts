@@ -28,9 +28,11 @@ import {
   addContactToGroup,
   closeDatabase,
   createContactGroup,
+  deleteAllMeshcorePathHistory,
   deleteContactGroup,
   deleteMeshcoreContactsByAge,
   deleteMeshcoreContactsNeverAdvertised,
+  deleteMeshcorePathHistoryForNode,
   deleteNodesBySource,
   deleteNodesWithoutLongname,
   exportDatabase,
@@ -38,6 +40,7 @@ import {
   getContactGroups,
   getDatabase,
   getMeshcoreHopHistory,
+  getMeshcorePathHistory,
   getMeshcoreTraceHistory,
   initDatabase,
   mergeDatabase,
@@ -45,12 +48,14 @@ import {
   pruneMeshcoreContactsByCount,
   pruneMeshcorePathHistory,
   prunePositionHistory,
+  recordMeshcorePathOutcome,
   removeContactFromGroup,
   saveMeshcoreHopHistory,
   saveMeshcoreTraceHistory,
   searchMeshcoreMessages,
   searchMessages,
   updateContactGroup,
+  upsertMeshcorePathHistory,
   upsertNodePath,
 } from './database';
 import { getGpsFix } from './gps';
@@ -405,6 +410,13 @@ function validateSaveMeshcoreMessage(msg: unknown): asserts msg is Record<string
       throw new Error('db:saveMeshcoreMessage: received_via invalid');
     if (!validReceivedVia.includes(m.received_via))
       throw new Error('db:saveMeshcoreMessage: received_via must be rf, mqtt, or both');
+  }
+  if (m.rx_packet_fingerprint != null) {
+    if (
+      typeof m.rx_packet_fingerprint !== 'string' ||
+      !/^[0-9A-Fa-f]{8}$/.test(m.rx_packet_fingerprint)
+    )
+      throw new Error('db:saveMeshcoreMessage: rx_packet_fingerprint must be 8 hex chars');
   }
 }
 
@@ -3093,11 +3105,13 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
       (validReceivedVia as readonly string[]).includes(receivedViaRaw)
         ? receivedViaRaw
         : null;
+    const rxFp =
+      typeof m.rx_packet_fingerprint === 'string' ? m.rx_packet_fingerprint.toUpperCase() : null;
     return db
       .prepareOnce(
         'INSERT OR IGNORE INTO meshcore_messages ' +
-          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node, received_via) ' +
-          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via)',
+          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint) ' +
+          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint)',
       )
       .run({
         sender_id: m.sender_id != null ? Number(m.sender_id) : null,
@@ -3111,6 +3125,7 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
         reply_id: replyId,
         to_node: m.to_node != null ? Number(m.to_node) : null,
         received_via,
+        rx_packet_fingerprint: rxFp,
       });
   } catch (err) {
     console.error(
@@ -3172,6 +3187,38 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
     throw err;
   }
 });
+
+ipcMain.handle(
+  'db:updateMeshcoreContactRfTransport',
+  (_event, nodeId: number, transportScope: unknown, transportReturn: unknown) => {
+    try {
+      const id = safeNonNegativeInt(nodeId);
+      const ts =
+        transportScope != null &&
+        typeof transportScope === 'number' &&
+        Number.isFinite(transportScope)
+          ? Math.trunc(transportScope) & 0xffff
+          : null;
+      const tr =
+        transportReturn != null &&
+        typeof transportReturn === 'number' &&
+        Number.isFinite(transportReturn)
+          ? Math.trunc(transportReturn) & 0xffff
+          : null;
+      getDatabase()
+        .prepareOnce(
+          'UPDATE meshcore_contacts SET last_rf_transport_scope = ?, last_rf_transport_return = ? WHERE node_id = ?',
+        )
+        .run(ts, tr, id);
+    } catch (err) {
+      console.error(
+        '[IPC] db:updateMeshcoreContactRfTransport failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  },
+);
 
 ipcMain.handle(
   'db:updateMeshcoreContactNickname',
@@ -3761,6 +3808,91 @@ ipcMain.handle('db:pruneMeshcorePathHistory', (_event, nodeId: number) => {
   } catch (err) {
     console.error(
       '[IPC] db:pruneMeshcorePathHistory failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle(
+  'db:upsertMeshcorePathHistory',
+  (
+    _event,
+    nodeId: number,
+    pathHash: string,
+    hopCount: number,
+    pathBytes: number[],
+    wasFloodDiscovery: boolean,
+    routeWeight: number,
+  ) => {
+    try {
+      upsertMeshcorePathHistory(
+        nodeId,
+        pathHash,
+        hopCount,
+        pathBytes,
+        wasFloodDiscovery,
+        routeWeight,
+      );
+      return true;
+    } catch (err) {
+      console.error(
+        '[IPC] db:upsertMeshcorePathHistory failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  },
+);
+
+ipcMain.handle(
+  'db:recordMeshcorePathOutcome',
+  (_event, nodeId: number, pathHash: string, success: boolean, tripTimeMs?: number) => {
+    try {
+      recordMeshcorePathOutcome(nodeId, pathHash, success, tripTimeMs);
+      return true;
+    } catch (err) {
+      console.error(
+        '[IPC] db:recordMeshcorePathOutcome failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  },
+);
+
+ipcMain.handle('db:getMeshcorePathHistory', (_event, nodeId: number) => {
+  try {
+    return getMeshcorePathHistory(nodeId);
+  } catch (err) {
+    console.error(
+      '[IPC] db:getMeshcorePathHistory failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:deleteMeshcorePathHistoryForNode', (_event, nodeId: number) => {
+  try {
+    deleteMeshcorePathHistoryForNode(nodeId);
+    return true;
+  } catch (err) {
+    console.error(
+      '[IPC] db:deleteMeshcorePathHistoryForNode failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:deleteAllMeshcorePathHistory', () => {
+  try {
+    deleteAllMeshcorePathHistory();
+    return true;
+  } catch (err) {
+    console.error(
+      '[IPC] db:deleteAllMeshcorePathHistory failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

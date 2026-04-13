@@ -203,6 +203,24 @@ declare module '@liamcottle/meshcore.js' {
     login(pubKey: Uint8Array, password: string, extraTimeoutMillis?: number): Promise<unknown>;
   }
 
+  export class Packet {
+    route_type: number;
+    route_type_string: string | null;
+    payload_type: number;
+    payload_type_string: string | null;
+    payload_version: number;
+    is_marked_do_not_retransmit: boolean;
+    pathLen: number;
+    path: Uint8Array;
+    payload: Uint8Array;
+    static fromBytes(bytes: Uint8Array): Packet;
+    getRouteType(): number;
+    getRouteTypeString(): string | null;
+    getPayloadType(): number;
+    getPayloadTypeString(): string | null;
+    getPathHashCount(): number;
+  }
+
   export class CayenneLpp {
     static LPP_DIGITAL_INPUT: number;
     static LPP_DIGITAL_OUTPUT: number;
