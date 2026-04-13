@@ -9,6 +9,7 @@ import { formatLogTimeOfDay } from '../../shared/formatLogTimestamp';
 import { parseMeshCoreRfPacket } from '../../shared/meshcoreRfPacketParse';
 import {
   MESHCORE_PAYLOAD_TYPE_ANON_REQ_NIBBLE,
+  MESHCORE_PAYLOAD_TYPE_CONTROL_NIBBLE,
   MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE,
   MESHCORE_PAYLOAD_TYPE_RESPONSE_NIBBLE,
 } from '../../shared/meshcoreRfPath';
@@ -48,6 +49,16 @@ function hexByte(byte: number): string {
   return byte.toString(16).padStart(2, '0');
 }
 
+function readU32LEAt(bytes: Uint8Array, offset: number): number | null {
+  if (offset + 4 > bytes.length) return null;
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  return dv.getUint32(offset, true);
+}
+
+function toSignedI8(byte: number): number {
+  return byte > 127 ? byte - 256 : byte;
+}
+
 function MeshcoreExpandedDetails({ p }: { p: RxPacketEntry }) {
   if (!p.parseOk) return null;
   const reparsed = parseMeshCoreRfPacket(p.raw);
@@ -67,6 +78,14 @@ function MeshcoreExpandedDetails({ p }: { p: RxPacketEntry }) {
     inner != null && nibble === MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE && inner.length >= 1
       ? hexByte(inner[0])
       : null;
+  const grpTxtMac =
+    inner != null && nibble === MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE && inner.length >= 3
+      ? toHex(inner.subarray(1, 3))
+      : null;
+  const grpTxtCiphertextLen =
+    inner != null && nibble === MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE && inner.length >= 3
+      ? inner.length - 3
+      : null;
   const anonReqFields =
     inner != null && nibble === MESHCORE_PAYLOAD_TYPE_ANON_REQ_NIBBLE && inner.length >= 7
       ? {
@@ -74,6 +93,38 @@ function MeshcoreExpandedDetails({ p }: { p: RxPacketEntry }) {
           senderKeyPrefix: toHex(inner.subarray(1, 7)),
         }
       : null;
+  const controlFields = (() => {
+    if (inner == null || nibble !== MESHCORE_PAYLOAD_TYPE_CONTROL_NIBBLE || inner.length < 1) {
+      return null;
+    }
+    const flags = inner[0];
+    const subtype = (flags >> 4) & 0x0f;
+    const subtypeName = subtype === 0x8 ? 'DISCOVER_REQ' : subtype === 0x9 ? 'DISCOVER_RESP' : null;
+    const prefixOnly = subtype === 0x8 ? (flags & 0x01) === 1 : null;
+    const nodeType = subtype === 0x9 ? flags & 0x0f : null;
+    const snrRaw = subtype === 0x9 && inner.length >= 2 ? toSignedI8(inner[1]) : null;
+    const tag = inner.length >= 6 ? readU32LEAt(inner, 2) : null;
+    const since = subtype === 0x8 && inner.length >= 10 ? readU32LEAt(inner, 6) : null;
+    const typeFilter = subtype === 0x8 && inner.length >= 2 ? inner[1] : null;
+    const pubkeyBytes = subtype === 0x9 && inner.length > 6 ? Math.min(32, inner.length - 6) : null;
+    const pubkeyPrefix =
+      subtype === 0x9 && inner.length > 6
+        ? toHex(inner.subarray(6, Math.min(inner.length, 12)))
+        : null;
+    return {
+      flags,
+      subtype,
+      subtypeName,
+      prefixOnly,
+      typeFilter,
+      nodeType,
+      snrRaw,
+      tag,
+      since,
+      pubkeyBytes,
+      pubkeyPrefix,
+    };
+  })();
   return (
     <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
       {p.messageFingerprintHex != null && (
@@ -98,10 +149,36 @@ function MeshcoreExpandedDetails({ p }: { p: RxPacketEntry }) {
           <span className="text-muted">Channel hash:</span> {grpTxtChannelHash}
         </p>
       )}
+      {grpTxtMac != null && (
+        <p>
+          <span className="text-muted">MAC:</span> {grpTxtMac}{' '}
+          <span className="text-muted">Ciphertext bytes:</span> {grpTxtCiphertextLen}
+        </p>
+      )}
       {anonReqFields != null && (
         <p>
           <span className="text-muted">Dest hash:</span> {anonReqFields.dest}{' '}
           <span className="text-muted">Sender key (prefix):</span> {anonReqFields.senderKeyPrefix}
+        </p>
+      )}
+      {controlFields != null && (
+        <p>
+          <span className="text-muted">Control:</span>{' '}
+          {`flags=0x${hexByte(controlFields.flags)} subtype=0x${controlFields.subtype.toString(16)}${controlFields.subtypeName != null ? `(${controlFields.subtypeName})` : ''}`}
+          {controlFields.typeFilter != null
+            ? ` type_filter=0x${hexByte(controlFields.typeFilter)}`
+            : ''}
+          {controlFields.prefixOnly != null
+            ? ` prefix_only=${String(controlFields.prefixOnly)}`
+            : ''}
+          {controlFields.nodeType != null ? ` node_type=${controlFields.nodeType}` : ''}
+          {controlFields.snrRaw != null ? ` snr=${(controlFields.snrRaw / 4).toFixed(2)}dB` : ''}
+          {controlFields.tag != null
+            ? ` tag=0x${controlFields.tag.toString(16).toUpperCase().padStart(8, '0')}`
+            : ''}
+          {controlFields.since != null ? ` since=${controlFields.since}` : ''}
+          {controlFields.pubkeyBytes != null ? ` pubkey_bytes=${controlFields.pubkeyBytes}` : ''}
+          {controlFields.pubkeyPrefix != null ? ` pubkey_prefix=${controlFields.pubkeyPrefix}` : ''}
         </p>
       )}
       {p.transportScopeCode != null && p.transportReturnCode != null && (

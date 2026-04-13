@@ -14,10 +14,18 @@ export const PAYLOAD_TYPE_TRACE = 0x09;
 export const MESHCORE_PAYLOAD_TYPE_ADVERT_NIBBLE = 4;
 /** Align with `@liamcottle/meshcore.js` `Packet.PAYLOAD_TYPE_GRP_TXT` (0x05). */
 export const MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE = 5;
+/** Group datagram payload type nibble (0x06). */
+export const MESHCORE_PAYLOAD_TYPE_GRP_DATA_NIBBLE = 6;
 /** Response to REQ_RESP or ANON_REQ (nibble 1). Inner: dest_hash(1)|src_hash(1)|mac(2)|ciphertext. */
 export const MESHCORE_PAYLOAD_TYPE_RESPONSE_NIBBLE = 1;
 /** Anonymous request with plaintext sender pubkey (nibble 7). Inner: dest_hash(1)|sender_pubkey(32)|mac(2)|ciphertext. */
 export const MESHCORE_PAYLOAD_TYPE_ANON_REQ_NIBBLE = 7;
+/** Multipart payload type nibble (0x0a). */
+export const MESHCORE_PAYLOAD_TYPE_MULTIPART_NIBBLE = 10;
+/** Control payload type nibble (0x0b). */
+export const MESHCORE_PAYLOAD_TYPE_CONTROL_NIBBLE = 11;
+/** Raw custom payload type nibble (0x0f). */
+export const MESHCORE_PAYLOAD_TYPE_RAW_CUSTOM_NIBBLE = 15;
 
 const ROUTE_TYPE_TRANSPORT_FLOOD = 0x00;
 const ROUTE_TYPE_TRANSPORT_DIRECT = 0x03;
@@ -122,12 +130,20 @@ export function meshCorePayloadTypeStringFromByte0(byte0: number): string {
       return 'ADVERT';
     case MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE:
       return 'GRP_TXT';
+    case MESHCORE_PAYLOAD_TYPE_GRP_DATA_NIBBLE:
+      return 'GRP_DATA';
     case MESHCORE_PAYLOAD_TYPE_ANON_REQ_NIBBLE:
       return 'ANON_REQ';
     case 8:
       return 'PATH';
     case 9:
       return 'TRACE';
+    case MESHCORE_PAYLOAD_TYPE_MULTIPART_NIBBLE:
+      return 'MULTIPART';
+    case MESHCORE_PAYLOAD_TYPE_CONTROL_NIBBLE:
+      return 'CONTROL';
+    case MESHCORE_PAYLOAD_TYPE_RAW_CUSTOM_NIBBLE:
+      return 'RAW_CUSTOM';
     default:
       return `PAYLOAD_0x${t.toString(16)}`;
   }
