@@ -70,6 +70,54 @@ describe('parseMeshCoreRfPacket', () => {
       0;
     expect(innerBeU32).toBe(0x111337a7);
   });
+
+  it('maps byte0 nibble 1 to RESPONSE label', () => {
+    const p = parseMeshCoreRfPacket(new Uint8Array([0x05, 0x00, 0xaa, 0xbb, 0xcc]));
+    expect(p.ok).toBe(true);
+    if (!p.ok) return;
+    expect(p.payloadTypeNibble).toBe(1);
+    expect(p.payloadTypeString).toBe('RESPONSE');
+  });
+
+  it('maps byte0 nibble 7 to ANON_REQ label', () => {
+    const p = parseMeshCoreRfPacket(new Uint8Array([0x1d, 0x00, 0x03, 0x88, 0x71, 0x06, 0xdb]));
+    expect(p.ok).toBe(true);
+    if (!p.ok) return;
+    expect(p.payloadTypeNibble).toBe(7);
+    expect(p.payloadTypeString).toBe('ANON_REQ');
+  });
+
+  it('maps byte0 nibble 6 to GRP_DATA label', () => {
+    const p = parseMeshCoreRfPacket(new Uint8Array([0x19, 0x00, 0xaa]));
+    expect(p.ok).toBe(true);
+    if (!p.ok) return;
+    expect(p.payloadTypeNibble).toBe(6);
+    expect(p.payloadTypeString).toBe('GRP_DATA');
+  });
+
+  it('maps byte0 nibble 0xA to MULTIPART label', () => {
+    const p = parseMeshCoreRfPacket(new Uint8Array([0x29, 0x00, 0xaa]));
+    expect(p.ok).toBe(true);
+    if (!p.ok) return;
+    expect(p.payloadTypeNibble).toBe(10);
+    expect(p.payloadTypeString).toBe('MULTIPART');
+  });
+
+  it('maps byte0 nibble 0xB to CONTROL label', () => {
+    const p = parseMeshCoreRfPacket(new Uint8Array([0x2d, 0x00, 0x92, 0xf3]));
+    expect(p.ok).toBe(true);
+    if (!p.ok) return;
+    expect(p.payloadTypeNibble).toBe(11);
+    expect(p.payloadTypeString).toBe('CONTROL');
+  });
+
+  it('maps byte0 nibble 0xF to RAW_CUSTOM label', () => {
+    const p = parseMeshCoreRfPacket(new Uint8Array([0x3d, 0x00, 0xaa]));
+    expect(p.ok).toBe(true);
+    if (!p.ok) return;
+    expect(p.payloadTypeNibble).toBe(15);
+    expect(p.payloadTypeString).toBe('RAW_CUSTOM');
+  });
 });
 
 describe('meshCoreTransportCodeForRegion', () => {

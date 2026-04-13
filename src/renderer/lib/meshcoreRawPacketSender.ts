@@ -1,6 +1,8 @@
 import type { MeshCoreRfParseOk } from '../../shared/meshcoreRfPacketParse';
 import {
   decodeMeshCorePathPrefix,
+  MESHCORE_PAYLOAD_TYPE_ANON_REQ_NIBBLE,
+  MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE,
   meshCorePayloadTypeNibble,
   meshCorePayloadTypeStringFromByte0,
   meshCoreRouteTypeStringFromByte0,
@@ -58,7 +60,20 @@ export function meshcoreRawPacketResolveFromParsed(
     if (id !== 0) return id;
     const mapped = pubKeyPrefixMap.get(pubkeyPrefixHex6(key)) ?? 0;
     if (mapped !== 0) return mapped;
-  } else if (inner.length >= 6) {
+  } else if (parsed.payloadTypeNibble === MESHCORE_PAYLOAD_TYPE_ANON_REQ_NIBBLE) {
+    // ANON_REQ inner: dest_hash(1) | sender_pubkey(32) | mac(2) | ciphertext
+    if (inner.length >= 33) {
+      const key = inner.subarray(1, 33);
+      const id = pubkeyToNodeId(key);
+      if (id !== 0) return id;
+      const mapped = pubKeyPrefixMap.get(pubkeyPrefixHex6(key)) ?? 0;
+      if (mapped !== 0) return mapped;
+    }
+  } else if (
+    parsed.payloadTypeNibble !== MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE &&
+    inner.length >= 6
+  ) {
+    // GRP_TXT inner starts with channel_hash, not a pubkey prefix — skip prefix lookup
     const mapped = pubKeyPrefixMap.get(pubkeyPrefixHex6(inner)) ?? 0;
     if (mapped !== 0) return mapped;
   }
@@ -97,7 +112,24 @@ export function meshcoreRawPacketLogFromBytesFallback(
           if (mapped !== 0) fromNodeId = mapped;
         }
       }
-    } else if (raw.length >= pathEndOffset + 6) {
+    } else if (payloadNibble === MESHCORE_PAYLOAD_TYPE_ANON_REQ_NIBBLE) {
+      // ANON_REQ inner: dest_hash(1) | sender_pubkey(32) | mac(2) | ciphertext
+      if (raw.length >= pathEndOffset + 33) {
+        const key = raw.subarray(pathEndOffset + 1, pathEndOffset + 33);
+        const id = pubkeyToNodeId(key);
+        if (id !== 0) {
+          fromNodeId = id;
+        } else {
+          const prefix = pubkeyPrefixHex6(key);
+          const mapped = pubKeyPrefixMap.get(prefix) ?? 0;
+          if (mapped !== 0) fromNodeId = mapped;
+        }
+      }
+    } else if (
+      payloadNibble !== MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE &&
+      raw.length >= pathEndOffset + 6
+    ) {
+      // GRP_TXT inner starts with channel_hash, not a pubkey prefix — skip prefix lookup
       const inner = raw.subarray(pathEndOffset);
       const mapped = pubKeyPrefixMap.get(pubkeyPrefixHex6(inner)) ?? 0;
       if (mapped !== 0) fromNodeId = mapped;

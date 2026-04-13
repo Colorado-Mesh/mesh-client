@@ -2,7 +2,7 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import { Mesh, Mqtt as MqttProto, Portnums } from '@meshtastic/protobufs';
 import { createCipheriv } from 'crypto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MQTTManager, parsePsk } from './mqtt-manager';
 
@@ -965,6 +965,67 @@ describe('onMessage — JSON nodeinfo', () => {
     expect(update.node_id).toBe(nodeId);
     expect(update.long_name).toBe('Root Level Node');
     expect(update.short_name).toBe('RLN');
+  });
+});
+
+describe('onMessage — JSON sampled handling', () => {
+  let manager: MQTTManager;
+  let debugSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    manager = new MQTTManager();
+    debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    debugSpy.mockRestore();
+  });
+
+  it('suppresses unhandled log noise for empty type + missing portnum messages', () => {
+    const payload = Buffer.from(
+      JSON.stringify({
+        from: 0x6982c484,
+        to: 0xa2d67b68,
+        type: '',
+      }),
+    );
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!6982c484', payload);
+
+    expect(
+      debugSpy.mock.calls.some((args: unknown[]) =>
+        String(args[0]).includes('JSON message missing type/portnum ignored'),
+      ),
+    ).toBe(true);
+    expect(
+      debugSpy.mock.calls.some((args: unknown[]) =>
+        String(args[0]).includes('JSON message unhandled'),
+      ),
+    ).toBe(false);
+  });
+
+  it('treats traceroute JSON as known and avoids unhandled logging', () => {
+    const payload = Buffer.from(
+      JSON.stringify({
+        from: 0x698524e8,
+        to: 0x6982c484,
+        type: 'traceroute',
+        payload: { route: ['A', 'B'] },
+      }),
+    );
+
+    (manager as any).onMessage('msh/US/CO/2/json/LongFast/!698524e8', payload);
+
+    expect(
+      debugSpy.mock.calls.some((args: unknown[]) =>
+        String(args[0]).includes('JSON traceroute message ignored'),
+      ),
+    ).toBe(true);
+    expect(
+      debugSpy.mock.calls.some((args: unknown[]) =>
+        String(args[0]).includes('JSON message unhandled'),
+      ),
+    ).toBe(false);
   });
 });
 

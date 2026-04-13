@@ -44,6 +44,7 @@ import {
   parseMeshcoreGetNeighboursResponse,
 } from '../lib/meshcoreGetNeighboursBinary';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
+import { meshcoreCorrelateOrSynthesizeChatEntry } from '../lib/meshcoreRawPacketCorrelate';
 import {
   meshcoreRawPacketLogFromBytesFallback,
   meshcoreRawPacketResolveFromParsed,
@@ -1148,7 +1149,15 @@ export function useMeshCore() {
     try {
       [radioStats, packetStats] = await Promise.all([conn.getStatsRadio(), conn.getStatsPackets()]);
     } catch (e: unknown) {
-      console.warn('[useMeshCore] fetchAndUpdateLocalStats radio/packet error', e);
+      const reason =
+        e instanceof Error
+          ? e.message
+          : typeof e === 'string'
+            ? e
+            : e == null
+              ? 'no error details'
+              : JSON.stringify(e);
+      console.warn('[useMeshCore] fetchAndUpdateLocalStats radio/packet error:', reason);
       return;
     }
 
@@ -2230,6 +2239,7 @@ export function useMeshCore() {
 
       // Incoming DM — event 7
       conn.on(7, (data: unknown) => {
+        const now = Date.now();
         const d = data as {
           pubKeyPrefix: Uint8Array;
           text: string;
@@ -2311,10 +2321,32 @@ export function useMeshCore() {
             to: myNodeNumRef.current || undefined,
           }),
         );
+        const resolvedSenderId = senderId !== 0 ? senderId : null;
+        setRawPackets((prev) =>
+          meshcoreCorrelateOrSynthesizeChatEntry(prev, 'TXT_MSG', resolvedSenderId, {
+            ts: now,
+            snr: 0,
+            rssi: 0,
+            raw: new Uint8Array(0),
+            routeTypeString: null,
+            payloadTypeString: 'TXT_MSG',
+            hopCount: 0,
+            fromNodeId: resolvedSenderId,
+            messageFingerprintHex: null,
+            transportScopeCode: null,
+            transportReturnCode: null,
+            advertName: null,
+            advertLat: null,
+            advertLon: null,
+            advertTimestampSec: null,
+            parseOk: false,
+          }),
+        );
       });
 
       // Incoming channel message — event 8
       conn.on(8, (data: unknown) => {
+        const now = Date.now();
         const d = data as { channelIdx: number; text: string; senderTimestamp: number };
         if (isMeshcoreTransportStatusChatLine(d.text)) {
           logTransportLineAsDevice(d.text);
@@ -2346,6 +2378,26 @@ export function useMeshCore() {
             channel: d.channelIdx,
             timestamp: d.senderTimestamp * 1000,
             receivedVia: 'rf',
+          }),
+        );
+        setRawPackets((prev) =>
+          meshcoreCorrelateOrSynthesizeChatEntry(prev, 'GRP_TXT', stubId, {
+            ts: now,
+            snr: 0,
+            rssi: 0,
+            raw: new Uint8Array(0),
+            routeTypeString: null,
+            payloadTypeString: 'GRP_TXT',
+            hopCount: 0,
+            fromNodeId: stubId,
+            messageFingerprintHex: null,
+            transportScopeCode: null,
+            transportReturnCode: null,
+            advertName: null,
+            advertLat: null,
+            advertLon: null,
+            advertTimestampSec: null,
+            parseOk: false,
           }),
         );
       });

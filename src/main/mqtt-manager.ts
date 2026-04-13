@@ -87,6 +87,12 @@ const MESHTASTIC_MQTT_WSS_PING_MS = 25_000;
  * on proxied WSS paths (LetsMesh broker).
  */
 const MESHTASTIC_MQTT_RESCHEDULE_MS = 30_000;
+const NOISY_DEBUG_LOG_INTERVAL_MS = 60_000;
+
+interface SampledDebugLogState {
+  lastLoggedAt: number;
+  suppressedCount: number;
+}
 
 export class MQTTManager extends EventEmitter {
   private client: mqtt.MqttClient | null = null;
@@ -101,6 +107,7 @@ export class MQTTManager extends EventEmitter {
   private extraPsks: Buffer[] = [];
   private wssPingTimer: ReturnType<typeof setInterval> | null = null;
   private keepaliveRescheduleTimer: ReturnType<typeof setInterval> | null = null;
+  private sampledDebugLogs = new Map<string, SampledDebugLogState>();
   /** Wall time at start of last `_doConnect` (CONNACK timing in connect logs). */
   private meshtasticConnectT0 = 0;
   /** After `connack timeout`, reconnect with {@link MESHTASTIC_MQTT_RECONNECT_AFTER_CONNACK_TIMEOUT_MS}. */
@@ -649,13 +656,12 @@ export class MQTTManager extends EventEmitter {
         }
       }
     } catch (err) {
+      // catch-no-log-ok decode failures are sampled via logSampledDebug (avoid duplicate console lines)
       const msg = err instanceof Error ? err.message : String(err);
-      console.debug(
-        '[Meshtastic MQTT] ServiceEnvelope decode failed:',
-        sanitizeLogMessage(msg),
-        '| Topic:',
-        sanitizeLogMessage(topic),
-      ); // log-filter-ok Meshtastic MQTT logs → App log panel
+      this.logSampledDebug(
+        'service-envelope-decode-failed',
+        `[Meshtastic MQTT] ServiceEnvelope decode failed: ${sanitizeLogMessage(msg)} | Topic: ${sanitizeLogMessage(topic)}`,
+      );
     }
   }
 
@@ -668,29 +674,38 @@ export class MQTTManager extends EventEmitter {
     const jsonStr = JSON.stringify(json).slice(0, 500);
     console.debug(`[Meshtastic MQTT] JSON content: ${jsonStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
 
-    const type = json.type as string | undefined;
+    const typeRaw = json.type;
+    const type = typeof typeRaw === 'string' ? typeRaw.trim() : '';
+    const typeLower = type.toLowerCase();
 
-    if (type === 'nodeinfo' || type === 'USER') {
+    if (typeLower === 'nodeinfo' || typeLower === 'user') {
       this.handleJsonNodeInfo(json, topic);
       return;
     }
 
-    if (type === 'position' || type === 'POSITION') {
+    if (typeLower === 'position') {
       this.handleJsonPosition(json, topic);
       return;
     }
 
-    if (type === 'telemetry' || type === 'TELEMETRY') {
+    if (typeLower === 'telemetry') {
       this.handleJsonTelemetry(json, topic);
       return;
     }
 
-    if (type === 'neighborinfo' || type === 'NEIGHBORINFO') {
+    if (typeLower === 'neighborinfo') {
       this.handleJsonNeighborInfo(json, topic);
       return;
     }
 
     const portnumRaw = json.portnum as number | undefined;
+    if (typeLower === 'traceroute') {
+      this.logSampledDebug(
+        'json-traceroute',
+        `[Meshtastic MQTT] JSON traceroute message ignored: topic=${sanitizeLogMessage(topic)}`,
+      );
+      return;
+    }
     if (portnumRaw === PortNum.NODEINFO_APP) {
       this.handleJsonNodeInfo(json, topic);
       return;
@@ -707,10 +722,18 @@ export class MQTTManager extends EventEmitter {
       this.handleJsonNodeInfo(json, topic);
       return;
     }
+    if (typeLower.length === 0 && portnumRaw === undefined) {
+      this.logSampledDebug(
+        'json-empty-type',
+        `[Meshtastic MQTT] JSON message missing type/portnum ignored: topic=${sanitizeLogMessage(topic)}`,
+      );
+      return;
+    }
 
-    console.debug(
-      `[Meshtastic MQTT] JSON message unhandled: type="${type}" portnum=${portnumRaw} topic=${topic}`,
-    ); // log-filter-ok Meshtastic MQTT logs → App log panel
+    this.logSampledDebug(
+      `json-unhandled:${typeLower || 'empty'}:${String(portnumRaw)}`,
+      `[Meshtastic MQTT] JSON message unhandled: type="${sanitizeLogMessage(type || '<empty>')}" portnum=${String(portnumRaw)} topic=${sanitizeLogMessage(topic)}`,
+    );
   }
 
   /**
@@ -1125,8 +1148,7 @@ export class MQTTManager extends EventEmitter {
     console.debug(
       `[Meshtastic MQTT] Decrypt attempt: trying ${allKeys.length} PSKs (1 default + ${this.extraPsks.length} custom) for nodeId=0x${from.toString(16)}`,
     ); // log-filter-ok Meshtastic MQTT logs → App log panel
-    for (let i = 0; i < allKeys.length; i++) {
-      const key = allKeys[i];
+    for (const key of allKeys) {
       const raw = this.tryDecryptWithKey(encrypted, packetId, from, key);
       if (!raw) continue;
       try {
@@ -1137,12 +1159,40 @@ export class MQTTManager extends EventEmitter {
           replyId?: number;
         };
       } catch {
-        // Wrong PSK produces garbage bytes that fail protobuf decode — try next key
-        console.debug(
-          `[Meshtastic MQTT] decrypt attempt ${i + 1}/${allKeys.length} failed (protobuf decode error)`,
-        ); // log-filter-ok Meshtastic MQTT logs → App log panel
+        // catch-no-log-ok wrong PSK produces garbage bytes that fail protobuf decode — try next key
       }
     }
+    this.logSampledDebug(
+      'decrypt-protobuf-fail',
+      `[Meshtastic MQTT] Could not decrypt packet (protobuf decode failed for all ${allKeys.length} PSKs), nodeId=0x${from.toString(16)} packetId=${packetId >>> 0}`,
+    );
     return null;
+  }
+
+  private logSampledDebug(
+    key: string,
+    message: string,
+    intervalMs = NOISY_DEBUG_LOG_INTERVAL_MS,
+  ): void {
+    const now = Date.now();
+    const state = this.sampledDebugLogs.get(key);
+    if (!state) {
+      this.sampledDebugLogs.set(key, { lastLoggedAt: now, suppressedCount: 0 });
+      console.debug(message); // log-filter-ok Meshtastic MQTT logs → App log panel
+      return;
+    }
+
+    if (now - state.lastLoggedAt >= intervalMs) {
+      const suffix =
+        state.suppressedCount > 0
+          ? ` (suppressed ${state.suppressedCount} similar message${state.suppressedCount === 1 ? '' : 's'})`
+          : '';
+      console.debug(`${message}${suffix}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      state.lastLoggedAt = now;
+      state.suppressedCount = 0;
+      return;
+    }
+
+    state.suppressedCount += 1;
   }
 }

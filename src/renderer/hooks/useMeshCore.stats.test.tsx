@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getSelfInfoMock = vi.fn();
 const getStatsCoreMock = vi.fn();
@@ -150,8 +150,11 @@ function makeMockSerialPort() {
 }
 
 describe('useMeshCore stats parsing', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
     getSelfInfoMock.mockResolvedValue({
@@ -202,6 +205,10 @@ describe('useMeshCore stats parsing', () => {
     });
   });
 
+  afterEach(() => {
+    warnSpy.mockRestore();
+  });
+
   it('hydrates queueStatus from the meshcore.js stats payload data field', async () => {
     const port = makeMockSerialPort();
     Object.defineProperty(navigator, 'serial', {
@@ -250,5 +257,10 @@ describe('useMeshCore stats parsing', () => {
       expect(result.current.state.status).toBe('configured');
       expect(result.current.queueStatus).toEqual({ free: 249, maxlen: 256, res: 0 });
     });
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[useMeshCore] fetchAndUpdateLocalStats radio/packet error:',
+      'radio stats timeout',
+    );
   });
 });
