@@ -2393,9 +2393,9 @@ export function useMeshCore() {
         const sigPoint: TelemetryPoint = { timestamp: now, snr, rssi };
         setSignalTelemetry((prev) => [...prev, sigPoint].slice(-MAX_TELEMETRY_POINTS));
 
-        // Raw packet log: decode MeshCore packets for the RawPacketLogPanel (in-house parse).
+        // Raw packet log: always run MeshCore in-house parse on this path (LOG_RX is MeshCore RF only).
+        // Do not gate on classifyPayload — Meshtastic-shaped heuristics can mis-label MeshCore frames.
         if (d.raw instanceof Uint8Array && d.raw.length > 0) {
-          const pClass = classifyPayload(d.raw);
           let routeTypeString: string | null = null;
           let payloadTypeString: string | null = null;
           let hopCount = 0;
@@ -2408,53 +2408,52 @@ export function useMeshCore() {
           let advertLon: number | null = null;
           let advertTimestampSec: number | null = null;
           let parseOk = false;
-          if (pClass === 'meshtastic') {
-            fromNodeId = extractMeshtasticSenderId(d.raw);
-          }
-          if (pClass === 'meshcore' || pClass === 'unknown-lora') {
-            const parsed = parseMeshCoreRfPacket(d.raw);
-            if (parsed.ok) {
-              parseOk = true;
-              routeTypeString = parsed.routeTypeString;
-              payloadTypeString = parsed.payloadTypeString;
-              hopCount = parsed.hopCount;
-              messageFingerprintHex = parsed.messageFingerprintHex;
+
+          const parsed = parseMeshCoreRfPacket(d.raw);
+          if (parsed.ok) {
+            parseOk = true;
+            routeTypeString = parsed.routeTypeString;
+            payloadTypeString = parsed.payloadTypeString;
+            hopCount = parsed.hopCount;
+            messageFingerprintHex = parsed.messageFingerprintHex;
+            if (parsed.transportCodes) {
+              transportScopeCode = parsed.transportCodes[0];
+              transportReturnCode = parsed.transportCodes[1];
+            }
+            if (parsed.advert) {
+              advertName = parsed.advert.name.length > 0 ? parsed.advert.name : null;
+              advertLat = parsed.advert.latitudeDeg;
+              advertLon = parsed.advert.longitudeDeg;
+              advertTimestampSec = parsed.advert.timestampSec;
+            }
+            const id = meshcoreRawPacketResolveFromParsed(parsed, pubKeyPrefixMapRef.current);
+            if (id != null) {
+              fromNodeId = id;
               if (parsed.transportCodes) {
-                transportScopeCode = parsed.transportCodes[0];
-                transportReturnCode = parsed.transportCodes[1];
-              }
-              if (parsed.advert) {
-                advertName = parsed.advert.name.length > 0 ? parsed.advert.name : null;
-                advertLat = parsed.advert.latitudeDeg;
-                advertLon = parsed.advert.longitudeDeg;
-                advertTimestampSec = parsed.advert.timestampSec;
-              }
-              if (pClass === 'meshcore') {
-                const id = meshcoreRawPacketResolveFromParsed(parsed, pubKeyPrefixMapRef.current);
-                if (id != null) {
-                  fromNodeId = id;
-                  if (parsed.transportCodes) {
-                    void window.electronAPI.db
-                      .updateMeshcoreContactRfTransport(
-                        id,
-                        parsed.transportCodes[0],
-                        parsed.transportCodes[1],
-                      )
-                      .catch((e: unknown) => {
-                        console.warn('[useMeshCore] updateMeshcoreContactRfTransport error', e);
-                      });
-                  }
-                }
-              }
-            } else if (pClass === 'meshcore') {
-              const fb = meshcoreRawPacketLogFromBytesFallback(d.raw, pubKeyPrefixMapRef.current);
-              if (fb) {
-                routeTypeString = fb.routeTypeString;
-                payloadTypeString = fb.payloadTypeString;
-                hopCount = fb.hopCount;
-                if (fb.fromNodeId != null) fromNodeId = fb.fromNodeId;
+                void window.electronAPI.db
+                  .updateMeshcoreContactRfTransport(
+                    id,
+                    parsed.transportCodes[0],
+                    parsed.transportCodes[1],
+                  )
+                  .catch((e: unknown) => {
+                    console.warn('[useMeshCore] updateMeshcoreContactRfTransport error', e);
+                  });
               }
             }
+          } else {
+            const fb = meshcoreRawPacketLogFromBytesFallback(d.raw, pubKeyPrefixMapRef.current);
+            if (fb) {
+              routeTypeString = fb.routeTypeString;
+              payloadTypeString = fb.payloadTypeString;
+              hopCount = fb.hopCount;
+              if (fb.fromNodeId != null) fromNodeId = fb.fromNodeId;
+            }
+          }
+
+          if (fromNodeId == null) {
+            const mtId = extractMeshtasticSenderId(d.raw);
+            if (mtId != null) fromNodeId = mtId;
           }
           const rxEntry: RxPacketEntry = {
             ts: now,

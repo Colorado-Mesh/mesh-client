@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { parseMeshCoreRfPacket } from '../../shared/meshcoreRfPacketParse';
 import {
   classifyPayload,
   classifyProximity,
@@ -232,6 +233,23 @@ describe('extractMeshtasticSenderId', () => {
     broadcast[6] = 0xff;
     broadcast[7] = 0xff;
     expect(extractMeshtasticSenderId(broadcast)).toBe(null);
+  });
+});
+
+/**
+ * MeshCore LOG_RX must always run `parseMeshCoreRfPacket`; `classifyPayload` can label the same
+ * bytes as `meshtastic` (short dest/src heuristic) and must not gate the sniffer decode.
+ */
+describe('MeshCore RF log (classifier vs parse)', () => {
+  it('classifies TRANSPORT_FLOOD+TRACE sample as meshtastic but in-house MeshCore parse still succeeds', () => {
+    const buffer = new Uint8Array([0x24, 0x34, 0x12, 0x78, 0x56, 0x02, 0x11, 0x22]);
+    expect(classifyPayload(buffer)).toBe('meshtastic');
+    const p = parseMeshCoreRfPacket(buffer);
+    expect(p.ok).toBe(true);
+    if (!p.ok) return;
+    expect(p.routeTypeString).toBe('TRANSPORT_FLOOD');
+    expect(p.payloadTypeString).toBe('TRACE');
+    expect(p.transportCodes).toEqual([0x1234, 0x5678]);
   });
 });
 
