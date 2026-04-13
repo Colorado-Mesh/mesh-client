@@ -2349,13 +2349,14 @@ export function useMeshCore() {
         const snr = d.lastSnr ?? 0;
         const rssi = d.lastRssi ?? 0;
         const now = Date.now();
+        const rawU8 = d.raw instanceof Uint8Array && d.raw.length > 0 ? d.raw : null;
+        const loraPacketClass = rawU8 ? classifyPayload(rawU8) : null;
 
         // Extract sender ID and update known node's last_heard + signal metrics
         let senderInfo = '';
-        if (d.raw instanceof Uint8Array && d.raw.length >= 8) {
-          const packetClass = classifyPayload(d.raw);
-          if (packetClass === 'meshtastic') {
-            const senderId = extractMeshtasticSenderId(d.raw);
+        if (rawU8 && rawU8.length >= 8 && loraPacketClass != null) {
+          if (loraPacketClass === 'meshtastic') {
+            const senderId = extractMeshtasticSenderId(rawU8);
             if (senderId !== null) {
               senderInfo = ` from=0x${senderId.toString(16)}`;
               // If we know this node (and it's not ourselves), update last_heard + SNR/RSSI
@@ -2375,7 +2376,7 @@ export function useMeshCore() {
                 });
               }
             }
-          } else if (packetClass === 'meshcore') {
+          } else if (loraPacketClass === 'meshcore') {
             senderInfo = ' [meshcore]';
           }
         }
@@ -2395,7 +2396,7 @@ export function useMeshCore() {
 
         // Raw packet log: always run MeshCore in-house parse on this path (LOG_RX is MeshCore RF only).
         // Do not gate on classifyPayload — Meshtastic-shaped heuristics can mis-label MeshCore frames.
-        if (d.raw instanceof Uint8Array && d.raw.length > 0) {
+        if (rawU8) {
           let routeTypeString: string | null = null;
           let payloadTypeString: string | null = null;
           let hopCount = 0;
@@ -2409,7 +2410,7 @@ export function useMeshCore() {
           let advertTimestampSec: number | null = null;
           let parseOk = false;
 
-          const parsed = parseMeshCoreRfPacket(d.raw);
+          const parsed = parseMeshCoreRfPacket(rawU8);
           if (parsed.ok) {
             parseOk = true;
             routeTypeString = parsed.routeTypeString;
@@ -2442,7 +2443,7 @@ export function useMeshCore() {
               }
             }
           } else {
-            const fb = meshcoreRawPacketLogFromBytesFallback(d.raw, pubKeyPrefixMapRef.current);
+            const fb = meshcoreRawPacketLogFromBytesFallback(rawU8, pubKeyPrefixMapRef.current);
             if (fb) {
               routeTypeString = fb.routeTypeString;
               payloadTypeString = fb.payloadTypeString;
@@ -2452,14 +2453,14 @@ export function useMeshCore() {
           }
 
           if (fromNodeId == null) {
-            const mtId = extractMeshtasticSenderId(d.raw);
+            const mtId = extractMeshtasticSenderId(rawU8);
             if (mtId != null) fromNodeId = mtId;
           }
           const rxEntry: RxPacketEntry = {
             ts: now,
             snr,
             rssi,
-            raw: d.raw,
+            raw: rawU8,
             routeTypeString,
             payloadTypeString,
             hopCount,
@@ -2485,17 +2486,17 @@ export function useMeshCore() {
         if (
           getStoredMeshProtocol() === 'meshcore' &&
           myNodeNumRef.current !== 0 &&
-          d.raw instanceof Uint8Array &&
-          d.raw.length > 0
+          rawU8 &&
+          loraPacketClass != null
         ) {
-          const packetClass = classifyPayload(d.raw);
-          if (packetClass !== 'meshcore') {
-            const senderId = packetClass === 'meshtastic' ? extractMeshtasticSenderId(d.raw) : null;
+          if (loraPacketClass !== 'meshcore') {
+            const senderId =
+              loraPacketClass === 'meshtastic' ? extractMeshtasticSenderId(rawU8) : null;
             useDiagnosticsStore
               .getState()
               .recordForeignLora(
                 myNodeNumRef.current,
-                packetClass,
+                loraPacketClass,
                 rssi || undefined,
                 snr || undefined,
                 senderId ?? undefined,
@@ -2515,8 +2516,8 @@ export function useMeshCore() {
             lastPacketLogAtRef.current = now;
             const origin = selfInfoRef.current?.name ?? 'mesh-client';
             let rawHex: string | undefined;
-            if (d.raw instanceof Uint8Array && d.raw.length > 0) {
-              rawHex = Array.from(d.raw, (b) => b.toString(16).padStart(2, '0')).join('');
+            if (rawU8) {
+              rawHex = Array.from(rawU8, (b) => b.toString(16).padStart(2, '0')).join('');
             }
             void window.electronAPI.mqtt
               .publishMeshcorePacketLog({

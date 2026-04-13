@@ -197,10 +197,8 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
     const records = get().records.get(nodeId);
     if (!records || records.length === 0) return null;
 
-    const fastestKnownTripMs = Math.min(
-      ...records.filter((r) => r.tripTimeMs > 0).map((r) => r.tripTimeMs),
-      0, // fallback so Math.min doesn't return Infinity
-    );
+    const positiveTripMs = records.filter((r) => r.tripTimeMs > 0).map((r) => r.tripTimeMs);
+    const fastestKnownTripMs = positiveTripMs.length > 0 ? Math.min(...positiveTripMs) : 0;
     const highestKnownWeight = Math.max(...records.map((r) => r.routeWeight), 0);
 
     let best: PathRecord | null = null;

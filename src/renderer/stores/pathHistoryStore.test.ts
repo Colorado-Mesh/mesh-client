@@ -259,6 +259,21 @@ describe('selectBestPath', () => {
     expect(sel!.pathHash).toBe(hashA);
   });
 
+  it('prefers lower trip time when reliability is tied', () => {
+    usePathHistoryStore.getState().recordPathUpdated(1, [0x01], 1, false);
+    usePathHistoryStore.getState().recordPathUpdated(1, [0x02], 1, false);
+    const hashFast = computePathHash([0x01]);
+    const hashSlow = computePathHash([0x02]);
+    for (let i = 0; i < 5; i++) {
+      usePathHistoryStore.getState().recordOutcome(1, hashFast, true, 50);
+    }
+    for (let i = 0; i < 5; i++) {
+      usePathHistoryStore.getState().recordOutcome(1, hashSlow, true, 200);
+    }
+    const sel = usePathHistoryStore.getState().selectBestPath(1);
+    expect(sel!.pathHash).toBe(hashFast);
+  });
+
   it('useFlood is true only for a flood path that has never succeeded', () => {
     usePathHistoryStore.getState().recordPathUpdated(1, [0x01], 1, true); // flood, no success
     const sel = usePathHistoryStore.getState().selectBestPath(1);

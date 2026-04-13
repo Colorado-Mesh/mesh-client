@@ -40,8 +40,8 @@ function MeshcoreExpandedDetails({ p }: { p: RxPacketEntry }) {
       )}
       {p.transportScopeCode != null && p.transportReturnCode != null && (
         <p>
-          <span className="text-muted">Transport:</span> scope={p.transportScopeCode} return=
-          {p.transportReturnCode}
+          <span className="text-muted">Transport:</span>{' '}
+          {`scope=${p.transportScopeCode} return=${p.transportReturnCode}`}
         </p>
       )}
       {p.advertTimestampSec != null && p.advertTimestampSec > 0 && (
