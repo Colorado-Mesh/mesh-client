@@ -129,10 +129,7 @@ export default function RawPacketLogPanel(props: Props) {
     onClear();
   }, [onClear]);
 
-  const emptyMessage =
-    variant === 'meshcore'
-      ? 'No RF packets received yet. Connect to a MeshCore device to capture packets.'
-      : 'No mesh packets received yet. Connect to a Meshtastic device to capture packets.';
+  const emptyMessage = 'No new mesh packets received yet. Please wait...';
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
