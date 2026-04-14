@@ -33,7 +33,6 @@ nav:
       - CI/CD: ci-cd.md
       - Release Process: release-process.md
   - MeshCore Roadmap:
-      - Deferred Epics: meshcore-deferred-epics.md
       - Feature Parity: meshcore-meshtastic-parity.md
       - MQTT Auth: letsmesh-mqtt-auth.md
   - Support:

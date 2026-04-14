@@ -51,7 +51,6 @@ For development setup and local build/test workflow, see:
   - [Accessibility Checklist](accessibility-checklist.md)
   - [Contributing](contributing.md)
 - **MeshCore Roadmap**
-  - [Deferred Epics](meshcore-deferred-epics.md)
   - [Feature Parity](meshcore-meshtastic-parity.md)
   - [MQTT Auth](letsmesh-mqtt-auth.md)
 - **Support**

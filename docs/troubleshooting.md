@@ -1,9 +1,5 @@
 # Troubleshooting
 
-### npm 11: `Unknown env config "devdir"`
-
-See [development-environment.md](development-environment.md#linux) for setup and troubleshooting details.
-
 ### `pnpm install` fails on native module compilation
 
 See [development-environment.md](development-environment.md) for OS-specific prerequisite installation and troubleshooting.

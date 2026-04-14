@@ -540,14 +540,6 @@ sudo sysctl -w kernel.unprivileged_userns_clone=1
 
 ### Troubleshooting
 
-#### npm 11: `Unknown env config "devdir"`
-
-```bash
-npm config delete devdir
-npm config delete devdir --global
-unset npm_config_devdir NPM_CONFIG_DEVDIR
-```
-
 #### SIGILL during `pnpm install` (`electron exited with signal SIGILL`)
 
 Install without running Electron rebuild first:
