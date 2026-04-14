@@ -64,7 +64,7 @@ Interim broker format until a binary/official MeshCore MQTT layout ships:
 }
 ```
 
-Subscribes under `{topicPrefix}/#`. Outbound optional publish uses `mqtt:publishMeshcore` → `{topicPrefix}/meshcore/chat` (JSON same shape). **LetsMesh public brokers** do not use that path for MQTT-only chat without a radio; optional `mqtt:publishMeshcorePacketLog` → `{topicPrefix}/meshcore/packets` for Analyzer (see [letsmesh-mqtt-auth.md](letsmesh-mqtt-auth.md) § Packet logger).
+Subscribes under `{topicPrefix}/#`. Outbound optional publish uses `mqtt:publishMeshcore` → `{topicPrefix}/meshcore/chat` (JSON same shape). **LetsMesh public brokers** do not use that path for MQTT-only chat without a radio; optional **Packet logger** (`mqtt:publishMeshcorePacketLog`) publishes RX packet summaries to `{topicPrefix}/meshcore/packets` using meshcoretomqtt-shaped JSON — implemented in [`MeshcoreMqttAdapter.publishPacketLog`](../src/main/meshcore-mqtt-adapter.ts) (see [letsmesh-mqtt-auth.md](letsmesh-mqtt-auth.md) § Packet logger). Debug logging is sampled to suppress repeated decode failures and noise (traceroute, empty-type JSON).
 
 ## Meshtastic MQTT network presets
 
@@ -89,6 +89,10 @@ In **MeshCore** mode only, [`ConnectionPanel.tsx`](../src/renderer/components/Co
 | Custom          | (user)                                                 | —    | No automatic changes — use for private brokers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 Topic prefix is set to `meshcore` for both public presets; users can still edit fields after choosing a preset.
+
+## Log filtering
+
+MQTT log messages are prefixed for easy filtering: **`[Meshtastic MQTT]`** in [`mqtt-manager.ts`](../src/main/mqtt-manager.ts) and **`[MeshCore MQTT]`** in [`meshcore-mqtt-adapter.ts`](../src/main/meshcore-mqtt-adapter.ts). The Log panel filter and analyzer patterns recognize these tags.
 
 ## Maintenance
 
