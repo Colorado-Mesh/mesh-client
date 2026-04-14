@@ -70,11 +70,11 @@ Subscribes under `{topicPrefix}/#`. Outbound optional publish uses `mqtt:publish
 
 In **Meshtastic** mode, [`ConnectionPanel.tsx`](../src/renderer/components/ConnectionPanel.tsx) shows **MQTT :1883**, **Liam's**, and **Custom** preset buttons. They populate `MQTTSettings` used by [`mqtt-manager.ts`](../src/main/mqtt-manager.ts).
 
-| Preset     | Broker host                      | Port | Notes                                                                                                                                                         |
-| ---------- | -------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| MQTT :1883 | `mqtt.meshtastic.org`            | 1883 | Plaintext; may be blocked on some networks                                                                                                                    |
-| Liam's     | `mqtt.meshtastic.liamcottle.net` | 1883 | **Uplink-only** (puts your node on Liam Cottle's map; no downlink). `uplink` / `uplink` credentials, no TLS. Useful when `mqtt.meshtastic.org` is unreachable |
-| Custom     | (user)                           | —    | No automatic changes — use for private brokers                                                                                                                |
+| Preset     | Broker host                      | Port | Notes                                                                                                                        |
+| ---------- | -------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------- |
+| MQTT :1883 | `mqtt.meshtastic.org`            | 1883 | Plaintext; may be blocked on some networks                                                                                   |
+| Liam's     | `mqtt.meshtastic.liamcottle.net` | 1883 | **Uplink-only** (puts your node on Liam Cottle's map; no downlink). No TLS. Useful when `mqtt.meshtastic.org` is unreachable |
+| Custom     | (user)                           | —    | No automatic changes — use for private brokers                                                                               |
 
 Topic prefix defaults to `msh/US/`; users can edit fields after choosing a preset. Defined in [`meshtasticMqttTlsMigration.ts`](../src/renderer/lib/meshtasticMqttTlsMigration.ts).
 
@@ -82,11 +82,11 @@ Topic prefix defaults to `msh/US/`; users can edit fields after choosing a prese
 
 In **MeshCore** mode only, [`ConnectionPanel.tsx`](../src/renderer/components/ConnectionPanel.tsx) shows **LetsMesh**, **Ripple Networks**, and **Custom** preset buttons. They populate the same `MQTTSettings` the main process uses for [`meshcore-mqtt-adapter.ts`](../src/main/meshcore-mqtt-adapter.ts) (with `mqttTransportProtocol: 'meshcore'`).
 
-| Preset          | Broker host                                            | Port | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| --------------- | ------------------------------------------------------ | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| LetsMesh        | `mqtt-us-v1.letsmesh.net` or `mqtt-eu-v1.letsmesh.net` | 443  | **WebSocket** (`useWebSocket` / `wss`). Auth matches [meshcore-mqtt-broker](https://github.com/michaelhart/meshcore-mqtt-broker): MQTT username `v1_<64-hex public key>` (uppercase); password is a token from `@michaelhart/meshcore-decoder` `createAuthToken` with `publicKey`, `iat`, `exp`, and JWT `aud` equal to the **regional broker hostname** (same as the Server field; aligns with common token tooling). Optional **Packet logger** publishes RX summaries to `meshcore/packets` under the topic prefix (meshcoretomqtt-shaped JSON). See [`docs/letsmesh-mqtt-auth.md`](letsmesh-mqtt-auth.md). Implemented in [`letsMeshJwt.ts`](../src/renderer/lib/letsMeshJwt.ts). Import MeshCore config JSON (Radio tab) so `public_key` and `private_key` are cached. |
-| Ripple Networks | `mqtt.ripplenetworks.com.au`                           | 8883 | TLS; preset fills default shared credentials and **insecure TLS** for self-signed / non–public CA chains                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Custom          | (user)                                                 | —    | No automatic changes — use for private brokers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Preset          | Broker host                                            | Port | Notes                                                                                                                                                                                                          |
+| --------------- | ------------------------------------------------------ | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LetsMesh        | `mqtt-us-v1.letsmesh.net` or `mqtt-eu-v1.letsmesh.net` | 443  | **WebSocket** (`wss`). JWT auth — see [Authentication](#meshcore-mqtt-authentication) below. Optional **Packet logger** publishes to `meshcore/packets`. See [`letsmesh-mqtt-auth.md`](letsmesh-mqtt-auth.md). |
+| Ripple Networks | `mqtt.ripplenetworks.com.au`                           | 8883 | TLS; preset fills default shared credentials and **insecure TLS** for self-signed / non–public CA chains                                                                                                       |
+| Custom          | (user)                                                 | —    | No automatic changes — use for private brokers                                                                                                                                                                 |
 
 Topic prefix is set to `meshcore` for both public presets; users can still edit fields after choosing a preset.
 
@@ -97,3 +97,26 @@ MQTT log messages are prefixed for easy filtering: **`[Meshtastic MQTT]`** in [`
 ## Maintenance
 
 When MeshCore firmware/SDK defines official MQTT topics and payloads, replace or extend [`MeshcoreMqttAdapter`](../src/main/meshcore-mqtt-adapter.ts) and update this document.
+
+## MeshCore MQTT Authentication
+
+### LetsMesh JWT authentication
+
+LetsMesh uses WebSocket (`wss`) with JWT authentication. The implementation matches [meshcore-mqtt-broker](https://github.com/michaelhart/meshcore-mqtt-broker):
+
+- **MQTT username**: `v1_<64-hex public key>` (uppercase hex)
+- **MQTT password**: A token from `@michaelhart/meshcore-decoder` `createAuthToken` with:
+  - `publicKey`: 64-character hex public key
+  - `iat`: Issued-at timestamp
+  - `exp`: Expiration timestamp
+  - JWT `aud` (audience): The **regional broker hostname** (same as the Server field)
+
+The JWT audience must match the regional broker hostname (`mqtt-us-v1.letsmesh.net` or `mqtt-eu-v1.letsmesh.net`).
+
+### Configuration
+
+Import a MeshCore config JSON file (Radio tab) so `public_key` and `private_key` are cached. The implementation is in [`letsMeshJwt.ts`](../src/renderer/lib/letsMeshJwt.ts).
+
+### Packet logger (optional)
+
+The optional **Packet logger** publishes RX packet summaries to `meshcore/packets` under the topic prefix using meshcoretomqtt-shaped JSON. See [`letsmesh-mqtt-auth.md`](letsmesh-mqtt-auth.md) for details.
