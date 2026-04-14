@@ -37,24 +37,27 @@ EOF
 
   # Features
   echo "### Features"
-  if git log "$last_tag"..HEAD --pretty=format:"* %s" | grep -qE "^\* feat"; then
-    git log "$last_tag"..HEAD --pretty=format:"* %s" | grep -E "^\* feat" | sed 's/^\* feat[^:]*: /* /'
+  feature_logs=$(git log "$last_tag"..HEAD --pretty=format:"* %s" 2> /dev/null || true)
+  if printf '%s\n' "$feature_logs" | grep -qE "^\* feat"; then
+    printf '%s\n' "$feature_logs" | grep -E "^\* feat" | sed 's/^\* feat[^:]*: /* /'
   else
     echo "*(No new features)*"
   fi
 
   echo ""
   echo "### Bug Fixes"
-  if git log "$last_tag"..HEAD --pretty=format:"* %s" | grep -qE "^\* fix"; then
-    git log "$last_tag"..HEAD --pretty=format:"* %s" | grep -E "^\* fix" | sed 's/^\* fix[^:]*: /* /'
+  fix_logs=$(git log "$last_tag"..HEAD --pretty=format:"* %s" 2> /dev/null || true)
+  if printf '%s\n' "$fix_logs" | grep -qE "^\* fix"; then
+    printf '%s\n' "$fix_logs" | grep -E "^\* fix" | sed 's/^\* fix[^:]*: /* /'
   else
     echo "*(No bug fixes)*"
   fi
 
   echo ""
   echo "### Other Changes"
-  if git log "$last_tag"..HEAD --pretty=format:"* %s" | grep -qE "^\* (chore|docs|refactor|test|style|perf|build|ci)"; then
-    git log "$last_tag"..HEAD --pretty=format:"* %s" \
+  other_logs=$(git log "$last_tag"..HEAD --pretty=format:"* %s" 2> /dev/null || true)
+  if printf '%s\n' "$other_logs" | grep -qE "^\* (chore|docs|refactor|test|style|perf|build|ci)"; then
+    printf '%s\n' "$other_logs" \
       | grep -E "^\* (chore|docs|refactor|test|style|perf|build|ci)" \
       | sed 's/^\* [^:]*: /* /'
   else
@@ -63,8 +66,9 @@ EOF
 
   echo ""
   echo "### Breaking Changes"
-  if git log "$last_tag"..HEAD --pretty=format:"* %s" | grep -qE "(BREAKING CHANGE|!)"; then
-    git log "$last_tag"..HEAD --pretty=format:"* %s" | grep -E "(BREAKING CHANGE|!)" | sed 's/^/* /'
+  breaking_logs=$(git log "$last_tag"..HEAD --pretty=format:"* %s" 2> /dev/null || true)
+  if printf '%s\n' "$breaking_logs" | grep -qE "(BREAKING CHANGE|!)"; then
+    printf '%s\n' "$breaking_logs" | grep -E "(BREAKING CHANGE|!)" | sed 's/^/* /'
   else
     echo "*(None)*"
   fi
@@ -97,15 +101,15 @@ detect_version_bump() {
     has_breaking=true
   fi
 
-  if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)!\s*:"; then
+  if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)![[:space:]]*:"; then
     has_breaking=true
   fi
 
-  if echo "$commits" | grep -qE "^feat\s*:"; then
+  if echo "$commits" | grep -qE "^feat[[:space:]]*:"; then
     has_feat=true
   fi
 
-  if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)\s*:"; then
+  if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)[[:space:]]*:"; then
     has_other=true
   fi
 

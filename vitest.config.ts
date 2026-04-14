@@ -4,10 +4,15 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const srcAlias = { '@': resolve(__dirname, 'src') };
 
 export default defineConfig({
-  plugins: [react()],
   test: {
+    // Test environment strategy:
+    // - Renderer/UI tests run in the "renderer" project with jsdom.
+    // - Main/shared logic tests run in the "main" project with node.
+    // - Use file-level `// @vitest-environment ...` only as an explicit override
+    //   when a specific test file must run in a non-default environment.
     globals: true,
     reporters: process.env.CI ? ['default', 'junit'] : ['default'],
     outputFile: {
@@ -24,7 +29,7 @@ export default defineConfig({
           include: ['src/renderer/**/*.test.{ts,tsx}'],
         },
         resolve: {
-          alias: { '@': resolve(__dirname, 'src') },
+          alias: srcAlias,
         },
       },
       {
@@ -35,12 +40,12 @@ export default defineConfig({
           include: ['src/main/**/*.test.ts', 'src/shared/**/*.test.ts'],
         },
         resolve: {
-          alias: { '@': resolve(__dirname, 'src') },
+          alias: srcAlias,
         },
       },
     ],
   },
   resolve: {
-    alias: { '@': resolve(__dirname, 'src') },
+    alias: srcAlias,
   },
 });
