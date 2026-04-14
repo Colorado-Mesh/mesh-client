@@ -67,6 +67,7 @@ export function decodeMeshCorePathPrefix(raw: Uint8Array): {
   }
 
   const pathLength = raw[pathLengthOffset] & 0x3f;
+  // Upper 2 bits encode hash-size code (0..3), mapping to hash sizes 1..4 bytes.
   const hashSizeCode = (raw[pathLengthOffset] >> 6) & 0x03;
   const hashSize = hashSizeCode + 1;
   const pathByteLength = pathLength * hashSize;
@@ -174,7 +175,7 @@ export function shouldClassifyRfPayloadAsMeshCoreFromPathDecode(raw: Uint8Array)
     route === ROUTE_TYPE_TRANSPORT_FLOOD || route === ROUTE_TYPE_TRANSPORT_DIRECT;
   if (hasTransportCodes) return true;
   if (decoded.hops > 0) return true;
-  if (nibble === 4) return true;
+  if (nibble === MESHCORE_PAYLOAD_TYPE_ADVERT_NIBBLE) return true;
   if (nibble === PAYLOAD_TYPE_PATH || nibble === PAYLOAD_TYPE_TRACE) return true;
   return false;
 }

@@ -64,7 +64,8 @@ export default tseslint.config(
           message: 'Avoid using child_process methods that execute shell commands directly.',
         },
         {
-          selector: "ObjectExpression > Property[key.name='shell'] > Literal[value=true]",
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.object.name='child_process'][callee.property.name=/^(spawn|spawnSync|execFile|execFileSync)$/] > ObjectExpression > Property[key.name='shell'] > Literal[value=true]",
           message: 'Avoid shell: true; use direct process execution with argument arrays instead.',
         },
       ],
