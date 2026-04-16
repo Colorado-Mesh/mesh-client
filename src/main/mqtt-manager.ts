@@ -1,5 +1,12 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
-import { Mesh, Mqtt as MqttProto, Portnums } from '@meshtastic/protobufs';
+import {
+  Mesh,
+  Mqtt,
+  Mqtt as MqttProto,
+  PaxCount,
+  Portnums,
+  Telemetry,
+} from '@meshtastic/protobufs';
 import { createCipheriv, createDecipheriv } from 'crypto';
 import { EventEmitter } from 'events';
 import * as mqtt from 'mqtt';
@@ -13,8 +20,14 @@ import { meshtasticShortNameAfterClearingDefault } from '../shared/nodeNameUtils
 import { sanitizeLogMessage } from './log-service';
 
 const { ServiceEnvelopeSchema } = MqttProto;
-const { UserSchema, PositionSchema, DataSchema, MeshPacketSchema } = Mesh;
+const { UserSchema, PositionSchema, DataSchema, MeshPacketSchema, RoutingSchema } = Mesh;
 const { PortNum } = Portnums;
+
+// Extended schema constants for additional portnum decoding
+const TelemetrySchema =
+  (Telemetry as unknown as { TelemetrySchema?: unknown }).TelemetrySchema ?? null;
+const PaxcountSchema = (PaxCount as unknown as { PaxcountSchema?: unknown }).PaxcountSchema ?? null;
+const MapReportSchema = (Mqtt as unknown as { MapReportSchema?: unknown }).MapReportSchema ?? null;
 
 // Default PSK for meshtastic: 0x01 followed by 15 zero bytes
 const DEFAULT_PSK = Buffer.from([
@@ -1087,6 +1100,112 @@ export class MQTTManager extends EventEmitter {
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
+        this.emitMinimalNodeUpdate(nodeId, hopsAway);
+      }
+    } else if (portnum === PortNum.TELEMETRY_APP && payload) {
+      try {
+        const telemetry = fromBinary(
+          TelemetrySchema as Parameters<typeof fromBinary>[0],
+          payload,
+        ) as {
+          variant?: {
+            deviceMetrics?: {
+              batteryLevel?: number;
+              voltage?: number;
+              channelUtilization?: number;
+              airUtilTx?: number;
+              uptimeSeconds?: number;
+            };
+          };
+        };
+        const device = telemetry.variant?.deviceMetrics;
+        if (device) {
+          this.emit('nodeUpdate', {
+            node_id: nodeId,
+            battery: device.batteryLevel,
+            voltage: device.voltage,
+            channel_utilization: device.channelUtilization,
+            air_util_tx: device.airUtilTx,
+            uptime_seconds: device.uptimeSeconds,
+            last_heard: Date.now(),
+            from_mqtt: true,
+          });
+        }
+      } catch (e) {
+        console.warn(
+          '[Meshtastic MQTT] Telemetry parse failed',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
+    } else if (portnum === PortNum.PAXCOUNTER_APP && payload) {
+      try {
+        const pax = fromBinary(PaxcountSchema as Parameters<typeof fromBinary>[0], payload) as {
+          wifi?: number;
+          ble?: number;
+        };
+        const wifiCount = typeof pax.wifi === 'number' ? pax.wifi : 0;
+        const bleCount = typeof pax.ble === 'number' ? pax.ble : 0;
+        this.emit('nodeUpdate', {
+          node_id: nodeId,
+          pax_count: wifiCount + bleCount,
+          last_heard: Date.now(),
+          from_mqtt: true,
+        });
+      } catch (e) {
+        console.warn(
+          '[Meshtastic MQTT] PaxCount parse failed',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
+    } else if (portnum === PortNum.DETECTION_SENSOR_APP && payload) {
+      const text = new TextDecoder().decode(payload);
+      this.emit('nodeUpdate', {
+        node_id: nodeId,
+        detection_text: text,
+        last_heard: Date.now(),
+        from_mqtt: true,
+      });
+    } else if (portnum === PortNum.MAP_REPORT_APP && payload) {
+      try {
+        const report = fromBinary(MapReportSchema as Parameters<typeof fromBinary>[0], payload) as {
+          longName?: string;
+          shortName?: string;
+          hwModel?: unknown;
+          role?: unknown;
+          latitudeI?: number;
+          longitudeI?: number;
+        };
+        this.emit('nodeUpdate', {
+          node_id: nodeId,
+          long_name: report.longName ?? undefined,
+          short_name: report.shortName ?? undefined,
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+          hw_model: report.hwModel != null ? String(report.hwModel) : undefined,
+          role: report.role,
+          latitude: report.latitudeI ? report.latitudeI / 1e7 : undefined,
+          longitude: report.longitudeI ? report.longitudeI / 1e7 : undefined,
+          last_heard: Date.now(),
+          from_mqtt: true,
+        });
+      } catch (e) {
+        console.warn(
+          '[Meshtastic MQTT] MapReport parse failed',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
+    } else if (portnum === PortNum.ROUTING_APP && payload) {
+      try {
+        const routing = fromBinary(RoutingSchema as Parameters<typeof fromBinary>[0], payload) as {
+          errorReason?: number;
+        };
+        if (routing.errorReason && routing.errorReason !== 0) {
+          console.debug(
+            `[Meshtastic MQTT] ROUTING error: nodeId=0x${nodeId.toString(16)} reason=${routing.errorReason}`,
+          );
+        }
+        this.emitMinimalNodeUpdate(nodeId, hopsAway);
+      } catch {
+        // catch-no-log-ok routing is optional info, failures are non-fatal
         this.emitMinimalNodeUpdate(nodeId, hopsAway);
       }
     } else {

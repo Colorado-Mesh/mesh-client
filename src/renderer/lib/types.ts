@@ -144,6 +144,10 @@ export interface MeshNode {
   env_wind_direction?: number;
   // Neighbor info from MQTT (session-only)
   neighbors?: MeshNeighbor[];
+  // PaxCounter from MQTT (combined wifi + ble count)
+  pax_count?: number;
+  // Detection sensor text alert from MQTT
+  detection_text?: string;
 }
 
 export interface MeshCoreLocalStats {
