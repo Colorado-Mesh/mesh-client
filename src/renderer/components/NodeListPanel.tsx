@@ -594,7 +594,7 @@ export default function NodeListPanel({
         </span>
       </div>
 
-      <div className="min-w-0 flex-1 overflow-auto rounded-lg border border-gray-700">
+      <div className="min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg border border-gray-700">
         <table
           style={{ minWidth: mode === 'meshcore' ? '1000px' : '1600px' }}
           className="text-sm whitespace-nowrap"

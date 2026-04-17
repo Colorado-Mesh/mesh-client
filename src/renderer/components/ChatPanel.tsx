@@ -742,7 +742,7 @@ function ChatPanel({
   );
 
   return (
-    <div className="flex h-full max-h-[calc(100vh-10rem)] flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Row 1 — Channel selector + Search toggle */}
       <div className={`mb-1 flex items-center gap-2 ${viewMode === 'dm' ? 'opacity-50' : ''}`}>
         <span className="text-muted mr-1 text-[10px] font-medium tracking-wider uppercase">
@@ -1395,7 +1395,7 @@ function ChatPanel({
       )}
 
       {/* Input area — textarea so Chromium applies spellcheck (single-line inputs often skip it) */}
-      <div className="mt-2 flex gap-2">
+      <div className="mt-1 flex gap-2">
         <textarea
           ref={inputRef}
           rows={1}

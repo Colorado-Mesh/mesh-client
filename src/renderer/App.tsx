@@ -1033,7 +1033,7 @@ export default function App() {
                 : 'border-gray-700'
             }`}
           >
-            <div className="flex min-w-0 flex-1 justify-center">
+            <div className="flex min-w-0 flex-1 justify-start">
               {/* Protocol context switcher — centered in the gap (narrow) or viewport (xl+ grid) */}
               <div
                 role="group"
@@ -1197,7 +1197,9 @@ export default function App() {
           <div
             role="main"
             ref={mainViewportRef}
-            className="flex-1 overflow-x-auto overflow-y-auto p-8 pt-4"
+            className={`flex-1 overflow-x-auto overflow-y-auto ${
+              activePanelIndex === 1 ? 'px-8 pt-4 pb-2' : 'p-8 pt-4'
+            }`}
           >
             <ErrorBoundary>
               <div

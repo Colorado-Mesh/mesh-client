@@ -758,7 +758,7 @@ export default function MapPanel({
   }, [nodesToRender, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
   return (
     <div
-      className="relative h-full min-h-[500px] overflow-hidden rounded-lg border border-gray-700"
+      className="relative h-full min-h-[500px] overflow-hidden rounded-lg border border-gray-700/50"
       aria-label="Network map showing node positions"
     >
       {/* Controls overlay — top right */}
