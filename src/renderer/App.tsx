@@ -366,6 +366,8 @@ export default function App() {
       : meshtasticDevice;
   const activeTabRef = useRef(activeTab);
   const protocolRef = useRef(protocol);
+  const lastMeshtasticTab = useRef(0);
+  const lastMeshcoreTab = useRef(0);
   const meshtasticMsgsRef = useRef(meshtasticDevice.messages);
   const meshcoreMsgsRef = useRef(meshcoreDevice.messages);
   const meshtasticMyNodeNumRef = useRef(meshtasticDevice.state.myNodeNum);
@@ -376,6 +378,8 @@ export default function App() {
   meshcoreMsgsRef.current = meshcoreDevice.messages;
   meshtasticMyNodeNumRef.current = meshtasticDevice.state.myNodeNum;
   meshcoreSelfIdRef.current = meshcoreDevice.selfNodeId;
+  lastMeshtasticTab.current = protocol === 'meshtastic' ? activeTab : lastMeshtasticTab.current;
+  lastMeshcoreTab.current = protocol === 'meshcore' ? activeTab : lastMeshcoreTab.current;
   const nodesForUi = protocol === 'meshcore' ? meshcoreDevice.nodes : meshtasticDevice.nodes;
   const rawPacketGetNodeLabel = useCallback(
     (id: number) => nodeLabelForRawPacket(nodesForUi.get(id), id, protocol),
@@ -430,9 +434,11 @@ export default function App() {
   // Reset activeTab if it's out of bounds (e.g., switching to meshcore while on Security tab)
   useEffect(() => {
     if (activeTab >= displayTabNames.length) {
-      setActiveTab(0);
+      const savedTab =
+        protocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
+      setActiveTab(savedTab < displayTabNames.length ? savedTab : 0);
     }
-  }, [activeTab, displayTabNames.length]);
+  }, [activeTab, displayTabNames.length, protocol]);
 
   // Reset scroll position when switching tabs
   useEffect(() => {
@@ -459,15 +465,26 @@ export default function App() {
   }, []);
 
   const handleProtocolChange = useCallback(
-    (p: MeshProtocol) => {
-      if (p === protocol) return;
-      // Keep diagnostics scoped to the active protocol.
+    (newProtocol: MeshProtocol) => {
+      if (newProtocol === protocol) return;
+
+      const savedTab =
+        newProtocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
+      const targetTab = savedTab < displayTabNames.length ? savedTab : 0;
+
+      if (newProtocol === 'meshtastic') {
+        lastMeshcoreTab.current = activeTab;
+        setActiveTab(targetTab);
+      } else {
+        lastMeshtasticTab.current = activeTab;
+        setActiveTab(targetTab);
+      }
+
       useDiagnosticsStore.getState().clearDiagnostics();
-      localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, p);
-      setProtocol(p);
-      // Dual-mode: both devices stay connected — no disconnect on switch.
+      localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, newProtocol);
+      setProtocol(newProtocol);
     },
-    [protocol],
+    [protocol, activeTab, displayTabNames.length],
   );
 
   const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);
