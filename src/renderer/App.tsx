@@ -1008,7 +1008,7 @@ export default function App() {
         protocol={protocol}
         onResult={handleFirmwareResult}
       />
-      <div className="flex h-screen w-screen overflow-hidden bg-slate-950">
+      <div className="flex h-screen w-screen min-w-0 overflow-hidden bg-slate-950">
         {/* Sidebar - collapsible width on left */}
         <div
           className={`flex h-full flex-col border-r border-slate-800 transition-[width] duration-300 ${
@@ -1026,7 +1026,7 @@ export default function App() {
         </div>
 
         {/* Content Wrapper - right side: flex column with header, viewport, footer */}
-        <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {/* Header */}
           <header
             className={`bg-deep-black relative flex w-full items-center gap-3 border-b px-4 py-2 ${
@@ -1201,9 +1201,7 @@ export default function App() {
           <div
             role="main"
             ref={mainViewportRef}
-            className={`min-h-0 w-full flex-1 overflow-x-auto overflow-y-auto ${
-              activePanelIndex === 1 ? 'px-8 pt-6 pb-2' : 'p-8 pt-6'
-            }`}
+            className="min-h-0 min-w-0 flex-1 overflow-auto px-8 pt-8 pb-8"
           >
             <ErrorBoundary>
               <div

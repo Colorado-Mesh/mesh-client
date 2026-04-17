@@ -303,4 +303,20 @@ describe('App accessibility', () => {
 
     expect(await screen.findByText('Q: 7/256')).toBeInTheDocument();
   });
+
+  it('keeps scrolling inside the main viewport container', () => {
+    render(<App />);
+
+    const mainViewport = screen.getByRole('main');
+    expect(mainViewport.className).toContain('min-w-0');
+    expect(mainViewport.className).toContain('overflow-auto');
+    expect(mainViewport.className).toContain('px-8');
+    expect(mainViewport.className).toContain('pt-8');
+    expect(mainViewport.className).toContain('pb-8');
+
+    const mainColumn = mainViewport.parentElement;
+    expect(mainColumn).not.toBeNull();
+    expect(mainColumn?.className).toContain('min-w-0');
+    expect(mainColumn?.className).toContain('overflow-hidden');
+  });
 });
