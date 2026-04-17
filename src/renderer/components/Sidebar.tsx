@@ -273,11 +273,29 @@ export default function Sidebar({
     <div className="bg-deep-black relative flex h-full w-full shrink-0 flex-col overflow-hidden">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-20 flex justify-center px-2 select-none"
+        className="pointer-events-none absolute inset-x-0 bottom-11 px-2 select-none"
       >
-        <span className="-rotate-6 text-base font-black tracking-[0.08em] whitespace-nowrap text-slate-300 opacity-[0.03]">
-          Colorado Mesh
-        </span>
+        <div
+          className={`cm-watermark ${collapsed ? 'cm-watermark-collapsed' : 'cm-watermark-expanded'}`}
+        >
+          <svg
+            className="cm-watermark-mark"
+            viewBox="0 0 20 14"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M1.8 11.1L6.15 6.15L8.85 9.05L12.55 4.7L17.9 11.1M6.95 11.1L10 7.2L13.05 11.1"
+              className="cm-watermark-mountain-outline"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className="cm-watermark-text" aria-hidden={collapsed}>
+            Colorado Mesh
+          </span>
+        </div>
       </div>
       {/* Nav items */}
       <div
