@@ -1571,7 +1571,7 @@ export default function ConnectionPanel({
           <div
             role="region"
             aria-labelledby="ble-device-picker-heading"
-            className="bg-deep-black w-full max-w-4xl overflow-hidden rounded-lg border border-gray-600"
+            className="bg-deep-black w-full overflow-hidden rounded-lg border border-gray-600"
           >
             <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-600 px-4 py-2.5">
               <span id="ble-device-picker-heading" className="text-sm font-medium text-gray-200">
@@ -1645,7 +1645,7 @@ export default function ConnectionPanel({
           <div
             role="region"
             aria-labelledby="serial-port-picker-heading"
-            className="bg-deep-black w-full max-w-4xl overflow-hidden rounded-lg border border-gray-600"
+            className="bg-deep-black w-full overflow-hidden rounded-lg border border-gray-600"
           >
             <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-600 px-4 py-2.5">
               <span id="serial-port-picker-heading" className="text-sm font-medium text-gray-200">
@@ -1694,14 +1694,14 @@ export default function ConnectionPanel({
 
         {/* Error in progress view */}
         {error && (
-          <div className="w-full max-w-4xl rounded-lg border border-red-700 bg-red-900/50 px-4 py-2 text-sm text-red-300">
+          <div className="w-full rounded-lg border border-red-700 bg-red-900/50 px-4 py-2 text-sm text-red-300">
             {error}
           </div>
         )}
 
         {/* Re-pair button for Linux BLE pairing issues */}
         {showRePairButton && (
-          <div className="flex w-full max-w-4xl flex-col gap-2">
+          <div className="flex w-full flex-col gap-2">
             <button
               type="button"
               onClick={handleRePair}
@@ -1714,7 +1714,7 @@ export default function ConnectionPanel({
 
         {/* PIN input prompt for Linux BLE pairing (connecting view) */}
         {showPinPrompt && (
-          <div className="w-full max-w-4xl rounded-lg border border-blue-700 bg-blue-900/50 px-4 py-3 text-blue-300">
+          <div className="w-full rounded-lg border border-blue-700 bg-blue-900/50 px-4 py-3 text-blue-300">
             <p className="mb-2 text-sm">Enter the PIN shown on your device:</p>
             {pinCountdown !== null && (
               <p
