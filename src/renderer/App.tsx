@@ -1000,198 +1000,202 @@ export default function App() {
         protocol={protocol}
         onResult={handleFirmwareResult}
       />
-      <div className="flex h-screen flex-col">
-        {/* Header */}
-        <header
-          className={`bg-deep-black relative flex flex-row items-center gap-2 border-b px-4 py-2 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:items-center xl:gap-0 ${
-            isConfigured
-              ? protocol === 'meshcore'
-                ? 'border-cyan-500/20'
-                : 'border-brand-green/20'
-              : 'border-gray-700'
-          }`}
-        >
-          <div className="flex min-w-0 items-center gap-3 xl:justify-self-start">
-            <h1 className="text-bright-green min-w-0 truncate text-lg font-bold tracking-wide">
-              Colorado Mesh
-            </h1>
-            <span className="text-muted shrink-0 text-xs">Mesh Client</span>
-          </div>
-
-          <div className="flex min-w-0 flex-1 justify-center xl:flex-none xl:justify-self-center">
-            {/* Protocol context switcher — centered in the gap (narrow) or viewport (xl+ grid) */}
-            <div
-              role="group"
-              aria-label="Protocol switcher"
-              className="flex shrink-0 items-center overflow-hidden rounded-full border border-gray-600 font-mono text-xs"
-            >
-              <button
-                type="button"
-                aria-pressed={protocol === 'meshtastic'}
-                aria-label="Switch to Meshtastic"
-                onClick={() => {
-                  handleProtocolChange('meshtastic');
-                }}
-                className={`px-3 py-0.5 transition-colors ${
-                  protocol === 'meshtastic'
-                    ? 'bg-brand-green/20 text-brand-green'
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-                }`}
-              >
-                (M) Meshtastic
-                {meshtasticUnread > 0 && protocol !== 'meshtastic' && (
-                  <span className="bg-brand-green/30 text-brand-green ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold">
-                    {meshtasticUnread > 99 ? '99+' : meshtasticUnread}
-                  </span>
-                )}
-              </button>
-              <div className="h-4 w-px bg-gray-600" aria-hidden="true" />
-              <button
-                type="button"
-                aria-pressed={protocol === 'meshcore'}
-                aria-label="Switch to MeshCore"
-                onClick={() => {
-                  handleProtocolChange('meshcore');
-                }}
-                className={`px-3 py-0.5 transition-colors ${
-                  protocol === 'meshcore'
-                    ? 'bg-cyan-600/20 text-cyan-400'
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-                }`}
-              >
-                (MC) MeshCore
-                {meshcoreUnread > 0 && protocol !== 'meshcore' && (
-                  <span className="ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-600/30 px-0.5 text-[10px] font-bold text-cyan-400">
-                    {meshcoreUnread > 99 ? '99+' : meshcoreUnread}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex min-w-0 shrink-0 items-center justify-end gap-2 xl:justify-self-end">
-            {capabilities.hasTakPanel && (
-              <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
-                <TakStatusIcon running={takStatus.running} />
-                <span
-                  aria-label={`TAK server ${takStatus.running ? 'running' : 'stopped'}`}
-                  className={`text-xs ${takStatus.running ? 'text-brand-green' : 'text-gray-400'}`}
-                >
-                  TAK {takStatus.running ? 'running' : 'stopped'}
-                </span>
-              </div>
-            )}
-            <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
-              <MqttGlobeIcon status={device.mqttStatus ?? 'disconnected'} />
-              <span
-                aria-label={`MQTT ${device.mqttStatus ?? 'disconnected'}`}
-                className={`text-xs ${
-                  device.mqttStatus === 'connected'
-                    ? 'text-brand-green'
-                    : device.mqttStatus === 'connecting'
-                      ? 'animate-pulse text-yellow-400'
-                      : device.mqttStatus === 'error'
-                        ? 'text-red-400'
-                        : 'text-gray-400'
-                }`}
-              >
-                MQTT {device.mqttStatus ?? 'disconnected'}
-              </span>
-            </div>
-            {isConnectedOrOperational && <LinkIcon className="h-4 w-4" aria-hidden="true" />}
-            <div
-              className={`h-2.5 w-2.5 rounded-full ${statusColor}`}
-              aria-hidden="true"
-              title={device.state.status}
-            />
-            <div role="status" aria-live="polite" aria-atomic="true">
-              <span
-                aria-label={`${device.state.status}${device.state.connectionType ? ` (${device.state.connectionType.toUpperCase()})` : ''}`}
-                className={`text-xs capitalize ${
-                  device.state.status === 'connecting'
-                    ? 'animate-pulse text-yellow-400'
-                    : device.state.status === 'stale'
-                      ? 'animate-pulse text-yellow-400'
-                      : device.state.status === 'reconnecting'
-                        ? 'animate-pulse text-orange-400'
-                        : 'text-muted'
-                }`}
-              >
-                {device.state.status}
-                {device.state.connectionType
-                  ? ` (${device.state.connectionType.toUpperCase()})`
-                  : ''}
-              </span>
-            </div>
-            {device.state.myNodeNum > 0 && (
-              <span
-                aria-label={`Node: ${device.getPickerStyleNodeLabel(device.state.myNodeNum)}`}
-                className="text-muted ml-2 text-xs whitespace-nowrap"
-              >
-                Node: {device.getPickerStyleNodeLabel(device.state.myNodeNum)}
-              </span>
-            )}
-            {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
-            {queueShowBadge && device.queueStatus && (
-              <HelpTooltip
-                text={protocol === 'meshcore' ? MESHCORE_QUEUE_TOOLTIP : MESHTASTIC_QUEUE_TOOLTIP}
-              >
-                <div
-                  aria-label={`Q: ${queueUsed}/${device.queueStatus.maxlen}`}
-                  className={`flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${queueColorClass}`}
-                >
-                  Q: {queueUsed}/{device.queueStatus.maxlen}
-                </div>
-              </HelpTooltip>
-            )}
-          </div>
-        </header>
-
-        {/* Connection Status Banner */}
-        <ConnectionBanner
-          status={device.state.status}
-          reconnectAttempt={device.state.reconnectAttempt}
-          onReconnect={handleReconnect}
+      <div className="flex h-screen w-screen flex-row overflow-hidden">
+        {/* Sidebar - fixed width on left */}
+        <Sidebar
+          tabs={displayTabNames}
+          active={activeTab}
+          onChange={setActiveTab}
+          chatUnread={protocol === 'meshtastic' ? meshtasticUnread : meshcoreUnread}
+          collapsed={sidebarCollapsed}
+          onToggle={handleSidebarToggle}
         />
 
-        {/* Telemetry disabled notice */}
-        {isOperational && device.telemetryEnabled === false && !telemetryNoticeDismissed && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="flex items-center justify-between gap-3 border-b border-gray-700 bg-gray-900 px-4 py-2 text-sm"
+        {/* Content Wrapper - right side: flex column with header, viewport, footer */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Header */}
+          <header
+            className={`bg-deep-black relative flex flex-row items-center gap-2 border-b px-4 py-2 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:items-center xl:gap-0 ${
+              isConfigured
+                ? protocol === 'meshcore'
+                  ? 'border-cyan-500/20'
+                  : 'border-brand-green/20'
+                : 'border-gray-700'
+            }`}
           >
-            <span className="text-gray-300">
-              Telemetry is disabled on this device. Enabling device metrics helps the mesh and this
-              app (diagnostics, battery, signal). Enable it in the Radio tab.
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setTelemetryNoticeDismissed(true);
-              }}
-              aria-label="Dismiss"
-              className="shrink-0 rounded border border-gray-600 px-2 py-1 text-xs font-medium text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-300"
+            <div className="flex min-w-0 items-center gap-3 xl:justify-self-start">
+              <h1 className="text-bright-green min-w-0 truncate text-lg font-bold tracking-wide">
+                Colorado Mesh
+              </h1>
+              <span className="text-muted shrink-0 text-xs">Mesh Client</span>
+            </div>
+
+            <div className="flex min-w-0 flex-1 justify-center xl:flex-none xl:justify-self-center">
+              {/* Protocol context switcher — centered in the gap (narrow) or viewport (xl+ grid) */}
+              <div
+                role="group"
+                aria-label="Protocol switcher"
+                className="flex shrink-0 items-center overflow-hidden rounded-full border border-gray-600 font-mono text-xs"
+              >
+                <button
+                  type="button"
+                  aria-pressed={protocol === 'meshtastic'}
+                  aria-label="Switch to Meshtastic"
+                  onClick={() => {
+                    handleProtocolChange('meshtastic');
+                  }}
+                  className={`px-3 py-0.5 transition-colors ${
+                    protocol === 'meshtastic'
+                      ? 'bg-brand-green/20 text-brand-green'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+                  }`}
+                >
+                  (M) Meshtastic
+                  {meshtasticUnread > 0 && protocol !== 'meshtastic' && (
+                    <span className="bg-brand-green/30 text-brand-green ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold">
+                      {meshtasticUnread > 99 ? '99+' : meshtasticUnread}
+                    </span>
+                  )}
+                </button>
+                <div className="h-4 w-px bg-gray-600" aria-hidden="true" />
+                <button
+                  type="button"
+                  aria-pressed={protocol === 'meshcore'}
+                  aria-label="Switch to MeshCore"
+                  onClick={() => {
+                    handleProtocolChange('meshcore');
+                  }}
+                  className={`px-3 py-0.5 transition-colors ${
+                    protocol === 'meshcore'
+                      ? 'bg-cyan-600/20 text-cyan-400'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+                  }`}
+                >
+                  (MC) MeshCore
+                  {meshcoreUnread > 0 && protocol !== 'meshcore' && (
+                    <span className="ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-600/30 px-0.5 text-[10px] font-bold text-cyan-400">
+                      {meshcoreUnread > 99 ? '99+' : meshcoreUnread}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex min-w-0 shrink-0 items-center justify-end gap-2 xl:justify-self-end">
+              {capabilities.hasTakPanel && (
+                <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
+                  <TakStatusIcon running={takStatus.running} />
+                  <span
+                    aria-label={`TAK server ${takStatus.running ? 'running' : 'stopped'}`}
+                    className={`text-xs ${takStatus.running ? 'text-brand-green' : 'text-gray-400'}`}
+                  >
+                    TAK {takStatus.running ? 'running' : 'stopped'}
+                  </span>
+                </div>
+              )}
+              <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
+                <MqttGlobeIcon status={device.mqttStatus ?? 'disconnected'} />
+                <span
+                  aria-label={`MQTT ${device.mqttStatus ?? 'disconnected'}`}
+                  className={`text-xs ${
+                    device.mqttStatus === 'connected'
+                      ? 'text-brand-green'
+                      : device.mqttStatus === 'connecting'
+                        ? 'animate-pulse text-yellow-400'
+                        : device.mqttStatus === 'error'
+                          ? 'text-red-400'
+                          : 'text-gray-400'
+                  }`}
+                >
+                  MQTT {device.mqttStatus ?? 'disconnected'}
+                </span>
+              </div>
+              {isConnectedOrOperational && <LinkIcon className="h-4 w-4" aria-hidden="true" />}
+              <div
+                className={`h-2.5 w-2.5 rounded-full ${statusColor}`}
+                aria-hidden="true"
+                title={device.state.status}
+              />
+              <div role="status" aria-live="polite" aria-atomic="true">
+                <span
+                  aria-label={`${device.state.status}${device.state.connectionType ? ` (${device.state.connectionType.toUpperCase()})` : ''}`}
+                  className={`text-xs capitalize ${
+                    device.state.status === 'connecting'
+                      ? 'animate-pulse text-yellow-400'
+                      : device.state.status === 'stale'
+                        ? 'animate-pulse text-yellow-400'
+                        : device.state.status === 'reconnecting'
+                          ? 'animate-pulse text-orange-400'
+                          : 'text-muted'
+                  }`}
+                >
+                  {device.state.status}
+                  {device.state.connectionType
+                    ? ` (${device.state.connectionType.toUpperCase()})`
+                    : ''}
+                </span>
+              </div>
+              {device.state.myNodeNum > 0 && (
+                <span
+                  aria-label={`Node: ${device.getPickerStyleNodeLabel(device.state.myNodeNum)}`}
+                  className="text-muted ml-2 text-xs whitespace-nowrap"
+                >
+                  Node: {device.getPickerStyleNodeLabel(device.state.myNodeNum)}
+                </span>
+              )}
+              {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
+              {queueShowBadge && device.queueStatus && (
+                <HelpTooltip
+                  text={protocol === 'meshcore' ? MESHCORE_QUEUE_TOOLTIP : MESHTASTIC_QUEUE_TOOLTIP}
+                >
+                  <div
+                    aria-label={`Q: ${queueUsed}/${device.queueStatus.maxlen}`}
+                    className={`flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${queueColorClass}`}
+                  >
+                    Q: {queueUsed}/{device.queueStatus.maxlen}
+                  </div>
+                </HelpTooltip>
+              )}
+            </div>
+          </header>
+
+          {/* Connection Status Banner */}
+          <ConnectionBanner
+            status={device.state.status}
+            reconnectAttempt={device.state.reconnectAttempt}
+            onReconnect={handleReconnect}
+          />
+
+          {/* Telemetry disabled notice */}
+          {isOperational && device.telemetryEnabled === false && !telemetryNoticeDismissed && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex items-center justify-between gap-3 border-b border-gray-700 bg-gray-900 px-4 py-2 text-sm"
             >
-              Dismiss
-            </button>
-          </div>
-        )}
+              <span className="text-gray-300">
+                Telemetry is disabled on this device. Enabling device metrics helps the mesh and
+                this app (diagnostics, battery, signal). Enable it in the Radio tab.
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setTelemetryNoticeDismissed(true);
+                }}
+                aria-label="Dismiss"
+                className="shrink-0 rounded border border-gray-600 px-2 py-1 text-xs font-medium text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-300"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-row">
-            {/* Sidebar */}
-            <Sidebar
-              tabs={displayTabNames}
-              active={activeTab}
-              onChange={setActiveTab}
-              chatUnread={protocol === 'meshtastic' ? meshtasticUnread : meshcoreUnread}
-              collapsed={sidebarCollapsed}
-              onToggle={handleSidebarToggle}
-            />
+          {/* Content Wrapper - right side: flex column with header, viewport, footer */}
+          <div className="flex min-w-0 flex-1 flex-col">
+            {/* Header, ConnectionBanner, TelemetryNotice already rendered above */}
 
-            {/* Content */}
-            <div role="main" className="min-h-0 flex-1 overflow-auto p-4">
+            {/* Main Viewport - scrollable panel area */}
+            <div role="main" className="flex-1 overflow-y-auto p-4">
               <ErrorBoundary>
                 <div
                   id="panel-0"
@@ -1755,8 +1759,8 @@ export default function App() {
               </ErrorBoundary>
             </div>
 
-            {/* Footer — same centering idea as header: 1fr | auto | 1fr so middle stays true center */}
-            <footer className="bg-deep-black text-muted grid shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-4 border-t border-gray-700 px-4 py-1.5 text-[11px]">
+            {/* Footer - fixed height at bottom of Content Wrapper */}
+            <footer className="bg-deep-black text-muted flex h-8 shrink-0 items-center justify-between border-t border-gray-700 px-4 text-[11px]">
               <span className="min-w-0">
                 A Project by{' '}
                 <a
