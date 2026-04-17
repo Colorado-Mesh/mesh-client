@@ -1246,7 +1246,7 @@ export default function App() {
           {/* Main Viewport - scrollable panel area */}
           <div role="main" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             {/* Scroll container - no padding so scrollbars pin to viewport edges */}
-            <div ref={mainViewportRef} className="h-full w-full overflow-auto">
+            <div ref={mainViewportRef} className="h-full w-full overflow-auto bg-slate-950">
               {/* Content wrapper - padding lives here, not on the scroll container */}
               <div className="px-8 pt-8 pb-8">
                 <ErrorBoundary>

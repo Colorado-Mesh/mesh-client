@@ -30,6 +30,9 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #4a5568;
 }
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
 
 /* Font smoothing */
 * {
