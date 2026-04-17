@@ -247,7 +247,7 @@ function ChatPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const [showScrollToLatest, setShowScrollToLatest] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -519,7 +519,7 @@ function ChatPanel({
     if (!el) return;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     setShowScrollButton(distFromBottom > 200);
-    setShowScrollToTop(el.scrollTop > 200);
+    setShowScrollToLatest(distFromBottom > 50);
     return distFromBottom;
   }, []);
 
@@ -576,6 +576,10 @@ function ChatPanel({
     } else {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
+  }, []);
+
+  const scrollToLatest = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   const scrollToQuotedParent = useCallback((replyKey: number) => {
@@ -1353,16 +1357,16 @@ function ChatPanel({
           </button>
         )}
 
-        {/* Top button — positioned inside message container to avoid input bar overlap */}
-        {showScrollToTop && (
+        {/* Latest button — keep visible until user reaches the bottom */}
+        {showScrollToLatest && (
           <button
             type="button"
-            onClick={scrollToTop}
-            className="bg-brand-green text-deep-black hover:bg-bright-green absolute right-4 bottom-20 z-20 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
-            title="Back to top"
-            aria-label="Back to top"
+            onClick={scrollToLatest}
+            className="bg-brand-green text-deep-black hover:bg-bright-green absolute right-8 bottom-24 z-20 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
+            title="Latest"
+            aria-label="Latest"
           >
-            ↑ Top
+            Latest
           </button>
         )}
       </div>

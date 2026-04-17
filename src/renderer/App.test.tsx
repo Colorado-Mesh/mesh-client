@@ -309,7 +309,8 @@ describe('App accessibility', () => {
 
     const mainViewport = screen.getByRole('main');
     expect(mainViewport.className).toContain('min-w-0');
-    expect(mainViewport.className).toContain('overflow-auto');
+    expect(mainViewport.className).toContain('overflow-x-auto');
+    expect(mainViewport.className).toContain('overflow-y-auto');
     expect(mainViewport.className).toContain('px-8');
     expect(mainViewport.className).toContain('pt-8');
     expect(mainViewport.className).toContain('pb-8');

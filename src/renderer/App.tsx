@@ -1247,7 +1247,7 @@ export default function App() {
           <div
             role="main"
             ref={mainViewportRef}
-            className="min-h-0 min-w-0 flex-1 overflow-auto px-8 pt-8 pb-8"
+            className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto px-8 pt-8 pb-8"
           >
             <ErrorBoundary>
               <div
