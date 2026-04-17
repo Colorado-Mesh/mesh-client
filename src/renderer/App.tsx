@@ -273,6 +273,8 @@ export default function App() {
   const isMeshtasticInitialRef = useRef(true);
   const isMeshcoreInitialRef = useRef(true);
   const mainViewportRef = useRef<HTMLDivElement>(null);
+  const activePanelIndexRef = useRef(0);
+  const scrollToTopChatRef = useRef<(() => void) | null>(null);
   const [showMainScrollTop, setShowMainScrollTop] = useState(false);
   const [updateState, setUpdateState] = useState<UpdateState>({ phase: 'idle' });
   const [firmwareCheckState, setFirmwareCheckState] = useState<FirmwareCheckResult>({
@@ -430,6 +432,7 @@ export default function App() {
   }, [protocol, capabilities]);
 
   const activePanelIndex = tabIndexToPanelIndex[activeTab] ?? 0;
+  activePanelIndexRef.current = activePanelIndex;
 
   // Reset activeTab if it's out of bounds (e.g., switching to meshcore while on Security tab)
   useEffect(() => {
@@ -451,7 +454,11 @@ export default function App() {
     const viewport = mainViewportRef.current;
     if (!viewport) return;
     const handleMainScroll = () => {
-      setShowMainScrollTop(viewport.scrollTop > 200);
+      if (activePanelIndexRef.current === 1) {
+        setShowMainScrollTop(false);
+      } else {
+        setShowMainScrollTop(viewport.scrollTop > 200);
+      }
     };
     handleMainScroll();
     viewport.addEventListener('scroll', handleMainScroll);
@@ -461,8 +468,12 @@ export default function App() {
   }, []);
 
   const scrollMainToTop = useCallback(() => {
-    mainViewportRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+    if (activePanelIndex === 1 && scrollToTopChatRef.current) {
+      scrollToTopChatRef.current();
+    } else {
+      mainViewportRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activePanelIndex]);
 
   const handleProtocolChange = useCallback(
     (newProtocol: MeshProtocol) => {
@@ -1341,6 +1352,7 @@ export default function App() {
                       isActive={activePanelIndex === 1}
                       onGlobalSearch={handleOpenGlobalSearch}
                       protocol={protocol}
+                      scrollToTopRef={scrollToTopChatRef}
                     />
                   </Suspense>
                 </div>
@@ -1806,11 +1818,11 @@ export default function App() {
             </ErrorBoundary>
           </div>
 
-          {showMainScrollTop && (
+          {showMainScrollTop && activePanelIndex !== 1 && (
             <button
               type="button"
               onClick={scrollMainToTop}
-              className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-6 bottom-14 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
+              className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-6 bottom-12 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
               title="Back to top"
               aria-label="Back to top"
             >

@@ -1,4 +1,13 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import {
   dismissedDmTabsStorageKey,
@@ -192,6 +201,8 @@ export interface ChatPanelProps {
   onGlobalSearch?: () => void;
   /** When `meshcore`, show full names, hide redundant RF-only transport badge. */
   protocol?: MeshProtocol;
+  /** Ref for scroll-to-top (Chat has its own Top button positioned inside the message list). */
+  scrollToTopRef?: React.RefObject<(() => void) | null>;
 }
 
 function ChatPanel({
@@ -211,7 +222,13 @@ function ChatPanel({
   isActive = true,
   onGlobalSearch,
   protocol = 'meshtastic',
+  scrollToTopRef,
 }: ChatPanelProps) {
+  const scrollToTop = useCallback(() => {
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  useImperativeHandle(scrollToTopRef, () => scrollToTop, [scrollToTop]);
   const [input, setInput] = useState('');
   const [channel, setChannel] = useState(() => (channels.length > 0 ? channels[0].index : 0));
   useEffect(() => {
@@ -230,6 +247,7 @@ function ChatPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -501,6 +519,7 @@ function ChatPanel({
     if (!el) return;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     setShowScrollButton(distFromBottom > 200);
+    setShowScrollToTop(el.scrollTop > 200);
     return distFromBottom;
   }, []);
 
@@ -1331,6 +1350,19 @@ function ChatPanel({
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
             </svg>
             Jump to Unread
+          </button>
+        )}
+
+        {/* Top button — positioned inside message container to avoid input bar overlap */}
+        {showScrollToTop && (
+          <button
+            type="button"
+            onClick={scrollToTop}
+            className="bg-brand-green text-deep-black hover:bg-bright-green absolute right-4 bottom-20 z-20 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
+            title="Back to top"
+            aria-label="Back to top"
+          >
+            ↑ Top
           </button>
         )}
       </div>
