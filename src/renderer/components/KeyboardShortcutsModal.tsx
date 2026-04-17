@@ -12,7 +12,7 @@ const DEFAULT_TAB_NAMES = [
   'TAK',
   'App',
   'Diagnostics',
-  'Distribution',
+  'Stats',
   'Sniffer',
 ];
 
@@ -166,9 +166,9 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
             </tbody>
           </table>
           <p className="text-muted mt-3 text-xs leading-relaxed">
-            Cmd/Ctrl+0, A, D, and S switch to the App, Diagnostics, Distribution, and Packet Sniffer
-            tabs by name when those tabs are visible (not by fixed slot, so shortcuts stay correct
-            when some tabs are hidden).
+            Cmd/Ctrl+0, A, D, and S switch to the App, Diagnostics, Stats, and Packet Sniffer tabs
+            by name when those tabs are visible (not by fixed slot, so shortcuts stay correct when
+            some tabs are hidden).
           </p>
         </div>
       </div>

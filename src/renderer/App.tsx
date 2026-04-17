@@ -117,7 +117,7 @@ const TAB_NAMES = [
   'TAK',
   'App',
   'Diagnostics',
-  'Distribution',
+  'Stats',
   'Sniffer',
 ];
 
@@ -816,7 +816,7 @@ export default function App() {
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
-        const targetIndex = displayTabNames.indexOf('Distribution');
+        const targetIndex = displayTabNames.indexOf('Stats');
         if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
