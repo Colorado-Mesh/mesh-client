@@ -496,19 +496,25 @@ function ChatPanel({
     setTriggerScrollToUnread((n) => n + 1);
   }, [viewKey]);
 
-  // Scroll tracking for scroll-to-bottom button + mark-as-read when at bottom
-  const handleScroll = useCallback(() => {
+  const updateScrollButtonVisibility = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     setShowScrollButton(distFromBottom > 200);
+    return distFromBottom;
+  }, []);
+
+  // Scroll tracking for scroll-to-bottom button + mark-as-read when at bottom
+  const handleScroll = useCallback(() => {
+    const distFromBottom = updateScrollButtonVisibility();
+    if (distFromBottom == null) return;
 
     if (distFromBottom < 50) {
       const now = Date.now();
       setPersistedLastRead((prev) => ({ ...prev, [viewKey]: now }));
       setUnreadDividerTimestamp(0); // hide divider once user has read to bottom
     }
-  }, [viewKey]);
+  }, [updateScrollButtonVisibility, viewKey]);
 
   // Auto-scroll on new messages (only if near bottom)
   useEffect(() => {
@@ -518,7 +524,10 @@ function ChatPanel({
     if (distFromBottom < 200) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [filteredMessages.length]);
+    requestAnimationFrame(() => {
+      updateScrollButtonVisibility();
+    });
+  }, [filteredMessages.length, updateScrollButtonVisibility]);
 
   // Fires after view switch (triggerScrollToUnread increments). useLayoutEffect
   // ensures DOM is committed before scrolling, preventing flash of wrong position.
@@ -530,7 +539,17 @@ function ChatPanel({
     } else {
       messagesEndRef.current?.scrollIntoView();
     }
-  }, [triggerScrollToUnread, isActive]);
+    requestAnimationFrame(() => {
+      updateScrollButtonVisibility();
+    });
+  }, [triggerScrollToUnread, isActive, updateScrollButtonVisibility]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    requestAnimationFrame(() => {
+      updateScrollButtonVisibility();
+    });
+  }, [isActive, viewKey, updateScrollButtonVisibility]);
 
   const scrollToUnreadOrBottom = useCallback(() => {
     if (unreadDividerRef.current) {

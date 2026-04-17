@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -318,5 +318,22 @@ describe('App accessibility', () => {
     expect(mainColumn).not.toBeNull();
     expect(mainColumn?.className).toContain('min-w-0');
     expect(mainColumn?.className).toContain('overflow-hidden');
+  });
+
+  it('shows global back-to-top control after main viewport scroll', () => {
+    render(<App />);
+
+    const mainViewport = screen.getByRole('main');
+    const scrollToSpy = vi.fn();
+    Object.defineProperty(mainViewport, 'scrollTo', { value: scrollToSpy, writable: true });
+    Object.defineProperty(mainViewport, 'scrollTop', { value: 260, writable: true });
+
+    fireEvent.scroll(mainViewport);
+
+    const backToTop = screen.getByRole('button', { name: 'Back to top' });
+    expect(backToTop).toBeInTheDocument();
+
+    fireEvent.click(backToTop);
+    expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });
 });

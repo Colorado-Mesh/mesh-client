@@ -175,23 +175,6 @@ export default function NodeListPanel({
       setSortAsc(false);
     }
   }, [mode, sortField]);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  useEffect(() => {
-    const main = document.querySelector('main');
-    if (!main) return;
-    const handler = () => {
-      setShowScrollTop(main.scrollTop > 200);
-    };
-    main.addEventListener('scroll', handler);
-    return () => {
-      main.removeEventListener('scroll', handler);
-    };
-  }, []);
-
-  const scrollToTop = () =>
-    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
-
   const handleRefreshContacts = async () => {
     if (!onRefreshContacts) return;
     setRefreshLoading(true);
@@ -1208,15 +1191,6 @@ export default function NodeListPanel({
           </tbody>
         </table>
       </div>
-      {showScrollTop && (
-        <button
-          onClick={scrollToTop}
-          className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-6 bottom-6 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
-          title="Back to top"
-        >
-          ↑ Top
-        </button>
-      )}
     </div>
   );
 }

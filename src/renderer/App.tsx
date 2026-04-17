@@ -273,6 +273,7 @@ export default function App() {
   const isMeshtasticInitialRef = useRef(true);
   const isMeshcoreInitialRef = useRef(true);
   const mainViewportRef = useRef<HTMLDivElement>(null);
+  const [showMainScrollTop, setShowMainScrollTop] = useState(false);
   const [updateState, setUpdateState] = useState<UpdateState>({ phase: 'idle' });
   const [firmwareCheckState, setFirmwareCheckState] = useState<FirmwareCheckResult>({
     phase: 'idle',
@@ -439,6 +440,23 @@ export default function App() {
       mainViewportRef.current.scrollTop = 0;
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const viewport = mainViewportRef.current;
+    if (!viewport) return;
+    const handleMainScroll = () => {
+      setShowMainScrollTop(viewport.scrollTop > 200);
+    };
+    handleMainScroll();
+    viewport.addEventListener('scroll', handleMainScroll);
+    return () => {
+      viewport.removeEventListener('scroll', handleMainScroll);
+    };
+  }, []);
+
+  const scrollMainToTop = useCallback(() => {
+    mainViewportRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const handleProtocolChange = useCallback(
     (p: MeshProtocol) => {
@@ -1770,6 +1788,18 @@ export default function App() {
               </div>
             </ErrorBoundary>
           </div>
+
+          {showMainScrollTop && (
+            <button
+              type="button"
+              onClick={scrollMainToTop}
+              className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-6 bottom-14 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
+              title="Back to top"
+              aria-label="Back to top"
+            >
+              ↑ Top
+            </button>
+          )}
 
           {/* Footer - fixed height at bottom of Content Wrapper */}
           <footer className="text-muted flex h-8 shrink-0 items-center justify-between border-t border-slate-800 bg-slate-900 px-4 text-[10px]">
