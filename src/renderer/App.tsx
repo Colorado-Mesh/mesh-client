@@ -1008,9 +1008,9 @@ export default function App() {
         protocol={protocol}
         onResult={handleFirmwareResult}
       />
-      <div className="flex h-screen w-screen flex-row overflow-hidden">
+      <div className="flex h-screen w-screen overflow-hidden bg-slate-950">
         {/* Sidebar - fixed width on left */}
-        <div className="w-48 shrink-0">
+        <div className="flex h-full w-48 flex-col border-r border-slate-800">
           <Sidebar
             tabs={displayTabNames}
             active={activeTab}
@@ -1025,7 +1025,7 @@ export default function App() {
         <div className="flex h-full min-w-0 flex-1 flex-col">
           {/* Header */}
           <header
-            className={`bg-deep-black relative flex flex-row items-center gap-2 border-b px-4 py-2 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:items-center xl:gap-0 ${
+            className={`bg-deep-black relative flex items-center gap-3 border-b px-4 py-2 ${
               isConfigured
                 ? protocol === 'meshcore'
                   ? 'border-cyan-500/20'
@@ -1033,14 +1033,7 @@ export default function App() {
                 : 'border-gray-700'
             }`}
           >
-            <div className="flex min-w-0 items-center gap-3 xl:justify-self-start">
-              <h1 className="text-bright-green min-w-0 truncate text-lg font-bold tracking-wide">
-                Colorado Mesh
-              </h1>
-              <span className="text-muted shrink-0 text-xs">Mesh Client</span>
-            </div>
-
-            <div className="flex min-w-0 flex-1 justify-center xl:flex-none xl:justify-self-center">
+            <div className="flex min-w-0 flex-1 justify-center">
               {/* Protocol context switcher — centered in the gap (narrow) or viewport (xl+ grid) */}
               <div
                 role="group"
@@ -1091,7 +1084,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex min-w-0 shrink-0 items-center justify-end gap-2 xl:justify-self-end">
+            <div className="ml-auto flex min-w-0 shrink-0 items-center justify-end gap-2">
               {capabilities.hasTakPanel && (
                 <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
                   <TakStatusIcon running={takStatus.running} />
@@ -1201,7 +1194,11 @@ export default function App() {
           )}
 
           {/* Main Viewport - scrollable panel area */}
-          <div role="main" ref={mainViewportRef} className="flex-1 overflow-y-auto p-8">
+          <div
+            role="main"
+            ref={mainViewportRef}
+            className="flex-1 overflow-x-auto overflow-y-auto p-8 pt-4"
+          >
             <ErrorBoundary>
               <div
                 id="panel-0"
@@ -1759,13 +1756,13 @@ export default function App() {
           </div>
 
           {/* Footer - fixed height at bottom of Content Wrapper */}
-          <footer className="bg-deep-black text-muted flex h-8 shrink-0 items-center justify-between border-t border-gray-700 px-4 text-[11px]">
+          <footer className="text-muted flex h-8 shrink-0 items-center justify-between border-t border-slate-800 bg-slate-900 px-4 text-[10px]">
             <span className="min-w-0">
               A Project by{' '}
               <a
                 href="https://coloradomesh.org/"
                 title="Colorado Mesh"
-                className="text-bright-green underline hover:opacity-80"
+                className="text-slate-400 underline decoration-slate-600/80 underline-offset-2 transition-colors hover:text-slate-300"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -1775,7 +1772,7 @@ export default function App() {
               <a
                 href="https://discord.com/invite/McChKR5NpS"
                 title="Colorado Mesh Discord"
-                className="text-bright-green underline hover:opacity-80"
+                className="text-slate-400 underline decoration-slate-600/80 underline-offset-2 transition-colors hover:text-slate-300"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -1785,7 +1782,7 @@ export default function App() {
               <a
                 href="https://github.com/Colorado-Mesh/mesh-client"
                 title="Colorado Mesh on GitHub"
-                className="text-bright-green underline hover:opacity-80"
+                className="text-slate-400 underline decoration-slate-600/80 underline-offset-2 transition-colors hover:text-slate-300"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -1801,14 +1798,14 @@ export default function App() {
               aria-label="Keyboard shortcuts (?)"
               aria-haspopup="dialog"
               title="Keyboard shortcuts (?)"
-              className="inline-flex shrink-0 items-center gap-1 justify-self-center rounded-full border border-gray-600 px-3 py-0.5 font-mono text-xs text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-300"
+              className="inline-flex shrink-0 items-center gap-1 justify-self-center rounded-full border border-slate-700 px-3 py-0.5 font-mono text-[10px] text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-300"
             >
               Shortcuts
               <span className="font-mono text-[10px] text-gray-400" aria-hidden="true">
                 ?
               </span>
             </button>
-            <span className="inline-flex flex-wrap items-center justify-end gap-2 justify-self-end text-right whitespace-nowrap tabular-nums">
+            <span className="inline-flex flex-wrap items-center justify-end gap-2 justify-self-end text-right font-mono text-[10px] whitespace-nowrap tabular-nums">
               <span>
                 {nodesForUi.size} {nodeCountLabel} | {device.messages.length} messages
               </span>

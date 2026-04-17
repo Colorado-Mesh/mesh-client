@@ -271,7 +271,7 @@ export default function Sidebar({
 
   return (
     <div
-      className={`bg-deep-black flex shrink-0 flex-col border-r border-gray-700 transition-[width] duration-300 ${
+      className={`bg-deep-black flex h-full shrink-0 flex-col transition-[width] duration-300 ${
         collapsed ? 'w-16' : 'w-48'
       }`}
     >
@@ -333,7 +333,7 @@ export default function Sidebar({
         onClick={onToggle}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         aria-expanded={!collapsed}
-        className="text-muted hover:bg-secondary-dark flex h-9 shrink-0 items-center justify-center border-t border-gray-700 transition-colors hover:text-gray-200"
+        className="text-muted hover:bg-secondary-dark flex h-9 shrink-0 items-center justify-center border-t border-slate-800 transition-colors hover:text-gray-200"
       >
         <svg
           aria-hidden="true"

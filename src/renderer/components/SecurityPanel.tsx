@@ -412,7 +412,7 @@ export default function SecurityPanel({
   const privateKeyB64 = securityConfig ? bytesToBase64(securityConfig.privateKey) : '';
 
   return (
-    <div className="h-full space-y-6 overflow-y-auto p-4">
+    <div className="w-full max-w-5xl space-y-6 p-4">
       {!isConnected && (
         <p className="text-muted py-4 text-center text-sm">
           Connect to a device to manage security settings.
