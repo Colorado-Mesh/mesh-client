@@ -1597,6 +1597,9 @@ export function useMeshCore() {
         if (mergedHwModel !== node.hw_model) {
           node.hw_model = mergedHwModel;
         }
+        if (node.hops_away === undefined && prevNode?.hops_away !== undefined) {
+          node.hops_away = prevNode.hops_away;
+        }
         nextNodes.set(node.node_id, node);
         pubKeyMapRef.current.set(node.node_id, contact.publicKey);
         const contactPathLen = contact.outPathLen ?? 0;
@@ -1671,8 +1674,15 @@ export function useMeshCore() {
               latitude: row.adv_lat ?? null,
               longitude: row.adv_lon ?? null,
               favorited: row.favorited === 1,
-              hops_away: row.hops_away ?? undefined,
+              hops_away: row.hops_away ?? prevSnap.get(row.node_id)?.hops_away,
             });
+          }
+        }
+        for (const row of dbContacts) {
+          const existing = nextNodes.get(row.node_id);
+          if (!existing) continue;
+          if (existing.hops_away === undefined && row.hops_away != null) {
+            nextNodes.set(row.node_id, { ...existing, hops_away: row.hops_away });
           }
         }
         for (const row of dbContacts) {
@@ -4120,6 +4130,7 @@ export function useMeshCore() {
             lastSnr: convertedLastSnr,
             tag: result.tag,
           });
+          meshcoreTraceResultsRef.current = next;
           return next;
         });
         void useDiagnosticsStore
@@ -4131,6 +4142,7 @@ export function useMeshCore() {
             convertedLastSnr,
             result.tag,
           );
+        const existingForRf = nodesRef.current.get(nodeId);
         setNodes((prev) => {
           const existing = prev.get(nodeId);
           if (!existing) return prev;
@@ -4138,6 +4150,20 @@ export function useMeshCore() {
           next.set(nodeId, { ...existing, hops_away: traceHops });
           return next;
         });
+        const lastSnrRf =
+          typeof convertedLastSnr === 'number' && Number.isFinite(convertedLastSnr)
+            ? convertedLastSnr
+            : (existingForRf?.snr ?? 0);
+        const lastRssiRf =
+          typeof existingForRf?.rssi === 'number' && Number.isFinite(existingForRf.rssi)
+            ? existingForRf.rssi
+            : 0;
+        const nowSecTrace = Math.floor(Date.now() / 1000);
+        void window.electronAPI.db
+          .updateMeshcoreContactLastRf(nodeId, lastSnrRf, lastRssiRf, traceHops, nowSecTrace)
+          .catch((e: unknown) => {
+            console.warn('[useMeshCore] updateMeshcoreContactLastRf (traceRoute) error', e);
+          });
         useRepeaterSignalStore.getState().recordSignal(nodeId, result.lastSnr);
         bumpMeshcoreNodeLastHeardFromRpc(nodeId);
         setMeshcorePingErrors((prev) => {
