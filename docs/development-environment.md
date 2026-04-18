@@ -9,7 +9,7 @@ These requirements apply to all platforms.
 ### 1) Required software
 
 - Git
-- Node.js **22.12.0+** (match [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml); `CONTRIBUTING.md` recommends the same)
+- Node.js **22.13.0+** (`package.json` `engines.node`; [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml) uses Node 22)
 - pnpm **10+**
 - Python 3 + `pip` (needed for MkDocs documentation build and yamllint)
 
@@ -323,7 +323,7 @@ These scripts try to install optional tooling automatically. If they fail (for e
    ```bash
    xcode-select --install
    ```
-2. Install Node 22 (22.12.0+ recommended via nvm) and npm:
+2. Install Node 22 (22.13.0+ recommended via nvm) and npm:
    ```bash
    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
    export NVM_DIR="$HOME/.nvm"
@@ -440,7 +440,7 @@ Fix:
 
 ### Install prerequisites
 
-Install Node 22 (22.12.0+ recommended), `make`, and C++ build tools (`g++`/`gcc-c++`) with native build dependencies.
+Install Node 22 (22.13.0+ recommended), `make`, and C++ build tools (`g++`/`gcc-c++`) with native build dependencies.
 
 Debian/Ubuntu:
 
