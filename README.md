@@ -336,7 +336,7 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 | Component  | Technology                                                                                                                         |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Desktop    | Electron                                                                                                                           |
-| UI         | React 19 + TypeScript                                                                                                              |
+| UI         | React 19 + TypeScript 6                                                                                                            |
 | Styling    | Tailwind CSS v4                                                                                                                    |
 | Meshtastic | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble (macOS/Windows) and Web Bluetooth (Linux) |
 | MeshCore   | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                |
