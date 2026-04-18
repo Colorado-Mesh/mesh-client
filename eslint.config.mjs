@@ -214,4 +214,12 @@ export default tseslint.config(
       'electron/default-value-changed': 'warn',
     },
   },
+  // Last: strictTypeChecked enables preserve-caught-error; ESLint may surface it under both names.
+  {
+    files: ['**/*.{ts,tsx,mts,cts}'],
+    rules: {
+      'preserve-caught-error': 'off',
+      '@typescript-eslint/preserve-caught-error': 'off',
+    },
+  },
 );

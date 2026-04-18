@@ -305,7 +305,7 @@ export class WebBluetoothManager {
       throw error;
     }
 
-    let service: BluetoothRemoteGATTService | null = null;
+    let service: BluetoothRemoteGATTService;
     try {
       service = await withGattTimeout(
         this.server.getPrimaryService(serviceUuid),

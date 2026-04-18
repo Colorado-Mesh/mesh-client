@@ -407,7 +407,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         console.debug('[MeshCore MQTT] first message received on topic', sanitizeLogMessage(topic));
       }
       const buf = payload instanceof Buffer ? payload : Buffer.from(payload);
-      let text = '';
+      let text: string;
       try {
         text = buf.toString('utf8');
       } catch {
