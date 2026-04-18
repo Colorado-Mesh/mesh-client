@@ -509,7 +509,41 @@ describe('ChatPanel accessibility', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Jump to Unread' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument();
     });
+  });
+
+  it('shows Latest (not Jump to Unread) when slightly scrolled from bottom', async () => {
+    const baseTs = Date.now() - 50_000;
+    const longMessages = Array.from({ length: 30 }, (_, idx) => ({
+      sender_id: idx % 2 === 0 ? 2 : 1,
+      sender_name: idx % 2 === 0 ? 'Alice' : 'Me',
+      payload: `message ${idx} `.repeat(20),
+      channel: 0,
+      timestamp: baseTs + idx * 1000,
+      status: 'acked' as const,
+    }));
+
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel {...defaultProps} isConnected myNodeNum={1} messages={longMessages} />
+      </ToastProvider>,
+    );
+
+    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
+    Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+    // distFromBottom = 120 → Latest on, Jump off (>200)
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      value: 1480,
+      writable: true,
+      configurable: true,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'Jump to Unread' })).not.toBeInTheDocument();
   });
 
   it('shows role="alert" when onSend rejects', async () => {
