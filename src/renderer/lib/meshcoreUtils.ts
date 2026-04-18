@@ -149,8 +149,10 @@ export function meshcoreContactTypeFromHwModel(hwModel: string): number | undefi
  * Map measured cell voltage to an approximate 0–100% for UI (e.g. node list bar).
  * Uses a simple 1S LiPo-style linear range (3.5 V empty → 4.2 V full); not accurate for all chemistries or loads.
  */
-export function meshcoreMilliVoltsToApproximateBatteryPercent(milliVolts: number): number {
-  if (!Number.isFinite(milliVolts) || milliVolts <= 0) return 0;
+export function meshcoreMilliVoltsToApproximateBatteryPercent(
+  milliVolts: number,
+): number | undefined {
+  if (!Number.isFinite(milliVolts) || milliVolts <= 0) return undefined;
   const v = milliVolts / 1000;
   const emptyV = 3.5;
   const fullV = 4.2;

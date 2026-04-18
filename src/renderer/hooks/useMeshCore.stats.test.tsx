@@ -154,7 +154,7 @@ describe('useMeshCore stats parsing', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
     getSelfInfoMock.mockResolvedValue({
@@ -259,7 +259,7 @@ describe('useMeshCore stats parsing', () => {
     });
 
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] fetchAndUpdateLocalStats radio/packet error:',
+      '[useMeshCore] getStatsRadio/getStatsPackets failed:',
       'radio stats timeout',
     );
   });

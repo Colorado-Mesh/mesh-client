@@ -140,10 +140,10 @@ describe('meshcoreMilliVoltsToApproximateBatteryPercent', () => {
     expect(meshcoreMilliVoltsToApproximateBatteryPercent(4300)).toBe(100);
   });
 
-  it('returns 0 for non-finite or non-positive input', () => {
-    expect(meshcoreMilliVoltsToApproximateBatteryPercent(NaN)).toBe(0);
-    expect(meshcoreMilliVoltsToApproximateBatteryPercent(0)).toBe(0);
-    expect(meshcoreMilliVoltsToApproximateBatteryPercent(-100)).toBe(0);
+  it('returns undefined for non-finite or non-positive input', () => {
+    expect(meshcoreMilliVoltsToApproximateBatteryPercent(NaN)).toBe(undefined);
+    expect(meshcoreMilliVoltsToApproximateBatteryPercent(0)).toBe(undefined);
+    expect(meshcoreMilliVoltsToApproximateBatteryPercent(-100)).toBe(undefined);
   });
 });
 

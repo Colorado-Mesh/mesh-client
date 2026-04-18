@@ -1141,7 +1141,10 @@ export function useMeshCore() {
     try {
       coreStats = await conn.getStatsCore();
     } catch (e: unknown) {
-      console.warn('[useMeshCore] fetchAndUpdateLocalStats getStatsCore error', e);
+      console.debug(
+        '[useMeshCore] getStatsCore failed - device may not support battery reporting',
+        e,
+      );
       return;
     }
 
@@ -1168,7 +1171,7 @@ export function useMeshCore() {
             : e == null
               ? 'no error details'
               : JSON.stringify(e);
-      console.warn('[useMeshCore] fetchAndUpdateLocalStats radio/packet error:', reason);
+      console.debug('[useMeshCore] getStatsRadio/getStatsPackets failed:', reason);
       return;
     }
 
@@ -1192,12 +1195,15 @@ export function useMeshCore() {
     prevStatsTimestampRef.current = now;
 
     setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts: core.batteryMilliVolts } : prev));
+    console.debug('[useMeshCore] batteryMilliVolts from getStatsCore:', core.batteryMilliVolts);
 
-    const batteryLevel = meshcoreMilliVoltsToApproximateBatteryPercent(core.batteryMilliVolts);
-    const voltage = core.batteryMilliVolts / 1000;
-    setTelemetry((prev) =>
-      [...prev, { timestamp: now, voltage, batteryLevel }].slice(-MAX_TELEMETRY_POINTS),
-    );
+    if (core.batteryMilliVolts > 0) {
+      const batteryLevel = meshcoreMilliVoltsToApproximateBatteryPercent(core.batteryMilliVolts);
+      const voltage = core.batteryMilliVolts / 1000;
+      setTelemetry((prev) =>
+        [...prev, { timestamp: now, voltage, batteryLevel }].slice(-MAX_TELEMETRY_POINTS),
+      );
+    }
 
     const localStats: MeshCoreLocalStats = {
       batteryMilliVolts: core.batteryMilliVolts,
@@ -1232,7 +1238,7 @@ export function useMeshCore() {
             long_name: fallbackName,
             short_name: '',
             hw_model: 'Unknown',
-            battery: meshcoreMilliVoltsToApproximateBatteryPercent(core.batteryMilliVolts),
+            battery: meshcoreMilliVoltsToApproximateBatteryPercent(core.batteryMilliVolts) ?? 0,
             snr: radio.lastSnr,
             rssi: radio.lastRssi,
             last_heard: Math.floor(now / 1000),
@@ -1432,7 +1438,7 @@ export function useMeshCore() {
     const mV = selfInfo?.batteryMilliVolts;
     if (myId <= 0 || mV == null || !Number.isFinite(mV)) return;
     const voltage = mV / 1000;
-    const battery = meshcoreMilliVoltsToApproximateBatteryPercent(mV);
+    const battery = meshcoreMilliVoltsToApproximateBatteryPercent(mV) ?? 0;
     setNodes((prev) => {
       const existing = prev.get(myId);
       if (!existing) return prev;
