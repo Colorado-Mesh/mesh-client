@@ -1354,7 +1354,7 @@ export default function App() {
               {/* Scroll container - no padding so scrollbars pin to viewport edges */}
               <div ref={mainViewportRef} className="h-full w-full overflow-auto bg-slate-950">
                 {/* Content wrapper - padding lives here, not on the scroll container */}
-                <div className="min-h-full min-w-0 px-8 pt-8 pb-8">
+                <div className="h-full min-h-full min-w-0 px-8 pt-8 pb-8">
                   <ErrorBoundary>
                     <div
                       id="panel-0"

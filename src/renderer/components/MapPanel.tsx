@@ -790,6 +790,7 @@ export default function MapPanel({
     }
     return counts;
   }, [nodesToRender, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
+
   return (
     <div
       className="relative h-full min-h-[500px] overflow-hidden rounded-lg border border-gray-700/50"
@@ -826,7 +827,7 @@ export default function MapPanel({
         </div>
       </div>
 
-      <MapContainer center={mapCenter} zoom={mapZoom} className="h-full w-full">
+      <MapContainer center={mapCenter} zoom={mapZoom} className="absolute inset-0">
         <DiagnosticPanes />
         <ViewportSaver hasAnyPositions={positions.length > 0 || !!ourPosition} />
         <MapFitter
