@@ -8,7 +8,7 @@ contributor guide lives in the repository at
 
 ## Local Setup
 
-- Use Node 22 (`22.12.0+` recommended).
+- Use Node 22 (`22.13.0+` recommended; see `package.json` `engines.node`).
 - Install dependencies: `pnpm install`
 - Start dev mode: `pnpm run dev`
 
