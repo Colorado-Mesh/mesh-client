@@ -424,6 +424,7 @@ export default function App() {
   }, [protocol, capabilities]);
 
   const activePanelIndex = tabIndexToPanelIndex[activeTab] ?? 0;
+  const prevPanelIndexForChatFreezeRef = useRef(activePanelIndex);
 
   useEffect(() => {
     activeTabRef.current = activeTab;
@@ -450,7 +451,8 @@ export default function App() {
     if (activeTab >= displayTabNames.length) {
       const savedTab =
         protocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
-      setActiveTab(savedTab < displayTabNames.length ? savedTab : 0);
+      const next = savedTab < displayTabNames.length ? savedTab : 0;
+      setActiveTab(next);
     }
   }, [activeTab, displayTabNames.length, protocol]);
 
@@ -581,24 +583,34 @@ export default function App() {
     nodes: typeof nodesForUi;
   } | null>(null);
 
+  // Chat tab freeze: run BEFORE protocol reset on the same commit so protocol clear wins when both fire.
   useEffect(() => {
-    queueMicrotask(() => {
-      setChatTabVisited(false);
-      setChatPanelFreeze(null);
-    });
-  }, [protocol]);
+    const was = prevPanelIndexForChatFreezeRef.current;
+    const now = activePanelIndex;
+    prevPanelIndexForChatFreezeRef.current = now;
 
-  useEffect(() => {
-    if (activePanelIndex !== 1) return;
-    queueMicrotask(() => {
+    if (now === 1) {
       setChatTabVisited(true);
+    }
+
+    if (was === 1 && now !== 1) {
       setChatPanelFreeze({
         messages: device.messages,
         channels: chatChannels,
         nodes: nodesForUi,
       });
-    });
-  }, [activePanelIndex, device.messages, chatChannels, nodesForUi, device]);
+    }
+    // Intentionally only activePanelIndex: snapshot is taken on tab transition, not on every
+    // messages/nodes identity change (that caused an infinite setState loop on Chat).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- freeze capture uses render snapshot at leave
+  }, [activePanelIndex]);
+
+  useEffect(() => {
+    setChatTabVisited(false);
+    setChatPanelFreeze(null);
+    prevPanelIndexForChatFreezeRef.current = activePanelIndex;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- protocol-only reset; capture current panel for ref sync
+  }, [protocol]);
 
   const isChatPanelFrozen = chatTabVisited && activePanelIndex !== 1;
   const freeze = chatPanelFreeze;
