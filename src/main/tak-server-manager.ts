@@ -18,6 +18,8 @@ interface ConnectedClient {
   buffer: string;
 }
 
+const NODE_CACHE_MAX_SIZE = 2000;
+
 export class TakServerManager extends EventEmitter {
   private server: tls.Server | null = null;
   private clients = new Map<string, ConnectedClient>();
@@ -105,10 +107,18 @@ export class TakServerManager extends EventEmitter {
     console.debug('[TakServer] Stopped');
   }
 
+  private pruneNodeCache(): void {
+    if (this.nodeCache.size <= NODE_CACHE_MAX_SIZE) return;
+    const sorted = [...this.nodeCache.entries()].sort((a, b) => a[1].last_heard - b[1].last_heard);
+    const toRemove = sorted.slice(0, this.nodeCache.size - NODE_CACHE_MAX_SIZE);
+    for (const [id] of toRemove) this.nodeCache.delete(id);
+  }
+
   onNodeUpdate(node: Partial<MeshNode> & { node_id: number }): void {
     const existing = this.nodeCache.get(node.node_id) ?? ({} as MeshNode);
     const merged = { ...existing, ...node } as MeshNode;
     this.nodeCache.set(node.node_id, merged);
+    this.pruneNodeCache();
 
     if (merged.latitude == null || merged.longitude == null) return;
     if (this.clients.size === 0) return;

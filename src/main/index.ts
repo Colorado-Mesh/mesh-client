@@ -3937,8 +3937,6 @@ ipcMain.handle('db:deleteAllMeshcorePathHistory', () => {
 // ─── MeshCore TCP bridge ───────────────────────────────────────────
 let meshcoreTcpSocket: net.Socket | null = null;
 
-const MAX_TCP_HOST_LENGTH = 253;
-
 ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
   return new Promise<void>((resolve, reject) => {
     let settled = false;
@@ -3947,8 +3945,11 @@ ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
       reject(new Error('Invalid port'));
       return;
     }
-    if (typeof host !== 'string' || host.length === 0 || host.length > MAX_TCP_HOST_LENGTH) {
-      reject(new Error('Invalid host'));
+    try {
+      validateHttpHost(host);
+    } catch (err) {
+      // catch-no-log-ok validation error forwarded to promise reject
+      reject(err instanceof Error ? err : new Error(String(err)));
       return;
     }
     if (meshcoreTcpSocket) {

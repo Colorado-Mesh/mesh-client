@@ -149,6 +149,50 @@ describe('session permission whitelist (source contract)', () => {
   });
 });
 
+// ─── meshcore:tcp-connect hostname validation ────────────────────────
+
+describe('meshcore:tcp-connect hostname validation (source contract)', () => {
+  it('calls validateHttpHost in the meshcore:tcp-connect handler', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
+    expect(handlerBody).toContain('validateHttpHost(');
+  });
+
+  it('does not use a bare length-only host check in meshcore:tcp-connect', () => {
+    // The old pattern was: typeof host !== 'string' || host.length === 0 || host.length > MAX_TCP_HOST_LENGTH
+    // It should now delegate entirely to validateHttpHost which applies VALID_HOSTNAME_RE
+    expect(INDEX_SOURCE).not.toContain('MAX_TCP_HOST_LENGTH');
+  });
+});
+
+// ─── tak:start settings validation ──────────────────────────────────
+
+describe('tak:start settings validation (source contract)', () => {
+  it('defines validateTakSettings before the tak:start handler', () => {
+    const validatorIdx = INDEX_SOURCE.indexOf('function validateTakSettings(');
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('tak:start'");
+    expect(validatorIdx).toBeGreaterThan(-1);
+    expect(handlerIdx).toBeGreaterThan(-1);
+    expect(validatorIdx).toBeLessThan(handlerIdx);
+  });
+
+  it('calls validateTakSettings in the tak:start handler', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('tak:start'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(handlerBody).toContain('validateTakSettings(');
+  });
+
+  it('validateTakSettings checks port range 1024-65535', () => {
+    const fnIdx = INDEX_SOURCE.indexOf('function validateTakSettings(');
+    expect(fnIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(fnIdx, fnIdx + 600);
+    expect(body).toContain('1024');
+    expect(body).toContain('65535');
+  });
+});
+
 // ─── Navigation / window-open security ──────────────────────────────
 
 describe('navigation security (source contract)', () => {
