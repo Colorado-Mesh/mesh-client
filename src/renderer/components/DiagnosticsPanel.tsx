@@ -19,7 +19,7 @@ import type { OurPosition } from '../lib/gpsSource';
 import { startNetworkDiscovery } from '../lib/networkDiscovery';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
-import type { DiagnosticRow, MeshNode } from '../lib/types';
+import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
@@ -45,6 +45,8 @@ interface Props {
   onNodeClick?: (node: MeshNode) => void;
   /** Protocol capabilities — controls which sections are shown (MQTT controls hidden for MeshCore). */
   capabilities?: ProtocolCapabilities;
+  /** Active radio protocol — auto-traceroute preference is stored per protocol. */
+  protocol: MeshProtocol;
 }
 
 function AlertTriangleIcon({ className }: { className?: string }) {
@@ -102,6 +104,7 @@ export default function DiagnosticsPanel({
   ourPosition,
   onNodeClick,
   capabilities,
+  protocol,
 }: Props) {
   const showMqttControls = capabilities?.hasMqttHybrid !== false;
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
@@ -118,6 +121,13 @@ export default function DiagnosticsPanel({
   const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
   const setCongestionHalosEnabled = useDiagnosticsStore((s) => s.setCongestionHalosEnabled);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
+  const autoTracerouteEnabledMeshtastic = useDiagnosticsStore(
+    (s) => s.autoTracerouteEnabledMeshtastic,
+  );
+  const autoTracerouteEnabledMeshcore = useDiagnosticsStore((s) => s.autoTracerouteEnabledMeshcore);
+  const setAutoTracerouteEnabled = useDiagnosticsStore((s) => s.setAutoTracerouteEnabled);
+  const autoTracerouteEnabled =
+    protocol === 'meshcore' ? autoTracerouteEnabledMeshcore : autoTracerouteEnabledMeshtastic;
   const setAnomalyHalosEnabled = useDiagnosticsStore((s) => s.setAnomalyHalosEnabled);
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
   const setIgnoreMqttEnabled = useDiagnosticsStore((s) => s.setIgnoreMqttEnabled);
@@ -156,29 +166,41 @@ export default function DiagnosticsPanel({
     };
   }, []);
 
-  const [autoTraceroute, setAutoTraceroute] = useState(false);
   const [lastDiscoveryTs, setLastDiscoveryTs] = useState<number | null>(null);
   const stopDiscoveryRef = useRef<(() => void) | null>(null);
+  /** Avoid restarting discovery on every `nodes` Map identity change (telemetry updates). */
+  const nodesRef = useRef(nodes);
+  const myNodeNumRef = useRef(myNodeNum);
+  const onTraceRouteRef = useRef(onTraceRoute);
+  nodesRef.current = nodes;
+  myNodeNumRef.current = myNodeNum;
+  onTraceRouteRef.current = onTraceRoute;
 
   useEffect(() => {
-    if (!autoTraceroute || !onTraceRoute || !isConnected) {
+    if (!autoTracerouteEnabled || !isConnected) {
+      stopDiscoveryRef.current?.();
+      stopDiscoveryRef.current = null;
+      return;
+    }
+    const trace = onTraceRouteRef.current;
+    if (!trace) {
       stopDiscoveryRef.current?.();
       stopDiscoveryRef.current = null;
       return;
     }
     const stop = startNetworkDiscovery(
       async (nodeId) => {
-        await onTraceRoute(nodeId);
+        await trace(nodeId);
         setLastDiscoveryTs(Date.now());
       },
-      () => [...nodes.keys()].filter((id) => id !== myNodeNum),
+      () => [...nodesRef.current.keys()].filter((id) => id !== myNodeNumRef.current),
     );
     stopDiscoveryRef.current = stop;
     return () => {
       stop();
       stopDiscoveryRef.current = null;
     };
-  }, [autoTraceroute, onTraceRoute, isConnected, nodes, myNodeNum]);
+  }, [autoTracerouteEnabled, isConnected]);
 
   /**
    * Match Node List Ch.Util / Air Tx columns: count nodes where at least one is non-null
@@ -850,9 +872,9 @@ export default function DiagnosticsPanel({
             <input
               type="checkbox"
               id="autoTraceroute"
-              checked={autoTraceroute}
+              checked={autoTracerouteEnabled}
               onChange={(e) => {
-                setAutoTraceroute(e.target.checked);
+                setAutoTracerouteEnabled(protocol, e.target.checked);
               }}
               className="accent-brand-green"
             />

@@ -41,6 +41,8 @@ describe('store shape contracts', () => {
       expect(data).toMatchInlineSnapshot(`
         [
           "anomalyHalosEnabled",
+          "autoTracerouteEnabledMeshcore",
+          "autoTracerouteEnabledMeshtastic",
           "congestionHalosEnabled",
           "cuHistory",
           "diagnosticRows",
@@ -80,6 +82,7 @@ describe('store shape contracts', () => {
           "saveMeshcoreHopHistory",
           "saveMeshcoreTraceHistory",
           "setAnomalyHalosEnabled",
+          "setAutoTracerouteEnabled",
           "setCongestionHalosEnabled",
           "setDiagnosticRowsMaxAgeHours",
           "setEnvMode",

@@ -1882,6 +1882,7 @@ export default function App() {
                                 setSelectedNodeId(node.node_id);
                               }}
                               capabilities={capabilities}
+                              protocol={protocol}
                             />
                           </Suspense>
                         </ErrorBoundary>

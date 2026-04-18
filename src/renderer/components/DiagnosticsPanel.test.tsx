@@ -28,6 +28,9 @@ vi.mock('../stores/diagnosticsStore', () => ({
       getCuStats24h: diagnosticsStoreState.getCuStats24h,
       anomalyHalosEnabled: false,
       congestionHalosEnabled: false,
+      autoTracerouteEnabledMeshtastic: false,
+      autoTracerouteEnabledMeshcore: false,
+      setAutoTracerouteEnabled: vi.fn(),
       envMode: 'standard',
       ignoreMqttEnabled: false,
       mqttIgnoredNodes: new Set<number>(),
@@ -71,6 +74,7 @@ describe('DiagnosticsPanel accessibility', () => {
         isConnected={false}
         traceRouteResults={new Map()}
         getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="meshtastic"
       />,
     );
     const results = await axe(container);
@@ -106,6 +110,7 @@ describe('DiagnosticsPanel node click', () => {
         traceRouteResults={new Map()}
         getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
         onNodeClick={onNodeClick}
+        protocol="meshtastic"
       />,
     );
 
@@ -142,6 +147,7 @@ describe('DiagnosticsPanel node click', () => {
         traceRouteResults={new Map()}
         getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
         onNodeClick={onNodeClick}
+        protocol="meshtastic"
       />,
     );
 
@@ -174,6 +180,7 @@ describe('DiagnosticsPanel node click', () => {
         traceRouteResults={new Map()}
         getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
         onNodeClick={onNodeClick}
+        protocol="meshtastic"
       />,
     );
 

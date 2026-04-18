@@ -1,12 +1,7 @@
-import { create, toBinary } from '@bufbuild/protobuf';
+import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/protobufs';
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-type ChannelType = Parameters<MeshDevice['setChannel']>[0];
-type PositionType = Parameters<MeshDevice['setPosition']>[0];
-type UserType = Parameters<MeshDevice['setOwner']>[0];
-type WaypointType = Parameters<MeshDevice['sendWaypoint']>[0];
 
 import {
   meshtasticShortNameAfterClearingDefault,
@@ -24,6 +19,10 @@ import { containsMeshCorePattern, extractRssiSnr } from '../lib/foreignLoraDetec
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
+import {
+  mergeMeshtasticTraceRouteIntoResultsMap,
+  meshtasticTraceRouteLookupKeys,
+} from '../lib/meshtasticTraceRouteLookupKeys';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import {
@@ -51,6 +50,11 @@ import type {
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
+type ChannelType = Parameters<MeshDevice['setChannel']>[0];
+type PositionType = Parameters<MeshDevice['setPosition']>[0];
+type UserType = Parameters<MeshDevice['setOwner']>[0];
+type WaypointType = Parameters<MeshDevice['sendWaypoint']>[0];
+
 function getMessageLoadLimit(): number {
   const s = parseStoredJson<{
     messageLimitEnabled?: boolean;
@@ -65,6 +69,11 @@ const MAX_TELEMETRY_POINTS = 50;
 const POLL_INTERVAL_MS = 30_000; // 30 seconds (BLE/serial)
 const HTTP_POLL_INTERVAL_MS = 60_000; // 60 seconds for WiFi — less contention with user sends
 const BROADCAST_ADDR = 0xffffffff;
+
+/** Portnums.TRACEROUTE_APP — use Number() so protobuf enums compare reliably */
+function isMeshtasticTraceroutePortnum(portnum: unknown): boolean {
+  return Number(portnum) === Portnums.PortNum.TRACEROUTE_APP;
+}
 
 // ─── Connection watchdog thresholds (per transport) ────────────────
 const BLE_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
@@ -202,6 +211,7 @@ export function useDevice() {
   const [traceRouteResults, setTraceRouteResults] = useState<
     Map<number, { route: number[]; from: number; timestamp: number }>
   >(new Map());
+  const pendingTraceRequestsRef = useRef<Map<number, number>>(new Map());
   const [channels, setChannels] = useState<{ index: number; name: string }[]>([
     { index: 0, name: 'Primary' },
   ]);
@@ -817,10 +827,23 @@ export function useDevice() {
       void window.electronAPI.db.saveMessage(mqttWithPreviews);
     });
 
+    const unsubTraceRouteMqtt = window.electronAPI.mqtt.onTraceRouteReply((payload) => {
+      if (payload.protocol !== 'meshtastic') return;
+      if (getStoredMeshProtocol() !== 'meshtastic') return;
+      const rd = {
+        route: payload.route as readonly number[],
+        routeBack: payload.routeBack as readonly number[],
+      };
+      setTraceRouteResults((prev) =>
+        mergeMeshtasticTraceRouteIntoResultsMap(prev, payload.meshFrom, rd, undefined),
+      );
+    });
+
     return () => {
       unsubStatus();
       unsubNode();
       unsubMsg();
+      unsubTraceRouteMqtt();
       if (mqttPresenceInitTimerRef.current) {
         clearTimeout(mqttPresenceInitTimerRef.current);
         mqttPresenceInitTimerRef.current = null;
@@ -1607,7 +1630,6 @@ export function useDevice() {
           hopStart?: number;
           viaMqtt?: boolean;
         };
-
         if (getStoredMeshProtocol() === 'meshtastic' && mp.from) {
           try {
             const raw = toBinary(Mesh.MeshPacketSchema, packet as never);
@@ -1739,19 +1761,56 @@ export function useDevice() {
       });
       unsubscribesRef.current.push(unsubConfig);
 
-      // ─── Trace route responses ──────────────────────────────────
-      const unsubTrace = device.events.onTraceRoutePacket.subscribe((packet) => {
-        setTraceRouteResults((prev) => {
-          const updated = new Map(prev);
-          updated.set(packet.from, {
-            route: (packet.data as { route: number[] }).route ?? [],
-            from: packet.from,
-            timestamp: Date.now(),
-          });
-          return updated;
+      // ─── Trace route responses: onMeshPacket reads Data.dest; onTraceRoutePacket fallback (@meshtastic/core)
+      const applyMeshtasticTracerouteReply = (
+        meshFrom: number,
+        rd: { route: readonly number[]; routeBack: readonly number[] },
+        dataLayerDest: number | undefined,
+      ) => {
+        const lookupKeys = meshtasticTraceRouteLookupKeys({
+          from: meshFrom,
+          data: { route: rd.route, routeBack: rd.routeBack },
+          dataLayerDest,
         });
+        for (const key of lookupKeys) {
+          pendingTraceRequestsRef.current.delete(key);
+        }
+        const cutoff = Date.now() - 2 * 60_000;
+        for (const [target, startedAt] of pendingTraceRequestsRef.current) {
+          if (startedAt < cutoff) pendingTraceRequestsRef.current.delete(target);
+        }
+        setTraceRouteResults((prev) =>
+          mergeMeshtasticTraceRouteIntoResultsMap(prev, meshFrom, rd, dataLayerDest),
+        );
+      };
+
+      const unsubTraceMesh = device.events.onMeshPacket.subscribe((meshPacket) => {
+        if (meshPacket.payloadVariant.case !== 'decoded') return;
+        const dataPacket = meshPacket.payloadVariant.value;
+        if (!isMeshtasticTraceroutePortnum(dataPacket.portnum)) return;
+        try {
+          const rd = fromBinary(Mesh.RouteDiscoverySchema, dataPacket.payload) as unknown as {
+            route: readonly number[];
+            routeBack: readonly number[];
+          };
+          const rawDest = (dataPacket as { dest?: number }).dest;
+          const dataLayerDest =
+            typeof rawDest === 'number' && Number.isFinite(rawDest) ? rawDest : undefined;
+          applyMeshtasticTracerouteReply(meshPacket.from, rd, dataLayerDest);
+        } catch {
+          // catch-no-log-ok RouteDiscovery decode failed (non-traceroute payload on port)
+        }
       });
-      unsubscribesRef.current.push(unsubTrace);
+      unsubscribesRef.current.push(unsubTraceMesh);
+
+      const unsubTraceLegacy = device.events.onTraceRoutePacket.subscribe((packet) => {
+        const rd = packet.data as unknown as {
+          route: readonly number[];
+          routeBack: readonly number[];
+        };
+        applyMeshtasticTracerouteReply(packet.from, rd, undefined);
+      });
+      unsubscribesRef.current.push(unsubTraceLegacy);
 
       // ─── Queue status ──────────────────────────────────────────
       const unsubQueue = device.events.onQueueStatus.subscribe((qs) => {
@@ -2653,6 +2712,7 @@ export function useDevice() {
 
   const traceRoute = useCallback(async (nodeNum: number) => {
     if (!deviceRef.current) return;
+    pendingTraceRequestsRef.current.set(nodeNum, Date.now());
     await deviceRef.current.traceRoute(nodeNum);
   }, []);
 

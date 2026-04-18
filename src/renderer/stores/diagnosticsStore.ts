@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
+import { getAppSettingsRaw, mergeAppSetting, setAppSettingsRaw } from '../lib/appSettingsStorage';
 import {
   DEFAULT_RF_DIAGNOSTIC_MAX_AGE_MS,
   DEFAULT_ROUTING_DIAGNOSTIC_MAX_AGE_MS,
@@ -29,6 +29,7 @@ import type {
   DiagnosticRow,
   HopHistoryPoint,
   MeshNode,
+  MeshProtocol,
   NodeAnomaly,
   RfDiagnosticRow,
 } from '../lib/types';
@@ -285,6 +286,9 @@ interface DiagnosticsState {
   nodeRedundancy: Map<number, NodeRedundancy>;
   congestionHalosEnabled: boolean;
   anomalyHalosEnabled: boolean;
+  /** Persisted per protocol: survives Diagnostics tab unmount (panel is not kept mounted when hidden). */
+  autoTracerouteEnabledMeshtastic: boolean;
+  autoTracerouteEnabledMeshcore: boolean;
   ignoreMqttEnabled: boolean;
   mqttIgnoredNodes: Set<number>;
   ourPositionSource: GpsSource | null;
@@ -333,6 +337,7 @@ interface DiagnosticsState {
   ): void;
   setCongestionHalosEnabled(enabled: boolean): void;
   setAnomalyHalosEnabled(enabled: boolean): void;
+  setAutoTracerouteEnabled(protocol: MeshProtocol, enabled: boolean): void;
   setIgnoreMqttEnabled(enabled: boolean): void;
   setNodeMqttIgnored(nodeId: number, ignored: boolean): void;
   setOurPositionSource(source: GpsSource | null): void;
@@ -388,6 +393,34 @@ function loadEnvMode(): EnvMode {
   return 'standard';
 }
 
+/**
+ * One-time: split legacy `autoTracerouteEnabled` into per-protocol keys so MeshCore and Meshtastic toggles don't share state.
+ */
+function migrateLegacyAutoTracerouteKeysOnce(): void {
+  try {
+    const raw = getAppSettingsRaw();
+    const o = parseStoredJson<Record<string, unknown>>(
+      raw,
+      'diagnosticsStore migrateLegacyAutoTracerouteKeysOnce',
+    );
+    if (!o || typeof o.autoTracerouteEnabled !== 'boolean') return;
+    if (
+      typeof o.autoTracerouteEnabledMeshtastic === 'boolean' ||
+      typeof o.autoTracerouteEnabledMeshcore === 'boolean'
+    ) {
+      return;
+    }
+    const v = o.autoTracerouteEnabled;
+    const next: Record<string, unknown> = { ...o };
+    delete next.autoTracerouteEnabled;
+    next.autoTracerouteEnabledMeshtastic = v;
+    next.autoTracerouteEnabledMeshcore = v;
+    setAppSettingsRaw(JSON.stringify(next));
+  } catch (e) {
+    console.warn('[diagnosticsStore] migrateLegacyAutoTracerouteKeysOnce failed', e);
+  }
+}
+
 function loadMqttIgnoredNodes(): Set<number> {
   const raw = localStorage.getItem('mesh-client:mqttIgnoredNodes');
   const arr = parseStoredJson<unknown>(raw, 'diagnosticsStore loadMqttIgnoredNodes');
@@ -406,6 +439,7 @@ function saveMqttIgnoredNodes(nodes: Set<number>): void {
   }
 }
 
+migrateLegacyAutoTracerouteKeysOnce();
 const initialSnapshot = loadDiagnosticRowsSnapshot();
 
 export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
@@ -418,6 +452,8 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   nodeRedundancy: new Map(),
   congestionHalosEnabled: loadPersistedBool('congestionHalosEnabled'),
   anomalyHalosEnabled: loadPersistedBool('anomalyHalosEnabled'),
+  autoTracerouteEnabledMeshtastic: loadPersistedBool('autoTracerouteEnabledMeshtastic'),
+  autoTracerouteEnabledMeshcore: loadPersistedBool('autoTracerouteEnabledMeshcore'),
   ignoreMqttEnabled: loadPersistedBool('ignoreMqttEnabled'),
   mqttIgnoredNodes: loadMqttIgnoredNodes(),
   ourPositionSource: null,
@@ -536,7 +572,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         tag: number,
       ) => Promise<boolean>;
     } | null;
-    if (!dbApi) return;
+    if (!dbApi) {
+      return;
+    }
     const timestamp = Date.now();
     try {
       await dbApi.saveMeshcoreTraceHistory?.(nodeId, timestamp, pathLen, pathSnrs, lastSnr, tag);
@@ -929,6 +967,24 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   setAnomalyHalosEnabled(enabled: boolean) {
     mergeAppSetting('anomalyHalosEnabled', enabled, 'diagnosticsStore setAnomalyHalosEnabled');
     set({ anomalyHalosEnabled: enabled });
+  },
+
+  setAutoTracerouteEnabled(protocol: MeshProtocol, enabled: boolean) {
+    if (protocol === 'meshcore') {
+      mergeAppSetting(
+        'autoTracerouteEnabledMeshcore',
+        enabled,
+        'diagnosticsStore setAutoTracerouteEnabled meshcore',
+      );
+      set({ autoTracerouteEnabledMeshcore: enabled });
+    } else {
+      mergeAppSetting(
+        'autoTracerouteEnabledMeshtastic',
+        enabled,
+        'diagnosticsStore setAutoTracerouteEnabled meshtastic',
+      );
+      set({ autoTracerouteEnabledMeshtastic: enabled });
+    }
   },
 
   setIgnoreMqttEnabled(enabled: boolean) {

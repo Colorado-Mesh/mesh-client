@@ -21,6 +21,8 @@ import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 
+const TRACE_ROUTE_UI_TIMEOUT_MS = 120_000;
+
 interface NodeDetailModalProps {
   /** Optional: enables originator list for Mesh Congestion (RF duplicate-prone by node). */
   nodes?: Map<number, MeshNode>;
@@ -177,12 +179,16 @@ export default function NodeDetailModal({
 
   // Clear trace route pending when result arrives
   useEffect(() => {
-    if (traceRouteHops) setTraceRoutePending(false);
+    if (!traceRouteHops) return;
+    setTraceRoutePending(false);
+    setActionStatus((prev) => (prev === 'Trace route timed out' ? 'Trace route received' : prev));
   }, [traceRouteHops]);
 
   // Clear trace route pending when MeshCore result arrives
   useEffect(() => {
-    if (meshcoreTraceResult) setTraceRoutePending(false);
+    if (!meshcoreTraceResult) return;
+    setTraceRoutePending(false);
+    setActionStatus((prev) => (prev === 'Trace route timed out' ? 'Trace route received' : prev));
   }, [meshcoreTraceResult]);
 
   // Auto-show repeater stats when they arrive
@@ -258,10 +264,13 @@ export default function NodeDetailModal({
   // Align with MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS (queue + tracePath in useMeshCore)
   useEffect(() => {
     if (!traceRoutePending) return;
-    const timer = setTimeout(() => {
-      setTraceRoutePending(false);
-      setActionStatus('Trace route timed out');
-    }, MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS);
+    const timer = setTimeout(
+      () => {
+        setTraceRoutePending(false);
+        setActionStatus('Trace route timed out');
+      },
+      Math.max(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS, TRACE_ROUTE_UI_TIMEOUT_MS),
+    );
     return () => {
       clearTimeout(timer);
     };
