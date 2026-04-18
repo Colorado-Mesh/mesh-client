@@ -284,7 +284,6 @@ function ChatPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [showScrollToLatest, setShowScrollToLatest] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -559,7 +558,6 @@ function ChatPanel({
     );
     if (distFromBottom == null) return undefined;
     setShowScrollButton(distFromBottom > 200);
-    setShowScrollToLatest(distFromBottom > 1);
     return distFromBottom;
   }, [outerScrollMetricsRootRef]);
 
@@ -664,32 +662,6 @@ function ChatPanel({
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, []);
-
-  const scrollToLastRead = useCallback(() => {
-    if (unreadDividerRef.current) {
-      unreadDividerRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
-      return;
-    }
-    const lastRead = persistedLastRead[viewKey] ?? 0;
-    if (!lastRead) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
-    let target: Element | null = null;
-    for (let i = filteredMessages.length - 1; i >= 0; i--) {
-      if (filteredMessages[i].timestamp <= lastRead) {
-        const key = filteredMessages[i].packetId ?? filteredMessages[i].timestamp;
-        target =
-          scrollContainerRef.current?.querySelector(`[data-chat-message-key="${key}"]`) ?? null;
-        break;
-      }
-    }
-    if (target) {
-      (target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [unreadDividerRef, persistedLastRead, viewKey, filteredMessages, scrollContainerRef]);
 
   const scrollToQuotedParent = useCallback((replyKey: number) => {
     const root = scrollContainerRef.current;
@@ -1460,7 +1432,13 @@ function ChatPanel({
         {/* Scroll to unread / bottom button */}
         {showScrollButton && (
           <button
-            onClick={scrollToUnreadOrBottom}
+            onClick={() => {
+              if (unreadDividerRef.current) {
+                scrollToUnreadOrBottom();
+              } else {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
             className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
           >
             <svg
@@ -1472,20 +1450,7 @@ function ChatPanel({
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
             </svg>
-            Jump to Unread
-          </button>
-        )}
-
-        {/* Latest button */}
-        {showScrollToLatest && (
-          <button
-            type="button"
-            onClick={scrollToLastRead}
-            className="bg-brand-green text-deep-black hover:bg-bright-green absolute right-1 bottom-3 z-30 w-fit rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
-            title="Scroll to last read position"
-            aria-label="Scroll to last read position"
-          >
-            Last Read
+            {unreadDividerRef.current ? 'Jump to Unread' : 'Jump to Latest'}
           </button>
         )}
       </div>

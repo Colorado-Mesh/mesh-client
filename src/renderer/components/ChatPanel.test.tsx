@@ -481,7 +481,7 @@ describe('ChatPanel accessibility', () => {
     expect(screen.queryByRole('button', { name: 'Alice' })).not.toBeInTheDocument();
   });
 
-  it('shows Jump to Unread when content overflows without manual scroll event', async () => {
+  it('shows Jump to Latest when content overflows without manual scroll event', async () => {
     const baseTs = Date.now() - 50_000;
     const longMessages = Array.from({ length: 30 }, (_, idx) => ({
       sender_id: idx % 2 === 0 ? 2 : 1,
@@ -508,14 +508,11 @@ describe('ChatPanel accessibility', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Jump to Unread' })).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: 'Scroll to last read position' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Jump to Latest' })).toBeInTheDocument();
     });
   });
 
-  it('shows Last Read (not Jump to Unread) when slightly scrolled from bottom', async () => {
+  it('shows Jump to Latest when slightly scrolled from bottom', async () => {
     const baseTs = Date.now() - 50_000;
     const longMessages = Array.from({ length: 30 }, (_, idx) => ({
       sender_id: idx % 2 === 0 ? 2 : 1,
@@ -535,17 +532,15 @@ describe('ChatPanel accessibility', () => {
     const scrollContainer = container.querySelector('div.overflow-y-auto')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
-    // distFromBottom = 120 → Latest on, Jump off (>200)
+    // distFromBottom = 300 → showScrollButton on (>200), label should be "Jump to Latest" (no divider)
     Object.defineProperty(scrollContainer, 'scrollTop', {
-      value: 1480,
+      value: 1300,
       writable: true,
       configurable: true,
     });
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: 'Scroll to last read position' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Jump to Latest' })).toBeInTheDocument();
     });
     expect(screen.queryByRole('button', { name: 'Jump to Unread' })).not.toBeInTheDocument();
   });
