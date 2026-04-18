@@ -1191,6 +1191,8 @@ export function useMeshCore() {
     prevTxAirSecsRef.current = radio.txAirSecs;
     prevStatsTimestampRef.current = now;
 
+    setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts: core.batteryMilliVolts } : prev));
+
     const localStats: MeshCoreLocalStats = {
       batteryMilliVolts: core.batteryMilliVolts,
       uptimeSecs: core.uptimeSecs,
