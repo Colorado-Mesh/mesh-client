@@ -23,6 +23,7 @@ import { validateCoords } from '../lib/coordUtils';
 import { containsMeshCorePattern, extractRssiSnr } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
+import { meshtasticHwModelName } from '../lib/hardwareModels';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import {
@@ -1135,7 +1136,8 @@ export function useDevice() {
             node_id: packet.from,
             long_name,
             short_name,
-            hw_model: String(user.hwModel ?? existing.hw_model),
+            hw_model:
+              user.hwModel != null ? meshtasticHwModelName(user.hwModel) : existing.hw_model,
             role: user.role ?? existing.role,
             // User packets are often replayed from the device DB at connect; do not
             // bump last_hear to now or offline nodes appear freshly heard.
@@ -1235,7 +1237,10 @@ export function useDevice() {
             node_id: nodeNum,
             long_name,
             short_name,
-            hw_model: String(info.user?.hwModel ?? existing.hw_model),
+            hw_model:
+              info.user?.hwModel != null
+                ? meshtasticHwModelName(info.user.hwModel)
+                : existing.hw_model,
             snr: info.snr ?? existing.snr,
             battery: info.deviceMetrics?.batteryLevel ?? existing.battery,
             last_heard: lastHeardMs,

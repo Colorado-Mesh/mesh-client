@@ -63,7 +63,7 @@ export function initDatabase(): void {
            WHERE packet_id IS NOT NULL`,
           )
           .run();
-        db!.pragma('user_version = 26');
+        db!.pragma('user_version = 27');
       } else {
         runMigrations();
       }
@@ -924,6 +924,32 @@ function runMigrations(): void {
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       throw new Error(`Migration v26 failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (userVersion < 27) {
+    try {
+      const msg1 = db!.prepare('PRAGMA table_info(messages)').all() as { name: string }[];
+      if (!msg1.some((c) => c.name === 'reply_preview_text')) {
+        db!.prepare('ALTER TABLE messages ADD COLUMN reply_preview_text TEXT').run();
+      }
+      if (!msg1.some((c) => c.name === 'reply_preview_sender')) {
+        db!.prepare('ALTER TABLE messages ADD COLUMN reply_preview_sender TEXT').run();
+      }
+      const mm1 = db!.prepare('PRAGMA table_info(meshcore_messages)').all() as { name: string }[];
+      if (!mm1.some((c) => c.name === 'reply_preview_text')) {
+        db!.prepare('ALTER TABLE meshcore_messages ADD COLUMN reply_preview_text TEXT').run();
+      }
+      if (!mm1.some((c) => c.name === 'reply_preview_sender')) {
+        db!.prepare('ALTER TABLE meshcore_messages ADD COLUMN reply_preview_sender TEXT').run();
+      }
+      db!.pragma('user_version = 27');
+    } catch (e) {
+      console.error(
+        '[db] migration v27 failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw new Error(`Migration v27 failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

@@ -252,6 +252,10 @@ export interface ChatMessage {
   meshcoreDedupeKey?: string;
   /** CRC-32 RF packet fingerprint (8 hex), when persisted from capture metadata */
   rxPacketFingerprintHex?: string;
+  /** Truncated text of the replied-to message (persisted so preview survives session reload) */
+  replyPreviewText?: string;
+  /** Sender name of the replied-to message */
+  replyPreviewSender?: string;
 }
 
 export interface TelemetryPoint {

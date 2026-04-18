@@ -352,7 +352,7 @@ export default function NodeDetailModal({
                     {headerHopsDisplay} hop{headerHopsDisplay !== 1 ? 's' : ''}
                   </span>
                 )}
-                {node.hw_model && node.hw_model !== '0' && (
+                {node.hw_model && node.hw_model !== '0' && node.hw_model !== 'Unset' && (
                   <span className="text-muted text-xs">{node.hw_model}</span>
                 )}
                 {/* MeshCore contact status badges */}

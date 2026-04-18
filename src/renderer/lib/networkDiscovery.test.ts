@@ -1,0 +1,122 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { startNetworkDiscovery } from './networkDiscovery';
+
+describe('startNetworkDiscovery', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('immediately traces all nodes returned by getNodeIds', async () => {
+    const traced: number[] = [];
+    const stop = startNetworkDiscovery(
+      (id) => {
+        traced.push(id);
+        return Promise.resolve();
+      },
+      () => [1, 2, 3],
+      60_000,
+      0, // no inter-node delay in tests
+    );
+
+    // Flush the immediate sweep (no timers involved when interNodeDelayMs=0)
+    await vi.advanceTimersByTimeAsync(0);
+    stop();
+
+    expect(traced).toEqual([1, 2, 3]);
+  });
+
+  it('does not trace after stop() is called', async () => {
+    const traced: number[] = [];
+    const stop = startNetworkDiscovery(
+      (id) => {
+        traced.push(id);
+        return Promise.resolve();
+      },
+      () => [10, 20],
+      60_000,
+      0,
+    );
+
+    stop();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(traced.length).toBeLessThanOrEqual(1);
+  });
+
+  it('schedules a second sweep after the interval', async () => {
+    const traced: number[] = [];
+    const stop = startNetworkDiscovery(
+      (id) => {
+        traced.push(id);
+        return Promise.resolve();
+      },
+      () => [5],
+      10_000,
+      0,
+    );
+
+    // First sweep (immediate)
+    await vi.advanceTimersByTimeAsync(0);
+    expect(traced).toEqual([5]);
+
+    // Second sweep after interval
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(traced).toEqual([5, 5]);
+
+    stop();
+  });
+
+  it('does not run a second sweep after stop()', async () => {
+    const traced: number[] = [];
+    const stop = startNetworkDiscovery(
+      (id) => {
+        traced.push(id);
+        return Promise.resolve();
+      },
+      () => [7],
+      5_000,
+      0,
+    );
+
+    await vi.advanceTimersByTimeAsync(0);
+    stop();
+
+    // Advance past where the second sweep would fire; no more timers are pending
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(traced).toEqual([7]);
+  });
+
+  it('logs a warning and continues on traceroute error', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const traced: number[] = [];
+
+    const stop = startNetworkDiscovery(
+      (id) => {
+        if (id === 2) return Promise.reject(new Error('timeout'));
+        traced.push(id);
+        return Promise.resolve();
+      },
+      () => [1, 2, 3],
+      60_000,
+      0,
+    );
+
+    await vi.advanceTimersByTimeAsync(0);
+    stop();
+
+    expect(traced).toEqual([1, 3]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[networkDiscovery] traceroute failed for node',
+      2,
+      expect.any(Error),
+    );
+
+    warnSpy.mockRestore();
+  });
+});

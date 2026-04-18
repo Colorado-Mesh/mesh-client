@@ -2343,8 +2343,8 @@ ipcMain.handle('db:saveMessage', (_event, message) => {
     validateSaveMessage(message);
     const db = getDatabase();
     const stmt = db.prepareOnce(`
-      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status, received_via)
-      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status, @received_via)
+      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status, received_via, reply_preview_text, reply_preview_sender)
+      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status, @received_via, @reply_preview_text, @reply_preview_sender)
     `);
     const validReceivedVia = ['rf', 'mqtt', 'both'];
     return stmt.run({
@@ -2364,6 +2364,8 @@ ipcMain.handle('db:saveMessage', (_event, message) => {
         message.receivedVia != null && validReceivedVia.includes(message.receivedVia)
           ? message.receivedVia
           : null,
+      reply_preview_text: message.replyPreviewText ?? null,
+      reply_preview_sender: message.replyPreviewSender ?? null,
     });
   } catch (err) {
     console.error(
@@ -2380,7 +2382,8 @@ ipcMain.handle('db:getMessages', (_event, channel?: number, limit = 200) => {
     const db = getDatabase();
     const columns = `id, sender_id, sender_name, payload, channel, timestamp,
          packet_id AS packetId, status, error, emoji, reply_id AS replyId, to_node,
-         mqtt_status AS mqttStatus, received_via AS receivedVia`;
+         mqtt_status AS mqttStatus, received_via AS receivedVia,
+         reply_preview_text AS replyPreviewText, reply_preview_sender AS replyPreviewSender`;
     let rows: any[];
     if (channel != null) {
       const ch = safeNonNegativeInt(channel);
@@ -3111,11 +3114,15 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
         : null;
     const rxFp =
       typeof m.rx_packet_fingerprint === 'string' ? m.rx_packet_fingerprint.toUpperCase() : null;
+    const replyPreviewText =
+      typeof m.reply_preview_text === 'string' ? m.reply_preview_text.slice(0, 100) : null;
+    const replyPreviewSender =
+      typeof m.reply_preview_sender === 'string' ? m.reply_preview_sender.slice(0, 64) : null;
     return db
       .prepareOnce(
         'INSERT OR IGNORE INTO meshcore_messages ' +
-          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint) ' +
-          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint)',
+          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender) ' +
+          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender)',
       )
       .run({
         sender_id: m.sender_id != null ? Number(m.sender_id) : null,
@@ -3130,6 +3137,8 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
         to_node: m.to_node != null ? Number(m.to_node) : null,
         received_via,
         rx_packet_fingerprint: rxFp,
+        reply_preview_text: replyPreviewText,
+        reply_preview_sender: replyPreviewSender,
       });
   } catch (err) {
     console.error(

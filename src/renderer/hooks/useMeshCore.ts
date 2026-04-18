@@ -910,6 +910,8 @@ interface MeshcoreMessageDbRow {
   to_node: number | null;
   received_via?: string | null;
   rx_packet_fingerprint?: string | null;
+  reply_preview_text?: string | null;
+  reply_preview_sender?: string | null;
 }
 
 /**
@@ -984,6 +986,9 @@ function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): ChatMess
         /^[0-9A-Fa-f]{8}$/.test(r.rx_packet_fingerprint)
           ? r.rx_packet_fingerprint.toUpperCase()
           : undefined,
+      replyPreviewText: typeof r.reply_preview_text === 'string' ? r.reply_preview_text : undefined,
+      replyPreviewSender:
+        typeof r.reply_preview_sender === 'string' ? r.reply_preview_sender : undefined,
     });
   }
   return mapped;

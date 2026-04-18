@@ -1,6 +1,20 @@
 import { normalizeReactionEmoji } from './reactions';
 import type { ChatMessage } from './types';
 
+const REPLY_PREVIEW_MAX_LEN = 80;
+
+/** Find the message whose packetId or timestamp matches `key` (used for preview extraction). */
+function findMessageByKey(messages: readonly ChatMessage[], key: number): ChatMessage | undefined {
+  return messages.find((m) => m.packetId === key || m.timestamp === key);
+}
+
+/** Truncate payload for reply preview display. */
+function replyPreviewText(payload: string): string {
+  return payload.length > REPLY_PREVIEW_MAX_LEN
+    ? payload.slice(0, REPLY_PREVIEW_MAX_LEN) + '…'
+    : payload;
+}
+
 export interface MeshcoreNormalizedText {
   senderName?: string;
   payload: string;
@@ -187,14 +201,21 @@ export function buildMeshcoreChannelIncomingMessage(
     });
     if (parentKey != null) {
       const body = normalized.payload.trim();
+      const parent = findMessageByKey(messages, parentKey);
+      const previewFields = parent
+        ? {
+            replyPreviewText: replyPreviewText(parent.payload),
+            replyPreviewSender: parent.sender_name,
+          }
+        : undefined;
       if (meshcorePayloadIsTapbackEmojiOnly(body)) {
         const emoji = normalizeReactionEmoji(undefined, body);
         if (emoji != null) {
-          return { ...base, payload: body, emoji, replyId: parentKey };
+          return { ...base, payload: body, emoji, replyId: parentKey, ...previewFields };
         }
       }
       if (body.length > 0) {
-        return { ...base, payload: body, replyId: parentKey };
+        return { ...base, payload: body, replyId: parentKey, ...previewFields };
       }
     }
     return { ...base, payload: fallbackPayload };
@@ -251,14 +272,21 @@ export function buildMeshcoreDmIncomingMessage(
     });
     if (parentKey != null) {
       const body = parsed.payload.trim();
+      const parent = findMessageByKey(messages, parentKey);
+      const previewFields = parent
+        ? {
+            replyPreviewText: replyPreviewText(parent.payload),
+            replyPreviewSender: parent.sender_name,
+          }
+        : undefined;
       if (meshcorePayloadIsTapbackEmojiOnly(body)) {
         const emoji = normalizeReactionEmoji(undefined, body);
         if (emoji != null) {
-          return { ...base, payload: body, emoji, replyId: parentKey };
+          return { ...base, payload: body, emoji, replyId: parentKey, ...previewFields };
         }
       }
       if (body.length > 0) {
-        return { ...base, payload: body, replyId: parentKey };
+        return { ...base, payload: body, replyId: parentKey, ...previewFields };
       }
     }
   }

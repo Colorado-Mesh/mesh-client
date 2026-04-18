@@ -1080,16 +1080,18 @@ function ChatPanel({
                       {/* Quoted reply preview */}
                       {msg.replyId &&
                         !msg.emoji &&
-                        messageByReplyKey.has(msg.replyId) &&
                         (() => {
-                          const orig = messageByReplyKey.get(msg.replyId)!;
-                          const quoteSnippet =
-                            orig.payload.length > 80
+                          const orig = messageByReplyKey.get(msg.replyId);
+                          const quoteSnippet = orig
+                            ? orig.payload.length > 80
                               ? orig.payload.slice(0, 80) + '…'
-                              : orig.payload;
-                          const quotedLabel =
-                            nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
-                            orig.sender_name;
+                              : orig.payload
+                            : msg.replyPreviewText;
+                          const quotedLabel = orig
+                            ? nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
+                              orig.sender_name
+                            : msg.replyPreviewSender;
+                          if (!quoteSnippet && !quotedLabel) return null;
                           return (
                             <button
                               type="button"
@@ -1097,7 +1099,7 @@ function ChatPanel({
                                 scrollToQuotedParent(msg.replyId!);
                               }}
                               className="bg-secondary-dark/50 hover:bg-secondary-dark/80 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left transition-colors"
-                              aria-label={`Jump to quoted message from ${quotedLabel}`}
+                              aria-label={`Jump to quoted message from ${quotedLabel ?? ''}`}
                             >
                               <div className="min-h-[2rem] w-0.5 shrink-0 self-stretch rounded-full bg-gray-500" />
                               <div className="min-w-0 flex-1">

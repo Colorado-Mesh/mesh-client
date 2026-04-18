@@ -16,6 +16,7 @@ import {
 } from '../lib/diagnostics/RemediationEngine';
 import { diagnoseConnectedNode, hasLocalStatsData } from '../lib/diagnostics/RFDiagnosticEngine';
 import type { OurPosition } from '../lib/gpsSource';
+import { startNetworkDiscovery } from '../lib/networkDiscovery';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
 import type { DiagnosticRow, MeshNode } from '../lib/types';
@@ -154,6 +155,30 @@ export default function DiagnosticsPanel({
       for (const timer of timers.values()) clearTimeout(timer);
     };
   }, []);
+
+  const [autoTraceroute, setAutoTraceroute] = useState(false);
+  const [lastDiscoveryTs, setLastDiscoveryTs] = useState<number | null>(null);
+  const stopDiscoveryRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!autoTraceroute || !onTraceRoute || !isConnected) {
+      stopDiscoveryRef.current?.();
+      stopDiscoveryRef.current = null;
+      return;
+    }
+    const stop = startNetworkDiscovery(
+      async (nodeId) => {
+        await onTraceRoute(nodeId);
+        setLastDiscoveryTs(Date.now());
+      },
+      () => [...nodes.keys()].filter((id) => id !== myNodeNum),
+    );
+    stopDiscoveryRef.current = stop;
+    return () => {
+      stop();
+      stopDiscoveryRef.current = null;
+    };
+  }, [autoTraceroute, onTraceRoute, isConnected, nodes, myNodeNum]);
 
   /**
    * Match Node List Ch.Util / Air Tx columns: count nodes where at least one is non-null
@@ -821,6 +846,24 @@ export default function DiagnosticsPanel({
               </span>
             </div>
           )}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="autoTraceroute"
+              checked={autoTraceroute}
+              onChange={(e) => {
+                setAutoTraceroute(e.target.checked);
+              }}
+              className="accent-brand-green"
+            />
+            <label htmlFor="autoTraceroute" className="cursor-pointer text-sm text-gray-300">
+              Auto-traceroute
+            </label>
+            <span className="text-muted text-xs">
+              Probe all nodes every 30 min
+              {lastDiscoveryTs !== null && <> · last: {formatTime(lastDiscoveryTs)}</>}
+            </span>
+          </div>
           <div className="flex flex-col gap-1.5">
             <div className="text-sm text-gray-300">Environment Profile</div>
             <div className="flex w-fit overflow-hidden rounded-lg border border-gray-600/50">
