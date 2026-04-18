@@ -282,21 +282,23 @@ export default function NodeDetailModal({
 
   if (!node) return null;
 
-  const headerHardwareSubtitle =
-    protocol === 'meshtastic'
-      ? meshtasticHwModelDisplay(node.hw_model)
-      : node.hw_model?.trim() || null;
-
-  const headerHopsDisplay =
-    protocol === 'meshcore' && meshcoreTraceResult != null
-      ? meshcoreTracePathLenToHops(meshcoreTraceResult.pathLen)
-      : node.hops_away;
-
   const hexId = `!${node.node_id.toString(16)}`;
   // Check if this appears to be a node with incomplete data (empty names and no role)
   const isIncomplete = !node.short_name && !node.long_name && node.role === undefined;
   const displayName = node.short_name || node.long_name || hexId;
   const isOurNode = node.node_id === homeNode?.node_id;
+
+  const headerHardwareSubtitle =
+    protocol === 'meshtastic'
+      ? meshtasticHwModelDisplay(node.hw_model)
+      : protocol === 'meshcore' && isOurNode && meshcoreManufacturerModel
+        ? meshcoreManufacturerModel
+        : node.hw_model?.trim() || null;
+
+  const headerHopsDisplay =
+    protocol === 'meshcore' && meshcoreTraceResult != null
+      ? meshcoreTracePathLenToHops(meshcoreTraceResult.pathLen)
+      : node.hops_away;
 
   const handleRequestPosition = async () => {
     setPositionRequestedAt(Date.now());

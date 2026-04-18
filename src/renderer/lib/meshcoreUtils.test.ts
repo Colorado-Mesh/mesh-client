@@ -13,6 +13,7 @@ import {
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreGetRepeaterSessionPassword,
   meshcoreIsRepeaterRemoteAuthTouched,
+  meshcoreManufacturerModelFromDeviceQuery,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
   meshcoreSelfInfoBwToDisplayKhz,
@@ -285,6 +286,37 @@ describe('mergeHwModelOnContactUpdate', () => {
 
   it('uses incoming hw_model when existing is Chat', () => {
     expect(mergeHwModelOnContactUpdate('Chat', 'Repeater')).toBe('Repeater');
+  });
+});
+
+describe('meshcoreManufacturerModelFromDeviceQuery', () => {
+  it('reads manufacturerModel and snake_case aliases', () => {
+    expect(meshcoreManufacturerModelFromDeviceQuery({ manufacturerModel: '  XIAO  ' })).toBe(
+      'XIAO',
+    );
+    expect(meshcoreManufacturerModelFromDeviceQuery({ manufacturer_model: 'nRF52' })).toBe('nRF52');
+  });
+
+  it('reads nested data / payload', () => {
+    expect(
+      meshcoreManufacturerModelFromDeviceQuery({
+        data: { model: 'Heltec' },
+      }),
+    ).toBe('Heltec');
+    expect(
+      meshcoreManufacturerModelFromDeviceQuery({
+        payload: { manufacturerModel: 'Lilygo' },
+      }),
+    ).toBe('Lilygo');
+  });
+
+  it('coerces numeric model fields', () => {
+    expect(meshcoreManufacturerModelFromDeviceQuery({ model: 42 })).toBe('42');
+  });
+
+  it('returns undefined when absent', () => {
+    expect(meshcoreManufacturerModelFromDeviceQuery(null)).toBeUndefined();
+    expect(meshcoreManufacturerModelFromDeviceQuery({ firmwareVer: 1 })).toBeUndefined();
   });
 });
 

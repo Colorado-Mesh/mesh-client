@@ -80,6 +80,7 @@ import {
   meshcoreContactTypeFromHwModel,
   meshcoreIsChatStubNodeId,
   meshcoreIsSyntheticPlaceholderPubKeyHex,
+  meshcoreManufacturerModelFromDeviceQuery,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
   meshcoreSyntheticPlaceholderPubKeyHex,
@@ -824,6 +825,12 @@ const MESHCORE_TRACE_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
 const MAX_TELEMETRY_POINTS = 50;
 
 const MAX_ENV_TELEMETRY_POINTS = 50;
+
+/** @see @liamcottle/meshcore.js Constants.ResponseCodes.DeviceInfo */
+const MESHCORE_RESPONSE_DEVICE_INFO = 13;
+
+/** Companion protocol version byte sent with CMD DeviceQuery; must match meshcore.js onConnected. */
+const MESHCORE_DEVICE_QUERY_APP_VER = 1;
 
 /**
  * Normalizes an error from a MeshCore RPC call into a proper Error object.
@@ -2813,6 +2820,21 @@ export function useMeshCore() {
       connRef.current = conn;
       setupEventListeners(conn);
 
+      // meshcore.js runs deviceQuery(SupportedCompanionProtocolVersion) from onConnected() on the next
+      // macrotask; register before any await so we capture that DeviceInfo (manufacturer string, build date).
+      conn.once(MESHCORE_RESPONSE_DEVICE_INFO, (response: unknown) => {
+        setState((prev) => {
+          const next = { ...prev };
+          const r = response as { firmware_build_date?: string };
+          if (typeof r?.firmware_build_date === 'string' && r.firmware_build_date.trim()) {
+            next.firmwareVersion = r.firmware_build_date.trim();
+          }
+          const mm = meshcoreManufacturerModelFromDeviceQuery(response);
+          if (mm) next.manufacturerModel = mm;
+          return next;
+        });
+      });
+
       // Load persisted messages from DB before device's MsgWaiting fires (merge with mount-hydrated state)
       try {
         const dbMsgs = (await awaitUnlessMeshcoreSetupCancelled(
@@ -2846,15 +2868,16 @@ export function useMeshCore() {
       }
 
       try {
-        const deviceInfo = await conn.deviceQuery(0);
+        // Must match meshcore.js onConnected (SupportedCompanionProtocolVersion); ver 0 can yield Err/empty DeviceInfo.
+        const deviceInfo = await conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER);
         setState((prev) => {
           const next = { ...prev };
           if (deviceInfo?.firmware_build_date) {
             next.firmwareVersion = deviceInfo.firmware_build_date;
           }
-          const mm = deviceInfo?.manufacturerModel;
-          if (typeof mm === 'string' && mm.trim()) {
-            next.manufacturerModel = mm.trim();
+          const mm = meshcoreManufacturerModelFromDeviceQuery(deviceInfo);
+          if (mm) {
+            next.manufacturerModel = mm;
           }
           return next;
         });
@@ -5071,7 +5094,11 @@ export function useMeshCore() {
       const conn = connRef.current;
       if (!conn) return null;
       try {
-        const result = await conn.deviceQuery(appTargetVer ?? 0);
+        const result = await conn.deviceQuery(appTargetVer ?? MESHCORE_DEVICE_QUERY_APP_VER);
+        const mm = meshcoreManufacturerModelFromDeviceQuery(result);
+        if (mm) {
+          setState((prev) => ({ ...prev, manufacturerModel: mm }));
+        }
         return result as Record<string, unknown>;
       } catch (e: unknown) {
         console.warn('[useMeshCore] getDeviceInfo error', e);

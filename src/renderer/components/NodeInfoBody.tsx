@@ -281,9 +281,10 @@ export default function NodeInfoBody({
       {protocol === 'meshcore' ? (
         <>
           <InfoRow label="Type" value={node.hw_model || '---'} />
-          {isOurNode && meshcoreManufacturerModel ? (
-            <InfoRow label="Radio model" value={meshcoreManufacturerModel} />
-          ) : null}
+          <InfoRow
+            label="Hardware"
+            value={isOurNode ? (meshcoreManufacturerModel ?? '—') : 'Not available remotely'}
+          />
         </>
       ) : (
         <>
