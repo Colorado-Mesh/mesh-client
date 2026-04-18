@@ -180,9 +180,11 @@ function withoutDmNode(source: Record<number, number>, nodeNum: number): Record<
 }
 
 /**
- * Distance from the “bottom” of the chat (latest messages): either the inner
- * message scroller when it overflows, or the message-end sentinel vs the app
- * main viewport when the inner box grows with content and the outer shell scrolls.
+ * Distance from the “bottom” of the chat (latest messages). Uses the **maximum** of:
+ * - Inner `overflow-y-auto` distance when the message list overflows, and
+ * - Message-end sentinel vs `outerScrollRoot` (app main viewport), so we still
+ *   detect “not at latest” when the inner scroller is at max but the shell scroll
+ *   has moved the thread off-screen (or vice versa).
  */
 export function getDistFromChatBottom(
   inner: HTMLDivElement | null,
@@ -190,16 +192,20 @@ export function getDistFromChatBottom(
   outerScrollRoot: HTMLElement | null,
 ): number | null {
   if (!inner) return null;
-  const innerCanScroll = inner.scrollHeight > inner.clientHeight + 1;
-  if (innerCanScroll) {
-    return inner.scrollHeight - inner.scrollTop - inner.clientHeight;
+
+  let dist = 0;
+
+  if (inner.scrollHeight > inner.clientHeight + 1) {
+    dist = Math.max(dist, inner.scrollHeight - inner.scrollTop - inner.clientHeight);
   }
+
   if (outerScrollRoot && messagesEnd) {
     const rootRect = outerScrollRoot.getBoundingClientRect();
     const endRect = messagesEnd.getBoundingClientRect();
-    return Math.max(0, endRect.bottom - rootRect.bottom);
+    dist = Math.max(dist, Math.max(0, endRect.bottom - rootRect.bottom));
   }
-  return 0;
+
+  return dist;
 }
 
 export interface ChatPanelProps {
@@ -1440,12 +1446,12 @@ function ChatPanel({
           </button>
         )}
 
-        {/* Latest button — keep visible until user reaches the bottom */}
+        {/* Latest button — sticky in scrollport (not absolute) so it stays visible */}
         {showScrollToLatest && (
           <button
             type="button"
             onClick={scrollToLatest}
-            className="bg-brand-green text-deep-black hover:bg-bright-green absolute right-8 bottom-24 z-20 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
+            className="bg-brand-green text-deep-black hover:bg-bright-green sticky bottom-3 z-30 mt-1 mr-1 ml-auto w-fit rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
             title="Latest"
             aria-label="Latest"
           >
