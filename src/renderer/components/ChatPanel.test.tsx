@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { MeshNode } from '../lib/types';
-import ChatPanel from './ChatPanel';
+import ChatPanel, { getDistFromChatBottom } from './ChatPanel';
 import { ToastProvider } from './Toast';
 
 describe('ChatPanel accessibility', () => {
@@ -567,6 +567,48 @@ describe('ChatPanel accessibility', () => {
       expect.any(Error),
     );
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('getDistFromChatBottom', () => {
+  it('uses inner scroller when it overflows', () => {
+    const inner = document.createElement('div');
+    Object.defineProperty(inner, 'scrollHeight', { value: 500, configurable: true });
+    Object.defineProperty(inner, 'clientHeight', { value: 100, configurable: true });
+    inner.scrollTop = 50;
+    expect(getDistFromChatBottom(inner, null, null)).toBe(350);
+  });
+
+  it('uses message end vs outer root when inner does not overflow', () => {
+    const inner = document.createElement('div');
+    Object.defineProperty(inner, 'scrollHeight', { value: 400, configurable: true });
+    Object.defineProperty(inner, 'clientHeight', { value: 400, configurable: true });
+
+    const root = document.createElement('div');
+    const end = document.createElement('div');
+    vi.spyOn(root, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      left: 0,
+      right: 800,
+      bottom: 600,
+      width: 800,
+      height: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    vi.spyOn(end, 'getBoundingClientRect').mockReturnValue({
+      top: 100,
+      left: 0,
+      right: 400,
+      bottom: 750,
+      width: 400,
+      height: 650,
+      x: 0,
+      y: 100,
+      toJSON: () => ({}),
+    });
+    expect(getDistFromChatBottom(inner, end, root)).toBe(150);
   });
 });
 

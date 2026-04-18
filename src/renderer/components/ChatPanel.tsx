@@ -179,6 +179,29 @@ function withoutDmNode(source: Record<number, number>, nodeNum: number): Record<
   ) as Record<number, number>;
 }
 
+/**
+ * Distance from the “bottom” of the chat (latest messages): either the inner
+ * message scroller when it overflows, or the message-end sentinel vs the app
+ * main viewport when the inner box grows with content and the outer shell scrolls.
+ */
+export function getDistFromChatBottom(
+  inner: HTMLDivElement | null,
+  messagesEnd: HTMLDivElement | null,
+  outerScrollRoot: HTMLElement | null,
+): number | null {
+  if (!inner) return null;
+  const innerCanScroll = inner.scrollHeight > inner.clientHeight + 1;
+  if (innerCanScroll) {
+    return inner.scrollHeight - inner.scrollTop - inner.clientHeight;
+  }
+  if (outerScrollRoot && messagesEnd) {
+    const rootRect = outerScrollRoot.getBoundingClientRect();
+    const endRect = messagesEnd.getBoundingClientRect();
+    return Math.max(0, endRect.bottom - rootRect.bottom);
+  }
+  return 0;
+}
+
 export interface ChatPanelProps {
   messages: ChatMessage[];
   channels: { index: number; name: string }[];
@@ -204,6 +227,12 @@ export interface ChatPanelProps {
   protocol?: MeshProtocol;
   /** Ref for scroll-to-top (Chat has its own Top button positioned inside the message list). */
   scrollToTopRef?: React.RefObject<(() => void) | null>;
+  /**
+   * Main app scrollport (e.g. App `mainViewportRef`). When the message list does not
+   * overflow its own `overflow-y-auto` box, chat still scrolls inside this root; we use
+   * it to measure whether the user has scrolled away from the latest messages.
+   */
+  outerScrollMetricsRootRef?: React.RefObject<HTMLElement | null>;
 }
 
 function ChatPanel({
@@ -224,6 +253,7 @@ function ChatPanel({
   onGlobalSearch,
   protocol = 'meshtastic',
   scrollToTopRef,
+  outerScrollMetricsRootRef,
 }: ChatPanelProps) {
   const scrollToTop = useCallback(() => {
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -516,25 +546,34 @@ function ChatPanel({
   }, [viewKey]);
 
   const updateScrollButtonVisibility = useCallback(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const distFromBottom = getDistFromChatBottom(
+      scrollContainerRef.current,
+      messagesEndRef.current,
+      outerScrollMetricsRootRef?.current ?? null,
+    );
+    if (distFromBottom == null) return undefined;
     setShowScrollButton(distFromBottom > 200);
     setShowScrollToLatest(distFromBottom > 1);
     return distFromBottom;
-  }, []);
+  }, [outerScrollMetricsRootRef]);
+
+  const applyNearBottomReadState = useCallback(
+    (distFromBottom: number) => {
+      if (distFromBottom < 50) {
+        const now = Date.now();
+        setPersistedLastRead((prev) => ({ ...prev, [viewKey]: now }));
+        setUnreadDividerTimestamp(0); // hide divider once user has read to bottom
+      }
+    },
+    [viewKey],
+  );
 
   // Scroll tracking for scroll-to-bottom button + mark-as-read when at bottom
   const handleScroll = useCallback(() => {
     const distFromBottom = updateScrollButtonVisibility();
-    if (distFromBottom == null) return;
-
-    if (distFromBottom < 50) {
-      const now = Date.now();
-      setPersistedLastRead((prev) => ({ ...prev, [viewKey]: now }));
-      setUnreadDividerTimestamp(0); // hide divider once user has read to bottom
-    }
-  }, [updateScrollButtonVisibility, viewKey]);
+    if (distFromBottom === undefined) return;
+    applyNearBottomReadState(distFromBottom);
+  }, [applyNearBottomReadState, updateScrollButtonVisibility]);
 
   // Initialize scroll button visibility on mount — critical for async message loading (e.g., meshcore SQLite load)
   useLayoutEffect(() => {
@@ -547,14 +586,48 @@ function ChatPanel({
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
-    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distFromBottom < 200) {
+    const distFromBottom = getDistFromChatBottom(
+      el,
+      messagesEndRef.current,
+      outerScrollMetricsRootRef?.current ?? null,
+    );
+    if (distFromBottom != null && distFromBottom < 200) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
     requestAnimationFrame(() => {
       updateScrollButtonVisibility();
     });
-  }, [filteredMessages.length, updateScrollButtonVisibility]);
+  }, [filteredMessages.length, outerScrollMetricsRootRef, updateScrollButtonVisibility]);
+
+  // Outer shell scroll (when the message list box does not overflow on its own)
+  useEffect(() => {
+    if (!isActive) return;
+    const root = outerScrollMetricsRootRef?.current;
+    if (!root) return;
+    const onOuterScroll = () => {
+      const dist = updateScrollButtonVisibility();
+      if (dist !== undefined) applyNearBottomReadState(dist);
+    };
+    root.addEventListener('scroll', onOuterScroll, { passive: true });
+    return () => {
+      root.removeEventListener('scroll', onOuterScroll);
+    };
+  }, [applyNearBottomReadState, isActive, outerScrollMetricsRootRef, updateScrollButtonVisibility]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const root = outerScrollMetricsRootRef?.current;
+    if (!root || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(() => {
+        updateScrollButtonVisibility();
+      });
+    });
+    ro.observe(root);
+    return () => {
+      ro.disconnect();
+    };
+  }, [isActive, outerScrollMetricsRootRef, updateScrollButtonVisibility]);
 
   // Fires after view switch (triggerScrollToUnread increments). useLayoutEffect
   // ensures DOM is committed before scrolling, preventing flash of wrong position.

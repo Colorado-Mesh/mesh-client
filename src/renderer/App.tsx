@@ -1360,6 +1360,7 @@ export default function App() {
                             onGlobalSearch={handleOpenGlobalSearch}
                             protocol={protocol}
                             scrollToTopRef={scrollToTopChatRef}
+                            outerScrollMetricsRootRef={mainViewportRef}
                           />
                         </Suspense>
                       </div>
