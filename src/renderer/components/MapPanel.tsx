@@ -21,11 +21,13 @@ import type { OurPosition } from '../lib/gpsSource';
 import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
+import { routeWeightToColor, routeWeightToStroke } from '../lib/routeWeightUtils';
 import type { MeshNode, MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
+import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import NodeInfoBody from './NodeInfoBody';
 import { useToast } from './Toast';
@@ -561,6 +563,9 @@ export default function MapPanel({
   const positionHistory = usePositionHistoryStore((s) => s.history);
   const showPaths = usePositionHistoryStore((s) => s.showPaths);
   const loadHistoryFromDb = usePositionHistoryStore((s) => s.loadHistoryFromDb);
+  const pathRecords = usePathHistoryStore((s) => s.records);
+
+  const [showRouteWeights, setShowRouteWeights] = useState(false);
 
   useEffect(() => {
     ensureMapStyles();
@@ -734,6 +739,28 @@ export default function MapPanel({
     return result;
   }, [positionHistory, showPaths, nodes, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
 
+  const weightedRouteLines = useMemo(() => {
+    if (!showRouteWeights) return [];
+    const paths = getWeightedPaths(pathRecords);
+    const fromNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
+    if (!fromNode?.latitude || !fromNode?.longitude) return [];
+    const fromPos: [number, number] = [fromNode.latitude, fromNode.longitude];
+
+    const validPaths = paths.flatMap((p) => {
+      const toNode = nodes.get(p.nodeId);
+      if (!toNode?.latitude || !toNode?.longitude) return [];
+      return [{ ...p, fromPos, toPos: [toNode.latitude, toNode.longitude] as [number, number] }];
+    });
+
+    const maxWeight = Math.max(...validPaths.map((p) => p.routeWeight), 1);
+    return validPaths.map((p) => ({
+      key: `rw-${p.nodeId}`,
+      positions: [p.fromPos, p.toPos] as [[number, number], [number, number]],
+      color: routeWeightToColor(p.routeWeight, maxWeight),
+      weight: routeWeightToStroke(p.routeWeight, maxWeight),
+    }));
+  }, [showRouteWeights, pathRecords, myNodeNum, nodes]);
+
   const savedViewport = useMapViewportStore((s) => s.viewport);
   const computedCenter: [number, number] =
     nodesToRender.length > 0
@@ -763,6 +790,19 @@ export default function MapPanel({
     >
       {/* Controls overlay — top right */}
       <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+        <button
+          onClick={() => {
+            setShowRouteWeights((v) => !v);
+          }}
+          className={`bg-deep-black/80 rounded-lg border px-3 py-1.5 text-xs backdrop-blur-sm transition-colors ${
+            showRouteWeights
+              ? 'border-brand-green text-brand-green'
+              : 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200'
+          }`}
+          title="Toggle route weight lines"
+        >
+          Route weights
+        </button>
         <div className="bg-deep-black/80 flex items-center gap-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs backdrop-blur-sm">
           <span className="flex items-center gap-1">
             <span className="bg-brand-green inline-block h-2 w-2 rounded-full" />
@@ -794,6 +834,9 @@ export default function MapPanel({
         />
         {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
           <Polyline key={`path-${nodeId}`} positions={pathPositions} pathOptions={pathOptions} />
+        ))}
+        {weightedRouteLines.map(({ key, positions: linePts, color, weight }) => (
+          <Polyline key={key} positions={linePts} pathOptions={{ color, weight, opacity: 0.7 }} />
         ))}
         {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
           <MapMarker

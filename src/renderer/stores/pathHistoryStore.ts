@@ -76,6 +76,27 @@ function touchLRU(lruOrder: number[], nodeId: number): number[] {
   return updated;
 }
 
+/**
+ * Returns the highest-weighted path record for each contact in the store.
+ * Only includes entries where routeWeight > 0.
+ */
+export function getWeightedPaths(
+  records: Map<number, PathRecord[]>,
+): { nodeId: number; routeWeight: number; pathBytes: number[] }[] {
+  const result: { nodeId: number; routeWeight: number; pathBytes: number[] }[] = [];
+  for (const [nodeId, pathList] of records) {
+    let best: PathRecord | null = null;
+    for (const r of pathList) {
+      if (r.routeWeight <= 0) continue;
+      if (!best || r.routeWeight > best.routeWeight) best = r;
+    }
+    if (best) {
+      result.push({ nodeId, routeWeight: best.routeWeight, pathBytes: best.pathBytes });
+    }
+  }
+  return result;
+}
+
 export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
   records: new Map(),
   lruOrder: [],
