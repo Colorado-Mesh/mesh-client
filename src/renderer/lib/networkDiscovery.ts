@@ -1,3 +1,5 @@
+import { sanitizeLogMessage } from '@/main/sanitize-log-message';
+
 const AUTO_TRACEROUTE_INTERVAL_MS = 30 * 60 * 1_000; // 30 minutes
 const INTER_NODE_DELAY_MS = 2_000; // 2 second gap between traces to avoid flooding
 
@@ -27,7 +29,11 @@ export function startNetworkDiscovery(
       try {
         await traceRouteFn(nodeId);
       } catch (e) {
-        console.warn('[networkDiscovery] traceroute failed for node', nodeId, e);
+        console.warn(
+          '[networkDiscovery] traceroute failed for node',
+          nodeId,
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
       if (stopped) return;
       // Small delay between nodes to avoid flooding the mesh

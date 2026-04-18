@@ -114,7 +114,7 @@ describe('startNetworkDiscovery', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       '[networkDiscovery] traceroute failed for node',
       2,
-      expect.any(Error),
+      'timeout',
     );
 
     warnSpy.mockRestore();
