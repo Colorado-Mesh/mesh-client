@@ -178,6 +178,8 @@ export interface ElectronAPI {
       to_node?: number | null;
       received_via?: string | null;
       rx_packet_fingerprint?: string | null;
+      reply_preview_text?: string | null;
+      reply_preview_sender?: string | null;
     }) => Promise<unknown>;
     saveMeshcoreContact: (contact: {
       node_id: number;

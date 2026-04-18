@@ -3115,7 +3115,7 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
     const rxFp =
       typeof m.rx_packet_fingerprint === 'string' ? m.rx_packet_fingerprint.toUpperCase() : null;
     const replyPreviewText =
-      typeof m.reply_preview_text === 'string' ? m.reply_preview_text.slice(0, 100) : null;
+      typeof m.reply_preview_text === 'string' ? m.reply_preview_text.slice(0, 50) : null;
     const replyPreviewSender =
       typeof m.reply_preview_sender === 'string' ? m.reply_preview_sender.slice(0, 64) : null;
     return db

@@ -252,7 +252,7 @@ export interface ChatMessage {
   meshcoreDedupeKey?: string;
   /** CRC-32 RF packet fingerprint (8 hex), when persisted from capture metadata */
   rxPacketFingerprintHex?: string;
-  /** Truncated text of the replied-to message (persisted so preview survives session reload) */
+  /** Truncated text of the replied-to message (max 50 chars; persisted for reload) */
   replyPreviewText?: string;
   /** Sender name of the replied-to message */
   replyPreviewSender?: string;
@@ -393,6 +393,8 @@ declare global {
           to_node?: number | null;
           received_via?: string | null;
           rx_packet_fingerprint?: string | null;
+          reply_preview_text?: string | null;
+          reply_preview_sender?: string | null;
         }) => Promise<unknown>;
         updateMeshcoreContactRfTransport: (
           nodeId: number,

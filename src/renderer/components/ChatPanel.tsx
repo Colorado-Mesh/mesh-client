@@ -19,6 +19,7 @@ import {
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayChar, emojiDisplayLabel } from '../lib/reactions';
+import { truncateReplyPreviewText } from '../lib/replyPreview';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
@@ -1090,9 +1091,7 @@ function ChatPanel({
                         (() => {
                           const orig = messageByReplyKey.get(msg.replyId);
                           const quoteSnippet = orig
-                            ? orig.payload.length > 80
-                              ? orig.payload.slice(0, 80) + '…'
-                              : orig.payload
+                            ? truncateReplyPreviewText(orig.payload)
                             : msg.replyPreviewText;
                           const quotedLabel = orig
                             ? nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
@@ -1113,7 +1112,7 @@ function ChatPanel({
                                 <span className="block text-[10px] font-semibold text-gray-400">
                                   {quotedLabel}
                                 </span>
-                                <span className="block truncate text-[11px] text-gray-500">
+                                <span className="line-clamp-2 block text-[11px] break-words text-gray-500">
                                   {quoteSnippet}
                                 </span>
                               </div>

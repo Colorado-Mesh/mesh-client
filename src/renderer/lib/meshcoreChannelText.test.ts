@@ -10,6 +10,7 @@ import {
   resolveMeshcoreBracketParentKey,
   resolveMeshcoreBracketParentKeyDm,
 } from './meshcoreChannelText';
+import { REPLY_PREVIEW_MAX_LEN } from './replyPreview';
 import type { ChatMessage } from './types';
 
 describe('normalizeMeshcoreIncomingText', () => {
@@ -196,6 +197,8 @@ describe('buildMeshcoreDmIncomingMessage', () => {
     expect(msg.replyId).toBe(t0);
     expect(msg.payload).toBe(thumb);
     expect(msg.channel).toBe(-1);
+    expect(msg.replyPreviewText).toBe('ping');
+    expect(msg.replyPreviewSender).toBe('Bob');
   });
 });
 
@@ -274,5 +277,31 @@ describe('buildMeshcoreChannelIncomingMessage', () => {
     expect(msg.emoji).toBeUndefined();
     expect(msg.replyId).toBe(99);
     expect(msg.payload).toBe('hi back');
+    expect(msg.replyPreviewText).toBe('parent text');
+    expect(msg.replyPreviewSender).toBe('Target');
+  });
+
+  it('truncates reply preview when parent payload is long', () => {
+    const longParents: ChatMessage[] = [
+      {
+        sender_id: 10,
+        sender_name: 'Target',
+        payload: 'x'.repeat(REPLY_PREVIEW_MAX_LEN + 30),
+        channel: 0,
+        timestamp: baseTime,
+        status: 'acked',
+        packetId: 101,
+      },
+    ];
+    const msg = buildMeshcoreChannelIncomingMessage(longParents, {
+      rawText: 'Someone: @[Target] short',
+      senderId: 20,
+      displayName: 'Someone',
+      channel: 0,
+      timestamp: baseTime + 500,
+      receivedVia: 'rf',
+    });
+    expect(msg.replyPreviewText?.length).toBe(REPLY_PREVIEW_MAX_LEN + 1);
+    expect(msg.replyPreviewText?.endsWith('…')).toBe(true);
   });
 });

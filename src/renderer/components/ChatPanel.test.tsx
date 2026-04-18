@@ -686,6 +686,33 @@ describe('ChatPanel StatusBadge', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders quoted preview from stored replyPreview fields when parent is not in messages', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            {
+              sender_id: 3,
+              sender_name: 'Bob',
+              payload: 'reply text',
+              channel: 0,
+              timestamp: Date.now(),
+              replyId: 424242,
+              replyPreviewText: 'Saved parent snippet',
+              replyPreviewSender: 'Alice',
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(
+      screen.getByRole('button', { name: /Jump to quoted message from Alice/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Saved parent snippet')).toBeInTheDocument();
+  });
+
   it('shows tooltip on hover and does not use a native title attribute', async () => {
     // Regression: StatusBadge previously used `title` which is silently dropped
     // in Electron. It must use HelpTooltip so the tooltip mounts in the DOM.

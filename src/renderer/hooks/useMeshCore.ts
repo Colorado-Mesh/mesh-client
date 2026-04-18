@@ -215,6 +215,8 @@ function messageToDbRow(
     to_node: msg.to ?? null,
     received_via,
     rx_packet_fingerprint: msg.rxPacketFingerprintHex ?? null,
+    reply_preview_text: msg.replyPreviewText ?? null,
+    reply_preview_sender: msg.replyPreviewSender ?? null,
   };
 }
 

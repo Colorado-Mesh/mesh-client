@@ -1,19 +1,6 @@
 import { normalizeReactionEmoji } from './reactions';
+import { findParentMessageForReply, truncateReplyPreviewText } from './replyPreview';
 import type { ChatMessage } from './types';
-
-const REPLY_PREVIEW_MAX_LEN = 80;
-
-/** Find the message whose packetId or timestamp matches `key` (used for preview extraction). */
-function findMessageByKey(messages: readonly ChatMessage[], key: number): ChatMessage | undefined {
-  return messages.find((m) => m.packetId === key || m.timestamp === key);
-}
-
-/** Truncate payload for reply preview display. */
-function replyPreviewText(payload: string): string {
-  return payload.length > REPLY_PREVIEW_MAX_LEN
-    ? payload.slice(0, REPLY_PREVIEW_MAX_LEN) + '…'
-    : payload;
-}
 
 export interface MeshcoreNormalizedText {
   senderName?: string;
@@ -201,10 +188,10 @@ export function buildMeshcoreChannelIncomingMessage(
     });
     if (parentKey != null) {
       const body = normalized.payload.trim();
-      const parent = findMessageByKey(messages, parentKey);
+      const parent = findParentMessageForReply(messages, parentKey);
       const previewFields = parent
         ? {
-            replyPreviewText: replyPreviewText(parent.payload),
+            replyPreviewText: truncateReplyPreviewText(parent.payload),
             replyPreviewSender: parent.sender_name,
           }
         : undefined;
@@ -272,10 +259,10 @@ export function buildMeshcoreDmIncomingMessage(
     });
     if (parentKey != null) {
       const body = parsed.payload.trim();
-      const parent = findMessageByKey(messages, parentKey);
+      const parent = findParentMessageForReply(messages, parentKey);
       const previewFields = parent
         ? {
-            replyPreviewText: replyPreviewText(parent.payload),
+            replyPreviewText: truncateReplyPreviewText(parent.payload),
             replyPreviewSender: parent.sender_name,
           }
         : undefined;

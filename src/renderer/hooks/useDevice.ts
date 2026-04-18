@@ -31,6 +31,7 @@ import {
   type MeshtasticRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
 import { normalizeReactionEmoji } from '../lib/reactions';
+import { enrichMeshtasticReplyPreviews } from '../lib/replyPreview';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { TransportManager } from '../lib/transport/TransportManager';
@@ -190,6 +191,10 @@ export function useDevice() {
     isLicensed: boolean;
   } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const messagesRef = useRef<ChatMessage[]>([]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
   const [nodes, setNodes] = useState<Map<number, MeshNode>>(new Map());
   const [telemetry, setTelemetry] = useState<TelemetryPoint[]>([]);
   const [signalTelemetry, setSignalTelemetry] = useState<TelemetryPoint[]>([]);
@@ -794,17 +799,22 @@ export function useDevice() {
 
       // Deduplicate by content too (same sender + timestamp)
       const mqttMsg = { ...msg, receivedVia: 'mqtt' as const };
+      const mqttWithPreviews = enrichMeshtasticReplyPreviews(
+        mqttMsg,
+        messagesRef.current,
+        getNodeName,
+      );
       setMessages((prev) => {
         const isDup = prev.some(
           (m) =>
-            m.sender_id === mqttMsg.sender_id &&
-            m.timestamp === mqttMsg.timestamp &&
-            m.payload === mqttMsg.payload,
+            m.sender_id === mqttWithPreviews.sender_id &&
+            m.timestamp === mqttWithPreviews.timestamp &&
+            m.payload === mqttWithPreviews.payload,
         );
         if (isDup) return prev;
-        return [...prev, mqttMsg];
+        return [...prev, mqttWithPreviews];
       });
-      void window.electronAPI.db.saveMessage(mqttMsg);
+      void window.electronAPI.db.saveMessage(mqttWithPreviews);
     });
 
     return () => {
@@ -820,7 +830,7 @@ export function useDevice() {
         mqttPresenceIntervalRef.current = null;
       }
     };
-  }, [updateNodes, isDuplicate, startGpsInterval, ensureNodeExists]);
+  }, [updateNodes, isDuplicate, startGpsInterval, ensureNodeExists, getNodeName]);
 
   // Cleanup on unmount — stop all intervals and subscriptions
   useEffect(() => {
@@ -1014,7 +1024,7 @@ export function useDevice() {
           ? (normalizeReactionEmoji(wireEmoji, payloadText) ?? wireEmoji ?? undefined)
           : undefined;
 
-        const msg: ChatMessage = {
+        const msgBase: ChatMessage = {
           sender_id: meshPacket.from,
           sender_name: getNodeName(meshPacket.from),
           payload: payloadText,
@@ -1026,6 +1036,7 @@ export function useDevice() {
           replyId,
           to: meshPacket.to && meshPacket.to !== BROADCAST_ADDR ? meshPacket.to : undefined,
         };
+        const msg = enrichMeshtasticReplyPreviews(msgBase, messagesRef.current, getNodeName);
 
         // Packet ID dedup: skip if already seen (e.g. via MQTT) so same message is not shown twice
         if (!isEcho && !msg.emoji && msg.packetId && isDuplicate(msg.packetId)) {
@@ -2453,18 +2464,22 @@ export function useDevice() {
         ? hasMqtt // MQTT-only: always uplink when connected
         : !!(chCfg?.uplinkEnabled && hasMqtt && myNodeNumRef.current);
 
-      const msg: ChatMessage = {
-        sender_id: from,
-        sender_name: getNodeName(from),
-        payload: text,
-        channel,
-        timestamp: Date.now(),
-        packetId: tempId,
-        status: deviceRef.current ? ('sending' as const) : undefined,
-        mqttStatus: shouldUplink ? ('sending' as const) : undefined,
-        to: destination,
-        replyId,
-      };
+      const msg: ChatMessage = enrichMeshtasticReplyPreviews(
+        {
+          sender_id: from,
+          sender_name: getNodeName(from),
+          payload: text,
+          channel,
+          timestamp: Date.now(),
+          packetId: tempId,
+          status: deviceRef.current ? ('sending' as const) : undefined,
+          mqttStatus: shouldUplink ? ('sending' as const) : undefined,
+          to: destination,
+          replyId,
+        },
+        messagesRef.current,
+        getNodeName,
+      );
       setMessages((prev) => [...prev, msg]);
       void window.electronAPI.db.saveMessage(msg);
 
