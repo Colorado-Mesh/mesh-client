@@ -19,6 +19,7 @@ import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { HelpTooltip } from './HelpTooltip';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 
@@ -63,6 +64,8 @@ interface NodeDetailModalProps {
   meshcoreLocalStats?: MeshCoreLocalStats | null;
   /** MeshCore: local radio manufacturer/model from `deviceQuery` (our node only in body). */
   meshcoreManufacturerModel?: string;
+  /** MeshCore: if set, Trace Route is only enabled when true for this node (0-hop or PathUpdated received). */
+  meshcoreCanPingTrace?: (nodeId: number) => boolean;
 }
 
 export default function NodeDetailModal({
@@ -96,6 +99,7 @@ export default function NodeDetailModal({
   onShareContact,
   meshcoreLocalStats,
   meshcoreManufacturerModel,
+  meshcoreCanPingTrace,
 }: NodeDetailModalProps) {
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
@@ -307,6 +311,21 @@ export default function NodeDetailModal({
       setTraceRoutePending(false);
     }
   };
+
+  const meshcoreTraceGateOk =
+    protocol !== 'meshcore' || !meshcoreCanPingTrace || meshcoreCanPingTrace(node.node_id);
+
+  const traceHardDisabled = !isConnected || !meshcoreTraceGateOk;
+  const traceBlockReason =
+    protocol === 'meshcore'
+      ? !isConnected
+        ? 'Connect to the radio first.'
+        : !meshcoreTraceGateOk
+          ? 'Path not synced yet — wait for PathUpdated from the radio, or trace a direct (0-hop) peer.'
+          : null
+      : !isConnected
+        ? 'Connect to the radio first.'
+        : null;
 
   return (
     <>
@@ -974,13 +993,29 @@ export default function NodeDetailModal({
                   📍 Request Position
                 </button>
               )}
-              <button
-                onClick={handleTraceRoute}
-                disabled={!isConnected}
-                className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                🛤 {traceRoutePending ? 'Tracing...' : 'Trace Route'}
-              </button>
+              {traceHardDisabled && traceBlockReason ? (
+                <HelpTooltip text={traceBlockReason}>
+                  <span className="inline-flex min-w-[8rem] flex-1">
+                    <button
+                      type="button"
+                      onClick={handleTraceRoute}
+                      disabled
+                      className="bg-secondary-dark min-w-[8rem] flex-1 cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-gray-200 opacity-40"
+                    >
+                      🛤 {traceRoutePending ? 'Tracing...' : 'Trace Route'}
+                    </button>
+                  </span>
+                </HelpTooltip>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleTraceRoute}
+                  disabled={false}
+                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600"
+                >
+                  🛤 {traceRoutePending ? 'Tracing...' : 'Trace Route'}
+                </button>
+              )}
               {protocol === 'meshcore' && onRequestRepeaterStatus && (
                 <button
                   onClick={async () => {

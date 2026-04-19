@@ -252,6 +252,48 @@ export function meshcoreContactToMeshNode(contact: MeshCoreContact): MeshNode {
   };
 }
 
+/** Max hop index in MeshCore outbound path (inclusive of destination). */
+export const MESHCORE_OUT_PATH_LEN_MAX = 61;
+
+/**
+ * Build outbound path bytes for `tracePath` from a contact.
+ * Valid lengths 0..{@link MESHCORE_OUT_PATH_LEN_MAX} use the firmware-reported length.
+ * Negative `outPathLen` (e.g. -1) often means “length unset” while `outPath` still holds a
+ * fixed-size buffer — trim trailing zeros. Oversized reported lengths use the same trim.
+ */
+export function meshcoreSliceContactOutPathForTrace(
+  outPath: Uint8Array | undefined,
+  outPathLen: number | null | undefined,
+): Uint8Array {
+  if (!outPath || outPath.length === 0) return new Uint8Array(0);
+  if (
+    typeof outPathLen === 'number' &&
+    Number.isFinite(outPathLen) &&
+    outPathLen >= 0 &&
+    outPathLen <= MESHCORE_OUT_PATH_LEN_MAX
+  ) {
+    return outPath.slice(0, outPathLen + 1);
+  }
+  if (typeof outPathLen === 'number' && Number.isFinite(outPathLen) && outPathLen < 0) {
+    let end = outPath.length;
+    while (end > 0 && outPath[end - 1] === 0) end--;
+    return end > 0 ? outPath.slice(0, end) : new Uint8Array(0);
+  }
+  if (
+    typeof outPathLen === 'number' &&
+    Number.isFinite(outPathLen) &&
+    outPathLen > MESHCORE_OUT_PATH_LEN_MAX
+  ) {
+    let end = outPath.length;
+    while (end > 0 && outPath[end - 1] === 0) end--;
+    return end > 0 ? outPath.slice(0, end) : new Uint8Array(0);
+  }
+  const n =
+    typeof outPathLen === 'number' && Number.isFinite(outPathLen) ? Math.trunc(outPathLen) : 0;
+  const safe = n >= 0 && n <= MESHCORE_OUT_PATH_LEN_MAX ? n : 0;
+  return outPath.slice(0, safe + 1);
+}
+
 /** Result of mapping a heard RF advert (push 0x80) into UI + DB when the node is not yet a contact. */
 export interface MeshcoreMinimalAdvertNodeResult {
   node: MeshNode;

@@ -71,6 +71,7 @@ import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMe
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
 import type { ChatMessage, DeviceState, MeshProtocol, MQTTSettings, MQTTStatus } from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
+import { usePathHistoryStore } from './stores/pathHistoryStore';
 
 // Tabs (0-indexed) that are disabled in MeshCore mode
 // Security tab (index 7) is hidden for MeshCore since PKI config is not supported
@@ -497,6 +498,10 @@ export default function App() {
   // ─── Theme colors (localStorage overrides for @theme tokens) ─────
   useLayoutEffect(() => {
     applyThemeColors(loadThemeColors());
+  }, []);
+
+  useEffect(() => {
+    void usePathHistoryStore.getState().loadAllFromDb();
   }, []);
 
   const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredMeshProtocol());
@@ -1825,6 +1830,7 @@ export default function App() {
                               meshcoreStatusErrors={meshcoreDevice.meshcoreStatusErrors}
                               meshcoreTraceResults={meshcoreDevice.meshcoreTraceResults}
                               meshcorePingErrors={meshcoreDevice.meshcorePingErrors}
+                              meshcoreCanPingTrace={meshcoreDevice.meshcoreCanPingTrace}
                               onRequestRepeaterStatus={meshcoreDevice.requestRepeaterStatus}
                               onPing={meshcoreDevice.traceRoute}
                               onDeleteRepeater={meshcoreDevice.deleteNode}
@@ -2268,6 +2274,9 @@ export default function App() {
             }}
             onRequestPosition={device.requestPosition}
             onTraceRoute={protocol === 'meshcore' ? meshcoreDevice.traceRoute : device.traceRoute}
+            meshcoreCanPingTrace={
+              protocol === 'meshcore' ? meshcoreDevice.meshcoreCanPingTrace : undefined
+            }
             traceRouteHops={traceRouteHops}
             onDeleteNode={async (nodeNum) => {
               await device.deleteNode(nodeNum);

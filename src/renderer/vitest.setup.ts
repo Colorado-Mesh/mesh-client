@@ -109,6 +109,7 @@ const electronAPIMock = {
     upsertMeshcorePathHistory: vi.fn().mockResolvedValue(true),
     recordMeshcorePathOutcome: vi.fn().mockResolvedValue(true),
     getMeshcorePathHistory: vi.fn().mockResolvedValue([]),
+    getAllMeshcorePathHistory: vi.fn().mockResolvedValue([]),
     deleteMeshcorePathHistoryForNode: vi.fn().mockResolvedValue(true),
     deleteAllMeshcorePathHistory: vi.fn().mockResolvedValue(true),
     getContactGroups: vi.fn().mockResolvedValue([]),

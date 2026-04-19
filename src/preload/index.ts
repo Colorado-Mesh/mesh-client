@@ -257,6 +257,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ) => ipcRenderer.invoke('db:recordMeshcorePathOutcome', nodeId, pathHash, success, tripTimeMs),
     getMeshcorePathHistory: (nodeId: number) =>
       ipcRenderer.invoke('db:getMeshcorePathHistory', nodeId),
+    getAllMeshcorePathHistory: () => ipcRenderer.invoke('db:getAllMeshcorePathHistory'),
     deleteMeshcorePathHistoryForNode: (nodeId: number) =>
       ipcRenderer.invoke('db:deleteMeshcorePathHistoryForNode', nodeId),
     deleteAllMeshcorePathHistory: () => ipcRenderer.invoke('db:deleteAllMeshcorePathHistory'),

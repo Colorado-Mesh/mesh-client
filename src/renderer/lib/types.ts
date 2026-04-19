@@ -550,6 +550,23 @@ declare global {
             updated_at: number;
           }[]
         >;
+        getAllMeshcorePathHistory: () => Promise<
+          {
+            id: number;
+            node_id: number;
+            path_hash: string;
+            hop_count: number;
+            path_bytes: string;
+            was_flood_discovery: number;
+            success_count: number;
+            failure_count: number;
+            trip_time_ms: number;
+            route_weight: number;
+            last_success_ts: number | null;
+            created_at: number;
+            updated_at: number;
+          }[]
+        >;
         deleteMeshcorePathHistoryForNode: (nodeId: number) => Promise<boolean>;
         deleteAllMeshcorePathHistory: () => Promise<boolean>;
         getContactGroups: (

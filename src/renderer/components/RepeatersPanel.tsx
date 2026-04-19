@@ -21,6 +21,7 @@ import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
+import { HelpTooltip } from './HelpTooltip';
 import { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 import { useToast } from './Toast';
@@ -49,6 +50,8 @@ interface Props {
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
   meshcoreCliErrors?: Map<number, string>;
   onClearCliHistory?: (nodeId: number) => void;
+  /** MeshCore: if set, Ping is only enabled when this returns true (direct 0-hop or PathUpdated received). */
+  meshcoreCanPingTrace?: (nodeId: number) => boolean;
 }
 
 function formatRelativeTime(
@@ -151,6 +154,7 @@ export default function RepeatersPanel({
   meshcoreCliHistories,
   meshcoreCliErrors,
   onClearCliHistory,
+  meshcoreCanPingTrace,
 }: Props) {
   const { addToast } = useToast();
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
@@ -501,6 +505,15 @@ export default function RepeatersPanel({
                   const neighborData = meshcoreNeighbors?.get(node.node_id);
                   const telemetryData = meshcoreTelemetry?.get(node.node_id);
                   const telemetryError = meshcoreTelemetryErrors?.get(node.node_id);
+                  const pingAllowed = !meshcoreCanPingTrace || meshcoreCanPingTrace(node.node_id);
+                  const pingHardDisabled = !isConnected || isPingLoading || !pingAllowed;
+                  const pingBlockReason = !isConnected
+                    ? 'Connect to the radio first.'
+                    : isPingLoading
+                      ? 'Ping in progress…'
+                      : !pingAllowed
+                        ? 'Path not synced yet — wait for PathUpdated from the radio, or use a direct (0-hop) peer.'
+                        : null;
                   return (
                     <Fragment key={node.node_id}>
                       <tr className="text-gray-300 hover:bg-gray-800/30">
@@ -588,26 +601,59 @@ export default function RepeatersPanel({
                         </td>
                         <td className="py-2">
                           <div className="flex flex-wrap gap-1">
-                            <button
-                              type="button"
-                              onClick={() => void handlePing(node.node_id)}
-                              disabled={!isConnected || isPingLoading}
-                              title={pingError ?? undefined}
-                              aria-label={pingError ? `Ping error: ${pingError}` : 'Ping trace'}
-                              className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                                pingError
-                                  ? 'border border-red-700 bg-red-900/60 text-red-300'
-                                  : 'border border-blue-700 bg-blue-900/60 text-blue-300 hover:bg-blue-800/60'
-                              }`}
-                            >
-                              {isPingLoading ? (
-                                <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
-                              ) : pingError ? (
-                                'Error'
-                              ) : (
-                                'Ping'
-                              )}
-                            </button>
+                            {pingHardDisabled && pingBlockReason ? (
+                              <HelpTooltip text={pingBlockReason}>
+                                <span className="inline-flex">
+                                  <button
+                                    type="button"
+                                    onClick={() => void handlePing(node.node_id)}
+                                    disabled
+                                    aria-label={
+                                      pingError ? `Ping error: ${pingError}` : 'Ping trace'
+                                    }
+                                    className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
+                                      pingError
+                                        ? 'border border-red-700 bg-red-900/60 text-red-300'
+                                        : 'border border-blue-700 bg-blue-900/60 text-blue-300 hover:bg-blue-800/60'
+                                    }`}
+                                  >
+                                    {isPingLoading ? (
+                                      <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
+                                    ) : pingError ? (
+                                      'Error'
+                                    ) : (
+                                      'Ping'
+                                    )}
+                                  </button>
+                                </span>
+                              </HelpTooltip>
+                            ) : pingError ? (
+                              <HelpTooltip text={`Last ping failed: ${pingError}`}>
+                                <span className="inline-flex">
+                                  <button
+                                    type="button"
+                                    onClick={() => void handlePing(node.node_id)}
+                                    aria-label={`Ping error: ${pingError}`}
+                                    className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60"
+                                  >
+                                    Error
+                                  </button>
+                                </span>
+                              </HelpTooltip>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => void handlePing(node.node_id)}
+                                aria-label="Ping trace"
+                                className="rounded border border-blue-700 bg-blue-900/60 px-2 py-0.5 text-xs font-medium text-blue-300 transition-colors hover:bg-blue-800/60"
+                              >
+                                {isPingLoading ? (
+                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
+                                ) : (
+                                  'Ping'
+                                )}
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => void handleStatus(node.node_id)}

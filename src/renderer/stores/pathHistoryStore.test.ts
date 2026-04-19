@@ -339,3 +339,29 @@ describe('clearAll', () => {
     expect(usePathHistoryStore.getState().lruOrder).toHaveLength(0);
   });
 });
+
+describe('loadAllFromDb', () => {
+  it('hydrates path records from getAllMeshcorePathHistory', async () => {
+    const row = {
+      id: 1,
+      node_id: 99,
+      path_hash: 'ab',
+      hop_count: 1,
+      path_bytes: '[1,2]',
+      was_flood_discovery: 0,
+      success_count: 1,
+      failure_count: 0,
+      trip_time_ms: 100,
+      route_weight: 1,
+      last_success_ts: Date.now(),
+      created_at: 1,
+      updated_at: 2,
+    };
+    vi.spyOn(window.electronAPI.db, 'getAllMeshcorePathHistory').mockResolvedValue([row]);
+    await usePathHistoryStore.getState().loadAllFromDb();
+    const recs = usePathHistoryStore.getState().records.get(99);
+    expect(recs?.length).toBe(1);
+    expect(recs?.[0].pathBytes).toEqual([1, 2]);
+    expect(recs?.[0].pathHash).toBe('ab');
+  });
+});

@@ -83,6 +83,7 @@ import {
   meshcoreManufacturerModelFromDeviceQuery,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
+  meshcoreSliceContactOutPathForTrace,
   meshcoreSyntheticPlaceholderPubKeyHex,
   meshcoreTracePathLenToHops,
   minimalMeshcoreChatNode,
@@ -255,7 +256,7 @@ function rendererLikelyWin32(): boolean {
       ?.platform;
     if (plat && /Windows/i.test(plat)) return true;
     // Legacy fallback when userAgent / userAgentData are inconclusive (Chromium still exposes platform on Win).
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- navigator.platform is the last-resort Win hint
+
     if (navigator.platform && /Win/i.test(navigator.platform)) return true;
   }
   return false;
@@ -273,7 +274,7 @@ function rendererLikelyLinux(): boolean {
     const plat = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
       ?.platform;
     if (plat && /Linux/i.test(plat)) return true;
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- navigator.platform is last-resort platform hint
+
     if (navigator.platform && /Linux/i.test(navigator.platform)) return true;
   }
   return false;
@@ -292,6 +293,8 @@ const WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS = 1_500;
 const MESHCORE_INIT_TIMEOUT_MS = 60_000;
 /** Companion Ok/Err for `sendFloodAdvert` — meshcore.js has no internal timeout. */
 const MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS = 25_000;
+/** Max time to wait for PathUpdated (129) after a flood advert when priming trace route. */
+const MESHCORE_TRACE_PRIME_WAIT_MS = 12_000;
 
 export function serializeErrorLike(value: unknown): string {
   if (value instanceof Error) return value.message;
@@ -709,6 +712,34 @@ interface MeshCoreConnection {
   importPrivateKey(privateKey: Uint8Array): Promise<void>;
   // Waiting messages
   syncNextMessage(): Promise<unknown>;
+}
+
+/** Wait for companion push 0x81 (129 PathUpdated) for a specific node's pubkey. */
+function waitForMeshcorePath129ForNode(
+  conn: Pick<MeshCoreConnection, 'on' | 'off'>,
+  nodeId: number,
+  timeoutMs: number,
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(t);
+      conn.off(129, on129);
+      resolve(ok);
+    };
+    const on129 = (data: unknown) => {
+      const d = data as { publicKey?: Uint8Array };
+      if (d.publicKey?.length !== 32) return;
+      if (pubkeyToNodeId(d.publicKey) !== nodeId) return;
+      finish(true);
+    };
+    const t = setTimeout(() => {
+      finish(false);
+    }, timeoutMs);
+    conn.on(129, on129);
+  });
 }
 
 export interface MeshCoreContactRaw {
@@ -1129,6 +1160,10 @@ export function useMeshCore() {
   const meshcoreContactsRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** NodeIds that fired event 129 since last debounced contacts refresh (for path history recording). */
   const meshcorePathUpdatePendingRef = useRef<Set<number>>(new Set());
+  /** Session-scoped: nodeIds that received PathUpdated (129) this connection (Ping/trace gating). */
+  const meshcoreSessionPathUpdatedNodeIdsRef = useRef<Set<number>>(new Set());
+  /** Bumps when {@link meshcoreSessionPathUpdatedNodeIdsRef} gains a node so UI re-evaluates Ping enablement. */
+  const [meshcorePingRouteReadyEpoch, setMeshcorePingRouteReadyEpoch] = useState(0);
   /** Periodic poll for waiting messages when event 131 may have been missed. */
   const meshcoreWaitingMessagesPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Stable ref to the current connection's processWaitingMessages fn (set by setupEventListeners). */
@@ -1955,6 +1990,10 @@ export function useMeshCore() {
         }
         const nodeId = pubkeyToNodeId(d.publicKey);
         if (nodeId === 0) return;
+        if (!meshcoreSessionPathUpdatedNodeIdsRef.current.has(nodeId)) {
+          meshcoreSessionPathUpdatedNodeIdsRef.current.add(nodeId);
+          setMeshcorePingRouteReadyEpoch((e) => e + 1);
+        }
         const nowSec = Math.floor(Date.now() / 1000);
         console.debug('[useMeshCore] event 129: path update', nodeId.toString(16).toUpperCase());
         const persist129 = {
@@ -2736,6 +2775,8 @@ export function useMeshCore() {
       });
 
       conn.on('disconnected', () => {
+        meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();
+        setMeshcorePingRouteReadyEpoch((e) => e + 1);
         setState((prev) => ({ ...prev, status: 'disconnected' }));
         setQueueStatus(null);
         // Clear pending contacts refresh timer
@@ -3484,6 +3525,8 @@ export function useMeshCore() {
       webBluetoothTransportRef.current = null;
     }
     connRef.current = null;
+    meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();
+    setMeshcorePingRouteReadyEpoch((e) => e + 1);
     pubKeyMapRef.current.clear();
     pubKeyPrefixMapRef.current.clear();
     outPathMapRef.current.clear();
@@ -4078,6 +4121,16 @@ export function useMeshCore() {
       });
   }, []);
 
+  /**
+   * MeshCore: allow Ping/trace for direct peers (0 hops) immediately; multi-hop / unknown hops require
+   * PathUpdated (129) this session so the radio has cached a route.
+   */
+  const meshcoreCanPingTrace = useCallback((nodeId: number) => {
+    const hops = nodesRef.current.get(nodeId)?.hops_away;
+    if (hops === 0) return true;
+    return meshcoreSessionPathUpdatedNodeIdsRef.current.has(nodeId);
+  }, []);
+
   const traceRoute = useCallback(
     async (nodeId: number) => {
       const pubKey = pubKeyMapRef.current.get(nodeId);
@@ -4119,14 +4172,13 @@ export function useMeshCore() {
             const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
             for (const contact of contacts) {
               if (pubkeyToNodeId(contact.publicKey) !== nodeId) continue;
-              const contactPathLen = contact.outPathLen ?? 0;
               if (typeof contact.outPathLen === 'number' && Number.isFinite(contact.outPathLen)) {
                 radioContactPathLen = contact.outPathLen;
               }
-              const slice =
-                contact.outPath && contactPathLen >= 0
-                  ? contact.outPath.slice(0, contactPathLen + 1)
-                  : new Uint8Array(0);
+              const slice = meshcoreSliceContactOutPathForTrace(
+                contact.outPath,
+                contact.outPathLen,
+              );
               if (slice.length > 0) {
                 outPathMapRef.current.set(nodeId, slice);
                 storedPath = slice;
@@ -4135,6 +4187,67 @@ export function useMeshCore() {
             }
           } catch (e: unknown) {
             console.warn('[useMeshCore] traceRoute getContacts refresh failed', e);
+          }
+        }
+        if ((!storedPath || storedPath.length <= 1) && (hopsAway == null || hopsAway >= 1)) {
+          try {
+            await usePathHistoryStore.getState().loadForNode(nodeId);
+            const sel = usePathHistoryStore.getState().selectBestPath(nodeId);
+            if (sel?.pathBytes?.length !== undefined && sel.pathBytes.length > 1) {
+              const fromHist = new Uint8Array(sel.pathBytes);
+              outPathMapRef.current.set(nodeId, fromHist);
+              storedPath = fromHist;
+            }
+          } catch {
+            // catch-no-log-ok path history optional
+          }
+        }
+        const needsRoutePrime =
+          (!storedPath || storedPath.length <= 1) && (hopsAway == null || hopsAway >= 1);
+        if (needsRoutePrime) {
+          try {
+            await withTimeout(
+              conn.sendFloodAdvert(),
+              MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
+              'meshcoreTracePrimeFloodAdvert',
+            );
+          } catch (e: unknown) {
+            console.warn('[useMeshCore] traceRoute prime: sendFloodAdvert failed', e);
+          }
+          await waitForMeshcorePath129ForNode(conn, nodeId, MESHCORE_TRACE_PRIME_WAIT_MS);
+          try {
+            const contactsRawPrime = await conn.getContacts();
+            const contactsPrime = contactsRawPrime.map(meshcoreContactRawFromDevice);
+            for (const contact of contactsPrime) {
+              if (pubkeyToNodeId(contact.publicKey) !== nodeId) continue;
+              if (typeof contact.outPathLen === 'number' && Number.isFinite(contact.outPathLen)) {
+                radioContactPathLen = contact.outPathLen;
+              }
+              const slicePrime = meshcoreSliceContactOutPathForTrace(
+                contact.outPath,
+                contact.outPathLen,
+              );
+              if (slicePrime.length > 0) {
+                outPathMapRef.current.set(nodeId, slicePrime);
+                storedPath = slicePrime;
+              }
+              break;
+            }
+          } catch (e: unknown) {
+            console.warn('[useMeshCore] traceRoute post-prime getContacts failed', e);
+          }
+          if (!storedPath || storedPath.length <= 1) {
+            try {
+              await usePathHistoryStore.getState().loadForNode(nodeId);
+              const selPrime = usePathHistoryStore.getState().selectBestPath(nodeId);
+              if (selPrime?.pathBytes?.length !== undefined && selPrime.pathBytes.length > 1) {
+                const fromHistPrime = new Uint8Array(selPrime.pathBytes);
+                outPathMapRef.current.set(nodeId, fromHistPrime);
+                storedPath = fromHistPrime;
+              }
+            } catch {
+              // catch-no-log-ok path history optional
+            }
           }
         }
         const pathTooShort = !storedPath || storedPath.length <= 1;
@@ -5513,6 +5626,8 @@ export function useMeshCore() {
       clearAllMeshcoreContacts,
       setOwner,
       traceRoute,
+      meshcoreCanPingTrace,
+      meshcorePingRouteReadyEpoch,
       requestRepeaterStatus,
       requestTelemetry,
       requestNeighbors,
@@ -5631,6 +5746,8 @@ export function useMeshCore() {
       clearAllMeshcoreContacts,
       setOwner,
       traceRoute,
+      meshcoreCanPingTrace,
+      meshcorePingRouteReadyEpoch,
       requestRepeaterStatus,
       requestTelemetry,
       requestNeighbors,

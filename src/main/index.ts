@@ -36,6 +36,7 @@ import {
   deleteNodesBySource,
   deleteNodesWithoutLongname,
   exportDatabase,
+  getAllMeshcorePathHistory,
   getContactGroupMembers,
   getContactGroups,
   getDatabase,
@@ -3906,6 +3907,18 @@ ipcMain.handle(
     }
   },
 );
+
+ipcMain.handle('db:getAllMeshcorePathHistory', () => {
+  try {
+    return getAllMeshcorePathHistory();
+  } catch (err) {
+    console.error(
+      '[IPC] db:getAllMeshcorePathHistory failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
 
 ipcMain.handle('db:getMeshcorePathHistory', (_event, nodeId: number) => {
   try {

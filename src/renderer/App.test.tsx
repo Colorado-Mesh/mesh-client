@@ -22,6 +22,8 @@ const { createMeshCoreMock, getStoredMeshProtocolMock, useMeshCoreMock, useRadio
       getFullNodeLabel: vi.fn(),
       sendText: vi.fn().mockResolvedValue(undefined),
       traceRoute: vi.fn(),
+      meshcoreCanPingTrace: () => true,
+      meshcorePingRouteReadyEpoch: 0,
       traceRouteResults: [],
       meshcoreTraceResults: new Map(),
       meshcoreNodeStatus: new Map(),

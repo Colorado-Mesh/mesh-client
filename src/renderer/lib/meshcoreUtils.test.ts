@@ -18,6 +18,7 @@ import {
   meshcoreMinimalNodeFromAdvertEvent,
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
+  meshcoreSliceContactOutPathForTrace,
   meshcoreTracePathLenToHops,
   pubkeyToNodeId,
 } from './meshcoreUtils';
@@ -220,6 +221,28 @@ describe('repeater session auth (in-memory)', () => {
     meshcoreApplyRepeaterSessionAuth('topsecret');
     expect(sessionStorage.getItem('meshclient:meshcoreRepeaterPassword')).toBeNull();
     expect(sessionStorage.getItem('meshclient:meshcoreRepeaterAuthTouched')).toBeNull();
+  });
+});
+
+describe('meshcoreSliceContactOutPathForTrace', () => {
+  it('uses firmware length when 0..61', () => {
+    const buf = new Uint8Array([1, 2, 3, 0, 0]);
+    expect(meshcoreSliceContactOutPathForTrace(buf, 2)).toEqual(new Uint8Array([1, 2, 3]));
+  });
+
+  it('trims trailing zeros when outPathLen is negative (e.g. -1)', () => {
+    const buf = new Uint8Array([10, 20, 30, 0, 0, 0]);
+    expect(meshcoreSliceContactOutPathForTrace(buf, -1)).toEqual(new Uint8Array([10, 20, 30]));
+  });
+
+  it('returns empty when negative length and buffer all zeros', () => {
+    const buf = new Uint8Array([0, 0, 0]);
+    expect(meshcoreSliceContactOutPathForTrace(buf, -1).length).toBe(0);
+  });
+
+  it('uses first byte only when length unknown (undefined)', () => {
+    const buf = new Uint8Array([7, 8, 9]);
+    expect(meshcoreSliceContactOutPathForTrace(buf, undefined)).toEqual(new Uint8Array([7]));
   });
 });
 
