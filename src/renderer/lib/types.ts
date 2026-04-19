@@ -415,6 +415,7 @@ declare global {
           last_rssi?: number | null;
           nickname?: string | null;
           contact_flags?: number | null;
+          hops_away?: number | null;
           on_radio?: number;
           last_synced_from_radio?: string | null;
         }) => Promise<unknown>;

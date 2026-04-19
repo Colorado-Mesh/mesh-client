@@ -1414,8 +1414,9 @@ export function useMeshCore() {
     Promise.all([
       window.electronAPI.db.getMeshcoreContacts(),
       window.electronAPI.db.getMeshcoreMessages(undefined, 500),
+      window.electronAPI.db.getNodes(),
     ])
-      .then(([rows, dbMsgs]) => {
+      .then(([rows, dbMsgs, savedNodes]) => {
         if (cancelled) return;
         const dbContacts = rows as {
           node_id: number;
@@ -1458,6 +1459,15 @@ export function useMeshCore() {
             pubKeyMapRef.current.set(row.node_id, bytes);
             const prefix = hex.slice(0, 12);
             pubKeyPrefixMapRef.current.set(prefix, row.node_id);
+          }
+        }
+        // Merge hops_away from nodes table as fallback for any nodes missing it
+        for (const n of savedNodes as { node_id: number; hops_away: number | null }[]) {
+          if (n.hops_away != null) {
+            const existing = initial.get(n.node_id);
+            if (existing && existing.hops_away === undefined) {
+              initial.set(n.node_id, { ...existing, hops_away: n.hops_away });
+            }
           }
         }
         const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
@@ -2482,6 +2492,16 @@ export function useMeshCore() {
           next.set(stubId, updated);
           if (hopsAway != null) {
             void window.electronAPI.db.saveNode(updated);
+            void window.electronAPI.db.saveMeshcoreContact({
+              node_id: stubId,
+              public_key: meshcoreSyntheticPlaceholderPubKeyHex(stubId),
+              adv_name: displayName,
+              contact_type: 1,
+              last_advert: d.senderTimestamp,
+              nickname: null,
+              hops_away: hopsAway,
+              on_radio: 1,
+            });
           }
           return next;
         });
