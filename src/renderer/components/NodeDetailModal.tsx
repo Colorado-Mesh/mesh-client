@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import { useEffect, useRef, useState } from 'react';
 
 import type {

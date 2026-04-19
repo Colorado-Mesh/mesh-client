@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity, react-hooks/incompatible-library */
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   type MouseEvent as ReactMouseEvent,

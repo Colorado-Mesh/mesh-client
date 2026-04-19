@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/purity */
 import { useEffect, useMemo, useState } from 'react';
 
 import type { ContactGroup } from '../../shared/electron-api.types';

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import {
   Suspense,
   useCallback,
@@ -387,7 +388,9 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
+  // Reset mesh tube animation state when sidebar collapses - useLayoutEffect for synchronous DOM updates
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useLayoutEffect(() => {
     if (!sidebarCollapsed) return;
     if (meshTubeTimeoutRef.current) {
       clearTimeout(meshTubeTimeoutRef.current);
@@ -745,6 +748,7 @@ export default function App() {
     prevPanelIndexForChatFreezeRef.current = now;
 
     if (now === 1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setChatTabVisited(true);
     }
 

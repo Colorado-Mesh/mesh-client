@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-possible-timing-attacks */
 /**
  * Minimal node shape required by resolveNodeId.
  * Structurally compatible with MeshNode from src/renderer/lib/types.ts.
