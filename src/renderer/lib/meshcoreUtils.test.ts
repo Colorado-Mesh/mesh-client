@@ -242,9 +242,13 @@ describe('meshcoreSliceContactOutPathForTrace', () => {
     expect(meshcoreSliceContactOutPathForTrace(buf, -1).length).toBe(0);
   });
 
-  it('uses first byte only when length unknown (undefined)', () => {
+  it('treats undefined/null like unset length — trim trailing zeros (same as -1)', () => {
     const buf = new Uint8Array([7, 8, 9]);
-    expect(meshcoreSliceContactOutPathForTrace(buf, undefined)).toEqual(new Uint8Array([7]));
+    expect(meshcoreSliceContactOutPathForTrace(buf, undefined)).toEqual(new Uint8Array([7, 8, 9]));
+    expect(meshcoreSliceContactOutPathForTrace(buf, null)).toEqual(new Uint8Array([7, 8, 9]));
+    expect(meshcoreSliceContactOutPathForTrace(new Uint8Array([1, 2, 3, 0, 0]), undefined)).toEqual(
+      new Uint8Array([1, 2, 3]),
+    );
   });
 });
 

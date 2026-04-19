@@ -315,6 +315,37 @@ describe('selectBestPath', () => {
   });
 });
 
+describe('ensureBestPathLoaded', () => {
+  it('returns existing selectBestPath without calling loadForNode', async () => {
+    usePathHistoryStore.getState().recordPathUpdated(7, [1, 2, 3], 2, false);
+    const loadSpy = vi.spyOn(usePathHistoryStore.getState(), 'loadForNode');
+    const sel = await usePathHistoryStore.getState().ensureBestPathLoaded(7);
+    expect(sel?.pathBytes).toEqual([1, 2, 3]);
+    expect(loadSpy).not.toHaveBeenCalled();
+  });
+
+  it('calls loadForNode when no in-memory path and returns hydrated selection', async () => {
+    const row = {
+      id: 1,
+      node_id: 42,
+      path_hash: '0a0b0c',
+      hop_count: 2,
+      path_bytes: '[10,11,12]',
+      was_flood_discovery: 0,
+      success_count: 0,
+      failure_count: 0,
+      trip_time_ms: 0,
+      route_weight: 1,
+      last_success_ts: null,
+      created_at: 1,
+      updated_at: 2,
+    };
+    vi.spyOn(window.electronAPI.db, 'getMeshcorePathHistory').mockResolvedValue([row]);
+    const sel = await usePathHistoryStore.getState().ensureBestPathLoaded(42);
+    expect(sel?.pathBytes).toEqual([10, 11, 12]);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // clearForNode / clearAll
 // ---------------------------------------------------------------------------

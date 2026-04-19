@@ -20,6 +20,7 @@ import { getNodeStatus, normalizeLastHeardMs } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
+import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
 import { HelpTooltip } from './HelpTooltip';
 import { formatSecondsAgo } from './NodeInfoBody';
@@ -200,6 +201,13 @@ export default function RepeatersPanel({
         n.long_name.toLowerCase().includes(q) || n.node_id.toString(16).toLowerCase().includes(q),
     );
   }, [repeaters, searchQuery]);
+
+  useEffect(() => {
+    if (!isConnected || meshcoreCanPingTrace == null) return;
+    for (const n of repeatersFiltered) {
+      void usePathHistoryStore.getState().loadForNode(n.node_id);
+    }
+  }, [isConnected, repeatersFiltered, meshcoreCanPingTrace]);
 
   const remoteAuthReady = meshcoreIsRepeaterRemoteAuthTouched();
 

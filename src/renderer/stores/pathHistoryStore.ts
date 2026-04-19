@@ -97,6 +97,8 @@ interface PathHistoryState {
   ): void;
   recordOutcome(nodeId: number, pathHash: string, success: boolean, tripTimeMs?: number): void;
   selectBestPath(nodeId: number): PathSelection | null;
+  /** Load from SQLite when no in-memory best path (e.g. LRU evicted); then re-select. */
+  ensureBestPathLoaded(nodeId: number): Promise<PathSelection | null>;
   loadForNode(nodeId: number): Promise<void>;
   /** Hydrate in-memory path history from SQLite for all nodes (call at app start). */
   loadAllFromDb(): Promise<void>;
@@ -283,6 +285,13 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
       pathHash: best.pathHash,
       useFlood: best.wasFloodDiscovery && best.successCount === 0,
     };
+  },
+
+  async ensureBestPathLoaded(nodeId) {
+    const existing = get().selectBestPath(nodeId);
+    if (existing != null) return existing;
+    await get().loadForNode(nodeId);
+    return get().selectBestPath(nodeId);
   },
 
   async loadForNode(nodeId) {

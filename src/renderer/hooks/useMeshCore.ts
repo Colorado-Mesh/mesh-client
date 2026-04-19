@@ -1637,15 +1637,9 @@ export function useMeshCore() {
         }
         nextNodes.set(node.node_id, node);
         pubKeyMapRef.current.set(node.node_id, contact.publicKey);
-        const contactPathLen = contact.outPathLen ?? 0;
-        outPathMapRef.current.set(
-          node.node_id,
-          contact.outPath?.slice(0, contactPathLen + 1) ?? new Uint8Array(0),
-        );
-        const contactPathBytes =
-          contact.outPath && contactPathLen > 0
-            ? Array.from(contact.outPath.slice(0, contactPathLen + 1))
-            : [];
+        const slicedPath = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
+        outPathMapRef.current.set(node.node_id, slicedPath);
+        const contactPathBytes = slicedPath.length > 0 ? Array.from(slicedPath) : [];
         if (contactPathBytes.length > 0) {
           const pathHash = computePathHash(contactPathBytes);
           const existing = usePathHistoryStore.getState().records.get(node.node_id) ?? [];
@@ -2039,6 +2033,33 @@ export function useMeshCore() {
         }
         // Accumulate nodeIds for path history recording after the debounced refresh
         meshcorePathUpdatePendingRef.current.add(nodeId);
+        // Refresh route bytes quickly so trace/ping can use outPath before the debounced full rebuild.
+        void (async () => {
+          if (!connRef.current) return;
+          try {
+            const contactsRaw = await connRef.current.getContacts();
+            const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
+            for (const contact of contacts) {
+              const cNodeId = pubkeyToNodeId(contact.publicKey);
+              if (cNodeId !== nodeId) continue;
+              const sliced = meshcoreSliceContactOutPathForTrace(
+                contact.outPath,
+                contact.outPathLen,
+              );
+              if (sliced.length > 0) {
+                outPathMapRef.current.set(cNodeId, sliced);
+                const pathBytes = Array.from(sliced);
+                const hops =
+                  meshcoreInferHopsFromOutPath(contact) ?? Math.max(0, pathBytes.length - 1);
+                usePathHistoryStore.getState().recordPathUpdated(cNodeId, pathBytes, hops, false);
+                meshcorePathUpdatePendingRef.current.delete(cNodeId);
+              }
+              break;
+            }
+          } catch (e: unknown) {
+            console.warn('[useMeshCore] immediate path refresh after 129 error', e);
+          }
+        })();
         // Path updates may change hop counts; debounced contacts refresh to fetch updated outPathLen
         if (meshcoreContactsRefreshTimerRef.current) {
           clearTimeout(meshcoreContactsRefreshTimerRef.current);
@@ -2064,11 +2085,11 @@ export function useMeshCore() {
               for (const contact of contacts) {
                 const cNodeId = pubkeyToNodeId(contact.publicKey);
                 if (!pendingIds.has(cNodeId)) continue;
-                const pathLen = contact.outPathLen ?? 0;
-                const pathBytes =
-                  contact.outPath && pathLen > 0
-                    ? Array.from(contact.outPath.slice(0, pathLen + 1))
-                    : [];
+                const sliced = meshcoreSliceContactOutPathForTrace(
+                  contact.outPath,
+                  contact.outPathLen,
+                );
+                const pathBytes = sliced.length > 0 ? Array.from(sliced) : [];
                 if (pathBytes.length > 0) {
                   const hops = newNodes.get(cNodeId)?.hops_away ?? 0;
                   usePathHistoryStore.getState().recordPathUpdated(cNodeId, pathBytes, hops, false);
@@ -2078,7 +2099,7 @@ export function useMeshCore() {
               console.warn('[useMeshCore] debounced contacts refresh error', e);
             }
           })();
-        }, 3000);
+        }, 2000);
       });
 
       // Push: send confirmed — event 0x82 = 130; resolve pending DM delivery
@@ -2163,10 +2184,9 @@ export function useMeshCore() {
         const d = meshcoreContactRawFromDevice(data as MeshCoreContactRaw);
         const node = meshcoreContactToMeshNode(d);
         pubKeyMapRef.current.set(node.node_id, d.publicKey);
-        const evt138PathLen = d.outPathLen ?? 0;
         outPathMapRef.current.set(
           node.node_id,
-          d.outPath?.slice(0, evt138PathLen + 1) ?? new Uint8Array(0),
+          meshcoreSliceContactOutPathForTrace(d.outPath, d.outPathLen),
         );
         const prefix = Array.from(d.publicKey.slice(0, 6))
           .map((b) => b.toString(16).padStart(2, '0'))
@@ -4083,8 +4103,7 @@ export function useMeshCore() {
         }
         if ((!storedPath || storedPath.length <= 1) && (hopsAway == null || hopsAway >= 1)) {
           try {
-            await usePathHistoryStore.getState().loadForNode(nodeId);
-            const sel = usePathHistoryStore.getState().selectBestPath(nodeId);
+            const sel = await usePathHistoryStore.getState().ensureBestPathLoaded(nodeId);
             if (sel?.pathBytes?.length !== undefined && sel.pathBytes.length > 1) {
               const fromHist = new Uint8Array(sel.pathBytes);
               outPathMapRef.current.set(nodeId, fromHist);
@@ -4130,8 +4149,7 @@ export function useMeshCore() {
           }
           if (!storedPath || storedPath.length <= 1) {
             try {
-              await usePathHistoryStore.getState().loadForNode(nodeId);
-              const selPrime = usePathHistoryStore.getState().selectBestPath(nodeId);
+              const selPrime = await usePathHistoryStore.getState().ensureBestPathLoaded(nodeId);
               if (selPrime?.pathBytes?.length !== undefined && selPrime.pathBytes.length > 1) {
                 const fromHistPrime = new Uint8Array(selPrime.pathBytes);
                 outPathMapRef.current.set(nodeId, fromHistPrime);
