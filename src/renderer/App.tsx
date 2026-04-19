@@ -2278,9 +2278,6 @@ export default function App() {
             }}
             onRequestPosition={device.requestPosition}
             onTraceRoute={protocol === 'meshcore' ? meshcoreDevice.traceRoute : device.traceRoute}
-            meshcoreCanPingTrace={
-              protocol === 'meshcore' ? meshcoreDevice.meshcoreCanPingTrace : undefined
-            }
             traceRouteHops={traceRouteHops}
             onDeleteNode={async (nodeNum) => {
               await device.deleteNode(nodeNum);

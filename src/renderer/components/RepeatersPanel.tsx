@@ -51,7 +51,7 @@ interface Props {
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
   meshcoreCliErrors?: Map<number, string>;
   onClearCliHistory?: (nodeId: number) => void;
-  /** MeshCore: if set, Ping is only enabled when this returns true (direct 0-hop or PathUpdated received). */
+  /** MeshCore: when set (non-null), prefetches SQLite path history for visible repeaters. */
   meshcoreCanPingTrace?: (nodeId: number) => boolean;
 }
 
@@ -513,15 +513,12 @@ export default function RepeatersPanel({
                   const neighborData = meshcoreNeighbors?.get(node.node_id);
                   const telemetryData = meshcoreTelemetry?.get(node.node_id);
                   const telemetryError = meshcoreTelemetryErrors?.get(node.node_id);
-                  const pingAllowed = !meshcoreCanPingTrace || meshcoreCanPingTrace(node.node_id);
-                  const pingHardDisabled = !isConnected || isPingLoading || !pingAllowed;
+                  const pingHardDisabled = !isConnected || isPingLoading;
                   const pingBlockReason = !isConnected
                     ? 'Connect to the radio first.'
                     : isPingLoading
                       ? 'Ping in progress…'
-                      : !pingAllowed
-                        ? 'Path not synced yet — wait for PathUpdated from the radio, or use a direct (0-hop) peer.'
-                        : null;
+                      : null;
                   return (
                     <Fragment key={node.node_id}>
                       <tr className="text-gray-300 hover:bg-gray-800/30">

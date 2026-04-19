@@ -65,8 +65,6 @@ interface NodeDetailModalProps {
   meshcoreLocalStats?: MeshCoreLocalStats | null;
   /** MeshCore: local radio manufacturer/model from `deviceQuery` (our node only in body). */
   meshcoreManufacturerModel?: string;
-  /** MeshCore: if set, Trace Route is only enabled when true for this node (0-hop or PathUpdated received). */
-  meshcoreCanPingTrace?: (nodeId: number) => boolean;
 }
 
 export default function NodeDetailModal({
@@ -100,7 +98,6 @@ export default function NodeDetailModal({
   onShareContact,
   meshcoreLocalStats,
   meshcoreManufacturerModel,
-  meshcoreCanPingTrace,
 }: NodeDetailModalProps) {
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
@@ -313,20 +310,8 @@ export default function NodeDetailModal({
     }
   };
 
-  const meshcoreTraceGateOk =
-    protocol !== 'meshcore' || !meshcoreCanPingTrace || meshcoreCanPingTrace(node.node_id);
-
-  const traceHardDisabled = !isConnected || !meshcoreTraceGateOk;
-  const traceBlockReason =
-    protocol === 'meshcore'
-      ? !isConnected
-        ? 'Connect to the radio first.'
-        : !meshcoreTraceGateOk
-          ? 'Path not synced yet — wait for PathUpdated from the radio, or trace a direct (0-hop) peer.'
-          : null
-      : !isConnected
-        ? 'Connect to the radio first.'
-        : null;
+  const traceHardDisabled = !isConnected;
+  const traceBlockReason = !isConnected ? 'Connect to the radio first.' : null;
 
   return (
     <>

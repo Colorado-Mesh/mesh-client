@@ -4032,16 +4032,11 @@ export function useMeshCore() {
   }, []);
 
   /**
-   * MeshCore: allow Ping/trace for direct peers (0 hops) immediately; multi-hop / unknown hops require
-   * PathUpdated (129) this session so the radio has cached a route, OR path history from a previous session.
+   * MeshCore: always allow Ping/trace in the UI. Pre-gating on PathUpdated/path history caused false
+   * “path not synced” when the radio had not yet reported 129; traceRoute resolves routes and sets
+   * meshcorePingErrors when the path is still unavailable.
    */
-  const meshcoreCanPingTrace = useCallback((nodeId: number) => {
-    const hops = nodesRef.current.get(nodeId)?.hops_away;
-    if (hops === 0) return true;
-    if (meshcoreSessionPathUpdatedNodeIdsRef.current.has(nodeId)) return true;
-    const bestPath = usePathHistoryStore.getState().selectBestPath(nodeId);
-    return bestPath?.pathBytes != null && bestPath.pathBytes.length > 1;
-  }, []);
+  const meshcoreCanPingTrace = useCallback(() => true, []);
 
   const traceRoute = useCallback(
     async (nodeId: number) => {
