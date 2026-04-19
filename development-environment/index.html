@@ -1,0 +1,2974 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../contributing/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Development Guide - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#development-environment-setup" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Development Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../diagnostics/" class="md-tabs__link">
+          
+  
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#shared-requirements-and-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared Requirements and Tooling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shared Requirements and Tooling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-required-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1) Required software
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mkdocs-documentation-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MkDocs (documentation) tooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-clone-and-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2) Clone and install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-run-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3) Run the app
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-pnpm-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common pnpm commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#all-scripts-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        All Scripts Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="All Scripts Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#package-distributables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package (distributables)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lint-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lint / Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#typecheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typecheck
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quality-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup / Helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle-automatic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle (automatic)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependabot-dependency-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependabot dependency updates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-test-harness-setup-and-local-quality-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4) Test harness setup and local quality checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-building-a-distributable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5) Building a distributable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-git-hooks-and-pre-commit-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6) Git hooks and pre-commit behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-ci-workflow-tooling-optional-but-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7) CI workflow tooling (optional but recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-helper-scripts-auto-install-where-possible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8) Helper scripts (auto-install where possible)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-optional-editortooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9) Optional editor/tooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="macOS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buildrun-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build/run flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bluetooth-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bluetooth permissions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos-release-download-note-not-required-for-source-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS release-download note (not required for source development)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Windows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-prerequisites_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buildrun-flow_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build/run flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-packaging-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows packaging note
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serial-device-driver-reminder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial device driver reminder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#could-not-find-any-visual-studio-installation-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Could not find any Visual Studio installation to use"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#could-not-find-any-python-installation-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Could not find any Python installation to use"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#distwin-fails-with-path-spaces-or-eperm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dist:win fails with path spaces or EPERM
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Linux">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-prerequisites_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buildrun-flow_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build/run flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serial-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial permissions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux-bluetooth-ble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux Bluetooth (BLE)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Linux Bluetooth (BLE)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bluetooth-pairing-on-linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bluetooth Pairing on Linux
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux-launch-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux launch notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sigill-during-pnpm-install-electron-exited-with-signal-sigill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIGILL during pnpm install (electron exited with signal SIGILL)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sigsegv-on-startup-electron-exited-with-signal-sigsegv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIGSEGV on startup (electron exited with signal SIGSEGV)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serial-serial_io_handlercc147-failed-to-open-serial-port-file_error_access_denied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-meshtastic-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discord
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Website
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#shared-requirements-and-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared Requirements and Tooling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shared Requirements and Tooling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-required-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1) Required software
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mkdocs-documentation-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MkDocs (documentation) tooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-clone-and-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2) Clone and install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-run-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3) Run the app
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-pnpm-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common pnpm commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#all-scripts-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        All Scripts Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="All Scripts Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#package-distributables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package (distributables)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lint-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lint / Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#typecheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typecheck
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quality-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup / Helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle-automatic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle (automatic)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependabot-dependency-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependabot dependency updates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-test-harness-setup-and-local-quality-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4) Test harness setup and local quality checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-building-a-distributable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5) Building a distributable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-git-hooks-and-pre-commit-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6) Git hooks and pre-commit behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-ci-workflow-tooling-optional-but-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7) CI workflow tooling (optional but recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-helper-scripts-auto-install-where-possible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8) Helper scripts (auto-install where possible)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-optional-editortooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9) Optional editor/tooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="macOS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buildrun-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build/run flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bluetooth-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bluetooth permissions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos-release-download-note-not-required-for-source-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS release-download note (not required for source development)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Windows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-prerequisites_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buildrun-flow_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build/run flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-packaging-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows packaging note
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serial-device-driver-reminder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial device driver reminder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#could-not-find-any-visual-studio-installation-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Could not find any Visual Studio installation to use"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#could-not-find-any-python-installation-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Could not find any Python installation to use"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#distwin-fails-with-path-spaces-or-eperm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dist:win fails with path spaces or EPERM
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Linux">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-prerequisites_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buildrun-flow_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build/run flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serial-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial permissions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux-bluetooth-ble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux Bluetooth (BLE)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Linux Bluetooth (BLE)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bluetooth-pairing-on-linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bluetooth Pairing on Linux
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux-launch-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux launch notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sigill-during-pnpm-install-electron-exited-with-signal-sigill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIGILL during pnpm install (electron exited with signal SIGILL)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sigsegv-on-startup-electron-exited-with-signal-sigsegv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIGSEGV on startup (electron exited with signal SIGSEGV)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serial-serial_io_handlercc147-failed-to-open-serial-port-file_error_access_denied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="development-environment-setup">Development Environment Setup</h1>
+<p>This guide covers local development setup for Mesh Client, including cloning, prerequisites, test harness tooling, and OS-specific troubleshooting.</p>
+<h2 id="shared-requirements-and-tooling">Shared Requirements and Tooling</h2>
+<p>These requirements apply to all platforms.</p>
+<h3 id="1-required-software">1) Required software</h3>
+<ul>
+<li>Git</li>
+<li>Node.js <strong>22.13.0+</strong> (<code>package.json</code> <code>engines.node</code>; <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml">CI</a> uses Node 22)</li>
+<li>pnpm <strong>10+</strong></li>
+<li>Python 3 + <code>pip</code> (needed for MkDocs documentation build and yamllint)</li>
+</ul>
+<p>Verify:</p>
+<pre><code class="language-bash">git --version
+node --version
+pnpm --version
+</code></pre>
+<h3 id="mkdocs-documentation-tooling">MkDocs (documentation) tooling</h3>
+<p>Docs are built with MkDocs Material.</p>
+<ol>
+<li>Create and activate a local virtual environment (recommended on macOS/Homebrew Python because of PEP 668 externally managed environments):</li>
+<li>macOS/Linux:<ul>
+<li><code>python3 -m venv .venv</code></li>
+<li><code>source .venv/bin/activate</code></li>
+</ul>
+</li>
+<li>Windows PowerShell:<ul>
+<li><code>py -3 -m venv .venv</code></li>
+<li><code>.\.venv\Scripts\Activate.ps1</code></li>
+</ul>
+</li>
+<li>Install the docs dependencies:</li>
+<li><code>pnpm run docs:install</code></li>
+<li>or (manual): <code>python3 -m pip install -r docs/requirements.txt</code></li>
+<li>Build locally:</li>
+<li><code>pnpm run docs:build</code></li>
+<li>Preview locally:</li>
+<li><code>pnpm run docs:serve</code></li>
+</ol>
+<p>If <code>pnpm run docs:install</code> fails with <code>externally-managed-environment</code>, activate <code>.venv</code> and rerun.</p>
+<h3 id="2-clone-and-install">2) Clone and install</h3>
+<pre><code class="language-bash">git clone https://github.com/Colorado-Mesh/mesh-client
+cd mesh-client
+pnpm install
+</code></pre>
+<p>If you are updating from an older clone, use a clean install when troubleshooting native module issues:</p>
+<pre><code class="language-bash">rm -rf node_modules package-lock.json
+pnpm install
+</code></pre>
+<h3 id="3-run-the-app">3) Run the app</h3>
+<ul>
+<li>Dev mode (hot reload): <code>pnpm run dev</code></li>
+<li>Production-like local start: <code>pnpm start</code></li>
+</ul>
+<h3 id="common-pnpm-commands">Common pnpm commands</h3>
+<p>Use these from the repository root:</p>
+<pre><code class="language-bash"># App run/build
+pnpm run dev
+pnpm start
+pnpm run build
+
+# Platform packaging (binary artifacts in release/)
+pnpm run dist:mac
+pnpm run dist:linux
+pnpm run dist:win
+
+# Quality checks
+pnpm run test:run
+pnpm run lint
+pnpm run typecheck
+pnpm run format:check
+
+# Docs
+pnpm run docs:install
+pnpm run docs:build
+pnpm run docs:serve
+</code></pre>
+<h3 id="all-scripts-reference">All Scripts Reference</h3>
+<p>Complete reference of all pnpm scripts in <code>package.json</code>, organized by category.</p>
+<h4 id="build">Build</h4>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>build</code></td>
+<td>Full production build: main (minified) + preload + renderer</td>
+</tr>
+<tr>
+<td><code>build:main</code></td>
+<td>Build main process (no minify) → <code>dist-electron/main/index.js</code></td>
+</tr>
+<tr>
+<td><code>build:main:prod</code></td>
+<td>Build main process (minified) → <code>dist-electron/main/index.js</code></td>
+</tr>
+<tr>
+<td><code>build:main:meta</code></td>
+<td>Build main with metadata JSON (no minify) → <code>dist-electron/main/metafile.json</code></td>
+</tr>
+<tr>
+<td><code>build:main:minify-meta</code></td>
+<td>Build main with metadata JSON (minified) → <code>dist-electron/main/meta.json</code></td>
+</tr>
+<tr>
+<td><code>build:main:size</code></td>
+<td>Print main bundle size</td>
+</tr>
+<tr>
+<td><code>build:preload</code></td>
+<td>Build preload script → <code>dist-electron/preload/index.js</code></td>
+</tr>
+<tr>
+<td><code>build:renderer</code></td>
+<td>Build renderer (React app) via Vite → <code>dist/</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="run">Run</h4>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dev</code></td>
+<td>Hot-reload dev mode: builds main/preload in watch mode + Vite dev server + Electron</td>
+</tr>
+<tr>
+<td><code>start</code></td>
+<td>Production-like local start: runs <code>build</code> then launches Electron</td>
+</tr>
+<tr>
+<td><code>electron:open</code></td>
+<td>Launch Electron (requires prior build)</td>
+</tr>
+<tr>
+<td><code>trace-deprecation</code></td>
+<td>Run with Node deprecation traces enabled</td>
+</tr>
+</tbody>
+</table>
+<h4 id="package-distributables">Package (distributables)</h4>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dist</code></td>
+<td>Build for current platform</td>
+</tr>
+<tr>
+<td><code>dist:mac</code></td>
+<td>Build macOS .dmg + .zip → <code>release/</code></td>
+</tr>
+<tr>
+<td><code>dist:mac:publish</code></td>
+<td>Build macOS and upload to release server</td>
+</tr>
+<tr>
+<td><code>dist:linux</code></td>
+<td>Build Linux .AppImage + .deb → <code>release/</code></td>
+</tr>
+<tr>
+<td><code>dist:linux:publish</code></td>
+<td>Build Linux and upload to release server</td>
+</tr>
+<tr>
+<td><code>dist:win</code></td>
+<td>Build Windows .exe installer → <code>release/</code></td>
+</tr>
+<tr>
+<td><code>dist:win:publish</code></td>
+<td>Build Windows and upload to release server</td>
+</tr>
+</tbody>
+</table>
+<h4 id="test">Test</h4>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test</code></td>
+<td>Run tests in watch mode</td>
+</tr>
+<tr>
+<td><code>test:run</code></td>
+<td>Run tests once (CI mode)</td>
+</tr>
+<tr>
+<td><code>test:verbose</code></td>
+<td>Run tests with verbose output</td>
+</tr>
+</tbody>
+</table>
+<h4 id="lint-format">Lint / Format</h4>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lint</code></td>
+<td>Run ESLint (type-aware)</td>
+</tr>
+<tr>
+<td><code>lint:fix</code></td>
+<td>Run ESLint with auto-fix</td>
+</tr>
+<tr>
+<td><code>lint:md</code></td>
+<td>Run markdownlint-cli2 on all .md files</td>
+</tr>
+<tr>
+<td><code>format</code></td>
+<td>Format all code via Prettier</td>
+</tr>
+<tr>
+<td><code>format:check</code></td>
+<td>Check formatting without fixing</td>
+</tr>
+</tbody>
+</table>
+<h4 id="typecheck">Typecheck</h4>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>typecheck</code></td>
+<td>TypeScript check: renderer + main process</td>
+</tr>
+</tbody>
+</table>
+<h4 id="quality-checks">Quality Checks</h4>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>check:log-injection</code></td>
+<td>Detect unsanitized user data in log calls</td>
+</tr>
+<tr>
+<td><code>check:db-migrations</code></td>
+<td>Verify SQLite migrations are valid</td>
+</tr>
+<tr>
+<td><code>check:ipc-contract</code></td>
+<td>Verify IPC channel contracts between main/preload/renderer</td>
+</tr>
+</tbody>
+</table>
+<h4 id="documentation">Documentation</h4>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docs:install</code></td>
+<td>Install MkDocs Python dependencies</td>
+</tr>
+<tr>
+<td><code>docs:build</code></td>
+<td>Build static docs to <code>site/</code></td>
+</tr>
+<tr>
+<td><code>docs:serve</code></td>
+<td>Serve docs locally with live reload</td>
+</tr>
+</tbody>
+</table>
+<h4 id="setup-helpers">Setup / Helpers</h4>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>setup:actionlint</code></td>
+<td>Install actionlint for GitHub workflow linting</td>
+</tr>
+<tr>
+<td><code>setup:build-deps</code></td>
+<td>Install native build dependencies</td>
+</tr>
+<tr>
+<td><code>setup:dialout</code></td>
+<td>Add user to dialout group for serial port access (Linux)</td>
+</tr>
+<tr>
+<td><code>rebuild</code></td>
+<td>Rebuild native Node modules for Electron</td>
+</tr>
+</tbody>
+</table>
+<h4 id="lifecycle-automatic">Lifecycle (automatic)</h4>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>preinstall</code></td>
+<td>Enforce pnpm as package manager</td>
+</tr>
+<tr>
+<td><code>postinstall</code></td>
+<td>Rebuild native modules + apply patches</td>
+</tr>
+<tr>
+<td><code>prepare</code></td>
+<td>Enable git hooks</td>
+</tr>
+<tr>
+<td><code>predist</code></td>
+<td>Dedupe packages before packaging</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dependabot-dependency-updates">Dependabot dependency updates</h3>
+<p>Automated dependency updates are configured in <code>.github/dependabot.yml</code>:</p>
+<ul>
+<li><strong>Schedule:</strong> Weekly on Saturdays</li>
+<li><strong>pnpm dependencies:</strong> Grouped PRs — <code>electron</code> separate, all other deps together</li>
+<li><strong>GitHub Actions:</strong> Grouped into one PR</li>
+</ul>
+<p><strong>Testing Dependabot PRs locally:</strong></p>
+<p>Always use <strong>pnpm</strong> to test dependabot PRs:</p>
+<pre><code class="language-bash">git checkout &lt;dependabot-branch&gt;
+pnpm install --frozen-lockfile
+pnpm run build
+pnpm run test:run
+</code></pre>
+<p>Do <strong>not</strong> use <code>npm install</code> — it creates a <code>package-lock.json</code> and may not respect pnpm's lockfile format.</p>
+<h3 id="4-test-harness-setup-and-local-quality-checks">4) Test harness setup and local quality checks</h3>
+<p>This section is the project test harness setup.</p>
+<p>Installed via <code>pnpm install</code> (from <code>package.json</code>):</p>
+<ul>
+<li><code>vitest</code> and renderer/main test dependencies</li>
+<li><code>eslint</code></li>
+<li><code>typescript</code></li>
+<li><code>prettier</code></li>
+<li><code>prettier-plugin-sh</code></li>
+<li><code>markdownlint-cli2</code></li>
+</ul>
+<p>Not installed by pnpm (install separately when needed):</p>
+<ul>
+<li><code>actionlint</code> (recommended for workflow linting; run <code>pnpm run setup:actionlint</code> or install system-wide)</li>
+<li><code>yamllint</code> (required for YAML linting; install via <code>pip install yamllint</code> or <code>brew install yamllint</code> on macOS)</li>
+<li><code>docker</code> and <code>act</code> (only if you run GitHub Actions locally)</li>
+<li>Python 3 + <code>venv</code> + MkDocs Python deps (for docs checks/builds)</li>
+</ul>
+<p>Run these quality checks before opening a PR:</p>
+<pre><code class="language-bash">pnpm run test:run
+pnpm run lint
+pnpm run lint:md
+pnpm run typecheck
+pnpm run format:check
+</code></pre>
+<p>Other useful test commands:</p>
+<ul>
+<li><code>pnpm test</code> (watch mode)</li>
+<li><code>pnpm run test:verbose</code> (verbose failures)</li>
+</ul>
+<h3 id="5-building-a-distributable">5) Building a distributable</h3>
+<p>Use the platform-specific packaging command:</p>
+<pre><code class="language-bash">pnpm run dist:mac   # macOS -&gt; .dmg + .zip in release/
+pnpm run dist:linux # Linux -&gt; .AppImage + .deb in release/
+pnpm run dist:win   # Windows -&gt; .exe installer in release/
+</code></pre>
+<p>Output goes to the <code>release/</code> directory.</p>
+<h3 id="build-analysis">Build analysis</h3>
+<p>To analyze the main process bundle size and composition:</p>
+<pre><code class="language-bash">pnpm run build:main:minify-meta
+</code></pre>
+<p>This generates <code>dist-electron/main/meta.json</code>. Upload this file to <a href="https://esbuild.github.io/analyze/">esbuild's online analyzer</a> to visualize:</p>
+<ul>
+<li>Bundle size by dependency</li>
+<li>Code that could be externalized</li>
+<li>Minification effectiveness</li>
+</ul>
+<h3 id="6-git-hooks-and-pre-commit-behavior">6) Git hooks and pre-commit behavior</h3>
+<p>After <code>pnpm install</code>, repo hooks are enabled via <code>core.hooksPath</code> and pre-commit runs checks (format, lint, typecheck, audit, actionlint, tests).</p>
+<p>Emergency bypass is available:</p>
+<pre><code class="language-bash">git commit --no-verify
+</code></pre>
+<p>Use this only as a temporary escape hatch, then run the skipped checks manually as soon as possible.</p>
+<h3 id="7-ci-workflow-tooling-optional-but-recommended">7) CI workflow tooling (optional but recommended)</h3>
+<ul>
+<li><strong>Docker</strong> (required to run <code>act</code> locally)</li>
+<li><strong>act</strong>: run GitHub Actions locally with Linux amd64 parity:</li>
+</ul>
+<pre><code class="language-bash">act --container-architecture linux/amd64 -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:full-latest
+</code></pre>
+<ul>
+<li><strong>actionlint</strong>: required for local pre-commit if workflow files are touched.</li>
+</ul>
+<h3 id="8-helper-scripts-auto-install-where-possible">8) Helper scripts (auto-install where possible)</h3>
+<p>These scripts try to install optional tooling automatically. If they fail (for example, missing <code>sudo</code>/admin rights), follow the manual steps in this doc instead.</p>
+<ol>
+<li>Install <code>actionlint</code> (used by the git pre-commit hook):</li>
+<li><code>pnpm run setup:actionlint</code></li>
+<li>This installs into <code>.githooks/bin</code> so the hook can find it.</li>
+<li>Install <code>yamllint</code> (required by the git pre-commit hook):</li>
+<li>Install manually via pip: <code>pip install yamllint</code></li>
+<li>macOS alternative: <code>brew install yamllint</code></li>
+<li>Linux alternative: <code>sudo apt install yamllint</code> (Debian/Ubuntu) or <code>sudo dnf install yamllint</code> (Fedora)</li>
+<li>Install native build dependencies:</li>
+<li><code>pnpm run setup:build-deps</code></li>
+<li>Linux/macOS: attempts to install what native builds need (requires sudo where applicable).</li>
+<li>Windows: prints a message to install Visual Studio Build Tools manually.</li>
+<li>(Linux only) Fix serial port permissions:</li>
+<li><code>pnpm run setup:dialout</code></li>
+<li>Adds your user to the <code>dialout</code> group (requires sudo + re-login).</li>
+</ol>
+<h3 id="9-optional-editortooling">9) Optional editor/tooling</h3>
+<ul>
+<li>VS Code (or Cursor) with TypeScript + ESLint support</li>
+<li>Prettier editor extension (optional convenience; repository already defines formatting rules)</li>
+<li>React DevTools for renderer debugging</li>
+</ul>
+<h2 id="macos">macOS</h2>
+<h3 id="install-prerequisites">Install prerequisites</h3>
+<ol>
+<li>Install Git (Xcode CLT includes it):
+   <code>bash
+   xcode-select --install</code></li>
+<li>Install Node 22 (22.13.0+ recommended via nvm) and npm:
+   <code>bash
+   curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+   export NVM_DIR="$HOME/.nvm"
+   [ -s "$NVM_DIR/nvm.sh" ] &amp;&amp; . "$NVM_DIR/nvm.sh"
+   nvm install 22
+   nvm use 22</code></li>
+</ol>
+<h3 id="buildrun-flow">Build/run flow</h3>
+<pre><code class="language-bash">git clone https://github.com/Colorado-Mesh/mesh-client
+cd mesh-client
+pnpm install
+pnpm run dev
+</code></pre>
+<h3 id="bluetooth-permissions">Bluetooth permissions</h3>
+<p>On first BLE connection, macOS prompts for Bluetooth access. If denied accidentally:</p>
+<ul>
+<li>Go to <strong>System Settings &gt; Privacy &amp; Security &gt; Bluetooth</strong></li>
+<li>Enable access for Mesh-Client</li>
+</ul>
+<h3 id="macos-release-download-note-not-required-for-source-development">macOS release-download note (not required for source development)</h3>
+<p>If a downloaded app reports "Mesh-client is damaged and can't be opened", remove quarantine:</p>
+<pre><code class="language-bash">xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
+</code></pre>
+<h2 id="windows">Windows</h2>
+<h3 id="install-prerequisites_1">Install prerequisites</h3>
+<ol>
+<li>Install Git and Node.js (winget primary path):
+   <code>powershell
+   winget install git.git
+   winget install OpenJS.NodeJS</code></li>
+<li>Allow npm script execution in current user scope:
+   <code>powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser</code></li>
+<li>Install <strong>Visual Studio Build Tools</strong> with <strong>Desktop development with C++</strong> workload.</li>
+<li>Install Python 3 and ensure it is on PATH:
+   <code>powershell
+   winget install Python.Python.3.12</code>
+   If needed, set npm Python path explicitly:
+   <code>powershell
+   npm config set python "C:\\Path\\To\\python.exe"</code></li>
+</ol>
+<h3 id="buildrun-flow_1">Build/run flow</h3>
+<pre><code class="language-powershell">git clone https://github.com/Colorado-Mesh/mesh-client
+cd mesh-client
+pnpm install
+pnpm run dev
+</code></pre>
+<h3 id="windows-packaging-note">Windows packaging note</h3>
+<p>The Windows build (<code>dist:win</code>) uses pnpm's <code>node-linker=hoisted</code> mode to work around asar packaging issues on Windows. The build command automatically reinstalls with hoisted mode, packages, then restores the default structure.</p>
+<h3 id="serial-device-driver-reminder">Serial device driver reminder</h3>
+<p>If serial ports do not appear, install the right USB UART driver (for example CH340/CH341, CP210x, or FTDI).</p>
+<h3 id="troubleshooting">Troubleshooting</h3>
+<h4 id="could-not-find-any-visual-studio-installation-to-use">"Could not find any Visual Studio installation to use"</h4>
+<p>Cause: outdated <code>node-gyp</code> resolution or missing C++ build tools workload.</p>
+<p>Fix:</p>
+<ol>
+<li>Install/confirm Visual Studio Build Tools with Desktop C++ workload.</li>
+<li>Upgrade node-gyp:
+   <code>bash
+   pnpm install node-gyp@latest -g
+   pnpm install node-gyp@latest --save-dev</code></li>
+<li>Restart terminal and rerun:
+   <code>bash
+   pnpm install</code></li>
+</ol>
+<h4 id="could-not-find-any-python-installation-to-use">"Could not find any Python installation to use"</h4>
+<p>Cause: Python missing or not on PATH for node-gyp.</p>
+<p>Fix:</p>
+<ol>
+<li>Install Python 3 and add it to PATH.</li>
+<li>Restart terminal.</li>
+<li>Retry <code>pnpm install</code> (or <code>pnpm run dist:win</code>).</li>
+<li>If still failing, set Python path with <code>npm config set python ...</code>.</li>
+</ol>
+<h4 id="distwin-fails-with-path-spaces-or-eperm"><code>dist:win</code> fails with path spaces or <code>EPERM</code></h4>
+<ul>
+<li>Prefer a path without spaces (for example <code>C:\dev\mesh-client</code>)</li>
+<li>Close running Electron/Node processes before rebuild</li>
+<li>Run:
+  <code>bash
+  pnpm run rebuild
+  pnpm run dist:win</code></li>
+</ul>
+<h2 id="linux">Linux</h2>
+<h3 id="install-prerequisites_2">Install prerequisites</h3>
+<p>Install Node 22 (22.13.0+ recommended), <code>make</code>, and C++ build tools (<code>g++</code>/<code>gcc-c++</code>) with native build dependencies.</p>
+<p>Debian/Ubuntu:</p>
+<pre><code class="language-bash">curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+export NVM_DIR=&quot;$HOME/.nvm&quot;
+[ -s &quot;$NVM_DIR/nvm.sh&quot; ] &amp;&amp; . &quot;$NVM_DIR/nvm.sh&quot;
+nvm install 22
+nvm use 22
+sudo apt install build-essential
+sudo apt install python3 libnspr4 libnss3
+</code></pre>
+<p>Fedora/RedHat:</p>
+<pre><code class="language-bash">curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+export NVM_DIR=&quot;$HOME/.nvm&quot;
+[ -s &quot;$NVM_DIR/nvm.sh&quot; ] &amp;&amp; . &quot;$NVM_DIR/nvm.sh&quot;
+nvm install 22
+nvm use 22
+sudo dnf install @development-tools
+sudo dnf install python3 nspr nss
+</code></pre>
+<h3 id="buildrun-flow_2">Build/run flow</h3>
+<pre><code class="language-bash">git clone https://github.com/Colorado-Mesh/mesh-client
+cd mesh-client
+pnpm install
+pnpm run dev
+</code></pre>
+<h3 id="serial-permissions">Serial permissions</h3>
+<p>Add your user to <code>dialout</code>:</p>
+<pre><code class="language-bash">sudo usermod -a -G dialout $USER
+</code></pre>
+<p>Log out/in after changing groups.</p>
+<h3 id="linux-bluetooth-ble">Linux Bluetooth (BLE)</h3>
+<p>Linux uses Web Bluetooth (Chromium's built-in BLE API) instead of <code>@stoprocent/noble</code>. This approach:</p>
+<ul>
+<li>Requires no setcap/setuid workaround scripts</li>
+<li>Requires the user to select a device from the in-app Bluetooth picker (backed by Chromium's chooser event)</li>
+<li>Requires a user gesture (button click) to trigger device selection</li>
+</ul>
+<p>The app automatically enables <code>--enable-experimental-web-platform-features</code> on Linux at startup.</p>
+<h4 id="bluetooth-pairing-on-linux">Bluetooth Pairing on Linux</h4>
+<p>Web Bluetooth may invoke the <strong>Electron pairing handler</strong> during GATT connect. Behavior differs by protocol:</p>
+<ul>
+<li><strong>Meshtastic:</strong> On the first Chromium <code>providePin</code> request, the client tries the standard Meshtastic PIN <code>123456</code>. If that fails, you are prompted to enter the PIN manually.</li>
+<li><strong>MeshCore:</strong> The MeshCore session does <strong>not</strong> auto-submit <code>123456</code>. When Chromium asks for a PIN, you enter the random code shown on the radio.</li>
+</ul>
+<p><strong>MeshCore and OS-level pairing (Linux / BlueZ):</strong> A stable GATT session usually requires a bond in BlueZ first. After you choose a device in the in-app picker, the client runs <code>bluetoothctl info &lt;MAC&gt;</code>. If the device is <strong>not</strong> paired (<code>Paired: no</code>) or not yet known to the adapter, the UI prompts for the PIN on the <strong>radio</strong> and runs <strong><code>bluetooth-pair</code></strong> (main-process <code>bluetoothctl</code> pairing) <strong>before</strong> resolving the pending Web Bluetooth selection. If <code>Paired: yes</code> already, connection continues without that step.</p>
+<p>Handshake retries reuse the <strong>same granted Web Bluetooth device</strong> (<code>navigator.bluetooth.getDevices()</code>) so the second attempt does not call <code>requestDevice()</code> without a user gesture.</p>
+<p>If you encounter pairing issues (e.g., "Connection attempt failed" or device was previously paired with wrong PIN):</p>
+<ol>
+<li>Use the <strong>"Remove &amp; Re-pair Device"</strong> button in the app</li>
+<li>Or manually remove via <code>bluetoothctl</code>:
+   <code>bash
+   bluetoothctl
+   # Inside bluetoothctl:
+   remove XX:XX:XX:XX:XX:XX # Replace with your device MAC
+   # Then re-pair from the app</code></li>
+<li>If the device still won't connect, power cycle Bluetooth:
+   <code>bash
+   bluetoothctl power off
+   bluetoothctl power on</code></li>
+</ol>
+<h3 id="linux-launch-notes">Linux launch notes</h3>
+<p>The supported dev and local run flows are:</p>
+<pre><code class="language-bash">pnpm run dev
+pnpm start
+</code></pre>
+<p>ARM (for example Raspberry Pi) may also require:</p>
+<pre><code class="language-bash">sudo apt install zlib1g-dev libfuse2
+sudo sysctl -w kernel.unprivileged_userns_clone=1
+</code></pre>
+<h3 id="troubleshooting_1">Troubleshooting</h3>
+<h4 id="sigill-during-pnpm-install-electron-exited-with-signal-sigill">SIGILL during <code>pnpm install</code> (<code>electron exited with signal SIGILL</code>)</h4>
+<p>Install without running Electron rebuild first:</p>
+<pre><code class="language-bash">MESHTASTIC_SKIP_ELECTRON_REBUILD=1 pnpm install
+</code></pre>
+<p>Then run rebuild on a host where Electron executes correctly:</p>
+<pre><code class="language-bash">pnpm run rebuild
+</code></pre>
+<h4 id="sigsegv-on-startup-electron-exited-with-signal-sigsegv">SIGSEGV on startup (<code>electron exited with signal SIGSEGV</code>)</h4>
+<p>Use:</p>
+<pre><code class="language-bash">pnpm run build &amp;&amp; pnpm dlx electron . --disable-gpu
+</code></pre>
+<p>Or:</p>
+<pre><code class="language-bash">pnpm run electron:open -- --disable-gpu
+</code></pre>
+<p>Optional persistent mitigation:</p>
+<ul>
+<li><code>export MESH_CLIENT_DISABLE_GPU=1</code></li>
+<li><code>ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm run electron:open</code></li>
+</ul>
+<h4 id="serial-serial_io_handlercc147-failed-to-open-serial-port-file_error_access_denied"><code>Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED</code></h4>
+<ol>
+<li>Ensure user is in <code>dialout</code>.</li>
+<li>Re-login.</li>
+<li>Verify with:
+   <code>bash
+   groups</code></li>
+<li>If missing, create and activate:
+   <code>bash
+   sudo groupadd dialout
+   sudo usermod -a -G dialout $USER
+   newgrp dialout</code></li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
