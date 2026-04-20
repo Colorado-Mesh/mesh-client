@@ -22,6 +22,7 @@ We were inspired by features from these projects:
 - [MeshCore](https://github.com/meshcore-dev) — Lightweight hybrid routing mesh protocol for packet radios
 - [meshcore-open](https://github.com/zjs81/meshcore-open) — Flutter client for MeshCore devices
 - [meshtastic-cli](https://github.com/statico/meshtastic-cli) — Terminal UI for monitoring Meshtastic mesh networks
+- [Mesh Monitor](https://meshmonitor.org/) — Web-based mesh network monitoring dashboard
 
 ## Libraries & Tools
 
