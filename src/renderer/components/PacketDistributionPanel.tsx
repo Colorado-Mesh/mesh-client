@@ -140,9 +140,12 @@ function countBy(packets: NormalizedPacket[], key: keyof NormalizedPacket): Map<
   return map;
 }
 
-function resolveNodeKey(k: string, getNodeLabel: (id: number) => string): string {
+function resolveNodeKey(k: string, getNodeLabel: (id: number) => string, variant: Variant): string {
   const id = parseInt(k, 10);
-  return k === 'null' || isNaN(id) ? 'Unknown' : getNodeLabel(id);
+  if (k === 'null' || isNaN(id)) {
+    return variant === 'meshcore' ? 'No sender id in raw frame' : 'Unknown';
+  }
+  return getNodeLabel(id);
 }
 
 function tooltipFormatter(value: unknown, total: number): [string, string] {
@@ -254,8 +257,8 @@ export default function PacketDistributionPanel({
     const sorted = [...counts.entries()]
       .map(([k, count]) => ({ key: k, count }))
       .sort((a, b) => b.count - a.count);
-    return buildSlices(sorted, (k) => resolveNodeKey(k, getNodeLabel));
-  }, [filtered, getNodeLabel]);
+    return buildSlices(sorted, (k) => resolveNodeKey(k, getNodeLabel, variant));
+  }, [filtered, getNodeLabel, variant]);
 
   const typeSlices = useMemo(() => {
     const counts = countBy(filtered, 'packetType');
@@ -286,8 +289,8 @@ export default function PacketDistributionPanel({
     const sorted = [...counts.entries()]
       .map(([k, count]) => ({ key: k, count }))
       .sort((a, b) => b.count - a.count);
-    return buildSlices(sorted, (k) => resolveNodeKey(k, getNodeLabel));
-  }, [filtered, effectiveType, getNodeLabel]);
+    return buildSlices(sorted, (k) => resolveNodeKey(k, getNodeLabel, variant));
+  }, [filtered, effectiveType, getNodeLabel, variant]);
 
   const typeDeviceTotal = typeDeviceSlices.reduce((s, d) => s + d.value, 0);
 
