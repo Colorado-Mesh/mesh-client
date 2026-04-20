@@ -415,6 +415,7 @@ declare global {
           last_rssi?: number | null;
           nickname?: string | null;
           contact_flags?: number | null;
+          hops_away?: number | null;
           on_radio?: number;
           last_synced_from_radio?: string | null;
         }) => Promise<unknown>;
@@ -534,6 +535,23 @@ declare global {
           tripTimeMs?: number,
         ) => Promise<boolean>;
         getMeshcorePathHistory: (nodeId: number) => Promise<
+          {
+            id: number;
+            node_id: number;
+            path_hash: string;
+            hop_count: number;
+            path_bytes: string;
+            was_flood_discovery: number;
+            success_count: number;
+            failure_count: number;
+            trip_time_ms: number;
+            route_weight: number;
+            last_success_ts: number | null;
+            created_at: number;
+            updated_at: number;
+          }[]
+        >;
+        getAllMeshcorePathHistory: () => Promise<
           {
             id: number;
             node_id: number;

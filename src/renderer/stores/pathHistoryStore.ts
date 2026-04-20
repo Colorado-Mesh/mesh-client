@@ -4,6 +4,47 @@ import type { PathRecord, PathScore, PathSelection } from '../lib/pathHistoryTyp
 
 const MAX_CONTACTS = 50;
 
+/** DB row shape from `getMeshcorePathHistory` / `getAllMeshcorePathHistory` IPC. */
+interface MeshcorePathHistoryWireRow {
+  id: number;
+  node_id: number;
+  path_hash: string;
+  hop_count: number;
+  path_bytes: string;
+  was_flood_discovery: number;
+  success_count: number;
+  failure_count: number;
+  trip_time_ms: number;
+  route_weight: number;
+  last_success_ts: number | null;
+  created_at: number;
+  updated_at: number;
+}
+
+function pathHistoryWireRowToRecord(row: MeshcorePathHistoryWireRow): PathRecord {
+  let pathBytes: number[] = [];
+  try {
+    pathBytes = JSON.parse(row.path_bytes) as number[];
+  } catch {
+    // catch-no-log-ok malformed stored path_bytes
+  }
+  return {
+    id: row.id,
+    nodeId: row.node_id,
+    pathHash: row.path_hash,
+    hopCount: row.hop_count,
+    pathBytes,
+    wasFloodDiscovery: row.was_flood_discovery === 1,
+    successCount: row.success_count,
+    failureCount: row.failure_count,
+    tripTimeMs: row.trip_time_ms,
+    routeWeight: row.route_weight,
+    lastSuccessTs: row.last_success_ts,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 /** Compute a hex path hash from an array of path bytes. */
 export function computePathHash(pathBytes: number[]): string {
   // Simple deterministic hex string for dedup key
@@ -56,7 +97,11 @@ interface PathHistoryState {
   ): void;
   recordOutcome(nodeId: number, pathHash: string, success: boolean, tripTimeMs?: number): void;
   selectBestPath(nodeId: number): PathSelection | null;
+  /** Load from SQLite when no in-memory best path (e.g. LRU evicted); then re-select. */
+  ensureBestPathLoaded(nodeId: number): Promise<PathSelection | null>;
   loadForNode(nodeId: number): Promise<void>;
+  /** Hydrate in-memory path history from SQLite for all nodes (call at app start). */
+  loadAllFromDb(): Promise<void>;
   clearForNode(nodeId: number): void;
   clearAll(): void;
 }
@@ -242,33 +287,21 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
     };
   },
 
+  async ensureBestPathLoaded(nodeId) {
+    const existing = get().selectBestPath(nodeId);
+    if (existing != null) return existing;
+    await get().loadForNode(nodeId);
+    return get().selectBestPath(nodeId);
+  },
+
   async loadForNode(nodeId) {
     try {
       const rows = await window.electronAPI.db.getMeshcorePathHistory(nodeId);
       if (!rows || rows.length === 0) return;
 
-      const parsed: PathRecord[] = rows.map((row) => ({
-        id: row.id,
-        nodeId: row.node_id,
-        pathHash: row.path_hash,
-        hopCount: row.hop_count,
-        pathBytes: (() => {
-          try {
-            return JSON.parse(row.path_bytes) as number[];
-          } catch {
-            // catch-no-log-ok malformed stored path_bytes returns empty array
-            return [];
-          }
-        })(),
-        wasFloodDiscovery: row.was_flood_discovery === 1,
-        successCount: row.success_count,
-        failureCount: row.failure_count,
-        tripTimeMs: row.trip_time_ms,
-        routeWeight: row.route_weight,
-        lastSuccessTs: row.last_success_ts,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      }));
+      const parsed: PathRecord[] = rows.map((row) =>
+        pathHistoryWireRowToRecord(row as MeshcorePathHistoryWireRow),
+      );
 
       const state = get();
       const newRecords = new Map(state.records);
@@ -278,6 +311,39 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
       set({ records: newRecords, lruOrder: newLru });
     } catch (err) {
       console.warn('[pathHistory] loadForNode failed:', err);
+    }
+  },
+
+  async loadAllFromDb() {
+    try {
+      const api = window.electronAPI?.db?.getAllMeshcorePathHistory;
+      if (typeof api !== 'function') return;
+      const rows = (await api()) as MeshcorePathHistoryWireRow[];
+      if (!rows || rows.length === 0) return;
+
+      const byNode = new Map<number, PathRecord[]>();
+      const latestTs = new Map<number, number>();
+      for (const row of rows) {
+        const rec = pathHistoryWireRowToRecord(row);
+        const list = byNode.get(row.node_id) ?? [];
+        list.push(rec);
+        byNode.set(row.node_id, list);
+        const prev = latestTs.get(row.node_id) ?? 0;
+        if (row.updated_at > prev) latestTs.set(row.node_id, row.updated_at);
+      }
+
+      const nodeIdsByRecency = [...byNode.keys()].sort(
+        (a, b) => (latestTs.get(b) ?? 0) - (latestTs.get(a) ?? 0),
+      );
+      const lruOrder = nodeIdsByRecency.slice(0, MAX_CONTACTS);
+      const records = new Map<number, PathRecord[]>();
+      for (const id of lruOrder) {
+        const list = byNode.get(id);
+        if (list) records.set(id, list);
+      }
+      set({ records, lruOrder });
+    } catch (err) {
+      console.warn('[pathHistory] loadAllFromDb failed:', err);
     }
   },
 

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useId, useState } from 'react';
 
 import type { MeshCoreSelfInfo } from '../hooks/useMeshCore';

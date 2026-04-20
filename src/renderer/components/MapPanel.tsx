@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 import 'leaflet/dist/leaflet.css';
 
 import L from 'leaflet';

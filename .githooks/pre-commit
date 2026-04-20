@@ -19,10 +19,33 @@ STAGED_LIST=$(mktemp)
 trap 'rm -f "$STAGED_LIST"' EXIT
 git diff --cached --name-only --diff-filter=ACM > "$STAGED_LIST" || fail 'git diff --cached (staged file list)'
 
-pnpm run format || fail 'pnpm run format'
-pnpm run lint:md || fail 'pnpm run lint:md'
-
+# Format and lint only staged files for intentionality and speed.
+# Skip entirely if no files staged (e.g., empty commit).
 if [ -s "$STAGED_LIST" ]; then
+  # Format only staged files
+  while IFS= read -r f || [ -n "$f" ]; do
+    [ -n "$f" ] || continue
+    [ -e "$f" ] || continue
+    pnpm exec prettier --write "$f" || fail "prettier --write $f"
+  done < "$STAGED_LIST"
+
+  # Lint only staged .md files
+  MARKDOWN_LIST=$(mktemp)
+  trap 'rm -f "$MARKDOWN_LIST"' EXIT
+  while IFS= read -r f || [ -n "$f" ]; do
+    case "$f" in
+      *.md) printf '%s\n' "$f" >> "$MARKDOWN_LIST" ;;
+    esac
+  done < "$STAGED_LIST"
+
+  if [ -s "$MARKDOWN_LIST" ]; then
+    markdownlint-cli2 "$(cat "$MARKDOWN_LIST")" || fail 'markdownlint-cli2'
+  fi
+
+  pnpm dedupe || fail 'pnpm dedupe'
+  git add pnpm-lock.yaml || fail 'git add pnpm-lock.yaml'
+
+  # Re-stage only originally-staged files (not new ones created by format)
   while IFS= read -r f || [ -n "$f" ]; do
     [ -n "$f" ] || continue
     [ -e "$f" ] || continue
@@ -36,9 +59,6 @@ pnpm run check:log-injection || fail 'pnpm run check:log-injection'
 pnpm run check:db-migrations || fail 'pnpm run check:db-migrations'
 pnpm run check:ipc-contract || fail 'pnpm run check:ipc-contract'
 pnpm run check:licenses || fail 'pnpm run check:licenses'
-pnpm dedupe || fail 'pnpm dedupe'
-# Stage lockfile changes after dedupe
-git add pnpm-lock.yaml || fail 'git add pnpm-lock.yaml'
 pnpm audit --audit-level=high || fail 'pnpm audit --audit-level=high'
 actionlint || fail 'actionlint'
 yamllint -f github -s . || fail 'yamllint'

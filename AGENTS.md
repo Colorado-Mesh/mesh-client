@@ -33,3 +33,11 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 ## 6. Cursor / Claude indexing and debug logs
 
 [`.cursorignore`](.cursorignore) and [`.claudeignore`](.claudeignore) exclude noisy paths (build output, dependencies, and **Cursor debug logs under `.cursor/`**) so they are less likely to pollute default context. Ignored paths may still be read when you **open the file**, **paste an excerpt**, or **reference an explicit path** in chat (tool behavior can differ by product; prefer small excerpts for very large logs).
+
+## 7. Optimizations
+
+# Context Management Protocol
+- **Deterministic Prefix:** Do not include timestamps, dynamic session IDs, or fluctuating environment variables in the first 2,000 tokens of this prompt.
+- **Read/Glob Hygiene:** When reading files larger than 100 lines or performing wide directory globs, provide a concise summary of findings. 
+- **Cold Storage Transition:** After 10 turns, if a previously read file is not the current focus, refer to it only by summary or path; do not re-read or re-dump the content unless a specific logic change is required.
+- **TOIN Tagging:** Explicitly tag key architectural decisions with `#TOIN-KEY` to assist the retrieval engine in indexing compressed blocks.

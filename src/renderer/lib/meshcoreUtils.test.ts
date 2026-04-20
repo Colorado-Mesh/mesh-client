@@ -9,15 +9,19 @@ import {
   meshcoreApplyRepeaterSessionAuthSkip,
   meshcoreClearRepeaterRemoteSessionAuth,
   meshcoreConnectionImpliesUsbPower,
+  meshcoreContactToMeshNode,
   meshcoreContactTypeFromHwModel,
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreGetRepeaterSessionPassword,
+  meshcoreInferHopsFromOutPath,
   meshcoreIsRepeaterRemoteAuthTouched,
   meshcoreManufacturerModelFromDeviceQuery,
+  meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
+  meshcoreSliceContactOutPathForTrace,
   meshcoreTracePathLenToHops,
   pubkeyToNodeId,
 } from './meshcoreUtils';
@@ -223,6 +227,32 @@ describe('repeater session auth (in-memory)', () => {
   });
 });
 
+describe('meshcoreSliceContactOutPathForTrace', () => {
+  it('uses firmware length when 0..61', () => {
+    const buf = new Uint8Array([1, 2, 3, 0, 0]);
+    expect(meshcoreSliceContactOutPathForTrace(buf, 2)).toEqual(new Uint8Array([1, 2, 3]));
+  });
+
+  it('trims trailing zeros when outPathLen is negative (e.g. -1)', () => {
+    const buf = new Uint8Array([10, 20, 30, 0, 0, 0]);
+    expect(meshcoreSliceContactOutPathForTrace(buf, -1)).toEqual(new Uint8Array([10, 20, 30]));
+  });
+
+  it('returns empty when negative length and buffer all zeros', () => {
+    const buf = new Uint8Array([0, 0, 0]);
+    expect(meshcoreSliceContactOutPathForTrace(buf, -1).length).toBe(0);
+  });
+
+  it('treats undefined/null like unset length — trim trailing zeros (same as -1)', () => {
+    const buf = new Uint8Array([7, 8, 9]);
+    expect(meshcoreSliceContactOutPathForTrace(buf, undefined)).toEqual(new Uint8Array([7, 8, 9]));
+    expect(meshcoreSliceContactOutPathForTrace(buf, null)).toEqual(new Uint8Array([7, 8, 9]));
+    expect(meshcoreSliceContactOutPathForTrace(new Uint8Array([1, 2, 3, 0, 0]), undefined)).toEqual(
+      new Uint8Array([1, 2, 3]),
+    );
+  });
+});
+
 describe('meshcoreTracePathLenToHops', () => {
   it('maps direct trace (pathLen 1) to 0 hops', () => {
     expect(meshcoreTracePathLenToHops(1)).toBe(0);
@@ -237,6 +267,80 @@ describe('meshcoreTracePathLenToHops', () => {
     expect(meshcoreTracePathLenToHops(0)).toBe(0);
     expect(meshcoreTracePathLenToHops(-1)).toBe(0);
     expect(meshcoreTracePathLenToHops(Number.NaN)).toBe(0);
+  });
+});
+
+describe('meshcoreInferHopsFromOutPath', () => {
+  it('uses trace semantics for valid outPathLen', () => {
+    expect(meshcoreInferHopsFromOutPath({ outPathLen: 1 })).toBe(0);
+    expect(meshcoreInferHopsFromOutPath({ outPathLen: 3 })).toBe(2);
+  });
+
+  it('when outPathLen is 0 but buffer still encodes hops, infers from bytes', () => {
+    expect(
+      meshcoreInferHopsFromOutPath({ outPathLen: 0, outPath: new Uint8Array([1, 2, 3]) }),
+    ).toBe(2);
+  });
+
+  it('infers from path bytes when outPathLen is invalid but buffer encodes a multi-hop path', () => {
+    const outPath = new Uint8Array([1, 2, 3, 4]);
+    expect(meshcoreInferHopsFromOutPath({ outPathLen: -1, outPath })).toBe(3);
+  });
+
+  it('returns undefined when path does not imply multiple hops', () => {
+    expect(meshcoreInferHopsFromOutPath({ outPathLen: -1, outPath: new Uint8Array([9]) })).toBe(
+      undefined,
+    );
+  });
+});
+
+describe('meshcoreMergeContactHopsAwayFromPrevious', () => {
+  it('preserves multi-hop when radio briefly reports 0 hops with empty path', () => {
+    expect(meshcoreMergeContactHopsAwayFromPrevious(0, 3, 1)).toBe(3);
+  });
+
+  it('preserves multi-hop when inferred hops are undefined', () => {
+    expect(meshcoreMergeContactHopsAwayFromPrevious(undefined, 2, 0)).toBe(2);
+  });
+
+  it('allows a better inferred hop count when path bytes support it', () => {
+    expect(meshcoreMergeContactHopsAwayFromPrevious(2, 3, 4)).toBe(2);
+  });
+
+  it('fills from previous when inferred is undefined and prev is direct', () => {
+    expect(meshcoreMergeContactHopsAwayFromPrevious(undefined, 0, 1)).toBe(0);
+  });
+});
+
+describe('meshcoreContactToMeshNode', () => {
+  const key32 = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) key32[i] = (i * 11 + 3) & 0xff;
+
+  it('sets hops_away from inferred path length', () => {
+    const node = meshcoreContactToMeshNode({
+      publicKey: key32,
+      type: 1,
+      advName: 'A',
+      lastAdvert: 100,
+      advLat: 0,
+      advLon: 0,
+      outPathLen: 2,
+    });
+    expect(node.hops_away).toBe(1);
+  });
+
+  it('infers hops from outPath when outPathLen is unset', () => {
+    const node = meshcoreContactToMeshNode({
+      publicKey: key32,
+      type: 1,
+      advName: 'A',
+      lastAdvert: 100,
+      advLat: 0,
+      advLon: 0,
+      outPathLen: -1,
+      outPath: new Uint8Array([1, 2, 3]),
+    });
+    expect(node.hops_away).toBe(2);
   });
 });
 

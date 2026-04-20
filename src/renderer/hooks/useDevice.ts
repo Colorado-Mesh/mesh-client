@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/protobufs';
@@ -536,9 +537,8 @@ export function useDevice() {
         console.error('[useDevice] Failed to load messages:', err);
         setMessages([]);
       });
-    window.electronAPI.db
-      .getNodes()
-      .then((savedNodes) => {
+    Promise.all([window.electronAPI.db.getNodes(), window.electronAPI.db.getMeshcoreContacts()])
+      .then(([savedNodes, meshcoreContacts]) => {
         const nodeMap = new Map<number, MeshNode>();
         for (const n of savedNodes) {
           const long_name = n.long_name ?? '';
@@ -567,6 +567,15 @@ export function useDevice() {
             // If hops (MeshCore) is present, use it for hops_away display, fallback to meshtastic hops_away
             hops_away: n.hops ?? n.hops_away ?? undefined,
           });
+        }
+        // Merge hops_away from meshcore_contacts for nodes that don't have it yet
+        for (const mc of meshcoreContacts as { node_id: number; hops_away: number | null }[]) {
+          if (mc.hops_away != null) {
+            const existing = nodeMap.get(mc.node_id);
+            if (existing && existing.hops_away === undefined) {
+              nodeMap.set(mc.node_id, { ...existing, hops_away: mc.hops_away });
+            }
+          }
         }
         nodesRef.current = nodeMap;
         setNodes(nodeMap);

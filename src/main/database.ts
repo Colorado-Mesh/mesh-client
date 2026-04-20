@@ -1385,6 +1385,13 @@ export function getMeshcorePathHistory(nodeId: number): MeshcorePathHistoryRow[]
     .all(nodeId) as MeshcorePathHistoryRow[];
 }
 
+/** All stored path variants for all nodes (for hydrating path history at app start). */
+export function getAllMeshcorePathHistory(): MeshcorePathHistoryRow[] {
+  return getDatabase()
+    .prepare(`SELECT * FROM meshcore_path_history ORDER BY node_id, updated_at DESC`)
+    .all() as MeshcorePathHistoryRow[];
+}
+
 export function deleteMeshcorePathHistoryForNode(nodeId: number): void {
   getDatabase().prepare(`DELETE FROM meshcore_path_history WHERE node_id = ?`).run(nodeId);
 }

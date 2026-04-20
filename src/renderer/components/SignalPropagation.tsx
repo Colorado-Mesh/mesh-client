@@ -6,6 +6,7 @@ export interface SignalPropagationProps {
 }
 
 const DURATION_MS = 2200;
+const REVEAL_TEXT = 'Colorado Mesh';
 
 /**
  * Full-screen canvas pulse from the top-left (0, 0). Animation state lives in refs + rAF only.
@@ -96,6 +97,39 @@ export default function SignalPropagation({ onComplete }: SignalPropagationProps
       ctx.shadowBlur = 32;
       ctx.shadowColor = '#66ff66';
       ctx.stroke();
+      ctx.restore();
+
+      // Per-letter reveal: each glyph appears only after the wave front passes its own position.
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const fontPx = Math.max(20, Math.round(Math.min(w, h) * 0.04));
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.font = `600 ${fontPx}px "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace`;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.lineWidth = Math.max(1.5, fontPx * 0.07);
+      const fullW = ctx.measureText(REVEAL_TEXT).width;
+      let x = cx - fullW / 2;
+      for (const ch of REVEAL_TEXT) {
+        const chW = ctx.measureText(ch).width;
+        const chCx = x + chW * 0.5;
+        const chDist = Math.hypot(chCx, cy);
+        const passedByPx = radiusCssPx - chDist;
+        // Quick pop when crossed, then smooth fade.
+        const rise = Math.min(1, Math.max(0, passedByPx / 46));
+        const fade = Math.max(0, 1 - Math.max(0, passedByPx) / 440);
+        const letterAlpha = rise * fade;
+        if (letterAlpha > 0.01) {
+          ctx.strokeStyle = `rgba(2, 18, 8, ${Math.min(0.78, letterAlpha * 0.8)})`;
+          ctx.fillStyle = `rgba(130, 255, 150, ${Math.min(0.95, letterAlpha)})`;
+          ctx.shadowBlur = 14 + letterAlpha * 18;
+          ctx.shadowColor = `rgba(80, 255, 110, ${Math.min(0.75, letterAlpha * 0.85)})`;
+          ctx.strokeText(ch, x, cy);
+          ctx.fillText(ch, x, cy);
+        }
+        x += chW;
+      }
       ctx.restore();
     };
 

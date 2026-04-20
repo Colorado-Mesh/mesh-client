@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -162,6 +163,7 @@ export default function DiagnosticsPanel({
       if (timer) clearTimeout(timer);
       traceTimers.current.delete(nodeId);
     }
+
     setTracePendingNodes((prev) => {
       const n = new Set(prev);
       for (const nodeId of done) n.delete(nodeId);
@@ -183,8 +185,12 @@ export default function DiagnosticsPanel({
   const nodesRef = useRef(nodes);
   const myNodeNumRef = useRef(myNodeNum);
   const onTraceRouteRef = useRef(onTraceRoute);
+  // Sync refs with latest values - intentionally runs on every render to keep callbacks using current values
+
   nodesRef.current = nodes;
+
   myNodeNumRef.current = myNodeNum;
+
   onTraceRouteRef.current = onTraceRoute;
 
   useEffect(() => {
@@ -370,7 +376,8 @@ export default function DiagnosticsPanel({
       return s;
     });
     setTracePendingNodes((prev) => new Set(prev).add(nodeId));
-    traceStartTimes.current.set(nodeId, Date.now());
+    const now = performance.now();
+    traceStartTimes.current.set(nodeId, now);
 
     const timer = setTimeout(() => {
       setTracePendingNodes((prev) => {

@@ -315,6 +315,37 @@ describe('selectBestPath', () => {
   });
 });
 
+describe('ensureBestPathLoaded', () => {
+  it('returns existing selectBestPath without calling loadForNode', async () => {
+    usePathHistoryStore.getState().recordPathUpdated(7, [1, 2, 3], 2, false);
+    const loadSpy = vi.spyOn(usePathHistoryStore.getState(), 'loadForNode');
+    const sel = await usePathHistoryStore.getState().ensureBestPathLoaded(7);
+    expect(sel?.pathBytes).toEqual([1, 2, 3]);
+    expect(loadSpy).not.toHaveBeenCalled();
+  });
+
+  it('calls loadForNode when no in-memory path and returns hydrated selection', async () => {
+    const row = {
+      id: 1,
+      node_id: 42,
+      path_hash: '0a0b0c',
+      hop_count: 2,
+      path_bytes: '[10,11,12]',
+      was_flood_discovery: 0,
+      success_count: 0,
+      failure_count: 0,
+      trip_time_ms: 0,
+      route_weight: 1,
+      last_success_ts: null,
+      created_at: 1,
+      updated_at: 2,
+    };
+    vi.spyOn(window.electronAPI.db, 'getMeshcorePathHistory').mockResolvedValue([row]);
+    const sel = await usePathHistoryStore.getState().ensureBestPathLoaded(42);
+    expect(sel?.pathBytes).toEqual([10, 11, 12]);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // clearForNode / clearAll
 // ---------------------------------------------------------------------------
@@ -337,5 +368,31 @@ describe('clearAll', () => {
     usePathHistoryStore.getState().clearAll();
     expect(usePathHistoryStore.getState().records.size).toBe(0);
     expect(usePathHistoryStore.getState().lruOrder).toHaveLength(0);
+  });
+});
+
+describe('loadAllFromDb', () => {
+  it('hydrates path records from getAllMeshcorePathHistory', async () => {
+    const row = {
+      id: 1,
+      node_id: 99,
+      path_hash: 'ab',
+      hop_count: 1,
+      path_bytes: '[1,2]',
+      was_flood_discovery: 0,
+      success_count: 1,
+      failure_count: 0,
+      trip_time_ms: 100,
+      route_weight: 1,
+      last_success_ts: Date.now(),
+      created_at: 1,
+      updated_at: 2,
+    };
+    vi.spyOn(window.electronAPI.db, 'getAllMeshcorePathHistory').mockResolvedValue([row]);
+    await usePathHistoryStore.getState().loadAllFromDb();
+    const recs = usePathHistoryStore.getState().records.get(99);
+    expect(recs?.length).toBe(1);
+    expect(recs?.[0].pathBytes).toEqual([1, 2]);
+    expect(recs?.[0].pathHash).toBe('ab');
   });
 });

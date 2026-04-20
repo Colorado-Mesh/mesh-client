@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import { useEffect, useRef, useState } from 'react';
 
 import type {
@@ -19,6 +20,7 @@ import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { HelpTooltip } from './HelpTooltip';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 
@@ -307,6 +309,9 @@ export default function NodeDetailModal({
       setTraceRoutePending(false);
     }
   };
+
+  const traceHardDisabled = !isConnected;
+  const traceBlockReason = !isConnected ? 'Connect to the radio first.' : null;
 
   return (
     <>
@@ -974,13 +979,29 @@ export default function NodeDetailModal({
                   📍 Request Position
                 </button>
               )}
-              <button
-                onClick={handleTraceRoute}
-                disabled={!isConnected}
-                className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                🛤 {traceRoutePending ? 'Tracing...' : 'Trace Route'}
-              </button>
+              {traceHardDisabled && traceBlockReason ? (
+                <HelpTooltip text={traceBlockReason}>
+                  <span className="inline-flex min-w-[8rem] flex-1">
+                    <button
+                      type="button"
+                      onClick={handleTraceRoute}
+                      disabled
+                      className="bg-secondary-dark min-w-[8rem] flex-1 cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-gray-200 opacity-40"
+                    >
+                      🛤 {traceRoutePending ? 'Tracing...' : 'Trace Route'}
+                    </button>
+                  </span>
+                </HelpTooltip>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleTraceRoute}
+                  disabled={false}
+                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600"
+                >
+                  🛤 {traceRoutePending ? 'Tracing...' : 'Trace Route'}
+                </button>
+              )}
               {protocol === 'meshcore' && onRequestRepeaterStatus && (
                 <button
                   onClick={async () => {

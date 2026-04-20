@@ -229,6 +229,7 @@ interface MeshCoreContact {
   advLon: number;
   flags?: number;
   outPathLen?: number;
+  outPath?: Uint8Array;
 }
 
 export function meshcoreContactToMeshNode(contact: MeshCoreContact): MeshNode {
@@ -245,11 +246,103 @@ export function meshcoreContactToMeshNode(contact: MeshCoreContact): MeshNode {
     last_heard: contact.lastAdvert,
     latitude: lat,
     longitude: lon,
-    hops_away:
-      contact.outPathLen != null && contact.outPathLen >= 0 && contact.outPathLen <= 61
-        ? contact.outPathLen
-        : undefined,
+    hops_away: meshcoreInferHopsFromOutPath(contact),
   };
+}
+
+/** Max hop index in MeshCore outbound path (inclusive of destination). */
+export const MESHCORE_OUT_PATH_LEN_MAX = 61;
+
+/** Trim fixed-size companion `outPath` buffers: meaningful bytes then zero padding. */
+function meshcoreTrimTrailingZerosOutPath(outPath: Uint8Array): Uint8Array {
+  let end = outPath.length;
+  while (end > 0 && outPath[end - 1] === 0) end--;
+  return end > 0 ? outPath.slice(0, end) : new Uint8Array(0);
+}
+
+/**
+ * Build outbound path bytes for `tracePath` from a contact.
+ * Valid lengths 0..{@link MESHCORE_OUT_PATH_LEN_MAX} use the firmware-reported length.
+ * Negative `outPathLen` (e.g. -1), **null**, or **undefined** mean “length unset” while `outPath`
+ * still holds a fixed-size buffer — trim trailing zeros. Oversized reported lengths use the same trim.
+ */
+export function meshcoreSliceContactOutPathForTrace(
+  outPath: Uint8Array | undefined,
+  outPathLen: number | null | undefined,
+): Uint8Array {
+  if (!outPath || outPath.length === 0) return new Uint8Array(0);
+  if (outPathLen === null || outPathLen === undefined) {
+    return meshcoreTrimTrailingZerosOutPath(outPath);
+  }
+  if (
+    typeof outPathLen === 'number' &&
+    Number.isFinite(outPathLen) &&
+    outPathLen >= 0 &&
+    outPathLen <= MESHCORE_OUT_PATH_LEN_MAX
+  ) {
+    return outPath.slice(0, outPathLen + 1);
+  }
+  if (typeof outPathLen === 'number' && Number.isFinite(outPathLen) && outPathLen < 0) {
+    return meshcoreTrimTrailingZerosOutPath(outPath);
+  }
+  if (
+    typeof outPathLen === 'number' &&
+    Number.isFinite(outPathLen) &&
+    outPathLen > MESHCORE_OUT_PATH_LEN_MAX
+  ) {
+    return meshcoreTrimTrailingZerosOutPath(outPath);
+  }
+  const n =
+    typeof outPathLen === 'number' && Number.isFinite(outPathLen) ? Math.trunc(outPathLen) : 0;
+  const safe = n >= 0 && n <= MESHCORE_OUT_PATH_LEN_MAX ? n : 0;
+  return outPath.slice(0, safe + 1);
+}
+
+/**
+ * Infer UI hop count from contact path length and/or outbound path bytes.
+ * Valid numeric `outPathLen` uses the same semantics as {@link meshcoreTracePathLenToHops}.
+ * When length is unset/invalid but `outPath` holds bytes, derives hops from the sliced path.
+ */
+export function meshcoreInferHopsFromOutPath(contact: {
+  outPathLen?: number;
+  outPath?: Uint8Array;
+}): number | undefined {
+  const len = contact.outPathLen;
+  const sliced = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
+  if (len != null && Number.isFinite(len) && len >= 0 && len <= MESHCORE_OUT_PATH_LEN_MAX) {
+    // outPathLen 0 uses slice(0,1) in the trace helper — too short when the buffer still holds a
+    // full route; re-slice with "length unset" semantics (trim) for hop inference only.
+    if (len === 0) {
+      const trimmed = meshcoreSliceContactOutPathForTrace(contact.outPath, undefined);
+      if (trimmed.length > 1) {
+        return Math.max(0, trimmed.length - 1);
+      }
+    }
+    return meshcoreTracePathLenToHops(len);
+  }
+  if (sliced.length > 1) {
+    return Math.max(0, sliced.length - 1);
+  }
+  return undefined;
+}
+
+/**
+ * When rebuilding the node map from `getContacts`, merge hop counts so a transient radio state
+ * (e.g. flood advert / trace priming reporting outPathLen 0 for everyone) does not clear the UI.
+ */
+export function meshcoreMergeContactHopsAwayFromPrevious(
+  inferred: number | undefined,
+  prev: number | undefined,
+  slicedPathByteLength: number,
+): number | undefined {
+  if (prev !== undefined && prev >= 1) {
+    if (inferred === undefined || (inferred === 0 && slicedPathByteLength <= 1)) {
+      return prev;
+    }
+  } else if (inferred === undefined && prev !== undefined) {
+    return prev;
+  }
+  return inferred;
 }
 
 /** Result of mapping a heard RF advert (push 0x80) into UI + DB when the node is not yet a contact. */
