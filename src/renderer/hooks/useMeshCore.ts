@@ -4229,8 +4229,9 @@ export function useMeshCore() {
             ? existingForRf.rssi
             : 0;
         const nowSecTrace = Math.floor(Date.now() / 1000);
+        const hopsToSave = typeof traceHops === 'number' ? traceHops : null;
         void window.electronAPI.db
-          .updateMeshcoreContactLastRf(nodeId, lastSnrRf, lastRssiRf, traceHops, nowSecTrace)
+          .updateMeshcoreContactLastRf(nodeId, lastSnrRf, lastRssiRf, hopsToSave, nowSecTrace)
           .catch((e: unknown) => {
             console.warn('[useMeshCore] updateMeshcoreContactLastRf (traceRoute) error', e);
           });
