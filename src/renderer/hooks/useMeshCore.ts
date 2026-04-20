@@ -1661,7 +1661,9 @@ export function useMeshCore() {
         // Save with on_radio=1 when contacts came from radio
         const now = new Date().toISOString();
         const onRadio = opts?.contactsFromRadio ? 1 : 0;
-        const dbRow = contactToDbRow(contact, undefined, onRadio, now, hopsAway);
+        const prevHopsAway = prevNode?.hops_away;
+        const hopsToSave = hopsAway ?? prevHopsAway ?? undefined;
+        const dbRow = contactToDbRow(contact, undefined, onRadio, now, hopsToSave);
         void window.electronAPI.db.saveMeshcoreContact(dbRow).catch((e: unknown) => {
           console.warn('[useMeshCore] saveMeshcoreContact error', e);
         });
