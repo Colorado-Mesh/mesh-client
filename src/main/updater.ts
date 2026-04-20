@@ -9,6 +9,9 @@ import { sanitizeLogMessage } from './log-service';
 let autoUpdater: any = null;
 let checkNow: (() => void) | null = null;
 
+/** Last release page URL from a GitHub API check (used when download cannot use electron-updater). */
+let lastGithubReleaseUrl: string | null = null;
+
 /** Returns the current update-check function (set after initUpdater runs). Used by native menu. */
 export function getCheckNow(): (() => void) | null {
   return checkNow;
@@ -31,6 +34,147 @@ function semverGt(remote: string, local: string): boolean {
   return rPat > lPat;
 }
 
+type SendFn = (channel: string, payload?: unknown) => void;
+
+/**
+ * GitHub Releases API check — used in dev, and as a fallback when packaged but
+ * electron-updater is missing or failed to load (so IPC handlers still register).
+ */
+function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boolean): void {
+  const doCheck = async () => {
+    lastGithubReleaseUrl = null;
+    try {
+      const res = await fetch(API_URL, {
+        headers: { 'User-Agent': `mesh-client/${app.getVersion()}` },
+      });
+      if (!res.ok) {
+        console.warn('[updater] GitHub API responded with', String(res.status));
+        send('update:error', { message: 'Update check failed — check network connection' });
+        return;
+      }
+      if (res.redirected) {
+        console.warn('[updater] GitHub API redirected to', res.url, '— API_URL may need updating');
+      }
+      const data = (await res.json()) as { tag_name: string; html_url: string };
+      const remoteVersion = data.tag_name.replace(/^v/, '');
+      const localVersion = app.getVersion();
+      if (semverGt(remoteVersion, localVersion)) {
+        lastGithubReleaseUrl = data.html_url;
+        send('update:available', {
+          version: remoteVersion,
+          releaseUrl: data.html_url,
+          isPackaged: uiReportsPackaged,
+          isMac: process.platform === 'darwin',
+        });
+      } else {
+        send('update:not-available');
+      }
+    } catch (e: unknown) {
+      console.warn(
+        '[updater] GitHub API fetch failed:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      send('update:error', { message: 'Update check failed — check network connection' });
+    }
+  };
+  checkNow = () => {
+    void doCheck();
+  };
+
+  ipcMain.handle('update:check', doCheck);
+
+  ipcMain.handle('update:download', async () => {
+    if (!uiReportsPackaged) return;
+    if (process.platform === 'darwin') return;
+    try {
+      await shell.openExternal(lastGithubReleaseUrl ?? RELEASES_URL);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn('[updater] update:download (GitHub fallback) failed:', sanitizeLogMessage(msg));
+      send('update:error', { message: msg });
+    }
+  });
+
+  ipcMain.handle('update:install', () => {
+    /* no-op — no downloaded artifact in this path */
+  });
+}
+
+function registerElectronUpdaterHandlers(send: SendFn): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    autoUpdater = require('electron-updater').autoUpdater;
+  } catch (e) {
+    console.error(
+      '[updater] electron-updater not available:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    return false;
+  }
+
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
+
+  autoUpdater.on('update-available', (info: { version: string }) => {
+    send('update:available', {
+      version: info.version,
+      releaseUrl: `${RELEASES_URL}/tag/v${info.version}`,
+      isPackaged: true,
+      isMac: process.platform === 'darwin',
+    });
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    send('update:not-available');
+  });
+
+  autoUpdater.on('download-progress', (progress: { percent: number }) => {
+    send('update:progress', { percent: Math.round(progress.percent) });
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    send('update:downloaded');
+  });
+
+  autoUpdater.on('error', (err: Error) => {
+    console.error('[updater] error:', sanitizeLogMessage(err.message));
+    send('update:error', { message: err.message });
+  });
+
+  const doCheck = async () => {
+    try {
+      await autoUpdater.checkForUpdates();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn('[updater] checkForUpdates failed:', sanitizeLogMessage(msg));
+      send('update:error', { message: msg });
+    }
+  };
+  checkNow = () => {
+    void doCheck();
+  };
+
+  ipcMain.handle('update:check', doCheck);
+
+  ipcMain.handle('update:download', async () => {
+    if (process.platform === 'darwin') return;
+    try {
+      await autoUpdater.downloadUpdate();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn('[updater] update:download failed:', sanitizeLogMessage(msg));
+      send('update:error', { message: msg });
+    }
+  });
+
+  ipcMain.handle('update:install', () => {
+    if (process.platform === 'darwin') return;
+    autoUpdater.quitAndInstall(false, true);
+  });
+
+  return true;
+}
+
 export function initUpdater(win: BrowserWindow): void {
   const send = (channel: string, payload?: unknown) => {
     if (win.isDestroyed()) return;
@@ -38,135 +182,15 @@ export function initUpdater(win: BrowserWindow): void {
   };
 
   if (app.isPackaged) {
-    // ── Packaged path: electron-updater ─────────────────────────────
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      autoUpdater = require('electron-updater').autoUpdater;
-    } catch (e) {
-      console.error(
-        '[updater] electron-updater not available:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-      return;
+    const ok = registerElectronUpdaterHandlers(send);
+    if (!ok) {
+      console.warn('[updater] falling back to GitHub Releases API (packaged build)');
+      registerGithubReleaseApiHandlers(send, true);
     }
-
-    autoUpdater.autoDownload = false;
-    autoUpdater.autoInstallOnAppQuit = false;
-
-    autoUpdater.on('update-available', (info: { version: string }) => {
-      send('update:available', {
-        version: info.version,
-        releaseUrl: `${RELEASES_URL}/tag/v${info.version}`,
-        isPackaged: true,
-        isMac: process.platform === 'darwin',
-      });
-    });
-
-    autoUpdater.on('update-not-available', () => {
-      send('update:not-available');
-    });
-
-    autoUpdater.on('download-progress', (progress: { percent: number }) => {
-      send('update:progress', { percent: Math.round(progress.percent) });
-    });
-
-    autoUpdater.on('update-downloaded', () => {
-      send('update:downloaded');
-    });
-
-    autoUpdater.on('error', (err: Error) => {
-      console.error('[updater] error:', sanitizeLogMessage(err.message));
-      send('update:error', { message: err.message });
-    });
-
-    const doCheck = async () => {
-      try {
-        await autoUpdater.checkForUpdates();
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.warn('[updater] checkForUpdates failed:', sanitizeLogMessage(msg));
-        send('update:error', { message: msg });
-      }
-    };
-    checkNow = () => {
-      void doCheck();
-    };
-
-    // Auto-check on startup is triggered from the renderer (respects user preference).
-    ipcMain.handle('update:check', doCheck);
-
-    ipcMain.handle('update:download', async () => {
-      if (process.platform === 'darwin') return; // macOS: open releases page instead
-      try {
-        await autoUpdater.downloadUpdate();
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.warn('[updater] update:download failed:', sanitizeLogMessage(msg));
-        send('update:error', { message: msg });
-      }
-    });
-
-    ipcMain.handle('update:install', () => {
-      if (process.platform === 'darwin') return;
-      autoUpdater.quitAndInstall(false, true);
-    });
   } else {
-    // ── Dev / git-clone path: GitHub Releases API ────────────────────
-    const doCheck = async () => {
-      try {
-        const res = await fetch(API_URL, {
-          headers: { 'User-Agent': `mesh-client/${app.getVersion()}` },
-        });
-        if (!res.ok) {
-          console.warn('[updater] GitHub API responded with', String(res.status));
-          send('update:error', { message: 'Update check failed — check network connection' });
-          return;
-        }
-        if (res.redirected) {
-          console.warn(
-            '[updater] GitHub API redirected to',
-            res.url,
-            '— API_URL may need updating',
-          );
-        }
-        const data = (await res.json()) as { tag_name: string; html_url: string };
-        const remoteVersion = data.tag_name.replace(/^v/, '');
-        const localVersion = app.getVersion();
-        if (semverGt(remoteVersion, localVersion)) {
-          send('update:available', {
-            version: remoteVersion,
-            releaseUrl: data.html_url,
-            isPackaged: false,
-            isMac: process.platform === 'darwin',
-          });
-        } else {
-          send('update:not-available');
-        }
-      } catch (e: unknown) {
-        console.warn(
-          '[updater] GitHub API fetch failed:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-        send('update:error', { message: 'Update check failed — check network connection' });
-      }
-    };
-    checkNow = () => {
-      void doCheck();
-    };
-
-    // Auto-check on startup is triggered from the renderer (respects user preference).
-    // In dev mode, download/install are no-ops; just expose the handlers.
-    ipcMain.handle('update:check', doCheck);
-
-    ipcMain.handle('update:download', () => {
-      /* no-op in dev */
-    });
-    ipcMain.handle('update:install', () => {
-      /* no-op in dev */
-    });
+    registerGithubReleaseApiHandlers(send, false);
   }
 
-  // Shared: open the GitHub releases page
   ipcMain.handle('update:open-releases', async (_event, url?: string) => {
     try {
       console.debug('[IPC] update:open-releases');
