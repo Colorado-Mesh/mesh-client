@@ -156,7 +156,7 @@ CI builds avoid both issues by using short paths and clean agents; local Windows
 Windows does not have built-in mDNS resolution. `.local` hostnames require **Bonjour** (installed with iTunes or Apple Devices). Install either:
 
 - [iTunes](https://www.apple.com/itunes/) — includes Bonjour automatically
-- [Bonjour Print Services for Windows](https://support.apple.com/kb/DL999) — standalone Bonjour installer
+- [Bonjour Print Services for Windows](https://support.apple.com/en-us/search?query=Bonjour%20Print%20Services%20for%20Windows) — standalone Bonjour installer
 
 Alternatively, enter the device's **IP address** directly instead of its `.local` hostname.
 
