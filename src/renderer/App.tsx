@@ -528,6 +528,8 @@ export default function App() {
   const protocolRef = useRef(protocol);
   const lastMeshtasticTab = useRef(0);
   const lastMeshcoreTab = useRef(0);
+  const lastMeshtasticPanel = useRef<number | null>(null);
+  const lastMeshcorePanel = useRef<number | null>(null);
   const meshtasticMsgsRef = useRef(meshtasticDevice.messages);
   const meshcoreMsgsRef = useRef(meshcoreDevice.messages);
   const meshtasticMyNodeNumRef = useRef(meshtasticDevice.state.myNodeNum);
@@ -593,6 +595,10 @@ export default function App() {
     meshcoreSelfIdRef.current = meshcoreDevice.selfNodeId;
     lastMeshtasticTab.current = protocol === 'meshtastic' ? activeTab : lastMeshtasticTab.current;
     lastMeshcoreTab.current = protocol === 'meshcore' ? activeTab : lastMeshcoreTab.current;
+    lastMeshtasticPanel.current =
+      protocol === 'meshtastic' ? activePanelIndex : lastMeshtasticPanel.current;
+    lastMeshcorePanel.current =
+      protocol === 'meshcore' ? activePanelIndex : lastMeshcorePanel.current;
     activePanelIndexRef.current = activePanelIndex;
   }, [
     activeTab,
@@ -607,12 +613,24 @@ export default function App() {
   // Reset activeTab if it's out of bounds (e.g., switching to meshcore while on Security tab)
   useEffect(() => {
     if (activeTab >= displayTabNames.length) {
-      const savedTab =
-        protocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
-      const next = savedTab < displayTabNames.length ? savedTab : 0;
+      const savedPanel =
+        protocol === 'meshcore' ? lastMeshcorePanel.current : lastMeshtasticPanel.current;
+      let next = 0;
+
+      if (savedPanel != null) {
+        const foundFilteredIndex = tabIndexToPanelIndex.findIndex((p) => p === savedPanel);
+        if (foundFilteredIndex !== -1 && foundFilteredIndex < displayTabNames.length) {
+          next = foundFilteredIndex;
+        }
+      } else {
+        const savedTab =
+          protocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
+        next = savedTab < displayTabNames.length ? savedTab : 0;
+      }
+
       setActiveTab(next);
     }
-  }, [activeTab, displayTabNames.length, protocol]);
+  }, [activeTab, displayTabNames.length, protocol, tabIndexToPanelIndex]);
 
   // Reset scroll position when switching tabs
   useEffect(() => {
@@ -650,15 +668,30 @@ export default function App() {
     (newProtocol: MeshProtocol) => {
       if (newProtocol === protocol) return;
 
-      const savedTab =
-        newProtocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
-      const targetTab = savedTab < displayTabNames.length ? savedTab : 0;
+      const savedPanel =
+        newProtocol === 'meshcore' ? lastMeshcorePanel.current : lastMeshtasticPanel.current;
+      let targetTab = 0;
+
+      if (savedPanel != null) {
+        const targetPanelIndexArr =
+          newProtocol === 'meshcore' ? tabIndexToPanelIndex : tabIndexToPanelIndex;
+        const foundFilteredIndex = targetPanelIndexArr.findIndex((p) => p === savedPanel);
+        if (foundFilteredIndex !== -1 && foundFilteredIndex < displayTabNames.length) {
+          targetTab = foundFilteredIndex;
+        }
+      } else {
+        const savedTab =
+          newProtocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
+        targetTab = savedTab < displayTabNames.length ? savedTab : 0;
+      }
 
       if (newProtocol === 'meshtastic') {
         lastMeshcoreTab.current = activeTab;
+        lastMeshcorePanel.current = activePanelIndex;
         setActiveTab(targetTab);
       } else {
         lastMeshtasticTab.current = activeTab;
+        lastMeshtasticPanel.current = activePanelIndex;
         setActiveTab(targetTab);
       }
 
@@ -666,7 +699,7 @@ export default function App() {
       localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, newProtocol);
       setProtocol(newProtocol);
     },
-    [protocol, activeTab, displayTabNames.length],
+    [protocol, activeTab, activePanelIndex, displayTabNames.length, tabIndexToPanelIndex],
   );
 
   const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);
