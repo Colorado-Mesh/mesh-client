@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
@@ -746,13 +746,13 @@ export default function ConnectionPanel({
   }, []);
 
   // Clear PIN countdown when prompt is dismissed - intentional sync setState for cleanup
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+
   useEffect(() => {
     if (!showPinPrompt) stopPinCountdown();
   }, [showPinPrompt, stopPinCountdown]);
 
   // Update connection stage based on state transitions, and save last connection on success
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+
   useEffect(() => {
     if (state.status === 'connecting') {
       if (showPinPrompt) return;

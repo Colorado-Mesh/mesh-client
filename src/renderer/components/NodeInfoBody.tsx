@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/purity */
+/* eslint-disable react-hooks/purity */
 import { useEffect, useState } from 'react';
 
 import { formatCoordPair } from '../lib/coordUtils';
