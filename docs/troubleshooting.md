@@ -60,13 +60,18 @@ See [development-environment.md#linux](development-environment.md#linux) for ser
 
 ### macOS: File is damaged and cannot be opened
 
-**Cause:** macOS tags downloads with the **`com.apple.quarantine`** extended attribute. For apps that are **not signed with a Developer ID** and **not notarized**, Gatekeeper may show **“File is damaged and cannot be opened”** (or **“Mesh-client” is damaged and can’t be opened**) instead of the usual unidentified-developer prompt. This is a **security / quarantine** behavior and is **common on Apple silicon** for community-built Electron binaries.
+**Cause:** macOS tags downloads with the **`com.apple.quarantine`** extended attribute. For apps that are **not signed with a Developer ID** and **not notarized**, Gatekeeper may show **"File is damaged and cannot be opened"** (or **"Mesh-client" is damaged and can't be opened**) instead of the usual unidentified-developer prompt. This is a **security / quarantine** behavior and is **common on Apple silicon** for community-built Electron binaries.
 
-**Fix:** Strip quarantine recursively, then launch again — adjust the path if the app is still under **Downloads** or another folder:
+**Fix:**
+
+1. Open **System Settings → Privacy & Security** and scroll to the bottom. If you see "Mesh-client was blocked from use", click **Allow** to run the app.
+2. If you don't see the Mesh-client entry in Privacy & Security, or the app still won't open after clicking Allow, strip the quarantine attribute — adjust the path if the app is still under **Downloads** or another folder:
 
 ```bash
 xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
 ```
+
+After running xattr, check Privacy & Security again (scroll to the bottom) — the entry should now appear with an **Allow** button.
 
 **Right-click → Open** on first launch can also help in some cases. Background and discussion: [jeffvli/feishin#104 (comment)](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
 

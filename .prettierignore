@@ -13,3 +13,11 @@ tmp/
 
 # Files unsupported by prettier parser
 *.plist
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
