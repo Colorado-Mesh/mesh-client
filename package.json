@@ -27,7 +27,7 @@
   "main": "dist-electron/main/index.js",
   "build": {
     "mac": {
-      "sign": "-"
+      "sign": false
     }
   },
   "scripts": {
