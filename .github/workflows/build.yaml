@@ -51,7 +51,6 @@ jobs:
             libxfixes3 \
             libxrender1 \
             libxi6 \
-            libasound2 \
             rpm
 
       - name: Install dependencies
