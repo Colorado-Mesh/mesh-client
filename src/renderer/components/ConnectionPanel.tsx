@@ -14,6 +14,7 @@ import {
   validateLetsMeshPresetConnect,
 } from '../lib/letsMeshConnectionGuards';
 import {
+  COLORADO_MESH_HOST,
   generateLetsMeshAuthToken,
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
@@ -552,10 +553,16 @@ export default function ConnectionPanel({
   const mqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const meshcoreMqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [meshcorePreset, setMeshcorePreset] = useState<
-    'letsmesh' | 'meshmapper' | 'ripple' | 'custom'
+    'letsmesh' | 'coloradomesh' | 'meshmapper' | 'ripple' | 'custom'
   >(() => {
     const saved = localStorage.getItem('mesh-client:mqttPreset:meshcore');
-    if (saved === 'letsmesh' || saved === 'meshmapper' || saved === 'ripple') return saved;
+    if (
+      saved === 'letsmesh' ||
+      saved === 'coloradomesh' ||
+      saved === 'meshmapper' ||
+      saved === 'ripple'
+    )
+      return saved;
     return 'custom';
   });
   const [meshtasticPreset, setMeshtasticPreset] = useState<'official-plain' | 'liam' | 'custom'>(
@@ -1949,6 +1956,7 @@ export default function ConnectionPanel({
                 {(
                   [
                     { id: 'letsmesh', label: 'LetsMesh' },
+                    { id: 'coloradomesh', label: 'Colorado Mesh' },
                     { id: 'meshmapper', label: 'MeshMapper' },
                     { id: 'ripple', label: 'Ripple Networks' },
                     { id: 'custom', label: 'Custom' },
@@ -1969,6 +1977,20 @@ export default function ConnectionPanel({
                           topicPrefix: 'meshcore',
                           useWebSocket: true,
                           keepalive: 60,
+                          username: fromIdentity || prev.username,
+                          password: '',
+                        }));
+                      } else if (id === 'coloradomesh') {
+                        const fromIdentity =
+                          letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                        setMeshcoreMqttSettings((prev) => ({
+                          ...prev,
+                          server: COLORADO_MESH_HOST,
+                          port: 8883,
+                          topicPrefix: 'meshcore',
+                          useWebSocket: true,
+                          keepalive: 60,
+                          tlsInsecure: true,
                           username: fromIdentity || prev.username,
                           password: '',
                         }));
@@ -2131,16 +2153,22 @@ export default function ConnectionPanel({
             </label>
           </div>
           {protocol === 'meshcore' &&
-            (meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper') &&
+            (meshcorePreset === 'letsmesh' ||
+              meshcorePreset === 'coloradomesh' ||
+              meshcorePreset === 'meshmapper') &&
             letsMeshPresetConfigurationDeviation(meshcoreMqttSettings) && (
               <div className="rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2 text-xs text-amber-200/90">
                 {meshcorePreset === 'letsmesh'
                   ? 'LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.'
-                  : 'MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.cc. Reset the preset or switch to Custom for other brokers.'}
+                  : meshcorePreset === 'coloradomesh'
+                    ? 'Colorado Mesh needs WebSocket on port 8883 with TLS disabled, server meshcore_mqtt.coloradomesh.org. Reset the preset or switch to Custom for other brokers.'
+                    : 'MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.cc. Reset the preset or switch to Custom for other brokers.'}
               </div>
             )}
           {protocol === 'meshcore' &&
-            (meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper') && (
+            (meshcorePreset === 'letsmesh' ||
+              meshcorePreset === 'coloradomesh' ||
+              meshcorePreset === 'meshmapper') && (
               <div
                 className={`flex items-start gap-2 rounded border px-2 py-2 text-xs ${
                   readMeshcoreIdentity()?.private_key
@@ -2157,7 +2185,9 @@ export default function ConnectionPanel({
               </div>
             )}
           {protocol === 'meshcore' &&
-            (meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper') && (
+            (meshcorePreset === 'letsmesh' ||
+              meshcorePreset === 'coloradomesh' ||
+              meshcorePreset === 'meshmapper') && (
               <div className="bg-secondary-dark/40 flex items-start gap-2 rounded border border-gray-600/50 px-2 py-2 text-xs text-gray-300">
                 <input
                   type="checkbox"
@@ -2323,7 +2353,9 @@ export default function ConnectionPanel({
                 };
                 if (
                   protocol === 'meshcore' &&
-                  (meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper')
+                  (meshcorePreset === 'letsmesh' ||
+                    meshcorePreset === 'coloradomesh' ||
+                    meshcorePreset === 'meshmapper')
                 ) {
                   const presetErr = validateLetsMeshPresetConnect(settings);
                   if (presetErr) {
