@@ -8,6 +8,8 @@ import { sanitizeLogMessage } from './log-service';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+const CURRENT_SCHEMA_VERSION = 27;
+
 let db: NodeSqliteDB | null = null;
 
 export function getDatabasePath(): string {
@@ -44,26 +46,11 @@ export function initDatabase(): void {
     db.pragma('busy_timeout = 5000');
     db.pragma('foreign_keys = ON');
 
-    // Detect fresh DB before running setup (user_version = 0, no tables yet)
-    const isFreshDb =
-      (db.pragma('user_version', { simple: true }) as number) === 0 &&
-      !db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='messages'").get();
-
     const setup = db.transaction(() => {
-      createBaseTables();
-      if (isFreshDb) {
-        // Base DDL already includes all columns; create constraint indexes that
-        // migrations would otherwise add, then stamp current schema version.
-        // idx_msg_packet_dedup is omitted from createBaseTables so that existing
-        // databases can be migrated safely (v12 deduplicates first).
-        db!
-          .prepare(
-            `CREATE UNIQUE INDEX IF NOT EXISTS idx_msg_packet_dedup
-           ON messages(sender_id, packet_id)
-           WHERE packet_id IS NOT NULL`,
-          )
-          .run();
-        db!.pragma('user_version = 27');
+      const userVersion = db!.pragma('user_version', { simple: true }) as number;
+      if (userVersion === 0) {
+        createBaseTables();
+        db!.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
       } else {
         runMigrations();
       }
@@ -151,7 +138,9 @@ function createBaseTables(): void {
         reply_id INTEGER,
         to_node INTEGER,
         mqtt_status TEXT,
-        received_via TEXT
+        received_via TEXT,
+        reply_preview_text TEXT,
+        reply_preview_sender TEXT
       );
 
       CREATE TABLE IF NOT EXISTS nodes (
@@ -185,6 +174,12 @@ function createBaseTables(): void {
       CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
       CREATE INDEX IF NOT EXISTS idx_messages_channel_ts ON messages(channel, timestamp DESC);
       CREATE INDEX IF NOT EXISTS idx_messages_packet_id ON messages(packet_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_reaction_dedup
+        ON messages(sender_id, reply_id, emoji)
+        WHERE emoji IS NOT NULL AND reply_id IS NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_msg_packet_dedup
+        ON messages(sender_id, packet_id)
+        WHERE packet_id IS NOT NULL;
       CREATE INDEX IF NOT EXISTS idx_nodes_last_heard ON nodes(last_heard);
 
       CREATE TABLE IF NOT EXISTS meshcore_contacts (
@@ -201,7 +196,10 @@ function createBaseTables(): void {
         nickname     TEXT,
         contact_flags INTEGER DEFAULT 0,
         last_rf_transport_scope  INTEGER,
-        last_rf_transport_return   INTEGER
+        last_rf_transport_return   INTEGER,
+        hops_away    INTEGER,
+        on_radio     INTEGER DEFAULT 0,
+        last_synced_from_radio TEXT
       );
 
       CREATE TABLE IF NOT EXISTS meshcore_messages (
@@ -217,7 +215,9 @@ function createBaseTables(): void {
         reply_id    INTEGER,
         to_node     INTEGER,
         received_via TEXT,
-        rx_packet_fingerprint TEXT
+        rx_packet_fingerprint TEXT,
+        reply_preview_text TEXT,
+        reply_preview_sender TEXT
       );
 
       CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp);
