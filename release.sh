@@ -318,9 +318,13 @@ if ! pnpm audit --audit-level=high; then
   exit 1
 fi
 
-# Check for Node.js deprecation warnings
+# Probe `pnpm version` with trace-deprecation; npm still writes package.json (even with --dry-run), so restore it.
 echo "Checking for Node.js deprecation warnings..."
-DEPRECATION_OUTPUT=$(NODE_OPTIONS="--trace-deprecation" pnpm version patch --no-git-tag-version --dry-run 2>&1 || true)
+PKG_JSON_BACKUP=$(mktemp)
+cp package.json "$PKG_JSON_BACKUP"
+DEPRECATION_OUTPUT=$(NODE_OPTIONS="--trace-deprecation" pnpm version patch --no-git-tag-version 2>&1 || true)
+cp "$PKG_JSON_BACKUP" package.json
+rm -f "$PKG_JSON_BACKUP"
 if echo "$DEPRECATION_OUTPUT" | grep -q "DEP0187"; then
   print_error "Found Node.js deprecation warning about fs.existsSync. This will cause the release to fail."
   print_error "Please fix the deprecation warning before proceeding with release."
