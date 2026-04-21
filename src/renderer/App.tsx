@@ -1650,6 +1650,19 @@ export default function App() {
                             messages={chatMessagesForPanel}
                             channels={chatChannelsForPanel}
                             myNodeNum={device.selfNodeId}
+                            ownNodeIds={
+                              protocol === 'meshtastic'
+                                ? Array.from(
+                                    new Set(
+                                      [
+                                        device.selfNodeId,
+                                        meshtasticDevice.virtualNodeId,
+                                        meshtasticDevice.lastRfSelfNodeId,
+                                      ].filter((id) => id > 0),
+                                    ),
+                                  )
+                                : [device.selfNodeId].filter((id) => id > 0)
+                            }
                             onSend={device.sendMessage}
                             onReact={device.sendReaction}
                             onResend={handleResend}

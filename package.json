@@ -25,6 +25,11 @@
     "megabear - KD5IHC"
   ],
   "main": "dist-electron/main/index.js",
+  "build": {
+    "mac": {
+      "sign": "-"
+    }
+  },
   "scripts": {
     "build": "pnpm run build:main:prod && pnpm run build:preload && pnpm run build:renderer",
     "build:main": "esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs",

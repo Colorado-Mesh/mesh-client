@@ -34,6 +34,7 @@ export class TransportManager {
     replyId: number | undefined,
     tempId: number,
     from: number,
+    emoji?: number,
   ): void {
     const {
       deviceRef,
@@ -47,7 +48,6 @@ export class TransportManager {
     const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
     const shouldUplink =
       chCfg?.uplinkEnabled && mqttStatusRef.current === 'connected' && myNodeNumRef.current;
-
     // ── MQTT transport (path 1) ──────────────────────────────────────────────
     if (shouldUplink || (!deviceRef.current && mqttStatusRef.current === 'connected')) {
       window.electronAPI.mqtt
@@ -57,6 +57,7 @@ export class TransportManager {
           channel,
           destination: destination ?? BROADCAST_ADDR,
           channelName: 'LongFast',
+          ...(emoji != null ? { emoji, replyId } : {}),
         })
         .then((mqttPacketId: number) => {
           isDuplicate(mqttPacketId); // register so echo is deduped

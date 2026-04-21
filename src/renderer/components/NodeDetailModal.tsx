@@ -1245,7 +1245,15 @@ export default function NodeDetailModal({
           {/* Action status */}
           {actionStatus && (
             <div className="shrink-0 px-5 pb-3">
-              <div className="text-muted text-center text-xs">{actionStatus}</div>
+              <div
+                className={`text-center text-xs ${
+                  actionStatus.includes('Cannot delete active MQTT identity')
+                    ? 'text-red-300'
+                    : 'text-muted'
+                }`}
+              >
+                {actionStatus}
+              </div>
             </div>
           )}
 
@@ -1275,7 +1283,18 @@ export default function NodeDetailModal({
                     Cancel
                   </button>
                   <button
-                    onClick={() => onDeleteNode(node.node_id).then(onClose)}
+                    onClick={() => {
+                      onDeleteNode(node.node_id)
+                        .then(onClose)
+                        .catch((e: unknown) => {
+                          setActionStatus(
+                            e instanceof Error
+                              ? e.message
+                              : 'Delete failed. Disconnect MQTT and try again.',
+                          );
+                          setShowDeleteConfirm(false);
+                        });
+                    }}
                     className="flex-1 rounded bg-red-800 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-700"
                   >
                     Confirm Delete

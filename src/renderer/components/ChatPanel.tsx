@@ -213,6 +213,7 @@ export interface ChatPanelProps {
   messages: ChatMessage[];
   channels: { index: number; name: string }[];
   myNodeNum: number;
+  ownNodeIds?: number[];
   onSend: (
     text: string,
     channel: number,
@@ -246,6 +247,7 @@ function ChatPanel({
   messages,
   channels,
   myNodeNum,
+  ownNodeIds,
   onSend,
   onReact,
   onResend,
@@ -262,6 +264,13 @@ function ChatPanel({
   scrollToTopRef,
   outerScrollMetricsRootRef,
 }: ChatPanelProps) {
+  const ownNodeIdSet = useMemo(() => {
+    const base = ownNodeIds != null && ownNodeIds.length > 0 ? ownNodeIds : [myNodeNum];
+    return new Set(base.filter((id) => id > 0));
+  }, [myNodeNum, ownNodeIds]);
+
+  const isOwnNode = useCallback((nodeId: number) => ownNodeIdSet.has(nodeId), [ownNodeIdSet]);
+
   const scrollToTop = useCallback(() => {
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
@@ -424,13 +433,13 @@ function ChatPanel({
       // - outgoing: sender_id == me, to == peer
       // - incoming: sender_id == peer, to == me
       let peer: number | undefined;
-      if (msg.sender_id === myNodeNum && msg.to !== myNodeNum) peer = msg.to;
-      if (msg.to === myNodeNum && msg.sender_id !== myNodeNum) peer = msg.sender_id;
+      if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
+      if (isOwnNode(msg.to) && !isOwnNode(msg.sender_id)) peer = msg.sender_id;
       if (peer == null) continue;
       peers.set(peer, (peers.get(peer) ?? 0) + 1);
     }
     return peers;
-  }, [regularMessages, myNodeNum]);
+  }, [isOwnNode, regularMessages]);
 
   const visibleDmTabs = useMemo(() => {
     const all = new Set(openDmTabs);
@@ -452,17 +461,17 @@ function ChatPanel({
       if (msg.to == null) continue;
       if (msg.isHistory) continue;
       let peer: number | undefined;
-      if (msg.sender_id === myNodeNum && msg.to !== myNodeNum) peer = msg.to;
-      if (msg.to === myNodeNum && msg.sender_id !== myNodeNum) peer = msg.sender_id;
+      if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
+      if (isOwnNode(msg.to) && !isOwnNode(msg.sender_id)) peer = msg.sender_id;
       if (peer == null) continue;
-      if (msg.sender_id === myNodeNum) continue;
+      if (isOwnNode(msg.sender_id)) continue;
       const lr = persistedLastRead[`dm:${peer}`] ?? 0;
       if (msg.timestamp > lr) {
         counts.set(peer, (counts.get(peer) ?? 0) + 1);
       }
     }
     return counts;
-  }, [regularMessages, myNodeNum, persistedLastRead]);
+  }, [isOwnNode, persistedLastRead, regularMessages]);
 
   // Lookup map for rendering quoted replies (packetId in Meshtastic, timestamp fallback in MeshCore)
   const messageByReplyKey = useMemo(() => {
@@ -478,7 +487,7 @@ function ChatPanel({
   useEffect(() => {
     const counts = new Map<number, number>();
     for (const msg of regularMessages) {
-      if (msg.sender_id === myNodeNum) continue; // own messages don't count
+      if (isOwnNode(msg.sender_id)) continue; // own messages don't count
       if (msg.to) continue; // DMs don't contribute to channel unread counts
       const lastRead = lastReadRef.current.get(msg.channel) ?? 0;
       if (msg.timestamp > lastRead) {
@@ -486,7 +495,7 @@ function ChatPanel({
       }
     }
     setUnreadCounts(counts);
-  }, [regularMessages, myNodeNum]);
+  }, [isOwnNode, regularMessages]);
 
   // Mark current channel as read when switching or viewing
   useEffect(() => {
@@ -516,8 +525,8 @@ function ChatPanel({
       // DM mode: show conversation between self and active DM node
       msgs = regularMessages.filter(
         (m) =>
-          (m.to === activeDmNode && m.sender_id === myNodeNum) ||
-          (m.sender_id === activeDmNode && m.to === myNodeNum),
+          (m.to === activeDmNode && isOwnNode(m.sender_id)) ||
+          (m.sender_id === activeDmNode && m.to != null && isOwnNode(m.to)),
       );
     } else {
       // Channel mode: show only broadcast messages (no DMs)
@@ -531,7 +540,7 @@ function ChatPanel({
       );
     }
     return msgs;
-  }, [regularMessages, channel, searchQuery, viewMode, activeDmNode, myNodeNum]);
+  }, [activeDmNode, channel, isOwnNode, regularMessages, searchQuery, viewMode]);
 
   const viewKey = useMemo(() => {
     if (viewMode === 'dm' && activeDmNode != null) return `dm:${activeDmNode}`;
@@ -846,10 +855,10 @@ function ChatPanel({
     if (channel === -1 || searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
     for (let i = 0; i < filteredMessages.length; i++) {
       const msg = filteredMessages[i];
-      if (msg.sender_id !== myNodeNum && msg.timestamp > unreadDividerTimestamp) return i;
+      if (!isOwnNode(msg.sender_id) && msg.timestamp > unreadDividerTimestamp) return i;
     }
     return -1;
-  }, [filteredMessages, myNodeNum, unreadDividerTimestamp, channel, searchQuery]);
+  }, [channel, filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
 
   const isDmMode = viewMode === 'dm' && activeDmNode != null;
   const dmNodeName = activeDmNode != null ? getDmLabel(activeDmNode) : '';
@@ -1082,7 +1091,7 @@ function ChatPanel({
             </div>
           ) : (
             filteredMessages.map((msg, i) => {
-              const isOwn = msg.sender_id === myNodeNum;
+              const isOwn = isOwnNode(msg.sender_id);
               const isDm = !!msg.to;
               const reactionRows = getReactionRows(msg.packetId ?? msg.timestamp);
               const messageRowKey = msg.packetId ?? msg.timestamp;
@@ -1391,7 +1400,7 @@ function ChatPanel({
                         }`}
                       >
                         {reactionRows.map((r, rIdx) => {
-                          const hideReactorLabel = !isOwn && r.sender_id === myNodeNum;
+                          const hideReactorLabel = !isOwn && isOwnNode(r.sender_id);
                           const reactorLabel =
                             nodeDisplayName(nodes.get(r.sender_id), protocol) || r.sender_name;
                           const emojiChar = emojiDisplayChar(r.emoji);

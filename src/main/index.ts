@@ -2427,6 +2427,38 @@ ipcMain.handle('db:getMessages', (_event, channel?: number, limit = 200) => {
 ipcMain.handle('db:saveNode', (_event, node) => {
   try {
     validateSaveNode(node);
+    // #region agent log
+    fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+      body: JSON.stringify({
+        sessionId: '340742',
+        runId: 'post-fix-11',
+        hypothesisId: 'H30',
+        location: 'src/main/index.ts:db:saveNode',
+        message: 'db saveNode received source flags',
+        data: {
+          nodeId:
+            typeof node === 'object' && node != null
+              ? (node as { node_id?: unknown }).node_id
+              : null,
+          source:
+            typeof node === 'object' && node != null
+              ? ((node as { source?: unknown }).source ?? null)
+              : null,
+          heardViaMqtt:
+            typeof node === 'object' && node != null
+              ? ((node as { heard_via_mqtt?: unknown }).heard_via_mqtt ?? null)
+              : null,
+          heardViaMqttOnly:
+            typeof node === 'object' && node != null
+              ? ((node as { heard_via_mqtt_only?: unknown }).heard_via_mqtt_only ?? null)
+              : null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     const db = getDatabase();
     const stmt = db.prepareOnce(`
       INSERT INTO nodes (node_id, long_name, short_name, hw_model, snr, rssi, battery, last_heard, latitude, longitude, role, hops_away, via_mqtt, voltage, channel_utilization, air_util_tx, altitude, favorited, source, num_packets_rx_bad, num_rx_dupe, num_packets_rx, num_packets_tx, hops, path)
@@ -2450,7 +2482,10 @@ ipcMain.handle('db:saveNode', (_event, node) => {
         channel_utilization = COALESCE(excluded.channel_utilization, nodes.channel_utilization),
         air_util_tx = COALESCE(excluded.air_util_tx, nodes.air_util_tx),
         altitude = COALESCE(excluded.altitude, nodes.altitude),
-        source = COALESCE(excluded.source, nodes.source, 'rf'),
+        source = CASE
+          WHEN nodes.source = 'mqtt' AND excluded.source = 'rf' AND COALESCE(excluded.via_mqtt, 0) = 1 THEN 'mqtt'
+          ELSE COALESCE(excluded.source, nodes.source, 'rf')
+        END,
         num_packets_rx_bad = COALESCE(excluded.num_packets_rx_bad, num_packets_rx_bad),
         num_rx_dupe = COALESCE(excluded.num_rx_dupe, num_rx_dupe),
         num_packets_rx = COALESCE(excluded.num_packets_rx, num_packets_rx),

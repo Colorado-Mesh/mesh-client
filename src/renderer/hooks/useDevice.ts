@@ -108,6 +108,10 @@ function getOrCreateVirtualNodeId(): number {
   return id;
 }
 
+function clearVirtualNodeId(): void {
+  localStorage.removeItem('mesh-client:mqttVirtualNodeId');
+}
+
 function meshtasticRawPacketPortLabel(packet: unknown): string {
   const p = packet as {
     payloadVariant?: { case?: string; value?: { portnum?: number } };
@@ -179,6 +183,8 @@ export function useDevice() {
   const channelConfigsRef = useRef<typeof channelConfigs>([]);
   // Nodes heard via RF this session — prevents MQTT-only flag from being set
   const rfHeardNodeIds = useRef<Set<number>>(new Set());
+  const lastRfSelfNodeIdRef = useRef<number>(0);
+  const virtualNodeIdRef = useRef<number>(getOrCreateVirtualNodeId());
   // Dedup map shared between RF and MQTT handlers
   const seenPacketIds = useRef<Map<number, number>>(new Map());
 
@@ -295,6 +301,37 @@ export function useDevice() {
   const [privateMessages, setPrivateMessages] = useState<
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
+
+  const ensureNonConflictingVirtualNodeId = useCallback((): number => {
+    let virtualId = virtualNodeIdRef.current;
+    const conflictsWithKnownRfNode = (id: number): boolean => {
+      const existing = nodesRef.current.get(id);
+      return !!existing && existing.source === 'rf' && id !== myNodeNumRef.current;
+    };
+    if (conflictsWithKnownRfNode(virtualId)) {
+      clearVirtualNodeId();
+      do {
+        virtualId = getOrCreateVirtualNodeId();
+      } while (conflictsWithKnownRfNode(virtualId));
+      virtualNodeIdRef.current = virtualId;
+      // #region agent log
+      fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+        body: JSON.stringify({
+          sessionId: '340742',
+          runId: 'post-fix-12',
+          hypothesisId: 'H31',
+          location: 'src/renderer/hooks/useDevice.ts:ensureNonConflictingVirtualNodeId',
+          message: 'virtual node id regenerated to avoid RF collision',
+          data: { virtualId },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+    }
+    return virtualId;
+  }, []);
 
   // Keep nodesRef in sync with state
   const updateNodes = useCallback(
@@ -599,18 +636,77 @@ export function useDevice() {
         );
       }
       if (s === 'connected' && !deviceRef.current) {
+        rfHeardNodeIds.current.clear();
+        // #region agent log
+        fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+          body: JSON.stringify({
+            sessionId: '340742',
+            runId: 'post-fix-9',
+            hypothesisId: 'H27',
+            location: 'src/renderer/hooks/useDevice.ts:mqttStatusConnected',
+            message: 'cleared rf-heard node cache for mqtt-only mode',
+            data: { rfHeardNodeCount: rfHeardNodeIds.current.size },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         startGpsInterval();
-        const virtualId = getOrCreateVirtualNodeId();
+        const virtualId = ensureNonConflictingVirtualNodeId();
+        myNodeNumRef.current = virtualId;
+        setState((prev) => ({ ...prev, myNodeNum: virtualId }));
+        // #region agent log
+        fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+          body: JSON.stringify({
+            sessionId: '340742',
+            runId: 'post-fix-4',
+            hypothesisId: 'H19',
+            location: 'src/renderer/hooks/useDevice.ts:mqttStatusConnected',
+            message: 'mqtt-only identity synchronized to virtual node id',
+            data: { virtualId, stateMyNodeNum: state.myNodeNum },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         updateNodes((prev) => {
           const updated = new Map(prev);
           const existing = updated.get(virtualId) ?? emptyNode(virtualId);
-          updated.set(virtualId, {
+          const virtualNode: MeshNode = {
             ...existing,
             node_id: virtualId,
             long_name: MQTT_ONLY_VIRTUAL_LONG_NAME,
             role: ROLE_CLIENT,
             hops_away: 0,
-          });
+            source: 'mqtt',
+            via_mqtt: true,
+            heard_via_mqtt: true,
+            heard_via_mqtt_only: true,
+          };
+          updated.set(virtualId, virtualNode);
+          void window.electronAPI.db.saveNode(virtualNode);
+          // #region agent log
+          fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+            body: JSON.stringify({
+              sessionId: '340742',
+              runId: 'post-fix-10',
+              hypothesisId: 'H29',
+              location: 'src/renderer/hooks/useDevice.ts:mqttStatusConnected',
+              message: 'persisted virtual mqtt node with mqtt source flags',
+              data: {
+                nodeId: virtualNode.node_id,
+                source: virtualNode.source ?? null,
+                heardViaMqttOnly: virtualNode.heard_via_mqtt_only ?? null,
+                heardViaMqtt: virtualNode.heard_via_mqtt ?? null,
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
           return updated;
         });
         // Periodic NodeInfo broadcast so other nodes see this client (every 5 min)
@@ -623,9 +719,24 @@ export function useDevice() {
             }
             return;
           }
+          // #region agent log
+          fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+            body: JSON.stringify({
+              sessionId: '340742',
+              runId: 'post-fix-4',
+              hypothesisId: 'H20',
+              location: 'src/renderer/hooks/useDevice.ts:sendPresence',
+              message: 'publishing mqtt-only node info presence',
+              data: { from: virtualNodeIdRef.current },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
           window.electronAPI.mqtt
             .publishNodeInfo({
-              from: getOrCreateVirtualNodeId(),
+              from: virtualNodeIdRef.current,
               longName: MQTT_ONLY_VIRTUAL_LONG_NAME,
               shortName: 'MQTT',
               channelName: 'LongFast',
@@ -635,9 +746,15 @@ export function useDevice() {
             });
         };
         if (mqttPresenceInitTimerRef.current) clearTimeout(mqttPresenceInitTimerRef.current);
+        // Announce immediately so early MQTT-only messages are not dropped by peers awaiting node identity.
+        sendPresence();
         mqttPresenceInitTimerRef.current = setTimeout(sendPresence, 10_000);
         mqttPresenceIntervalRef.current = setInterval(sendPresence, 5 * 60 * 1000);
       } else if (s !== 'connected') {
+        if (!deviceRef.current) {
+          myNodeNumRef.current = 0;
+          setState((prev) => ({ ...prev, myNodeNum: 0 }));
+        }
         if (mqttPresenceIntervalRef.current) {
           clearInterval(mqttPresenceIntervalRef.current);
           mqttPresenceIntervalRef.current = null;
@@ -683,13 +800,16 @@ export function useDevice() {
       updateNodes((prev) => {
         const existing = prev.get(nodeUpdate.node_id) ?? emptyNode(nodeUpdate.node_id);
         const heardViaRF = rfHeardNodeIds.current.has(nodeUpdate.node_id);
+        const isActiveVirtualIdentity =
+          !deviceRef.current && nodeUpdate.node_id === virtualNodeIdRef.current;
         const updated = new Map(prev);
         const node: MeshNode = {
           ...existing,
           ...nodeUpdate,
-          heard_via_mqtt_only: !heardViaRF,
+          heard_via_mqtt_only: isActiveVirtualIdentity ? true : !heardViaRF,
+          via_mqtt: true,
           heard_via_mqtt: true,
-          source: heardViaRF ? 'rf' : 'mqtt',
+          source: isActiveVirtualIdentity ? 'mqtt' : heardViaRF ? 'rf' : 'mqtt',
           last_heard: nodeUpdate.last_heard ?? Date.now(),
           long_name: preferNonEmptyTrimmedString(nodeUpdate.long_name, existing.long_name, {
             nodeId: nodeUpdate.node_id,
@@ -733,6 +853,28 @@ export function useDevice() {
           node.short_name ?? '',
           node.node_id,
         );
+        if (isActiveVirtualIdentity) {
+          // #region agent log
+          fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+            body: JSON.stringify({
+              sessionId: '340742',
+              runId: 'post-fix-13',
+              hypothesisId: 'H32',
+              location: 'src/renderer/hooks/useDevice.ts:onMqttNodeUpdate',
+              message: 'forced virtual identity source to mqtt',
+              data: {
+                nodeId: node.node_id,
+                heardViaRF,
+                source: node.source ?? null,
+                heardViaMqttOnly: node.heard_via_mqtt_only ?? null,
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
+        }
         updated.set(nodeUpdate.node_id, node);
         void window.electronAPI.db.saveNode(node);
         return updated;
@@ -877,7 +1019,15 @@ export function useDevice() {
         mqttPresenceIntervalRef.current = null;
       }
     };
-  }, [updateNodes, isDuplicate, startGpsInterval, ensureNodeExists, getNodeName]);
+  }, [
+    updateNodes,
+    isDuplicate,
+    startGpsInterval,
+    ensureNodeExists,
+    getNodeName,
+    ensureNonConflictingVirtualNodeId,
+    state.myNodeNum,
+  ]);
 
   // Cleanup on unmount — stop all intervals and subscriptions
   useEffect(() => {
@@ -959,6 +1109,22 @@ export function useDevice() {
 
         // Always clean up on disconnect, even if we never reached configured
         if (status === 2) {
+          rfHeardNodeIds.current.clear();
+          // #region agent log
+          fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+            body: JSON.stringify({
+              sessionId: '340742',
+              runId: 'post-fix-9',
+              hypothesisId: 'H28',
+              location: 'src/renderer/hooks/useDevice.ts:onDeviceStatus',
+              message: 'cleared rf-heard node cache on device disconnect',
+              data: { rfHeardNodeCount: rfHeardNodeIds.current.size },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
           clearConfigureTimeout();
           isConfiguringRef.current = false;
           stopWatchdog();
@@ -990,13 +1156,14 @@ export function useDevice() {
       const unsub2 = device.events.onMyNodeInfo.subscribe((info) => {
         console.debug(`[useDevice] onMyNodeInfo: myNodeNum=${info.myNodeNum}`);
         touchLastData();
-        const virtualNodeId = getOrCreateVirtualNodeId();
+        const virtualNodeId = virtualNodeIdRef.current;
         if (virtualNodeId !== info.myNodeNum) {
           window.electronAPI.db.deleteNode(virtualNodeId).catch((e: unknown) => {
             console.debug('[useDevice] deleteNode virtual', e);
           });
         }
         myNodeNumRef.current = info.myNodeNum;
+        lastRfSelfNodeIdRef.current = info.myNodeNum;
         if (getStoredMeshProtocol() === 'meshtastic') {
           useDiagnosticsStore.getState().migrateForeignLoraFromZero(info.myNodeNum);
         }
@@ -2597,7 +2764,57 @@ export function useDevice() {
       const hasMqtt = mqttStatusRef.current === 'connected';
       if (!deviceRef.current && !hasMqtt) throw new Error('Not connected');
 
-      const from = myNodeNumRef.current > 0 ? myNodeNumRef.current : getOrCreateVirtualNodeId();
+      const from =
+        deviceRef.current && myNodeNumRef.current > 0
+          ? myNodeNumRef.current
+          : virtualNodeIdRef.current;
+      if (!deviceRef.current && myNodeNumRef.current !== from) {
+        const previousMyNodeNum = myNodeNumRef.current;
+        myNodeNumRef.current = from;
+        setState((prev) => ({ ...prev, myNodeNum: from }));
+        // #region agent log
+        fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+          body: JSON.stringify({
+            sessionId: '340742',
+            runId: 'post-fix-5',
+            hypothesisId: 'H21',
+            location: 'src/renderer/hooks/useDevice.ts:sendMessage',
+            message: 'mqtt-only sender id corrected before sendMessage',
+            data: { from, previousMyNodeNum },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+      }
+      // #region agent log
+      fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+        body: JSON.stringify({
+          sessionId: '340742',
+          runId: 'post-fix-8',
+          hypothesisId: 'H26',
+          location: 'src/renderer/hooks/useDevice.ts:sendMessage',
+          message: 'sendMessage ownership context snapshot',
+          data: {
+            hasDevice: !!deviceRef.current,
+            hasMqtt,
+            from,
+            myNodeNumRef: myNodeNumRef.current,
+            stateMyNodeNum: state.myNodeNum,
+            computedSelfNodeId:
+              state.myNodeNum > 0
+                ? state.myNodeNum
+                : mqttStatusRef.current === 'connected'
+                  ? virtualNodeIdRef.current
+                  : 0,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       const tempId = Math.floor(Math.random() * 0xffffffff);
 
       // Determine initial MQTT display state (TransportManager will confirm/update asynchronously)
@@ -2641,7 +2858,7 @@ export function useDevice() {
       });
       transportManagerRef.current.sendMessage(text, channel, destination, replyId, tempId, from);
     },
-    [getNodeName, isDuplicate],
+    [getNodeName, isDuplicate, state.myNodeNum],
   );
 
   const setConfig = useCallback(async (config: unknown) => {
@@ -2802,6 +3019,14 @@ export function useDevice() {
 
   const deleteNode = useCallback(
     async (nodeId: number) => {
+      const activeVirtualNodeId = virtualNodeIdRef.current;
+      if (nodeId === activeVirtualNodeId && mqttStatusRef.current === 'connected') {
+        throw new Error('Cannot delete active MQTT identity while MQTT is connected');
+      }
+      if (nodeId === activeVirtualNodeId) {
+        clearVirtualNodeId();
+        virtualNodeIdRef.current = getOrCreateVirtualNodeId();
+      }
       await window.electronAPI.db.deleteNode(nodeId);
       console.debug(
         `[useDevice] deleteNode: removed 0x${nodeId.toString(16).toUpperCase()} from memory`,
@@ -2917,10 +3142,10 @@ export function useDevice() {
           hasDevice && myNodeNumRef.current > 0
             ? myNodeNumRef.current
             : mqttStatusRef.current === 'connected'
-              ? getOrCreateVirtualNodeId()
+              ? virtualNodeIdRef.current
               : 0;
         if (selfNodeId > 0) {
-          const isVirtualNode = !hasDevice && selfNodeId === getOrCreateVirtualNodeId();
+          const isVirtualNode = !hasDevice && selfNodeId === virtualNodeIdRef.current;
           updateNodes((prev) => {
             const updated = new Map(prev);
             const existing = updated.get(selfNodeId) ?? emptyNode(selfNodeId);
@@ -3009,11 +3234,94 @@ export function useDevice() {
   }, []);
 
   const sendReaction = useCallback(
-    async (emoji: number, replyId: number, channel: number) => {
+    (emoji: number, replyId: number, channel: number): Promise<void> => {
       const hasMqtt = mqttStatusRef.current === 'connected';
-      if (!deviceRef.current && !hasMqtt) throw new Error('Not connected');
-
-      const from = myNodeNumRef.current;
+      if (!deviceRef.current && !hasMqtt) return Promise.reject(new Error('Not connected'));
+      const from =
+        deviceRef.current && myNodeNumRef.current > 0
+          ? myNodeNumRef.current
+          : virtualNodeIdRef.current;
+      if (!deviceRef.current && myNodeNumRef.current !== from) {
+        const previousMyNodeNum = myNodeNumRef.current;
+        myNodeNumRef.current = from;
+        setState((prev) => ({ ...prev, myNodeNum: from }));
+        // #region agent log
+        fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+          body: JSON.stringify({
+            sessionId: '340742',
+            runId: 'post-fix-5',
+            hypothesisId: 'H21',
+            location: 'src/renderer/hooks/useDevice.ts:sendReaction',
+            message: 'mqtt-only sender id corrected before sendReaction',
+            data: { from, previousMyNodeNum },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+      }
+      const repliedMsg =
+        messagesRef.current.find((m) => m.packetId === replyId) ??
+        messagesRef.current.find((m) => m.timestamp === replyId) ??
+        null;
+      const replyTargetsMqttOnly = repliedMsg?.receivedVia === 'mqtt';
+      if (hasMqtt && replyTargetsMqttOnly) {
+        // #region agent log
+        fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+          body: JSON.stringify({
+            sessionId: '340742',
+            runId: 'post-fix-8',
+            hypothesisId: 'H25',
+            location: 'src/renderer/hooks/useDevice.ts:sendReaction',
+            message: 'blocked tapback for mqtt-origin message',
+            data: {
+              hasDevice: !!deviceRef.current,
+              hasMqtt,
+              repliedMsgReceivedVia: repliedMsg?.receivedVia ?? null,
+              repliedMsgSenderId: repliedMsg?.sender_id ?? null,
+              replyId,
+              emoji,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+        return Promise.reject(
+          new Error(
+            'Tapbacks to MQTT-origin messages are not currently supported. Send a normal reply instead.',
+          ),
+        );
+      }
+      // #region agent log
+      fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+        body: JSON.stringify({
+          sessionId: '340742',
+          runId: 'pre-fix-2',
+          hypothesisId: 'H6',
+          location: 'src/renderer/hooks/useDevice.ts:sendReaction',
+          message: 'sendReaction invoked with reaction fields',
+          data: {
+            hasDevice: !!deviceRef.current,
+            hasMqtt,
+            myNodeNum: myNodeNumRef.current,
+            from,
+            emoji,
+            replyId,
+            channel,
+            repliedMsgFound: !!repliedMsg,
+            repliedMsgSenderId: repliedMsg?.sender_id ?? null,
+            repliedMsgTo: repliedMsg?.to ?? null,
+            repliedMsgChannel: repliedMsg?.channel ?? null,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       const msg: ChatMessage = {
         sender_id: from,
         sender_name: getNodeName(from),
@@ -3036,20 +3344,83 @@ export function useDevice() {
 
       // Device transport
       if (deviceRef.current) {
-        await deviceRef.current.sendText('', 'broadcast', true, channel, replyId, emoji);
+        // #region agent log
+        fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+          body: JSON.stringify({
+            sessionId: '340742',
+            runId: 'pre-fix-4',
+            hypothesisId: 'H10',
+            location: 'src/renderer/hooks/useDevice.ts:sendReactionDeviceSend',
+            message: 'attempting device sendText for reaction',
+            data: { channel, replyId, emoji },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+        deviceRef.current
+          .sendText('', 'broadcast', true, channel, replyId, emoji)
+          .then(() => {
+            // #region agent log
+            fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+              body: JSON.stringify({
+                sessionId: '340742',
+                runId: 'post-fix-1',
+                hypothesisId: 'H10',
+                location: 'src/renderer/hooks/useDevice.ts:sendReactionDeviceSend',
+                message: 'device sendText for reaction succeeded',
+                data: { channel, replyId, emoji },
+                timestamp: Date.now(),
+              }),
+            }).catch(() => {});
+            // #endregion
+          })
+          .catch((e: unknown) => {
+            // #region agent log
+            fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+              body: JSON.stringify({
+                sessionId: '340742',
+                runId: 'post-fix-1',
+                hypothesisId: 'H11',
+                location: 'src/renderer/hooks/useDevice.ts:sendReactionDeviceSend',
+                message: 'device sendText for reaction failed',
+                data: {
+                  error: e instanceof Error ? e.message : String(e),
+                  channel,
+                  replyId,
+                  emoji,
+                },
+                timestamp: Date.now(),
+              }),
+            }).catch(() => {});
+            // #endregion
+            console.warn('[useDevice] sendReaction device sendText failed', e);
+          });
       }
 
-      // MQTT transport (MQTT-only connections or uplink-enabled gateway)
       if (hasMqtt) {
-        const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
-        if (chCfg?.uplinkEnabled || !deviceRef.current) {
-          window.electronAPI.mqtt
-            .publish({ text: '', from, channel, emoji, replyId })
-            .catch((e: unknown) => {
-              console.warn('[useDevice] sendReaction MQTT failed', e);
-            });
-        }
+        // #region agent log
+        fetch('http://127.0.0.1:7734/ingest/afc61236-b7e9-4068-81d9-23661201f65e', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '340742' },
+          body: JSON.stringify({
+            sessionId: '340742',
+            runId: 'post-fix-7',
+            hypothesisId: 'H24',
+            location: 'src/renderer/hooks/useDevice.ts:sendReaction',
+            message: 'skipping tapback MQTT publish path by design',
+            data: { hasDevice: !!deviceRef.current, hasMqtt, channel, replyId, emoji },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
       }
+      return Promise.resolve();
     },
     [getNodeName],
   );
@@ -3080,8 +3451,9 @@ export function useDevice() {
     state.myNodeNum > 0
       ? state.myNodeNum
       : mqttStatus === 'connected'
-        ? getOrCreateVirtualNodeId()
+        ? virtualNodeIdRef.current
         : 0;
+  const virtualNodeId = virtualNodeIdRef.current;
 
   const getNodes = useCallback(() => nodesRef.current, []);
 
@@ -3102,6 +3474,8 @@ export function useDevice() {
     traceRouteResults,
     ourPosition,
     selfNodeId,
+    virtualNodeId,
+    lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
     deviceGpsMode,
     telemetryEnabled,
     telemetryDeviceUpdateInterval,
