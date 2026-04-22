@@ -337,6 +337,23 @@ describe('App accessibility', () => {
     expect(mainColumn?.className).toContain('overflow-hidden');
   });
 
+  it('does not create nested horizontal scroll containers', () => {
+    render(<App />);
+
+    const mainViewport = screen.getByRole('main');
+    const scrollContainer = mainViewport.firstElementChild as HTMLElement;
+
+    const allDescendants = scrollContainer.querySelectorAll('*');
+    let foundNestedOverflowX = false;
+    for (const el of allDescendants) {
+      if (el.className.includes('overflow-x-auto')) {
+        foundNestedOverflowX = true;
+        break;
+      }
+    }
+    expect(foundNestedOverflowX).toBe(false);
+  });
+
   it('shows global back-to-top control after main viewport scroll', () => {
     render(<App />);
 

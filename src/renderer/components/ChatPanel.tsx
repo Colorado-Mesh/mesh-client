@@ -878,7 +878,7 @@ function ChatPanel({
       <div
         className={`mb-1 flex min-w-0 items-center gap-2 ${viewMode === 'dm' ? 'opacity-50' : ''}`}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+        <div className="flex min-w-0 flex-1 items-center gap-2 whitespace-nowrap">
           <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
             Channels
           </span>
@@ -982,7 +982,7 @@ function ChatPanel({
 
       {/* Row 2 — DM tabs */}
       <div
-        className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 overflow-x-auto ${viewMode === 'channels' ? 'opacity-50' : ''}`}
+        className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 whitespace-nowrap ${viewMode === 'channels' ? 'opacity-50' : ''}`}
       >
         <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
           DMs
