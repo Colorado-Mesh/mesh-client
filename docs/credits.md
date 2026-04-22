@@ -8,8 +8,8 @@
 
 ### Contributors
 
-megabear - KD5IHC created the icon
-[Soord](https://github.com/soord)
+* megabear - KD5IHC created the icon
+* [Soord](https://github.com/soord)
 
 ## Colorado Mesh
 
