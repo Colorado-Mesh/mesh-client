@@ -78,7 +78,7 @@ export async function runStartElectron(argv = process.argv.slice(2)) {
     const child = spawn(resolveLocalElectronBin(), spawnArgs, {
       cwd: projectRoot,
       stdio: ['inherit', 'inherit', 'pipe'],
-      env: process.env,
+      env: { ...process.env, ELECTRON_ENABLE_SECURITY_WARNINGS: '1' },
     });
 
     let stderrBuffer = '';

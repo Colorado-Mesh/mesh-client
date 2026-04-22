@@ -72,6 +72,7 @@ fi
 
 pnpm run lint || fail 'pnpm run lint'
 pnpm run typecheck || fail 'pnpm run typecheck'
+pnpm run check:electron-security || fail 'pnpm run check:electron-security'
 pnpm run check:log-injection || fail 'pnpm run check:log-injection'
 pnpm run check:db-migrations || fail 'pnpm run check:db-migrations'
 pnpm run check:ipc-contract || fail 'pnpm run check:ipc-contract'

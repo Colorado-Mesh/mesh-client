@@ -1316,7 +1316,8 @@ export default function App() {
       )}
       <div className="flex h-screen w-screen min-w-0 flex-col overflow-hidden bg-slate-950">
         {/* Header - full width; sidebar + main start below */}
-        <header
+        <div
+          role="banner"
           className={`bg-deep-black relative flex w-full items-center border-b py-2 pr-4 ${
             isConfigured
               ? protocol === 'meshcore'
@@ -1325,6 +1326,7 @@ export default function App() {
               : 'border-gray-700'
           }`}
         >
+          <h1 className="sr-only">Mesh Client</h1>
           {/* Sidebar-area branding — top-left cell, matches sidebar width */}
           <div
             aria-hidden={false}
@@ -1496,7 +1498,7 @@ export default function App() {
               </HelpTooltip>
             )}
           </div>
-        </header>
+        </div>
 
         {/* Connection Status Banner */}
         <ConnectionBanner
@@ -1549,7 +1551,7 @@ export default function App() {
           {/* Main column: viewport + footer */}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             {/* Main Viewport - scrollable panel area */}
-            <div role="main" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               {/* Scroll container - no padding so scrollbars pin to viewport edges */}
               <div ref={mainViewportRef} className="h-full w-full overflow-auto bg-slate-950">
                 {/* Content wrapper - padding lives here, not on the scroll container */}
@@ -2179,7 +2181,7 @@ export default function App() {
             )}
 
             {/* Footer - fixed height at bottom of Content Wrapper */}
-            <footer className="text-muted flex h-8 shrink-0 items-center justify-between border-t border-slate-800 bg-slate-900 px-4 text-[10px]">
+            <div className="text-muted flex h-8 shrink-0 items-center justify-between border-t border-slate-800 bg-slate-900 px-4 text-[10px]">
               <span className="min-w-0">
                 A Project by{' '}
                 <a
@@ -2248,7 +2250,7 @@ export default function App() {
                   }
                 />
               </span>
-            </footer>
+            </div>
           </div>
         </div>
       </div>

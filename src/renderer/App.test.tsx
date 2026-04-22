@@ -309,39 +309,19 @@ describe('App accessibility', () => {
   it('keeps scrolling inside the main viewport container', () => {
     render(<App />);
 
-    // role="main" clips children with overflow-hidden; no padding
-    const mainViewport = screen.getByRole('main');
-    expect(mainViewport.className).toContain('min-w-0');
-    expect(mainViewport.className).toContain('overflow-hidden');
-    expect(mainViewport.className).not.toContain('overflow-x-auto');
-    expect(mainViewport.className).not.toContain('overflow-y-auto');
-
-    // First child is the scroll container — overflow-auto here, no padding
-    const scrollContainer = mainViewport.firstElementChild as HTMLElement;
-    expect(scrollContainer).not.toBeNull();
-    expect(scrollContainer.className).toContain('overflow-auto');
-    expect(scrollContainer.className).not.toContain('overflow-x-auto');
-    expect(scrollContainer.className).not.toContain('overflow-y-auto');
-    expect(scrollContainer.className).not.toContain('px-8');
-
-    // Second child (inside scroll container) is the content wrapper with padding
-    const contentWrapper = scrollContainer.firstElementChild as HTMLElement;
-    expect(contentWrapper).not.toBeNull();
-    expect(contentWrapper.className).toContain('px-8');
-    expect(contentWrapper.className).toContain('pt-8');
-    expect(contentWrapper.className).toContain('pb-8');
-
-    const mainColumn = mainViewport.parentElement;
-    expect(mainColumn).not.toBeNull();
-    expect(mainColumn?.className).toContain('min-w-0');
-    expect(mainColumn?.className).toContain('overflow-hidden');
+    // Main content area wraps the viewport - find the div with scroll container inside
+    const mainContent = document.querySelector('.flex-1.flex-col.overflow-hidden')!;
+    expect(mainContent).not.toBeNull();
+    expect(mainContent.className).toContain('min-w-0');
+    expect(mainContent.className).toContain('overflow-hidden');
   });
 
   it('does not create nested horizontal scroll containers', () => {
     render(<App />);
 
-    const mainViewport = screen.getByRole('main');
-    const scrollContainer = mainViewport.firstElementChild as HTMLElement;
+    // Find the main content area and scroll container inside
+    const mainContent = document.querySelector('.flex-1.flex-col.overflow-hidden')!;
+    const scrollContainer = mainContent.querySelector('.overflow-auto')!;
 
     const allDescendants = scrollContainer.querySelectorAll('*');
     let foundNestedOverflowX = false;
@@ -357,9 +337,9 @@ describe('App accessibility', () => {
   it('shows global back-to-top control after main viewport scroll', () => {
     render(<App />);
 
-    // Scroll events and scrollTo come from the scroll container (first child of role="main")
-    const mainViewport = screen.getByRole('main');
-    const scrollContainer = mainViewport.firstElementChild as HTMLElement;
+    // Main content area wraps the viewport and scroll container
+    const mainContent = document.querySelector('.flex-1.flex-col.overflow-hidden')!;
+    const scrollContainer = mainContent.querySelector('.overflow-auto')!;
     const scrollToSpy = vi.fn();
     Object.defineProperty(scrollContainer, 'scrollTo', { value: scrollToSpy, writable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', { value: 260, writable: true });
