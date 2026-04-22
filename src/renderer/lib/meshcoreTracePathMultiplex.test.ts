@@ -139,7 +139,6 @@ describe('runMeshcoreTracePathMultiplexed', () => {
       const runSerialized = createRepeaterRemoteRpcQueue();
       const p = runMeshcoreTracePathMultiplexed(conn, new Uint8Array([1]), 0, runSerialized);
       await Promise.resolve();
-      // eslint-disable-next-line vitest/valid-expect
       const expectation = expect(p).rejects.toThrow(/timeout waiting for trace acknowledgment/);
       await vi.advanceTimersByTimeAsync(MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS);
       await expectation;

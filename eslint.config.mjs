@@ -7,7 +7,6 @@ import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import security from 'eslint-plugin-security';
-import vitest from 'eslint-plugin-vitest';
 import noSecrets from 'eslint-plugin-no-secrets';
 import electron from 'eslint-plugin-electron';
 
@@ -202,11 +201,6 @@ export default tseslint.config(
         },
       ],
     },
-  },
-  // Vitest: test-specific rules
-  {
-    files: ['**/*.test.{ts,tsx}'],
-    ...vitest.configs.recommended,
   },
   // Electron: main/preload process security
   {

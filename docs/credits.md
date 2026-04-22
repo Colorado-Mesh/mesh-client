@@ -82,7 +82,6 @@ Exact semver ranges live in [`package.json`](https://github.com/Colorado-Mesh/me
 | eslint-plugin-react-hooks        | ^7.1.1                                             | MIT        | ESLint React hooks               |
 | eslint-plugin-security           | ^4.0.0                                             | MIT        | ESLint security rules            |
 | eslint-plugin-simple-import-sort | ^13.0.0                                            | MIT        | ESLint import sorting            |
-| eslint-plugin-vitest             | ^0.5.4                                             | MIT        | ESLint Vitest rules              |
 | jsdom                            | ^29.0.2                                            | MIT        | DOM for Node.js                  |
 | leaflet                          | ^1.9.4                                             | ISC        | Interactive maps                 |
 | license-checker-rseidelsohn      | ^4.4.2                                             | MIT        | License checking                 |

@@ -100,11 +100,11 @@ electron-builder publishes to GitHub when it thinks it's in CI. Local builds use
 
 ### `[DEP0190]` when running electron-builder
 
-Node deprecates `spawn(..., { shell: true })` with an args array. This project uses pnpm's native patching via `patchedDependencies` to patch `app-builder-lib` so macOS/Linux use `shell: false` for the npm dependency collector. Re-run `pnpm install` if you upgrade electron-builder and the warning returns.
+Node deprecates `spawn(..., { shell: true })` with an args array. This project carries the packaging workaround via pnpm `patchedDependencies` on transitive packages used by the Electron build path. Re-run `pnpm install` if you upgrade `electron-builder` or its transitive packaging deps and the warning returns.
 
 ### `duplicate dependency references` during dist
 
-npm's JSON tree lists hoisted packages with many duplicate refs (one per edge). That's expected and not something you need to fix. The **app-builder-lib** patch logs that summary at **debug** only so normal `dist:*` runs stay quiet. To see it: `DEBUG=electron-builder pnpm dlx electron-builder --mac` (or your usual dist command).
+npm's JSON tree lists hoisted packages with many duplicate refs (one per edge). That's expected and not something you need to fix. The patched packaging dependency path keeps that summary at **debug** only so normal `dist:*` runs stay quiet. To see it: `DEBUG=electron-builder pnpm dlx electron-builder --mac` (or your usual dist command).
 
 ### `[DEP0169]` / `url.parse()` deprecation warning
 
