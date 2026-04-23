@@ -156,26 +156,26 @@ export class MQTTManager extends EventEmitter {
     const useTls = settings.port === 8883;
     const rejectUnauthorized = useTls ? !settings.tlsInsecure : false;
 
-    const logUrl = settings.useWebSocket
-      ? `${settings.port === 443 || settings.tlsInsecure !== true ? 'wss' : 'ws'}://${hostTrim}:${settings.port}/mqtt`
+    const wsEnabled = settings.useWebSocket === true;
+    const wsTlsEnabled =
+      settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 443);
+    const wsPath = settings.wsPath ?? '/mqtt';
+    const wsScheme = wsTlsEnabled ? 'wss' : 'ws';
+
+    const logUrl = wsEnabled
+      ? `${wsScheme}://${hostTrim}:${settings.port}${wsPath}`
       : useTls
         ? `mqtts://${hostTrim}:${settings.port}`
         : `mqtt://${hostTrim}:${settings.port}`;
-    console.debug(
-      '[Meshtastic MQTT] connect start',
-      sanitizeLogMessage(logUrl),
-      'ws:',
-      settings.useWebSocket === true,
-    );
+    console.debug('[Meshtastic MQTT] connect start', sanitizeLogMessage(logUrl), 'ws:', wsEnabled); // log-filter-ok Meshtastic MQTT logs → App log panel
 
     let connectOpts: mqtt.IClientOptions;
-    if (settings.useWebSocket) {
-      const wsScheme = settings.port === 443 || settings.tlsInsecure !== true ? 'wss' : 'ws';
+    if (wsEnabled) {
       connectOpts = {
         protocol: wsScheme,
         host: hostTrim,
         port: settings.port,
-        path: '/mqtt',
+        path: wsPath,
         clientId,
         username: settings.username || undefined,
         password: settings.password || undefined,

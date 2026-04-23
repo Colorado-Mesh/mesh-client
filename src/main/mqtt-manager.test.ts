@@ -2,9 +2,22 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import { Mesh, Mqtt as MqttProto, Portnums } from '@meshtastic/protobufs';
 import { createCipheriv } from 'crypto';
+import * as mqtt from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MQTTManager, parsePsk } from './mqtt-manager';
+
+vi.mock('mqtt', () => {
+  const mockClient = {
+    on: vi.fn(),
+    end: vi.fn(),
+    removeAllListeners: vi.fn(),
+    connected: false,
+    publish: vi.fn(),
+    subscribe: vi.fn(),
+  };
+  return { connect: vi.fn(() => mockClient) };
+});
 
 const { ServiceEnvelopeSchema } = MqttProto;
 const { UserSchema, PositionSchema, DataSchema, MeshPacketSchema } = Mesh;
@@ -564,6 +577,104 @@ describe('deduplication', () => {
 
     // Second message with same packetId must be silently dropped
     expect(updates).toHaveLength(1);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _doConnect — WebSocket scheme selection
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('_doConnect — WebSocket scheme', () => {
+  afterEach(() => {
+    vi.mocked(mqtt.connect).mockClear();
+  });
+
+  it('uses ws:// for port 1883 (plaintext MQTT port, no TLS)', () => {
+    new MQTTManager().connect({
+      server: 'mqtt.meshcore.coloradomesh.org',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'meshcore',
+      autoLaunch: false,
+      useWebSocket: true,
+    });
+
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
+    ).toBe('ws');
+  });
+
+  it('uses wss:// for port 443', () => {
+    new MQTTManager().connect({
+      server: 'mqtt.example.com',
+      port: 443,
+      username: '',
+      password: '',
+      topicPrefix: 'msh',
+      autoLaunch: false,
+      useWebSocket: true,
+    });
+
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
+    ).toBe('wss');
+  });
+
+  it('uses ws:// when tlsInsecure is true on port 8883', () => {
+    new MQTTManager().connect({
+      server: 'mqtt.example.com',
+      port: 8883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh',
+      autoLaunch: false,
+      useWebSocket: true,
+      tlsInsecure: true,
+    });
+
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
+    ).toBe('ws');
+  });
+
+  it('uses wss:// when tlsEnabled is true on port 1883', () => {
+    new MQTTManager().connect({
+      server: 'mqtt.meshcore.coloradomesh.org',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'meshcore',
+      autoLaunch: false,
+      useWebSocket: true,
+      tlsEnabled: true,
+    });
+
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
+    ).toBe('wss');
+  });
+
+  it('uses custom wsPath when provided', () => {
+    new MQTTManager().connect({
+      server: 'mqtt.meshcore.coloradomesh.org',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'meshcore',
+      autoLaunch: false,
+      useWebSocket: true,
+      tlsEnabled: true,
+      wsPath: '/ws',
+    });
+
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
+    const opts = vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { path: string };
+    expect(opts.path).toBe('/ws');
   });
 });
 

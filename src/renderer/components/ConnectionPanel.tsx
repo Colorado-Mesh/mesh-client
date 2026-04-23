@@ -1989,6 +1989,8 @@ export default function ConnectionPanel({
                           port: 1883,
                           topicPrefix: 'meshcore',
                           useWebSocket: true,
+                          tlsEnabled: true,
+                          wsPath: '/ws',
                           keepalive: 60,
                           username: fromIdentity || prev.username,
                           password: '',
@@ -2160,7 +2162,7 @@ export default function ConnectionPanel({
                 {meshcorePreset === 'letsmesh'
                   ? 'LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.'
                   : meshcorePreset === 'coloradomesh'
-                    ? 'Colorado Mesh needs WebSocket on port 1883 with TLS enabled, server mqtt.meshcore.coloradomesh.org. Reset the preset or switch to Custom for other brokers.'
+                    ? 'Colorado Mesh needs WebSocket on port 1883 with TLS enabled, server mqtt.meshcore.coloradomesh.org, path /ws. Reset the preset or switch to Custom for other brokers.'
                     : 'MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.cc. Reset the preset or switch to Custom for other brokers.'}
               </div>
             )}

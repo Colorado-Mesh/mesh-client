@@ -20,9 +20,12 @@ function normalizePrefix(prefix: string): string {
 /** For debug logs only — actual connect uses the same option-object shape as MQTTManager. */
 function buildMeshcoreUrlForLog(settings: MQTTSettings): string {
   const host = settings.server.trim();
-  if (settings.useWebSocket) {
-    const scheme = settings.port === 443 || settings.tlsInsecure !== true ? 'wss' : 'ws';
-    return `${scheme}://${host}:${settings.port}/mqtt`;
+  if (settings.useWebSocket === true) {
+    const wsTlsEnabled =
+      settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 443);
+    const wsPath = settings.wsPath ?? '/mqtt';
+    const scheme = wsTlsEnabled ? 'wss' : 'ws';
+    return `${scheme}://${host}:${settings.port}${wsPath}`;
   }
   return settings.port === 8883
     ? `mqtts://${host}:${settings.port}`
@@ -264,6 +267,11 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     // Use MQTT keepalive for both WebSocket and raw TCP; letsmesh requires PINGREQ every 60s.
     // WebSocket-level pings (MESHCORE_MQTT_WSS_PING_MS) additionally keep LB/proxy paths alive.
     const keepaliveSec = settings.keepalive ?? 60;
+    const wsEnabled = settings.useWebSocket === true;
+    const wsTlsEnabled =
+      settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 443);
+    const wsPath = settings.wsPath ?? '/mqtt';
+    const wsScheme = wsTlsEnabled ? 'wss' : 'ws';
     let connectOpts: mqtt.IClientOptions = {
       clientId,
       username: settings.username || undefined,
@@ -274,14 +282,13 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       connectTimeout: MESHCORE_MQTT_CONNECT_ACK_MS,
       protocolVersion: 4,
     };
-    if (settings.useWebSocket) {
-      const wsScheme = settings.port === 443 || settings.tlsInsecure !== true ? 'wss' : 'ws';
+    if (wsEnabled) {
       connectOpts = {
         ...connectOpts,
         protocol: wsScheme,
         host: settings.server.trim(),
         port: settings.port,
-        path: '/mqtt',
+        path: wsPath,
         rejectUnauthorized: settings.port === 443 ? true : rejectUnauthorizedTls,
         // Prefer IPv4 when DNS returns AAAA first but the path is broken (reduces WSS hangs).
         wsOptions: { family: 4 },
@@ -301,6 +308,10 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       sanitizeLogMessage(logUrl),
       'ws:',
       settings.useWebSocket,
+      'wsTlsEnabled:',
+      wsTlsEnabled,
+      'wsPath:',
+      wsPath,
       'keepaliveSec:',
       keepaliveSec,
       'tlsInsecure:',
