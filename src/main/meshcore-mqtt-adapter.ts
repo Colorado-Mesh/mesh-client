@@ -559,7 +559,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     const v1Pattern = /^v1_([0-9A-Fa-f]{64})$/i;
     const pubKey = v1Pattern.exec(this.lastSettings.username ?? '')?.[1]?.toUpperCase();
     const topic = pubKey ? `${base}/${pubKey}/chat` : `${base}/meshcore/chat`;
-    const payload = JSON.stringify(envelope);
+    const payload = JSON.stringify(pubKey ? { origin_id: pubKey, ...envelope } : envelope);
     this.client.publish(topic, payload, { qos: 0 });
   }
 
@@ -581,6 +581,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     const date = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
     const payload: Record<string, string> = {
+      ...(pubKey ? { origin_id: pubKey } : {}),
       origin: args.origin.slice(0, 200),
       timestamp: now.toISOString(),
       type: 'PACKET',
