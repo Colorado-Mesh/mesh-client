@@ -483,6 +483,16 @@ function ChatPanel({
 
   // Update unread counts when messages change
   useEffect(() => {
+    if (lastReadRef.current.size === 0) {
+      for (const [key, value] of Object.entries(persistedLastRead)) {
+        if (key.startsWith('ch:')) {
+          const channelIndex = parseInt(key.slice(2), 10);
+          if (!isNaN(channelIndex)) {
+            lastReadRef.current.set(channelIndex, value);
+          }
+        }
+      }
+    }
     const counts = new Map<number, number>();
     for (const msg of regularMessages) {
       if (isOwnNode(msg.sender_id)) continue; // own messages don't count
@@ -493,7 +503,7 @@ function ChatPanel({
       }
     }
     setUnreadCounts(counts);
-  }, [isOwnNode, regularMessages]);
+  }, [isOwnNode, persistedLastRead, regularMessages]);
 
   // Mark current channel as read when switching or viewing
   useEffect(() => {
@@ -504,9 +514,17 @@ function ChatPanel({
         for (const ch of channelsRef.current) {
           lastReadRef.current.set(ch.index, now);
         }
+        setPersistedLastRead((prev) => {
+          const next = { ...prev };
+          for (const ch of channelsRef.current) {
+            next[`ch:${ch.index}`] = now;
+          }
+          return next;
+        });
         setUnreadCounts(new Map());
       } else {
         lastReadRef.current.set(channel, now);
+        setPersistedLastRead((prev) => ({ ...prev, [`ch:${channel}`]: now }));
         setUnreadCounts((prev) => {
           const next = new Map(prev);
           next.delete(channel);
@@ -574,6 +592,12 @@ function ChatPanel({
       if (distFromBottom < 50) {
         const now = Date.now();
         setPersistedLastRead((prev) => ({ ...prev, [viewKey]: now }));
+        if (viewKey.startsWith('ch:')) {
+          const channelIndex = parseInt(viewKey.slice(2), 10);
+          if (!isNaN(channelIndex)) {
+            lastReadRef.current.set(channelIndex, now);
+          }
+        }
         setUnreadDividerTimestamp(0); // hide divider once user has read to bottom
       }
     },
