@@ -2515,6 +2515,18 @@ export function useMeshCore() {
             receivedVia: 'rf',
           }),
         );
+        if (mqttStatusRef.current === 'connected') {
+          void window.electronAPI.mqtt
+            .publishMeshcore({
+              text: normalized.payload || d.text,
+              channelIdx: d.channelIdx,
+              senderName: normalized.senderName ?? displayName,
+              timestamp: d.senderTimestamp * 1000,
+            })
+            .catch((e: unknown) => {
+              console.warn('[useMeshCore] publishMeshcore (heard RF) error', e);
+            });
+        }
         setRawPackets((prev) =>
           meshcoreCorrelateOrSynthesizeChatEntry(prev, 'GRP_TXT', stubId, {
             ts: now,
