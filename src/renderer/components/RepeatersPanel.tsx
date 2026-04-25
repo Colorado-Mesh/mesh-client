@@ -57,6 +57,13 @@ interface Props {
   onToggleFavorite?: (nodeId: number, favorited: boolean) => void;
 }
 
+const SIGNAL_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function isSignalRecent(lastAdvert: number | null | undefined): boolean {
+  if (lastAdvert == null) return true;
+  return Date.now() - lastAdvert < SIGNAL_MAX_AGE_MS;
+}
+
 function formatRelativeTime(
   lastHeard: number | null | undefined,
   nodeId?: number,
@@ -103,21 +110,58 @@ function displayRepeaterSnr(
   node: MeshNode,
   status: MeshCoreRepeaterStatus | undefined,
   history?: SignalPoint[],
+  contacts?: Map<
+    number,
+    {
+      node_id: number;
+      last_snr: number | null;
+      last_rssi: number | null;
+      last_advert: number | null;
+    }
+  >,
 ): string {
   if (status !== undefined && Number.isFinite(status.lastSnr)) {
     return status.lastSnr.toFixed(1);
   }
-  if (node.snr != null && node.snr !== 0) return node.snr.toFixed(1);
   const latestSignal = history && history.length > 0 ? history[history.length - 1] : undefined;
   if (latestSignal != null && Number.isFinite(latestSignal.snr)) {
     return latestSignal.snr.toFixed(1);
   }
+  const contactSignal = contacts?.get(node.node_id);
+  if (
+    contactSignal?.last_snr != null &&
+    contactSignal.last_snr !== 0 &&
+    isSignalRecent(contactSignal.last_advert)
+  ) {
+    return contactSignal.last_snr.toFixed(1);
+  }
+  if (node.snr != null && node.snr !== 0) return node.snr.toFixed(1);
   return '—';
 }
 
-function displayRepeaterRssi(node: MeshNode, status: MeshCoreRepeaterStatus | undefined): string {
+function displayRepeaterRssi(
+  node: MeshNode,
+  status: MeshCoreRepeaterStatus | undefined,
+  contacts?: Map<
+    number,
+    {
+      node_id: number;
+      last_snr: number | null;
+      last_rssi: number | null;
+      last_advert: number | null;
+    }
+  >,
+): string {
   if (status !== undefined && Number.isFinite(status.lastRssi)) {
     return String(status.lastRssi);
+  }
+  const contactSignal = contacts?.get(node.node_id);
+  if (
+    contactSignal?.last_rssi != null &&
+    contactSignal.last_rssi !== 0 &&
+    isSignalRecent(contactSignal.last_advert)
+  ) {
+    return String(contactSignal.last_rssi);
   }
   if (node.rssi != null && node.rssi !== 0) return String(node.rssi);
   return '—';
@@ -178,6 +222,45 @@ export default function RepeatersPanel({
   const [cliLoadingSet, setCliLoadingSet] = useState<Set<number>>(new Set());
   const [cliUseSavedPath, setCliUseSavedPath] = useState<Map<number, boolean>>(new Map());
   const [searchQuery, setSearchQuery] = useState('');
+  const [meshcoreContactsDb, setMeshcoreContactsDb] = useState<
+    Map<
+      number,
+      {
+        node_id: number;
+        last_snr: number | null;
+        last_rssi: number | null;
+        last_advert: number | null;
+      }
+    >
+  >(new Map());
+
+  useEffect(() => {
+    void window.electronAPI.db
+      .getMeshcoreContacts()
+      .then((rows) => {
+        const m = new Map<
+          number,
+          {
+            node_id: number;
+            last_snr: number | null;
+            last_rssi: number | null;
+            last_advert: number | null;
+          }
+        >();
+        for (const row of rows as {
+          node_id: number;
+          last_snr: number | null;
+          last_rssi: number | null;
+          last_advert: number | null;
+        }[]) {
+          m.set(row.node_id, row);
+        }
+        setMeshcoreContactsDb(m);
+      })
+      .catch(() => {
+        // catch-no-log-ok database error - contacts will show as unavailable
+      });
+  }, []);
 
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider('meshcore');
 
@@ -596,7 +679,7 @@ export default function RepeatersPanel({
                               : 'Contact SNR — use Status for live reading'
                           }
                         >
-                          {displayRepeaterSnr(node, status, history)}
+                          {displayRepeaterSnr(node, status, history, meshcoreContactsDb)}
                         </td>
                         <td
                           className="py-2 pr-4"
@@ -606,7 +689,7 @@ export default function RepeatersPanel({
                               : 'Contact RSSI — use Status for live reading'
                           }
                         >
-                          {displayRepeaterRssi(node, status)}
+                          {displayRepeaterRssi(node, status, meshcoreContactsDb)}
                         </td>
                         <td className="py-2 pr-4">
                           {traceResult ? (
