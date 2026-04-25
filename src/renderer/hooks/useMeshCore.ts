@@ -1491,7 +1491,8 @@ export function useMeshCore() {
           }
         }
         const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
-        setNodes(mergeStubNodesFromMeshcoreMessages(initial, mapped));
+        const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
+        setNodes(mergedInitial);
         if (mapped.length > 0) {
           setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
         }
@@ -1760,7 +1761,36 @@ export function useMeshCore() {
         for (const row of dbContacts) {
           const existing = nextNodes.get(row.node_id);
           if (existing) {
-            nextNodes.set(row.node_id, { ...existing, favorited: row.favorited === 1 });
+            const fallbackSnr =
+              typeof row.last_snr === 'number' &&
+              Number.isFinite(row.last_snr) &&
+              row.last_snr !== 0
+                ? row.last_snr
+                : null;
+            const fallbackRssi =
+              typeof row.last_rssi === 'number' &&
+              Number.isFinite(row.last_rssi) &&
+              row.last_rssi !== 0
+                ? row.last_rssi
+                : null;
+            const nextSnr =
+              typeof existing.snr === 'number' &&
+              Number.isFinite(existing.snr) &&
+              existing.snr !== 0
+                ? existing.snr
+                : (fallbackSnr ?? existing.snr);
+            const nextRssi =
+              typeof existing.rssi === 'number' &&
+              Number.isFinite(existing.rssi) &&
+              existing.rssi !== 0
+                ? existing.rssi
+                : (fallbackRssi ?? existing.rssi);
+            nextNodes.set(row.node_id, {
+              ...existing,
+              favorited: row.favorited === 1,
+              snr: nextSnr,
+              rssi: nextRssi,
+            });
           }
         }
         for (const row of dbContacts) {
@@ -4267,16 +4297,37 @@ export function useMeshCore() {
             .getState()
             .recordPathUpdated(nodeId, tracePathBytes, tracePathHops, false);
         }
-        const result = await withTimeout(
-          runMeshcoreTracePathMultiplexed(
-            conn as unknown as MeshcoreTracePathMuxConnection,
-            outPath,
-            MESHCORE_TRACE_TIMEOUT_MS,
-            repeaterRemoteRpcRef.current,
-          ),
-          MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
-          'meshcoreTracePing',
-        );
+        let tracePathInUse = outPath;
+        let result;
+        try {
+          result = await withTimeout(
+            runMeshcoreTracePathMultiplexed(
+              conn as unknown as MeshcoreTracePathMuxConnection,
+              tracePathInUse,
+              MESHCORE_TRACE_TIMEOUT_MS,
+              repeaterRemoteRpcRef.current,
+            ),
+            MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+            'meshcoreTracePing',
+          );
+        } catch (firstTraceError: unknown) {
+          const directRetryEligible = (hopsAway ?? 0) === 0 && tracePathInUse.length === 1;
+          if (!directRetryEligible) throw firstTraceError;
+          tracePathInUse = new Uint8Array(pubKey);
+          const retryPathBytes = Array.from(tracePathInUse);
+          tracePathHash = computePathHash(retryPathBytes);
+          usePathHistoryStore.getState().recordPathUpdated(nodeId, retryPathBytes, 0, false);
+          result = await withTimeout(
+            runMeshcoreTracePathMultiplexed(
+              conn as unknown as MeshcoreTracePathMuxConnection,
+              tracePathInUse,
+              MESHCORE_TRACE_TIMEOUT_MS,
+              repeaterRemoteRpcRef.current,
+            ),
+            MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+            'meshcoreTracePingDirectRetry',
+          );
+        }
         const traceHops = meshcoreTracePathLenToHops(result.pathLen);
         const convertedSnrs = (result.pathSnrs ?? []).map((s) => s * MESHCORE_RPC_SNR_RAW_TO_DB);
         const convertedLastSnr = result.lastSnr;

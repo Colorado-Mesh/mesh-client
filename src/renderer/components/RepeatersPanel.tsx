@@ -61,7 +61,9 @@ const SIGNAL_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function isSignalRecent(lastAdvert: number | null | undefined): boolean {
   if (lastAdvert == null) return true;
-  return Date.now() - lastAdvert < SIGNAL_MAX_AGE_MS;
+  const advertMs = normalizeLastHeardMs(lastAdvert);
+  if (!advertMs) return false;
+  return Date.now() - advertMs < SIGNAL_MAX_AGE_MS;
 }
 
 function formatRelativeTime(
@@ -260,7 +262,7 @@ export default function RepeatersPanel({
       .catch(() => {
         // catch-no-log-ok database error - contacts will show as unavailable
       });
-  }, []);
+  }, [isConnected, nodes.size]);
 
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider('meshcore');
 
@@ -293,7 +295,7 @@ export default function RepeatersPanel({
     for (const n of repeatersFiltered) {
       void usePathHistoryStore.getState().ensureBestPathLoaded(n.node_id);
     }
-  }, [repeatersFiltered]);
+  }, [pathHistory, repeatersFiltered]);
 
   useEffect(() => {
     if (!isConnected || meshcoreCanPingTrace == null) return;
@@ -575,6 +577,7 @@ export default function RepeatersPanel({
                   );
                   const history = signalHistory.get(node.node_id) ?? [];
                   const paths = pathHistory.get(node.node_id) ?? [];
+                  const reliabilityText = displayReliability(paths);
                   const airPct =
                     status?.totalAirTimeSecs && status?.totalUpTimeSecs
                       ? ((status.totalAirTimeSecs / status.totalUpTimeSecs) * 100).toFixed(1)
@@ -711,7 +714,7 @@ export default function RepeatersPanel({
                         </td>
                         <td className="py-2 pr-4">{formatUptime(status?.totalUpTimeSecs)}</td>
                         <td className="py-2 pr-4">{airPct != null ? `${airPct}%` : '—'}</td>
-                        <td className="py-2 pr-4">{displayReliability(paths)}</td>
+                        <td className="py-2 pr-4">{reliabilityText}</td>
                         <td className="py-2">
                           <div className="flex flex-wrap gap-1">
                             {pingHardDisabled && pingBlockReason ? (

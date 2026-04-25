@@ -291,7 +291,8 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
     const existing = get().selectBestPath(nodeId);
     if (existing != null) return existing;
     await get().loadForNode(nodeId);
-    return get().selectBestPath(nodeId);
+    const selected = get().selectBestPath(nodeId);
+    return selected;
   },
 
   async loadForNode(nodeId) {
