@@ -36,14 +36,9 @@ function buildMeshcoreUrlForLog(settings: MQTTSettings): string {
 const MESHCORE_MQTT_CONNECT_ACK_MS = 30_000;
 /** Send WebSocket-level ping frames so LB/proxy idle timers see traffic at ~10s intervals. */
 const MESHCORE_MQTT_WSS_PING_MS = 10_000;
-/** Reconnect delay base/cap — mirrors MQTTManager. */
+/** Reconnect delay base/cap. */
 const MESHCORE_MQTT_RECONNECT_IMMEDIATE_MS = 500;
 const MESHCORE_MQTT_RECONNECT_10_MINUTE_DELAY_MS = 600_000;
-/**
- * Periodic reschedulePing(true) resets mqtt.js KeepaliveManager without waiting for PINGRESP/SUBACK
- * on proxied WSS paths (LetsMesh broker) — same as MQTTManager.
- */
-const MESHCORE_MQTT_RESCHEDULE_MS = 30_000;
 /**
  * A session that lasted this long is considered stable. When the next disconnect occurs after a
  * stable session, retryCount resets to 0 so the full retry budget is available again.
@@ -61,7 +56,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   /** One-shot: log first inbound MQTT message for broker delivery diagnostics. */
   private firstMessageLogged = false;
   private wssPingTimer: ReturnType<typeof setInterval> | null = null;
-  private keepaliveRescheduleTimer: ReturnType<typeof setInterval> | null = null;
   private connectionWatchdogTimer: ReturnType<typeof setInterval> | null = null;
   private lastPacketReceivedAt = 0;
   private pingReqLogged = false;
@@ -176,13 +170,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     }
   }
 
-  private clearKeepaliveReschedule(): void {
-    if (this.keepaliveRescheduleTimer) {
-      clearInterval(this.keepaliveRescheduleTimer);
-      this.keepaliveRescheduleTimer = null;
-    }
-  }
-
   private clearConnectionWatchdog(): void {
     if (this.connectionWatchdogTimer) {
       clearInterval(this.connectionWatchdogTimer);
@@ -203,21 +190,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     }, 15_000);
   }
 
-  private startKeepaliveReschedule(): void {
-    this.clearKeepaliveReschedule();
-    this.keepaliveRescheduleTimer = setInterval(() => {
-      if (!this.client?.connected) return;
-      try {
-        this.client.reschedulePing(true);
-      } catch (e) {
-        console.debug(
-          '[MeshCore MQTT] reschedulePing failed',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
-    }, MESHCORE_MQTT_RESCHEDULE_MS);
-  }
-
   private clearReconnectTimer(): void {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -235,7 +207,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.clearTokenRefreshTimer();
     this.clearConnectTimers();
     this.clearWssPing();
-    this.clearKeepaliveReschedule();
     this.clearReconnectTimer();
     this.pendingReconnect = false;
     if (this.pendingReconnectTimer) {
@@ -279,7 +250,10 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       }
       this.client = null;
     }
-    const clientId = `meshcore-mqtt-${Math.random().toString(36).slice(2, 10)}`;
+    const isV1Username = /^v1_[0-9A-Fa-f]{64}$/i.test(settings.username ?? '');
+    const clientId = isV1Username
+      ? settings.username
+      : `meshcore-mqtt-${Math.random().toString(36).slice(2, 10)}`;
     const useTls = settings.port === 8883;
     const rejectUnauthorizedTls = useTls ? !settings.tlsInsecure : false;
     const logUrl = buildMeshcoreUrlForLog(settings);
@@ -424,8 +398,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
           }
         }, MESHCORE_MQTT_WSS_PING_MS);
       }
-      // Start keepalive reschedule (same as MQTTManager) — resets mqtt.js keepalive without waiting for PINGRESP
-      this.startKeepaliveReschedule();
       // Schedule proactive token refresh
       this.scheduleTokenRefresh();
     });
@@ -476,7 +448,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     });
     this.client.on('close', () => {
       this.clearWssPing();
-      this.clearKeepaliveReschedule();
       this.clearConnectionWatchdog();
       this.clearConnectTimers();
       const now = Date.now();
