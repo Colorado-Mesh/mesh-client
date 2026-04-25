@@ -5,7 +5,17 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
-import { usePathHistoryStore } from '../stores/pathHistoryStore';
+import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
+
+const { runMeshcoreTracePathMultiplexedMock } = vi.hoisted(() => ({
+  runMeshcoreTracePathMultiplexedMock: vi.fn(),
+}));
+vi.mock('../lib/meshcoreTracePathMultiplex', async (importOriginal) => {
+  const actual = await importOriginal();
+  return Object.assign({}, actual, {
+    runMeshcoreTracePathMultiplexed: runMeshcoreTracePathMultiplexedMock,
+  });
+});
 import {
   MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS,
   MESHCORE_PING_NO_ROUTE_ERROR_MSG,
@@ -210,9 +220,61 @@ describe('meshcorePingNoRouteErrorExpiryUpdate', () => {
   });
 });
 
+describe('useMeshCore refreshNodesFromDb hop preservation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
+  });
+
+  it('keeps known hops_away when DB refresh row omits it', async () => {
+    const rowWithHops = {
+      node_id: REMOTE_NODE_ID,
+      public_key: REMOTE_PUBKEY_HEX,
+      adv_name: 'RemotePeer',
+      contact_type: 1,
+      last_advert: 1_700_000_000,
+      adv_lat: null,
+      adv_lon: null,
+      last_snr: null,
+      last_rssi: null,
+      favorited: 0,
+      nickname: null,
+      hops_away: 3,
+    };
+    const rowWithoutHops = {
+      ...rowWithHops,
+      hops_away: null,
+    };
+    vi.mocked(window.electronAPI.db.getMeshcoreContacts)
+      .mockResolvedValueOnce([rowWithHops])
+      .mockResolvedValueOnce([rowWithoutHops]);
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await waitFor(() => {
+      expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(3);
+    });
+
+    await act(async () => {
+      await result.current.refreshNodesFromDb();
+    });
+
+    expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(3);
+  });
+});
+
 describe('useMeshCore traceRoute no-route error expiry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    runMeshcoreTracePathMultiplexedMock.mockResolvedValue({
+      pathLen: 2,
+      pathHashes: [1, 2],
+      pathSnrs: [4, 8],
+      lastSnr: 1.25,
+      tag: 7,
+    });
     usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
     getSelfInfoMock.mockResolvedValue({
       name: 'SelfRadio',
@@ -292,5 +354,123 @@ describe('useMeshCore traceRoute no-route error expiry', () => {
     });
 
     expect(result.current.meshcorePingErrors.has(REMOTE_NODE_ID)).toBe(false);
+  });
+});
+
+describe('useMeshCore traceRoute path outcome attribution', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    runMeshcoreTracePathMultiplexedMock.mockResolvedValue({
+      pathLen: 2,
+      pathHashes: [1, 2],
+      pathSnrs: [4, 8],
+      lastSnr: 1.25,
+      tag: 7,
+    });
+    usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
+    getSelfInfoMock.mockResolvedValue({
+      name: 'SelfRadio',
+      publicKey: SELF_PUBKEY,
+      type: 1,
+      txPower: 22,
+      radioFreq: 902_000_000,
+    });
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
+      {
+        node_id: REMOTE_NODE_ID,
+        public_key: REMOTE_PUBKEY_HEX,
+        adv_name: 'RemotePeer',
+        contact_type: 1,
+        last_advert: 1_700_000_000,
+        adv_lat: null,
+        adv_lon: null,
+        last_snr: null,
+        last_rssi: null,
+        favorited: 0,
+        nickname: null,
+        hops_away: 2,
+      },
+    ]);
+  });
+
+  it('records success outcome for traceRoute on the used path hash', async () => {
+    const dbOutcomeSpy = vi.spyOn(window.electronAPI.db, 'recordMeshcorePathOutcome');
+    const pathBytes = [0x11, 0x22];
+    const pathHash = computePathHash(pathBytes);
+    usePathHistoryStore.getState().recordPathUpdated(REMOTE_NODE_ID, pathBytes, 1, false);
+
+    const port = makeMockSerialPort();
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: {
+        requestPort: vi.fn().mockResolvedValue(port),
+      },
+    });
+
+    const { result } = renderHook(() => useMeshCore());
+    await waitFor(() => {
+      expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
+    });
+    await act(async () => {
+      await result.current.connect('serial');
+    });
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    await act(async () => {
+      await result.current.traceRoute(REMOTE_NODE_ID);
+      await Promise.resolve();
+    });
+
+    const record = usePathHistoryStore
+      .getState()
+      .records.get(REMOTE_NODE_ID)
+      ?.find((r) => r.pathHash === pathHash);
+    expect(record?.successCount).toBe(1);
+    expect(record?.failureCount).toBe(0);
+    expect(dbOutcomeSpy).toHaveBeenCalledWith(REMOTE_NODE_ID, pathHash, true, undefined);
+  });
+
+  it('records failure outcome for traceRoute errors on the used path hash', async () => {
+    runMeshcoreTracePathMultiplexedMock.mockRejectedValueOnce(new Error('trace timeout'));
+    const dbOutcomeSpy = vi.spyOn(window.electronAPI.db, 'recordMeshcorePathOutcome');
+    const pathBytes = [0x11, 0x22];
+    const pathHash = computePathHash(pathBytes);
+    usePathHistoryStore.getState().recordPathUpdated(REMOTE_NODE_ID, pathBytes, 1, false);
+
+    const port = makeMockSerialPort();
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: {
+        requestPort: vi.fn().mockResolvedValue(port),
+      },
+    });
+
+    const { result } = renderHook(() => useMeshCore());
+    await waitFor(() => {
+      expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
+    });
+    await act(async () => {
+      await result.current.connect('serial');
+    });
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    await act(async () => {
+      await result.current.traceRoute(REMOTE_NODE_ID);
+      await Promise.resolve();
+    });
+
+    const record = usePathHistoryStore
+      .getState()
+      .records.get(REMOTE_NODE_ID)
+      ?.find((r) => r.pathHash === pathHash);
+    expect(record?.successCount).toBe(0);
+    expect(record?.failureCount).toBe(1);
+    expect(dbOutcomeSpy).toHaveBeenCalledWith(REMOTE_NODE_ID, pathHash, false, undefined);
   });
 });

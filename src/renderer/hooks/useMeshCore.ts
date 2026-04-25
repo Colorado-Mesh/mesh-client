@@ -4140,6 +4140,7 @@ export function useMeshCore() {
         return next;
       });
 
+      let tracePathHash: string | undefined;
       try {
         const conn = connRef.current;
         if (!conn) {
@@ -4255,6 +4256,17 @@ export function useMeshCore() {
         if (outPath.length === 1 && outPath[0] === 0 && pubKey[0] !== 0) {
           outPath = new Uint8Array([pubKey[0]]);
         }
+        const tracePathBytes = Array.from(outPath);
+        tracePathHash = tracePathBytes.length > 0 ? computePathHash(tracePathBytes) : undefined;
+        if (tracePathHash) {
+          const tracePathHops =
+            typeof hopsAway === 'number' && Number.isFinite(hopsAway)
+              ? Math.max(0, hopsAway)
+              : Math.max(0, tracePathBytes.length - 1);
+          usePathHistoryStore
+            .getState()
+            .recordPathUpdated(nodeId, tracePathBytes, tracePathHops, false);
+        }
         const result = await withTimeout(
           runMeshcoreTracePathMultiplexed(
             conn as unknown as MeshcoreTracePathMuxConnection,
@@ -4314,6 +4326,9 @@ export function useMeshCore() {
           });
         useRepeaterSignalStore.getState().recordSignal(nodeId, result.lastSnr);
         bumpMeshcoreNodeLastHeardFromRpc(nodeId);
+        if (tracePathHash) {
+          usePathHistoryStore.getState().recordOutcome(nodeId, tracePathHash, true);
+        }
         clearMeshcorePingNoRouteExpiryTimer(nodeId);
         setMeshcorePingErrors((prev) => {
           const next = new Map(prev);
@@ -4329,6 +4344,9 @@ export function useMeshCore() {
           ? `Request timed out (up to ~${Math.round(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS / 1000)}s)`
           : `Failed: ${errMsg}`;
         friendlyErr = meshcoreAppendRepeaterAuthHint(friendlyErr);
+        if (tracePathHash) {
+          usePathHistoryStore.getState().recordOutcome(nodeId, tracePathHash, false);
+        }
         setMeshcorePingErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, friendlyErr);
@@ -5490,25 +5508,37 @@ export function useMeshCore() {
         last_snr: number | null;
         last_rssi: number | null;
         favorited: number;
+        hops_away: number | null;
       }[];
       setNodes((prev) => {
         const next = new Map(prev);
         for (const row of dbContacts) {
-          if (!next.has(row.node_id)) {
-            next.set(row.node_id, {
-              node_id: row.node_id,
-              long_name: row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
-              short_name: '',
-              hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
-              battery: 0,
-              snr: row.last_snr ?? 0,
-              rssi: row.last_rssi ?? 0,
-              last_heard: row.last_advert ?? 0,
-              latitude: row.adv_lat ?? null,
-              longitude: row.adv_lon ?? null,
-              favorited: row.favorited === 1,
-            });
+          const existing = next.get(row.node_id);
+          const mergedHopsAway =
+            row.hops_away != null
+              ? existing?.hops_away != null
+                ? Math.min(existing.hops_away, row.hops_away)
+                : row.hops_away
+              : existing?.hops_away;
+          if (existing) {
+            if (existing.hops_away === mergedHopsAway) continue;
+            next.set(row.node_id, { ...existing, hops_away: mergedHopsAway });
+            continue;
           }
+          next.set(row.node_id, {
+            node_id: row.node_id,
+            long_name: row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
+            short_name: '',
+            hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
+            battery: 0,
+            snr: row.last_snr ?? 0,
+            rssi: row.last_rssi ?? 0,
+            last_heard: row.last_advert ?? 0,
+            latitude: row.adv_lat ?? null,
+            longitude: row.adv_lon ?? null,
+            favorited: row.favorited === 1,
+            ...(mergedHopsAway != null ? { hops_away: mergedHopsAway } : {}),
+          });
         }
         return next;
       });
