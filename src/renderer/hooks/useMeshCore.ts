@@ -23,7 +23,6 @@ import {
 } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
-import { isLetsMeshSettings } from '../lib/letsMeshJwt';
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
@@ -43,7 +42,6 @@ import {
   buildMeshcoreGetNeighboursRequest,
   parseMeshcoreGetNeighboursResponse,
 } from '../lib/meshcoreGetNeighboursBinary';
-import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import {
   MESHCORE_CHAT_CORRELATE_WINDOW_MS,
   meshcoreCorrelateOrSynthesizeChatEntry,
@@ -2515,6 +2513,17 @@ export function useMeshCore() {
             receivedVia: 'rf',
           }),
         );
+        if (mqttStatusRef.current === 'connected') {
+          void window.electronAPI.mqtt
+            .publishMeshcorePacketLog({
+              origin: selfInfoRef.current?.name ?? 'mesh-client',
+              snr: rfMatch?.snr ?? 0,
+              rssi: rfMatch?.rssi ?? 0,
+            })
+            .catch((e: unknown) => {
+              console.warn('[useMeshCore] publishMeshcorePacketLog (heard RF) error', e);
+            });
+        }
         setRawPackets((prev) =>
           meshcoreCorrelateOrSynthesizeChatEntry(prev, 'GRP_TXT', stubId, {
             ts: now,
@@ -2588,6 +2597,14 @@ export function useMeshCore() {
         });
         const sigPoint: TelemetryPoint = { timestamp: now, snr, rssi };
         setSignalTelemetry((prev) => [...prev, sigPoint].slice(-MAX_TELEMETRY_POINTS));
+
+        // Packet-log metadata hoisted for the MQTT publish below (set inside the rawU8 block).
+        let mqttRawHex: string | undefined;
+        let mqttLen: number | undefined;
+        let mqttPacketType: number | undefined;
+        let mqttRoute: string | undefined;
+        let mqttPayloadLen: number | undefined;
+        let mqttHash: string | undefined;
 
         // Raw packet log: always run MeshCore in-house parse on this path (LOG_RX is MeshCore RF only).
         // Do not gate on classifyPayload — Meshtastic-shaped heuristics can mis-label MeshCore frames.
@@ -2736,6 +2753,16 @@ export function useMeshCore() {
               ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
               : next;
           });
+
+          // Populate hoisted MQTT packet-log fields from the parsed result.
+          mqttRawHex = Array.from(rawU8, (b) => b.toString(16).padStart(2, '0')).join('');
+          mqttLen = rawU8.length;
+          mqttPayloadLen = rawU8.length;
+          if (parsed.ok) {
+            mqttPacketType = parsed.payloadTypeNibble;
+          }
+          mqttRoute = routeTypeString ?? undefined;
+          mqttHash = messageFingerprintHex ?? undefined;
         }
 
         // Foreign LoRa fingerprinting: only flag non-MeshCore packets as foreign (requires known self node ID)
@@ -2761,26 +2788,21 @@ export function useMeshCore() {
           }
         }
 
-        const mq = readMeshcoreMqttSettingsFromStorage();
-        if (
-          mqttStatusRef.current === 'connected' &&
-          isLetsMeshSettings(mq.server) &&
-          mq.meshcorePacketLoggerEnabled
-        ) {
-          const now = Date.now();
-          if (now - lastPacketLogAtRef.current >= 100) {
-            lastPacketLogAtRef.current = now;
-            const origin = selfInfoRef.current?.name ?? 'mesh-client';
-            let rawHex: string | undefined;
-            if (rawU8) {
-              rawHex = Array.from(rawU8, (b) => b.toString(16).padStart(2, '0')).join('');
-            }
+        if (mqttStatusRef.current === 'connected') {
+          const nowMs = Date.now();
+          if (nowMs - lastPacketLogAtRef.current >= 100) {
+            lastPacketLogAtRef.current = nowMs;
             void window.electronAPI.mqtt
               .publishMeshcorePacketLog({
-                origin,
+                origin: selfInfoRef.current?.name ?? 'mesh-client',
                 snr,
                 rssi,
-                rawHex,
+                rawHex: mqttRawHex,
+                len: mqttLen,
+                packetType: mqttPacketType,
+                route: mqttRoute,
+                payloadLen: mqttPayloadLen,
+                hash: mqttHash,
               })
               .catch(() => {
                 const t = Date.now();
@@ -3724,13 +3746,19 @@ export function useMeshCore() {
               status: 'acked',
               replyId: replyField,
             });
-          } else if (mqttStatusRef.current === 'connected') {
-            const mq = readMeshcoreMqttSettingsFromStorage();
-            if (isLetsMeshSettings(mq.server)) {
-              // LetsMesh MQTT is for authenticated packet/analyzer feeds (see docs), not MQTT-only
-              // channel chat without a radio.
-              return;
+            if (mqttStatusRef.current === 'connected') {
+              void window.electronAPI.mqtt
+                .publishMeshcorePacketLog({
+                  origin: selfInfo?.name ?? 'mesh-client',
+                  snr: 0,
+                  rssi: 0,
+                  direction: 'tx',
+                })
+                .catch((e: unknown) => {
+                  console.warn('[useMeshCore] publishMeshcorePacketLog (sent via RF) error', e);
+                });
             }
+          } else if (mqttStatusRef.current === 'connected') {
             await window.electronAPI.mqtt.publishMeshcore({
               text: textToSend,
               channelIdx,

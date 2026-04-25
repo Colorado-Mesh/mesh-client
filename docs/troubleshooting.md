@@ -183,6 +183,39 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 **Fix**: Confirm the broker's ACL allows your client to subscribe to the configured topic prefix.
 
+### MQTT keeps disconnecting
+
+**Cause**: Wireless interference, broker downtime, or token issues (LetsMesh/Colorado Mesh).
+
+**Fix**:
+
+- Check your WiFi/signal strength
+- Verify the broker is online
+- For LetsMesh/Colorado Mesh: re-import your MeshCore identity to refresh the token
+- Enable debug logs to see the disconnect reason
+
+### MQTT connected but no messages from other nodes
+
+**Cause**: LetsMesh and Colorado Mesh are publish-only brokers — you can send packets to the mesh but won't receive other users' traffic over MQTT. The connection is real, but incoming messages are limited.
+
+**Fix**: Expected behavior for public brokers. For two-way MQTT, use a different broker or connect via BLE/Serial.
+
+### "Token expired" on LetsMesh/Colorado Mesh
+
+**Cause**: JWT tokens expire after 1 hour.
+
+**Fix**: Re-import your MeshCore config JSON in the Radio tab, or paste your v1\_ public key in the MQTT username field to regenerate a token.
+
+### MQTT "Connection refused" or broker unreachable
+
+**Cause**: Wrong broker URL, port, or firewall blocking the connection.
+
+**Fix**:
+
+- Verify the server URL and port match your broker's settings
+- Check that port 1883 (or 8883/443 for TLS/WebSocket) is allowed through your firewall
+- For WebSocket brokers (port 443), ensure "Use WebSocket" is enabled in the MQTT settings
+
 ### BLE auto-reconnect: "No previously connected BLE device found"
 
 **Cause**: The reconnect card appeared, but the browser lost the cached device handle — for example, the app was fully quit and relaunched.
@@ -291,3 +324,16 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 **Cause**: Nodes you only **hear** on the mesh—but that do **not** have **your** node in **their** contact list—are sometimes called foreign or one-way contacts. MeshCore firmware may not answer **Trace Route** (node detail) or **Ping trace** (Repeaters panel) for those peers, so the app waits until the trace/ping timeout with no TraceData response. You may see **Trace route timed out** in the node detail modal or an error toast from **Ping trace**.
 
 **Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected—not a Mesh-Client defect when the radio never returns a result.
+
+### Can't see RF packets on custom MQTT broker
+
+**Cause**: The packet logger publishes to `{prefix}/{pubKey}/packets`, but you're viewing the packets somewhere that doesn't receive published MQTT messages.
+
+**Fix**:
+
+- The app publishes to `meshcore/{IATA}/{pubKey}/packets` (e.g., `meshcore/DEN/AABBCCDDEEFF001122/packets`)
+- Use an external MQTT client (like MQTT Explorer, mosquitto_sub, or your broker's dashboard) to subscribe and view the packets
+- For Colorado Mesh, subscribe to `meshcore/DEN/+/packets/#`
+- For LetsMesh/MeshMapper, subscribe to `meshcore/test/+/packets/#`
+- Verify your broker ACL allows publishing to `packets/` topics
+- Check the Log panel for "Published RF packet" entries to confirm packets are being sent

@@ -36,14 +36,9 @@ function buildMeshcoreUrlForLog(settings: MQTTSettings): string {
 const MESHCORE_MQTT_CONNECT_ACK_MS = 30_000;
 /** Send WebSocket-level ping frames so LB/proxy idle timers see traffic at ~10s intervals. */
 const MESHCORE_MQTT_WSS_PING_MS = 10_000;
-/** Reconnect delay base/cap — mirrors MQTTManager. */
+/** Reconnect delay base/cap. */
 const MESHCORE_MQTT_RECONNECT_IMMEDIATE_MS = 500;
 const MESHCORE_MQTT_RECONNECT_10_MINUTE_DELAY_MS = 600_000;
-/**
- * Periodic reschedulePing(true) resets mqtt.js KeepaliveManager without waiting for PINGRESP/SUBACK
- * on proxied WSS paths (LetsMesh broker) — same as MQTTManager.
- */
-const MESHCORE_MQTT_RESCHEDULE_MS = 30_000;
 /**
  * A session that lasted this long is considered stable. When the next disconnect occurs after a
  * stable session, retryCount resets to 0 so the full retry budget is available again.
@@ -61,7 +56,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   /** One-shot: log first inbound MQTT message for broker delivery diagnostics. */
   private firstMessageLogged = false;
   private wssPingTimer: ReturnType<typeof setInterval> | null = null;
-  private keepaliveRescheduleTimer: ReturnType<typeof setInterval> | null = null;
+  private connectionWatchdogTimer: ReturnType<typeof setInterval> | null = null;
+  private lastPacketReceivedAt = 0;
   private pingReqLogged = false;
   private pingRespLogged = false;
   private retryCount = 0;
@@ -174,26 +170,24 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     }
   }
 
-  private clearKeepaliveReschedule(): void {
-    if (this.keepaliveRescheduleTimer) {
-      clearInterval(this.keepaliveRescheduleTimer);
-      this.keepaliveRescheduleTimer = null;
+  private clearConnectionWatchdog(): void {
+    if (this.connectionWatchdogTimer) {
+      clearInterval(this.connectionWatchdogTimer);
+      this.connectionWatchdogTimer = null;
     }
   }
 
-  private startKeepaliveReschedule(): void {
-    this.clearKeepaliveReschedule();
-    this.keepaliveRescheduleTimer = setInterval(() => {
-      if (!this.client?.connected) return;
-      try {
-        this.client.reschedulePing(true);
-      } catch (e) {
-        console.debug(
-          '[MeshCore MQTT] reschedulePing failed',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
+  private startConnectionWatchdog(): void {
+    this.clearConnectionWatchdog();
+    const keepaliveSec = this.lastSettings?.keepalive ?? 30;
+    const timeoutMs = keepaliveSec * 1500; // 1.5× keepalive, mirrors broker's own threshold
+    this.connectionWatchdogTimer = setInterval(() => {
+      if (this.status !== 'connected' || !this.client || this.lastPacketReceivedAt === 0) return;
+      if (Date.now() - this.lastPacketReceivedAt > timeoutMs) {
+        console.warn('[MeshCore MQTT] connection watchdog: no packets received, forcing reconnect');
+        this.client.end(true);
       }
-    }, MESHCORE_MQTT_RESCHEDULE_MS);
+    }, 15_000);
   }
 
   private clearReconnectTimer(): void {
@@ -213,7 +207,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.clearTokenRefreshTimer();
     this.clearConnectTimers();
     this.clearWssPing();
-    this.clearKeepaliveReschedule();
     this.clearReconnectTimer();
     this.pendingReconnect = false;
     if (this.pendingReconnectTimer) {
@@ -257,16 +250,20 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       }
       this.client = null;
     }
-    const clientId = `meshcore-mqtt-${Math.random().toString(36).slice(2, 10)}`;
+    const isV1Username = /^v1_[0-9A-Fa-f]{64}$/i.test(settings.username ?? '');
+    const clientId = isV1Username
+      ? settings.username
+      : `meshcore-mqtt-${Math.random().toString(36).slice(2, 10)}`;
     const useTls = settings.port === 8883;
     const rejectUnauthorizedTls = useTls ? !settings.tlsInsecure : false;
     const logUrl = buildMeshcoreUrlForLog(settings);
 
     // Match MQTTManager: WebSocket uses mqtt.connect({ protocol, host, port, path, … }) — not
     // mqtt.connect(urlString, opts), which can hang or mis-handle TLS in Node mqtt.js.
-    // Use MQTT keepalive for both WebSocket and raw TCP; letsmesh requires PINGREQ every 60s.
+    // Use MQTT keepalive for both WebSocket and raw TCP; letsmesh brokers time out at 65s so we
+    // default to 30s to stay well inside that window.
     // WebSocket-level pings (MESHCORE_MQTT_WSS_PING_MS) additionally keep LB/proxy paths alive.
-    const keepaliveSec = settings.keepalive ?? 60;
+    const keepaliveSec = settings.keepalive ?? 30;
     const wsEnabled = settings.useWebSocket === true;
     const wsTlsEnabled =
       settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 443);
@@ -353,35 +350,40 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       );
       this.clientIdStr = this.client?.options?.clientId ?? '';
       this.lastConnected = Date.now();
+      this.lastPacketReceivedAt = Date.now();
       this.setStatus('connected');
+      this.startConnectionWatchdog();
       this.emit('clientId', this.clientIdStr);
-      // Add small delay before resubscribing to allow broker to stabilize
-      setTimeout(() => {
-        if (this.status !== 'connected' || !this.client) return;
-        const base = normalizePrefix(settings.topicPrefix || 'msh');
-        const subTopic = `${base}/#`;
-        this.client.subscribe(subTopic, (err: Error | null) => {
-          if (err) {
-            if (this.connectAbortByWatchdog) {
-              this.connectAbortByWatchdog = false;
+      // LetsMesh/Colorado brokers (v1_ username) are publish-only — skip subscribe.
+      if (!isV1Username) {
+        // Add small delay before resubscribing to allow broker to stabilize
+        setTimeout(() => {
+          if (this.status !== 'connected' || !this.client) return;
+          const base = normalizePrefix(settings.topicPrefix || 'msh');
+          const subTopic = `${base}/#`;
+          this.client.subscribe(subTopic, (err: Error | null) => {
+            if (err) {
+              if (this.connectAbortByWatchdog) {
+                this.connectAbortByWatchdog = false;
+                return;
+              }
+              // Cascade after transport teardown (e.g. keepalive) — user already got `error`.
+              if (/^connection closed$/i.test(err.message.trim())) {
+                console.debug(
+                  '[MeshCore MQTT] subscribe skipped (connection closed)',
+                  sanitizeLogMessage(subTopic),
+                );
+                return;
+              }
+              const detail = `Subscribe to ${subTopic} failed: ${err.message}`;
+              console.warn('[MeshCore MQTT] subscribe warning', sanitizeLogMessage(detail));
+              this.emit('subscribeWarning', detail);
               return;
             }
-            // Cascade after transport teardown (e.g. keepalive) — user already got `error`.
-            if (/^connection closed$/i.test(err.message.trim())) {
-              console.debug(
-                '[MeshCore MQTT] subscribe skipped (connection closed)',
-                sanitizeLogMessage(subTopic),
-              );
-              return;
-            }
-            const detail = `Subscribe to ${subTopic} failed: ${err.message}`;
-            console.warn('[MeshCore MQTT] subscribe warning', sanitizeLogMessage(detail));
-            this.emit('subscribeWarning', detail);
-            return;
-          }
-          console.debug('[MeshCore MQTT] subscribe callback OK', sanitizeLogMessage(subTopic));
-        });
-      }, 500);
+            console.debug('[MeshCore MQTT] subscribe callback OK', sanitizeLogMessage(subTopic));
+          });
+        }, 500);
+      }
       // WebSocket-level pings keep LB/proxy paths alive independent of MQTT keepalive
       if (settings.useWebSocket) {
         // Ping every 10s so intermediary idle timers stay reset
@@ -395,8 +397,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
           }
         }, MESHCORE_MQTT_WSS_PING_MS);
       }
-      // Start keepalive reschedule (same as MQTTManager) — resets mqtt.js keepalive without waiting for PINGRESP
-      this.startKeepaliveReschedule();
       // Schedule proactive token refresh
       this.scheduleTokenRefresh();
     });
@@ -407,6 +407,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       }
     });
     this.client.on('packetreceive', (packet) => {
+      this.lastPacketReceivedAt = Date.now();
       if (packet.cmd === 'pingresp') {
         this.pingRespLogged = false;
         console.debug('[MeshCore MQTT] PINGRESP received', new Date().toISOString());
@@ -446,7 +447,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     });
     this.client.on('close', () => {
       this.clearWssPing();
-      this.clearKeepaliveReschedule();
+      this.clearConnectionWatchdog();
       this.clearConnectTimers();
       const now = Date.now();
       this.disconnectCount++;
@@ -552,8 +553,10 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       throw new Error('MeshCore MQTT not connected');
     }
     const base = normalizePrefix(this.lastSettings.topicPrefix || 'msh');
-    const topic = `${base}/meshcore/chat`;
-    const payload = JSON.stringify(envelope);
+    const v1Pattern = /^v1_([0-9A-Fa-f]{64})$/i;
+    const pubKey = v1Pattern.exec(this.lastSettings.username ?? '')?.[1]?.toUpperCase();
+    const topic = pubKey ? `${base}/${pubKey}/chat` : `${base}/meshcore/chat`;
+    const payload = JSON.stringify(pubKey ? { origin_id: pubKey, ...envelope } : envelope);
     this.client.publish(topic, payload, { qos: 0 });
   }
 
@@ -561,30 +564,50 @@ export class MeshcoreMqttAdapter extends EventEmitter {
    * Packet logger / Analyzer feed — same topic layout as meshcoretomqtt (`meshcore/packets` under
    * topic prefix), JSON shape aligned with Andrew-a-g/meshcoretomqtt README examples.
    */
-  publishPacketLog(args: { origin: string; snr: number; rssi: number; rawHex?: string }): void {
+  publishPacketLog(args: {
+    origin: string;
+    snr: number;
+    rssi: number;
+    rawHex?: string;
+    len?: number;
+    packetType?: number;
+    route?: string;
+    payloadLen?: number;
+    hash?: string;
+    direction?: 'rx' | 'tx';
+  }): void {
     if (!this.client || this.status !== 'connected' || !this.lastSettings) {
       throw new Error('MeshCore MQTT not connected');
     }
+    if (!this.lastSettings.meshcorePacketLoggerEnabled) return;
     const base = normalizePrefix(this.lastSettings.topicPrefix || 'msh');
-    const topic = `${base}/meshcore/packets`;
+    const pubKey = /^v1_([0-9A-Fa-f]{64})$/i
+      .exec(this.lastSettings.username ?? '')?.[1]
+      ?.toUpperCase();
+    const topic = pubKey ? `${base}/${pubKey}/packets` : `${base}/meshcore/packets`;
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
     const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     const date = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
     const payload: Record<string, string> = {
+      ...(pubKey ? { origin_id: pubKey } : {}),
       origin: args.origin.slice(0, 200),
       timestamp: now.toISOString(),
       type: 'PACKET',
-      direction: 'rx',
+      direction: args.direction ?? 'rx',
       time,
       date,
+      ...(args.len != null ? { len: String(args.len) } : {}),
+      ...(args.packetType != null ? { packet_type: String(args.packetType) } : {}),
+      ...(args.route != null ? { route: args.route } : {}),
+      ...(args.payloadLen != null ? { payload_len: String(args.payloadLen) } : {}),
+      ...(args.rawHex
+        ? { raw: args.rawHex.length > 2048 ? args.rawHex.slice(0, 2048) : args.rawHex }
+        : {}),
       SNR: String(args.snr),
       RSSI: String(args.rssi),
-      meshclient_source: 'mesh-client',
+      ...(args.hash ? { hash: args.hash } : {}),
     };
-    if (args.rawHex && args.rawHex.length > 0) {
-      payload.raw_hex = args.rawHex.length > 2048 ? args.rawHex.slice(0, 2048) : args.rawHex;
-    }
     this.client.publish(topic, JSON.stringify(payload), { qos: 0 });
   }
 }

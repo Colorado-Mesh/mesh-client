@@ -2159,12 +2159,29 @@ ipcMain.handle('mqtt:publishMeshcorePacketLog', (_event, args) => {
   try {
     console.debug('[IPC] mqtt:publishMeshcorePacketLog');
     validateMqttPublishMeshcorePacketLogArgs(args);
-    const a = args as { origin: string; snr: number; rssi: number; rawHex?: string };
+    const a = args as {
+      origin: string;
+      snr: number;
+      rssi: number;
+      rawHex?: string;
+      len?: number;
+      packetType?: number;
+      route?: string;
+      payloadLen?: number;
+      hash?: string;
+      direction?: 'rx' | 'tx';
+    };
     meshcoreMqttAdapter.publishPacketLog({
       origin: a.origin,
       snr: a.snr,
       rssi: a.rssi,
       rawHex: a.rawHex,
+      len: a.len,
+      packetType: a.packetType,
+      route: a.route,
+      payloadLen: a.payloadLen,
+      hash: a.hash,
+      direction: a.direction,
     });
   } catch (err) {
     console.error(

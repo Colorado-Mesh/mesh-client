@@ -1589,7 +1589,6 @@ export default function App() {
                                 : undefined
                             }
                             protocol="meshtastic"
-                            onProtocolChange={handleProtocolChange}
                             firmwareCheckState={
                               protocol === 'meshtastic' ? firmwareCheckState : undefined
                             }
@@ -1626,7 +1625,6 @@ export default function App() {
                                 : undefined
                             }
                             protocol="meshcore"
-                            onProtocolChange={handleProtocolChange}
                             firmwareCheckState={
                               protocol === 'meshcore' ? firmwareCheckState : undefined
                             }

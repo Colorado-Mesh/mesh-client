@@ -1,6 +1,6 @@
-# LetsMesh MQTT authentication (MeshCore)
+# MeshCore MQTT authentication
 
-mesh-client uses the same contract as [meshcore-mqtt-broker](https://github.com/michaelhart/meshcore-mqtt-broker): MQTT username `v1_<64-hex public key>` (uppercase) and a password produced by `@michaelhart/meshcore-decoder` `createAuthToken`.
+This document describes the authentication contract used by many MeshCore MQTT brokers including **Colorado Mesh** and **LetsMesh**. mesh-client uses the same contract as [meshcore-mqtt-broker](https://github.com/michaelhart/meshcore-mqtt-broker): MQTT username `v1_<64-hex public key>` (uppercase) and a password produced by `@michaelhart/meshcore-decoder` `createAuthToken`.
 
 ## JWT audience (`aud`)
 
@@ -30,14 +30,86 @@ Meshtastic MQTT working on the same machine does not guarantee MeshCore LetsMesh
 
 Import identity under **Radio**, or set **Custom** and paste username `v1_<public key>` and a token from tooling that matches your broker’s `AUTH_EXPECTED_AUDIENCE`.
 
-## Packet logger / Analyzer (LetsMesh)
+## Packet logger / Analyzer
 
-[LetsMesh](https://www.letsmesh.net/) positions public MQTT as part of the **MeshCore Analyzer** ecosystem: clients contribute **observed** traffic (e.g. packet captures) for the map and web UI—similar to [meshcoretomqtt](https://github.com/Andrew-a-g/meshcoretomqtt) (topics such as `meshcore/packets` with JSON metadata).
+Many MeshCore MQTT operators provide a **packet logger** or **Analyzer** service: clients contribute **observed** traffic (e.g. packet captures) for the map and web UI—similar to [meshcoretomqtt](https://github.com/Andrew-a-g/meshcoretomqtt) (topics such as `meshcore/packets` with JSON metadata).
 
-In mesh-client, **LetsMesh public brokers** are **not** used for MQTT-only channel chat when no radio is connected. Optional **Packet logger (LetsMesh Analyzer)** (off by default) publishes RX summaries from the radio to `{topicPrefix}/meshcore/packets` using a meshcoretomqtt-style JSON shape (see [`MeshcoreMqttAdapter.publishPacketLog`](../src/main/meshcore-mqtt-adapter.ts)). Confirm broker ACLs and [observer onboarding](https://analyzer.letsmesh.net/observer/onboard) expectations with current operator docs.
+In mesh-client, optional **Packet logger** (off by default) publishes RX summaries from the radio to `{topicPrefix}/meshcore/packets` using the JSON envelope shown above. Confirm broker ACLs and observer onboarding expectations with your operator docs.
 
 ## Proactive JWT refresh
 
 mesh-client proactively refreshes the JWT token **before** it expires to avoid connection drops. The client schedules a refresh **6 minutes before** the token's `exp` claim when connected. The refresh runs regardless of whether the mesh radio is active — MQTT-only connections also benefit.
 
 If the refresh fails, the client falls back to on-demand refresh (token is regenerated on next connect attempt after expiry).
+
+## Packet format
+
+MeshCore MQTT uses JSON v1 envelopes for both chat messages and packet logger feeds.
+
+### Chat envelope
+
+Published to `{topicPrefix}/{pubKey}/chat` (with origin_id) or `{topicPrefix}/meshcore/chat`:
+
+```json
+{
+  "v": 1,
+  "text": "Hello world",
+  "channelIdx": 0,
+  "senderName": "MyNode",
+  "senderNodeId": 12345678,
+  "timestamp": 1699999999000
+}
+```
+
+**Fields:**
+
+- `v` — always `1` (version)
+- `text` — message text, max 16000 chars
+- `channelIdx` — channel index (0–255)
+- `senderName` — optional sender display name, max 200 chars
+- `senderNodeId` — optional sender node ID (number)
+- `timestamp` — optional message timestamp (Unix ms)
+
+When publishing with a `v1_<pubKey>` username, mesh-client adds `origin_id` (uppercase hex) to the envelope.
+
+### Packet logger envelope
+
+Published to `{topicPrefix}/{pubKey}/packets` or `{topicPrefix}/meshcore/packets`:
+
+```json
+{
+  "origin_id": "AABBCCDDEEFF001122",
+  "origin": "!abcdef00",
+  "timestamp": "2024-11-14T10:30:00.000Z",
+  "type": "PACKET",
+  "direction": "rx",
+  "time": "10:30:00",
+  "date": "14/11/2024",
+  "len": 24,
+  "packet_type": 0,
+  "route": "direct",
+  "payload_len": 12,
+  "raw": "3c010002...",
+  "SNR": 10.5,
+  "RSSI": -90,
+  "hash": "abc123"
+}
+```
+
+**Fields:**
+
+- `origin_id` — sender's public key (uppercase hex, included when publishing with v1 auth)
+- `origin` — sender node ID (Meshtastic-style `!<hex>` or decimal)
+- `timestamp` — ISO 8601 timestamp
+- `type` — always `"PACKET"`
+- `direction` — `"rx"` or `"tx"`
+- `time` — HH:MM:SS local time
+- `date` — DD/MM/YYYY
+- `len` — total packet length in bytes
+- `packet_type` — MeshCore packet type number
+- `route` — routing type: `"direct"`, `"mqtt"`, or hop count like `"1"`, `"2"`
+- `payload_len` — payload byte length
+- `raw` — raw packet hex (truncated to 2048 chars)
+- `SNR` — signal-to-noise ratio (dB)
+- `RSSI` — received signal strength (dBm)
+- `hash` — packet hash for deduplication

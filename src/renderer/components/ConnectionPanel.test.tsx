@@ -25,7 +25,6 @@ describe('ConnectionPanel MQTT port clamping', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        onProtocolChange={vi.fn()}
       />,
     );
     // Navigate to MQTT section — look for the port field by label
@@ -50,7 +49,6 @@ describe('HelpTooltip in MQTT form', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol={protocol}
-        onProtocolChange={vi.fn()}
       />,
     );
   }
@@ -92,7 +90,6 @@ describe('ConnectionPanel accessibility', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        onProtocolChange={vi.fn()}
       />,
     );
     const results = await axe(container);
@@ -114,7 +111,6 @@ describe('ConnectionPanel MQTT connect error', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshcore"
-        onProtocolChange={vi.fn()}
       />,
     );
 
@@ -146,7 +142,6 @@ describe('ConnectionPanel MQTT connect error', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        onProtocolChange={vi.fn()}
       />,
     );
 
@@ -188,7 +183,6 @@ describe('ConnectionPanel BLE error humanization', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshcore"
-        onProtocolChange={vi.fn()}
       />,
     );
 
@@ -225,7 +219,6 @@ describe('ConnectionPanel BLE error humanization', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        onProtocolChange={vi.fn()}
       />,
     );
 
@@ -262,7 +255,6 @@ describe('ConnectionPanel BLE error humanization', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        onProtocolChange={vi.fn()}
       />,
     );
 
@@ -300,7 +292,6 @@ describe('ConnectionPanel Linux BLE path', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        onProtocolChange={vi.fn()}
       />,
     );
 
@@ -336,7 +327,6 @@ describe('ConnectionPanel Linux BLE path', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshcore"
-        onProtocolChange={vi.fn()}
       />,
     );
 
@@ -371,7 +361,6 @@ function renderWithFirmware(
       onDisconnect={vi.fn().mockResolvedValue(undefined)}
       mqttStatus="disconnected"
       protocol="meshtastic"
-      onProtocolChange={vi.fn()}
       firmwareCheckState={firmwareCheckState}
       onOpenFirmwareReleases={onOpenFirmwareReleases}
     />,
@@ -395,7 +384,6 @@ describe('ConnectionPanel firmware status indicator', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        onProtocolChange={vi.fn()}
         firmwareCheckState={{ phase: 'up-to-date', latestVersion: '2.5.4' }}
         onOpenFirmwareReleases={vi.fn()}
       />,
@@ -446,7 +434,6 @@ describe("ConnectionPanel Meshtastic MQTT presets — Liam's server", () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        onProtocolChange={vi.fn()}
       />,
     );
   }

@@ -440,6 +440,24 @@ function migrateMqttSettingsOnce(): void {
 }
 migrateMqttSettingsOnce();
 
+function migrateMeshcoreTopicIataOnce(): void {
+  const MIGRATION_KEY = 'mesh-client:migrated:meshcore-topic-iata-v1';
+  if (localStorage.getItem(MIGRATION_KEY) !== null) return;
+  const raw = localStorage.getItem('mesh-client:mqttSettings:meshcore');
+  if (raw) {
+    const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'migrateMeshcoreTopicIataOnce');
+    if (parsed?.topicPrefix === 'meshcore' && typeof parsed.server === 'string') {
+      const iata = parsed.server.trim() === COLORADO_MESH_HOST ? 'DEN' : 'test';
+      localStorage.setItem(
+        'mesh-client:mqttSettings:meshcore',
+        JSON.stringify({ ...parsed, topicPrefix: `meshcore/${iata}` }),
+      );
+    }
+  }
+  localStorage.setItem(MIGRATION_KEY, '1');
+}
+migrateMeshcoreTopicIataOnce();
+
 function loadMqttSettings(): MQTTSettings {
   const raw = localStorage.getItem('mesh-client:mqttSettings');
   const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'ConnectionPanel loadMqttSettings');
@@ -502,7 +520,6 @@ interface Props {
   mqttStatus: MQTTStatus;
   myNodeLabel?: string;
   protocol: MeshProtocol;
-  onProtocolChange: (p: MeshProtocol) => void;
   manualAddContacts?: boolean;
   onToggleManualContacts?: (manual: boolean) => Promise<void>;
   firmwareCheckState?: FirmwareCheckResult;
@@ -517,7 +534,6 @@ export default function ConnectionPanel({
   mqttStatus,
   myNodeLabel,
   protocol,
-  onProtocolChange,
   manualAddContacts,
   onToggleManualContacts,
   firmwareCheckState,
@@ -549,7 +565,6 @@ export default function ConnectionPanel({
   const [showMqttPassword, setShowMqttPassword] = useState(false);
   const [mqttError, setMqttError] = useState<string | null>(null);
   const [mqttWarning, setMqttWarning] = useState<string | null>(null);
-  const [mqttClientId, setMqttClientId] = useState('');
   const mqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const meshcoreMqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [meshcorePreset, setMeshcorePreset] = useState<
@@ -622,27 +637,11 @@ export default function ConnectionPanel({
       setMqttWarning(protocol === 'meshcore' ? meshcoreMqttUserFacingHint(warning) : warning);
     });
   }, [protocol]);
-  useEffect(() => {
-    // Restore clientId if already connected when this component mounts (e.g. after tab switch)
-    window.electronAPI.mqtt
-      .getClientId(protocol)
-      .then((id) => {
-        if (id) setMqttClientId(id);
-      })
-      .catch((err: unknown) => {
-        console.warn('[ConnectionPanel] getClientId failed:', err);
-      });
-    return window.electronAPI.mqtt.onClientId(({ clientId, protocol: mqttProtocol }) => {
-      if (mqttProtocol !== protocol) return;
-      setMqttClientId(clientId);
-    });
-  }, [protocol]);
 
   // Clear MQTT error on successful connect; leave it visible on disconnect so the user can read it.
   useEffect(() => {
     if (mqttStatus === 'connected') setMqttError(null);
     if (mqttStatus === 'disconnected') {
-      setMqttClientId('');
       setMqttWarning(null);
     }
     if (mqttStatus === 'connecting') setMqttWarning(null);
@@ -653,7 +652,9 @@ export default function ConnectionPanel({
     const syncLetsMeshUsername = () => {
       if (
         protocol !== 'meshcore' ||
-        (meshcorePreset !== 'letsmesh' && meshcorePreset !== 'meshmapper')
+        (meshcorePreset !== 'letsmesh' &&
+          meshcorePreset !== 'meshmapper' &&
+          meshcorePreset !== 'coloradomesh')
       )
         return;
       const u = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
@@ -1520,32 +1521,6 @@ export default function ConnectionPanel({
     state.status === 'stale' ||
     state.status === 'reconnecting';
 
-  // ─── Protocol toggle (shown in both connected and disconnected views) ──
-  const protocolToggle = (
-    <div className="bg-deep-black flex overflow-hidden rounded-lg border border-gray-700">
-      {(['meshtastic', 'meshcore'] as const).map((p) => (
-        <button
-          key={p}
-          type="button"
-          aria-label={p === 'meshtastic' ? 'Meshtastic' : 'MeshCore'}
-          aria-pressed={protocol === p}
-          onClick={() => {
-            onProtocolChange(p);
-          }}
-          className={`flex-1 py-2 text-sm font-medium transition-colors ${
-            protocol === p
-              ? p === 'meshcore'
-                ? 'bg-cyan-600/20 text-cyan-400'
-                : 'bg-brand-green/20 text-brand-green border-brand-green'
-              : 'text-muted hover:bg-secondary-dark hover:text-gray-200'
-          }`}
-        >
-          {p === 'meshtastic' ? 'Meshtastic' : 'MeshCore'}
-        </button>
-      ))}
-    </div>
-  );
-
   // ─── Connecting Progress View ───────────────────────────────────
   if (connecting && !isConnected) {
     return (
@@ -1779,9 +1754,7 @@ export default function ConnectionPanel({
 
   // ─── Shared MQTT section ────────────────────────────────────────
   const mqttHeaderBar = (
-    <div
-      className={`bg-secondary-dark flex items-center justify-between border-b px-4 py-3 ${mqttStatus === 'connected' ? 'border-brand-green/20' : 'border-gray-700'}`}
-    >
+    <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
       <div className="flex items-center gap-2">
         <MqttGlobeIcon status={mqttStatus} />
         <span className="font-medium text-gray-200">MQTT Connection</span>
@@ -1806,7 +1779,7 @@ export default function ConnectionPanel({
 
   const mqttSection =
     mqttStatus === 'connected' ? (
-      <div className={`bg-deep-black border-brand-green/20 overflow-hidden rounded-lg border`}>
+      <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
         {mqttHeaderBar}
         {mqttError && (
           <div className="border-b border-red-800 bg-red-900/50 px-4 py-2 text-xs text-red-300">
@@ -1825,10 +1798,21 @@ export default function ConnectionPanel({
               {activeMqttSettings.server}:{activeMqttSettings.port}
             </span>
           </div>
-          {mqttClientId && (
+          {protocol === 'meshcore' &&
+            /^v1_[0-9A-Fa-f]{64}$/i.test(activeMqttSettings.username ?? '') && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted">From</span>
+                <span className="font-mono text-xs text-gray-200">
+                  {activeMqttSettings.username?.slice(3)}
+                </span>
+              </div>
+            )}
+          {protocol === 'meshtastic' && state.myNodeNum > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted">Client ID</span>
-              <span className="font-mono text-xs text-gray-200">{mqttClientId}</span>
+              <span className="text-muted">From</span>
+              <span className="font-mono text-xs text-gray-200">
+                !{state.myNodeNum.toString(16)}
+              </span>
             </div>
           )}
           <div className="flex justify-between text-sm">
@@ -1974,9 +1958,9 @@ export default function ConnectionPanel({
                           ...prev,
                           server: LETSMESH_HOST_US,
                           port: 443,
-                          topicPrefix: 'meshcore',
+                          topicPrefix: 'meshcore/test',
                           useWebSocket: true,
-                          keepalive: 60,
+                          keepalive: 30,
                           username: fromIdentity || prev.username,
                           password: '',
                         }));
@@ -1987,11 +1971,11 @@ export default function ConnectionPanel({
                           ...prev,
                           server: COLORADO_MESH_HOST,
                           port: 1883,
-                          topicPrefix: 'meshcore',
+                          topicPrefix: 'meshcore/DEN',
                           useWebSocket: true,
                           tlsEnabled: true,
                           wsPath: '/ws',
-                          keepalive: 60,
+                          keepalive: 30,
                           username: fromIdentity || prev.username,
                           password: '',
                         }));
@@ -2002,9 +1986,9 @@ export default function ConnectionPanel({
                           ...prev,
                           server: MESHMAPPER_HOST,
                           port: 443,
-                          topicPrefix: 'meshcore',
+                          topicPrefix: 'meshcore/test',
                           useWebSocket: true,
-                          keepalive: 60,
+                          keepalive: 30,
                           username: fromIdentity || prev.username,
                           password: '',
                         }));
@@ -2048,7 +2032,6 @@ export default function ConnectionPanel({
                         port: 443,
                         useWebSocket: true,
                         keepalive: 60,
-                        topicPrefix: 'meshcore',
                         username: fromIdentity || prev.username,
                       }));
                     }}
@@ -2070,7 +2053,6 @@ export default function ConnectionPanel({
                         port: 443,
                         useWebSocket: true,
                         keepalive: 60,
-                        topicPrefix: 'meshcore',
                         username: fromIdentity || prev.username,
                       }));
                     }}
@@ -2185,29 +2167,25 @@ export default function ConnectionPanel({
                 })()}
               </div>
             )}
-          {protocol === 'meshcore' &&
-            (meshcorePreset === 'letsmesh' ||
-              meshcorePreset === 'coloradomesh' ||
-              meshcorePreset === 'meshmapper') && (
-              <div className="bg-secondary-dark/40 flex items-start gap-2 rounded border border-gray-600/50 px-2 py-2 text-xs text-gray-300">
-                <input
-                  type="checkbox"
-                  id="meshcore-packet-logger"
-                  checked={meshcoreMqttSettings.meshcorePacketLoggerEnabled ?? false}
-                  onChange={(e) => {
-                    updateMqtt('meshcorePacketLoggerEnabled', e.target.checked);
-                  }}
-                  className="accent-brand-green mt-0.5 shrink-0"
-                />
-                <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
-                  Packet logger (LetsMesh Analyzer) — when connected to your radio and MQTT, forward
-                  RX packet summaries to{' '}
-                  <code className="text-gray-400">{`{topicPrefix}/meshcore/packets`}</code> in the
-                  same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to
-                  share heard air traffic with the public analyzer.
-                </label>
-              </div>
-            )}
+          {protocol === 'meshcore' && (
+            <div className="bg-secondary-dark/40 flex items-start gap-2 rounded border border-gray-600/50 px-2 py-2 text-xs text-gray-300">
+              <input
+                type="checkbox"
+                id="meshcore-packet-logger"
+                checked={meshcoreMqttSettings.meshcorePacketLoggerEnabled ?? false}
+                onChange={(e) => {
+                  updateMqtt('meshcorePacketLoggerEnabled', e.target.checked);
+                }}
+                className="accent-brand-green mt-0.5 shrink-0"
+              />
+              <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
+                Packet logger — when connected to your radio and MQTT, forward RX packet summaries
+                to <code className="text-gray-400">{`{topicPrefix}/meshcore/packets`}</code> in the
+                same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to
+                share heard air traffic with a packet analyzer.
+              </label>
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             <div className="space-y-1">
               <label htmlFor="mqtt-username" className="text-muted text-xs">
@@ -2420,7 +2398,6 @@ export default function ConnectionPanel({
   if (isConnected) {
     return (
       <div className="w-full space-y-6">
-        {protocolToggle}
         <button
           onClick={async () => {
             // Cap wait so quit always runs if transport teardown hangs (e.g. Windows serial/BLE).
@@ -2436,16 +2413,8 @@ export default function ConnectionPanel({
           Disconnect &amp; Quit
         </button>
 
-        <div
-          className={`bg-deep-black overflow-hidden rounded-lg border ${
-            state.status === 'reconnecting' ? 'border-orange-500/30' : 'border-brand-green/20'
-          }`}
-        >
-          <div
-            className={`bg-secondary-dark flex items-center justify-between border-b px-4 py-3 ${
-              state.status === 'reconnecting' ? 'border-orange-500/30' : 'border-brand-green/20'
-            }`}
-          >
+        <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
+          <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
             <div className="flex items-center gap-2">
               <ConnectionIcon type={state.connectionType!} />
               <span className="font-medium text-gray-200">Radio Connection</span>
@@ -2560,7 +2529,6 @@ export default function ConnectionPanel({
   // ─── Disconnected View ─────────────────────────────────────────
   return (
     <div className="w-full space-y-6">
-      {protocolToggle}
       {mqttStatus === 'connected' && (
         <button
           type="button"

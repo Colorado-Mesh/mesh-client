@@ -1,4 +1,5 @@
 // @vitest-environment node
+import type { IClientOptions } from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MQTTSettings } from '../renderer/lib/types';
@@ -40,6 +41,29 @@ function seedConnected(adapter: MeshcoreMqttAdapter, expiresAt: number): void {
   a.status = 'connected';
   a.lastSettings = { ...BASE_SETTINGS, tokenExpiresAt: expiresAt };
 }
+
+describe('MeshcoreMqttAdapter — clientId', () => {
+  let adapter: MeshcoreMqttAdapter;
+
+  beforeEach(() => {
+    adapter = new MeshcoreMqttAdapter();
+  });
+
+  it('uses username as clientId if it matches v1_ pattern', async () => {
+    const mqtt = await import('mqtt');
+    const v1Username = `v1_${'A'.repeat(64)}`;
+    adapter.connect({ ...BASE_SETTINGS, username: v1Username });
+    expect(mqtt.connect).toHaveBeenCalledWith(expect.objectContaining({ clientId: v1Username }));
+  });
+
+  it('uses random clientId if username does not match v1_ pattern', async () => {
+    const mqtt = await import('mqtt');
+    adapter.connect({ ...BASE_SETTINGS, username: 'normal-user' });
+    const call = vi.mocked(mqtt.connect).mock.calls[vi.mocked(mqtt.connect).mock.calls.length - 1];
+    const opts = call[0] as IClientOptions;
+    expect(opts.clientId).toMatch(/^meshcore-mqtt-[a-z0-9]{8}$/);
+  });
+});
 
 describe('MeshcoreMqttAdapter — token refresh', () => {
   let adapter: MeshcoreMqttAdapter;

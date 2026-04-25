@@ -651,6 +651,12 @@ declare global {
           snr: number;
           rssi: number;
           rawHex?: string;
+          len?: number;
+          packetType?: number;
+          route?: string;
+          payloadLen?: number;
+          hash?: string;
+          direction?: 'rx' | 'tx';
         }) => Promise<void>;
         onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
         refreshMeshcoreToken: (
