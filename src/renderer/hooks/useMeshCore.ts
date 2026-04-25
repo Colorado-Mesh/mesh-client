@@ -3736,6 +3736,19 @@ export function useMeshCore() {
               status: 'acked',
               replyId: replyField,
             });
+            if (mqttStatusRef.current === 'connected') {
+              void window.electronAPI.mqtt
+                .publishMeshcore({
+                  text: textToSend,
+                  channelIdx,
+                  senderNodeId: myNodeNumRef.current || undefined,
+                  senderName: selfInfo?.name,
+                  timestamp: sentAt,
+                })
+                .catch((e: unknown) => {
+                  console.warn('[useMeshCore] publishMeshcore (sent via RF) error', e);
+                });
+            }
           } else if (mqttStatusRef.current === 'connected') {
             await window.electronAPI.mqtt.publishMeshcore({
               text: textToSend,
