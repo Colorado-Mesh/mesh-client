@@ -579,6 +579,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     if (!this.client || this.status !== 'connected' || !this.lastSettings) {
       throw new Error('MeshCore MQTT not connected');
     }
+    if (!this.lastSettings.meshcorePacketLoggerEnabled) return;
     const base = normalizePrefix(this.lastSettings.topicPrefix || 'msh');
     const pubKey = /^v1_([0-9A-Fa-f]{64})$/i
       .exec(this.lastSettings.username ?? '')?.[1]

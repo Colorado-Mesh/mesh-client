@@ -2203,29 +2203,25 @@ export default function ConnectionPanel({
                 })()}
               </div>
             )}
-          {protocol === 'meshcore' &&
-            (meshcorePreset === 'letsmesh' ||
-              meshcorePreset === 'coloradomesh' ||
-              meshcorePreset === 'meshmapper') && (
-              <div className="bg-secondary-dark/40 flex items-start gap-2 rounded border border-gray-600/50 px-2 py-2 text-xs text-gray-300">
-                <input
-                  type="checkbox"
-                  id="meshcore-packet-logger"
-                  checked={meshcoreMqttSettings.meshcorePacketLoggerEnabled ?? false}
-                  onChange={(e) => {
-                    updateMqtt('meshcorePacketLoggerEnabled', e.target.checked);
-                  }}
-                  className="accent-brand-green mt-0.5 shrink-0"
-                />
-                <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
-                  Packet logger (LetsMesh Analyzer) — when connected to your radio and MQTT, forward
-                  RX packet summaries to{' '}
-                  <code className="text-gray-400">{`{topicPrefix}/meshcore/packets`}</code> in the
-                  same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to
-                  share heard air traffic with the public analyzer.
-                </label>
-              </div>
-            )}
+          {protocol === 'meshcore' && (
+            <div className="bg-secondary-dark/40 flex items-start gap-2 rounded border border-gray-600/50 px-2 py-2 text-xs text-gray-300">
+              <input
+                type="checkbox"
+                id="meshcore-packet-logger"
+                checked={meshcoreMqttSettings.meshcorePacketLoggerEnabled ?? false}
+                onChange={(e) => {
+                  updateMqtt('meshcorePacketLoggerEnabled', e.target.checked);
+                }}
+                className="accent-brand-green mt-0.5 shrink-0"
+              />
+              <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
+                Packet logger — when connected to your radio and MQTT, forward RX packet summaries
+                to <code className="text-gray-400">{`{topicPrefix}/meshcore/packets`}</code> in the
+                same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to
+                share heard air traffic with a packet analyzer.
+              </label>
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             <div className="space-y-1">
               <label htmlFor="mqtt-username" className="text-muted text-xs">
