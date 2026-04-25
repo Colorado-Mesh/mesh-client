@@ -128,6 +128,7 @@ export class MQTTManager extends EventEmitter {
   private wssPingTimer: ReturnType<typeof setInterval> | null = null;
   private keepaliveRescheduleTimer: ReturnType<typeof setInterval> | null = null;
   private sampledDebugLogs = new Map<string, SampledDebugLogState>();
+  private static MAX_SAMPLED_LOGS = 1000;
   /** Wall time at start of last `_doConnect` (CONNACK timing in connect logs). */
   private meshtasticConnectT0 = 0;
   /** After `connack timeout`, reconnect with {@link MESHTASTIC_MQTT_RECONNECT_AFTER_CONNACK_TIMEOUT_MS}. */
@@ -1379,6 +1380,7 @@ export class MQTTManager extends EventEmitter {
     const now = Date.now();
     const state = this.sampledDebugLogs.get(key);
     if (!state) {
+      this.pruneSampledLogs();
       this.sampledDebugLogs.set(key, { lastLoggedAt: now, suppressedCount: 0 });
       console.debug(message); // log-filter-ok Meshtastic MQTT logs → App log panel
       return;
@@ -1396,5 +1398,20 @@ export class MQTTManager extends EventEmitter {
     }
 
     state.suppressedCount += 1;
+  }
+
+  private pruneSampledLogs(): void {
+    while (this.sampledDebugLogs.size > MQTTManager.MAX_SAMPLED_LOGS) {
+      let oldestKey: string | undefined;
+      let oldestTime = Infinity;
+      for (const [k, v] of this.sampledDebugLogs) {
+        if (v.lastLoggedAt < oldestTime) {
+          oldestTime = v.lastLoggedAt;
+          oldestKey = k;
+        }
+      }
+      if (oldestKey) this.sampledDebugLogs.delete(oldestKey);
+      else break;
+    }
   }
 }

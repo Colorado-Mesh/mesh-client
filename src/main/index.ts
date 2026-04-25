@@ -4209,12 +4209,6 @@ ipcMain.handle('http:connect', async (_event, host: unknown, tls: unknown) => {
     httpDevice = null;
   }
   await httpPreflight(host, tls);
-  let controller: { enqueue: (chunk: { type: string; data: Uint8Array }) => void };
-  void new ReadableStream({
-    start(ctrl) {
-      controller = ctrl;
-    },
-  });
   const intervalId = setInterval(() => {
     void (async () => {
       try {
@@ -4230,10 +4224,6 @@ ipcMain.handle('http:connect', async (_event, host: unknown, tls: unknown) => {
           readBuffer = await response.arrayBuffer();
           if (readBuffer.byteLength > 0) {
             const data = new Uint8Array(readBuffer);
-            controller.enqueue({
-              type: 'packet',
-              data,
-            });
             mainWindow?.webContents.send('http:data', data);
           }
         }

@@ -984,9 +984,6 @@ export function mergeDatabase(sourcePath: string) {
   try {
     sourceDb = new NodeSqliteDB(sourcePath, { readonly: true });
 
-    const sourceNodes = sourceDb.prepare('SELECT * FROM nodes').all() as any[];
-    const sourceMessages = sourceDb.prepare('SELECT * FROM messages').all() as any[];
-
     return targetDb.transaction(() => {
       let nodesAdded = 0;
       let messagesAdded = 0;
@@ -1016,7 +1013,7 @@ export function mergeDatabase(sourcePath: string) {
         )
       `);
 
-      for (const node of sourceNodes) {
+      for (const node of sourceDb!.prepare('SELECT * FROM nodes').iterate()) {
         try {
           // Basic shape validation: must have a finite node_id; ignore obviously malformed rows.
           const nodeId = Number((node as { node_id?: unknown }).node_id);
@@ -1036,7 +1033,7 @@ export function mergeDatabase(sourcePath: string) {
         }
       }
 
-      for (const msg of sourceMessages) {
+      for (const msg of sourceDb!.prepare('SELECT * FROM messages').iterate()) {
         try {
           const senderId = (msg as { sender_id?: unknown }).sender_id;
           const timestamp = (msg as { timestamp?: unknown }).timestamp;

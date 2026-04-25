@@ -111,6 +111,14 @@ class WrappedStatement {
     return (this.stmt.run as any)(...this.prep(args)) as RunResult;
   }
 
+  *iterate(...args: unknown[]): Generator<Record<string, unknown>, void, unknown> {
+    for (const row of (this.stmt.all as (...a: unknown[]) => Record<string, unknown>[])(
+      ...this.prep(args),
+    )) {
+      yield row;
+    }
+  }
+
   get(...args: unknown[]): unknown {
     return (this.stmt.get as any)(...this.prep(args));
   }
