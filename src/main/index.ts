@@ -2169,6 +2169,7 @@ ipcMain.handle('mqtt:publishMeshcorePacketLog', (_event, args) => {
       route?: string;
       payloadLen?: number;
       hash?: string;
+      direction?: 'rx' | 'tx';
     };
     meshcoreMqttAdapter.publishPacketLog({
       origin: a.origin,
@@ -2180,6 +2181,7 @@ ipcMain.handle('mqtt:publishMeshcorePacketLog', (_event, args) => {
       route: a.route,
       payloadLen: a.payloadLen,
       hash: a.hash,
+      direction: a.direction,
     });
   } catch (err) {
     console.error(

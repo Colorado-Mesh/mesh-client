@@ -656,6 +656,7 @@ declare global {
           route?: string;
           payloadLen?: number;
           hash?: string;
+          direction?: 'rx' | 'tx';
         }) => Promise<void>;
         onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
         refreshMeshcoreToken: (

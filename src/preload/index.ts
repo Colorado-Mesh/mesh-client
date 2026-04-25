@@ -407,6 +407,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       route?: string;
       payloadLen?: number;
       hash?: string;
+      direction?: 'rx' | 'tx';
     }) => ipcRenderer.invoke('mqtt:publishMeshcorePacketLog', args),
     onMeshcoreChat: (cb: (msg: unknown) => void) => {
       const handler = (_: unknown, m: unknown) => {

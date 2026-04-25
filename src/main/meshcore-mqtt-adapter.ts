@@ -179,7 +179,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
 
   private startConnectionWatchdog(): void {
     this.clearConnectionWatchdog();
-    const keepaliveSec = this.lastSettings?.keepalive ?? 60;
+    const keepaliveSec = this.lastSettings?.keepalive ?? 30;
     const timeoutMs = keepaliveSec * 1500; // 1.5× keepalive, mirrors broker's own threshold
     this.connectionWatchdogTimer = setInterval(() => {
       if (this.status !== 'connected' || !this.client || this.lastPacketReceivedAt === 0) return;
@@ -355,8 +355,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       this.startConnectionWatchdog();
       this.emit('clientId', this.clientIdStr);
       // LetsMesh/Colorado brokers (v1_ username) are publish-only — skip subscribe.
-      const isLetsMeshBroker = /^v1_[0-9A-Fa-f]{64}$/i.test(settings.username ?? '');
-      if (!isLetsMeshBroker) {
+      if (!isV1Username) {
         // Add small delay before resubscribing to allow broker to stabilize
         setTimeout(() => {
           if (this.status !== 'connected' || !this.client) return;
@@ -575,6 +574,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     route?: string;
     payloadLen?: number;
     hash?: string;
+    direction?: 'rx' | 'tx';
   }): void {
     if (!this.client || this.status !== 'connected' || !this.lastSettings) {
       throw new Error('MeshCore MQTT not connected');
@@ -594,7 +594,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       origin: args.origin.slice(0, 200),
       timestamp: now.toISOString(),
       type: 'PACKET',
-      direction: 'rx',
+      direction: args.direction ?? 'rx',
       time,
       date,
       ...(args.len != null ? { len: String(args.len) } : {}),
