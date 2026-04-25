@@ -1828,7 +1828,16 @@ export default function ConnectionPanel({
               {activeMqttSettings.server}:{activeMqttSettings.port}
             </span>
           </div>
-          {state.myNodeNum > 0 && (
+          {protocol === 'meshcore' &&
+            /^v1_[0-9A-Fa-f]{64}$/i.test(activeMqttSettings.username ?? '') && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted">From</span>
+                <span className="font-mono text-xs text-gray-200">
+                  {activeMqttSettings.username?.slice(3)}
+                </span>
+              </div>
+            )}
+          {protocol === 'meshtastic' && state.myNodeNum > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-muted">From</span>
               <span className="font-mono text-xs text-gray-200">
