@@ -15,6 +15,7 @@ Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/r
 **Colors:** Use Tailwind CSS utility classes (e.g., `text-green-400`, `bg-slate-700`). Custom theme colors via CSS custom properties in `styles.css` (`--color-brand-green`, etc.). Avoid inline hex colors in JSX.
 
 **Code style and testing:** [Code style & standards](CONTRIBUTING.md#code-style--standards) and [Testing protocols](CONTRIBUTING.md#testing-protocols) in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### Layout map
 
 Path alias `@/*` → `src/*` (see `tsconfig.json`).
