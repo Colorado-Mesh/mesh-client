@@ -554,6 +554,7 @@ export default function MapPanel({
 }: Props) {
   const homeNode = nodes.get(myNodeNum) ?? null;
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
+  const excludeMeshcoreRepeaterInMeshtastic = protocol === 'meshtastic';
 
   const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
@@ -687,6 +688,9 @@ export default function MapPanel({
 
     return Array.from(nodes.values()).filter((n) => {
       let rejectReason: string | null = null;
+      if (!rejectReason && excludeMeshcoreRepeaterInMeshtastic && n.hw_model === 'Repeater') {
+        rejectReason = 'meshcore_repeater_filtered_for_meshtastic';
+      }
       if (
         n.latitude == null ||
         n.longitude == null ||
@@ -708,7 +712,7 @@ export default function MapPanel({
       }
       return rejectReason === null;
     });
-  }, [nodes, myNodeNum, locationFilter]);
+  }, [nodes, myNodeNum, locationFilter, excludeMeshcoreRepeaterInMeshtastic]);
 
   const nodesToRender = useMemo(() => {
     const idSet = new Set(nodesWithPosition.map((n) => n.node_id));
@@ -717,6 +721,7 @@ export default function MapPanel({
       if (idSet.has(nodeId)) continue;
       const node = nodes.get(nodeId);
       if (
+        (excludeMeshcoreRepeaterInMeshtastic && node?.hw_model === 'Repeater') ||
         node?.latitude == null ||
         node.longitude == null ||
         !(Math.abs(node.latitude) > 0.0001 || Math.abs(node.longitude) > 0.0001)
@@ -735,7 +740,7 @@ export default function MapPanel({
       if (shouldReplace) byPos.set(k, n);
     }
     return Array.from(byPos.values());
-  }, [nodesWithPosition, routingNodeIds, nodes]);
+  }, [nodesWithPosition, routingNodeIds, nodes, excludeMeshcoreRepeaterInMeshtastic]);
 
   const nodesWithStatus = useMemo(
     () =>

@@ -113,6 +113,7 @@ describe('MapPanel accessibility', () => {
         locationFilter={defaultFilter}
         ourPosition={null}
         onLocateMe={vi.fn().mockResolvedValue(null)}
+        protocol="meshcore"
       />,
     );
 
@@ -127,6 +128,57 @@ describe('MapPanel accessibility', () => {
     ).toBe(true);
     // Non-repeater marker should not have the badge
     expect(decodedSvgs.some((svg) => !svg.includes('scale(0.4167)'))).toBe(true);
+  });
+
+  it('filters meshcore repeater contacts from meshtastic map view', () => {
+    leafletIconMock.mockClear();
+    const nowSec = Math.floor(Date.now() / 1000);
+    const nodes = new Map([
+      [
+        101,
+        {
+          node_id: 101,
+          long_name: 'MeshCore Repeater',
+          short_name: 'MCRP',
+          hw_model: 'Repeater',
+          snr: 0,
+          battery: 0,
+          last_heard: nowSec,
+          latitude: 40.2,
+          longitude: -105.1,
+        },
+      ],
+      [
+        202,
+        {
+          node_id: 202,
+          long_name: 'Meshtastic Node',
+          short_name: 'MTST',
+          hw_model: 'T-Echo',
+          snr: 0,
+          battery: 0,
+          last_heard: nowSec,
+          latitude: 40.21,
+          longitude: -105.11,
+        },
+      ],
+    ]);
+
+    render(
+      <MapPanel
+        nodes={nodes}
+        myNodeNum={202}
+        locationFilter={defaultFilter}
+        ourPosition={null}
+        onLocateMe={vi.fn().mockResolvedValue(null)}
+        protocol="meshtastic"
+      />,
+    );
+
+    const iconCalls = leafletIconMock.mock.calls.map((call) => call[0] as { iconUrl?: string });
+    const markerIcons = iconCalls.filter((call) => typeof call.iconUrl === 'string');
+    const decodedSvgs = markerIcons.map((call) => decodeURIComponent(call.iconUrl!));
+    expect(decodedSvgs.some((svg) => svg.includes('M1 9l2 2c4.97'))).toBe(false);
   });
 
   it('root element has h-full so Leaflet container receives a non-zero height', () => {
