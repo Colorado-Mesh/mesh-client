@@ -976,57 +976,17 @@ export default function MapPanel({
     return counts;
   }, [nodesToRender, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
 
-  const iconCreateFunction = useCallback(
-    (cluster: any) => {
-      const count = cluster.getChildCount();
-      let size = 40;
-      if (count > 10) size = 50;
-      if (count > 100) size = 60;
-
-      let haloColor = '';
-      let haloWidth = 0;
-      if (anomalyHalosEnabled || congestionHalosEnabled) {
-        const markers = cluster.getAllChildMarkers();
-        for (const marker of markers) {
-          const nodeData = marker.options?.nodeData;
-          if (!nodeData) continue;
-          if (anomalyHalosEnabled && nodeData.anomaly) {
-            const severity = nodeData.anomaly.severity;
-            if (severity === 'error') {
-              haloColor = '#ef4444';
-              haloWidth = 6;
-              break;
-            }
-            if (severity === 'warning' && haloColor !== '#ef4444') {
-              haloColor = '#f59e0b';
-              haloWidth = 5;
-            }
-            if (severity === 'info' && !haloColor) {
-              haloColor = '#60a5fa';
-              haloWidth = 4;
-            }
-          } else if (congestionHalosEnabled && nodeData.channelUtilization != null) {
-            const cu = nodeData.channelUtilization;
-            const cuColor = getCUColor(cu);
-            if (!haloColor) {
-              haloColor = cuColor;
-              haloWidth = cu >= 50 ? 5 : cu >= 30 ? 4 : 3;
-            }
-          }
-        }
-      }
-
-      const haloStyle = haloColor
-        ? `box-shadow: 0 0 0 ${haloWidth}px ${haloColor}, 0 0 0 ${haloWidth + 4}px rgba(0,0,0,0.3);`
-        : '';
-      return L.divIcon({
-        html: `<div style="background:#86efac;border:3px solid #fff;border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:#064e3b;${haloStyle}">${count}</div>`,
-        className: '',
-        iconSize: [size, size],
-      });
-    },
-    [anomalyHalosEnabled, congestionHalosEnabled],
-  );
+  const iconCreateFunction = useCallback((cluster: any) => {
+    const count = cluster.getChildCount();
+    let size = 40;
+    if (count > 10) size = 50;
+    if (count > 100) size = 60;
+    return L.divIcon({
+      html: `<div style="background:rgba(134,239,172,0.2);border:3px solid #86efac;border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"><span style="display:inline-flex;align-items:center;justify-content:center;padding:0 4px;min-width:18px;height:18px;border-radius:9999px;background:#86efac;color:#020617;font-size:12px;font-weight:800;line-height:1;opacity:1;">${count}</span></div>`,
+      className: '',
+      iconSize: [size, size],
+    });
+  }, []);
 
   return (
     <div
