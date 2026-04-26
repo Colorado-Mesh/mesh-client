@@ -1,0 +1,2273 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../diagnostics/">
+      
+      
+        <link rel="next" href="../license/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Troubleshooting - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#troubleshooting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Troubleshooting
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../diagnostics/" class="md-tabs__link">
+          
+  
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-meshtastic-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pnpm-install-fails-on-native-module-compilation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm install fails on native module compilation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-visual-studio-installation-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Visual Studio installation to use"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Python installation to use" (e.g. when building @serialport/bindings-cpp)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-connection-fails-with-connection-attempt-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE connection fails with "Connection attempt failed"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-known-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE known issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#serial-port-not-detected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial port not detected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-serial-serial_io_handlercc147-failed-to-open-serial-port-file_error_access_denied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux: Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos-file-is-damaged-and-cannot-be-opened" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS: File is damaged and cannot be opened
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-crashes-on-launch-macos-distributable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App crashes on launch (macOS distributable)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-shows-disconnected-but-device-is-still-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App shows "disconnected" but device is still on
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connection-or-transport-issues-use-log-analyze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection or transport issues — use Log Analyze
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permission-messages-in-the-console" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permission messages in the console
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pnpm-run-distmac-fails-with-gh_token-cannot-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm run dist:mac fails with GH_TOKEN / "Cannot cleanup"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dep0190-when-running-electron-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0190] when running electron-builder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#duplicate-dependency-references-during-dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        duplicate dependency references during dist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dep0169-urlparse-deprecation-warning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0169] / url.parse() deprecation warning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-native-module-failed-to-load-dialog-on-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "A native module failed to load" dialog on startup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#distwin-fails-with-space-in-the-path-or-eperm-on-native-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dist:win fails with "space in the path" or EPERM on native modules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-directory-is-not-writable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database directory is not writable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-wifi-connection-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP / WiFi connection issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connection-lost-after-n-reconnect-attempts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT: "Connection lost after N reconnect attempts"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-subscribe-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT: "Subscribe failed"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-keeps-disconnecting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT keeps disconnecting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connected-but-no-messages-from-other-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT connected but no messages from other nodes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-expired-on-letsmeshcolorado-mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Token expired" on LetsMesh/Colorado Mesh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connection-refused-or-broker-unreachable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT "Connection refused" or broker unreachable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-auto-reconnect-no-previously-connected-ble-device-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE auto-reconnect: "No previously connected BLE device found"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gps-location-unavailable-or-stuck-on-the-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPS "Location unavailable" or stuck on the map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#something-went-wrong-blank-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Something went wrong" blank screen
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos-representedobject-is-not-a-weakptrtoelectronmenumodelasnsobject-when-typing-in-chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS: "representedObject is not a WeakPtrToElectronMenuModelAsNSObject" when typing in chat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#update-check-fails-footer-update-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update check fails / footer update status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map-tab-without-internet-offline-no-wan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Map tab without internet (offline / no WAN)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifying-offline-behavior-manual-qa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verifying offline behavior (manual QA)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics-panel-restored-from-last-session-banner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics panel: "restored from last session" banner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics-look-stale-or-overcrowded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics look stale or overcrowded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#no-signal-bars-on-some-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No signal bars on some nodes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-get-telemetry-returns-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: "Get Telemetry" returns timeout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-get-neighbors-button-not-visible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: "Get Neighbors" button not visible
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-cannot-connect-via-bluetooth-usb-or-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Cannot connect via Bluetooth, USB, or HTTP
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-trace-route-or-ping-trace-times-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Trace Route or Ping trace times out
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cant-see-rf-packets-on-custom-mqtt-broker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can't see RF packets on custom MQTT broker
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discord
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Website
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pnpm-install-fails-on-native-module-compilation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm install fails on native module compilation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-visual-studio-installation-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Visual Studio installation to use"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Python installation to use" (e.g. when building @serialport/bindings-cpp)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-connection-fails-with-connection-attempt-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE connection fails with "Connection attempt failed"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-known-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE known issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#serial-port-not-detected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial port not detected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-serial-serial_io_handlercc147-failed-to-open-serial-port-file_error_access_denied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux: Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos-file-is-damaged-and-cannot-be-opened" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS: File is damaged and cannot be opened
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-crashes-on-launch-macos-distributable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App crashes on launch (macOS distributable)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-shows-disconnected-but-device-is-still-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App shows "disconnected" but device is still on
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connection-or-transport-issues-use-log-analyze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection or transport issues — use Log Analyze
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permission-messages-in-the-console" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permission messages in the console
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pnpm-run-distmac-fails-with-gh_token-cannot-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm run dist:mac fails with GH_TOKEN / "Cannot cleanup"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dep0190-when-running-electron-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0190] when running electron-builder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#duplicate-dependency-references-during-dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        duplicate dependency references during dist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dep0169-urlparse-deprecation-warning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0169] / url.parse() deprecation warning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-native-module-failed-to-load-dialog-on-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "A native module failed to load" dialog on startup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#distwin-fails-with-space-in-the-path-or-eperm-on-native-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dist:win fails with "space in the path" or EPERM on native modules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-directory-is-not-writable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database directory is not writable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-wifi-connection-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP / WiFi connection issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connection-lost-after-n-reconnect-attempts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT: "Connection lost after N reconnect attempts"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-subscribe-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT: "Subscribe failed"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-keeps-disconnecting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT keeps disconnecting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connected-but-no-messages-from-other-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT connected but no messages from other nodes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-expired-on-letsmeshcolorado-mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Token expired" on LetsMesh/Colorado Mesh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connection-refused-or-broker-unreachable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT "Connection refused" or broker unreachable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-auto-reconnect-no-previously-connected-ble-device-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE auto-reconnect: "No previously connected BLE device found"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gps-location-unavailable-or-stuck-on-the-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPS "Location unavailable" or stuck on the map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#something-went-wrong-blank-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Something went wrong" blank screen
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos-representedobject-is-not-a-weakptrtoelectronmenumodelasnsobject-when-typing-in-chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS: "representedObject is not a WeakPtrToElectronMenuModelAsNSObject" when typing in chat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#update-check-fails-footer-update-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update check fails / footer update status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map-tab-without-internet-offline-no-wan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Map tab without internet (offline / no WAN)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifying-offline-behavior-manual-qa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verifying offline behavior (manual QA)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics-panel-restored-from-last-session-banner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics panel: "restored from last session" banner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics-look-stale-or-overcrowded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics look stale or overcrowded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#no-signal-bars-on-some-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No signal bars on some nodes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-get-telemetry-returns-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: "Get Telemetry" returns timeout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-get-neighbors-button-not-visible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: "Get Neighbors" button not visible
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-cannot-connect-via-bluetooth-usb-or-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Cannot connect via Bluetooth, USB, or HTTP
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-trace-route-or-ping-trace-times-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Trace Route or Ping trace times out
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cant-see-rf-packets-on-custom-mqtt-broker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can't see RF packets on custom MQTT broker
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="troubleshooting">Troubleshooting</h1>
+<h3 id="pnpm-install-fails-on-native-module-compilation"><code>pnpm install</code> fails on native module compilation</h3>
+<p>See <a href="../development-environment/">development-environment.md</a> for OS-specific prerequisite installation and troubleshooting.</p>
+<h3 id="windows-could-not-find-any-visual-studio-installation-to-use">Windows: "Could not find any Visual Studio installation to use"</h3>
+<p>See <a href="../development-environment/#windows">development-environment.md</a> for required build tools and the full recovery steps.</p>
+<h3 id="windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp">Windows: "Could not find any Python installation to use" (e.g. when building <code>@serialport/bindings-cpp</code>)</h3>
+<p>See <a href="../development-environment/#windows">development-environment.md</a> for Python setup and npm/node-gyp troubleshooting.</p>
+<h3 id="ble-connection-fails-with-connection-attempt-failed">BLE connection fails with "Connection attempt failed"</h3>
+<ul>
+<li>Make sure your device has Bluetooth enabled and is in pairing mode</li>
+<li>On macOS: check <strong>System Settings &gt; Privacy &amp; Security &gt; Bluetooth</strong></li>
+<li>Try disconnecting fully first, then reconnecting</li>
+<li>If the device picker never appears, restart the app</li>
+</ul>
+<h3 id="ble-known-issues">BLE known issues</h3>
+<ul>
+<li><strong>Bluetooth adapter not found</strong> — ensure Bluetooth is enabled at the OS level. On Linux: <code>systemctl status bluetooth</code> and <code>rfkill list</code>. On macOS: check <strong>System Settings &gt; Bluetooth</strong>. On Windows: <strong>Settings → Bluetooth &amp; devices</strong>.</li>
+<li><strong>Device not discovered</strong> — make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.</li>
+<li>If BLE is unreliable, prefer Serial (USB) or TCP/HTTP for a stable connection.</li>
+</ul>
+<p><strong>Windows-specific:</strong></p>
+<ul>
+<li>Before connecting to a MeshCore device over BLE, pair it first in <strong>Settings → Bluetooth &amp; devices → Add device</strong>. Without pairing, the connection appears to succeed but no data is exchanged.</li>
+</ul>
+<p><strong>Linux-specific:</strong></p>
+<ul>
+<li>The app uses Web Bluetooth (Chromium's built-in BLE API). You still need a working Bluetooth stack (<code>systemctl status bluetooth</code>).</li>
+<li>Linux BLE uses the in-app Bluetooth picker (triggered from a button click); if no picker appears, restart the app and try Connect again.</li>
+<li>If the Bluetooth adapter isn't detected, check: <code>systemctl status bluetooth</code> and <code>rfkill list</code>.</li>
+<li><strong>MeshCore:</strong> After you pick a radio, the app checks <code>bluetoothctl info &lt;MAC&gt;</code>. If the device is <strong>not</strong> paired at the OS level, you are prompted for the <strong>PIN shown on the device</strong> and pairing runs via <strong><code>bluetooth-pair</code></strong> before Web Bluetooth finishes connecting. Meshtastic does not use this gate in the same way (it may use PIN <code>123456</code> on the first pairing prompt from Chromium).</li>
+<li>If device pairing fails with "Connection attempt failed", try the <strong>"Remove &amp; Re-pair Device"</strong> button in the app, or manually remove via <code>bluetoothctl</code>:
+  <code>bash
+  bluetoothctl
+  # Inside bluetoothctl:
+  remove XX:XX:XX:XX:XX:XX # Replace with your device MAC
+  # Then re-pair from the app</code></li>
+<li>For <strong>Meshtastic</strong> devices, the first Chromium pairing attempt may use PIN <code>123456</code>. For <strong>MeshCore</strong>, always use the PIN shown on the radio (and the pre-connect prompt when BlueZ reports not paired).</li>
+<li>If devices won't pair or connect, power-cycle Bluetooth:
+  <code>bash
+  bluetoothctl power off
+  bluetoothctl power on</code></li>
+<li>MeshCore devices must be in Bluetooth Companion mode. If you still see bonds without a PIN, remove the device in <code>bluetoothctl</code> or use <strong>Remove &amp; Re-pair Device</strong>, then connect again.</li>
+</ul>
+<h3 id="serial-port-not-detected">Serial port not detected</h3>
+<p>See <a href="../development-environment/">development-environment.md</a> for OS-specific serial setup and driver guidance.</p>
+<h3 id="linux-serial-serial_io_handlercc147-failed-to-open-serial-port-file_error_access_denied">Linux: <code>Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED</code></h3>
+<p>See <a href="../development-environment/#linux">development-environment.md#linux</a> for serial permission recovery steps.</p>
+<h3 id="macos-file-is-damaged-and-cannot-be-opened">macOS: File is damaged and cannot be opened</h3>
+<p><strong>Cause:</strong> macOS tags downloads with the <strong><code>com.apple.quarantine</code></strong> extended attribute. For apps that are <strong>not signed with a Developer ID</strong> and <strong>not notarized</strong>, Gatekeeper may show <strong>"File is damaged and cannot be opened"</strong> (or <strong>"Mesh-client" is damaged and can't be opened</strong>) instead of the usual unidentified-developer prompt. This is a <strong>security / quarantine</strong> behavior and is <strong>common on Apple silicon</strong> for community-built Electron binaries.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Open <strong>System Settings → Privacy &amp; Security</strong> and scroll to the bottom. If you see "Mesh-client was blocked from use", click <strong>Allow</strong> to run the app.</li>
+<li>If you don't see the Mesh-client entry in Privacy &amp; Security, or the app still won't open after clicking Allow, strip the quarantine attribute — adjust the path if the app is still under <strong>Downloads</strong> or another folder:</li>
+</ol>
+<pre><code class="language-bash">xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
+</code></pre>
+<p>After running xattr, check Privacy &amp; Security again (scroll to the bottom) — the entry should now appear with an <strong>Allow</strong> button.</p>
+<p><strong>Right-click → Open</strong> on first launch can also help in some cases. Background and discussion: <a href="https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730">jeffvli/feishin#104 (comment)</a>.</p>
+<h3 id="app-crashes-on-launch-macos-distributable">App crashes on launch (macOS distributable)</h3>
+<ul>
+<li><strong>macOS 26 (Tahoe) + EXC_BREAKPOINT at launch</strong>: electron-builder ad-hoc signing can crash during ElectronMain/V8 init before any app code runs. This repo sets <code>mac.identity: null</code> in <code>electron-builder.yml</code> so the packaged app is unsigned and avoids that re-sign path; first open may require <strong>Right-click → Open</strong> or clearing quarantine (<a href="#macos-file-is-damaged-and-cannot-be-opened">macOS: File is damaged…</a> above). For notarized releases, set a real Developer ID in <code>mac.identity</code> and retest on macOS 26. See <a href="https://github.com/electron/electron/issues/49522">electron#49522</a> and <a href="https://github.com/electron-userland/electron-builder/issues/9396">electron-builder#9396</a>.</li>
+<li>This may also be a native module signing issue — try rebuilding: <code>pnpm run dist:mac</code></li>
+<li>If building from source: make sure <code>pnpm install</code> completed without errors</li>
+</ul>
+<h3 id="app-shows-disconnected-but-device-is-still-on">App shows "disconnected" but device is still on</h3>
+<ul>
+<li>The Bluetooth connection can drop silently — click Disconnect, then Connect again</li>
+<li>For serial: the USB cable may have been bumped — reconnect</li>
+</ul>
+<h3 id="connection-or-transport-issues-use-log-analyze">Connection or transport issues — use Log <strong>Analyze</strong></h3>
+<p>Open the <strong>Log</strong> panel (right rail), enable <strong>debug</strong> if needed, reproduce the problem, then click <strong>Analyze</strong>. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists <strong>suggested next steps</strong>. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is <strong>heuristic</strong> — treat recommendations as hints, not guarantees.</p>
+<h3 id="permission-messages-in-the-console">Permission messages in the console</h3>
+<p><code>[permissions] checkHandler: media → denied</code> and <code>web-app-installation → denied</code> are expected. The app only uses <strong>serial</strong> and <strong>geolocation</strong> — media and web-app-installation are intentionally denied.</p>
+<h3 id="pnpm-run-distmac-fails-with-gh_token-cannot-cleanup"><code>pnpm run dist:mac</code> fails with <code>GH_TOKEN</code> / "Cannot cleanup"</h3>
+<p>electron-builder publishes to GitHub when it thinks it's in CI. Local builds use <code>--publish never</code> so artifacts land in <code>release/</code> without a token. Tag releases use <code>pnpm run dist:mac:publish</code> (and <code>:linux:publish</code> / <code>:win:publish</code>) with <code>GH_TOKEN</code> set — see <code>.github/workflows/release.yaml</code>.</p>
+<h3 id="dep0190-when-running-electron-builder"><code>[DEP0190]</code> when running electron-builder</h3>
+<p>Node deprecates <code>spawn(..., { shell: true })</code> with an args array. This project carries the packaging workaround via pnpm <code>patchedDependencies</code> on transitive packages used by the Electron build path. Re-run <code>pnpm install</code> if you upgrade <code>electron-builder</code> or its transitive packaging deps and the warning returns.</p>
+<h3 id="duplicate-dependency-references-during-dist"><code>duplicate dependency references</code> during dist</h3>
+<p>npm's JSON tree lists hoisted packages with many duplicate refs (one per edge). That's expected and not something you need to fix. The patched packaging dependency path keeps that summary at <strong>debug</strong> only so normal <code>dist:*</code> runs stay quiet. To see it: <code>DEBUG=electron-builder pnpm dlx electron-builder --mac</code> (or your usual dist command).</p>
+<h3 id="dep0169-urlparse-deprecation-warning"><code>[DEP0169]</code> / <code>url.parse()</code> deprecation warning</h3>
+<p>The app uses npm package overrides to force <code>follow-redirects</code> and <code>cacheable-request</code> onto versions that use the WHATWG URL API, which removes this warning. To trace the source of any deprecation, run:</p>
+<pre><code class="language-bash">pnpm run trace-deprecation
+</code></pre>
+<h3 id="a-native-module-failed-to-load-dialog-on-startup">"A native module failed to load" dialog on startup</h3>
+<p><strong>Cause</strong>: <code>@stoprocent/noble</code> (or <code>@serialport/bindings-cpp</code>) was compiled for a different Electron ABI — common after an Electron or Node version change.</p>
+<p><strong>Fix</strong>: Run <code>pnpm install</code> (the postinstall script rebuilds native modules for the correct ABI automatically).</p>
+<ul>
+<li>If you still see dlopen errors after switching machines or OSes, delete <code>node_modules</code> and run a clean <code>pnpm install</code>.</li>
+<li><strong>Windows</strong>: Also ensure the <a href="https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist">Visual C++ Redistributable</a> is installed.</li>
+</ul>
+<h3 id="distwin-fails-with-space-in-the-path-or-eperm-on-native-modules"><code>dist:win</code> fails with "space in the path" or <code>EPERM</code> on native modules</h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li><code>Attempting to build a module with a space in the path</code> during <code>pnpm run dist:win</code> (or <code>pnpm run rebuild</code>).</li>
+<li><code>EPERM: operation not permitted</code> when the rebuild tries to replace a locked <code>.node</code> file.</li>
+</ul>
+<p><strong>Cause</strong></p>
+<ol>
+<li><strong>Spaces in the project path</strong> — node-gyp is unreliable when the repo lives under a path with spaces (e.g. <code>C:\Users\Joey Stanford\mesh-client</code>). This can surface as "Attempting to build a module with a space in the path", "Could not find any Visual Studio installation to use", or EPERM. See <a href="https://github.com/nodejs/node-gyp/issues/65#issuecomment-368820565">node-gyp#65</a>.</li>
+<li><strong>EPERM on unlink</strong> — Something on Windows still has the <code>.node</code> file open (another <code>node</code>/<code>electron</code> process, antivirus/Windows Defender scanning the file, or a stuck handle).</li>
+</ol>
+<p><strong>Fix</strong></p>
+<ol>
+<li><strong>Use a path without spaces</strong> (strongly recommended): clone or copy the repo to e.g. <code>C:\dev\mesh-client</code>, then <code>pnpm install</code> and <code>pnpm run dist:win</code> from there.</li>
+<li><strong>Clear the lock before rebuild</strong>: quit any running Mesh-Client/Electron dev instances, then delete the affected <code>build</code> folder under <code>node_modules</code> and retry.</li>
+<li><strong>Rebuild then dist</strong>: <code>pnpm run rebuild</code> — if that succeeds, run <code>pnpm run dist:win</code>.</li>
+</ol>
+<p>CI builds avoid both issues by using short paths and clean agents; local Windows builds need the same constraints.</p>
+<h3 id="database-directory-is-not-writable">Database directory is not writable</h3>
+<p><strong>Error</strong>: <code>"Database directory is not writable: &lt;path&gt;"</code></p>
+<p><strong>Cause</strong>: File permissions on the app's <code>userData</code> directory are too restrictive.</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li><strong>Mac/Linux</strong>: <code>chmod 755 ~/Library/Application\ Support/mesh-client</code> (or <code>~/.config/mesh-client</code> on Linux)</li>
+<li><strong>Windows</strong>: Right-click <code>%APPDATA%\mesh-client</code> → Properties → Security → grant your user Full Control</li>
+</ul>
+<h3 id="http-wifi-connection-issues">HTTP / WiFi connection issues</h3>
+<p><strong><code>meshtastic.local</code> (or any <code>.local</code> hostname) not found on Windows:</strong></p>
+<p>Windows does not have built-in mDNS resolution. <code>.local</code> hostnames require <strong>Bonjour</strong> (installed with iTunes or Apple Devices). Install either:</p>
+<ul>
+<li><a href="https://www.apple.com/itunes/">iTunes</a> — includes Bonjour automatically</li>
+<li><a href="https://support.apple.com/en-us/search?query=Bonjour%20Print%20Services%20for%20Windows">Bonjour Print Services for Windows</a> — standalone Bonjour installer</li>
+</ul>
+<p>Alternatively, enter the device's <strong>IP address</strong> directly instead of its <code>.local</code> hostname.</p>
+<blockquote>
+<p>A yellow warning is shown below the address input on Windows as a reminder.</p>
+</blockquote>
+<p><strong>IPv6 address format:</strong></p>
+<p>Bare IPv6 addresses (e.g. <code>fe80::1</code>) must be wrapped in brackets when entered in the HTTP address field: <code>[fe80::1]</code>. The app normalises bare addresses automatically, but entering <code>[fe80::1]:443</code> (with port) is the most reliable form.</p>
+<h3 id="mqtt-connection-lost-after-n-reconnect-attempts">MQTT: "Connection lost after N reconnect attempts"</h3>
+<p><strong>Cause</strong>: Broker unreachable, bad credentials, or wrong port.</p>
+<p><strong>Fix</strong>: Verify the broker URL, port (default 1883, or 8883 for TLS), and username/password. Check that your firewall allows outbound connections on the broker port.</p>
+<h3 id="mqtt-subscribe-failed">MQTT: "Subscribe failed"</h3>
+<p><strong>Cause</strong>: Topic permission denied on the broker, or wildcards not allowed by the broker ACL.</p>
+<p><strong>Fix</strong>: Confirm the broker's ACL allows your client to subscribe to the configured topic prefix.</p>
+<h3 id="mqtt-keeps-disconnecting">MQTT keeps disconnecting</h3>
+<p><strong>Cause</strong>: Wireless interference, broker downtime, or token issues (LetsMesh/Colorado Mesh).</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>Check your WiFi/signal strength</li>
+<li>Verify the broker is online</li>
+<li>For LetsMesh/Colorado Mesh: re-import your MeshCore identity to refresh the token</li>
+<li>Enable debug logs to see the disconnect reason</li>
+</ul>
+<h3 id="mqtt-connected-but-no-messages-from-other-nodes">MQTT connected but no messages from other nodes</h3>
+<p><strong>Cause</strong>: LetsMesh and Colorado Mesh are publish-only brokers — you can send packets to the mesh but won't receive other users' traffic over MQTT. The connection is real, but incoming messages are limited.</p>
+<p><strong>Fix</strong>: Expected behavior for public brokers. For two-way MQTT, use a different broker or connect via BLE/Serial.</p>
+<h3 id="token-expired-on-letsmeshcolorado-mesh">"Token expired" on LetsMesh/Colorado Mesh</h3>
+<p><strong>Cause</strong>: JWT tokens expire after 1 hour.</p>
+<p><strong>Fix</strong>: Re-import your MeshCore config JSON in the Radio tab, or paste your v1_ public key in the MQTT username field to regenerate a token.</p>
+<h3 id="mqtt-connection-refused-or-broker-unreachable">MQTT "Connection refused" or broker unreachable</h3>
+<p><strong>Cause</strong>: Wrong broker URL, port, or firewall blocking the connection.</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>Verify the server URL and port match your broker's settings</li>
+<li>Check that port 1883 (or 8883/443 for TLS/WebSocket) is allowed through your firewall</li>
+<li>For WebSocket brokers (port 443), ensure "Use WebSocket" is enabled in the MQTT settings</li>
+</ul>
+<h3 id="ble-auto-reconnect-no-previously-connected-ble-device-found">BLE auto-reconnect: "No previously connected BLE device found"</h3>
+<p><strong>Cause</strong>: The reconnect card appeared, but the browser lost the cached device handle — for example, the app was fully quit and relaunched.</p>
+<p><strong>Fix</strong>: Click <strong>Forget this device</strong> on the reconnect card and pair fresh using the Bluetooth picker.</p>
+<h3 id="gps-location-unavailable-or-stuck-on-the-map">GPS "Location unavailable" or stuck on the map</h3>
+<p><strong>Cause</strong>: Browser geolocation was denied, or the device has no GPS fix yet.</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>Grant location permission when prompted by the app.</li>
+<li>Or set coordinates manually via the <strong>Radio</strong> tab → Fixed Position.</li>
+<li>Note: The IP-geolocation fallback (ipwho.is) provides city-level accuracy only — not suitable for position broadcasting. If the service is unreachable, "Location unavailable" is shown.</li>
+</ul>
+<h3 id="something-went-wrong-blank-screen">"Something went wrong" blank screen</h3>
+<p><strong>Cause</strong>: An unhandled React render error, usually from a corrupt or unexpected database value.</p>
+<p><strong>Fix</strong>: Open the <strong>App</strong> tab → <strong>Clear Database</strong>, then restart. If the window never loads at all, delete the SQLite file manually:</p>
+<ul>
+<li><strong>Mac</strong>: <code>~/Library/Application Support/mesh-client/</code></li>
+<li><strong>Windows</strong>: <code>%APPDATA%\mesh-client\</code></li>
+<li><strong>Linux</strong>: <code>~/.config/mesh-client/</code></li>
+</ul>
+<h3 id="macos-representedobject-is-not-a-weakptrtoelectronmenumodelasnsobject-when-typing-in-chat">macOS: "representedObject is not a WeakPtrToElectronMenuModelAsNSObject" when typing in chat</h3>
+<p><strong>Cause</strong>: Known Electron/Chromium quirk on macOS when the first responder is a text field (e.g. the chat input). The native menu bridge logs this; it does not affect behavior.</p>
+<p><strong>Fix</strong>: None required — safe to ignore. Copy/paste and other edit actions still work.</p>
+<h3 id="update-check-fails-footer-update-status">Update check fails / footer update status</h3>
+<p>The app functions fully offline — this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached. The footer shows <strong>Update error</strong> when a check fails; use <strong>Check for updates</strong> in the app menu or retry from the footer when applicable.</p>
+<h3 id="map-tab-without-internet-offline-no-wan">Map tab without internet (offline / no WAN)</h3>
+<p><strong>Basemap tiles:</strong> The map background uses <strong>OpenStreetMap</strong> raster tiles loaded over HTTPS. The <code>TileLayer</code> is defined in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx"><code>MapPanel.tsx</code></a>. <strong>Without internet access, new tiles cannot be fetched</strong>, so the basemap may look <strong>blank, gray, or incomplete</strong>, or show only <strong>tiles previously cached</strong> by the embedded browser (caching is best-effort and not guaranteed).</p>
+<p><strong>Overlays:</strong> <strong>Node markers, polylines, position trails, and other vector layers</strong> are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still <strong>render on top of a missing or partial basemap</strong>.</p>
+<p><strong>Your position offline:</strong> Use <strong>device GPS</strong> when available, <strong>Fixed Position</strong> on the <strong>Radio</strong> tab, or <strong>static coordinates</strong> in app/GPS settings. See <strong>GPS "Location unavailable" or stuck on the map</strong> above for IP-based fallbacks and manual entry. Positions heard over the mesh do not require internet.</p>
+<h3 id="verifying-offline-behavior-manual-qa">Verifying offline behavior (manual QA)</h3>
+<p>With <strong>Wi‑Fi off</strong> or <strong>airplane mode</strong> on, using a <strong>packaged</strong> build if possible:</p>
+<ol>
+<li>Confirm the app <strong>window loads</strong> and core tabs work; connect via <strong>USB serial</strong> or <strong>BLE</strong> to a local radio if you need RF features.</li>
+<li>Open the <strong>Map</strong> tab: expect <strong>missing or stale basemap tiles</strong> as described above; <strong>markers and trails</strong> may still appear when position data exists.</li>
+<li>A non-fatal <strong>update check</strong> message in the console is expected without WAN; see <strong>Update check fails / footer update status</strong> above.</li>
+</ol>
+<h3 id="diagnostics-panel-restored-from-last-session-banner">Diagnostics panel: "restored from last session" banner</h3>
+<p><strong>Cause</strong>: Diagnostic rows (routing + RF) are snapshotted to <code>localStorage</code> so a restart doesn't wipe the table.</p>
+<p><strong>Fix</strong>: This is expected — rows refresh as new packets arrive. Use <strong>Stop restoring on next launch</strong> on the banner to clear the snapshot, or use <strong>App</strong> tab → <strong>Reset Diagnostics</strong> to clear in-memory rows and related state.</p>
+<h3 id="diagnostics-look-stale-or-overcrowded">Diagnostics look stale or overcrowded</h3>
+<p><strong>Cause</strong>: RF rows age out faster (default 1 h) than routing rows (default 24 h); very old rows are pruned by timestamp.</p>
+<p><strong>Fix</strong>: In <strong>Network Diagnostics</strong> → Display Settings, adjust <strong>diagnostic row max age</strong> (hours). Or reset diagnostics from the App tab and let the mesh repopulate.</p>
+<h3 id="no-signal-bars-on-some-nodes">No signal bars on some nodes</h3>
+<p><strong>Cause</strong>: Signal strength is only available for <strong>direct (0-hop) RF</strong> neighbors. Multi-hop and MQTT-heard nodes have no client-side signal strength.</p>
+<p><strong>Fix</strong>: Not a bug — use SNR/last heard and routing diagnostics instead for those paths.</p>
+<h3 id="meshcore-get-telemetry-returns-timeout">MeshCore: "Get Telemetry" returns timeout</h3>
+<p><strong>Cause</strong>: The remote node has no environment sensors, or the request timed out before the node responded.</p>
+<p><strong>Fix</strong>: Not all nodes support environment telemetry. The error is shown inline in the node detail modal and is safe to ignore.</p>
+<h3 id="meshcore-get-neighbors-button-not-visible">MeshCore: "Get Neighbors" button not visible</h3>
+<p><strong>Cause</strong>: The button is only shown for <strong>Repeater</strong>-type contacts (contact type 2). Chat and Room contacts do not support the neighbor query command.</p>
+<p><strong>Fix</strong>: Open the node detail modal for a Repeater node (shown as "Repeater" in the hardware model field).</p>
+<h3 id="meshcore-cannot-connect-via-bluetooth-usb-or-http">MeshCore: Cannot connect via Bluetooth, USB, or HTTP</h3>
+<p><strong>Bluetooth:</strong></p>
+<ul>
+<li>The device must be <strong>flashed as Companion Bluetooth</strong> (the default BLE flashing mode).</li>
+<li>The device must be <strong>paired</strong> with your computer before connecting:</li>
+<li><strong>Windows</strong>: Pair first in <strong>Settings → Bluetooth &amp; devices → Add device</strong>, then connect from the app.</li>
+<li><strong>Linux</strong>: Use <strong><code>bluetoothctl pair &lt;MAC&gt;</code></strong> first, or let the app handle the pairing prompt. See <a href="#ble-known-issues">BLE known issues</a> for detailed steps.</li>
+<li><strong>Try in the official MeshCore app first</strong> — if the device connects there, it will work in Mesh-Client.</li>
+<li>If Bluetooth fails, try serial (USB) or HTTP as alternatives.</li>
+</ul>
+<p><strong>USB (Serial):</strong></p>
+<ul>
+<li>The device must be <strong>flashed as Companion USB</strong> (not BLE-only firmware).</li>
+<li>If the serial port is not detected, see <a href="#serial-port-not-detected">Serial port not detected</a>.</li>
+</ul>
+<p><strong>HTTP (WiFi):</strong></p>
+<ul>
+<li>The device must be <strong>flashed as Companion HTTP</strong> (not BLE-only firmware).</li>
+<li>If <code>meshtastic.local</code> is not resolved, see <a href="#http--wifi-connection-issues">HTTP / WiFi connection issues</a>.</li>
+</ul>
+<h3 id="meshcore-trace-route-or-ping-trace-times-out">MeshCore: Trace Route or Ping trace times out</h3>
+<p><strong>Cause</strong>: Nodes you only <strong>hear</strong> on the mesh—but that do <strong>not</strong> have <strong>your</strong> node in <strong>their</strong> contact list—are sometimes called foreign or one-way contacts. MeshCore firmware may not answer <strong>Trace Route</strong> (node detail) or <strong>Ping trace</strong> (Repeaters panel) for those peers, so the app waits until the trace/ping timeout with no TraceData response. You may see <strong>Trace route timed out</strong> in the node detail modal or an error toast from <strong>Ping trace</strong>.</p>
+<p><strong>Fix</strong>: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected—not a Mesh-Client defect when the radio never returns a result.</p>
+<h3 id="cant-see-rf-packets-on-custom-mqtt-broker">Can't see RF packets on custom MQTT broker</h3>
+<p><strong>Cause</strong>: The packet logger publishes to <code>{prefix}/{pubKey}/packets</code>, but you're viewing the packets somewhere that doesn't receive published MQTT messages.</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>The app publishes to <code>meshcore/{IATA}/{pubKey}/packets</code> (e.g., <code>meshcore/DEN/AABBCCDDEEFF001122/packets</code>)</li>
+<li>Use an external MQTT client (like MQTT Explorer, mosquitto_sub, or your broker's dashboard) to subscribe and view the packets</li>
+<li>For Colorado Mesh, subscribe to <code>meshcore/DEN/+/packets/#</code></li>
+<li>For LetsMesh/MeshMapper, subscribe to <code>meshcore/test/+/packets/#</code></li>
+<li>Verify your broker ACL allows publishing to <code>packets/</code> topics</li>
+<li>Check the Log panel for "Published RF packet" entries to confirm packets are being sent</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

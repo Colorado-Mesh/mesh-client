@@ -1,0 +1,1718 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../release-process/">
+      
+      
+        <link rel="next" href="../letsmesh-mqtt-auth/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Feature Parity - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#meshtastic-vs-meshcore-feature-parity" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Feature Parity
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../diagnostics/" class="md-tabs__link">
+          
+  
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Parity
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#capability-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-trace-route-and-ping-trace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Trace Route and Ping trace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-meshcore-over-ble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: MeshCore over BLE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-meshcore-over-ble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux: MeshCore over BLE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat-mention-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat mention tokens
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-mqtt-json-envelope-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore MQTT JSON envelope (v1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-mqtt-network-presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic MQTT network presets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-mqtt-network-presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore MQTT network presets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log filtering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Maintenance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-mqtt-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore MQTT Authentication
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MeshCore MQTT Authentication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#letsmesh-jwt-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LetsMesh JWT authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#packet-logger-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packet logger (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discord
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Website
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#capability-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-trace-route-and-ping-trace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Trace Route and Ping trace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-meshcore-over-ble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: MeshCore over BLE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-meshcore-over-ble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux: MeshCore over BLE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat-mention-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat mention tokens
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-mqtt-json-envelope-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore MQTT JSON envelope (v1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-mqtt-network-presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic MQTT network presets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-mqtt-network-presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore MQTT network presets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log filtering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Maintenance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-mqtt-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore MQTT Authentication
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MeshCore MQTT Authentication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#letsmesh-jwt-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LetsMesh JWT authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#packet-logger-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packet logger (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="meshtastic-vs-meshcore-feature-parity">Meshtastic vs MeshCore feature parity</h1>
+<p>This document summarizes which client features are <strong>Meshtastic-only</strong>, <strong>MeshCore-only</strong>, or <strong>shared</strong>, and whether gaps are <strong>app wiring</strong>, <strong>post-MQTT</strong>, or <strong>blocked by protocol</strong>.</p>
+<p>See also <a href="../CONTRIBUTING.md">CONTRIBUTING.md</a> (dual-protocol architecture).</p>
+<h2 id="capability-flags">Capability flags</h2>
+<p>Shared UI gates use <code>ProtocolCapabilities</code> in <a href="../src/renderer/lib/radio/BaseRadioProvider.ts"><code>src/renderer/lib/radio/BaseRadioProvider.ts</code></a>. Prefer new gates there instead of <code>protocol === 'meshcore'</code> string checks.</p>
+<h2 id="feature-matrix">Feature matrix</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Meshtastic</th>
+<th>MeshCore</th>
+<th>Gap type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Transports</td>
+<td>BLE, Serial, HTTP (<code>@meshtastic/core</code>)</td>
+<td>BLE, Web Serial, TCP bridge (5000)</td>
+<td>Different stacks</td>
+</tr>
+<tr>
+<td>Tab “Modules” / “Repeaters”</td>
+<td><code>ModulePanel</code> (protobuf modules)</td>
+<td><code>RepeatersPanel</code> (trace, status, neighbors)</td>
+<td>Product split</td>
+</tr>
+<tr>
+<td>MQTT broker UI</td>
+<td>Full (with transport selection)</td>
+<td>Same broker fields; transport protocol selected when connecting; MeshCore-only <strong>LetsMesh</strong> / <strong>Ripple</strong> / <strong>Colorado Mesh</strong> / <strong>Custom</strong> presets fill known public brokers</td>
+<td><strong>Post-MQTT</strong> codec on broker path</td>
+</tr>
+<tr>
+<td>MQTT wire format</td>
+<td><code>ServiceEnvelope</code> / <code>MeshPacket</code> (<a href="../src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a>)</td>
+<td>JSON <strong>v1</strong> chat on <code>{topicPrefix}/meshcore/chat</code> (non-LetsMesh / private brokers); <strong>LetsMesh</strong>: optional meshcoretomqtt-style <strong>packet</strong> JSON on <code>{topicPrefix}/meshcore/packets</code> (<a href="../src/main/meshcore-mqtt-adapter.ts"><code>meshcore-mqtt-adapter.ts</code></a>); chat parser in <a href="../src/shared/meshcoreMqttEnvelope.ts"><code>meshcoreMqttEnvelope.ts</code></a></td>
+<td>Adapter vs protobuf</td>
+</tr>
+<tr>
+<td>Node list hops / MQTT columns</td>
+<td><code>hops_away</code>, <code>via_mqtt</code> from device</td>
+<td>Contact model; hops via <code>outPathLen</code> from device trace</td>
+<td><strong>App</strong> (implemented)</td>
+</tr>
+<tr>
+<td>RF diagnostics (LocalStats)</td>
+<td>From protobuf</td>
+<td>Not available</td>
+<td><strong>Blocked</strong></td>
+</tr>
+<tr>
+<td>Routing diagnostics (hop-based)</td>
+<td><code>RoutingDiagnosticEngine</code> with hop count</td>
+<td>Skipped when <code>hasHopCount === false</code></td>
+<td><strong>Blocked</strong> until hop metric exists</td>
+</tr>
+<tr>
+<td>Neighbor UI</td>
+<td><code>neighborInfo</code> protobuf</td>
+<td><code>getNeighbours</code> (repeaters)</td>
+<td>Different primitive</td>
+</tr>
+<tr>
+<td>Radio config</td>
+<td>Full protobuf (role, presets, WiFi, etc.)</td>
+<td><code>setRadioParams</code>, channels, advert name/position</td>
+<td><strong>Blocked</strong> for Meshtastic-only admin</td>
+</tr>
+<tr>
+<td>Position</td>
+<td>Full GPS protobuf + request position</td>
+<td>Advert lat/lon + <code>setAdvertLatLong</code></td>
+<td><strong>Partial</strong></td>
+</tr>
+<tr>
+<td>Waypoints</td>
+<td>Supported</td>
+<td>Not in protocol surface</td>
+<td><strong>Blocked</strong></td>
+</tr>
+<tr>
+<td>Favorites</td>
+<td><code>nodes</code> table</td>
+<td><code>meshcore_contacts.favorited</code> + <code>db:updateMeshcoreContactFavorited</code></td>
+<td><strong>App</strong> (implemented)</td>
+</tr>
+<tr>
+<td>Environment telemetry charts</td>
+<td>Device telemetry module</td>
+<td>Cayenne LPP via <code>getTelemetry</code> → <code>environmentTelemetry</code></td>
+<td><strong>App</strong> (implemented)</td>
+</tr>
+<tr>
+<td>Chat transport badges / history</td>
+<td><code>received_via</code> on Meshtastic messages</td>
+<td><code>meshcore_messages.received_via</code> (<code>rf</code> / <code>mqtt</code> / <code>both</code>)</td>
+<td><strong>App</strong> (implemented)</td>
+</tr>
+<tr>
+<td>Chat search</td>
+<td><code>searchMessages</code></td>
+<td><code>searchMeshcoreMessages</code>; UI search modal supports <code>user:</code> / <code>channel:</code> filters for cross-channel lookup</td>
+<td>Parallel DB tables</td>
+</tr>
+<tr>
+<td>Chat <code>@[Display Name]</code> tokens</td>
+<td>Same on-wire pattern for replies / reactions / path-style lines</td>
+<td>Same</td>
+<td><strong>App</strong> — chat body renders tokens as inline labels (see below)</td>
+</tr>
+<tr>
+<td>Repeater CLI</td>
+<td>Not applicable</td>
+<td>Per-repeater expandable CLI in <code>RepeatersPanel</code>; prefix-token correlation, retry, flood/auto routing toggle (<code>RepeaterCommandService</code>); <strong>Flood Advert</strong> and <strong>Sync Clock</strong> buttons moved to Radio panel (Device Actions section); auto flood advert scheduling available in App Settings (disabled / 12h / 24h)</td>
+<td><strong>App</strong> (MeshCore-only)</td>
+</tr>
+<tr>
+<td>Security / PKI admin</td>
+<td><code>SecurityPanel</code> when <code>hasSecurityPanel</code></td>
+<td>Tab omitted — no Meshtastic-style PKI surface on MeshCore firmware</td>
+<td><strong>Blocked</strong> (protocol)</td>
+</tr>
+<tr>
+<td>Contact groups</td>
+<td>Built-in groups (GPS, RF+MQTT) via <code>meshtasticContactGroupUtils</code>; user-managed via <code>ContactGroupsModal</code></td>
+<td>SQLite-backed groups + Nodes toolbar (<code>useContactGroups</code>, <code>ContactGroupsModal</code>); built-in Room filter</td>
+<td><strong>App</strong> — protocol-neutral with Meshtastic built-ins</td>
+</tr>
+<tr>
+<td>Log analyzer</td>
+<td><code>LogPanel</code> → <strong>Analyze</strong> (<code>logAnalyzer.ts</code>, protocol-aware)</td>
+<td>Same shared UI</td>
+<td><strong>App</strong> (implemented)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="meshcore-trace-route-and-ping-trace">MeshCore: Trace Route and Ping trace</h2>
+<p><strong>Trace Route</strong> (node detail) and <strong>Ping trace</strong> (Repeaters panel) use the firmware <code>tracePath</code> flow. Remote nodes often answer only when they have <strong>your</strong> node in <strong>their</strong> contact list. Heard-only or one-way peers may produce no response until the client times out. See <a href="../troubleshooting/#meshcore-trace-route-or-ping-trace-times-out">troubleshooting.md</a>.</p>
+<h2 id="windows-meshcore-over-ble">Windows: MeshCore over BLE</h2>
+<p>Pair the radio in <strong>Settings → Bluetooth &amp; devices</strong> before connecting from the app; WinRT is much more reliable with a bonded device. The client may <strong>retry once</strong> after transient GATT discovery failures, and canceling mid-connect should not surface a misleading long-running channel timeout. User-facing copy lives in the Connection tab on Windows; contributor details are in <a href="../CONTRIBUTING.md">CONTRIBUTING.md</a> (MeshCore internals, BLE) and <a href="../README.md">README.md</a> (MeshCore Transport Notes).</p>
+<h2 id="linux-meshcore-over-ble">Linux: MeshCore over BLE</h2>
+<p>Linux uses <strong>Web Bluetooth</strong> in the renderer (not Noble). After you pick a device, the client reads <strong><code>bluetoothctl info &lt;MAC&gt;</code></strong>. If the radio is <strong>not</strong> paired in BlueZ, the UI asks for the <strong>PIN shown on the device</strong> and runs <strong><code>bluetooth-pair</code></strong> before resolving the pending Web Bluetooth <code>requestDevice()</code> selection. If a handshake times out, a <strong>single retry</strong> reuses the granted device via <code>getDevices()</code> so <code>requestDevice()</code> is not called again without a click. See <a href="../development-environment/#linux-bluetooth-ble">development-environment.md</a> and <a href="../troubleshooting/#ble-known-issues">troubleshooting.md</a>.</p>
+<h2 id="chat-mention-tokens">Chat mention tokens</h2>
+<p>Meshtastic and MeshCore use the literal form <code>@[Display Name]</code> in channel payloads for <strong>thread replies</strong>, <strong>emoji tapbacks</strong>, <strong>path / hop summaries</strong>, and <strong>inline references</strong>. The client may keep the raw string in storage when a reply parent cannot be matched; the <strong>Chat</strong> tab still parses these segments for <strong>display</strong> only: brackets are hidden and the name is shown as a compact inline label (<code>ChatPayloadText</code> in <a href="../src/renderer/components/ChatPanel.tsx"><code>ChatPanel.tsx</code></a>, parser in <a href="../src/renderer/lib/chatMentionSegments.ts"><code>chatMentionSegments.ts</code></a>). Threading / <code>replyId</code> behavior is unchanged — this is purely presentational.</p>
+<h2 id="meshcore-mqtt-json-envelope-v1">MeshCore MQTT JSON envelope (v1)</h2>
+<p>Interim broker format until a binary/official MeshCore MQTT layout ships:</p>
+<pre><code class="language-json">{
+  &quot;v&quot;: 1,
+  &quot;text&quot;: &quot;message body&quot;,
+  &quot;channelIdx&quot;: 0,
+  &quot;senderName&quot;: &quot;optional&quot;,
+  &quot;senderNodeId&quot;: 305419896,
+  &quot;timestamp&quot;: 1700000000000
+}
+</code></pre>
+<p>Subscribes under <code>{topicPrefix}/#</code>. Outbound optional publish uses <code>mqtt:publishMeshcore</code> → <code>{topicPrefix}/meshcore/chat</code> (JSON same shape). <strong>LetsMesh public brokers</strong> do not use that path for MQTT-only chat without a radio; optional <strong>Packet logger</strong> (<code>mqtt:publishMeshcorePacketLog</code>) publishes RX packet summaries to <code>{topicPrefix}/meshcore/packets</code> using meshcoretomqtt-shaped JSON — implemented in <a href="../src/main/meshcore-mqtt-adapter.ts"><code>MeshcoreMqttAdapter.publishPacketLog</code></a> (see <a href="../letsmesh-mqtt-auth/">letsmesh-mqtt-auth.md</a> § Packet logger). Debug logging is sampled to suppress repeated decode failures and noise (traceroute, empty-type JSON).</p>
+<h2 id="meshtastic-mqtt-network-presets">Meshtastic MQTT network presets</h2>
+<p>In <strong>Meshtastic</strong> mode, <a href="../src/renderer/components/ConnectionPanel.tsx"><code>ConnectionPanel.tsx</code></a> shows <strong>MQTT :1883</strong>, <strong>Liam's</strong>, and <strong>Custom</strong> preset buttons. They populate <code>MQTTSettings</code> used by <a href="../src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a>.</p>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Broker host</th>
+<th>Port</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MQTT :1883</td>
+<td><code>mqtt.meshtastic.org</code></td>
+<td>1883</td>
+<td>Plaintext; may be blocked on some networks</td>
+</tr>
+<tr>
+<td>Liam's</td>
+<td><code>mqtt.meshtastic.liamcottle.net</code></td>
+<td>1883</td>
+<td><strong>Uplink-only</strong> (puts your node on Liam Cottle's map; no downlink). No TLS. Useful when <code>mqtt.meshtastic.org</code> is unreachable</td>
+</tr>
+<tr>
+<td>Custom</td>
+<td>(user)</td>
+<td>—</td>
+<td>No automatic changes — use for private brokers</td>
+</tr>
+</tbody>
+</table>
+<p>Topic prefix defaults to <code>msh/US/</code>; users can edit fields after choosing a preset. Defined in <a href="../src/renderer/lib/meshtasticMqttTlsMigration.ts"><code>meshtasticMqttTlsMigration.ts</code></a>.</p>
+<h2 id="meshcore-mqtt-network-presets">MeshCore MQTT network presets</h2>
+<p>In <strong>MeshCore</strong> mode only, <a href="../src/renderer/components/ConnectionPanel.tsx"><code>ConnectionPanel.tsx</code></a> shows <strong>LetsMesh</strong>, <strong>Ripple Networks</strong>, <strong>Colorado Mesh</strong>, and <strong>Custom</strong> preset buttons. They populate the same <code>MQTTSettings</code> the main process uses for <a href="../src/main/meshcore-mqtt-adapter.ts"><code>meshcore-mqtt-adapter.ts</code></a> (with <code>mqttTransportProtocol: 'meshcore'</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Broker host</th>
+<th>Port</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LetsMesh</td>
+<td><code>mqtt-us-v1.letsmesh.net</code> or <code>mqtt-eu-v1.letsmesh.net</code></td>
+<td>443</td>
+<td><strong>WebSocket</strong> (<code>wss</code>). JWT auth — see <a href="#meshcore-mqtt-authentication">Authentication</a> below. Optional <strong>Packet logger</strong> publishes to <code>meshcore/packets</code>. See <a href="../letsmesh-mqtt-auth/"><code>letsmesh-mqtt-auth.md</code></a>.</td>
+</tr>
+<tr>
+<td>Ripple Networks</td>
+<td><code>mqtt.ripplenetworks.com.au</code></td>
+<td>8883</td>
+<td>TLS; preset fills default shared credentials and <strong>insecure TLS</strong> for self-signed / non–public CA chains</td>
+</tr>
+<tr>
+<td>Colorado Mesh</td>
+<td><code>meshcore_mqtt.coloradomesh.org</code></td>
+<td>8883 / 443</td>
+<td>TLS; JWT auth with custom audience mapping (<code>coloradomesh</code> in token generation). Same topic prefix <code>meshcore</code>.</td>
+</tr>
+<tr>
+<td>Custom</td>
+<td>(user)</td>
+<td>—</td>
+<td>No automatic changes — use for private brokers</td>
+</tr>
+</tbody>
+</table>
+<p>Topic prefix is set to <code>meshcore</code> for both public presets; users can still edit fields after choosing a preset.</p>
+<h2 id="log-filtering">Log filtering</h2>
+<p>MQTT log messages are prefixed for easy filtering: <strong><code>[Meshtastic MQTT]</code></strong> in <a href="../src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a> and <strong><code>[MeshCore MQTT]</code></strong> in <a href="../src/main/meshcore-mqtt-adapter.ts"><code>meshcore-mqtt-adapter.ts</code></a>. The Log panel filter and analyzer patterns recognize these tags.</p>
+<h2 id="maintenance">Maintenance</h2>
+<p>When MeshCore firmware/SDK defines official MQTT topics and payloads, replace or extend <a href="../src/main/meshcore-mqtt-adapter.ts"><code>MeshcoreMqttAdapter</code></a> and update this document.</p>
+<h2 id="meshcore-mqtt-authentication">MeshCore MQTT Authentication</h2>
+<h3 id="letsmesh-jwt-authentication">LetsMesh JWT authentication</h3>
+<p>LetsMesh uses WebSocket (<code>wss</code>) with JWT authentication. The implementation matches <a href="https://github.com/michaelhart/meshcore-mqtt-broker">meshcore-mqtt-broker</a>:</p>
+<ul>
+<li><strong>MQTT username</strong>: <code>v1_&lt;64-hex public key&gt;</code> (uppercase hex)</li>
+<li><strong>MQTT password</strong>: A token from <code>@michaelhart/meshcore-decoder</code> <code>createAuthToken</code> with:</li>
+<li><code>publicKey</code>: 64-character hex public key</li>
+<li><code>iat</code>: Issued-at timestamp</li>
+<li><code>exp</code>: Expiration timestamp</li>
+<li>JWT <code>aud</code> (audience): The <strong>regional broker hostname</strong> (same as the Server field)</li>
+</ul>
+<p>The JWT audience must match the regional broker hostname (<code>mqtt-us-v1.letsmesh.net</code> or <code>mqtt-eu-v1.letsmesh.net</code>).</p>
+<h3 id="configuration">Configuration</h3>
+<p>Import a MeshCore config JSON file (Radio tab) so <code>public_key</code> and <code>private_key</code> are cached. The implementation is in <a href="../src/renderer/lib/letsMeshJwt.ts"><code>letsMeshJwt.ts</code></a>.</p>
+<h3 id="packet-logger-optional">Packet logger (optional)</h3>
+<p>The optional <strong>Packet logger</strong> publishes RX packet summaries to <code>meshcore/packets</code> under the topic prefix using meshcoretomqtt-shaped JSON. See <a href="../letsmesh-mqtt-auth/"><code>letsmesh-mqtt-auth.md</code></a> for details.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
