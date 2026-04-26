@@ -626,8 +626,8 @@ export default function RepeatersPanel({
                                 repeaterStatus === 'online'
                                   ? 'bg-green-500'
                                   : repeaterStatus === 'stale'
-                                    ? 'bg-amber-500'
-                                    : 'bg-gray-500'
+                                    ? 'bg-violet-900'
+                                    : 'bg-slate-700'
                               }`}
                             />
                             <span
@@ -635,8 +635,8 @@ export default function RepeatersPanel({
                                 repeaterStatus === 'online'
                                   ? 'text-xs text-green-400'
                                   : repeaterStatus === 'stale'
-                                    ? 'text-xs text-amber-400'
-                                    : 'text-xs text-gray-500'
+                                    ? 'text-xs text-violet-400'
+                                    : 'text-xs text-slate-400'
                               }
                             >
                               {repeaterStatus === 'online'

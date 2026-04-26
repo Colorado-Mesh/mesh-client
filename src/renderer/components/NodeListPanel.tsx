@@ -592,7 +592,7 @@ export default function NodeListPanel({
           online
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+          <span className="inline-block h-2 w-2 rounded-full bg-violet-900" />
           {
             nodeList.filter(
               (n) =>
@@ -603,7 +603,7 @@ export default function NodeListPanel({
           stale
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-gray-600" />
+          <span className="inline-block h-2 w-2 rounded-full bg-slate-700" />
           {
             nodeList.filter(
               (n) =>
@@ -918,7 +918,7 @@ export default function NodeListPanel({
                             status === 'online'
                               ? 'bg-brand-green'
                               : status === 'stale'
-                                ? 'bg-yellow-500'
+                                ? 'bg-purple-800'
                                 : 'bg-gray-600'
                           }`}
                           aria-label={

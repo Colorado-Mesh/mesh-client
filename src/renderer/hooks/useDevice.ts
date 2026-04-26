@@ -1062,10 +1062,21 @@ export function useDevice() {
           if (virtualNodeId !== info.myNodeNum) updated.delete(virtualNodeId);
           const existing = updated.get(info.myNodeNum);
           if (!existing) {
-            const selfNode = { ...emptyNode(info.myNodeNum), hops_away: 0, last_heard: Date.now() };
+            const selfNode: MeshNode = {
+              ...emptyNode(info.myNodeNum),
+              hops_away: 0,
+              last_heard: Date.now(),
+              source: 'rf',
+              heard_via_mqtt_only: false,
+            };
             updated.set(info.myNodeNum, selfNode);
           } else {
-            const selfNode = { ...existing, hops_away: 0 };
+            const selfNode: MeshNode = {
+              ...existing,
+              hops_away: 0,
+              source: 'rf',
+              heard_via_mqtt_only: false,
+            };
             updated.set(info.myNodeNum, selfNode);
             void window.electronAPI.db.saveNode(selfNode);
           }
@@ -1097,7 +1108,13 @@ export function useDevice() {
             const now = meshPacket.rxTime ? meshPacket.rxTime * 1000 : Date.now();
             if (now <= (existing.last_heard || 0)) return prev;
             const next = new Map(prev);
-            const updated = { ...existing, last_heard: now };
+            const updated: MeshNode = {
+              ...existing,
+              last_heard: now,
+              source: 'rf',
+              heard_via_mqtt_only: false,
+              via_mqtt: meshPacket.viaMqtt ?? false,
+            };
             next.set(meshPacket.from, updated);
             void window.electronAPI.db.saveNode(updated);
             return next;
@@ -1252,6 +1269,7 @@ export function useDevice() {
             // bump last_hear to now or offline nodes appear freshly heard.
             last_heard: existing.last_heard,
             heard_via_mqtt_only: false,
+            via_mqtt: false,
             source: 'rf',
           };
           updated.set(packet.from, node);
@@ -1363,7 +1381,7 @@ export function useDevice() {
                 : lastHeardStale
                   ? undefined
                   : (info.hopsAway ?? existing.hops_away),
-            via_mqtt: info.viaMqtt ?? existing.via_mqtt,
+            via_mqtt: info.viaMqtt ?? false,
             voltage: info.deviceMetrics?.voltage ?? existing.voltage,
             channel_utilization:
               info.deviceMetrics?.channelUtilization ?? existing.channel_utilization,
@@ -1495,6 +1513,9 @@ export function useDevice() {
             // Position replays at connect must not bump last_heard to now.
             last_heard: existing.last_heard,
             lastPositionWarning: undefined,
+            source: 'rf',
+            heard_via_mqtt_only: false,
+            via_mqtt: false,
           };
           updated.set(packet.from, node);
           void window.electronAPI.db.saveNode(node);
@@ -1572,6 +1593,9 @@ export function useDevice() {
                 env_lux: env.lux ?? existing.env_lux,
                 env_wind_speed: env.windSpeed ?? existing.env_wind_speed,
                 env_wind_direction: env.windDirection ?? existing.env_wind_direction,
+                source: 'rf',
+                heard_via_mqtt_only: false,
+                via_mqtt: false,
               });
             }
             return updated;
@@ -1598,6 +1622,9 @@ export function useDevice() {
                 num_rx_dupe: ls.numRxDupe ?? existing.num_rx_dupe,
                 num_packets_rx: ls.numPacketsRx ?? existing.num_packets_rx,
                 num_packets_tx: ls.numPacketsTx ?? existing.num_packets_tx,
+                source: 'rf',
+                heard_via_mqtt_only: false,
+                via_mqtt: false,
               };
               updated.set(myNodeNumRef.current, node);
               void window.electronAPI.db.saveNode(node);
@@ -1767,6 +1794,9 @@ export function useDevice() {
                 )
                   ? { hops_away: computedHopsAway }
                   : {}),
+                source: 'rf',
+                heard_via_mqtt_only: false,
+                via_mqtt: mp.viaMqtt ?? false,
               };
               updated.set(mp.from!, node);
               void window.electronAPI.db.saveNode(node);

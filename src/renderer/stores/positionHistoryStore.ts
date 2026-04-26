@@ -6,6 +6,7 @@ import { parseStoredJson } from '../lib/parseStoredJson';
 import type { PositionPoint } from '../lib/types';
 
 const MOVEMENT_THRESHOLD_KM = 0.01; // 10 metres — filters GPS jitter
+const MAX_POINTS_PER_NODE = 2000; // Hard cap to prevent unbounded per-node memory growth
 
 function loadShowPaths(): boolean {
   const o = parseStoredJson<{ showMovementPaths?: boolean }>(
@@ -61,6 +62,9 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
         // catch-no-log-ok electronAPI not available in test/storybook contexts
       }
     }
+    if (pruned.length > MAX_POINTS_PER_NODE) {
+      pruned.splice(0, pruned.length - MAX_POINTS_PER_NODE);
+    }
     const shortenedByWindow = pruned.length !== existing.length;
     if (added || shortenedByWindow) {
       const newHistory = new Map(get().history);
@@ -115,6 +119,9 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
             MOVEMENT_THRESHOLD_KM
         ) {
           arr.push({ t: row.recorded_at, lat: row.latitude, lon: row.longitude });
+          if (arr.length > MAX_POINTS_PER_NODE) {
+            arr.splice(0, arr.length - MAX_POINTS_PER_NODE);
+          }
         }
         newHistory.set(row.node_id, arr);
       }

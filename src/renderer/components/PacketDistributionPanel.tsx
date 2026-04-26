@@ -59,8 +59,8 @@ const TIME_FILTERS: { label: string; value: TimeFilter }[] = [
 ];
 
 const TOOLTIP_STYLE = {
-  backgroundColor: '#1a202c',
-  border: '1px solid #4a5568',
+  backgroundColor: '#0f172a',
+  border: '1px solid #334155',
   borderRadius: '6px',
   color: '#e2e8f0',
   fontSize: '12px',

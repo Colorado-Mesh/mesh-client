@@ -27,12 +27,12 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
 
 /** Default hex values — must match src/renderer/styles.css @theme block. */
 export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
-  brandGreen: '#9ae6b4',
-  brightGreen: '#9ae6b4',
+  brandGreen: '#86efac',
+  brightGreen: '#86efac',
   readableGreen: '#16a34a',
-  deepBlack: '#1a202c',
-  secondaryDark: '#2d3748',
-  muted: '#a0aec0',
+  deepBlack: '#0f172a',
+  secondaryDark: '#334155',
+  muted: '#94a3b8',
 };
 
 export interface ThemeTokenMeta {
@@ -41,21 +41,25 @@ export interface ThemeTokenMeta {
   description: string;
 }
 
-/** Preset hex values only — no free typing in App panel (avoids Electron macOS menu bridge warnings). */
+/** Preset hex values — Tailwind palette only. */
 export const THEME_COLOR_PRESETS: { label: string; hex: string }[] = [
-  { label: 'Default brand', hex: '#9ae6b4' },
-  { label: 'Default deep black', hex: '#1a202c' },
-  { label: 'Default secondary', hex: '#2d3748' },
-  { label: 'Default muted', hex: '#a0aec0' },
+  { label: 'Green 300', hex: '#86efac' },
+  { label: 'Slate 900', hex: '#0f172a' },
+  { label: 'Slate 700', hex: '#334155' },
+  { label: 'Slate 400', hex: '#94a3b8' },
   { label: 'White', hex: '#ffffff' },
   { label: 'Black', hex: '#000000' },
-  { label: 'Blue', hex: '#3b82f6' },
-  { label: 'Amber', hex: '#f59e0b' },
-  { label: 'Red', hex: '#ef4444' },
-  { label: 'Slate light', hex: '#94a3b8' },
-  { label: 'Slate dark', hex: '#334155' },
-  { label: 'Emerald', hex: '#10b981' },
-  { label: 'Readable green (default)', hex: '#16a34a' },
+  { label: 'Blue 500', hex: '#3b82f6' },
+  { label: 'Amber 500', hex: '#f59e0b' },
+  { label: 'Red 500', hex: '#ef4444' },
+  { label: 'Emerald 500', hex: '#10b981' },
+  { label: 'Green 600', hex: '#16a34a' },
+  { label: 'Violet 500', hex: '#8b5cf6' },
+  { label: 'Cyan 400', hex: '#22d3ee' },
+  { label: 'Purple 400', hex: '#c084fc' },
+  { label: 'Pink 400', hex: '#f472b6' },
+  { label: 'Orange 400', hex: '#fb923c' },
+  { label: 'Yellow 400', hex: '#facc15' },
 ];
 
 export const THEME_TOKEN_META: ThemeTokenMeta[] = [

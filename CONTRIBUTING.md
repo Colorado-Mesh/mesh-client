@@ -9,6 +9,7 @@ Thank you for your interest in contributing. See [docs/development-environment.m
 - **Prettier:** Semi always, single quotes, trailing commas, print width 100, tab 2, LF.
 - **TypeScript:** Strict; avoid `any`; prefer `unknown` + guards; export types; prefer interfaces over type aliases.
 - **React:** Function components only; `exhaustive-deps` is errors; `?.` in JSX; **every interactive control needs `aria-label`**.
+- **Colors:** Use Tailwind CSS utility classes (e.g., `text-green-400`, `bg-slate-700`). Custom theme colors via CSS custom properties from `styles.css` (`--color-brand-green`, `--color-deep-black`, etc.). Avoid inline hex colors in JSX.
 - **Zustand:** Module-level defaults for stable refs; prefer `useStore(s => s.field)` over broad subscriptions; avoid subscribing to whole Maps when one id suffices; `persist` for localStorage, IPC from an effect for SQLite; extract time constants to `src/renderer/lib/timeConstants.ts` (e.g. `MS_PER_SECOND`).
 - **Performance:** No hot-path O(n); lazy cleanup when collections grow large.
 

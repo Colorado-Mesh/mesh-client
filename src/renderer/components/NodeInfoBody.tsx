@@ -28,6 +28,7 @@ import type { HopHistoryPoint, MeshNode, MeshProtocol, NodeAnomaly } from '../li
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import SnrIndicator from './SnrIndicator';
 
@@ -154,6 +155,8 @@ export interface NodeInfoBodyProps {
   protocol?: MeshProtocol;
   /** MeshCore: local radio model from `deviceQuery` (shown only for our node). */
   meshcoreManufacturerModel?: string;
+  /** Optional tracked positions passed from parent to avoid relying on store timing. */
+  positionHistory?: Map<number, { t: number; lat: number; lon: number }[]>;
 }
 
 const SEVERITY_STYLES: Record<RFDiagnosis['severity'], string> = {
@@ -174,6 +177,7 @@ export default function NodeInfoBody({
   useFahrenheit = false,
   protocol = 'meshtastic',
   meshcoreManufacturerModel,
+  positionHistory,
 }: NodeInfoBodyProps) {
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
@@ -188,6 +192,25 @@ export default function NodeInfoBody({
   const meshcoreTraceHistory = useDiagnosticsStore((s) => s.meshcoreTraceHistory.get(node.node_id));
   const loadMeshcorePathHistory = useDiagnosticsStore((s) => s.loadMeshcorePathHistory);
   const [pathHistoryOpen, setPathHistoryOpen] = useState(false);
+  const latestTrackedPositionFromStore = usePositionHistoryStore((s) => {
+    const points = s.history.get(node.node_id);
+    if (!points || points.length === 0) return null;
+    let latest = points[0];
+    for (let i = 1; i < points.length; i++) {
+      if (points[i].t > latest.t) latest = points[i];
+    }
+    return latest;
+  });
+  const latestTrackedPositionFromProps = (() => {
+    const points = positionHistory?.get(node.node_id);
+    if (!points || points.length === 0) return null;
+    let latest = points[0];
+    for (let i = 1; i < points.length; i++) {
+      if (points[i].t > latest.t) latest = points[i];
+    }
+    return latest;
+  })();
+  const latestTrackedPosition = latestTrackedPositionFromProps ?? latestTrackedPositionFromStore;
 
   const meshcoreTraceFirst = meshcoreTraceHistory?.[0];
   const meshcoreTracePathSnrsSafe =
@@ -454,6 +477,20 @@ export default function NodeInfoBody({
             className="font-mono text-xs text-gray-300"
           />
         )}
+      {(node.latitude == null ||
+        node.longitude == null ||
+        (node.latitude === 0 && node.longitude === 0)) &&
+        latestTrackedPosition && (
+          <InfoRow
+            label="Last Tracked Position"
+            value={formatCoordPair(
+              latestTrackedPosition.lat,
+              latestTrackedPosition.lon,
+              coordinateFormat,
+            )}
+            className="font-mono text-xs text-gray-300"
+          />
+        )}
 
       {/* GPS warning */}
       {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (
@@ -464,8 +501,8 @@ export default function NodeInfoBody({
       )}
 
       {/* Routing Health */}
-      <div className="bg-primary-dark mt-3 rounded-lg p-3">
-        <div className="mb-1.5 text-xs text-gray-400">Routing Health</div>
+      <div className="bg-primary-dark mt-3 rounded-lg py-3">
+        <div className="mb-1.5 text-sm font-medium text-gray-400">Routing Health</div>
 
         {/* Remedy badge */}
         {(() => {
@@ -872,9 +909,9 @@ function RFDiagnosticsSection({
         />
       )}
 
-      <div className="bg-primary-dark mt-3 rounded-lg p-3">
+      <div className="bg-primary-dark mt-3 rounded-lg py-3">
         <div className="mb-2 flex items-center justify-between">
-          <div className="text-xs text-gray-400">RF Diagnostics</div>
+          <div className="text-sm font-medium text-gray-400">RF Diagnostics</div>
           {!noTelemetry && totalChecks !== null && (
             <span
               className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${

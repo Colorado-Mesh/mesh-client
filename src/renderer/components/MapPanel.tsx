@@ -1,8 +1,19 @@
 /* eslint-disable react-hooks/purity */
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 import L from 'leaflet';
-import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Circle,
   CircleMarker,
@@ -13,6 +24,7 @@ import {
   TileLayer,
   useMap,
 } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import type { LocationFilter } from '../App';
 import { formatCoordPair } from '../lib/coordUtils';
@@ -30,7 +42,6 @@ import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
 import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
-import NodeInfoBody from './NodeInfoBody';
 import { useToast } from './Toast';
 
 const WAYPOINT_MARKER_ICON = L.divIcon({
@@ -60,28 +71,32 @@ function ensureMapStyles() {
       animation: anomaly-pulse 1.4s ease-in-out infinite;
       pointer-events: none !important;
     }
-    .leaflet-popup-content-wrapper {
-      background: #0d0d0d;
-      border: 1px solid #374151;
+    .leaflet-popup.map-node-popup .leaflet-popup-content-wrapper {
+      background: #0f172a;
+      border: 1px solid #334155;
       color: #e5e7eb;
       border-radius: 0.75rem;
       padding: 0;
       box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
     }
-    .leaflet-popup-tip {
-      background: #0d0d0d;
-    }
-    .leaflet-popup-content {
+    .leaflet-popup.map-node-popup .leaflet-popup-content {
       margin: 0;
-      min-width: 220px;
-      max-width: 320px;
+      min-width: 280px;
+      max-width: 340px;
+      max-height: 70vh;
+      overflow: hidden;
+    }
+    .leaflet-popup.map-node-popup .leaflet-popup-content > div {
       max-height: 70vh;
       overflow-y: auto;
     }
-    .leaflet-popup-close-button {
+    .leaflet-popup.map-node-popup .leaflet-popup-tip {
+      background: #0f172a;
+    }
+    .leaflet-popup.map-node-popup .leaflet-popup-close-button {
       color: #9ca3af !important;
     }
-    .leaflet-popup-close-button:hover {
+    .leaflet-popup.map-node-popup .leaflet-popup-close-button:hover {
       color: #e5e7eb !important;
     }
     .leaflet-locate-control a {
@@ -90,15 +105,15 @@ function ensureMapStyles() {
       justify-content: center;
       width: 30px;
       height: 30px;
-      background: #fff;
-      color: #444;
+      background: #ffffff;
+      color: #52525b;
       cursor: pointer;
       border: none;
       outline: none;
     }
     .leaflet-locate-control a:hover {
-      background: #f4f4f4;
-      color: #000;
+      background: #f4f4f5;
+      color: #000000;
     }
     .leaflet-locate-control a.locating {
       color: #3b82f6;
@@ -141,18 +156,18 @@ function createMarkerIcon(
       : '';
   const mqttBadge = (c: number) =>
     isMqttOnly
-      ? `<circle cx="${c + 7}" cy="${c - 7}" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>`
+      ? `<circle cx="${c + 7}" cy="${c - 7}" r="4" fill="#3b82f6" stroke="#ffffff" stroke-width="1.5"/>`
       : '';
   const nodeBadgeSvg = (c: number) => {
     const path = nodeBadge ? NODE_BADGE_PATHS[nodeBadge] : null;
     if (!path) return '';
-    return `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#111827" stroke="#fff" stroke-width="1.2"/><path transform="translate(${c - 12},${c - 12}) scale(0.4167)" d="${path}" fill="#f9fafb"/></g>`;
+    return `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#111827" stroke="#ffffff" stroke-width="1.2"/><path transform="translate(${c - 12},${c - 12}) scale(0.4167)" d="${path}" fill="#f9fafb"/></g>`;
   };
 
   if (isSelf) {
     const total = 32 + 2 * haloPx;
     const c = total / 2;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<g transform="translate(${haloPx},${haloPx}) scale(${32 / 24})"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${escapeSvgAttr(color)}" stroke="#000" stroke-width="0.5"/></g>${mqttBadge(c)}${nodeBadgeSvg(c)}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<g transform="translate(${haloPx},${haloPx}) scale(${32 / 24})"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${escapeSvgAttr(color)}" stroke="#ffffff" stroke-width="0.5"/></g>${mqttBadge(c)}${nodeBadgeSvg(c)}</svg>`;
     return L.icon({
       iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
       iconSize: [total, total],
@@ -163,7 +178,7 @@ function createMarkerIcon(
 
   const total = 25 + 2 * haloPx;
   const c = total / 2;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<circle cx="${c}" cy="${c}" r="10.4" fill="${escapeSvgAttr(color)}" stroke="#000" stroke-width="1" opacity="0.9"/><circle cx="${c}" cy="${c}" r="4.2" fill="#fff" opacity="0.8"/>${mqttBadge(c)}${nodeBadgeSvg(c)}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" opacity="${markerOpacity}">${halo(c)}<circle cx="${c}" cy="${c}" r="10.4" fill="${escapeSvgAttr(color)}" stroke="#ffffff" stroke-width="1" opacity="0.9"/><circle cx="${c}" cy="${c}" r="4.2" fill="#ffffff" opacity="0.8"/>${mqttBadge(c)}${nodeBadgeSvg(c)}</svg>`;
   return L.icon({
     iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
     iconSize: [total, total],
@@ -179,16 +194,28 @@ function getMarkerIcon(
   isMqttOnly = false,
   nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = null,
 ): L.Icon {
-  const color = status === 'online' ? '#9ae6b4' : status === 'stale' ? '#c4a864' : '#6b7280';
+  const color = status === 'online' ? '#86efac' : status === 'stale' ? '#4c1d95' : '#334155';
   const opacity = status === 'online' ? 1 : status === 'stale' ? 0.65 : 0.45;
   return createMarkerIcon(color, isSelf, cu, opacity, isMqttOnly, nodeBadge);
 }
 
 const PATH_COLORS = {
-  online: '#9ae6b4',
-  stale: '#c4a864',
-  offline: '#6b7280',
+  online: '#86efac',
+  stale: '#4c1d95',
+  offline: '#334155',
 } as const;
+const MAX_PATH_POINTS_RENDER = 500; // Avoid huge polyline arrays in renderer memory
+
+function downsamplePathPoints(points: [number, number][], maxPoints: number): [number, number][] {
+  if (points.length <= maxPoints) return points;
+  const step = (points.length - 1) / (maxPoints - 1);
+  const sampled: [number, number][] = [];
+  for (let i = 0; i < maxPoints; i++) {
+    const idx = Math.round(i * step);
+    sampled.push(points[idx]);
+  }
+  return sampled;
+}
 
 // ─── DiagnosticPanes ──────────────────────────────────────────────────────────
 // Creates a dedicated Leaflet pane for anomaly halos. Sits above overlayPane
@@ -218,48 +245,34 @@ function DiagnosticPanes() {
 interface MapMarkerProps {
   node: MeshNode;
   anomaly: NodeAnomaly | null;
+  nodeRenderSignature: string;
+  homeNodeRenderSignature: string;
+  anomalyRenderSignature: string;
   isSelf: boolean;
-  anomalyHalosEnabled: boolean;
-  congestionHalosEnabled: boolean;
-  homeNode?: MeshNode | null;
-  haloCenterOffset?: [number, number];
-  nodes: Map<number, MeshNode>;
   protocol: MeshProtocol;
+  onNodeClick?: (nodeId: number) => void;
+  congestionHalosEnabled: boolean;
 }
 
-const MapMarker = memo(
-  function MapMarker({
+interface HaloMarkerProps {
+  node: MeshNode;
+  anomaly: NodeAnomaly | null;
+  anomalyHalosEnabled: boolean;
+  congestionHalosEnabled: boolean;
+  haloCenterOffset?: [number, number];
+}
+
+const NodeHalo = memo(
+  function NodeHalo({
     node,
     anomaly,
-    isSelf,
     anomalyHalosEnabled,
     congestionHalosEnabled,
-    homeNode,
     haloCenterOffset = [0, 0],
-    nodes,
-    protocol,
-  }: MapMarkerProps) {
-    const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
-    const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
-    const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
-    const nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = (() => {
-      if (node.hw_model === 'Repeater') return 'repeater';
-      if (node.hw_model === 'Room') return 'room';
-      if (node.hw_model === 'Sensor') return 'sensor';
-      if (protocol === 'meshtastic' && node.role === 2) return 'repeater';
-      if (protocol === 'meshtastic' && node.role === 11) return 'clock';
-      if (protocol === 'meshtastic' && node.role === 12) return 'home';
-      return null;
-    })();
-
-    const icon = useMemo(
-      () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge),
-      [status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge],
-    );
-
+  }: HaloMarkerProps) {
     const shouldShowHalo = useMemo(
-      () => anomalyHalosEnabled && anomaly !== null && anomaly.nodeId === node.node_id && !isSelf,
-      [anomalyHalosEnabled, anomaly, node.node_id, isSelf],
+      () => anomalyHalosEnabled && anomaly !== null && anomaly.nodeId === node.node_id,
+      [anomalyHalosEnabled, anomaly, node.node_id],
     );
 
     const severity = anomaly?.severity;
@@ -276,8 +289,8 @@ const MapMarker = memo(
             pane="diagnosticPane"
             interactive={false}
             pathOptions={{
-              color: isError ? '#ef4444' : '#FFBF00',
-              fillColor: isError ? '#ef4444' : '#FFBF00',
+              color: isError ? '#ef4444' : '#f59e0b',
+              fillColor: isError ? '#ef4444' : '#f59e0b',
               fillOpacity: 0.18,
               weight: 2,
               opacity: 0.75,
@@ -319,46 +332,76 @@ const MapMarker = memo(
             }}
           />
         )}
-        <Marker
-          position={[node.latitude!, node.longitude!]}
-          icon={icon}
-          zIndexOffset={isSelf ? 1000 : 0}
-        >
-          <Popup>
-            <div className="max-h-[70vh] overflow-y-auto px-4 py-3">
-              <div className="mb-2 flex items-center gap-1.5 font-semibold text-gray-100">
-                {isSelf && <span title="Your node">★</span>}
-                {node.long_name || `!${node.node_id.toString(16)}`}
-                {(() => {
-                  const shortId = `!${node.node_id.toString(16)}`;
-                  const displayName = node.long_name || shortId;
-                  if (shortId === displayName.trim()) return null;
-                  return (
-                    <span className="text-muted ml-1 font-mono text-xs">
-                      !{node.node_id.toString(16)}
-                    </span>
-                  );
-                })()}
-              </div>
-              <NodeInfoBody node={node} homeNode={homeNode} nodes={nodes} protocol={protocol} />
-            </div>
-          </Popup>
-        </Marker>
       </Fragment>
     );
   },
   (prev, next) =>
     prev.node === next.node &&
-    prev.isSelf === next.isSelf &&
     prev.anomalyHalosEnabled === next.anomalyHalosEnabled &&
     prev.congestionHalosEnabled === next.congestionHalosEnabled &&
-    prev.homeNode === next.homeNode &&
-    prev.nodes === next.nodes &&
     prev.anomaly?.type === next.anomaly?.type &&
     prev.anomaly?.severity === next.anomaly?.severity &&
     prev.haloCenterOffset?.[0] === next.haloCenterOffset?.[0] &&
-    prev.haloCenterOffset?.[1] === next.haloCenterOffset?.[1] &&
-    prev.protocol === next.protocol,
+    prev.haloCenterOffset?.[1] === next.haloCenterOffset?.[1],
+);
+
+const MapMarker = memo(
+  function MapMarker({
+    node,
+    isSelf,
+    onNodeClick,
+    congestionHalosEnabled,
+    protocol,
+  }: MapMarkerProps) {
+    const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
+    const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
+
+    const nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = (() => {
+      if (node.hw_model === 'Repeater') return 'repeater';
+      if (node.hw_model === 'Room') return 'room';
+      if (node.hw_model === 'Sensor') return 'sensor';
+      if (protocol === 'meshtastic' && node.role === 2) return 'repeater';
+      if (protocol === 'meshtastic' && node.role === 11) return 'clock';
+      if (protocol === 'meshtastic' && node.role === 12) return 'home';
+      return null;
+    })();
+
+    const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
+    const icon = useMemo(
+      () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge),
+      [status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge],
+    );
+
+    return (
+      <Marker
+        position={[node.latitude!, node.longitude!]}
+        icon={icon}
+        zIndexOffset={isSelf ? 1000 : 0}
+        eventHandlers={{
+          click: () => {
+            onNodeClick?.(node.node_id);
+          },
+        }}
+      >
+        {/* No popup path: map interactions route to NodeDetailModal only. */}
+      </Marker>
+    );
+  },
+  (prev, next) => {
+    if (
+      prev.isSelf !== next.isSelf ||
+      prev.protocol !== next.protocol ||
+      prev.congestionHalosEnabled !== next.congestionHalosEnabled ||
+      prev.onNodeClick !== next.onNodeClick ||
+      prev.nodeRenderSignature !== next.nodeRenderSignature ||
+      prev.homeNodeRenderSignature !== next.homeNodeRenderSignature ||
+      prev.anomalyRenderSignature !== next.anomalyRenderSignature
+    ) {
+      return false;
+    }
+    // We intentionally do not re-render for unrelated `nodes` Map churn.
+    return true;
+  },
 );
 
 // 1941 Ute Creek Dr, Longmont CO — used when there are no GPS coordinates
@@ -517,10 +560,42 @@ function LocateMeControl({
         <CircleMarker
           center={locatedPos}
           radius={8}
-          pathOptions={{ color: '#fff', fillColor: '#3b82f6', fillOpacity: 1, weight: 2 }}
+          pathOptions={{ color: '#ffffff', fillColor: '#3b82f6', fillOpacity: 1, weight: 2 }}
         />
       )}
     </>
+  );
+}
+
+function PathPolyline({
+  nodeId,
+  pathPositions,
+  pathOptions,
+  onNodeClick,
+}: {
+  nodeId: number;
+  pathPositions: [number, number][];
+  pathOptions: { color: string; weight: number; opacity: number };
+  onNodeClick?: (nodeId: number) => void;
+}) {
+  const map = useMap();
+
+  return (
+    <Polyline
+      key={`path-${nodeId}`}
+      positions={pathPositions}
+      pathOptions={pathOptions}
+      eventHandlers={{
+        click: () => {
+          const latestPoint = pathPositions[pathPositions.length - 1];
+          if (latestPoint) {
+            const targetZoom = Math.max(map.getZoom(), 13);
+            map.flyTo(latestPoint, targetZoom, { duration: 0.35 });
+          }
+          onNodeClick?.(nodeId);
+        },
+      }}
+    />
   );
 }
 
@@ -539,6 +614,7 @@ interface Props {
     ch?: number,
   ) => Promise<void>;
   onDeleteWaypoint?: (id: number) => Promise<void>;
+  onNodeClick?: (nodeId: number) => void;
   protocol?: MeshProtocol;
 }
 
@@ -550,10 +626,46 @@ export default function MapPanel({
   onLocateMe,
   waypoints,
   onDeleteWaypoint,
+  onNodeClick,
   protocol = 'meshtastic',
 }: Props) {
+  const toNodeRenderSignature = useCallback((node: MeshNode): string => {
+    return [
+      node.node_id,
+      node.latitude ?? 'null',
+      node.longitude ?? 'null',
+      node.long_name ?? '',
+      node.short_name ?? '',
+      node.hw_model ?? '',
+      node.role ?? 'null',
+      node.battery ?? 'null',
+      node.voltage ?? 'null',
+      node.snr ?? 'null',
+      node.rssi ?? 'null',
+      node.last_heard ?? 'null',
+      node.hops_away ?? 'null',
+      node.channel_utilization ?? 'null',
+      node.air_util_tx ?? 'null',
+      node.heard_via_mqtt_only ? 1 : 0,
+      node.heard_via_mqtt ? 1 : 0,
+      node.lastPositionWarning ?? '',
+      node.favorited ? 1 : 0,
+    ].join('|');
+  }, []);
+  const toAnomalyRenderSignature = useCallback((anomaly: NodeAnomaly | null): string => {
+    if (anomaly == null) return 'none';
+    return [
+      anomaly.nodeId,
+      anomaly.type,
+      anomaly.severity,
+      anomaly.description,
+      anomaly.detectedAt,
+      anomaly.confidence ?? 'none',
+    ].join('|');
+  }, []);
   const homeNode = nodes.get(myNodeNum) ?? null;
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
+  const excludeMeshcoreRepeaterInMeshtastic = protocol === 'meshtastic';
 
   const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
@@ -685,31 +797,39 @@ export default function MapPanel({
         ? locationFilter.maxDistance * 1.60934
         : locationFilter.maxDistance;
 
-    return Array.from(nodes.values()).filter((n) => {
-      let rejectReason: string | null = null;
-      if (
-        n.latitude == null ||
-        n.longitude == null ||
-        !(Math.abs(n.latitude) > 0.0001 || Math.abs(n.longitude) > 0.0001)
-      ) {
-        rejectReason = 'invalid_or_zero_coords';
-      }
-      if (!rejectReason && locationFilter.hideMqttOnly && n.heard_via_mqtt_only) {
-        rejectReason = 'mqtt_only_filtered';
-      }
-      if (!rejectReason && locationFilter.enabled && homeHasLocation) {
-        const d = haversineDistanceKm(
-          homeNode.latitude!,
-          homeNode.longitude!,
-          n.latitude!,
-          n.longitude!,
-        );
-        if (d > maxKm) rejectReason = 'distance_filtered';
-      }
-      return rejectReason === null;
-    });
-  }, [nodes, myNodeNum, locationFilter]);
-
+    return Array.from(nodes.values())
+      .filter((n) => {
+        let rejectReason: string | null = null;
+        if (
+          rejectReason === null &&
+          excludeMeshcoreRepeaterInMeshtastic &&
+          n.hw_model === 'Repeater'
+        ) {
+          rejectReason = 'meshcore_repeater_filtered_for_meshtastic';
+        }
+        if (
+          n.latitude == null ||
+          n.longitude == null ||
+          !(Math.abs(n.latitude) > 0.0001 || Math.abs(n.longitude) > 0.0001)
+        ) {
+          rejectReason = 'invalid_or_zero_coords';
+        }
+        if (rejectReason === null && locationFilter.hideMqttOnly && n.heard_via_mqtt_only) {
+          rejectReason = 'mqtt_only_filtered';
+        }
+        if (rejectReason === null && locationFilter.enabled && homeHasLocation) {
+          const d = haversineDistanceKm(
+            homeNode?.latitude ?? 0,
+            homeNode?.longitude ?? 0,
+            n.latitude!,
+            n.longitude!,
+          );
+          if (d > maxKm) rejectReason = 'distance_filtered';
+        }
+        return rejectReason === null;
+      })
+      .sort((a, b) => a.node_id - b.node_id);
+  }, [nodes, myNodeNum, locationFilter, excludeMeshcoreRepeaterInMeshtastic]);
   const nodesToRender = useMemo(() => {
     const idSet = new Set(nodesWithPosition.map((n) => n.node_id));
     const out: MeshNode[] = [...nodesWithPosition];
@@ -717,6 +837,7 @@ export default function MapPanel({
       if (idSet.has(nodeId)) continue;
       const node = nodes.get(nodeId);
       if (
+        (excludeMeshcoreRepeaterInMeshtastic && node?.hw_model === 'Repeater') ||
         node?.latitude == null ||
         node.longitude == null ||
         !(Math.abs(node.latitude) > 0.0001 || Math.abs(node.longitude) > 0.0001)
@@ -725,17 +846,8 @@ export default function MapPanel({
       idSet.add(nodeId);
       out.push(node);
     }
-    const byPos = new Map<string, MeshNode>();
-    for (const n of out) {
-      const k = `${n.latitude},${n.longitude}`;
-      const existing = byPos.get(k);
-      const hasAnomaly = routingNodeIds.has(n.node_id);
-      const existingHasAnomaly = existing ? routingNodeIds.has(existing.node_id) : false;
-      const shouldReplace = !existing || (hasAnomaly && !existingHasAnomaly);
-      if (shouldReplace) byPos.set(k, n);
-    }
-    return Array.from(byPos.values());
-  }, [nodesWithPosition, routingNodeIds, nodes]);
+    return out.sort((a, b) => a.node_id - b.node_id);
+  }, [nodesWithPosition, routingNodeIds, nodes, excludeMeshcoreRepeaterInMeshtastic]);
 
   const nodesWithStatus = useMemo(
     () =>
@@ -831,7 +943,10 @@ export default function MapPanel({
       const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
       result.push({
         nodeId,
-        positions: points.map((p) => [p.lat, p.lon]),
+        positions: downsamplePathPoints(
+          points.map((p) => [p.lat, p.lon] as [number, number]),
+          MAX_PATH_POINTS_RENDER,
+        ),
         pathOptions: { color: PATH_COLORS[status], weight: 3, opacity: 0.65 },
       });
     }
@@ -847,11 +962,11 @@ export default function MapPanel({
         : DEFAULT_CENTER;
   const computedZoom = DEFAULT_ZOOM;
   const shouldFitOnMount = savedViewport == null;
-  // Use current viewport from store when available so props match the map after
-  // moveend; otherwise react-leaflet syncs map to (stale) props → setView →
-  // moveend → setViewport → re-render loop.
-  const mapCenter = savedViewport?.center ?? computedCenter;
-  const mapZoom = savedViewport?.zoom ?? computedZoom;
+
+  const [initialViewport] = useState(() => ({
+    center: savedViewport?.center ?? computedCenter,
+    zoom: savedViewport?.zoom ?? computedZoom,
+  }));
 
   const statusCounts = useMemo(() => {
     const counts = { online: 0, stale: 0, offline: 0 };
@@ -860,6 +975,18 @@ export default function MapPanel({
     }
     return counts;
   }, [nodesToRender, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
+
+  const iconCreateFunction = useCallback((cluster: any) => {
+    const count = cluster.getChildCount();
+    let size = 40;
+    if (count > 10) size = 50;
+    if (count > 100) size = 60;
+    return L.divIcon({
+      html: `<div style="background:rgba(134,239,172,0.2);border:3px solid #86efac;border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"><span style="display:inline-flex;align-items:center;justify-content:center;padding:0 4px;min-width:18px;height:18px;border-radius:9999px;background:#86efac;color:#020617;font-size:12px;font-weight:800;line-height:1;opacity:1;">${count}</span></div>`,
+      className: '',
+      iconSize: [size, size],
+    });
+  }, []);
 
   return (
     <div
@@ -891,17 +1018,22 @@ export default function MapPanel({
             {statusCounts.online}
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-amber-500 opacity-60" />
+            <span className="inline-block h-2 w-2 rounded-full bg-violet-900" />
             {statusCounts.stale}
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-gray-500" />
+            <span className="inline-block h-2 w-2 rounded-full bg-slate-700" />
             {statusCounts.offline}
           </span>
         </div>
       </div>
 
-      <MapContainer center={mapCenter} zoom={mapZoom} className="absolute inset-0">
+      <MapContainer
+        center={initialViewport.center}
+        zoom={initialViewport.zoom}
+        className="absolute inset-0"
+        preferCanvas
+      >
         <DiagnosticPanes />
         <ViewportSaver hasAnyPositions={positions.length > 0 || !!ourPosition} />
         <MapFitter
@@ -913,25 +1045,53 @@ export default function MapPanel({
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          keepBuffer={1}
+          updateWhenIdle
         />
         {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
-          <Polyline key={`path-${nodeId}`} positions={pathPositions} pathOptions={pathOptions} />
-        ))}
-        {routeWeightPolylines}
-        {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
-          <MapMarker
-            key={node.node_id}
-            node={node}
-            anomaly={anomaly}
-            isSelf={node.node_id === myNodeNum}
-            anomalyHalosEnabled={anomalyHalosEnabled}
-            congestionHalosEnabled={congestionHalosEnabled}
-            homeNode={homeNode}
-            haloCenterOffset={haloCenterOffset}
-            nodes={nodes}
-            protocol={protocol}
+          <PathPolyline
+            key={`path-${nodeId}`}
+            nodeId={nodeId}
+            pathPositions={pathPositions}
+            pathOptions={pathOptions}
+            onNodeClick={onNodeClick}
           />
         ))}
+        {routeWeightPolylines}
+        {anomalyHalosEnabled || congestionHalosEnabled
+          ? nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
+              <NodeHalo
+                key={`halo-${node.node_id}`}
+                node={node}
+                anomaly={anomaly}
+                anomalyHalosEnabled={anomalyHalosEnabled}
+                congestionHalosEnabled={congestionHalosEnabled}
+                haloCenterOffset={haloCenterOffset}
+              />
+            ))
+          : null}
+        <MarkerClusterGroup
+          showCoverageOnHover={false}
+          chunkedLoading
+          maxClusterRadius={60}
+          disableClusteringAtZoom={9}
+          iconCreateFunction={iconCreateFunction}
+        >
+          {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly }) => (
+            <MapMarker
+              key={node.node_id}
+              node={node}
+              anomaly={anomaly}
+              nodeRenderSignature={toNodeRenderSignature(node)}
+              homeNodeRenderSignature={homeNode ? toNodeRenderSignature(homeNode) : 'none'}
+              anomalyRenderSignature={toAnomalyRenderSignature(anomaly)}
+              isSelf={node.node_id === myNodeNum}
+              protocol={protocol}
+              onNodeClick={onNodeClick}
+              congestionHalosEnabled={congestionHalosEnabled}
+            />
+          ))}
+        </MarkerClusterGroup>
         {waypoints &&
           [...waypoints.values()].map((wp) => (
             <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>

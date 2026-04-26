@@ -268,8 +268,8 @@ export default function TelemetryPanel({
                   />
                   <Tooltip
                     contentStyle={{
-                      background: '#1a202c',
-                      border: '1px solid #374151',
+                      background: '#0f172a',
+                      border: '1px solid #334155',
                       borderRadius: '8px',
                     }}
                   />
@@ -332,8 +332,8 @@ export default function TelemetryPanel({
                   />
                   <Tooltip
                     contentStyle={{
-                      background: '#1a202c',
-                      border: '1px solid #374151',
+                      background: '#0f172a',
+                      border: '1px solid #334155',
                       borderRadius: '8px',
                     }}
                   />
@@ -343,7 +343,7 @@ export default function TelemetryPanel({
                     type="monotone"
                     dataKey="snr"
                     name="SNR"
-                    stroke="#ef4444"
+                    stroke="#f97316"
                     strokeWidth={2}
                     dot={false}
                     connectNulls
@@ -353,7 +353,7 @@ export default function TelemetryPanel({
                     type="monotone"
                     dataKey="rssi"
                     name="RSSI"
-                    stroke="#f97316"
+                    stroke="#3b82f6"
                     strokeWidth={2}
                     dot={false}
                     connectNulls
@@ -403,8 +403,8 @@ export default function TelemetryPanel({
                   )}
                   <Tooltip
                     contentStyle={{
-                      background: '#1a202c',
-                      border: '1px solid #374151',
+                      background: '#0f172a',
+                      border: '1px solid #334155',
                       borderRadius: '8px',
                     }}
                   />
@@ -459,8 +459,8 @@ export default function TelemetryPanel({
                   />
                   <Tooltip
                     contentStyle={{
-                      background: '#1a202c',
-                      border: '1px solid #374151',
+                      background: '#0f172a',
+                      border: '1px solid #334155',
                       borderRadius: '8px',
                     }}
                   />
@@ -502,8 +502,8 @@ export default function TelemetryPanel({
                   />
                   <Tooltip
                     contentStyle={{
-                      background: '#1a202c',
-                      border: '1px solid #374151',
+                      background: '#0f172a',
+                      border: '1px solid #334155',
                       borderRadius: '8px',
                     }}
                   />

@@ -16,6 +16,8 @@ import {
   MESHCORE_MAX_CONTACTS,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
+import { getNodeStatus } from '../lib/nodeStatus';
+import { useRadioProvider } from '../lib/radio/providerFactory';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
@@ -25,6 +27,7 @@ import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 
 const TRACE_ROUTE_UI_TIMEOUT_MS = 120_000;
+const POSITION_HISTORY_MAX_ROWS = 100;
 
 interface NodeDetailModalProps {
   /** Optional: enables originator list for Mesh Congestion (RF duplicate-prone by node). */
@@ -65,6 +68,8 @@ interface NodeDetailModalProps {
   meshcoreLocalStats?: MeshCoreLocalStats | null;
   /** MeshCore: local radio manufacturer/model from `deviceQuery` (our node only in body). */
   meshcoreManufacturerModel?: string;
+  /** GPS position history (tracking path) for mobile nodes */
+  positionHistory?: Map<number, { t: number; lat: number; lon: number }[]>;
 }
 
 export default function NodeDetailModal({
@@ -98,6 +103,7 @@ export default function NodeDetailModal({
   onShareContact,
   meshcoreLocalStats,
   meshcoreManufacturerModel,
+  positionHistory,
 }: NodeDetailModalProps) {
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
@@ -268,6 +274,10 @@ export default function NodeDetailModal({
     };
   }, [traceRoutePending]);
 
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(
+    protocol ?? 'meshtastic',
+  );
+
   if (!node) return null;
 
   const hexId = `!${node.node_id.toString(16)}`;
@@ -275,6 +285,25 @@ export default function NodeDetailModal({
   const isIncomplete = !node.short_name && !node.long_name && node.role === undefined;
   const displayName = node.short_name || node.long_name || hexId;
   const isOurNode = node.node_id === homeNode?.node_id;
+  const nodeStatus = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
+  const nodeStatusUi =
+    nodeStatus === 'online'
+      ? {
+          label: 'Online',
+          dotClass: 'bg-brand-green',
+          textClass: 'text-brand-green',
+        }
+      : nodeStatus === 'stale'
+        ? {
+            label: 'Stale',
+            dotClass: 'bg-violet-400',
+            textClass: 'text-violet-300',
+          }
+        : {
+            label: 'Offline',
+            dotClass: 'bg-slate-400',
+            textClass: 'text-slate-300',
+          };
 
   const headerHardwareSubtitle =
     protocol === 'meshtastic'
@@ -315,21 +344,21 @@ export default function NodeDetailModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
         <button
           type="button"
           aria-label="Close dialog"
-          className="absolute inset-0 cursor-pointer border-0 bg-black/50 p-0 backdrop-blur-sm"
+          className="absolute inset-0 cursor-pointer border-0 bg-black/50 p-0"
           onClick={onClose}
         />
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="node-modal-title"
-          className="bg-deep-black relative z-10 flex max-h-[90vh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-xl border border-gray-700 shadow-2xl"
+          className="bg-deep-black relative z-10 flex max-h-[90vh] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-xl border border-gray-700 shadow-2xl"
         >
           {/* Header */}
-          <div className="flex shrink-0 items-center justify-between border-b border-gray-700 px-5 py-4">
+          <div className="flex shrink-0 items-start justify-between border-b border-gray-700 px-5 py-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h3 id="node-modal-title" className="truncate text-lg font-semibold text-gray-100">
@@ -422,41 +451,52 @@ export default function NodeDetailModal({
                   )}
               </div>
             </div>
-            <button
-              onClick={() => {
-                onToggleFavorite(node.node_id, !node.favorited);
-              }}
-              className="hover:bg-secondary-dark mr-1 shrink-0 rounded-lg p-1.5 transition-colors"
-              aria-label={node.favorited ? 'Remove from favorites' : 'Add to favorites'}
-              aria-pressed={node.favorited}
-            >
+            <div className="ml-3 flex shrink-0 flex-col items-end gap-1">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    onToggleFavorite(node.node_id, !node.favorited);
+                  }}
+                  className="hover:bg-secondary-dark shrink-0 rounded-lg p-1.5 transition-colors"
+                  aria-label={node.favorited ? 'Remove from favorites' : 'Add to favorites'}
+                  aria-pressed={node.favorited}
+                >
+                  <span
+                    className={`text-xl ${node.favorited ? 'text-yellow-400' : 'text-gray-500 hover:text-yellow-400'}`}
+                    aria-hidden="true"
+                  >
+                    {node.favorited ? '★' : '☆'}
+                  </span>
+                </button>
+                <button
+                  ref={closeButtonRef}
+                  onClick={onClose}
+                  aria-label="Close dialog"
+                  className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
               <span
-                className={`text-xl ${node.favorited ? 'text-yellow-400' : 'text-gray-500 hover:text-yellow-400'}`}
-                aria-hidden="true"
+                className={`flex items-center gap-1 text-[11px] font-medium ${nodeStatusUi.textClass}`}
+                title="Current node status"
               >
-                {node.favorited ? '★' : '☆'}
+                <span className={`inline-block h-2 w-2 rounded-full ${nodeStatusUi.dotClass}`} />
+                {nodeStatusUi.label}
               </span>
-            </button>
-            <button
-              ref={closeButtonRef}
-              onClick={onClose}
-              aria-label="Close dialog"
-              className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            </div>
           </div>
 
           {/* Body — scrollable so long RF/diagnostics content fits on screen */}
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3">
+          <div className="min-h-0 flex-1 overflow-auto overscroll-contain px-5 py-3">
             <NodeInfoBody
               node={node}
               homeNode={homeNode}
@@ -465,6 +505,7 @@ export default function NodeDetailModal({
               useFahrenheit={useFahrenheit}
               protocol={protocol}
               meshcoreManufacturerModel={meshcoreManufacturerModel}
+              positionHistory={positionHistory}
             />
 
             {protocol === 'meshcore' &&
@@ -792,180 +833,241 @@ export default function NodeDetailModal({
                   </div>
                 </div>
               )}
-          </div>
 
-          {/* Neighbors section */}
-          {neighborInfo &&
-            (() => {
-              const record = neighborInfo.get(node.node_id);
-              if (!record || record.neighbors.length === 0) return null;
-              return (
-                <div className="space-y-2 px-5 pb-2">
-                  <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                    Neighbors ({record.neighbors.length})
-                  </h4>
-                  <div className="space-y-1">
-                    {record.neighbors.map((nb) => {
-                      const nbNode = nodes?.get(nb.nodeId);
-                      const label = nbNode?.short_name || `!${nb.nodeId.toString(16)}`;
-                      return (
-                        <div
-                          key={nb.nodeId}
-                          className="bg-secondary-dark flex items-center justify-between rounded px-2 py-1 text-xs"
-                        >
-                          <span className="text-gray-300">{label}</span>
-                          <span className="text-xs text-gray-500">
-                            {formatSecondsAgo(
-                              Math.max(0, Math.floor(Date.now() / 1000 - nb.lastRxTime)),
-                            )}
-                          </span>
-                          <SnrIndicator snr={nb.snr} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-
-          {/* MeshCore Local Stats section (for connected node only) */}
-          {protocol === 'meshcore' && meshcoreLocalStats && (
-            <div className="space-y-2 px-5 pb-2">
-              <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                Radio Stats (Local)
-              </h4>
-              <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                <div className="text-muted">Noise Floor</div>
-                <div className="font-mono text-gray-200">{meshcoreLocalStats.noiseFloor} dBm</div>
-                <div className="text-muted">Last RSSI</div>
-                <div className="font-mono text-gray-200">{meshcoreLocalStats.lastRssi} dBm</div>
-                <div className="text-muted">Last SNR</div>
-                <div className="font-mono text-gray-200">
-                  {meshcoreLocalStats.lastSnr.toFixed(2)} dB
-                </div>
-                <div className="text-muted">TX Air Time</div>
-                <div className="font-mono text-gray-200">{meshcoreLocalStats.txAirSecs}s</div>
-                <div className="text-muted">RX Air Time</div>
-                <div className="font-mono text-gray-200">{meshcoreLocalStats.rxAirSecs}s</div>
-                <div className="text-muted">Uptime</div>
-                <div className="font-mono text-gray-200">
-                  {Math.floor(meshcoreLocalStats.uptimeSecs / 3600)}h{' '}
-                  {Math.floor((meshcoreLocalStats.uptimeSecs % 3600) / 60)}m
-                </div>
-              </div>
-
-              <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                Packets (Local)
-              </h4>
-              <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                <div className="text-muted">Sent (Flood / Direct)</div>
-                <div className="font-mono text-gray-200">
-                  {meshcoreLocalStats.nSentFlood} / {meshcoreLocalStats.nSentDirect}
-                </div>
-                <div className="text-muted">Recv (Flood / Direct)</div>
-                <div className="font-mono text-gray-200">
-                  {meshcoreLocalStats.nRecvFlood} / {meshcoreLocalStats.nRecvDirect}
-                </div>
-                <div className="text-muted">Total Sent</div>
-                <div className="font-mono text-gray-200">{meshcoreLocalStats.sent}</div>
-                <div className="text-muted">Total Recv</div>
-                <div className="font-mono text-gray-200">{meshcoreLocalStats.recv}</div>
-                {meshcoreLocalStats.nRecvErrors !== undefined &&
-                  meshcoreLocalStats.nRecvErrors !== null && (
-                    <>
-                      <div className="text-muted">RX Errors</div>
-                      <div className="font-mono text-gray-200">
-                        {meshcoreLocalStats.nRecvErrors}
-                      </div>
-                    </>
-                  )}
-              </div>
-            </div>
-          )}
-
-          {/* PaxCounter section (Meshtastic only) */}
-          {protocol === 'meshtastic' &&
-            paxCounterData &&
-            (() => {
-              const paxData = paxCounterData.get(node.node_id);
-              if (!paxData) return null;
-              return (
-                <div className="space-y-2 px-5 pb-2">
-                  <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                    Pax Counter
-                  </h4>
-                  <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                    <div className="text-muted">Detected Count</div>
-                    <div className="font-mono text-gray-200">{paxData.count}</div>
-                    <div className="text-muted">Last Seen</div>
-                    <div className="font-mono text-gray-200">
-                      {formatSecondsAgo(
-                        Math.max(0, Math.floor((Date.now() - paxData.timestamp) / 1000)),
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-          {/* Detection Sensor section (Meshtastic only) */}
-          {protocol === 'meshtastic' &&
-            detectionSensorEvents &&
-            (() => {
-              const sensorEvents = detectionSensorEvents.get(node.node_id);
-              if (!sensorEvents || sensorEvents.length === 0) return null;
-              const latestEvent = sensorEvents[sensorEvents.length - 1];
-              return (
-                <div className="space-y-2 px-5 pb-2">
-                  <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                    Detection Sensor ({sensorEvents.length})
-                  </h4>
-                  <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                    <div className="text-muted">Last Detection</div>
-                    <div className="font-mono text-gray-200">
-                      {formatSecondsAgo(
-                        Math.max(0, Math.floor((Date.now() - latestEvent.timestamp) / 1000)),
-                      )}
-                    </div>
-                    <div className="text-muted">Data Size</div>
-                    <div className="font-mono text-gray-200">{latestEvent.data.length} bytes</div>
-                    <div className="text-muted col-span-2">Raw Data (hex)</div>
-                    <div className="col-span-2 font-mono text-[10px] break-all text-gray-200">
-                      {Array.from(latestEvent.data)
-                        .map((b) => b.toString(16).padStart(2, '0'))
-                        .join(' ')}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-          {/* Map Report section (Meshtastic only) */}
-          {protocol === 'meshtastic' && mapReports && (
-            <div className="space-y-2 px-5 pb-2">
-              <h4 className="text-muted text-xs font-medium tracking-wide uppercase">Map Report</h4>
-              {(() => {
-                const mapReport = mapReports.get(node.node_id);
-                if (!mapReport) {
-                  return <p className="text-xs text-gray-500">No map report received</p>;
-                }
+            {/* Neighbors section */}
+            {neighborInfo &&
+              (() => {
+                const record = neighborInfo.get(node.node_id);
+                if (!record || record.neighbors.length === 0) return null;
                 return (
-                  <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                    <div className="text-muted">Last Report</div>
-                    <div className="font-mono text-gray-200">
-                      {formatSecondsAgo(
-                        Math.max(0, Math.floor((Date.now() - mapReport.timestamp) / 1000)),
-                      )}
-                    </div>
-                    <div className="text-muted">Data</div>
-                    <div className="font-mono text-gray-200">
-                      {mapReport.data ? JSON.stringify(mapReport.data).slice(0, 50) : 'N/A'}
+                  <div className="space-y-2 pb-2">
+                    <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                      Neighbors ({record.neighbors.length})
+                    </h4>
+                    <div className="space-y-1">
+                      {record.neighbors.map((nb) => {
+                        const nbNode = nodes?.get(nb.nodeId);
+                        const label = nbNode?.short_name || `!${nb.nodeId.toString(16)}`;
+                        return (
+                          <div
+                            key={nb.nodeId}
+                            className="bg-secondary-dark flex items-center justify-between rounded px-2 py-1 text-xs"
+                          >
+                            <span className="text-gray-300">{label}</span>
+                            <span className="text-xs text-gray-500">
+                              {formatSecondsAgo(
+                                Math.max(0, Math.floor(Date.now() / 1000 - nb.lastRxTime)),
+                              )}
+                            </span>
+                            <SnrIndicator snr={nb.snr} />
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
               })()}
-            </div>
-          )}
+
+            {/* MeshCore Local Stats section (for connected node only) */}
+            {protocol === 'meshcore' && meshcoreLocalStats && (
+              <div className="space-y-2 pb-2">
+                <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                  Radio Stats (Local)
+                </h4>
+                <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                  <div className="text-muted">Noise Floor</div>
+                  <div className="font-mono text-gray-200">{meshcoreLocalStats.noiseFloor} dBm</div>
+                  <div className="text-muted">Last RSSI</div>
+                  <div className="font-mono text-gray-200">{meshcoreLocalStats.lastRssi} dBm</div>
+                  <div className="text-muted">Last SNR</div>
+                  <div className="font-mono text-gray-200">
+                    {meshcoreLocalStats.lastSnr.toFixed(2)} dB
+                  </div>
+                  <div className="text-muted">TX Air Time</div>
+                  <div className="font-mono text-gray-200">{meshcoreLocalStats.txAirSecs}s</div>
+                  <div className="text-muted">RX Air Time</div>
+                  <div className="font-mono text-gray-200">{meshcoreLocalStats.rxAirSecs}s</div>
+                  <div className="text-muted">Uptime</div>
+                  <div className="font-mono text-gray-200">
+                    {Math.floor(meshcoreLocalStats.uptimeSecs / 3600)}h{' '}
+                    {Math.floor((meshcoreLocalStats.uptimeSecs % 3600) / 60)}m
+                  </div>
+                </div>
+
+                <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                  Packets (Local)
+                </h4>
+                <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                  <div className="text-muted">Sent (Flood / Direct)</div>
+                  <div className="font-mono text-gray-200">
+                    {meshcoreLocalStats.nSentFlood} / {meshcoreLocalStats.nSentDirect}
+                  </div>
+                  <div className="text-muted">Recv (Flood / Direct)</div>
+                  <div className="font-mono text-gray-200">
+                    {meshcoreLocalStats.nRecvFlood} / {meshcoreLocalStats.nRecvDirect}
+                  </div>
+                  <div className="text-muted">Total Sent</div>
+                  <div className="font-mono text-gray-200">{meshcoreLocalStats.sent}</div>
+                  <div className="text-muted">Total Recv</div>
+                  <div className="font-mono text-gray-200">{meshcoreLocalStats.recv}</div>
+                  {meshcoreLocalStats.nRecvErrors !== undefined &&
+                    meshcoreLocalStats.nRecvErrors !== null && (
+                      <>
+                        <div className="text-muted">RX Errors</div>
+                        <div className="font-mono text-gray-200">
+                          {meshcoreLocalStats.nRecvErrors}
+                        </div>
+                      </>
+                    )}
+                </div>
+              </div>
+            )}
+
+            {/* PaxCounter section (Meshtastic only) */}
+            {protocol === 'meshtastic' &&
+              paxCounterData &&
+              (() => {
+                const paxData = paxCounterData.get(node.node_id);
+                if (!paxData) return null;
+                return (
+                  <div className="space-y-2 px-5 pb-2">
+                    <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                      Pax Counter
+                    </h4>
+                    <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                      <div className="text-muted">Detected Count</div>
+                      <div className="font-mono text-gray-200">{paxData.count}</div>
+                      <div className="text-muted">Last Seen</div>
+                      <div className="font-mono text-gray-200">
+                        {formatSecondsAgo(
+                          Math.max(0, Math.floor((Date.now() - paxData.timestamp) / 1000)),
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+            {/* Detection Sensor section (Meshtastic only) */}
+            {protocol === 'meshtastic' &&
+              detectionSensorEvents &&
+              (() => {
+                const sensorEvents = detectionSensorEvents.get(node.node_id);
+                if (!sensorEvents || sensorEvents.length === 0) return null;
+                const latestEvent = sensorEvents[sensorEvents.length - 1];
+                return (
+                  <div className="space-y-2 px-5 pb-2">
+                    <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                      Detection Sensor ({sensorEvents.length})
+                    </h4>
+                    <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                      <div className="text-muted">Last Detection</div>
+                      <div className="font-mono text-gray-200">
+                        {formatSecondsAgo(
+                          Math.max(0, Math.floor((Date.now() - latestEvent.timestamp) / 1000)),
+                        )}
+                      </div>
+                      <div className="text-muted">Data Size</div>
+                      <div className="font-mono text-gray-200">{latestEvent.data.length} bytes</div>
+                      <div className="text-muted col-span-2">Raw Data (hex)</div>
+                      <div className="col-span-2 font-mono text-[10px] break-all text-gray-200">
+                        {Array.from(latestEvent.data)
+                          .map((b) => b.toString(16).padStart(2, '0'))
+                          .join(' ')}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+            {/* Map Report section (Meshtastic only) */}
+            {protocol === 'meshtastic' && mapReports && (
+              <div className="space-y-2 pb-2">
+                <h4 className="text-muted text-sm font-medium">Map Report</h4>
+                {(() => {
+                  const mapReport = mapReports.get(node.node_id);
+                  if (!mapReport) {
+                    return <p className="text-xs text-gray-500">No map report received</p>;
+                  }
+                  return (
+                    <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded py-2 text-xs">
+                      <div className="text-muted">Last Report</div>
+                      <div className="font-mono text-gray-200">
+                        {formatSecondsAgo(
+                          Math.max(0, Math.floor((Date.now() - mapReport.timestamp) / 1000)),
+                        )}
+                      </div>
+                      <div className="text-muted">Data</div>
+                      <div className="font-mono text-gray-200">
+                        {mapReport.data ? JSON.stringify(mapReport.data).slice(0, 50) : 'N/A'}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Position History (GPS tracking path) */}
+            {positionHistory && (
+              <div className="space-y-2 pb-2">
+                <h4 className="text-muted text-sm font-medium">Position History</h4>
+                {(() => {
+                  const points = positionHistory.get(node.node_id);
+                  if (!points || points.length === 0) {
+                    return <p className="text-xs text-gray-500">No position history recorded</p>;
+                  }
+                  const sorted = [...points].sort((a, b) => a.t - b.t);
+                  const first = sorted[0];
+                  const last = sorted[sorted.length - 1];
+                  const durationHours = ((last.t - first.t) / (1000 * 60 * 60)).toFixed(1);
+                  const recentPoints = [...sorted].reverse().slice(0, POSITION_HISTORY_MAX_ROWS);
+                  return (
+                    <>
+                      <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded py-2 text-xs">
+                        <div className="text-muted">Recorded Points</div>
+                        <div className="font-mono text-gray-200">{points.length}</div>
+                        <div className="text-muted">Time Span</div>
+                        <div className="font-mono text-gray-200">{durationHours}h</div>
+                        <div className="text-muted">First Position</div>
+                        <div className="font-mono text-gray-200">
+                          {new Date(first.t).toLocaleString()}
+                        </div>
+                        <div className="text-muted">Last Position</div>
+                        <div className="font-mono text-gray-200">
+                          {new Date(last.t).toLocaleString()}
+                        </div>
+                      </div>
+                      {sorted.length > 1 && (
+                        <div className="text-[10px] text-gray-500">
+                          Most recent: {last.lat.toFixed(5)}, {last.lon.toFixed(5)}
+                        </div>
+                      )}
+                      {sorted.length > POSITION_HISTORY_MAX_ROWS && (
+                        <div className="text-[10px] text-gray-500">
+                          Showing newest {POSITION_HISTORY_MAX_ROWS} of {sorted.length} points
+                        </div>
+                      )}
+                      <div className="bg-secondary-dark space-y-1 rounded py-2">
+                        {recentPoints.map((point, idx) => (
+                          <div
+                            key={`${point.t}-${point.lat}-${point.lon}-${idx}`}
+                            className="grid grid-cols-[auto_1fr] gap-x-2 text-[10px]"
+                          >
+                            <span className="text-gray-500">
+                              {new Date(point.t).toLocaleString()}
+                            </span>
+                            <span className="font-mono whitespace-nowrap text-gray-200">
+                              {formatCoordPair(point.lat, point.lon, coordinateFormat)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
 
           {/* Footer actions — omitted for directly connected node (no position/trace/message to self) */}
           {!isOurNode && (

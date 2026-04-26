@@ -1,12 +1,12 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-brand-green: #9ae6b4;
-  --color-bright-green: #9ae6b4;
+  --color-brand-green: #86efac;
+  --color-bright-green: #86efac;
   --color-readable-green: #16a34a;
-  --color-deep-black: #1a202c;
-  --color-secondary-dark: #2d3748;
-  --color-muted: #a0aec0;
+  --color-deep-black: #0f172a;
+  --color-secondary-dark: #334155;
+  --color-muted: #94a3b8;
 }
 
 /* Leaflet container needs explicit height */
@@ -28,7 +28,7 @@
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a5568;
+  background: #475569;
 }
 ::-webkit-scrollbar-corner {
   background: transparent;

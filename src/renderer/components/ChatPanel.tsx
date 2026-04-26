@@ -1624,7 +1624,7 @@ function ChatPanel({
           className={`rounded-xl px-5 py-2.5 font-medium transition-colors ${
             isDmMode
               ? 'disabled:text-muted bg-purple-600 text-white hover:bg-purple-500 disabled:bg-gray-600'
-              : 'disabled:text-muted bg-[#4CAF50] text-white hover:bg-[#43A047] disabled:bg-gray-600'
+              : 'disabled:text-muted bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-600'
           }`}
         >
           {sending ? '...' : isDmMode ? 'DM' : 'Send'}

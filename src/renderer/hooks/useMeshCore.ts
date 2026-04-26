@@ -2531,15 +2531,21 @@ export function useMeshCore() {
         setNodes((prev) => {
           const next = new Map(prev);
           const existing = next.get(stubId);
-          const updated = existing
+          const updated: MeshNode = existing
             ? {
                 ...existing,
                 last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
                 ...(hopsAway != null ? { hops_away: hopsAway } : {}),
+                source: 'rf',
+                heard_via_mqtt_only: false,
+                via_mqtt: false,
               }
             : {
                 ...minimalMeshcoreChatNode(stubId, displayName, d.senderTimestamp, 'rf'),
                 ...(hopsAway != null ? { hops_away: hopsAway } : {}),
+                source: 'rf',
+                heard_via_mqtt_only: false,
+                via_mqtt: false,
               };
           next.set(stubId, updated);
           if (hopsAway != null) {
@@ -2731,6 +2737,9 @@ export function useMeshCore() {
                 snr: snr,
                 rssi: rssi,
                 last_heard: Math.max(existing.last_heard ?? 0, nowSec),
+                source: 'rf',
+                heard_via_mqtt_only: false,
+                via_mqtt: false,
               };
 
               // Optimization: skip identical updates

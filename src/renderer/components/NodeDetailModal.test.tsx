@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -81,5 +81,105 @@ describe('NodeDetailModal accessibility', () => {
       />,
     );
     expect(container.firstChild).toBeNull();
+  });
+
+  it('shows position history summary when points exist for node', () => {
+    const now = Date.now();
+    const points = new Map<number, { t: number; lat: number; lon: number }[]>([
+      [
+        mockNode.node_id,
+        [
+          { t: now - 60 * 60 * 1000, lat: 40.1, lon: -105.1 },
+          { t: now, lat: 40.2, lon: -105.2 },
+        ],
+      ],
+    ]);
+
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+        positionHistory={points}
+      />,
+    );
+
+    expect(screen.getByText('Position History')).toBeInTheDocument();
+    expect(screen.getByText('Recorded Points')).toBeInTheDocument();
+    expect(screen.getByText('Time Span')).toBeInTheDocument();
+    expect(screen.getByText('Most recent: 40.20000, -105.20000')).toBeInTheDocument();
+    expect(screen.getAllByText(new Date(now).toLocaleString()).length).toBeGreaterThan(0);
+    expect(screen.getByText('40.20000, -105.20000')).toBeInTheDocument();
+  });
+
+  it('shows empty-state message when node has no recorded history', () => {
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+        positionHistory={new Map()}
+      />,
+    );
+
+    expect(screen.getByText('Position History')).toBeInTheDocument();
+    expect(screen.getByText('No position history recorded')).toBeInTheDocument();
+  });
+
+  it('caps rendered position rows to newest 100 entries', () => {
+    const nodeId = mockNode.node_id;
+    const base = Date.now() - 200_000;
+    const points = Array.from({ length: 101 }, (_, i) => ({
+      t: base + i * 1000,
+      lat: 41 + i / 1000,
+      lon: -106 - i / 1000,
+    }));
+
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+        positionHistory={new Map([[nodeId, points]])}
+      />,
+    );
+
+    expect(screen.getByText('Showing newest 100 of 101 points')).toBeInTheDocument();
+    expect(
+      screen.getAllByText(new Date(base + 100 * 1000).toLocaleString()).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText('41.00000, -106.00000')).not.toBeInTheDocument();
+  });
+
+  it('shows node online status badge in header', () => {
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+      />,
+    );
+
+    expect(screen.getByText('Online')).toBeInTheDocument();
   });
 });

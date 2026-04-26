@@ -2384,8 +2384,7 @@ export default function ConnectionPanel({
                 });
               }}
               disabled={mqttStatus === 'connecting'}
-              className="w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-40"
-              style={{ backgroundColor: '#4CAF50' }}
+              className="w-full rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-400 disabled:opacity-40"
             >
               Connect
             </button>
@@ -2571,8 +2570,7 @@ export default function ConnectionPanel({
             <button
               type="button"
               onClick={handleReconnect}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
-              style={{ backgroundColor: '#4CAF50' }}
+              className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-400"
             >
               Reconnect
             </button>
@@ -2699,10 +2697,9 @@ export default function ConnectionPanel({
                     }}
                     className={`flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
                       connectionType === type
-                        ? 'ring-bright-green text-white ring-2'
+                        ? 'ring-bright-green bg-green-500 text-white ring-2'
                         : 'bg-secondary-dark text-gray-300 hover:bg-gray-600'
                     }`}
-                    style={connectionType === type ? { backgroundColor: '#4CAF50' } : undefined}
                   >
                     <ConnectionIcon type={type} />
                     {type === 'ble' && 'Bluetooth'}
@@ -2728,10 +2725,9 @@ export default function ConnectionPanel({
                     }}
                     className={`flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
                       connectionType === type
-                        ? 'text-white ring-2 ring-purple-500'
+                        ? 'bg-violet-600 text-white ring-2 ring-purple-500'
                         : 'bg-secondary-dark text-gray-300 hover:bg-gray-600'
                     }`}
-                    style={connectionType === type ? { backgroundColor: '#7c3aed' } : undefined}
                   >
                     <ConnectionIcon type={type} />
                     {type === 'ble' && 'Bluetooth'}
@@ -2850,8 +2846,7 @@ export default function ConnectionPanel({
                 state.status === 'connecting' ||
                 (connectionType === 'http' && !activeHostAddress.trim())
               }
-              className="w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ backgroundColor: '#4CAF50' }}
+              className="w-full rounded-lg bg-green-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Connect
             </button>

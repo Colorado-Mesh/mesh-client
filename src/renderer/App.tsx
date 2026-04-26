@@ -73,6 +73,7 @@ import { applyThemeColors, loadThemeColors } from './lib/themeColors';
 import type { ChatMessage, DeviceState, MeshProtocol, MQTTSettings, MQTTStatus } from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
+import { usePositionHistoryStore } from './stores/positionHistoryStore';
 
 // Tabs (0-indexed) that are disabled in MeshCore mode
 // Security tab (index 7) is hidden for MeshCore since PKI config is not supported
@@ -403,6 +404,12 @@ export default function App() {
   }, [sidebarCollapsed]);
 
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
+  const selectedNodeHistoryPoints = usePositionHistoryStore(
+    useCallback(
+      (s) => (selectedNodeId == null ? undefined : s.history.get(selectedNodeId)),
+      [selectedNodeId],
+    ),
+  );
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [locationFilter, setLocationFilter] = useState<LocationFilter>(() => {
@@ -761,8 +768,29 @@ export default function App() {
   const isConnectedOrOperational = isOperational || device.state.status === 'connected';
   const selectedNode = useMemo(() => {
     if (selectedNodeId == null) return null;
-    return nodesForUi.get(selectedNodeId) ?? meshNodeStubForDetailModal(selectedNodeId);
-  }, [selectedNodeId, nodesForUi]);
+    const liveNode = nodesForUi.get(selectedNodeId);
+    if (liveNode) return liveNode;
+
+    const fallback = meshNodeStubForDetailModal(selectedNodeId);
+    const historyPoints = selectedNodeHistoryPoints;
+    if (!historyPoints || historyPoints.length === 0) return fallback;
+
+    let latest = historyPoints[0];
+    for (let i = 1; i < historyPoints.length; i++) {
+      if (historyPoints[i].t > latest.t) latest = historyPoints[i];
+    }
+
+    return {
+      ...fallback,
+      latitude: latest.lat,
+      longitude: latest.lon,
+      last_heard: Math.max(fallback.last_heard, Math.floor(latest.t / 1000)),
+    };
+  }, [selectedNodeId, nodesForUi, selectedNodeHistoryPoints]);
+  const selectedNodeHistory = useMemo(() => {
+    if (selectedNodeId == null || !selectedNodeHistoryPoints) return undefined;
+    return new Map([[selectedNodeId, selectedNodeHistoryPoints]]);
+  }, [selectedNodeId, selectedNodeHistoryPoints]);
 
   const handleResend = useCallback(
     (msg: ChatMessage) => {
@@ -1765,6 +1793,7 @@ export default function App() {
                               waypoints={device.waypoints}
                               onSendWaypoint={device.sendWaypoint}
                               onDeleteWaypoint={device.deleteWaypoint}
+                              onNodeClick={setSelectedNodeId}
                               protocol={protocol}
                             />
                           </Suspense>
@@ -2431,6 +2460,7 @@ export default function App() {
             meshcoreManufacturerModel={
               protocol === 'meshcore' ? meshcoreDevice.state.manufacturerModel : undefined
             }
+            positionHistory={selectedNodeHistory}
           />
         </Suspense>
       )}
