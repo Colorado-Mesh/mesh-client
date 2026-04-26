@@ -1013,7 +1013,7 @@ export default function NodeDetailModal({
                         Showing newest {POSITION_HISTORY_MAX_ROWS} of {sorted.length} points
                       </div>
                     )}
-                    <div className="bg-secondary-dark max-h-48 space-y-1 overflow-auto rounded p-2">
+                    <div className="bg-secondary-dark space-y-1 rounded p-2">
                       {recentPoints.map((point, idx) => (
                         <div
                           key={`${point.t}-${point.lat}-${point.lon}-${idx}`}
