@@ -891,10 +891,7 @@ export default function MapPanel({
             {statusCounts.online}
           </span>
           <span className="flex items-center gap-1">
-            <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ backgroundColor: '#451B88' }}
-            />
+            <span className="inline-block h-2 w-2 rounded-full bg-violet-900" />
             {statusCounts.stale}
           </span>
           <span className="flex items-center gap-1">

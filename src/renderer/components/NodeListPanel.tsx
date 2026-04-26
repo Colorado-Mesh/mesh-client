@@ -592,10 +592,7 @@ export default function NodeListPanel({
           online
         </span>
         <span className="flex items-center gap-1">
-          <span
-            className="inline-block h-2 w-2 rounded-full"
-            style={{ backgroundColor: '#451B88' }}
-          />
+          <span className="inline-block h-2 w-2 rounded-full bg-violet-900" />
           {
             nodeList.filter(
               (n) =>
