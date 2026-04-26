@@ -179,7 +179,7 @@ function getMarkerIcon(
   isMqttOnly = false,
   nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = null,
 ): L.Icon {
-  const color = status === 'online' ? '#86efac' : status === 'stale' ? '#4c1d95' : '#6b7280';
+  const color = status === 'online' ? '#86efac' : status === 'stale' ? '#4c1d95' : '#334155';
   const opacity = status === 'online' ? 1 : status === 'stale' ? 0.65 : 0.45;
   return createMarkerIcon(color, isSelf, cu, opacity, isMqttOnly, nodeBadge);
 }
@@ -187,7 +187,7 @@ function getMarkerIcon(
 const PATH_COLORS = {
   online: '#86efac',
   stale: '#4c1d95',
-  offline: '#6b7280',
+  offline: '#334155',
 } as const;
 
 // ─── DiagnosticPanes ──────────────────────────────────────────────────────────
@@ -895,7 +895,7 @@ export default function MapPanel({
             {statusCounts.stale}
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-gray-500" />
+            <span className="inline-block h-2 w-2 rounded-full bg-slate-700" />
             {statusCounts.offline}
           </span>
         </div>

@@ -603,7 +603,7 @@ export default function NodeListPanel({
           stale
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-gray-600" />
+          <span className="inline-block h-2 w-2 rounded-full bg-slate-700" />
           {
             nodeList.filter(
               (n) =>
