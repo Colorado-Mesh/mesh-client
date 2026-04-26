@@ -6,22 +6,23 @@ import type { PathRecord } from '../lib/pathHistoryTypes';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import MapPanel from './MapPanel';
 
-const { leafletIconMock, mapContainerMock } = vi.hoisted(() => ({
-  leafletIconMock: vi.fn().mockReturnValue({}),
-  mapContainerMock: vi.fn(({ children }: { children: React.ReactNode }) => (
-    <div data-testid="map-container">{children}</div>
-  )),
-}));
-
-vi.mock('../stores/diagnosticsStore', () => ({
-  useDiagnosticsStore: (selector: (s: unknown) => unknown) => {
-    const store = {
-      diagnosticRows: [],
+const { leafletIconMock, mapContainerMock, circleMock, polylineMock, diagnosticsStoreState } =
+  vi.hoisted(() => ({
+    leafletIconMock: vi.fn().mockReturnValue({}),
+    mapContainerMock: vi.fn(({ children }: { children: React.ReactNode }) => (
+      <div data-testid="map-container">{children}</div>
+    )),
+    circleMock: vi.fn(() => null),
+    polylineMock: vi.fn(() => null),
+    diagnosticsStoreState: {
+      diagnosticRows: [] as unknown[],
       anomalyHalosEnabled: false,
       congestionHalosEnabled: false,
-    };
-    return selector(store);
-  },
+    },
+  }));
+
+vi.mock('../stores/diagnosticsStore', () => ({
+  useDiagnosticsStore: (selector: (s: unknown) => unknown) => selector(diagnosticsStoreState),
 }));
 
 vi.mock('../stores/mapViewportStore', () => ({
@@ -47,8 +48,9 @@ vi.mock('react-leaflet', () => ({
   TileLayer: () => null,
   Marker: () => null,
   Popup: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Circle: () => null,
+  Polyline: polylineMock,
   CircleMarker: () => null,
+  Circle: circleMock,
   useMap: () => mockMapInstance,
   useMapEvents: () => mockMapInstance,
 }));
@@ -72,6 +74,14 @@ const defaultFilter = {
 };
 
 describe('MapPanel accessibility', () => {
+  beforeEach(() => {
+    diagnosticsStoreState.diagnosticRows = [];
+    diagnosticsStoreState.anomalyHalosEnabled = false;
+    diagnosticsStoreState.congestionHalosEnabled = false;
+    circleMock.mockClear();
+    polylineMock.mockClear();
+  });
+
   it('adds wifi icon badge to repeater map markers', () => {
     leafletIconMock.mockClear();
     const nowSec = Math.floor(Date.now() / 1000);
@@ -179,6 +189,40 @@ describe('MapPanel accessibility', () => {
     const markerIcons = iconCalls.filter((call) => typeof call.iconUrl === 'string');
     const decodedSvgs = markerIcons.map((call) => decodeURIComponent(call.iconUrl!));
     expect(decodedSvgs.some((svg) => svg.includes('M1 9l2 2c4.97'))).toBe(false);
+  });
+
+  it('renders circle overlays when enabled regardless of node count', () => {
+    diagnosticsStoreState.congestionHalosEnabled = true;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const nodes = new Map(
+      Array.from({ length: 260 }, (_, i) => [
+        i + 1,
+        {
+          node_id: i + 1,
+          long_name: `Node-${i + 1}`,
+          short_name: `N${i + 1}`,
+          hw_model: 'T-Echo',
+          snr: 0,
+          battery: 0,
+          last_heard: nowSec,
+          latitude: 40 + i * 0.0001,
+          longitude: -105 - i * 0.0001,
+          channel_utilization: 18,
+        },
+      ]),
+    );
+
+    render(
+      <MapPanel
+        nodes={nodes}
+        myNodeNum={1}
+        locationFilter={defaultFilter}
+        ourPosition={null}
+        onLocateMe={vi.fn().mockResolvedValue(null)}
+      />,
+    );
+
+    expect(circleMock).toHaveBeenCalled();
   });
 
   it('root element has h-full so Leaflet container receives a non-zero height', () => {

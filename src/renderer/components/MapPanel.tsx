@@ -906,7 +906,7 @@ export default function MapPanel({
         </div>
       </div>
 
-      <MapContainer center={mapCenter} zoom={mapZoom} className="absolute inset-0">
+      <MapContainer center={mapCenter} zoom={mapZoom} className="absolute inset-0" preferCanvas>
         <DiagnosticPanes />
         <ViewportSaver hasAnyPositions={positions.length > 0 || !!ourPosition} />
         <MapFitter
@@ -918,6 +918,8 @@ export default function MapPanel({
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          keepBuffer={1}
+          updateWhenIdle
         />
         {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
           <Polyline key={`path-${nodeId}`} positions={pathPositions} pathOptions={pathOptions} />
