@@ -43,7 +43,9 @@ vi.mock('../stores/mapViewportStore', () => ({
 // Leaflet doesn't work in jsdom — mock react-leaflet
 const mockMapInstance = {
   fitBounds: vi.fn(),
+  flyTo: vi.fn(),
   setView: vi.fn(),
+  getZoom: vi.fn().mockReturnValue(10),
   on: vi.fn(),
   off: vi.fn(),
   getPane: vi.fn().mockReturnValue(null),
@@ -94,6 +96,7 @@ describe('MapPanel accessibility', () => {
     markerMock.mockClear();
     circleMock.mockClear();
     polylineMock.mockClear();
+    mockMapInstance.flyTo.mockClear();
   });
 
   it('adds wifi icon badge to repeater map markers', () => {
@@ -435,6 +438,9 @@ describe('MapPanel accessibility', () => {
     };
     expect(pathProps?.eventHandlers?.click).toBeDefined();
     pathProps.eventHandlers?.click?.();
+    expect(mockMapInstance.flyTo).toHaveBeenCalledWith([40.1005, -105.1005], 13, {
+      duration: 0.35,
+    });
     expect(onNodeClick).toHaveBeenCalledWith(7);
   });
 });

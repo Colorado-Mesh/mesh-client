@@ -567,6 +567,38 @@ function LocateMeControl({
   );
 }
 
+function PathPolyline({
+  nodeId,
+  pathPositions,
+  pathOptions,
+  onNodeClick,
+}: {
+  nodeId: number;
+  pathPositions: [number, number][];
+  pathOptions: { color: string; weight: number; opacity: number };
+  onNodeClick?: (nodeId: number) => void;
+}) {
+  const map = useMap();
+
+  return (
+    <Polyline
+      key={`path-${nodeId}`}
+      positions={pathPositions}
+      pathOptions={pathOptions}
+      eventHandlers={{
+        click: () => {
+          const latestPoint = pathPositions[pathPositions.length - 1];
+          if (latestPoint) {
+            const targetZoom = Math.max(map.getZoom(), 13);
+            map.flyTo(latestPoint, targetZoom, { duration: 0.35 });
+          }
+          onNodeClick?.(nodeId);
+        },
+      }}
+    />
+  );
+}
+
 // ─── MapPanel ─────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -1057,15 +1089,12 @@ export default function MapPanel({
           updateWhenIdle
         />
         {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
-          <Polyline
+          <PathPolyline
             key={`path-${nodeId}`}
-            positions={pathPositions}
+            nodeId={nodeId}
+            pathPositions={pathPositions}
             pathOptions={pathOptions}
-            eventHandlers={{
-              click: () => {
-                onNodeClick?.(nodeId);
-              },
-            }}
+            onNodeClick={onNodeClick}
           />
         ))}
         {routeWeightPolylines}

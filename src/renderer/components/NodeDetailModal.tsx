@@ -330,7 +330,7 @@ export default function NodeDetailModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="node-modal-title"
-          className="bg-deep-black relative z-10 flex max-h-[90vh] min-h-0 w-full max-w-xl flex-col overflow-hidden rounded-xl border border-gray-700 shadow-2xl"
+          className="bg-deep-black relative z-10 flex max-h-[90vh] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-xl border border-gray-700 shadow-2xl"
         >
           {/* Header */}
           <div className="flex shrink-0 items-center justify-between border-b border-gray-700 px-5 py-4">
