@@ -2,6 +2,10 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import {
+  MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT,
+  MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT,
+} from '../shared/meshcorePathHistoryLimits';
 import { escapeSqlLikePattern } from '../shared/sqlLikeEscape';
 import { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
@@ -1376,16 +1380,32 @@ export function recordMeshcorePathOutcome(
 }
 
 export function getMeshcorePathHistory(nodeId: number): MeshcorePathHistoryRow[] {
-  return getDatabase()
-    .prepare(`SELECT * FROM meshcore_path_history WHERE node_id = ? ORDER BY updated_at DESC`)
-    .all(nodeId) as MeshcorePathHistoryRow[];
+  const rows = getDatabase()
+    .prepare(
+      `SELECT * FROM meshcore_path_history WHERE node_id = ? ORDER BY updated_at DESC LIMIT ?`,
+    )
+    .all(nodeId, MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT) as MeshcorePathHistoryRow[];
+  if (rows.length >= MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT) {
+    console.warn(
+      '[database] getMeshcorePathHistory: row limit reached (results may be truncated)',
+      { nodeId, limit: MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT },
+    );
+  }
+  return rows;
 }
 
 /** All stored path variants for all nodes (for hydrating path history at app start). */
 export function getAllMeshcorePathHistory(): MeshcorePathHistoryRow[] {
-  return getDatabase()
-    .prepare(`SELECT * FROM meshcore_path_history ORDER BY node_id, updated_at DESC`)
-    .all() as MeshcorePathHistoryRow[];
+  const rows = getDatabase()
+    .prepare(`SELECT * FROM meshcore_path_history ORDER BY node_id, updated_at DESC LIMIT ?`)
+    .all(MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT) as MeshcorePathHistoryRow[];
+  if (rows.length >= MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT) {
+    console.warn(
+      '[database] getAllMeshcorePathHistory: row limit reached; path history is truncated',
+      { limit: MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT },
+    );
+  }
+  return rows;
 }
 
 export function deleteMeshcorePathHistoryForNode(nodeId: number): void {

@@ -9,6 +9,7 @@ import {
   preferNonEmptyTrimmedString,
 } from '../../shared/nodeNameUtils';
 import { getAppSettingsRaw } from '../lib/appSettingsStorage';
+import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import {
   createBleConnection,
   createConnection,
@@ -547,7 +548,7 @@ export function useDevice() {
       .getMessages(undefined, getMessageLoadLimit())
       .then((msgs) => {
         const reversed = msgs.reverse();
-        setMessages(reversed);
+        setMessages(trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES));
         // Seed dedup map so device config-sync replays are caught immediately
         for (const m of reversed) {
           if (m.packetId) {
@@ -879,7 +880,7 @@ export function useDevice() {
             m.payload === mqttWithPreviews.payload,
         );
         if (isDup) return prev;
-        return [...prev, mqttWithPreviews];
+        return trimChatMessagesToMax([...prev, mqttWithPreviews], MAX_IN_MEMORY_CHAT_MESSAGES);
       });
       void window.electronAPI.db.saveMessage(mqttWithPreviews);
     });
@@ -1178,7 +1179,7 @@ export function useDevice() {
           if (!rfMsg.emoji && rfMsg.packetId && prev.some((m) => m.packetId === rfMsg.packetId)) {
             return prev;
           }
-          return [...prev, rfMsg];
+          return trimChatMessagesToMax([...prev, rfMsg], MAX_IN_MEMORY_CHAT_MESSAGES);
         });
         void window.electronAPI.db.saveMessage(rfMsg);
 
@@ -2677,7 +2678,7 @@ export function useDevice() {
         messagesRef.current,
         getNodeName,
       );
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES));
       void window.electronAPI.db.saveMessage(msg);
 
       // For device path: track this tempId so the RF echo can be suppressed (avoids duplicate)
@@ -2925,7 +2926,7 @@ export function useDevice() {
       .getMessages(undefined, getMessageLoadLimit())
       .then((msgs) => {
         console.debug(`[useDevice] refreshMessagesFromDb: loaded ${msgs.length} messages`);
-        setMessages(msgs.reverse());
+        setMessages(trimChatMessagesToMax(msgs.reverse(), MAX_IN_MEMORY_CHAT_MESSAGES));
       })
       .catch((err: unknown) => {
         console.error('[useDevice] Failed to refresh messages:', err);
@@ -3111,7 +3112,7 @@ export function useDevice() {
           (m) => m.emoji === emoji && m.replyId === replyId && m.sender_id === from,
         );
         if (isDup) return prev;
-        return [...prev, msg];
+        return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
       });
       void window.electronAPI.db.saveMessage(msg);
 

@@ -36,7 +36,6 @@ const DEFAULT_PROPS = {
   onDisconnect: vi.fn().mockResolvedValue(undefined),
   mqttStatus: 'disconnected' as const,
   protocol: 'meshtastic' as const,
-  onProtocolChange: vi.fn(),
 };
 
 describe('ConnectionPanel hardware event wiring', () => {

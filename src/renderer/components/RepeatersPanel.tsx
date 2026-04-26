@@ -60,7 +60,7 @@ interface Props {
 const SIGNAL_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function isSignalRecent(lastAdvert: number | null | undefined): boolean {
-  if (lastAdvert == null) return true;
+  if (lastAdvert == null) return false;
   const advertMs = normalizeLastHeardMs(lastAdvert);
   if (!advertMs) return false;
   return Date.now() - advertMs < SIGNAL_MAX_AGE_MS;

@@ -188,6 +188,8 @@ export class NodeSqliteDB {
       if (!ALLOWED_PRAGMAS.has(key)) {
         throw new Error(`db-compat: PRAGMA '${key}' is not on the allowed list`);
       }
+      // `val` is interpolated into SQL; `key` is allowlisted. `val` must remain a hardcoded literal
+      // or strictly internal/sanitized — never pass arbitrary user/caller-controlled strings.
       this._run(`PRAGMA ${key} = ${val}`);
       return undefined;
     }

@@ -299,3 +299,19 @@ describe('escapeSqlLikePattern', () => {
     expect(escapeSqlLikePattern('')).toBe('');
   });
 });
+
+describe('meshcore_path_history bounded reads', () => {
+  it('getMeshcorePathHistory uses ORDER BY updated_at DESC with a LIMIT placeholder', () => {
+    expect(DB_SOURCE).toMatch(
+      /export function getMeshcorePathHistory[\s\S]*?ORDER BY updated_at DESC LIMIT \?/,
+    );
+    expect(DB_SOURCE).toContain('MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT');
+  });
+
+  it('getAllMeshcorePathHistory uses ORDER BY node_id, updated_at DESC with a LIMIT placeholder', () => {
+    expect(DB_SOURCE).toMatch(
+      /export function getAllMeshcorePathHistory[\s\S]*?ORDER BY node_id, updated_at DESC LIMIT \?/,
+    );
+    expect(DB_SOURCE).toContain('MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT');
+  });
+});

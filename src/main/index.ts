@@ -4160,6 +4160,8 @@ let httpDevice: {
 } | null = null;
 
 const HTTP_FETCH_INTERVAL_MS = 3000;
+/** Max Meshtastic HTTP toRadio payload (aligned with meshcore:tcp-write cap). */
+const HTTP_WRITE_TO_RADIO_MAX_BYTES = 256 * 1024;
 const MAX_HOST_LENGTH = 253;
 
 /**
@@ -4253,8 +4255,13 @@ ipcMain.handle('http:write', async (_event, data: number[]) => {
   if (!httpDevice) {
     throw new Error('http:write: no active connection');
   }
-  if (!Array.isArray(data)) {
-    throw new Error('http:write: invalid data');
+  if (!Array.isArray(data) || data.length > HTTP_WRITE_TO_RADIO_MAX_BYTES) {
+    throw new Error(
+      `http:write: invalid or oversized payload (max ${HTTP_WRITE_TO_RADIO_MAX_BYTES} bytes)`,
+    );
+  }
+  if (!data.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) {
+    throw new Error('http:write: byte values must be integers 0-255');
   }
   await httpWriteToRadio(httpDevice.host, httpDevice.tls, new Uint8Array(data));
 });
