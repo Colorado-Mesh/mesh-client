@@ -55,6 +55,10 @@ vi.mock('react-leaflet', () => ({
   useMapEvents: () => mockMapInstance,
 }));
 
+vi.mock('react-leaflet-cluster', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 vi.mock('leaflet', () => ({
   default: {
     divIcon: vi.fn().mockReturnValue({}),
@@ -195,7 +199,7 @@ describe('MapPanel accessibility', () => {
     diagnosticsStoreState.congestionHalosEnabled = true;
     const nowSec = Math.floor(Date.now() / 1000);
     const nodes = new Map(
-      Array.from({ length: 260 }, (_, i) => [
+      Array.from({ length: 1000 }, (_, i) => [
         i + 1,
         {
           node_id: i + 1,
