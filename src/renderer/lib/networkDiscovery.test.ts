@@ -20,9 +20,9 @@ describe('startNetworkDiscovery', () => {
       },
       () => [1, 2, 3],
       60_000,
+      0,
     );
 
-    // Flush the immediate sweep (no timers involved when interNodeDelayMs=0)
     await vi.advanceTimersByTimeAsync(0);
     stop();
 
@@ -38,6 +38,7 @@ describe('startNetworkDiscovery', () => {
       },
       () => [10, 20],
       60_000,
+      0,
     );
 
     stop();
@@ -55,6 +56,7 @@ describe('startNetworkDiscovery', () => {
       },
       () => [5],
       10_000,
+      0,
     );
 
     // First sweep (immediate)
@@ -77,6 +79,7 @@ describe('startNetworkDiscovery', () => {
       },
       () => [7],
       5_000,
+      0,
     );
 
     await vi.advanceTimersByTimeAsync(0);
@@ -100,6 +103,7 @@ describe('startNetworkDiscovery', () => {
       },
       () => [1, 2, 3],
       60_000,
+      0,
     );
 
     await vi.advanceTimersByTimeAsync(0);
@@ -113,5 +117,51 @@ describe('startNetworkDiscovery', () => {
     );
 
     warnSpy.mockRestore();
+  });
+
+  it('staggers node trace starts by interNodeStaggerMs', async () => {
+    const startTimes: Record<number, number> = {};
+    const stop = startNetworkDiscovery(
+      (id) => {
+        startTimes[id] = Date.now();
+        return Promise.resolve();
+      },
+      () => [1, 2, 3],
+      60_000,
+      500,
+    );
+
+    // Advance past initial yield then through all stagger timers
+    await vi.advanceTimersByTimeAsync(0); // yield for index 0
+    await vi.advanceTimersByTimeAsync(500); // stagger for index 1
+    await vi.advanceTimersByTimeAsync(500); // stagger delta for index 2
+    stop();
+
+    expect(startTimes[1]).toBeDefined();
+    expect(startTimes[2]).toBeDefined();
+    expect(startTimes[3]).toBeDefined();
+    // Each node starts after the previous stagger window
+    expect(startTimes[2]).toBeGreaterThanOrEqual(startTimes[1] + 500);
+    expect(startTimes[3]).toBeGreaterThanOrEqual(startTimes[1] + 1_000);
+  });
+
+  it('stops staggered traces mid-sweep when stop() is called', async () => {
+    const traced: number[] = [];
+    const stop = startNetworkDiscovery(
+      (id) => {
+        traced.push(id);
+        return Promise.resolve();
+      },
+      () => [1, 2, 3],
+      60_000,
+      500,
+    );
+
+    // Let node 1 (index 0) trace, then stop before node 2's stagger fires
+    await vi.advanceTimersByTimeAsync(0);
+    stop();
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(traced).toEqual([1]);
   });
 });
