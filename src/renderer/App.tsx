@@ -1818,6 +1818,7 @@ export default function App() {
                               channelConfigs={device.channelConfigs}
                               isConnected={isOperational}
                               telemetryDeviceUpdateInterval={device.telemetryDeviceUpdateInterval}
+                              deviceFixedPosition={device.deviceFixedPosition}
                               onReboot={
                                 protocol === 'meshcore'
                                   ? () => meshcoreDevice.reboot()

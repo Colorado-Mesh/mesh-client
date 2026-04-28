@@ -189,6 +189,7 @@ export function useDevice() {
   const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [deviceGpsMode, setDeviceGpsMode] = useState<number>(0);
+  const [deviceFixedPosition, setDeviceFixedPosition] = useState<boolean | null>(null);
   const [telemetryDeviceUpdateInterval, setTelemetryDeviceUpdateInterval] = useState<number | null>(
     null,
   );
@@ -1844,6 +1845,11 @@ export function useDevice() {
         if (cfg.payloadVariant?.case === 'position' && cfg.payloadVariant.value?.gpsMode != null) {
           deviceGpsModeRef.current = cfg.payloadVariant.value.gpsMode;
           setDeviceGpsMode(cfg.payloadVariant.value.gpsMode);
+          const fixedPosition = (cfg.payloadVariant.value as { fixedPosition?: boolean })
+            .fixedPosition;
+          if (typeof fixedPosition === 'boolean') {
+            setDeviceFixedPosition(fixedPosition);
+          }
         }
         if (cfg.payloadVariant?.case === 'telemetry' && cfg.payloadVariant.value != null) {
           const interval =
@@ -2727,7 +2733,6 @@ export function useDevice() {
 
   const setConfig = useCallback(async (config: unknown) => {
     if (!deviceRef.current) return;
-
     await deviceRef.current.setConfig(config as any);
   }, []);
 
@@ -3208,6 +3213,7 @@ export function useDevice() {
     virtualNodeId,
     lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
     deviceGpsMode,
+    deviceFixedPosition,
     telemetryEnabled,
     telemetryDeviceUpdateInterval,
     connect,

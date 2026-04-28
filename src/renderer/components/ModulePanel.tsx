@@ -410,18 +410,26 @@ export default function ModulePanel({
     setAmbientBlue(parseInt(hex.slice(5, 7), 16));
   };
 
-  const applyModule = async (sectionName: string, moduleCase: string, value: unknown) => {
+  const applyModule = (sectionName: string, moduleCase: string, value: unknown) => {
     setApplyingSection(sectionName);
-    try {
-      await onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
-      await onCommit();
-      addToast(`${sectionName} applied.`, 'success');
-    } catch (err) {
-      console.warn('[ModulePanel] apply failed', err);
-      addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
-    } finally {
-      setApplyingSection(null);
-    }
+    const setPromise = onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
+    void setPromise
+      .then(() => {
+        addToast(`${sectionName} sent. Device may briefly reboot.`, 'success');
+        return onCommit()
+          .then(() => {})
+          .catch((err: unknown) => {
+            addToast(
+              `Commit failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+              'error',
+            );
+          });
+      })
+      .catch((err: unknown) => {
+        console.warn('[ModulePanel] apply failed', err);
+        addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      });
+    setApplyingSection(null);
   };
 
   return (
@@ -443,15 +451,15 @@ export default function ModulePanel({
       {/* ═══ Ambient Lighting Module ═══ */}
       <ModuleSection
         title="Ambient Lighting Module"
-        onApply={() =>
+        onApply={() => {
           applyModule('Ambient Lighting', 'ambientLighting', {
             ledState: ambientLedState,
             red: ambientRed,
             green: ambientGreen,
             blue: ambientBlue,
             current: ambientCurrent,
-          })
-        }
+          });
+        }}
         applying={applyingSection === 'Ambient Lighting'}
         disabled={disabled}
       >
@@ -563,14 +571,14 @@ export default function ModulePanel({
       {/* ═══ Detection Sensor Module ═══ */}
       <ModuleSection
         title="Detection Sensor Module"
-        onApply={() =>
+        onApply={() => {
           applyModule('Detection Sensor', 'detectionSensor', {
             enabled: detectEnabled,
             name: detectName,
             minimumBroadcastSecs: detectMinBroadcast,
             stateBroadcastSecs: detectStateBroadcast,
-          })
-        }
+          });
+        }}
         applying={applyingSection === 'Detection Sensor'}
         disabled={disabled}
       >
@@ -611,7 +619,7 @@ export default function ModulePanel({
       {/* ═══ External Notification Module ═══ */}
       <ModuleSection
         title="External Notification Module"
-        onApply={() =>
+        onApply={() => {
           applyModule('External Notification', 'externalNotification', {
             enabled: extEnabled,
             active: extActive,
@@ -628,8 +636,8 @@ export default function ModulePanel({
             alertBellVibra: extAlertBellVibra,
             usePwm: extUsePwm,
             useI2sAsBuzzer: extUseI2sAsBuzzer,
-          })
-        }
+          });
+        }}
         applying={applyingSection === 'External Notification'}
         disabled={disabled}
       >
@@ -764,7 +772,7 @@ export default function ModulePanel({
       {/* ═══ MQTT Relay Module ═══ */}
       <ModuleSection
         title="MQTT Relay (Device-Side)"
-        onApply={() =>
+        onApply={() => {
           applyModule('MQTT Relay', 'mqtt', {
             enabled: mqttEnabled,
             address: mqttAddress,
@@ -775,8 +783,8 @@ export default function ModulePanel({
             tlsEnabled: mqttTls,
             root: mqttRoot,
             mapReportingEnabled: mqttMapReporting,
-          })
-        }
+          });
+        }}
         applying={applyingSection === 'MQTT Relay'}
         disabled={disabled}
       >
@@ -846,12 +854,12 @@ export default function ModulePanel({
       {/* ═══ Pax Counter Module ═══ */}
       <ModuleSection
         title="Pax Counter Module"
-        onApply={() =>
+        onApply={() => {
           applyModule('Pax Counter', 'paxcounter', {
             enabled: paxEnabled,
             paxcounterUpdateInterval: paxInterval,
-          })
-        }
+          });
+        }}
         applying={applyingSection === 'Pax Counter'}
         disabled={disabled}
       >
@@ -885,13 +893,13 @@ export default function ModulePanel({
       {/* ═══ Range Test Module ═══ */}
       <ModuleSection
         title="Range Test Module"
-        onApply={() =>
+        onApply={() => {
           applyModule('Range Test', 'rangeTest', {
             enabled: rangeEnabled,
             sender: rangeSenderInterval,
             save: rangeSave,
-          })
-        }
+          });
+        }}
         applying={applyingSection === 'Range Test'}
         disabled={disabled}
       >
@@ -995,13 +1003,13 @@ export default function ModulePanel({
       {/* ═══ Serial Module ═══ */}
       <ModuleSection
         title="Serial Module"
-        onApply={() =>
+        onApply={() => {
           applyModule('Serial Module', 'serial', {
             enabled: serialEnabled,
             echo: serialEcho,
             baud: serialBaud,
-          })
-        }
+          });
+        }}
         applying={applyingSection === 'Serial Module'}
         disabled={disabled}
       >
@@ -1045,15 +1053,15 @@ export default function ModulePanel({
       {/* ═══ Store & Forward Module ═══ */}
       <ModuleSection
         title="Store & Forward Module"
-        onApply={() =>
+        onApply={() => {
           applyModule('Store & Forward', 'storeForward', {
             enabled: sfEnabled,
             heartbeat: sfHeartbeat,
             numRecords: sfNumRecords,
             historyReturnMax: sfHistoryMax,
             historyReturnWindow: sfHistoryWindow,
-          })
-        }
+          });
+        }}
         applying={applyingSection === 'Store & Forward'}
         disabled={disabled}
       >
@@ -1103,15 +1111,15 @@ export default function ModulePanel({
       {/* ═══ Telemetry Module ═══ */}
       <ModuleSection
         title="Telemetry Module"
-        onApply={() =>
+        onApply={() => {
           applyModule('Telemetry Module', 'telemetry', {
             deviceUpdateInterval: telDeviceInterval,
             environmentUpdateInterval: telEnvInterval,
             environmentMeasurementEnabled: telEnvEnabled,
             powerMeasurementEnabled: telPowerEnabled,
             airQualityEnabled: telAirQualityEnabled,
-          })
-        }
+          });
+        }}
         applying={applyingSection === 'Telemetry Module'}
         disabled={disabled}
       >
