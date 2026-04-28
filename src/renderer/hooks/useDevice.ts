@@ -68,8 +68,6 @@ function getMessageLoadLimit(): number {
 }
 
 const MAX_TELEMETRY_POINTS = 50;
-const POLL_INTERVAL_MS = 30_000; // 30 seconds (BLE/serial)
-const HTTP_POLL_INTERVAL_MS = 60_000; // 60 seconds for WiFi — less contention with user sends
 const BROADCAST_ADDR = 0xffffffff;
 
 /** Portnums.TRACEROUTE_APP — use Number() so protobuf enums compare reliably */
@@ -141,8 +139,6 @@ export function useDevice() {
   const myNodeNumRef = useRef<number>(0);
   // Use a ref for nodes so event callbacks always see the latest value
   const nodesRef = useRef<Map<number, MeshNode>>(new Map());
-  // Track polling interval for node refresh
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Track event unsubscribe functions for cleanup
   const unsubscribesRef = useRef<(() => void)[]>([]);
 
@@ -422,25 +418,6 @@ export function useDevice() {
     const charging = batteryLevel > 100;
     const pct = Math.min(100, batteryLevel);
     setState((s) => ({ ...s, batteryPercent: pct, batteryCharging: charging }));
-  }, []);
-
-  // ─── Helper: start polling for node updates ─────────────────────
-  const startPolling = useCallback((connectionType?: ConnectionType | null) => {
-    if (pollRef.current) return; // Already polling
-    const intervalMs = connectionType === 'http' ? HTTP_POLL_INTERVAL_MS : POLL_INTERVAL_MS;
-    pollRef.current = setInterval(() => {
-      if (nodesRef.current.get(myNodeNumRef.current)?.role === ROLE_CLIENT_MUTE) return;
-      deviceRef.current?.requestPosition(0xffffffff).catch((e: unknown) => {
-        console.debug('[useDevice] requestPosition poll', e);
-      });
-    }, intervalMs);
-  }, []);
-
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
   }, []);
 
   // ─── Helper: clean up all event subscriptions ───────────────────
@@ -933,7 +910,6 @@ export function useDevice() {
     return () => {
       cleanupSubscriptions();
       clearConfigureTimeout();
-      stopPolling();
       stopWatchdog();
       stopGpsInterval();
       isReconnectingRef.current = false;
@@ -945,7 +921,7 @@ export function useDevice() {
         });
       }
     };
-  }, [cleanupSubscriptions, clearConfigureTimeout, stopPolling, stopWatchdog, stopGpsInterval]);
+  }, [cleanupSubscriptions, clearConfigureTimeout, stopWatchdog, stopGpsInterval]);
 
   // ─── Wire up all event subscriptions for a device ─────────────
   const wireSubscriptions = useCallback(
@@ -979,7 +955,6 @@ export function useDevice() {
                 });
               }
               cleanupSubscriptions();
-              stopPolling();
               stopWatchdog();
               stopGpsInterval();
               setState({
@@ -994,12 +969,11 @@ export function useDevice() {
           }
         }
 
-        // Start polling + watchdog when configured
+        // Start watchdog when configured
         if (status === 7) {
           clearConfigureTimeout();
           isConfiguringRef.current = false;
           lastDataReceivedRef.current = Date.now();
-          startPolling(type);
           startWatchdog();
           void refreshOurPositionRef.current();
           startGpsInterval();
@@ -1014,7 +988,6 @@ export function useDevice() {
           stopWatchdog();
           stopGpsInterval();
           cleanupSubscriptions();
-          stopPolling();
           setTraceRouteResults(new Map());
           setQueueStatus(null);
           setDeviceLogs([]);
@@ -2349,8 +2322,6 @@ export function useDevice() {
       applyOwnNodeBatteryFromDeviceMetrics,
       getNodeName,
       updateNodes,
-      startPolling,
-      stopPolling,
       startWatchdog,
       stopWatchdog,
       cleanupSubscriptions,
@@ -2371,7 +2342,6 @@ export function useDevice() {
     // Clean up existing connection
     clearConfigureTimeout();
     cleanupSubscriptions();
-    stopPolling();
     stopWatchdog();
     stopGpsInterval();
     const oldDevice = deviceRef.current;
@@ -2383,7 +2353,7 @@ export function useDevice() {
 
     // Begin reconnection
     void attemptReconnectRef.current();
-  }, [clearConfigureTimeout, cleanupSubscriptions, stopPolling, stopWatchdog, stopGpsInterval]);
+  }, [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog, stopGpsInterval]);
 
   // Keep the ref in sync
   handleConnectionLostRef.current = handleConnectionLost;
@@ -2468,7 +2438,6 @@ export function useDevice() {
       clearConfigureTimeout();
       if (deviceRef.current) {
         cleanupSubscriptions();
-        stopPolling();
         stopWatchdog();
         const oldDevice = deviceRef.current;
         deviceRef.current = null;
@@ -2511,7 +2480,6 @@ export function useDevice() {
         clearConfigureTimeout();
         console.error('[Meshtastic] Connection failed:', err);
         cleanupSubscriptions();
-        stopPolling();
         stopWatchdog();
         deviceRef.current = null;
         setState({
@@ -2524,7 +2492,7 @@ export function useDevice() {
         throw err;
       }
     },
-    [wireSubscriptions, cleanupSubscriptions, stopPolling, stopWatchdog, clearConfigureTimeout],
+    [wireSubscriptions, cleanupSubscriptions, stopWatchdog, clearConfigureTimeout],
   );
 
   /**
@@ -2542,7 +2510,6 @@ export function useDevice() {
       clearConfigureTimeout();
       if (deviceRef.current) {
         cleanupSubscriptions();
-        stopPolling();
         stopWatchdog();
         const oldDevice = deviceRef.current;
         deviceRef.current = null;
@@ -2582,7 +2549,6 @@ export function useDevice() {
         clearConfigureTimeout();
         console.error('[Meshtastic] Auto-connect failed:', err);
         cleanupSubscriptions();
-        stopPolling();
         stopWatchdog();
         deviceRef.current = null;
         setState({
@@ -2595,14 +2561,13 @@ export function useDevice() {
         throw err;
       }
     },
-    [wireSubscriptions, cleanupSubscriptions, stopPolling, stopWatchdog, clearConfigureTimeout],
+    [wireSubscriptions, cleanupSubscriptions, stopWatchdog, clearConfigureTimeout],
   );
 
   const disconnect = useCallback(async () => {
     // Stop all monitoring and reconnection
     clearConfigureTimeout();
     cleanupSubscriptions();
-    stopPolling();
     stopWatchdog();
     stopGpsInterval();
     isReconnectingRef.current = false;
@@ -2622,7 +2587,7 @@ export function useDevice() {
       batteryPercent: undefined,
       batteryCharging: undefined,
     });
-  }, [cleanupSubscriptions, stopPolling, stopWatchdog, stopGpsInterval, clearConfigureTimeout]);
+  }, [cleanupSubscriptions, stopWatchdog, stopGpsInterval, clearConfigureTimeout]);
 
   // ─── TransportManager status handler ─────────────────────────────────────
   // Defined as useCallback so it's stable; stored in a ref so TransportManager
