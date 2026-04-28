@@ -132,6 +132,13 @@ export interface CuSample {
   cu: number;
 }
 
+interface LocalStatsBaseline {
+  rxTotal: number;
+  rxDupe: number;
+  rxBad: number;
+  capturedAt: number;
+}
+
 export function computeCuStats24h(samples: CuSample[]): {
   average: number;
   sampleCount: number;
@@ -153,6 +160,7 @@ export function computeCuStats24h(samples: CuSample[]): {
 
 const DIAGNOSTIC_ROWS_STORAGE_KEY = 'mesh-client:diagnosticRowsSnapshot';
 const PERSIST_DEBOUNCE_MS = 2500;
+const LOCAL_STATS_BASELINE_RESET_MS = 60 * 60 * 1000;
 
 interface DiagnosticRowsSnapshot {
   v: 1;
@@ -282,6 +290,8 @@ interface DiagnosticsState {
   hopHistory: Map<number, HopHistoryPoint[]>;
   /** Per-node channel_utilization samples (24h rolling) for CU spike detection */
   cuHistory: Map<number, CuSample[]>;
+  /** Baseline connected-node LocalStats counters so clearDiagnostics starts fresh ratios. */
+  localStatsBaselines: Map<number, LocalStatsBaseline>;
   packetStats: Map<number, { total: number; duplicates: number }>;
   /** Rolling window of timestamps per node per noisy portnum (1h window). Outer key: nodeId, inner key: portnum. */
   noiseRateStats: Map<number, Map<number, number[]>>;
@@ -485,6 +495,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   foreignLoraDetections: new Map(),
   meshcoreHopHistory: new Map(),
   meshcoreTraceHistory: new Map(),
+  localStatsBaselines: new Map(),
 
   getForeignLoraDetectionsList(nodeId: number) {
     const bySender = get().foreignLoraDetections.get(nodeId);
@@ -673,6 +684,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     if (analysisTimer) clearTimeout(analysisTimer);
     analysisTimer = setTimeout(() => {
       const state = get();
+      const now = Date.now();
       set((s) => {
         const newAnomalies = new Map<number, NodeAnomaly>();
         for (const [id, a] of diagnosticRowsToRoutingMap(s.diagnosticRows)) {
@@ -701,14 +713,55 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           else newAnomalies.delete(nodeId);
         }
         let diagnosticRows = replaceRoutingRowsFromMap(s.diagnosticRows, newAnomalies);
+        let localStatsBaselines = s.localStatsBaselines;
         if (myNodeNum != null) {
           const homeFromPending = pendingAnalyses.get(myNodeNum)?.node;
           if (
             homeFromPending &&
             (hasLocalStatsData(homeFromPending) || homeFromPending.channel_utilization != null)
           ) {
+            const baseline =
+              s.localStatsBaselines.get(myNodeNum) ??
+              (() => {
+                const next = new Map(s.localStatsBaselines);
+                next.set(myNodeNum, {
+                  rxTotal: homeFromPending.num_packets_rx ?? 0,
+                  rxDupe: homeFromPending.num_rx_dupe ?? 0,
+                  rxBad: homeFromPending.num_packets_rx_bad ?? 0,
+                  capturedAt: now,
+                });
+                return {
+                  baseline: next.get(myNodeNum)!,
+                  baselines: next,
+                };
+              })();
+            let baselineValue = 'baseline' in baseline ? baseline.baseline : baseline;
+            let baselinesNext = 'baselines' in baseline ? baseline.baselines : localStatsBaselines;
+            if (now - baselineValue.capturedAt > LOCAL_STATS_BASELINE_RESET_MS) {
+              baselinesNext = new Map(baselinesNext);
+              baselineValue = {
+                rxTotal: homeFromPending.num_packets_rx ?? 0,
+                rxDupe: homeFromPending.num_rx_dupe ?? 0,
+                rxBad: homeFromPending.num_packets_rx_bad ?? 0,
+                capturedAt: now,
+              };
+              baselinesNext.set(myNodeNum, baselineValue);
+            }
+            localStatsBaselines = baselinesNext;
+            const adjustedHomeNode: MeshNode = {
+              ...homeFromPending,
+              num_packets_rx: Math.max(
+                0,
+                (homeFromPending.num_packets_rx ?? 0) - baselineValue.rxTotal,
+              ),
+              num_rx_dupe: Math.max(0, (homeFromPending.num_rx_dupe ?? 0) - baselineValue.rxDupe),
+              num_packets_rx_bad: Math.max(
+                0,
+                (homeFromPending.num_packets_rx_bad ?? 0) - baselineValue.rxBad,
+              ),
+            };
             const cuStats24h = get().getCuStats24h(myNodeNum);
-            const findings = diagnoseConnectedNode(homeFromPending, {
+            const findings = diagnoseConnectedNode(adjustedHomeNode, {
               cuStats24h: cuStats24h ?? undefined,
               capabilities,
             });
@@ -721,7 +774,6 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
             }
           }
         }
-        const now = Date.now();
         diagnosticRows = pruneDiagnosticRowsByAge(
           diagnosticRows,
           now,
@@ -730,7 +782,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         );
         pendingAnalyses.clear();
         schedulePersistDiagnosticRows(() => get().diagnosticRows);
-        return { diagnosticRows, diagnosticRowsRestoredAt: null };
+        return { diagnosticRows, diagnosticRowsRestoredAt: null, localStatsBaselines };
       });
     }, 2000);
   },
@@ -966,8 +1018,40 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       let diagnosticRows = replaceRoutingRowsFromMap(state.diagnosticRows, newAnomalies);
       const selfNode = nodes.get(myNodeNum);
       if (selfNode && (hasLocalStatsData(selfNode) || selfNode.channel_utilization != null)) {
+        const baseline =
+          state.localStatsBaselines.get(myNodeNum) ??
+          (() => {
+            const next = new Map(state.localStatsBaselines);
+            next.set(myNodeNum, {
+              rxTotal: selfNode.num_packets_rx ?? 0,
+              rxDupe: selfNode.num_rx_dupe ?? 0,
+              rxBad: selfNode.num_packets_rx_bad ?? 0,
+              capturedAt: Date.now(),
+            });
+            set({ localStatsBaselines: next });
+            return next.get(myNodeNum)!;
+          })();
+        let baselineValue = baseline;
+        if (Date.now() - baselineValue.capturedAt > LOCAL_STATS_BASELINE_RESET_MS) {
+          const refreshed = {
+            rxTotal: selfNode.num_packets_rx ?? 0,
+            rxDupe: selfNode.num_rx_dupe ?? 0,
+            rxBad: selfNode.num_packets_rx_bad ?? 0,
+            capturedAt: Date.now(),
+          };
+          baselineValue = refreshed;
+          const nextBaselines = new Map(state.localStatsBaselines);
+          nextBaselines.set(myNodeNum, refreshed);
+          set({ localStatsBaselines: nextBaselines });
+        }
+        const adjustedSelfNode: MeshNode = {
+          ...selfNode,
+          num_packets_rx: Math.max(0, (selfNode.num_packets_rx ?? 0) - baselineValue.rxTotal),
+          num_rx_dupe: Math.max(0, (selfNode.num_rx_dupe ?? 0) - baselineValue.rxDupe),
+          num_packets_rx_bad: Math.max(0, (selfNode.num_packets_rx_bad ?? 0) - baselineValue.rxBad),
+        };
         const cuStats24h = get().getCuStats24h(myNodeNum);
-        const findings = diagnoseConnectedNode(selfNode, {
+        const findings = diagnoseConnectedNode(adjustedSelfNode, {
           cuStats24h: cuStats24h ?? undefined,
           capabilities,
         });
@@ -1102,6 +1186,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       diagnosticRowsRestoredAt: null,
       hopHistory: new Map(),
       cuHistory: new Map(),
+      localStatsBaselines: new Map(),
       packetStats: new Map(),
       packetCache: new Map(),
       nodeRedundancy: new Map(),

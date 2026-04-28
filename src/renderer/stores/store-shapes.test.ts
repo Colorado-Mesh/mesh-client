@@ -52,6 +52,7 @@ describe('store shape contracts', () => {
           "foreignLoraDetections",
           "hopHistory",
           "ignoreMqttEnabled",
+          "localStatsBaselines",
           "meshcoreHopHistory",
           "meshcoreTraceHistory",
           "mqttIgnoredNodes",
