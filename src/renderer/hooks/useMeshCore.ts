@@ -2826,6 +2826,17 @@ export function useMeshCore() {
           }
           mqttRoute = routeTypeString ?? undefined;
           mqttHash = messageFingerprintHex ?? undefined;
+
+          // Record noisy payload types for MeshCore
+          // FLOOD (1001): Discovery Floods indicate routing loops or lost paths
+          // FLOOD + ADVERT (1002): Flood-routed advertisements (room or device)
+          if (fromNodeId != null && routeTypeString === 'FLOOD') {
+            if (parsed.ok && parsed.advert != null) {
+              useDiagnosticsStore.getState().recordNoisePort(fromNodeId, 1002);
+            } else {
+              useDiagnosticsStore.getState().recordNoisePort(fromNodeId, 1001);
+            }
+          }
         }
 
         // Foreign LoRa fingerprinting: only flag non-MeshCore packets as foreign (requires known self node ID)

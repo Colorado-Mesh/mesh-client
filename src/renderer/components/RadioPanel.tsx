@@ -15,6 +15,10 @@ import {
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
 } from '../lib/meshcoreUtils';
+import {
+  MESHTASTIC_DEVICE_METRICS_HELP_TOOLTIP,
+  MESHTASTIC_RADIO_DEVICE_METRICS_DESCRIPTION,
+} from '../lib/meshtasticTelemetryLocalClientCopy';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { HelpTooltip } from './HelpTooltip';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
@@ -49,6 +53,7 @@ interface Props {
   channelConfigs: ChannelConfig[];
   isConnected: boolean;
   telemetryDeviceUpdateInterval?: number | null;
+  deviceFixedPosition?: boolean | null;
   onReboot: (seconds: number) => Promise<void>;
   onShutdown: (seconds: number) => Promise<void>;
   onFactoryReset: () => Promise<void>;
@@ -550,6 +555,7 @@ export default function RadioPanel({
   channelConfigs,
   isConnected,
   telemetryDeviceUpdateInterval,
+  deviceFixedPosition,
   onReboot,
   onShutdown,
   onFactoryReset,
@@ -669,6 +675,12 @@ export default function RadioPanel({
     }
   }, [telemetryDeviceUpdateInterval]);
 
+  useEffect(() => {
+    if (typeof deviceFixedPosition === 'boolean') {
+      setFixedPosition(deviceFixedPosition);
+    }
+  }, [deviceFixedPosition]);
+
   // ─── Shared state ─────────────────────────────────────────────
   const [status, setStatus] = useState<string | null>(null);
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
@@ -698,8 +710,15 @@ export default function RadioPanel({
           value: configValue,
         },
       });
-      await onCommit();
-      setStatus(`${section} applied successfully!`);
+      const commitPromise = onCommit();
+      void commitPromise
+        .then(() => {})
+        .catch((err: unknown) => {
+          setStatus(
+            `${section} sent, but commit failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          );
+        });
+      setStatus(`${section} applied successfully. Device may briefly reboot.`);
     } catch (err) {
       console.warn('[RadioPanel] apply section failed', err);
       setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -1679,7 +1698,8 @@ export default function RadioPanel({
             min={0}
             max={86400}
             unit="seconds"
-            description="How often to send device metrics (battery, voltage, channel utilization) to the mesh. 0 = disabled. Default 1800 (30 min)."
+            description={MESHTASTIC_RADIO_DEVICE_METRICS_DESCRIPTION}
+            tooltip={MESHTASTIC_DEVICE_METRICS_HELP_TOOLTIP}
           />
         </ConfigSection>
       )}

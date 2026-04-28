@@ -191,6 +191,9 @@ export function initUpdater(win: BrowserWindow): void {
     registerGithubReleaseApiHandlers(send, false);
   }
 
+  const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
+  setInterval(() => checkNow?.(), CHECK_INTERVAL_MS).unref();
+
   ipcMain.handle('update:open-releases', async (_event, url?: string) => {
     try {
       console.debug('[IPC] update:open-releases');

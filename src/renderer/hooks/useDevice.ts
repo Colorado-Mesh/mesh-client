@@ -189,6 +189,7 @@ export function useDevice() {
   const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [deviceGpsMode, setDeviceGpsMode] = useState<number>(0);
+  const [deviceFixedPosition, setDeviceFixedPosition] = useState<boolean | null>(null);
   const [telemetryDeviceUpdateInterval, setTelemetryDeviceUpdateInterval] = useState<number | null>(
     null,
   );
@@ -667,8 +668,14 @@ export function useDevice() {
         protocol?: 'meshtastic' | 'meshcore';
         positionWarning?: string | null;
         neighbors?: MeshNeighbor[];
+        portnum?: number;
       };
       if (!nodeUpdate.node_id) return;
+
+      // Record noisy portnums from MQTT for diagnostics
+      if (nodeUpdate.portnum != null) {
+        useDiagnosticsStore.getState().recordNoisePort(nodeUpdate.node_id, nodeUpdate.portnum);
+      }
 
       // Skip if protocol doesn't match current mode (backward compat: no protocol = process)
       if (nodeUpdate.protocol && nodeUpdate.protocol !== getStoredMeshProtocol()) {
@@ -1474,26 +1481,31 @@ export function useDevice() {
           return;
         }
 
+        const homeNode = nodesRef.current.get(myNodeNumRef.current) ?? null;
+        const existing = nodesRef.current.get(packet.from) ?? emptyNode(packet.from);
+        const node: MeshNode = {
+          ...existing,
+          latitude: lat,
+          longitude: lon,
+          altitude: pos.altitude ?? existing.altitude,
+          // Position replays at connect must not bump last_heard to now.
+          last_heard: existing.last_heard,
+          lastPositionWarning: undefined,
+          source: 'rf',
+          heard_via_mqtt_only: false,
+          via_mqtt: false,
+        };
         updateNodes((prev) => {
           const updated = new Map(prev);
-          const existing = updated.get(packet.from) ?? emptyNode(packet.from);
-
-          const node: MeshNode = {
-            ...existing,
-            latitude: lat,
-            longitude: lon,
-            altitude: pos.altitude ?? existing.altitude,
-            // Position replays at connect must not bump last_heard to now.
-            last_heard: existing.last_heard,
-            lastPositionWarning: undefined,
-            source: 'rf',
-            heard_via_mqtt_only: false,
-            via_mqtt: false,
-          };
           updated.set(packet.from, node);
           void window.electronAPI.db.saveNode(node);
           return updated;
         });
+        if (getStoredMeshProtocol() === 'meshtastic') {
+          useDiagnosticsStore
+            .getState()
+            .processNodeUpdate(node, homeNode, myNodeNumRef.current, MESHTASTIC_CAPABILITIES);
+        }
         usePositionHistoryStore.getState().recordPosition(packet.from, lat, lon);
       });
       unsubscribesRef.current.push(unsub6);
@@ -1619,18 +1631,28 @@ export function useDevice() {
 
         // Update node battery if from a known node
         if (metrics.batteryLevel != null && packet.from) {
-          updateNodes((prev) => {
-            const updated = new Map(prev);
-            const existing = updated.get(packet.from);
-            if (existing) {
-              updated.set(packet.from, {
-                ...existing,
-                battery: metrics.batteryLevel!,
-                // Telemetry replay at connect must not bump last_heard to now.
-              });
+          const existing = nodesRef.current.get(packet.from);
+          if (existing) {
+            const node: MeshNode = {
+              ...existing,
+              battery: metrics.batteryLevel,
+            };
+            updateNodes((prev) => {
+              const updated = new Map(prev);
+              updated.set(packet.from, node);
+              return updated;
+            });
+            if (getStoredMeshProtocol() === 'meshtastic') {
+              useDiagnosticsStore
+                .getState()
+                .processNodeUpdate(
+                  node,
+                  nodesRef.current.get(myNodeNumRef.current) ?? null,
+                  myNodeNumRef.current,
+                  MESHTASTIC_CAPABILITIES,
+                );
             }
-            return updated;
-          });
+          }
           if (packet.from === myNodeNumRef.current) {
             applyOwnNodeBatteryFromDeviceMetrics(metrics.batteryLevel);
           }
@@ -1726,6 +1748,15 @@ export function useDevice() {
           } catch (e) {
             console.debug('[useDevice] raw packet log entry failed', e);
           }
+
+          // Record noisy portnums for diagnostics
+          const decoded = packet.payloadVariant;
+          if (decoded.case === 'decoded') {
+            const portnum = decoded.value.portnum;
+            if (typeof portnum === 'number') {
+              useDiagnosticsStore.getState().recordNoisePort(mp.from, portnum);
+            }
+          }
         }
 
         if (!mp.from) return;
@@ -1814,6 +1845,11 @@ export function useDevice() {
         if (cfg.payloadVariant?.case === 'position' && cfg.payloadVariant.value?.gpsMode != null) {
           deviceGpsModeRef.current = cfg.payloadVariant.value.gpsMode;
           setDeviceGpsMode(cfg.payloadVariant.value.gpsMode);
+          const fixedPosition = (cfg.payloadVariant.value as { fixedPosition?: boolean })
+            .fixedPosition;
+          if (typeof fixedPosition === 'boolean') {
+            setDeviceFixedPosition(fixedPosition);
+          }
         }
         if (cfg.payloadVariant?.case === 'telemetry' && cfg.payloadVariant.value != null) {
           const interval =
@@ -2697,7 +2733,6 @@ export function useDevice() {
 
   const setConfig = useCallback(async (config: unknown) => {
     if (!deviceRef.current) return;
-
     await deviceRef.current.setConfig(config as any);
   }, []);
 
@@ -3178,6 +3213,7 @@ export function useDevice() {
     virtualNodeId,
     lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
     deviceGpsMode,
+    deviceFixedPosition,
     telemetryEnabled,
     telemetryDeviceUpdateInterval,
     connect,

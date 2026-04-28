@@ -204,6 +204,26 @@ describe('emitMinimalNodeUpdate', () => {
     expect(update.short_name).toBeUndefined();
     expect(update.hw_model).toBeUndefined();
   });
+
+  it('includes portnum in event when passed', () => {
+    const events: unknown[] = [];
+    manager.on('nodeUpdate', (u) => events.push(u));
+
+    (manager as any).emitMinimalNodeUpdate(0xdeadbeef, undefined, PortNum.POSITION_APP);
+
+    const update = events[0] as Record<string, unknown>;
+    expect(update.portnum).toBe(PortNum.POSITION_APP);
+  });
+
+  it('omits portnum when not passed', () => {
+    const events: unknown[] = [];
+    manager.on('nodeUpdate', (u) => events.push(u));
+
+    (manager as any).emitMinimalNodeUpdate(0xdeadbeef);
+
+    const update = events[0] as Record<string, unknown>;
+    expect(update.portnum).toBeUndefined();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -482,6 +502,31 @@ describe('onMessage — POSITION_APP', () => {
     // long_name is not spread into position updates (only into minimal updates)
     // The UI merges with existing node state; cache is the source
     expect(u.node_id).toBe(nodeId);
+  });
+
+  it('emits portnum=POSITION_APP on minimal update when position has no coordinates', () => {
+    const nodeId = 0xaabbccdd;
+    const packetId = 0x00000012;
+
+    // Position request: no latitudeI/longitudeI — simulates a node requesting position
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.POSITION_APP,
+        payload: toBinary(PositionSchema, create(PositionSchema, {})),
+      }),
+    );
+
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK });
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!aabbccdd', payload);
+
+    const u = updates[0] as Record<string, unknown>;
+    expect(u.node_id).toBe(nodeId);
+    expect(u.portnum).toBe(PortNum.POSITION_APP);
+    expect(u.latitude).toBeUndefined();
   });
 });
 

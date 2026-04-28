@@ -77,6 +77,28 @@ describe('RadioPanel HelpTooltip coverage — LoRa params', () => {
   });
 });
 
+describe('RadioPanel HelpTooltip coverage — Telemetry', () => {
+  it('Device metrics update interval has a help tooltip and mesh vs client copy', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} isConnected />
+      </ToastProvider>,
+    );
+
+    const telemetryDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Telemetry';
+    });
+    expect(telemetryDetails).toBeTruthy();
+    await user.click(telemetryDetails!.querySelector('summary')!);
+
+    expect(hasTooltipNext('Device metrics update interval')).toBe(true);
+    expect(screen.getByText(/Mesh broadcast/i)).toBeInTheDocument();
+    expect(screen.getByText(/Connected app/i)).toBeInTheDocument();
+  });
+});
+
 describe('RadioPanel HelpTooltip coverage — channel edit form', () => {
   it('Key Size and Encryption Key have help tooltips once a channel slot is selected', async () => {
     const user = userEvent.setup();

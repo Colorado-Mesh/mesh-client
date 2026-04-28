@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MeshNode } from '../types';
-import { detectBadRoute, detectHopGoblin } from './RoutingDiagnosticEngine';
+import {
+  detectBadRoute,
+  detectHopGoblin,
+  detectNoisyNode,
+  type NoiseStats,
+  NOISY_PORTNUMS,
+} from './RoutingDiagnosticEngine';
 
 function baseNode(overrides: Partial<MeshNode> = {}): MeshNode {
   return {
@@ -91,5 +97,44 @@ describe('detectBadRoute', () => {
     // hopsThreshold 4 => maxHopsCloseIn 6 => 5 hops does not trigger same branch
     const w2 = detectBadRoute(node, undefined, home, false, 1, 0, 4);
     expect(w2).toBeNull();
+  });
+});
+
+describe('detectNoisyNode', () => {
+  const HOUR_MS = 3_600_000;
+
+  function makeStats(counts: Record<number, number>): NoiseStats {
+    return { nodeId: 1, counts, windowMs: HOUR_MS };
+  }
+
+  it('returns null for null stats', () => {
+    expect(detectNoisyNode(null)).toBeNull();
+  });
+
+  it('returns null when counts are empty', () => {
+    expect(detectNoisyNode(makeStats({}))).toBeNull();
+  });
+
+  it('POSITION_APP (portnum 3) warns at 4/hr', () => {
+    const result = detectNoisyNode(makeStats({ [NOISY_PORTNUMS.POSITION_APP]: 4 }));
+    expect(result).not.toBeNull();
+    expect(result!.severity).toBe('warning');
+    expect(result!.description).toContain('Position');
+  });
+
+  it('POSITION_APP (portnum 3) errors at 10/hr', () => {
+    const result = detectNoisyNode(makeStats({ [NOISY_PORTNUMS.POSITION_APP]: 10 }));
+    expect(result).not.toBeNull();
+    expect(result!.severity).toBe('error');
+  });
+
+  it('POSITION_APP portnum is 3 and REMOTE_HARDWARE_APP portnum is 2', () => {
+    expect(NOISY_PORTNUMS.POSITION_APP).toBe(3);
+    expect(NOISY_PORTNUMS.REMOTE_HARDWARE_APP).toBe(2);
+  });
+
+  it('returns null below warning threshold', () => {
+    // 3 position packets in 1 hour is below the 4/hr warn threshold
+    expect(detectNoisyNode(makeStats({ [NOISY_PORTNUMS.POSITION_APP]: 3 }))).toBeNull();
   });
 });

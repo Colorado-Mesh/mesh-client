@@ -3804,8 +3804,8 @@ packages:
     resolution: {integrity: sha512-dWUG8F5sIIARXih1DTaQAX4SsiTXhInKf1buxdY9DIg4ZYPZK5nGM1VRIYmEbDbsHt7USo99xSLFu5Q1IqTmsg==}
     engines: {node: '>= 18'}
 
-  socks@2.8.7:
-    resolution: {integrity: sha512-HLpt+uLy/pxB+bum/9DzAgiKS8CX1EvbWxI4zlmgGCExImLdiad2iCwXT5Z4c9c3Eq8rP2318mPW2c+QbtjK8A==}
+  socks@2.8.8:
+    resolution: {integrity: sha512-NlGELfPrgX2f1TAAcz0WawlLn+0r3FyhhCRpFFK2CemXenPYvzMWWZINv3eDNo9ucdwme7oCHRY0Jnbs4aIkog==}
     engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
 
   sort-object-keys@2.1.0:
@@ -7684,7 +7684,7 @@ snapshots:
       number-allocator: 1.0.14
       readable-stream: 4.7.0(patch_hash=96023d9278085d7490d08bce1a5079dd202f7782a0daa66fa81c6b1424ef8ab1)
       rfdc: 1.4.1
-      socks: 2.8.7
+      socks: 2.8.8
       split2: 4.2.0
       worker-timers: 8.0.31
       ws: 8.20.0
@@ -8405,7 +8405,7 @@ snapshots:
 
   smol-toml@1.6.1: {}
 
-  socks@2.8.7:
+  socks@2.8.8:
     dependencies:
       ip-address: 10.1.1
       smart-buffer: 4.2.0

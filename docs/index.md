@@ -56,6 +56,7 @@ For development setup and local build/test workflow, see:
 - **Support**
   - [Diagnostics](diagnostics.md)
   - [Troubleshooting](troubleshooting.md)
+  - [Meshtastic: mesh vs local client telemetry](meshtastic-telemetry-local-client.md)
 - **Project**
   - [License](license.md)
   - [Credits](credits.md)

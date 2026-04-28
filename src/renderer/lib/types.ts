@@ -6,7 +6,12 @@ export type ConnectionType = 'ble' | 'serial' | 'http';
 
 export type MeshProtocol = 'meshtastic' | 'meshcore';
 
-export type AnomalyType = 'hop_goblin' | 'bad_route' | 'route_flapping' | 'impossible_hop';
+export type AnomalyType =
+  | 'hop_goblin'
+  | 'bad_route'
+  | 'route_flapping'
+  | 'impossible_hop'
+  | 'noisy_node';
 
 /** How confident the detector is: proven uses distance/stats; heuristic is SNR/hops pattern only. */
 export type AnomalyConfidence = 'proven' | 'heuristic';

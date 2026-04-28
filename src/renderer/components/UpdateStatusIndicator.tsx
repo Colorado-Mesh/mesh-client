@@ -48,7 +48,7 @@ function IconUpToDate() {
 function IconUpdateAvailable() {
   return (
     <svg
-      className="text-brand-green h-3.5 w-3.5 shrink-0"
+      className="h-3.5 w-3.5 shrink-0 text-amber-400"
       aria-hidden="true"
       viewBox="0 0 24 24"
       fill="none"
@@ -139,18 +139,24 @@ export default function UpdateStatusIndicator({
       )}
 
       {phase === 'available' && (
-        <span className="inline-flex min-w-0 items-center gap-1">
-          <IconUpdateAvailable />
-          {version != null ? <span className="tabular-nums">v{version}</span> : <span>Update</span>}
-          {useReleasePage ? (
-            <button type="button" onClick={onViewRelease} className={linkBtn} title="View release">
-              View Release
-            </button>
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <span className="relative flex h-3.5 w-3.5 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-50" />
+            <IconUpdateAvailable />
+          </span>
+          {version != null ? (
+            <span className="text-amber-300 tabular-nums">v{version}</span>
           ) : (
-            <button type="button" onClick={onDownload} className={linkBtn} title="Download update">
-              Download
-            </button>
+            <span className="text-amber-300">Update</span>
           )}
+          <button
+            type="button"
+            onClick={useReleasePage ? onViewRelease : onDownload}
+            title={useReleasePage ? 'View release' : 'Download update'}
+            className="rounded border border-amber-600 bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-200 transition-colors hover:border-amber-500 hover:text-amber-100"
+          >
+            {useReleasePage ? 'View Release' : 'Download'}
+          </button>
         </span>
       )}
 

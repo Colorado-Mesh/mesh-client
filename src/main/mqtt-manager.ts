@@ -929,7 +929,7 @@ export class MQTTManager extends EventEmitter {
 
     if (lat === undefined || lon === undefined) {
       this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-      this.emitMinimalNodeUpdate(nodeId);
+      this.emitMinimalNodeUpdate(nodeId, undefined, PortNum.POSITION_APP);
       return;
     }
 
@@ -1087,7 +1087,7 @@ export class MQTTManager extends EventEmitter {
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       }
     } else if (portnum === PortNum.POSITION_APP && payload) {
       try {
@@ -1103,6 +1103,7 @@ export class MQTTManager extends EventEmitter {
             positionWarning: warning,
             last_heard: Date.now(),
             from_mqtt: true,
+            portnum: PortNum.POSITION_APP,
             ...(hopsAway !== undefined && { hops_away: hopsAway }),
           });
         } else if (pos.latitudeI || pos.longitudeI) {
@@ -1118,6 +1119,7 @@ export class MQTTManager extends EventEmitter {
             node_id: number;
             from_mqtt: boolean;
             positionWarning: null;
+            portnum?: number;
           } = {
             node_id: nodeId,
             latitude: lat,
@@ -1126,12 +1128,13 @@ export class MQTTManager extends EventEmitter {
             last_heard: now,
             from_mqtt: true,
             positionWarning: null,
+            portnum: PortNum.POSITION_APP,
             ...(hopsAway !== undefined && { hops_away: hopsAway }),
           };
           this.emit('nodeUpdate', nodeUpdate);
         } else {
           this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-          this.emitMinimalNodeUpdate(nodeId, hopsAway);
+          this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
         }
       } catch (e) {
         console.warn(
@@ -1140,7 +1143,7 @@ export class MQTTManager extends EventEmitter {
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       }
     } else if (portnum === PortNum.TEXT_MESSAGE_APP && (payload?.length || data.emoji)) {
       try {
@@ -1160,7 +1163,7 @@ export class MQTTManager extends EventEmitter {
         };
         this.emit('message', msg);
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       } catch (e) {
         console.warn(
           '[Meshtastic MQTT] TextMessage parse failed for node',
@@ -1168,7 +1171,7 @@ export class MQTTManager extends EventEmitter {
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       }
     } else if (portnum === PortNum.TELEMETRY_APP && payload) {
       try {
@@ -1271,10 +1274,10 @@ export class MQTTManager extends EventEmitter {
             `[Meshtastic MQTT] ROUTING error: nodeId=0x${nodeId.toString(16)} reason=${routing.errorReason}`,
           );
         }
-        this.emitMinimalNodeUpdate(nodeId, hopsAway);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       } catch {
         // catch-no-log-ok routing is optional info, failures are non-fatal
-        this.emitMinimalNodeUpdate(nodeId, hopsAway);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       }
     } else if (portnum === PortNum.TRACEROUTE_APP && payload) {
       try {
@@ -1288,23 +1291,23 @@ export class MQTTManager extends EventEmitter {
           route: rd.route != null ? [...rd.route] : [],
           routeBack: rd.routeBack != null ? [...rd.routeBack] : [],
         });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       } catch (e) {
         console.warn(
           '[Meshtastic MQTT] TRACEROUTE RouteDiscovery parse failed',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway);
+        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       }
     } else {
       // Unknown portnum — at least track the node as seen
       this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-      this.emitMinimalNodeUpdate(nodeId, hopsAway);
+      this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
     }
   }
 
-  private emitMinimalNodeUpdate(nodeId: number, hopsAway?: number): void {
+  private emitMinimalNodeUpdate(nodeId: number, hopsAway?: number, portnum?: number): void {
     const cached = this.nodeCache.get(nodeId);
     this.emit('nodeUpdate', {
       node_id: nodeId,
@@ -1314,6 +1317,7 @@ export class MQTTManager extends EventEmitter {
       ...(cached?.short_name && { short_name: cached.short_name }),
       ...(cached?.hw_model && { hw_model: cached.hw_model }),
       ...(hopsAway !== undefined && { hops_away: hopsAway }),
+      ...(portnum !== undefined && { portnum }),
     });
   }
 
