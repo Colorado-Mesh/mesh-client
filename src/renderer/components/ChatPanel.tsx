@@ -1391,7 +1391,9 @@ function ChatPanel({
                                 setPickerOpenFor(showPicker ? null : id);
                               } else {
                                 reactionHiddenInputRef.current?.focus();
-                                void window.electronAPI.showEmojiPanel();
+                                requestAnimationFrame(() => {
+                                  void window.electronAPI.showEmojiPanel();
+                                });
                               }
                             }}
                             className="rounded p-1 text-xs text-gray-600 hover:text-gray-300"
@@ -1617,7 +1619,9 @@ function ChatPanel({
               setShowComposePicker((prev) => !prev);
             } else {
               inputRef.current?.focus();
-              void window.electronAPI.showEmojiPanel();
+              requestAnimationFrame(() => {
+                void window.electronAPI.showEmojiPanel();
+              });
             }
           }}
           disabled={!isConnected || sending}
