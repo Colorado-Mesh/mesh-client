@@ -1733,14 +1733,17 @@ export function useDevice() {
         if (getStoredMeshProtocol() === 'meshtastic' && mp.from) {
           try {
             const raw = toBinary(Mesh.MeshPacketSchema, packet as never);
+            const portLabel = meshtasticRawPacketPortLabel(packet);
             const entry: MeshtasticRawPacketEntry = {
               ts: Date.now(),
               snr: mp.rxSnr ?? 0,
               rssi: mp.rxRssi ?? 0,
               raw,
               fromNodeId: mp.from,
-              portLabel: meshtasticRawPacketPortLabel(packet),
+              portLabel,
               viaMqtt: mp.viaMqtt === true,
+              isLocal:
+                mp.from === myNodeNumRef.current && !mp.viaMqtt && portLabel === 'TELEMETRY_APP',
             };
             setRawPackets((prev) => {
               const next = [...prev, entry];

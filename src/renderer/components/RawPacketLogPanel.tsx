@@ -254,6 +254,7 @@ export default function RawPacketLogPanel(props: Props) {
         (p.portLabel ?? '').includes(q) ||
         toHex(p.raw).includes(f) ||
         (p.viaMqtt && 'mqtt'.includes(f)) ||
+        (p.isLocal && 'local'.includes(f)) ||
         (p.fromNodeId != null && getNodeLabel(p.fromNodeId).toUpperCase().includes(q)),
     );
   }, [packets, filter, variant, getNodeLabel]);
@@ -504,10 +505,14 @@ function MeshtasticRow({
       </span>
       <span
         className={`w-[52px] shrink-0 rounded px-1 text-[10px] font-semibold ${
-          p.viaMqtt ? 'bg-purple-900/50 text-purple-200' : 'bg-slate-700 text-slate-200'
+          p.isLocal
+            ? 'bg-blue-900/50 text-blue-300'
+            : p.viaMqtt
+              ? 'bg-purple-900/50 text-purple-200'
+              : 'bg-slate-700 text-slate-200'
         }`}
       >
-        {p.viaMqtt ? 'MQTT' : 'RF'}
+        {p.isLocal ? 'LOCAL' : p.viaMqtt ? 'MQTT' : 'RF'}
       </span>
       <span className="text-muted min-w-0 flex-1">
         SNR={p.snr.toFixed(1)} RSSI={p.rssi}

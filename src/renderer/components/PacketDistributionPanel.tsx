@@ -29,6 +29,7 @@ interface NormalizedPacket {
   fromNodeId: number | null;
   packetType: string;
   viaMqtt: boolean;
+  isLocal?: boolean;
 }
 
 interface SliceData {
@@ -78,6 +79,7 @@ function normalize(
       fromNodeId: p.fromNodeId,
       packetType: p.portLabel || 'UNKNOWN',
       viaMqtt: p.viaMqtt,
+      isLocal: p.isLocal,
     }));
   }
   return (packets as RxPacketEntry[]).map((p) => ({
@@ -99,9 +101,11 @@ function applySourceFilter(
   filter: SourceFilter,
   variant: Variant,
 ): NormalizedPacket[] {
-  if (variant === 'meshcore' || filter === 'all') return packets;
-  if (filter === 'rf') return packets.filter((p) => !p.viaMqtt);
-  return packets.filter((p) => p.viaMqtt);
+  if (variant === 'meshcore') return packets;
+  const nonLocal = packets.filter((p) => !p.isLocal);
+  if (filter === 'all') return nonLocal;
+  if (filter === 'rf') return nonLocal.filter((p) => !p.viaMqtt);
+  return nonLocal.filter((p) => p.viaMqtt);
 }
 
 function buildSlices(

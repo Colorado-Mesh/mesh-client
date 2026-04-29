@@ -19,4 +19,5 @@ export interface MeshtasticRawPacketEntry {
   fromNodeId: number | null;
   portLabel: string;
   viaMqtt: boolean;
+  isLocal?: boolean;
 }
