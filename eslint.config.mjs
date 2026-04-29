@@ -73,7 +73,10 @@ export default tseslint.config(
       'import/first': 'off',
       'import/newline-after-import': 'error',
       'import/no-duplicates': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { caughtErrors: 'all' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { caughtErrors: 'all', argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/consistent-type-imports': 'error',
       'prefer-const': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
