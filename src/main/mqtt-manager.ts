@@ -839,7 +839,7 @@ export class MQTTManager extends EventEmitter {
       return null;
     }
     if (typeof fromRaw === 'number') {
-      return fromRaw;
+      return fromRaw >>> 0;
     }
     if (typeof fromRaw !== 'string') {
       console.debug(`[Meshtastic MQTT] JSON ${handler} unexpected from type: ${typeof fromRaw}`); // log-filter-ok Meshtastic MQTT logs → App log panel
@@ -852,14 +852,14 @@ export class MQTTManager extends EventEmitter {
         console.debug(`[Meshtastic MQTT] JSON ${handler} invalid from hex: ${fromStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
         return null;
       }
-      return nodeId;
+      return nodeId >>> 0;
     }
     const nodeId = parseInt(fromStr, 10);
     if (isNaN(nodeId)) {
       console.debug(`[Meshtastic MQTT] JSON ${handler} invalid from: ${fromStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
       return null;
     }
-    return nodeId;
+    return nodeId >>> 0;
   }
 
   private handleJsonNodeInfo(json: Record<string, unknown>, topic: string): void {

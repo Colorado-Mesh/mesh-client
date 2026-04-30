@@ -1150,6 +1150,69 @@ describe('onMessage — JSON nodeinfo', () => {
     expect(update.short_name).toBe('DRA');
     expect(update.hw_model).toBe('43');
   });
+
+  it('normalizes large node ID (> 2^31) passed as unsigned number', () => {
+    // 0xb2a7c770 = 2,997,340,016 — exceeds signed 32-bit max (2,147,483,647)
+    const unsignedNodeId = 0xb2a7c770;
+    const json = {
+      type: 'USER',
+      from: unsignedNodeId,
+      user: { longName: 'Large Unsigned Node', shortName: 'LUN' },
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/json/LongFast/!b2a7c770', payload);
+
+    expect(updates).toHaveLength(1);
+    expect((updates[0] as Record<string, unknown>).node_id).toBe(0xb2a7c770);
+  });
+
+  it('normalizes large node ID passed as signed negative (firmware signed-int serialization)', () => {
+    // Some firmware serializes uint32 node IDs > 2^31 as signed integers in JSON.
+    // -1,297,627,280 is the signed 32-bit representation of 0xb2a7c770 (2,997,340,016).
+    const signedNodeId = 0xb2a7c770 - 2 ** 32; // -1297627280
+    const json = {
+      type: 'USER',
+      from: signedNodeId,
+      user: { longName: 'Large Signed Node', shortName: 'LSN' },
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const updates: unknown[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+    (manager as any).onMessage('msh/US/2/json/LongFast/!b2a7c770', payload);
+
+    expect(updates).toHaveLength(1);
+    expect((updates[0] as Record<string, unknown>).node_id).toBe(0xb2a7c770);
+  });
+});
+
+describe('onMessage — JSON text large node ID', () => {
+  let manager: MQTTManager;
+
+  beforeEach(() => {
+    manager = new MQTTManager();
+  });
+
+  it('normalizes sender_id for large node ID passed as signed negative in text message', () => {
+    const signedNodeId = 0xb2a7c770 - 2 ** 32; // -1297627280
+    const json = {
+      type: 'text',
+      from: signedNodeId,
+      channel: 0,
+      text: 'hello from large node',
+    };
+    const payload = Buffer.from(JSON.stringify(json));
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/json/LongFast/!b2a7c770', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as Record<string, unknown>).sender_id).toBe(0xb2a7c770);
+  });
 });
 
 describe('onMessage — JSON sampled handling', () => {

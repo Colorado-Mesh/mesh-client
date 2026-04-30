@@ -424,7 +424,15 @@ function validateSaveMessage(message: unknown): asserts message is Record<string
   const m = message as Record<string, unknown>;
   if (typeof m.payload !== 'string') throw new Error('db:saveMessage: payload must be a string');
   if (m.payload.length > MAX_PAYLOAD_LENGTH) throw new Error('db:saveMessage: payload too long');
-  safeNonNegativeInt(m.sender_id);
+  const rawSenderId = Number(m.sender_id);
+  if (!Number.isFinite(rawSenderId))
+    throw new Error('db:saveMessage: sender_id must be a finite number');
+  m.sender_id = rawSenderId >>> 0;
+  if (m.to != null) {
+    const rawTo = Number(m.to);
+    if (!Number.isFinite(rawTo)) throw new Error('db:saveMessage: to must be a finite number');
+    m.to = rawTo >>> 0;
+  }
   if (typeof m.sender_name !== 'string')
     throw new Error('db:saveMessage: sender_name must be a string');
   if (m.sender_name.length > MAX_NODE_STRING)
@@ -451,9 +459,9 @@ function validateSaveNode(
 ): asserts node is Record<string, unknown> & { node_id: number } {
   if (!node || typeof node !== 'object') throw new Error('db:saveNode: node must be an object');
   const n = node as Record<string, unknown>;
-  const nodeId = Number(n.node_id);
-  if (!Number.isFinite(nodeId) || nodeId < 0)
-    throw new Error('db:saveNode: node_id must be a finite non-negative number');
+  const rawNodeId = Number(n.node_id);
+  if (!Number.isFinite(rawNodeId)) throw new Error('db:saveNode: node_id must be a finite number');
+  n.node_id = rawNodeId >>> 0;
   const checkStr = (key: string, max: number) => {
     const v = n[key];
     if (v != null && typeof v === 'string' && v.length > max)
