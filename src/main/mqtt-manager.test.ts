@@ -1427,3 +1427,29 @@ describe('onMessage — ServiceEnvelope decoding robust handling', () => {
     expect(updates[0].last_heard).toBeDefined();
   });
 });
+
+describe('onMessage — undecodable ServiceEnvelope signature cache', () => {
+  let manager: MQTTManager;
+  let decodeSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
+    manager = new MQTTManager();
+    decodeSpy = vi.spyOn(MQTTManager.prototype as any, 'decodeAndHandleServiceEnvelope');
+  });
+
+  afterEach(() => {
+    decodeSpy.mockRestore();
+  });
+
+  it('skips a second decode attempt for the same topic + payload bytes', () => {
+    // Field 1 (length-delimited) claims 100 bytes of MeshPacket but buffer is truncated — not recoverable.
+    const bad = Buffer.from([0x0a, 0x64, ...Array(20).fill(0xab)]);
+    const topic = 'msh/US/CO/2/e/LongFast/!835bb187';
+
+    (manager as any).onMessage(topic, bad);
+    (manager as any).onMessage(topic, bad);
+
+    expect(decodeSpy).toHaveBeenCalledTimes(1);
+  });
+});
