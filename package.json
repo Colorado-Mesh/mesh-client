@@ -41,6 +41,7 @@
     "check:licenses": "license-checker-rseidelsohn --summary --excludePrivatePackages",
     "check:log-injection": "node scripts/check-log-injection.mjs",
     "check:log-service-sinks": "node scripts/check-log-service-sinks.mjs",
+    "check:codeql-extensions": "node scripts/check-codeql-extensions.mjs",
     "check:log-panel-filter": "node scripts/check-log-panel-filter.mjs",
     "check:silent-catches": "node scripts/check-silent-catches.mjs",
     "check:xss-patterns": "node scripts/check-xss-patterns.mjs",

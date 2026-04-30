@@ -296,6 +296,11 @@ if ! pnpm run check:log-service-sinks; then
   exit 1
 fi
 
+if ! pnpm run check:codeql-extensions; then
+  print_error "CodeQL extensions layout check failed."
+  exit 1
+fi
+
 if ! pnpm run check:db-migrations; then
   print_error "Database migration check failed."
   exit 1

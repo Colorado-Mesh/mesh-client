@@ -1,0 +1,9 @@
+# Local CodeQL model extensions (default setup picks up packs under .github/codeql/extensions).
+# Barriers for mesh-client log sanitizers — see customizing-library-models-for-javascript.
+name: mesh-client/mesh-client-models
+version: 1.0.0
+library: true
+extensionTargets:
+  codeql/javascript-all: '*'
+dataExtensions:
+  - models/*.yml

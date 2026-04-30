@@ -26,3 +26,11 @@ Default setup already runs JavaScript/TypeScript analysis on push/PR; no separat
 2. Add a workflow that runs `github/codeql-action/init@v4` with `config-file: ./.github/codeql/codeql-config.yml` and `analyze` as documented.
 
 Do not run both default setup and a CodeQL workflow that uploads SARIF for the same scope—GitHub will reject the upload.
+
+## Embedded model pack (`extensions/`)
+
+[Default setup](https://docs.github.com/en/code-security/code-scanning/managing-your-code-scanning-configuration/editing-your-configuration-of-default-setup#extending-codeql-coverage-with-codeql-model-packs-in-default-setup) loads **CodeQL model packs** from `.github/codeql/extensions/`.
+
+This repo ships **`mesh-client-models`**: data extensions that mark `sanitizeForLogSink`, `sanitizeLogMessage`, and `sanitizeLogPayloadForDisk` as **barriers** for `js/log-injection` and `js/http-to-file-access`, because CodeQL’s built-in newline-replace sanitizer requires an **empty** replacement (see [Log injection query help](https://codeql.github.com/codeql-query-help/javascript/js-log-injection/)) while our pipeline normalizes newlines to spaces for readability.
+
+Layout is enforced locally by `pnpm run check:codeql-extensions`. If alerts persist after changing imports or package name, adjust the first column of the `barrierModel` rows in [`extensions/mesh-client-models/models/log-sanitizer-barriers.yml`](./extensions/mesh-client-models/models/log-sanitizer-barriers.yml) to match how CodeQL labels the module (often `package.json` `name` or the relative `src/main/...` path).

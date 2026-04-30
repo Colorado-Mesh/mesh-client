@@ -1,0 +1,13 @@
+extensions:
+  - addsTo:
+      pack: codeql/javascript-all
+      extensible: barrierModel
+    data:
+      # NPM package name from package.json (primary).
+      - ['mesh-client', 'Member[sanitizeForLogSink].ReturnValue', 'log-injection']
+      - ['mesh-client', 'Member[sanitizeLogMessage].ReturnValue', 'log-injection']
+      - ['mesh-client', 'Member[sanitizeLogPayloadForDisk].ReturnValue', 'http-to-file-access']
+      # Fallback module labels sometimes emitted for relative imports (keep if alerts persist).
+      - ['src/main/sanitize-log-message', 'Member[sanitizeForLogSink].ReturnValue', 'log-injection']
+      - ['src/main/sanitize-log-message', 'Member[sanitizeLogMessage].ReturnValue', 'log-injection']
+      - ['src/main/sanitize-log-message', 'Member[sanitizeLogPayloadForDisk].ReturnValue', 'http-to-file-access']

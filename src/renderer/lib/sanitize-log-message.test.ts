@@ -88,6 +88,18 @@ describe('sanitizeLogPayloadForDisk (log file sink, CodeQL http-to-file path)', 
   });
 });
 
+describe('CodeQL extensions layout', () => {
+  it('embedded model pack under .github/codeql/extensions is valid', () => {
+    const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
+    execFileSync('node', [path.join(projectRoot, 'scripts', 'check-codeql-extensions.mjs')], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      cwd: projectRoot,
+    });
+    expect(true).toBe(true);
+  });
+});
+
 describe('log-injection check (main process)', () => {
   it('main process has no unsanitized console.*(..., err|e|error|reason) calls', () => {
     const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
