@@ -69,6 +69,16 @@ describe('log-service source contracts', () => {
     expect(body).toContain('stat.size');
     expect(body).toContain('LOG_MAX_BYTES');
   });
+
+  it('patchMainConsole passes echo args through sanitizeConsoleEchoArgs (CodeQL log sink)', () => {
+    expect(LOG_SERVICE_SOURCE).toContain('function sanitizeConsoleEchoArgs');
+    expect(LOG_SERVICE_SOURCE).toContain(
+      'original.warn(`[${ts}]`, ...sanitizeConsoleEchoArgs(args))',
+    );
+    expect(LOG_SERVICE_SOURCE).toContain(
+      'original.error(`[${ts}]`, ...sanitizeConsoleEchoArgs(args))',
+    );
+  });
 });
 
 // ─── Functional tests ──────────────────────────────────────────────────────────

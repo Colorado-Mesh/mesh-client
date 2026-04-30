@@ -251,6 +251,11 @@ function stringifyArgs(args: unknown[]): string {
     .join(' ');
 }
 
+/** Per-arg stringify + {@link sanitizeForLogSink} for terminal echo (CodeQL js/log-injection). */
+function sanitizeConsoleEchoArgs(args: unknown[]): string[] {
+  return args.map((a) => sanitizeForLogSink(stringifyArgs([a])));
+}
+
 let consolePatched = false;
 
 function resolveMainSource(): 'sdk' | 'main' {
@@ -263,6 +268,7 @@ function resolveMainSource(): 'sdk' | 'main' {
  * so terminal/devtools behavior is preserved.
  * Uses sanitizeForLogSink ( .replace(/\n|\r/g, ' ') first) so CodeQL js/log-injection
  * recognizes the sanitizer; see sanitize-log-message.test.ts for pre-commit coverage.
+ * Terminal echo uses {@link sanitizeConsoleEchoArgs} so untrusted args never reach original console raw.
  */
 export function patchMainConsole(): void {
   if (consolePatched) return;
@@ -271,24 +277,24 @@ export function patchMainConsole(): void {
   console.log = (...args: unknown[]) => {
     const safe = sanitizeForLogSink(stringifyArgs(args));
     appendLine('log', resolveMainSource(), safe);
-    original.log(...args);
+    original.log(...sanitizeConsoleEchoArgs(args));
   };
   console.info = (...args: unknown[]) => {
     const safe = sanitizeForLogSink(stringifyArgs(args));
     appendLine('info', resolveMainSource(), safe);
-    original.info(...args);
+    original.info(...sanitizeConsoleEchoArgs(args));
   };
   console.warn = (...args: unknown[]) => {
     const safe = sanitizeForLogSink(stringifyArgs(args));
     appendLine('warn', resolveMainSource(), safe);
     const ts = formatLogFileTimestamp(Date.now());
-    original.warn(`[${ts}]`, ...args);
+    original.warn(`[${ts}]`, ...sanitizeConsoleEchoArgs(args));
   };
   console.error = (...args: unknown[]) => {
     const safe = sanitizeForLogSink(stringifyArgs(args));
     appendLine('error', resolveMainSource(), safe);
     const ts = formatLogFileTimestamp(Date.now());
-    original.error(`[${ts}]`, ...args);
+    original.error(`[${ts}]`, ...sanitizeConsoleEchoArgs(args));
   };
   console.debug = (...args: unknown[]) => {
     const safe = sanitizeForLogSink(stringifyArgs(args));
