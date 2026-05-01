@@ -13,6 +13,7 @@ interface LogAnalyzeModalProps {
   isOpen: boolean;
   onClose: () => void;
   entries: LogEntry[];
+  /** Active radio protocol for analysis gating only; log lines are not protocol-tagged. */
   protocol: MeshProtocol;
 }
 
@@ -132,6 +133,10 @@ export default function LogAnalyzeModal({
             </span>
             <span className="text-muted">{timeRange}</span>
           </div>
+          <p className="text-muted mt-2 text-xs leading-snug">
+            Uses the active radio protocol for protocol-specific categories; individual log lines
+            are not labeled by protocol.
+          </p>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
