@@ -9,8 +9,8 @@ import { sanitizeLogMessage } from './log-service';
 let autoUpdater: any = null;
 let checkNow: (() => void) | null = null;
 
-/** Last release page URL from a GitHub API check (used when download cannot use electron-updater). */
-let lastGithubReleaseUrl: string | null = null;
+/** Last app release page URL (GitHub); set on update:available for download / macOS open-in-browser. */
+let lastAppReleaseUrl: string | null = null;
 
 /** Returns the current update-check function (set after initUpdater runs). Used by native menu. */
 export function getCheckNow(): (() => void) | null {
@@ -36,13 +36,23 @@ function semverGt(remote: string, local: string): boolean {
 
 type SendFn = (channel: string, payload?: unknown) => void;
 
+async function openAppReleasePage(send: SendFn): Promise<void> {
+  try {
+    await shell.openExternal(lastAppReleaseUrl ?? RELEASES_URL);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn('[updater] open release page failed:', sanitizeLogMessage(msg));
+    send('update:error', { message: msg });
+  }
+}
+
 /**
  * GitHub Releases API check — used in dev, and as a fallback when packaged but
  * electron-updater is missing or failed to load (so IPC handlers still register).
  */
 function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boolean): void {
   const doCheck = async () => {
-    lastGithubReleaseUrl = null;
+    lastAppReleaseUrl = null;
     try {
       const res = await fetch(API_URL, {
         headers: { 'User-Agent': `mesh-client/${app.getVersion()}` },
@@ -59,7 +69,7 @@ function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boole
       const remoteVersion = data.tag_name.replace(/^v/, '');
       const localVersion = app.getVersion();
       if (semverGt(remoteVersion, localVersion)) {
-        lastGithubReleaseUrl = data.html_url;
+        lastAppReleaseUrl = data.html_url;
         send('update:available', {
           version: remoteVersion,
           releaseUrl: data.html_url,
@@ -85,14 +95,7 @@ function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boole
 
   ipcMain.handle('update:download', async () => {
     if (!uiReportsPackaged) return;
-    if (process.platform === 'darwin') return;
-    try {
-      await shell.openExternal(lastGithubReleaseUrl ?? RELEASES_URL);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.warn('[updater] update:download (GitHub fallback) failed:', sanitizeLogMessage(msg));
-      send('update:error', { message: msg });
-    }
+    await openAppReleasePage(send);
   });
 
   ipcMain.handle('update:install', () => {
@@ -116,9 +119,11 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
   autoUpdater.autoInstallOnAppQuit = false;
 
   autoUpdater.on('update-available', (info: { version: string }) => {
+    const releaseUrl = `${RELEASES_URL}/tag/v${info.version}`;
+    lastAppReleaseUrl = releaseUrl;
     send('update:available', {
       version: info.version,
-      releaseUrl: `${RELEASES_URL}/tag/v${info.version}`,
+      releaseUrl,
       isPackaged: true,
       isMac: process.platform === 'darwin',
     });
@@ -157,7 +162,10 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
   ipcMain.handle('update:check', doCheck);
 
   ipcMain.handle('update:download', async () => {
-    if (process.platform === 'darwin') return;
+    if (process.platform === 'darwin') {
+      await openAppReleasePage(send);
+      return;
+    }
     try {
       await autoUpdater.downloadUpdate();
     } catch (e: unknown) {

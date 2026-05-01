@@ -10,4 +10,9 @@ describe('updater source contracts', () => {
     expect(UPDATER_SOURCE).toContain('falling back to GitHub Releases API');
     expect(UPDATER_SOURCE).toContain('registerGithubReleaseApiHandlers(send, true)');
   });
+
+  it('tracks last release URL and opens it from helper (macOS download path)', () => {
+    expect(UPDATER_SOURCE).toContain('lastAppReleaseUrl');
+    expect(UPDATER_SOURCE).toContain('openAppReleasePage');
+  });
 });
