@@ -93,7 +93,7 @@
     "systeminformation": "^5.31.5"
   },
   "devDependencies": {
-    "@axe-core/react": "^4.11.2",
+    "@axe-core/react": "^4.11.3",
     "@eslint/js": "^10.0.1",
     "@liamcottle/meshcore.js": "^1.13.0",
     "@meshtastic/core": "npm:@jsr/meshtastic__core@^2.6.6",
@@ -128,7 +128,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-security": "^4.0.0",
     "eslint-plugin-simple-import-sort": "^13.0.0",
-    "jsdom": "^29.1.0",
+    "jsdom": "^29.1.1",
     "leaflet": "^1.9.4",
     "license-checker-rseidelsohn": "^4.4.2",
     "markdownlint-cli2": "^0.22.1",
