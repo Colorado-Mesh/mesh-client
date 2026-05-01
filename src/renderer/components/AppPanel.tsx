@@ -1358,477 +1358,498 @@ export default function AppPanel({
         </details>
       </div>
 
-      {/* Danger Zone — all destructive actions at bottom, red styling */}
-      <div className="space-y-3">
+      {/* Danger Zone — collapsible; same pattern as Appearance → Color scheme */}
+      <div className="space-y-2">
         <h3 className="text-sm font-medium text-red-400">Danger Zone</h3>
-        <div className="space-y-4 rounded-lg border border-red-900 bg-red-950/20 p-4">
-          <p className="text-xs text-red-400/80">
-            These actions are permanent and cannot be undone. Confirm each step carefully.
-          </p>
-
-          {/* Diagnostics (in-memory reset) */}
-          <div className="space-y-2">
-            <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-              Diagnostics
-            </div>
-            <p className="text-muted text-xs leading-relaxed">
-              Clears in-memory routing anomalies, hop history, and packet stats. Rebuilds from new
-              packets.
-            </p>
-            <button
-              type="button"
-              aria-label="Reset Diagnostics"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: 'Reset Diagnostics',
-                  title: 'Reset Diagnostics',
-                  message:
-                    'This will clear all routing anomalies, hop history, and packet stats. The engine will rebuild from new incoming packets. Continue?',
-                  confirmLabel: 'Reset Diagnostics',
-                  danger: true,
-                  action: async () => {
-                    await Promise.resolve();
-                    clearDiagnostics();
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+        <details className="group rounded-lg border border-red-900 bg-red-950/20">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-red-300 hover:bg-red-950/40 [&::-webkit-details-marker]:hidden">
+            <span>Destructive actions</span>
+            <svg
+              className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
             >
-              Reset Diagnostics
-            </button>
-          </div>
-
-          <div className="space-y-2 border-t border-red-900/50 pt-4">
-            <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-              GPS positions
-            </div>
-            <p className="text-muted text-xs leading-relaxed">
-              Removes stored GPS coordinates from all nodes without deleting nodes. Positions
-              repopulate as new data arrives.
-            </p>
-            <button
-              type="button"
-              aria-label="Clear GPS Data"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: 'Clear GPS Data',
-                  title: 'Clear GPS Data',
-                  message:
-                    'This will remove stored GPS coordinates from all nodes. Nodes will remain but their positions will be blank until new data is received. Continue?',
-                  confirmLabel: 'Clear GPS Data',
-                  danger: true,
-                  action: async () => {
-                    await window.electronAPI.db.clearNodePositions();
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
-            >
-              Clear GPS Data
-            </button>
-          </div>
-
-          <div className="space-y-2 border-t border-red-900/50 pt-4">
-            <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-              Position History
-            </div>
-            <p className="text-muted text-xs leading-relaxed">
-              Clears all persisted movement trail data and the current in-memory path overlay. New
-              positions will resume tracking immediately.
-            </p>
-            <button
-              type="button"
-              aria-label="Clear Position History"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: 'Clear Position History',
-                  title: 'Clear Position History',
-                  message:
-                    'This will permanently delete all stored position history from the database. Movement trails will no longer be shown for past sessions. Continue?',
-                  confirmLabel: 'Clear Position History',
-                  danger: true,
-                  action: async () => {
-                    await Promise.resolve();
-                    clearHistory();
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
-            >
-              Clear Position History
-            </button>
-          </div>
-
-          {/* Nodes */}
-          <div className="space-y-3 border-t border-red-900/50 pt-4">
-            <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">Nodes</div>
-            <div className="flex flex-wrap items-center gap-2">
-              <label htmlFor="apppanel-delete-age-days" className="text-sm text-gray-300">
-                Delete nodes last heard more than
-              </label>
-              <input
-                id="apppanel-delete-age-days"
-                type="number"
-                min={1}
-                value={deleteAgeDays}
-                onChange={(e) => {
-                  setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1));
-                }}
-                aria-label={`Delete nodes last heard more than ${deleteAgeDays} days`}
-                className="bg-deep-black w-20 rounded border border-red-800/60 px-2 py-1 text-right text-sm text-gray-200 focus:border-red-500 focus:outline-none"
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
               />
-              <span className="text-sm text-gray-300">days</span>
+            </svg>
+          </summary>
+          <div className="space-y-4 border-t border-red-900/50 px-4 pt-1 pb-4">
+            <p className="text-xs text-red-400/80">
+              These actions are permanent and cannot be undone. Confirm each step carefully.
+            </p>
+
+            {/* Diagnostics (in-memory reset) */}
+            <div className="space-y-2">
+              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+                Diagnostics
+              </div>
+              <p className="text-muted text-xs leading-relaxed">
+                Clears in-memory routing anomalies, hop history, and packet stats. Rebuilds from new
+                packets.
+              </p>
               <button
                 type="button"
-                aria-label="Delete Old Nodes"
+                aria-label="Reset Diagnostics"
                 onClick={() => {
                   executeWithConfirmation({
-                    name: 'Delete Old Nodes',
-                    title: 'Delete Old Nodes',
-                    message: `This will permanently delete all nodes that haven't been heard in the last ${deleteAgeDays} day${deleteAgeDays !== 1 ? 's' : ''}. They will be re-discovered when they broadcast again.`,
-                    confirmLabel: 'Delete Old Nodes',
+                    name: 'Reset Diagnostics',
+                    title: 'Reset Diagnostics',
+                    message:
+                      'This will clear all routing anomalies, hop history, and packet stats. The engine will rebuild from new incoming packets. Continue?',
+                    confirmLabel: 'Reset Diagnostics',
                     danger: true,
                     action: async () => {
-                      await window.electronAPI.db.deleteNodesByAge(deleteAgeDays);
+                      await Promise.resolve();
+                      clearDiagnostics();
                     },
                   });
                 }}
-                className="rounded border border-red-800 bg-red-900/50 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-red-300 transition-colors hover:bg-red-900/70"
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Delete Old Nodes
+                Reset Diagnostics
               </button>
             </div>
-            <button
-              type="button"
-              aria-label="Prune MQTT-only Nodes"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: 'Prune MQTT-only Nodes',
-                  title: 'Prune MQTT-only Nodes',
-                  message:
-                    'This will permanently delete all nodes discovered only via MQTT (never heard via RF). They will reappear if heard again via MQTT or RF.',
-                  confirmLabel: 'Prune MQTT Nodes',
-                  danger: true,
-                  action: async () => {
-                    await window.electronAPI.db.deleteNodesBySource('mqtt');
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
-            >
-              Prune MQTT-only Nodes
-            </button>
-            <button
-              type="button"
-              aria-label="Prune Unnamed Nodes"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: 'Prune Unnamed Nodes',
-                  title: 'Prune Unnamed Nodes',
-                  message:
-                    'This will permanently delete nodes with no real long name: empty names, auto-generated !hex placeholders, and MQTT-only identities that never received UserInfo. Favorited nodes are kept. They will be re-discovered when they broadcast again.',
-                  confirmLabel: 'Prune Unnamed Nodes',
-                  danger: true,
-                  action: async () => {
-                    await window.electronAPI.db.deleteNodesWithoutLongname();
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
-            >
-              Prune Unnamed Nodes
-            </button>
-            <button
-              type="button"
-              aria-label="Prune No-Fix / Zero Island Nodes Removes nodes with null or near-zero coordinates (no GPS fix or at 0 deg N, 0 deg E)."
-              onClick={() => {
-                const zeroIslandNodes = Array.from(nodes.values()).filter(
-                  (n) => Math.abs(n.latitude ?? 0) < 0.5 && Math.abs(n.longitude ?? 0) < 0.5,
-                );
-                if (zeroIslandNodes.length === 0) {
-                  addToast('No no-fix or zero-island nodes found.', 'success');
-                  return;
-                }
-                executeWithConfirmation({
-                  name: 'Prune No-Fix / Zero Island Nodes',
-                  title: 'Prune No-Fix / Zero Island Nodes',
-                  message: `This will permanently delete ${zeroIslandNodes.length} node${zeroIslandNodes.length !== 1 ? 's' : ''} with null or near-zero coordinates (no GPS fix or Zero Island). This cannot be undone.`,
-                  confirmLabel: `Delete ${zeroIslandNodes.length} Node${zeroIslandNodes.length !== 1 ? 's' : ''}`,
-                  danger: true,
-                  action: async () => {
-                    await window.electronAPI.db.deleteNodesBatch(
-                      zeroIslandNodes.map((n) => n.node_id),
-                    );
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
-            >
-              <div className="font-medium">Prune No-Fix / Zero Island Nodes</div>
-              <div className="mt-0.5 text-xs text-red-400/70">
-                Removes nodes with no GPS fix (null coords) or near 0°N, 0°E.
-              </div>
-            </button>
-            <button
-              type="button"
-              aria-label="Prune Distant Nodes Beyond the distance threshold in Map & Node Filtering. Requires a valid GPS location."
-              onClick={() => {
-                const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
-                const homeLat = homeNode?.latitude ?? ourPosition?.lat;
-                const homeLon = homeNode?.longitude ?? ourPosition?.lon;
-                const hasHome =
-                  homeLat != null && homeLon != null && (homeLat !== 0 || homeLon !== 0);
-                if (!hasHome) {
-                  addToast(
-                    'No GPS position available. Use device node coordinates or enable GPS in the app.',
-                    'error',
-                  );
-                  return;
-                }
-                const maxKm =
-                  settings.distanceUnit === 'miles'
-                    ? settings.distanceFilterMax * 1.60934
-                    : settings.distanceFilterMax;
-                const distantNodes = Array.from(nodes.values()).filter((n) => {
-                  if (n.node_id === myNodeNum) return false;
-                  if (n.latitude == null || n.longitude == null) return false;
-                  const d = haversineDistanceKm(homeLat, homeLon, n.latitude, n.longitude);
-                  return d > maxKm;
-                });
-                if (distantNodes.length === 0) {
-                  addToast('No nodes found beyond the distance threshold.', 'success');
-                  return;
-                }
-                executeWithConfirmation({
-                  name: 'Prune Distant Nodes',
-                  title: 'Prune Distant Nodes',
-                  message: `This will permanently delete ${distantNodes.length} node${distantNodes.length !== 1 ? 's' : ''} beyond ${settings.distanceFilterMax} ${settings.distanceUnit} from your device. This cannot be undone.`,
-                  confirmLabel: `Delete ${distantNodes.length} Node${distantNodes.length !== 1 ? 's' : ''}`,
-                  danger: true,
-                  action: async () => {
-                    await window.electronAPI.db.deleteNodesBatch(
-                      distantNodes.map((n) => n.node_id),
-                    );
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
-            >
-              <div className="font-medium">Prune Distant Nodes</div>
-              <div className="mt-0.5 text-xs text-red-400/70">
-                Beyond the distance threshold in Map &amp; Node Filtering. Requires a valid GPS
-                location.
-              </div>
-            </button>
-            <button
-              type="button"
-              aria-label="Prune Offline Nodes that have not been heard within the offline threshold"
-              onClick={() => {
-                const offlineNodes = Array.from(nodes.values()).filter(
-                  (n) =>
-                    n.node_id !== myNodeNum &&
-                    !n.favorited &&
-                    getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
-                      'offline',
-                );
-                if (offlineNodes.length === 0) {
-                  addToast('No offline nodes found.', 'success');
-                  return;
-                }
-                const offlineDays = Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000));
-                executeWithConfirmation({
-                  name: 'Prune Offline Nodes',
-                  title: 'Prune Offline Nodes',
-                  message: `This will permanently delete ${offlineNodes.length} node${offlineNodes.length !== 1 ? 's' : ''} not heard in over ${offlineDays} day${offlineDays !== 1 ? 's' : ''}. This cannot be undone.`,
-                  confirmLabel: `Delete ${offlineNodes.length} Node${offlineNodes.length !== 1 ? 's' : ''}`,
-                  danger: true,
-                  action: async () => {
-                    await window.electronAPI.db.deleteNodesBatch(
-                      offlineNodes.map((n) => n.node_id),
-                    );
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
-            >
-              <div className="font-medium">Prune Offline Nodes</div>
-              <div className="mt-0.5 text-xs text-red-400/70">
-                Not heard in over {Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000))} days.
-                Favorited nodes are excluded.
-              </div>
-            </button>
-            <button
-              type="button"
-              aria-label={`Clear All Nodes (${nodes.size})`}
-              onClick={() => {
-                executeWithConfirmation({
-                  name: 'Clear Nodes',
-                  title: 'Clear Nodes',
-                  message: `This will permanently delete all ${nodes.size} locally stored nodes. They will be re-discovered when connected.`,
-                  confirmLabel: `Clear ${nodes.size} Nodes`,
-                  danger: true,
-                  action: async () => {
-                    await window.electronAPI.db.clearNodes();
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
-            >
-              Clear All Nodes ({nodes.size})
-            </button>
 
-            {/* MeshCore contacts cleanup */}
-            {protocol === 'meshcore' && (
+            <div className="space-y-2 border-t border-red-900/50 pt-4">
+              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+                GPS positions
+              </div>
+              <p className="text-muted text-xs leading-relaxed">
+                Removes stored GPS coordinates from all nodes without deleting nodes. Positions
+                repopulate as new data arrives.
+              </p>
               <button
                 type="button"
-                aria-label="Delete All Nodes Without Pubkeys"
+                aria-label="Clear GPS Data"
                 onClick={() => {
                   executeWithConfirmation({
-                    name: 'Delete Contacts Without Pubkeys',
-                    title: 'Delete Contacts Without Pubkeys',
+                    name: 'Clear GPS Data',
+                    title: 'Clear GPS Data',
                     message:
-                      'This will permanently delete all MeshCore contacts from the database that have no public key. Chat stub nodes (created from messages) will be excluded. This cannot be undone.',
-                    confirmLabel: 'Delete',
+                      'This will remove stored GPS coordinates from all nodes. Nodes will remain but their positions will be blank until new data is received. Continue?',
+                    confirmLabel: 'Clear GPS Data',
                     danger: true,
                     action: async () => {
-                      const result =
-                        await window.electronAPI.db.deleteMeshcoreContactsWithoutPubkey();
-                      addToast(
-                        `Deleted ${result.deleted} contacts. ${result.excludedStubCount} chat stub nodes excluded.`,
-                        'success',
+                      await window.electronAPI.db.clearNodePositions();
+                    },
+                  });
+                }}
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+              >
+                Clear GPS Data
+              </button>
+            </div>
+
+            <div className="space-y-2 border-t border-red-900/50 pt-4">
+              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+                Position History
+              </div>
+              <p className="text-muted text-xs leading-relaxed">
+                Clears all persisted movement trail data and the current in-memory path overlay. New
+                positions will resume tracking immediately.
+              </p>
+              <button
+                type="button"
+                aria-label="Clear Position History"
+                onClick={() => {
+                  executeWithConfirmation({
+                    name: 'Clear Position History',
+                    title: 'Clear Position History',
+                    message:
+                      'This will permanently delete all stored position history from the database. Movement trails will no longer be shown for past sessions. Continue?',
+                    confirmLabel: 'Clear Position History',
+                    danger: true,
+                    action: async () => {
+                      await Promise.resolve();
+                      clearHistory();
+                    },
+                  });
+                }}
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+              >
+                Clear Position History
+              </button>
+            </div>
+
+            {/* Nodes */}
+            <div className="space-y-3 border-t border-red-900/50 pt-4">
+              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+                Nodes
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <label htmlFor="apppanel-delete-age-days" className="text-sm text-gray-300">
+                  Delete nodes last heard more than
+                </label>
+                <input
+                  id="apppanel-delete-age-days"
+                  type="number"
+                  min={1}
+                  value={deleteAgeDays}
+                  onChange={(e) => {
+                    setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1));
+                  }}
+                  aria-label={`Delete nodes last heard more than ${deleteAgeDays} days`}
+                  className="bg-deep-black w-20 rounded border border-red-800/60 px-2 py-1 text-right text-sm text-gray-200 focus:border-red-500 focus:outline-none"
+                />
+                <span className="text-sm text-gray-300">days</span>
+                <button
+                  type="button"
+                  aria-label="Delete Old Nodes"
+                  onClick={() => {
+                    executeWithConfirmation({
+                      name: 'Delete Old Nodes',
+                      title: 'Delete Old Nodes',
+                      message: `This will permanently delete all nodes that haven't been heard in the last ${deleteAgeDays} day${deleteAgeDays !== 1 ? 's' : ''}. They will be re-discovered when they broadcast again.`,
+                      confirmLabel: 'Delete Old Nodes',
+                      danger: true,
+                      action: async () => {
+                        await window.electronAPI.db.deleteNodesByAge(deleteAgeDays);
+                      },
+                    });
+                  }}
+                  className="rounded border border-red-800 bg-red-900/50 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-red-300 transition-colors hover:bg-red-900/70"
+                >
+                  Delete Old Nodes
+                </button>
+              </div>
+              <button
+                type="button"
+                aria-label="Prune MQTT-only Nodes"
+                onClick={() => {
+                  executeWithConfirmation({
+                    name: 'Prune MQTT-only Nodes',
+                    title: 'Prune MQTT-only Nodes',
+                    message:
+                      'This will permanently delete all nodes discovered only via MQTT (never heard via RF). They will reappear if heard again via MQTT or RF.',
+                    confirmLabel: 'Prune MQTT Nodes',
+                    danger: true,
+                    action: async () => {
+                      await window.electronAPI.db.deleteNodesBySource('mqtt');
+                    },
+                  });
+                }}
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+              >
+                Prune MQTT-only Nodes
+              </button>
+              <button
+                type="button"
+                aria-label="Prune Unnamed Nodes"
+                onClick={() => {
+                  executeWithConfirmation({
+                    name: 'Prune Unnamed Nodes',
+                    title: 'Prune Unnamed Nodes',
+                    message:
+                      'This will permanently delete nodes with no real long name: empty names, auto-generated !hex placeholders, and MQTT-only identities that never received UserInfo. Favorited nodes are kept. They will be re-discovered when they broadcast again.',
+                    confirmLabel: 'Prune Unnamed Nodes',
+                    danger: true,
+                    action: async () => {
+                      await window.electronAPI.db.deleteNodesWithoutLongname();
+                    },
+                  });
+                }}
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+              >
+                Prune Unnamed Nodes
+              </button>
+              <button
+                type="button"
+                aria-label="Prune No-Fix / Zero Island Nodes Removes nodes with null or near-zero coordinates (no GPS fix or at 0 deg N, 0 deg E)."
+                onClick={() => {
+                  const zeroIslandNodes = Array.from(nodes.values()).filter(
+                    (n) => Math.abs(n.latitude ?? 0) < 0.5 && Math.abs(n.longitude ?? 0) < 0.5,
+                  );
+                  if (zeroIslandNodes.length === 0) {
+                    addToast('No no-fix or zero-island nodes found.', 'success');
+                    return;
+                  }
+                  executeWithConfirmation({
+                    name: 'Prune No-Fix / Zero Island Nodes',
+                    title: 'Prune No-Fix / Zero Island Nodes',
+                    message: `This will permanently delete ${zeroIslandNodes.length} node${zeroIslandNodes.length !== 1 ? 's' : ''} with null or near-zero coordinates (no GPS fix or Zero Island). This cannot be undone.`,
+                    confirmLabel: `Delete ${zeroIslandNodes.length} Node${zeroIslandNodes.length !== 1 ? 's' : ''}`,
+                    danger: true,
+                    action: async () => {
+                      await window.electronAPI.db.deleteNodesBatch(
+                        zeroIslandNodes.map((n) => n.node_id),
                       );
                     },
                   });
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                <div className="font-medium">Delete Contacts Without Pubkeys</div>
+                <div className="font-medium">Prune No-Fix / Zero Island Nodes</div>
                 <div className="mt-0.5 text-xs text-red-400/70">
-                  Excludes chat stub nodes created from messages.
+                  Removes nodes with no GPS fix (null coords) or near 0°N, 0°E.
                 </div>
               </button>
-            )}
-          </div>
-
-          {/* Messages */}
-          <div className="space-y-2 border-t border-red-900/50 pt-4">
-            <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-              Messages
-            </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="apppanel-clear-channel" className="shrink-0 text-sm text-gray-400">
-                Channel:
-              </label>
-              <select
-                id="apppanel-clear-channel"
-                value={clearChannelTarget}
-                onChange={(e) => {
-                  setClearChannelTarget(parseInt(e.target.value, 10));
+              <button
+                type="button"
+                aria-label="Prune Distant Nodes Beyond the distance threshold in Map & Node Filtering. Requires a valid GPS location."
+                onClick={() => {
+                  const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
+                  const homeLat = homeNode?.latitude ?? ourPosition?.lat;
+                  const homeLon = homeNode?.longitude ?? ourPosition?.lon;
+                  const hasHome =
+                    homeLat != null && homeLon != null && (homeLat !== 0 || homeLon !== 0);
+                  if (!hasHome) {
+                    addToast(
+                      'No GPS position available. Use device node coordinates or enable GPS in the app.',
+                      'error',
+                    );
+                    return;
+                  }
+                  const maxKm =
+                    settings.distanceUnit === 'miles'
+                      ? settings.distanceFilterMax * 1.60934
+                      : settings.distanceFilterMax;
+                  const distantNodes = Array.from(nodes.values()).filter((n) => {
+                    if (n.node_id === myNodeNum) return false;
+                    if (n.latitude == null || n.longitude == null) return false;
+                    const d = haversineDistanceKm(homeLat, homeLon, n.latitude, n.longitude);
+                    return d > maxKm;
+                  });
+                  if (distantNodes.length === 0) {
+                    addToast('No nodes found beyond the distance threshold.', 'success');
+                    return;
+                  }
+                  executeWithConfirmation({
+                    name: 'Prune Distant Nodes',
+                    title: 'Prune Distant Nodes',
+                    message: `This will permanently delete ${distantNodes.length} node${distantNodes.length !== 1 ? 's' : ''} beyond ${settings.distanceFilterMax} ${settings.distanceUnit} from your device. This cannot be undone.`,
+                    confirmLabel: `Delete ${distantNodes.length} Node${distantNodes.length !== 1 ? 's' : ''}`,
+                    danger: true,
+                    action: async () => {
+                      await window.electronAPI.db.deleteNodesBatch(
+                        distantNodes.map((n) => n.node_id),
+                      );
+                    },
+                  });
                 }}
-                aria-label="Channel:"
-                className="bg-deep-black flex-1 rounded-lg border border-red-800/60 px-3 py-1.5 text-sm text-gray-200 focus:border-red-500 focus:outline-none"
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                <option value={CLEAR_ALL_CHANNELS_VALUE}>All Channels</option>
-                {msgChannels.map((ch) => (
-                  <option key={ch} value={ch}>
-                    {getChannelLabel(ch)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="button"
-              aria-label={`Clear Messages (${messageCount})`}
-              onClick={() => {
-                const isAll = clearChannelTarget === CLEAR_ALL_CHANNELS_VALUE;
-                const channelName = isAll ? '' : getChannelLabel(clearChannelTarget);
-                executeWithConfirmation({
-                  name: 'Clear Messages',
-                  title: 'Clear Messages',
-                  message: isAll
-                    ? `This will permanently delete all ${messageCount} locally stored messages across all channels. This cannot be undone.`
-                    : `This will permanently delete all messages from ${channelName}. This cannot be undone.`,
-                  confirmLabel: isAll ? `Clear ${messageCount} Messages` : `Clear ${channelName}`,
-                  danger: true,
-                  action: async () => {
-                    if (protocol === 'meshcore') {
-                      if (isAll) {
-                        await window.electronAPI.db.clearMeshcoreMessages();
-                      } else {
-                        await window.electronAPI.db.clearMeshcoreMessagesByChannel(
-                          clearChannelTarget,
-                        );
-                      }
-                    } else if (isAll) {
-                      await window.electronAPI.db.clearMessages();
-                    } else {
-                      await window.electronAPI.db.clearMessagesByChannel(clearChannelTarget);
-                    }
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
-            >
-              Clear Messages ({messageCount})
-            </button>
-          </div>
+                <div className="font-medium">Prune Distant Nodes</div>
+                <div className="mt-0.5 text-xs text-red-400/70">
+                  Beyond the distance threshold in Map &amp; Node Filtering. Requires a valid GPS
+                  location.
+                </div>
+              </button>
+              <button
+                type="button"
+                aria-label="Prune Offline Nodes that have not been heard within the offline threshold"
+                onClick={() => {
+                  const offlineNodes = Array.from(nodes.values()).filter(
+                    (n) =>
+                      n.node_id !== myNodeNum &&
+                      !n.favorited &&
+                      getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                        'offline',
+                  );
+                  if (offlineNodes.length === 0) {
+                    addToast('No offline nodes found.', 'success');
+                    return;
+                  }
+                  const offlineDays = Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000));
+                  executeWithConfirmation({
+                    name: 'Prune Offline Nodes',
+                    title: 'Prune Offline Nodes',
+                    message: `This will permanently delete ${offlineNodes.length} node${offlineNodes.length !== 1 ? 's' : ''} not heard in over ${offlineDays} day${offlineDays !== 1 ? 's' : ''}. This cannot be undone.`,
+                    confirmLabel: `Delete ${offlineNodes.length} Node${offlineNodes.length !== 1 ? 's' : ''}`,
+                    danger: true,
+                    action: async () => {
+                      await window.electronAPI.db.deleteNodesBatch(
+                        offlineNodes.map((n) => n.node_id),
+                      );
+                    },
+                  });
+                }}
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+              >
+                <div className="font-medium">Prune Offline Nodes</div>
+                <div className="mt-0.5 text-xs text-red-400/70">
+                  Not heard in over {Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000))}{' '}
+                  days. Favorited nodes are excluded.
+                </div>
+              </button>
+              <button
+                type="button"
+                aria-label={`Clear All Nodes (${nodes.size})`}
+                onClick={() => {
+                  executeWithConfirmation({
+                    name: 'Clear Nodes',
+                    title: 'Clear Nodes',
+                    message: `This will permanently delete all ${nodes.size} locally stored nodes. They will be re-discovered when connected.`,
+                    confirmLabel: `Clear ${nodes.size} Nodes`,
+                    danger: true,
+                    action: async () => {
+                      await window.electronAPI.db.clearNodes();
+                    },
+                  });
+                }}
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+              >
+                Clear All Nodes ({nodes.size})
+              </button>
 
-          {/* MeshCore */}
-          {onClearMeshcoreRepeaters && (
+              {/* MeshCore contacts cleanup */}
+              {protocol === 'meshcore' && (
+                <button
+                  type="button"
+                  aria-label="Delete All Nodes Without Pubkeys"
+                  onClick={() => {
+                    executeWithConfirmation({
+                      name: 'Delete Contacts Without Pubkeys',
+                      title: 'Delete Contacts Without Pubkeys',
+                      message:
+                        'This will permanently delete all MeshCore contacts from the database that have no public key. Chat stub nodes (created from messages) will be excluded. This cannot be undone.',
+                      confirmLabel: 'Delete',
+                      danger: true,
+                      action: async () => {
+                        const result =
+                          await window.electronAPI.db.deleteMeshcoreContactsWithoutPubkey();
+                        addToast(
+                          `Deleted ${result.deleted} contacts. ${result.excludedStubCount} chat stub nodes excluded.`,
+                          'success',
+                        );
+                      },
+                    });
+                  }}
+                  className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                >
+                  <div className="font-medium">Delete Contacts Without Pubkeys</div>
+                  <div className="mt-0.5 text-xs text-red-400/70">
+                    Excludes chat stub nodes created from messages.
+                  </div>
+                </button>
+              )}
+            </div>
+
+            {/* Messages */}
             <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
-                MeshCore
+              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+                Messages
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="apppanel-clear-channel" className="shrink-0 text-sm text-gray-400">
+                  Channel:
+                </label>
+                <select
+                  id="apppanel-clear-channel"
+                  value={clearChannelTarget}
+                  onChange={(e) => {
+                    setClearChannelTarget(parseInt(e.target.value, 10));
+                  }}
+                  aria-label="Channel:"
+                  className="bg-deep-black flex-1 rounded-lg border border-red-800/60 px-3 py-1.5 text-sm text-gray-200 focus:border-red-500 focus:outline-none"
+                >
+                  <option value={CLEAR_ALL_CHANNELS_VALUE}>All Channels</option>
+                  {msgChannels.map((ch) => (
+                    <option key={ch} value={ch}>
+                      {getChannelLabel(ch)}
+                    </option>
+                  ))}
+                </select>
               </div>
               <button
                 type="button"
-                aria-label="Clear All Repeaters"
+                aria-label={`Clear Messages (${messageCount})`}
                 onClick={() => {
+                  const isAll = clearChannelTarget === CLEAR_ALL_CHANNELS_VALUE;
+                  const channelName = isAll ? '' : getChannelLabel(clearChannelTarget);
                   executeWithConfirmation({
-                    name: 'Clear All Repeaters',
-                    title: 'Clear All Repeaters',
-                    message:
-                      'This will permanently remove all saved MeshCore repeaters from the local database. This cannot be undone.',
-                    confirmLabel: 'Clear All Repeaters',
+                    name: 'Clear Messages',
+                    title: 'Clear Messages',
+                    message: isAll
+                      ? `This will permanently delete all ${messageCount} locally stored messages across all channels. This cannot be undone.`
+                      : `This will permanently delete all messages from ${channelName}. This cannot be undone.`,
+                    confirmLabel: isAll ? `Clear ${messageCount} Messages` : `Clear ${channelName}`,
                     danger: true,
-                    action: onClearMeshcoreRepeaters,
+                    action: async () => {
+                      if (protocol === 'meshcore') {
+                        if (isAll) {
+                          await window.electronAPI.db.clearMeshcoreMessages();
+                        } else {
+                          await window.electronAPI.db.clearMeshcoreMessagesByChannel(
+                            clearChannelTarget,
+                          );
+                        }
+                      } else if (isAll) {
+                        await window.electronAPI.db.clearMessages();
+                      } else {
+                        await window.electronAPI.db.clearMessagesByChannel(clearChannelTarget);
+                      }
+                    },
                   });
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Clear All Repeaters
+                Clear Messages ({messageCount})
               </button>
             </div>
-          )}
 
-          {/* Everything */}
-          <div className="space-y-2 border-t border-red-900/50 pt-4">
-            <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
-              Everything
+            {/* MeshCore */}
+            {onClearMeshcoreRepeaters && (
+              <div className="space-y-2 border-t border-red-900/50 pt-4">
+                <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
+                  MeshCore
+                </div>
+                <button
+                  type="button"
+                  aria-label="Clear All Repeaters"
+                  onClick={() => {
+                    executeWithConfirmation({
+                      name: 'Clear All Repeaters',
+                      title: 'Clear All Repeaters',
+                      message:
+                        'This will permanently remove all saved MeshCore repeaters from the local database. This cannot be undone.',
+                      confirmLabel: 'Clear All Repeaters',
+                      danger: true,
+                      action: onClearMeshcoreRepeaters,
+                    });
+                  }}
+                  className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                >
+                  Clear All Repeaters
+                </button>
+              </div>
+            )}
+
+            {/* Everything */}
+            <div className="space-y-2 border-t border-red-900/50 pt-4">
+              <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
+                Everything
+              </div>
+              <button
+                type="button"
+                aria-label="Clear All Local Data & Cache"
+                onClick={() => {
+                  executeWithConfirmation({
+                    name: 'Clear All Data',
+                    title: '⚠ Clear All Local Data',
+                    message:
+                      'This will permanently delete ALL local messages, nodes, and cached session data. This action CANNOT be undone.',
+                    confirmLabel: 'Clear Everything',
+                    danger: true,
+                    action: async () => {
+                      await window.electronAPI.db.clearMessages();
+                      await window.electronAPI.db.clearNodes();
+                      await window.electronAPI.clearSessionData();
+                    },
+                  });
+                }}
+                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+              >
+                Clear All Local Data &amp; Cache
+              </button>
             </div>
-            <button
-              type="button"
-              aria-label="Clear All Local Data & Cache"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: 'Clear All Data',
-                  title: '⚠ Clear All Local Data',
-                  message:
-                    'This will permanently delete ALL local messages, nodes, and cached session data. This action CANNOT be undone.',
-                  confirmLabel: 'Clear Everything',
-                  danger: true,
-                  action: async () => {
-                    await window.electronAPI.db.clearMessages();
-                    await window.electronAPI.db.clearNodes();
-                    await window.electronAPI.clearSessionData();
-                  },
-                });
-              }}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
-            >
-              Clear All Local Data &amp; Cache
-            </button>
           </div>
-        </div>
+        </details>
       </div>
 
       {/* Confirmation Modal */}
