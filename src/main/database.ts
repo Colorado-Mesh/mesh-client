@@ -146,7 +146,13 @@ function createBaseTables(): void {
 
 /** Export DB to a file. Best-effort for very large databases; may take a long time with no progress callback. */
 export function exportDatabase(destPath: string): void {
-  getDatabase().backup(destPath);
+  getDatabase(); // Ensure singleton initialized before snapshot connection opens same path.
+  const snapshot = new NodeSqliteDB(getDatabasePath(), { readonly: true });
+  try {
+    snapshot.backup(destPath);
+  } finally {
+    snapshot.close();
+  }
 }
 
 const MAX_MERGE_FILE_BYTES = 500 * 1024 * 1024; // 500 MB
