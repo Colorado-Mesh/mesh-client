@@ -149,6 +149,8 @@ export interface ElectronAPI {
     importDb: () => Promise<{ nodesAdded: number; messagesAdded: number } | null>;
     deleteNodesByAge: (days: number) => Promise<unknown>;
     pruneNodesByCount: (maxCount: number) => Promise<unknown>;
+    pruneMessagesByCount: (maxCount: number) => Promise<unknown>;
+    pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<unknown>;
     deleteNodesNeverHeard: () => Promise<number>;
     deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
     clearMessagesByChannel: (channel: number) => Promise<unknown>;
@@ -524,6 +526,10 @@ export interface ElectronAPI {
   appSettings: {
     getLoginItem: () => Promise<{ openAtLogin: boolean }>;
     setLoginItem: (openAtLogin: boolean) => Promise<void>;
+    /** Read all SQLite-backed app settings as raw string key/value pairs. */
+    getAll: () => Promise<Record<string, string>>;
+    /** Write a single SQLite-backed app setting. Keys are allow-listed in main. */
+    set: (key: string, value: string) => Promise<{ changes: number }>;
   };
 
   // ─── OS emoji panel ──────────────────────────────────────────────────────────

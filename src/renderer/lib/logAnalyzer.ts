@@ -58,6 +58,16 @@ function truncateLastMessage(message: string): string {
   return `${oneLine.slice(0, LAST_MESSAGE_MAX - 1)}…`;
 }
 
+/**
+ * Categories are evaluated independently; one log line may match multiple patterns.
+ * dedupeRecommendations() merges identical recommendation text in the analyze modal only.
+ *
+ * Protocol: `LogEntry` has no protocol field. `analyzeLogs()` receives the **currently active**
+ * radio protocol only to include or skip categories with `protocols?: [...]`. Most categories
+ * apply regardless of protocol; a subset (e.g. MeshCore TCP, stack-specific SDK rows) is gated.
+ * Exported or buffered logs may contain lines from another protocol than the one selected at
+ * analysis time.
+ */
 const PATTERN_CATEGORIES: PatternCategory[] = [
   {
     id: 'ble-connection',
@@ -153,8 +163,44 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     label: 'Native Module Load Failure',
     patterns: [/native module failed to load/i],
     recommendation:
-      'A native add-on failed to load — often wrong Electron ABI after an upgrade. Run npm install in the project folder (or npm run rebuild), quit all app instances, and retry.',
+      'A native add-on failed to load — often wrong Electron ABI after an upgrade. Run pnpm install in the project folder (or pnpm run rebuild), quit all app instances, and retry.',
     severity: 'error',
+  },
+  {
+    id: 'internal-error',
+    label: 'Internal App Errors',
+    patterns: [
+      /\[main\] Uncaught exception:/i,
+      /\[main\] Unhandled rejection:/i,
+      /\[main\] Renderer process gone:/i,
+      /\[main\] Failed to load:/i,
+    ],
+    recommendation:
+      'An unexpected internal error occurred. Please report this bug with the log file.',
+    severity: 'error',
+  },
+  {
+    id: 'database-error',
+    label: 'Database Failures',
+    patterns: [
+      /\[db\] Database init failed/i,
+      /\[db\] Merge failed/i,
+      /\[db\] runSchemaUpgrade failed/i,
+      /\[db\] migration v\d+ failed/i,
+      /\[db\] mergeDatabase failed/i,
+      /\[db\] createBaseTables failed/i,
+    ],
+    recommendation:
+      'Database error. This may indicate a corrupt database file or permission issue.',
+    severity: 'error',
+  },
+  {
+    id: 'database-chmod',
+    label: 'Database chmod (non-fatal)',
+    patterns: [/\[db\] chmod failed/i],
+    recommendation:
+      'Database file permission tweak failed (often benign on Windows). If you see real DB errors elsewhere, check antivirus and folder permissions for the mesh-client userData directory.',
+    severity: 'warning',
   },
   {
     id: 'database-writable',
@@ -165,6 +211,31 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     severity: 'error',
   },
   {
+    id: 'tak-server',
+    label: 'TAK Server Issues',
+    patterns: [/\[TakServer\]/i],
+    recommendation: 'TAK server error. Check certificate status and port availability.',
+    severity: 'warning',
+    requireWarnOrError: true,
+  },
+  {
+    id: 'updater',
+    label: 'App Updater Errors',
+    patterns: [/\[updater\]/i],
+    recommendation:
+      'App updater error. Check your internet connection or try a manual update from GitHub.',
+    severity: 'warning',
+    requireWarnOrError: true,
+  },
+  {
+    id: 'meshcore-tcp',
+    label: 'MeshCore IP Bridge Errors',
+    patterns: [/\[IPC\][^\n]*meshcore:tcp-(?:connect|write)\s+error/i],
+    recommendation: 'MeshCore TCP bridge error. Verify the remote host and port are reachable.',
+    severity: 'error',
+    protocols: ['meshcore'],
+  },
+  {
     id: 'ble-meshcore-notify-watchdog',
     label: 'BLE Notify Watchdog (MeshCore)',
     patterns: [/\[BLE:meshcore\] notify watchdog/i],
@@ -173,17 +244,26 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     severity: 'warning',
   },
   {
-    id: 'bluetooth-pairing-timeout',
-    label: 'Bluetooth Pairing Timeout',
-    patterns: [/bluetooth-pairing: PIN prompt timed out/i],
+    id: 'bluetooth-pairing',
+    label: 'Bluetooth Pairing Issues',
+    patterns: [
+      /bluetooth-pairing:\s*PIN prompt timed out/i,
+      /bluetooth-pair failed/i,
+      /bluetooth-unpair failed/i,
+    ],
     recommendation:
-      'PIN entry timed out. Open the app window when pairing, enter the PIN shown on the device promptly, or remove and re-pair from Bluetooth settings.',
+      'Bluetooth pairing or unpair failed, or the PIN prompt timed out. Open the app when pairing, enter the PIN promptly, check the MAC address and Bluetooth permissions, or remove and re-pair from OS Bluetooth settings.',
     severity: 'warning',
   },
   {
     id: 'sdk-meshtastic',
     label: 'Meshtastic SDK Warnings/Errors',
-    patterns: [/\[iMeshDevice\]/i, /\[TransportNobleIpc\]/i, /\[NobleBleManager\]/i],
+    patterns: [
+      /\[iMeshDevice\]/i,
+      /\[TransportNobleIpc\]/i,
+      /\[NobleBleManager\]/i,
+      /\[IpcNobleConnection:meshtastic\]/i,
+    ],
     recommendation:
       'Meshtastic stack reported a warning or error. If it repeats, check firmware, transport (BLE/serial), and reconnect.',
     severity: 'warning',
@@ -193,7 +273,12 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
   {
     id: 'sdk-meshcore',
     label: 'MeshCore SDK Warnings/Errors',
-    patterns: [/\[useMeshCore\]/i, /\[MeshcoreMqttAdapter\]/i, /\[BLE:meshcore\]/i],
+    patterns: [
+      /\[useMeshCore\]/i,
+      /\[MeshcoreMqttAdapter\]/i,
+      /\[BLE:meshcore\]/i,
+      /\[IpcNobleConnection:meshcore\]/i,
+    ],
     recommendation:
       'MeshCore stack reported a warning or error. If it repeats, check BLE pairing, MQTT settings, and reconnect.',
     severity: 'warning',
@@ -206,11 +291,24 @@ function isWarnOrErrorLevel(level: string): boolean {
   return level === 'warn' || level === 'error';
 }
 
+/** Cancelled navigations log as did-fail-load with ERR_ABORTED (-3); omit from internal-error. */
+function isFailedLoadAbortNoise(message: string): boolean {
+  if (!/\[main\] Failed to load:/i.test(message)) return false;
+  if (/ERR_ABORTED/i.test(message)) return true;
+  return /\[main\] Failed to load:\s*-3\b/.test(message);
+}
+
 function matchesCategory(entry: LogEntry, category: PatternCategory): boolean {
   if (category.requireWarnOrError && !isWarnOrErrorLevel(entry.level)) {
     return false;
   }
-  return category.patterns.some((p) => p.test(entry.message));
+  return category.patterns.some((p) => {
+    if (!p.test(entry.message)) return false;
+    if (category.id === 'internal-error' && isFailedLoadAbortNoise(entry.message)) {
+      return false;
+    }
+    return true;
+  });
 }
 
 export function dedupeRecommendations(categories: CategoryFinding[]): DedupedRecommendation[] {
@@ -244,6 +342,10 @@ export function dedupeRecommendations(categories: CategoryFinding[]): DedupedRec
   return rows;
 }
 
+/**
+ * Summarize log entries into finding categories. `protocol` is the active radio stack in the UI,
+ * not per-entry metadata — see the protocol note on `PATTERN_CATEGORIES` above.
+ */
 export function analyzeLogs(entries: LogEntry[], protocol: MeshProtocol): AnalysisResult {
   if (entries.length === 0) {
     return {

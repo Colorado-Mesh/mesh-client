@@ -78,6 +78,20 @@ describe('MeshCore DB IPC (source contract)', () => {
   });
 });
 
+describe('Persistent app settings IPC (source contract)', () => {
+  it('registers appSettings:get and appSettings:set with allow-listed keys', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('appSettings:get'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('appSettings:set'");
+    expect(INDEX_SOURCE).toContain('APP_SETTINGS_ALLOWED_KEYS');
+    expect(INDEX_SOURCE).toMatch(/key not allowed/);
+  });
+
+  it('registers DB-level message prune IPC for both protocols (issue #387)', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('db:pruneMessagesByCount'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('db:pruneMeshcoreMessagesByCount'");
+  });
+});
+
 describe('External link routing (source contract)', () => {
   it('routes external http/https navigations to system browser', () => {
     expect(INDEX_SOURCE).toContain('setWindowOpenHandler');

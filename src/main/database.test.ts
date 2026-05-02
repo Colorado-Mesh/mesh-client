@@ -19,6 +19,7 @@ import { escapeSqlLikePattern } from '../shared/sqlLikeEscape';
  */
 
 const DB_SOURCE = readFileSync(join(__dirname, 'database.ts'), 'utf-8');
+const SCHEMA_SYNC_SOURCE = readFileSync(join(__dirname, 'db-schema-sync.ts'), 'utf-8');
 
 describe('deleteNodesWithoutLongname SQL', () => {
   it('deletes NULL long_name', () => {
@@ -110,36 +111,36 @@ describe('placeholder name format', () => {
 /**
  * MeshCore message dedup + fresh-install stamp — INSERT OR IGNORE must not drop
  * distinct lines that share sender + second-resolution timestamp + channel only.
- * Fresh installs skip runMigrations(), so base DDL + user_version must match latest stamp.
+ * Fresh installs stamp CURRENT_SCHEMA_VERSION then runSchemaUpgrade() (idempotent).
  */
 describe('meshcore_messages dedup index and fresh DB version', () => {
-  it('createBaseTables defines idx_mc_msg_dedup including payload', () => {
-    expect(DB_SOURCE).toMatch(
+  it('canonical DDL defines idx_mc_msg_dedup including payload', () => {
+    expect(SCHEMA_SYNC_SOURCE).toMatch(
       /CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup\s+ON meshcore_messages\(sender_id, timestamp, channel_idx, payload\)/s,
     );
   });
 
-  it('createBaseTables defines meshcore_contacts.contact_flags', () => {
-    expect(DB_SOURCE).toMatch(/meshcore_contacts.*contact_flags INTEGER DEFAULT 0/s);
+  it('canonical DDL defines meshcore_contacts.contact_flags', () => {
+    expect(SCHEMA_SYNC_SOURCE).toMatch(/meshcore_contacts.*contact_flags INTEGER DEFAULT 0/s);
   });
 
-  it('fresh DB init stamps user_version = BASE_SCHEMA_VERSION then runs migrations', () => {
-    expect(DB_SOURCE).toMatch(/const BASE_SCHEMA_VERSION = \d+/);
+  it('fresh DB init stamps user_version = CURRENT_SCHEMA_VERSION then runs runSchemaUpgrade', () => {
+    expect(DB_SOURCE).toMatch(/CURRENT_SCHEMA_VERSION/);
     expect(DB_SOURCE).toMatch(
-      /if \(userVersion === 0\) \{[\s\S]*?createBaseTables\(\)[\s\S]*?pragma\(`user_version = \$\{BASE_SCHEMA_VERSION\}`\)[\s\S]*?\}\s*runMigrations\(\)/,
+      /if \(userVersion === 0\) \{[\s\S]*?createBaseTables\(\)[\s\S]*?pragma\(`user_version = \$\{CURRENT_SCHEMA_VERSION\}`\)[\s\S]*?\}\s*runSchemaUpgrade\(db!\)/,
     );
   });
 
-  it('createBaseTables defines protocol-neutral contact_groups tables', () => {
-    expect(DB_SOURCE).toMatch(/CREATE TABLE IF NOT EXISTS contact_groups/s);
-    expect(DB_SOURCE).toMatch(/CREATE TABLE IF NOT EXISTS contact_group_members/s);
+  it('canonical DDL defines protocol-neutral contact_groups tables', () => {
+    expect(SCHEMA_SYNC_SOURCE).toMatch(/CREATE TABLE IF NOT EXISTS contact_groups/s);
+    expect(SCHEMA_SYNC_SOURCE).toMatch(/CREATE TABLE IF NOT EXISTS contact_group_members/s);
   });
 });
 
 describe('meshcore_trace_history schema and retention', () => {
-  it('migration v24 rebuilds meshcore_trace_history when id column is missing', () => {
-    expect(DB_SOURCE).toMatch(/userVersion < 24/);
-    expect(DB_SOURCE).toMatch(/meshcore_trace_history_new/);
+  it('schema sync rebuilds meshcore_trace_history when id column is missing', () => {
+    expect(SCHEMA_SYNC_SOURCE).toMatch(/meshcore_trace_history_new/);
+    expect(SCHEMA_SYNC_SOURCE).toMatch(/rebuildMeshcoreTraceHistoryIfNeeded/);
   });
 
   it('saveMeshcoreTraceHistory prune uses rowid so retention works without id column', () => {
@@ -297,6 +298,75 @@ describe('escapeSqlLikePattern', () => {
 
   it('returns empty string for empty input', () => {
     expect(escapeSqlLikePattern('')).toBe('');
+  });
+});
+
+/**
+ * DB-backed message retention setting (issue #387) via app_settings + schema sync seeds.
+ * Source-level checks because we cannot exercise the Electron-bound DB layer
+ * directly in this Node test environment.
+ */
+describe('app_settings table + message retention defaults (schema sync)', () => {
+  const INDEX_SOURCE = readFileSync(join(__dirname, '../main/index.ts'), 'utf-8');
+
+  it('canonical DDL creates the app_settings KV table', () => {
+    expect(SCHEMA_SYNC_SOURCE).toMatch(/CREATE TABLE IF NOT EXISTS app_settings\s*\(/);
+    expect(SCHEMA_SYNC_SOURCE).toMatch(/key TEXT PRIMARY KEY/);
+    expect(SCHEMA_SYNC_SOURCE).toMatch(/value TEXT NOT NULL/);
+  });
+
+  it('seeds the four retention defaults via INSERT OR IGNORE so user values are preserved', () => {
+    expect(SCHEMA_SYNC_SOURCE).toMatch(
+      /INSERT OR IGNORE INTO app_settings\(key, value\) VALUES \(\?, \?\)/,
+    );
+    expect(SCHEMA_SYNC_SOURCE).toContain("'meshtasticMessageRetentionEnabled', '1'");
+    expect(SCHEMA_SYNC_SOURCE).toContain("'meshtasticMessageRetentionCount', '4000'");
+    expect(SCHEMA_SYNC_SOURCE).toContain("'meshcoreMessageRetentionEnabled', '1'");
+    expect(SCHEMA_SYNC_SOURCE).toContain("'meshcoreMessageRetentionCount', '4000'");
+    expect(SCHEMA_SYNC_SOURCE).toMatch(
+      /db\.pragma\(`user_version = \$\{CURRENT_SCHEMA_VERSION\}`\)/,
+    );
+  });
+
+  it('appSettings:get IPC handler reads from app_settings', () => {
+    expect(INDEX_SOURCE).toContain("'appSettings:get'");
+    expect(INDEX_SOURCE).toMatch(/SELECT key, value FROM app_settings/);
+  });
+
+  it('appSettings:set IPC handler enforces an allow-list of retention keys', () => {
+    expect(INDEX_SOURCE).toContain("'appSettings:set'");
+    expect(INDEX_SOURCE).toContain('APP_SETTINGS_ALLOWED_KEYS');
+    expect(INDEX_SOURCE).toContain('meshtasticMessageRetentionEnabled');
+    expect(INDEX_SOURCE).toContain('meshtasticMessageRetentionCount');
+    expect(INDEX_SOURCE).toContain('meshcoreMessageRetentionEnabled');
+    expect(INDEX_SOURCE).toContain('meshcoreMessageRetentionCount');
+    expect(INDEX_SOURCE).toMatch(/INSERT OR REPLACE INTO app_settings\(key, value\) VALUES/);
+  });
+
+  it('appSettings:set rejects oversized values to bound DB writes', () => {
+    expect(INDEX_SOURCE).toContain('APP_SETTINGS_MAX_VALUE_LENGTH');
+    expect(INDEX_SOURCE).toMatch(/value\.length > APP_SETTINGS_MAX_VALUE_LENGTH/);
+  });
+
+  it('db:pruneMessagesByCount keeps the newest N rows by timestamp', () => {
+    expect(INDEX_SOURCE).toContain("'db:pruneMessagesByCount'");
+    expect(INDEX_SOURCE).toMatch(
+      /DELETE FROM messages WHERE id NOT IN \(SELECT id FROM messages ORDER BY timestamp DESC, id DESC LIMIT \?\)/,
+    );
+  });
+
+  it('db:pruneMeshcoreMessagesByCount keeps the newest N rows by timestamp', () => {
+    expect(INDEX_SOURCE).toContain("'db:pruneMeshcoreMessagesByCount'");
+    expect(INDEX_SOURCE).toMatch(
+      /DELETE FROM meshcore_messages WHERE id NOT IN \(SELECT id FROM meshcore_messages ORDER BY timestamp DESC, id DESC LIMIT \?\)/,
+    );
+  });
+
+  it('prune handlers reject obviously invalid maxCount inputs', () => {
+    // Both prune handlers should refuse counts under the safety floor (100).
+    const matches = INDEX_SOURCE.match(/maxCount < 100 \|\| !isFinite\(maxCount\)/g);
+    expect(matches).not.toBeNull();
+    expect(matches!.length).toBeGreaterThanOrEqual(2);
   });
 });
 

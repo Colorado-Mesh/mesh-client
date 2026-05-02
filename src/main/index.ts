@@ -807,8 +807,7 @@ async function showAboutDialog(): Promise<void> {
   const detail = [
     `Version ${app.getVersion()}`,
     '',
-    'Cross-platform Meshtastic desktop client',
-    'BLE, Serial, HTTP, and MQTT support',
+    'Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows — BLE, USB serial, Wi‑Fi/TCP, MQTT, local SQLite history, routing diagnostics, and keyboard-first workflows.',
     '',
     'License: MIT',
     'Author: Colorado Mesh',
@@ -2431,6 +2430,63 @@ ipcMain.handle('app:setLoginItem', (_event, openAtLogin: unknown) => {
   app.setLoginItemSettings({ openAtLogin });
 });
 
+// ─── IPC: Persistent app settings (SQLite-backed key/value) ────────
+// Allow-list keys to prevent arbitrary writes from a compromised renderer.
+const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
+  'meshtasticMessageRetentionEnabled',
+  'meshtasticMessageRetentionCount',
+  'meshcoreMessageRetentionEnabled',
+  'meshcoreMessageRetentionCount',
+]);
+const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
+
+ipcMain.handle('appSettings:get', () => {
+  try {
+    const rows = getDatabase().prepareOnce('SELECT key, value FROM app_settings').all() as {
+      key: string;
+      value: string;
+    }[];
+    const out: Record<string, string> = {};
+    for (const row of rows) {
+      if (typeof row.key === 'string' && typeof row.value === 'string') {
+        out[row.key] = row.value;
+      }
+    }
+    return out;
+  } catch (err) {
+    console.error(
+      '[IPC] appSettings:get failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('IPC sender validation failed');
+  }
+  if (typeof key !== 'string' || !APP_SETTINGS_ALLOWED_KEYS.has(key)) {
+    throw new Error('appSettings:set: key not allowed');
+  }
+  if (typeof value !== 'string' || value.length > APP_SETTINGS_MAX_VALUE_LENGTH) {
+    throw new Error('appSettings:set: value must be a string under 256 chars');
+  }
+  try {
+    const result = getDatabase()
+      .prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)')
+      .run(key, value);
+    console.debug(`[IPC] appSettings:set: ${sanitizeLogMessage(key)} (${result.changes} rows)`);
+    return { changes: Number(result.changes) };
+  } catch (err) {
+    console.error(
+      '[IPC] appSettings:set failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
 ipcMain.handle('app:showEmojiPanel', (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
@@ -2839,6 +2895,52 @@ ipcMain.handle('db:pruneNodesByCount', (_event, maxCount: number) => {
   } catch (err) {
     console.error(
       '[IPC] db:pruneNodesByCount failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:pruneMessagesByCount', (_event, maxCount: number) => {
+  try {
+    if (typeof maxCount !== 'number' || maxCount < 100 || !isFinite(maxCount))
+      return { changes: 0 };
+    const cap = Math.floor(maxCount);
+    const result = getDatabase()
+      .prepareOnce(
+        'DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY timestamp DESC, id DESC LIMIT ?)',
+      )
+      .run(cap);
+    console.debug(
+      `[IPC] db:pruneMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
+    );
+    return result;
+  } catch (err) {
+    console.error(
+      '[IPC] db:pruneMessagesByCount failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:pruneMeshcoreMessagesByCount', (_event, maxCount: number) => {
+  try {
+    if (typeof maxCount !== 'number' || maxCount < 100 || !isFinite(maxCount))
+      return { changes: 0 };
+    const cap = Math.floor(maxCount);
+    const result = getDatabase()
+      .prepareOnce(
+        'DELETE FROM meshcore_messages WHERE id NOT IN (SELECT id FROM meshcore_messages ORDER BY timestamp DESC, id DESC LIMIT ?)',
+      )
+      .run(cap);
+    console.debug(
+      `[IPC] db:pruneMeshcoreMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
+    );
+    return result;
+  } catch (err) {
+    console.error(
+      '[IPC] db:pruneMeshcoreMessagesByCount failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

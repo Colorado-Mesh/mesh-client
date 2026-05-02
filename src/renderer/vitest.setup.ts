@@ -59,6 +59,8 @@ const electronAPIMock = {
     deleteNodesByAge: vi.fn().mockResolvedValue(0),
     deleteNodesNeverHeard: vi.fn().mockResolvedValue(0),
     pruneNodesByCount: vi.fn().mockResolvedValue(0),
+    pruneMessagesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
+    pruneMeshcoreMessagesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
     deleteNodesBatch: vi.fn().mockResolvedValue(0),
     clearMessagesByChannel: vi.fn().mockResolvedValue(undefined),
     getMessageChannels: vi.fn().mockResolvedValue([]),
@@ -201,6 +203,8 @@ const electronAPIMock = {
   appSettings: {
     getLoginItem: vi.fn().mockResolvedValue({ openAtLogin: false }),
     setLoginItem: vi.fn().mockResolvedValue(undefined),
+    getAll: vi.fn().mockResolvedValue({}),
+    set: vi.fn().mockResolvedValue({ changes: 1 }),
   },
   onPowerSuspend: vi.fn().mockReturnValue(() => {}),
   onPowerResume: vi.fn().mockReturnValue(() => {}),

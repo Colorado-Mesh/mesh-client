@@ -64,6 +64,7 @@ import {
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './lib/meshtasticMqttTlsMigration';
+import { fetchMessageRetention } from './lib/messageRetention';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { parseStoredJson } from './lib/parseStoredJson';
 import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
@@ -962,6 +963,37 @@ export default function App() {
         );
       }
     }
+
+    // Issue #387: DB-backed message retention. Two independent caps; prune
+    // both tables on startup since both protocols may have data even if the
+    // user is currently in the other one. Failures are best-effort: log and
+    // continue so a transient DB lock doesn't block app startup.
+    ops.push(
+      fetchMessageRetention()
+        .then((r) => {
+          const innerOps: Promise<unknown>[] = [];
+          if (r.meshtasticEnabled) {
+            innerOps.push(
+              window.electronAPI.db.pruneMessagesByCount(r.meshtasticCount).catch((e: unknown) => {
+                console.warn('[App] startup pruneMessagesByCount failed', e);
+              }),
+            );
+          }
+          if (r.meshcoreEnabled) {
+            innerOps.push(
+              window.electronAPI.db
+                .pruneMeshcoreMessagesByCount(r.meshcoreCount)
+                .catch((e: unknown) => {
+                  console.warn('[App] startup pruneMeshcoreMessagesByCount failed', e);
+                }),
+            );
+          }
+          return Promise.all(innerOps);
+        })
+        .catch((e: unknown) => {
+          console.warn('[App] startup message retention prune failed', e);
+        }),
+    );
 
     if (ops.length > 0) {
       void Promise.all(ops).then(() => {
@@ -2209,7 +2241,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={scrollMainToTop}
-                className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-6 bottom-12 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
+                className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-28 bottom-12 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
                 title="Back to top"
                 aria-label="Back to top"
               >

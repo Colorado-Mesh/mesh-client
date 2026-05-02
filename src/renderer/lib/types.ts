@@ -381,6 +381,8 @@ declare global {
         deleteNodesByAge: (days: number) => Promise<unknown>;
         deleteNodesNeverHeard: () => Promise<number>;
         pruneNodesByCount: (maxCount: number) => Promise<unknown>;
+        pruneMessagesByCount: (maxCount: number) => Promise<unknown>;
+        pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<unknown>;
         deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
         clearMessagesByChannel: (channel: number) => Promise<unknown>;
         getMessageChannels: () => Promise<{ channel: number }[]>;
@@ -765,6 +767,12 @@ declare global {
         encrypt: (plaintext: string) => Promise<string | null>;
         decrypt: (ciphertext: string) => Promise<string | null>;
         isAvailable: () => Promise<boolean>;
+      };
+      appSettings: {
+        getLoginItem: () => Promise<{ openAtLogin: boolean }>;
+        setLoginItem: (openAtLogin: boolean) => Promise<void>;
+        getAll: () => Promise<Record<string, string>>;
+        set: (key: string, value: string) => Promise<{ changes: number }>;
       };
       tak: {
         start: (settings: TAKSettings) => Promise<void>;

@@ -111,7 +111,7 @@ export default function UpdateStatusIndicator({
   onViewRelease,
 }: Props) {
   const { phase, version, isPackaged, isMac, percent } = updateState;
-  const useReleasePage = !isPackaged || isMac;
+  const useReleasePage = !isPackaged || isMac || window.electronAPI.getPlatform() === 'darwin';
 
   return (
     <span

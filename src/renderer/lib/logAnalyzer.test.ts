@@ -169,7 +169,7 @@ describe('analyzeLogs', () => {
     expect(cat?.count).toBe(1);
   });
 
-  it('detects native module failure message', () => {
+  it('detects native module failure message and recommends pnpm', () => {
     const entries: LogEntry[] = [
       makeEntry('A native module failed to load. Run npm install.', 'error'),
     ];
@@ -177,6 +177,8 @@ describe('analyzeLogs', () => {
     const cat = result.categories.find((c) => c.id === 'native-module');
     expect(cat).toBeDefined();
     expect(cat?.count).toBe(1);
+    expect(cat?.recommendation).toContain('pnpm');
+    expect(cat?.recommendation).toContain('rebuild');
   });
 
   it('detects database not writable', () => {
@@ -202,9 +204,135 @@ describe('analyzeLogs', () => {
       makeEntry('bluetooth-pairing: PIN prompt timed out after 120s — aborting', 'warn'),
     ];
     const result = analyzeLogs(entries, 'meshtastic');
-    const cat = result.categories.find((c) => c.id === 'bluetooth-pairing-timeout');
+    const cat = result.categories.find((c) => c.id === 'bluetooth-pairing');
     expect(cat).toBeDefined();
     expect(cat?.count).toBe(1);
+  });
+
+  it('detects bluetooth IPC pair and unpair failures', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[IPC] bluetooth-pair failed: timeout', 'warn'),
+      makeEntry('[IPC] bluetooth-unpair failed: not paired', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    const cat = result.categories.find((c) => c.id === 'bluetooth-pairing');
+    expect(cat).toBeDefined();
+    expect(cat?.count).toBe(2);
+  });
+
+  it('detects internal app errors', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[main] Uncaught exception: Error: boom', 'error'),
+      makeEntry('[main] Unhandled rejection: bad', 'error'),
+      makeEntry('[main] Renderer process gone: crashed', 'error'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    const cat = result.categories.find((c) => c.id === 'internal-error');
+    expect(cat).toBeDefined();
+    expect(cat?.count).toBe(3);
+  });
+
+  it('detects Failed to load as internal error when not ERR_ABORTED', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[main] Failed to load: -105 ERR_BLOCKED_BY_CLIENT https://example.com/', 'error'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'internal-error')).toBeDefined();
+  });
+
+  it('does not flag Failed to load ERR_ABORTED -3 as internal error', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[main] Failed to load: -3 ERR_ABORTED https://localhost/', 'error'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'internal-error')).toBeUndefined();
+  });
+
+  it('detects database failures', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[db] Database init failed: SQLITE_CANTOPEN', 'error'),
+      makeEntry('[db] runSchemaUpgrade failed corrupt', 'error'),
+      makeEntry('[db] migration v12 failed: rollback', 'error'),
+      makeEntry('[db] mergeDatabase failed: corrupt', 'error'),
+      makeEntry('[db] Merge failed: duplicate', 'error'),
+      makeEntry('[db] createBaseTables failed: no disk', 'error'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    const cat = result.categories.find((c) => c.id === 'database-error');
+    expect(cat).toBeDefined();
+    expect(cat?.count).toBe(6);
+  });
+
+  it('detects database chmod as warning', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[db] chmod failed (non-fatal, expected on Windows):', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    const cat = result.categories.find((c) => c.id === 'database-chmod');
+    expect(cat).toBeDefined();
+    expect(cat?.severity).toBe('warning');
+  });
+
+  it('does not flag TakServer debug lines', () => {
+    const entries: LogEntry[] = [makeEntry('[TakServer] Listening on port 8080', 'debug')];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'tak-server')).toBeUndefined();
+  });
+
+  it('detects TakServer warn lines', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[TakServer] Client socket error abc: socket error', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'tak-server')).toBeDefined();
+  });
+
+  it('does not flag updater debug lines', () => {
+    const entries: LogEntry[] = [makeEntry('[updater] would check (hypothetical debug)', 'debug')];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'updater')).toBeUndefined();
+  });
+
+  it('detects updater warnings', () => {
+    const entries: LogEntry[] = [makeEntry('[updater] checkForUpdates failed: network', 'warn')];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'updater')).toBeDefined();
+  });
+
+  it('detects meshcore TCP bridge errors for meshcore protocol only', () => {
+    const tcpLine = '[IPC] meshcore:tcp-connect error: ECONNREFUSED';
+    const mesh = analyzeLogs([makeEntry(tcpLine, 'error')], 'meshcore');
+    expect(mesh.categories.find((c) => c.id === 'meshcore-tcp')).toBeDefined();
+    const mega = analyzeLogs([makeEntry(tcpLine, 'error')], 'meshtastic');
+    expect(mega.categories.find((c) => c.id === 'meshcore-tcp')).toBeUndefined();
+  });
+
+  it('detects meshcore TCP write errors', () => {
+    const result = analyzeLogs(
+      [makeEntry('[IPC] meshcore:tcp-write error: broken pipe', 'error')],
+      'meshcore',
+    );
+    expect(result.categories.find((c) => c.id === 'meshcore-tcp')).toBeDefined();
+  });
+
+  it('classifies IpcNobleConnection:meshtastic under sdk-meshtastic', () => {
+    const result = analyzeLogs(
+      [makeEntry('[IpcNobleConnection:meshtastic] peripheral disconnected', 'warn')],
+      'meshtastic',
+    );
+    const sdk = result.categories.find((c) => c.id === 'sdk-meshtastic');
+    expect(sdk).toBeDefined();
+    expect(sdk?.count).toBe(1);
+  });
+
+  it('classifies IpcNobleConnection:meshcore under sdk-meshcore', () => {
+    const result = analyzeLogs(
+      [makeEntry('[IpcNobleConnection:meshcore] peripheral disconnected', 'warn')],
+      'meshcore',
+    );
+    const sdk = result.categories.find((c) => c.id === 'sdk-meshcore');
+    expect(sdk).toBeDefined();
+    expect(sdk?.count).toBe(1);
   });
 
   it('detects watchdog triggers', () => {

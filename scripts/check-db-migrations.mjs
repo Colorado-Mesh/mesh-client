@@ -1,123 +1,135 @@
 #!/usr/bin/env node
 /**
- * Pre-commit / CI check for two CodeQL patterns in src/main/database.ts:
+ * Pre-commit / CI check for SQLite schema sources:
  *
  *  1. js/missing-space-in-string-concatenation — SQL string segments that end
  *     with a comma immediately before the closing quote (e.g. `'col INTEGER,'`)
- *     will produce `...INTEGER,nextCol` when concatenated.  Every segment that
- *     ends with ',' must have a trailing space: `'col INTEGER, '`.
+ *     when concatenated with `+`. Every segment ending with ',' must have a
+ *     trailing space: `'col INTEGER, '`.
  *
- *  2. js/useless-assignment-to-local — after the last migration block
- *     `if (userVersion < N)` writes `db.pragma('user_version = N')`, there
- *     must be no `userVersion = N` assignment because no later block reads it.
+ *  2. Schema stamp hygiene — `src/main/db-schema-sync.ts` must export
+ *     `CURRENT_SCHEMA_VERSION`, and `src/main/database.ts` must invoke
+ *     `runSchemaUpgrade` (replacing the old linear `runMigrations` ladder).
  *
  * To suppress a false positive on rule 1, add // db-sql-space-ok with a reason
  * on the same line as the string segment.
  */
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_FILE = path.resolve(__dirname, "..", "src", "main", "database.ts");
+const ROOT = path.resolve(__dirname, '..');
+const DB_FILES = [
+  path.join(ROOT, 'src', 'main', 'database.ts'),
+  path.join(ROOT, 'src', 'main', 'db-schema-sync.ts'),
+];
+const SCHEMA_SYNC = path.join(ROOT, 'src', 'main', 'db-schema-sync.ts');
+const DATABASE_TS = path.join(ROOT, 'src', 'main', 'database.ts');
 
-// ─── Rule 1: SQL segment ending with comma, no trailing space ─────────────────
-// Matches a single-quoted string that ends with a bare comma: '...,' + or '...',
-// but not '..., ' (space before closing quote).
-// We only flag it when the line also contains a concatenation (+) or is
-// clearly part of a multi-line SQL build.
 const BARE_COMMA_SEGMENT = /'[^']*[^'\s],'\s*\+/;
 const SUPPRESSED_SPACE = /\/\/\s*db-sql-space-ok\b/;
+const CURRENT_SCHEMA_RE = /export const CURRENT_SCHEMA_VERSION = (\d+)\s*;/;
 
-// ─── Rule 2: Useless assignment to userVersion after last migration ────────────
-// Collect all `if (userVersion < N)` guards and `userVersion = N` assignments.
-const GUARD_RE = /if\s*\(\s*userVersion\s*<\s*(\d+)\s*\)/g;
-const ASSIGN_RE = /userVersion\s*=\s*(\d+)\s*;/g;
-
-function checkSqlSpaces(lines) {
+function checkSqlSpaces(files) {
   const violations = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!BARE_COMMA_SEGMENT.test(line)) continue;
-    if (SUPPRESSED_SPACE.test(line)) continue;
-    violations.push({ lineNum: i + 1, line: line.trim() });
-  }
-  return violations;
-}
-
-function checkUselessAssignment(content) {
-  // Find the highest migration guard version.
-  let maxGuard = 0;
-  for (const m of content.matchAll(GUARD_RE)) {
-    maxGuard = Math.max(maxGuard, parseInt(m[1], 10));
-  }
-  if (maxGuard === 0) return [];
-
-  // After that guard, find any `userVersion = maxGuard` assignment.
-  // We locate the guard position and search only from there forward.
-  const guardStr = `userVersion < ${maxGuard}`;
-  const guardIdx = content.lastIndexOf(guardStr);
-  if (guardIdx === -1) return [];
-
-  const tail = content.slice(guardIdx);
-  const violations = [];
-  for (const m of tail.matchAll(ASSIGN_RE)) {
-    if (parseInt(m[1], 10) === maxGuard) {
-      const lineNum =
-        content.slice(0, guardIdx + m.index).split("\n").length;
-      violations.push({
-        lineNum,
-        line: m[0].trim(),
-        version: maxGuard,
-      });
+  for (const file of files) {
+    if (!fs.existsSync(file)) continue;
+    const lines = fs.readFileSync(file, 'utf8').split('\n');
+    const relPath = path.relative(process.cwd(), file);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!BARE_COMMA_SEGMENT.test(line)) continue;
+      if (SUPPRESSED_SPACE.test(line)) continue;
+      violations.push({ file: relPath, lineNum: i + 1, line: line.trim() });
     }
   }
   return violations;
 }
 
+function checkSchemaSyncExport() {
+  const violations = [];
+  const relPath = path.relative(process.cwd(), SCHEMA_SYNC);
+  if (!fs.existsSync(SCHEMA_SYNC)) {
+    violations.push({
+      file: relPath,
+      message: 'missing file src/main/db-schema-sync.ts',
+    });
+    return violations;
+  }
+  const content = fs.readFileSync(SCHEMA_SYNC, 'utf8');
+  const m = content.match(CURRENT_SCHEMA_RE);
+  if (!m) {
+    violations.push({
+      file: relPath,
+      message: 'must export exactly one `export const CURRENT_SCHEMA_VERSION = <int>;`',
+    });
+    return violations;
+  }
+  const n = parseInt(m[1], 10);
+  if (!Number.isFinite(n) || n < 1) {
+    violations.push({
+      file: relPath,
+      message: `CURRENT_SCHEMA_VERSION must be a positive integer (got ${m[1]})`,
+    });
+  }
+  return violations;
+}
+
+function checkDatabaseInit() {
+  const violations = [];
+  const relPath = path.relative(process.cwd(), DATABASE_TS);
+  if (!fs.existsSync(DATABASE_TS)) {
+    violations.push({ file: relPath, message: 'missing database.ts' });
+    return violations;
+  }
+  const content = fs.readFileSync(DATABASE_TS, 'utf8');
+  if (!content.includes('runSchemaUpgrade')) {
+    violations.push({
+      file: relPath,
+      message: 'init path must call runSchemaUpgrade(db)',
+    });
+  }
+  if (/\bfunction\s+runMigrations\s*\(/.test(content)) {
+    violations.push({
+      file: relPath,
+      message: 'remove legacy function runMigrations — use db-schema-sync.ts',
+    });
+  }
+  return violations;
+}
+
 function main() {
-  const relPath = path.relative(process.cwd(), DB_FILE);
-  const content = fs.readFileSync(DB_FILE, "utf8");
-  const lines = content.split("\n");
+  const spaceViolations = checkSqlSpaces(DB_FILES);
+  const schemaViolations = [...checkSchemaSyncExport(), ...checkDatabaseInit()];
 
-  const spaceViolations = checkSqlSpaces(lines);
-  const assignViolations = checkUselessAssignment(content);
-
-  if (spaceViolations.length === 0 && assignViolations.length === 0) {
+  if (spaceViolations.length === 0 && schemaViolations.length === 0) {
     process.exit(0);
     return;
   }
 
   if (spaceViolations.length > 0) {
     console.error(
-      "check-db-migrations: SQL string segments missing space after comma " +
-        "(CodeQL js/missing-space-in-string-concatenation):\n"
+      'check-db-migrations: SQL string segments missing space after comma ' +
+        '(CodeQL js/missing-space-in-string-concatenation):\n',
     );
     for (const v of spaceViolations) {
-      console.error(`  ${relPath}:${v.lineNum}`);
+      console.error(`  ${v.file}:${v.lineNum}`);
       console.error(`    ${v.line}`);
-      console.error(
-        "    Fix: add a trailing space before the closing quote, e.g. 'col INTEGER, '"
-      );
-      console.error("");
+      console.error("    Fix: add a trailing space before the closing quote, e.g. 'col INTEGER, '");
+      console.error('');
     }
     console.error(
-      "To suppress a false positive, add // db-sql-space-ok with a reason on the same line.\n"
+      'To suppress a false positive, add // db-sql-space-ok with a reason on the same line.\n',
     );
   }
 
-  if (assignViolations.length > 0) {
-    console.error(
-      "check-db-migrations: useless userVersion assignment in last migration block " +
-        "(CodeQL js/useless-assignment-to-local):\n"
-    );
-    for (const v of assignViolations) {
-      console.error(`  ${relPath}:${v.lineNum}`);
-      console.error(`    ${v.line}`);
-      console.error(
-        `    Fix: remove \`userVersion = ${v.version};\` — no subsequent migration block reads it.`
-      );
-      console.error("");
+  if (schemaViolations.length > 0) {
+    console.error('check-db-migrations: schema upgrade source checks:\n');
+    for (const v of schemaViolations) {
+      console.error(`  ${v.file}`);
+      console.error(`    ${v.message}`);
+      console.error('');
     }
   }
 

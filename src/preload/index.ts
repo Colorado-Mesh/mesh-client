@@ -71,6 +71,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteNodesByAge: (days: number) => ipcRenderer.invoke('db:deleteNodesByAge', days),
     deleteNodesNeverHeard: () => ipcRenderer.invoke('db:deleteNodesNeverHeard'),
     pruneNodesByCount: (maxCount: number) => ipcRenderer.invoke('db:pruneNodesByCount', maxCount),
+    pruneMessagesByCount: (maxCount: number) =>
+      ipcRenderer.invoke('db:pruneMessagesByCount', maxCount),
+    pruneMeshcoreMessagesByCount: (maxCount: number) =>
+      ipcRenderer.invoke('db:pruneMeshcoreMessagesByCount', maxCount),
     deleteNodesBatch: (nodeIds: number[]) => ipcRenderer.invoke('db:deleteNodesBatch', nodeIds),
     clearMessagesByChannel: (channel: number) =>
       ipcRenderer.invoke('db:clearMessagesByChannel', channel),
@@ -686,6 +690,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getLoginItem: (): Promise<{ openAtLogin: boolean }> => ipcRenderer.invoke('app:getLoginItem'),
     setLoginItem: (openAtLogin: boolean): Promise<void> =>
       ipcRenderer.invoke('app:setLoginItem', openAtLogin),
+    getAll: (): Promise<Record<string, string>> => ipcRenderer.invoke('appSettings:get'),
+    set: (key: string, value: string): Promise<{ changes: number }> =>
+      ipcRenderer.invoke('appSettings:set', key, value),
   },
 
   // ─── Power events ──────────────────────────────────────────────
