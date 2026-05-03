@@ -21,9 +21,15 @@ See [development-environment.md](development-environment.md#windows) for Python 
 
 ### BLE known issues
 
-- **Bluetooth adapter not found** — ensure Bluetooth is enabled at the OS level. On Linux: `systemctl status bluetooth` and `rfkill list`. On macOS: check **System Settings > Bluetooth**. On Windows: **Settings → Bluetooth & devices**.
-- **Device not discovered** — make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.
+- **Bluetooth adapter not found**: ensure Bluetooth is enabled at the OS level. On Linux: `systemctl status bluetooth` and `rfkill list`. On macOS: check **System Settings > Bluetooth**. On Windows: **Settings → Bluetooth & devices**.
+- **Device not discovered**: make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.
 - If BLE is unreliable, prefer Serial (USB) or TCP/HTTP for a stable connection.
+
+#### BLE debug: `mtu=null` and `MTU updated: …` in logs
+
+- After **Noble** `connectAsync`, **`mtu=null`** is common until the stack finishes ATT MTU negotiation.
+- A line like **`MTU updated: 20`** comes from the Noble `mtu` event. ATT_MTU must be **≥ 23** per spec; the client **coerces reported values below 23 to 23** for write sizing (treating odd values such as **20** as a Noble/binding quirk, not a literal 20-octet ATT MTU). A **one-time debug** line may note the raw value when that happens (not a warning).
+- **Slow NodeDB / large config sync over BLE** can still be limited by **`@meshtastic/core`** queue timing (hundreds of ms between queued packets), not only GATT MTU. Use **Log → Analyze** for hints, or try **USB serial** / **TCP** if throughput matters.
 
 **Windows-specific:**
 
@@ -65,38 +71,38 @@ See [development-environment.md#linux](development-environment.md#linux) for ser
 **Fix:**
 
 1. Open **System Settings → Privacy & Security** and scroll to the bottom. If you see "Mesh-client was blocked from use", click **Allow** to run the app.
-2. If you don't see the Mesh-client entry in Privacy & Security, or the app still won't open after clicking Allow, strip the quarantine attribute — adjust the path if the app is still under **Downloads** or another folder:
+2. If you don't see the Mesh-client entry in Privacy & Security, or the app still won't open after clicking Allow, strip the quarantine attribute; adjust the path if the app is still under **Downloads** or another folder:
 
 ```bash
 xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
 ```
 
-After running xattr, check Privacy & Security again (scroll to the bottom) — the entry should now appear with an **Allow** button.
+After running xattr, check Privacy & Security again (scroll to the bottom); the entry should now appear with an **Allow** button.
 
 **Right-click → Open** on first launch can also help in some cases. Background and discussion: [jeffvli/feishin#104 (comment)](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
 
 ### App crashes on launch (macOS distributable)
 
 - **macOS 26 (Tahoe) + EXC_BREAKPOINT at launch**: electron-builder ad-hoc signing can crash during ElectronMain/V8 init before any app code runs. This repo sets `mac.identity: null` in `electron-builder.yml` so the packaged app is unsigned and avoids that re-sign path; first open may require **Right-click → Open** or clearing quarantine ([macOS: File is damaged…](#macos-file-is-damaged-and-cannot-be-opened) above). For notarized releases, set a real Developer ID in `mac.identity` and retest on macOS 26. See [electron#49522](https://github.com/electron/electron/issues/49522) and [electron-builder#9396](https://github.com/electron-userland/electron-builder/issues/9396).
-- This may also be a native module signing issue — try rebuilding: `pnpm run dist:mac`
+- This may also be a native module signing issue; try rebuilding: `pnpm run dist:mac`
 - If building from source: make sure `pnpm install` completed without errors
 
 ### App shows "disconnected" but device is still on
 
-- The Bluetooth connection can drop silently — click Disconnect, then Connect again
-- For serial: the USB cable may have been bumped — reconnect
+- The Bluetooth connection can drop silently; click Disconnect, then Connect again
+- For serial: the USB cable may have been bumped; reconnect
 
-### Connection or transport issues — use Log **Analyze**
+### Connection or transport issues: use Log **Analyze**
 
-Open the **Log** panel (right rail), enable **debug** if needed, reproduce the problem, then click **Analyze**. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists **suggested next steps**. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is **heuristic** — treat recommendations as hints, not guarantees.
+Open the **Log** panel (right rail), enable **debug** if needed, reproduce the problem, then click **Analyze**. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists **suggested next steps**. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is **heuristic**; treat recommendations as hints, not guarantees.
 
 ### Permission messages in the console
 
-`[permissions] checkHandler: media → denied` and `web-app-installation → denied` are expected. The app only uses **serial** and **geolocation** — media and web-app-installation are intentionally denied.
+`[permissions] checkHandler: media → denied` and `web-app-installation → denied` are expected. The app only uses **serial** and **geolocation**; media and web-app-installation are intentionally denied.
 
 ### `pnpm run dist:mac` fails with `GH_TOKEN` / "Cannot cleanup"
 
-electron-builder publishes to GitHub when it thinks it's in CI. Local builds use `--publish never` so artifacts land in `release/` without a token. Tag releases use `pnpm run dist:mac:publish` (and `:linux:publish` / `:win:publish`) with `GH_TOKEN` set — see `.github/workflows/release.yaml`.
+electron-builder publishes to GitHub when it thinks it's in CI. Local builds use `--publish never` so artifacts land in `release/` without a token. Tag releases use `pnpm run dist:mac:publish` (and `:linux:publish` / `:win:publish`) with `GH_TOKEN` set; see `.github/workflows/release.yaml`.
 
 ### `[DEP0190]` when running electron-builder
 
@@ -116,7 +122,7 @@ pnpm run trace-deprecation
 
 ### "A native module failed to load" dialog on startup
 
-**Cause**: `@stoprocent/noble` (or `@serialport/bindings-cpp`) was compiled for a different Electron ABI — common after an Electron or Node version change.
+**Cause**: `@stoprocent/noble` (or `@serialport/bindings-cpp`) was compiled for a different Electron ABI; common after an Electron or Node version change.
 
 **Fix**: Run `pnpm install` (the postinstall script rebuilds native modules for the correct ABI automatically).
 
@@ -132,16 +138,31 @@ pnpm run trace-deprecation
 
 **Cause**
 
-1. **Spaces in the project path** — node-gyp is unreliable when the repo lives under a path with spaces (e.g. `C:\Users\Joey Stanford\mesh-client`). This can surface as "Attempting to build a module with a space in the path", "Could not find any Visual Studio installation to use", or EPERM. See [node-gyp#65](https://github.com/nodejs/node-gyp/issues/65#issuecomment-368820565).
-2. **EPERM on unlink** — Something on Windows still has the `.node` file open (another `node`/`electron` process, antivirus/Windows Defender scanning the file, or a stuck handle).
+1. **Spaces in the project path**: node-gyp is unreliable when the repo lives under a path with spaces (e.g. `C:\Users\Joey Stanford\mesh-client`). This can surface as "Attempting to build a module with a space in the path", "Could not find any Visual Studio installation to use", or EPERM. See [node-gyp#65](https://github.com/nodejs/node-gyp/issues/65#issuecomment-368820565).
+2. **EPERM on unlink**: Something on Windows still has the `.node` file open (another `node`/`electron` process, antivirus/Windows Defender scanning the file, or a stuck handle).
 
 **Fix**
 
 1. **Use a path without spaces** (strongly recommended): clone or copy the repo to e.g. `C:\dev\mesh-client`, then `pnpm install` and `pnpm run dist:win` from there.
 2. **Clear the lock before rebuild**: quit any running Mesh-Client/Electron dev instances, then delete the affected `build` folder under `node_modules` and retry.
-3. **Rebuild then dist**: `pnpm run rebuild` — if that succeeds, run `pnpm run dist:win`.
+3. **Rebuild then dist**: `pnpm run rebuild`; if that succeeds, run `pnpm run dist:win`.
 
 CI builds avoid both issues by using short paths and clean agents; local Windows builds need the same constraints.
+
+### Windows: `0x80010135` / "Path too long" (e.g. `bluetooth_hci_socket.lastbuildstate`)
+
+**Symptoms**
+
+- Explorer or the compiler shows **error 0x80010135** with **Path too long**, often on a **`*.lastbuildstate`** file under `node_modules`.
+- **`bluetooth_hci_socket`** in the name points at **`@stoprocent/bluetooth-hci-socket`** (a native dependency of **`@stoprocent/noble`**). MSBuild writes build state under very deep paths; together with a long clone directory, the full path can exceed the legacy **~260 character** Win32 limit.
+
+**Fix** (use one or more)
+
+1. **Shorten the repo path** (most reliable): clone or copy the project to a shallow path such as `C:\dev\mesh-client` instead of e.g. `C:\Users\…\Documents\GitHub\org\mesh-client`.
+2. **Enable long paths in Git** (helps clones/checkouts): `git config --global core.longpaths true`, then re-clone or ensure no stuck long paths in the worktree.
+3. **Enable Win32 long paths in Windows** (Windows 10 1607+): **Settings → System → About → Advanced system settings** → **Environment Variables** is not the usual switch; use **Local Group Policy** → _Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths_, or the registry DWORD **`LongPathsEnabled = 1`** under `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem` (admin rights; reboot may be required). See [Microsoft: Maximum Path Length Limitation](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation).
+4. **`pnpm run dist:win`** already runs a **hoisted** `pnpm install` to shorten `node_modules` depth before packaging; if **`pnpm install`** / **`pnpm run rebuild`** fails earlier with this error, try the short path and long-path OS settings first, or temporarily: `pnpm install --config.node-linker=hoisted` from a short root path.
+5. **Packaged app (`dist:win`)**: the build embeds a Windows application manifest with **`longPathAware`** so the installed **Mesh-client.exe** can use long paths when the machine has long paths enabled (registry / policy). That helps **runtime** paths inside the app; it does **not** shorten **`node_modules`** during **`pnpm install`** on the build machine—CI and developers still benefit from short clone paths for native rebuilds.
 
 ### Database directory is not writable
 
@@ -160,8 +181,8 @@ CI builds avoid both issues by using short paths and clean agents; local Windows
 
 Windows does not have built-in mDNS resolution. `.local` hostnames require **Bonjour** (installed with iTunes or Apple Devices). Install either:
 
-- [iTunes](https://www.apple.com/itunes/) — includes Bonjour automatically
-- [Bonjour Print Services for Windows](https://support.apple.com/en-us/search?query=Bonjour%20Print%20Services%20for%20Windows) — standalone Bonjour installer
+- [iTunes](https://www.apple.com/itunes/): includes Bonjour automatically
+- [Bonjour Print Services for Windows](https://support.apple.com/en-us/search?query=Bonjour%20Print%20Services%20for%20Windows): standalone Bonjour installer
 
 Alternatively, enter the device's **IP address** directly instead of its `.local` hostname.
 
@@ -196,7 +217,7 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 ### MQTT connected but no messages from other nodes
 
-**Cause**: LetsMesh and Colorado Mesh are publish-only brokers — you can send packets to the mesh but won't receive other users' traffic over MQTT. The connection is real, but incoming messages are limited.
+**Cause**: LetsMesh and Colorado Mesh are publish-only brokers; you can send packets to the mesh but won't receive other users' traffic over MQTT. The connection is real, but incoming messages are limited.
 
 **Fix**: Expected behavior for public brokers. For two-way MQTT, use a different broker or connect via BLE/Serial.
 
@@ -218,7 +239,7 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 ### BLE auto-reconnect: "No previously connected BLE device found"
 
-**Cause**: The reconnect card appeared, but the browser lost the cached device handle — for example, the app was fully quit and relaunched.
+**Cause**: The reconnect card appeared, but the browser lost the cached device handle; for example, the app was fully quit and relaunched.
 
 **Fix**: Click **Forget this device** on the reconnect card and pair fresh using the Bluetooth picker.
 
@@ -230,7 +251,7 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 - Grant location permission when prompted by the app.
 - Or set coordinates manually via the **Radio** tab → Fixed Position.
-- Note: The IP-geolocation fallback (ipwho.is) provides city-level accuracy only — not suitable for position broadcasting. If the service is unreachable, "Location unavailable" is shown.
+- Note: The IP-geolocation fallback (ipwho.is) provides city-level accuracy only; not suitable for position broadcasting. If the service is unreachable, "Location unavailable" is shown.
 
 ### "Something went wrong" blank screen
 
@@ -246,11 +267,11 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 **Cause**: Known Electron/Chromium quirk on macOS when the first responder is a text field (e.g. the chat input). The native menu bridge logs this; it does not affect behavior.
 
-**Fix**: None required — safe to ignore. Copy/paste and other edit actions still work.
+**Fix**: None required; safe to ignore. Copy/paste and other edit actions still work.
 
 ### Update check fails / footer update status
 
-The app functions fully offline — this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached. The footer shows **Update error** when a check fails; use **Check for updates** in the app menu or retry from the footer when applicable.
+The app functions fully offline; this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached. The footer shows **Update error** when a check fails; use **Check for updates** in the app menu or retry from the footer when applicable.
 
 ### Map tab without internet (offline / no WAN)
 
@@ -272,7 +293,7 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 **Cause**: Diagnostic rows (routing + RF) are snapshotted to `localStorage` so a restart doesn't wipe the table.
 
-**Fix**: This is expected — rows refresh as new packets arrive. Use **Stop restoring on next launch** on the banner to clear the snapshot, or use **App** tab → **Reset Diagnostics** to clear in-memory rows and related state.
+**Fix**: This is expected; rows refresh as new packets arrive. Use **Stop restoring on next launch** on the banner to clear the snapshot, or use **App** tab → **Reset Diagnostics** to clear in-memory rows and related state.
 
 ### Diagnostics look stale or overcrowded
 
@@ -284,7 +305,7 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 **Cause**: Signal strength is only available for **direct (0-hop) RF** neighbors. Multi-hop and MQTT-heard nodes have no client-side signal strength.
 
-**Fix**: Not a bug — use SNR/last heard and routing diagnostics instead for those paths.
+**Fix**: Not a bug; use SNR/last heard and routing diagnostics instead for those paths.
 
 ### MeshCore: "Get Telemetry" returns timeout
 
@@ -306,7 +327,7 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 - The device must be **paired** with your computer before connecting:
   - **Windows**: Pair first in **Settings → Bluetooth & devices → Add device**, then connect from the app.
   - **Linux**: Use **`bluetoothctl pair <MAC>`** first, or let the app handle the pairing prompt. See [BLE known issues](#ble-known-issues) for detailed steps.
-- **Try in the official MeshCore app first** — if the device connects there, it will work in Mesh-Client.
+- **Try in the official MeshCore app first**: if the device connects there, it will work in Mesh-Client.
 - If Bluetooth fails, try serial (USB) or HTTP as alternatives.
 
 **USB (Serial):**
@@ -321,9 +342,9 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 ### MeshCore: Trace Route or Ping trace times out
 
-**Cause**: Nodes you only **hear** on the mesh—but that do **not** have **your** node in **their** contact list—are sometimes called foreign or one-way contacts. MeshCore firmware may not answer **Trace Route** (node detail) or **Ping trace** (Repeaters panel) for those peers, so the app waits until the trace/ping timeout with no TraceData response. You may see **Trace route timed out** in the node detail modal or an error toast from **Ping trace**.
+**Cause**: Nodes you only **hear** on the mesh; but that do **not** have **your** node in **their** contact list; are sometimes called foreign or one-way contacts. MeshCore firmware may not answer **Trace Route** (node detail) or **Ping trace** (Repeaters panel) for those peers, so the app waits until the trace/ping timeout with no TraceData response. You may see **Trace route timed out** in the node detail modal or an error toast from **Ping trace**.
 
-**Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected—not a Mesh-Client defect when the radio never returns a result.
+**Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result.
 
 ### Can't see RF packets on custom MQTT broker
 

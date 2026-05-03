@@ -15,6 +15,10 @@ import {
   meshtasticContactGroupMatchesBuiltinRfMqtt,
   meshtasticContactGroupMatchesBuiltinRouter,
 } from '../lib/meshtasticContactGroupUtils';
+import {
+  MeshtasticHybridPathIcons,
+  meshtasticNodeShowsHybridMqttPath,
+} from '../lib/meshtasticSourceIcons';
 import { getNodeTypeIcon } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
@@ -914,6 +918,7 @@ export default function NodeListPanel({
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
                         <span
+                          role="img"
                           className={`h-2 w-2 rounded-full ${
                             status === 'online'
                               ? 'bg-brand-green'
@@ -1094,10 +1099,8 @@ export default function NodeListPanel({
                           <span title="Connected via MQTT" className="text-blue-400">
                             🌐
                           </span>
-                        ) : node.via_mqtt ? (
-                          <span title="Relay uses MQTT" className="text-xs text-gray-400">
-                            relay
-                          </span>
+                        ) : meshtasticNodeShowsHybridMqttPath(node) ? (
+                          <MeshtasticHybridPathIcons />
                         ) : (
                           '-'
                         )}

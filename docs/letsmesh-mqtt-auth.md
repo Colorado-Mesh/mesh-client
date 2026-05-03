@@ -32,13 +32,13 @@ Import identity under **Radio**, or set **Custom** and paste username `v1_<publi
 
 ## Packet logger / Analyzer
 
-Many MeshCore MQTT operators provide a **packet logger** or **Analyzer** service: clients contribute **observed** traffic (e.g. packet captures) for the map and web UI—similar to [meshcoretomqtt](https://github.com/Andrew-a-g/meshcoretomqtt) (topics such as `meshcore/packets` with JSON metadata).
+Many MeshCore MQTT operators provide a **packet logger** or **Analyzer** service: clients contribute **observed** traffic (e.g. packet captures) for the map and web UI; similar to [meshcoretomqtt](https://github.com/Andrew-a-g/meshcoretomqtt) (topics such as `meshcore/packets` with JSON metadata).
 
 In mesh-client, optional **Packet logger** (off by default) publishes RX summaries from the radio to `{topicPrefix}/meshcore/packets` using the JSON envelope shown above. Confirm broker ACLs and observer onboarding expectations with your operator docs.
 
 ## Proactive JWT refresh
 
-mesh-client proactively refreshes the JWT token **before** it expires to avoid connection drops. The client schedules a refresh **6 minutes before** the token's `exp` claim when connected. The refresh runs regardless of whether the mesh radio is active — MQTT-only connections also benefit.
+mesh-client proactively refreshes the JWT token **before** it expires to avoid connection drops. The client schedules a refresh **6 minutes before** the token's `exp` claim when connected. The refresh runs regardless of whether the mesh radio is active; MQTT-only connections also benefit.
 
 If the refresh fails, the client falls back to on-demand refresh (token is regenerated on next connect attempt after expiry).
 
@@ -63,12 +63,12 @@ Published to `{topicPrefix}/{pubKey}/chat` (with origin_id) or `{topicPrefix}/me
 
 **Fields:**
 
-- `v` — always `1` (version)
-- `text` — message text, max 16000 chars
-- `channelIdx` — channel index (0–255)
-- `senderName` — optional sender display name, max 200 chars
-- `senderNodeId` — optional sender node ID (number)
-- `timestamp` — optional message timestamp (Unix ms)
+- `v`: always `1` (version)
+- `text`: message text, max 16000 chars
+- `channelIdx`: channel index (0–255)
+- `senderName`: optional sender display name, max 200 chars
+- `senderNodeId`: optional sender node ID (number)
+- `timestamp`: optional message timestamp (Unix ms)
 
 When publishing with a `v1_<pubKey>` username, mesh-client adds `origin_id` (uppercase hex) to the envelope.
 
@@ -98,18 +98,18 @@ Published to `{topicPrefix}/{pubKey}/packets` or `{topicPrefix}/meshcore/packets
 
 **Fields:**
 
-- `origin_id` — sender's public key (uppercase hex, included when publishing with v1 auth)
-- `origin` — sender node ID (Meshtastic-style `!<hex>` or decimal)
-- `timestamp` — ISO 8601 timestamp
-- `type` — always `"PACKET"`
-- `direction` — `"rx"` or `"tx"`
-- `time` — HH:MM:SS local time
-- `date` — DD/MM/YYYY
-- `len` — total packet length in bytes
-- `packet_type` — MeshCore packet type number
-- `route` — routing type: `"direct"`, `"mqtt"`, or hop count like `"1"`, `"2"`
-- `payload_len` — payload byte length
-- `raw` — raw packet hex (truncated to 2048 chars)
-- `SNR` — signal-to-noise ratio (dB)
-- `RSSI` — received signal strength (dBm)
-- `hash` — packet hash for deduplication
+- `origin_id`: sender's public key (uppercase hex, included when publishing with v1 auth)
+- `origin`: sender node ID (Meshtastic-style `!<hex>` or decimal)
+- `timestamp`: ISO 8601 timestamp
+- `type`: always `"PACKET"`
+- `direction`: `"rx"` or `"tx"`
+- `time`: HH:MM:SS local time
+- `date`: DD/MM/YYYY
+- `len`: total packet length in bytes
+- `packet_type`: MeshCore packet type number
+- `route`: routing type: `"direct"`, `"mqtt"`, or hop count like `"1"`, `"2"`
+- `payload_len`: payload byte length
+- `raw`: raw packet hex (truncated to 2048 chars)
+- `SNR`: signal-to-noise ratio (dB)
+- `RSSI`: received signal strength (dBm)
+- `hash`: packet hash for deduplication

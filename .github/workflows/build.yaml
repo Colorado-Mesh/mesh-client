@@ -85,12 +85,8 @@ jobs:
           name: mesh-client-linux-${{ github.sha }}
           path: |
             release/*.AppImage
-            release/*.rpm
             release/*.deb
-            release/linux-unpacked/**/*
-            release/linux/**/*.AppImage
-            release/linux/**/*.rpm
-            release/linux/**/*.deb
+            release/*.rpm
           retention-days: 30
 
       - name: Upload Windows Artifact
@@ -100,7 +96,4 @@ jobs:
           name: mesh-client-windows-${{ github.sha }}
           path: |
             release/*.exe
-            release/win-unpacked/**/*
-            release/win-arm64-unpacked/**/*
-            release/win-x64-unpacked/**/*
           retention-days: 30

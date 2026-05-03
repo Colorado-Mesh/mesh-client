@@ -13,6 +13,7 @@ tmp/
 
 # Files unsupported by prettier parser
 *.plist
+resources/win/*.xml
 
 # CodeQL MaD — Prettier line-wrap breaks yamllint indentation for barrier tuples
 .github/codeql/extensions/**/*.yml

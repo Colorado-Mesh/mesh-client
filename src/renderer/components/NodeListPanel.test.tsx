@@ -7,6 +7,7 @@ import {
   MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS,
   MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT,
 } from '../lib/meshtasticContactGroupUtils';
+import { MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL } from '../lib/meshtasticSourceIcons';
 import type { MeshNode } from '../lib/types';
 import NodeListPanel from './NodeListPanel';
 
@@ -182,6 +183,62 @@ describe('NodeListPanel import contacts', () => {
     expect(screen.getByText('Hybrid')).toBeInTheDocument();
     expect(screen.queryByText('MqttOnly')).not.toBeInTheDocument();
     expect(screen.queryByText('Me')).not.toBeInTheDocument();
+  });
+
+  it('shows hybrid MQTT path icons (not relay text) when via_mqtt and not MQTT-only', async () => {
+    const nodes = new Map<number, MeshNode>([
+      [
+        2,
+        makeNode({
+          node_id: 2,
+          long_name: 'RelayPeer',
+          heard_via_mqtt_only: false,
+          heard_via_mqtt: false,
+          via_mqtt: true,
+        }),
+      ],
+    ]);
+    const { container } = render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={99}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    expect(screen.getByText('RelayPeer')).toBeInTheDocument();
+    expect(screen.getByLabelText(MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL)).toBeInTheDocument();
+    expect(screen.queryByText('relay')).not.toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('shows hybrid MQTT path icons when heard_via_mqtt without via_mqtt', () => {
+    const nodes = new Map<number, MeshNode>([
+      [
+        3,
+        makeNode({
+          node_id: 3,
+          long_name: 'SessionHybrid',
+          heard_via_mqtt_only: false,
+          heard_via_mqtt: true,
+          via_mqtt: false,
+        }),
+      ],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={99}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    expect(screen.getByText('SessionHybrid')).toBeInTheDocument();
+    expect(screen.getByLabelText(MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL)).toBeInTheDocument();
   });
 
   it('does not show Import Contacts button when onImportContacts not provided in meshcore mode', () => {

@@ -5,7 +5,7 @@ import { createCipheriv } from 'crypto';
 import * as mqtt from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { MQTTManager, parsePsk } from './mqtt-manager';
+import { MQTTManager, parsePsk, prepareMqttProtobufBytes } from './mqtt-manager';
 
 vi.mock('mqtt', () => {
   const mockClient = {
@@ -107,6 +107,22 @@ function buildDecodedEnvelope(options: {
 // ─────────────────────────────────────────────────────────────────────────────
 // parsePsk
 // ─────────────────────────────────────────────────────────────────────────────
+
+describe('prepareMqttProtobufBytes', () => {
+  it('strips a leading run of null bytes (broker padding)', () => {
+    const core = Buffer.from([0x0a, 0x02, 0xff]);
+    const padded = Buffer.concat([Buffer.alloc(4, 0), core]);
+    const out = prepareMqttProtobufBytes(padded);
+    expect(Array.from(out)).toEqual([0x0a, 0x02, 0xff]);
+  });
+
+  it('returns the same view when there is no leading padding', () => {
+    const buf = Buffer.from([0x0a, 0x01]);
+    const out = prepareMqttProtobufBytes(buf);
+    expect(out.byteOffset).toBe(buf.byteOffset);
+    expect(out.byteLength).toBe(buf.byteLength);
+  });
+});
 
 describe('parsePsk', () => {
   it('returns null for empty string', () => {
@@ -567,10 +583,17 @@ describe('onMessage — unknown PSK falls back to minimal update', () => {
     const updates: unknown[] = [];
     manager.on('nodeUpdate', (u) => updates.push(u));
 
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     (manager as any).onMessage('msh/US/2/e/CustomChan/!deadbeef', payload);
+    debugSpy.mockRestore();
 
     // No updates should be emitted when decryption fails - we don't add unknown nodes
     expect(updates).toHaveLength(0);
+    expect(
+      debugSpy.mock.calls.some((args: unknown[]) =>
+        String(args[0]).includes('Could not decrypt packet'),
+      ),
+    ).toBe(false);
   });
 
   it('does not emit update for brand-new unknown-PSK node', () => {
@@ -1228,7 +1251,7 @@ describe('onMessage — JSON sampled handling', () => {
     debugSpy.mockRestore();
   });
 
-  it('suppresses unhandled log noise for empty type + missing portnum messages', () => {
+  it('silently ignores empty type + missing portnum messages (no debug)', () => {
     const payload = Buffer.from(
       JSON.stringify({
         from: 0x6982c484,
@@ -1239,19 +1262,10 @@ describe('onMessage — JSON sampled handling', () => {
 
     (manager as any).onMessage('msh/US/CO/2/json/LongFast/!6982c484', payload);
 
-    expect(
-      debugSpy.mock.calls.some((args: unknown[]) =>
-        String(args[0]).includes('JSON message missing type/portnum ignored'),
-      ),
-    ).toBe(true);
-    expect(
-      debugSpy.mock.calls.some((args: unknown[]) =>
-        String(args[0]).includes('JSON message unhandled'),
-      ),
-    ).toBe(false);
+    expect(debugSpy).not.toHaveBeenCalled();
   });
 
-  it('treats traceroute JSON as known and avoids unhandled logging', () => {
+  it('treats traceroute JSON as known and avoids any logging', () => {
     const payload = Buffer.from(
       JSON.stringify({
         from: 0x698524e8,
@@ -1263,16 +1277,7 @@ describe('onMessage — JSON sampled handling', () => {
 
     (manager as any).onMessage('msh/US/CO/2/json/LongFast/!698524e8', payload);
 
-    expect(
-      debugSpy.mock.calls.some((args: unknown[]) =>
-        String(args[0]).includes('JSON traceroute message ignored'),
-      ),
-    ).toBe(true);
-    expect(
-      debugSpy.mock.calls.some((args: unknown[]) =>
-        String(args[0]).includes('JSON message unhandled'),
-      ),
-    ).toBe(false);
+    expect(debugSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -1453,6 +1458,86 @@ describe('onMessage — ServiceEnvelope decoding robust handling', () => {
       (call) => typeof call[0] === 'string' && call[0].includes('ServiceEnvelope decode failed'),
     );
     expect(failedCalls).toHaveLength(0);
+  });
+
+  it('successfully decodes ServiceEnvelope with leading null bytes after trim', () => {
+    const nodeId = 0x12345678;
+    const packetId = 123;
+    const packet = create(MeshPacketSchema, {
+      from: nodeId,
+      id: packetId,
+      payloadVariant: {
+        case: 'decoded',
+        value: create(DataSchema, { portnum: PortNum.TEXT_MESSAGE_APP }),
+      },
+    });
+    const envelope = create(ServiceEnvelopeSchema, {
+      packet,
+    });
+    const core = toBinary(ServiceEnvelopeSchema, envelope);
+    const junkBytes = new Uint8Array(core.length + 3);
+    junkBytes.set(core, 3);
+
+    const updates: any[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    const debugSpy = vi.spyOn(console, 'debug');
+
+    (manager as any).onMessage('msh/US/2/e/LongFast/!12345678', Buffer.from(junkBytes));
+
+    expect(updates).toHaveLength(1);
+    expect(updates[0].node_id).toBe(nodeId);
+
+    const failedCalls = debugSpy.mock.calls.filter(
+      (call) => typeof call[0] === 'string' && call[0].includes('Unknown message format'),
+    );
+    expect(failedCalls).toHaveLength(0);
+    const decodeFailedCalls = debugSpy.mock.calls.filter(
+      (call) => typeof call[0] === 'string' && call[0].includes('ServiceEnvelope decode failed'),
+    );
+    expect(decodeFailedCalls).toHaveLength(0);
+  });
+
+  it('successfully decodes ServiceEnvelope with leading and trailing null bytes', () => {
+    const nodeId = 0xabcdef00;
+    const packetId = 456;
+    const packet = create(MeshPacketSchema, {
+      from: nodeId,
+      id: packetId,
+      payloadVariant: {
+        case: 'decoded',
+        value: create(DataSchema, { portnum: PortNum.TEXT_MESSAGE_APP }),
+      },
+    });
+    const envelope = create(ServiceEnvelopeSchema, {
+      packet,
+    });
+    const core = toBinary(ServiceEnvelopeSchema, envelope);
+    const padded = new Uint8Array(2 + core.length + 4);
+    padded.set(core, 2);
+
+    const updates: any[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/2/e/LongFast/!abcdef00', Buffer.from(padded));
+
+    expect(updates).toHaveLength(1);
+    expect(updates[0].node_id).toBe(nodeId);
+  });
+
+  it('all-null payload after trim is ignored without decode failure log', () => {
+    const debugSpy = vi.spyOn(console, 'debug');
+    debugSpy.mockClear();
+    const updates: any[] = [];
+    manager.on('nodeUpdate', (u) => updates.push(u));
+
+    (manager as any).onMessage('msh/US/2/e/LongFast/!12345678', Buffer.alloc(16, 0));
+
+    expect(updates).toHaveLength(0);
+    const decodeFailedCalls = debugSpy.mock.calls.filter(
+      (call) => typeof call[0] === 'string' && call[0].includes('ServiceEnvelope decode failed'),
+    );
+    expect(decodeFailedCalls).toHaveLength(0);
   });
 
   it('does not over-trim when a null byte is part of a valid field (fixed32 id)', () => {

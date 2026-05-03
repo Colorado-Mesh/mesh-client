@@ -102,7 +102,7 @@ pnpm run build
 pnpm run test:run
 ```
 
-Do not use `npm install` — it will create a `package-lock.json` and may not respect pnpm's lockfile format.
+Do not use `npm install`; it will create a `package-lock.json` and may not respect pnpm's lockfile format.
 
 ---
 

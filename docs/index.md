@@ -1,8 +1,9 @@
 # Mesh-Client
 
 Cross-platform **Electron** desktop client for **Meshtastic** and **MeshCore**
-on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**,
-**Wi-Fi/TCP**, **MQTT**, local **SQLite** history, and routing diagnostics.
+on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**,
+**MQTT**, local **SQLite** history, **routing diagnostics**, and **keyboard-first**
+workflows.
 
 This page is the docs landing view based on the project README. For the full
 repository version, see [README on GitHub](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md).

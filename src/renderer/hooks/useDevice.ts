@@ -5,6 +5,7 @@ import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/p
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
+  meshtasticNodeLacksDisplayIdentity,
   meshtasticShortNameAfterClearingDefault,
   preferNonEmptyTrimmedString,
 } from '../../shared/nodeNameUtils';
@@ -75,6 +76,9 @@ function getMessageLoadLimit(): number {
 
 const MAX_TELEMETRY_POINTS = 50;
 const BROADCAST_ADDR = 0xffffffff;
+
+/** Min interval between proactive NODEINFO requests per peer (RF text → request identity). */
+const REQUEST_NODEINFO_MIN_INTERVAL_MS = 120_000;
 
 /** Portnums.TRACEROUTE_APP — use Number() so protobuf enums compare reliably */
 function isMeshtasticTraceroutePortnum(portnum: unknown): boolean {
@@ -192,6 +196,8 @@ export function useDevice() {
   const virtualNodeIdRef = useRef<number>(getOrCreateVirtualNodeId());
   // Dedup map shared between RF and MQTT handlers
   const seenPacketIds = useRef<Map<number, number>>(new Map());
+  /** Last time we sent a proactive NODEINFO_APP request for each node (debounce). */
+  const lastNodeInfoRequestAtRef = useRef<Map<number, number>>(new Map());
 
   const [mqttStatus, setMqttStatus] = useState<MQTTStatus>('disconnected');
   const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
@@ -490,6 +496,8 @@ export function useDevice() {
       const intervalSecs = gpsParsed?.refreshInterval ?? 0;
       if (intervalSecs > 0) {
         gpsIntervalRef.current = setInterval(() => {
+          // Dual-protocol: avoid host IP/geo refresh churn while MeshCore is the active UI protocol.
+          if (getStoredMeshProtocol() !== 'meshtastic') return;
           refreshOurPositionRef.current().catch((err: unknown) => {
             console.error('[useDevice] GPS interval refresh error:', err);
           });
@@ -695,8 +703,6 @@ export function useDevice() {
         return;
       }
 
-      console.debug(`[useDevice] MQTT node update: nodeId=${nodeUpdate.node_id}`);
-
       // Handle neighbor info from MQTT
       if (nodeUpdate.neighbors && nodeUpdate.neighbors.length > 0) {
         setNeighborInfo((prev) => {
@@ -851,7 +857,6 @@ export function useDevice() {
       }
 
       // Packet ID dedup (catches our own uplink echoes)
-      console.debug(`[useDevice] MQTT message: from=${msg.sender_id} packetId=${packetId}`);
       if (packetId !== 0 && isDuplicate(packetId)) {
         if (getStoredMeshProtocol() === 'meshtastic') {
           useDiagnosticsStore.getState().recordDuplicate(msg.sender_id);
@@ -1009,6 +1014,7 @@ export function useDevice() {
         // Always clean up on disconnect, even if we never reached configured
         if (status === 2) {
           rfHeardNodeIds.current.clear();
+          lastNodeInfoRequestAtRef.current.clear();
           clearConfigureTimeout();
           isConfiguringRef.current = false;
           stopWatchdog();
@@ -1091,6 +1097,28 @@ export function useDevice() {
       });
       unsubscribesRef.current.push(unsub_meta);
 
+      const maybeRequestNodeInfoAfterText = (from: number): void => {
+        if (from === 0 || from === myNodeNumRef.current) return;
+        if (isConfiguringRef.current) return;
+        const existing = nodesRef.current.get(from);
+        if (existing && !meshtasticNodeLacksDisplayIdentity(existing, from)) return;
+        const now = Date.now();
+        const last = lastNodeInfoRequestAtRef.current.get(from) ?? 0;
+        if (now - last < REQUEST_NODEINFO_MIN_INTERVAL_MS) return;
+        lastNodeInfoRequestAtRef.current.set(from, now);
+        void (async () => {
+          try {
+            await device.sendPacket(new Uint8Array(), Portnums.PortNum.NODEINFO_APP, from);
+            console.debug(`[useDevice] NODEINFO request sent for 0x${from.toString(16)}`);
+          } catch (e: unknown) {
+            console.debug(
+              '[useDevice] NODEINFO request failed',
+              e instanceof Error ? e.message : e,
+            );
+          }
+        })();
+      };
+
       // ─── Text messages ─────────────────────────────────────────
       const unsub3 = device.events.onMeshPacket.subscribe((meshPacket) => {
         if (meshPacket.payloadVariant.case !== 'decoded') {
@@ -1100,6 +1128,7 @@ export function useDevice() {
         if (dataPacket.portnum !== Portnums.PortNum.TEXT_MESSAGE_APP) return;
 
         ensureNodeExists(meshPacket.from, 'rf');
+        maybeRequestNodeInfoAfterText(meshPacket.from);
 
         // Bump last_heard for the sender on live (non-replay) packets.
         if (!isConfiguringRef.current && meshPacket.from) {
@@ -1246,6 +1275,7 @@ export function useDevice() {
           hwModel?: number;
           role?: number;
         };
+        const packetRxMs = packet.rxTime instanceof Date ? packet.rxTime.getTime() : 0;
         updateNodes((prev) => {
           const updated = new Map(prev);
           const existing = updated.get(packet.from) ?? emptyNode(packet.from);
@@ -1257,6 +1287,11 @@ export function useDevice() {
             preferNonEmptyTrimmedString(user.shortName, existing.short_name),
             packet.from,
           );
+          const last_heard = mergeMeshtasticUserPacketLastHeard(
+            existing.last_heard || 0,
+            packetRxMs,
+            isConfiguringRef.current,
+          );
           const node: MeshNode = {
             ...existing,
             node_id: packet.from,
@@ -1265,9 +1300,8 @@ export function useDevice() {
             hw_model:
               user.hwModel != null ? meshtasticHwModelName(user.hwModel) : existing.hw_model,
             role: user.role ?? existing.role,
-            // User packets are often replayed from the device DB at connect; do not
-            // bump last_hear to now or offline nodes appear freshly heard.
-            last_heard: existing.last_heard,
+            // During configure, skip rxTime bumps (NodeDB replay). After configure, use mesh rxTime.
+            last_heard,
             heard_via_mqtt_only: false,
             via_mqtt: false,
             source: 'rf',
@@ -3029,6 +3063,11 @@ export function useDevice() {
   );
 
   const refreshOurPosition = useCallback(async (): Promise<OurPosition | null> => {
+    // Dual-protocol: Meshtastic hook stays mounted when user switches to MeshCore; skip GPS work
+    // so we do not overwrite Meshtastic state or call getGpsFix / IP while MeshCore is active.
+    if (getStoredMeshProtocol() !== 'meshtastic') {
+      return null;
+    }
     setGpsLoading(true);
     try {
       const myNode = nodesRef.current.get(myNodeNumRef.current);
@@ -3397,6 +3436,20 @@ export function computeNodeInfoLastHeardMs(
   return (infoLastHeard ?? 0) > 0
     ? infoLastHeard! * 1000
     : existingLastHeard || (isSelf ? Date.now() : 0);
+}
+
+/**
+ * Merge last_heard from onUserPacket using packet rxTime; skip bumps during configure replay.
+ */
+export function mergeMeshtasticUserPacketLastHeard(
+  existingLastHeard: number,
+  packetRxTimeMs: number,
+  isConfiguring: boolean,
+): number {
+  if (isConfiguring || !Number.isFinite(packetRxTimeMs) || packetRxTimeMs <= 0) {
+    return existingLastHeard;
+  }
+  return Math.max(existingLastHeard || 0, packetRxTimeMs);
 }
 
 export function createChatStubNode(nodeId: number, source: 'rf' | 'mqtt'): MeshNode {

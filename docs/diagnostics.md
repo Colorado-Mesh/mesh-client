@@ -1,13 +1,13 @@
 # Diagnostics Reference
 
-This document is the authoritative reference for every diagnostic output in Mesh-Client. It covers the two diagnostic subsystems — **Routing** and **RF** — and explains what each finding means, what triggers it, and how to interpret it.
+This document is the authoritative reference for every diagnostic output in Mesh-Client. It covers the two diagnostic subsystems; **Routing** and **RF**; and explains what each finding means, what triggers it, and how to interpret it.
 
 **Where diagnostics appear:**
 
-- **DiagnosticsPanel** — network health status, anomaly table, halos toggles, environment profile, max-age settings
-- **NodeDetailModal** — per-node routing health section, redundancy path history, RF findings, MQTT ignore toggle
-- **NodeListPanel** — inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming
-- **MapPanel** — channel utilization halos, routing anomaly aura circles
+- **DiagnosticsPanel**: network health status, anomaly table, halos toggles, environment profile, max-age settings
+- **NodeDetailModal**: per-node routing health section, redundancy path history, RF findings, MQTT ignore toggle
+- **NodeListPanel**: inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming
+- **MapPanel**: channel utilization halos, routing anomaly aura circles
 
 ---
 
@@ -27,9 +27,9 @@ The panel also shows a breakdown of error and warning counts, and a "This node" 
 
 ## 2. Routing Anomalies
 
-Routing anomaly detection runs on Meshtastic nodes. For MeshCore, hop-based anomalies require `hasHopCount` capability — if absent, they are skipped.
+Routing anomaly detection runs on Meshtastic nodes. For MeshCore, hop-based anomalies require `hasHopCount` capability; if absent, they are skipped.
 
-Detection is run in priority order — first match wins:
+Detection is run in priority order; first match wins:
 
 1. `impossible_hop`
 2. `bad_route` (error variant)
@@ -41,7 +41,7 @@ Routing rows persist for up to **24 hours** by default (configurable 1–168 h i
 
 ---
 
-### hop_goblin — Error
+### hop_goblin: Error
 
 **Trigger:** A node is within 3 km (standard profile) but is taking more than 2 hops to reach your device.
 
@@ -61,7 +61,7 @@ If your GPS source is IP-geolocation (low accuracy), the distance threshold is d
 
 ---
 
-### bad_route — Two Variants
+### bad_route: Two Variants
 
 **Error variant (duplication rate):**
 
@@ -71,11 +71,11 @@ If your GPS source is IP-geolocation (low accuracy), the distance threshold is d
 **Warning variant (close-in over-hopping):**
 
 - **Trigger:** A node within 5 miles is taking more than `hopThreshold + 2` hops.
-- **Meaning:** Suboptimal path — the node is reachable but the route is longer than expected for its distance.
+- **Meaning:** Suboptimal path; the node is reachable but the route is longer than expected for its distance.
 
 ---
 
-### impossible_hop — Error
+### impossible_hop: Error
 
 **Trigger:** A node reports 0 hops (direct neighbor) but is more than 100 miles away (GPS coordinates required on both your device and the remote node).
 
@@ -85,7 +85,7 @@ If your GPS source is IP-geolocation (low accuracy), the distance threshold is d
 
 ---
 
-### route_flapping — Warning
+### route_flapping: Warning
 
 **Trigger:** The hop count to a node changes more than 3 times within the last 10 minutes.
 
@@ -105,15 +105,15 @@ RF rows expire after **1 hour** (fixed, not configurable).
 
 These findings use LocalStats data from your own device's radio.
 
-| Finding                        | Trigger                                                                                    | Severity | Meaning                                                                                                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Utilization vs. TX             | Channel utilization (CU) > 25% and air TX < 5%                                             | Warning  | Your node is hearing a busy channel but transmitting very little — high noise floor causing backoff                                                       |
-| Non-LoRa Noise / RFI           | CU > 25%, ≥5 RX packets, 0 bad packets                                                     | Warning  | RF energy present from a non-LoRa source (motors, baby monitors, switching power supplies) — packets decode correctly because it is not LoRa interference |
-| 900MHz Industrial Interference | Bad packet rate > 20% and CU > 25%                                                         | Warning  | Bursty high-power sources such as smart meters or industrial telemetry on 900 MHz causing frequent decode failures                                        |
-| Channel Utilization Spike      | Current CU > 2× 30-min rolling average (minimum 12 samples, ≥30 min span, rolling avg ≥1%) | Warning  | Sudden congestion or interference surge above your node's normal baseline; 15-min cooldown before re-firing                                               |
-| Mesh Congestion                | RX duplicate rate > 15%                                                                    | Warning  | Excessive redundant packet rebroadcasting across the mesh                                                                                                 |
-| Hidden Terminal Risk           | CU > 40%, bad rate 5–10%, no industrial finding                                            | Warning  | Multiple transmitters cannot hear each other and are colliding at your node; a classic hidden terminal scenario                                           |
-| LoRa Collision or Corruption   | Bad packet rate > 10% (catch-all)                                                          | Warning  | Preamble decoded but CRC/decode failed — often caused by non-Meshtastic LoRa devices on the same frequency                                                |
+| Finding                        | Trigger                                                                                    | Severity | Meaning                                                                                                                                                  |
+| ------------------------------ | ------------------------------------------------------------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Utilization vs. TX             | Channel utilization (CU) > 25% and air TX < 5%                                             | Warning  | Your node is hearing a busy channel but transmitting very little; high noise floor causing backoff                                                       |
+| Non-LoRa Noise / RFI           | CU > 25%, ≥5 RX packets, 0 bad packets                                                     | Warning  | RF energy present from a non-LoRa source (motors, baby monitors, switching power supplies); packets decode correctly because it is not LoRa interference |
+| 900MHz Industrial Interference | Bad packet rate > 20% and CU > 25%                                                         | Warning  | Bursty high-power sources such as smart meters or industrial telemetry on 900 MHz causing frequent decode failures                                       |
+| Channel Utilization Spike      | Current CU > 2× 30-min rolling average (minimum 12 samples, ≥30 min span, rolling avg ≥1%) | Warning  | Sudden congestion or interference surge above your node's normal baseline; 15-min cooldown before re-firing                                              |
+| Mesh Congestion                | RX duplicate rate > 15%                                                                    | Warning  | Excessive redundant packet rebroadcasting across the mesh                                                                                                |
+| Hidden Terminal Risk           | CU > 40%, bad rate 5–10%, no industrial finding                                            | Warning  | Multiple transmitters cannot hear each other and are colliding at your node; a classic hidden terminal scenario                                          |
+| LoRa Collision or Corruption   | Bad packet rate > 10% (catch-all)                                                          | Warning  | Preamble decoded but CRC/decode failed; often caused by non-Meshtastic LoRa devices on the same frequency                                                |
 
 ---
 
@@ -149,7 +149,7 @@ Foreign LoRa detection identifies non-Meshtastic LoRa traffic observed by your c
 - Distant
 - Unknown Distance
 
-**Escalation:** If MeshCore packets exceed 5 per minute, the finding upgrades to **Potential MeshCore Repeater Conflict** (Warning) — indicating a nearby MeshCore repeater that may be competing for airtime on the same frequency.
+**Escalation:** If MeshCore packets exceed 5 per minute, the finding upgrades to **Potential MeshCore Repeater Conflict** (Warning); indicating a nearby MeshCore repeater that may be competing for airtime on the same frequency.
 
 **Cooldown:** The same (nodeId, class) pair updates at most every 5 minutes to avoid flooding the table.
 
@@ -157,7 +157,7 @@ Foreign LoRa detection identifies non-Meshtastic LoRa traffic observed by your c
 
 ## 5. Packet Redundancy
 
-Packet redundancy measures how many distinct paths each packet travels through the mesh — both RF paths and MQTT. A higher redundancy score means a node is reachable via multiple independent routes, which improves reliability.
+Packet redundancy measures how many distinct paths each packet travels through the mesh; both RF paths and MQTT. A higher redundancy score means a node is reachable via multiple independent routes, which improves reliability.
 
 **Where it appears:**
 
@@ -303,13 +303,13 @@ This section documents the exact protocol and hardware mechanisms behind each di
 
 ---
 
-### 11.1 RF Findings — Connected Node
+### 11.1 RF Findings: Connected Node
 
 #### Utilization vs. TX
 
 **Trigger:** `channel_utilization > 25%` (`HIGH_CU`) and `air_util_tx < 5%` (`LOW_TX`)
 
-**Mechanism:** Meshtastic uses CSMA/CA (Carrier Sense Multiple Access with Collision Avoidance). Before transmitting, the LoRa radio performs a Channel Activity Detection (CAD) check. `channel_utilization` counts the fraction of time the radio detected any RF energy on the channel — including non-decodable signals. `air_util_tx` counts only the time _your_ radio was actually transmitting. When CU is high but TX is very low, the radio is repeatedly sensing a busy channel and backing off — it cannot transmit because it keeps losing the CAD check.
+**Mechanism:** Meshtastic uses CSMA/CA (Carrier Sense Multiple Access with Collision Avoidance). Before transmitting, the LoRa radio performs a Channel Activity Detection (CAD) check. `channel_utilization` counts the fraction of time the radio detected any RF energy on the channel; including non-decodable signals. `air_util_tx` counts only the time _your_ radio was actually transmitting. When CU is high but TX is very low, the radio is repeatedly sensing a busy channel and backing off; it cannot transmit because it keeps losing the CAD check.
 
 **Fields:** `channel_utilization` (% of time channel was active in the last stats window, delivered via `NodeInfo.DeviceMetrics`); `air_util_tx` (% of the same window your node was actually on air).
 
@@ -337,9 +337,9 @@ This section documents the exact protocol and hardware mechanisms behind each di
 
 **Trigger:** `num_packets_rx_bad / num_packets_rx > 20%` (`SPIKE_BAD_RATE`) and `channel_utilization > 25%`
 
-**Mechanism:** 900 MHz ISM-band industrial devices — smart meters, SCADA telemetry, agricultural sensors — typically use FSK or GFSK modulation. The LoRa radio's CAD circuit detects their energy (raising CU) and in many cases detects what resembles a LoRa preamble, triggering a full demodulation attempt that fails CRC because the modulation is incompatible. The result is a high `num_packets_rx_bad / num_packets_rx` ratio alongside elevated CU. The >20% bad-rate threshold (higher than the 5–10% Hidden Terminal band) reflects the bursty, high-power nature of industrial transmitters.
+**Mechanism:** 900 MHz ISM-band industrial devices; smart meters, SCADA telemetry, agricultural sensors; typically use FSK or GFSK modulation. The LoRa radio's CAD circuit detects their energy (raising CU) and in many cases detects what resembles a LoRa preamble, triggering a full demodulation attempt that fails CRC because the modulation is incompatible. The result is a high `num_packets_rx_bad / num_packets_rx` ratio alongside elevated CU. The >20% bad-rate threshold (higher than the 5–10% Hidden Terminal band) reflects the bursty, high-power nature of industrial transmitters.
 
-**Fields:** `num_packets_rx_bad`, `num_packets_rx`, `channel_utilization` — all reported in `DeviceMetrics` / LocalStats telemetry packets.
+**Fields:** `num_packets_rx_bad`, `num_packets_rx`, `channel_utilization`; all reported in `DeviceMetrics` / LocalStats telemetry packets.
 
 **Common sources:** AMI smart meters (e.g., Itron, Landis+Gyr, Sensus operating on 902–928 MHz); agricultural IoT networks; oil/gas pipeline SCADA systems; municipal water metering.
 
@@ -365,7 +365,7 @@ This section documents the exact protocol and hardware mechanisms behind each di
 
 **Trigger:** `num_rx_dupe / num_packets_rx > 15%` (`HIGH_DUPE_RATE`)
 
-**Mechanism:** The Meshtastic firmware maintains a duplicate-detection window keyed by packet ID. When a node receives a packet it has already processed, it increments `num_rx_dupe` without rebroadcasting. A high duplicate rate means many nodes are re-forwarding the same packets — typically caused by too many nodes having high hop limits, causing the mesh to flood rather than route. The client-side `recordDuplicate()` in diagnosticsStore also feeds this counter from MQTT-observed duplicates.
+**Mechanism:** The Meshtastic firmware maintains a duplicate-detection window keyed by packet ID. When a node receives a packet it has already processed, it increments `num_rx_dupe` without rebroadcasting. A high duplicate rate means many nodes are re-forwarding the same packets; typically caused by too many nodes having high hop limits, causing the mesh to flood rather than route. The client-side `recordDuplicate()` in diagnosticsStore also feeds this counter from MQTT-observed duplicates.
 
 **Fields:** `num_rx_dupe`, `num_packets_rx` from `DeviceMetrics`.
 
@@ -379,7 +379,7 @@ This section documents the exact protocol and hardware mechanisms behind each di
 
 **Trigger:** `channel_utilization > 40%` (`HIDDEN_TERMINAL_CU`), bad packet rate in the range 5–10% (`HIDDEN_TERMINAL_BAD_MIN` / `HIGH_BAD_RATE`), and the Industrial finding is not already present.
 
-**Mechanism:** The "hidden terminal" problem occurs when two transmitters (A and C) are both within range of your node (B) but cannot hear each other. Both use CSMA and check the channel before transmitting — but since they cannot detect each other's transmissions, both conclude the channel is clear simultaneously and transmit at the same time. Your node receives both overlapping signals, causing a collision: the LoRa preamble is detected (so demodulation is attempted) but the combined signal fails CRC. The 5–10% bad-rate band is specific to this scenario: below 5% is noise floor, above 10% is caught by the general LoRa Collision finding (or Industrial if >20%). The Industrial finding is evaluated first; if present, it blocks this finding.
+**Mechanism:** The "hidden terminal" problem occurs when two transmitters (A and C) are both within range of your node (B) but cannot hear each other. Both use CSMA and check the channel before transmitting; but since they cannot detect each other's transmissions, both conclude the channel is clear simultaneously and transmit at the same time. Your node receives both overlapping signals, causing a collision: the LoRa preamble is detected (so demodulation is attempted) but the combined signal fails CRC. The 5–10% bad-rate band is specific to this scenario: below 5% is noise floor, above 10% is caught by the general LoRa Collision finding (or Industrial if >20%). The Industrial finding is evaluated first; if present, it blocks this finding.
 
 **Fields:** `channel_utilization`, `num_packets_rx_bad`, `num_packets_rx`.
 
@@ -403,9 +403,9 @@ This section documents the exact protocol and hardware mechanisms behind each di
 
 ---
 
-### 11.2 RF Findings — Remote Nodes
+### 11.2 RF Findings: Remote Nodes
 
-SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snrMeaningfulForNodeDiagnostics` returns `true` — which requires that the remote node is a 0-hop direct RF neighbor, ensuring the SNR value reflects the actual link to your node rather than a multi-hop path.
+SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snrMeaningfulForNodeDiagnostics` returns `true`; which requires that the remote node is a 0-hop direct RF neighbor, ensuring the SNR value reflects the actual link to your node rather than a multi-hop path.
 
 ---
 
@@ -423,7 +423,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 **Trigger:** `channel_utilization > 25%` and `SNR < 0 dB` (0-hop RF neighbor only).
 
-**Mechanism:** Elevated CU combined with a negative SNR on the last hop indicates that the remote node's location has an elevated RF noise floor. SNR in Meshtastic is the ratio of the received signal power to the noise floor at the _receiver_ — a negative value means the noise floor is higher than the signal (the packet still decoded because LoRa spread-spectrum can operate below the noise floor). This combination implies that even though many transmissions are detected, signal quality is degraded by broadband noise at that location.
+**Mechanism:** Elevated CU combined with a negative SNR on the last hop indicates that the remote node's location has an elevated RF noise floor. SNR in Meshtastic is the ratio of the received signal power to the noise floor at the _receiver_; a negative value means the noise floor is higher than the signal (the packet still decoded because LoRa spread-spectrum can operate below the noise floor). This combination implies that even though many transmissions are detected, signal quality is degraded by broadband noise at that location.
 
 **Fields:** `snr` from the most recent packet received from this node (last-hop only, 0-hop RF).
 
@@ -435,7 +435,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 **Trigger:** `channel_utilization ≤ 10%` and `SNR < 0 dB` (0-hop RF neighbor only).
 
-**Mechanism:** Low CU means the node is not hearing much mesh traffic — it is on the periphery of coverage or in an RF shadow. The negative SNR confirms the link quality is marginal. This is informational: the node is functional but poorly connected to the rest of the mesh.
+**Mechanism:** Low CU means the node is not hearing much mesh traffic; it is on the periphery of coverage or in an RF shadow. The negative SNR confirms the link quality is marginal. This is informational: the node is functional but poorly connected to the rest of the mesh.
 
 **Note:** Because severity is `info`, this finding does not contribute to the error or warning counts in the health status band.
 
@@ -445,9 +445,9 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 #### hop_goblin (`RoutingDiagnosticEngine.detectHopGoblin()`)
 
-**What it measures:** The `hops_away` field from the received NodeInfo packet vs. the haversine distance between your connected node's GPS coordinates and the remote node's GPS coordinates. `hops_away` is the hop count embedded in the Meshtastic packet header by the originating firmware — it is decremented by each relay node and thus reflects how many RF hops the packet actually traversed.
+**What it measures:** The `hops_away` field from the received NodeInfo packet vs. the haversine distance between your connected node's GPS coordinates and the remote node's GPS coordinates. `hops_away` is the hop count embedded in the Meshtastic packet header by the originating firmware; it is decremented by each relay node and thus reflects how many RF hops the packet actually traversed.
 
-**Distance computation:** Uses `haversineDistanceKm()` from `nodeStatus.ts` — a standard great-circle distance formula. Requires that both your connected node and the remote node have valid non-null GPS coordinates in their NodeInfo.
+**Distance computation:** Uses `haversineDistanceKm()` from `nodeStatus.ts`; a standard great-circle distance formula. Requires that both your connected node and the remote node have valid non-null GPS coordinates in their NodeInfo.
 
 **Why GPS is required:** Earlier implementations used SNR + hops heuristics, but `rxSnr` is last-hop only (meaningless for multi-hop originators and MQTT-only nodes). GPS distance is the only reliable proxy for expected hop count.
 
@@ -459,9 +459,9 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 **Duplicate tracking:** `diagnosticsStore.packetStats` accumulates `{ total, duplicates }` per originating node. `total` is incremented on every `processNodeUpdate` call for that node; `duplicates` is incremented by `recordDuplicate()`, which is called from the MQTT dedup handler and the RF dedup path in `useDevice.ts`. The ratio `duplicates / total` is evaluated against the 55% threshold.
 
-**Close-in over-hopping:** Uses the same haversine distance as hop_goblin but converted to miles (1 km = 0.621371 mi); threshold is 5 miles × profile multiplier. The hop threshold used here is `hopsThreshold + 2` — for Standard profile that is 4, City 5, Canyon 6.
+**Close-in over-hopping:** Uses the same haversine distance as hop_goblin but converted to miles (1 km = 0.621371 mi); threshold is 5 miles × profile multiplier. The hop threshold used here is `hopsThreshold + 2`; for Standard profile that is 4, City 5, Canyon 6.
 
-**Why 55% for routing loop:** At 55%+ duplication, the packet is arriving from multiple mesh paths more often than not, indicating the routing algorithm is forwarding it redundantly — characteristic of a routing loop or an over-configured flood mesh.
+**Why 55% for routing loop:** At 55%+ duplication, the packet is arriving from multiple mesh paths more often than not, indicating the routing algorithm is forwarding it redundantly; characteristic of a routing loop or an over-configured flood mesh.
 
 ---
 
@@ -469,7 +469,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 **The 0-hop case:** `hops_away === 0` means the originating firmware stamped this packet as a direct transmission (no relays). In a legitimate direct link, 0 hops is only possible within LoRa range (typically ≤ ~20 km under ideal conditions). The 100-mile (~160 km) threshold is deliberately conservative to avoid false positives.
 
-**Why this happens:** Most commonly seen when an MQTT-bridged node appears to have 0 hops — the MQTT message does not carry hop-count metadata, so the app may receive the node without a hop field, which defaults to 0. Per-node MQTT ignore resolves this in most cases. Can also indicate stale GPS where a node moved but has not updated its position.
+**Why this happens:** Most commonly seen when an MQTT-bridged node appears to have 0 hops; the MQTT message does not carry hop-count metadata, so the app may receive the node without a hop field, which defaults to 0. Per-node MQTT ignore resolves this in most cases. Can also indicate stale GPS where a node moved but has not updated its position.
 
 **MeshCore skip:** `capabilities?.hasHopCount === false` causes this check to be bypassed entirely.
 
@@ -500,7 +500,7 @@ The classifier operates on raw LoRa payload bytes received by the radio before a
 
 Short packets (8–15 bytes) pass on ID checks alone: MeshCore frames always begin with `0x3c`, so any non-0x3c payload of this length with valid IDs reliably indicates Meshtastic. For full 16-byte headers, the flags byte (byte 12) is also validated: `hop_limit` (bits [2:0]) must be ≤ `hop_start` (bits [7:5]). This structural invariant holds for all Meshtastic packets including direct-only devices (`hop_start=0, hop_limit=0`), and filters out MeshCore encrypted packets whose first 8 bytes happen to look like valid Meshtastic node IDs.
 
-**MeshCore log-pattern detection** (`containsMeshCorePattern()`): Device log messages mentioning decode failures and containing `0x3c` (or `<`) are matched via regex — this catches MeshCore traffic even when only the log stream is available (no raw packet data).
+**MeshCore log-pattern detection** (`containsMeshCorePattern()`): Device log messages mentioning decode failures and containing `0x3c` (or `<`) are matched via regex; this catches MeshCore traffic even when only the log stream is available (no raw packet data).
 
 #### Proximity classification (`classifyProximity()`)
 
@@ -515,7 +515,7 @@ RSSI is the primary signal; SNR is used as fallback when RSSI is unavailable.
 
 #### MeshCore rate escalation
 
-A module-level `RollingRateCounter(60_000)` counts MeshCore-class packets in the last 60 seconds. When `getRate() > 5` (more than 5 packets/minute), the diagnostic row is promoted from Info to Warning with the label "Potential MeshCore Repeater Conflict." This threshold targets active repeater behavior — a repeater forwards many packets per minute — vs. an occasional passthrough.
+A module-level `RollingRateCounter(60_000)` counts MeshCore-class packets in the last 60 seconds. When `getRate() > 5` (more than 5 packets/minute), the diagnostic row is promoted from Info to Warning with the label "Potential MeshCore Repeater Conflict." This threshold targets active repeater behavior; a repeater forwards many packets per minute; vs. an occasional passthrough.
 
 #### 5-minute cooldown
 
@@ -531,7 +531,7 @@ Each incoming packet (RF or MQTT) calls `recordPacketPath(packetId, fromNodeId, 
 
 #### The `maxPaths` metric
 
-For each `PacketRecord`, `paths.length` is the number of times that specific packet arrived via distinct observed paths. `maxPaths` is the maximum `paths.length` across the last 20 packets for a given node — the highest observed redundancy under current conditions.
+For each `PacketRecord`, `paths.length` is the number of times that specific packet arrived via distinct observed paths. `maxPaths` is the maximum `paths.length` across the last 20 packets for a given node; the highest observed redundancy under current conditions.
 
 **Why max, not average:** A single highly-redundant packet proves the mesh _can_ deliver multiple paths to this node. The max represents the theoretical ceiling under current conditions; an average would be pulled down by single-path packets during quiet periods.
 

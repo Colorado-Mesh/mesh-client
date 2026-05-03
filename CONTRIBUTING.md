@@ -33,8 +33,8 @@ pnpm run test:run # Run tests
 
 Before each commit, the hook runs (order matters):
 
-1. `pnpm run format` — Prettier writes fixes
-2. `pnpm run lint:md` — Markdown fixes
+1. `pnpm run format`: Prettier writes fixes
+2. `pnpm run lint:md`: Markdown fixes
 3. Re-stage staged files
 4. `pnpm run lint`
 5. `pnpm run typecheck`

@@ -288,3 +288,58 @@ describe('useMeshCore mount hydration', () => {
     );
   });
 });
+
+describe('useMeshCore disconnect DB rehydration', () => {
+  const NODE_ID = 0xabcd1234;
+  const REMOTE_PUBKEY_HEX = Array.from({ length: 32 }, (_, i) =>
+    ((i * 17 + 3) & 0xff).toString(16).padStart(2, '0'),
+  ).join('');
+
+  function sampleContactWithHops(hops: number) {
+    return [
+      {
+        node_id: NODE_ID,
+        public_key: REMOTE_PUBKEY_HEX,
+        adv_name: 'RemoteHop',
+        contact_type: 2,
+        last_advert: 1_700_000_000,
+        adv_lat: null as number | null,
+        adv_lon: null as number | null,
+        last_snr: 0,
+        last_rssi: 0,
+        favorited: 0,
+        nickname: null as string | null,
+        hops_away: hops,
+        on_radio: 0,
+        last_synced_from_radio: null as string | null,
+      },
+    ];
+  }
+
+  beforeEach(() => {
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue(
+      sampleContactWithHops(4),
+    );
+    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
+  });
+
+  it('reloads persisted hops from SQLite after disconnect (reconnect merge baseline)', async () => {
+    const { result } = renderHook(() => useMeshCore());
+
+    await waitFor(() => {
+      expect(result.current.nodes.get(NODE_ID)?.hops_away).toBe(4);
+    });
+
+    await act(async () => {
+      await result.current.disconnect();
+    });
+
+    await waitFor(() => {
+      expect(result.current.nodes.get(NODE_ID)?.hops_away).toBe(4);
+    });
+    expect(
+      vi.mocked(window.electronAPI.db.getMeshcoreContacts).mock.calls.length,
+    ).toBeGreaterThanOrEqual(2);
+  });
+});

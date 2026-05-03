@@ -1,6 +1,6 @@
-# AGENTS.md — Coding Guidelines for AI Assistants
+# AGENTS.md: Coding Guidelines for AI Assistants
 
-This file is self-contained. ARCHITECTURE.md and CONTRIBUTING.md are human references — read them only if you need deep subsystem detail beyond what's here.
+This file is self-contained. ARCHITECTURE.md and CONTRIBUTING.md are human references; read them only if you need deep subsystem detail beyond what's here.
 
 ## 1. Scope & Workflow
 
@@ -75,8 +75,8 @@ Adding a cross-boundary feature:
 
 **Pre-commit hook order:**
 
-1. `pnpm run format` — Prettier writes fixes
-2. `pnpm run lint:md` — Markdown fixes
+1. `pnpm run format`: Prettier writes fixes
+2. `pnpm run lint:md`: Markdown fixes
 3. Re-stage staged files
 4. `pnpm run lint`
 5. `pnpm run typecheck`
@@ -95,8 +95,8 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 
 ### Diagnostics
 
-- **Engines:** `src/renderer/lib/diagnostics/` — `RoutingDiagnosticEngine.ts`, `RFDiagnosticEngine.ts`, `RemediationEngine.ts`.
-- **Store:** `src/renderer/stores/diagnosticsStore.ts` — routing/RF rows, foreign LoRa, MQTT ignore, redundancy.
+- **Engines:** `src/renderer/lib/diagnostics/`; `RoutingDiagnosticEngine.ts`, `RFDiagnosticEngine.ts`, `RemediationEngine.ts`.
+- **Store:** `src/renderer/stores/diagnosticsStore.ts`; routing/RF rows, foreign LoRa, MQTT ignore, redundancy.
 - **Extend:** adjust `DiagnosticRow` in `src/renderer/lib/types.ts`, add detector, wire `replaceRoutingRowsFromMap` / `replaceRfRowsForNode`; TTL defaults in `diagnosticRows.ts` (routing 24h, RF 1h).
 - **Full reference:** [docs/diagnostics.md](docs/diagnostics.md).
 
@@ -118,6 +118,8 @@ WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-
 ### BLE and serial
 
 Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-manager.ts` (macOS/Windows), Web Bluetooth IPC on Linux. Serial: `connection.ts`, `serialPortSignature.ts`. Reconnect watchdog: `useDevice.ts`.
+
+**ATT MTU / writes:** Noble `toRadio` writes in `noble-ble-manager.ts` are chunked using negotiated `peripheral.mtu` (sanitized via `src/shared/bleAttWriteLimit.ts`; values below spec min 23 are coerced—NobleMac may log `MTU updated: 20` before a full exchange). Linux Web Bluetooth uses `webbluetooth-ble-manager.ts`; when Chromium exposes `maximumWriteValueLength`, writes are chunked—there is no standard Web API for negotiated MTU ([WebBluetoothCG#383](https://github.com/WebBluetoothCG/web-bluetooth/issues/383)).
 
 ### MQTT
 

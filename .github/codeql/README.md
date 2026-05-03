@@ -25,7 +25,7 @@ Default setup already runs JavaScript/TypeScript analysis on push/PR; no separat
 1. In **Settings → Code security and analysis → Code scanning**, disable CodeQL default setup (so SARIF from Actions is accepted).
 2. Add a workflow that runs `github/codeql-action/init@v4` with `config-file: ./.github/codeql/codeql-config.yml` and `analyze` as documented.
 
-Do not run both default setup and a CodeQL workflow that uploads SARIF for the same scope—GitHub will reject the upload.
+Do not run both default setup and a CodeQL workflow that uploads SARIF for the same scope; GitHub will reject the upload.
 
 ## Embedded model pack (`extensions/`)
 
@@ -35,7 +35,7 @@ This repo ships **`mesh-client-models`**: data extensions that mark `sanitizeFor
 
 **Log injection (`js/log-injection`):** `barrierModel` rows with kind **`log-injection`** attach to that query because the library defines `SanitizerFromModel` via `ModelOutput::barrierNode(_, "log-injection")` (see [`LogInjectionQuery.qll`](https://github.com/github/codeql/blob/main/javascript/ql/lib/semmle/javascript/security/dataflow/LogInjectionQuery.qll) on `github/codeql`).
 
-**Network → file (`js/http-to-file-access`):** MaD barrier kinds must be valid **sink** kinds (for example **`file-content-store`** for file-body writes), not the query id. More importantly, [`HttpToFileAccessQuery.qll`](https://github.com/github/codeql/blob/main/javascript/ql/lib/semmle/javascript/security/dataflow/HttpToFileAccessQuery.qll) currently wires barriers only through the abstract `Sanitizer` class and does **not** include a `SanitizerFromModel` for any MaD kind—so **`barrierModel` cannot clear this query until upstream adds that hook** (or you rely on [`codeql-config.yml`](./codeql-config.yml) query filters under **advanced** setup). We still model `sanitizeLogPayloadForDisk` as a **`file-content-store`** barrier for correctness and forward compatibility.
+**Network → file (`js/http-to-file-access`):** MaD barrier kinds must be valid **sink** kinds (for example **`file-content-store`** for file-body writes), not the query id. More importantly, [`HttpToFileAccessQuery.qll`](https://github.com/github/codeql/blob/main/javascript/ql/lib/semmle/javascript/security/dataflow/HttpToFileAccessQuery.qll) currently wires barriers only through the abstract `Sanitizer` class and does **not** include a `SanitizerFromModel` for any MaD kind; so **`barrierModel` cannot clear this query until upstream adds that hook** (or you rely on [`codeql-config.yml`](./codeql-config.yml) query filters under **advanced** setup). We still model `sanitizeLogPayloadForDisk` as a **`file-content-store`** barrier for correctness and forward compatibility.
 
 Each pack directory includes **`qlpack.yml`** and a duplicate **`codeql-pack.yml`** so default setup resolves metadata reliably; `extensionTargets` must use a real semver range (not `*`), or GitHub may skip loading the pack.
 

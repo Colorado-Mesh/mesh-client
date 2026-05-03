@@ -190,7 +190,7 @@ Complete reference of all pnpm scripts in `package.json`, organized by category.
 Automated dependency updates are configured in `.github/dependabot.yml`:
 
 - **Schedule:** Weekly on Saturdays
-- **pnpm dependencies:** Grouped PRs — `electron` separate, all other deps together
+- **pnpm dependencies:** Grouped PRs; `electron` separate, all other deps together
 - **GitHub Actions:** Grouped into one PR
 
 **Testing Dependabot PRs locally:**
@@ -204,7 +204,7 @@ pnpm run build
 pnpm run test:run
 ```
 
-Do **not** use `npm install` — it creates a `package-lock.json` and may not respect pnpm's lockfile format.
+Do **not** use `npm install`; it creates a `package-lock.json` and may not respect pnpm's lockfile format.
 
 ### 4) Test harness setup and local quality checks
 
@@ -494,6 +494,8 @@ Linux uses Web Bluetooth (Chromium's built-in BLE API) instead of `@stoprocent/n
 - Requires a user gesture (button click) to trigger device selection
 
 The app automatically enables `--enable-experimental-web-platform-features` on Linux at startup.
+
+There is **no portable Web Bluetooth API** for the negotiated ATT MTU ([WebBluetoothCG#383](https://github.com/WebBluetoothCG/web-bluetooth/issues/383)). When Chromium exposes `maximumWriteValueLength` on the TX characteristic, the client chunks `writeValue` accordingly; otherwise it sends each payload in one call.
 
 #### Bluetooth Pairing on Linux
 

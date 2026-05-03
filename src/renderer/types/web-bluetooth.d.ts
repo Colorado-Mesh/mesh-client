@@ -31,6 +31,8 @@ interface BluetoothRemoteGATTService {
 interface BluetoothRemoteGATTCharacteristic {
   readonly service: BluetoothRemoteGATTService;
   readonly uuid: string;
+  /** Chromium: max payload per `writeValue` when exposed; not in all TS DOM libs. */
+  readonly maximumWriteValueLength?: number;
   readonly properties: {
     read: boolean;
     write: boolean;

@@ -1,6 +1,7 @@
 import type { ConnectionType, MeshNode } from './types';
 
-const MESHCORE_COORD_SCALE = 1e6;
+/** MeshCore companion scaled coordinates: integer × degrees (same as firmware advert fields). */
+export const MESHCORE_COORD_SCALE = 1e6;
 
 /** Reserved range for channel / unknown-sender chat stubs (name-only, no pubkey). */
 export const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
@@ -149,7 +150,19 @@ const DEVICE_QUERY_MODEL_KEYS = [
 ] as const;
 
 function meshcoreStringFromDeviceQueryField(value: unknown): string | undefined {
-  if (typeof value === 'string' && value.trim()) return value.trim();
+  if (typeof value === 'string') {
+    // meshcore.js readString() decodes the entire DeviceInfo frame remainder, including
+    // null padding and extra null-terminated segments — truncate at first NUL (C-string).
+    const nullIdx = value.indexOf('\u0000');
+    const head = nullIdx >= 0 ? value.slice(0, nullIdx) : value;
+    let printable = '';
+    for (let i = 0; i < head.length; i++) {
+      const c = head.charCodeAt(i);
+      if (c >= 32 && c !== 127) printable += head[i];
+    }
+    const cleaned = printable.trim();
+    return cleaned.length > 0 ? cleaned : undefined;
+  }
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
   return undefined;
 }
@@ -232,10 +245,41 @@ interface MeshCoreContact {
   outPath?: Uint8Array;
 }
 
+/**
+ * Maps MeshCore `advLat` / `advLon` integers (degrees × {@link MESHCORE_COORD_SCALE}) to decimal degrees.
+ * Non-finite values or zero on an axis yield null for that axis (same rules as {@link meshcoreContactToMeshNode}).
+ */
+export function meshcoreScaledAdvLatLonToDeg(
+  advLat: number,
+  advLon: number,
+): { lat: number | null; lon: number | null } {
+  const lat =
+    typeof advLat === 'number' && Number.isFinite(advLat) && advLat !== 0
+      ? advLat / MESHCORE_COORD_SCALE
+      : null;
+  const lon =
+    typeof advLon === 'number' && Number.isFinite(advLon) && advLon !== 0
+      ? advLon / MESHCORE_COORD_SCALE
+      : null;
+  return { lat, lon };
+}
+
+/**
+ * Cayenne LPP GPS payloads may include `altitude` in meters for {@link MeshNode.altitude}.
+ * Returns `undefined` when missing or non-finite so callers do not overwrite a prior good value.
+ */
+export function meshcoreTelemetryGpsAltitudeMeters(
+  gps: { altitude?: number; latitude?: number; longitude?: number } | undefined | null,
+): number | undefined {
+  if (gps == null || typeof gps !== 'object') return undefined;
+  const a = gps.altitude;
+  if (typeof a !== 'number' || !Number.isFinite(a)) return undefined;
+  return a;
+}
+
 export function meshcoreContactToMeshNode(contact: MeshCoreContact): MeshNode {
   const nodeId = pubkeyToNodeId(contact.publicKey);
-  const lat = contact.advLat !== 0 ? contact.advLat / MESHCORE_COORD_SCALE : null;
-  const lon = contact.advLon !== 0 ? contact.advLon / MESHCORE_COORD_SCALE : null;
+  const { lat, lon } = meshcoreScaledAdvLatLonToDeg(contact.advLat, contact.advLon);
   return {
     node_id: nodeId,
     long_name: contact.advName || `Node-${nodeId.toString(16).toUpperCase()}`,
@@ -335,15 +379,16 @@ export function meshcoreMergeContactHopsAwayFromPrevious(
   prev: number | undefined,
   slicedPathByteLength: number,
 ): number | undefined {
+  void slicedPathByteLength;
   if (prev !== undefined && prev >= 1) {
-    if (inferred === undefined || (inferred === 0 && slicedPathByteLength <= 1)) {
+    // Never replace a known multi-hop route with 0/unknown from a transient contact or RF parse:
+    // firmware sometimes reports outPathLen/direct while bytes still imply hops, or packets carry hop 0.
+    if (inferred === undefined || inferred === 0) {
       return prev;
     }
-    // Prefer the smaller (better) hop count if both are defined and >= 1
-    if (inferred >= 1) {
-      return Math.min(inferred, prev);
-    }
-  } else if (inferred === undefined && prev !== undefined) {
+    return Math.min(inferred, prev);
+  }
+  if (inferred === undefined && prev !== undefined) {
     return prev;
   }
   return inferred;
@@ -380,16 +425,13 @@ export function meshcoreMinimalNodeFromAdvertEvent(
     typeof opts.contactType === 'number' && Number.isFinite(opts.contactType)
       ? Math.max(0, Math.floor(opts.contactType))
       : 0;
-  const hasLat =
-    typeof opts.advLat === 'number' && Number.isFinite(opts.advLat) && opts.advLat !== 0;
-  const hasLon =
-    typeof opts.advLon === 'number' && Number.isFinite(opts.advLon) && opts.advLon !== 0;
   const lastHeardSec =
     typeof opts.lastAdvert === 'number' && Number.isFinite(opts.lastAdvert) && opts.lastAdvert > 0
       ? opts.lastAdvert
       : opts.nowSec;
-  const latDeg = hasLat ? opts.advLat! / MESHCORE_COORD_SCALE : null;
-  const lonDeg = hasLon ? opts.advLon! / MESHCORE_COORD_SCALE : null;
+  const advLat = typeof opts.advLat === 'number' ? opts.advLat : 0;
+  const advLon = typeof opts.advLon === 'number' ? opts.advLon : 0;
+  const { lat: latDeg, lon: lonDeg } = meshcoreScaledAdvLatLonToDeg(advLat, advLon);
   const advNameTrim =
     typeof opts.advName === 'string' && opts.advName.trim() ? opts.advName.trim() : '';
   const node: MeshNode = {
