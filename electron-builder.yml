@@ -1,5 +1,6 @@
 appId: com.mesh-client.app
 productName: Mesh-client
+afterPack: scripts/electron-builder-after-pack.cjs
 directories:
   buildResources: resources
   output: release
