@@ -1379,7 +1379,12 @@ export default function App() {
         onResult={handleFirmwareResult}
       />
       {signalPulseKey !== null && (
-        <SignalPropagation key={signalPulseKey} onComplete={handleSignalPulseComplete} />
+        <SignalPropagation
+          key={signalPulseKey}
+          phraseSeed={signalPulseKey}
+          protocol={protocol}
+          onComplete={handleSignalPulseComplete}
+        />
       )}
       <div className="flex h-screen w-screen min-w-0 flex-col overflow-hidden bg-slate-950">
         {/* Header - full width; sidebar + main start below */}
