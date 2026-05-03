@@ -335,15 +335,16 @@ export function meshcoreMergeContactHopsAwayFromPrevious(
   prev: number | undefined,
   slicedPathByteLength: number,
 ): number | undefined {
+  void slicedPathByteLength;
   if (prev !== undefined && prev >= 1) {
-    if (inferred === undefined || (inferred === 0 && slicedPathByteLength <= 1)) {
+    // Never replace a known multi-hop route with 0/unknown from a transient contact or RF parse:
+    // firmware sometimes reports outPathLen/direct while bytes still imply hops, or packets carry hop 0.
+    if (inferred === undefined || inferred === 0) {
       return prev;
     }
-    // Prefer the smaller (better) hop count if both are defined and >= 1
-    if (inferred >= 1) {
-      return Math.min(inferred, prev);
-    }
-  } else if (inferred === undefined && prev !== undefined) {
+    return Math.min(inferred, prev);
+  }
+  if (inferred === undefined && prev !== undefined) {
     return prev;
   }
   return inferred;

@@ -299,6 +299,10 @@ describe('meshcoreMergeContactHopsAwayFromPrevious', () => {
     expect(meshcoreMergeContactHopsAwayFromPrevious(0, 3, 1)).toBe(3);
   });
 
+  it('preserves multi-hop when inferred is 0 even if path slice length > 1 (transient direct)', () => {
+    expect(meshcoreMergeContactHopsAwayFromPrevious(0, 3, 4)).toBe(3);
+  });
+
   it('preserves multi-hop when inferred hops are undefined', () => {
     expect(meshcoreMergeContactHopsAwayFromPrevious(undefined, 2, 0)).toBe(2);
   });

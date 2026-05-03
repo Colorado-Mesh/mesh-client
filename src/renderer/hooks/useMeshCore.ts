@@ -1160,6 +1160,10 @@ export function useMeshCore() {
   const nicknameMapRef = useRef<Map<number, string>>(new Map());
   // Stable ref to current nodes so event listeners don't form stale closures
   const nodesRef = useRef<Map<number, MeshNode>>(new Map());
+  /** SQLite hydration snapshot set synchronously before `setNodes` so initConn can merge hops when `nodesRef` has not flushed yet. */
+  const meshcoreLastPersistedNodesRef = useRef<Map<number, MeshNode>>(new Map());
+  /** Mount DB load — initConn awaits this so an immediate connect does not skip persisted hop counts. */
+  const meshcoreMountHydrationPromiseRef = useRef<Promise<void> | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
   const rawPacketsRef = useRef<RxPacketEntry[]>([]);
   // Stable ref to own node ID so event listeners don't form stale closures
@@ -1431,87 +1435,101 @@ export function useMeshCore() {
     });
   }, []);
 
+  /** Reload MeshCore contacts + hop counts from SQLite (mount, and after disconnect). */
+  const reloadMeshcoreNodesFromDb = useCallback(
+    async (opts?: { hydrateMessages?: boolean; beforeCommit?: () => boolean }) => {
+      const [rows, dbMsgs, savedNodes] = await Promise.all([
+        window.electronAPI.db.getMeshcoreContacts(),
+        window.electronAPI.db.getMeshcoreMessages(undefined, 500),
+        window.electronAPI.db.getNodes(),
+      ]);
+      if (opts?.beforeCommit && !opts.beforeCommit()) return;
+
+      const dbContacts = rows as {
+        node_id: number;
+        public_key: string;
+        adv_name: string | null;
+        contact_type: number;
+        last_advert: number | null;
+        adv_lat: number | null;
+        adv_lon: number | null;
+        last_snr: number | null;
+        last_rssi: number | null;
+        favorited: number;
+        nickname: string | null;
+        hops_away: number | null;
+      }[];
+      const initial = new Map<number, MeshNode>();
+      for (const row of dbContacts) {
+        const node: MeshNode = {
+          node_id: row.node_id,
+          long_name:
+            row.nickname ?? row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
+          short_name: '',
+          hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
+          battery: 0,
+          snr: row.last_snr ?? 0,
+          rssi: row.last_rssi ?? 0,
+          last_heard: row.last_advert ?? 0,
+          latitude: row.adv_lat ?? null,
+          longitude: row.adv_lon ?? null,
+          favorited: row.favorited === 1,
+          hops_away: row.hops_away ?? undefined,
+        };
+        initial.set(row.node_id, node);
+        if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
+        const hex = row.public_key.replace(/\s/g, '');
+        if (!meshcoreIsSyntheticPlaceholderPubKeyHex(hex) && hex.length >= 12) {
+          const pairs = hex.match(/.{2}/g);
+          if (!pairs) continue;
+          const bytes = new Uint8Array(pairs.map((b) => parseInt(b, 16)));
+          pubKeyMapRef.current.set(row.node_id, bytes);
+          const prefix = hex.slice(0, 12);
+          pubKeyPrefixMapRef.current.set(prefix, row.node_id);
+        }
+      }
+      for (const n of savedNodes as {
+        node_id: number;
+        hops_away: number | null;
+        hops: number | null;
+      }[]) {
+        const hopCount = n.hops ?? n.hops_away;
+        if (hopCount != null) {
+          const existing = initial.get(n.node_id);
+          if (existing && existing.hops_away === undefined) {
+            initial.set(n.node_id, { ...existing, hops_away: hopCount });
+          }
+        }
+      }
+      const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
+      const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
+      if (opts?.beforeCommit && !opts.beforeCommit()) return;
+
+      meshcoreLastPersistedNodesRef.current = new Map(mergedInitial);
+
+      setNodes(mergedInitial);
+      if (opts?.hydrateMessages && mapped.length > 0) {
+        setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
+      }
+    },
+    [],
+  );
+
   // Load persisted MeshCore contacts + messages from DB on mount (no device required — matches Meshtastic).
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      window.electronAPI.db.getMeshcoreContacts(),
-      window.electronAPI.db.getMeshcoreMessages(undefined, 500),
-      window.electronAPI.db.getNodes(),
-    ])
-      .then(([rows, dbMsgs, savedNodes]) => {
-        if (cancelled) return;
-        const dbContacts = rows as {
-          node_id: number;
-          public_key: string;
-          adv_name: string | null;
-          contact_type: number;
-          last_advert: number | null;
-          adv_lat: number | null;
-          adv_lon: number | null;
-          last_snr: number | null;
-          last_rssi: number | null;
-          favorited: number;
-          nickname: string | null;
-          hops_away: number | null;
-        }[];
-        const initial = new Map<number, MeshNode>();
-        for (const row of dbContacts) {
-          const node: MeshNode = {
-            node_id: row.node_id,
-            long_name:
-              row.nickname ?? row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
-            short_name: '',
-            hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
-            battery: 0,
-            snr: row.last_snr ?? 0,
-            rssi: row.last_rssi ?? 0,
-            last_heard: row.last_advert ?? 0,
-            latitude: row.adv_lat ?? null,
-            longitude: row.adv_lon ?? null,
-            favorited: row.favorited === 1,
-            hops_away: row.hops_away ?? undefined,
-          };
-          initial.set(row.node_id, node);
-          if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
-          const hex = row.public_key.replace(/\s/g, '');
-          if (!meshcoreIsSyntheticPlaceholderPubKeyHex(hex) && hex.length >= 12) {
-            const pairs = hex.match(/.{2}/g);
-            if (!pairs) continue;
-            const bytes = new Uint8Array(pairs.map((b) => parseInt(b, 16)));
-            pubKeyMapRef.current.set(row.node_id, bytes);
-            const prefix = hex.slice(0, 12);
-            pubKeyPrefixMapRef.current.set(prefix, row.node_id);
-          }
-        }
-        // Merge hops_away from nodes table as fallback for any nodes missing it
-        for (const n of savedNodes as {
-          node_id: number;
-          hops_away: number | null;
-          hops: number | null;
-        }[]) {
-          const hopCount = n.hops ?? n.hops_away;
-          if (hopCount != null) {
-            const existing = initial.get(n.node_id);
-            if (existing && existing.hops_away === undefined) {
-              initial.set(n.node_id, { ...existing, hops_away: hopCount });
-            }
-          }
-        }
-        const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
-        const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
-        setNodes(mergedInitial);
-        if (mapped.length > 0) {
-          setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
-        }
-      })
-      .catch((e: unknown) => {
-        console.warn('[useMeshCore] load contacts/messages from DB on mount', e);
-      });
+    /* eslint-disable react-hooks/set-state-in-effect -- async reload resolves before setState; deferring with queueMicrotask races importContacts (hydration would wipe in-memory nodes). */
+    meshcoreMountHydrationPromiseRef.current = reloadMeshcoreNodesFromDb({
+      hydrateMessages: true,
+      beforeCommit: () => !cancelled,
+    }).catch((e: unknown) => {
+      if (!cancelled) console.warn('[useMeshCore] load contacts/messages from DB on mount', e);
+    });
+    /* eslint-enable react-hooks/set-state-in-effect */
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadMeshcoreNodesFromDb]);
 
   // Mirror self radio battery into the home MeshNode (node list + node detail); refreshContacts rebuilds from selfInfo
   useEffect(() => {
@@ -1858,9 +1876,10 @@ export function useMeshCore() {
         if (myNodeId > 0 && nodeId === myNodeId) continue;
         const existing = nextNodes.get(nodeId);
         if (existing) {
+          const traceHops = meshcoreTracePathLenToHops(tr.pathLen);
           nextNodes.set(nodeId, {
             ...existing,
-            hops_away: meshcoreTracePathLenToHops(tr.pathLen),
+            hops_away: traceHops,
           });
         }
       }
@@ -2738,9 +2757,14 @@ export function useMeshCore() {
             setNodes((prev) => {
               const existing = prev.get(fromNodeId!);
               if (!existing) return prev;
+              const mergedHopsAway = meshcoreMergeContactHopsAwayFromPrevious(
+                hopCount,
+                existing.hops_away,
+                0,
+              );
               const updated: MeshNode = {
                 ...existing,
-                hops_away: hopCount,
+                hops_away: mergedHopsAway ?? hopCount,
                 snr: snr,
                 rssi: rssi,
                 last_heard: Math.max(existing.last_heard ?? 0, nowSec),
@@ -2751,7 +2775,7 @@ export function useMeshCore() {
 
               // Optimization: skip identical updates
               if (
-                existing.hops_away === hopCount &&
+                existing.hops_away === updated.hops_away &&
                 existing.snr === snr &&
                 existing.rssi === rssi &&
                 existing.last_heard === updated.last_heard
@@ -2764,13 +2788,19 @@ export function useMeshCore() {
 
               void window.electronAPI.db.saveNode(updated);
               void window.electronAPI.db
-                .updateMeshcoreContactLastRf(fromNodeId!, snr, rssi, hopCount, nowSec)
+                .updateMeshcoreContactLastRf(
+                  fromNodeId!,
+                  snr,
+                  rssi,
+                  mergedHopsAway ?? hopCount,
+                  nowSec,
+                )
                 .catch((e: unknown) => {
                   console.warn('[useMeshCore] updateMeshcoreContactLastRf error', e);
                 });
               void useDiagnosticsStore
                 .getState()
-                .saveMeshcoreHopHistory(fromNodeId!, now, hopCount, snr, rssi)
+                .saveMeshcoreHopHistory(fromNodeId!, now, mergedHopsAway ?? hopCount, snr, rssi)
                 .catch((e: unknown) => {
                   console.warn('[useMeshCore] saveMeshcoreHopHistory error', e);
                 });
@@ -3085,12 +3115,15 @@ export function useMeshCore() {
       );
       const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
       setMeshcoreContactsForTelemetry(contacts);
+      await meshcoreMountHydrationPromiseRef.current?.catch(() => {});
+      const previousNodesBaseline =
+        nodesRef.current.size > 0 ? nodesRef.current : meshcoreLastPersistedNodesRef.current;
       const newNodes = await awaitUnlessMeshcoreSetupCancelled(
         setupGen,
         buildNodesFromContacts(contacts, {
           self: info,
           myNodeId,
-          previousNodes: nodesRef.current,
+          previousNodes: previousNodesBaseline,
           contactsFromRadio: true,
         }),
       );
@@ -3626,8 +3659,13 @@ export function useMeshCore() {
     pubKeyPrefixMapRef.current.clear();
     outPathMapRef.current.clear();
     nicknameMapRef.current.clear();
-    setNodes(new Map());
     setMessages([]);
+    try {
+      await reloadMeshcoreNodesFromDb({ hydrateMessages: false });
+    } catch (e: unknown) {
+      console.warn('[useMeshCore] disconnect: rehydrate nodes from DB failed', e);
+      setNodes(new Map());
+    }
     setChannels([]);
     setSelfInfo(null);
     setMeshcoreContactsForTelemetry([]);
@@ -3650,7 +3688,7 @@ export function useMeshCore() {
     }
     prevTxAirSecsRef.current = null;
     prevStatsTimestampRef.current = null;
-  }, [teardownMeshcoreConnEventListeners]);
+  }, [teardownMeshcoreConnEventListeners, reloadMeshcoreNodesFromDb]);
 
   const sendMessage = useCallback(
     async (text: string, channelIdx: number, destNodeId?: number, replyId?: number) => {
