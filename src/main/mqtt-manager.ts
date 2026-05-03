@@ -70,6 +70,25 @@ function trimLeadingNullRun(bytes: Uint8Array): Uint8Array {
   return bytes.subarray(start);
 }
 
+/** View `input` as Uint8Array without copying (Node Buffer is Uint8Array-compatible). */
+function asUint8Array(input: Buffer | Uint8Array): Uint8Array {
+  return input instanceof Uint8Array ? input : new Uint8Array(input);
+}
+
+/**
+ * Leading: strip broker prefix null run (safe).
+ * Trailing: do not strip here — a valid ServiceEnvelope can end with a literal 0x00 on the wire;
+ * trailing padding is peeled only after decode fails with {@link isIllegalTagFieldZero}.
+ */
+export function prepareMqttProtobufBytes(input: Buffer | Uint8Array): Uint8Array {
+  return trimLeadingNullRun(asUint8Array(input));
+}
+
+/** True when protobuf reports illegal tag 0 (typ. trailing 0x00 padding after wire message). */
+function isIllegalTagFieldZero(msg: string): boolean {
+  return msg.includes('field no 0');
+}
+
 // Dedup window: 10 minutes
 const DEDUP_TTL_MS = 10 * 60 * 1000;
 
@@ -666,8 +685,8 @@ export class MQTTManager extends EventEmitter {
   }
 
   private onMessage(topic: string, payload: Buffer | string): void {
-    const rawBytes = new Uint8Array(Buffer.isBuffer(payload) ? payload : Buffer.from(payload));
-    const bytes = trimLeadingNullRun(rawBytes);
+    const raw = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+    const bytes = prepareMqttProtobufBytes(raw);
     if (bytes.length === 0) return;
 
     if (bytes[0] === 0x7b) {
@@ -675,7 +694,11 @@ export class MQTTManager extends EventEmitter {
         const parsed = JSON.parse(new TextDecoder().decode(bytes));
         this.handleJsonMessage(parsed, topic);
       } catch {
-        console.debug(`[Meshtastic MQTT] JSON parse failed, topic=${topic} bytes=${bytes.length}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+        // catch-no-log-ok non-JSON on topic; failure sampled via logSampledDebug (not parse error object)
+        this.logSampledDebug(
+          'mqtt-json-parse-failed',
+          `[Meshtastic MQTT] JSON parse failed, topic=${sanitizeLogMessage(topic)} bytes=${bytes.length}`,
+        );
       }
       return;
     }
@@ -691,14 +714,20 @@ export class MQTTManager extends EventEmitter {
       return;
     }
 
+    this.decodeServiceEnvelopeWithTrailingNullRetry(bytes, topic);
+  }
+
+  /**
+   * Decode ServiceEnvelope; on illegal tag 0 (trailing 0x00 padding), peel trailing nulls and retry.
+   * Failure point: corrupt or truncated protobuf on topic. Fallback: sampled log + bad-envelope cache.
+   */
+  private decodeServiceEnvelopeWithTrailingNullRetry(bytes: Uint8Array, topic: string): void {
     try {
       this.decodeAndHandleServiceEnvelope(bytes, topic);
     } catch (err) {
-      // Trailing broker null padding: protobuf treats extra 0x00 as tag 0 (illegal). Only strip
-      // from the end after decode fails — never strip trailing 0x00 preemptively (valid wire).
       let decodeErr: unknown = err;
       let msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('field no 0') && bytes[bytes.length - 1] === 0) {
+      if (isIllegalTagFieldZero(msg) && bytes.length > 0 && bytes[bytes.length - 1] === 0) {
         let currentBytes = bytes;
         while (currentBytes.length > 0 && currentBytes[currentBytes.length - 1] === 0) {
           currentBytes = currentBytes.subarray(0, currentBytes.length - 1);
@@ -709,14 +738,12 @@ export class MQTTManager extends EventEmitter {
             // catch-no-log-ok trim-retry expects protobuf errors until trailing nulls removed; final error logged via logSampledDebug below
             decodeErr = retryErr;
             msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-            if (!msg.includes('field no 0')) break;
+            if (!isIllegalTagFieldZero(msg)) break;
           }
         }
       }
 
-      // catch-no-log-ok decode failures are sampled via logSampledDebug (avoid duplicate console lines)
       const finalMsg = decodeErr instanceof Error ? decodeErr.message : String(decodeErr);
-      // Identical bytes always decode the same way; skip re-decoding recurring bad broker payloads.
       this.rememberBadEnvelope(topic, bytes);
       this.logSampledDebug(
         this.serviceEnvelopeDecodeFailureLogKey(topic, bytes),
@@ -764,9 +791,26 @@ export class MQTTManager extends EventEmitter {
 
     const json = parsed as Record<string, unknown>;
 
+    // Bare nodeinfo-like objects (some gateways): handle before Meshtastic-shape guard.
+    if (
+      json.longName !== undefined ||
+      json.long_name !== undefined ||
+      json.shortName !== undefined ||
+      json.short_name !== undefined
+    ) {
+      this.handleJsonNodeInfo(json, topic);
+      return;
+    }
+
     const typeRaw = json.type;
     const type = typeof typeRaw === 'string' ? typeRaw.trim() : '';
     const typeLower = type.toLowerCase();
+
+    const portnumRaw = json.portnum;
+    const hasMeshtasticShape = typeLower.length > 0 || typeof portnumRaw === 'number';
+    if (!hasMeshtasticShape) {
+      return;
+    }
 
     if (typeLower === 'nodeinfo' || typeLower === 'user') {
       this.handleJsonNodeInfo(json, topic);
@@ -793,35 +837,11 @@ export class MQTTManager extends EventEmitter {
       return;
     }
 
-    const portnumRaw = json.portnum as number | undefined;
     if (typeLower === 'traceroute') {
-      this.logSampledDebug(
-        'json-traceroute',
-        `[Meshtastic MQTT] JSON traceroute message ignored: topic=${sanitizeLogMessage(topic)}`,
-      );
       return;
     }
     if (portnumRaw === PortNum.NODEINFO_APP) {
       this.handleJsonNodeInfo(json, topic);
-      return;
-    }
-
-    // Also check if this JSON directly contains user fields (longName, shortName, etc.)
-    // without being wrapped in a "user" or "payload" object
-    if (
-      json.longName !== undefined ||
-      json.long_name !== undefined ||
-      json.shortName !== undefined ||
-      json.short_name !== undefined
-    ) {
-      this.handleJsonNodeInfo(json, topic);
-      return;
-    }
-    if (typeLower.length === 0 && portnumRaw === undefined) {
-      this.logSampledDebug(
-        'json-empty-type',
-        `[Meshtastic MQTT] JSON message missing type/portnum ignored: topic=${sanitizeLogMessage(topic)}`,
-      );
       return;
     }
 
@@ -1394,10 +1414,7 @@ export class MQTTManager extends EventEmitter {
         // catch-no-log-ok wrong PSK produces garbage bytes that fail protobuf decode — try next key
       }
     }
-    this.logSampledDebug(
-      'decrypt-protobuf-fail',
-      `[Meshtastic MQTT] Could not decrypt packet (protobuf decode failed for all ${allKeys.length} PSKs), nodeId=0x${from.toString(16)} packetId=${packetId >>> 0}`,
-    );
+    // Wrong PSK / foreign channel traffic on global brokers — silent discard (no log firehose).
     return null;
   }
 

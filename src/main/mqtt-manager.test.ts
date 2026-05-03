@@ -5,7 +5,7 @@ import { createCipheriv } from 'crypto';
 import * as mqtt from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { MQTTManager, parsePsk } from './mqtt-manager';
+import { MQTTManager, parsePsk, prepareMqttProtobufBytes } from './mqtt-manager';
 
 vi.mock('mqtt', () => {
   const mockClient = {
@@ -107,6 +107,22 @@ function buildDecodedEnvelope(options: {
 // ─────────────────────────────────────────────────────────────────────────────
 // parsePsk
 // ─────────────────────────────────────────────────────────────────────────────
+
+describe('prepareMqttProtobufBytes', () => {
+  it('strips a leading run of null bytes (broker padding)', () => {
+    const core = Buffer.from([0x0a, 0x02, 0xff]);
+    const padded = Buffer.concat([Buffer.alloc(4, 0), core]);
+    const out = prepareMqttProtobufBytes(padded);
+    expect(Array.from(out)).toEqual([0x0a, 0x02, 0xff]);
+  });
+
+  it('returns the same view when there is no leading padding', () => {
+    const buf = Buffer.from([0x0a, 0x01]);
+    const out = prepareMqttProtobufBytes(buf);
+    expect(out.byteOffset).toBe(buf.byteOffset);
+    expect(out.byteLength).toBe(buf.byteLength);
+  });
+});
 
 describe('parsePsk', () => {
   it('returns null for empty string', () => {
@@ -567,10 +583,17 @@ describe('onMessage — unknown PSK falls back to minimal update', () => {
     const updates: unknown[] = [];
     manager.on('nodeUpdate', (u) => updates.push(u));
 
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     (manager as any).onMessage('msh/US/2/e/CustomChan/!deadbeef', payload);
+    debugSpy.mockRestore();
 
     // No updates should be emitted when decryption fails - we don't add unknown nodes
     expect(updates).toHaveLength(0);
+    expect(
+      debugSpy.mock.calls.some((args: unknown[]) =>
+        String(args[0]).includes('Could not decrypt packet'),
+      ),
+    ).toBe(false);
   });
 
   it('does not emit update for brand-new unknown-PSK node', () => {
@@ -1228,7 +1251,7 @@ describe('onMessage — JSON sampled handling', () => {
     debugSpy.mockRestore();
   });
 
-  it('suppresses unhandled log noise for empty type + missing portnum messages', () => {
+  it('silently ignores empty type + missing portnum messages (no debug)', () => {
     const payload = Buffer.from(
       JSON.stringify({
         from: 0x6982c484,
@@ -1239,19 +1262,10 @@ describe('onMessage — JSON sampled handling', () => {
 
     (manager as any).onMessage('msh/US/CO/2/json/LongFast/!6982c484', payload);
 
-    expect(
-      debugSpy.mock.calls.some((args: unknown[]) =>
-        String(args[0]).includes('JSON message missing type/portnum ignored'),
-      ),
-    ).toBe(true);
-    expect(
-      debugSpy.mock.calls.some((args: unknown[]) =>
-        String(args[0]).includes('JSON message unhandled'),
-      ),
-    ).toBe(false);
+    expect(debugSpy).not.toHaveBeenCalled();
   });
 
-  it('treats traceroute JSON as known and avoids unhandled logging', () => {
+  it('treats traceroute JSON as known and avoids any logging', () => {
     const payload = Buffer.from(
       JSON.stringify({
         from: 0x698524e8,
@@ -1263,16 +1277,7 @@ describe('onMessage — JSON sampled handling', () => {
 
     (manager as any).onMessage('msh/US/CO/2/json/LongFast/!698524e8', payload);
 
-    expect(
-      debugSpy.mock.calls.some((args: unknown[]) =>
-        String(args[0]).includes('JSON traceroute message ignored'),
-      ),
-    ).toBe(true);
-    expect(
-      debugSpy.mock.calls.some((args: unknown[]) =>
-        String(args[0]).includes('JSON message unhandled'),
-      ),
-    ).toBe(false);
+    expect(debugSpy).not.toHaveBeenCalled();
   });
 });
 
