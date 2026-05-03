@@ -328,6 +328,26 @@ describe('App accessibility', () => {
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
 
+  it('footer shows tagline and Discord, GitHub, Website links', () => {
+    render(<App />);
+
+    expect(screen.getByText(/For everyone, everywhere/)).toBeInTheDocument();
+    expect(screen.getByText(/Join us:/)).toBeInTheDocument();
+
+    expect(screen.getByRole('link', { name: 'Discord' })).toHaveAttribute(
+      'href',
+      'https://discord.com/invite/McChKR5NpS',
+    );
+    expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute(
+      'href',
+      'https://github.com/Colorado-Mesh/mesh-client',
+    );
+    expect(screen.getByRole('link', { name: 'Website' })).toHaveAttribute(
+      'href',
+      'https://coloradomesh.org/',
+    );
+  });
+
   it('renders the queue badge in meshcore mode when queueStatus is available', async () => {
     getStoredMeshProtocolMock.mockReturnValue('meshcore');
     useRadioProviderMock.mockReturnValue({

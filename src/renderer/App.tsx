@@ -2257,17 +2257,7 @@ export default function App() {
             {/* Footer - fixed height at bottom of Content Wrapper */}
             <footer className="text-muted flex h-8 shrink-0 items-center justify-between border-t border-slate-800 bg-slate-900 px-4 text-[10px]">
               <span className="min-w-0">
-                A Project by{' '}
-                <a
-                  href="https://coloradomesh.org/"
-                  title="Colorado Mesh"
-                  className="text-slate-400 underline decoration-slate-600/80 underline-offset-2 transition-colors hover:text-slate-300"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Colorado Mesh
-                </a>
-                . Join us on{' '}
+                For everyone, everywhere. Join us:{' '}
                 <a
                   href="https://discord.com/invite/McChKR5NpS"
                   title="Colorado Mesh Discord"
@@ -2277,7 +2267,7 @@ export default function App() {
                 >
                   Discord
                 </a>
-                . Code on{' '}
+                {' • '}
                 <a
                   href="https://github.com/Colorado-Mesh/mesh-client"
                   title="Colorado Mesh on GitHub"
@@ -2287,7 +2277,16 @@ export default function App() {
                 >
                   GitHub
                 </a>
-                .
+                {' • '}
+                <a
+                  href="https://coloradomesh.org/"
+                  title="Colorado Mesh website"
+                  className="text-slate-400 underline decoration-slate-600/80 underline-offset-2 transition-colors hover:text-slate-300"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Website
+                </a>
               </span>
               <button
                 type="button"
