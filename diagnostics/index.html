@@ -1,0 +1,2996 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../letsmesh-mqtt-auth/">
+      
+      
+        <link rel="next" href="../troubleshooting/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Diagnostics - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#diagnostics-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Diagnostics
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-meshtastic-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-network-health-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Network Health Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-routing-anomalies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Routing Anomalies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Routing Anomalies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hop_goblin-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hop_goblin: Error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bad_route-two-variants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bad_route: Two Variants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impossible_hop-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        impossible_hop: Error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#route_flapping-warning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        route_flapping: Warning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-rf-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. RF Diagnostics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. RF Diagnostics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#connected-node-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connected Node Findings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote-node-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote Node Findings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-foreign-lora-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Foreign LoRa Detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-packet-redundancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Packet Redundancy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-map-visualizations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Map Visualizations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Map Visualizations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#channel-utilization-halos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channel Utilization Halos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routing-anomaly-halos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routing Anomaly Halos
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-mqtt-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. MQTT Filtering
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. MQTT Filtering">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#global-ignore-mqtt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Ignore MQTT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-node-mqtt-ignore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-Node MQTT Ignore
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hybrid-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hybrid Nodes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-environment-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Environment Profiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-node-status-thresholds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Node Status Thresholds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-key-source-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Key Source Files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-technical-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Technical Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Technical Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-rf-findings-connected-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 RF Findings: Connected Node
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.1 RF Findings: Connected Node">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#utilization-vs-tx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Utilization vs. TX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#non-lora-noise-rfi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-LoRa Noise / RFI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#900-mhz-industrial-interference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        900 MHz Industrial Interference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel-utilization-spike" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channel Utilization Spike
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mesh-congestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mesh Congestion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hidden-terminal-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hidden Terminal Risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lora-collision-or-corruption" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LoRa Collision or Corruption
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-rf-findings-remote-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 RF Findings: Remote Nodes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.2 RF Findings: Remote Nodes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#external-interference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Interference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wideband-noise-floor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wideband Noise Floor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fringe-weak-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fringe / Weak Coverage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-routing-anomalies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 Routing Anomalies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.3 Routing Anomalies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hop_goblin-routingdiagnosticenginedetecthopgoblin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hop_goblin (RoutingDiagnosticEngine.detectHopGoblin())
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bad_route-routingdiagnosticenginedetectbadroute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bad_route (RoutingDiagnosticEngine.detectBadRoute())
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impossible_hop-routingdiagnosticenginedetectimpossiblehop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        impossible_hop (RoutingDiagnosticEngine.detectImpossibleHop())
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#route_flapping-routingdiagnosticenginedetectrouteflapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        route_flapping (RoutingDiagnosticEngine.detectRouteFlapping())
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114-foreign-lora-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 Foreign LoRa Detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.4 Foreign LoRa Detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#packet-classification-foreignloradetectionclassifypayload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packet classification (foreignLoraDetection.classifyPayload())
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proximity-classification-classifyproximity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proximity classification (classifyProximity())
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#meshcore-rate-escalation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore rate escalation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-minute-cooldown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-minute cooldown
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#115-packet-redundancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.5 Packet Redundancy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.5 Packet Redundancy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-maxpaths-metric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The maxPaths metric
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache management
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discord
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Website
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-network-health-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Network Health Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-routing-anomalies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Routing Anomalies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Routing Anomalies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hop_goblin-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hop_goblin: Error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bad_route-two-variants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bad_route: Two Variants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impossible_hop-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        impossible_hop: Error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#route_flapping-warning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        route_flapping: Warning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-rf-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. RF Diagnostics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. RF Diagnostics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#connected-node-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connected Node Findings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote-node-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote Node Findings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-foreign-lora-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Foreign LoRa Detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-packet-redundancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Packet Redundancy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-map-visualizations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Map Visualizations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Map Visualizations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#channel-utilization-halos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channel Utilization Halos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routing-anomaly-halos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routing Anomaly Halos
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-mqtt-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. MQTT Filtering
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. MQTT Filtering">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#global-ignore-mqtt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Ignore MQTT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-node-mqtt-ignore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-Node MQTT Ignore
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hybrid-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hybrid Nodes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-environment-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Environment Profiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-node-status-thresholds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Node Status Thresholds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-key-source-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Key Source Files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-technical-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Technical Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Technical Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-rf-findings-connected-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 RF Findings: Connected Node
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.1 RF Findings: Connected Node">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#utilization-vs-tx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Utilization vs. TX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#non-lora-noise-rfi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-LoRa Noise / RFI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#900-mhz-industrial-interference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        900 MHz Industrial Interference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel-utilization-spike" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channel Utilization Spike
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mesh-congestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mesh Congestion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hidden-terminal-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hidden Terminal Risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lora-collision-or-corruption" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LoRa Collision or Corruption
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-rf-findings-remote-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 RF Findings: Remote Nodes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.2 RF Findings: Remote Nodes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#external-interference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Interference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wideband-noise-floor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wideband Noise Floor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fringe-weak-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fringe / Weak Coverage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-routing-anomalies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 Routing Anomalies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.3 Routing Anomalies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hop_goblin-routingdiagnosticenginedetecthopgoblin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hop_goblin (RoutingDiagnosticEngine.detectHopGoblin())
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bad_route-routingdiagnosticenginedetectbadroute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bad_route (RoutingDiagnosticEngine.detectBadRoute())
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impossible_hop-routingdiagnosticenginedetectimpossiblehop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        impossible_hop (RoutingDiagnosticEngine.detectImpossibleHop())
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#route_flapping-routingdiagnosticenginedetectrouteflapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        route_flapping (RoutingDiagnosticEngine.detectRouteFlapping())
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114-foreign-lora-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 Foreign LoRa Detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.4 Foreign LoRa Detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#packet-classification-foreignloradetectionclassifypayload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packet classification (foreignLoraDetection.classifyPayload())
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proximity-classification-classifyproximity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proximity classification (classifyProximity())
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#meshcore-rate-escalation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore rate escalation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-minute-cooldown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-minute cooldown
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#115-packet-redundancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.5 Packet Redundancy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.5 Packet Redundancy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-maxpaths-metric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The maxPaths metric
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache management
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="diagnostics-reference">Diagnostics Reference</h1>
+<p>This document is the authoritative reference for every diagnostic output in Mesh-Client. It covers the two diagnostic subsystems; <strong>Routing</strong> and <strong>RF</strong>; and explains what each finding means, what triggers it, and how to interpret it.</p>
+<p><strong>Where diagnostics appear:</strong></p>
+<ul>
+<li><strong>DiagnosticsPanel</strong>: network health status, anomaly table, halos toggles, environment profile, max-age settings</li>
+<li><strong>NodeDetailModal</strong>: per-node routing health section, redundancy path history, RF findings, MQTT ignore toggle</li>
+<li><strong>NodeListPanel</strong>: inline anomaly badges, redundancy <code>+N</code> echo count, MQTT-only node dimming</li>
+<li><strong>MapPanel</strong>: channel utilization halos, routing anomaly aura circles</li>
+</ul>
+<hr />
+<h2 id="1-network-health-status">1. Network Health Status</h2>
+<p>The network health band summarizes the current diagnostic state of the mesh in the DiagnosticsPanel header.</p>
+<table>
+<thead>
+<tr>
+<th>Badge</th>
+<th>Condition</th>
+<th>Color</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Healthy</td>
+<td>0 errors, 0 warnings</td>
+<td>Green</td>
+</tr>
+<tr>
+<td>Attention</td>
+<td>Any errors or warnings (routing errors &lt; 3)</td>
+<td>Yellow</td>
+</tr>
+<tr>
+<td>Degraded</td>
+<td>≥ 3 routing errors</td>
+<td>Red</td>
+</tr>
+</tbody>
+</table>
+<p>The panel also shows a breakdown of error and warning counts, and a "This node" line when your connected device has its own issues separate from the mesh-wide picture.</p>
+<hr />
+<h2 id="2-routing-anomalies">2. Routing Anomalies</h2>
+<p>Routing anomaly detection runs on Meshtastic nodes. For MeshCore, hop-based anomalies require <code>hasHopCount</code> capability; if absent, they are skipped.</p>
+<p>Detection is run in priority order; first match wins:</p>
+<ol>
+<li><code>impossible_hop</code></li>
+<li><code>bad_route</code> (error variant)</li>
+<li><code>route_flapping</code></li>
+<li><code>hop_goblin</code></li>
+<li><code>bad_route</code> (warning variant)</li>
+</ol>
+<p>Routing rows persist for up to <strong>24 hours</strong> by default (configurable 1–168 h in DiagnosticsPanel → Display Settings).</p>
+<hr />
+<h3 id="hop_goblin-error">hop_goblin: Error</h3>
+<p><strong>Trigger:</strong> A node is within 3 km (standard profile) but is taking more than 2 hops to reach your device.</p>
+<p><strong>Meaning:</strong> A nearby node is routing through intermediate mesh nodes instead of connecting directly. This wastes airtime on rebroadcasts that should not be necessary for a short-range link.</p>
+<p><strong>Environment multipliers:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>Distance threshold</th>
+<th>Hop threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Standard</td>
+<td>3 km</td>
+<td>2 hops</td>
+</tr>
+<tr>
+<td>City</td>
+<td>4.8 km (1.6×)</td>
+<td>3 hops</td>
+</tr>
+<tr>
+<td>Canyon</td>
+<td>7.8 km (2.6×)</td>
+<td>4 hops</td>
+</tr>
+</tbody>
+</table>
+<p>If your GPS source is IP-geolocation (low accuracy), the distance threshold is doubled automatically and a yellow banner appears in the diagnostics panel.</p>
+<p><strong>MQTT behavior:</strong> Skipped entirely for MQTT-only nodes when global or per-node MQTT ignore is active. For hybrid nodes (heard via both RF and MQTT), the anomaly still fires but a yellow advisory note suggests enabling MQTT filtering as a first step before adjusting node placement.</p>
+<hr />
+<h3 id="bad_route-two-variants">bad_route: Two Variants</h3>
+<p><strong>Error variant (duplication rate):</strong></p>
+<ul>
+<li><strong>Trigger:</strong> More than 55% of a node's recent packets are duplicates.</li>
+<li><strong>Meaning:</strong> The mesh is forwarding the same packet through multiple competing paths from this node. This typically indicates a routing loop or excessive redundant rebroadcasting.</li>
+</ul>
+<p><strong>Warning variant (close-in over-hopping):</strong></p>
+<ul>
+<li><strong>Trigger:</strong> A node within 5 miles is taking more than <code>hopThreshold + 2</code> hops.</li>
+<li><strong>Meaning:</strong> Suboptimal path; the node is reachable but the route is longer than expected for its distance.</li>
+</ul>
+<hr />
+<h3 id="impossible_hop-error">impossible_hop: Error</h3>
+<p><strong>Trigger:</strong> A node reports 0 hops (direct neighbor) but is more than 100 miles away (GPS coordinates required on both your device and the remote node).</p>
+<p><strong>Meaning:</strong> Either the GPS coordinates are stale or wrong, or the hop-count metadata is unreliable for this node. The node's position data should be treated with suspicion.</p>
+<p><strong>Note:</strong> Skipped for MeshCore nodes without <code>hasHopCount</code> capability.</p>
+<hr />
+<h3 id="route_flapping-warning">route_flapping: Warning</h3>
+<p><strong>Trigger:</strong> The hop count to a node changes more than 3 times within the last 10 minutes.</p>
+<p><strong>Meaning:</strong> The node's path through the mesh is unstable. Common causes include competing routes of similar quality, marginal RF links where the best next-hop changes frequently, or a node that is on the edge of coverage.</p>
+<hr />
+<h2 id="3-rf-diagnostics">3. RF Diagnostics</h2>
+<p>RF diagnostics analyze signal-layer data from radio telemetry. There are two categories: <strong>Connected Node</strong> (your directly attached device, using LocalStats telemetry) and <strong>Remote Nodes</strong> (other mesh nodes, observed from their telemetry packets).</p>
+<p>RF rows expire after <strong>1 hour</strong> (fixed, not configurable).</p>
+<hr />
+<h3 id="connected-node-findings">Connected Node Findings</h3>
+<p>These findings use LocalStats data from your own device's radio.</p>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Trigger</th>
+<th>Severity</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Utilization vs. TX</td>
+<td>Channel utilization (CU) &gt; 25% and air TX &lt; 5%</td>
+<td>Warning</td>
+<td>Your node is hearing a busy channel but transmitting very little; high noise floor causing backoff</td>
+</tr>
+<tr>
+<td>Non-LoRa Noise / RFI</td>
+<td>CU &gt; 25%, ≥5 RX packets, 0 bad packets</td>
+<td>Warning</td>
+<td>RF energy present from a non-LoRa source (motors, baby monitors, switching power supplies); packets decode correctly because it is not LoRa interference</td>
+</tr>
+<tr>
+<td>900MHz Industrial Interference</td>
+<td>Bad packet rate &gt; 20% and CU &gt; 25%</td>
+<td>Warning</td>
+<td>Bursty high-power sources such as smart meters or industrial telemetry on 900 MHz causing frequent decode failures</td>
+</tr>
+<tr>
+<td>Channel Utilization Spike</td>
+<td>Current CU &gt; 2× 30-min rolling average (minimum 12 samples, ≥30 min span, rolling avg ≥1%)</td>
+<td>Warning</td>
+<td>Sudden congestion or interference surge above your node's normal baseline; 15-min cooldown before re-firing</td>
+</tr>
+<tr>
+<td>Mesh Congestion</td>
+<td>RX duplicate rate &gt; 15%</td>
+<td>Warning</td>
+<td>Excessive redundant packet rebroadcasting across the mesh</td>
+</tr>
+<tr>
+<td>Hidden Terminal Risk</td>
+<td>CU &gt; 40%, bad rate 5–10%, no industrial finding</td>
+<td>Warning</td>
+<td>Multiple transmitters cannot hear each other and are colliding at your node; a classic hidden terminal scenario</td>
+</tr>
+<tr>
+<td>LoRa Collision or Corruption</td>
+<td>Bad packet rate &gt; 10% (catch-all)</td>
+<td>Warning</td>
+<td>Preamble decoded but CRC/decode failed; often caused by non-Meshtastic LoRa devices on the same frequency</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="remote-node-findings">Remote Node Findings</h3>
+<p>These findings use telemetry observed from other nodes' radio stats.</p>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Trigger</th>
+<th>Severity</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>External Interference</td>
+<td>CU &gt; 25% and air TX &lt; 5%</td>
+<td>Warning</td>
+<td>Same pattern as connected node finding, observed at a remote node</td>
+</tr>
+<tr>
+<td>Channel Utilization Spike</td>
+<td>Same gates as connected node (rolling average, min samples, cooldown)</td>
+<td>Warning</td>
+<td>Sudden congestion at a remote node's location</td>
+</tr>
+<tr>
+<td>Wideband Noise Floor</td>
+<td>CU &gt; 25%, SNR &lt; 0 dB</td>
+<td>Warning</td>
+<td>Last-hop SNR only; elevated noise floor at the remote node</td>
+</tr>
+<tr>
+<td>Fringe / Weak Coverage</td>
+<td>CU ≤ 10%, SNR &lt; 0 dB</td>
+<td>Info</td>
+<td>Node is at the edge of mesh coverage; low activity and poor signal</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-foreign-lora-detection">4. Foreign LoRa Detection</h2>
+<p>Foreign LoRa detection identifies non-Meshtastic LoRa traffic observed by your connected device's radio. The detection window is the <strong>last 90 minutes</strong>.</p>
+<p><strong>Signal classes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Label</th>
+<th>Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meshcore</code></td>
+<td>MeshCore Activity</td>
+<td>Info</td>
+</tr>
+<tr>
+<td><code>meshtastic</code></td>
+<td>Meshtastic Traffic</td>
+<td>Info</td>
+</tr>
+<tr>
+<td><code>unknown-lora</code></td>
+<td>Unknown LoRa Signal</td>
+<td>Info</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Proximity classification</strong> (from RSSI/SNR):</p>
+<ul>
+<li>Very Close</li>
+<li>Nearby</li>
+<li>Distant</li>
+<li>Unknown Distance</li>
+</ul>
+<p><strong>Escalation:</strong> If MeshCore packets exceed 5 per minute, the finding upgrades to <strong>Potential MeshCore Repeater Conflict</strong> (Warning); indicating a nearby MeshCore repeater that may be competing for airtime on the same frequency.</p>
+<p><strong>Cooldown:</strong> The same (nodeId, class) pair updates at most every 5 minutes to avoid flooding the table.</p>
+<hr />
+<h2 id="5-packet-redundancy">5. Packet Redundancy</h2>
+<p>Packet redundancy measures how many distinct paths each packet travels through the mesh; both RF paths and MQTT. A higher redundancy score means a node is reachable via multiple independent routes, which improves reliability.</p>
+<p><strong>Where it appears:</strong></p>
+<ul>
+<li>NodeListPanel "Redund." column (sortable)</li>
+<li>NodeDetailModal "Connection Health %" row + collapsible "Path History" in the Routing Health section</li>
+</ul>
+<p><strong>Tracking:</strong> The last 20 packets per node are tracked. For each packet, the number of distinct observed paths (RF + MQTT) is recorded.</p>
+<p><strong>Score formula:</strong></p>
+<pre><code>score = min(round((maxPaths - 1) / 3 × 100), 100)
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>maxPaths</th>
+<th>Score</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0%</td>
+<td>Single path only</td>
+</tr>
+<tr>
+<td>2</td>
+<td>33%</td>
+<td>One echo</td>
+</tr>
+<tr>
+<td>3</td>
+<td>67%</td>
+<td>Two echoes</td>
+</tr>
+<tr>
+<td>4+</td>
+<td>100%</td>
+<td>Three or more echoes</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Display:</strong></p>
+<ul>
+<li><code>+N</code> echoes where N = maxPaths − 1</li>
+<li>≥ 3 echoes: lime green (excellent redundancy)</li>
+<li>1–2 echoes: gray</li>
+<li>0 echoes: muted dash</li>
+</ul>
+<p><strong>Cache:</strong> 15-minute TTL per packet, maximum 2000 entries before cleanup.</p>
+<hr />
+<h2 id="6-map-visualizations">6. Map Visualizations</h2>
+<h3 id="channel-utilization-halos">Channel Utilization Halos</h3>
+<p>Toggle: <strong>"Show channel utilization halos on map"</strong> in DiagnosticsPanel.</p>
+<p>Halos appear as colored circles around node positions, sized relative to channel utilization.</p>
+<table>
+<thead>
+<tr>
+<th>CU range</th>
+<th>Color</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&lt; 15%</td>
+<td>Green</td>
+</tr>
+<tr>
+<td>15–30%</td>
+<td>Yellow</td>
+</tr>
+<tr>
+<td>31–50%</td>
+<td>Orange</td>
+</tr>
+<tr>
+<td>≥ 51%</td>
+<td>Red</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Radius:</strong> <code>(CU / 100) × 14</code> pixels.</p>
+<h3 id="routing-anomaly-halos">Routing Anomaly Halos</h3>
+<p>Toggle: <strong>"Show routing anomaly halos on map"</strong> in DiagnosticsPanel.</p>
+<table>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Style</th>
+<th>Radius</th>
+<th>Animation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error</td>
+<td>Red dashed circle</td>
+<td>500m</td>
+<td>Fast pulse (1.4s)</td>
+</tr>
+<tr>
+<td>Warning</td>
+<td>Amber dashed circle</td>
+<td>500m</td>
+<td>Slow pulse (2s)</td>
+</tr>
+<tr>
+<td>Info</td>
+<td>Blue thin circle</td>
+<td>350m</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-mqtt-filtering">7. MQTT Filtering</h2>
+<h3 id="global-ignore-mqtt">Global Ignore MQTT</h3>
+<p>Checkbox in DiagnosticsPanel settings.</p>
+<p>When enabled:</p>
+<ul>
+<li>MQTT-only nodes are dimmed in NodeListPanel (<code>opacity-50</code>, strikethrough on name/short name)</li>
+<li><code>hop_goblin</code> and <code>impossible_hop</code> are skipped for MQTT-only nodes</li>
+<li>All nodes are re-analyzed immediately</li>
+</ul>
+<h3 id="per-node-mqtt-ignore">Per-Node MQTT Ignore</h3>
+<p>Toggle in NodeDetailModal ("MQTT Ignore" row); pill button in the anomaly table Action column.</p>
+<ul>
+<li>Same skip logic as global ignore, but scoped to one node</li>
+<li>Persisted to <code>localStorage['mesh-client:mqttIgnoredNodes']</code></li>
+<li>Active nodes shown as yellow badge in DiagnosticsPanel "Per-Node MQTT Filters" section</li>
+<li>Active nodes show a yellow "MQTT Ignored" badge in the NodeDetailModal header</li>
+</ul>
+<h3 id="hybrid-nodes">Hybrid Nodes</h3>
+<p>A hybrid node has been heard via both RF and MQTT in the current session. For hybrid nodes, <code>hop_goblin</code> still fires (unlike MQTT-only nodes) but adds a yellow advisory note suggesting per-node MQTT filtering as a first diagnostic step before adjusting node placement.</p>
+<hr />
+<h2 id="8-environment-profiles">8. Environment Profiles</h2>
+<p>The environment profile adjusts detection thresholds to account for different RF propagation environments.</p>
+<p>Selected in DiagnosticsPanel settings via a segmented control.</p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>Distance multiplier</th>
+<th>Hop threshold</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Standard</td>
+<td>1×</td>
+<td>2 hops</td>
+<td>Rural / open terrain</td>
+</tr>
+<tr>
+<td>City</td>
+<td>1.6×</td>
+<td>3 hops</td>
+<td>Dense urban environment with buildings blocking RF</td>
+</tr>
+<tr>
+<td>Canyon</td>
+<td>2.6×</td>
+<td>4 hops</td>
+<td>Mountainous or canyon terrain with significant multipath</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Low-accuracy GPS:</strong> When your position is derived from IP geolocation (city-level only), distance thresholds are doubled automatically in addition to any profile multiplier. A yellow banner appears in the diagnostics panel indicating reduced accuracy.</p>
+<hr />
+<h2 id="9-node-status-thresholds">9. Node Status Thresholds</h2>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Condition</th>
+<th>Color</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Online</td>
+<td>Last heard &lt; 2 hours</td>
+<td>Green</td>
+</tr>
+<tr>
+<td>Stale</td>
+<td>Last heard 2–72 hours</td>
+<td>Yellow</td>
+</tr>
+<tr>
+<td>Offline</td>
+<td>Last heard ≥ 72 hours, or never heard</td>
+<td>Gray</td>
+</tr>
+</tbody>
+</table>
+<p><strong>SNR quality</strong> (used in path traces and neighbor SNR bars):</p>
+<table>
+<thead>
+<tr>
+<th>SNR</th>
+<th>Quality</th>
+<th>Color</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>≥ 5 dB</td>
+<td>Good</td>
+<td>Green</td>
+</tr>
+<tr>
+<td>0–4 dB</td>
+<td>Marginal</td>
+<td>Yellow</td>
+</tr>
+<tr>
+<td>&lt; 0 dB</td>
+<td>Poor</td>
+<td>Red</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="10-key-source-files">10. Key Source Files</h2>
+<p>For contributors who want to modify or extend the diagnostics system:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="src/renderer/stores/diagnosticsStore.ts"><code>src/renderer/stores/diagnosticsStore.ts</code></a></td>
+<td>Zustand store: anomaly state, persistence, MQTT ignore sets, foreign LoRa records</td>
+</tr>
+<tr>
+<td><a href="src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts"><code>src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts</code></a></td>
+<td>Hop anomaly detection (hop_goblin, bad_route, impossible_hop, route_flapping)</td>
+</tr>
+<tr>
+<td><a href="src/renderer/lib/diagnostics/RFDiagnosticEngine.ts"><code>src/renderer/lib/diagnostics/RFDiagnosticEngine.ts</code></a></td>
+<td>RF signal analysis (connected node + remote node findings)</td>
+</tr>
+<tr>
+<td><a href="src/renderer/lib/diagnostics/diagnosticRows.ts"><code>src/renderer/lib/diagnostics/diagnosticRows.ts</code></a></td>
+<td>Row merge/prune utilities, default max-age values</td>
+</tr>
+<tr>
+<td><a href="src/renderer/lib/foreignLoraDetection.ts"><code>src/renderer/lib/foreignLoraDetection.ts</code></a></td>
+<td>Foreign LoRa packet classification and proximity scoring</td>
+</tr>
+<tr>
+<td><a href="src/renderer/components/DiagnosticsPanel.tsx"><code>src/renderer/components/DiagnosticsPanel.tsx</code></a></td>
+<td>Tab 8 UI: health band + counts, anomaly table, settings</td>
+</tr>
+<tr>
+<td><a href="src/renderer/components/NodeDetailModal.tsx"><code>src/renderer/components/NodeDetailModal.tsx</code></a></td>
+<td>Per-node detail overlay: routing health, MQTT ignore toggle</td>
+</tr>
+<tr>
+<td><a href="src/renderer/components/NodeInfoBody.tsx"><code>src/renderer/components/NodeInfoBody.tsx</code></a></td>
+<td>RF findings section, redundancy path history, congestion block</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-technical-reference">11. Technical Reference</h2>
+<p>This section documents the exact protocol and hardware mechanisms behind each diagnostic finding. Thresholds are quoted directly from the source code.</p>
+<hr />
+<h3 id="111-rf-findings-connected-node">11.1 RF Findings: Connected Node</h3>
+<h4 id="utilization-vs-tx">Utilization vs. TX</h4>
+<p><strong>Trigger:</strong> <code>channel_utilization &gt; 25%</code> (<code>HIGH_CU</code>) and <code>air_util_tx &lt; 5%</code> (<code>LOW_TX</code>)</p>
+<p><strong>Mechanism:</strong> Meshtastic uses CSMA/CA (Carrier Sense Multiple Access with Collision Avoidance). Before transmitting, the LoRa radio performs a Channel Activity Detection (CAD) check. <code>channel_utilization</code> counts the fraction of time the radio detected any RF energy on the channel; including non-decodable signals. <code>air_util_tx</code> counts only the time <em>your</em> radio was actually transmitting. When CU is high but TX is very low, the radio is repeatedly sensing a busy channel and backing off; it cannot transmit because it keeps losing the CAD check.</p>
+<p><strong>Fields:</strong> <code>channel_utilization</code> (% of time channel was active in the last stats window, delivered via <code>NodeInfo.DeviceMetrics</code>); <code>air_util_tx</code> (% of the same window your node was actually on air).</p>
+<p><strong>Common sources:</strong> Co-located high-power transmitters (other LoRa gateways or repeaters on the same channel); local mesh congestion from nodes with high hop limits flooding the channel; or a non-LoRa wideband signal raising the energy floor.</p>
+<p><strong>Mitigation:</strong> Reduce hop limits on nearby high-traffic nodes; relocate antenna away from co-located transmitters; switch to a less-congested frequency plan.</p>
+<hr />
+<h4 id="non-lora-noise-rfi">Non-LoRa Noise / RFI</h4>
+<p><strong>Trigger:</strong> <code>channel_utilization &gt; 25%</code>, <code>num_packets_rx &gt;= 5</code> (<code>MIN_SAMPLE</code>), and <code>num_packets_rx_bad === 0</code></p>
+<p><strong>Mechanism:</strong> The LoRa radio's CAD/energy-detect circuit triggers on any RF energy above threshold (~−120 dBm), raising <code>channel_utilization</code>. But non-LoRa signals do not carry a valid LoRa preamble/sync word. When the radio detects energy without a valid preamble it does not even attempt demodulation, so <code>num_packets_rx_bad</code> stays at 0. The zero bad-packet criterion is what distinguishes wideband RFI from LoRa interference: real LoRa signals (even from foreign networks) produce demodulation attempts and CRC failures; pure noise or non-LoRa wideband sources do not.</p>
+<p><strong>Fields:</strong> <code>num_packets_rx_bad</code> must be exactly 0; <code>num_packets_rx</code> must be ≥ 5 to ensure the sample size is meaningful.</p>
+<p><strong>Common sources:</strong> DC motor brushes and variable-frequency drives (900 MHz harmonics); switching-mode power supplies; other ISM-band devices operating in continuous-wave mode (older cordless phones, some baby monitors).</p>
+<p><strong>Mitigation:</strong> Identify the noise source with a spectrum analyzer or SDR. Physically separate the antenna from nearby electronics. A bandpass or SAW filter on the antenna feed can attenuate out-of-band energy before it reaches the LoRa front end.</p>
+<hr />
+<h4 id="900-mhz-industrial-interference">900 MHz Industrial Interference</h4>
+<p><strong>Trigger:</strong> <code>num_packets_rx_bad / num_packets_rx &gt; 20%</code> (<code>SPIKE_BAD_RATE</code>) and <code>channel_utilization &gt; 25%</code></p>
+<p><strong>Mechanism:</strong> 900 MHz ISM-band industrial devices; smart meters, SCADA telemetry, agricultural sensors; typically use FSK or GFSK modulation. The LoRa radio's CAD circuit detects their energy (raising CU) and in many cases detects what resembles a LoRa preamble, triggering a full demodulation attempt that fails CRC because the modulation is incompatible. The result is a high <code>num_packets_rx_bad / num_packets_rx</code> ratio alongside elevated CU. The &gt;20% bad-rate threshold (higher than the 5–10% Hidden Terminal band) reflects the bursty, high-power nature of industrial transmitters.</p>
+<p><strong>Fields:</strong> <code>num_packets_rx_bad</code>, <code>num_packets_rx</code>, <code>channel_utilization</code>; all reported in <code>DeviceMetrics</code> / LocalStats telemetry packets.</p>
+<p><strong>Common sources:</strong> AMI smart meters (e.g., Itron, Landis+Gyr, Sensus operating on 902–928 MHz); agricultural IoT networks; oil/gas pipeline SCADA systems; municipal water metering.</p>
+<p><strong>Mitigation:</strong> Channel-hop to a less-contested sub-band (if your region and firmware support it); install a cavity or bandpass filter for the specific Meshtastic channel frequency. For permanent base-station installs in dense smart-meter areas, a SAW filter is often required.</p>
+<hr />
+<h4 id="channel-utilization-spike">Channel Utilization Spike</h4>
+<p><strong>Trigger:</strong> Current <code>channel_utilization &gt; 2×</code> 30-minute rolling average, with gates: ≥ 12 samples, ≥ 30-minute span, rolling average ≥ 1%. 15-minute cooldown per node before re-firing.</p>
+<p><strong>Mechanism:</strong> The detector maintains a rolling 24-hour history of <code>channel_utilization</code> samples in <code>diagnosticsStore.cuHistory</code> (one entry per NodeInfo update). <code>computeCuStats24h</code> computes the rolling average over the pruned sample window. A spike fires when current CU exceeds 2× that baseline. The 15-minute cooldown (<code>cuSpikeLastFired</code> map in <code>RFDiagnosticEngine</code>) prevents the same node from re-firing while CU remains elevated. Cooldown state is cleared by <code>clearDiagnostics()</code>.</p>
+<p><strong>Fields:</strong> Current <code>channel_utilization</code> vs. stored per-node <code>CuSample[]</code> history in diagnosticsStore.</p>
+<p><strong>Common sources:</strong> Sudden network event (new repeater powered on, MQTT downlink storm, firmware retransmission loop); external interference source that just came online; a scheduled transmitter on a recurring duty cycle.</p>
+<p><strong>Mitigation:</strong> Determine whether the spike is sustained or transient. If sustained, treat as mesh congestion or external interference. If it correlates with a time pattern, a scheduled transmitter may be nearby.</p>
+<hr />
+<h4 id="mesh-congestion">Mesh Congestion</h4>
+<p><strong>Trigger:</strong> <code>num_rx_dupe / num_packets_rx &gt; 15%</code> (<code>HIGH_DUPE_RATE</code>)</p>
+<p><strong>Mechanism:</strong> The Meshtastic firmware maintains a duplicate-detection window keyed by packet ID. When a node receives a packet it has already processed, it increments <code>num_rx_dupe</code> without rebroadcasting. A high duplicate rate means many nodes are re-forwarding the same packets; typically caused by too many nodes having high hop limits, causing the mesh to flood rather than route. The client-side <code>recordDuplicate()</code> in diagnosticsStore also feeds this counter from MQTT-observed duplicates.</p>
+<p><strong>Fields:</strong> <code>num_rx_dupe</code>, <code>num_packets_rx</code> from <code>DeviceMetrics</code>.</p>
+<p><strong>Common sources:</strong> Too many routers/repeaters in a dense mesh with default hop limits; MQTT-RF loop where the same packet arrives via both RF and the MQTT broker; overlapping repeater coverage with no intelligent routing.</p>
+<p><strong>Mitigation:</strong> Reduce hop limits on nearby routers (3 is often sufficient for most networks); enable the MQTT duplicate-ignore feature for bridged nodes; review <code>ROUTER</code> vs. <code>CLIENT_MUTE</code> roles to reduce unnecessary rebroadcasting.</p>
+<hr />
+<h4 id="hidden-terminal-risk">Hidden Terminal Risk</h4>
+<p><strong>Trigger:</strong> <code>channel_utilization &gt; 40%</code> (<code>HIDDEN_TERMINAL_CU</code>), bad packet rate in the range 5–10% (<code>HIDDEN_TERMINAL_BAD_MIN</code> / <code>HIGH_BAD_RATE</code>), and the Industrial finding is not already present.</p>
+<p><strong>Mechanism:</strong> The "hidden terminal" problem occurs when two transmitters (A and C) are both within range of your node (B) but cannot hear each other. Both use CSMA and check the channel before transmitting; but since they cannot detect each other's transmissions, both conclude the channel is clear simultaneously and transmit at the same time. Your node receives both overlapping signals, causing a collision: the LoRa preamble is detected (so demodulation is attempted) but the combined signal fails CRC. The 5–10% bad-rate band is specific to this scenario: below 5% is noise floor, above 10% is caught by the general LoRa Collision finding (or Industrial if &gt;20%). The Industrial finding is evaluated first; if present, it blocks this finding.</p>
+<p><strong>Fields:</strong> <code>channel_utilization</code>, <code>num_packets_rx_bad</code>, <code>num_packets_rx</code>.</p>
+<p><strong>Common sources:</strong> Dense deployments where many nodes are at the edge of range to a central gateway; hilltop gateway nodes receiving from many edge nodes that cannot hear each other; hub-and-spoke repeater topologies.</p>
+<p><strong>Mitigation:</strong> Use directional antennas to reduce the number of simultaneous transmitters in view; reduce hop limits to limit the number of nodes routing through this node; consider splitting into multiple channels.</p>
+<hr />
+<h4 id="lora-collision-or-corruption">LoRa Collision or Corruption</h4>
+<p><strong>Trigger:</strong> <code>num_packets_rx_bad / num_packets_rx &gt; 10%</code> (<code>HIGH_BAD_RATE</code>), catch-all when the Industrial finding is not present.</p>
+<p><strong>Mechanism:</strong> The LoRa radio decoded a valid-looking preamble/sync word but the payload CRC failed. This indicates the packet was either corrupted in flight (multipath, near-far problem) or was transmitted by a non-Meshtastic LoRa network using the same frequency and spreading factor but a different sync word or modulation depth. Unlike the Non-LoRa RFI finding (which never produces demodulation attempts), this finding requires that the radio actually tried to decode the packet.</p>
+<p><strong>Fields:</strong> <code>num_packets_rx_bad / num_packets_rx</code>.</p>
+<p><strong>Common sources:</strong> LoRaWAN networks operating on the same channel (common in the 902–928 MHz US ISM band); other Meshtastic networks on the same channel with different PSKs; near-far collisions where a strong nearby transmitter overwhelms a weaker distant packet mid-reception.</p>
+<p><strong>Mitigation:</strong> Channel planning to avoid LoRaWAN frequencies; directional antenna with a bandpass filter; coordinate frequency and spreading-factor usage with operators of co-located LoRa deployments.</p>
+<hr />
+<h3 id="112-rf-findings-remote-nodes">11.2 RF Findings: Remote Nodes</h3>
+<p>SNR-based findings (<code>Wideband Noise Floor</code>, <code>Fringe</code>) are only emitted when <code>snrMeaningfulForNodeDiagnostics</code> returns <code>true</code>; which requires that the remote node is a 0-hop direct RF neighbor, ensuring the SNR value reflects the actual link to your node rather than a multi-hop path.</p>
+<hr />
+<h4 id="external-interference">External Interference</h4>
+<p><strong>Trigger:</strong> <code>channel_utilization &gt; 25%</code> and <code>air_util_tx &lt; 5%</code> on a remote node.</p>
+<p><strong>Mechanism:</strong> Same CSMA backoff pattern as the connected-node "Utilization vs. TX" finding, but observed on a remote node via its <code>DeviceMetrics</code> telemetry. The remote node's radio is sensing a busy channel and reducing its own transmissions.</p>
+<p><strong>Telemetry path:</strong> The remote node reports <code>channel_utilization</code> and <code>air_util_tx</code> in its <code>NodeInfo</code> packet; your connected device receives this and forwards it to the app via the mesh. Because this is a remote observation, causes are specific to that node's physical location, not your environment.</p>
+<hr />
+<h4 id="wideband-noise-floor">Wideband Noise Floor</h4>
+<p><strong>Trigger:</strong> <code>channel_utilization &gt; 25%</code> and <code>SNR &lt; 0 dB</code> (0-hop RF neighbor only).</p>
+<p><strong>Mechanism:</strong> Elevated CU combined with a negative SNR on the last hop indicates that the remote node's location has an elevated RF noise floor. SNR in Meshtastic is the ratio of the received signal power to the noise floor at the <em>receiver</em>; a negative value means the noise floor is higher than the signal (the packet still decoded because LoRa spread-spectrum can operate below the noise floor). This combination implies that even though many transmissions are detected, signal quality is degraded by broadband noise at that location.</p>
+<p><strong>Fields:</strong> <code>snr</code> from the most recent packet received from this node (last-hop only, 0-hop RF).</p>
+<p><strong>Common sources:</strong> Faulty electronics in the same structure as the node; proximity to power lines with corona discharge; poorly shielded switching supplies near the antenna.</p>
+<hr />
+<h4 id="fringe-weak-coverage">Fringe / Weak Coverage</h4>
+<p><strong>Trigger:</strong> <code>channel_utilization ≤ 10%</code> and <code>SNR &lt; 0 dB</code> (0-hop RF neighbor only).</p>
+<p><strong>Mechanism:</strong> Low CU means the node is not hearing much mesh traffic; it is on the periphery of coverage or in an RF shadow. The negative SNR confirms the link quality is marginal. This is informational: the node is functional but poorly connected to the rest of the mesh.</p>
+<p><strong>Note:</strong> Because severity is <code>info</code>, this finding does not contribute to the error or warning counts in the health status band.</p>
+<hr />
+<h3 id="113-routing-anomalies">11.3 Routing Anomalies</h3>
+<h4 id="hop_goblin-routingdiagnosticenginedetecthopgoblin">hop_goblin (<code>RoutingDiagnosticEngine.detectHopGoblin()</code>)</h4>
+<p><strong>What it measures:</strong> The <code>hops_away</code> field from the received NodeInfo packet vs. the haversine distance between your connected node's GPS coordinates and the remote node's GPS coordinates. <code>hops_away</code> is the hop count embedded in the Meshtastic packet header by the originating firmware; it is decremented by each relay node and thus reflects how many RF hops the packet actually traversed.</p>
+<p><strong>Distance computation:</strong> Uses <code>haversineDistanceKm()</code> from <code>nodeStatus.ts</code>; a standard great-circle distance formula. Requires that both your connected node and the remote node have valid non-null GPS coordinates in their NodeInfo.</p>
+<p><strong>Why GPS is required:</strong> Earlier implementations used SNR + hops heuristics, but <code>rxSnr</code> is last-hop only (meaningless for multi-hop originators and MQTT-only nodes). GPS distance is the only reliable proxy for expected hop count.</p>
+<p><strong>Note on <code>distanceOffsetKm</code>:</strong> This parameter is <code>0</code> in the current implementation. Only <code>distanceMultiplier</code> varies by environment profile. The offset exists as a code provision for future user-adjustable baseline correction.</p>
+<hr />
+<h4 id="bad_route-routingdiagnosticenginedetectbadroute">bad_route (<code>RoutingDiagnosticEngine.detectBadRoute()</code>)</h4>
+<p><strong>Duplicate tracking:</strong> <code>diagnosticsStore.packetStats</code> accumulates <code>{ total, duplicates }</code> per originating node. <code>total</code> is incremented on every <code>processNodeUpdate</code> call for that node; <code>duplicates</code> is incremented by <code>recordDuplicate()</code>, which is called from the MQTT dedup handler and the RF dedup path in <code>useDevice.ts</code>. The ratio <code>duplicates / total</code> is evaluated against the 55% threshold.</p>
+<p><strong>Close-in over-hopping:</strong> Uses the same haversine distance as hop_goblin but converted to miles (1 km = 0.621371 mi); threshold is 5 miles × profile multiplier. The hop threshold used here is <code>hopsThreshold + 2</code>; for Standard profile that is 4, City 5, Canyon 6.</p>
+<p><strong>Why 55% for routing loop:</strong> At 55%+ duplication, the packet is arriving from multiple mesh paths more often than not, indicating the routing algorithm is forwarding it redundantly; characteristic of a routing loop or an over-configured flood mesh.</p>
+<hr />
+<h4 id="impossible_hop-routingdiagnosticenginedetectimpossiblehop">impossible_hop (<code>RoutingDiagnosticEngine.detectImpossibleHop()</code>)</h4>
+<p><strong>The 0-hop case:</strong> <code>hops_away === 0</code> means the originating firmware stamped this packet as a direct transmission (no relays). In a legitimate direct link, 0 hops is only possible within LoRa range (typically ≤ ~20 km under ideal conditions). The 100-mile (~160 km) threshold is deliberately conservative to avoid false positives.</p>
+<p><strong>Why this happens:</strong> Most commonly seen when an MQTT-bridged node appears to have 0 hops; the MQTT message does not carry hop-count metadata, so the app may receive the node without a hop field, which defaults to 0. Per-node MQTT ignore resolves this in most cases. Can also indicate stale GPS where a node moved but has not updated its position.</p>
+<p><strong>MeshCore skip:</strong> <code>capabilities?.hasHopCount === false</code> causes this check to be bypassed entirely.</p>
+<hr />
+<h4 id="route_flapping-routingdiagnosticenginedetectrouteflapping">route_flapping (<code>RoutingDiagnosticEngine.detectRouteFlapping()</code>)</h4>
+<p><strong>Hop history:</strong> <code>diagnosticsStore.hopHistory</code> stores <code>{ t: timestamp, h: hops_away }</code> tuples per node, pruned to a 24-hour window. The flapping detector filters to the last 10 minutes and counts transitions where <code>recent[i].h !== recent[i-1].h</code>. More than 3 transitions fires the warning.</p>
+<p><strong>What this looks like:</strong> A node whose hop count alternates between 2 and 3 on successive packets over 10 minutes has <code>changes = 6</code> → fires. A node that was 3 hops and settled to 2 hops has <code>changes = 1</code> → does not fire.</p>
+<p><strong>Common causes:</strong> Two relay paths of similar quality competing; a relay node that is intermittently reachable (marginal RF link); environmental RF changes (vehicles, weather, multipath) altering which relay wins the forwarding race.</p>
+<hr />
+<h3 id="114-foreign-lora-detection">11.4 Foreign LoRa Detection</h3>
+<h4 id="packet-classification-foreignloradetectionclassifypayload">Packet classification (<code>foreignLoraDetection.classifyPayload()</code>)</h4>
+<p>The classifier operates on raw LoRa payload bytes received by the radio before any decryption:</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Byte condition</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MeshCore frame-start</td>
+<td><code>raw[0] === 0x3c</code> (<code>&lt;</code> in ASCII)</td>
+<td><code>meshcore</code></td>
+</tr>
+<tr>
+<td>Meshtastic short packet</td>
+<td><code>raw.length</code> 8–15 AND bytes 0–3 = valid destId AND bytes 4–7 = valid senderId (both non-zero, non-broadcast <code>0xFFFFFFFF</code>)</td>
+<td><code>meshtastic</code></td>
+</tr>
+<tr>
+<td>Meshtastic full header</td>
+<td><code>raw.length &gt;= 16</code> AND bytes 0–3 = valid destId AND bytes 4–7 = valid senderId AND byte 12 flags: <code>hop_limit</code> (bits [2:0]) ≤ <code>hop_start</code> (bits [7:5])</td>
+<td><code>meshtastic</code></td>
+</tr>
+<tr>
+<td>Fallback</td>
+<td>everything else</td>
+<td><code>unknown-lora</code></td>
+</tr>
+</tbody>
+</table>
+<p>Short packets (8–15 bytes) pass on ID checks alone: MeshCore frames always begin with <code>0x3c</code>, so any non-0x3c payload of this length with valid IDs reliably indicates Meshtastic. For full 16-byte headers, the flags byte (byte 12) is also validated: <code>hop_limit</code> (bits [2:0]) must be ≤ <code>hop_start</code> (bits [7:5]). This structural invariant holds for all Meshtastic packets including direct-only devices (<code>hop_start=0, hop_limit=0</code>), and filters out MeshCore encrypted packets whose first 8 bytes happen to look like valid Meshtastic node IDs.</p>
+<p><strong>MeshCore log-pattern detection</strong> (<code>containsMeshCorePattern()</code>): Device log messages mentioning decode failures and containing <code>0x3c</code> (or <code>&lt;</code>) are matched via regex; this catches MeshCore traffic even when only the log stream is available (no raw packet data).</p>
+<h4 id="proximity-classification-classifyproximity">Proximity classification (<code>classifyProximity()</code>)</h4>
+<p>RSSI is the primary signal; SNR is used as fallback when RSSI is unavailable.</p>
+<table>
+<thead>
+<tr>
+<th>RSSI</th>
+<th>SNR (fallback)</th>
+<th>Label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&gt; −80 dBm</td>
+<td>&gt; 8 dB</td>
+<td>Very Close</td>
+</tr>
+<tr>
+<td>−95 to −80 dBm</td>
+<td>2–8 dB</td>
+<td>Nearby</td>
+</tr>
+<tr>
+<td>&lt; −95 dBm</td>
+<td>&lt; 2 dB</td>
+<td>Distant</td>
+</tr>
+<tr>
+<td>neither available</td>
+<td>neither available</td>
+<td>Unknown Distance</td>
+</tr>
+</tbody>
+</table>
+<h4 id="meshcore-rate-escalation">MeshCore rate escalation</h4>
+<p>A module-level <code>RollingRateCounter(60_000)</code> counts MeshCore-class packets in the last 60 seconds. When <code>getRate() &gt; 5</code> (more than 5 packets/minute), the diagnostic row is promoted from Info to Warning with the label "Potential MeshCore Repeater Conflict." This threshold targets active repeater behavior; a repeater forwards many packets per minute; vs. an occasional passthrough.</p>
+<h4 id="5-minute-cooldown">5-minute cooldown</h4>
+<p><code>rfRowCooldowns: Map&lt;string, number&gt;</code> is keyed by <code>"nodeId:packetClass"</code>. The same sender/class combination updates at most once every 5 minutes, preventing table noise during sustained interference events.</p>
+<hr />
+<h3 id="115-packet-redundancy">11.5 Packet Redundancy</h3>
+<h4 id="data-model">Data model</h4>
+<p>Each incoming packet (RF or MQTT) calls <code>recordPacketPath(packetId, fromNodeId, path)</code> in diagnosticsStore. Packets with <code>packetId === 0</code> are rejected (protobuf default / missing field). Each record stores an array of <code>PacketPath</code> objects: <code>{ transport: 'rf' | 'mqtt', snr?, rssi?, timestamp }</code>.</p>
+<h4 id="the-maxpaths-metric">The <code>maxPaths</code> metric</h4>
+<p>For each <code>PacketRecord</code>, <code>paths.length</code> is the number of times that specific packet arrived via distinct observed paths. <code>maxPaths</code> is the maximum <code>paths.length</code> across the last 20 packets for a given node; the highest observed redundancy under current conditions.</p>
+<p><strong>Why max, not average:</strong> A single highly-redundant packet proves the mesh <em>can</em> deliver multiple paths to this node. The max represents the theoretical ceiling under current conditions; an average would be pulled down by single-path packets during quiet periods.</p>
+<h4 id="cache-management">Cache management</h4>
+<p>15-minute TTL per <code>PacketRecord</code> (keyed by <code>packetId</code>). When the cache exceeds 2000 entries, all entries older than 15 minutes are pruned. The packetCache is session-only and is not persisted to disk.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
