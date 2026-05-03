@@ -34,13 +34,18 @@ describe('deleteNodesWithoutLongname SQL', () => {
     expect(DB_SOURCE).toContain("printf('!%08x', node_id)");
   });
 
-  it('all three conditions appear in the same DELETE statement', () => {
+  it("deletes MeshCore-style Node- || printf('%X', node_id) auto-names", () => {
+    expect(DB_SOURCE).toContain("long_name = 'Node-' || printf('%X', node_id)");
+  });
+
+  it('all prune conditions appear in the same DELETE statement', () => {
     const match = /DELETE FROM nodes[^;]*long_name[^;]*/s.exec(DB_SOURCE);
     expect(match).not.toBeNull();
     const stmt = match![0];
     expect(stmt).toContain('long_name IS NULL');
     expect(stmt).toContain("TRIM(long_name) = ''");
     expect(stmt).toContain("printf('!%08x', node_id)");
+    expect(stmt).toContain("long_name = 'Node-' || printf('%X', node_id)");
   });
 
   it('does not delete favorited nodes', () => {

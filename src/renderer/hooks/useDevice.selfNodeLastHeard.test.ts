@@ -13,7 +13,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { getNodeStatus } from '../lib/nodeStatus';
-import { computeNodeInfoLastHeardMs, emptyNode } from './useDevice';
+import {
+  computeNodeInfoLastHeardMs,
+  emptyNode,
+  mergeMeshtasticUserPacketLastHeard,
+} from './useDevice';
 
 const MY_NODE_NUM = 0xdeadbeef;
 
@@ -44,5 +48,24 @@ describe('self-node last_heard initialisation (#272)', () => {
   it('non-self node with info.lastHeard=0 and existing=0 stays offline', () => {
     const lastHeardMs = computeNodeInfoLastHeardMs(0, 0, false);
     expect(getNodeStatus(lastHeardMs)).toBe('offline');
+  });
+});
+
+describe('mergeMeshtasticUserPacketLastHeard', () => {
+  it('does not bump during configure replay', () => {
+    expect(mergeMeshtasticUserPacketLastHeard(0, Date.now(), true)).toBe(0);
+    expect(mergeMeshtasticUserPacketLastHeard(1_000_000, Date.now(), true)).toBe(1_000_000);
+  });
+
+  it('ignores invalid rx times', () => {
+    expect(mergeMeshtasticUserPacketLastHeard(1000, 0, false)).toBe(1000);
+    expect(mergeMeshtasticUserPacketLastHeard(1000, NaN, false)).toBe(1000);
+  });
+
+  it('takes max of existing and packet rx when post-configure', () => {
+    const rx = 5_000_000;
+    expect(mergeMeshtasticUserPacketLastHeard(0, rx, false)).toBe(rx);
+    expect(mergeMeshtasticUserPacketLastHeard(10_000_000, rx, false)).toBe(10_000_000);
+    expect(mergeMeshtasticUserPacketLastHeard(1000, rx, false)).toBe(rx);
   });
 });

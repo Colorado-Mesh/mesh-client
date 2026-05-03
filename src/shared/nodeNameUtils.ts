@@ -25,6 +25,17 @@ export function isPlaceholderLongName(longName: string, nodeId: number): boolean
   return longName.trim().toLowerCase() === expected.toLowerCase();
 }
 
+/** True when we still need real identity (empty or !xxxxxxxx placeholder long_name). */
+export function meshtasticNodeLacksDisplayIdentity(
+  node: { long_name?: string } | undefined,
+  nodeId: number,
+): boolean {
+  if (!node) return true;
+  const ln = (node.long_name ?? '').trim();
+  if (!ln) return true;
+  return isPlaceholderLongName(ln, nodeId);
+}
+
 /** True when shortName matches the firmware/client default (last 4 hex of node id). */
 export function isDefaultShortName(shortName: string, nodeId: number): boolean {
   if (!shortName.trim()) return false;

@@ -1546,7 +1546,7 @@ export default function AppPanel({
                     name: 'Prune Unnamed Nodes',
                     title: 'Prune Unnamed Nodes',
                     message:
-                      'This will permanently delete nodes with no real long name: empty names, auto-generated !hex placeholders, and MQTT-only identities that never received UserInfo. Favorited nodes are kept. They will be re-discovered when they broadcast again.',
+                      'This will permanently delete nodes with no real long name: empty names, auto-generated !hex placeholders, Node-HEX fallbacks tied to the node id, and MQTT-only identities that never received UserInfo. Favorited nodes are kept. They will be re-discovered when they broadcast again.',
                     confirmLabel: 'Prune Unnamed Nodes',
                     danger: true,
                     action: async () => {
