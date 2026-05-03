@@ -119,6 +119,8 @@ WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-
 
 Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-manager.ts` (macOS/Windows), Web Bluetooth IPC on Linux. Serial: `connection.ts`, `serialPortSignature.ts`. Reconnect watchdog: `useDevice.ts`.
 
+**ATT MTU / writes:** Noble `toRadio` writes in `noble-ble-manager.ts` are chunked using negotiated `peripheral.mtu` (sanitized via `src/shared/bleAttWriteLimit.ts`; values below spec min 23 are coerced—NobleMac may log `MTU updated: 20` before a full exchange). Linux Web Bluetooth uses `webbluetooth-ble-manager.ts`; when Chromium exposes `maximumWriteValueLength`, writes are chunked—there is no standard Web API for negotiated MTU ([WebBluetoothCG#383](https://github.com/WebBluetoothCG/web-bluetooth/issues/383)).
+
 ### MQTT
 
 Meshtastic: `mqtt-manager.ts` (AES, protobuf, dedup). MeshCore: `meshcore-mqtt-adapter.ts` (JSON v1 envelope).

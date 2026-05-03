@@ -42,9 +42,14 @@ class FakeCharacteristic extends EventEmitter {
     return this.readQueue.length > 0 ? this.readQueue.shift()! : Buffer.alloc(0);
   }
 
-  async writeAsync(): Promise<void> {
+  public writtenChunks: Buffer[] = [];
+
+  async writeAsync(data?: Buffer): Promise<void> {
     await Promise.resolve();
     this.writeCalls += 1;
+    if (data !== undefined) {
+      this.writtenChunks.push(Buffer.from(data));
+    }
   }
 }
 
@@ -247,5 +252,36 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
     } else {
       expect(fromRadio.readCalls).toBeGreaterThan(readsAfterSubscribe);
     }
+  });
+
+  it('writeToRadio chunks toRadio writes by negotiated ATT MTU (meshcore)', async () => {
+    const mod = await import('./noble-ble-manager');
+    const manager = new mod.NobleBleManager();
+    (manager as any).sessions.set('meshtastic', (manager as any).createSessionState());
+    (manager as any).sessions.set('meshcore', (manager as any).createSessionState());
+    (manager as any).adapterReady = true;
+    (manager as any).lastAdapterState = 'poweredOn';
+
+    const toRadio = new FakeCharacteristic(MESHCORE_RX_UUID, { properties: ['write'] });
+    const fromRadio = new FakeCharacteristic(MESHCORE_TX_UUID, {
+      properties: ['read', 'notify'],
+      readResults: [Buffer.alloc(0)],
+    });
+    const peripheral = new FakePeripheral('meshcore-peripheral', [toRadio, fromRadio]);
+    peripheral.mtu = 50;
+    (manager as any).knownPeripherals.set(peripheral.id, peripheral);
+
+    await manager.connect('meshcore', peripheral.id);
+
+    const payload = Buffer.alloc(100, 0xab);
+    await manager.writeToRadio('meshcore', payload);
+
+    // attMtu 50 → max write-request payload 47; 100 bytes → 47 + 47 + 6
+    expect(toRadio.writeCalls).toBe(3);
+    expect(toRadio.writtenChunks).toHaveLength(3);
+    expect(toRadio.writtenChunks[0].length).toBe(47);
+    expect(toRadio.writtenChunks[1].length).toBe(47);
+    expect(toRadio.writtenChunks[2].length).toBe(6);
+    expect(Buffer.concat(toRadio.writtenChunks).equals(payload)).toBe(true);
   });
 });

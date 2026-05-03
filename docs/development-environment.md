@@ -495,6 +495,8 @@ Linux uses Web Bluetooth (Chromium's built-in BLE API) instead of `@stoprocent/n
 
 The app automatically enables `--enable-experimental-web-platform-features` on Linux at startup.
 
+There is **no portable Web Bluetooth API** for the negotiated ATT MTU ([WebBluetoothCG#383](https://github.com/WebBluetoothCG/web-bluetooth/issues/383)). When Chromium exposes `maximumWriteValueLength` on the TX characteristic, the client chunks `writeValue` accordingly; otherwise it sends each payload in one call.
+
 #### Bluetooth Pairing on Linux
 
 Web Bluetooth may invoke the **Electron pairing handler** during GATT connect. Behavior differs by protocol:

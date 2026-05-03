@@ -25,6 +25,12 @@ See [development-environment.md](development-environment.md#windows) for Python 
 - **Device not discovered**: make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.
 - If BLE is unreliable, prefer Serial (USB) or TCP/HTTP for a stable connection.
 
+#### BLE debug: `mtu=null` and `MTU updated: …` in logs
+
+- After **Noble** `connectAsync`, **`mtu=null`** is common until the stack finishes ATT MTU negotiation.
+- A line like **`MTU updated: 20`** comes from the Noble `mtu` event. ATT_MTU must be **≥ 23** per spec; the client **coerces reported values below 23 to 23** for write sizing (treating odd values such as **20** as a Noble/binding quirk, not a literal 20-octet ATT MTU). A **one-time debug** line may note the raw value when that happens (not a warning).
+- **Slow NodeDB / large config sync over BLE** can still be limited by **`@meshtastic/core`** queue timing (hundreds of ms between queued packets), not only GATT MTU. Use **Log → Analyze** for hints, or try **USB serial** / **TCP** if throughput matters.
+
 **Windows-specific:**
 
 - Before connecting to a MeshCore device over BLE, pair it first in **Settings → Bluetooth & devices → Add device**. Without pairing, the connection appears to succeed but no data is exchanged.

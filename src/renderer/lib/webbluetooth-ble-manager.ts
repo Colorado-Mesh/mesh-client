@@ -1,5 +1,7 @@
 import type { Types } from '@meshtastic/core';
 
+import { BLE_TO_RADIO_PAYLOAD_CAP } from '@/shared/bleAttWriteLimit';
+
 import type { NobleBleSessionId } from './types';
 
 // Error types for Web Bluetooth GATT operations on Linux
@@ -48,6 +50,22 @@ function withGattTimeout<T>(promise: Promise<T>, ms: number, context: string): P
 // Chrome DOMException names that often indicate pairing issues on Linux
 const CHROME_PAIRING_ERROR_NAMES = ['SecurityError', 'NetworkError'];
 
+/**
+ * Chromium exposes `maximumWriteValueLength` on some builds; Web Bluetooth has no standard negotiated-MTU API.
+ * @see https://github.com/WebBluetoothCG/web-bluetooth/issues/383
+ */
+export function probeWebBluetoothToRadioChunkLimitBytes(
+  characteristic: BluetoothRemoteGATTCharacteristic,
+): number | null {
+  const c = characteristic as BluetoothRemoteGATTCharacteristic & {
+    maximumWriteValueLength?: number;
+  };
+  if (typeof c.maximumWriteValueLength === 'number' && c.maximumWriteValueLength > 0) {
+    return Math.min(c.maximumWriteValueLength, BLE_TO_RADIO_PAYLOAD_CAP);
+  }
+  return null;
+}
+
 export function isWebBluetoothPairingError(err: unknown): boolean {
   if (err instanceof DOMException) {
     if (CHROME_PAIRING_ERROR_NAMES.includes(err.name)) {
@@ -79,6 +97,8 @@ export class WebBluetoothManager {
   private fromRadioDescriptorUuids: string[] = [];
   /** When true, `fromRadio` uses GATT readValue pump (Linux/BlueZ may lack CCCD for notify on 2c55…). */
   private meshtasticFromRadioReadPump = false;
+  /** When set, `writeToRadio` splits payloads (Chromium `maximumWriteValueLength`); null = single writeValue. */
+  private toRadioChunkLimitBytes: number | null = null;
   private _pendingDevicePromise?: Promise<BluetoothDevice>;
   private _resolvePendingDevice?: (device: BluetoothDevice) => void;
   private _rejectPendingDevice?: (reason?: unknown) => void;
@@ -342,6 +362,14 @@ export class WebBluetoothManager {
           'GATT characteristic discovery (fromRadio)',
         );
       }
+      this.toRadioChunkLimitBytes = probeWebBluetoothToRadioChunkLimitBytes(
+        this.toRadioCharacteristic,
+      );
+      if (this.toRadioChunkLimitBytes != null) {
+        console.debug(
+          `[WebBluetooth:${this.sessionId}] toRadio chunk limit=${this.toRadioChunkLimitBytes} (maximumWriteValueLength)`,
+        );
+      }
       try {
         const descriptors = await withGattTimeout(
           (
@@ -467,6 +495,7 @@ export class WebBluetoothManager {
     this.fromRadioCharacteristic = null;
     this.fromRadioNotifyHandler = null;
     this.meshtasticFromRadioReadPump = false;
+    this.toRadioChunkLimitBytes = null;
   }
 
   async writeToRadio(data: Uint8Array): Promise<void> {
@@ -474,7 +503,16 @@ export class WebBluetoothManager {
       throw new Error('Not connected');
     }
 
-    await this.toRadioCharacteristic.writeValue(data);
+    const ch = this.toRadioCharacteristic;
+    const limit = this.toRadioChunkLimitBytes;
+    if (limit == null || data.length <= limit) {
+      await ch.writeValue(data);
+    } else {
+      for (let offset = 0; offset < data.length; offset += limit) {
+        const end = Math.min(offset + limit, data.length);
+        await ch.writeValue(data.subarray(offset, end));
+      }
+    }
     if (this.sessionId === 'meshtastic' && this.meshtasticFromRadioReadPump) {
       await this.drainMeshtasticFromRadioReads();
     }

@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 
+import { attMtuOrDefault, maxWriteRequestPayloadBytes } from '../shared/bleAttWriteLimit';
 import { withTimeout } from '../shared/withTimeout';
 import { logDeviceConnection, sanitizeLogMessage } from './log-service';
 
@@ -38,6 +39,10 @@ const BLE_DISCOVERY_TIMEOUT_MS = IS_DARWIN ? 15_000 : 30_000;
 const BLE_SUBSCRIBE_TIMEOUT_MS = IS_DARWIN ? 10_000 : 20_000;
 /** Timeout for noble.startScanning() callback (IPC must always settle; native cb can hang). */
 const BLE_START_SCAN_TIMEOUT_MS = IS_DARWIN ? 15_000 : 30_000;
+/** After GATT subscribe, wait briefly for `peripheral.mtu` when still null (async negotiation on WinRT/Darwin). */
+const BLE_MTU_POST_GATT_WAIT_MS = 1500;
+/** Poll interval while waiting for first `peripheral.mtu` value. */
+const BLE_MTU_POLL_MS = 50;
 
 function normalizeUuid(uuid: string): string {
   return uuid.toLowerCase().replace(/-/g, '');
@@ -140,6 +145,12 @@ interface NobleBleSession {
    * operation; concurrent writes accumulate past Noble's 10-listener limit.
    */
   writeQueue: Promise<void>;
+  /** Sanitized ATT MTU (23–517) from Noble `peripheral.mtu` / `mtu` events; drives write chunking. */
+  attMtuSanitized: number;
+  /** True after first `console.debug` for Noble-reported MTU below 23 (binding quirks, e.g. raw 20 on Darwin). */
+  attMtuSuspiciousLogged: boolean;
+  /** Bound handler removed on disconnect; NobleMac emits `mtu` asynchronously vs `connectAsync`. */
+  peripheralMtuHandler: ((rawMtu: number) => void) | null;
 }
 
 export class NobleBleManager extends EventEmitter {
@@ -238,6 +249,9 @@ export class NobleBleManager extends EventEmitter {
       meshcoreLinuxEarlyReadPollAttempts: 0,
       meshcoreGattInflight: null,
       writeQueue: Promise.resolve(),
+      attMtuSanitized: attMtuOrDefault(null),
+      attMtuSuspiciousLogged: false,
+      peripheralMtuHandler: null,
     };
   }
 
@@ -248,6 +262,16 @@ export class NobleBleManager extends EventEmitter {
   }
 
   private clearSessionState(session: NobleBleSession): void {
+    const peri = session.connectedPeripheral;
+    const mtuHandler = session.peripheralMtuHandler;
+    if (peri && mtuHandler) {
+      try {
+        peri.removeListener?.('mtu', mtuHandler);
+      } catch {
+        // catch-no-log-ok peripheral mtu listener cleanup — session teardown
+      }
+    }
+    session.peripheralMtuHandler = null;
     if (session.meshcoreGattInflight) {
       try {
         session.meshcoreGattInflight.reject(new Error('BLE session cleared'));
@@ -283,6 +307,69 @@ export class NobleBleManager extends EventEmitter {
     session.fromRadioUsedReadPumpFallback = false;
     session.meshcoreLinuxEarlyReadPollAttempts = 0;
     session.writeQueue = Promise.resolve();
+    session.attMtuSanitized = attMtuOrDefault(null);
+    session.attMtuSuspiciousLogged = false;
+  }
+
+  private updateSessionAttMtuFromRaw(
+    sessionId: NobleSessionId,
+    session: NobleBleSession,
+    raw: number | null | undefined,
+    source: 'event' | 'poll',
+  ): void {
+    if (raw != null && typeof raw === 'number' && Number.isFinite(raw) && raw > 0 && raw < 23) {
+      if (!session.attMtuSuspiciousLogged) {
+        session.attMtuSuspiciousLogged = true;
+        console.debug(
+          `[BLE:${sessionId}] reported MTU=${raw} (< spec min 23); treating as ATT default 23 for write sizing (Noble/binding quirk; NobleMac native emits values such as 20 before a full exchange).`,
+        );
+      }
+    }
+    const sanitized = attMtuOrDefault(typeof raw === 'number' ? raw : null);
+    session.attMtuSanitized = sanitized;
+    if (source === 'event') {
+      console.debug(
+        `[BLE:${sessionId}] MTU updated: ${raw} (effective ATT ${sanitized} for writes)`,
+      );
+    }
+  }
+
+  private attachNoblePeripheralMtuListener(
+    sessionId: NobleSessionId,
+    session: NobleBleSession,
+    peripheral: any,
+  ): void {
+    if (session.peripheralMtuHandler) {
+      try {
+        peripheral.removeListener?.('mtu', session.peripheralMtuHandler);
+      } catch {
+        // catch-no-log-ok re-attach mtu listener
+      }
+    }
+    const handler = (rawMtu: number) => {
+      this.updateSessionAttMtuFromRaw(sessionId, session, rawMtu, 'event');
+    };
+    session.peripheralMtuHandler = handler;
+    peripheral.on('mtu', handler);
+    if (peripheral.mtu != null) {
+      this.updateSessionAttMtuFromRaw(sessionId, session, peripheral.mtu as number, 'poll');
+    }
+  }
+
+  private async waitForNoblePeripheralMtuSettled(
+    sessionId: NobleSessionId,
+    session: NobleBleSession,
+    peripheral: any,
+  ): Promise<void> {
+    const deadline = Date.now() + BLE_MTU_POST_GATT_WAIT_MS;
+    while (Date.now() < deadline) {
+      if (peripheral.mtu != null) {
+        this.updateSessionAttMtuFromRaw(sessionId, session, peripheral.mtu as number, 'poll');
+        return;
+      }
+      await new Promise<void>((r) => setTimeout(r, BLE_MTU_POLL_MS));
+    }
+    this.updateSessionAttMtuFromRaw(sessionId, session, peripheral.mtu ?? null, 'poll');
   }
 
   private emitFromRadio(
@@ -807,10 +894,8 @@ export class NobleBleManager extends EventEmitter {
       };
       peripheral.once('disconnect', onDisconnected);
       session.connectedPeripheralDisconnectHandler = onDisconnected;
-      // Log MTU negotiation — WinRT sometimes negotiates asynchronously after connect.
-      peripheral.once('mtu', (mtu: number) => {
-        console.debug(`[BLE:${sessionId}] MTU updated: ${mtu}`);
-      });
+      // Failure point: NobleMac / WinRT may emit `mtu` only after connectAsync; values <23 are coerced (see `bleAttWriteLimit.ts`).
+      this.attachNoblePeripheralMtuListener(sessionId, session, peripheral);
 
       // Stop scanning before connecting — many Linux/BlueZ drivers abort connections while scanning.
       if (this.scanningActive) {
@@ -1036,6 +1121,8 @@ export class NobleBleManager extends EventEmitter {
         `[BLE:${sessionId}] subscriptions ready in ${Date.now() - tSubscribe}ms — fromNum=${Boolean(session.fromNumChar)} fromRadioNotify=${fromRadioSubscribed} fromRadioReadPump=${!fromRadioSubscribed && fromRadioCanRead} mtu=${peripheral.mtu ?? 'null'}`,
       );
 
+      await this.waitForNoblePeripheralMtuSettled(sessionId, session, peripheral);
+
       // One-shot initial read in case the device already queued bytes before the first FROMNUM notify.
       this.requestFromRadioReadPump(sessionId);
 
@@ -1121,7 +1208,17 @@ export class NobleBleManager extends EventEmitter {
       await prev;
       if (!session.toRadioChar)
         throw new Error(`Disconnected before write could execute for session ${sessionId}`);
-      await session.toRadioChar.writeAsync(data, false);
+      const peripheral = session.connectedPeripheral;
+      const rawMtu =
+        peripheral != null && typeof peripheral.mtu === 'number' && Number.isFinite(peripheral.mtu)
+          ? (peripheral.mtu as number)
+          : session.attMtuSanitized;
+      const limit = maxWriteRequestPayloadBytes(rawMtu);
+      for (let offset = 0; offset < data.length; offset += limit) {
+        const end = Math.min(offset + limit, data.length);
+        const chunk = data.subarray(offset, end);
+        await session.toRadioChar.writeAsync(chunk, false);
+      }
     } finally {
       release();
     }
