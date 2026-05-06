@@ -915,13 +915,13 @@ function ChatPanel({
   const composePlaceholder = useMemo(
     () =>
       isDmMode
-        ? `DM to ${dmNodeName}...`
+        ? t('chatPanel.composePlaceholderDm', { name: dmNodeName })
         : !isConnected
-          ? 'Connect to send messages'
+          ? t('chatPanel.composePlaceholderConnectFirst')
           : isMqttOnly
-            ? 'Type a message (via MQTT)...'
-            : 'Type a message...',
-    [isDmMode, dmNodeName, isConnected, isMqttOnly],
+            ? t('chatPanel.composePlaceholderMqttOnly')
+            : t('chatPanel.composePlaceholderDefault'),
+    [isDmMode, dmNodeName, isConnected, isMqttOnly, t],
   );
 
   return (
@@ -1588,7 +1588,11 @@ function ChatPanel({
               : 'disabled:text-muted bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-600'
           }`}
         >
-          {sending ? '...' : isDmMode ? 'DM' : 'Send'}
+          {sending
+            ? t('chatPanel.sendButtonSending')
+            : isDmMode
+              ? t('chatPanel.sendButtonDm')
+              : t('chatPanel.sendButton')}
         </button>
       </div>
       {/* Character count — only show near limit */}

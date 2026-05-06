@@ -575,7 +575,7 @@ describe('ChatPanel accessibility', () => {
         <ChatPanel {...defaultProps} isConnected onSend={onSend} />
       </ToastProvider>,
     );
-    const input = screen.getByPlaceholderText('Type a message...');
+    const input = screen.getByPlaceholderText('Enter message here');
     await user.type(input, 'hello');
     await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(onSend).toHaveBeenCalled();

@@ -579,10 +579,7 @@ export default function AppPanel({
               <option value={12}>{t('appPanel.floodAdvertEvery12h')}</option>
               <option value={24}>{t('appPanel.floodAdvertEvery24h')}</option>
             </select>
-            <p className="text-muted text-xs">
-              Sends a flood advert when connected and repeats at the chosen interval to keep your
-              node visible on the mesh.
-            </p>
+            <p className="text-muted text-xs">{t('appPanel.floodAdvertHelp')}</p>
           </div>
         </div>
       )}
@@ -629,8 +626,8 @@ export default function AppPanel({
                 onChange={(e) => {
                   setStaticLatInput(e.target.value);
                 }}
-                placeholder="e.g. 40.12345"
-                aria-label={`${t('appPanel.latLabel')} ${staticLatInput || 'e.g. 40.12345'}`}
+                placeholder={t('appPanel.latPlaceholderExample')}
+                aria-label={`${t('appPanel.latLabel')} ${staticLatInput || t('appPanel.latPlaceholderExample')}`}
                 className="bg-deep-black focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
               />
               <label htmlFor="apppanel-static-lon" className="w-8 text-sm text-gray-300">
@@ -646,8 +643,8 @@ export default function AppPanel({
                 onChange={(e) => {
                   setStaticLonInput(e.target.value);
                 }}
-                placeholder="e.g. -105.12345"
-                aria-label={`${t('appPanel.lonLabel')} ${staticLonInput || 'e.g. -105.12345'}`}
+                placeholder={t('appPanel.lonPlaceholderExample')}
+                aria-label={`${t('appPanel.lonLabel')} ${staticLonInput || t('appPanel.lonPlaceholderExample')}`}
                 className="bg-deep-black focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
               />
             </div>
@@ -673,7 +670,7 @@ export default function AppPanel({
 
           <div className="flex items-center gap-2">
             <label htmlFor="apppanel-gps-interval" className="flex-1 text-sm text-gray-300">
-              Auto-refresh interval:
+              {t('appPanel.autoRefreshInterval')}
             </label>
             <select
               id="apppanel-gps-interval"
@@ -742,12 +739,12 @@ export default function AppPanel({
               className="accent-brand-green"
             />
             <label htmlFor="distanceFilter" className="cursor-pointer text-sm text-gray-300">
-              Filter distant nodes from map and node list
+              {t('appPanel.filterDistantNodesCheckbox')}
             </label>
           </div>
           <div className="flex items-center gap-2">
             <label htmlFor="apppanel-max-distance" className="text-sm text-gray-300">
-              Max distance:
+              {t('appPanel.maxDistanceLabel')}
             </label>
             <input
               id="apppanel-max-distance"
@@ -870,7 +867,7 @@ export default function AppPanel({
                 htmlFor="autoPrune"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Auto-prune nodes on startup, older than
+                {t('appPanel.autoPruneNodesOlderThan')}
               </label>
               <input
                 id="apppanel-auto-prune-days"
@@ -885,7 +882,7 @@ export default function AppPanel({
                 aria-label={`Auto-prune nodes on startup, older than ${settings.autoPruneDays} days`}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">days</span>
+              <span className="text-sm text-gray-300">{t('common.days')}</span>
             </div>
 
             {/* Prune unnamed nodes on startup */}
@@ -905,13 +902,10 @@ export default function AppPanel({
                   htmlFor="pruneEmptyNames"
                   className="flex-1 cursor-pointer text-sm text-gray-300"
                 >
-                  Remove unnamed nodes on startup
+                  {t('appPanel.removeUnnamedNodesLabel')}
                 </label>
               </div>
-              <p className="text-muted pl-6 text-xs">
-                Includes MQTT-only placeholders that still use the default !hex ID; favorited nodes
-                are kept.
-              </p>
+              <p className="text-muted pl-6 text-xs">{t('appPanel.unnamedNodesHint')}</p>
             </div>
 
             {/* Node cap */}
@@ -931,7 +925,7 @@ export default function AppPanel({
                 htmlFor="nodeCap"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Cap total nodes, keep newest
+                {t('appPanel.capTotalNodesLabel')}
               </label>
               <input
                 id="apppanel-node-cap-count"
@@ -946,7 +940,7 @@ export default function AppPanel({
                 aria-label={`Cap total nodes, keep newest ${settings.nodeCapCount} nodes`}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">nodes</span>
+              <span className="text-sm text-gray-300">{t('common.nodes')}</span>
             </div>
 
             {/* Position history prune */}
@@ -966,7 +960,7 @@ export default function AppPanel({
                 htmlFor="positionHistoryPrune"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Auto-prune position history on startup, older than
+                {t('appPanel.autoPrunePositionHistoryLabel')}
               </label>
               <input
                 id="apppanel-position-history-prune-days"
@@ -984,7 +978,7 @@ export default function AppPanel({
                 aria-label={`Auto-prune position history on startup, older than ${settings.positionHistoryPruneDays} days`}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">days</span>
+              <span className="text-sm text-gray-300">{t('common.days')}</span>
             </div>
           </div>
         )}
@@ -1009,12 +1003,11 @@ export default function AppPanel({
                   htmlFor="meshcoreDeleteNeverAdvertised"
                   className="flex-1 cursor-pointer text-sm text-gray-300"
                 >
-                  Remove contacts that have never advertised on startup
+                  {t('appPanel.meshcoreRemoveNeverAdvertisedLabel')}
                 </label>
               </div>
               <p className="text-muted pl-6 text-xs">
-                Removes stale placeholder contacts with no advert history; favorited contacts are
-                kept.
+                {t('appPanel.meshcoreRemoveNeverAdvertisedHint')}
               </p>
             </div>
 
@@ -1035,7 +1028,7 @@ export default function AppPanel({
                 htmlFor="meshcoreAutoPrune"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Auto-prune unheard contacts on startup, older than
+                {t('appPanel.autoPruneUnheardContactsLabel')}
               </label>
               <input
                 id="apppanel-meshcore-auto-prune-days"
@@ -1053,7 +1046,7 @@ export default function AppPanel({
                 aria-label={`Auto-prune unheard contacts on startup, older than ${settings.meshcoreAutoPruneDays} days`}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">days</span>
+              <span className="text-sm text-gray-300">{t('common.days')}</span>
             </div>
 
             {/* Contact cap */}
@@ -1073,7 +1066,7 @@ export default function AppPanel({
                 htmlFor="meshcoreContactCap"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Cap total contacts, keep most recently seen
+                {t('appPanel.capTotalContactsLabel')}
               </label>
               <input
                 id="apppanel-meshcore-contact-cap-count"
@@ -1091,7 +1084,7 @@ export default function AppPanel({
                 aria-label={`Cap total contacts, keep most recently seen ${settings.meshcoreContactCapCount} contacts`}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">contacts</span>
+              <span className="text-sm text-gray-300">{t('common.contacts')}</span>
             </div>
           </div>
         )}
@@ -1099,9 +1092,7 @@ export default function AppPanel({
         {/* Messages: load limit (localStorage) + DB retention cap — single card (issue #387). */}
         <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
           <p className="text-muted text-xs leading-relaxed">
-            Limit how many messages load into memory for the UI, and cap how many rows stay in
-            SQLite. Loading fewer keeps RAM down on busy networks; the database cap prunes older
-            messages on app startup (stored per protocol).
+            {t('appPanel.messagesLoadLimitIntro')}
           </p>
           <div className="flex items-center gap-2">
             <input
@@ -1119,7 +1110,7 @@ export default function AppPanel({
               htmlFor="messageLimit"
               className="flex-1 cursor-pointer text-sm text-gray-300"
             >
-              Limit messages loaded
+              {t('appPanel.limitMessagesLoadedLabel')}
             </label>
             <input
               id="apppanel-message-limit-count"
@@ -1138,7 +1129,7 @@ export default function AppPanel({
               aria-label={`Limit messages loaded ${settings.messageLimitCount} messages`}
               className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
-            <span className="text-sm text-gray-300">messages</span>
+            <span className="text-sm text-gray-300">{t('common.messages')}</span>
           </div>
           {protocol !== 'meshcore' ? (
             <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
@@ -1157,7 +1148,7 @@ export default function AppPanel({
                 htmlFor="messageRetentionMeshtastic"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Cap stored messages, keep newest
+                {t('appPanel.capStoredMessagesLabel')}
               </label>
               <input
                 id="apppanel-message-retention-meshtastic-count"
@@ -1176,7 +1167,7 @@ export default function AppPanel({
                 aria-label={`Cap stored messages, keep newest ${retention.meshtasticCount} messages`}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">messages</span>
+              <span className="text-sm text-gray-300">{t('common.messages')}</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
@@ -1195,7 +1186,7 @@ export default function AppPanel({
                 htmlFor="messageRetentionMeshcore"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Cap stored messages, keep newest
+                {t('appPanel.capStoredMessagesLabel')}
               </label>
               <input
                 id="apppanel-message-retention-meshcore-count"
@@ -1214,7 +1205,7 @@ export default function AppPanel({
                 aria-label={`Cap stored messages, keep newest ${retention.meshcoreCount} messages`}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">messages</span>
+              <span className="text-sm text-gray-300">{t('common.messages')}</span>
             </div>
           )}
         </div>
@@ -1246,7 +1237,7 @@ export default function AppPanel({
             }}
             className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
-            Export Database
+            {t('appPanel.exportDatabaseButton')}
           </button>
 
           <button
@@ -1276,7 +1267,7 @@ export default function AppPanel({
             }}
             className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
-            Import &amp; Merge
+            {t('appPanel.importMergeButton')}
           </button>
         </div>
       </div>
@@ -1303,9 +1294,7 @@ export default function AppPanel({
             </svg>
           </summary>
           <div className="space-y-3 border-t border-gray-700 px-4 pt-1 pb-4">
-            <p className="text-muted text-xs">
-              Changes apply immediately and persist. Hover a token name for where it is used.
-            </p>
+            <p className="text-muted text-xs">{t('appPanel.themeColorsApplyHint')}</p>
             {THEME_TOKEN_META.map((meta) => {
               const hex = themeColors[meta.key];
               return (
@@ -1366,7 +1355,7 @@ export default function AppPanel({
               aria-label={t('appPanel.resetAllColors')}
               className="bg-deep-black w-full rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
             >
-              Reset all colors to defaults
+              {t('appPanel.resetAllColorsButton')}
             </button>
           </div>
         </details>
@@ -1394,18 +1383,15 @@ export default function AppPanel({
             </svg>
           </summary>
           <div className="space-y-4 border-t border-red-900/50 px-4 pt-1 pb-4">
-            <p className="text-xs text-red-400/80">
-              These actions are permanent and cannot be undone. Confirm each step carefully.
-            </p>
+            <p className="text-xs text-red-400/80">{t('appPanel.dangerZoneIntro')}</p>
 
             {/* Diagnostics (in-memory reset) */}
             <div className="space-y-2">
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-                Diagnostics
+                {t('appPanel.dangerZoneDiagnosticsHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
-                Clears in-memory routing anomalies, hop history, and packet stats. Rebuilds from new
-                packets.
+                {t('appPanel.dangerZoneDiagnosticsDesc')}
               </p>
               <button
                 type="button"
@@ -1432,11 +1418,10 @@ export default function AppPanel({
 
             <div className="space-y-2 border-t border-red-900/50 pt-4">
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-                GPS positions
+                {t('appPanel.dangerZoneGpsHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
-                Removes stored GPS coordinates from all nodes without deleting nodes. Positions
-                repopulate as new data arrives.
+                {t('appPanel.dangerZoneGpsDesc')}
               </p>
               <button
                 type="button"
@@ -1462,11 +1447,10 @@ export default function AppPanel({
 
             <div className="space-y-2 border-t border-red-900/50 pt-4">
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-                Position History
+                {t('appPanel.dangerZonePositionHistoryHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
-                Clears all persisted movement trail data and the current in-memory path overlay. New
-                positions will resume tracking immediately.
+                {t('appPanel.dangerZonePositionHistoryDesc')}
               </p>
               <button
                 type="button"
@@ -1494,11 +1478,11 @@ export default function AppPanel({
             {/* Nodes */}
             <div className="space-y-3 border-t border-red-900/50 pt-4">
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-                Nodes
+                {t('appPanel.dangerZoneNodesHeading')}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <label htmlFor="apppanel-delete-age-days" className="text-sm text-gray-300">
-                  Delete nodes last heard more than
+                  {t('appPanel.deleteNodesOlderThanLabel')}
                 </label>
                 <input
                   id="apppanel-delete-age-days"
@@ -1511,7 +1495,7 @@ export default function AppPanel({
                   aria-label={`Delete nodes last heard more than ${deleteAgeDays} days`}
                   className="bg-deep-black w-20 rounded border border-red-800/60 px-2 py-1 text-right text-sm text-gray-200 focus:border-red-500 focus:outline-none"
                 />
-                <span className="text-sm text-gray-300">days</span>
+                <span className="text-sm text-gray-300">{t('common.days')}</span>
                 <button
                   type="button"
                   aria-label={t('appPanel.deleteOldNodes')}
@@ -1598,9 +1582,9 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                <div className="font-medium">Prune No-Fix / Zero Island Nodes</div>
+                <div className="font-medium">{t('appPanel.pruneNoFixNodes')}</div>
                 <div className="mt-0.5 text-xs text-red-400/70">
-                  Removes nodes with no GPS fix (null coords) or near 0°N, 0°E.
+                  {t('appPanel.pruneNoFixSubtitle')}
                 </div>
               </button>
               <button
@@ -1645,10 +1629,9 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                <div className="font-medium">Prune Distant Nodes</div>
+                <div className="font-medium">{t('appPanel.pruneDistantNodesTitle')}</div>
                 <div className="mt-0.5 text-xs text-red-400/70">
-                  Beyond the distance threshold in Map &amp; Node Filtering. Requires a valid GPS
-                  location.
+                  {t('appPanel.pruneDistantSubtitle')}
                 </div>
               </button>
               <button
@@ -1682,10 +1665,11 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                <div className="font-medium">Prune Offline Nodes</div>
+                <div className="font-medium">{t('appPanel.pruneOfflineNodesTitle')}</div>
                 <div className="mt-0.5 text-xs text-red-400/70">
-                  Not heard in over {Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000))}{' '}
-                  days. Favorited nodes are excluded.
+                  {t('appPanel.pruneOfflineSubtitle', {
+                    days: Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000)),
+                  })}
                 </div>
               </button>
               <button
@@ -1736,9 +1720,9 @@ export default function AppPanel({
                   }}
                   className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
                 >
-                  <div className="font-medium">Delete Contacts Without Pubkeys</div>
+                  <div className="font-medium">{t('appPanel.deleteContactsNoPubkeysTitle')}</div>
                   <div className="mt-0.5 text-xs text-red-400/70">
-                    Excludes chat stub nodes created from messages.
+                    {t('appPanel.deleteContactsWithoutPubkeysSubtitle')}
                   </div>
                 </button>
               )}
@@ -1747,11 +1731,11 @@ export default function AppPanel({
             {/* Messages */}
             <div className="space-y-2 border-t border-red-900/50 pt-4">
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-                Messages
+                {t('appPanel.messagesSection')}
               </div>
               <div className="flex items-center gap-2">
                 <label htmlFor="apppanel-clear-channel" className="shrink-0 text-sm text-gray-400">
-                  Channel:
+                  {t('appPanel.clearChannelLabel')}
                 </label>
                 <select
                   id="apppanel-clear-channel"

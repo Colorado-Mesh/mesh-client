@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -99,15 +99,6 @@ function InfoCircleIcon({ className }: { className?: string }) {
   );
 }
 
-function formatTime(ts: number): string {
-  if (!ts) return '—';
-  const diff = Date.now() - ts;
-  if (diff < MS_PER_MINUTE) return 'Just now';
-  if (diff < MS_PER_HOUR) return `${Math.floor(diff / MS_PER_MINUTE)}m ago`;
-  if (diff < MS_PER_DAY) return `${Math.floor(diff / MS_PER_HOUR)}h ago`;
-  return new Date(ts).toLocaleDateString();
-}
-
 export default function DiagnosticsPanel({
   nodes,
   myNodeNum,
@@ -121,6 +112,21 @@ export default function DiagnosticsPanel({
   protocol,
 }: Props) {
   const { t } = useTranslation();
+  const formatRowTime = useCallback(
+    (ts: number) => {
+      if (!ts) return t('common.emDash');
+      const diff = Date.now() - ts;
+      if (diff < MS_PER_MINUTE) return t('common.justNow');
+      if (diff < MS_PER_HOUR) {
+        return t('common.minutesAgo', { count: Math.floor(diff / MS_PER_MINUTE) });
+      }
+      if (diff < MS_PER_DAY) {
+        return t('common.hoursAgo', { count: Math.floor(diff / MS_PER_HOUR) });
+      }
+      return new Date(ts).toLocaleDateString();
+    },
+    [t],
+  );
   const showMqttControls = capabilities?.hasMqttHybrid !== false;
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const diagnosticRowsRestoredAt = useDiagnosticsStore((s) => s.diagnosticRowsRestoredAt);
@@ -261,7 +267,7 @@ export default function DiagnosticsPanel({
     if (errors >= DEGRADED_ERROR_THRESHOLD) {
       return {
         status: 'degraded' as const,
-        label: 'Degraded',
+        label: t('diagnosticsPanel.meshHealthDegraded'),
         textColor: 'text-red-400',
         bg: 'bg-red-500/10 border-red-500/30',
       };
@@ -269,18 +275,18 @@ export default function DiagnosticsPanel({
     if (errors > 0 || warnings > 0) {
       return {
         status: 'attention' as const,
-        label: 'Attention',
+        label: t('diagnosticsPanel.meshHealthAttention'),
         textColor: 'text-yellow-400',
         bg: 'bg-yellow-500/10 border-yellow-500/30',
       };
     }
     return {
       status: 'healthy' as const,
-      label: 'Healthy',
+      label: t('diagnosticsPanel.meshHealthHealthy'),
       textColor: 'text-brand-green',
       bg: 'bg-brand-green/10 border-brand-green/30',
     };
-  }, [diagnosticRows]);
+  }, [diagnosticRows, t]);
 
   /** Connected node only — same threshold as mesh so small error counts stay attention/orange. */
   const connectedHealth = useMemo(() => {
@@ -294,7 +300,7 @@ export default function DiagnosticsPanel({
       rows.filter((r) => r.kind === 'rf' && r.severity === 'info').length;
     if (errors >= DEGRADED_ERROR_THRESHOLD) {
       return {
-        label: 'Degraded',
+        label: t('diagnosticsPanel.meshHealthDegraded'),
         textColor: 'text-red-400',
         bg: 'bg-red-500/10 border-red-500/20',
         errors,
@@ -304,7 +310,7 @@ export default function DiagnosticsPanel({
     }
     if (errors > 0 || warnings > 0) {
       return {
-        label: 'Attention',
+        label: t('diagnosticsPanel.meshHealthAttention'),
         textColor: 'text-yellow-400',
         bg: 'bg-yellow-500/10 border-yellow-500/20',
         errors,
@@ -313,14 +319,14 @@ export default function DiagnosticsPanel({
       };
     }
     return {
-      label: 'Healthy',
+      label: t('diagnosticsPanel.meshHealthHealthy'),
       textColor: 'text-brand-green',
       bg: 'bg-brand-green/10 border-brand-green/20',
       errors,
       warnings,
       infos,
     };
-  }, [diagnosticRows, myNodeNum]);
+  }, [diagnosticRows, myNodeNum, t]);
 
   const matchesSearchRow = (row: DiagnosticRow) => {
     if (!search.trim()) return true;
@@ -433,10 +439,10 @@ export default function DiagnosticsPanel({
         lastSeverity = sev;
         const label =
           sev === 'error'
-            ? `Errors (${countSev('error')})`
+            ? t('diagnosticsPanel.severityErrors', { count: countSev('error') })
             : sev === 'warning'
-              ? `Warnings (${countSev('warning')})`
-              : `Notes (${countSev('info')})`;
+              ? t('diagnosticsPanel.severityWarnings', { count: countSev('warning') })
+              : t('diagnosticsPanel.severityNotes', { count: countSev('info') });
         const rowClass =
           sev === 'error'
             ? 'bg-red-950/40 text-red-400'
@@ -485,7 +491,7 @@ export default function DiagnosticsPanel({
                 {rf.condition}
                 {rf.isLastHop && (
                   <span className="ml-1 rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-[10px] text-blue-300">
-                    Last-Hop
+                    {t('diagnosticsPanel.lastHopBadge')}
                   </span>
                 )}
               </div>
@@ -493,7 +499,7 @@ export default function DiagnosticsPanel({
             </td>
             <td className="px-4 py-2.5 text-right text-xs text-gray-300">—</td>
             <td className="text-muted px-4 py-2.5 text-right text-xs">
-              {formatTime(rf.detectedAt)}
+              {formatRowTime(rf.detectedAt)}
             </td>
             <td className="px-4 py-2.5">
               {remedy ? (
@@ -527,7 +533,7 @@ export default function DiagnosticsPanel({
         traceResult && startTime !== undefined && traceResult.timestamp >= startTime;
       const traceHops = hasResult
         ? [
-            getFullNodeLabel(myNodeNum) || 'Me',
+            getFullNodeLabel(myNodeNum) || t('diagnosticsPanel.selfNodeFallback'),
             ...traceResult.route.map((id) => getFullNodeLabel(id)),
             getFullNodeLabel(traceResult.from),
           ]
@@ -565,7 +571,7 @@ export default function DiagnosticsPanel({
               node?.heard_via_mqtt === true &&
               !node?.heard_via_mqtt_only && (
                 <div className="mt-1 text-xs text-yellow-400/70">
-                  Warning: Hybrid Node. MQTT latency may be skewing hop data. Suggest: Filter MQTT.
+                  {t('diagnosticsPanel.hybridNodeMqttWarning')}
                 </div>
               )}
           </td>
@@ -574,9 +580,9 @@ export default function DiagnosticsPanel({
           </td>
           <td className="text-muted px-4 py-2.5 text-right text-xs">
             {isPending ? (
-              <span className="animate-pulse text-blue-400">Tracing...</span>
+              <span className="animate-pulse text-blue-400">{t('diagnosticsPanel.tracing')}</span>
             ) : (
-              formatTime(anomaly.detectedAt)
+              formatRowTime(anomaly.detectedAt)
             )}
           </td>
           <td className="px-4 py-2.5">
@@ -614,11 +620,13 @@ export default function DiagnosticsPanel({
                     />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
-                  Tracing...
+                  {t('diagnosticsPanel.tracing')}
                 </span>
               ) : traceHops ? (
                 <div className="text-right">
-                  <div className="text-muted mb-0.5 text-[10px]">Route</div>
+                  <div className="text-muted mb-0.5 text-[10px]">
+                    {t('diagnosticsPanel.routeColumn')}
+                  </div>
                   <div className="flex flex-wrap justify-end gap-0.5 font-mono text-xs text-gray-300">
                     {traceHops.map((hop, i) => (
                       <span key={i} className="flex items-center gap-0.5">
@@ -638,21 +646,21 @@ export default function DiagnosticsPanel({
                     disabled={!isConnected}
                     className="bg-secondary-dark mt-1 rounded px-2 py-0.5 text-[10px] text-gray-400 hover:bg-gray-600 disabled:opacity-40"
                   >
-                    Re-trace
+                    {t('diagnosticsPanel.reTrace')}
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => handleTraceRoute(anomaly.nodeId)}
                   disabled={!isConnected || tracePendingNodes.has(anomaly.nodeId)}
-                  title={isFailed ? 'Trace route timed out — click to retry' : undefined}
+                  title={isFailed ? t('diagnosticsPanel.traceRouteTimeoutHint') : undefined}
                   className={`rounded px-2.5 py-1 text-xs whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                     isFailed
                       ? 'border border-red-800/50 bg-red-900/40 text-red-300 hover:bg-red-900/60'
                       : 'bg-secondary-dark text-gray-300 hover:bg-gray-600'
                   }`}
                 >
-                  {isFailed ? 'Retry Trace' : 'Trace Route'}
+                  {isFailed ? t('diagnosticsPanel.retryTrace') : t('diagnosticsPanel.traceRoute')}
                 </button>
               )}
               {showMqttControls &&
@@ -664,7 +672,7 @@ export default function DiagnosticsPanel({
                     className="inline-flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/20 px-2 py-0.5 text-[10px] whitespace-nowrap text-yellow-300 transition-colors hover:bg-yellow-500/30"
                     title={t('diagnosticsPanel.stopIgnoringMqtt')}
                   >
-                    MQTT Ignored ✕
+                    {t('diagnosticsPanel.mqttIgnoredToggle')}
                   </button>
                 ) : (
                   <button
@@ -674,7 +682,7 @@ export default function DiagnosticsPanel({
                     className="bg-secondary-dark text-muted rounded px-2 py-0.5 text-[10px] whitespace-nowrap transition-colors hover:bg-gray-600 hover:text-gray-300"
                     title={t('diagnosticsPanel.excludeMqttData')}
                   >
-                    Ignore MQTT
+                    {t('diagnosticsPanel.ignoreMqttButton')}
                   </button>
                 ))}
             </div>
@@ -688,23 +696,25 @@ export default function DiagnosticsPanel({
   return (
     <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-200">Network Diagnostics</h2>
+        <h2 className="text-xl font-semibold text-gray-200">
+          {t('diagnosticsPanel.networkDiagnosticsTitle')}
+        </h2>
         <a
           href="https://github.com/Colorado-Mesh/mesh-client/blob/main/DIAGNOSTICS.md"
           target="_blank"
           rel="noreferrer"
           className="text-muted hover:text-brand-green text-xs transition-colors"
         >
-          Docs ↗
+          {t('diagnosticsPanel.docsLink')}
         </a>
       </div>
 
       {diagnosticRowsRestoredAt != null && diagnosticRows.length > 0 && (
         <div className="flex items-start justify-between gap-3 rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
           <span>
-            Showing diagnostics restored from last session (
-            {new Date(diagnosticRowsRestoredAt).toLocaleString()}) — they will refresh as new
-            packets arrive.
+            {t('diagnosticsPanel.restoredSessionBanner', {
+              time: new Date(diagnosticRowsRestoredAt).toLocaleString(),
+            })}
           </span>
           <button
             type="button"
@@ -713,7 +723,7 @@ export default function DiagnosticsPanel({
             }}
             className="shrink-0 rounded bg-blue-900/50 px-2 py-1 text-xs text-blue-100 hover:bg-blue-800/50"
           >
-            Stop restoring on next launch
+            {t('diagnosticsPanel.stopRestoringOnLaunch')}
           </button>
         </div>
       )}
@@ -723,24 +733,26 @@ export default function DiagnosticsPanel({
         className={`rounded-xl border p-4 ${meshHealth.bg}`}
         title={
           infoCount > 0
-            ? `${infoCount} heuristic note(s) not shown below — see diagnostics table.`
+            ? t('diagnosticsPanel.heuristicNotesTooltip', { count: infoCount })
             : undefined
         }
       >
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-muted text-sm">Network health</span>
+            <span className="text-muted text-sm">{t('diagnosticsPanel.networkHealthLabel')}</span>
             <span className={`text-lg font-semibold ${meshHealth.textColor}`}>
               {meshHealth.label}
             </span>
           </div>
           <div className="text-sm text-gray-300">
-            <span className="text-muted">{nodesWithTelemetryCount} nodes with telemetry</span>
+            <span className="text-muted">
+              {t('diagnosticsPanel.nodesWithTelemetry', { count: nodesWithTelemetryCount })}
+            </span>
             {errorCount > 0 && (
               <>
                 <span className="text-muted"> · </span>
                 <span className="text-red-400">
-                  {errorCount} error{errorCount !== 1 ? 's' : ''}
+                  {t('diagnosticsPanel.errorCount', { count: errorCount })}
                 </span>
               </>
             )}
@@ -748,14 +760,14 @@ export default function DiagnosticsPanel({
               <>
                 <span className="text-muted"> · </span>
                 <span className="text-orange-400">
-                  {warningCount} warning{warningCount !== 1 ? 's' : ''}
+                  {t('diagnosticsPanel.warningCount', { count: warningCount })}
                 </span>
               </>
             )}
             {errorCount === 0 && warningCount === 0 && diagnosticRows.length === 0 && (
               <>
                 <span className="text-muted"> · </span>
-                <span className="text-brand-green">no issues</span>
+                <span className="text-brand-green">{t('diagnosticsPanel.noIssues')}</span>
               </>
             )}
           </div>
@@ -763,10 +775,10 @@ export default function DiagnosticsPanel({
             (connectedHealth.errors !== errorCount ||
               connectedHealth.warnings !== warningCount) && (
               <div className="text-muted border-t border-gray-700/40 pt-1 text-xs">
-                This node:{' '}
+                {t('diagnosticsPanel.thisNodePrefix')}{' '}
                 {connectedHealth.errors > 0 && (
                   <span className="text-red-400">
-                    {connectedHealth.errors} error{connectedHealth.errors !== 1 ? 's' : ''}
+                    {t('diagnosticsPanel.errorCount', { count: connectedHealth.errors })}
                   </span>
                 )}
                 {connectedHealth.errors > 0 && connectedHealth.warnings > 0 && (
@@ -774,7 +786,7 @@ export default function DiagnosticsPanel({
                 )}
                 {connectedHealth.warnings > 0 && (
                   <span className="text-orange-400">
-                    {connectedHealth.warnings} warning{connectedHealth.warnings !== 1 ? 's' : ''}
+                    {t('diagnosticsPanel.warningCount', { count: connectedHealth.warnings })}
                   </span>
                 )}
               </div>
@@ -788,21 +800,21 @@ export default function DiagnosticsPanel({
           const foreignList = getForeignLoraDetectionsList(myNodeNum);
           if (foreignList.length === 0) return null;
           const classLabels: Record<string, string> = {
-            meshcore: 'MeshCore Activity',
-            meshtastic: 'Meshtastic Traffic',
-            'unknown-lora': 'Unknown LoRa Signal',
+            meshcore: t('diagnosticsPanel.foreignClassMeshcore'),
+            meshtastic: t('diagnosticsPanel.foreignClassMeshtastic'),
+            'unknown-lora': t('diagnosticsPanel.foreignClassUnknownLora'),
           };
           const proximityLabels: Record<string, string> = {
-            'very-close': 'Very Close',
-            nearby: 'Nearby',
-            distant: 'Distant',
-            unknown: 'Unknown Distance',
+            'very-close': t('diagnosticsPanel.proximityVeryClose'),
+            nearby: t('diagnosticsPanel.proximityNearby'),
+            distant: t('diagnosticsPanel.proximityDistant'),
+            unknown: t('diagnosticsPanel.proximityUnknown'),
           };
           return (
             <div className="space-y-3 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4">
               <h3 className="flex items-center gap-1.5 text-sm font-medium text-orange-400">
                 <AlertTriangleIcon className="h-4 w-4 shrink-0" />
-                Foreign LoRa Activity (last 90 min)
+                {t('diagnosticsPanel.foreignLoraHeading')}
               </h3>
               <div className="space-y-2">
                 {foreignList.map((d, i) => {
@@ -818,19 +830,25 @@ export default function DiagnosticsPanel({
                       key={`${d.packetClass}-${d.lastSenderId ?? 'na'}-${d.detectedAt}-${i}`}
                       className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs"
                     >
-                      <div className="text-muted">Class</div>
+                      <div className="text-muted">{t('diagnosticsPanel.foreignClassColumn')}</div>
                       <div className="text-gray-200">
                         {classLabels[d.packetClass] ?? d.packetClass}
                       </div>
-                      <div className="text-muted">Proximity</div>
+                      <div className="text-muted">
+                        {t('diagnosticsPanel.foreignProximityColumn')}
+                      </div>
                       <div className="text-gray-200">
                         {proximityLabels[d.proximity] ?? d.proximity}
                       </div>
-                      <div className="text-muted">Last Seen</div>
-                      <div className="text-gray-200">
-                        {minutesAgo < 1 ? 'Just now' : `${minutesAgo}m ago`}
+                      <div className="text-muted">
+                        {t('diagnosticsPanel.foreignLastSeenColumn')}
                       </div>
-                      <div className="text-muted">Count</div>
+                      <div className="text-gray-200">
+                        {minutesAgo < 1
+                          ? t('common.justNow')
+                          : t('common.minutesAgo', { count: minutesAgo })}
+                      </div>
+                      <div className="text-muted">{t('diagnosticsPanel.foreignCountColumn')}</div>
                       <div className="text-gray-200">{d.count}×</div>
                       {(d.rssi !== undefined || d.snr !== undefined) && (
                         <>
@@ -925,7 +943,7 @@ export default function DiagnosticsPanel({
             </label>
             <span className="text-muted text-xs">
               Probe all nodes every 30 min
-              {lastDiscoveryTs !== null && <> · last: {formatTime(lastDiscoveryTs)}</>}
+              {lastDiscoveryTs !== null && <> · last: {formatRowTime(lastDiscoveryTs)}</>}
             </span>
           </div>
           <div className="flex flex-col gap-1.5">

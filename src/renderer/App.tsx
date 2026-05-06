@@ -106,6 +106,30 @@ const STATUS_COLOR: Record<string, string> = {
   reconnecting: 'bg-orange-500 animate-pulse',
 };
 
+function deviceConnectionStatusLabel(
+  t: ReturnType<typeof useTranslation>['t'],
+  status: DeviceState['status'],
+): string {
+  switch (status) {
+    case 'disconnected':
+      return t('app.deviceStatus.disconnected');
+    case 'connecting':
+      return t('app.deviceStatus.connecting');
+    case 'connected':
+      return t('app.deviceStatus.connected');
+    case 'configured':
+      return t('app.deviceStatus.configured');
+    case 'stale':
+      return t('app.deviceStatus.stale');
+    case 'reconnecting':
+      return t('app.deviceStatus.reconnecting');
+    default: {
+      const _x: never = status;
+      return _x;
+    }
+  }
+}
+
 const TAB_NAMES = [
   'Connection',
   'Chat',
@@ -1539,12 +1563,12 @@ export default function App() {
             <div
               className={`h-2.5 w-2.5 rounded-full ${statusColor}`}
               aria-hidden="true"
-              title={device.state.status}
+              title={deviceConnectionStatusLabel(t, device.state.status)}
             />
             <div role="status" aria-live="polite" aria-atomic="true">
               <span
-                aria-label={`${device.state.status}${device.state.connectionType ? ` (${device.state.connectionType.toUpperCase()})` : ''}`}
-                className={`text-xs capitalize ${
+                aria-label={`${deviceConnectionStatusLabel(t, device.state.status)}${device.state.connectionType ? ` (${device.state.connectionType.toUpperCase()})` : ''}`}
+                className={`text-xs ${
                   device.state.status === 'connecting'
                     ? 'animate-pulse text-yellow-400'
                     : device.state.status === 'stale'
@@ -1554,7 +1578,7 @@ export default function App() {
                         : 'text-muted'
                 }`}
               >
-                {device.state.status}
+                {deviceConnectionStatusLabel(t, device.state.status)}
                 {device.state.connectionType
                   ? ` (${device.state.connectionType.toUpperCase()})`
                   : ''}
@@ -1562,10 +1586,14 @@ export default function App() {
             </div>
             {device.state.myNodeNum > 0 && (
               <span
-                aria-label={`Node: ${device.getPickerStyleNodeLabel(device.state.myNodeNum)}`}
+                aria-label={t('app.nodeLabel', {
+                  name: device.getPickerStyleNodeLabel(device.state.myNodeNum),
+                })}
                 className="text-muted ml-2 text-xs whitespace-nowrap"
               >
-                Node: {device.getPickerStyleNodeLabel(device.state.myNodeNum)}
+                {t('app.nodeLabel', {
+                  name: device.getPickerStyleNodeLabel(device.state.myNodeNum),
+                })}
               </span>
             )}
             {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}

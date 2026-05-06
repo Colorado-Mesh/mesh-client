@@ -448,12 +448,16 @@ export default function NodeListPanel({
       : `${visibleNodeCount} of ${totalNodeCount}`;
 
   function formatTime(ts: number): string {
-    if (!ts) return 'Never';
+    if (!ts) return t('common.never');
     const normalizedTs = normalizeLastHeardMs(ts);
     const diff = Date.now() - normalizedTs;
-    if (diff < MS_PER_MINUTE) return 'Just now';
-    if (diff < MS_PER_HOUR) return `${Math.floor(diff / MS_PER_MINUTE)}m ago`;
-    if (diff < MS_PER_DAY) return `${Math.floor(diff / MS_PER_HOUR)}h ago`;
+    if (diff < MS_PER_MINUTE) return t('common.justNow');
+    if (diff < MS_PER_HOUR) {
+      return t('common.minutesAgo', { count: Math.floor(diff / MS_PER_MINUTE) });
+    }
+    if (diff < MS_PER_DAY) {
+      return t('common.hoursAgo', { count: Math.floor(diff / MS_PER_HOUR) });
+    }
     return new Date(normalizedTs).toLocaleDateString();
   }
 
@@ -462,7 +466,10 @@ export default function NodeListPanel({
       {/* 1fr | auto | 1fr keeps the search visually centered on wide screens (matches MeshCore’s title | search | import row). */}
       <div className="grid grid-cols-1 items-center gap-3 min-[480px]:grid-cols-[1fr_auto_1fr]">
         <h2 className="text-bright-green text-lg font-semibold min-[480px]:justify-self-start">
-          {mode === 'meshcore' ? 'Contacts' : 'Node Database'} ({headerCountLabel})
+          {mode === 'meshcore'
+            ? t('nodeListPanel.headingContacts')
+            : t('nodeListPanel.headingNodeDatabase')}{' '}
+          ({headerCountLabel})
         </h2>
         <input
           type="text"
@@ -470,8 +477,16 @@ export default function NodeListPanel({
           onChange={(e) => {
             setSearchQuery(e.target.value);
           }}
-          placeholder={mode === 'meshcore' ? 'Search contacts…' : 'Search nodes…'}
-          aria-label={mode === 'meshcore' ? 'Search contacts' : 'Search nodes'}
+          placeholder={
+            mode === 'meshcore'
+              ? t('nodeListPanel.searchContactsPlaceholder')
+              : t('nodeListPanel.searchNodesPlaceholder')
+          }
+          aria-label={
+            mode === 'meshcore'
+              ? t('nodeListPanel.searchContactsAria')
+              : t('nodeListPanel.searchNodesAria')
+          }
           className="bg-secondary-dark/80 focus:border-brand-green/50 w-full max-w-[20rem] min-w-[8rem] rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none min-[480px]:justify-self-center"
         />
         <div className="flex flex-wrap justify-stretch gap-2 min-[480px]:justify-end">
@@ -488,7 +503,7 @@ export default function NodeListPanel({
               {refreshLoading ? (
                 <span className="inline-block h-3 w-3 animate-spin rounded-full border border-purple-400 border-t-transparent" />
               ) : null}
-              Refresh
+              {t('nodeListPanel.buttonRefresh')}
             </button>
           ) : null}
           {mode === 'meshcore' && onSendAdvert ? (
@@ -504,7 +519,7 @@ export default function NodeListPanel({
               {advertLoading ? (
                 <span className="border-brand-green inline-block h-3 w-3 animate-spin rounded-full border border-t-transparent" />
               ) : null}
-              Flood Advert
+              {t('nodeListPanel.buttonFloodAdvert')}
             </button>
           ) : null}
           {mode === 'meshcore' && onImportContacts ? (
@@ -516,7 +531,7 @@ export default function NodeListPanel({
               {importLoading ? (
                 <span className="border-brand-green inline-block h-3 w-3 animate-spin rounded-full border border-t-transparent" />
               ) : null}
-              Import Contacts
+              {t('nodeListPanel.buttonImportContacts')}
             </button>
           ) : (
             <div className="hidden min-w-0 min-[480px]:block" aria-hidden />
@@ -524,10 +539,7 @@ export default function NodeListPanel({
         </div>
       </div>
       {mode === 'meshcore' && (
-        <p className="max-w-2xl text-xs text-gray-500">
-          Imported contacts use the import time as Last heard until an RF advert or Ping / Status
-          updates it.
-        </p>
+        <p className="max-w-2xl text-xs text-gray-500">{t('nodeListPanel.meshcoreImportedHint')}</p>
       )}
 
       {/* Group filter (MeshCore + Meshtastic when contactGroupsEnabled) */}
@@ -542,11 +554,15 @@ export default function NodeListPanel({
             aria-label={t('nodeListPanel.filterByContactGroup')}
             className="bg-secondary-dark/80 focus:border-brand-green/50 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
           >
-            <option value="">{mode === 'meshcore' ? 'All contacts' : 'All nodes'}</option>
+            <option value="">
+              {mode === 'meshcore'
+                ? t('nodeListPanel.filterOptionAllContacts')
+                : t('nodeListPanel.filterOptionAllNodes')}
+            </option>
             {mode === 'meshcore'
               ? BUILTIN_TYPE_FILTERS.map((f) => (
                   <option key={f.group_id} value={f.group_id}>
-                    Type: {f.label}
+                    {t('nodeListPanel.filterTypePrefix', { label: f.label })}
                   </option>
                 ))
               : MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS.map((f) => (
@@ -556,7 +572,10 @@ export default function NodeListPanel({
                 ))}
             {groups?.map((g) => (
               <option key={g.group_id} value={g.group_id}>
-                Group: {g.name} ({g.member_count})
+                {t('nodeListPanel.filterGroupPrefix', {
+                  name: g.name,
+                  count: g.member_count,
+                })}
               </option>
             ))}
           </select>
@@ -592,13 +611,19 @@ export default function NodeListPanel({
       {/* Distance filter status */}
       {filterStatus === 'no-gps' && (
         <div className="shrink-0 rounded-lg border border-yellow-700 bg-yellow-900/30 px-3 py-2 text-xs text-yellow-300">
-          Distance filter is enabled but your device has no GPS fix — all nodes are shown.
+          {t('nodeListPanel.distanceFilterNoGpsBanner')}
         </div>
       )}
       {filterStatus !== null && filterStatus !== 'no-gps' && filterStatus.hidden > 0 && (
         <div className="bg-brand-green/10 border-brand-green/30 text-brand-green shrink-0 rounded-lg border px-3 py-2 text-xs">
-          Distance filter active — {filterStatus.hidden} node{filterStatus.hidden !== 1 ? 's' : ''}{' '}
-          hidden beyond {locationFilter.maxDistance} {locationFilter.unit}.
+          {t('nodeListPanel.distanceFilterActiveBanner', {
+            count: filterStatus.hidden,
+            maxDistance: locationFilter.maxDistance,
+            unit:
+              locationFilter.unit === 'miles'
+                ? t('appPanel.distanceUnitMiles')
+                : t('appPanel.distanceUnitKm'),
+          })}
         </div>
       )}
 
@@ -606,36 +631,33 @@ export default function NodeListPanel({
       <div className="text-muted flex shrink-0 gap-3 text-xs">
         <span className="flex items-center gap-1">
           <span className="bg-brand-green inline-block h-2 w-2 rounded-full" />
-          {
-            nodeList.filter(
+          {t('nodeListPanel.summaryOnline', {
+            count: nodeList.filter(
               (n) =>
                 getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
                 'online',
-            ).length
-          }{' '}
-          online
+            ).length,
+          })}
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-full bg-violet-900" />
-          {
-            nodeList.filter(
+          {t('nodeListPanel.summaryStale', {
+            count: nodeList.filter(
               (n) =>
                 getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
                 'stale',
-            ).length
-          }{' '}
-          stale
+            ).length,
+          })}
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-full bg-slate-700" />
-          {
-            nodeList.filter(
+          {t('nodeListPanel.summaryOffline', {
+            count: nodeList.filter(
               (n) =>
                 getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
                 'offline',
-            ).length
-          }{' '}
-          offline
+            ).length,
+          })}
         </span>
       </div>
 
@@ -644,14 +666,14 @@ export default function NodeListPanel({
           style={{ minWidth: mode === 'meshcore' ? '1000px' : '1600px' }}
           className="text-sm whitespace-nowrap"
         >
-          <caption className="sr-only">Connected mesh nodes</caption>
+          <caption className="sr-only">{t('nodeListPanel.tableCaptionMeshNodes')}</caption>
           <thead>
             <tr className="bg-deep-black text-muted sticky top-0 z-10 text-left whitespace-nowrap">
               <th scope="col" className="w-8 px-3 py-2">
-                <span className="sr-only">Status</span>
+                <span className="sr-only">{t('nodeListPanel.columnStatus')}</span>
               </th>
               <th scope="col" className="w-6 px-2 py-2" title={t('nodeListPanel.favoritesColumn')}>
-                <span className="sr-only">Favorite</span>
+                <span className="sr-only">{t('nodeListPanel.columnFavorite')}</span>
               </th>
               <th
                 scope="col"
@@ -663,7 +685,8 @@ export default function NodeListPanel({
                   handleSort('node_id');
                 }}
               >
-                ID <SortIcon field="node_id" sortField={sortField} sortAsc={sortAsc} />
+                {t('nodeListPanel.columnId')}{' '}
+                <SortIcon field="node_id" sortField={sortField} sortAsc={sortAsc} />
               </th>
               <th
                 scope="col"
@@ -675,7 +698,8 @@ export default function NodeListPanel({
                   handleSort('long_name');
                 }}
               >
-                Long Name <SortIcon field="long_name" sortField={sortField} sortAsc={sortAsc} />
+                {t('nodeListPanel.columnLongName')}{' '}
+                <SortIcon field="long_name" sortField={sortField} sortAsc={sortAsc} />
               </th>
               {mode !== 'meshcore' && (
                 <th
@@ -688,7 +712,8 @@ export default function NodeListPanel({
                     handleSort('short_name');
                   }}
                 >
-                  Short <SortIcon field="short_name" sortField={sortField} sortAsc={sortAsc} />
+                  {t('nodeListPanel.columnShort')}{' '}
+                  <SortIcon field="short_name" sortField={sortField} sortAsc={sortAsc} />
                 </th>
               )}
               <th
@@ -701,7 +726,8 @@ export default function NodeListPanel({
                   handleSort('last_heard');
                 }}
               >
-                Last Heard <SortIcon field="last_heard" sortField={sortField} sortAsc={sortAsc} />
+                {t('nodeListPanel.columnLastHeard')}{' '}
+                <SortIcon field="last_heard" sortField={sortField} sortAsc={sortAsc} />
               </th>
               {mode === 'meshcore' ? (
                 <th
@@ -715,7 +741,8 @@ export default function NodeListPanel({
                   }}
                   title={t('nodeListPanel.meshcoreContactType')}
                 >
-                  Type <SortIcon field="hw_model" sortField={sortField} sortAsc={sortAsc} />
+                  {t('nodeListPanel.columnType')}{' '}
+                  <SortIcon field="hw_model" sortField={sortField} sortAsc={sortAsc} />
                 </th>
               ) : (
                 <th
@@ -726,7 +753,8 @@ export default function NodeListPanel({
                     handleSort('role');
                   }}
                 >
-                  Role <SortIcon field="role" sortField={sortField} sortAsc={sortAsc} />
+                  {t('nodeListPanel.columnRole')}{' '}
+                  <SortIcon field="role" sortField={sortField} sortAsc={sortAsc} />
                 </th>
               )}
               <th
@@ -739,7 +767,8 @@ export default function NodeListPanel({
                   handleSort('hops_away');
                 }}
               >
-                Hops <SortIcon field="hops_away" sortField={sortField} sortAsc={sortAsc} />
+                {t('nodeListPanel.columnHops')}{' '}
+                <SortIcon field="hops_away" sortField={sortField} sortAsc={sortAsc} />
               </th>
               {mode !== 'meshcore' && (
                 <th
@@ -752,7 +781,8 @@ export default function NodeListPanel({
                     handleSort('via_mqtt');
                   }}
                 >
-                  MQTT <SortIcon field="via_mqtt" sortField={sortField} sortAsc={sortAsc} />
+                  {t('nodeListPanel.columnMqtt')}{' '}
+                  <SortIcon field="via_mqtt" sortField={sortField} sortAsc={sortAsc} />
                 </th>
               )}
               <th
@@ -765,7 +795,9 @@ export default function NodeListPanel({
                   handleSort('latitude');
                 }}
               >
-                {coordinateFormat === 'mgrs' ? 'MGRS' : 'Lat'}{' '}
+                {coordinateFormat === 'mgrs'
+                  ? t('nodeListPanel.columnMgrs')
+                  : t('nodeListPanel.columnLat')}{' '}
                 <SortIcon field="latitude" sortField={sortField} sortAsc={sortAsc} />
               </th>
               {coordinateFormat !== 'mgrs' && (
@@ -779,7 +811,8 @@ export default function NodeListPanel({
                     handleSort('longitude');
                   }}
                 >
-                  Lon <SortIcon field="longitude" sortField={sortField} sortAsc={sortAsc} />
+                  {t('nodeListPanel.columnLon')}{' '}
+                  <SortIcon field="longitude" sortField={sortField} sortAsc={sortAsc} />
                 </th>
               )}
               {mode !== 'meshcore' && (
@@ -794,7 +827,8 @@ export default function NodeListPanel({
                       handleSort('rssi');
                     }}
                   >
-                    Signal <SortIcon field="rssi" sortField={sortField} sortAsc={sortAsc} />
+                    {t('nodeListPanel.columnSignal')}{' '}
+                    <SortIcon field="rssi" sortField={sortField} sortAsc={sortAsc} />
                   </th>
                   <th
                     scope="col"
@@ -807,7 +841,8 @@ export default function NodeListPanel({
                     }}
                     title={t('nodeListPanel.snrTooltip')}
                   >
-                    SNR <SortIcon field="snr" sortField={sortField} sortAsc={sortAsc} />
+                    {t('nodeListPanel.columnSnr')}{' '}
+                    <SortIcon field="snr" sortField={sortField} sortAsc={sortAsc} />
                   </th>
                 </>
               )}
@@ -821,7 +856,8 @@ export default function NodeListPanel({
                   handleSort('battery');
                 }}
               >
-                Battery <SortIcon field="battery" sortField={sortField} sortAsc={sortAsc} />
+                {t('nodeListPanel.columnBattery')}{' '}
+                <SortIcon field="battery" sortField={sortField} sortAsc={sortAsc} />
               </th>
               {mode !== 'meshcore' && (
                 <>
@@ -835,7 +871,8 @@ export default function NodeListPanel({
                       handleSort('voltage');
                     }}
                   >
-                    Voltage <SortIcon field="voltage" sortField={sortField} sortAsc={sortAsc} />
+                    {t('nodeListPanel.columnVoltage')}{' '}
+                    <SortIcon field="voltage" sortField={sortField} sortAsc={sortAsc} />
                   </th>
                   <th
                     scope="col"
@@ -851,7 +888,7 @@ export default function NodeListPanel({
                       handleSort('channel_utilization');
                     }}
                   >
-                    Ch.Util{' '}
+                    {t('nodeListPanel.columnChUtil')}{' '}
                     <SortIcon field="channel_utilization" sortField={sortField} sortAsc={sortAsc} />
                   </th>
                   <th
@@ -864,7 +901,8 @@ export default function NodeListPanel({
                       handleSort('air_util_tx');
                     }}
                   >
-                    Air Tx <SortIcon field="air_util_tx" sortField={sortField} sortAsc={sortAsc} />
+                    {t('nodeListPanel.columnAirTx')}{' '}
+                    <SortIcon field="air_util_tx" sortField={sortField} sortAsc={sortAsc} />
                   </th>
                   <th
                     scope="col"
@@ -876,7 +914,8 @@ export default function NodeListPanel({
                       handleSort('altitude');
                     }}
                   >
-                    Alt <SortIcon field="altitude" sortField={sortField} sortAsc={sortAsc} />
+                    {t('nodeListPanel.columnAlt')}{' '}
+                    <SortIcon field="altitude" sortField={sortField} sortAsc={sortAsc} />
                   </th>
                   <th
                     scope="col"
@@ -889,7 +928,8 @@ export default function NodeListPanel({
                     }}
                     title={t('nodeListPanel.echoesTooltip')}
                   >
-                    Redund. <SortIcon field="redundancy" sortField={sortField} sortAsc={sortAsc} />
+                    {t('nodeListPanel.columnRedund')}{' '}
+                    <SortIcon field="redundancy" sortField={sortField} sortAsc={sortAsc} />
                   </th>
                 </>
               )}
@@ -903,8 +943,8 @@ export default function NodeListPanel({
                   className="text-muted py-8 text-center"
                 >
                   {searchQuery
-                    ? 'No nodes match your search.'
-                    : 'No nodes discovered yet. Connect to a device to see the mesh network.'}
+                    ? t('nodeListPanel.emptyNoSearchMatches')
+                    : t('nodeListPanel.emptyNoNodesYet')}
                 </td>
               </tr>
             ) : (

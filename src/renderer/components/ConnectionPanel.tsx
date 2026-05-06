@@ -1829,7 +1829,7 @@ export default function ConnectionPanel({
             )}
           {protocol === 'meshtastic' && state.myNodeNum > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted">From</span>
+              <span className="text-muted">{t('connectionPanel.from')}</span>
               <span className="font-mono text-xs text-gray-200">
                 !{state.myNodeNum.toString(16)}
               </span>
@@ -1847,7 +1847,7 @@ export default function ConnectionPanel({
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
               <label htmlFor="mqtt-max-retries-when-connected" className="text-muted text-xs">
-                Max reconnect attempts
+                {t('connectionPanel.maxReconnectAttempts')}
               </label>
               <HelpTooltip
                 text={

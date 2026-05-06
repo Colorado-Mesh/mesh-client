@@ -1082,13 +1082,13 @@ export default function RadioPanel({
       {/* ═══ Device Role ═══ */}
       {capabilities?.hasDeviceRoleConfig !== false && (
         <ConfigSection
-          title="Device Role"
+          title={t('radioPanel.sectionDeviceRole')}
           onApply={() => applyConfig('Device', 'device', { role: deviceRole })}
           applying={applyingSection === 'Device'}
           disabled={disabled}
         >
           <ConfigSelect
-            label="Role"
+            label={t('radioPanel.roleFieldLabel')}
             value={deviceRole}
             options={deviceRoleOptions}
             onChange={setDeviceRole}
@@ -1100,7 +1100,7 @@ export default function RadioPanel({
 
       {/* ═══ Device User / Identity ═══ */}
       <ConfigSection
-        title="Device User / Identity"
+        title={t('radioPanel.sectionDeviceUser')}
         onApply={async () => {
           if (!onSetOwner) return;
           setApplyingSection('User');
@@ -1120,7 +1120,9 @@ export default function RadioPanel({
       >
         <div className="space-y-1">
           <label htmlFor="radio-long-name" className="text-muted text-sm">
-            {capabilities?.protocol === 'meshcore' ? 'Name' : 'Long Name'}
+            {capabilities?.protocol === 'meshcore'
+              ? t('radioPanel.meshcoreNameFieldLabel')
+              : t('radioPanel.longNameFieldLabel')}
           </label>
           <input
             id="radio-long-name"
@@ -1135,20 +1137,20 @@ export default function RadioPanel({
             }}
             maxLength={capabilities?.protocol === 'meshcore' ? undefined : 39}
             disabled={disabled}
-            placeholder="Your Name"
+            placeholder={t('radioPanel.yourNamePlaceholder')}
             className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
           />
           <p className="text-muted text-xs">
             {capabilities?.protocol === 'meshcore'
-              ? 'Advertised node name (emoji supported)'
-              : 'Display name (max 39 chars)'}
+              ? t('radioPanel.longNameHintMeshcore')
+              : t('radioPanel.longNameHintMeshtastic')}
           </p>
         </div>
         {capabilities?.protocol !== 'meshcore' && (
           <>
             <div className="space-y-1">
               <label htmlFor="radio-short-name" className="text-muted text-sm">
-                Short Name
+                {t('radioPanel.shortNameFieldLabel')}
               </label>
               <input
                 id="radio-short-name"
@@ -1159,19 +1161,17 @@ export default function RadioPanel({
                 }}
                 maxLength={4}
                 disabled={disabled}
-                placeholder="NAME"
+                placeholder={t('radioPanel.namePlaceholder')}
                 className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
               />
-              <p className="text-muted text-xs">
-                Short identifier shown on tiny displays (max 4 chars)
-              </p>
+              <p className="text-muted text-xs">{t('radioPanel.shortNameHint')}</p>
             </div>
             <ConfigToggle
-              label="Licensed (Ham Radio Operator)"
+              label={t('radioPanel.licensedHamLabel')}
               checked={isLicensed}
               onChange={setIsLicensed}
               disabled={disabled}
-              description="Enables additional frequencies for licensed amateur radio operators"
+              description={t('radioPanel.licensedHamDescription')}
             />
           </>
         )}
@@ -1180,7 +1180,7 @@ export default function RadioPanel({
       {/* ═══ Display ═══ */}
       {capabilities?.hasDisplayConfig !== false && (
         <ConfigSection
-          title="Display"
+          title={t('radioPanel.sectionDisplay')}
           onApply={() =>
             applyConfig('Display', 'display', {
               screenOnSecs,
@@ -1191,17 +1191,17 @@ export default function RadioPanel({
           disabled={disabled}
         >
           <ConfigNumber
-            label="Screen On Duration"
+            label={t('radioPanel.screenOnDurationLabel')}
             value={screenOnSecs}
             onChange={setScreenOnSecs}
             disabled={disabled || applyingSection !== null}
             min={0}
             max={3600}
-            unit="seconds"
-            description="How long the screen stays on after activity. 0 = always on."
+            unit={t('radioPanel.secondsUnit')}
+            description={t('radioPanel.screenOnDurationDesc')}
           />
           <ConfigSelect
-            label="Display Units"
+            label={t('radioPanel.displayUnitsFieldLabel')}
             value={displayUnits}
             options={displayUnitOptions}
             onChange={setDisplayUnits}
@@ -1214,7 +1214,7 @@ export default function RadioPanel({
       {onApplyLoraParams ? (
         /* MeshCore path: direct radio params (freq, bw, sf, cr, txPower) */
         <ConfigSection
-          title="LoRa / Radio"
+          title={t('radioPanel.sectionLora')}
           onApply={async () => {
             if (!onApplyLoraParams) return;
             setApplyingSection('LoRa');
@@ -1243,7 +1243,7 @@ export default function RadioPanel({
         >
           <div className="space-y-1">
             <label htmlFor="radio-freq-mhz" className="text-muted text-sm">
-              Frequency (MHz)
+              {t('radioPanel.frequencyMhzLabel')}
             </label>
             <input
               id="radio-freq-mhz"
@@ -1263,7 +1263,7 @@ export default function RadioPanel({
           </div>
           <div className="space-y-4 border-l border-gray-700 pl-3">
             <ConfigSelect
-              label="Bandwidth"
+              label={t('radioPanel.bandwidthLabel')}
               value={bandwidth}
               options={[
                 { value: 31.25, label: '31.25 kHz' },
@@ -1274,10 +1274,10 @@ export default function RadioPanel({
               ]}
               onChange={setBandwidth}
               disabled={disabled || applyingSection !== null}
-              tooltip="Channel width in kHz. Narrower = longer range and less interference but slower data rate. All nodes on the network must use the same bandwidth."
+              tooltip={t('radioPanel.bandwidthTooltip')}
             />
             <ConfigSelect
-              label="Spread Factor"
+              label={t('radioPanel.spreadFactorLabel')}
               value={spreadFactor}
               options={Array.from({ length: 6 }, (_, i) => ({
                 value: i + 7,
@@ -1285,10 +1285,10 @@ export default function RadioPanel({
               }))}
               onChange={setSpreadFactor}
               disabled={disabled || applyingSection !== null}
-              description="Higher = more range but slower airtime. Default: SF12."
+              description={t('radioPanel.spreadFactorDesc')}
             />
             <ConfigSelect
-              label="Coding Rate"
+              label={t('radioPanel.codingRateLabel')}
               value={codingRate}
               options={[
                 { value: 5, label: '4/5' },
@@ -1298,25 +1298,25 @@ export default function RadioPanel({
               ]}
               onChange={setCodingRate}
               disabled={disabled || applyingSection !== null}
-              tooltip="Forward error correction overhead. 4/5 = minimal redundancy (faster). 4/8 = maximum redundancy (more resilient to interference). All nodes must match."
+              tooltip={t('radioPanel.codingRateTooltip')}
             />
             <ConfigNumber
-              label="TX Power"
+              label={t('radioPanel.txPowerLabel')}
               value={txPower}
               onChange={setTxPower}
               disabled={disabled || applyingSection !== null}
               min={1}
               max={30}
               unit="dBm"
-              description="Transmit power. Check local regulations before increasing."
-              tooltip="Transmit power in dBm (1–30). Higher = longer range but more power draw. Check regional regulations for the legal maximum in your area."
+              description={t('radioPanel.txPowerDesc')}
+              tooltip={t('radioPanel.txPowerTooltip')}
             />
           </div>
         </ConfigSection>
       ) : (
         /* Meshtastic path: region, presets, hop limit */
         <ConfigSection
-          title="LoRa / Radio"
+          title={t('radioPanel.sectionLora')}
           onApply={() =>
             applyConfig('LoRa', 'lora', {
               region,
@@ -1338,22 +1338,22 @@ export default function RadioPanel({
           disabled={disabled}
         >
           <ConfigSelect
-            label="Region"
+            label={t('radioPanel.regionLabel')}
             value={region}
             options={REGIONS}
             onChange={setRegion}
             disabled={disabled || applyingSection !== null}
           />
           <ConfigToggle
-            label="Use modem preset"
+            label={t('radioPanel.useModemPresetLabel')}
             checked={usePreset}
             onChange={setUsePreset}
             disabled={disabled || applyingSection !== null}
-            description="Use a predefined modem configuration. Disable for custom RF parameters."
+            description={t('radioPanel.useModemPresetDesc')}
           />
           {usePreset ? (
             <ConfigSelect
-              label="Modem Preset"
+              label={t('radioPanel.modemPresetLabel')}
               value={modemPreset}
               options={MODEM_PRESETS}
               onChange={setModemPreset}
@@ -1362,7 +1362,7 @@ export default function RadioPanel({
           ) : (
             <div className="space-y-4 border-l border-gray-700 pl-3">
               <ConfigSelect
-                label="Bandwidth"
+                label={t('radioPanel.bandwidthLabel')}
                 value={bandwidth}
                 options={[
                   { value: 31.25, label: '31.25 kHz' },
@@ -1373,10 +1373,10 @@ export default function RadioPanel({
                 ]}
                 onChange={setBandwidth}
                 disabled={disabled || applyingSection !== null}
-                tooltip="Channel width in kHz. Narrower = longer range and less interference but slower data rate. All nodes on the network must use the same bandwidth."
+                tooltip={t('radioPanel.bandwidthTooltip')}
               />
               <ConfigSelect
-                label="Spread Factor"
+                label={t('radioPanel.spreadFactorLabel')}
                 value={spreadFactor}
                 options={Array.from({ length: 6 }, (_, i) => ({
                   value: i + 7,
@@ -1384,10 +1384,10 @@ export default function RadioPanel({
                 }))}
                 onChange={setSpreadFactor}
                 disabled={disabled || applyingSection !== null}
-                description="Higher = more range but slower airtime. Default: SF12."
+                description={t('radioPanel.spreadFactorDesc')}
               />
               <ConfigSelect
-                label="Coding Rate"
+                label={t('radioPanel.codingRateLabel')}
                 value={codingRate}
                 options={[
                   { value: 5, label: '4/5' },
@@ -1397,31 +1397,31 @@ export default function RadioPanel({
                 ]}
                 onChange={setCodingRate}
                 disabled={disabled || applyingSection !== null}
-                tooltip="Forward error correction overhead. 4/5 = minimal redundancy (faster). 4/8 = maximum redundancy (more resilient to interference). All nodes must match."
+                tooltip={t('radioPanel.codingRateTooltip')}
               />
               <ConfigNumber
-                label="TX Power"
+                label={t('radioPanel.txPowerLabel')}
                 value={txPower}
                 onChange={setTxPower}
                 disabled={disabled || applyingSection !== null}
                 min={1}
                 max={30}
                 unit="dBm"
-                description="Transmit power. Check local regulations before increasing."
-                tooltip="Transmit power in dBm (1–30). Higher = longer range but more power draw. Check regional regulations for the legal maximum in your area."
+                description={t('radioPanel.txPowerDesc')}
+                tooltip={t('radioPanel.txPowerTooltip')}
               />
               <ConfigToggle
-                label="SX126x RX Boosted Gain"
+                label={t('radioPanel.sx126xRxBoostedLabel')}
                 checked={rxBoostedGain}
                 onChange={setRxBoostedGain}
                 disabled={disabled || applyingSection !== null}
-                description="Enable boosted LNA gain for better receive sensitivity (SX1262/1268 chips only)."
+                description={t('radioPanel.sx126xRxBoostedDesc')}
               />
             </div>
           )}
           <div className="space-y-1">
             <label htmlFor="radio-hop-limit" className="text-muted text-sm">
-              Hop Limit
+              {t('radioPanel.hopLimitLabel')}
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -1438,17 +1438,14 @@ export default function RadioPanel({
               />
               <span className="w-6 text-center font-mono text-lg text-gray-200">{hopLimit}</span>
             </div>
-            <p className="text-muted text-xs">
-              Number of times a message can be relayed (1–7). Higher = more reach, more airtime.
-              Default: 3.
-            </p>
+            <p className="text-muted text-xs">{t('radioPanel.hopLimitDescription')}</p>
           </div>
         </ConfigSection>
       )}
 
       {/* ═══ Position / GPS ═══ */}
       <ConfigSection
-        title="Position / GPS"
+        title={t('radioPanel.sectionPositionGps')}
         onApply={
           capabilities?.hasFullPositionConfig === false
             ? undefined
@@ -1470,79 +1467,79 @@ export default function RadioPanel({
         {capabilities?.hasFullPositionConfig !== false && (
           <>
             <ConfigNumber
-              label="Position Broadcast Interval"
+              label={t('radioPanel.positionBroadcastIntervalLabel')}
               value={positionBroadcastSecs}
               onChange={setPositionBroadcastSecs}
               disabled={disabled || applyingSection !== null}
               min={0}
               max={86400}
-              unit="seconds"
-              description="How often to broadcast position. 0 = use default (900s). Set higher to conserve airtime."
+              unit={t('radioPanel.secondsUnit')}
+              description={t('radioPanel.positionBroadcastIntervalDesc')}
             />
             <ConfigNumber
-              label="GPS Update Interval"
+              label={t('radioPanel.gpsUpdateIntervalLabel')}
               value={gpsUpdateInterval}
               onChange={setGpsUpdateInterval}
               disabled={disabled || applyingSection !== null}
               min={0}
               max={86400}
-              unit="seconds"
-              description="How often to poll the GPS module. 0 = use default."
+              unit={t('radioPanel.secondsUnit')}
+              description={t('radioPanel.gpsUpdateIntervalDesc')}
             />
             <ConfigSelect
-              label="GPS Mode"
+              label={t('radioPanel.gpsModeLabel')}
               value={gpsMode}
               options={[
-                { value: 0, label: 'Disabled' },
-                { value: 1, label: 'Enabled' },
-                { value: 2, label: 'Not Present' },
+                { value: 0, label: t('radioPanel.gpsModeDisabled') },
+                { value: 1, label: t('radioPanel.gpsModeEnabled') },
+                { value: 2, label: t('radioPanel.gpsModeNotPresent') },
               ]}
               onChange={setGpsMode}
               disabled={disabled || applyingSection !== null}
-              description="GPS_DISABLED: no GPS; GPS_ENABLED: use GPS; GPS_NOT_PRESENT: hardware lacks GPS."
+              description={t('radioPanel.gpsModeDesc')}
             />
             <ConfigNumber
-              label="Position precision"
+              label={t('radioPanel.positionPrecisionLabel')}
               value={positionPrecision}
               onChange={setPositionPrecision}
               disabled={disabled || applyingSection !== null}
               min={1}
               max={19}
-              description="Obfuscation level (1=coarsest, 19=exact). Lower values hide your exact location."
+              description={t('radioPanel.positionPrecisionDesc')}
             />
             <ConfigToggle
-              label="Smart position broadcast"
+              label={t('radioPanel.smartPositionBroadcastLabel')}
               checked={smartPositionEnabled}
               onChange={setSmartPositionEnabled}
               disabled={disabled || applyingSection !== null}
-              description="Only broadcast position when you have moved enough or enough time has passed."
+              description={t('radioPanel.smartPositionBroadcastDesc')}
             />
             {smartPositionEnabled && (
               <div className="space-y-4 border-l border-gray-700 pl-3">
                 <ConfigNumber
-                  label="Min distance to trigger"
+                  label={t('radioPanel.minDistanceTriggerLabel')}
                   value={smartPositionMinDistance}
                   onChange={setSmartPositionMinDistance}
                   disabled={disabled || applyingSection !== null}
                   min={0}
-                  unit="meters"
+                  unit={t('radioPanel.metersUnit')}
                 />
                 <ConfigNumber
-                  label="Min interval"
+                  label={t('radioPanel.minIntervalLabel')}
                   value={smartPositionMinInterval}
                   onChange={setSmartPositionMinInterval}
                   disabled={disabled || applyingSection !== null}
                   min={0}
-                  unit="seconds"
+                  unit={t('radioPanel.secondsUnit')}
                 />
               </div>
             )}
             <ConfigToggle
-              label="Fixed Position"
+              label={t('radioPanel.fixedPositionLabel')}
               checked={fixedPosition}
               onChange={setFixedPosition}
               disabled={disabled || applyingSection !== null}
-              description="When enabled, the device will use a manually-set position instead of GPS."
+              description={t('radioPanel.fixedPositionDesc')}
             />
           </>
         )}
@@ -1551,7 +1548,7 @@ export default function RadioPanel({
         {(fixedPosition || capabilities?.hasFullPositionConfig === false) && (
           <div className="space-y-3 border-t border-gray-700 pt-2">
             <p className="text-muted text-xs">
-              Set coordinates to send to the device.
+              {t('radioPanel.setCoordinatesHint')}
               {ourPosition && (
                 <button
                   type="button"
@@ -1565,13 +1562,13 @@ export default function RadioPanel({
                   }}
                   className="text-brand-green ml-2 underline hover:opacity-80"
                 >
-                  Use current GPS
+                  {t('radioPanel.useCurrentGps')}
                 </button>
               )}
             </p>
             <div className="space-y-1">
               <label htmlFor="radio-fixed-lat" className="text-muted text-sm">
-                Latitude
+                {t('radioPanel.latitudeLabel')}
               </label>
               <input
                 id="radio-fixed-lat"
@@ -1588,7 +1585,7 @@ export default function RadioPanel({
             </div>
             <div className="space-y-1">
               <label htmlFor="radio-fixed-lon" className="text-muted text-sm">
-                Longitude
+                {t('radioPanel.longitudeLabel')}
               </label>
               <input
                 id="radio-fixed-lon"
@@ -1605,7 +1602,7 @@ export default function RadioPanel({
             </div>
             <div className="space-y-1">
               <label htmlFor="radio-fixed-alt" className="text-muted text-sm">
-                Altitude (m)
+                {t('radioPanel.altitudeMetersLabel')}
               </label>
               <input
                 id="radio-fixed-alt"
@@ -1650,7 +1647,7 @@ export default function RadioPanel({
               disabled={disabled || !onSendPositionToDevice}
               className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
             >
-              Send Position to Device
+              {t('radioPanel.sendPositionToDevice')}
             </button>
           </div>
         )}
@@ -1659,7 +1656,7 @@ export default function RadioPanel({
       {/* ═══ Power ═══ */}
       {capabilities?.hasPowerConfig !== false && (
         <ConfigSection
-          title="Power"
+          title={t('radioPanel.sectionPower')}
           onApply={() =>
             applyConfig('Power', 'power', {
               isPowerSaving,
@@ -1674,56 +1671,56 @@ export default function RadioPanel({
           disabled={disabled}
         >
           <ConfigToggle
-            label="Power Saving Mode"
+            label={t('radioPanel.powerSavingModeLabel')}
             checked={isPowerSaving}
             onChange={setIsPowerSaving}
             disabled={disabled || applyingSection !== null}
-            description="Enable low-power mode. Reduces responsiveness but significantly extends battery life."
+            description={t('radioPanel.powerSavingModeDesc')}
           />
           <ConfigNumber
-            label="Min wake duration"
+            label={t('radioPanel.minWakeDurationLabel')}
             value={minWakeSecs}
             onChange={setMinWakeSecs}
             disabled={disabled || applyingSection !== null}
             min={0}
-            unit="seconds"
-            description="Minimum time to stay awake after waking. 0 = use default."
+            unit={t('radioPanel.secondsUnit')}
+            description={t('radioPanel.minWakeDurationDesc')}
           />
           <ConfigNumber
-            label="Bluetooth idle timeout"
+            label={t('radioPanel.bluetoothIdleTimeoutLabel')}
             value={waitBluetoothSecs}
             onChange={setWaitBluetoothSecs}
             disabled={disabled || applyingSection !== null}
             min={0}
-            unit="seconds"
-            description="Seconds to wait before disabling BT when no client is connected. 0 = never."
+            unit={t('radioPanel.secondsUnit')}
+            description={t('radioPanel.bluetoothIdleTimeoutDesc')}
           />
           <ConfigNumber
-            label="Super deep sleep after"
+            label={t('radioPanel.superDeepSleepLabel')}
             value={sdsSecs}
             onChange={setSdsSecs}
             disabled={disabled || applyingSection !== null}
             min={0}
-            unit="seconds"
-            description="Enter super deep sleep after this many seconds of inactivity. 0 = disabled."
+            unit={t('radioPanel.secondsUnit')}
+            description={t('radioPanel.superDeepSleepDesc')}
           />
           <ConfigNumber
-            label="Light sleep duration"
+            label={t('radioPanel.lightSleepDurationLabel')}
             value={lsSecs}
             onChange={setLsSecs}
             disabled={disabled || applyingSection !== null}
             min={0}
-            unit="seconds"
-            description="Duration of light sleep cycles. 0 = use default."
+            unit={t('radioPanel.secondsUnit')}
+            description={t('radioPanel.lightSleepDurationDesc')}
           />
           <ConfigNumber
-            label="Battery shutdown after"
+            label={t('radioPanel.batteryShutdownLabel')}
             value={onBatteryShutdownAfterSecs}
             onChange={setOnBatteryShutdownAfterSecs}
             disabled={disabled || applyingSection !== null}
             min={0}
-            unit="seconds"
-            description="Shut down on battery after this many seconds since last mesh activity. 0 = disabled."
+            unit={t('radioPanel.secondsUnit')}
+            description={t('radioPanel.batteryShutdownDesc')}
           />
         </ConfigSection>
       )}
@@ -1731,7 +1728,7 @@ export default function RadioPanel({
       {/* ═══ Telemetry ═══ */}
       {capabilities?.hasTelemetryIntervalConfig !== false && (
         <ConfigSection
-          title="Telemetry"
+          title={t('radioPanel.sectionTelemetry')}
           onApply={() =>
             applyConfig('Telemetry', 'telemetry', {
               device_update_interval: deviceUpdateInterval,
@@ -1741,7 +1738,7 @@ export default function RadioPanel({
           disabled={disabled}
         >
           <ConfigNumber
-            label="Device metrics update interval"
+            label={t('radioPanel.deviceMetricsIntervalLabel')}
             value={deviceUpdateInterval}
             onChange={setDeviceUpdateInterval}
             disabled={disabled || applyingSection !== null}
@@ -1784,7 +1781,7 @@ export default function RadioPanel({
       {/* ═══ WiFi / Network ═══ */}
       {capabilities?.hasWifiConfig !== false && (
         <ConfigSection
-          title="WiFi / Network"
+          title={t('radioPanel.sectionWifi')}
           onApply={() =>
             applyConfig('Network', 'network', {
               wifiEnabled,
@@ -1798,15 +1795,15 @@ export default function RadioPanel({
           disabled={disabled}
         >
           <ConfigToggle
-            label="WiFi enabled"
+            label={t('radioPanel.wifiEnabledLabel')}
             checked={wifiEnabled}
             onChange={setWifiEnabled}
             disabled={disabled || applyingSection !== null}
-            description="Enable the device's WiFi radio. Requires reboot to take effect."
+            description={t('radioPanel.wifiEnabledDesc')}
           />
           <div className="space-y-1">
             <label htmlFor="radio-wifi-ssid" className="text-muted text-sm">
-              WiFi SSID
+              {t('radioPanel.wifiSsidLabel')}
             </label>
             <input
               id="radio-wifi-ssid"
@@ -1816,7 +1813,7 @@ export default function RadioPanel({
                 setWifiSsid(e.target.value);
               }}
               disabled={disabled || !wifiEnabled || applyingSection !== null}
-              placeholder="Network name"
+              placeholder={t('radioPanel.networkNamePlaceholder')}
               maxLength={33}
               className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
             />
@@ -1828,7 +1825,7 @@ export default function RadioPanel({
           />
           <div className="space-y-1">
             <label htmlFor="radio-ntp-server" className="text-muted text-sm">
-              NTP Server
+              {t('radioPanel.ntpServerLabel')}
             </label>
             <input
               id="radio-ntp-server"
@@ -1844,11 +1841,11 @@ export default function RadioPanel({
             <p className="text-muted text-xs">{t('radioPanel.ntpHint')}</p>
           </div>
           <ConfigToggle
-            label="Ethernet enabled"
+            label={t('radioPanel.ethernetEnabledLabel')}
             checked={ethEnabled}
             onChange={setEthEnabled}
             disabled={disabled || applyingSection !== null}
-            description="Enable hardware Ethernet (supported on select devices)."
+            description={t('radioPanel.ethernetEnabledDesc')}
           />
         </ConfigSection>
       )}
@@ -1870,7 +1867,7 @@ export default function RadioPanel({
 
       {/* Info */}
       <div className="bg-deep-black text-muted space-y-1 rounded-lg p-4 text-sm">
-        <p>Changes are written to the device's flash memory and persist across reboots.</p>
+        <p>{t('radioPanel.flashMemoryNote')}</p>
         <p>{t('radioPanel.restartWarning')}</p>
       </div>
 
@@ -2474,26 +2471,26 @@ function ChannelSection({
 
             {/* MQTT Uplink */}
             <ConfigToggle
-              label="MQTT Uplink"
+              label={t('radioPanel.mqttUplinkLabel')}
               checked={editUplink}
               onChange={setEditUplink}
               disabled={disabled}
-              description="Forward received packets to MQTT broker"
+              description={t('radioPanel.mqttUplinkDesc')}
             />
 
             {/* MQTT Downlink */}
             <ConfigToggle
-              label="MQTT Downlink"
+              label={t('radioPanel.mqttDownlinkLabel')}
               checked={editDownlink}
               onChange={setEditDownlink}
               disabled={disabled}
-              description="Subscribe to MQTT broker and re-broadcast packets"
+              description={t('radioPanel.mqttDownlinkDesc')}
             />
 
             {/* Position Precision */}
             <div className="space-y-1">
               <label htmlFor="radio-mt-ch-pos-precision" className="text-muted text-xs">
-                Position Precision (0 = no location)
+                {t('radioPanel.positionPrecisionChannelLabel')}
               </label>
               <input
                 id="radio-mt-ch-pos-precision"
@@ -2516,7 +2513,7 @@ function ChannelSection({
                 disabled={disabled || saving}
                 className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
               >
-                {saving ? 'Saving...' : 'Save Channel'}
+                {saving ? t('radioPanel.savingChannel') : t('radioPanel.saveChannel')}
               </button>
               <button
                 onClick={resetChannel}

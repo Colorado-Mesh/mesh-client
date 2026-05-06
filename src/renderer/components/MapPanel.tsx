@@ -1014,7 +1014,7 @@ export default function MapPanel({
             title={t('mapPanel.toggleRouteWeightLines')}
             aria-label={t('mapPanel.toggleRouteWeightLines')}
           >
-            Route weights
+            {t('mapPanel.routeWeights')}
           </button>
         )}
         <div className="bg-deep-black/80 flex items-center gap-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs backdrop-blur-sm">

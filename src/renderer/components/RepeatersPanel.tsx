@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -68,13 +69,14 @@ function isSignalRecent(lastAdvert: number | null | undefined): boolean {
 }
 
 function formatRelativeTime(
+  t: TFunction,
   lastHeard: number | null | undefined,
   nodeId?: number,
   nodeName?: string,
 ): string {
-  if (!lastHeard) return 'Never';
+  if (!lastHeard) return t('common.never');
   const lastMs = normalizeLastHeardMs(lastHeard);
-  if (!lastMs) return 'Never';
+  if (!lastMs) return t('common.never');
   const ageMs = Date.now() - lastMs;
   const ageSec = Math.floor(ageMs / 1000);
   if (ageSec < 0) {
@@ -85,12 +87,12 @@ function formatRelativeTime(
       );
   }
   const clampedSec = Math.max(0, ageSec);
-  if (clampedSec < 60) return 'Just now';
+  if (clampedSec < 60) return t('common.justNow');
   const ageMin = Math.floor(clampedSec / 60);
-  if (ageMin < 60) return `${ageMin}m ago`;
+  if (ageMin < 60) return t('common.minutesAgo', { count: ageMin });
   const ageHr = Math.floor(ageMin / 60);
-  if (ageHr < 24) return `${ageHr}h ago`;
-  return `${Math.floor(ageHr / 24)}d ago`;
+  if (ageHr < 24) return t('common.hoursAgo', { count: ageHr });
+  return t('common.daysAgo', { count: Math.floor(ageHr / 24) });
 }
 
 function formatUptime(secs: number | undefined): string {
@@ -518,7 +520,7 @@ export default function RepeatersPanel({
               }}
               className="text-xs text-amber-400/90 underline decoration-dotted hover:text-amber-300"
             >
-              Change session repeater password
+              {t('repeatersPanel.changeSessionRepeaterPassword')}
             </button>
           </div>
         ) : null}
@@ -530,7 +532,7 @@ export default function RepeatersPanel({
               {t('repeatersPanel.noRepeatersHintPre')}
               <strong>{t('repeatersPanel.importContacts')}</strong>
               {t('repeatersPanel.noRepeatersHintMid')}
-              <strong>Nodes</strong>
+              <strong>{t('repeatersPanel.nodesTabName')}</strong>
               {t('repeatersPanel.noRepeatersHintSuffix')}
             </p>
           </div>
@@ -543,9 +545,9 @@ export default function RepeatersPanel({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-700 text-left text-gray-400">
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 pr-4 font-medium">Name</th>
-                  <th className="py-2 pr-4 font-medium">Last Heard</th>
+                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnStatus')}</th>
+                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnName')}</th>
+                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnLastHeard')}</th>
                   <th className="py-2 pr-4 font-medium" title={t('repeatersPanel.snrDbTooltip')}>
                     SNR
                   </th>
@@ -553,12 +555,12 @@ export default function RepeatersPanel({
                     RSSI
                   </th>
                   <th className="py-2 pr-4 font-medium" title={t('repeatersPanel.hopCountTooltip')}>
-                    Hops
+                    {t('repeatersPanel.columnHops')}
                   </th>
-                  <th className="py-2 pr-4 font-medium">Uptime</th>
-                  <th className="py-2 pr-4 font-medium">Air%</th>
-                  <th className="py-2 pr-4 font-medium">Reliability</th>
-                  <th className="py-2 font-medium">Actions</th>
+                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnUptime')}</th>
+                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnAirPct')}</th>
+                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnReliability')}</th>
+                  <th className="py-2 font-medium">{t('repeatersPanel.columnActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
@@ -671,7 +673,7 @@ export default function RepeatersPanel({
                           </span>
                         </td>
                         <td className="py-2 pr-4 text-xs text-gray-400">
-                          {formatRelativeTime(node.last_heard, node.node_id, node.long_name)}
+                          {formatRelativeTime(t, node.last_heard, node.node_id, node.long_name)}
                         </td>
                         <td
                           className="py-2 pr-4"
