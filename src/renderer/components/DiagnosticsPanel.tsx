@@ -879,7 +879,9 @@ export default function DiagnosticsPanel({
 
       {/* Settings */}
       <div className="bg-secondary-dark rounded-lg p-4">
-        <h3 className="text-muted mb-3 text-sm font-medium">Display Settings</h3>
+        <h3 className="text-muted mb-3 text-sm font-medium">
+          {t('diagnosticsPanel.displaySettings')}
+        </h3>
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <input
@@ -892,7 +894,7 @@ export default function DiagnosticsPanel({
               className="accent-brand-green"
             />
             <label htmlFor="congestionHalos" className="cursor-pointer text-sm text-gray-300">
-              Show channel utilization halos on map
+              {t('diagnosticsPanel.showChannelUtilHalos')}
             </label>
           </div>
           <div className="flex items-center gap-2">
@@ -906,7 +908,7 @@ export default function DiagnosticsPanel({
               className="accent-brand-green"
             />
             <label htmlFor="anomalyHalos" className="cursor-pointer text-sm text-gray-300">
-              Show routing anomaly halos on map
+              {t('diagnosticsPanel.showRoutingAnomalyHalos')}
             </label>
           </div>
           {showMqttControls && (
@@ -939,21 +941,21 @@ export default function DiagnosticsPanel({
               className="accent-brand-green"
             />
             <label htmlFor="autoTraceroute" className="cursor-pointer text-sm text-gray-300">
-              Auto-traceroute
+              {t('diagnosticsPanel.autoTraceroute')}
             </label>
             <span className="text-muted text-xs">
-              Probe all nodes every 30 min
+              {t('diagnosticsPanel.autoTracerouteHelp')}
               {lastDiscoveryTs !== null && <> · last: {formatRowTime(lastDiscoveryTs)}</>}
             </span>
           </div>
           <div className="flex flex-col gap-1.5">
-            <div className="text-sm text-gray-300">Environment Profile</div>
+            <div className="text-sm text-gray-300">{t('diagnosticsPanel.environmentProfile')}</div>
             <div className="flex w-fit overflow-hidden rounded-lg border border-gray-600/50">
               {(
                 [
-                  { mode: 'standard', label: 'Standard' },
-                  { mode: 'city', label: 'City' },
-                  { mode: 'canyon', label: 'Canyon' },
+                  { mode: 'standard', label: t('diagnosticsPanel.environmentStandard') },
+                  { mode: 'city', label: t('diagnosticsPanel.environmentCity') },
+                  { mode: 'canyon', label: t('diagnosticsPanel.environmentCanyon') },
                 ] as const
               ).map(({ mode, label }, i) => (
                 <button
@@ -972,17 +974,18 @@ export default function DiagnosticsPanel({
               ))}
             </div>
             <span className="text-muted text-xs">
-              {envMode === 'standard' && 'Default 3 km threshold'}
-              {envMode === 'city' &&
-                'Dense urban RF interference — 1.6× threshold, allow 1 extra hop'}
-              {envMode === 'canyon' && 'Mountainous terrain — 2.6× threshold, allow 2 extra hops'}
+              {envMode === 'standard' && t('diagnosticsPanel.environmentStandardHint')}
+              {envMode === 'city' && t('diagnosticsPanel.environmentCityHint')}
+              {envMode === 'canyon' && t('diagnosticsPanel.environmentCanyonHint')}
             </span>
           </div>
           <div className="flex flex-col gap-1.5 border-t border-gray-700/50 pt-2">
-            <div className="text-sm text-gray-300">Stale routing diagnostics</div>
+            <div className="text-sm text-gray-300">
+              {t('diagnosticsPanel.staleRoutingDiagnostics')}
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <label htmlFor="diagnosticRowsMaxAgeHours" className="text-sm text-gray-400">
-                Drop routing rows older than
+                {t('diagnosticsPanel.dropRoutingRowsLabel')}
               </label>
               <input
                 id="diagnosticRowsMaxAgeHours"
@@ -999,11 +1002,9 @@ export default function DiagnosticsPanel({
                 })}
                 className="bg-deep-black focus:border-brand-green w-16 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none"
               />
-              <span className="text-sm text-gray-400">hours (1–168)</span>
+              <span className="text-sm text-gray-400">{t('diagnosticsPanel.hoursRange')}</span>
             </div>
-            <span className="text-muted text-xs">
-              Applied on load, persist, and merge. RF findings still expire after 1 hour.
-            </span>
+            <span className="text-muted text-xs">{t('diagnosticsPanel.staleRoutingHelp')}</span>
           </div>
         </div>
       </div>
@@ -1089,8 +1090,8 @@ export default function DiagnosticsPanel({
         {anomalyList.length === 0 ? (
           <div className="bg-secondary-dark text-muted rounded-lg p-8 text-center text-sm">
             {diagnosticRows.length === 0
-              ? 'No diagnostics detected. The mesh looks healthy!'
-              : 'No anomalies match your search.'}
+              ? t('diagnosticsPanel.noDiagnosticsHealthy')
+              : t('diagnosticsPanel.noAnomaliesMatchSearch')}
           </div>
         ) : (
           <div className="space-y-6">

@@ -546,13 +546,10 @@ export default function AppPanel({
                 htmlFor="log-panel-visible-checkbox"
                 className="cursor-pointer text-sm text-gray-300"
               >
-                Show log panel (right side)
+                {t('appPanel.showLogPanel')}
               </label>
             </div>
-            <p className="text-muted mt-2 text-xs">
-              When enabled, a live log stream appears on the right. Debug lines require the checkbox
-              inside the log panel.
-            </p>
+            <p className="text-muted mt-2 text-xs">{t('appPanel.logPanelHelp')}</p>
           </div>
         </div>
       )}

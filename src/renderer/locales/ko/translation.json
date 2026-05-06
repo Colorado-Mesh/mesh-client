@@ -796,7 +796,8 @@
     "clearChannelLabel": "채널:",
     "meshcoreRemoveNeverAdvertisedLabel": "시작 시 광고한 적이 없는 연락처 제거",
     "meshcoreRemoveNeverAdvertisedHint": "광고 기록이 없는 오래된 자리 표시자 연락처를 제거합니다. 즐겨찾는 연락처가 유지됩니다.",
-    "messagesLoadLimitIntro": "UI용 메모리에 로드되는 메시지 수를 제한하고 SQLite에 유지되는 행 수를 제한합니다. 더 적은 수의 로드를 사용하면 사용량이 많은 네트워크에서 RAM을 적게 사용할 수 있습니다. 데이터베이스 캡은 앱 시작 시 오래된 메시지를 정리합니다(프로토콜별로 저장됨)."
+    "messagesLoadLimitIntro": "UI용 메모리에 로드되는 메시지 수를 제한하고 SQLite에 유지되는 행 수를 제한합니다. 더 적은 수의 로드를 사용하면 사용량이 많은 네트워크에서 RAM을 적게 사용할 수 있습니다. 데이터베이스 캡은 앱 시작 시 오래된 메시지를 정리합니다(프로토콜별로 저장됨).",
+    "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다."
   },
   "nodeListPanel": {
     "contactsRefreshed": "연락처가 새로 고쳐졌습니다.",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "수업",
     "foreignProximityColumn": "근접성",
     "foreignLastSeenColumn": "마지막으로 본",
-    "foreignCountColumn": "세다"
+    "foreignCountColumn": "세다",
+    "displaySettings": "디스플레이 설정",
+    "showChannelUtilHalos": "지도에 채널 활용 후광 표시",
+    "showRoutingAnomalyHalos": "지도에 경로 이상 후광 표시",
+    "autoTraceroute": "자동 추적 경로",
+    "autoTracerouteHelp": "30분마다 모든 노드를 프로브합니다.",
+    "environmentProfile": "환경 프로필",
+    "environmentStandard": "기준",
+    "environmentCity": "도시",
+    "environmentCanyon": "깊은 협곡",
+    "environmentStandardHint": "기본 3km 임계값",
+    "environmentCityHint": "조밀한 도시 RF 간섭 — 1.6× 임계값, 1개의 추가 홉 허용",
+    "environmentCanyonHint": "산악 지형 — 2.6× 임계값, 2개의 추가 홉 허용",
+    "staleRoutingDiagnostics": "오래된 라우팅 진단",
+    "dropRoutingRowsLabel": "다음보다 오래된 라우팅 행 삭제",
+    "hoursRange": "시간(1~168)",
+    "staleRoutingHelp": "로드, 지속 및 병합 시 적용됩니다. RF 발견 항목은 1시간 후에도 만료됩니다.",
+    "noDiagnosticsHealthy": "진단이 감지되지 않았습니다. 메쉬가 건강해 보이네요!",
+    "noAnomaliesMatchSearch": "검색어와 일치하는 이상이 없습니다."
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",
@@ -1199,7 +1218,20 @@
     "columnReliability": "신뢰할 수 있음",
     "columnActions": "행위",
     "nodesTabName": "노드",
-    "changeSessionRepeaterPassword": "세션 리피터 비밀번호 변경"
+    "changeSessionRepeaterPassword": "세션 리피터 비밀번호 변경",
+    "title": "중계기",
+    "columnsDataHint": "SNR, RSSI, 가동 시간 및 방송 시간은 상태 작업(또는 이 패널이 열려 있는 동안 자동 가져오기)에서 가져옵니다. 홉 및 경로 기록에는 Ping이 필요합니다. MeshCore는 광고만으로는 해당 열을 채우지 않습니다.",
+    "remoteAccessAriaLabel": "중계기 원격 액세스",
+    "remoteAuthLabel": "리피터 관리자 비밀번호(선택사항)",
+    "remoteAuthPlaceholder": "리피터에 관리자 비밀번호가 없으면 비워 두세요.",
+    "remoteAuthHelp": "원격 중계기 상태, 이웃 및 센서 원격 측정에는 관리자 비밀번호가 필요할 수 있습니다. 세션당 한 번 선택합니다. 이 창에 대해서는 메모리에만 저장됩니다.",
+    "remoteAuthContinueWithoutPassword": "비밀번호 없이 계속하기",
+    "remoteAuthSaveForSession": "이 세션을 위해 저장",
+    "remoteAuthCancelDialog": "리피터 비밀번호 취소 대화상자",
+    "remoteAuthTitle": "리피터 관리자 비밀번호",
+    "remoteAuthModalHelp": "원격 리피터 명령에 대한 선택적 비밀번호입니다. 이 세션에 대해서만 이 창에 저장됩니다.",
+    "remoteAuthNoPassword": "비밀번호 없음",
+    "remoteAuthContinue": "계속하다"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "즐겨찾기에서 제거",

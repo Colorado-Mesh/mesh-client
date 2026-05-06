@@ -796,7 +796,8 @@
     "clearChannelLabel": "Kanal:",
     "meshcoreRemoveNeverAdvertisedLabel": "Kontakte entfernen, die beim Start noch nie beworben wurden",
     "meshcoreRemoveNeverAdvertisedHint": "Entfernt veraltete Platzhalterkontakte ohne Anzeigenverlauf; bevorzugte Kontakte werden beibehalten.",
-    "messagesLoadLimitIntro": "Begrenzen Sie, wie viele Nachrichten in den Speicher für die Benutzeroberfläche geladen werden, und begrenzen Sie, wie viele Zeilen in SQLite verbleiben. Weniger Laden hält den Arbeitsspeicher in ausgelasteten Netzwerken niedrig; die Datenbankobergrenze beschneidet ältere Nachrichten beim App-Start (per Protokoll gespeichert)."
+    "messagesLoadLimitIntro": "Begrenzen Sie, wie viele Nachrichten in den Speicher für die Benutzeroberfläche geladen werden, und begrenzen Sie, wie viele Zeilen in SQLite verbleiben. Weniger Laden hält den Arbeitsspeicher in ausgelasteten Netzwerken niedrig; die Datenbankobergrenze beschneidet ältere Nachrichten beim App-Start (per Protokoll gespeichert).",
+    "logPanelHelp": "Wenn diese Option aktiviert ist, wird rechts ein Live-Protokollstream angezeigt. Für Debugzeilen ist das Kontrollkästchen im Protokollbereich erforderlich."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakte aktualisiert.",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "Klasse",
     "foreignProximityColumn": "Nähe",
     "foreignLastSeenColumn": "Zuletzt Online",
-    "foreignCountColumn": "Anzahl"
+    "foreignCountColumn": "Anzahl",
+    "displaySettings": "Anzeigeeinstellungen",
+    "showChannelUtilHalos": "Kanalauslastungshöfe auf der Karte anzeigen",
+    "showRoutingAnomalyHalos": "Routing-Anomalie-Halos auf der Karte anzeigen",
+    "autoTraceroute": "Automatische Routenverfolgung",
+    "autoTracerouteHelp": "Prüfen Sie alle Knoten alle 30 Minuten",
+    "environmentProfile": "Umgebungsprofil",
+    "environmentStandard": "Standard",
+    "environmentCity": "Stadt",
+    "environmentCanyon": "Schlucht",
+    "environmentStandardHint": "Standardmäßiger Schwellenwert von 3 km",
+    "environmentCityHint": "Dichte urbane HF-Störung – 1,6-facher Schwellenwert, 1 zusätzlichen Hop erlauben",
+    "environmentCanyonHint": "Bergiges Gelände – 2,6-facher Schwellenwert, 2 zusätzliche Sprünge zulassen",
+    "staleRoutingDiagnostics": "Diagnose eines veralteten Routings",
+    "dropRoutingRowsLabel": "Löschen Sie Routingzeilen, die älter sind als",
+    "hoursRange": "Stunden (1–168)",
+    "staleRoutingHelp": "Wird beim Laden, Beibehalten und Zusammenführen angewendet. RF-Befunde verfallen weiterhin nach 1 Stunde.",
+    "noDiagnosticsHealthy": "Keine Diagnose erkannt. Das Netz sieht gesund aus!",
+    "noAnomaliesMatchSearch": "Keine Anomalien entsprechen Ihrer Suche."
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",
@@ -1199,7 +1218,20 @@
     "columnReliability": "Zuverlässigkeit",
     "columnActions": "Aktionen",
     "nodesTabName": "Knoten",
-    "changeSessionRepeaterPassword": "Passwort des Sitzungswiederholers ändern"
+    "changeSessionRepeaterPassword": "Passwort des Sitzungswiederholers ändern",
+    "title": "Wiederholer",
+    "columnsDataHint": "SNR, RSSI, Betriebszeit und Sendezeit stammen aus der Statusaktion (oder werden automatisch abgerufen, während dieses Bedienfeld geöffnet ist). Hopfen und Pfadverlauf benötigen Ping. MeshCore füllt diese Spalten nicht allein durch Werbung.",
+    "remoteAccessAriaLabel": "Repeater-Fernzugriff",
+    "remoteAuthLabel": "Repeater-Administratorkennwort (optional)",
+    "remoteAuthPlaceholder": "Leer lassen, wenn Repeater kein Admin-Passwort haben",
+    "remoteAuthHelp": "Für den Remote-Repeater-Status, die Nachbarn und die Sensortelemetrie ist möglicherweise ein Administratorkennwort erforderlich. Wählen Sie einmal pro Sitzung aus – wird nur für dieses Fenster im Speicher gespeichert.",
+    "remoteAuthContinueWithoutPassword": "Ohne Passwort fortfahren",
+    "remoteAuthSaveForSession": "Speichern Sie für diese Sitzung",
+    "remoteAuthCancelDialog": "Repeater-Passwort-Dialog abbrechen",
+    "remoteAuthTitle": "Repeater-Administratorkennwort",
+    "remoteAuthModalHelp": "Optionales Passwort für Remote-Repeater-Befehle. Wird nur für diese Sitzung in diesem Fenster gespeichert.",
+    "remoteAuthNoPassword": "Kein Passwort",
+    "remoteAuthContinue": "Weitermachen"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Aus Favoriten-Liste entfernen",

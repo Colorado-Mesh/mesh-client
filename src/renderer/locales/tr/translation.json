@@ -796,7 +796,8 @@
     "clearChannelLabel": "Kanal:",
     "meshcoreRemoveNeverAdvertisedLabel": "Başlangıçta hiç reklam vermeyen kişileri kaldırın",
     "meshcoreRemoveNeverAdvertisedHint": "Reklam geçmişi olmayan eski yer tutucu kişileri kaldırır; favorilere eklenen kişiler korunur.",
-    "messagesLoadLimitIntro": "Kullanıcı arayüzü için belleğe kaç mesajın yükleneceğini ve SQLite'ta kaç satırın kalacağını sınırlayın. Daha az yükleme, yoğun ağlarda RAM'in düşük kalmasını sağlar; veritabanı başlığı, uygulama başlangıcında eski mesajları siler (protokol başına saklanır)."
+    "messagesLoadLimitIntro": "Kullanıcı arayüzü için belleğe kaç mesajın yükleneceğini ve SQLite'ta kaç satırın kalacağını sınırlayın. Daha az yükleme, yoğun ağlarda RAM'in düşük kalmasını sağlar; veritabanı başlığı, uygulama başlangıcında eski mesajları siler (protokol başına saklanır).",
+    "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "Sınıf",
     "foreignProximityColumn": "Yakınlık",
     "foreignLastSeenColumn": "Son Görülme",
-    "foreignCountColumn": "Saymak"
+    "foreignCountColumn": "Saymak",
+    "displaySettings": "Ekran Ayarları",
+    "showChannelUtilHalos": "Kanal kullanım halelerini haritada göster",
+    "showRoutingAnomalyHalos": "Rota anormalliği halelerini haritada göster",
+    "autoTraceroute": "Otomatik izleme rotası",
+    "autoTracerouteHelp": "Her 30 dakikada bir tüm düğümleri araştırın",
+    "environmentProfile": "Çevre Profili",
+    "environmentStandard": "Standart",
+    "environmentCity": "Şehir",
+    "environmentCanyon": "Kanyon",
+    "environmentStandardHint": "Varsayılan 3 km eşiği",
+    "environmentCityHint": "Yoğun kentsel RF girişimi — 1,6x eşik, 1 ekstra sıçramaya izin verir",
+    "environmentCanyonHint": "Dağlık arazi — 2,6× eşik, 2 ekstra sıçramaya izin verir",
+    "staleRoutingDiagnostics": "Eski yönlendirme teşhisi",
+    "dropRoutingRowsLabel": "Şu tarihten daha eski olan yönlendirme satırlarını bırak:",
+    "hoursRange": "saat (1–168)",
+    "staleRoutingHelp": "Yükleme, kalıcılık ve birleştirme sırasında uygulanır. RF bulgularının geçerliliği 1 saat sonra da sona ermektedir.",
+    "noDiagnosticsHealthy": "Hiçbir teşhis algılanmadı. Örgü sağlıklı görünüyor!",
+    "noAnomaliesMatchSearch": "Aramanızla eşleşen anormallik yok."
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -1199,7 +1218,20 @@
     "columnReliability": "Güvenilirlik",
     "columnActions": "Eylemler",
     "nodesTabName": "Düğümler",
-    "changeSessionRepeaterPassword": "Oturum tekrarlayıcı şifresini değiştirin"
+    "changeSessionRepeaterPassword": "Oturum tekrarlayıcı şifresini değiştirin",
+    "title": "Tekrarlayıcılar",
+    "columnsDataHint": "SNR, RSSI, çalışma süresi ve yayın süresi Durum işleminden (veya bu panel açıkken otomatik getirme) gelir. Şerbetçiotu ve yol geçmişinin Ping'e ihtiyacı var. MeshCore bu sütunları yalnızca reklamlardan doldurmaz.",
+    "remoteAccessAriaLabel": "Tekrarlayıcı uzaktan erişim",
+    "remoteAuthLabel": "Tekrarlayıcı yönetici şifresi (isteğe bağlı)",
+    "remoteAuthPlaceholder": "Tekrarlayıcıların yönetici şifresi yoksa boş bırakın",
+    "remoteAuthHelp": "Uzak tekrarlayıcı Durumu, Komşular ve sensör telemetrisi için yönetici şifresi gerekebilir. Oturum başına bir kez seçin; yalnızca bu pencerenin belleğinde saklanır.",
+    "remoteAuthContinueWithoutPassword": "Şifre olmadan devam et",
+    "remoteAuthSaveForSession": "Bu oturum için kaydet",
+    "remoteAuthCancelDialog": "Tekrarlayıcı şifre iletişim kutusunu iptal et",
+    "remoteAuthTitle": "Tekrarlayıcı yönetici şifresi",
+    "remoteAuthModalHelp": "Uzaktan tekrarlayıcı komutları için isteğe bağlı şifre. Bu oturum için yalnızca bu pencerede saklanır.",
+    "remoteAuthNoPassword": "Şifre yok",
+    "remoteAuthContinue": "Devam etmek"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Favorilerden kaldır",

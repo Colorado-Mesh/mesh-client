@@ -491,7 +491,7 @@ export default function RepeatersPanel({
     <>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col flex-wrap items-stretch justify-between gap-3 min-[480px]:flex-row min-[480px]:items-center">
-          <h2 className="text-bright-green text-lg font-semibold">Repeaters</h2>
+          <h2 className="text-bright-green text-lg font-semibold">{t('repeatersPanel.title')}</h2>
           <input
             type="search"
             value={searchQuery}
@@ -503,11 +503,7 @@ export default function RepeatersPanel({
             className="bg-secondary-dark/80 focus:border-brand-green/50 max-w-[20rem] min-w-[8rem] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
           />
         </div>
-        <p className="max-w-2xl text-xs text-gray-500">
-          SNR, RSSI, uptime, and airtime come from the Status action (or auto-fetch while this panel
-          is open). Hops and path history need Ping. MeshCore does not fill those columns from
-          adverts alone.
-        </p>
+        <p className="max-w-2xl text-xs text-gray-500">{t('repeatersPanel.columnsDataHint')}</p>
 
         <MeshcoreRepeaterRemoteAuthBanner onConfigured={bumpRemoteAuthEpoch} />
         {remoteAuthReady ? (

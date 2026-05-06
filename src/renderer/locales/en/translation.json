@@ -802,7 +802,8 @@
     "clearChannelLabel": "Channel:",
     "meshcoreRemoveNeverAdvertisedLabel": "Remove contacts that have never advertised on startup",
     "meshcoreRemoveNeverAdvertisedHint": "Removes stale placeholder contacts with no advert history; favorited contacts are kept.",
-    "messagesLoadLimitIntro": "Limit how many messages load into memory for the UI, and cap how many rows stay in SQLite. Loading fewer keeps RAM down on busy networks; the database cap prunes older messages on app startup (stored per protocol)."
+    "messagesLoadLimitIntro": "Limit how many messages load into memory for the UI, and cap how many rows stay in SQLite. Loading fewer keeps RAM down on busy networks; the database cap prunes older messages on app startup (stored per protocol).",
+    "logPanelHelp": "When enabled, a live log stream appears on the right. Debug lines require the checkbox inside the log panel."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacts refreshed.",
@@ -1150,7 +1151,25 @@
     "foreignClassColumn": "Class",
     "foreignProximityColumn": "Proximity",
     "foreignLastSeenColumn": "Last Seen",
-    "foreignCountColumn": "Count"
+    "foreignCountColumn": "Count",
+    "displaySettings": "Display Settings",
+    "showChannelUtilHalos": "Show channel utilization halos on map",
+    "showRoutingAnomalyHalos": "Show routing anomaly halos on map",
+    "autoTraceroute": "Auto-traceroute",
+    "autoTracerouteHelp": "Probe all nodes every 30 min",
+    "environmentProfile": "Environment Profile",
+    "environmentStandard": "Standard",
+    "environmentCity": "City",
+    "environmentCanyon": "Canyon",
+    "environmentStandardHint": "Default 3 km threshold",
+    "environmentCityHint": "Dense urban RF interference — 1.6× threshold, allow 1 extra hop",
+    "environmentCanyonHint": "Mountainous terrain — 2.6× threshold, allow 2 extra hops",
+    "staleRoutingDiagnostics": "Stale routing diagnostics",
+    "dropRoutingRowsLabel": "Drop routing rows older than",
+    "hoursRange": "hours (1–168)",
+    "staleRoutingHelp": "Applied on load, persist, and merge. RF findings still expire after 1 hour.",
+    "noDiagnosticsHealthy": "No diagnostics detected. The mesh looks healthy!",
+    "noAnomaliesMatchSearch": "No anomalies match your search."
   },
   "rawPacketLog": {
     "filterPackets": "Filter packets",
@@ -1204,7 +1223,20 @@
     "columnReliability": "Reliability",
     "columnActions": "Actions",
     "nodesTabName": "Nodes",
-    "changeSessionRepeaterPassword": "Change session repeater password"
+    "changeSessionRepeaterPassword": "Change session repeater password",
+    "title": "Repeaters",
+    "columnsDataHint": "SNR, RSSI, uptime, and airtime come from the Status action (or auto-fetch while this panel is open). Hops and path history need Ping. MeshCore does not fill those columns from adverts alone.",
+    "remoteAccessAriaLabel": "Repeater remote access",
+    "remoteAuthLabel": "Repeater admin password (optional)",
+    "remoteAuthPlaceholder": "Leave empty if repeaters have no admin password",
+    "remoteAuthHelp": "Remote repeater Status, Neighbors, and sensor telemetry may need an admin password. Choose once per session — stored only in memory for this window.",
+    "remoteAuthContinueWithoutPassword": "Continue without password",
+    "remoteAuthSaveForSession": "Save for this session",
+    "remoteAuthCancelDialog": "Cancel repeater password dialog",
+    "remoteAuthTitle": "Repeater admin password",
+    "remoteAuthModalHelp": "Optional password for remote repeater commands. Stored for this session only in this window.",
+    "remoteAuthNoPassword": "No password",
+    "remoteAuthContinue": "Continue"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Remove from favorites",

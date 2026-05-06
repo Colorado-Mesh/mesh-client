@@ -796,7 +796,8 @@
     "clearChannelLabel": "Canal:",
     "meshcoreRemoveNeverAdvertisedLabel": "Eliminar contactos que nunca se han anunciado en el inicio",
     "meshcoreRemoveNeverAdvertisedHint": "Elimina los contactos de marcador de posición obsoletos sin historial de anuncios; los contactos favoritos se mantienen.",
-    "messagesLoadLimitIntro": "Limite la cantidad de mensajes que se cargan en la memoria para la interfaz de usuario y limite la cantidad de filas que permanecen en SQLite. Cargar menos mantiene la RAM baja en redes ocupadas; el límite de la base de datos elimina los mensajes más antiguos al iniciar la aplicación (almacenados por protocolo)."
+    "messagesLoadLimitIntro": "Limite la cantidad de mensajes que se cargan en la memoria para la interfaz de usuario y limite la cantidad de filas que permanecen en SQLite. Cargar menos mantiene la RAM baja en redes ocupadas; el límite de la base de datos elimina los mensajes más antiguos al iniciar la aplicación (almacenados por protocolo).",
+    "logPanelHelp": "Cuando está habilitado, aparece una transmisión de registro en vivo a la derecha. Las líneas de depuración requieren la casilla de verificación dentro del panel de registro."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contactos actualizados.",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "Curso",
     "foreignProximityColumn": "Proximidad",
     "foreignLastSeenColumn": "Visto por última vez",
-    "foreignCountColumn": "Contar"
+    "foreignCountColumn": "Contar",
+    "displaySettings": "Configuración de pantalla",
+    "showChannelUtilHalos": "Mostrar halos de utilización del canal en el mapa",
+    "showRoutingAnomalyHalos": "Mostrar halos de anomalías de ruta en el mapa",
+    "autoTraceroute": "Trazado automático de ruta",
+    "autoTracerouteHelp": "Sondear todos los nodos cada 30 min.",
+    "environmentProfile": "Perfil ambiental",
+    "environmentStandard": "Estándar",
+    "environmentCity": "Ciudad",
+    "environmentCanyon": "Cañón",
+    "environmentStandardHint": "Umbral predeterminado de 3 km",
+    "environmentCityHint": "Interferencia de RF urbana densa: umbral de 1,6 ×, permite 1 salto adicional",
+    "environmentCanyonHint": "Terreno montañoso: umbral de 2,6 ×, permite 2 saltos adicionales",
+    "staleRoutingDiagnostics": "Diagnóstico de enrutamiento obsoleto",
+    "dropRoutingRowsLabel": "Eliminar filas de enrutamiento anteriores a",
+    "hoursRange": "horas (1–168)",
+    "staleRoutingHelp": "Se aplica al cargar, persistir y fusionar. Los hallazgos de RF aún caducan después de 1 hora.",
+    "noDiagnosticsHealthy": "No se detectaron diagnósticos. ¡La malla se ve saludable!",
+    "noAnomaliesMatchSearch": "Ninguna anomalía coincide con su búsqueda."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",
@@ -1199,7 +1218,20 @@
     "columnReliability": "Fiabilidad",
     "columnActions": "Acciones",
     "nodesTabName": "Nodos",
-    "changeSessionRepeaterPassword": "Cambiar contraseña del repetidor de sesión"
+    "changeSessionRepeaterPassword": "Cambiar contraseña del repetidor de sesión",
+    "title": "Repetidores",
+    "columnsDataHint": "SNR, RSSI, tiempo de actividad y tiempo aire provienen de la acción Estado (o recuperación automática mientras este panel está abierto). El historial de saltos y rutas necesita Ping. MeshCore no llena esas columnas únicamente con anuncios.",
+    "remoteAccessAriaLabel": "Acceso remoto al repetidor",
+    "remoteAuthLabel": "Contraseña de administrador del repetidor (opcional)",
+    "remoteAuthPlaceholder": "Déjelo en blanco si los repetidores no tienen contraseña de administrador.",
+    "remoteAuthHelp": "El estado del repetidor remoto, los vecinos y la telemetría del sensor pueden necesitar una contraseña de administrador. Elija una vez por sesión: se almacena solo en la memoria para esta ventana.",
+    "remoteAuthContinueWithoutPassword": "Continuar sin contraseña",
+    "remoteAuthSaveForSession": "Guardar para esta sesión",
+    "remoteAuthCancelDialog": "Cancelar el cuadro de diálogo de contraseña del repetidor",
+    "remoteAuthTitle": "Contraseña de administrador del repetidor",
+    "remoteAuthModalHelp": "Contraseña opcional para comandos de repetidor remoto. Almacenado para esta sesión solo en esta ventana.",
+    "remoteAuthNoPassword": "Sin contraseña",
+    "remoteAuthContinue": "Continuar"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Eliminar de favoritos",

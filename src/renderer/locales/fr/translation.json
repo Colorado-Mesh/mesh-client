@@ -796,7 +796,8 @@
     "clearChannelLabel": "Chaîne :",
     "meshcoreRemoveNeverAdvertisedLabel": "Supprimer les contacts qui n'ont jamais été annoncés au démarrage",
     "meshcoreRemoveNeverAdvertisedHint": "Supprime les contacts d'espace réservé périmés sans historique publicitaire ; les contacts favoris sont conservés.",
-    "messagesLoadLimitIntro": "Limitez le nombre de messages chargés en mémoire pour l'interface utilisateur et limitez le nombre de lignes restant dans SQLite. Charger moins réduit la RAM sur les réseaux occupés ; la base de données élague les messages plus anciens au démarrage de l'application (stockée par protocole)."
+    "messagesLoadLimitIntro": "Limitez le nombre de messages chargés en mémoire pour l'interface utilisateur et limitez le nombre de lignes restant dans SQLite. Charger moins réduit la RAM sur les réseaux occupés ; la base de données élague les messages plus anciens au démarrage de l'application (stockée par protocole).",
+    "logPanelHelp": "Lorsqu'il est activé, un flux de journaux en direct apparaît sur la droite. Les lignes de débogage nécessitent la case à cocher dans le panneau de journal."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacts actualisés.",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "Classe",
     "foreignProximityColumn": "Proximité",
     "foreignLastSeenColumn": "Consulté dernièrement",
-    "foreignCountColumn": "Compter"
+    "foreignCountColumn": "Compter",
+    "displaySettings": "Paramètres d'affichage",
+    "showChannelUtilHalos": "Afficher les halos d'utilisation des canaux sur la carte",
+    "showRoutingAnomalyHalos": "Afficher les halos d'anomalies de routage sur la carte",
+    "autoTraceroute": "Trace automatique",
+    "autoTracerouteHelp": "Sonder tous les nœuds toutes les 30 minutes",
+    "environmentProfile": "Profil d'environnement",
+    "environmentStandard": "Standard",
+    "environmentCity": "Ville",
+    "environmentCanyon": "Canyon",
+    "environmentStandardHint": "Seuil de 3 km par défaut",
+    "environmentCityHint": "Interférence RF urbaine dense — seuil de 1,6 ×, autoriser 1 saut supplémentaire",
+    "environmentCanyonHint": "Terrain montagneux – seuil de 2,6 ×, autorisez 2 sauts supplémentaires",
+    "staleRoutingDiagnostics": "Diagnostics de routage obsolètes",
+    "dropRoutingRowsLabel": "Supprimer les lignes de routage plus anciennes que",
+    "hoursRange": "heures (1 à 168)",
+    "staleRoutingHelp": "Appliqué lors du chargement, de la persistance et de la fusion. Les résultats RF expirent toujours après 1 heure.",
+    "noDiagnosticsHealthy": "Aucun diagnostic détecté. Le maillage a l'air sain !",
+    "noAnomaliesMatchSearch": "Aucune anomalie ne correspond à votre recherche."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",
@@ -1199,7 +1218,20 @@
     "columnReliability": "Fiabilité",
     "columnActions": "Interventions",
     "nodesTabName": "Nœuds",
-    "changeSessionRepeaterPassword": "Modifier le mot de passe du répéteur de session"
+    "changeSessionRepeaterPassword": "Modifier le mot de passe du répéteur de session",
+    "title": "Répéteurs",
+    "columnsDataHint": "SNR, RSSI, disponibilité et temps d'antenne proviennent de l'action Statut (ou de la récupération automatique lorsque ce panneau est ouvert). L'historique du houblon et du chemin a besoin de Ping. MeshCore ne remplit pas ces colonnes uniquement à partir d'annonces.",
+    "remoteAccessAriaLabel": "Accès à distance du répéteur",
+    "remoteAuthLabel": "Mot de passe administrateur du répéteur (facultatif)",
+    "remoteAuthPlaceholder": "Laisser vide si les répéteurs n'ont pas de mot de passe administrateur",
+    "remoteAuthHelp": "L'état du répéteur à distance, les voisins et la télémétrie du capteur peuvent nécessiter un mot de passe administrateur. Choisissez une fois par session - stocké uniquement en mémoire pour cette fenêtre.",
+    "remoteAuthContinueWithoutPassword": "Continuer sans mot de passe",
+    "remoteAuthSaveForSession": "Enregistrer pour cette session",
+    "remoteAuthCancelDialog": "Boîte de dialogue Annuler le mot de passe du répéteur",
+    "remoteAuthTitle": "Mot de passe administrateur du répéteur",
+    "remoteAuthModalHelp": "Mot de passe facultatif pour les commandes du répéteur à distance. Stocké pour cette session uniquement dans cette fenêtre.",
+    "remoteAuthNoPassword": "Pas de mot de passe",
+    "remoteAuthContinue": "Continuer"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Supprimer des favoris",

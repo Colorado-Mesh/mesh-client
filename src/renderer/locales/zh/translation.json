@@ -796,7 +796,8 @@
     "clearChannelLabel": "頻道：",
     "meshcoreRemoveNeverAdvertisedLabel": "删除从未在启动时发布广告的联系人",
     "meshcoreRemoveNeverAdvertisedHint": "删除没有广告历史记录的陈旧占位符联系人；保留收藏的联系人。",
-    "messagesLoadLimitIntro": "限制UI加载到内存中的消息数，并限制SQLite中保留的行数。加载较少会降低繁忙网络上的RAM ；数据库CAP会在应用程序启动时修剪较旧的消息（按协议存储）。"
+    "messagesLoadLimitIntro": "限制UI加载到内存中的消息数，并限制SQLite中保留的行数。加载较少会降低繁忙网络上的RAM ；数据库CAP会在应用程序启动时修剪较旧的消息（按协议存储）。",
+    "logPanelHelp": "启用后，实时日志流将显示在右侧。调试行需要日志面板内的复选框。"
   },
   "nodeListPanel": {
     "contactsRefreshed": "联系人已刷新。",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "纲",
     "foreignProximityColumn": "邻近度",
     "foreignLastSeenColumn": "上一次查看时间",
-    "foreignCountColumn": "计数"
+    "foreignCountColumn": "计数",
+    "displaySettings": "显示设置",
+    "showChannelUtilHalos": "在地图上显示通道利用率光环",
+    "showRoutingAnomalyHalos": "在地图上显示路由异常光环",
+    "autoTraceroute": "自动追踪路线",
+    "autoTracerouteHelp": "每 30 分钟探测一次所有节点",
+    "environmentProfile": "环境概况",
+    "environmentStandard": "标准",
+    "environmentCity": "城市",
+    "environmentCanyon": "峡谷",
+    "environmentStandardHint": "默认 3 公里阈值",
+    "environmentCityHint": "密集城市射频干扰 — 1.6× 阈值，允许 1 个额外跳",
+    "environmentCanyonHint": "山区地形 — 2.6× 阈值，允许 2 次额外跳跃",
+    "staleRoutingDiagnostics": "过时的路由诊断",
+    "dropRoutingRowsLabel": "删除早于以下时间的路由行",
+    "hoursRange": "小时 (1–168)",
+    "staleRoutingHelp": "应用于加载、持久和合并。 RF 结果仍会在 1 小时后失效。",
+    "noDiagnosticsHealthy": "未检测到诊断。网格看起来很健康！",
+    "noAnomaliesMatchSearch": "没有与您的搜索相符的异常情况。"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -1199,7 +1218,20 @@
     "columnReliability": "可靠性",
     "columnActions": "动作",
     "nodesTabName": "节点",
-    "changeSessionRepeaterPassword": "更改会话中继器密码"
+    "changeSessionRepeaterPassword": "更改会话中继器密码",
+    "title": "中继器",
+    "columnsDataHint": "SNR、RSSI、正常运行时间和通话时间来自状态操作（或在此面板打开时自动获取）。跃点和路径历史记录需要 Ping。 MeshCore 不会仅通过广告来填充这些列。",
+    "remoteAccessAriaLabel": "中继器远程访问",
+    "remoteAuthLabel": "中继器管理员密码（可选）",
+    "remoteAuthPlaceholder": "如果中继器没有管理员密码，则留空",
+    "remoteAuthHelp": "远程中继器状态、邻居和传感器遥测可能需要管理员密码。每个会话选择一次 - 仅存储在该窗口的内存中。",
+    "remoteAuthContinueWithoutPassword": "无需密码继续",
+    "remoteAuthSaveForSession": "保存本次会议",
+    "remoteAuthCancelDialog": "取消中继器密码对话框",
+    "remoteAuthTitle": "中继器管理员密码",
+    "remoteAuthModalHelp": "远程中继器命令的可选密码。仅为该会话存储在此窗口中。",
+    "remoteAuthNoPassword": "无密码",
+    "remoteAuthContinue": "继续"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "从收藏夹中移除",

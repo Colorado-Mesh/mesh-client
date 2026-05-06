@@ -796,7 +796,8 @@
     "clearChannelLabel": "Kanaal:",
     "meshcoreRemoveNeverAdvertisedLabel": "Verwijder contacten die nog nooit hebben geadverteerd bij het opstarten",
     "meshcoreRemoveNeverAdvertisedHint": "Verwijdert verouderde tijdelijke contacten zonder advertentiegeschiedenis; favoriete contacten blijven behouden.",
-    "messagesLoadLimitIntro": "Beperk het aantal berichten dat in het geheugen van de gebruikersinterface wordt geladen en beperk het aantal rijen dat in SQLite blijft. Door minder te laden, blijft het RAM-geheugen laag op drukke netwerken; de database cap verwijdert oudere berichten bij het opstarten van de app (opgeslagen per protocol)."
+    "messagesLoadLimitIntro": "Beperk het aantal berichten dat in het geheugen van de gebruikersinterface wordt geladen en beperk het aantal rijen dat in SQLite blijft. Door minder te laden, blijft het RAM-geheugen laag op drukke netwerken; de database cap verwijdert oudere berichten bij het opstarten van de app (opgeslagen per protocol).",
+    "logPanelHelp": "Indien ingeschakeld, verschijnt er aan de rechterkant een live logstream. Voor foutopsporingsregels is het selectievakje in het logpaneel vereist."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacten vernieuwd.",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "Klas",
     "foreignProximityColumn": "Nabijheid",
     "foreignLastSeenColumn": "Laatst gezien",
-    "foreignCountColumn": "Graaf"
+    "foreignCountColumn": "Graaf",
+    "displaySettings": "Weergave-instellingen",
+    "showChannelUtilHalos": "Toon halo's voor kanaalgebruik op de kaart",
+    "showRoutingAnomalyHalos": "Toon halo's van routeringsafwijkingen op de kaart",
+    "autoTraceroute": "Automatische traceroute",
+    "autoTracerouteHelp": "Onderzoek alle knooppunten elke 30 minuten",
+    "environmentProfile": "Milieu profiel",
+    "environmentStandard": "Standaard",
+    "environmentCity": "Stad",
+    "environmentCanyon": "Canyon",
+    "environmentStandardHint": "Standaard drempel van 3 km",
+    "environmentCityHint": "Dichte stedelijke RF-interferentie — 1,6× drempel, 1 extra sprong toestaan",
+    "environmentCanyonHint": "Bergachtig terrein — drempel van 2,6×, 2 extra hops toegestaan",
+    "staleRoutingDiagnostics": "Diagnostiek van verouderde routering",
+    "dropRoutingRowsLabel": "Verwijder routeringsrijen die ouder zijn dan",
+    "hoursRange": "uur (1–168)",
+    "staleRoutingHelp": "Toegepast bij belasting, persistentie en samenvoeging. RF-bevindingen vervallen nog steeds na 1 uur.",
+    "noDiagnosticsHealthy": "Geen diagnose gedetecteerd. Het gaas ziet er gezond uit!",
+    "noAnomaliesMatchSearch": "Er zijn geen afwijkingen die overeenkomen met uw zoekopdracht."
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",
@@ -1199,7 +1218,20 @@
     "columnReliability": "Betrouwbaarheid",
     "columnActions": "Acties",
     "nodesTabName": "Knooppunten",
-    "changeSessionRepeaterPassword": "Wijzig het wachtwoord van de sessierepeater"
+    "changeSessionRepeaterPassword": "Wijzig het wachtwoord van de sessierepeater",
+    "title": "Repeaters",
+    "columnsDataHint": "SNR, RSSI, uptime en zendtijd zijn afkomstig van de statusactie (of automatisch ophalen terwijl dit paneel open is). Hop- en padgeschiedenis hebben Ping nodig. MeshCore vult deze kolommen niet alleen met advertenties.",
+    "remoteAccessAriaLabel": "Repeater-toegang op afstand",
+    "remoteAuthLabel": "Repeater beheerderswachtwoord (optioneel)",
+    "remoteAuthPlaceholder": "Laat leeg als repeaters geen beheerderswachtwoord hebben",
+    "remoteAuthHelp": "Voor status-, buren- en sensortelemetrie van de externe repeater is mogelijk een beheerderswachtwoord vereist. Kies één keer per sessie — alleen opgeslagen in het geheugen voor dit venster.",
+    "remoteAuthContinueWithoutPassword": "Ga verder zonder wachtwoord",
+    "remoteAuthSaveForSession": "Bewaar voor deze sessie",
+    "remoteAuthCancelDialog": "Dialoogvenster Repeaterwachtwoord annuleren",
+    "remoteAuthTitle": "Repeater-beheerderswachtwoord",
+    "remoteAuthModalHelp": "Optioneel wachtwoord voor externe repeateropdrachten. Alleen voor deze sessie opgeslagen in dit venster.",
+    "remoteAuthNoPassword": "Geen wachtwoord",
+    "remoteAuthContinue": "Doorgaan"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Verwijderen uit favorieten",

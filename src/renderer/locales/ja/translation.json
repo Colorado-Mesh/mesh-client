@@ -796,7 +796,8 @@
     "clearChannelLabel": "チャネル：",
     "meshcoreRemoveNeverAdvertisedLabel": "起動時に一度もアドバタイズされていない連絡先を削除する",
     "meshcoreRemoveNeverAdvertisedHint": "広告履歴のない古いプレースホルダー連絡先を削除します。お気に入りの連絡先は保持されます。",
-    "messagesLoadLimitIntro": "UI のメモリに読み込まれるメッセージの数を制限し、SQLite に保持される行の数を制限します。読み込みを少なくすると、混雑したネットワークで RAM の使用量が減ります。データベースの上限により、アプリの起動時に古いメッセージが削除されます (プロトコルごとに保存されます)。"
+    "messagesLoadLimitIntro": "UI のメモリに読み込まれるメッセージの数を制限し、SQLite に保持される行の数を制限します。読み込みを少なくすると、混雑したネットワークで RAM の使用量が減ります。データベースの上限により、アプリの起動時に古いメッセージが削除されます (プロトコルごとに保存されます)。",
+    "logPanelHelp": "有効にすると、右側にライブ ログ ストリームが表示されます。デバッグ行では、ログ パネル内のチェックボックスが必要です。"
   },
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "クラス",
     "foreignProximityColumn": "近接性",
     "foreignLastSeenColumn": "最後に見たもの",
-    "foreignCountColumn": "カウント"
+    "foreignCountColumn": "カウント",
+    "displaySettings": "表示設定",
+    "showChannelUtilHalos": "チャネル使用率のハローを地図上に表示",
+    "showRoutingAnomalyHalos": "地図上にルーティング異常のハローを表示",
+    "autoTraceroute": "自動トレースルート",
+    "autoTracerouteHelp": "30 分ごとにすべてのノードをプローブする",
+    "environmentProfile": "環境プロファイル",
+    "environmentStandard": "標準",
+    "environmentCity": "市",
+    "environmentCanyon": "キャニオン",
+    "environmentStandardHint": "デフォルトの 3 km しきい値",
+    "environmentCityHint": "都市部の高密度 RF 干渉 - 1.6 倍のしきい値、1 つの追加ホップを許可",
+    "environmentCanyonHint": "山岳地帯 — 2.6 倍のしきい値、2 つの追加ホップを許可",
+    "staleRoutingDiagnostics": "古いルーティング診断",
+    "dropRoutingRowsLabel": "より古いルーティング行を削除します",
+    "hoursRange": "時間 (1 ～ 168)",
+    "staleRoutingHelp": "ロード、永続化、およびマージ時に適用されます。 RF 所見は 1 時間後に期限切れになります。",
+    "noDiagnosticsHealthy": "診断は検出されませんでした。メッシュは健康的に見えます！",
+    "noAnomaliesMatchSearch": "検索に一致する異常はありません。"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
@@ -1199,7 +1218,20 @@
     "columnReliability": "信頼性",
     "columnActions": "アクション",
     "nodesTabName": "ノード",
-    "changeSessionRepeaterPassword": "セッションリピーターのパスワードを変更する"
+    "changeSessionRepeaterPassword": "セッションリピーターのパスワードを変更する",
+    "title": "リピーター",
+    "columnsDataHint": "SNR、RSSI、稼働時間、および通信時間は、ステータス アクション (または、このパネルが開いている間の自動取得) から取得されます。ホップとパス履歴には Ping が必要です。 MeshCore は広告だけからこれらの列を埋めません。",
+    "remoteAccessAriaLabel": "リピーターのリモートアクセス",
+    "remoteAuthLabel": "リピーター管理者パスワード (オプション)",
+    "remoteAuthPlaceholder": "リピーターに管理者パスワードがない場合は空のままにしてください",
+    "remoteAuthHelp": "リモート リピータ ステータス、ネイバー、およびセンサー テレメトリには管理者パスワードが必要な場合があります。セッションごとに 1 回選択します。このウィンドウのメモリにのみ保存されます。",
+    "remoteAuthContinueWithoutPassword": "パスワードなしで続行",
+    "remoteAuthSaveForSession": "このセッションのために保存する",
+    "remoteAuthCancelDialog": "リピータパスワードダイアログのキャンセル",
+    "remoteAuthTitle": "リピーター管理者パスワード",
+    "remoteAuthModalHelp": "リモート リピーター コマンドのオプションのパスワード。このセッションのためにこのウィンドウにのみ保存されます。",
+    "remoteAuthNoPassword": "パスワードなし",
+    "remoteAuthContinue": "続く"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "お気に入りから削除",

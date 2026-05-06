@@ -1,4 +1,5 @@
 import { useCallback, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   meshcoreApplyRepeaterSessionAuth,
@@ -17,11 +18,12 @@ function RepeaterRemoteAuthFields({
   disabled?: boolean;
   passwordInputId: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
       <div className="min-w-[12rem] flex-1 space-y-1">
         <label htmlFor={passwordInputId} className="text-xs text-gray-400">
-          Repeater admin password (optional)
+          {t('repeatersPanel.remoteAuthLabel')}
         </label>
         <input
           id={passwordInputId}
@@ -32,7 +34,7 @@ function RepeaterRemoteAuthFields({
             onPasswordChange(e.target.value);
           }}
           disabled={disabled}
-          placeholder="Leave empty if repeaters have no admin password"
+          placeholder={t('repeatersPanel.remoteAuthPlaceholder')}
           className="bg-secondary-dark focus:border-brand-green/50 w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
         />
       </div>
@@ -42,6 +44,7 @@ function RepeaterRemoteAuthFields({
 
 /** Inline banner: complete once per session before auto Status fetch and remote RPCs. */
 export function MeshcoreRepeaterRemoteAuthBanner({ onConfigured }: { onConfigured: () => void }) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const passwordId = useId();
 
@@ -51,12 +54,9 @@ export function MeshcoreRepeaterRemoteAuthBanner({ onConfigured }: { onConfigure
     <div
       className="space-y-3 rounded-lg border border-amber-700/50 bg-amber-950/30 px-3 py-3"
       role="region"
-      aria-label="Repeater remote access"
+      aria-label={t('repeatersPanel.remoteAccessAriaLabel')}
     >
-      <p className="text-sm text-amber-100/90">
-        Remote repeater Status, Neighbors, and sensor telemetry may need an admin password. Choose
-        once per session — stored only in memory for this window.
-      </p>
+      <p className="text-sm text-amber-100/90">{t('repeatersPanel.remoteAuthHelp')}</p>
       <RepeaterRemoteAuthFields
         password={password}
         onPasswordChange={setPassword}
@@ -71,7 +71,7 @@ export function MeshcoreRepeaterRemoteAuthBanner({ onConfigured }: { onConfigure
           }}
           className="rounded border border-gray-600 bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors hover:bg-gray-600"
         >
-          Continue without password
+          {t('repeatersPanel.remoteAuthContinueWithoutPassword')}
         </button>
         <button
           type="button"
@@ -81,7 +81,7 @@ export function MeshcoreRepeaterRemoteAuthBanner({ onConfigured }: { onConfigure
           }}
           className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-3 py-1.5 text-xs font-medium transition-colors"
         >
-          Save for this session
+          {t('repeatersPanel.remoteAuthSaveForSession')}
         </button>
       </div>
     </div>
@@ -89,6 +89,7 @@ export function MeshcoreRepeaterRemoteAuthBanner({ onConfigured }: { onConfigure
 }
 
 export function useMeshcoreRepeaterRemoteAuth() {
+  const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
   const resolverRef = useRef<((ok: boolean) => void) | null>(null);
   const passwordId = useId();
@@ -126,7 +127,7 @@ export function useMeshcoreRepeaterRemoteAuth() {
       <button
         type="button"
         className="absolute inset-0 cursor-default border-0 bg-black/60 p-0"
-        aria-label="Cancel repeater password dialog"
+        aria-label={t('repeatersPanel.remoteAuthCancelDialog')}
         onClick={() => {
           finishModal(false, 'cancel', '');
         }}
@@ -138,12 +139,9 @@ export function useMeshcoreRepeaterRemoteAuth() {
         className="relative z-10 w-full max-w-md space-y-3 rounded-lg border border-gray-600 bg-gray-900 p-4 shadow-xl"
       >
         <h2 id="repeater-remote-auth-title" className="text-base font-semibold text-white">
-          Repeater admin password
+          {t('repeatersPanel.remoteAuthTitle')}
         </h2>
-        <p className="text-sm text-gray-400">
-          Optional password for remote repeater commands. Stored for this session only in this
-          window.
-        </p>
+        <p className="text-sm text-gray-400">{t('repeatersPanel.remoteAuthModalHelp')}</p>
         <ModalAuthBody
           passwordId={passwordId}
           onCancel={() => {
@@ -155,6 +153,9 @@ export function useMeshcoreRepeaterRemoteAuth() {
           onSave={(pwd) => {
             finishModal(true, 'save', pwd);
           }}
+          cancelLabel={t('common.cancel')}
+          skipLabel={t('repeatersPanel.remoteAuthNoPassword')}
+          continueLabel={t('repeatersPanel.remoteAuthContinue')}
         />
       </div>
     </div>
@@ -168,11 +169,17 @@ function ModalAuthBody({
   onCancel,
   onSkip,
   onSave,
+  cancelLabel,
+  skipLabel,
+  continueLabel,
 }: {
   passwordId: string;
   onCancel: () => void;
   onSkip: () => void;
   onSave: (password: string) => void;
+  cancelLabel: string;
+  skipLabel: string;
+  continueLabel: string;
 }) {
   const [password, setPassword] = useState('');
   return (
@@ -188,14 +195,14 @@ function ModalAuthBody({
           onClick={onCancel}
           className="rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700"
         >
-          Cancel
+          {cancelLabel}
         </button>
         <button
           type="button"
           onClick={onSkip}
           className="rounded border border-gray-600 bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-600"
         >
-          No password
+          {skipLabel}
         </button>
         <button
           type="button"
@@ -204,7 +211,7 @@ function ModalAuthBody({
           }}
           className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-3 py-1.5 text-xs font-medium"
         >
-          Continue
+          {continueLabel}
         </button>
       </div>
     </>

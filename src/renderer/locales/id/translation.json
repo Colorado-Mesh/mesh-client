@@ -796,7 +796,8 @@
     "clearChannelLabel": "Saluran:",
     "meshcoreRemoveNeverAdvertisedLabel": "Hapus kontak yang tidak pernah beriklan saat startup",
     "meshcoreRemoveNeverAdvertisedHint": "Menghapus kontak placeholder basi tanpa riwayat iklan; kontak favorit disimpan.",
-    "messagesLoadLimitIntro": "Batasi jumlah pesan yang dimuat ke dalam memori untuk UI, dan batasi jumlah baris yang disimpan di SQLite. Memuat lebih sedikit akan membuat RAM tetap rendah di jaringan yang sibuk; batas database memangkas pesan lama saat startup aplikasi (disimpan per protokol)."
+    "messagesLoadLimitIntro": "Batasi jumlah pesan yang dimuat ke dalam memori untuk UI, dan batasi jumlah baris yang disimpan di SQLite. Memuat lebih sedikit akan membuat RAM tetap rendah di jaringan yang sibuk; batas database memangkas pesan lama saat startup aplikasi (disimpan per protokol).",
+    "logPanelHelp": "Saat diaktifkan, streaming log langsung muncul di sebelah kanan. Baris debug memerlukan kotak centang di dalam panel log."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontak disegarkan.",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "Kelas",
     "foreignProximityColumn": "Kedekatan",
     "foreignLastSeenColumn": "Terakhir terlihat",
-    "foreignCountColumn": "Menghitung"
+    "foreignCountColumn": "Menghitung",
+    "displaySettings": "Pengaturan Tampilan",
+    "showChannelUtilHalos": "Tampilkan lingkaran cahaya pemanfaatan saluran di peta",
+    "showRoutingAnomalyHalos": "Tampilkan lingkaran cahaya anomali perutean di peta",
+    "autoTraceroute": "Traceroute otomatis",
+    "autoTracerouteHelp": "Periksa semua node setiap 30 menit",
+    "environmentProfile": "Profil Lingkungan",
+    "environmentStandard": "Standar",
+    "environmentCity": "Kota",
+    "environmentCanyon": "Ngarai",
+    "environmentStandardHint": "Ambang batas default 3 km",
+    "environmentCityHint": "Interferensi RF perkotaan yang padat — ambang batas 1,6×, memungkinkan 1 lompatan ekstra",
+    "environmentCanyonHint": "Medan pegunungan — ambang batas 2,6×, memungkinkan 2 lompatan ekstra",
+    "staleRoutingDiagnostics": "Diagnostik perutean yang basi",
+    "dropRoutingRowsLabel": "Hapus baris perutean yang lebih lama dari",
+    "hoursRange": "jam (1–168)",
+    "staleRoutingHelp": "Diterapkan saat memuat, bertahan, dan menggabungkan. Temuan RF masih kedaluwarsa setelah 1 jam.",
+    "noDiagnosticsHealthy": "Tidak ada diagnostik yang terdeteksi. Jaringnya terlihat sehat!",
+    "noAnomaliesMatchSearch": "Tidak ada anomali yang cocok dengan penelusuran Anda."
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",
@@ -1199,7 +1218,20 @@
     "columnReliability": "Keandalan",
     "columnActions": "Tindakan",
     "nodesTabName": "Node",
-    "changeSessionRepeaterPassword": "Ubah kata sandi pengulang sesi"
+    "changeSessionRepeaterPassword": "Ubah kata sandi pengulang sesi",
+    "title": "Repeater",
+    "columnsDataHint": "SNR, RSSI, uptime, dan airtime berasal dari tindakan Status (atau pengambilan otomatis saat panel ini terbuka). Hop dan riwayat jalur memerlukan Ping. MeshCore tidak mengisi kolom tersebut hanya dari iklan.",
+    "remoteAccessAriaLabel": "Akses jarak jauh pengulang",
+    "remoteAuthLabel": "Kata sandi admin pengulang (opsional)",
+    "remoteAuthPlaceholder": "Biarkan kosong jika repeater tidak memiliki kata sandi admin",
+    "remoteAuthHelp": "Status pengulang jarak jauh, Tetangga, dan telemetri sensor mungkin memerlukan kata sandi admin. Pilih sekali per sesi — hanya disimpan di memori untuk jendela ini.",
+    "remoteAuthContinueWithoutPassword": "Lanjutkan tanpa kata sandi",
+    "remoteAuthSaveForSession": "Simpan untuk sesi ini",
+    "remoteAuthCancelDialog": "Batalkan dialog kata sandi pengulang",
+    "remoteAuthTitle": "Kata sandi admin pengulang",
+    "remoteAuthModalHelp": "Kata sandi opsional untuk perintah pengulang jarak jauh. Disimpan untuk sesi ini hanya di jendela ini.",
+    "remoteAuthNoPassword": "Tidak ada kata sandi",
+    "remoteAuthContinue": "Melanjutkan"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Hapus dari favorit",

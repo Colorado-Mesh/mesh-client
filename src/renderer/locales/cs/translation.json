@@ -796,7 +796,8 @@
     "clearChannelLabel": "Kanál:",
     "meshcoreRemoveNeverAdvertisedLabel": "Při spuštění odstraňte kontakty, které nikdy neinzerovaly",
     "meshcoreRemoveNeverAdvertisedHint": "Odstraní zastaralé zástupné kontakty bez historie reklam; oblíbené kontakty jsou zachovány.",
-    "messagesLoadLimitIntro": "Omezte počet zpráv, které se načítají do paměti pro uživatelské rozhraní, a omezte počet řádků, které zůstanou v SQLite. Menší zatížení udržuje RAM v rušných sítích; omezení databáze ořezává starší zprávy při spuštění aplikace (uložené podle protokolu)."
+    "messagesLoadLimitIntro": "Omezte počet zpráv, které se načítají do paměti pro uživatelské rozhraní, a omezte počet řádků, které zůstanou v SQLite. Menší zatížení udržuje RAM v rušných sítích; omezení databáze ořezává starší zprávy při spuštění aplikace (uložené podle protokolu).",
+    "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakty byly obnoveny.",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "Třída",
     "foreignProximityColumn": "Blízkost",
     "foreignLastSeenColumn": "Naposledy viděno",
-    "foreignCountColumn": "Počítat"
+    "foreignCountColumn": "Počítat",
+    "displaySettings": "Nastavení zobrazení",
+    "showChannelUtilHalos": "Zobrazit halo využití kanálu na mapě",
+    "showRoutingAnomalyHalos": "Zobrazit anomálie směrování na mapě",
+    "autoTraceroute": "Auto-traceroute",
+    "autoTracerouteHelp": "Prozkoumejte všechny uzly každých 30 minut",
+    "environmentProfile": "Profil prostředí",
+    "environmentStandard": "Norma",
+    "environmentCity": "Město",
+    "environmentCanyon": "Kaňon",
+    "environmentStandardHint": "Výchozí práh 3 km",
+    "environmentCityHint": "Husté městské RF rušení — 1,6× práh, umožňuje 1 skok navíc",
+    "environmentCanyonHint": "Hornatý terén — 2,6× práh, povolit 2 skoky navíc",
+    "staleRoutingDiagnostics": "Zastaralá diagnostika směrování",
+    "dropRoutingRowsLabel": "Vypustit řádky směrování starší než",
+    "hoursRange": "hodiny (1–168)",
+    "staleRoutingHelp": "Aplikuje se při načtení, zachování a sloučení. RF nálezy stále vyprší po 1 hodině.",
+    "noDiagnosticsHealthy": "Nebyla zjištěna žádná diagnostika. Síťka vypadá zdravě!",
+    "noAnomaliesMatchSearch": "Vašemu vyhledávání neodpovídají žádné anomálie."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
@@ -1199,7 +1218,20 @@
     "columnReliability": "Spolehlivost",
     "columnActions": "Akce",
     "nodesTabName": "Uzly",
-    "changeSessionRepeaterPassword": "Změňte heslo opakovače relace"
+    "changeSessionRepeaterPassword": "Změňte heslo opakovače relace",
+    "title": "Opakovače",
+    "columnsDataHint": "SNR, RSSI, doba provozu a doba vysílání pocházejí z akce Stav (nebo automatického načtení, když je tento panel otevřený). Hopy a historie cest potřebují Ping. MeshCore nevyplňuje tyto sloupce pouze z reklam.",
+    "remoteAccessAriaLabel": "Vzdálený přístup opakovače",
+    "remoteAuthLabel": "Heslo správce opakovače (volitelné)",
+    "remoteAuthPlaceholder": "Pokud opakovače nemají heslo správce, ponechte prázdné",
+    "remoteAuthHelp": "Stav vzdáleného opakovače, sousedé a telemetrie senzoru mohou vyžadovat heslo správce. Vyberte jednou za relaci – uloženo pouze v paměti pro toto okno.",
+    "remoteAuthContinueWithoutPassword": "Pokračujte bez hesla",
+    "remoteAuthSaveForSession": "Uložit pro tuto relaci",
+    "remoteAuthCancelDialog": "Dialog pro zrušení hesla opakovače",
+    "remoteAuthTitle": "Heslo správce opakovače",
+    "remoteAuthModalHelp": "Volitelné heslo pro příkazy vzdáleného opakovače. Uloženo pro tuto relaci pouze v tomto okně.",
+    "remoteAuthNoPassword": "Žádné heslo",
+    "remoteAuthContinue": "Pokračovat"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Odebrat z oblíbených",

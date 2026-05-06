@@ -796,7 +796,8 @@
     "clearChannelLabel": "Canal:",
     "meshcoreRemoveNeverAdvertisedLabel": "Remover contatos que nunca anunciaram na inicialização",
     "meshcoreRemoveNeverAdvertisedHint": "Remove contatos de espaço reservado obsoletos sem histórico de anúncios; contatos favoritos são mantidos.",
-    "messagesLoadLimitIntro": "Limite quantas mensagens são carregadas na memória para a interface do usuário e limite quantas linhas permanecem no SQLite. Carregar menos mantém a RAM baixa em redes ocupadas; a tampa do banco de dados poda mensagens mais antigas na inicialização do aplicativo (armazenadas por protocolo)."
+    "messagesLoadLimitIntro": "Limite quantas mensagens são carregadas na memória para a interface do usuário e limite quantas linhas permanecem no SQLite. Carregar menos mantém a RAM baixa em redes ocupadas; a tampa do banco de dados poda mensagens mais antigas na inicialização do aplicativo (armazenadas por protocolo).",
+    "logPanelHelp": "Quando ativado, um fluxo de log ao vivo aparece à direita. As linhas de depuração exigem a caixa de seleção dentro do painel de log."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contatos atualizados.",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "Aula",
     "foreignProximityColumn": "Proximidade",
     "foreignLastSeenColumn": "Última Visualização",
-    "foreignCountColumn": "Quantidade"
+    "foreignCountColumn": "Quantidade",
+    "displaySettings": "Configurações de exibição",
+    "showChannelUtilHalos": "Mostrar halos de utilização do canal no mapa",
+    "showRoutingAnomalyHalos": "Mostrar halos de anomalia de roteamento no mapa",
+    "autoTraceroute": "Rastreamento automático",
+    "autoTracerouteHelp": "Teste todos os nós a cada 30 minutos",
+    "environmentProfile": "Perfil Ambiental",
+    "environmentStandard": "Padrão",
+    "environmentCity": "Cidade",
+    "environmentCanyon": "Desfiladeiro",
+    "environmentStandardHint": "Limite padrão de 3 km",
+    "environmentCityHint": "Interferência de RF urbana densa – limite de 1,6×, permite 1 salto extra",
+    "environmentCanyonHint": "Terreno montanhoso – limite de 2,6×, permite 2 saltos extras",
+    "staleRoutingDiagnostics": "Diagnóstico de roteamento obsoleto",
+    "dropRoutingRowsLabel": "Eliminar linhas de roteamento anteriores a",
+    "hoursRange": "horas (1–168)",
+    "staleRoutingHelp": "Aplicado ao carregar, persistir e mesclar. As descobertas de RF ainda expiram após 1 hora.",
+    "noDiagnosticsHealthy": "Nenhum diagnóstico detectado. A malha parece saudável!",
+    "noAnomaliesMatchSearch": "Nenhuma anomalia corresponde à sua pesquisa."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",
@@ -1199,7 +1218,20 @@
     "columnReliability": "Confiabilidade",
     "columnActions": "Ações",
     "nodesTabName": "Nós",
-    "changeSessionRepeaterPassword": "Alterar senha do repetidor de sessão"
+    "changeSessionRepeaterPassword": "Alterar senha do repetidor de sessão",
+    "title": "Repetidores",
+    "columnsDataHint": "SNR, RSSI, tempo de atividade e tempo de antena vêm da ação Status (ou busca automática enquanto este painel está aberto). O histórico de saltos e caminhos precisa de Ping. MeshCore não preenche essas colunas apenas com anúncios.",
+    "remoteAccessAriaLabel": "Acesso remoto ao repetidor",
+    "remoteAuthLabel": "Senha de administrador do repetidor (opcional)",
+    "remoteAuthPlaceholder": "Deixe em branco se os repetidores não tiverem senha de administrador",
+    "remoteAuthHelp": "Status do repetidor remoto, vizinhos e telemetria do sensor podem precisar de uma senha de administrador. Escolha uma vez por sessão — armazenado apenas na memória desta janela.",
+    "remoteAuthContinueWithoutPassword": "Continuar sem senha",
+    "remoteAuthSaveForSession": "Salvar para esta sessão",
+    "remoteAuthCancelDialog": "Caixa de diálogo Cancelar senha do repetidor",
+    "remoteAuthTitle": "Senha de administrador do repetidor",
+    "remoteAuthModalHelp": "Senha opcional para comandos de repetidor remoto. Armazenado para esta sessão somente nesta janela.",
+    "remoteAuthNoPassword": "Sem senha",
+    "remoteAuthContinue": "Continuar"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Remove from favorites",

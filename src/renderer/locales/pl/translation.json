@@ -796,7 +796,8 @@
     "clearChannelLabel": "Kanał:",
     "meshcoreRemoveNeverAdvertisedLabel": "Usuń kontakty, które nigdy nie były reklamowane podczas uruchamiania",
     "meshcoreRemoveNeverAdvertisedHint": "Usuwa nieaktualne kontakty zastępcze bez historii ogłoszeń; ulubione kontakty zostaną zachowane.",
-    "messagesLoadLimitIntro": "Ogranicz liczbę wiadomości ładowanych do pamięci interfejsu użytkownika i liczbę wierszy pozostających w SQLite. Ładowanie mniejszej liczby zmniejsza ilość pamięci RAM w obciążonych sieciach; limit bazy danych usuwa starsze wiadomości podczas uruchamiania aplikacji (przechowywane według protokołu)."
+    "messagesLoadLimitIntro": "Ogranicz liczbę wiadomości ładowanych do pamięci interfejsu użytkownika i liczbę wierszy pozostających w SQLite. Ładowanie mniejszej liczby zmniejsza ilość pamięci RAM w obciążonych sieciach; limit bazy danych usuwa starsze wiadomości podczas uruchamiania aplikacji (przechowywane według protokołu).",
+    "logPanelHelp": "Po włączeniu po prawej stronie pojawia się strumień dziennika na żywo. Linie debugowania wymagają pola wyboru w panelu dziennika."
   },
   "nodeListPanel": {
     "refreshFailed": "Odświeżanie nie powiodło się: {{message}}",
@@ -1145,7 +1146,25 @@
     "foreignClassColumn": "Klasa",
     "foreignProximityColumn": "Bliskość",
     "foreignLastSeenColumn": "Ostatnio widziany",
-    "foreignCountColumn": "Liczyć"
+    "foreignCountColumn": "Liczyć",
+    "displaySettings": "Ustawienia wyświetlania",
+    "showChannelUtilHalos": "Pokaż aureole wykorzystania kanału na mapie",
+    "showRoutingAnomalyHalos": "Pokaż aureole anomalii trasowania na mapie",
+    "autoTraceroute": "Automatyczne śledzenie trasy",
+    "autoTracerouteHelp": "Sonduj wszystkie węzły co 30 minut",
+    "environmentProfile": "Profil środowiska",
+    "environmentStandard": "Standard",
+    "environmentCity": "Miasto",
+    "environmentCanyon": "Kanion",
+    "environmentStandardHint": "Domyślny próg 3 km",
+    "environmentCityHint": "Gęste miejskie zakłócenia RF — próg 1,6 ×, umożliwiają 1 dodatkowy przeskok",
+    "environmentCanyonHint": "Teren górzysty — próg 2,6x, pozwala na 2 dodatkowe przeskoki",
+    "staleRoutingDiagnostics": "Nieaktualna diagnostyka routingu",
+    "dropRoutingRowsLabel": "Usuń wiersze routingu starsze niż",
+    "hoursRange": "godziny (1–168)",
+    "staleRoutingHelp": "Stosowane przy ładowaniu, utrwalaniu i łączeniu. Wyniki RF nadal tracą ważność po 1 godzinie.",
+    "noDiagnosticsHealthy": "Nie wykryto żadnych elementów diagnostycznych. Siatka wygląda zdrowo!",
+    "noAnomaliesMatchSearch": "Żadne anomalie nie pasują do Twojego wyszukiwania."
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",
@@ -1199,7 +1218,20 @@
     "columnReliability": "Niezawodność",
     "columnActions": "Działania",
     "nodesTabName": "Węzły",
-    "changeSessionRepeaterPassword": "Zmień hasło powtarzacza sesji"
+    "changeSessionRepeaterPassword": "Zmień hasło powtarzacza sesji",
+    "title": "Repeatery",
+    "columnsDataHint": "SNR, RSSI, czas pracy i czas antenowy pochodzą z akcji Status (lub automatycznego pobierania, gdy ten panel jest otwarty). Historia przeskoków i ścieżek wymaga polecenia Ping. MeshCore nie wypełnia tych kolumn samymi reklamami.",
+    "remoteAccessAriaLabel": "Zdalny dostęp do wzmacniacza",
+    "remoteAuthLabel": "Hasło administratora wzmacniaka (opcjonalnie)",
+    "remoteAuthPlaceholder": "Pozostaw puste, jeśli wzmacniaki nie mają hasła administratora",
+    "remoteAuthHelp": "Stan zdalnego wzmacniaka, sąsiedzi i dane telemetryczne czujnika mogą wymagać hasła administratora. Wybierz raz na sesję — przechowywane tylko w pamięci tego okna.",
+    "remoteAuthContinueWithoutPassword": "Kontynuuj bez hasła",
+    "remoteAuthSaveForSession": "Zapisz na tę sesję",
+    "remoteAuthCancelDialog": "Anuluj okno dialogowe hasła przekaźnika",
+    "remoteAuthTitle": "Hasło administratora wzmacniaka",
+    "remoteAuthModalHelp": "Opcjonalne hasło do poleceń zdalnego przemiennika. Zapisywane dla tej sesji tylko w tym oknie.",
+    "remoteAuthNoPassword": "Brak hasła",
+    "remoteAuthContinue": "Kontynuować"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Usuń z ulubionych",
