@@ -1886,7 +1886,7 @@ export default function RadioPanel({
                 {advertLoading ? (
                   <span className="border-brand-green inline-block h-3 w-3 animate-spin rounded-full border border-t-transparent" />
                 ) : (
-                  'Flood Advert'
+                  t('radioPanel.floodAdvertButton')
                 )}
               </button>
             )}
@@ -1900,7 +1900,7 @@ export default function RadioPanel({
                 {syncClockLoading ? (
                   <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
                 ) : (
-                  'Sync Clock'
+                  t('radioPanel.syncClockButton')
                 )}
               </button>
             )}
@@ -1914,64 +1914,61 @@ export default function RadioPanel({
         <h3 className="text-sm font-medium text-orange-400">{t('radioPanel.deviceCommands')}</h3>
         <div className="space-y-2 rounded-lg border border-orange-900 p-4">
           <p className="text-xs text-orange-400/80">
-            These actions affect the connected device immediately (reboot, shutdown, firmware modes,
-            etc.).
+            {t('radioPanel.deviceCommandsImmediateWarning')}
           </p>
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             <button
               type="button"
               onClick={() => {
                 executeWithConfirmation({
-                  name: 'Enter DFU Mode',
-                  title: 'Enter DFU Mode',
-                  message:
-                    'This will reboot the device into Device Firmware Update (DFU) mode for firmware flashing.',
-                  confirmLabel: 'Enter DFU',
+                  name: t('radioPanel.enterDfuName'),
+                  title: t('radioPanel.enterDfuTitle'),
+                  message: t('radioPanel.enterDfuMessage'),
+                  confirmLabel: t('radioPanel.enterDfuConfirm'),
                   action: () => onEnterDfu?.() ?? Promise.resolve(),
                 });
               }}
               disabled={!isConnected || !onEnterDfu}
               className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
             >
-              Enter DFU Mode
+              {t('radioPanel.enterDfuButton')}
             </button>
 
             <button
               type="button"
               onClick={() => {
                 executeWithConfirmation({
-                  name: 'Reboot',
-                  title: 'Reboot Device',
+                  name: t('radioPanel.rebootName'),
+                  title: t('radioPanel.rebootTitle'),
                   message:
                     capabilities?.protocol === 'meshcore'
-                      ? 'This will reboot the connected MeshCore device. It will briefly go offline during restart.'
-                      : 'This will reboot the connected Meshtastic device. It will briefly go offline during restart.',
-                  confirmLabel: 'Reboot',
+                      ? t('radioPanel.rebootMessageMeshcore')
+                      : t('radioPanel.rebootMessageMeshtastic'),
+                  confirmLabel: t('radioPanel.rebootConfirm'),
                   action: () => onReboot(2),
                 });
               }}
               disabled={!isConnected}
               className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
             >
-              Reboot
+              {t('radioPanel.rebootButton')}
             </button>
 
             <button
               type="button"
               onClick={() => {
                 executeWithConfirmation({
-                  name: 'Reboot to OTA',
-                  title: 'Reboot to OTA',
-                  message:
-                    'This will reboot the device into OTA (Over The Air) firmware update mode.',
-                  confirmLabel: 'Reboot to OTA',
+                  name: t('radioPanel.rebootOtaName'),
+                  title: t('radioPanel.rebootOtaTitle'),
+                  message: t('radioPanel.rebootOtaMessage'),
+                  confirmLabel: t('radioPanel.rebootOtaConfirm'),
                   action: () => onRebootOta?.(10) ?? Promise.resolve(),
                 });
               }}
               disabled={!isConnected || !onRebootOta}
               className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
             >
-              Reboot to OTA
+              {t('radioPanel.rebootOtaButton')}
             </button>
 
             {capabilities?.hasNodeDbReset !== false && (

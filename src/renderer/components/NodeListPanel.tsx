@@ -58,10 +58,20 @@ type SortField =
   | 'redundancy';
 
 const BUILTIN_TYPE_FILTERS = [
-  { group_id: -1, label: 'Chat', hw_model: 'Chat' },
-  { group_id: -2, label: 'Repeater', hw_model: 'Repeater' },
-  { group_id: -3, label: 'Room', hw_model: 'Room' },
+  { group_id: -1, typeKey: 'nodeListPanel.meshcoreTypeChat' as const, hw_model: 'Chat' },
+  { group_id: -2, typeKey: 'nodeListPanel.meshcoreTypeRepeater' as const, hw_model: 'Repeater' },
+  { group_id: -3, typeKey: 'nodeListPanel.meshcoreTypeRoom' as const, hw_model: 'Room' },
 ] as const;
+
+function meshcoreContactTypeLabel(
+  t: (key: string) => string,
+  hw_model: string | undefined,
+): string {
+  if (hw_model === 'Chat') return t('nodeListPanel.meshcoreTypeChat');
+  if (hw_model === 'Repeater') return t('nodeListPanel.meshcoreTypeRepeater');
+  if (hw_model === 'Room') return t('nodeListPanel.meshcoreTypeRoom');
+  return hw_model?.trim() || t('common.emDash');
+}
 
 /** Sort fields that do not apply when the Nodes table is in MeshCore (contacts) layout. */
 const MESHCORE_INAPPLICABLE_SORT_FIELDS: readonly SortField[] = [
@@ -562,7 +572,7 @@ export default function NodeListPanel({
             {mode === 'meshcore'
               ? BUILTIN_TYPE_FILTERS.map((f) => (
                   <option key={f.group_id} value={f.group_id}>
-                    {t('nodeListPanel.filterTypePrefix', { label: f.label })}
+                    {t('nodeListPanel.filterTypePrefix', { label: t(f.typeKey) })}
                   </option>
                 ))
               : MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS.map((f) => (
@@ -988,12 +998,18 @@ export default function NodeListPanel({
                           }`}
                           aria-label={
                             status === 'online'
-                              ? 'Online'
+                              ? t('nodeListPanel.statusOnline')
                               : status === 'stale'
-                                ? 'Stale'
-                                : 'Offline'
+                                ? t('nodeListPanel.statusStale')
+                                : t('nodeListPanel.statusOffline')
                           }
-                          title={status}
+                          title={
+                            status === 'online'
+                              ? t('nodeListPanel.statusOnline')
+                              : status === 'stale'
+                                ? t('nodeListPanel.statusStale')
+                                : t('nodeListPanel.statusOffline')
+                          }
                         />
                         {isSelf && (
                           <span
@@ -1017,9 +1033,17 @@ export default function NodeListPanel({
                           onClick={() => {
                             onToggleFavorite(node.node_id, !node.favorited);
                           }}
-                          aria-label={node.favorited ? 'Remove from favorites' : 'Add to favorites'}
+                          aria-label={
+                            node.favorited
+                              ? t('nodeListPanel.removeFromFavorites')
+                              : t('nodeListPanel.addToFavorites')
+                          }
                           aria-pressed={node.favorited}
-                          title={node.favorited ? 'Remove from favorites' : 'Add to favorites'}
+                          title={
+                            node.favorited
+                              ? t('nodeListPanel.removeFromFavorites')
+                              : t('nodeListPanel.addToFavorites')
+                          }
                         >
                           <span
                             className={
@@ -1103,7 +1127,7 @@ export default function NodeListPanel({
                             <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                               <path d={getNodeTypeIcon(node.hw_model) ?? ''} />
                             </svg>
-                            {node.hw_model}
+                            {meshcoreContactTypeLabel(t, node.hw_model)}
                           </span>
                         ) : node.hw_model === 'Chat' ? (
                           <span className="inline-flex items-center gap-1 text-gray-300">
@@ -1117,10 +1141,12 @@ export default function NodeListPanel({
                               <circle cx="12" cy="8" r="4" />
                               <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" />
                             </svg>
-                            Chat
+                            {meshcoreContactTypeLabel(t, node.hw_model)}
                           </span>
                         ) : (
-                          <span className="text-gray-300">{node.hw_model || '—'}</span>
+                          <span className="text-gray-300">
+                            {meshcoreContactTypeLabel(t, node.hw_model)}
+                          </span>
                         )
                       ) : node.hw_model === 'Chat' ? (
                         <span className="inline-flex items-center gap-1 text-xs text-gray-400">
@@ -1134,7 +1160,7 @@ export default function NodeListPanel({
                             <circle cx="12" cy="8" r="4" />
                             <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" />
                           </svg>
-                          Chat
+                          {meshcoreContactTypeLabel(t, node.hw_model)}
                         </span>
                       ) : (
                         <RoleDisplay role={node.role} />

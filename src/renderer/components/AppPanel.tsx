@@ -1313,7 +1313,7 @@ export default function AppPanel({
                     {meta.label}
                   </div>
                   <div
-                    className="flex max-w-full min-w-0 flex-1 flex-nowrap gap-1 py-0.5 [scrollbar-width:thin]"
+                    className="flex max-w-full min-w-0 flex-1 [scrollbar-width:thin] flex-nowrap gap-1 py-0.5"
                     role="group"
                     aria-labelledby={`theme-color-heading-${meta.key}`}
                   >

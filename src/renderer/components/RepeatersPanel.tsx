@@ -317,7 +317,12 @@ export default function RepeatersPanel({
       await onRequestRepeaterStatus(nodeId);
     } catch (e) {
       console.warn('[RepeatersPanel] requestRepeaterStatus error', e);
-      addToast(`Status failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
+      addToast(
+        t('repeatersPanel.statusFailedToast', {
+          message: e instanceof Error ? e.message : String(e),
+        }),
+        'error',
+      );
     } finally {
       setStatusLoadingSet((prev) => {
         const next = new Set(prev);
@@ -333,7 +338,12 @@ export default function RepeatersPanel({
       await onPing(nodeId);
     } catch (e) {
       console.warn('[RepeatersPanel] ping error', e);
-      addToast(`Ping failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
+      addToast(
+        t('repeatersPanel.pingFailedToast', {
+          message: e instanceof Error ? e.message : String(e),
+        }),
+        'error',
+      );
     } finally {
       setPingLoadingSet((prev) => {
         const next = new Set(prev);
@@ -354,7 +364,12 @@ export default function RepeatersPanel({
       await onDeleteRepeater(nodeId);
     } catch (e) {
       console.warn('[RepeatersPanel] deleteRepeater failed:', e instanceof Error ? e.message : e);
-      addToast(`Remove failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
+      addToast(
+        t('repeatersPanel.removeFailedToast', {
+          message: e instanceof Error ? e.message : String(e),
+        }),
+        'error',
+      );
     } finally {
       setDeleteLoadingSet((prev) => {
         const next = new Set(prev);
@@ -593,10 +608,14 @@ export default function RepeatersPanel({
                   const cliUseAutoPath = cliUseSavedPath.get(node.node_id) ?? false;
                   const neighborError = meshcoreNeighborErrors?.get(node.node_id);
                   const actionErrorSummary = [
-                    statusError && `Status: ${statusError}`,
-                    pingError && `Ping: ${pingError}`,
-                    neighborError && !isNeighborsExpanded && `Neighbors: ${neighborError}`,
-                    cliError && !isCliExpanded && `CLI: ${cliError}`,
+                    statusError && t('repeatersPanel.actionErrorStatus', { error: statusError }),
+                    pingError && t('repeatersPanel.actionErrorPing', { error: pingError }),
+                    neighborError &&
+                      !isNeighborsExpanded &&
+                      t('repeatersPanel.actionErrorNeighbors', { error: neighborError }),
+                    cliError &&
+                      !isCliExpanded &&
+                      t('repeatersPanel.actionErrorCli', { error: cliError }),
                   ]
                     .filter(Boolean)
                     .join(' · ');
@@ -605,9 +624,9 @@ export default function RepeatersPanel({
                   const telemetryError = meshcoreTelemetryErrors?.get(node.node_id);
                   const pingHardDisabled = !isConnected || isPingLoading;
                   const pingBlockReason = !isConnected
-                    ? 'Connect to the radio first.'
+                    ? t('repeatersPanel.connectRadioFirst')
                     : isPingLoading
-                      ? 'Ping in progress…'
+                      ? t('repeatersPanel.pingInProgress')
                       : null;
                   return (
                     <Fragment key={node.node_id}>
@@ -633,10 +652,10 @@ export default function RepeatersPanel({
                               }
                             >
                               {repeaterStatus === 'online'
-                                ? 'Online'
+                                ? t('repeatersPanel.statusOnline')
                                 : repeaterStatus === 'stale'
-                                  ? 'Stale'
-                                  : 'Offline'}
+                                  ? t('repeatersPanel.statusStale')
+                                  : t('repeatersPanel.statusOffline')}
                             </span>
                           </span>
                         </td>
@@ -675,8 +694,8 @@ export default function RepeatersPanel({
                           className="py-2 pr-4"
                           title={
                             status !== undefined
-                              ? 'SNR from repeater status'
-                              : 'Contact SNR — use Status for live reading'
+                              ? t('repeatersPanel.snrFromStatusTooltip')
+                              : t('repeatersPanel.snrContactTooltip')
                           }
                         >
                           {displayRepeaterSnr(node, status, history, meshcoreContactsDb)}
@@ -685,8 +704,8 @@ export default function RepeatersPanel({
                           className="py-2 pr-4"
                           title={
                             status !== undefined
-                              ? 'RSSI from repeater status'
-                              : 'Contact RSSI — use Status for live reading'
+                              ? t('repeatersPanel.rssiFromStatusTooltip')
+                              : t('repeatersPanel.rssiContactTooltip')
                           }
                         >
                           {displayRepeaterRssi(node, status, meshcoreContactsDb)}
@@ -735,15 +754,19 @@ export default function RepeatersPanel({
                                     {isPingLoading ? (
                                       <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
                                     ) : pingError ? (
-                                      'Error'
+                                      t('repeatersPanel.buttonErrorShort')
                                     ) : (
-                                      'Ping'
+                                      t('repeatersPanel.buttonPing')
                                     )}
                                   </button>
                                 </span>
                               </HelpTooltip>
                             ) : pingError ? (
-                              <HelpTooltip text={`Last ping failed: ${pingError}`}>
+                              <HelpTooltip
+                                text={t('repeatersPanel.pingLastFailedTooltip', {
+                                  error: pingError,
+                                })}
+                              >
                                 <span className="inline-flex">
                                   <button
                                     type="button"
@@ -751,7 +774,7 @@ export default function RepeatersPanel({
                                     aria-label={t('repeatersPanel.pingError', { error: pingError })}
                                     className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60"
                                   >
-                                    Error
+                                    {t('repeatersPanel.buttonErrorShort')}
                                   </button>
                                 </span>
                               </HelpTooltip>
@@ -765,7 +788,7 @@ export default function RepeatersPanel({
                                 {isPingLoading ? (
                                   <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
                                 ) : (
-                                  'Ping'
+                                  t('repeatersPanel.buttonPing')
                                 )}
                               </button>
                             )}
@@ -788,9 +811,9 @@ export default function RepeatersPanel({
                               {isStatusLoading ? (
                                 <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
                               ) : statusError ? (
-                                'Error'
+                                t('repeatersPanel.buttonErrorShort')
                               ) : (
-                                'Status'
+                                t('repeatersPanel.buttonStatus')
                               )}
                             </button>
                             {onRequestNeighbors && (
@@ -815,9 +838,9 @@ export default function RepeatersPanel({
                                 {isNeighborsLoading ? (
                                   <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
                                 ) : neighborError && !isNeighborsExpanded ? (
-                                  'Error'
+                                  t('repeatersPanel.buttonErrorShort')
                                 ) : (
-                                  'Neighbors'
+                                  t('repeatersPanel.buttonNeighbors')
                                 )}
                               </button>
                             )}
@@ -870,9 +893,9 @@ export default function RepeatersPanel({
                               {isDeleteLoading ? (
                                 <span className="inline-block h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
                               ) : isDeleteConfirm ? (
-                                'Confirm?'
+                                t('repeatersPanel.buttonConfirmRemove')
                               ) : (
-                                'Remove'
+                                t('repeatersPanel.buttonRemove')
                               )}
                             </button>
                           </div>
@@ -920,7 +943,9 @@ export default function RepeatersPanel({
                         <tr className="bg-gray-900/60">
                           <td colSpan={10} className="px-4 py-2">
                             <p className="mb-1 text-xs text-gray-400">
-                              Neighbors ({neighborData.totalNeighboursCount} total):
+                              {t('repeatersPanel.neighborsHeading', {
+                                count: neighborData.totalNeighboursCount,
+                              })}
                             </p>
                             {neighborData.neighbours.length === 0 ? (
                               <p className="text-xs text-gray-600">No neighbors reported</p>

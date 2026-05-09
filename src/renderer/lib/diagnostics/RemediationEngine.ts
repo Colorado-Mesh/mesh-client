@@ -21,6 +21,9 @@ const SCENARIOS: ScenarioChecker[] = [
       description: `Node is <1 mi away but SNR ${node.snr.toFixed(1)} dB — likely antenna null or polarization mismatch.`,
       category: 'Hardware',
       severity: 'warning',
+      titleKey: 'diagnosticsPanel.remedyScenario.antennaPolarizationTitle',
+      descriptionKey: 'diagnosticsPanel.remedyScenario.antennaPolarizationDescription',
+      descriptionParams: { snr: node.snr.toFixed(1) },
     };
   },
   // Scenario D: MQTT Ghost (0 hops but far away)
@@ -32,6 +35,9 @@ const SCENARIOS: ScenarioChecker[] = [
       description: `Node appears as 0 hops but is ${distMiles.toFixed(0)} mi away — likely bridged via MQTT, not RF.`,
       category: 'Software',
       severity: 'info',
+      titleKey: 'diagnosticsPanel.remedyScenario.mqttGhostTitle',
+      descriptionKey: 'diagnosticsPanel.remedyScenario.mqttGhostDescription',
+      descriptionParams: { miles: distMiles.toFixed(0) },
     };
   },
   // Scenario A: High-Ground Config (chatty node)
@@ -45,6 +51,9 @@ const SCENARIOS: ScenarioChecker[] = [
       description: `SNR ${node.snr.toFixed(1)} dB + ${node.hops_away ?? '?'} hops within 10 mi — node likely has hop limit set too high.`,
       category: 'Configuration',
       severity: 'info',
+      titleKey: 'diagnosticsPanel.remedyScenario.highGroundTitle',
+      descriptionKey: 'diagnosticsPanel.remedyScenario.highGroundDescription',
+      descriptionParams: { snr: node.snr.toFixed(1), hops: node.hops_away ?? '?' },
     };
   },
   // Scenario B2: High duplication — suggest MQTT/RF overlap when mid-band (before B severity)
@@ -56,6 +65,9 @@ const SCENARIOS: ScenarioChecker[] = [
       description: `${Math.round(duplicateRate * 100)}% packet duplication within 5 mi — gateway downlink or bridged paths may echo RF; try Ignore MQTT for affected nodes.`,
       category: 'Software',
       severity: 'warning',
+      titleKey: 'diagnosticsPanel.remedyScenario.mqttRfOverlapTitle',
+      descriptionKey: 'diagnosticsPanel.remedyScenario.mqttRfOverlapDescription',
+      descriptionParams: { percent: Math.round(duplicateRate * 100) },
     };
   },
   // Scenario B: RF Noise / Hidden Terminal (duplication-only; SNR not reliable multi-hop/MQTT)
@@ -67,6 +79,9 @@ const SCENARIOS: ScenarioChecker[] = [
       description: `${Math.round(duplicateRate * 100)}% packet duplication within 5 mi — local RF interference suspected.`,
       category: 'Physical',
       severity: 'warning',
+      titleKey: 'diagnosticsPanel.remedyScenario.duplicateInterferenceTitle',
+      descriptionKey: 'diagnosticsPanel.remedyScenario.duplicateInterferenceDescription',
+      descriptionParams: { percent: Math.round(duplicateRate * 100) },
     };
   },
 ];
@@ -99,6 +114,8 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
       'High channel utilization with low TX suggests a busy channel — reduce hop limit on nearby repeaters or relocate away from interference.',
     category: 'Configuration',
     severity: 'warning',
+    titleKey: 'diagnosticsPanel.remedyRf.utilizationVsTx.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.utilizationVsTx.description',
   },
   'Non-LoRa Noise / RFI': {
     title: 'Locate non-LoRa interference',
@@ -106,6 +123,8 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
       'Identify motors, monitors, or power electronics near the antenna; relocate antenna or source.',
     category: 'Physical',
     severity: 'warning',
+    titleKey: 'diagnosticsPanel.remedyRf.nonLoraNoiseRfi.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.nonLoraNoiseRfi.description',
   },
   '900MHz Industrial Interference': {
     title: 'Avoid bursty 900MHz sources',
@@ -113,6 +132,8 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
       'Smart meters and industrial telemetry can spike the channel — antenna placement and shielding help.',
     category: 'Physical',
     severity: 'warning',
+    titleKey: 'diagnosticsPanel.remedyRf.industrial900mhz.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.industrial900mhz.description',
   },
   'Channel Utilization Spike': {
     title: 'Check for surge in traffic or interference',
@@ -120,6 +141,8 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
       'CU is well above recent average — temporary congestion or new interference; monitor and adjust hop limits if sustained.',
     category: 'Configuration',
     severity: 'warning',
+    titleKey: 'diagnosticsPanel.remedyRf.channelUtilizationSpike.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.channelUtilizationSpike.description',
   },
   'Mesh Congestion': {
     title: 'Reduce hop limit / check MQTT overlap',
@@ -127,6 +150,8 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
       'High duplicate rate — see Diagnostics duplicate-traffic block; try Ignore MQTT for bridged nodes.',
     category: 'Software',
     severity: 'warning',
+    titleKey: 'diagnosticsPanel.remedyRf.meshCongestion.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.meshCongestion.description',
   },
   'Hidden Terminal Risk': {
     title: 'Improve geometry or reduce concurrency',
@@ -134,6 +159,8 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
       'Concurrent transmitters may not hear each other — fewer hops, better placement, or fewer simultaneous talkers.',
     category: 'Physical',
     severity: 'warning',
+    titleKey: 'diagnosticsPanel.remedyRf.hiddenTerminalRisk.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.hiddenTerminalRisk.description',
   },
   'LoRa Collision or Corruption': {
     title: 'Filter band / relocate',
@@ -141,6 +168,8 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
       'Non-Meshtastic LoRa or collisions — directional antenna or channel planning may help.',
     category: 'Hardware',
     severity: 'warning',
+    titleKey: 'diagnosticsPanel.remedyRf.loraCollisionCorruption.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.loraCollisionCorruption.description',
   },
   'External Interference': {
     title: 'Identify dominant transmitter',
@@ -148,6 +177,8 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
       'Another transmitter is backing off your node — find and mitigate the source or relocate.',
     category: 'Physical',
     severity: 'warning',
+    titleKey: 'diagnosticsPanel.remedyRf.externalInterference.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.externalInterference.description',
   },
   'Wideband Noise Floor': {
     title: 'Reduce broadband noise sources',
@@ -155,12 +186,16 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
       'Faulty electronics and power-line noise raise the floor — isolate antenna from noise sources.',
     category: 'Physical',
     severity: 'warning',
+    titleKey: 'diagnosticsPanel.remedyRf.widebandNoiseFloor.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.widebandNoiseFloor.description',
   },
   'Fringe / Weak Coverage': {
     title: 'Improve path or add relay',
     description: 'Node is at edge of coverage — relay placement or antenna upgrade.',
     category: 'Configuration',
     severity: 'info',
+    titleKey: 'diagnosticsPanel.remedyRf.fringeWeakCoverage.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.fringeWeakCoverage.description',
   },
 };
 

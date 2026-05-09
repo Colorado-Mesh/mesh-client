@@ -8,6 +8,14 @@ import {
   meshHasRoutingAnomaliesFromRows,
 } from '../lib/diagnostics/diagnosticRows';
 import {
+  translateRemedyDescription,
+  translateRemedyTitle,
+  translateRfCauseText,
+  translateRfConditionLabel,
+  translateRoutingAnomalyType,
+  translateRoutingRowDescription,
+} from '../lib/diagnostics/diagnosticsLabels';
+import {
   meshCongestionDetailLines,
   summarizeMeshCongestionAttribution,
   summarizeRfDuplicateOriginators,
@@ -488,14 +496,14 @@ export default function DiagnosticsPanel({
             </td>
             <td className="px-4 py-2.5">
               <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
-                {rf.condition}
+                {translateRfConditionLabel(t, rf.condition)}
                 {rf.isLastHop && (
                   <span className="ml-1 rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-[10px] text-blue-300">
                     {t('diagnosticsPanel.lastHopBadge')}
                   </span>
                 )}
               </div>
-              <div className="max-w-xs text-xs text-gray-400">{rf.cause}</div>
+              <div className="max-w-xs text-xs text-gray-400">{translateRfCauseText(t, rf)}</div>
             </td>
             <td className="px-4 py-2.5 text-right text-xs text-gray-300">—</td>
             <td className="text-muted px-4 py-2.5 text-right text-xs">
@@ -504,21 +512,24 @@ export default function DiagnosticsPanel({
             <td className="px-4 py-2.5">
               {remedy ? (
                 <span
-                  title={remedy.description}
+                  title={translateRemedyDescription(t, remedy)}
                   className={`inline-block rounded px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
                 >
-                  {remedy.title}
+                  {translateRemedyTitle(t, remedy)}
                 </span>
               ) : (
                 <span className="text-muted text-xs">—</span>
               )}
             </td>
-            <td className="text-muted px-4 py-2.5 text-right text-xs">RF — trace N/A</td>
+            <td className="text-muted px-4 py-2.5 text-right text-xs">
+              {t('diagnosticsPanel.rfTraceNotAvailable')}
+            </td>
           </tr>,
         );
         return rows;
       }
-      const anomaly = routingRowToNodeAnomaly(row);
+      const routingRow = row;
+      const anomaly = routingRowToNodeAnomaly(routingRow);
       const node = nodes.get(anomaly.nodeId);
       const isError = anomaly.severity === 'error';
       const isInfo = anomaly.severity === 'info';
@@ -563,9 +574,11 @@ export default function DiagnosticsPanel({
           </td>
           <td className="px-4 py-2.5">
             <div className={`text-xs font-medium tracking-wide uppercase ${colorClass} mb-0.5`}>
-              {anomaly.type.replace(/_/g, ' ')}
+              {translateRoutingAnomalyType(t, anomaly.type)}
             </div>
-            <div className="max-w-xs text-xs text-gray-400">{anomaly.description}</div>
+            <div className="max-w-xs text-xs text-gray-400">
+              {translateRoutingRowDescription(t, routingRow)}
+            </div>
             {showMqttControls &&
               anomaly.type === 'hop_goblin' &&
               node?.heard_via_mqtt === true &&
@@ -592,10 +605,10 @@ export default function DiagnosticsPanel({
               if (!remedy) return <span className="text-muted text-xs">—</span>;
               return (
                 <span
-                  title={remedy.description}
+                  title={translateRemedyDescription(t, remedy)}
                   className={`inline-block rounded px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
                 >
-                  {remedy.title}
+                  {translateRemedyTitle(t, remedy)}
                 </span>
               );
             })()}
@@ -1098,18 +1111,24 @@ export default function DiagnosticsPanel({
             {selfRows.length > 0 && (
               <div>
                 <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-                  Connected node (you) ({selfRows.length})
+                  {t('diagnosticsPanel.connectedNodeYouHeading', { count: selfRows.length })}
                 </h4>
                 <div className="border-brand-green/20 overflow-auto rounded-lg border border-gray-700">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-deep-black text-muted sticky top-0 text-left">
-                        <th className="px-4 py-2.5">Node</th>
-                        <th className="px-4 py-2.5">Offense</th>
-                        <th className="px-4 py-2.5 text-right">Hops</th>
-                        <th className="px-4 py-2.5 text-right">Detected</th>
-                        <th className="px-4 py-2.5">Suggested Fix</th>
-                        <th className="px-4 py-2.5 text-right">Action</th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableHops')}
+                        </th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableDetected')}
+                        </th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableAction')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700/50">
@@ -1133,12 +1152,18 @@ export default function DiagnosticsPanel({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-deep-black text-muted sticky top-0 text-left">
-                        <th className="px-4 py-2.5">Node</th>
-                        <th className="px-4 py-2.5">Offense</th>
-                        <th className="px-4 py-2.5 text-right">Hops</th>
-                        <th className="px-4 py-2.5 text-right">Detected</th>
-                        <th className="px-4 py-2.5">Suggested Fix</th>
-                        <th className="px-4 py-2.5 text-right">Action</th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableHops')}
+                        </th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableDetected')}
+                        </th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableAction')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700/50">
@@ -1159,12 +1184,18 @@ export default function DiagnosticsPanel({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-deep-black text-muted sticky top-0 text-left">
-                        <th className="px-4 py-2.5">Node</th>
-                        <th className="px-4 py-2.5">Offense</th>
-                        <th className="px-4 py-2.5 text-right">Hops</th>
-                        <th className="px-4 py-2.5 text-right">Detected</th>
-                        <th className="px-4 py-2.5">Suggested Fix</th>
-                        <th className="px-4 py-2.5 text-right">Action</th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableHops')}
+                        </th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableDetected')}
+                        </th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableAction')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700/50">
@@ -1177,18 +1208,24 @@ export default function DiagnosticsPanel({
             {meshRows.length > 0 && (
               <div>
                 <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-                  Mesh diagnostics ({meshRows.length})
+                  {t('diagnosticsPanel.meshDiagnosticsHeading', { count: meshRows.length })}
                 </h4>
                 <div className="overflow-auto rounded-lg border border-gray-700">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-deep-black text-muted sticky top-0 text-left">
-                        <th className="px-4 py-2.5">Node</th>
-                        <th className="px-4 py-2.5">Offense</th>
-                        <th className="px-4 py-2.5 text-right">Hops</th>
-                        <th className="px-4 py-2.5 text-right">Detected</th>
-                        <th className="px-4 py-2.5">Suggested Fix</th>
-                        <th className="px-4 py-2.5 text-right">Action</th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableHops')}
+                        </th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableDetected')}
+                        </th>
+                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
+                        <th className="px-4 py-2.5 text-right">
+                          {t('diagnosticsPanel.tableAction')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700/50">

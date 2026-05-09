@@ -80,6 +80,7 @@ export function rfDiagnosesToRows(nodeId: number, findings: RFDiagnosis[]): RfDi
     severity: f.severity,
     detectedAt: now,
     isLastHop: f.isLastHop,
+    causeI18n: f.causeI18n,
   }));
 }
 

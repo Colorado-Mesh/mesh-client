@@ -33,8 +33,8 @@
     "always": "Always",
     "dismiss": "Dismiss",
     "channel": "Channel",
-    "nodes": "nodes",
-    "contacts": "contacts",
+    "nodes": "Nodes",
+    "contacts": "Contacts",
     "messages": "messages",
     "connect": "Connect",
     "disconnect": "Disconnect",
@@ -72,6 +72,7 @@
   "tabs": {
     "connection": "Connection",
     "chat": "Chat",
+    "contacts": "Contacts",
     "nodes": "Nodes",
     "map": "Map",
     "radio": "Radio",

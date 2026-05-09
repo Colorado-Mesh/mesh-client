@@ -9,6 +9,10 @@ import {
   getRoutingRowForNode,
 } from '../lib/diagnostics/diagnosticRows';
 import {
+  translateRfConditionLabel,
+  translateRFDiagnosisCause,
+} from '../lib/diagnostics/diagnosticsLabels';
+import {
   meshCongestionDetailLines,
   summarizeMeshCongestionAttribution,
   summarizeRfDuplicateOriginators,
@@ -962,14 +966,18 @@ function RFDiagnosticsSection({
                 <span className="mt-0.5 shrink-0">{SEVERITY_ICON[f.severity]}</span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1">
-                    <span className="font-semibold">{f.condition}</span>
+                    <span className="font-semibold">
+                      {translateRfConditionLabel(t, f.condition)}
+                    </span>
                     {f.isLastHop && (
                       <span className="rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-[10px] text-blue-300">
                         {t('nodeInfoBody.lastHopSnrBadge')}
                       </span>
                     )}
                   </div>
-                  <div className="mt-0.5 text-gray-400">— {f.cause}</div>
+                  <div className="mt-0.5 text-gray-400">
+                    — {translateRFDiagnosisCause(t, f.cause, f.causeI18n)}
+                  </div>
                   {(f.hints?.length ?? 0) > 0 && (
                     <ul className="text-muted mt-1.5 list-disc space-y-0.5 pl-3 text-[10px]">
                       {f.hints!.map((h, j) => (

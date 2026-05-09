@@ -49,6 +49,10 @@ export function detectHopGoblin(
         severity: 'error',
         confidence: 'proven',
         description: `Only ${distKm.toFixed(2)} km away but taking ${node.hops_away ?? '?'} hops — critical over-hopping`,
+        descriptionI18n: {
+          key: 'diagnosticsPanel.routingDesc.hopGoblinKm',
+          params: { distanceKm: distKm.toFixed(2), hops: node.hops_away ?? '?' },
+        },
         detectedAt: Date.now(),
         snr: node.snr,
         hopsAway: node.hops_away,
@@ -78,6 +82,10 @@ export function detectBadRoute(
         type: 'bad_route',
         severity: 'error',
         description: `${Math.round(lossRate * 100)}% packet duplication — routing loop suspected`,
+        descriptionI18n: {
+          key: 'diagnosticsPanel.routingDesc.badRouteDuplication',
+          params: { percent: Math.round(lossRate * 100) },
+        },
         detectedAt: Date.now(),
         snr: node.snr,
         hopsAway: node.hops_away,
@@ -110,6 +118,10 @@ export function detectBadRoute(
         type: 'bad_route',
         severity: 'warning',
         description: `Only ${distMiles.toFixed(1)} mi away but taking ${node.hops_away ?? '?'} hops — possible suboptimal route`,
+        descriptionI18n: {
+          key: 'diagnosticsPanel.routingDesc.badRouteSuboptimalMi',
+          params: { distanceMi: distMiles.toFixed(1), hops: node.hops_away ?? '?' },
+        },
         detectedAt: Date.now(),
         snr: node.snr,
         hopsAway: node.hops_away,
@@ -141,6 +153,10 @@ export function detectImpossibleHop(
       type: 'impossible_hop',
       severity: 'error',
       description: `Reported as 0 hops away but ${Math.round(distMiles)} miles distant — GPS or routing data suspect`,
+      descriptionI18n: {
+        key: 'diagnosticsPanel.routingDesc.impossibleHopMi',
+        params: { miles: Math.round(distMiles) },
+      },
       detectedAt: Date.now(),
       snr: node.snr,
       hopsAway: 0,
@@ -166,6 +182,10 @@ export function detectRouteFlapping(
       type: 'route_flapping',
       severity: 'warning',
       description: `Hop count changed ${changes} times in the last 10 minutes — unstable route`,
+      descriptionI18n: {
+        key: 'diagnosticsPanel.routingDesc.routeFlapping',
+        params: { changes },
+      },
       detectedAt: Date.now(),
     };
   }
@@ -307,6 +327,10 @@ export function detectNoisyNode(
     severity: isError ? 'error' : 'warning',
     confidence: 'proven',
     description: `Sending ${Math.round(maxExceed)}/hr on ${portLabels} — excessive traffic`,
+    descriptionI18n: {
+      key: 'diagnosticsPanel.routingDesc.noisyNode',
+      params: { ratePerHour: Math.round(maxExceed), ports: portLabels },
+    },
     detectedAt: Date.now(),
   };
 }

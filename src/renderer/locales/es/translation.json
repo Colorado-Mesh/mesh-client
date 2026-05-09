@@ -31,7 +31,7 @@
     "dismiss": "Declarar sin lugar",
     "channel": "Canal",
     "nodes": "nodos",
-    "contacts": "contactos",
+    "contacts": "Contactos",
     "messages": "mensajes",
     "connect": "Conectar",
     "disconnect": "Desconectar",
@@ -66,6 +66,7 @@
   "tabs": {
     "connection": "Conexión",
     "chat": "Chat",
+    "contacts": "Contactos",
     "nodes": "Nodos",
     "map": "Mapa",
     "radio": "Radio",

@@ -19,31 +19,55 @@ const DEFAULT_TAB_NAMES = [
 
 interface KeyboardShortcutsModalProps {
   onClose: () => void;
-  /** Current tab labels (e.g. from App). When in MeshCore mode, tab 6 is "Repeaters" instead of "Modules". */
-  tabNames?: string[];
+  /** Translated sidebar tab labels in visible order (from App). */
+  tabLabels?: string[];
+  /** Stable English slot ids per visible tab (from App). */
+  tabSlotIds?: string[];
 }
 
-export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardShortcutsModalProps) {
+export default function KeyboardShortcutsModal({
+  onClose,
+  tabLabels,
+  tabSlotIds,
+}: KeyboardShortcutsModalProps) {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const shortcuts = useMemo(() => {
-    const currentNames = tabNames ?? DEFAULT_TAB_NAMES;
     const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A', 'M', 'S'];
-    const tabShortcuts = DEFAULT_TAB_NAMES.map((name, i) => {
-      const currentTabIndex = currentNames.indexOf(name);
-      const currentTabAtPosition = currentNames[i];
-      const displayName = name === 'Sniffer' ? t('shortcuts.packetSniffer') : name;
+    const slots = tabSlotIds ?? DEFAULT_TAB_NAMES;
+    const labels =
+      tabLabels ??
+      DEFAULT_TAB_NAMES.map((slot) =>
+        slot === 'Sniffer' ? t('shortcuts.packetSniffer') : t(`tabs.${slot.toLowerCase()}`),
+      );
+
+    const tabShortcuts = DEFAULT_TAB_NAMES.map((_canonical, i) => {
+      const slotAtPosition = slots[i] ?? DEFAULT_TAB_NAMES[i];
+      const labelAtPosition =
+        labels[i] ??
+        (DEFAULT_TAB_NAMES[i] === 'Sniffer'
+          ? t('shortcuts.packetSniffer')
+          : t(`tabs.${DEFAULT_TAB_NAMES[i].toLowerCase()}`));
+      const fromApp = tabLabels != null && tabLabels.length === tabSlotIds?.length;
+
+      const displayName =
+        slotAtPosition === 'Sniffer' ? t('shortcuts.packetSniffer') : labelAtPosition;
+
       let suffix = '';
-      if (currentTabAtPosition !== name) {
-        if (i === 7 && currentTabIndex === -1) {
-          suffix = t('shortcuts.notInMeshCore');
-        } else if (i === 8 && currentTabIndex === -1) {
-          suffix = t('shortcuts.notInMeshCore');
-        } else if (i === 5 && currentTabAtPosition === 'Repeaters') {
-          suffix = t('shortcuts.meshCoreRepeaters');
+      if (!fromApp && i < slots.length) {
+        const currentTabIndex = slots.indexOf(DEFAULT_TAB_NAMES[i]);
+        if (slots[i] !== DEFAULT_TAB_NAMES[i]) {
+          if (i === 7 && currentTabIndex === -1) {
+            suffix = t('shortcuts.notInMeshCore');
+          } else if (i === 8 && currentTabIndex === -1) {
+            suffix = t('shortcuts.notInMeshCore');
+          } else if (i === 5 && slotAtPosition === 'Repeaters') {
+            suffix = t('shortcuts.meshCoreRepeaters');
+          }
         }
       }
+
       return {
         keys: `Cmd/Ctrl + ${keys[i]}`,
         action: t('shortcuts.switchToTab', { name: displayName }) + suffix,
@@ -59,7 +83,7 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
       { keys: 'Cmd/Ctrl + ]', action: t('shortcuts.switchMeshCore') },
     ];
     return [...tabShortcuts, ...otherShortcuts];
-  }, [tabNames, t]);
+  }, [tabLabels, tabSlotIds, t]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {

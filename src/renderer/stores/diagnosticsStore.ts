@@ -867,17 +867,31 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     const nodes = getNodes?.();
     let condition: string;
     let cause: string;
+    let causeI18n: RfDiagnosticRow['causeI18n'];
 
     if (packetClass === 'meshcore') {
       condition = 'MeshCore Activity Detected';
       if (proximity === 'very-close') {
         cause = `MeshCore node very close (RSSI ${rssi} dBm) — likely causing packet collisions.`;
+        causeI18n = {
+          key: 'diagnosticsPanel.foreignLoraCause.meshcoreVeryClose',
+          params: { rssi: rssi ?? '?' },
+        };
       } else if (proximity === 'nearby') {
         cause = `MeshCore node detected nearby (RSSI ${rssi} dBm) — may interfere with traffic.`;
+        causeI18n = {
+          key: 'diagnosticsPanel.foreignLoraCause.meshcoreNearby',
+          params: { rssi: rssi ?? '?' },
+        };
       } else if (proximity === 'distant') {
         cause = `Distant MeshCore activity on this frequency (RSSI ${rssi} dBm).`;
+        causeI18n = {
+          key: 'diagnosticsPanel.foreignLoraCause.meshcoreDistant',
+          params: { rssi: rssi ?? '?' },
+        };
       } else {
         cause = 'MeshCore node transmitting on this frequency.';
+        causeI18n = { key: 'diagnosticsPanel.foreignLoraCause.meshcoreGeneric' };
       }
     } else if (packetClass === 'meshtastic') {
       condition = 'Meshtastic Traffic Detected';
@@ -893,10 +907,26 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
             : proximity === 'distant'
               ? 'Distant'
               : '';
+      const proximityKey =
+        proximity === 'very-close'
+          ? 'veryClose'
+          : proximity === 'nearby'
+            ? 'nearby'
+            : proximity === 'distant'
+              ? 'distant'
+              : '';
       cause = `Meshtastic node transmitting on this frequency. Sender: ${senderLabel}. ${proxLabel ? proxLabel + '. ' : ''}This node may be in your MeshCore repeater area.`;
+      causeI18n = {
+        key: 'diagnosticsPanel.foreignLoraCause.meshtastic',
+        params: { sender: senderLabel, proximityKey },
+      };
     } else {
       condition = 'Unknown LoRa Traffic';
       cause = `Unrecognized LoRa signal detected (RSSI ${rssi ?? '?'} dBm, SNR ${snr ?? '?'} dB).`;
+      causeI18n = {
+        key: 'diagnosticsPanel.foreignLoraCause.unknownLora',
+        params: { rssi: rssi ?? '?', snr: snr ?? '?' },
+      };
     }
 
     const mainRow: RfDiagnosticRow = {
@@ -907,6 +937,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       cause,
       severity: 'info',
       detectedAt: now,
+      causeI18n,
     };
 
     const extraRows: RfDiagnosticRow[] = [];
@@ -920,6 +951,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           'High MeshCore packet rate detected (>5/min). A nearby MeshCore repeater may be causing packet collisions.',
         severity: 'warning',
         detectedAt: now,
+        causeI18n: { key: 'diagnosticsPanel.foreignLoraCause.potentialRepeaterConflict' },
       });
     }
 

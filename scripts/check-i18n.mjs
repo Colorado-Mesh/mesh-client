@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
- * Pre-commit / CI check for i18n key completeness.
+ * Pre-commit / CI check for i18n key completeness and locale string quality.
  *
  * 1. Extracts all t('key') / t("key") call sites from renderer source.
  * 2. Verifies every key resolves to an existing path in en/translation.json.
- * 3. Verifies every key in en/translation.json exists in every other locale file.
+ * 3. Verifies every key in en/translation.json exists in every other locale file (warn only).
+ * 4. Fails on CAT/XLIFF/Memsource residue in non-English strings; fails if {{placeholder}}
+ *    name sets differ from English for the same key.
  *
  * Add a comment  // i18n-ok <reason>  on the same line to suppress a dynamic-key warning.
  */
@@ -114,6 +116,69 @@ for (const dir of localeDirs) {
       `Warning: locale "${dir}" is missing ${missing.length} key(s) — run: pnpm run i18n:auto-translate`,
     );
     warnings++;
+  }
+}
+
+/** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
+function placeholderNameSet(s) {
+  const re = /\{\{\s*([^}]+?)\s*\}\}/g;
+  const out = new Set();
+  let m;
+  while ((m = re.exec(s))) {
+    out.add(m[1]);
+  }
+  return out;
+}
+
+function setsEqualStrings(a, b) {
+  if (a.size !== b.size) return false;
+  for (const x of a) {
+    if (!b.has(x)) return false;
+  }
+  return true;
+}
+
+// CAT / XLIFF / Memsource garbage that must never ship in JSON values.
+const LOCALE_ARTIFACT_RES = [
+  /<g\s+id=/i,
+  /<\/g>/i,
+  /<ph\s+id=/i,
+  /equiv-text=/i,
+  /__\s*PH\s*\d/i,
+  /__PH\s*\d/i,
+];
+
+// ── 3. Locale string quality: no CAT/XML artifacts; {{name}} sets match English ──
+for (const dir of localeDirs) {
+  const localePath = join(LOCALES_DIR, dir, 'translation.json');
+  let localeFlat;
+  try {
+    localeFlat = flatten(readJson(localePath));
+  } catch {
+    continue;
+  }
+  for (const [key, val] of Object.entries(localeFlat)) {
+    if (typeof val !== 'string') continue;
+    for (const re of LOCALE_ARTIFACT_RES) {
+      if (re.test(val)) {
+        console.error(
+          `Locale artifact in "${dir}" key "${key}": CAT/XLIFF/Memsource residue is not allowed (matched ${re}).`,
+        );
+        errors++;
+      }
+    }
+    const enVal = en[key];
+    if (typeof enVal !== 'string') continue;
+    const enPh = placeholderNameSet(enVal);
+    const locPh = placeholderNameSet(val);
+    if (!setsEqualStrings(enPh, locPh)) {
+      const enList = [...enPh].sort().join(', ') || '(none)';
+      const locList = [...locPh].sort().join(', ') || '(none)';
+      console.error(
+        `Placeholder mismatch in "${dir}" key "${key}": English has {${enList}} but locale has {${locList}}.`,
+      );
+      errors++;
+    }
   }
 }
 

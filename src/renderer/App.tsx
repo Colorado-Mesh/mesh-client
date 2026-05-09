@@ -130,7 +130,8 @@ function deviceConnectionStatusLabel(
   }
 }
 
-const TAB_NAMES = [
+/** Stable English tab slot ids (icons, shortcuts, chat badge) — not for display. */
+const TAB_SLOT_IDS = [
   'Connection',
   'Chat',
   'Nodes',
@@ -144,7 +145,40 @@ const TAB_NAMES = [
   'Diagnostics',
   'Stats',
   'Sniffer',
-];
+] as const;
+
+function tabLabelKey(protocol: MeshProtocol, panelIndex: number): `tabs.${string}` {
+  if (panelIndex === 2 && protocol === 'meshcore') return 'tabs.contacts';
+  if (panelIndex === 5 && protocol === 'meshcore') return 'tabs.repeaters';
+  return `tabs.${TAB_SLOT_IDS[panelIndex].toLowerCase()}`;
+}
+
+function tabIconSlotId(protocol: MeshProtocol, panelIndex: number): string {
+  if (panelIndex === 5 && protocol === 'meshcore') return 'Repeaters';
+  return TAB_SLOT_IDS[panelIndex];
+}
+
+function computeTabMappings(
+  translate: ReturnType<typeof useTranslation>['t'],
+  targetProtocol: MeshProtocol,
+  targetCapabilities: ProtocolCapabilities,
+) {
+  const filtered: { label: string; slotId: string; panelIndex: number }[] = [];
+  TAB_SLOT_IDS.forEach((_slot, panelIndex) => {
+    const requiredCap = TAB_CAPABILITY_REQUIREMENTS[panelIndex];
+    if (requiredCap !== undefined && !targetCapabilities[requiredCap]) return;
+    filtered.push({
+      label: translate(tabLabelKey(targetProtocol, panelIndex)),
+      slotId: tabIconSlotId(targetProtocol, panelIndex),
+      panelIndex,
+    });
+  });
+  return {
+    displayTabLabels: filtered.map((row) => row.label),
+    tabSlotIds: filtered.map((row) => row.slotId),
+    tabIndexToPanelIndex: filtered.map((row) => row.panelIndex),
+  };
+}
 
 export interface LocationFilter {
   enabled: boolean;
@@ -600,36 +634,16 @@ export default function App() {
   const meshtasticCapabilities = useRadioProvider('meshtastic');
   const meshcoreCapabilities = useRadioProvider('meshcore');
 
-  const computeTabMappings = (
-    targetProtocol: MeshProtocol,
-    targetCapabilities: ProtocolCapabilities,
-  ) => {
-    const filtered: { name: string; panelIndex: number }[] = [];
-    TAB_NAMES.forEach((name, panelIndex) => {
-      const requiredCap = TAB_CAPABILITY_REQUIREMENTS[panelIndex];
-      if (requiredCap === undefined || targetCapabilities[requiredCap]) {
-        filtered.push({
-          name: panelIndex === 5 && targetProtocol === 'meshcore' ? 'Repeaters' : name,
-          panelIndex,
-        });
-      }
-    });
-    return {
-      displayTabNames: filtered.map((t) => t.name),
-      tabIndexToPanelIndex: filtered.map((t) => t.panelIndex),
-    };
-  };
-
   const meshtasticTabs = useMemo(
-    () => computeTabMappings('meshtastic', meshtasticCapabilities),
-    [meshtasticCapabilities],
+    () => computeTabMappings(t, 'meshtastic', meshtasticCapabilities),
+    [t, meshtasticCapabilities],
   );
   const meshcoreTabs = useMemo(
-    () => computeTabMappings('meshcore', meshcoreCapabilities),
-    [meshcoreCapabilities],
+    () => computeTabMappings(t, 'meshcore', meshcoreCapabilities),
+    [t, meshcoreCapabilities],
   );
 
-  const { displayTabNames, tabIndexToPanelIndex } = useMemo(() => {
+  const { displayTabLabels, tabSlotIds, tabIndexToPanelIndex } = useMemo(() => {
     return protocol === 'meshcore' ? meshcoreTabs : meshtasticTabs;
   }, [protocol, meshtasticTabs, meshcoreTabs]);
 
@@ -662,7 +676,7 @@ export default function App() {
 
   // Reset activeTab if it's out of bounds (e.g., switching to meshcore while on Security tab)
   useEffect(() => {
-    if (activeTab >= displayTabNames.length) {
+    if (activeTab >= displayTabLabels.length) {
       const savedPanel =
         protocol === 'meshcore' ? lastMeshcorePanel.current : lastMeshtasticPanel.current;
       let next = 0;
@@ -672,18 +686,18 @@ export default function App() {
         const foundFilteredIndex = targetTabs.tabIndexToPanelIndex.findIndex(
           (p) => p === savedPanel,
         );
-        if (foundFilteredIndex !== -1 && foundFilteredIndex < targetTabs.displayTabNames.length) {
+        if (foundFilteredIndex !== -1 && foundFilteredIndex < targetTabs.displayTabLabels.length) {
           next = foundFilteredIndex;
         }
       } else {
         const savedTab =
           protocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
-        next = savedTab < targetTabs.displayTabNames.length ? savedTab : 0;
+        next = savedTab < targetTabs.displayTabLabels.length ? savedTab : 0;
       }
 
       setActiveTab(next);
     }
-  }, [activeTab, displayTabNames.length, protocol, meshtasticTabs, meshcoreTabs]);
+  }, [activeTab, displayTabLabels.length, protocol, meshtasticTabs, meshcoreTabs]);
 
   // Reset scroll position when switching tabs
   useEffect(() => {
@@ -730,14 +744,14 @@ export default function App() {
         const foundFilteredIndex = targetTabs.tabIndexToPanelIndex.findIndex(
           (p) => p === savedPanel,
         );
-        if (foundFilteredIndex !== -1 && foundFilteredIndex < targetTabs.displayTabNames.length) {
+        if (foundFilteredIndex !== -1 && foundFilteredIndex < targetTabs.displayTabLabels.length) {
           targetTab = foundFilteredIndex;
         }
       } else {
         const savedTab =
           newProtocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
         const targetTabs = newProtocol === 'meshcore' ? meshcoreTabs : meshtasticTabs;
-        targetTab = savedTab < targetTabs.displayTabNames.length ? savedTab : 0;
+        targetTab = savedTab < targetTabs.displayTabLabels.length ? savedTab : 0;
       }
 
       if (newProtocol === 'meshtastic') {
@@ -1191,7 +1205,7 @@ export default function App() {
   // (App, Diagnostics, Sniffer) so indices stay correct when Security/TAK are hidden.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const maxTab = displayTabNames.length - 1;
+      const maxTab = displayTabLabels.length - 1;
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         setSearchModalOpen(true);
@@ -1202,25 +1216,25 @@ export default function App() {
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key === '0') {
-        const targetIndex = displayTabNames.indexOf('App');
+        const targetIndex = tabSlotIds.indexOf('App');
         if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
-        const targetIndex = displayTabNames.indexOf('Diagnostics');
+        const targetIndex = tabSlotIds.indexOf('Diagnostics');
         if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'm') {
-        const targetIndex = displayTabNames.indexOf('Stats');
+        const targetIndex = tabSlotIds.indexOf('Stats');
         if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-        const targetIndex = displayTabNames.indexOf('Sniffer');
+        const targetIndex = tabSlotIds.indexOf('Sniffer');
         if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
@@ -1237,7 +1251,7 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [displayTabNames]);
+  }, [displayTabLabels, tabSlotIds]);
 
   // ─── Track Meshtastic messages arriving while inactive ──────────
   useEffect(() => {
@@ -1657,7 +1671,8 @@ export default function App() {
             }`}
           >
             <Sidebar
-              tabs={displayTabNames}
+              tabs={displayTabLabels}
+              tabSlotIds={tabSlotIds}
               active={activeTab}
               onChange={setActiveTab}
               chatUnread={protocol === 'meshtastic' ? meshtasticUnread : meshcoreUnread}
@@ -2419,7 +2434,8 @@ export default function App() {
             onClose={() => {
               setShowShortcuts(false);
             }}
-            tabNames={displayTabNames}
+            tabLabels={displayTabLabels}
+            tabSlotIds={tabSlotIds}
           />
         </Suspense>
       )}
