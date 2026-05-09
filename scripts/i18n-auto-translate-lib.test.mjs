@@ -53,14 +53,17 @@ describe('filterMissingKeysToTranslate', () => {
 });
 
 describe('sanitizeLocaleTranslationJsonFileBodyForDisk', () => {
-  it('removes NUL and other C0 controls but keeps TAB/LF/CR', () => {
+  it('removes NUL, round-trips JSON, and pretty-prints for disk', () => {
     const raw = '{\n  "a": "x"\n}\n\x00';
-    expect(sanitizeLocaleTranslationJsonFileBodyForDisk(raw)).toBe('{\n  "a": "x"\n}\n');
+    const out = sanitizeLocaleTranslationJsonFileBodyForDisk(raw);
+    expect(JSON.parse(out)).toEqual({ a: 'x' });
+    expect(out).toMatch(/^\{\n/);
   });
 
-  it('strips line/paragraph separators', () => {
+  it('strips line/paragraph separators then parses', () => {
     const withSep = `{\u2028"k":1}`;
-    expect(sanitizeLocaleTranslationJsonFileBodyForDisk(withSep)).toBe('{"k":1}');
+    const out = sanitizeLocaleTranslationJsonFileBodyForDisk(withSep);
+    expect(JSON.parse(out)).toEqual({ k: 1 });
   });
 });
 

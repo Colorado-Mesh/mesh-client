@@ -15,7 +15,13 @@ const UNSAFE_LOCALE_KEY_PARTS = new Set(['__proto__', 'constructor', 'prototype'
  * @returns {string}
  */
 export function sanitizeLocaleTranslationJsonFileBodyForDisk(body) {
-  return String(body).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]/g, ''); // eslint-disable-line no-control-regex
+  const noCtl = String(body).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]/g, ''); // eslint-disable-line no-control-regex
+  try {
+    return JSON.stringify(JSON.parse(noCtl), null, 2) + '\n';
+  } catch {
+    // catch-no-log-ok: if stripped text is not valid JSON, persist control-stripped body only
+    return noCtl;
+  }
 }
 
 /**

@@ -153,10 +153,8 @@ async function translateMyMemory(text, targetMm) {
     ...(MM_EMAIL ? { de: MM_EMAIL } : {}),
   });
   const url = `https://api.mymemory.translated.net/get?${params.toString()}`;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (attempt > 0) {
-      await sleep(1200);
-    }
+
+  const fetchTranslation = async () => {
     const res = await fetchWithTimeout(url);
     if (res.status === HTTP_STATUS_TOO_MANY_REQUESTS) {
       throw Object.assign(new Error('MyMemory rate limited'), { code: MYMEMORY_RATE_LIMIT_CODE });
@@ -174,8 +172,20 @@ async function translateMyMemory(text, targetMm) {
     }
     const translated = json.responseData?.translatedText ?? stripped;
     return restorePlaceholders(translated, placeholders);
+  };
+
+  try {
+    return await fetchTranslation();
+  } catch (err) {
+    if (typeof err === 'object' && err !== null && err.code === MYMEMORY_RATE_LIMIT_CODE) {
+      throw err;
+    }
+    if (err instanceof Error && err.message.startsWith('MyMemory daily quota')) {
+      throw err;
+    }
+    await sleep(1200);
+    return await fetchTranslation();
   }
-  throw new Error('MyMemory failed after retry');
 }
 
 // ── Google Translate (public endpoint) fallback ───────────────────────────────
