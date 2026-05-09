@@ -8,7 +8,11 @@ vi.mock('@meshtastic/core', () => ({
 
 vi.mock('./transportNobleIpc', () => ({
   TransportNobleIpc: vi.fn().mockImplementation(function TransportNobleIpc(sessionId: string) {
-    return { sessionId };
+    return {
+      sessionId,
+      fromDevice: new ReadableStream<Uint8Array>(),
+      toDevice: new WritableStream<Uint8Array>(),
+    };
   }),
 }));
 

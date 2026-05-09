@@ -3,6 +3,11 @@ import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
 import { isMainProcessBleTimeoutMessage } from './bleConnectErrors';
 import {
+  assertMeshtasticSerialWebStreamsAvailable,
+  assertTransportReadyForMeshDevice,
+  getMeshtasticStreamsDiagnostics,
+} from './connectionWebStreams';
+import {
   getPortSignature,
   persistSerialPortIdentity,
   selectGrantedSerialPort,
@@ -20,6 +25,22 @@ const BLE_CONNECT_RETRY_DELAY_MS = 1_500;
 function logMeshtasticDeviceConnection(detail: string): void {
   const fn = window.electronAPI?.log?.logDeviceConnection;
   if (typeof fn === 'function') void fn(detail);
+}
+
+/** Maps opaque `pipeTo` failures inside @meshtastic/transport-web-serial to a clearer error. */
+function rethrowIfTransportWebSerialPipeToFailed(err: unknown, phase: string): never {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (!msg.includes('pipeTo')) {
+    throw err instanceof Error ? err : new Error(String(err));
+  }
+  console.error(
+    `[connection] Meshtastic serial ${phase}: pipeTo failure`,
+    err,
+    getMeshtasticStreamsDiagnostics(),
+  );
+  throw new Error(
+    `Meshtastic serial failed during ${phase} (Web Streams pipe). Often occurs when @meshtastic/core stream helpers are unavailable or the serial port streams are invalid. Diagnostics were logged to the console.`,
+  );
 }
 
 /**
@@ -75,6 +96,7 @@ export async function createBleConnection(
           });
         }
         console.debug('[connection] createBleConnection: connected on Linux');
+        assertTransportReadyForMeshDevice(transport, 'Meshtastic BLE (Linux Web Bluetooth)');
         return new MeshDevice(transport);
       } catch (err) {
         lastError = err;
@@ -136,6 +158,7 @@ export async function createBleConnection(
       }
       console.debug('[connection] createBleConnection connected', peripheralId);
       console.debug('[connection] createBleConnection elapsedMs', Date.now() - connectStartedAt);
+      assertTransportReadyForMeshDevice(transport, 'Meshtastic BLE (Noble)');
       return new MeshDevice(transport);
     } catch (err) {
       lastError = err;
@@ -189,6 +212,11 @@ export async function createConnection(
       if (!navigator.serial?.requestPort) {
         throw new Error('Web Serial API not available');
       }
+      assertMeshtasticSerialWebStreamsAvailable();
+      console.debug(
+        '[connection] Meshtastic serial Web Streams OK',
+        getMeshtasticStreamsDiagnostics(),
+      );
       const SERIAL_CONNECT_TIMEOUT_MS = 15_000;
       const serialApi = navigator.serial;
       const origRequestPort = serialApi.requestPort.bind(serialApi);
@@ -207,7 +235,12 @@ export async function createConnection(
             );
           }, SERIAL_CONNECT_TIMEOUT_MS),
         );
-        transport = await Promise.race([serialPromise, serialTimeoutPromise]);
+        try {
+          transport = await Promise.race([serialPromise, serialTimeoutPromise]);
+        } catch (err) {
+          console.debug('[connection] TransportWebSerial.create failed', err);
+          rethrowIfTransportWebSerialPipeToFailed(err, 'TransportWebSerial.create');
+        }
       } finally {
         serialApi.requestPort = origRequestPort;
       }
@@ -251,6 +284,7 @@ export async function createConnection(
       logMeshtasticDeviceConnection(
         `transport=http stack=meshtastic host=${host} tls=${useTls} port=${useTls ? 443 : 80}`,
       );
+      assertTransportReadyForMeshDevice(transport, 'Meshtastic HTTP');
       return new MeshDevice(transport);
     }
 
@@ -262,6 +296,7 @@ export async function createConnection(
   // event subscriptions are set up in useDevice.ts, otherwise the initial
   // node/channel/config dump is emitted before any listeners exist.
 
+  assertTransportReadyForMeshDevice(transport, 'Meshtastic serial');
   return new MeshDevice(transport as any);
 }
 
@@ -288,7 +323,15 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
     `[connection] reconnectSerial: using port portId=${(port as SerialPort & { portId?: string }).portId ?? 'none'} usbVendor=${port.getInfo?.().usbVendorId ?? 'n/a'} usbProduct=${port.getInfo?.().usbProductId ?? 'n/a'}`,
   );
 
-  const transport = await TransportWebSerial.createFromPort(port, 115200);
+  assertMeshtasticSerialWebStreamsAvailable();
+  console.debug('[connection] reconnectSerial Web Streams OK', getMeshtasticStreamsDiagnostics());
+  let transport: Awaited<ReturnType<typeof TransportWebSerial.createFromPort>>;
+  try {
+    transport = await TransportWebSerial.createFromPort(port, 115200);
+  } catch (err) {
+    console.debug('[connection] TransportWebSerial.createFromPort failed', err);
+    rethrowIfTransportWebSerialPipeToFailed(err, 'TransportWebSerial.createFromPort');
+  }
   {
     const sig = getPortSignature(port);
     const pid = (port as SerialPort & { portId?: string }).portId;
@@ -298,6 +341,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
     if (sig.usbProductId != null) parts.push(`usbProductId=${sig.usbProductId}`);
     logMeshtasticDeviceConnection(parts.join(' '));
   }
+  assertTransportReadyForMeshDevice(transport, 'Meshtastic serial (reconnect)');
   return new MeshDevice(transport);
 }
 
