@@ -380,6 +380,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       channelName?: string;
       emoji?: number;
       replyId?: number;
+      publishJsonMirror: boolean;
     }) => ipcRenderer.invoke('mqtt:publish', args),
     publishNodeInfo: (args: {
       from: number;
@@ -387,6 +388,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       shortName: string;
       channelName?: string;
       hwModel?: number;
+      publishJsonMirror: boolean;
     }) => ipcRenderer.invoke('mqtt:publishNodeInfo', args),
     publishPosition: (args: {
       from: number;
@@ -395,7 +397,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
       latitudeI: number;
       longitudeI: number;
       altitude?: number;
+      publishJsonMirror: boolean;
     }) => ipcRenderer.invoke('mqtt:publishPosition', args),
+    publishWaypoint: (args: {
+      from: number;
+      to: number;
+      channel: number;
+      channelName: string;
+      publishJsonMirror: boolean;
+      waypoint: {
+        id: number;
+        latitudeI: number;
+        longitudeI: number;
+        name: string;
+        description?: string;
+        icon?: number;
+        lockedTo?: number;
+        expire?: number;
+      };
+    }) => ipcRenderer.invoke('mqtt:publishWaypoint', args),
     publishMeshcore: (args: {
       text: string;
       channelIdx: number;

@@ -5,6 +5,7 @@ import { createCipheriv } from 'crypto';
 import * as mqtt from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { MQTTSettings } from '../renderer/lib/types';
 import { MQTTManager, parsePsk, prepareMqttProtobufBytes } from './mqtt-manager';
 
 vi.mock('mqtt', () => {
@@ -151,6 +152,90 @@ describe('parsePsk', () => {
     const result = parsePsk(longKey);
     expect(result).not.toBeNull();
     expect(result!.length).toBe(16);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// publish — encrypted protobuf + optional JSON mirror
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('publish — MQTT uplink JSON mirror', () => {
+  function wireConnected(manager: MQTTManager): ReturnType<typeof vi.fn> {
+    const publish = vi.fn();
+    (manager as unknown as { client: unknown }).client = {
+      on: vi.fn(),
+      end: vi.fn(),
+      removeAllListeners: vi.fn(),
+      connected: true,
+      publish,
+      subscribe: vi.fn(),
+    };
+    (manager as unknown as { currentSettings: MQTTSettings }).currentSettings = {
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/',
+      autoLaunch: false,
+    };
+    return publish;
+  }
+
+  it('publishes only protobuf when publishJsonMirror is false', () => {
+    const manager = new MQTTManager();
+    const publish = wireConnected(manager);
+    manager.publish({
+      text: 'hello',
+      from: 0x11223344,
+      channel: 0,
+      publishJsonMirror: false,
+    });
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect((publish.mock.calls[0][0] as string).includes('2/e/')).toBe(true);
+  });
+
+  it('publishes protobuf and JSON when publishJsonMirror is true', () => {
+    const manager = new MQTTManager();
+    const publish = wireConnected(manager);
+    manager.publish({
+      text: 'hello',
+      from: 0x11223344,
+      channel: 0,
+      publishJsonMirror: true,
+    });
+    expect(publish).toHaveBeenCalledTimes(2);
+    const jsonTopic = publish.mock.calls[1][0] as string;
+    expect(jsonTopic.includes('2/json/')).toBe(true);
+    const body = JSON.parse(publish.mock.calls[1][1] as string) as Record<string, unknown>;
+    expect(body.portnum).toBe('TEXT_MESSAGE_APP');
+    expect(body.type).toBe('text');
+    expect(body.payload).toEqual({ text: 'hello' });
+  });
+
+  it('publishWaypoint mirrors WAYPOINT_APP JSON when enabled', () => {
+    const manager = new MQTTManager();
+    const publish = wireConnected(manager);
+    manager.publishWaypoint(
+      0x11223344,
+      0xffffffff,
+      0,
+      'LongFast',
+      {
+        id: 42,
+        latitudeI: 450000000,
+        longitudeI: -900000000,
+        name: 'X',
+        description: 'd',
+        icon: 0,
+        lockedTo: 0,
+        expire: 0,
+      },
+      true,
+    );
+    expect(publish).toHaveBeenCalledTimes(2);
+    const body = JSON.parse(publish.mock.calls[1][1] as string) as Record<string, unknown>;
+    expect(body.portnum).toBe('WAYPOINT_APP');
+    expect(body.type).toBe('waypoint');
   });
 });
 

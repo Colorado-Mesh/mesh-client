@@ -41,6 +41,13 @@ describe('MeshCore packet log IPC (source contract)', () => {
   });
 });
 
+describe('Meshtastic MQTT waypoint IPC (source contract)', () => {
+  it('registers publishWaypoint handler with validation', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publishWaypoint'");
+    expect(INDEX_SOURCE).toContain('validateMqttPublishWaypointArgs');
+  });
+});
+
 describe('MQTT forwarder dropped-event logs (source contract)', () => {
   it('sanitizes dynamic MQTT fields when mainWindow is not ready', () => {
     expect((INDEX_SOURCE.match(/sanitizeLogMessage\(String\(s\)\)/g) ?? []).length).toBe(2);

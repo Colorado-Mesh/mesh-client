@@ -675,6 +675,70 @@ function validateMqttPublishArgs(args: unknown): void {
     if (!Number.isFinite(replyId) || replyId < 0)
       throw new Error('mqtt:publish: replyId must be a non-negative integer');
   }
+  if (typeof a.publishJsonMirror !== 'boolean') {
+    throw new Error('mqtt:publish: publishJsonMirror must be a boolean');
+  }
+}
+
+function validateMqttPublishWaypointArgs(args: unknown): void {
+  if (!args || typeof args !== 'object') {
+    throw new Error('mqtt:publishWaypoint: args must be an object');
+  }
+  const a = args as Record<string, unknown>;
+  if (typeof a.publishJsonMirror !== 'boolean') {
+    throw new Error('mqtt:publishWaypoint: publishJsonMirror must be a boolean');
+  }
+  const from = Number(a.from);
+  if (!Number.isFinite(from) || from < 0) {
+    throw new Error('mqtt:publishWaypoint: from must be a non-negative integer');
+  }
+  const to = Number(a.to);
+  if (!Number.isFinite(to) || to < 0) {
+    throw new Error('mqtt:publishWaypoint: to must be a non-negative integer');
+  }
+  const channel = Number(a.channel);
+  if (!Number.isFinite(channel) || channel < 0) {
+    throw new Error('mqtt:publishWaypoint: channel must be a non-negative integer');
+  }
+  if (typeof a.channelName !== 'string' || !a.channelName.trim()) {
+    throw new Error('mqtt:publishWaypoint: channelName must be a non-empty string');
+  }
+  const wp = a.waypoint;
+  if (!wp || typeof wp !== 'object') {
+    throw new Error('mqtt:publishWaypoint: waypoint must be an object');
+  }
+  const w = wp as Record<string, unknown>;
+  const id = Number(w.id);
+  if (!Number.isFinite(id)) throw new Error('mqtt:publishWaypoint: waypoint.id invalid');
+  const latitudeI = Number(w.latitudeI);
+  const longitudeI = Number(w.longitudeI);
+  if (!Number.isFinite(latitudeI) || !Number.isFinite(longitudeI)) {
+    throw new Error('mqtt:publishWaypoint: waypoint latitudeI/longitudeI invalid');
+  }
+  if (typeof w.name !== 'string')
+    throw new Error('mqtt:publishWaypoint: waypoint.name must be a string');
+  if (w.name.length > 256) throw new Error('mqtt:publishWaypoint: waypoint.name too long');
+  if (w.description != null && typeof w.description !== 'string') {
+    throw new Error('mqtt:publishWaypoint: waypoint.description invalid');
+  }
+  if (typeof w.description === 'string' && w.description.length > 1024) {
+    throw new Error('mqtt:publishWaypoint: waypoint.description too long');
+  }
+  if (w.icon != null) {
+    const icon = Number(w.icon);
+    if (!Number.isFinite(icon) || icon < 0)
+      throw new Error('mqtt:publishWaypoint: waypoint.icon invalid');
+  }
+  if (w.lockedTo != null) {
+    const lt = Number(w.lockedTo);
+    if (!Number.isFinite(lt) || lt < 0)
+      throw new Error('mqtt:publishWaypoint: waypoint.lockedTo invalid');
+  }
+  if (w.expire != null) {
+    const ex = Number(w.expire);
+    if (!Number.isFinite(ex) || ex < 0)
+      throw new Error('mqtt:publishWaypoint: waypoint.expire invalid');
+  }
 }
 
 // Enable Web Serial (experimental)
@@ -2199,6 +2263,7 @@ ipcMain.handle('mqtt:publish', (_event, args) => {
       channelName?: string;
       emoji?: number;
       replyId?: number;
+      publishJsonMirror: boolean;
     };
     return mqttManager.publish({
       text: a.text,
@@ -2208,6 +2273,7 @@ ipcMain.handle('mqtt:publish', (_event, args) => {
       channelName: a.channelName,
       emoji: a.emoji,
       replyId: a.replyId,
+      publishJsonMirror: a.publishJsonMirror,
     });
   } catch (err) {
     console.error(
@@ -2302,14 +2368,16 @@ ipcMain.handle('mqtt:publishNodeInfo', (_event, args) => {
       shortName: string;
       channelName?: string;
       hwModel?: number;
+      publishJsonMirror: boolean;
     };
     if (
       typeof a.from !== 'number' ||
       typeof a.longName !== 'string' ||
-      typeof a.shortName !== 'string'
+      typeof a.shortName !== 'string' ||
+      typeof a.publishJsonMirror !== 'boolean'
     ) {
       throw new Error(
-        'mqtt:publishNodeInfo requires from (number), longName (string), shortName (string)',
+        'mqtt:publishNodeInfo requires from (number), longName (string), shortName (string), publishJsonMirror (boolean)',
       );
     }
     return mqttManager.publishNodeInfo(
@@ -2318,6 +2386,7 @@ ipcMain.handle('mqtt:publishNodeInfo', (_event, args) => {
       a.shortName,
       a.channelName ?? 'LongFast',
       a.hwModel,
+      a.publishJsonMirror,
     );
   } catch (err) {
     // Presence broadcast is fire-and-forget; silently ignore if MQTT just disconnected
@@ -2340,16 +2409,18 @@ ipcMain.handle('mqtt:publishPosition', (_event, args) => {
       latitudeI: number;
       longitudeI: number;
       altitude?: number;
+      publishJsonMirror: boolean;
     };
     if (
       typeof a.from !== 'number' ||
       typeof a.channel !== 'number' ||
       typeof a.channelName !== 'string' ||
       typeof a.latitudeI !== 'number' ||
-      typeof a.longitudeI !== 'number'
+      typeof a.longitudeI !== 'number' ||
+      typeof a.publishJsonMirror !== 'boolean'
     ) {
       throw new Error(
-        'mqtt:publishPosition requires from, channel, channelName, latitudeI, longitudeI',
+        'mqtt:publishPosition requires from, channel, channelName, latitudeI, longitudeI, publishJsonMirror',
       );
     }
     return mqttManager.publishPosition(
@@ -2359,10 +2430,49 @@ ipcMain.handle('mqtt:publishPosition', (_event, args) => {
       a.latitudeI,
       a.longitudeI,
       a.altitude,
+      a.publishJsonMirror,
     );
   } catch (err) {
     console.error(
       '[IPC] mqtt:publishPosition failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('mqtt:publishWaypoint', (_event, args) => {
+  try {
+    console.debug('[IPC] mqtt:publishWaypoint');
+    validateMqttPublishWaypointArgs(args);
+    const a = args as {
+      from: number;
+      to: number;
+      channel: number;
+      channelName: string;
+      publishJsonMirror: boolean;
+      waypoint: {
+        id: number;
+        latitudeI: number;
+        longitudeI: number;
+        name: string;
+        description?: string;
+        icon?: number;
+        lockedTo?: number;
+        expire?: number;
+      };
+    };
+    return mqttManager.publishWaypoint(
+      a.from,
+      a.to,
+      a.channel,
+      a.channelName,
+      a.waypoint,
+      a.publishJsonMirror,
+    );
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:publishWaypoint failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

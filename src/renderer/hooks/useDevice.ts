@@ -4,6 +4,8 @@ import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/protobufs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { isMeshtasticDefaultPublicPsk } from '@/shared/meshtasticDefaultPublicPsk';
+
 import {
   meshtasticNodeLacksDisplayIdentity,
   meshtasticShortNameAfterClearingDefault,
@@ -654,12 +656,14 @@ export function useDevice() {
             }
             return;
           }
+          const primaryCh = channelConfigsRef.current.find((c) => c.index === 0);
           window.electronAPI.mqtt
             .publishNodeInfo({
               from: virtualNodeIdRef.current,
               longName: MQTT_ONLY_VIRTUAL_LONG_NAME,
               shortName: 'MQTT',
               channelName: 'LongFast',
+              publishJsonMirror: primaryCh ? isMeshtasticDefaultPublicPsk(primaryCh.psk) : false,
             })
             .catch((e: unknown) => {
               console.warn('[useDevice] MQTT presence publish failed', e);
@@ -1241,6 +1245,7 @@ export function useDevice() {
                 channel: msg.channel,
                 destination: BROADCAST_ADDR,
                 channelName: 'LongFast',
+                publishJsonMirror: chCfg ? isMeshtasticDefaultPublicPsk(chCfg.psk) : false,
               })
               .then(isDuplicate)
               .catch((e: unknown) => {
@@ -2137,6 +2142,42 @@ export function useDevice() {
           }
           return updated;
         });
+
+        const mp = packet as { from?: number; to?: number; channel?: number };
+        const fromNode = mp.from;
+        const toNode = (mp.to ?? BROADCAST_ADDR) >>> 0;
+        const chanIdx = mp.channel ?? 0;
+        if (
+          fromNode != null &&
+          fromNode !== myNodeNumRef.current &&
+          mqttStatusRef.current === 'connected' &&
+          toNode === BROADCAST_ADDR
+        ) {
+          const chCfg = channelConfigsRef.current.find((c) => c.index === chanIdx);
+          if (chCfg?.uplinkEnabled) {
+            void window.electronAPI.mqtt
+              .publishWaypoint({
+                from: fromNode,
+                to: toNode,
+                channel: chanIdx,
+                channelName: 'LongFast',
+                publishJsonMirror: isMeshtasticDefaultPublicPsk(chCfg.psk),
+                waypoint: {
+                  id: data.id,
+                  latitudeI: data.latitudeI ?? 0,
+                  longitudeI: data.longitudeI ?? 0,
+                  name: data.name ?? '',
+                  description: data.description ?? '',
+                  icon: data.icon ?? 0,
+                  lockedTo: data.lockedTo ?? 0,
+                  expire: data.expire ?? 0,
+                },
+              })
+              .catch((e: unknown) => {
+                console.debug('[useDevice] MQTT waypoint relay failed', e);
+              });
+          }
+        }
       });
       unsubscribesRef.current.push(unsubWaypoint);
 
@@ -2924,6 +2965,32 @@ export function useDevice() {
         expire: wp.expire ?? 0,
       }) as WaypointType;
       await deviceRef.current.sendWaypoint(waypoint, dest, channel);
+
+      const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
+      const fromNum = myNodeNumRef.current ?? 0;
+      if (mqttStatusRef.current === 'connected' && fromNum && chCfg?.uplinkEnabled) {
+        void window.electronAPI.mqtt
+          .publishWaypoint({
+            from: fromNum,
+            to: dest >>> 0,
+            channel,
+            channelName: 'LongFast',
+            publishJsonMirror: isMeshtasticDefaultPublicPsk(chCfg.psk),
+            waypoint: {
+              id: wp.id,
+              latitudeI: Math.round(wp.latitude * 1e7),
+              longitudeI: Math.round(wp.longitude * 1e7),
+              name: wp.name,
+              description: wp.description ?? '',
+              icon: wp.icon ?? 0,
+              lockedTo: wp.lockedTo ?? 0,
+              expire: wp.expire ?? 0,
+            },
+          })
+          .catch((e: unknown) => {
+            console.debug('[useDevice] MQTT publishWaypoint failed', e);
+          });
+      }
     },
     [],
   );
@@ -2932,6 +2999,32 @@ export function useDevice() {
     if (!deviceRef.current) return;
     const waypoint = create(Mesh.WaypointSchema, { id, expire: 1 }) as WaypointType;
     await deviceRef.current.sendWaypoint(waypoint, 0xffffffff, 0);
+
+    const chCfg = channelConfigsRef.current.find((c) => c.index === 0);
+    const fromNum = myNodeNumRef.current ?? 0;
+    if (mqttStatusRef.current === 'connected' && fromNum && chCfg?.uplinkEnabled) {
+      void window.electronAPI.mqtt
+        .publishWaypoint({
+          from: fromNum,
+          to: BROADCAST_ADDR,
+          channel: 0,
+          channelName: 'LongFast',
+          publishJsonMirror: chCfg ? isMeshtasticDefaultPublicPsk(chCfg.psk) : false,
+          waypoint: {
+            id,
+            latitudeI: 0,
+            longitudeI: 0,
+            name: '',
+            description: '',
+            icon: 0,
+            lockedTo: 0,
+            expire: 1,
+          },
+        })
+        .catch((e: unknown) => {
+          console.debug('[useDevice] MQTT publishWaypoint (delete) failed', e);
+        });
+    }
   }, []);
 
   const setModuleConfig = useCallback(async (config: unknown) => {

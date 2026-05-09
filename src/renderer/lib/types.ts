@@ -631,6 +631,7 @@ declare global {
           channelName?: string;
           emoji?: number;
           replyId?: number;
+          publishJsonMirror: boolean;
         }) => Promise<number>;
         publishNodeInfo: (args: {
           from: number;
@@ -638,6 +639,7 @@ declare global {
           shortName: string;
           channelName?: string;
           hwModel?: number;
+          publishJsonMirror: boolean;
         }) => Promise<number>;
         publishPosition: (args: {
           from: number;
@@ -646,6 +648,24 @@ declare global {
           latitudeI: number;
           longitudeI: number;
           altitude?: number;
+          publishJsonMirror: boolean;
+        }) => Promise<number>;
+        publishWaypoint: (args: {
+          from: number;
+          to: number;
+          channel: number;
+          channelName: string;
+          publishJsonMirror: boolean;
+          waypoint: {
+            id: number;
+            latitudeI: number;
+            longitudeI: number;
+            name: string;
+            description?: string;
+            icon?: number;
+            lockedTo?: number;
+            expire?: number;
+          };
         }) => Promise<number>;
         publishMeshcore: (args: {
           text: string;

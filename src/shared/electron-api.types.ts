@@ -395,6 +395,7 @@ export interface ElectronAPI {
       channelName?: string;
       emoji?: number;
       replyId?: number;
+      publishJsonMirror: boolean;
     }) => Promise<unknown>;
     publishNodeInfo: (args: {
       from: number;
@@ -402,6 +403,7 @@ export interface ElectronAPI {
       shortName: string;
       channelName?: string;
       hwModel?: number;
+      publishJsonMirror: boolean;
     }) => Promise<unknown>;
     publishPosition: (args: {
       from: number;
@@ -410,6 +412,24 @@ export interface ElectronAPI {
       latitudeI: number;
       longitudeI: number;
       altitude?: number;
+      publishJsonMirror: boolean;
+    }) => Promise<unknown>;
+    publishWaypoint: (args: {
+      from: number;
+      to: number;
+      channel: number;
+      channelName: string;
+      publishJsonMirror: boolean;
+      waypoint: {
+        id: number;
+        latitudeI: number;
+        longitudeI: number;
+        name: string;
+        description?: string;
+        icon?: number;
+        lockedTo?: number;
+        expire?: number;
+      };
     }) => Promise<unknown>;
     publishMeshcore: (args: {
       text: string;
