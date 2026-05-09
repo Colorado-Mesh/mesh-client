@@ -590,6 +590,91 @@ describe('ChatPanel accessibility', () => {
   });
 });
 
+describe('ChatPanel compact mode', () => {
+  const defaultProps = {
+    messages: [] as ChatMessage[],
+    channels: [{ index: 0, name: 'General' }],
+    myNodeNum: 1,
+    onSend: vi.fn().mockResolvedValue(undefined),
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    isConnected: true,
+    nodes: new Map(),
+    isActive: true,
+    compactMode: true,
+  };
+
+  it('merges consecutive same-sender channel bubbles when timestamps are more than 5 minutes apart', () => {
+    const base = new Date('2026-05-09T12:00:00').getTime();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'JCR2',
+              payload: 'Painting the front door',
+              channel: 0,
+              timestamp: base,
+              status: 'acked',
+            },
+            {
+              sender_id: 2,
+              sender_name: 'JCR2',
+              payload: 'Test 123',
+              channel: 0,
+              timestamp: base + 10 * 60 * 1000,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getAllByRole('button', { name: 'JCR2' })).toHaveLength(1);
+    expect(screen.getByText('Painting the front door')).toBeInTheDocument();
+    expect(screen.getByText('Test 123')).toBeInTheDocument();
+  });
+
+  it('renders compact continuation segment with flush top border so bubbles visually merge', () => {
+    const base = new Date('2026-05-09T12:00:00').getTime();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'JCR2',
+              payload: 'first line',
+              channel: 0,
+              timestamp: base,
+              status: 'acked',
+            },
+            {
+              sender_id: 2,
+              sender_name: 'JCR2',
+              payload: 'second line',
+              channel: 0,
+              timestamp: base + 60_000,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    const firstBubble = screen.getByText('first line').closest('.rounded-b-none');
+    const secondBubble = screen.getByText('second line').closest('.rounded-t-none');
+    expect(firstBubble).not.toBeNull();
+    expect(secondBubble).not.toBeNull();
+    expect(firstBubble).toHaveClass('border-b-0');
+    expect(secondBubble).toHaveClass('border-t-0');
+  });
+});
+
 describe('getDistFromChatBottom', () => {
   it('uses inner scroller when it overflows', () => {
     const inner = document.createElement('div');

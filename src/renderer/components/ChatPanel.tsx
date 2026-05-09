@@ -24,6 +24,7 @@ import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayChar, emojiDisplayLabel } from '../lib/reactions';
 import { truncateReplyPreviewText } from '../lib/replyPreview';
+import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '../lib/timeConstants';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
@@ -1134,21 +1135,28 @@ function ChatPanel({
                 compactMode &&
                 daySeparator === null &&
                 prevMsg !== null &&
-                prevMsg.sender_id === msg.sender_id &&
-                msg.timestamp - prevMsg.timestamp < 5 * 60 * 1000;
+                prevMsg.sender_id === msg.sender_id;
               const isFollowedByContinuation =
                 compactMode &&
                 nextMsg !== null &&
                 nextMsg.sender_id === msg.sender_id &&
-                !daySeparatorIndices.has(i + 1) &&
-                nextMsg.timestamp - msg.timestamp < 5 * 60 * 1000;
+                !daySeparatorIndices.has(i + 1);
+              const showContinuationTime =
+                isContinuation &&
+                prevMsg !== null &&
+                msg.timestamp - prevMsg.timestamp >= CHAT_COMPACT_CONTINUATION_TIME_GAP_MS;
+
+              /** Visually merge compact consecutive same-sender bubbles (flat seam + no double border). */
+              const compactMerged = compactMode && (isContinuation || isFollowedByContinuation);
+              const compactStackTop = compactMode && isContinuation;
+              const compactStackBottom = compactMode && isFollowedByContinuation;
 
               return (
                 <div
                   key={
                     msg.id != null ? `db-${msg.id}` : `${msg.timestamp}-${msg.packetId ?? 'x'}-${i}`
                   }
-                  className={isContinuation ? '!mt-px' : undefined}
+                  className={isContinuation ? '!mt-0' : undefined}
                 >
                   {daySeparator}
                   {isUnreadStart && (
@@ -1169,13 +1177,23 @@ function ChatPanel({
                       {/* Message bubble */}
                       <div
                         className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${
-                          isDm
-                            ? isOwn
-                              ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-purple-500/30 bg-purple-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                              : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border border-purple-600/30 bg-purple-700/20${isContinuation ? 'rounded-tl-sm' : ''}`
-                            : isOwn
-                              ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-blue-500/30 bg-blue-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                              : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`
+                          compactMerged
+                            ? `${compactStackTop ? 'rounded-t-none border-t-0' : ''} ${compactStackBottom ? 'rounded-b-none border-b-0' : ''} ${
+                                isDm
+                                  ? isOwn
+                                    ? 'border border-purple-500/30 bg-purple-600/20'
+                                    : 'border border-purple-600/30 bg-purple-700/20'
+                                  : isOwn
+                                    ? 'border border-blue-500/30 bg-blue-600/20'
+                                    : 'border-chat-incoming-border bg-chat-incoming-bg border'
+                              }`
+                            : isDm
+                              ? isOwn
+                                ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-purple-500/30 bg-purple-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
+                                : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border border-purple-600/30 bg-purple-700/20${isContinuation ? 'rounded-tl-sm' : ''}`
+                              : isOwn
+                                ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-blue-500/30 bg-blue-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
+                                : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`
                         }`}
                       >
                         {/* Header: sender name (clickable) + DM indicator + time */}
@@ -1204,6 +1222,14 @@ function ChatPanel({
                             {channels.length > 1 && !isDm && (
                               <span className="text-[10px] text-gray-600">ch{msg.channel}</span>
                             )}
+                          </div>
+                        )}
+
+                        {showContinuationTime && (
+                          <div className={`mb-0.5 ${isOwn ? 'flex justify-end' : ''}`}>
+                            <span className="text-muted/70 text-[10px]">
+                              {formatTime(msg.timestamp)}
+                            </span>
                           </div>
                         )}
 
