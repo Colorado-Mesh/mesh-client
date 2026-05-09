@@ -46,35 +46,4 @@ describe('runSchemaUpgrade', () => {
     expect(mcCols.some((c) => c.name === 'public_key')).toBe(true);
     db.close();
   });
-
-  it('deduplicates reaction rows so idx_reaction_dedup can be created (duplicate triples)', () => {
-    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-test-'));
-    const dbPath = join(dir, 'reaction-dedup.db');
-    const db = new NodeSqliteDB(dbPath);
-    runSchemaUpgrade(db);
-    db.execScript('DROP INDEX IF EXISTS idx_reaction_dedup');
-    db.prepare(
-      `INSERT INTO messages (sender_id, sender_name, payload, channel, timestamp, reply_id, emoji)
-       VALUES (1, 'a', 'x', 0, 100, 5, 10)`,
-    ).run();
-    db.prepare(
-      `INSERT INTO messages (sender_id, sender_name, payload, channel, timestamp, reply_id, emoji)
-       VALUES (1, 'a', 'x2', 0, 101, 5, 10)`,
-    ).run();
-    runSchemaUpgrade(db);
-    const n = (
-      db.prepare('SELECT COUNT(*) as c FROM messages WHERE reply_id = 5 AND emoji = 10').get() as {
-        c: number;
-      }
-    ).c;
-    expect(n).toBe(1);
-    expect(
-      db
-        .prepare(
-          `SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_reaction_dedup' LIMIT 1`,
-        )
-        .get(),
-    ).toBeDefined();
-    db.close();
-  });
 });

@@ -70,6 +70,9 @@ if [ -s "$STAGED_LIST" ]; then
   done < "$STAGED_LIST"
 fi
 
+pnpm run i18n:auto-translate || fail 'pnpm run i18n:auto-translate'
+git add src/renderer/locales/ || fail 'git add (i18n locales)'
+
 pnpm run lint || fail 'pnpm run lint'
 pnpm run typecheck || fail 'pnpm run typecheck'
 pnpm run check:electron-security || fail 'pnpm run check:electron-security'
@@ -82,6 +85,7 @@ pnpm run check:console-log || fail 'pnpm run check:console-log'
 pnpm run check:silent-catches || fail 'pnpm run check:silent-catches'
 pnpm run check:xss-patterns || fail 'pnpm run check:xss-patterns'
 pnpm run check:log-panel-filter || fail 'pnpm run check:log-panel-filter'
+pnpm run check:i18n || fail 'pnpm run check:i18n'
 pnpm run check:licenses || fail 'pnpm run check:licenses'
 pnpm audit --audit-level=high || fail 'pnpm audit --audit-level=high'
 actionlint || fail 'actionlint'

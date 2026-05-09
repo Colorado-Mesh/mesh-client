@@ -8,9 +8,11 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpTooltip } from './components/HelpTooltip';
+import LanguageSelector from './components/LanguageSelector';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
 import SignalPropagation from './components/SignalPropagation';
@@ -104,13 +106,32 @@ const STATUS_COLOR: Record<string, string> = {
   reconnecting: 'bg-orange-500 animate-pulse',
 };
 
-/** Header queue badge tooltips. */
-const MESHCORE_QUEUE_TOOLTIP =
-  'Because MeshCore sends messages rapidly, and we poll every 30 seconds, this should always be 0. If not 0, there is congestion.';
-const MESHTASTIC_QUEUE_TOOLTIP =
-  'Transmit queue: packets waiting to be sent. Green = low, amber = filling up, red = congested.';
+function deviceConnectionStatusLabel(
+  t: ReturnType<typeof useTranslation>['t'],
+  status: DeviceState['status'],
+): string {
+  switch (status) {
+    case 'disconnected':
+      return t('app.deviceStatus.disconnected');
+    case 'connecting':
+      return t('app.deviceStatus.connecting');
+    case 'connected':
+      return t('app.deviceStatus.connected');
+    case 'configured':
+      return t('app.deviceStatus.configured');
+    case 'stale':
+      return t('app.deviceStatus.stale');
+    case 'reconnecting':
+      return t('app.deviceStatus.reconnecting');
+    default: {
+      const _x: never = status;
+      return _x;
+    }
+  }
+}
 
-const TAB_NAMES = [
+/** Stable English tab slot ids (icons, shortcuts, chat badge) — not for display. */
+const TAB_SLOT_IDS = [
   'Connection',
   'Chat',
   'Nodes',
@@ -124,7 +145,40 @@ const TAB_NAMES = [
   'Diagnostics',
   'Stats',
   'Sniffer',
-];
+] as const;
+
+function tabLabelKey(protocol: MeshProtocol, panelIndex: number): `tabs.${string}` {
+  if (panelIndex === 2 && protocol === 'meshcore') return 'tabs.contacts';
+  if (panelIndex === 5 && protocol === 'meshcore') return 'tabs.repeaters';
+  return `tabs.${TAB_SLOT_IDS[panelIndex].toLowerCase()}`;
+}
+
+function tabIconSlotId(protocol: MeshProtocol, panelIndex: number): string {
+  if (panelIndex === 5 && protocol === 'meshcore') return 'Repeaters';
+  return TAB_SLOT_IDS[panelIndex];
+}
+
+function computeTabMappings(
+  translate: ReturnType<typeof useTranslation>['t'],
+  targetProtocol: MeshProtocol,
+  targetCapabilities: ProtocolCapabilities,
+) {
+  const filtered: { label: string; slotId: string; panelIndex: number }[] = [];
+  TAB_SLOT_IDS.forEach((_slot, panelIndex) => {
+    const requiredCap = TAB_CAPABILITY_REQUIREMENTS[panelIndex];
+    if (requiredCap !== undefined && !targetCapabilities[requiredCap]) return;
+    filtered.push({
+      label: translate(tabLabelKey(targetProtocol, panelIndex)),
+      slotId: tabIconSlotId(targetProtocol, panelIndex),
+      panelIndex,
+    });
+  });
+  return {
+    displayTabLabels: filtered.map((row) => row.label),
+    tabSlotIds: filtered.map((row) => row.slotId),
+    tabIndexToPanelIndex: filtered.map((row) => row.panelIndex),
+  };
+}
 
 export interface LocationFilter {
   enabled: boolean;
@@ -182,26 +236,28 @@ function persistUnread(protocol: 'meshtastic' | 'meshcore', count: number): void
 }
 
 function PanelSkeleton() {
+  const { t } = useTranslation();
   return (
     <div
       className="flex h-full min-h-[12rem] items-center justify-center rounded-xl border border-gray-800 bg-gray-900/50"
       role="status"
       aria-busy="true"
     >
-      <span className="sr-only">Loading panel</span>
+      <span className="sr-only">{t('app.loadingPanel')}</span>
       <div className="h-8 w-8 animate-pulse rounded-full bg-gray-700" aria-hidden />
     </div>
   );
 }
 
 function DialogLazyFallback() {
+  const { t } = useTranslation();
   return (
     <div
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40"
       role="status"
       aria-busy="true"
     >
-      <span className="sr-only">Loading dialog</span>
+      <span className="sr-only">{t('app.loadingDialog')}</span>
       <div className="h-10 w-10 animate-pulse rounded-full bg-gray-600" aria-hidden />
     </div>
   );
@@ -338,6 +394,7 @@ function ColoradoMeshWatermarkMark() {
 }
 
 export default function App() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('mesh-client:sidebarCollapsed') === 'true';
@@ -425,6 +482,11 @@ export default function App() {
       unit: s.distanceUnit === 'km' ? 'km' : 'miles',
       hideMqttOnly: Boolean(s.filterMqttOnly),
     };
+  });
+  const [chatCompactMode, setChatCompactMode] = useState<boolean>(() => {
+    const s =
+      parseStoredJson<Record<string, unknown>>(getAppSettingsRaw(), 'App chatCompactMode') ?? {};
+    return Boolean(s.chatCompactMode);
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [meshtasticUnread, setMeshtasticUnread] = useState(() => readPersistedUnread('meshtastic'));
@@ -548,7 +610,7 @@ export default function App() {
     (id: number) => nodeLabelForRawPacket(nodesForUi.get(id), id, protocol),
     [nodesForUi, protocol],
   );
-  const nodeCountLabel = protocol === 'meshcore' ? 'contacts' : 'nodes';
+  const nodeCountLabel = protocol === 'meshcore' ? t('common.contacts') : t('common.nodes');
 
   const meshcorePublicKeyHexByNodeId = useMemo(() => {
     const m = new Map<number, string>();
@@ -577,36 +639,16 @@ export default function App() {
   const meshtasticCapabilities = useRadioProvider('meshtastic');
   const meshcoreCapabilities = useRadioProvider('meshcore');
 
-  const computeTabMappings = (
-    targetProtocol: MeshProtocol,
-    targetCapabilities: ProtocolCapabilities,
-  ) => {
-    const filtered: { name: string; panelIndex: number }[] = [];
-    TAB_NAMES.forEach((name, panelIndex) => {
-      const requiredCap = TAB_CAPABILITY_REQUIREMENTS[panelIndex];
-      if (requiredCap === undefined || targetCapabilities[requiredCap]) {
-        filtered.push({
-          name: panelIndex === 5 && targetProtocol === 'meshcore' ? 'Repeaters' : name,
-          panelIndex,
-        });
-      }
-    });
-    return {
-      displayTabNames: filtered.map((t) => t.name),
-      tabIndexToPanelIndex: filtered.map((t) => t.panelIndex),
-    };
-  };
-
   const meshtasticTabs = useMemo(
-    () => computeTabMappings('meshtastic', meshtasticCapabilities),
-    [meshtasticCapabilities],
+    () => computeTabMappings(t, 'meshtastic', meshtasticCapabilities),
+    [t, meshtasticCapabilities],
   );
   const meshcoreTabs = useMemo(
-    () => computeTabMappings('meshcore', meshcoreCapabilities),
-    [meshcoreCapabilities],
+    () => computeTabMappings(t, 'meshcore', meshcoreCapabilities),
+    [t, meshcoreCapabilities],
   );
 
-  const { displayTabNames, tabIndexToPanelIndex } = useMemo(() => {
+  const { displayTabLabels, tabSlotIds, tabIndexToPanelIndex } = useMemo(() => {
     return protocol === 'meshcore' ? meshcoreTabs : meshtasticTabs;
   }, [protocol, meshtasticTabs, meshcoreTabs]);
 
@@ -639,7 +681,7 @@ export default function App() {
 
   // Reset activeTab if it's out of bounds (e.g., switching to meshcore while on Security tab)
   useEffect(() => {
-    if (activeTab >= displayTabNames.length) {
+    if (activeTab >= displayTabLabels.length) {
       const savedPanel =
         protocol === 'meshcore' ? lastMeshcorePanel.current : lastMeshtasticPanel.current;
       let next = 0;
@@ -649,18 +691,18 @@ export default function App() {
         const foundFilteredIndex = targetTabs.tabIndexToPanelIndex.findIndex(
           (p) => p === savedPanel,
         );
-        if (foundFilteredIndex !== -1 && foundFilteredIndex < targetTabs.displayTabNames.length) {
+        if (foundFilteredIndex !== -1 && foundFilteredIndex < targetTabs.displayTabLabels.length) {
           next = foundFilteredIndex;
         }
       } else {
         const savedTab =
           protocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
-        next = savedTab < targetTabs.displayTabNames.length ? savedTab : 0;
+        next = savedTab < targetTabs.displayTabLabels.length ? savedTab : 0;
       }
 
       setActiveTab(next);
     }
-  }, [activeTab, displayTabNames.length, protocol, meshtasticTabs, meshcoreTabs]);
+  }, [activeTab, displayTabLabels.length, protocol, meshtasticTabs, meshcoreTabs]);
 
   // Reset scroll position when switching tabs
   useEffect(() => {
@@ -707,14 +749,14 @@ export default function App() {
         const foundFilteredIndex = targetTabs.tabIndexToPanelIndex.findIndex(
           (p) => p === savedPanel,
         );
-        if (foundFilteredIndex !== -1 && foundFilteredIndex < targetTabs.displayTabNames.length) {
+        if (foundFilteredIndex !== -1 && foundFilteredIndex < targetTabs.displayTabLabels.length) {
           targetTab = foundFilteredIndex;
         }
       } else {
         const savedTab =
           newProtocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
         const targetTabs = newProtocol === 'meshcore' ? meshcoreTabs : meshtasticTabs;
-        targetTab = savedTab < targetTabs.displayTabNames.length ? savedTab : 0;
+        targetTab = savedTab < targetTabs.displayTabLabels.length ? savedTab : 0;
       }
 
       if (newProtocol === 'meshtastic') {
@@ -870,9 +912,6 @@ export default function App() {
 
   const handleDmTargetConsumed = useCallback(() => {
     setPendingDmTarget(null);
-  }, []);
-  const handleOpenGlobalSearch = useCallback(() => {
-    setSearchModalOpen(true);
   }, []);
 
   // ─── Startup pruning based on persisted app settings (protocol-aware) ─────
@@ -1171,7 +1210,7 @@ export default function App() {
   // (App, Diagnostics, Sniffer) so indices stay correct when Security/TAK are hidden.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const maxTab = displayTabNames.length - 1;
+      const maxTab = displayTabLabels.length - 1;
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         setSearchModalOpen(true);
@@ -1182,25 +1221,25 @@ export default function App() {
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key === '0') {
-        const targetIndex = displayTabNames.indexOf('App');
+        const targetIndex = tabSlotIds.indexOf('App');
         if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
-        const targetIndex = displayTabNames.indexOf('Diagnostics');
+        const targetIndex = tabSlotIds.indexOf('Diagnostics');
         if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'm') {
-        const targetIndex = displayTabNames.indexOf('Stats');
+        const targetIndex = tabSlotIds.indexOf('Stats');
         if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-        const targetIndex = displayTabNames.indexOf('Sniffer');
+        const targetIndex = tabSlotIds.indexOf('Sniffer');
         if (targetIndex >= 0 && targetIndex <= maxTab) {
           e.preventDefault();
           setActiveTab(targetIndex);
@@ -1217,7 +1256,7 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [displayTabNames]);
+  }, [displayTabLabels, tabSlotIds]);
 
   // ─── Track Meshtastic messages arriving while inactive ──────────
   useEffect(() => {
@@ -1350,6 +1389,10 @@ export default function App() {
     setLocationFilter(f);
   }, []);
 
+  const handleChatCompactModeChange = useCallback((compact: boolean) => {
+    setChatCompactMode(compact);
+  }, []);
+
   const statusColor = STATUS_COLOR[device.state.status] ?? 'bg-gray-500';
 
   const queueUsed = device.queueStatus ? device.queueStatus.maxlen - device.queueStatus.free : 0;
@@ -1411,7 +1454,7 @@ export default function App() {
                 <button
                   type="button"
                   className="m-0 inline-flex cursor-pointer appearance-none border-0 bg-transparent p-0"
-                  aria-label="Play mesh signal pulse animation"
+                  aria-label={t('aria.playAnimation')}
                   onClick={handleCollapsedWatermarkActivate}
                 >
                   <ColoradoMeshWatermarkMark />
@@ -1447,13 +1490,13 @@ export default function App() {
             {/* Protocol context switcher — centered in the gap (narrow) or viewport (xl+ grid) */}
             <div
               role="group"
-              aria-label="Protocol switcher"
+              aria-label={t('aria.protocolSwitcher')}
               className="flex shrink-0 items-center overflow-hidden rounded-full border border-gray-600 font-mono text-xs"
             >
               <button
                 type="button"
                 aria-pressed={protocol === 'meshtastic'}
-                aria-label="Switch to Meshtastic"
+                aria-label={t('aria.switchToMeshtastic')}
                 onClick={() => {
                   handleProtocolChange('meshtastic');
                 }}
@@ -1474,7 +1517,7 @@ export default function App() {
               <button
                 type="button"
                 aria-pressed={protocol === 'meshcore'}
-                aria-label="Switch to MeshCore"
+                aria-label={t('aria.switchToMeshCore')}
                 onClick={() => {
                   handleProtocolChange('meshcore');
                 }}
@@ -1499,17 +1542,27 @@ export default function App() {
               <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
                 <TakStatusIcon running={takStatus.running} />
                 <span
-                  aria-label={`TAK server ${takStatus.running ? 'running' : 'stopped'}`}
+                  aria-label={
+                    takStatus.running ? t('app.takServerRunning') : t('app.takServerStopped')
+                  }
                   className={`text-xs ${takStatus.running ? 'text-brand-green' : 'text-gray-400'}`}
                 >
-                  TAK {takStatus.running ? 'running' : 'stopped'}
+                  {takStatus.running ? t('app.takRunning') : t('app.takStopped')}
                 </span>
               </div>
             )}
             <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
               <MqttGlobeIcon status={device.mqttStatus ?? 'disconnected'} />
               <span
-                aria-label={`MQTT ${device.mqttStatus ?? 'disconnected'}`}
+                aria-label={
+                  device.mqttStatus === 'connected'
+                    ? t('app.mqttConnected')
+                    : device.mqttStatus === 'connecting'
+                      ? t('app.mqttConnecting')
+                      : device.mqttStatus === 'error'
+                        ? t('app.mqttError')
+                        : t('app.mqttDisconnected')
+                }
                 className={`text-xs ${
                   device.mqttStatus === 'connected'
                     ? 'text-brand-green'
@@ -1520,19 +1573,25 @@ export default function App() {
                         : 'text-gray-400'
                 }`}
               >
-                MQTT {device.mqttStatus ?? 'disconnected'}
+                {device.mqttStatus === 'connected'
+                  ? t('app.mqttConnected')
+                  : device.mqttStatus === 'connecting'
+                    ? t('app.mqttConnecting')
+                    : device.mqttStatus === 'error'
+                      ? t('app.mqttError')
+                      : t('app.mqttDisconnected')}
               </span>
             </div>
             {isConnectedOrOperational && <LinkIcon className="h-4 w-4" aria-hidden="true" />}
             <div
               className={`h-2.5 w-2.5 rounded-full ${statusColor}`}
               aria-hidden="true"
-              title={device.state.status}
+              title={deviceConnectionStatusLabel(t, device.state.status)}
             />
             <div role="status" aria-live="polite" aria-atomic="true">
               <span
-                aria-label={`${device.state.status}${device.state.connectionType ? ` (${device.state.connectionType.toUpperCase()})` : ''}`}
-                className={`text-xs capitalize ${
+                aria-label={`${deviceConnectionStatusLabel(t, device.state.status)}${device.state.connectionType ? ` (${device.state.connectionType.toUpperCase()})` : ''}`}
+                className={`text-xs ${
                   device.state.status === 'connecting'
                     ? 'animate-pulse text-yellow-400'
                     : device.state.status === 'stale'
@@ -1542,7 +1601,7 @@ export default function App() {
                         : 'text-muted'
                 }`}
               >
-                {device.state.status}
+                {deviceConnectionStatusLabel(t, device.state.status)}
                 {device.state.connectionType
                   ? ` (${device.state.connectionType.toUpperCase()})`
                   : ''}
@@ -1550,16 +1609,24 @@ export default function App() {
             </div>
             {device.state.myNodeNum > 0 && (
               <span
-                aria-label={`Node: ${device.getPickerStyleNodeLabel(device.state.myNodeNum)}`}
+                aria-label={t('app.nodeLabel', {
+                  name: device.getPickerStyleNodeLabel(device.state.myNodeNum),
+                })}
                 className="text-muted ml-2 text-xs whitespace-nowrap"
               >
-                Node: {device.getPickerStyleNodeLabel(device.state.myNodeNum)}
+                {t('app.nodeLabel', {
+                  name: device.getPickerStyleNodeLabel(device.state.myNodeNum),
+                })}
               </span>
             )}
             {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
             {queueShowBadge && device.queueStatus && (
               <HelpTooltip
-                text={protocol === 'meshcore' ? MESHCORE_QUEUE_TOOLTIP : MESHTASTIC_QUEUE_TOOLTIP}
+                text={
+                  protocol === 'meshcore'
+                    ? t('app.meshcoreQueueTooltip')
+                    : t('app.meshtasticQueueTooltip')
+                }
               >
                 <div
                   aria-label={`Q: ${queueUsed}/${device.queueStatus.maxlen}`}
@@ -1569,6 +1636,7 @@ export default function App() {
                 </div>
               </HelpTooltip>
             )}
+            <LanguageSelector />
           </div>
         </div>
 
@@ -1595,10 +1663,10 @@ export default function App() {
               onClick={() => {
                 setTelemetryNoticeDismissed(true);
               }}
-              aria-label="Dismiss"
+              aria-label={t('common.dismiss')}
               className="shrink-0 rounded border border-gray-600 px-2 py-1 text-xs font-medium text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-300"
             >
-              Dismiss
+              {t('common.dismiss')}
             </button>
           </div>
         )}
@@ -1606,13 +1674,14 @@ export default function App() {
         <div className="flex min-h-0 min-w-0 flex-1">
           {/* Sidebar - collapsible width on left */}
           <nav
-            aria-label="Application panels"
+            aria-label={t('aria.applicationPanels')}
             className={`flex h-full min-h-0 shrink-0 flex-col border-r border-slate-800 transition-[width] duration-300 ${
               sidebarCollapsed ? 'w-16' : 'w-48'
             }`}
           >
             <Sidebar
-              tabs={displayTabNames}
+              tabs={displayTabLabels}
+              tabSlotIds={tabSlotIds}
               active={activeTab}
               onChange={setActiveTab}
               chatUnread={protocol === 'meshtastic' ? meshtasticUnread : meshcoreUnread}
@@ -1745,10 +1814,10 @@ export default function App() {
                             initialDmTarget={pendingDmTarget}
                             onDmTargetConsumed={handleDmTargetConsumed}
                             isActive={activePanelIndex === 1}
-                            onGlobalSearch={handleOpenGlobalSearch}
                             protocol={protocol}
                             scrollToTopRef={scrollToTopChatRef}
                             outerScrollMetricsRootRef={mainViewportRef}
+                            compactMode={chatCompactMode}
                           />
                         </Suspense>
                       </div>
@@ -2146,6 +2215,7 @@ export default function App() {
                                   : undefined
                               }
                               onAutoFloodAdvertIntervalChange={setAutoFloodAdvertIntervalHours}
+                              onChatCompactModeChange={handleChatCompactModeChange}
                             />
                           </Suspense>
                         </ErrorBoundary>
@@ -2247,8 +2317,8 @@ export default function App() {
                 type="button"
                 onClick={scrollMainToTop}
                 className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-28 bottom-12 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
-                title="Back to top"
-                aria-label="Back to top"
+                title={t('aria.backToTop')}
+                aria-label={t('aria.backToTop')}
               >
                 ↑ Top
               </button>
@@ -2257,7 +2327,7 @@ export default function App() {
             {/* Footer - fixed height at bottom of Content Wrapper */}
             <footer className="text-muted flex h-8 shrink-0 items-center justify-between border-t border-slate-800 bg-slate-900 px-4 text-[10px]">
               <span className="min-w-0">
-                For everyone, everywhere. Join us:{' '}
+                {t('app.footerSlogan')}{' '}
                 <a
                   href="https://discord.com/invite/McChKR5NpS"
                   title="Colorado Mesh Discord"
@@ -2265,7 +2335,7 @@ export default function App() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Discord
+                  {t('common.discord')}
                 </a>
                 {' • '}
                 <a
@@ -2275,7 +2345,7 @@ export default function App() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  GitHub
+                  {t('common.github')}
                 </a>
                 {' • '}
                 <a
@@ -2285,7 +2355,7 @@ export default function App() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Website
+                  {t('common.website')}
                 </a>
               </span>
               <button
@@ -2293,19 +2363,23 @@ export default function App() {
                 onClick={() => {
                   setShowShortcuts(true);
                 }}
-                aria-label="Keyboard shortcuts (?)"
+                aria-label={t('aria.keyboardShortcuts')}
                 aria-haspopup="dialog"
-                title="Keyboard shortcuts (?)"
+                title={t('aria.keyboardShortcuts')}
                 className="inline-flex shrink-0 items-center gap-1 justify-self-center rounded-full border border-slate-700 px-3 py-0.5 font-mono text-[10px] text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-300"
               >
-                Shortcuts
+                {t('app.shortcuts')}
                 <span className="font-mono text-[10px] text-gray-400" aria-hidden="true">
                   ?
                 </span>
               </button>
               <span className="inline-flex flex-wrap items-center justify-end gap-2 justify-self-end text-right font-mono text-[10px] whitespace-nowrap tabular-nums">
                 <span>
-                  {nodesForUi.size} {nodeCountLabel} | {device.messages.length} messages
+                  {t('app.footerStats', {
+                    nodeCount: nodesForUi.size,
+                    nodeLabel: nodeCountLabel,
+                    messageCount: device.messages.length,
+                  })}
                 </span>
                 <UpdateStatusIndicator
                   updateState={updateState}
@@ -2371,7 +2445,8 @@ export default function App() {
             onClose={() => {
               setShowShortcuts(false);
             }}
-            tabNames={displayTabNames}
+            tabLabels={displayTabLabels}
+            tabSlotIds={tabSlotIds}
           />
         </Suspense>
       )}
@@ -2515,6 +2590,7 @@ function InactiveProtocolNotifier({
   meshtasticDevice: ReturnType<typeof useDevice>;
   meshcoreDevice: ReturnType<typeof useMeshCore>;
 }) {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const prevMeshtasticRef = useRef(0);
   const prevMeshcoreRef = useRef(0);
@@ -2540,14 +2616,14 @@ function InactiveProtocolNotifier({
       const realNew = newMsgs.filter((m) => !m.emoji && !m.isHistory);
       if (realNew.length > 0) {
         addToast(
-          `Meshtastic: ${realNew.length} new message${realNew.length > 1 ? 's' : ''}`,
+          t('toasts.newMessages', { protocol: 'Meshtastic', count: realNew.length }),
           'info',
           6000,
         );
       }
     }
     prevMeshtasticRef.current = count;
-  }, [meshtasticDevice.messages, protocol, addToast]);
+  }, [meshtasticDevice.messages, protocol, addToast, t]);
 
   // Notify when MeshCore (inactive) gets new messages
   useEffect(() => {
@@ -2568,14 +2644,14 @@ function InactiveProtocolNotifier({
       const realNew = newMsgs.filter((m) => !m.emoji && !m.isHistory);
       if (realNew.length > 0) {
         addToast(
-          `MeshCore: ${realNew.length} new message${realNew.length > 1 ? 's' : ''}`,
+          t('toasts.newMessages', { protocol: 'MeshCore', count: realNew.length }),
           'info',
           6000,
         );
       }
     }
     prevMeshcoreRef.current = count;
-  }, [meshcoreDevice.messages, protocol, addToast]);
+  }, [meshcoreDevice.messages, protocol, addToast, t]);
 
   return null;
 }
@@ -2592,6 +2668,7 @@ function FirmwareUpdateNotifier({
   protocol: MeshProtocol;
   onResult: (r: FirmwareCheckResult) => void;
 }) {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const toastShownRef = useRef(false);
   const activeState = protocol === 'meshcore' ? meshcoreState : meshtasticState;
@@ -2633,7 +2710,7 @@ function FirmwareUpdateNotifier({
         );
         if (updateAvailable && !toastShownRef.current) {
           toastShownRef.current = true;
-          addToast(`Firmware update available: v${release.version}`, 'warning', 8000);
+          addToast(t('toasts.firmwareAvailable', { version: release.version }), 'warning', 8000);
         }
       })
       .catch((err: unknown) => {
@@ -2648,7 +2725,7 @@ function FirmwareUpdateNotifier({
     return () => {
       cancelled = true;
     };
-  }, [activeState, protocol, onResult, addToast]);
+  }, [activeState, protocol, onResult, addToast, t]);
 
   useEffect(() => {
     if (activeState.status === 'disconnected') {

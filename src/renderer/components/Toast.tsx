@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -48,6 +49,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number) => void }) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -100,10 +102,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
             onDismiss(toast.id);
           }, 300);
         }}
-        aria-label="Dismiss"
+        aria-label={t('common.dismiss')}
         className="text-muted ml-2 shrink-0 text-xs font-medium hover:text-gray-200"
       >
-        Dismiss
+        {t('common.dismiss')}
       </button>
     </div>
   );

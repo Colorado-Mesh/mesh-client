@@ -453,6 +453,11 @@ function validateSaveMessage(message: unknown): asserts message is Record<string
     throw new Error('db:saveMessage: timestamp must be a number');
   if (m.timestamp != null && !Number.isFinite(m.timestamp))
     throw new Error('db:saveMessage: invalid timestamp');
+  if (m.rxHops != null) {
+    const h = Number(m.rxHops);
+    if (!Number.isInteger(h) || h < 0)
+      throw new Error('db:saveMessage: rxHops must be a non-negative integer');
+  }
 }
 
 function validateSaveNode(
@@ -508,6 +513,11 @@ function validateSaveMeshcoreMessage(msg: unknown): asserts msg is Record<string
       !/^[0-9A-Fa-f]{8}$/.test(m.rx_packet_fingerprint)
     )
       throw new Error('db:saveMeshcoreMessage: rx_packet_fingerprint must be 8 hex chars');
+  }
+  if (m.rx_hops != null) {
+    const h = Number(m.rx_hops);
+    if (!Number.isInteger(h) || h < 0)
+      throw new Error('db:saveMeshcoreMessage: rx_hops must be a non-negative integer');
   }
 }
 
@@ -674,6 +684,70 @@ function validateMqttPublishArgs(args: unknown): void {
     const replyId = Number(a.replyId);
     if (!Number.isFinite(replyId) || replyId < 0)
       throw new Error('mqtt:publish: replyId must be a non-negative integer');
+  }
+  if (typeof a.publishJsonMirror !== 'boolean') {
+    throw new Error('mqtt:publish: publishJsonMirror must be a boolean');
+  }
+}
+
+function validateMqttPublishWaypointArgs(args: unknown): void {
+  if (!args || typeof args !== 'object') {
+    throw new Error('mqtt:publishWaypoint: args must be an object');
+  }
+  const a = args as Record<string, unknown>;
+  if (typeof a.publishJsonMirror !== 'boolean') {
+    throw new Error('mqtt:publishWaypoint: publishJsonMirror must be a boolean');
+  }
+  const from = Number(a.from);
+  if (!Number.isFinite(from) || from < 0) {
+    throw new Error('mqtt:publishWaypoint: from must be a non-negative integer');
+  }
+  const to = Number(a.to);
+  if (!Number.isFinite(to) || to < 0) {
+    throw new Error('mqtt:publishWaypoint: to must be a non-negative integer');
+  }
+  const channel = Number(a.channel);
+  if (!Number.isFinite(channel) || channel < 0) {
+    throw new Error('mqtt:publishWaypoint: channel must be a non-negative integer');
+  }
+  if (typeof a.channelName !== 'string' || !a.channelName.trim()) {
+    throw new Error('mqtt:publishWaypoint: channelName must be a non-empty string');
+  }
+  const wp = a.waypoint;
+  if (!wp || typeof wp !== 'object') {
+    throw new Error('mqtt:publishWaypoint: waypoint must be an object');
+  }
+  const w = wp as Record<string, unknown>;
+  const id = Number(w.id);
+  if (!Number.isFinite(id)) throw new Error('mqtt:publishWaypoint: waypoint.id invalid');
+  const latitudeI = Number(w.latitudeI);
+  const longitudeI = Number(w.longitudeI);
+  if (!Number.isFinite(latitudeI) || !Number.isFinite(longitudeI)) {
+    throw new Error('mqtt:publishWaypoint: waypoint latitudeI/longitudeI invalid');
+  }
+  if (typeof w.name !== 'string')
+    throw new Error('mqtt:publishWaypoint: waypoint.name must be a string');
+  if (w.name.length > 256) throw new Error('mqtt:publishWaypoint: waypoint.name too long');
+  if (w.description != null && typeof w.description !== 'string') {
+    throw new Error('mqtt:publishWaypoint: waypoint.description invalid');
+  }
+  if (typeof w.description === 'string' && w.description.length > 1024) {
+    throw new Error('mqtt:publishWaypoint: waypoint.description too long');
+  }
+  if (w.icon != null) {
+    const icon = Number(w.icon);
+    if (!Number.isFinite(icon) || icon < 0)
+      throw new Error('mqtt:publishWaypoint: waypoint.icon invalid');
+  }
+  if (w.lockedTo != null) {
+    const lt = Number(w.lockedTo);
+    if (!Number.isFinite(lt) || lt < 0)
+      throw new Error('mqtt:publishWaypoint: waypoint.lockedTo invalid');
+  }
+  if (w.expire != null) {
+    const ex = Number(w.expire);
+    if (!Number.isFinite(ex) || ex < 0)
+      throw new Error('mqtt:publishWaypoint: waypoint.expire invalid');
   }
 }
 
@@ -2199,6 +2273,7 @@ ipcMain.handle('mqtt:publish', (_event, args) => {
       channelName?: string;
       emoji?: number;
       replyId?: number;
+      publishJsonMirror: boolean;
     };
     return mqttManager.publish({
       text: a.text,
@@ -2208,6 +2283,7 @@ ipcMain.handle('mqtt:publish', (_event, args) => {
       channelName: a.channelName,
       emoji: a.emoji,
       replyId: a.replyId,
+      publishJsonMirror: a.publishJsonMirror,
     });
   } catch (err) {
     console.error(
@@ -2302,14 +2378,16 @@ ipcMain.handle('mqtt:publishNodeInfo', (_event, args) => {
       shortName: string;
       channelName?: string;
       hwModel?: number;
+      publishJsonMirror: boolean;
     };
     if (
       typeof a.from !== 'number' ||
       typeof a.longName !== 'string' ||
-      typeof a.shortName !== 'string'
+      typeof a.shortName !== 'string' ||
+      typeof a.publishJsonMirror !== 'boolean'
     ) {
       throw new Error(
-        'mqtt:publishNodeInfo requires from (number), longName (string), shortName (string)',
+        'mqtt:publishNodeInfo requires from (number), longName (string), shortName (string), publishJsonMirror (boolean)',
       );
     }
     return mqttManager.publishNodeInfo(
@@ -2318,6 +2396,7 @@ ipcMain.handle('mqtt:publishNodeInfo', (_event, args) => {
       a.shortName,
       a.channelName ?? 'LongFast',
       a.hwModel,
+      a.publishJsonMirror,
     );
   } catch (err) {
     // Presence broadcast is fire-and-forget; silently ignore if MQTT just disconnected
@@ -2340,16 +2419,18 @@ ipcMain.handle('mqtt:publishPosition', (_event, args) => {
       latitudeI: number;
       longitudeI: number;
       altitude?: number;
+      publishJsonMirror: boolean;
     };
     if (
       typeof a.from !== 'number' ||
       typeof a.channel !== 'number' ||
       typeof a.channelName !== 'string' ||
       typeof a.latitudeI !== 'number' ||
-      typeof a.longitudeI !== 'number'
+      typeof a.longitudeI !== 'number' ||
+      typeof a.publishJsonMirror !== 'boolean'
     ) {
       throw new Error(
-        'mqtt:publishPosition requires from, channel, channelName, latitudeI, longitudeI',
+        'mqtt:publishPosition requires from, channel, channelName, latitudeI, longitudeI, publishJsonMirror',
       );
     }
     return mqttManager.publishPosition(
@@ -2359,10 +2440,49 @@ ipcMain.handle('mqtt:publishPosition', (_event, args) => {
       a.latitudeI,
       a.longitudeI,
       a.altitude,
+      a.publishJsonMirror,
     );
   } catch (err) {
     console.error(
       '[IPC] mqtt:publishPosition failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('mqtt:publishWaypoint', (_event, args) => {
+  try {
+    console.debug('[IPC] mqtt:publishWaypoint');
+    validateMqttPublishWaypointArgs(args);
+    const a = args as {
+      from: number;
+      to: number;
+      channel: number;
+      channelName: string;
+      publishJsonMirror: boolean;
+      waypoint: {
+        id: number;
+        latitudeI: number;
+        longitudeI: number;
+        name: string;
+        description?: string;
+        icon?: number;
+        lockedTo?: number;
+        expire?: number;
+      };
+    };
+    return mqttManager.publishWaypoint(
+      a.from,
+      a.to,
+      a.channel,
+      a.channelName,
+      a.waypoint,
+      a.publishJsonMirror,
+    );
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:publishWaypoint failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -2437,6 +2557,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticMessageRetentionCount',
   'meshcoreMessageRetentionEnabled',
   'meshcoreMessageRetentionCount',
+  'locale',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
 
@@ -2556,8 +2677,8 @@ ipcMain.handle('db:saveMessage', (_event, message) => {
     validateSaveMessage(message);
     const db = getDatabase();
     const stmt = db.prepareOnce(`
-      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status, received_via, reply_preview_text, reply_preview_sender)
-      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status, @received_via, @reply_preview_text, @reply_preview_sender)
+      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status, received_via, reply_preview_text, reply_preview_sender, rx_hops)
+      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status, @received_via, @reply_preview_text, @reply_preview_sender, @rx_hops)
     `);
     const validReceivedVia = ['rf', 'mqtt', 'both'];
     return stmt.run({
@@ -2579,6 +2700,12 @@ ipcMain.handle('db:saveMessage', (_event, message) => {
           : null,
       reply_preview_text: message.replyPreviewText ?? null,
       reply_preview_sender: message.replyPreviewSender ?? null,
+      rx_hops:
+        message.rxHops != null &&
+        typeof message.rxHops === 'number' &&
+        Number.isFinite(message.rxHops)
+          ? Math.trunc(message.rxHops)
+          : null,
     });
   } catch (err) {
     console.error(
@@ -2596,7 +2723,8 @@ ipcMain.handle('db:getMessages', (_event, channel?: number, limit = 200) => {
     const columns = `id, sender_id, sender_name, payload, channel, timestamp,
          packet_id AS packetId, status, error, emoji, reply_id AS replyId, to_node,
          mqtt_status AS mqttStatus, received_via AS receivedVia,
-         reply_preview_text AS replyPreviewText, reply_preview_sender AS replyPreviewSender`;
+         reply_preview_text AS replyPreviewText, reply_preview_sender AS replyPreviewSender,
+         rx_hops AS rxHops`;
     let rows: any[];
     if (channel != null) {
       const ch = safeNonNegativeInt(channel);
@@ -3172,23 +3300,30 @@ ipcMain.handle(
 );
 
 // ─── IPC: Upgrade received_via to 'both' when packet arrives on second transport ─
-ipcMain.handle('db:updateMessageReceivedVia', (_event, packetId: number) => {
-  try {
-    const pid = safeNonNegativeInt(packetId);
-    const db = getDatabase();
-    return db
-      .prepareOnce(
-        "UPDATE messages SET received_via = 'both' WHERE packet_id = ? AND received_via != 'both'",
-      )
-      .run(pid);
-  } catch (err) {
-    console.error(
-      '[IPC] db:updateMessageReceivedVia failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
+ipcMain.handle(
+  'db:updateMessageReceivedVia',
+  (_event, packetId: number, rxHops?: number | null) => {
+    try {
+      const pid = safeNonNegativeInt(packetId);
+      const db = getDatabase();
+      const hopBind =
+        rxHops != null && typeof rxHops === 'number' && Number.isFinite(rxHops)
+          ? Math.trunc(rxHops)
+          : null;
+      return db
+        .prepareOnce(
+          "UPDATE messages SET received_via = 'both', rx_hops = COALESCE(?, rx_hops) WHERE packet_id = ? AND received_via != 'both'",
+        )
+        .run(hopBind, pid);
+    } catch (err) {
+      console.error(
+        '[IPC] db:updateMessageReceivedVia failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  },
+);
 
 /** Replace optimistic temp `packet_id` with the real mesh id from `sendText()` (tapbacks key on `reply_id`). */
 ipcMain.handle('db:updateMessagePacketId', (_event, oldPacketId: number, newPacketId: number) => {
@@ -3445,8 +3580,8 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
     return db
       .prepareOnce(
         'INSERT OR IGNORE INTO meshcore_messages ' +
-          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender) ' +
-          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender)',
+          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops) ' +
+          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops)',
       )
       .run({
         sender_id: m.sender_id != null ? Number(m.sender_id) : null,
@@ -3463,6 +3598,10 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
         rx_packet_fingerprint: rxFp,
         reply_preview_text: replyPreviewText,
         reply_preview_sender: replyPreviewSender,
+        rx_hops:
+          m.rx_hops != null && Number.isFinite(Number(m.rx_hops))
+            ? Math.trunc(Number(m.rx_hops))
+            : null,
       });
   } catch (err) {
     console.error(

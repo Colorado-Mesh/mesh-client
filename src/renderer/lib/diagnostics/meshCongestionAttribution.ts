@@ -74,9 +74,14 @@ export function meshHasRoutingAnomalies(anomalies: Map<number, NodeAnomaly>): bo
   return false;
 }
 
-/** Single line when mesh has routing anomalies — use with meshHasRoutingAnomalies. */
-export const MESH_ROUTING_ANOMALY_LINE =
-  'This mesh currently has routing anomalies (long routes close in) — that increases duplicate receptions until routes improve.';
+/** Structured lines resolved to UI copy via meshCongestion translation keys in the renderer. */
+export type CongestionLine =
+  | { key: 'partialSamples'; values: { count: number; pct: number } }
+  | { key: 'insufficientEvidence' }
+  | { key: 'routingAnomalies' }
+  | { key: 'pathMixMqttCausal'; values: { pct: number } }
+  | { key: 'pathMixMqttHeavy'; values: { pct: number } }
+  | { key: 'pathMixRfOnly'; values: { pct: number } };
 
 /**
  * Summarize packetCache for Mesh Congestion detail copy. Only uses packetId/path
@@ -109,10 +114,15 @@ export function summarizeMeshCongestionAttribution(
 /**
  * Single-line answer when we have any multi-path data but not enough for full confidence.
  */
-export function meshCongestionPartialAnswer(attr: MeshCongestionAttribution): string | null {
+export function meshCongestionPartialAnswer(
+  attr: MeshCongestionAttribution,
+): CongestionLine | null {
   if (attr.sufficientEvidence || attr.multiPathCount === 0) return null;
   const pct = Math.round(attr.mqttInvolvedRatio * 100);
-  return `So far, ${attr.multiPathCount} duplicate packet(s) had multiple paths; ${pct}% involved MQTT — need a few more samples to confirm the main cause. If you use a gateway with MQTT downlink, try Ignore MQTT for that node in Diagnostics to see if duplicates drop.`;
+  return {
+    key: 'partialSamples',
+    values: { count: attr.multiPathCount, pct },
+  };
 }
 
 export interface MeshCongestionDetailLinesOptions {
@@ -120,42 +130,34 @@ export interface MeshCongestionDetailLinesOptions {
   alwaysIncludeRoutingAnomalies?: boolean;
 }
 
-/** Template-only detail lines for UI (no raw node names). */
+/** Structured detail lines for UI (no raw node names). */
 export function meshCongestionDetailLines(
   attr: MeshCongestionAttribution,
   options?: MeshCongestionDetailLinesOptions,
-): string[] {
-  const lines: string[] = [];
+): CongestionLine[] {
+  const lines: CongestionLine[] = [];
   if (!attr.sufficientEvidence) {
     const partial = meshCongestionPartialAnswer(attr);
     if (partial) {
       lines.push(partial);
     } else {
-      lines.push(
-        'Duplicates are likely from overlapping RF coverage, MQTT+RF double delivery if you use a gateway, or repeaters with a high hop limit — we have not logged enough multi-path packets yet to say which dominates.',
-      );
+      lines.push({ key: 'insufficientEvidence' });
     }
     if (options?.alwaysIncludeRoutingAnomalies && attr.hasRoutingAnomalies) {
-      lines.push(MESH_ROUTING_ANOMALY_LINE);
+      lines.push({ key: 'routingAnomalies' });
     }
     return lines;
   }
   const pct = Math.round(attr.mqttInvolvedRatio * 100);
   if (attr.mqttCausal) {
-    lines.push(
-      `Path mix: ${pct}% of recent multi-path packets involved MQTT — check gateway downlink overlap or Ignore MQTT for bridged nodes.`,
-    );
+    lines.push({ key: 'pathMixMqttCausal', values: { pct } });
   } else if (attr.mqttHeavy) {
-    lines.push(
-      `Path mix: ${pct}% of recent multi-path packets often involve MQTT — overlapping RF+MQTT may duplicate deliveries.`,
-    );
+    lines.push({ key: 'pathMixMqttHeavy', values: { pct } });
   } else {
-    lines.push(
-      `Path mix: ${pct}% of recent multi-path packets are RF-only (no MQTT on those paths) — overlapping RF coverage or repeaters with a high hop limit are the likely cause; reducing hop limit on strong local nodes usually helps.`,
-    );
+    lines.push({ key: 'pathMixRfOnly', values: { pct } });
   }
   if (attr.hasRoutingAnomalies) {
-    lines.push(MESH_ROUTING_ANOMALY_LINE);
+    lines.push({ key: 'routingAnomalies' });
   }
   return lines;
 }

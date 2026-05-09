@@ -74,7 +74,8 @@ export default defineConfig({
     outDir: path.resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
     sourcemap: false,
-    chunkSizeWarningLimit: 700,
+    // Advisory only — Electron renderer; not a public web cold-load budget.
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       // All Node built-ins are redirected to browser-safe stubs via resolve.alias below.
       // Do NOT list them as externals — Rollup would emit bare `import "stream"` etc.

@@ -4,7 +4,6 @@ import {
   analyzeLogs,
   type CategoryFinding,
   dedupeRecommendations,
-  formatTimeAgo,
   formatTimeRange,
   type LogEntry,
 } from './logAnalyzer';
@@ -177,8 +176,7 @@ describe('analyzeLogs', () => {
     const cat = result.categories.find((c) => c.id === 'native-module');
     expect(cat).toBeDefined();
     expect(cat?.count).toBe(1);
-    expect(cat?.recommendation).toContain('pnpm');
-    expect(cat?.recommendation).toContain('rebuild');
+    expect(cat?.id).toBe('native-module');
   });
 
   it('detects database not writable', () => {
@@ -426,10 +424,10 @@ describe('analyzeLogs', () => {
     expect(result.newestTs).toBe(now);
   });
 
-  it('includes recommendation for each category', () => {
+  it('flags auth-decrypt category for auth failed lines', () => {
     const entries: LogEntry[] = [makeEntry('auth failed')];
     const result = analyzeLogs(entries, 'meshtastic');
-    expect(result.categories[0].recommendation).toContain('channel keys');
+    expect(result.categories[0].id).toBe('auth-decrypt');
   });
 
   it('truncates lastMessage for long lines', () => {
@@ -443,23 +441,21 @@ describe('analyzeLogs', () => {
 });
 
 describe('dedupeRecommendations', () => {
-  it('merges duplicate recommendation text and escalates severity', () => {
+  it('merges identical recommendationGroup and escalates severity', () => {
     const cats: CategoryFinding[] = [
       {
         id: 'a',
-        label: 'Cat A',
+        recommendationGroup: '__test_merged',
         count: 1,
         severity: 'warning',
-        recommendation: 'Do the thing.',
         lastTs: 1,
         lastMessage: '',
       },
       {
         id: 'b',
-        label: 'Cat B',
+        recommendationGroup: '__test_merged',
         count: 2,
         severity: 'error',
-        recommendation: 'Do the thing.',
         lastTs: 2,
         lastMessage: '',
       },
@@ -467,26 +463,24 @@ describe('dedupeRecommendations', () => {
     const d = dedupeRecommendations(cats);
     expect(d).toHaveLength(1);
     expect(d[0].severity).toBe('error');
-    expect(d[0].appliesToLabels).toEqual(['Cat A', 'Cat B']);
+    expect(d[0].categoryIds).toEqual(['a', 'b']);
   });
 
-  it('keeps separate rows for distinct recommendations', () => {
+  it('keeps separate rows for distinct recommendation groups', () => {
     const cats: CategoryFinding[] = [
       {
         id: 'a',
-        label: 'A',
+        recommendationGroup: 'a',
         count: 1,
         severity: 'error',
-        recommendation: 'One',
         lastTs: 1,
         lastMessage: '',
       },
       {
         id: 'b',
-        label: 'B',
+        recommendationGroup: 'b',
         count: 1,
         severity: 'warning',
-        recommendation: 'Two',
         lastTs: 2,
         lastMessage: '',
       },
@@ -512,32 +506,5 @@ describe('formatTimeRange', () => {
     expect(parts.length).toBeGreaterThanOrEqual(2);
     expect(parts[0].trim().length).toBeGreaterThan(0);
     expect(parts[parts.length - 1].trim().length).toBeGreaterThan(0);
-  });
-});
-
-describe('formatTimeAgo', () => {
-  it('returns "just now" for recent times', () => {
-    const result = formatTimeAgo(Date.now() - 30000);
-    expect(result).toBe('just now');
-  });
-
-  it('returns minutes for times under an hour', () => {
-    const result = formatTimeAgo(Date.now() - 1800000);
-    expect(result).toBe('30 min ago');
-  });
-
-  it('returns hours for times under a day', () => {
-    const result = formatTimeAgo(Date.now() - 7200000);
-    expect(result).toBe('2 hr ago');
-  });
-
-  it('returns days for older times', () => {
-    const result = formatTimeAgo(Date.now() - 172800000);
-    expect(result).toBe('2 days ago');
-  });
-
-  it('returns singular day for one day', () => {
-    const result = formatTimeAgo(Date.now() - 86400000);
-    expect(result).toBe('1 day ago');
   });
 });

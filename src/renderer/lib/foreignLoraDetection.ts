@@ -130,6 +130,10 @@ export class RollingRateCounter {
     }
   }
 
+  reset(): void {
+    this.timestamps = [];
+  }
+
   private cleanup(): void {
     const cutoff = Date.now() - this.windowMs;
     this.timestamps = this.timestamps.filter((t) => t >= cutoff);

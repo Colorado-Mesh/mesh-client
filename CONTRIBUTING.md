@@ -43,6 +43,8 @@ Before each commit, the hook runs (order matters):
 8. `actionlint`, `yamllint`
 9. `pnpm run test:run`
 
+The live hook in `.githooks/pre-commit` also runs `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stages `src/renderer/locales/` before lint. MyMemory uses **`info@coloradomesh.org`** as the default contact for the higher free quota unless **`MYMEMORY_EMAIL`** is set — see [AGENTS.md](AGENTS.md) (i18n / Localization).
+
 Skip in emergency: `git commit --no-verify`.
 
 ## PR Process

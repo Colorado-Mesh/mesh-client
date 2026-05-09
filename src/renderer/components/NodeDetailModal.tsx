@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type {
   MeshCoreNeighborResult,
@@ -105,6 +106,7 @@ export default function NodeDetailModal({
   meshcoreManufacturerModel,
   positionHistory,
 }: NodeDetailModalProps) {
+  const { t } = useTranslation();
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
@@ -173,21 +175,21 @@ export default function NodeDetailModal({
   useEffect(() => {
     if (positionRequestedAtRef.current !== null) {
       setPositionRequestedAt(null);
-      setActionStatus('Position updated');
+      setActionStatus(t('nodeDetailModal.positionUpdated'));
     }
-  }, [node?.latitude, node?.longitude]);
+  }, [node?.latitude, node?.longitude, t]);
 
   // 30-second timeout for position request
   useEffect(() => {
     if (!positionRequestedAt) return;
     const timer = setTimeout(() => {
       setPositionRequestedAt(null);
-      setActionStatus('Position request timed out');
+      setActionStatus(t('nodeDetailModal.positionRequestTimedOut'));
     }, 30_000);
     return () => {
       clearTimeout(timer);
     };
-  }, [positionRequestedAt]);
+  }, [positionRequestedAt, t]);
 
   // Auto-show repeater stats when they arrive
   useEffect(() => {
@@ -265,14 +267,14 @@ export default function NodeDetailModal({
     const timer = setTimeout(
       () => {
         setTraceRoutePending(false);
-        setActionStatus('Trace route timed out');
+        setActionStatus(t('nodeDetailModal.traceRouteTimedOut'));
       },
       Math.max(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS, TRACE_ROUTE_UI_TIMEOUT_MS),
     );
     return () => {
       clearTimeout(timer);
     };
-  }, [traceRoutePending]);
+  }, [traceRoutePending, t]);
 
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(
     protocol ?? 'meshtastic',
@@ -289,18 +291,18 @@ export default function NodeDetailModal({
   const nodeStatusUi =
     nodeStatus === 'online'
       ? {
-          label: 'Online',
+          label: t('nodeDetailModal.statusOnline'),
           dotClass: 'bg-brand-green',
           textClass: 'text-brand-green',
         }
       : nodeStatus === 'stale'
         ? {
-            label: 'Stale',
+            label: t('nodeDetailModal.statusStale'),
             dotClass: 'bg-violet-400',
             textClass: 'text-violet-300',
           }
         : {
-            label: 'Offline',
+            label: t('nodeDetailModal.statusOffline'),
             dotClass: 'bg-slate-400',
             textClass: 'text-slate-300',
           };
@@ -319,19 +321,19 @@ export default function NodeDetailModal({
 
   const handleRequestPosition = async () => {
     setPositionRequestedAt(Date.now());
-    setActionStatus('Requesting position...');
+    setActionStatus(t('nodeDetailModal.requestingPosition'));
     try {
       await onRequestPosition(node.node_id);
     } catch (e) {
       console.warn('[NodeDetailModal] request position failed', e);
       setPositionRequestedAt(null);
-      setActionStatus('Position request failed');
+      setActionStatus(t('nodeDetailModal.positionRequestFailed'));
     }
   };
 
   const handleTraceRoute = async () => {
     setTraceRoutePending(true);
-    setActionStatus('Trace route requested...');
+    setActionStatus(t('nodeDetailModal.traceRouteRequested'));
     try {
       await onTraceRoute(node.node_id);
     } finally {
@@ -340,14 +342,14 @@ export default function NodeDetailModal({
   };
 
   const traceHardDisabled = !isConnected;
-  const traceBlockReason = !isConnected ? 'Connect to the radio first.' : null;
+  const traceBlockReason = !isConnected ? t('nodeDetailModal.connectRadioFirst') : null;
 
   return (
     <>
       <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
         <button
           type="button"
-          aria-label="Close dialog"
+          aria-label={t('aria.closeDialog')}
           className="absolute inset-0 cursor-pointer border-0 bg-black/50 p-0"
           onClick={onClose}
         />
@@ -366,15 +368,15 @@ export default function NodeDetailModal({
                 </h3>
                 {mqttIgnoredNodes.has(node.node_id) && (
                   <span className="shrink-0 rounded border border-yellow-500/30 bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-medium text-yellow-300">
-                    MQTT Ignored
+                    {t('nodeDetailModal.mqttIgnoredBadge')}
                   </span>
                 )}
                 {isIncomplete && (
                   <span
                     className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
-                    title="Node data incomplete - waiting for full NodeInfo packet"
+                    title={t('nodeDetailModal.nodeIncomplete')}
                   >
-                    Loading...
+                    {t('nodeDetailModal.loadingBadge')}
                   </span>
                 )}
               </div>
@@ -385,11 +387,11 @@ export default function NodeDetailModal({
                     className={`text-xs ${headerHopsDisplay === 0 ? 'text-bright-green' : 'text-gray-400'}`}
                     title={
                       protocol === 'meshcore' && meshcoreTraceResult != null
-                        ? 'Hops from last trace (matches Path Trace below)'
-                        : 'Hops away (from contact routing when no trace yet)'
+                        ? t('nodeDetailModal.hopsFromTraceTitle')
+                        : t('nodeDetailModal.hopsFromRoutingTitle')
                     }
                   >
-                    {headerHopsDisplay} hop{headerHopsDisplay !== 1 ? 's' : ''}
+                    {t('nodeDetailModal.hopLabel', { count: headerHopsDisplay })}
                   </span>
                 )}
                 {headerHardwareSubtitle != null && (
@@ -399,7 +401,7 @@ export default function NodeDetailModal({
                 {protocol === 'meshcore' && contactPubkey && (
                   <span
                     className="shrink-0 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-300"
-                    title="Has public key - can send DMs"
+                    title={t('nodeDetailModal.hasPublicKey')}
                   >
                     🔑 DM
                   </span>
@@ -409,33 +411,33 @@ export default function NodeDetailModal({
                   node.node_id <= MESHCORE_CHAT_STUB_ID_MAX && (
                     <span
                       className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
-                      title="Chat-only node (no public key)"
+                      title={t('nodeDetailModal.chatOnlyNode')}
                     >
-                      📢 Chat
+                      {t('nodeDetailModal.chatBadge')}
                     </span>
                   )}
                 {protocol === 'meshcore' && contactOnRadio === false && contactPubkey && (
                   <span
                     className="shrink-0 rounded border border-orange-500/30 bg-orange-500/20 px-1.5 py-0.5 text-[10px] font-medium text-orange-300"
-                    title="Contact stored in database only, not on radio"
+                    title={t('nodeDetailModal.dbOnlyContact')}
                   >
-                    Only in DB
+                    {t('nodeDetailModal.onlyInDbBadge')}
                   </span>
                 )}
                 {protocol === 'meshcore' && contactOnRadio === true && contactPubkey && (
                   <span
                     className="shrink-0 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-300"
-                    title="Contact synced: stored in database and on radio"
+                    title={t('nodeDetailModal.syncedContact')}
                   >
-                    Synced
+                    {t('nodeDetailModal.syncedBadge')}
                   </span>
                 )}
                 {protocol === 'meshcore' && contactOnRadio === true && !contactPubkey && (
                   <span
                     className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
-                    title="Contact on radio but not yet fully stored in database"
+                    title={t('nodeDetailModal.radioOnlyContact')}
                   >
-                    On Radio
+                    {t('nodeDetailModal.onRadioBadge')}
                   </span>
                 )}
                 {protocol === 'meshcore' &&
@@ -444,7 +446,10 @@ export default function NodeDetailModal({
                   radioContactCount >= MESHCORE_CONTACTS_CRITICAL_THRESHOLD && (
                     <span
                       className="shrink-0 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-[10px] font-medium text-red-300"
-                      title={`Radio near capacity: ${radioContactCount}/${MESHCORE_MAX_CONTACTS ?? 'unknown'}`}
+                      title={t('nodeDetailModal.radioCapacityTitle', {
+                        current: radioContactCount,
+                        max: MESHCORE_MAX_CONTACTS ?? 'unknown',
+                      })}
                     >
                       ⚠️ {radioContactCount}/{MESHCORE_MAX_CONTACTS ?? 'unknown'}
                     </span>
@@ -458,7 +463,11 @@ export default function NodeDetailModal({
                     onToggleFavorite(node.node_id, !node.favorited);
                   }}
                   className="hover:bg-secondary-dark shrink-0 rounded-lg p-1.5 transition-colors"
-                  aria-label={node.favorited ? 'Remove from favorites' : 'Add to favorites'}
+                  aria-label={
+                    node.favorited
+                      ? t('nodeDetailModal.removeFromFavorites')
+                      : t('nodeDetailModal.addToFavorites')
+                  }
                   aria-pressed={node.favorited}
                 >
                   <span
@@ -471,7 +480,7 @@ export default function NodeDetailModal({
                 <button
                   ref={closeButtonRef}
                   onClick={onClose}
-                  aria-label="Close dialog"
+                  aria-label={t('aria.closeDialog')}
                   className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
                 >
                   <svg
@@ -487,7 +496,7 @@ export default function NodeDetailModal({
               </div>
               <span
                 className={`flex items-center gap-1 text-[11px] font-medium ${nodeStatusUi.textClass}`}
-                title="Current node status"
+                title={t('nodeDetailModal.currentNodeStatus')}
               >
                 <span className={`inline-block h-2 w-2 rounded-full ${nodeStatusUi.dotClass}`} />
                 {nodeStatusUi.label}
@@ -529,10 +538,10 @@ export default function NodeDetailModal({
             {protocol === 'meshcore' && !isOurNode && meshcoreTraceResult && (
               <div className="mt-3 space-y-1">
                 <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                  Path Trace
+                  {t('nodeDetailModal.pathTraceHeading')}
                 </h4>
                 <div className="text-xs text-gray-400">
-                  Hops:{' '}
+                  {t('nodeDetailModal.hopsLabel')}{' '}
                   <span className="font-mono text-gray-200">
                     {meshcoreTracePathLenToHops(meshcoreTraceResult.pathLen)}
                   </span>
@@ -543,12 +552,14 @@ export default function NodeDetailModal({
                     : []
                   ).map((hop, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs">
-                      <span className="text-muted w-10">Hop {i + 1}</span>
+                      <span className="text-muted w-10">
+                        {t('nodeDetailModal.hopNLabel', { n: i + 1 })}
+                      </span>
                       <SnrIndicator snr={hop} />
                     </div>
                   ))}
                   <div className="flex items-center gap-2 border-t border-gray-700 pt-1 text-xs">
-                    <span className="text-muted w-10">Dest</span>
+                    <span className="text-muted w-10">{t('nodeDetailModal.destLabel')}</span>
                     <SnrIndicator snr={meshcoreTraceResult.lastSnr} />
                   </div>
                 </div>
@@ -560,7 +571,7 @@ export default function NodeDetailModal({
               <div className="mt-3 space-y-1">
                 <div className="flex items-center justify-between">
                   <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                    Sensor telemetry (LPP)
+                    {t('nodeDetailModal.sensorTelemetryHeading')}
                   </h4>
                   <div className="flex items-center gap-2">
                     <span className="text-muted text-xs">
@@ -572,14 +583,14 @@ export default function NodeDetailModal({
                       }}
                       className="text-muted text-xs hover:text-gray-300"
                     >
-                      Hide
+                      {t('common.hide')}
                     </button>
                   </div>
                 </div>
                 <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
                   {meshcoreNodeTelemetry.temperature !== undefined && (
                     <>
-                      <div className="text-muted">Temperature</div>
+                      <div className="text-muted">{t('nodeDetailModal.temperatureLabel')}</div>
                       <div className="font-mono text-gray-200">
                         {meshcoreNodeTelemetry.temperature.toFixed(1)} °C
                       </div>
@@ -587,7 +598,7 @@ export default function NodeDetailModal({
                   )}
                   {meshcoreNodeTelemetry.relativeHumidity !== undefined && (
                     <>
-                      <div className="text-muted">Humidity</div>
+                      <div className="text-muted">{t('nodeDetailModal.humidityLabel')}</div>
                       <div className="font-mono text-gray-200">
                         {meshcoreNodeTelemetry.relativeHumidity.toFixed(1)} %
                       </div>
@@ -595,7 +606,7 @@ export default function NodeDetailModal({
                   )}
                   {meshcoreNodeTelemetry.barometricPressure !== undefined && (
                     <>
-                      <div className="text-muted">Pressure</div>
+                      <div className="text-muted">{t('nodeDetailModal.pressureLabel')}</div>
                       <div className="font-mono text-gray-200">
                         {meshcoreNodeTelemetry.barometricPressure.toFixed(1)} hPa
                       </div>
@@ -603,7 +614,7 @@ export default function NodeDetailModal({
                   )}
                   {meshcoreNodeTelemetry.voltage !== undefined && (
                     <>
-                      <div className="text-muted">Voltage</div>
+                      <div className="text-muted">{t('nodeDetailModal.voltageLabel')}</div>
                       <div className="font-mono text-gray-200">
                         {meshcoreNodeTelemetry.voltage.toFixed(2)} V
                       </div>
@@ -611,7 +622,7 @@ export default function NodeDetailModal({
                   )}
                   {meshcoreNodeTelemetry.gps && (
                     <>
-                      <div className="text-muted">GPS</div>
+                      <div className="text-muted">{t('nodeDetailModal.gpsLabel')}</div>
                       <div className="font-mono text-gray-200">
                         {formatCoordPair(
                           meshcoreNodeTelemetry.gps.latitude,
@@ -623,10 +634,12 @@ export default function NodeDetailModal({
                   )}
                   {meshcoreNodeTelemetry.entries.length === 0 && (
                     <>
-                      <div className="text-muted col-span-2 italic">No LPP sensor data</div>
+                      <div className="text-muted col-span-2 italic">
+                        {t('nodeDetailModal.noLppSensorData')}
+                      </div>
                       {node.latitude != null && node.longitude != null ? (
                         <div className="text-muted col-span-2 text-xs">
-                          Map position is from advert/contact data, not this request.
+                          {t('nodeDetailModal.mapPositionFromAdvertNotRequest')}
                         </div>
                       ) : null}
                     </>
@@ -643,7 +656,9 @@ export default function NodeDetailModal({
                 <div className="mt-3 space-y-1">
                   <div className="flex items-center justify-between">
                     <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                      Neighbors ({meshcoreNeighbors.totalNeighboursCount})
+                      {t('nodeDetailModal.neighborsHeading', {
+                        count: meshcoreNeighbors.totalNeighboursCount,
+                      })}
                     </h4>
                     <button
                       onClick={() => {
@@ -651,7 +666,7 @@ export default function NodeDetailModal({
                       }}
                       className="text-muted text-xs hover:text-gray-300"
                     >
-                      Hide
+                      {t('common.hide')}
                     </button>
                   </div>
                   <div className="space-y-1">
@@ -669,7 +684,7 @@ export default function NodeDetailModal({
                           <div>
                             <span className="text-gray-300">{label}</span>
                             <span className="text-muted ml-2">
-                              {formatSecondsAgo(nb.heardSecondsAgo)}
+                              {formatSecondsAgo(nb.heardSecondsAgo, t)}
                             </span>
                           </div>
                           <SnrIndicator snr={nb.snr} />
@@ -677,7 +692,9 @@ export default function NodeDetailModal({
                       );
                     })}
                     {meshcoreNeighbors.neighbours.length === 0 && (
-                      <div className="text-muted px-2 text-xs italic">No neighbors reported</div>
+                      <div className="text-muted px-2 text-xs italic">
+                        {t('nodeDetailModal.noNeighborsReported')}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -688,22 +705,11 @@ export default function NodeDetailModal({
               (() => {
                 const list = getForeignLoraDetectionsList(node.node_id);
                 if (list.length === 0) return null;
-                const classLabels: Record<string, string> = {
-                  meshcore: 'MeshCore Activity',
-                  meshtastic: 'Meshtastic Traffic',
-                  'unknown-lora': 'Unknown LoRa Signal',
-                };
-                const proximityLabels: Record<string, string> = {
-                  'very-close': 'Very Close',
-                  nearby: 'Nearby',
-                  distant: 'Distant',
-                  unknown: 'Unknown Distance',
-                };
                 return (
                   <div className="mt-3 space-y-2">
                     <h4 className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-orange-400 uppercase">
                       <span aria-hidden="true">⚠</span>
-                      Foreign LoRa Activity (last 90 min)
+                      {t('diagnosticsPanel.foreignLoraHeading')}
                     </h4>
                     {list.map((detection, i) => {
                       const minutesAgo = Math.floor((Date.now() - detection.detectedAt) / 60_000);
@@ -718,23 +724,47 @@ export default function NodeDetailModal({
                           key={`${detection.packetClass}-${detection.lastSenderId ?? 'na'}-${detection.detectedAt}-${i}`}
                           className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs"
                         >
-                          <div className="text-muted">Class</div>
-                          <div className="text-gray-200">
-                            {classLabels[detection.packetClass] ?? detection.packetClass}
+                          <div className="text-muted">
+                            {t('diagnosticsPanel.foreignClassColumn')}
                           </div>
-                          <div className="text-muted">Proximity</div>
                           <div className="text-gray-200">
-                            {proximityLabels[detection.proximity] ?? detection.proximity}
+                            {detection.packetClass === 'meshcore'
+                              ? t('diagnosticsPanel.foreignClassMeshcore')
+                              : detection.packetClass === 'meshtastic'
+                                ? t('diagnosticsPanel.foreignClassMeshtastic')
+                                : detection.packetClass === 'unknown-lora'
+                                  ? t('diagnosticsPanel.foreignClassUnknownLora')
+                                  : detection.packetClass}
                           </div>
-                          <div className="text-muted">Last Seen</div>
+                          <div className="text-muted">
+                            {t('diagnosticsPanel.foreignProximityColumn')}
+                          </div>
                           <div className="text-gray-200">
-                            {minutesAgo < 1 ? 'Just now' : `${minutesAgo}m ago`}
+                            {detection.proximity === 'very-close'
+                              ? t('diagnosticsPanel.proximityVeryClose')
+                              : detection.proximity === 'nearby'
+                                ? t('diagnosticsPanel.proximityNearby')
+                                : detection.proximity === 'distant'
+                                  ? t('diagnosticsPanel.proximityDistant')
+                                  : detection.proximity === 'unknown'
+                                    ? t('diagnosticsPanel.proximityUnknown')
+                                    : detection.proximity}
                           </div>
-                          <div className="text-muted">Count</div>
+                          <div className="text-muted">
+                            {t('diagnosticsPanel.foreignLastSeenColumn')}
+                          </div>
+                          <div className="text-gray-200">
+                            {minutesAgo < 1
+                              ? t('common.justNow')
+                              : t('common.minutesAgo', { count: minutesAgo })}
+                          </div>
+                          <div className="text-muted">
+                            {t('diagnosticsPanel.foreignCountColumn')}
+                          </div>
                           <div className="text-gray-200">{detection.count}×</div>
                           {(detection.rssi !== undefined || detection.snr !== undefined) && (
                             <>
-                              <div className="text-muted">Signal</div>
+                              <div className="text-muted">{t('nodeDetailModal.signalLabel')}</div>
                               <div className="font-mono text-gray-200">
                                 {detection.rssi !== undefined ? `RSSI ${detection.rssi} dBm` : ''}
                                 {detection.rssi !== undefined && detection.snr !== undefined
@@ -748,7 +778,7 @@ export default function NodeDetailModal({
                           )}
                           {detection.lastSenderId != null && (
                             <>
-                              <div className="text-muted">Sender</div>
+                              <div className="text-muted">{t('nodeDetailModal.senderLabel')}</div>
                               <div className="font-mono text-gray-200">
                                 !{detection.lastSenderId.toString(16).padStart(8, '0')}
                                 {senderName ? ` (${senderName})` : ''}
@@ -770,7 +800,7 @@ export default function NodeDetailModal({
                 <div className="mt-3 space-y-1">
                   <div className="flex items-center justify-between">
                     <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                      Repeater Status
+                      {t('nodeDetailModal.repeaterStatusHeading')}
                     </h4>
                     <button
                       onClick={() => {
@@ -778,55 +808,55 @@ export default function NodeDetailModal({
                       }}
                       className="text-muted text-xs hover:text-gray-300"
                     >
-                      Hide
+                      {t('common.hide')}
                     </button>
                   </div>
                   <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                    <div className="text-muted">Battery</div>
+                    <div className="text-muted">{t('nodeDetailModal.batteryLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {(meshcoreRepeaterStatus.battMilliVolts / 1000).toFixed(2)} V
                     </div>
-                    <div className="text-muted">Noise Floor</div>
+                    <div className="text-muted">{t('nodeDetailModal.noiseFloorLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {meshcoreRepeaterStatus.noiseFloor} dBm
                     </div>
-                    <div className="text-muted">Last RSSI</div>
+                    <div className="text-muted">{t('nodeDetailModal.lastRssiLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {meshcoreRepeaterStatus.lastRssi} dBm
                     </div>
-                    <div className="text-muted">Last SNR</div>
+                    <div className="text-muted">{t('nodeDetailModal.lastSnrLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {meshcoreRepeaterStatus.lastSnr.toFixed(2)} dB
                     </div>
-                    <div className="text-muted">Pkts Recv / Sent</div>
+                    <div className="text-muted">{t('nodeDetailModal.pktsRecvSentLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {meshcoreRepeaterStatus.nPacketsRecv} / {meshcoreRepeaterStatus.nPacketsSent}
                     </div>
-                    <div className="text-muted">Air Time</div>
+                    <div className="text-muted">{t('nodeDetailModal.airTimeLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {meshcoreRepeaterStatus.totalAirTimeSecs}s
                     </div>
-                    <div className="text-muted">Uptime</div>
+                    <div className="text-muted">{t('nodeDetailModal.uptimeLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {Math.floor(meshcoreRepeaterStatus.totalUpTimeSecs / 60)}m
                     </div>
-                    <div className="text-muted">TX Queue</div>
+                    <div className="text-muted">{t('nodeDetailModal.txQueueLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {meshcoreRepeaterStatus.currTxQueueLen}
                     </div>
-                    <div className="text-muted">Flood / Direct sent</div>
+                    <div className="text-muted">{t('nodeDetailModal.floodDirectSentLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {meshcoreRepeaterStatus.nSentFlood} / {meshcoreRepeaterStatus.nSentDirect}
                     </div>
-                    <div className="text-muted">Flood / Direct recv</div>
+                    <div className="text-muted">{t('nodeDetailModal.floodDirectRecvLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {meshcoreRepeaterStatus.nRecvFlood} / {meshcoreRepeaterStatus.nRecvDirect}
                     </div>
-                    <div className="text-muted">Errors</div>
+                    <div className="text-muted">{t('nodeDetailModal.errorsLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {meshcoreRepeaterStatus.errEvents}
                     </div>
-                    <div className="text-muted">Dups (direct / flood)</div>
+                    <div className="text-muted">{t('nodeDetailModal.dupsDirectFloodLabel')}</div>
                     <div className="font-mono text-gray-200">
                       {meshcoreRepeaterStatus.nDirectDups} / {meshcoreRepeaterStatus.nFloodDups}
                     </div>
@@ -842,7 +872,7 @@ export default function NodeDetailModal({
                 return (
                   <div className="space-y-2 pb-2">
                     <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                      Neighbors ({record.neighbors.length})
+                      {t('nodeDetailModal.neighborsHeading', { count: record.neighbors.length })}
                     </h4>
                     <div className="space-y-1">
                       {record.neighbors.map((nb) => {
@@ -857,6 +887,7 @@ export default function NodeDetailModal({
                             <span className="text-xs text-gray-500">
                               {formatSecondsAgo(
                                 Math.max(0, Math.floor(Date.now() / 1000 - nb.lastRxTime)),
+                                t,
                               )}
                             </span>
                             <SnrIndicator snr={nb.snr} />
@@ -872,22 +903,22 @@ export default function NodeDetailModal({
             {protocol === 'meshcore' && meshcoreLocalStats && (
               <div className="space-y-2 pb-2">
                 <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                  Radio Stats (Local)
+                  {t('nodeDetailModal.radioStatsLocalHeading')}
                 </h4>
                 <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                  <div className="text-muted">Noise Floor</div>
+                  <div className="text-muted">{t('nodeDetailModal.noiseFloorLabel')}</div>
                   <div className="font-mono text-gray-200">{meshcoreLocalStats.noiseFloor} dBm</div>
-                  <div className="text-muted">Last RSSI</div>
+                  <div className="text-muted">{t('nodeDetailModal.lastRssiLabel')}</div>
                   <div className="font-mono text-gray-200">{meshcoreLocalStats.lastRssi} dBm</div>
-                  <div className="text-muted">Last SNR</div>
+                  <div className="text-muted">{t('nodeDetailModal.lastSnrLabel')}</div>
                   <div className="font-mono text-gray-200">
                     {meshcoreLocalStats.lastSnr.toFixed(2)} dB
                   </div>
-                  <div className="text-muted">TX Air Time</div>
+                  <div className="text-muted">{t('nodeDetailModal.txAirTimeLabel')}</div>
                   <div className="font-mono text-gray-200">{meshcoreLocalStats.txAirSecs}s</div>
-                  <div className="text-muted">RX Air Time</div>
+                  <div className="text-muted">{t('nodeDetailModal.rxAirTimeLabel')}</div>
                   <div className="font-mono text-gray-200">{meshcoreLocalStats.rxAirSecs}s</div>
-                  <div className="text-muted">Uptime</div>
+                  <div className="text-muted">{t('nodeDetailModal.uptimeLabel')}</div>
                   <div className="font-mono text-gray-200">
                     {Math.floor(meshcoreLocalStats.uptimeSecs / 3600)}h{' '}
                     {Math.floor((meshcoreLocalStats.uptimeSecs % 3600) / 60)}m
@@ -895,25 +926,25 @@ export default function NodeDetailModal({
                 </div>
 
                 <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                  Packets (Local)
+                  {t('nodeDetailModal.packetsLocalHeading')}
                 </h4>
                 <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                  <div className="text-muted">Sent (Flood / Direct)</div>
+                  <div className="text-muted">{t('nodeDetailModal.sentFloodDirectLabel')}</div>
                   <div className="font-mono text-gray-200">
                     {meshcoreLocalStats.nSentFlood} / {meshcoreLocalStats.nSentDirect}
                   </div>
-                  <div className="text-muted">Recv (Flood / Direct)</div>
+                  <div className="text-muted">{t('nodeDetailModal.recvFloodDirectLabel')}</div>
                   <div className="font-mono text-gray-200">
                     {meshcoreLocalStats.nRecvFlood} / {meshcoreLocalStats.nRecvDirect}
                   </div>
-                  <div className="text-muted">Total Sent</div>
+                  <div className="text-muted">{t('nodeDetailModal.totalSentLabel')}</div>
                   <div className="font-mono text-gray-200">{meshcoreLocalStats.sent}</div>
-                  <div className="text-muted">Total Recv</div>
+                  <div className="text-muted">{t('nodeDetailModal.totalRecvLabel')}</div>
                   <div className="font-mono text-gray-200">{meshcoreLocalStats.recv}</div>
                   {meshcoreLocalStats.nRecvErrors !== undefined &&
                     meshcoreLocalStats.nRecvErrors !== null && (
                       <>
-                        <div className="text-muted">RX Errors</div>
+                        <div className="text-muted">{t('nodeDetailModal.rxErrorsLabel')}</div>
                         <div className="font-mono text-gray-200">
                           {meshcoreLocalStats.nRecvErrors}
                         </div>
@@ -941,6 +972,7 @@ export default function NodeDetailModal({
                       <div className="font-mono text-gray-200">
                         {formatSecondsAgo(
                           Math.max(0, Math.floor((Date.now() - paxData.timestamp) / 1000)),
+                          t,
                         )}
                       </div>
                     </div>
@@ -965,6 +997,7 @@ export default function NodeDetailModal({
                       <div className="font-mono text-gray-200">
                         {formatSecondsAgo(
                           Math.max(0, Math.floor((Date.now() - latestEvent.timestamp) / 1000)),
+                          t,
                         )}
                       </div>
                       <div className="text-muted">Data Size</div>
@@ -983,23 +1016,32 @@ export default function NodeDetailModal({
             {/* Map Report section (Meshtastic only) */}
             {protocol === 'meshtastic' && mapReports && (
               <div className="space-y-2 pb-2">
-                <h4 className="text-muted text-sm font-medium">Map Report</h4>
+                <h4 className="text-muted text-sm font-medium">
+                  {t('nodeDetailModal.mapReportHeading')}
+                </h4>
                 {(() => {
                   const mapReport = mapReports.get(node.node_id);
                   if (!mapReport) {
-                    return <p className="text-xs text-gray-500">No map report received</p>;
+                    return (
+                      <p className="text-xs text-gray-500">
+                        {t('nodeDetailModal.noMapReportReceived')}
+                      </p>
+                    );
                   }
                   return (
                     <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded py-2 text-xs">
-                      <div className="text-muted">Last Report</div>
+                      <div className="text-muted">{t('nodeDetailModal.mapReportLastReport')}</div>
                       <div className="font-mono text-gray-200">
                         {formatSecondsAgo(
                           Math.max(0, Math.floor((Date.now() - mapReport.timestamp) / 1000)),
+                          t,
                         )}
                       </div>
-                      <div className="text-muted">Data</div>
+                      <div className="text-muted">{t('nodeDetailModal.mapReportDataLabel')}</div>
                       <div className="font-mono text-gray-200">
-                        {mapReport.data ? JSON.stringify(mapReport.data).slice(0, 50) : 'N/A'}
+                        {mapReport.data
+                          ? JSON.stringify(mapReport.data).slice(0, 50)
+                          : t('nodeDetailModal.mapReportDataNa')}
                       </div>
                     </div>
                   );
@@ -1010,11 +1052,17 @@ export default function NodeDetailModal({
             {/* Position History (GPS tracking path) */}
             {positionHistory && (
               <div className="space-y-2 pb-2">
-                <h4 className="text-muted text-sm font-medium">Position History</h4>
+                <h4 className="text-muted text-sm font-medium">
+                  {t('nodeDetailModal.positionHistoryHeading')}
+                </h4>
                 {(() => {
                   const points = positionHistory.get(node.node_id);
                   if (!points || points.length === 0) {
-                    return <p className="text-xs text-gray-500">No position history recorded</p>;
+                    return (
+                      <p className="text-xs text-gray-500">
+                        {t('nodeDetailModal.noPositionHistoryRecorded')}
+                      </p>
+                    );
                   }
                   const sorted = [...points].sort((a, b) => a.t - b.t);
                   const first = sorted[0];
@@ -1024,27 +1072,45 @@ export default function NodeDetailModal({
                   return (
                     <>
                       <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded py-2 text-xs">
-                        <div className="text-muted">Recorded Points</div>
+                        <div className="text-muted">
+                          {t('nodeDetailModal.positionHistoryRecordedPoints')}
+                        </div>
                         <div className="font-mono text-gray-200">{points.length}</div>
-                        <div className="text-muted">Time Span</div>
-                        <div className="font-mono text-gray-200">{durationHours}h</div>
-                        <div className="text-muted">First Position</div>
+                        <div className="text-muted">
+                          {t('nodeDetailModal.positionHistoryTimeSpan')}
+                        </div>
+                        <div className="font-mono text-gray-200">
+                          {t('nodeDetailModal.positionHistoryDurationHours', {
+                            hours: durationHours,
+                          })}
+                        </div>
+                        <div className="text-muted">
+                          {t('nodeDetailModal.positionHistoryFirstPosition')}
+                        </div>
                         <div className="font-mono text-gray-200">
                           {new Date(first.t).toLocaleString()}
                         </div>
-                        <div className="text-muted">Last Position</div>
+                        <div className="text-muted">
+                          {t('nodeDetailModal.positionHistoryLastPosition')}
+                        </div>
                         <div className="font-mono text-gray-200">
                           {new Date(last.t).toLocaleString()}
                         </div>
                       </div>
                       {sorted.length > 1 && (
                         <div className="text-[10px] text-gray-500">
-                          Most recent: {last.lat.toFixed(5)}, {last.lon.toFixed(5)}
+                          {t('nodeDetailModal.positionHistoryMostRecent', {
+                            lat: last.lat.toFixed(5),
+                            lon: last.lon.toFixed(5),
+                          })}
                         </div>
                       )}
                       {sorted.length > POSITION_HISTORY_MAX_ROWS && (
                         <div className="text-[10px] text-gray-500">
-                          Showing newest {POSITION_HISTORY_MAX_ROWS} of {sorted.length} points
+                          {t('nodeDetailModal.positionHistoryTruncated', {
+                            shown: POSITION_HISTORY_MAX_ROWS,
+                            total: sorted.length,
+                          })}
                         </div>
                       )}
                       <div className="bg-secondary-dark space-y-1 rounded py-2">
@@ -1078,7 +1144,7 @@ export default function NodeDetailModal({
                   disabled={!isConnected || positionRequestedAt !== null}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  📍 Request Position
+                  {t('nodeDetailModal.requestPosition')}
                 </button>
               )}
               {traceHardDisabled && traceBlockReason ? (
@@ -1090,7 +1156,10 @@ export default function NodeDetailModal({
                       disabled
                       className="bg-secondary-dark min-w-[8rem] flex-1 cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-gray-200 opacity-40"
                     >
-                      🛤 {traceRoutePending ? 'Tracing...' : 'Trace Route'}
+                      🛤{' '}
+                      {traceRoutePending
+                        ? t('nodeDetailModal.tracingEllipsis')
+                        : t('nodeDetailModal.traceRoute')}
                     </button>
                   </span>
                 </HelpTooltip>
@@ -1101,7 +1170,10 @@ export default function NodeDetailModal({
                   disabled={false}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600"
                 >
-                  🛤 {traceRoutePending ? 'Tracing...' : 'Trace Route'}
+                  🛤{' '}
+                  {traceRoutePending
+                    ? t('nodeDetailModal.tracingEllipsis')
+                    : t('nodeDetailModal.traceRoute')}
                 </button>
               )}
               {protocol === 'meshcore' && onRequestRepeaterStatus && (
@@ -1109,13 +1181,15 @@ export default function NodeDetailModal({
                   onClick={async () => {
                     if (!(await ensureConfigured())) return;
                     setRepeaterStatusPending(true);
-                    setActionStatus('Requesting status...');
+                    setActionStatus(t('nodeDetailModal.requestingStatus'));
                     try {
                       await onRequestRepeaterStatus(node.node_id);
                       setActionStatus(null);
                     } catch (e) {
                       console.warn('[NodeDetailModal] requestRepeaterStatus failed', e);
-                      setActionStatus(e instanceof Error ? e.message : 'Status request failed');
+                      setActionStatus(
+                        e instanceof Error ? e.message : t('nodeDetailModal.statusRequestFailed'),
+                      );
                     } finally {
                       setRepeaterStatusPending(false);
                     }
@@ -1123,25 +1197,30 @@ export default function NodeDetailModal({
                   disabled={!isConnected || repeaterStatusPending}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  📊 {repeaterStatusPending ? 'Requesting...' : 'Request Status'}
+                  📊{' '}
+                  {repeaterStatusPending
+                    ? t('nodeDetailModal.requestingEllipsis')
+                    : t('nodeDetailModal.requestStatus')}
                 </button>
               )}
               {protocol === 'meshcore' && onRequestTelemetry && (
                 <button
                   type="button"
-                  title="Cayenne LPP sensor payload (not advert GPS on the map)"
-                  aria-label="Sensor telemetry LPP"
+                  title={t('nodeDetailModal.cayenneLppTitle')}
+                  aria-label={t('nodeDetailModal.sensorTelemetryLpp')}
                   onClick={async () => {
                     if (!(await ensureConfigured())) return;
                     setTelemetryPending(true);
-                    setActionStatus('Requesting sensor telemetry (LPP)...');
+                    setActionStatus(t('nodeDetailModal.requestingSensorTelemetry'));
                     try {
                       await onRequestTelemetry(node.node_id);
                       setActionStatus(null);
                     } catch (e) {
                       console.warn('[NodeDetailModal] requestTelemetry failed', e);
                       setActionStatus(
-                        e instanceof Error ? e.message : `Telemetry failed: ${String(e)}`,
+                        e instanceof Error
+                          ? e.message
+                          : t('nodeDetailModal.telemetryFailed', { message: String(e) }),
                       );
                     } finally {
                       setTelemetryPending(false);
@@ -1150,7 +1229,10 @@ export default function NodeDetailModal({
                   disabled={!isConnected || telemetryPending}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  🌡 {telemetryPending ? 'Requesting...' : 'Sensor telemetry'}
+                  🌡{' '}
+                  {telemetryPending
+                    ? t('nodeDetailModal.requestingEllipsis')
+                    : t('nodeDetailModal.sensorTelemetryButton')}
                 </button>
               )}
               {protocol === 'meshcore' && onRequestNeighbors && node.hw_model === 'Repeater' && (
@@ -1158,14 +1240,16 @@ export default function NodeDetailModal({
                   onClick={async () => {
                     if (!(await ensureConfigured())) return;
                     setNeighborsPending(true);
-                    setActionStatus('Requesting neighbors...');
+                    setActionStatus(t('nodeDetailModal.requestingNeighbors'));
                     try {
                       await onRequestNeighbors(node.node_id);
                       setActionStatus(null);
                     } catch (e) {
                       console.warn('[NodeDetailModal] requestNeighbors failed', e);
                       setActionStatus(
-                        e instanceof Error ? e.message : `Neighbors failed: ${String(e)}`,
+                        e instanceof Error
+                          ? e.message
+                          : t('nodeDetailModal.neighborsFailed', { message: String(e) }),
                       );
                     } finally {
                       setNeighborsPending(false);
@@ -1174,7 +1258,10 @@ export default function NodeDetailModal({
                   disabled={!isConnected || neighborsPending}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  🔗 {neighborsPending ? 'Requesting...' : 'Get Neighbors'}
+                  🔗{' '}
+                  {neighborsPending
+                    ? t('nodeDetailModal.requestingEllipsis')
+                    : t('nodeDetailModal.getNeighbors')}
                 </button>
               )}
               {onMessageNode && (
@@ -1186,12 +1273,12 @@ export default function NodeDetailModal({
                   disabled={!isConnected || (protocol === 'meshcore' && !contactPubkey)}
                   title={
                     protocol === 'meshcore' && !contactPubkey
-                      ? 'Cannot message: no encryption key. Wait for a full contact exchange or refresh contacts.'
+                      ? t('nodeDetailModal.messageNoKeyTitle')
                       : undefined
                   }
                   className="min-w-[8rem] flex-1 rounded-lg bg-purple-700/50 px-3 py-2 text-sm font-medium text-purple-300 transition-colors hover:bg-purple-600/50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  💬 Message
+                  {t('nodeDetailModal.messageButton')}
                 </button>
               )}
               {protocol === 'meshcore' && onExportContact && (
@@ -1199,7 +1286,7 @@ export default function NodeDetailModal({
                   onClick={async () => {
                     if (!(await ensureConfigured())) return;
                     setExportContactPending(true);
-                    setActionStatus('Exporting contact...');
+                    setActionStatus(t('nodeDetailModal.exportingContact'));
                     try {
                       const advert = await onExportContact(node.node_id);
                       if (advert) {
@@ -1214,11 +1301,13 @@ export default function NodeDetailModal({
                         URL.revokeObjectURL(url);
                         setActionStatus(null);
                       } else {
-                        setActionStatus('No public key available');
+                        setActionStatus(t('nodeDetailModal.noPublicKeyAvailable'));
                       }
                     } catch (e) {
                       console.warn('[NodeDetailModal] exportContact failed', e);
-                      setActionStatus(e instanceof Error ? e.message : 'Export failed');
+                      setActionStatus(
+                        e instanceof Error ? e.message : t('nodeDetailModal.exportFailed'),
+                      );
                     } finally {
                       setExportContactPending(false);
                     }
@@ -1226,7 +1315,10 @@ export default function NodeDetailModal({
                   disabled={!isConnected || exportContactPending}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  📤 {exportContactPending ? 'Exporting...' : 'Export Contact'}
+                  📤{' '}
+                  {exportContactPending
+                    ? t('nodeDetailModal.exportingEllipsis')
+                    : t('nodeDetailModal.exportContact')}
                 </button>
               )}
               {protocol === 'meshcore' && onShareContact && (
@@ -1234,13 +1326,15 @@ export default function NodeDetailModal({
                   onClick={async () => {
                     if (!(await ensureConfigured())) return;
                     setShareContactPending(true);
-                    setActionStatus('Sharing contact...');
+                    setActionStatus(t('nodeDetailModal.sharingContact'));
                     try {
                       const success = await onShareContact(node.node_id);
-                      setActionStatus(success ? null : 'Share failed');
+                      setActionStatus(success ? null : t('nodeDetailModal.shareFailed'));
                     } catch (e) {
                       console.warn('[NodeDetailModal] shareContact failed', e);
-                      setActionStatus(e instanceof Error ? e.message : 'Share failed');
+                      setActionStatus(
+                        e instanceof Error ? e.message : t('nodeDetailModal.shareFailed'),
+                      );
                     } finally {
                       setShareContactPending(false);
                     }
@@ -1248,14 +1342,17 @@ export default function NodeDetailModal({
                   disabled={!isConnected || shareContactPending}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  📨 {shareContactPending ? 'Sharing...' : 'Share Contact'}
+                  📨{' '}
+                  {shareContactPending
+                    ? t('nodeDetailModal.sharingEllipsis')
+                    : t('nodeDetailModal.shareContact')}
                 </button>
               )}
               {protocol === 'meshcore' && contactPubkey && contactOnRadio === false && (
                 <button
                   onClick={async () => {
                     setAddRemoveLoading(true);
-                    setActionStatus('Adding to radio...');
+                    setActionStatus(t('nodeDetailModal.addingToRadio'));
                     try {
                       await window.electronAPI.db.saveMeshcoreContact({
                         node_id: node.node_id,
@@ -1270,7 +1367,9 @@ export default function NodeDetailModal({
                       setActionStatus(null);
                     } catch (e) {
                       console.warn('[NodeDetailModal] addToRadio failed', e);
-                      setActionStatus(e instanceof Error ? e.message : 'Add to radio failed');
+                      setActionStatus(
+                        e instanceof Error ? e.message : t('nodeDetailModal.addToRadioFailed'),
+                      );
                     } finally {
                       setAddRemoveLoading(false);
                     }
@@ -1278,14 +1377,17 @@ export default function NodeDetailModal({
                   disabled={!isConnected || addRemoveLoading}
                   className="min-w-[8rem] flex-1 rounded-lg bg-green-900/50 px-3 py-2 text-sm font-medium text-green-300 transition-colors hover:bg-green-800/50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  ➕ {addRemoveLoading ? 'Adding...' : 'Add to Radio'}
+                  ➕{' '}
+                  {addRemoveLoading
+                    ? t('nodeDetailModal.addingEllipsis')
+                    : t('nodeDetailModal.addToRadio')}
                 </button>
               )}
               {protocol === 'meshcore' && contactPubkey && contactOnRadio === true && (
                 <button
                   onClick={async () => {
                     setAddRemoveLoading(true);
-                    setActionStatus('Removing from radio...');
+                    setActionStatus(t('nodeDetailModal.removingFromRadio'));
                     try {
                       await window.electronAPI.db.saveMeshcoreContact({
                         node_id: node.node_id,
@@ -1299,7 +1401,9 @@ export default function NodeDetailModal({
                       setActionStatus(null);
                     } catch (e) {
                       console.warn('[NodeDetailModal] removeFromRadio failed', e);
-                      setActionStatus(e instanceof Error ? e.message : 'Remove from radio failed');
+                      setActionStatus(
+                        e instanceof Error ? e.message : t('nodeDetailModal.removeFromRadioFailed'),
+                      );
                     } finally {
                       setAddRemoveLoading(false);
                     }
@@ -1307,7 +1411,10 @@ export default function NodeDetailModal({
                   disabled={!isConnected || addRemoveLoading}
                   className="min-w-[8rem] flex-1 rounded-lg bg-orange-900/50 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-800/50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  ➖ {addRemoveLoading ? 'Removing...' : 'Remove from Radio'}
+                  ➖{' '}
+                  {addRemoveLoading
+                    ? t('nodeDetailModal.removingEllipsis')
+                    : t('nodeDetailModal.removeFromRadio')}
                 </button>
               )}
             </div>
@@ -1316,10 +1423,10 @@ export default function NodeDetailModal({
           {/* MQTT Ignore toggle */}
           <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-700/50 px-5 py-2">
             <div>
-              <div className="text-xs font-medium text-gray-300">MQTT Ignore</div>
-              <div className="text-muted text-xs">
-                Exclude this node's MQTT data from diagnostics
+              <div className="text-xs font-medium text-gray-300">
+                {t('nodeDetailModal.mqttIgnoreHeading')}
               </div>
+              <div className="text-muted text-xs">{t('nodeDetailModal.mqttIgnoreDescription')}</div>
             </div>
             <button
               onClick={() => {
@@ -1332,8 +1439,8 @@ export default function NodeDetailModal({
               aria-checked={mqttIgnoredNodes.has(node.node_id)}
               title={
                 mqttIgnoredNodes.has(node.node_id)
-                  ? 'Stop ignoring MQTT for this node'
-                  : 'Ignore MQTT for this node'
+                  ? t('nodeDetailModal.stopIgnoringMqttTitle')
+                  : t('nodeDetailModal.ignoreMqttTitle')
               }
             >
               <span
@@ -1368,12 +1475,12 @@ export default function NodeDetailModal({
                 }}
                 className="mt-2 w-full rounded-lg border border-red-900/50 bg-red-900/30 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/50 hover:text-red-300"
               >
-                Delete Node
+                {t('nodeDetailModal.deleteNode')}
               </button>
             ) : (
               <div className="mt-2 rounded-lg border border-red-900/50 bg-red-900/20 p-3">
                 <p className="mb-2 text-xs text-red-300">
-                  Remove this node from local database? It will reappear when it broadcasts again.
+                  {t('nodeDetailModal.deleteNodeConfirm')}
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -1382,7 +1489,7 @@ export default function NodeDetailModal({
                     }}
                     className="bg-secondary-dark flex-1 rounded px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-600"
                   >
-                    Cancel
+                    {t('nodeDetailModal.cancel')}
                   </button>
                   <button
                     onClick={() => {
@@ -1390,16 +1497,14 @@ export default function NodeDetailModal({
                         .then(onClose)
                         .catch((e: unknown) => {
                           setActionStatus(
-                            e instanceof Error
-                              ? e.message
-                              : 'Delete failed. Disconnect MQTT and try again.',
+                            e instanceof Error ? e.message : t('nodeDetailModal.deleteFailedMqtt'),
                           );
                           setShowDeleteConfirm(false);
                         });
                     }}
                     className="flex-1 rounded bg-red-800 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-700"
                   >
-                    Confirm Delete
+                    {t('nodeDetailModal.confirmDelete')}
                   </button>
                 </div>
               </div>

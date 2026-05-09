@@ -1,5 +1,5 @@
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
-import type { MeshNode } from '../types';
+import type { DiagnosticTextI18n, MeshNode } from '../types';
 import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnostics';
 
 export interface RFDiagnosis {
@@ -10,6 +10,8 @@ export interface RFDiagnosis {
   isLastHop?: boolean;
   /** Extra lines under cause (template-only; render muted in UI). */
   hints?: string[];
+  /** Preferred UI string for `cause` when present. */
+  causeI18n?: DiagnosticTextI18n;
 }
 
 /** 24h CU history stats from diagnosticsStore.getCuStats24h */
@@ -80,6 +82,10 @@ export function detectCuSpike(
     condition: 'Channel Utilization Spike',
     cause: `Current ${currentCu.toFixed(0)}% is over 2× the recent average (${stats.average.toFixed(1)}%) — possible congestion or interference surge.`,
     severity: 'warning',
+    causeI18n: {
+      key: 'diagnosticsPanel.rfCause.channelUtilizationSpike',
+      params: { current: currentCu.toFixed(0), average: stats.average.toFixed(1) },
+    },
   };
 }
 
@@ -110,6 +116,7 @@ export function diagnoseConnectedNode(
       condition: 'Utilization vs. TX',
       cause: 'High noise floor or nearby busy node; your node stays quiet to avoid collisions.',
       severity: 'warning',
+      causeI18n: { key: 'diagnosticsPanel.rfCause.utilizationVsTx' },
     });
   }
 
@@ -119,6 +126,7 @@ export function diagnoseConnectedNode(
       condition: 'Non-LoRa Noise / RFI',
       cause: 'Interference from motors, baby monitors, leaky power lines, etc.',
       severity: 'warning',
+      causeI18n: { key: 'diagnosticsPanel.rfCause.nonLoraNoiseRfi' },
     });
   }
 
@@ -128,6 +136,7 @@ export function diagnoseConnectedNode(
       condition: '900MHz Industrial Interference',
       cause: 'Bursty high-power sources (Smart Meters, industrial telemetry, etc.).',
       severity: 'warning',
+      causeI18n: { key: 'diagnosticsPanel.rfCause.industrial900mhz' },
     });
   }
 
@@ -141,6 +150,7 @@ export function diagnoseConnectedNode(
       condition: 'Mesh Congestion',
       cause: 'Excessive redundant repeating of the same packets.',
       severity: 'warning',
+      causeI18n: { key: 'diagnosticsPanel.rfCause.meshCongestion' },
     });
   }
 
@@ -158,6 +168,7 @@ export function diagnoseConnectedNode(
       cause:
         'High channel load with elevated decode failures — concurrent transmitters may not hear each other, increasing collisions at your node.',
       severity: 'warning',
+      causeI18n: { key: 'diagnosticsPanel.rfCause.hiddenTerminalRisk' },
     });
   }
 
@@ -168,6 +179,7 @@ export function diagnoseConnectedNode(
       condition: 'LoRa Collision or Corruption',
       cause: 'Preamble detected but CRC/decode failed (most often non-Meshtastic LoRa traffic).',
       severity: 'warning',
+      causeI18n: { key: 'diagnosticsPanel.rfCause.loraCollisionCorruption' },
     });
   }
 
@@ -204,6 +216,7 @@ export function diagnoseOtherNode(
       condition: 'External Interference',
       cause: 'Nearby transmitter dominating the channel — your node backs off to avoid collisions.',
       severity: 'warning',
+      causeI18n: { key: 'diagnosticsPanel.rfCause.externalInterference' },
     });
   }
 
@@ -218,6 +231,7 @@ export function diagnoseOtherNode(
         'Broadband interference (faulty electronics, power-line noise, etc.) elevating the noise floor.',
       severity: 'warning',
       isLastHop: true,
+      causeI18n: { key: 'diagnosticsPanel.rfCause.widebandNoiseFloor' },
     });
   }
 
@@ -227,6 +241,7 @@ export function diagnoseOtherNode(
       cause: 'Node is too far away or poorly connected to the rest of the mesh.',
       severity: 'info',
       isLastHop: true,
+      causeI18n: { key: 'diagnosticsPanel.rfCause.fringeWeakCoverage' },
     });
   }
 

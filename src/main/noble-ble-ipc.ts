@@ -5,6 +5,9 @@ export interface NobleBleWriter {
   writeToRadio(sessionId: NobleSessionId, bytes: Buffer): Promise<void>;
 }
 
+// Error messages verified against @abandonware/noble ^1.9.2.
+// Noble does not expose a stable .code field on BLE errors, so we match messages.
+// If new Noble versions change these strings, update both the regex and the includes below.
 export function isExpectedNobleDisconnectError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
   const message = err.message.toLowerCase();

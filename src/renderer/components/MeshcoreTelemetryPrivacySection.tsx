@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../hooks/useMeshCore';
 import {
@@ -20,9 +21,11 @@ function TriStateRow({
   disabled,
   specificLabel,
   specificCount,
-  specificDescription,
+  specificPermissionPhraseKey,
   yesDescription,
   noDescription,
+  yesLabel,
+  noLabel,
 }: {
   title: string;
   groupName: string;
@@ -31,20 +34,27 @@ function TriStateRow({
   disabled: boolean;
   specificLabel: string;
   specificCount: number;
-  specificDescription: string;
+  /** i18n key under meshcoreTelemetryPrivacy for the trailing permission phrase */
+  specificPermissionPhraseKey:
+    | 'baseTelemetryPermission'
+    | 'locationPermission'
+    | 'environmentPermission';
   yesDescription: string;
   noDescription: string;
+  yesLabel: string;
+  noLabel: string;
 }) {
+  const { t } = useTranslation();
+  const permissionPhrase = t(`meshcoreTelemetryPrivacy.${specificPermissionPhraseKey}`);
+  const specificSub = `${t('meshcoreTelemetryPrivacy.contactCount', { count: specificCount })} ${permissionPhrase}`;
+
   const options: { id: MeshcoreTelemetryTriState; label: string; sub: string }[] = [
-    { id: 'deny', label: 'No', sub: noDescription },
-    { id: 'allow_all', label: 'Yes', sub: yesDescription },
+    { id: 'deny', label: noLabel, sub: noDescription },
+    { id: 'allow_all', label: yesLabel, sub: yesDescription },
     {
       id: 'allow_flags',
       label: specificLabel,
-      sub:
-        specificCount === 1
-          ? `1 contact ${specificDescription}`
-          : `${specificCount} contacts ${specificDescription}`,
+      sub: specificSub,
     },
   ];
 
@@ -103,6 +113,7 @@ export default function MeshcoreTelemetryPrivacySection({
     telemetryModeEnv: number;
   }) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [base, setBase] = useState<MeshcoreTelemetryTriState>(() =>
     meshcoreTelemetryModeToTriState(selfInfo.telemetryModeBase),
   );
@@ -128,10 +139,13 @@ export default function MeshcoreTelemetryPrivacySection({
     meshcoreTriStateToTelemetryMode(loc) !== selfInfo.telemetryModeLoc ||
     meshcoreTriStateToTelemetryMode(env) !== selfInfo.telemetryModeEnv;
 
+  const yes = t('common.yes');
+  const no = t('common.no');
+
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
-        <span>Telemetry privacy</span>
+        <span>{t('meshcoreTelemetryPrivacy.summary')}</span>
         <svg
           className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
           fill="none"
@@ -142,47 +156,48 @@ export default function MeshcoreTelemetryPrivacySection({
         </svg>
       </summary>
       <div className="space-y-4 px-4 pb-4">
-        <p className="text-muted text-xs">
-          Controls how your node responds to telemetry requests and what data is included (MeshCore
-          companion firmware). Per-contact permissions apply when you choose &quot;specific
-          contacts&quot;; edit contact flags from the reference MeshCore apps or a future contact
-          detail UI.
-        </p>
+        <p className="text-muted text-xs">{t('meshcoreTelemetryPrivacy.description')}</p>
         <TriStateRow
-          title="Allow telemetry requests?"
+          title={t('meshcoreTelemetryPrivacy.allowTelemetryTitle')}
           groupName="meshcore-telem-req"
           value={base}
           onChange={setBase}
           disabled={disabled || applying}
-          specificLabel="From specific contacts"
+          specificLabel={t('meshcoreTelemetryPrivacy.fromSpecificContacts')}
           specificCount={cBase}
-          specificDescription="have the base telemetry permission"
-          yesDescription="Telemetry requests will be allowed from everyone."
-          noDescription="Telemetry requests will be ignored."
+          specificPermissionPhraseKey="baseTelemetryPermission"
+          yesDescription={t('meshcoreTelemetryPrivacy.allowAllBase')}
+          noDescription={t('meshcoreTelemetryPrivacy.denyBase')}
+          yesLabel={yes}
+          noLabel={no}
         />
         <TriStateRow
-          title="Include location in your telemetry?"
+          title={t('meshcoreTelemetryPrivacy.includeLocationTitle')}
           groupName="meshcore-telem-loc"
           value={loc}
           onChange={setLoc}
           disabled={disabled || applying}
-          specificLabel="For specific contacts"
+          specificLabel={t('meshcoreTelemetryPrivacy.forSpecificContacts')}
           specificCount={cLoc}
-          specificDescription="have the telemetry location permission"
-          yesDescription="Location will be included in your telemetry."
-          noDescription="Location will be excluded from your telemetry."
+          specificPermissionPhraseKey="locationPermission"
+          yesDescription={t('meshcoreTelemetryPrivacy.allowAllLoc')}
+          noDescription={t('meshcoreTelemetryPrivacy.denyLoc')}
+          yesLabel={yes}
+          noLabel={no}
         />
         <TriStateRow
-          title="Include environment in your telemetry?"
+          title={t('meshcoreTelemetryPrivacy.includeEnvironmentTitle')}
           groupName="meshcore-telem-env"
           value={env}
           onChange={setEnv}
           disabled={disabled || applying}
-          specificLabel="For specific contacts"
+          specificLabel={t('meshcoreTelemetryPrivacy.forSpecificContacts')}
           specificCount={cEnv}
-          specificDescription="have the environment sensors permission"
-          yesDescription="Environment sensors will be included in your telemetry."
-          noDescription="Environment sensors will be excluded from your telemetry."
+          specificPermissionPhraseKey="environmentPermission"
+          yesDescription={t('meshcoreTelemetryPrivacy.allowAllEnv')}
+          noDescription={t('meshcoreTelemetryPrivacy.denyEnv')}
+          yesLabel={yes}
+          noLabel={no}
         />
         <button
           type="button"
@@ -196,7 +211,9 @@ export default function MeshcoreTelemetryPrivacySection({
           }
           className="bg-brand-green rounded-lg px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
         >
-          {applying ? 'Applying…' : 'Apply telemetry privacy'}
+          {applying
+            ? t('meshcoreTelemetryPrivacy.applying')
+            : t('meshcoreTelemetryPrivacy.applyButton')}
         </button>
       </div>
     </details>

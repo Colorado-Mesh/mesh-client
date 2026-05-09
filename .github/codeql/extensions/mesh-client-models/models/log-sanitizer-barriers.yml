@@ -19,3 +19,11 @@ extensions:
       - ['src/main/sanitize-log-message', 'Member[sanitizeLogMessage].ReturnValue', 'log-injection']
       - ['src/main/sanitize-log-message', 'Member[sanitizeForConsoleEcho].ReturnValue', 'log-injection']
       - ['src/main/sanitize-log-message', 'Member[sanitizeLogPayloadForDisk].ReturnValue', 'file-content-store']
+      # i18n auto-translate: translation API output is written under src/renderer/locales only.
+      - ['mesh-client', 'Member[sanitizeLocaleTranslationJsonFileBodyForDisk].ReturnValue', 'file-content-store']
+      - - mesh-client/scripts/i18n-auto-translate-lib.mjs
+        - Member[sanitizeLocaleTranslationJsonFileBodyForDisk].ReturnValue
+        - file-content-store
+      - - scripts/i18n-auto-translate-lib.mjs
+        - Member[sanitizeLocaleTranslationJsonFileBodyForDisk].ReturnValue
+        - file-content-store

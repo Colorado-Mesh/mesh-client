@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { MeshProtocol } from '../lib/types';
 
@@ -27,22 +28,22 @@ export function easeReadoutWipe(linear01: number): number {
   return x ** 1.85;
 }
 
-/** Short, inclusive phrases shown when the collapsed sidebar logo triggers the pulse. */
-export const INCLUSIVE_ONE_LINERS = [
-  'Stay on the air',
-  'Hello, operator',
-  'Thanks for meshing',
-  'Built for communities everywhere',
-  'Stay connected',
-  'Signals out',
-  'Glad you are here',
-  'Keep the mesh alive',
+/** i18n keys — resolved with `t()` in `SignalPropagation`. */
+export const INCLUSIVE_ONE_LINER_KEYS = [
+  'signalPropagation.oneLiners.stayOnTheAir',
+  'signalPropagation.oneLiners.helloOperator',
+  'signalPropagation.oneLiners.thanksForMeshing',
+  'signalPropagation.oneLiners.builtForCommunities',
+  'signalPropagation.oneLiners.stayConnected',
+  'signalPropagation.oneLiners.signalsOut',
+  'signalPropagation.oneLiners.gladYouAreHere',
+  'signalPropagation.oneLiners.keepTheMeshAlive',
 ] as const;
 
-export function pickInclusiveOneLiner(seed: number): string {
-  const n = INCLUSIVE_ONE_LINERS.length;
+export function pickInclusiveOneLinerKey(seed: number): (typeof INCLUSIVE_ONE_LINER_KEYS)[number] {
+  const n = INCLUSIVE_ONE_LINER_KEYS.length;
   const idx = ((seed % n) + n) % n;
-  return INCLUSIVE_ONE_LINERS[idx];
+  return INCLUSIVE_ONE_LINER_KEYS[idx];
 }
 
 export interface SignalPulseTheme {
@@ -124,6 +125,7 @@ export default function SignalPropagation({
   phraseSeed,
   onComplete,
 }: SignalPropagationProps) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef<number | null>(null);
@@ -131,7 +133,7 @@ export default function SignalPropagation({
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
 
-  const revealText = useMemo(() => pickInclusiveOneLiner(phraseSeed), [phraseSeed]);
+  const revealText = useMemo(() => t(pickInclusiveOneLinerKey(phraseSeed)), [phraseSeed, t]);
   const theme = useMemo(() => getSignalPulseTheme(protocol), [protocol]);
 
   useEffect(() => {

@@ -78,12 +78,13 @@ Adding a cross-boundary feature:
 1. `pnpm run format`: Prettier writes fixes
 2. `pnpm run lint:md`: Markdown fixes
 3. Re-stage staged files
-4. `pnpm run lint`
-5. `pnpm run typecheck`
-6. `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:licenses`
-7. `pnpm audit`
-8. `actionlint`, `yamllint`
-9. `pnpm run test:run`
+4. `pnpm run i18n:auto-translate`: fills missing translation keys; re-stages `src/renderer/locales/`
+5. `pnpm run lint`
+6. `pnpm run typecheck`
+7. `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:i18n`, `check:licenses`
+8. `pnpm audit`
+9. `actionlint`, `yamllint`
+10. `pnpm run test:run`
 
 Before PR: `pnpm run lint`, `typecheck`, `test:run`, plus any relevant `check:*`.
 
@@ -128,6 +129,16 @@ Meshtastic: `mqtt-manager.ts` (AES, protobuf, dedup). MeshCore: `meshcore-mqtt-a
 ### UI
 
 Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capabilities. Stores: module defaults; persist vs SQLite IPC as elsewhere.
+
+### i18n / Localization
+
+- **Framework:** i18next + react-i18next; static JSON bundles loaded at startup; `fallbackLng: 'en'`.
+- **Locale files:** `src/renderer/locales/{en,es,uk,de,zh,pt-BR,fr,it,pl,cs,ja,ru,nl,ko,tr,id}/translation.json` — English is source of truth (314 keys).
+- **Locale persistence:** `locale` key in `app_settings` SQLite table (canonical) and `mesh-client:appSettings` localStorage (fast startup read); reconciled in `App.tsx` on mount.
+- **Adding strings:** add to `src/renderer/locales/en/translation.json`, use `t('your.key')` in components; `check:i18n` enforces all call sites resolve to English keys.
+- **Auto-translate:** `pnpm run i18n:auto-translate` uses MyMemory (default) or LibreTranslate (`LIBRETRANSLATE_URL`). With git, the default run **only** fills keys that are **new in English vs `HEAD`** and still missing from each locale (pre-commit uses this). Use **`pnpm run i18n:auto-translate --all`** or **`I18N_TRANSLATE_ALL=1`** to machine-translate **every** key missing from a locale vs English (large runs). Existing entries in a locale file are never overwritten. MyMemory sends contact `info@coloradomesh.org` by default for the 50 k words/day quota; override with `MYMEMORY_EMAIL` if needed.
+- **Key check:** `pnpm run check:i18n` — hard fails on missing English keys; warns (does not fail) on incomplete locale coverage so rate-limit gaps don't block commits.
+- **Language selector:** `src/renderer/components/LanguageSelector.tsx` — globe-icon dropdown in the header; calls `i18n.changeLanguage()` + `mergeAppSetting('locale', ...)` + `electronAPI.appSettings.set('locale', ...)`.
 
 ### Common issues
 

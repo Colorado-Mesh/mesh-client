@@ -304,4 +304,34 @@ describe('buildMeshcoreChannelIncomingMessage', () => {
     expect(msg.replyPreviewText?.length).toBe(REPLY_PREVIEW_MAX_LEN + 1);
     expect(msg.replyPreviewText?.endsWith('…')).toBe(true);
   });
+
+  it('includes rxHops on channel message when provided', () => {
+    const msg = buildMeshcoreChannelIncomingMessage([], {
+      rawText: 'A: hi',
+      senderId: 1,
+      displayName: 'A',
+      channel: 0,
+      timestamp: 1,
+      receivedVia: 'rf',
+      rxHops: 2,
+    });
+    expect(msg.rxHops).toBe(2);
+  });
+});
+
+describe('buildMeshcoreDmIncomingMessage', () => {
+  it('includes rxHops when provided', () => {
+    const msg = buildMeshcoreDmIncomingMessage([], {
+      rawText: 'hello',
+      senderId: 5,
+      displayName: 'Bob',
+      timestamp: 1,
+      receivedVia: 'rf',
+      rxHops: 0,
+      peerNodeId: 5,
+      myNodeId: 9,
+      to: 9,
+    });
+    expect(msg.rxHops).toBe(0);
+  });
 });

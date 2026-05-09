@@ -108,7 +108,7 @@ class WrappedStatement {
   }
 
   run(...args: unknown[]): RunResult {
-    return (this.stmt.run as any)(...this.prep(args)) as RunResult;
+    return (this.stmt.run as (...a: unknown[]) => RunResult)(...this.prep(args));
   }
 
   *iterate(...args: unknown[]): Generator<Record<string, unknown>, void, unknown> {
@@ -120,11 +120,11 @@ class WrappedStatement {
   }
 
   get(...args: unknown[]): unknown {
-    return (this.stmt.get as any)(...this.prep(args));
+    return (this.stmt.get as (...a: unknown[]) => unknown)(...this.prep(args));
   }
 
   all(...args: unknown[]): unknown[] {
-    return (this.stmt.all as any)(...this.prep(args)) as unknown[];
+    return (this.stmt.all as (...a: unknown[]) => unknown[])(...this.prep(args));
   }
 }
 

@@ -11,6 +11,8 @@ export interface OurPosition {
   lat: number;
   lon: number;
   source: GpsSource;
+  /** Device-reported altitude in meters, when the radio path provided it. */
+  altitudeMeters?: number;
 }
 
 /**
@@ -21,6 +23,7 @@ export async function resolveOurPosition(
   deviceLon?: number | null,
   staticLat?: number,
   staticLon?: number,
+  deviceAltMeters?: number | null,
 ): Promise<OurPosition | null> {
   // 1. Device GPS — use if clearly non-zero
   if (
@@ -28,7 +31,11 @@ export async function resolveOurPosition(
     deviceLon != null &&
     (Math.abs(deviceLat) > 0.0001 || Math.abs(deviceLon) > 0.0001)
   ) {
-    return { lat: deviceLat, lon: deviceLon, source: 'device' };
+    const out: OurPosition = { lat: deviceLat, lon: deviceLon, source: 'device' };
+    if (typeof deviceAltMeters === 'number' && Number.isFinite(deviceAltMeters)) {
+      out.altitudeMeters = deviceAltMeters;
+    }
+    return out;
   }
 
   // 2. Static position — user-configured override (skips browser/IP lookup)

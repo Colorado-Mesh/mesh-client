@@ -7,8 +7,10 @@ vi.mock('electron', () => ({
 }));
 
 vi.mock('fs', () => ({
-  default: { writeFileSync: vi.fn() },
+  default: { writeFileSync: vi.fn(), renameSync: vi.fn(), rmSync: vi.fn() },
   writeFileSync: vi.fn(),
+  renameSync: vi.fn(),
+  rmSync: vi.fn(),
 }));
 
 vi.mock('os', () => ({
@@ -90,8 +92,12 @@ describe('generateDataPackage', () => {
     const result = await generateDataPackage(STUB_CERTS, STUB_SETTINGS);
     expect(result).toBe('/tmp/test-tak/tak-package.zip');
     expect(vi.mocked(fs.writeFileSync)).toHaveBeenCalledWith(
-      '/tmp/test-tak/tak-package.zip',
+      '/tmp/test-tak/tak-package.zip.tmp',
       expect.any(Buffer),
+    );
+    expect(vi.mocked(fs.renameSync)).toHaveBeenCalledWith(
+      '/tmp/test-tak/tak-package.zip.tmp',
+      '/tmp/test-tak/tak-package.zip',
     );
   });
 

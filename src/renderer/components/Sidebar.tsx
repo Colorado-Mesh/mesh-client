@@ -1,5 +1,10 @@
+import { useTranslation } from 'react-i18next';
+
 interface SidebarProps {
+  /** Translated tab labels shown in the sidebar */
   tabs: string[];
+  /** Stable English slot ids (same order as `tabs`) for icons and Chat badge; omit only in tests */
+  tabSlotIds?: string[];
   active: number;
   onChange: (index: number) => void;
   /** Unread message count for Chat tab badge; 0 hides badge */
@@ -260,6 +265,7 @@ function TabIcon({ name }: { name: string }) {
 
 export default function Sidebar({
   tabs,
+  tabSlotIds,
   active,
   onChange,
   chatUnread = 0,
@@ -267,28 +273,31 @@ export default function Sidebar({
   collapsed,
   onToggle,
 }: SidebarProps) {
+  const { t } = useTranslation();
   const safeActive = tabs.length === 0 ? 0 : Math.max(0, Math.min(active, tabs.length - 1));
+  const slotIds = tabSlotIds?.length === tabs.length ? tabSlotIds : tabs;
 
   return (
     <div className="bg-deep-black relative flex h-full w-full shrink-0 flex-col overflow-hidden">
       {/* Nav items */}
       <div
         role="tablist"
-        aria-label="Application panels"
+        aria-label={t('aria.applicationPanels')}
         aria-orientation="vertical"
         className="relative z-10 flex flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto py-2"
       >
-        {tabs.map((name, i) => {
+        {tabs.map((displayLabel, i) => {
+          const slotId = slotIds[i] ?? displayLabel;
           const isActive = safeActive === i;
           const isDisabled = disabledTabs?.has(i) ?? false;
-          const showChatBadge = name === 'Chat' && chatUnread > 0;
+          const showChatBadge = slotId === 'Chat' && chatUnread > 0;
           const tabAriaLabel = showChatBadge
-            ? `${name} ${chatUnread > 99 ? '99+' : chatUnread} unread`
-            : name;
+            ? `${displayLabel} ${chatUnread > 99 ? '99+' : chatUnread} unread`
+            : displayLabel;
 
           return (
             <button
-              key={`${i}-${name}`}
+              key={`${i}-${slotId}`}
               type="button"
               role="tab"
               id={`tab-${i}`}
@@ -299,7 +308,9 @@ export default function Sidebar({
               onClick={() => {
                 if (!isDisabled) onChange(i);
               }}
-              title={isDisabled ? 'Not available in this mode' : collapsed ? name : undefined}
+              title={
+                isDisabled ? t('sidebar.disabledTabTooltip') : collapsed ? displayLabel : undefined
+              }
               className={`relative mx-1 flex items-center gap-3 rounded-sm border-l-2 py-2.5 pr-3 pl-[14px] text-sm font-medium transition-colors ${
                 isDisabled
                   ? 'cursor-not-allowed border-transparent text-gray-600 opacity-40'
@@ -310,14 +321,14 @@ export default function Sidebar({
             >
               {/* Icon wrapper — relative so badge can anchor to it */}
               <span className="relative shrink-0">
-                <TabIcon name={name} />
+                <TabIcon name={slotId} />
                 {showChatBadge && (
                   <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                     {chatUnread > 99 ? '99+' : chatUnread}
                   </span>
                 )}
               </span>
-              {!collapsed && <span className="truncate">{name}</span>}
+              {!collapsed && <span className="truncate">{displayLabel}</span>}
             </button>
           );
         })}
@@ -327,7 +338,7 @@ export default function Sidebar({
       <button
         type="button"
         onClick={onToggle}
-        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-label={collapsed ? t('aria.expandSidebar') : t('aria.collapseSidebar')}
         aria-expanded={!collapsed}
         className="text-muted hover:bg-secondary-dark relative z-10 flex h-9 shrink-0 items-center justify-center border-t border-slate-800 transition-colors hover:text-gray-200"
       >

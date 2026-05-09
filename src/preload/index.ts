@@ -86,8 +86,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteNodesWithoutLongname: () => ipcRenderer.invoke('db:deleteNodesWithoutLongname'),
     prunePositionHistory: (days: number) => ipcRenderer.invoke('db:prunePositionHistory', days),
     clearNodePositions: () => ipcRenderer.invoke('db:clearNodePositions'),
-    updateMessageReceivedVia: (packetId: number) =>
-      ipcRenderer.invoke('db:updateMessageReceivedVia', packetId),
+    updateMessageReceivedVia: (packetId: number, rxHops?: number | null) =>
+      ipcRenderer.invoke('db:updateMessageReceivedVia', packetId, rxHops),
 
     getMeshcoreMessages: (channelIdx?: number, limit?: number) =>
       ipcRenderer.invoke('db:getMeshcoreMessages', channelIdx, limit),
@@ -109,6 +109,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       to_node?: number | null;
       received_via?: string | null;
       rx_packet_fingerprint?: string | null;
+      reply_preview_text?: string | null;
+      reply_preview_sender?: string | null;
+      rx_hops?: number | null;
     }) => ipcRenderer.invoke('db:saveMeshcoreMessage', message),
     saveMeshcoreContact: (contact: {
       node_id: number;
@@ -380,6 +383,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       channelName?: string;
       emoji?: number;
       replyId?: number;
+      publishJsonMirror: boolean;
     }) => ipcRenderer.invoke('mqtt:publish', args),
     publishNodeInfo: (args: {
       from: number;
@@ -387,6 +391,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       shortName: string;
       channelName?: string;
       hwModel?: number;
+      publishJsonMirror: boolean;
     }) => ipcRenderer.invoke('mqtt:publishNodeInfo', args),
     publishPosition: (args: {
       from: number;
@@ -395,7 +400,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
       latitudeI: number;
       longitudeI: number;
       altitude?: number;
+      publishJsonMirror: boolean;
     }) => ipcRenderer.invoke('mqtt:publishPosition', args),
+    publishWaypoint: (args: {
+      from: number;
+      to: number;
+      channel: number;
+      channelName: string;
+      publishJsonMirror: boolean;
+      waypoint: {
+        id: number;
+        latitudeI: number;
+        longitudeI: number;
+        name: string;
+        description?: string;
+        icon?: number;
+        lockedTo?: number;
+        expire?: number;
+      };
+    }) => ipcRenderer.invoke('mqtt:publishWaypoint', args),
     publishMeshcore: (args: {
       text: string;
       channelIdx: number;

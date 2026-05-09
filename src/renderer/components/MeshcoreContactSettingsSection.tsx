@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { MeshCoreSelfInfo } from '../hooks/useMeshCore';
 import {
@@ -9,14 +10,14 @@ import {
 } from '../lib/meshcoreContactAutoAdd';
 import { useToast } from './Toast';
 
-function parseMaxHopsInput(raw: string): { wire: number; error: string | null } {
-  const t = raw.trim();
-  if (t === '') return { wire: 0, error: null };
-  const n = Number(t);
+function parseMaxHopsInput(raw: string): { wire: number; invalid: boolean } {
+  const trimmed = raw.trim();
+  if (trimmed === '') return { wire: 0, invalid: false };
+  const n = Number(trimmed);
   if (!Number.isInteger(n) || n < 0 || n > 63) {
-    return { wire: 0, error: 'Enter a whole number from 0 to 63, or leave blank for no limit.' };
+    return { wire: 0, invalid: true };
   }
-  return { wire: n, error: null };
+  return { wire: n, invalid: false };
 }
 
 export default function MeshcoreContactSettingsSection({
@@ -51,6 +52,7 @@ export default function MeshcoreContactSettingsSection({
   onClearAllContacts?: () => Promise<void>;
 }) {
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const modeGroupId = useId();
   const [clearingAll, setClearingAll] = useState(false);
   const [autoAddAll, setAutoAddAll] = useState(!selfInfo.manualAddContacts);
@@ -76,9 +78,9 @@ export default function MeshcoreContactSettingsSection({
   }, [selfInfo.manualAddContacts, autoadd?.autoaddConfig, autoadd?.autoaddMaxHops]);
 
   const triggerApply = (overrides: Partial<Parameters<typeof onApply>[0]> = {}) => {
-    const { wire, error } = parseMaxHopsInput(maxHopsInput);
-    if (error) {
-      setHopsError(error);
+    const { wire, invalid } = parseMaxHopsInput(maxHopsInput);
+    if (invalid) {
+      setHopsError(t('meshcoreContactSettings.maxHopsInvalid'));
       return;
     }
     void onApply({
@@ -96,7 +98,7 @@ export default function MeshcoreContactSettingsSection({
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
-        <span>Contact management</span>
+        <span>{t('meshcoreContactSettings.contactManagement')}</span>
         <svg
           className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
           fill="none"
@@ -107,16 +109,14 @@ export default function MeshcoreContactSettingsSection({
         </svg>
       </summary>
       <div className="space-y-4 px-4 pb-4">
-        <p className="text-muted text-xs">
-          Controls how the companion radio adds contacts from heard adverts (MeshCore firmware).
-          Auto add selected types only applies when &quot;Auto add selected&quot; is on; overwrite
-          and max hops apply in both modes.
-        </p>
+        <p className="text-muted text-xs">{t('meshcoreContactSettings.intro')}</p>
         <fieldset
           className="space-y-3 rounded-lg border border-gray-600/80 p-3"
           disabled={disabled || applying}
         >
-          <legend className="px-1 text-sm font-medium text-gray-200">Auto add mode</legend>
+          <legend className="px-1 text-sm font-medium text-gray-200">
+            {t('meshcoreContactSettings.autoAddModeLegend')}
+          </legend>
           <div className="hover:bg-secondary-dark/50 flex gap-2 rounded-md p-1.5">
             <input
               id={`${modeGroupId}-all`}
@@ -134,9 +134,11 @@ export default function MeshcoreContactSettingsSection({
               htmlFor={`${modeGroupId}-all`}
               className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5"
             >
-              <span className="text-sm text-gray-200">Auto add all</span>
+              <span className="text-sm text-gray-200">
+                {t('meshcoreContactSettings.autoAddAllTitle')}
+              </span>
               <span className="text-muted text-xs">
-                All received adverts can be added to contacts.
+                {t('meshcoreContactSettings.autoAddAllDesc')}
               </span>
             </label>
           </div>
@@ -157,9 +159,11 @@ export default function MeshcoreContactSettingsSection({
               htmlFor={`${modeGroupId}-selected`}
               className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5"
             >
-              <span className="text-sm text-gray-200">Auto add selected</span>
+              <span className="text-sm text-gray-200">
+                {t('meshcoreContactSettings.autoAddSelectedTitle')}
+              </span>
               <span className="text-muted text-xs">
-                Only the contact types you enable below are auto-added.
+                {t('meshcoreContactSettings.autoAddSelectedDesc')}
               </span>
             </label>
           </div>
@@ -169,11 +173,13 @@ export default function MeshcoreContactSettingsSection({
           className={`space-y-2 rounded-lg border border-gray-600/60 p-3 ${autoAddAll ? 'opacity-50' : ''}`}
           aria-disabled={autoAddAll}
         >
-          <p className="text-xs font-medium text-gray-300">Auto-add types (selected mode only)</p>
+          <p className="text-xs font-medium text-gray-300">
+            {t('meshcoreContactSettings.autoAddTypesHeading')}
+          </p>
           {[
             {
               id: 'meshcore-autoadd-chat',
-              label: 'Chat users',
+              label: t('meshcoreContactSettings.typeChatUsers'),
               checked: chat,
               onChange: (val: boolean) => {
                 setChat(val);
@@ -182,7 +188,7 @@ export default function MeshcoreContactSettingsSection({
             },
             {
               id: 'meshcore-autoadd-rep',
-              label: 'Repeaters',
+              label: t('meshcoreContactSettings.typeRepeaters'),
               checked: repeater,
               onChange: (val: boolean) => {
                 setRepeater(val);
@@ -191,7 +197,7 @@ export default function MeshcoreContactSettingsSection({
             },
             {
               id: 'meshcore-autoadd-room',
-              label: 'Room servers',
+              label: t('meshcoreContactSettings.typeRoomServers'),
               checked: roomServer,
               onChange: (val: boolean) => {
                 setRoomServer(val);
@@ -200,7 +206,7 @@ export default function MeshcoreContactSettingsSection({
             },
             {
               id: 'meshcore-autoadd-sens',
-              label: 'Sensors',
+              label: t('meshcoreContactSettings.typeSensors'),
               checked: sensor,
               onChange: (val: boolean) => {
                 setSensor(val);
@@ -230,10 +236,10 @@ export default function MeshcoreContactSettingsSection({
         <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-600/60 p-3">
           <div>
             <label htmlFor="meshcore-overwrite-oldest" className="text-sm text-gray-200">
-              Overwrite oldest
+              {t('meshcoreContactSettings.overwriteOldestTitle')}
             </label>
             <p className="text-muted mt-0.5 text-xs">
-              When the contact list is full, replace the oldest non-favourite contact with new ones.
+              {t('meshcoreContactSettings.overwriteOldestHelp')}
             </p>
           </div>
           <input
@@ -247,24 +253,25 @@ export default function MeshcoreContactSettingsSection({
             }}
             disabled={disabled || applying}
             className="h-4 w-4 shrink-0"
-            aria-label="Overwrite oldest non-favourite contacts when full"
+            aria-label={t('meshcoreContactSettings.overwriteOldest')}
           />
         </div>
 
         <div className="space-y-1">
           <label htmlFor="meshcore-autoadd-max-hops" className="text-sm text-gray-200">
-            Auto add max hops
+            {t('meshcoreContactSettings.maxHopsLabel')}
           </label>
           <p className="text-muted text-xs">
-            Only auto-add if the advert path has at most this many hops. Leave blank for no limit.
-            (0–{Math.min(63, MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX)}; device may clamp to{' '}
-            {MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX}.)
+            {t('meshcoreContactSettings.maxHopsHelp', {
+              uiMax: Math.min(63, MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX),
+              wireMax: MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX,
+            })}
           </p>
           <input
             id="meshcore-autoadd-max-hops"
             type="text"
             inputMode="numeric"
-            placeholder="No limit"
+            placeholder={t('meshcoreContactSettings.noLimitPlaceholder')}
             value={maxHopsInput}
             onChange={(e) => {
               setMaxHopsInput(e.target.value);
@@ -292,13 +299,15 @@ export default function MeshcoreContactSettingsSection({
 
         <div className="space-y-3 border-t border-gray-600/80 pt-4">
           <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">
-            Contacts list (app)
+            {t('meshcoreContactSettings.contactsListAppHeading')}
           </p>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <span className="text-sm text-gray-200">Show refresh control</span>
+              <span className="text-sm text-gray-200">
+                {t('meshcoreContactSettings.showRefreshLabel')}
+              </span>
               <p className="text-muted mt-0.5 text-xs">
-                Show a refresh button on the Contacts tab (desktop substitute for pull-to-refresh).
+                {t('meshcoreContactSettings.showRefreshDesc')}
               </p>
             </div>
             <input
@@ -309,14 +318,16 @@ export default function MeshcoreContactSettingsSection({
               }}
               disabled={disabled || applying}
               className="h-4 w-4 shrink-0"
-              aria-label="Show refresh control on contacts list"
+              aria-label={t('meshcoreContactSettings.showRefreshControl')}
             />
           </div>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <span className="text-sm text-gray-200">Show public keys</span>
+              <span className="text-sm text-gray-200">
+                {t('meshcoreContactSettings.showPublicKeysLabel')}
+              </span>
               <p className="text-muted mt-0.5 text-xs">
-                Show each contact&apos;s public key under the name.
+                {t('meshcoreContactSettings.showPublicKeysDesc')}
               </p>
             </div>
             <input
@@ -327,45 +338,45 @@ export default function MeshcoreContactSettingsSection({
               }}
               disabled={disabled || applying}
               className="h-4 w-4 shrink-0"
-              aria-label="Show public keys in contacts list"
+              aria-label={t('meshcoreContactSettings.showPublicKeys')}
             />
           </div>
         </div>
 
         {onClearAllContacts ? (
           <div className="border-t border-red-900/50 pt-4">
-            <p className="text-muted mb-2 text-xs">
-              Remove every contact from the radio and clear the app&apos;s contact database. This
-              cannot be undone.
-            </p>
+            <p className="text-muted mb-2 text-xs">{t('meshcoreContactSettings.clearAllIntro')}</p>
             <button
               type="button"
               disabled={disabled || applying || clearingAll}
               onClick={() => {
-                if (
-                  !window.confirm(
-                    'Remove all contacts from the radio and clear local contact data?',
-                  )
-                ) {
+                if (!window.confirm(t('meshcoreContactSettings.clearAllContactsConfirm'))) {
                   return;
                 }
                 setClearingAll(true);
                 void onClearAllContacts()
                   .then(() => {
-                    addToast('All contacts cleared.', 'success');
+                    addToast(t('meshcoreContactSettings.allContactsCleared'), 'success');
                   })
                   .catch((e: unknown) => {
                     console.warn('[MeshcoreContactSettingsSection] clear all failed', e);
-                    addToast(e instanceof Error ? e.message : 'Failed to clear contacts.', 'error');
+                    addToast(
+                      e instanceof Error
+                        ? e.message
+                        : t('meshcoreContactSettings.failedClearContacts'),
+                      'error',
+                    );
                   })
                   .finally(() => {
                     setClearingAll(false);
                   });
               }}
               className="rounded-lg border border-red-700 bg-red-950/40 px-4 py-2 text-sm font-medium text-red-200 hover:bg-red-900/50 disabled:opacity-50"
-              aria-label="Clear all MeshCore contacts"
+              aria-label={t('meshcoreContactSettings.clearAllContacts')}
             >
-              {clearingAll ? 'Clearing…' : 'Clear all contacts'}
+              {clearingAll
+                ? t('meshcoreContactSettings.clearingContacts')
+                : t('meshcoreContactSettings.clearAllContactsButton')}
             </button>
           </div>
         ) : null}

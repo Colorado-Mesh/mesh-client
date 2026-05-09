@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useToast } from './Toast';
 
@@ -111,6 +112,7 @@ function ApplyButton({
   applying: boolean;
   disabled: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -118,7 +120,7 @@ function ApplyButton({
       disabled={disabled || applying}
       className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
     >
-      {applying ? 'Applying...' : label}
+      {applying ? t('securityPanel.applying') : label}
     </button>
   );
 }
@@ -134,6 +136,7 @@ function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-deep-black mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-700 p-6">
@@ -144,14 +147,14 @@ function ConfirmModal({
             onClick={onCancel}
             className="flex-1 rounded-lg bg-gray-700 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-600"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="button"
             onClick={onConfirm}
             className="flex-1 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
           >
-            Confirm
+            {t('common.confirm')}
           </button>
         </div>
       </div>
@@ -172,6 +175,7 @@ export default function SecurityPanel({
   onImportPrivateKey,
 }: Props) {
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const disabled = !isConnected;
 
   // ── Admin keys section state
@@ -257,20 +261,25 @@ export default function SecurityPanel({
         publicKey: new Uint8Array(32),
         privateKey: new Uint8Array(32),
       });
-      addToast('Key regeneration requested. Device will generate new keys.', 'success');
+      addToast(t('securityPanel.keyRegenRequested'), 'success');
     } catch (err) {
       console.warn('[SecurityPanel] handleRegenerate', err);
-      addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      addToast(
+        t('securityPanel.failed', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        'error',
+      );
     } finally {
       setApplyingRegen(false);
     }
-  }, [applyConfig, addToast]);
+  }, [applyConfig, addToast, t]);
 
   // ── Admin keys apply
   const handleApplyAdminKeys = useCallback(async () => {
     const errors = adminKeys.map((k) => {
       if (k.trim() === '') return null;
-      return isValidBase64Key(k) ? null : 'Must be a valid base64-encoded 32-byte key';
+      return isValidBase64Key(k) ? null : t('securityPanel.invalidAdminKey');
     });
     setAdminKeyErrors(errors);
     if (errors.some((e) => e !== null)) return;
@@ -279,28 +288,38 @@ export default function SecurityPanel({
     try {
       const parsed = adminKeys.filter((k) => k.trim() !== '').map((k) => base64ToBytes(k.trim()));
       await applyConfig({ adminKey: parsed });
-      addToast('Admin keys applied.', 'success');
+      addToast(t('securityPanel.adminKeysApplied'), 'success');
     } catch (err) {
       console.warn('[SecurityPanel] handleApplyAdminKeys', err);
-      addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      addToast(
+        t('securityPanel.failed', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        'error',
+      );
     } finally {
       setApplyingAdmin(false);
     }
-  }, [adminKeys, applyConfig, addToast]);
+  }, [adminKeys, applyConfig, addToast, t]);
 
   // ── Administration toggles apply
   const handleApplyToggles = useCallback(async () => {
     setApplyingToggles(true);
     try {
       await applyConfig({ isManaged, serialEnabled, debugLogApiEnabled, adminChannelEnabled });
-      addToast('Administration settings applied.', 'success');
+      addToast(t('securityPanel.adminSettingsApplied'), 'success');
     } catch (err) {
       console.warn('[SecurityPanel] handleApplyToggles', err);
-      addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      addToast(
+        t('securityPanel.failed', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        'error',
+      );
     } finally {
       setApplyingToggles(false);
     }
-  }, [isManaged, serialEnabled, debugLogApiEnabled, adminChannelEnabled, applyConfig, addToast]);
+  }, [isManaged, serialEnabled, debugLogApiEnabled, adminChannelEnabled, applyConfig, addToast, t]);
 
   // ── Key backup
   const handleBackup = useCallback(async () => {
@@ -315,14 +334,19 @@ export default function SecurityPanel({
       if (!encrypted) throw new Error('Encryption failed');
       localStorage.setItem(KEY_BACKUP_STORAGE_KEY, encrypted);
       setBackupAvailable(true);
-      addToast('Keys backed up to system keychain.', 'success');
+      addToast(t('securityPanel.keysBackedUp'), 'success');
     } catch (err) {
       console.warn('[SecurityPanel] handleBackup', err);
-      addToast(`Backup failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      addToast(
+        t('securityPanel.backupFailed', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        'error',
+      );
     } finally {
       setBackupInProgress(false);
     }
-  }, [securityConfig, safeStorageAvailable, addToast]);
+  }, [securityConfig, safeStorageAvailable, addToast, t]);
 
   // ── Key restore
   const handleRestore = useCallback(async () => {
@@ -337,14 +361,19 @@ export default function SecurityPanel({
       const publicKey = base64ToBytes(parsed.publicKey);
       const privateKey = base64ToBytes(parsed.privateKey);
       await applyConfig({ publicKey, privateKey });
-      addToast('Keys restored from backup.', 'success');
+      addToast(t('securityPanel.keysRestored'), 'success');
     } catch (err) {
       console.warn('[SecurityPanel] handleRestore', err);
-      addToast(`Restore failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      addToast(
+        t('securityPanel.restoreFailed', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        'error',
+      );
     } finally {
       setBackupInProgress(false);
     }
-  }, [safeStorageAvailable, applyConfig, addToast]);
+  }, [safeStorageAvailable, applyConfig, addToast, t]);
 
   // ── MeshCore: Sign data
   const handleSignData = useCallback(async () => {
@@ -356,17 +385,22 @@ export default function SecurityPanel({
       const signature = await onSignData(dataBytes);
       if (signature) {
         setSignDataResult(bytesToBase64(signature));
-        addToast('Data signed successfully.', 'success');
+        addToast(t('securityPanel.dataSigned'), 'success');
       } else {
-        addToast('Sign operation returned no result.', 'error');
+        addToast(t('securityPanel.signNoResult'), 'error');
       }
     } catch (err) {
       console.warn('[SecurityPanel] handleSignData', err);
-      addToast(`Sign failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      addToast(
+        t('securityPanel.signFailed', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        'error',
+      );
     } finally {
       setSignInProgress(false);
     }
-  }, [onSignData, signDataInput, addToast]);
+  }, [onSignData, signDataInput, addToast, t]);
 
   // ── MeshCore: Export private key
   const handleExportPrivateKey = useCallback(async () => {
@@ -376,17 +410,22 @@ export default function SecurityPanel({
       const key = await onExportPrivateKey();
       if (key) {
         setExportedPrivateKey(bytesToBase64(key));
-        addToast('Private key exported.', 'success');
+        addToast(t('securityPanel.privateKeyExported'), 'success');
       } else {
-        addToast('Export returned no key.', 'error');
+        addToast(t('securityPanel.exportNoKey'), 'error');
       }
     } catch (err) {
       console.warn('[SecurityPanel] handleExportPrivateKey', err);
-      addToast(`Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      addToast(
+        t('securityPanel.exportFailed', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        'error',
+      );
     } finally {
       setExportInProgress(false);
     }
-  }, [onExportPrivateKey, addToast]);
+  }, [onExportPrivateKey, addToast, t]);
 
   // ── MeshCore: Import private key
   const handleImportPrivateKey = useCallback(async () => {
@@ -396,18 +435,23 @@ export default function SecurityPanel({
       const keyBytes = base64ToBytes(importKeyInput.trim());
       const success = await onImportPrivateKey(keyBytes);
       if (success) {
-        addToast('Private key imported. Restart may be required.', 'success');
+        addToast(t('securityPanel.privateKeyImported'), 'success');
         setImportKeyInput('');
       } else {
-        addToast('Import failed.', 'error');
+        addToast(t('securityPanel.importFailed'), 'error');
       }
     } catch (err) {
       console.warn('[SecurityPanel] handleImportPrivateKey', err);
-      addToast(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      addToast(
+        t('securityPanel.importFailedWithMessage', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        'error',
+      );
     } finally {
       setImportInProgress(false);
     }
-  }, [onImportPrivateKey, importKeyInput, addToast]);
+  }, [onImportPrivateKey, importKeyInput, addToast, t]);
 
   const publicKeyB64 = securityConfig ? bytesToBase64(securityConfig.publicKey) : '';
   const privateKeyB64 = securityConfig ? bytesToBase64(securityConfig.privateKey) : '';
@@ -415,17 +459,15 @@ export default function SecurityPanel({
   return (
     <div className="w-full max-w-5xl space-y-6 p-4">
       {!isConnected && (
-        <p className="text-muted py-4 text-center text-sm">
-          Connect to a device to manage security settings.
-        </p>
+        <p className="text-muted py-4 text-center text-sm">{t('securityPanel.connectToManage')}</p>
       )}
 
       {/* ── DM Keys ─────────────────────────────────────────────── */}
       <section className="space-y-4">
-        <SectionHeader title="DM Keys" />
+        <SectionHeader title={t('securityPanel.sectionDmKeys')} />
         <div className="space-y-1">
           <label htmlFor="security-public-key" className="text-muted text-sm">
-            Public Key
+            {t('securityPanel.publicKeyLabel')}
           </label>
           <input
             id="security-public-key"
@@ -437,7 +479,7 @@ export default function SecurityPanel({
         </div>
         <div className="space-y-1">
           <label htmlFor="security-private-key" className="text-muted text-sm">
-            Private Key
+            {t('securityPanel.privateKeyLabel')}
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -455,12 +497,10 @@ export default function SecurityPanel({
               disabled={disabled}
               className="text-muted px-3 py-2 text-xs hover:text-gray-300 disabled:opacity-50"
             >
-              {showPrivateKey ? 'Hide' : 'Show'}
+              {showPrivateKey ? t('common.hide') : t('common.show')}
             </button>
           </div>
-          <p className="text-muted text-xs">
-            Keep your private key secret. It is used to encrypt direct messages.
-          </p>
+          <p className="text-muted text-xs">{t('securityPanel.privateKeyHint')}</p>
         </div>
         <button
           type="button"
@@ -470,16 +510,15 @@ export default function SecurityPanel({
           disabled={disabled || applyingRegen || !securityConfig}
           className="w-full rounded-lg border border-yellow-700/60 bg-yellow-700/40 px-4 py-2 text-sm font-medium text-yellow-300 transition-colors hover:bg-yellow-700/60 disabled:opacity-50"
         >
-          {applyingRegen ? 'Regenerating...' : 'Regenerate Keys'}
+          {applyingRegen ? t('securityPanel.regeneratingKeys') : t('securityPanel.regenerateKeys')}
         </button>
       </section>
 
       {/* ── Admin Keys ──────────────────────────────────────────── */}
       <section className="space-y-4">
-        <SectionHeader title="Admin Keys" />
+        <SectionHeader title={t('securityPanel.sectionAdminKeys')} />
         <p className="text-muted text-xs">
-          Up to {MAX_ADMIN_KEYS} public keys authorized to send admin commands to this device. Each
-          must be a base64-encoded 32-byte Curve25519 public key.
+          {t('securityPanel.adminKeysIntro', { max: MAX_ADMIN_KEYS })}
         </p>
         <div className="space-y-3">
           {adminKeys.map((key, i) => (
@@ -497,9 +536,9 @@ export default function SecurityPanel({
                     setAdminKeyErrors(errs);
                   }}
                   disabled={disabled}
-                  placeholder="Base64-encoded 32-byte public key"
+                  placeholder={t('securityPanel.adminKeyPlaceholder')}
                   className="bg-secondary-dark focus:border-brand-green flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
-                  aria-label={`Admin key ${i + 1}`}
+                  aria-label={t('securityPanel.adminKeyLabel', { number: i + 1 })}
                 />
                 <button
                   type="button"
@@ -509,9 +548,9 @@ export default function SecurityPanel({
                   }}
                   disabled={disabled}
                   className="px-2 py-2 text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
-                  aria-label={`Remove admin key ${i + 1}`}
+                  aria-label={t('securityPanel.removeAdminKey', { number: i + 1 })}
                 >
-                  Remove
+                  {t('securityPanel.removeAdminKeyButton')}
                 </button>
               </div>
               {adminKeyErrors[i] && <p className="text-xs text-red-400">{adminKeyErrors[i]}</p>}
@@ -528,11 +567,11 @@ export default function SecurityPanel({
             disabled={disabled}
             className="text-muted w-full rounded-lg border border-dashed border-gray-600 px-4 py-2 text-sm transition-colors hover:border-gray-500 hover:text-gray-300 disabled:opacity-50"
           >
-            + Add Admin Key
+            {t('securityPanel.addAdminKey')}
           </button>
         )}
         <ApplyButton
-          label="Apply Admin Keys"
+          label={t('securityPanel.applyAdminKeys')}
           onClick={() => {
             void handleApplyAdminKeys();
           }}
@@ -543,37 +582,37 @@ export default function SecurityPanel({
 
       {/* ── Administration Settings ──────────────────────────────── */}
       <section className="space-y-4">
-        <SectionHeader title="Administration Settings" />
+        <SectionHeader title={t('securityPanel.sectionAdminSettings')} />
         <ConfigToggle
-          label="Managed Device"
+          label={t('securityPanel.managedDevice')}
           checked={isManaged}
           onChange={setIsManaged}
           disabled={disabled}
-          description="Device is managed by a mesh administrator."
+          description={t('securityPanel.managedDeviceDesc')}
         />
         <ConfigToggle
-          label="Serial Console"
+          label={t('securityPanel.serialConsole')}
           checked={serialEnabled}
           onChange={setSerialEnabled}
           disabled={disabled}
-          description="Enable serial console over the Stream API."
+          description={t('securityPanel.serialConsoleDesc')}
         />
         <ConfigToggle
-          label="Debug Log API"
+          label={t('securityPanel.debugLogApi')}
           checked={debugLogApiEnabled}
           onChange={setDebugLogApiEnabled}
           disabled={disabled}
-          description="Output live debug logging over serial or Bluetooth."
+          description={t('securityPanel.debugLogApiDesc')}
         />
         <ConfigToggle
-          label="Admin Channel (insecure)"
+          label={t('securityPanel.adminChannel')}
           checked={adminChannelEnabled}
           onChange={setAdminChannelEnabled}
           disabled={disabled}
-          description="Allow incoming device control over the insecure legacy admin channel."
+          description={t('securityPanel.adminChannelDesc')}
         />
         <ApplyButton
-          label="Apply Settings"
+          label={t('securityPanel.applySettings')}
           onClick={() => {
             void handleApplyToggles();
           }}
@@ -584,24 +623,20 @@ export default function SecurityPanel({
 
       {/* ── Key Backup / Restore ─────────────────────────────────── */}
       <section className="space-y-4">
-        <SectionHeader title="Key Backup / Restore" />
+        <SectionHeader title={t('securityPanel.sectionKeyBackup')} />
         {safeStorageAvailable === false && (
-          <p className="text-xs text-yellow-400">
-            System keychain encryption is not available on this platform. Backup and restore are
-            disabled.
-          </p>
+          <p className="text-xs text-yellow-400">{t('securityPanel.keyBackupUnavailable')}</p>
         )}
         {safeStorageAvailable !== false && (
           <>
-            <p className="text-muted text-xs">
-              Back up your DM keys to the system keychain (encrypted). You can restore them to the
-              device at any time.
-            </p>
+            <p className="text-muted text-xs">{t('securityPanel.keyBackupDesc')}</p>
             <div className="text-muted flex items-center gap-2 text-xs">
               <span
                 className={`h-2 w-2 rounded-full ${backupAvailable ? 'bg-readable-green' : 'bg-gray-600'}`}
               />
-              {backupAvailable ? 'Backup available' : 'No backup stored'}
+              {backupAvailable
+                ? t('securityPanel.backupAvailable')
+                : t('securityPanel.noBackupStored')}
             </div>
             <div className="flex gap-3">
               <button
@@ -612,7 +647,7 @@ export default function SecurityPanel({
                 disabled={disabled || backupInProgress || !securityConfig}
                 className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
               >
-                {backupInProgress ? 'Working...' : 'Backup Keys'}
+                {backupInProgress ? t('securityPanel.working') : t('securityPanel.backupKeys')}
               </button>
               <button
                 type="button"
@@ -622,7 +657,7 @@ export default function SecurityPanel({
                 disabled={disabled || backupInProgress || !backupAvailable}
                 className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
               >
-                {backupInProgress ? 'Working...' : 'Restore Keys'}
+                {backupInProgress ? t('securityPanel.working') : t('securityPanel.restoreKeys')}
               </button>
             </div>
           </>
@@ -632,16 +667,14 @@ export default function SecurityPanel({
       {/* ── MeshCore Crypto Operations ───────────────────────────────── */}
       {protocol === 'meshcore' && (onSignData || onExportPrivateKey || onImportPrivateKey) && (
         <section className="space-y-4">
-          <SectionHeader title="MeshCore Cryptography" />
-          <p className="text-muted text-xs">
-            Sign data with your device key, or export/import your private key for backup.
-          </p>
+          <SectionHeader title={t('securityPanel.sectionMeshcoreCrypto')} />
+          <p className="text-muted text-xs">{t('securityPanel.meshcoreCryptoDesc')}</p>
 
           {/* Sign Data */}
           {onSignData && (
             <div className="space-y-2">
               <label htmlFor="meshcore-sign-input" className="text-muted text-sm">
-                Sign Data
+                {t('securityPanel.signDataLabel')}
               </label>
               <textarea
                 id="meshcore-sign-input"
@@ -649,7 +682,7 @@ export default function SecurityPanel({
                 onChange={(e) => {
                   setSignDataInput(e.target.value);
                 }}
-                placeholder="Enter text to sign..."
+                placeholder={t('securityPanel.signTextPlaceholder')}
                 disabled={disabled || signInProgress}
                 className="bg-secondary-dark focus:ring-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:ring-1 focus:outline-none disabled:opacity-50"
                 rows={2}
@@ -662,11 +695,13 @@ export default function SecurityPanel({
                 disabled={disabled || signInProgress || !signDataInput.trim()}
                 className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
               >
-                {signInProgress ? 'Signing...' : 'Sign Data'}
+                {signInProgress ? t('securityPanel.signing') : t('securityPanel.signDataButton')}
               </button>
               {signDataResult && (
                 <div className="space-y-1">
-                  <span className="text-muted text-xs">Signature (Base64)</span>
+                  <span className="text-muted text-xs">
+                    {t('securityPanel.signatureBase64Label')}
+                  </span>
                   <div className="bg-secondary-dark rounded border border-gray-600 p-2 font-mono text-xs break-all text-gray-200">
                     {signDataResult}
                   </div>
@@ -686,17 +721,19 @@ export default function SecurityPanel({
                 disabled={disabled || exportInProgress}
                 className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
               >
-                {exportInProgress ? 'Exporting...' : 'Export Private Key'}
+                {exportInProgress
+                  ? t('securityPanel.exportingPrivateKey')
+                  : t('securityPanel.exportPrivateKeyButton')}
               </button>
               {exportedPrivateKey && (
                 <div className="space-y-1">
-                  <span className="text-muted text-xs">Private Key (Base64)</span>
+                  <span className="text-muted text-xs">
+                    {t('securityPanel.privateKeyBase64Label')}
+                  </span>
                   <div className="bg-secondary-dark rounded border border-gray-600 p-2 font-mono text-xs break-all text-gray-200">
                     {exportedPrivateKey}
                   </div>
-                  <p className="text-xs text-yellow-400">
-                    Keep this key secure. Anyone with access can decrypt your private messages.
-                  </p>
+                  <p className="text-xs text-yellow-400">{t('securityPanel.exportKeyWarning')}</p>
                 </div>
               )}
             </div>
@@ -706,7 +743,7 @@ export default function SecurityPanel({
           {onImportPrivateKey && (
             <div className="space-y-2">
               <label htmlFor="meshcore-import-key" className="text-muted text-sm">
-                Import Private Key
+                {t('securityPanel.importPrivateKeyLabel')}
               </label>
               <textarea
                 id="meshcore-import-key"
@@ -714,7 +751,7 @@ export default function SecurityPanel({
                 onChange={(e) => {
                   setImportKeyInput(e.target.value);
                 }}
-                placeholder="Paste base64-encoded private key..."
+                placeholder={t('securityPanel.importKeyPlaceholder')}
                 disabled={disabled || importInProgress}
                 className="bg-secondary-dark focus:ring-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:ring-1 focus:outline-none disabled:opacity-50"
                 rows={2}
@@ -727,7 +764,9 @@ export default function SecurityPanel({
                 disabled={disabled || importInProgress || !importKeyInput.trim()}
                 className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
               >
-                {importInProgress ? 'Importing...' : 'Import Private Key'}
+                {importInProgress
+                  ? t('securityPanel.importingPrivateKey')
+                  : t('securityPanel.importPrivateKeyButton')}
               </button>
             </div>
           )}
@@ -736,7 +775,7 @@ export default function SecurityPanel({
 
       {pendingRegenerate && (
         <ConfirmModal
-          message="Regenerating keys will replace your current DM public and private keys. Any existing encrypted messages will no longer be decryptable. Are you sure?"
+          message={t('securityPanel.regenerateKeysConfirm')}
           onConfirm={() => {
             void handleRegenerate();
           }}

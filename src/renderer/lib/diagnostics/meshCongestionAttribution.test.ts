@@ -81,6 +81,6 @@ describe('meshCongestionDetailLines alwaysIncludeRoutingAnomalies', () => {
     const lines = meshCongestionDetailLines(attr, {
       alwaysIncludeRoutingAnomalies: true,
     });
-    expect(lines.some((l) => l.includes('routing anomalies'))).toBe(true);
+    expect(lines.some((l) => l.key === 'routingAnomalies')).toBe(true);
   });
 });

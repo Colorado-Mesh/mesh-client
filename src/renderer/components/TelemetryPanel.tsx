@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   CartesianGrid,
   Legend,
@@ -46,6 +47,7 @@ export default function TelemetryPanel({
   capabilities,
   meshcorePacketStats,
 }: Props) {
+  const { t } = useTranslation();
   const showEnvironment = capabilities?.hasEnvironmentTelemetry !== false;
   const showPacketStats = capabilities?.hasRfStats === true && meshcorePacketStats != null;
   const chartData = useMemo(
@@ -183,12 +185,12 @@ export default function TelemetryPanel({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-200">Telemetry</h2>
+        <h2 className="text-xl font-semibold text-gray-200">{t('telemetryPanel.title')}</h2>
         <div className="flex items-center gap-2">
           {showEnvironment && hasTemp && (
             <button
               onClick={onToggleFahrenheit}
-              title="Toggle temperature unit"
+              title={t('telemetryPanel.toggleTempUnit')}
               className="rounded bg-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-600"
             >
               {useFahrenheit ? '°F' : '°C'}
@@ -200,7 +202,7 @@ export default function TelemetryPanel({
             <button
               onClick={handleExportCsv}
               className="flex items-center gap-1.5 rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
-              title="Export telemetry data as CSV"
+              title={t('telemetryPanel.exportCsv')}
             >
               <svg
                 className="h-4 w-4"
@@ -236,7 +238,9 @@ export default function TelemetryPanel({
           {/* Battery / Voltage Chart */}
           {hasBatteryData && (
             <div className="bg-deep-black rounded-lg p-4">
-              <h3 className="text-muted mb-3 text-sm font-medium">Battery & Voltage</h3>
+              <h3 className="text-muted mb-3 text-sm font-medium">
+                {t('telemetryPanel.sectionBatteryVoltage')}
+              </h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -278,7 +282,7 @@ export default function TelemetryPanel({
                     yAxisId="battery"
                     type="monotone"
                     dataKey="battery"
-                    name="Battery %"
+                    name={t('telemetryPanel.seriesBatteryPct')}
                     stroke="#3b82f6"
                     strokeWidth={2}
                     dot={false}
@@ -288,7 +292,7 @@ export default function TelemetryPanel({
                     yAxisId="voltage"
                     type="monotone"
                     dataKey="voltage"
-                    name="Voltage"
+                    name={t('telemetryPanel.seriesVoltage')}
                     stroke="#8b5cf6"
                     strokeWidth={2}
                     dot={false}
@@ -302,7 +306,9 @@ export default function TelemetryPanel({
           {/* Signal Quality Chart */}
           {hasSignalData && (
             <div className="bg-deep-black rounded-lg p-4">
-              <h3 className="text-muted mb-3 text-sm font-medium">Signal Quality</h3>
+              <h3 className="text-muted mb-3 text-sm font-medium">
+                {t('telemetryPanel.sectionSignalQuality')}
+              </h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={signalChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -342,7 +348,7 @@ export default function TelemetryPanel({
                     yAxisId="snr"
                     type="monotone"
                     dataKey="snr"
-                    name="SNR"
+                    name={t('telemetryPanel.seriesSnr')}
                     stroke="#f97316"
                     strokeWidth={2}
                     dot={false}
@@ -352,7 +358,7 @@ export default function TelemetryPanel({
                     yAxisId="rssi"
                     type="monotone"
                     dataKey="rssi"
-                    name="RSSI"
+                    name={t('telemetryPanel.seriesRssi')}
                     stroke="#3b82f6"
                     strokeWidth={2}
                     dot={false}
@@ -414,7 +420,11 @@ export default function TelemetryPanel({
                       yAxisId="temp"
                       type="monotone"
                       dataKey="temperature"
-                      name={useFahrenheit ? 'Temp °F' : 'Temp °C'}
+                      name={
+                        useFahrenheit
+                          ? t('telemetryPanel.seriesTempF')
+                          : t('telemetryPanel.seriesTempC')
+                      }
                       stroke="#f59e0b"
                       strokeWidth={2}
                       dot={false}
@@ -426,7 +436,7 @@ export default function TelemetryPanel({
                       yAxisId="humidity"
                       type="monotone"
                       dataKey="humidity"
-                      name="Humidity %"
+                      name={t('telemetryPanel.seriesHumidityPct')}
                       stroke="#06b6d4"
                       strokeWidth={2}
                       dot={false}
@@ -441,7 +451,9 @@ export default function TelemetryPanel({
           {/* Barometric Pressure Chart */}
           {showEnvironment && hasPressure && (
             <div className="bg-deep-black rounded-lg p-4">
-              <h3 className="text-muted mb-3 text-sm font-medium">Barometric Pressure</h3>
+              <h3 className="text-muted mb-3 text-sm font-medium">
+                {t('telemetryPanel.sectionBarometricPressure')}
+              </h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={envChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -469,7 +481,7 @@ export default function TelemetryPanel({
                     yAxisId="pressure"
                     type="monotone"
                     dataKey="pressure"
-                    name="Pressure hPa"
+                    name={t('telemetryPanel.seriesPressureHpa')}
                     stroke="#a78bfa"
                     strokeWidth={2}
                     dot={false}
@@ -483,7 +495,9 @@ export default function TelemetryPanel({
           {/* Air Quality (IAQ) Chart */}
           {showEnvironment && hasIaq && (
             <div className="bg-deep-black rounded-lg p-4">
-              <h3 className="text-muted mb-3 text-sm font-medium">Air Quality (IAQ)</h3>
+              <h3 className="text-muted mb-3 text-sm font-medium">
+                {t('telemetryPanel.sectionAirQuality')}
+              </h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={envChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -512,7 +526,7 @@ export default function TelemetryPanel({
                     yAxisId="iaq"
                     type="monotone"
                     dataKey="iaq"
-                    name="IAQ (0–500)"
+                    name={t('telemetryPanel.seriesIaq')}
                     stroke="#34d399"
                     strokeWidth={2}
                     dot={false}
@@ -526,52 +540,59 @@ export default function TelemetryPanel({
           {/* MeshCore Packet Stats Chart */}
           {showPacketStats && (
             <div className="bg-deep-black rounded-lg p-4">
-              <h3 className="text-muted mb-3 text-sm font-medium">Packets (MeshCore)</h3>
+              <h3 className="text-muted mb-3 text-sm font-medium">
+                {t('telemetryPanel.sectionPacketsMeshCore')}
+              </h3>
               <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-cyan-400">{meshcorePacketStats.sent}</div>
-                  <div className="text-xs text-gray-500">Sent</div>
+                  <div className="text-xs text-gray-500">{t('telemetryPanel.statSent')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-400">
                     {meshcorePacketStats.recv}
                   </div>
-                  <div className="text-xs text-gray-500">Received</div>
+                  <div className="text-xs text-gray-500">{t('telemetryPanel.statReceived')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-cyan-600">
                     {meshcorePacketStats.nSentFlood}
                   </div>
-                  <div className="text-xs text-gray-500">Flood</div>
+                  <div className="text-xs text-gray-500">{t('telemetryPanel.statFlood')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-cyan-600">
                     {meshcorePacketStats.nSentDirect}
                   </div>
-                  <div className="text-xs text-gray-500">Direct</div>
+                  <div className="text-xs text-gray-500">{t('telemetryPanel.statDirect')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-purple-600">
                     {meshcorePacketStats.nRecvFlood}
                   </div>
-                  <div className="text-xs text-gray-500">Flood</div>
+                  <div className="text-xs text-gray-500">{t('telemetryPanel.statFlood')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-purple-600">
                     {meshcorePacketStats.nRecvDirect}
                   </div>
-                  <div className="text-xs text-gray-500">Direct</div>
+                  <div className="text-xs text-gray-500">{t('telemetryPanel.statDirect')}</div>
                 </div>
               </div>
             </div>
           )}
 
           <div className="text-center text-xs text-gray-600">
-            Battery: {telemetry.length} pts &nbsp;·&nbsp; Signal: {signalTelemetry.length} pts
+            {t('telemetryPanel.footerBattery', { count: telemetry.length })} &nbsp;·&nbsp;{' '}
+            {t('telemetryPanel.footerSignal', { count: signalTelemetry.length })}
             {environmentTelemetry.length > 0 && (
-              <> &nbsp;·&nbsp; Env: {environmentTelemetry.length} pts</>
+              <>
+                {' '}
+                &nbsp;·&nbsp;{' '}
+                {t('telemetryPanel.footerEnv', { count: environmentTelemetry.length })}
+              </>
             )}{' '}
-            (max 50 each)
+            {t('telemetryPanel.footerMax')}
           </div>
         </>
       )}

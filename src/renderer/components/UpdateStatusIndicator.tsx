@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import type { UpdateState } from '../App';
 
 interface Props {
@@ -110,6 +112,7 @@ export default function UpdateStatusIndicator({
   onInstall,
   onViewRelease,
 }: Props) {
+  const { t } = useTranslation();
   const { phase, version, isPackaged, isMac, percent } = updateState;
   const useReleasePage = !isPackaged || isMac || window.electronAPI.getPlatform() === 'darwin';
 
@@ -122,7 +125,7 @@ export default function UpdateStatusIndicator({
       {phase === 'idle' && (
         <>
           <IconSpinner className="h-3.5 w-3.5 text-gray-400" />
-          <span aria-busy="true">Checking…</span>
+          <span aria-busy="true">{t('updateStatus.checking')}</span>
         </>
       )}
 
@@ -131,10 +134,10 @@ export default function UpdateStatusIndicator({
           type="button"
           onClick={onCheck}
           className="font-inherit inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-gray-300 transition-colors hover:text-gray-100"
-          title="Check for updates"
+          title={t('updateStatus.checkForUpdates')}
         >
           <IconUpToDate />
-          <span>Up to date</span>
+          <span>{t('updateStatus.upToDate')}</span>
         </button>
       )}
 
@@ -147,15 +150,17 @@ export default function UpdateStatusIndicator({
           {version != null ? (
             <span className="text-amber-300 tabular-nums">v{version}</span>
           ) : (
-            <span className="text-amber-300">Update</span>
+            <span className="text-amber-300">{t('updateStatus.update')}</span>
           )}
           <button
             type="button"
             onClick={useReleasePage ? onViewRelease : onDownload}
-            title={useReleasePage ? 'View release' : 'Download update'}
+            title={
+              useReleasePage ? t('updateStatus.viewReleaseTitle') : t('updateStatus.downloadTitle')
+            }
             className="rounded border border-amber-600 bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-200 transition-colors hover:border-amber-500 hover:text-amber-100"
           >
-            {useReleasePage ? 'View Release' : 'Download'}
+            {useReleasePage ? t('updateStatus.viewRelease') : t('updateStatus.download')}
           </button>
         </span>
       )}
@@ -176,8 +181,13 @@ export default function UpdateStatusIndicator({
       {phase === 'ready' && (
         <span className="inline-flex min-w-0 items-center gap-1">
           <IconRestart />
-          <button type="button" onClick={onInstall} className={linkBtn} title="Restart and install">
-            Restart
+          <button
+            type="button"
+            onClick={onInstall}
+            className={linkBtn}
+            title={t('updateStatus.restartTitle')}
+          >
+            {t('updateStatus.restart')}
           </button>
         </span>
       )}
@@ -187,10 +197,10 @@ export default function UpdateStatusIndicator({
           type="button"
           onClick={onCheck}
           className="font-inherit inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-gray-300 transition-colors hover:text-gray-100"
-          title="Retry update check"
+          title={t('updateStatus.retryCheck')}
         >
           <IconWarning />
-          <span className="text-amber-500/90">Update error</span>
+          <span className="text-amber-500/90">{t('updateStatus.updateError')}</span>
         </button>
       )}
     </span>

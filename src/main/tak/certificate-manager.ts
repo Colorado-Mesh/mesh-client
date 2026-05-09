@@ -132,12 +132,29 @@ export async function loadOrGenerateCerts(serverName: string): Promise<CertBundl
     clientKey: forge.pki.privateKeyToPem(clientKeyPair.privateKey),
   };
 
-  fs.writeFileSync(paths.caCert, bundle.caCert);
-  fs.writeFileSync(paths.caKey, bundle.caKey);
-  fs.writeFileSync(paths.serverCert, bundle.serverCert);
-  fs.writeFileSync(paths.serverKey, bundle.serverKey);
-  fs.writeFileSync(paths.clientCert, bundle.clientCert);
-  fs.writeFileSync(paths.clientKey, bundle.clientKey);
+  const tmpPaths = Object.fromEntries(
+    Object.entries(paths).map(([k, v]) => [k, v + '.tmp']),
+  ) as typeof paths;
+  try {
+    fs.writeFileSync(tmpPaths.caCert, bundle.caCert);
+    fs.writeFileSync(tmpPaths.caKey, bundle.caKey);
+    fs.writeFileSync(tmpPaths.serverCert, bundle.serverCert);
+    fs.writeFileSync(tmpPaths.serverKey, bundle.serverKey);
+    fs.writeFileSync(tmpPaths.clientCert, bundle.clientCert);
+    fs.writeFileSync(tmpPaths.clientKey, bundle.clientKey);
+    for (const [key, tmpPath] of Object.entries(tmpPaths)) {
+      fs.renameSync(tmpPath, paths[key as keyof typeof paths]);
+    }
+  } catch (e) {
+    for (const tmpPath of Object.values(tmpPaths)) {
+      try {
+        fs.rmSync(tmpPath, { force: true });
+      } catch {
+        // catch-no-log-ok best-effort cleanup
+      }
+    }
+    throw e;
+  }
 
   return bundle;
 }

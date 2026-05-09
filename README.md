@@ -1,6 +1,6 @@
 # Mesh-Client
 
-> Cross-platform **Electron** desktop client for **Meshtastic** and **MeshCore** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, and **keyboard-first** workflows.
+> Cross-platform **Electron** desktop client for **Meshtastic** and **MeshCore** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, and **keyboard-first** workflows.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
@@ -162,6 +162,12 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - **Updates**: permanent status in the footer (up to date, update available, errors, download progress, etc.); automatic check runs a few seconds after every launch; **Check for Updates…** in the app menu (macOS) or **Help** (Windows/Linux), or tap **Up to date** in the footer to re-check; Windows/Linux packaged builds can download in-app, macOS and dev builds open the GitHub release page
 - System tray with live unread badge; app stays accessible when window is closed
 - Persistent SQLite storage; DB export/import/clear in the App tab; Clear GPS Data and Reset Diagnostics without a full DB wipe
+
+**Localization**
+
+- **16 languages**: English, Spanish, Ukrainian, German, Chinese (Simplified), Portuguese (Brazilian), French, Italian, Polish, Czech, Japanese, Russian, Dutch, Korean, Turkish, and Indonesian; select from the globe icon in the header
+- Language preference persists across restarts (stored in SQLite + localStorage); falls back to English for any untranslated string
+- Translations are static JSON bundles — no network calls at runtime; works fully offline
 
 **Accessibility**
 
@@ -355,17 +361,18 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 
 ### Tech Stack
 
-| Component  | Technology                                                                                                                         |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop    | Electron                                                                                                                           |
-| UI         | React 19 + TypeScript 6 + Zustand                                                                                                  |
-| Styling    | Tailwind CSS v4                                                                                                                    |
-| Meshtastic | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble (macOS/Windows) and Web Bluetooth (Linux) |
-| MeshCore   | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                |
-| Maps       | Leaflet + OpenStreetMap                                                                                                            |
-| Charts     | Recharts                                                                                                                           |
-| Database   | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                               |
-| Build      | esbuild + Vite + electron-builder                                                                                                  |
+| Component    | Technology                                                                                                                         |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop      | Electron                                                                                                                           |
+| UI           | React 19 + TypeScript 6 + Zustand                                                                                                  |
+| Styling      | Tailwind CSS v4                                                                                                                    |
+| Localization | i18next + react-i18next; 16 languages; static JSON bundles                                                                         |
+| Meshtastic   | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble (macOS/Windows) and Web Bluetooth (Linux) |
+| MeshCore     | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                |
+| Maps         | Leaflet + OpenStreetMap                                                                                                            |
+| Charts       | Recharts                                                                                                                           |
+| Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                               |
+| Build        | esbuild + Vite + electron-builder                                                                                                  |
 
 ### Architecture
 

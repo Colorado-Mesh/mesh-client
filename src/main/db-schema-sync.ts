@@ -9,7 +9,7 @@ import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 29;
+export const CURRENT_SCHEMA_VERSION = 30;
 
 /**
  * Tables only — used during upgrades so we do not CREATE UNIQUE indexes before
@@ -32,7 +32,8 @@ export const CANONICAL_TABLES_DDL = `
         mqtt_status TEXT,
         received_via TEXT,
         reply_preview_text TEXT,
-        reply_preview_sender TEXT
+        reply_preview_sender TEXT,
+        rx_hops INTEGER
       );
 
       CREATE TABLE IF NOT EXISTS nodes (
@@ -98,7 +99,8 @@ export const CANONICAL_TABLES_DDL = `
         received_via TEXT,
         rx_packet_fingerprint TEXT,
         reply_preview_text TEXT,
-        reply_preview_sender TEXT
+        reply_preview_sender TEXT,
+        rx_hops INTEGER
       );
 
       CREATE TABLE IF NOT EXISTS position_history (
@@ -164,7 +166,12 @@ export const CANONICAL_TABLES_DDL = `
       );
     `;
 
-const INDEX_DDLS: readonly string[] = [
+/**
+ * All `CREATE UNIQUE INDEX` entries need a matching dedupe path in `structuralUpgrades`
+ * (or a proof the table is empty) before the index can be built on legacy data.
+ * @see src/main/db-schema-sync.unique-indexes.test.ts (contract + duplicate-key regressions)
+ */
+export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_messages_channel_ts ON messages(channel, timestamp DESC)',
   'CREATE INDEX IF NOT EXISTS idx_messages_packet_id ON messages(packet_id)',
@@ -211,6 +218,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     received_via: 'TEXT',
     reply_preview_text: 'TEXT',
     reply_preview_sender: 'TEXT',
+    rx_hops: 'INTEGER',
   },
   nodes: {
     long_name: 'TEXT',
@@ -271,6 +279,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     rx_packet_fingerprint: 'TEXT',
     reply_preview_text: 'TEXT',
     reply_preview_sender: 'TEXT',
+    rx_hops: 'INTEGER',
   },
   position_history: {
     node_id: 'INTEGER NOT NULL',
@@ -350,9 +359,20 @@ function ensureColumns(db: NodeSqliteDB): void {
   }
 }
 
-/** Legacy meshcore_messages dedup index lacked payload; drop and recreate current definition. */
+/** Legacy meshcore_messages dedup index lacked payload; drop, dedupe, then recreate (historical v17). */
 function ensureMeshcoreMessagesDedupIndex(db: NodeSqliteDB): void {
   db.execScript('DROP INDEX IF EXISTS idx_mc_msg_dedup');
+  if (tableExists(db, 'meshcore_messages')) {
+    db.prepare(
+      `DELETE FROM meshcore_messages
+         WHERE id NOT IN (
+           SELECT MIN(id) FROM meshcore_messages
+           WHERE sender_id IS NOT NULL
+           GROUP BY sender_id, timestamp, channel_idx, payload
+         )
+         AND sender_id IS NOT NULL`,
+    ).run();
+  }
   db.execScript(
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup ' +
       'ON meshcore_messages(sender_id, timestamp, channel_idx, payload) ' +

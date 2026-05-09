@@ -1,5 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
+import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
@@ -62,52 +64,64 @@ function lastConnectionKey(p: MeshProtocol) {
   return `mesh-client:lastConnection:${p}`;
 }
 
-function humanizeSerialError(err: unknown): string {
+function humanizeSerialError(err: unknown, t: TFunction): string {
   const msg = err instanceof Error ? err.message : String(err);
   const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   if (/access denied|permission|not allowed/i.test(msg)) {
-    if (isWindows) {
-      return `${msg} — Ensure the correct USB driver is installed (CH340, CP210x, or FTDI). Check Device Manager for a yellow warning on the COM port.`;
-    }
-    return `${msg} — On Linux, add your user to the dialout group: sudo usermod -aG dialout $USER (then log out and back in)`;
+    const hint = isWindows
+      ? t('connectionPanel.humanize.serial.accessDeniedWindowsHint')
+      : t('connectionPanel.humanize.serial.accessDeniedLinuxHint');
+    return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
   }
   if (/no port|not found|disconnected|device not found/i.test(msg)) {
-    return `${msg} — Ensure the USB cable is connected and the device is powered on.`;
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.serial.disconnectedHint'),
+    });
   }
   if (/timed out/i.test(msg)) {
-    return `${msg} — If the port appeared briefly, try reconnecting the USB cable.`;
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.serial.timeoutHint'),
+    });
   }
   return msg;
 }
 
-function humanizeHttpError(address: string, err: unknown): string {
+function humanizeHttpError(address: string, err: unknown, t: TFunction): string {
   const msg = err instanceof Error ? err.message : String(err);
   const isMdns = address.toLowerCase().includes('meshtastic.local');
   const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   if (/timed out|timeout|aborted/i.test(msg)) {
     const hint = isMdns
       ? isWindows
-        ? "On Windows, meshtastic.local requires Bonjour (installed with iTunes). Use the device's IP address instead."
-        : "mDNS may not resolve — try the device's IP address instead."
-      : 'Ensure the device is powered on and reachable.';
-    return `${msg} — ${hint}`;
+        ? t('connectionPanel.humanize.http.timeoutMdnsWindows')
+        : t('connectionPanel.humanize.http.timeoutMdnsNonWindows')
+      : t('connectionPanel.humanize.http.timeoutGeneric');
+    return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
   }
   if (/401|403|unauthorized/i.test(msg)) {
-    return `${msg} — Check device authentication settings.`;
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.http.unauthorizedHint'),
+    });
   }
   if (/econnrefused|connection refused|failed to fetch|network/i.test(msg)) {
-    return `${msg} — Ensure the device is powered on and connected to the same network.`;
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.http.econnrefusedHint'),
+    });
   }
   if (isMdns) {
     const suffix = isWindows
-      ? "On Windows, meshtastic.local requires Bonjour (installed with iTunes). Use the device's IP address instead."
-      : "mDNS may not resolve on your network; try the device's IP address instead.";
-    return `${msg} — ${suffix}`;
+      ? t('connectionPanel.humanize.http.suffixMdnsWindows')
+      : t('connectionPanel.humanize.http.suffixMdnsNonWindows');
+    return t('connectionPanel.humanize.prefixedHint', { message: msg, hint: suffix });
   }
   return msg;
 }
 
-function humanizeBleError(err: unknown): string {
+function humanizeBleError(err: unknown, t: TFunction): string {
   if (
     err instanceof DOMException &&
     err.name === 'AbortError' &&
@@ -131,69 +145,72 @@ function humanizeBleError(err: unknown): string {
   const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   const isLinux = navigator.userAgent.toLowerCase().includes('linux');
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
-    if (isWindows) {
-      return `${msg} — Check Settings > Bluetooth & devices. If Bluetooth is on but unavailable, update your Bluetooth driver in Device Manager.`;
-    }
-    if (isLinux) {
-      return `${msg} — Make sure Bluetooth is enabled and the Web Bluetooth experimental flag is set. Try: systemctl status bluetooth`;
-    }
-    return `${msg} — Make sure Bluetooth is enabled. On Linux, run: systemctl status bluetooth`;
+    const hint = isWindows
+      ? t('connectionPanel.humanize.ble.adapterWindowsHint')
+      : isLinux
+        ? t('connectionPanel.humanize.ble.adapterLinuxHint')
+        : t('connectionPanel.humanize.ble.adapterGenericHint');
+    return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
   }
   if (msg.includes('SecurityError') || msg.includes('not allowed to access')) {
-    return `${msg} — Bluetooth permission denied. Ensure the app has access to the Bluetooth device.`;
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.ble.securityPermissionHint'),
+    });
   }
   if (msg.includes('GATT Server is disconnected')) {
-    return `${msg} — GATT connection dropped. Try moving closer to the device and reconnecting.`;
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.ble.gattDisconnectedHint'),
+    });
   }
   // Web Bluetooth on Linux: "GATT Error: Not supported" means the device requires pairing
   // before GATT operations are allowed. This is common with Meshtastic devices.
   if (msg.includes('GATT Error: Not supported')) {
-    let enhanced = `${msg} The device requires pairing before connecting. Use the "Remove & Re-pair Device" button to re-initiate pairing.`;
+    let enhanced = `${msg} ${t('connectionPanel.humanize.ble.gattNotSupportedBase')}`;
     if (isLinux) {
-      enhanced += ` For Meshtastic use PIN 123456. For MeshCore the PIN is shown on the device display.`;
+      enhanced += t('connectionPanel.humanize.ble.gattNotSupportedLinuxPin');
     }
     return enhanced;
   }
   // Check error.name directly for DOMException types that indicate pairing issues
   if (err instanceof DOMException) {
     if (err.name === 'SecurityError') {
-      let enhanced = `Bluetooth authentication failed (${err.message}). The device may not be properly paired. Use the "Remove & Re-pair Device" button.`;
+      let enhanced = t('connectionPanel.humanize.ble.authFailedBase', { message: err.message });
       if (isLinux) {
-        enhanced += ` For Meshtastic use PIN 123456.`;
+        enhanced += t('connectionPanel.humanize.ble.authFailedLinuxPin');
       }
       return enhanced;
     }
     if (err.name === 'NetworkError') {
-      let enhanced = `Bluetooth connection failed (${err.message}). The device may not be properly paired.`;
+      let enhanced = t('connectionPanel.humanize.ble.networkFailedBase', { message: err.message });
       if (isLinux) {
-        enhanced += ` Use the "Remove & Re-pair Device" button or manage pairings via 'bluetoothctl'.`;
+        enhanced += t('connectionPanel.humanize.ble.networkFailedLinuxHint');
       } else {
-        enhanced += ` Remove the device from Bluetooth settings and re-pair.`;
+        enhanced += t('connectionPanel.humanize.ble.networkFailedNonLinuxHint');
       }
       return enhanced;
     }
   }
   // Web Bluetooth on Linux: connection failed often means device not paired properly
   if (msg.includes('Connection Error: Connection attempt failed')) {
-    let enhanced = `${msg} The device may not be paired with your computer. Remove the device from Bluetooth settings, then re-pair it. For Meshtastic use PIN 123456. For MeshCore the PIN is randomly generated and displayed on the device.`;
+    let enhanced = `${msg} ${t('connectionPanel.humanize.ble.connectionAttemptFailedBase')}`;
     if (isLinux) {
-      enhanced += ` On Linux, you can manage pairings via the system Bluetooth settings or 'bluetoothctl' tool.`;
+      enhanced += t('connectionPanel.humanize.ble.connectionAttemptFailedLinuxHint');
     }
     return enhanced;
   }
   if (/Bluetooth connected but MeshCore protocol handshake did not complete/i.test(msg)) {
-    let enhanced = `${msg} Ensure your MeshCore device is in Bluetooth Companion mode and paired with your computer using a PIN. Remove any existing pairing and re-pair if connection issues persist.`;
+    let enhanced = `${msg} ${t('connectionPanel.humanize.ble.meshcoreHandshakeHint')}`;
     if (isWindows) {
-      enhanced +=
-        ' On Windows, toggle Bluetooth off/on and update the adapter driver in Device Manager if disconnects persist.';
+      enhanced += t('connectionPanel.humanize.ble.meshcoreHandshakeWindowsExtra');
     }
     return enhanced;
   }
   if (/Bluetooth connection timed out while opening MeshCore over Noble IPC/i.test(msg)) {
-    let enhanced = `${msg} Ensure your MeshCore device is in Bluetooth Companion mode and paired with your computer using a PIN. Remove any existing pairing and re-pair if connection issues persist.`;
+    let enhanced = `${msg} ${t('connectionPanel.humanize.ble.meshcoreHandshakeHint')}`;
     if (isWindows) {
-      enhanced +=
-        ' On Windows, toggle Bluetooth off/on and update the adapter driver in Device Manager if disconnects persist.';
+      enhanced += t('connectionPanel.humanize.ble.meshcoreHandshakeWindowsExtra');
     }
     return enhanced;
   }
@@ -239,9 +256,7 @@ function parseBluetoothctlPairedState(info: string): 'yes' | 'no' | 'unknown' {
   return 'unknown';
 }
 
-/** Shown when MeshCore Linux reconnect finds the saved device is not OS-paired (BlueZ). */
-const MESHCORE_LINUX_SAVED_UNPAIRED_HINT =
-  'Saved device is not paired in Linux Bluetooth — select it below to enter PIN and connect.';
+const STAGE_LINUX_UNPAIRED = 'connectionPanel.stageLinuxUnpaired';
 
 function shouldForgetGrantedWebBluetoothDevice(
   device: BluetoothDevice,
@@ -539,6 +554,7 @@ export default function ConnectionPanel({
   firmwareCheckState,
   onOpenFirmwareReleases,
 }: Props) {
+  const { t } = useTranslation();
   const [connectionType, setConnectionType] = useState<ConnectionType>('ble');
   const [httpAddress, setHttpAddress] = useState(() => {
     const last = loadLastConnection(protocol);
@@ -764,13 +780,13 @@ export default function ConnectionPanel({
   useEffect(() => {
     if (state.status === 'connecting') {
       if (showPinPrompt) return;
-      if (showBlePicker) setConnectionStage('Select your device below');
-      else if (showSerialPicker) setConnectionStage('Select a serial port below');
+      if (showBlePicker) setConnectionStage('connectionPanel.stageSelectDevice');
+      else if (showSerialPicker) setConnectionStage('connectionPanel.stageSelectSerial');
       else if (connectionType === 'ble' && isAutoConnectingRef.current) {
-        setConnectionStage('Connecting to last Bluetooth device…');
-      } else setConnectionStage('Please wait...');
+        setConnectionStage('connectionPanel.stageConnectingLast');
+      } else setConnectionStage('connectionPanel.stagePleaseWait');
     } else if (state.status === 'connected') {
-      setConnectionStage('Configuring device...');
+      setConnectionStage('connectionPanel.stageConfiguring');
     } else if (state.status === 'configured') {
       setConnectionStage('');
       setConnecting(false);
@@ -843,11 +859,11 @@ export default function ConnectionPanel({
           void window.electronAPI.stopNobleBleScanning(protocol);
           saveLastBleDevice(protocol, device.deviceId);
           lastSelectedBleNameRef.current = device.deviceName ?? null;
-          setConnectionStage('Connecting to device...');
+          setConnectionStage('connectionPanel.stageConnecting');
           onConnect('ble', undefined, device.deviceId).catch((err: unknown) => {
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
-            const bleErrMsg = humanizeBleError(err);
+            const bleErrMsg = humanizeBleError(err, t);
             if (bleErrMsg) setError(bleErrMsg);
             setConnecting(false);
             setConnectionStage('');
@@ -857,10 +873,10 @@ export default function ConnectionPanel({
       }
       if (connectionTypeRef.current === 'ble') {
         setShowBlePicker(true);
-        setConnectionStage('Scanning — select your device when it appears below');
+        setConnectionStage('connectionPanel.stageScanning');
       }
     });
-  }, [lastConnection, onConnect, protocol]); // isAutoConnecting intentionally omitted — ref handles it
+  }, [lastConnection, onConnect, protocol, t]); // isAutoConnecting intentionally omitted — ref handles it
 
   // Listen for Bluetooth devices discovered by main process (Linux Web Bluetooth)
   useEffect(() => {
@@ -885,7 +901,7 @@ export default function ConnectionPanel({
               if (paired === 'yes') {
                 bleLinuxPickerSelectionResolvedRef.current = true;
                 setShowBlePicker(false);
-                setConnectionStage('Connecting to saved Bluetooth device…');
+                setConnectionStage('connectionPanel.stageConnectingSaved');
                 window.electronAPI.selectBluetoothDevice(lastId);
                 return;
               }
@@ -897,13 +913,13 @@ export default function ConnectionPanel({
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
             setShowBlePicker(true);
-            setConnectionStage(MESHCORE_LINUX_SAVED_UNPAIRED_HINT);
+            setConnectionStage('connectionPanel.stageLinuxUnpaired');
           })();
           return;
         }
         bleLinuxPickerSelectionResolvedRef.current = true;
         setShowBlePicker(false);
-        setConnectionStage('Connecting to saved Bluetooth device…');
+        setConnectionStage('connectionPanel.stageConnectingSaved');
         window.electronAPI.selectBluetoothDevice(lastId);
         return;
       }
@@ -914,7 +930,7 @@ export default function ConnectionPanel({
         !pendingMeshcoreLinuxWbMacRef.current;
       if (shouldShowEmbeddedPicker) {
         setShowBlePicker(true);
-        setConnectionStage('Select your Bluetooth device below');
+        setConnectionStage('connectionPanel.stageSelectBluetooth');
       }
     });
   }, [protocol, isLinux]);
@@ -928,7 +944,7 @@ export default function ConnectionPanel({
       setShowPinPrompt(true);
       setManualPairingFallback(false);
       setPinInputValue('');
-      setConnectionStage('Enter the PIN shown on your device');
+      setConnectionStage('connectionPanel.stageEnterPin');
       // Start countdown: BlueZ pairing window is ~30s. Warn the user to enter quickly.
       const CHROMIUM_PAIRING_COUNTDOWN_SECS = 25;
       stopPinCountdown();
@@ -954,7 +970,7 @@ export default function ConnectionPanel({
     const mac = lastSelectedBleMacRef.current;
     if (!mac) {
       console.debug('[ConnectionPanel] handleRePair: no MAC available');
-      setError('No device MAC address available for re-pairing');
+      setError(t('connectionPanel.error.noMacRePair'));
       return;
     }
 
@@ -965,17 +981,17 @@ export default function ConnectionPanel({
     setPinInputValue(protocol === 'meshtastic' ? '123456' : '');
     setShowPinPrompt(true);
     setConnecting(false);
-    setConnectionStage('Enter PIN to pair device');
+    setConnectionStage('connectionPanel.stageEnterPinPair');
     pinPromptSeenSinceRePairRef.current = false;
     console.debug('[ConnectionPanel] handleRePair END');
-  }, [protocol]);
+  }, [protocol, t]);
 
   // Handle PIN submission for pairing
   const handlePinSubmit = useCallback(async () => {
     stopPinCountdown();
     const normalizedPin = normalizePairingPin(pinInputValue);
     if (!normalizedPin) {
-      setError('PIN must be 1–6 digits (use the code shown on the device).');
+      setError(t('connectionPanel.error.pinFormat'));
       return;
     }
     const pendingWbMac = pendingMeshcoreLinuxWbMacRef.current;
@@ -983,7 +999,7 @@ export default function ConnectionPanel({
       try {
         setError(null);
         setConnecting(true);
-        setConnectionStage('Pairing with PIN (bluetoothctl)...');
+        setConnectionStage('connectionPanel.stagePairingBluetooth');
         await window.electronAPI.bluetoothPair(pendingWbMac, normalizedPin);
         try {
           await window.electronAPI.bluetoothGetInfo(pendingWbMac);
@@ -993,13 +1009,13 @@ export default function ConnectionPanel({
         pendingMeshcoreLinuxWbMacRef.current = null;
         setShowPinPrompt(false);
         setPinInputValue('');
-        setConnectionStage('Connecting to device...');
+        setConnectionStage('connectionPanel.stageConnecting');
         window.electronAPI.selectBluetoothDevice(pendingWbMac);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.warn('[ConnectionPanel] MeshCore pre-connect pair failed:', err);
-        setError(`Pairing failed: ${msg}`);
-        setConnectionStage('Enter the PIN shown on your device');
+        setError(t('connectionPanel.error.pairingFailed', { msg }));
+        setConnectionStage('connectionPanel.stageEnterPin');
         setConnecting(false);
       }
       return;
@@ -1012,7 +1028,7 @@ export default function ConnectionPanel({
         setError(null);
         setShowPinPrompt(false);
         setConnecting(true);
-        setConnectionStage('Removing device...');
+        setConnectionStage('connectionPanel.stageRemoving');
         await window.electronAPI.bluetoothUnpair(manualMac);
         try {
           await window.electronAPI.bluetoothUntrust(manualMac);
@@ -1043,7 +1059,7 @@ export default function ConnectionPanel({
         } catch (e) {
           console.warn('[ConnectionPanel] bluetoothStartScan warning:', e);
         }
-        setConnectionStage('Pairing with PIN...');
+        setConnectionStage('connectionPanel.stagePairingPin');
         await window.electronAPI.bluetoothPair(manualMac, normalizedPin);
         try {
           await window.electronAPI.bluetoothGetInfo(manualMac);
@@ -1055,14 +1071,12 @@ export default function ConnectionPanel({
         setShowRePairButton(false);
         setConnecting(false);
         setConnectionStage('');
-        setError(
-          'PIN accepted. Pairing completed. Press Connect and select your device to finish connecting.',
-        );
+        setError(t('connectionPanel.error.pinAcceptedNext'));
         return;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.warn('[ConnectionPanel] manual pair failed:', err);
-        setError(`PIN pairing failed: ${msg}`);
+        setError(t('connectionPanel.error.pinPairingFailed', { msg }));
         setShowRePairButton(true);
         setConnecting(false);
         setConnectionStage('');
@@ -1079,10 +1093,10 @@ export default function ConnectionPanel({
     }
     console.debug('[ConnectionPanel] Providing PIN for pairing');
     window.electronAPI.provideBluetoothPin(normalizedPin);
-    setConnectionStage('Pairing...');
+    setConnectionStage('connectionPanel.stagePairing');
     setShowPinPrompt(false);
     setPinInputValue('');
-  }, [pinInputValue, manualPairingFallback, isLinux, protocol, stopPinCountdown]);
+  }, [pinInputValue, manualPairingFallback, isLinux, protocol, stopPinCountdown, t]);
 
   // Handle PIN prompt cancel
   const handlePinCancel = useCallback(() => {
@@ -1122,13 +1136,13 @@ export default function ConnectionPanel({
               autoConnectTimeoutRef.current = null;
             }
             window.electronAPI.selectSerialPort(match.portId);
-            setConnectionStage('Connecting to device...');
+            setConnectionStage('connectionPanel.stageConnecting');
             return;
           }
         }
       }
       setShowSerialPicker(true);
-      setConnectionStage('Select a serial port below');
+      setConnectionStage('connectionPanel.stageSelectSerial');
     });
   }, [isAutoConnecting, lastConnection]);
 
@@ -1144,12 +1158,12 @@ export default function ConnectionPanel({
     setShowBlePicker(false);
     setShowSerialPicker(false);
     bleLinuxPickerSelectionResolvedRef.current = false;
-    setConnectionStage('Please wait...');
+    setConnectionStage('connectionPanel.stagePleaseWait');
 
     if (connectionType === 'ble') {
       if (isLinux) {
         console.debug('[ConnectionPanel] handleConnect Linux BLE path');
-        setConnectionStage('Select your Bluetooth device...');
+        setConnectionStage('connectionPanel.stageSelectBluetoothDots');
         // Same-tick IPC: select-bluetooth-device can fire before React commits connectionType;
         // discovery uses connectionTypeRef for shouldShowEmbeddedPicker.
         connectionTypeRef.current = 'ble';
@@ -1162,7 +1176,7 @@ export default function ConnectionPanel({
           return;
         } catch (err) {
           // catch-no-log-ok -- error is humanized and surfaced via setError
-          const bleErrMsg = humanizeBleError(err);
+          const bleErrMsg = humanizeBleError(err, t);
           const mac = lastSelectedBleMacRef.current;
           if (mac) {
             try {
@@ -1176,7 +1190,7 @@ export default function ConnectionPanel({
           if (isPairingRelatedError) {
             setShowRePairButton(true);
             setShowBlePicker(false);
-            setConnectionStage('Pairing failed. Please re-pair your device.');
+            setConnectionStage('connectionPanel.stagePairingFailed');
             setConnecting(false);
           } else {
             setConnecting(false);
@@ -1191,12 +1205,12 @@ export default function ConnectionPanel({
         }
       }
       // Noble: start scanning — actual connection triggered when user selects a device
-      setConnectionStage('Scanning — select your device when it appears below');
+      setConnectionStage('connectionPanel.stageScanning');
       try {
         await window.electronAPI.startNobleBleScanning(protocol);
       } catch (err) {
         console.warn('[ConnectionPanel] startNobleBleScanning failed:', err);
-        const bleErrMsg = humanizeBleError(err);
+        const bleErrMsg = humanizeBleError(err, t);
         if (bleErrMsg) setError(bleErrMsg);
         setConnecting(false);
         setConnectionStage('');
@@ -1211,17 +1225,17 @@ export default function ConnectionPanel({
       console.warn('[ConnectionPanel] handleConnect failed', err);
       let errorMsg: string;
       if (connectionType === 'serial') {
-        errorMsg = humanizeSerialError(err);
+        errorMsg = humanizeSerialError(err, t);
       } else if (connectionType === 'http') {
-        errorMsg = humanizeHttpError(activeHostAddress, err);
+        errorMsg = humanizeHttpError(activeHostAddress, err, t);
       } else {
-        errorMsg = err instanceof Error ? err.message : 'Connection failed';
+        errorMsg = err instanceof Error ? err.message : t('connectionPanel.error.connectionFailed');
       }
       setError(errorMsg);
       setConnecting(false);
       setConnectionStage('');
     }
-  }, [connectionType, activeHostAddress, onConnect, protocol, isLinux]);
+  }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t]);
 
   const handleCancelConnection = useCallback(async () => {
     isAutoConnectingRef.current = false;
@@ -1286,13 +1300,13 @@ export default function ConnectionPanel({
       }
       setShowRePairButton(false);
       if (isLinux && protocol === 'meshcore') {
-        setConnectionStage('Checking Bluetooth pairing…');
+        setConnectionStage('connectionPanel.stageCheckingPairing');
         void (async () => {
           try {
             const info = await window.electronAPI.bluetoothGetInfo(deviceId);
             const paired = parseBluetoothctlPairedState(info);
             if (paired === 'yes') {
-              setConnectionStage('Connecting to device...');
+              setConnectionStage('connectionPanel.stageConnecting');
               window.electronAPI.selectBluetoothDevice(deviceId);
               return;
             }
@@ -1303,11 +1317,11 @@ export default function ConnectionPanel({
           setManualPairingFallback(false);
           setPinInputValue('');
           setShowPinPrompt(true);
-          setConnectionStage('Enter the PIN shown on your device (pair with Linux first)');
+          setConnectionStage('connectionPanel.stageEnterPinLinux');
         })();
         return;
       }
-      setConnectionStage('Connecting to device...');
+      setConnectionStage('connectionPanel.stageConnecting');
       if (isLinux) {
         // Web Bluetooth path: requestDevice() is pending. Resolve the deferred promise
         // so that the original onConnect's requestDevice() returns and proceeds to connect().
@@ -1322,21 +1336,21 @@ export default function ConnectionPanel({
         // Trigger the actual connection with the peripheral ID
         onConnect('ble', undefined, deviceId).catch((err: unknown) => {
           console.warn('[ConnectionPanel] BLE connect after selection failed', err);
-          const bleErrMsg = humanizeBleError(err);
+          const bleErrMsg = humanizeBleError(err, t);
           if (bleErrMsg) setError(bleErrMsg);
           setConnecting(false);
           setConnectionStage('');
         });
       }
     },
-    [bleDevices, isLinux, onConnect, protocol],
+    [bleDevices, isLinux, onConnect, protocol, t],
   );
 
   const handleSelectSerialPort = useCallback((portId: string) => {
     saveLastSerialPort(portId);
     window.electronAPI.selectSerialPort(portId);
     setShowSerialPicker(false);
-    setConnectionStage('Connecting to device...');
+    setConnectionStage('connectionPanel.stageConnecting');
   }, []);
 
   // Auto-connect on mount: fires once per session using saved last connection.
@@ -1356,7 +1370,7 @@ export default function ConnectionPanel({
         console.warn('[ConnectionPanel] auto-connect timed out after 30s');
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
-        setError('Auto-connect timed out.');
+        setError(t('connectionPanel.error.autoConnectTimeout'));
         setConnecting(false);
         setConnectionStage('');
       }, 30_000);
@@ -1369,7 +1383,7 @@ export default function ConnectionPanel({
       }
       isAutoConnectingRef.current = false;
       setIsAutoConnecting(false);
-      setError(err instanceof Error ? err.message : 'Auto-connect failed');
+      setError(err instanceof Error ? err.message : t('connectionPanel.error.autoConnectFailed'));
       setConnecting(false);
       setConnectionStage('');
     };
@@ -1379,7 +1393,7 @@ export default function ConnectionPanel({
       isAutoConnectingRef.current = true;
       setIsAutoConnecting(true);
       setConnecting(true);
-      setConnectionStage('Please wait...');
+      setConnectionStage('connectionPanel.stagePleaseWait');
       startAutoConnectTimeout();
       void onAutoConnectRef
         .current('serial', undefined, lc.serialPortId)
@@ -1393,13 +1407,13 @@ export default function ConnectionPanel({
         isAutoConnectingRef.current = true;
         setIsAutoConnecting(true);
         setConnecting(true);
-        setConnectionStage('Scanning for last Bluetooth device…');
+        setConnectionStage('connectionPanel.stageScanningLast');
         startAutoConnectTimeout();
         void window.electronAPI.startNobleBleScanning(protocol).catch(onAutoConnectFailed);
       }
     }
     // HTTP: do not auto-trigger — show one-click reconnect card instead
-  }, [protocol, isLinux]);
+  }, [protocol, isLinux, t]);
 
   // Cleanup timeout on unmount
   useEffect(
@@ -1426,19 +1440,19 @@ export default function ConnectionPanel({
         if (isLinux) {
           // Web Bluetooth path: use onConnect directly (NOT connectAutomatic which skips BLE for MeshCore)
           // This is a user gesture, so requestDevice() is allowed.
-          setConnectionStage('Reconnecting to last Bluetooth device…');
+          setConnectionStage('connectionPanel.stageReconnecting');
           // Same-tick IPC: discovery may run before setConnectionType('ble') commits; picker gating uses connectionTypeRef.
           connectionTypeRef.current = 'ble';
           void onConnect('ble', undefined).catch((err: unknown) => {
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
-            const bleErrMsg = humanizeBleError(err);
+            const bleErrMsg = humanizeBleError(err, t);
             if (bleErrMsg) setError(bleErrMsg);
             const isPairingRelatedError = shouldShowLinuxRePairFromBleError(err, bleErrMsg);
             if (isPairingRelatedError) {
               setShowRePairButton(true);
               setShowBlePicker(false);
-              setConnectionStage('Pairing failed. Please re-pair your device.');
+              setConnectionStage('connectionPanel.stagePairingFailed');
             } else {
               setConnecting(false);
               setConnectionStage('');
@@ -1452,7 +1466,7 @@ export default function ConnectionPanel({
         } else {
           // Noble: start scanning — no user gesture required.
           // onNobleBleDeviceDiscovered will auto-connect when the known device appears.
-          setConnectionStage('Scanning for last Bluetooth device…');
+          setConnectionStage('connectionPanel.stageScanningLast');
           if (autoConnectTimeoutRef.current) {
             clearTimeout(autoConnectTimeoutRef.current);
             autoConnectTimeoutRef.current = null;
@@ -1461,7 +1475,7 @@ export default function ConnectionPanel({
             console.warn('[ConnectionPanel] auto-connect timed out after 30s');
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
-            setError('Auto-connect timed out.');
+            setError(t('connectionPanel.error.autoConnectTimeout'));
             setConnecting(false);
             setConnectionStage('');
           }, 30_000);
@@ -1472,7 +1486,7 @@ export default function ConnectionPanel({
             }
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
-            const bleErrMsg = humanizeBleError(err);
+            const bleErrMsg = humanizeBleError(err, t);
             if (bleErrMsg) setError(bleErrMsg);
             setConnecting(false);
             setConnectionStage('');
@@ -1493,9 +1507,9 @@ export default function ConnectionPanel({
       setSerialPorts([]);
       setShowBlePicker(false);
       setShowSerialPicker(false);
-      setConnectionStage('Please wait...');
+      setConnectionStage('connectionPanel.stagePleaseWait');
       onConnect('http', addr).catch((err: unknown) => {
-        setError(humanizeHttpError(addr, err));
+        setError(humanizeHttpError(addr, err, t));
         setConnecting(false);
         setConnectionStage('');
       });
@@ -1504,16 +1518,16 @@ export default function ConnectionPanel({
       setIsAutoConnecting(true);
       setConnectionType('serial');
       setConnecting(true);
-      setConnectionStage('Please wait...');
+      setConnectionStage('connectionPanel.stagePleaseWait');
       onAutoConnect('serial', undefined, lastConnection.serialPortId).catch((err: unknown) => {
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
-        setError(humanizeSerialError(err));
+        setError(humanizeSerialError(err, t));
         setConnecting(false);
         setConnectionStage('');
       });
     }
-  }, [lastConnection, onConnect, onAutoConnect, httpAddress, protocol, tcpHost, isLinux]);
+  }, [lastConnection, onConnect, onAutoConnect, httpAddress, protocol, tcpHost, isLinux, t]);
 
   const isConnected =
     state.status === 'connected' ||
@@ -1529,26 +1543,24 @@ export default function ConnectionPanel({
         <div className="space-y-2 text-center">
           <h2 className="text-xl font-semibold text-gray-200">
             {showPinPrompt
-              ? 'Pair with your device'
+              ? t('connectionPanel.pairWithDevice')
               : showBlePicker
-                ? 'Scanning for Bluetooth devices…'
+                ? t('connectionPanel.scanningBluetooth')
                 : isAutoConnecting
-                  ? 'Auto-connecting…'
-                  : 'Connecting…'}
+                  ? t('connectionPanel.autoConnecting')
+                  : t('connectionPanel.connecting')}
           </h2>
           <div role="status" aria-live="polite" aria-atomic="true">
             <p
               className={
-                connectionStage === MESHCORE_LINUX_SAVED_UNPAIRED_HINT
+                connectionStage === STAGE_LINUX_UNPAIRED
                   ? 'rounded-lg border border-amber-500/45 bg-amber-950/40 px-4 py-3 text-sm text-amber-200'
                   : 'text-muted text-sm'
               }
             >
-              {connectionStage}
+              {connectionStage ? t(connectionStage) : ''}
             </p>
-            <p className="text-muted/80 mt-1 text-xs">
-              For best results, stay on this tab until the device has finished connecting.
-            </p>
+            <p className="text-muted/80 mt-1 text-xs">{t('connectionPanel.stayOnTab')}</p>
           </div>
         </div>
 
@@ -1561,17 +1573,19 @@ export default function ConnectionPanel({
           >
             <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-600 px-4 py-2.5">
               <span id="ble-device-picker-heading" className="text-sm font-medium text-gray-200">
-                Select Bluetooth Device
+                {t('connectionPanel.selectBluetoothDevice')}
               </span>
               <span className="text-muted text-xs" aria-live="polite">
-                {bleDevices.length} found
+                {t('connectionPanel.devicesFound', { count: bleDevices.length })}
               </span>
             </div>
             <div className="max-h-60 overflow-y-auto">
               {bleDevices.length === 0 ? (
                 <div className="text-muted px-4 py-6 text-center text-sm">
                   <Spinner className="text-muted mx-auto mb-2 h-5 w-5" />
-                  Scanning for {protocol === 'meshcore' ? 'MeshCore' : 'Meshtastic'} devices...
+                  {t('connectionPanel.scanningDevices', {
+                    protocol: protocol === 'meshcore' ? 'MeshCore' : 'Meshtastic',
+                  })}
                 </div>
               ) : (
                 (() => {
@@ -1635,16 +1649,16 @@ export default function ConnectionPanel({
           >
             <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-600 px-4 py-2.5">
               <span id="serial-port-picker-heading" className="text-sm font-medium text-gray-200">
-                Select Serial Port
+                {t('connectionPanel.selectSerialPort')}
               </span>
               <span className="text-muted text-xs" aria-live="polite">
-                {serialPorts.length} found
+                {t('connectionPanel.devicesFound', { count: serialPorts.length })}
               </span>
             </div>
             <div className="max-h-60 overflow-y-auto">
               {serialPorts.length === 0 ? (
                 <div className="text-muted px-4 py-6 text-center text-sm">
-                  No serial ports found. Ensure your device is plugged in.
+                  {t('connectionPanel.noSerialPorts')}
                 </div>
               ) : (
                 serialPorts.map((port) => {
@@ -1693,7 +1707,7 @@ export default function ConnectionPanel({
               onClick={handleRePair}
               className="rounded-lg bg-orange-600 px-4 py-2 font-medium text-white transition-colors hover:bg-orange-700"
             >
-              Remove &amp; Re-pair Device
+              {t('connectionPanel.rePairDevice')}
             </button>
           </div>
         )}
@@ -1716,7 +1730,7 @@ export default function ConnectionPanel({
                 onChange={(e) => {
                   setPinInputValue(e.target.value.replace(/\D/g, '').slice(0, 6));
                 }}
-                placeholder="PIN"
+                placeholder={t('connectionPanel.pinPlaceholder')}
                 className="flex-1 rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
                 maxLength={6}
                 inputMode="numeric"
@@ -1757,7 +1771,7 @@ export default function ConnectionPanel({
     <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
       <div className="flex items-center gap-2">
         <MqttGlobeIcon status={mqttStatus} />
-        <span className="font-medium text-gray-200">MQTT Connection</span>
+        <span className="font-medium text-gray-200">{t('connectionPanel.mqttConnection')}</span>
       </div>
       <span
         className={`text-xs font-medium ${
@@ -1772,7 +1786,13 @@ export default function ConnectionPanel({
         aria-live="polite"
       >
         <span aria-hidden="true">● </span>
-        {mqttStatus}
+        {mqttStatus === 'connected'
+          ? t('connectionPanel.mqttStatusConnected')
+          : mqttStatus === 'connecting'
+            ? t('connectionPanel.mqttStatusConnecting')
+            : mqttStatus === 'error'
+              ? t('connectionPanel.mqttStatusError')
+              : t('connectionPanel.mqttStatusDisconnected')}
       </span>
     </div>
   );
@@ -1793,7 +1813,7 @@ export default function ConnectionPanel({
         )}
         <div className="space-y-3 p-4">
           <div className="flex justify-between text-sm">
-            <span className="text-muted">Server</span>
+            <span className="text-muted">{t('connectionPanel.server')}</span>
             <span className="text-gray-200">
               {activeMqttSettings.server}:{activeMqttSettings.port}
             </span>
@@ -1801,7 +1821,7 @@ export default function ConnectionPanel({
           {protocol === 'meshcore' &&
             /^v1_[0-9A-Fa-f]{64}$/i.test(activeMqttSettings.username ?? '') && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted">From</span>
+                <span className="text-muted">{t('connectionPanel.from')}</span>
                 <span className="font-mono text-xs text-gray-200">
                   {activeMqttSettings.username?.slice(3)}
                 </span>
@@ -1809,14 +1829,14 @@ export default function ConnectionPanel({
             )}
           {protocol === 'meshtastic' && state.myNodeNum > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted">From</span>
+              <span className="text-muted">{t('connectionPanel.from')}</span>
               <span className="font-mono text-xs text-gray-200">
                 !{state.myNodeNum.toString(16)}
               </span>
             </div>
           )}
           <div className="flex justify-between text-sm">
-            <span className="text-muted">Topic</span>
+            <span className="text-muted">{t('connectionPanel.topic')}</span>
             <span className="font-mono text-xs text-gray-200">
               {activeMqttSettings.topicPrefix.endsWith('/')
                 ? activeMqttSettings.topicPrefix
@@ -1827,7 +1847,7 @@ export default function ConnectionPanel({
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
               <label htmlFor="mqtt-max-retries-when-connected" className="text-muted text-xs">
-                Max reconnect attempts
+                {t('connectionPanel.maxReconnectAttempts')}
               </label>
               <HelpTooltip
                 text={
@@ -1840,7 +1860,7 @@ export default function ConnectionPanel({
             <input
               id="mqtt-max-retries-when-connected"
               type="number"
-              aria-label="Max MQTT reconnect attempts"
+              aria-label={t('connectionPanel.maxReconnectAttempts')}
               min={1}
               max={MQTT_MAX_RECONNECT_ATTEMPTS}
               value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
@@ -1862,7 +1882,7 @@ export default function ConnectionPanel({
             }
             className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
           >
-            Disconnect
+            {t('connectionPanel.disconnectMqtt')}
           </button>
         </div>
       </div>
@@ -1878,7 +1898,7 @@ export default function ConnectionPanel({
           {protocol !== 'meshcore' && (
             <div className="space-y-1">
               <p id="conn-meshtastic-network-preset" className="text-muted text-xs">
-                Network Preset
+                {t('connectionPanel.networkPreset')}
               </p>
               <div
                 className="flex gap-2"
@@ -1920,17 +1940,14 @@ export default function ConnectionPanel({
                 ))}
               </div>
               {meshtasticPreset === 'liam' && (
-                <p className="text-xs text-amber-400">
-                  Liam's server is uplink-only — your node appears on his map but you won't receive
-                  messages from it.
-                </p>
+                <p className="text-xs text-amber-400">{t('connectionPanel.liamServerNote')}</p>
               )}
             </div>
           )}
           {protocol === 'meshcore' && (
             <div className="space-y-1">
               <p id="conn-meshcore-network-preset" className="text-muted text-xs">
-                Network Preset
+                {t('connectionPanel.networkPreset')}
               </p>
               <div
                 className="flex gap-2"
@@ -2019,9 +2036,9 @@ export default function ConnectionPanel({
                 <div
                   className="flex flex-wrap items-center gap-2 pt-1"
                   role="group"
-                  aria-label="LetsMesh region"
+                  aria-label={t('connectionPanel.letsMeshRegion')}
                 >
-                  <span className="text-muted text-xs">Region</span>
+                  <span className="text-muted text-xs">{t('connectionPanel.region')}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -2071,7 +2088,7 @@ export default function ConnectionPanel({
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             <div className="col-span-2 space-y-1">
               <label htmlFor="mqtt-server" className="text-muted text-xs">
-                Server
+                {t('connectionPanel.server')}
               </label>
               <input
                 id="mqtt-server"
@@ -2085,7 +2102,7 @@ export default function ConnectionPanel({
             </div>
             <div className="space-y-1">
               <label htmlFor="mqtt-port" className="text-muted text-xs">
-                Port
+                {t('connectionPanel.port')}
               </label>
               <input
                 id="mqtt-port"
@@ -2132,7 +2149,8 @@ export default function ConnectionPanel({
               className="accent-brand-green"
             />
             <label htmlFor="mqtt-websocket" className="cursor-pointer text-xs text-gray-300">
-              Use WebSocket transport <span className="text-gray-500">(required for port 443)</span>
+              {t('connectionPanel.useWebSocket')}{' '}
+              <span className="text-gray-500">{t('connectionPanel.wsRequired')}</span>
             </label>
           </div>
           {protocol === 'meshcore' &&
@@ -2189,7 +2207,7 @@ export default function ConnectionPanel({
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             <div className="space-y-1">
               <label htmlFor="mqtt-username" className="text-muted text-xs">
-                Username
+                {t('connectionPanel.username')}
               </label>
               <input
                 id="mqtt-username"
@@ -2203,7 +2221,7 @@ export default function ConnectionPanel({
             </div>
             <div className="space-y-1">
               <label htmlFor="mqtt-password" className="text-muted text-xs">
-                Password
+                {t('connectionPanel.password')}
               </label>
               <div className="relative">
                 <input
@@ -2220,10 +2238,16 @@ export default function ConnectionPanel({
                   onClick={() => {
                     setShowMqttPassword((v) => !v);
                   }}
-                  aria-label={showMqttPassword ? 'hide' : 'show'}
+                  aria-label={
+                    showMqttPassword
+                      ? t('connectionPanel.hidePassword')
+                      : t('connectionPanel.showPassword')
+                  }
                   className="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-300"
                 >
-                  {showMqttPassword ? 'hide' : 'show'}
+                  {showMqttPassword
+                    ? t('connectionPanel.hidePassword')
+                    : t('connectionPanel.showPassword')}
                 </button>
               </div>
             </div>
@@ -2231,7 +2255,7 @@ export default function ConnectionPanel({
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
               <label htmlFor="mqtt-topic-prefix" className="text-muted text-xs">
-                Topic Prefix
+                {t('connectionPanel.topicPrefix')}
               </label>
               <HelpTooltip
                 text={
@@ -2257,7 +2281,7 @@ export default function ConnectionPanel({
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
               <label htmlFor="mqtt-max-retries" className="text-muted text-xs">
-                Max Retries
+                {t('connectionPanel.maxRetries')}
               </label>
               <HelpTooltip
                 text={
@@ -2287,7 +2311,7 @@ export default function ConnectionPanel({
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <label htmlFor="mqtt-channel-psks" className="text-muted text-xs">
-                  Channel PSKs
+                  {t('connectionPanel.channelPsks')}
                 </label>
                 <HelpTooltip text="Base64-encoded AES-128 keys for custom channels, one per line. The default LongFast key is always tried automatically." />
               </div>
@@ -2319,7 +2343,7 @@ export default function ConnectionPanel({
               className="accent-brand-green"
             />
             <label htmlFor="mqttAutoLaunch" className="cursor-pointer text-sm text-gray-300">
-              Auto-connect on application start
+              {t('connectionPanel.autoConnect')}
             </label>
           </div>
           <div className="pt-1">
@@ -2386,7 +2410,7 @@ export default function ConnectionPanel({
               disabled={mqttStatus === 'connecting'}
               className="w-full rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-400 disabled:opacity-40"
             >
-              Connect
+              {t('connectionPanel.connectMqtt')}
             </button>
           </div>
         </div>
@@ -2409,14 +2433,16 @@ export default function ConnectionPanel({
           }}
           className="w-full rounded-lg border border-red-700 px-6 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300"
         >
-          Disconnect &amp; Quit
+          {t('connectionPanel.disconnectAndQuit')}
         </button>
 
         <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
           <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
             <div className="flex items-center gap-2">
               <ConnectionIcon type={state.connectionType!} />
-              <span className="font-medium text-gray-200">Radio Connection</span>
+              <span className="font-medium text-gray-200">
+                {t('connectionPanel.radioConnection')}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <a
@@ -2440,12 +2466,12 @@ export default function ConnectionPanel({
           </div>
           <div className="space-y-3 p-4">
             <div className="flex justify-between text-sm">
-              <span className="text-muted">Connection Type</span>
+              <span className="text-muted">{t('connectionPanel.connectionType')}</span>
               <span className="text-gray-200 uppercase">{state.connectionType}</span>
             </div>
             {state.myNodeNum > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted">My Node</span>
+                <span className="text-muted">{t('connectionPanel.myNode')}</span>
                 <span className="font-mono text-gray-200">
                   {myNodeLabel ?? `!${state.myNodeNum.toString(16)}`}
                 </span>
@@ -2453,7 +2479,7 @@ export default function ConnectionPanel({
             )}
             {state.myNodeNum > 0 && state.batteryPercent !== undefined && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted">Battery</span>
+                <span className="text-muted">{t('connectionPanel.battery')}</span>
                 <ConnectionBatteryGauge
                   percent={state.batteryPercent}
                   charging={state.batteryCharging === true}
@@ -2462,7 +2488,7 @@ export default function ConnectionPanel({
             )}
             {state.firmwareVersion && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted">Firmware</span>
+                <span className="text-muted">{t('connectionPanel.firmware')}</span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="font-mono text-xs text-gray-300">{state.firmwareVersion}</span>
                   {firmwareCheckState && onOpenFirmwareReleases && (
@@ -2477,7 +2503,7 @@ export default function ConnectionPanel({
             )}
             {state.lastDataReceived && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted">Last Data</span>
+                <span className="text-muted">{t('connectionPanel.lastData')}</span>
                 <span className="text-xs text-gray-300">
                   {new Date(state.lastDataReceived).toLocaleTimeString()}
                 </span>
@@ -2487,7 +2513,7 @@ export default function ConnectionPanel({
               onClick={onDisconnect}
               className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
             >
-              Disconnect
+              {t('connectionPanel.disconnectRadio')}
             </button>
           </div>
         </div>
@@ -2495,9 +2521,11 @@ export default function ConnectionPanel({
         {onToggleManualContacts !== undefined && (
           <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-700 p-4">
             <div id="manual-contact-approval-label">
-              <div className="text-sm font-medium text-gray-200">Manual Contact Approval</div>
+              <div className="text-sm font-medium text-gray-200">
+                {t('connectionPanel.manualContactApproval')}
+              </div>
               <div className="text-muted mt-0.5 text-xs">
-                Require manual approval before new contacts appear
+                {t('connectionPanel.manualContactApprovalDesc')}
               </div>
             </div>
             <button
@@ -2537,7 +2565,7 @@ export default function ConnectionPanel({
           }}
           className="w-full rounded-lg border border-red-700 px-6 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300"
         >
-          Disconnect &amp; Quit
+          {t('connectionPanel.disconnectAndQuit')}
         </button>
       )}
       {protocol === 'meshcore' && mqttStatus !== 'connected' && (
@@ -2546,7 +2574,7 @@ export default function ConnectionPanel({
           onClick={() => window.electronAPI.quitApp()}
           className="w-full rounded-lg border border-red-700 px-6 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300"
         >
-          Quit
+          {t('connectionPanel.quit')}
         </button>
       )}
 
@@ -2559,10 +2587,10 @@ export default function ConnectionPanel({
               <div>
                 <p className="text-sm font-medium text-gray-200">
                   {lastConnection.type === 'ble'
-                    ? (lastConnection.bleDeviceName ?? 'Bluetooth device')
+                    ? (lastConnection.bleDeviceName ?? t('connectionPanel.bluetoothDevice'))
                     : lastConnection.type === 'serial'
-                      ? 'Serial device'
-                      : (lastConnection.httpAddress ?? 'WiFi device')}
+                      ? t('connectionPanel.serialDevice')
+                      : (lastConnection.httpAddress ?? t('connectionPanel.wifiDevice'))}
                 </p>
                 <p className="text-muted text-xs uppercase">{lastConnection.type}</p>
               </div>
@@ -2572,7 +2600,7 @@ export default function ConnectionPanel({
               onClick={handleReconnect}
               className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-400"
             >
-              Reconnect
+              {t('connectionPanel.reconnect')}
             </button>
           </div>
           <button
@@ -2583,7 +2611,7 @@ export default function ConnectionPanel({
             }}
             className="text-xs text-gray-600 transition-colors hover:text-gray-400"
           >
-            Forget this device
+            {t('connectionPanel.forgetDevice')}
           </button>
         </div>
       )}
@@ -2594,7 +2622,9 @@ export default function ConnectionPanel({
         <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
           <div className="flex items-center gap-2">
             <ConnectionIcon type={connectionType} />
-            <span className="font-medium text-gray-200">Radio Connection</span>
+            <span className="font-medium text-gray-200">
+              {t('connectionPanel.radioConnection')}
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <a
@@ -2605,7 +2635,9 @@ export default function ConnectionPanel({
             >
               Docs ↗
             </a>
-            <span className="text-xs font-medium text-gray-500">● disconnected</span>
+            <span className="text-xs font-medium text-gray-500">
+              {t('connectionPanel.disconnected')}
+            </span>
           </div>
         </div>
 
@@ -2623,7 +2655,7 @@ export default function ConnectionPanel({
               onClick={handleRePair}
               className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-orange-700"
             >
-              Remove &amp; Re-pair Device
+              {t('connectionPanel.rePairDevice')}
             </button>
           </div>
         )}
@@ -2631,12 +2663,12 @@ export default function ConnectionPanel({
         {/* PIN input prompt for Linux BLE pairing (disconnected view) */}
         {showPinPrompt && (
           <div className="border-b border-blue-800 bg-blue-900/30 px-4 py-3 text-blue-200">
-            <p className="mb-2 text-sm">Enter the PIN shown on your device:</p>
+            <p className="mb-2 text-sm">{t('connectionPanel.enterPin')}:</p>
             {pinCountdown !== null && (
               <p
                 className={`mb-2 text-xs ${pinCountdown <= 10 ? 'font-semibold text-red-400' : 'text-blue-400'}`}
               >
-                {pinCountdown}s — enter PIN quickly, BlueZ pairing window is closing
+                {t('connectionPanel.pinExpiring', { count: pinCountdown })}
               </p>
             )}
             <div className="flex gap-2">
@@ -2646,7 +2678,7 @@ export default function ConnectionPanel({
                 onChange={(e) => {
                   setPinInputValue(e.target.value.replace(/\D/g, '').slice(0, 6));
                 }}
-                placeholder="PIN"
+                placeholder={t('connectionPanel.pinPlaceholder')}
                 className="flex-1 rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
                 maxLength={6}
                 inputMode="numeric"
@@ -2660,14 +2692,14 @@ export default function ConnectionPanel({
                 disabled={!normalizePairingPin(pinInputValue)}
                 className="rounded bg-blue-600 px-4 py-1.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                Submit
+                {t('connectionPanel.submit')}
               </button>
               <button
                 type="button"
                 onClick={handlePinCancel}
                 className="rounded bg-gray-600 px-4 py-1.5 font-medium text-white hover:bg-gray-700"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -2678,7 +2710,7 @@ export default function ConnectionPanel({
           {/* Connection type selector */}
           <fieldset className="min-w-0 space-y-2 border-0 p-0">
             <legend id="connection-type-legend" className="text-muted text-xs">
-              Connection Type
+              {t('connectionPanel.connectionType')}
             </legend>
             {protocol === 'meshtastic' ? (
               <div
@@ -2702,9 +2734,9 @@ export default function ConnectionPanel({
                     }`}
                   >
                     <ConnectionIcon type={type} />
-                    {type === 'ble' && 'Bluetooth'}
-                    {type === 'serial' && 'USB Serial'}
-                    {type === 'http' && 'WiFi/HTTP'}
+                    {type === 'ble' && t('connectionPanel.bluetooth')}
+                    {type === 'serial' && t('connectionPanel.usbSerial')}
+                    {type === 'http' && t('connectionPanel.wifiHttp')}
                   </button>
                 ))}
               </div>
@@ -2730,9 +2762,9 @@ export default function ConnectionPanel({
                     }`}
                   >
                     <ConnectionIcon type={type} />
-                    {type === 'ble' && 'Bluetooth'}
-                    {type === 'serial' && 'USB Serial'}
-                    {type === 'http' && 'TCP/IP'}
+                    {type === 'ble' && t('connectionPanel.bluetooth')}
+                    {type === 'serial' && t('connectionPanel.usbSerial')}
+                    {type === 'http' && t('connectionPanel.tcpIp')}
                   </button>
                 ))}
               </div>
@@ -2743,7 +2775,7 @@ export default function ConnectionPanel({
           {connectionType === 'http' && protocol === 'meshtastic' && (
             <div className="space-y-1">
               <label htmlFor="connection-meshtastic-host" className="text-muted text-xs">
-                Device Address
+                {t('connectionPanel.deviceAddress')}
               </label>
               <input
                 id="connection-meshtastic-host"
@@ -2756,19 +2788,16 @@ export default function ConnectionPanel({
                 className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
                 autoComplete="off"
               />
-              <p className="text-muted text-xs">Enter hostname or IP address (without http://)</p>
+              <p className="text-muted text-xs">{t('connectionPanel.deviceAddressHint')}</p>
               {navigator.userAgent.toLowerCase().includes('windows') && (
-                <p className="text-xs text-yellow-400">
-                  On Windows, meshtastic.local may not resolve — use the device&apos;s IP address
-                  instead.
-                </p>
+                <p className="text-xs text-yellow-400">{t('connectionPanel.windowsMdnsNote')}</p>
               )}
             </div>
           )}
           {connectionType === 'http' && protocol === 'meshcore' && (
             <div className="space-y-1">
               <label htmlFor="connection-meshcore-tcp-host" className="text-muted text-xs">
-                Host (port 5000)
+                {t('connectionPanel.meshcoreHost')}
               </label>
               <input
                 id="connection-meshcore-tcp-host"
@@ -2781,9 +2810,7 @@ export default function ConnectionPanel({
                 className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:border-purple-500 focus:outline-none"
                 autoComplete="off"
               />
-              <p className="text-muted text-xs">
-                MeshCore companion radio host (connects on port 5000)
-              </p>
+              <p className="text-muted text-xs">{t('connectionPanel.meshcoreHostHint')}</p>
             </div>
           )}
 
@@ -2791,48 +2818,36 @@ export default function ConnectionPanel({
           <div className="text-muted bg-secondary-dark space-y-1 rounded-lg p-3 text-xs">
             {connectionType === 'ble' && protocol === 'meshtastic' && (
               <>
-                <p>Ensure your Meshtastic device has Bluetooth enabled and is in range.</p>
-                <p>
-                  Click Connect to scan — a device picker will appear with discovered Meshtastic
-                  devices.
-                </p>
+                <p>{t('connectionPanel.hintMeshtasticBle1')}</p>
+                <p>{t('connectionPanel.hintMeshtasticBle2')}</p>
               </>
             )}
             {connectionType === 'ble' && protocol === 'meshcore' && (
               <>
-                <p>Ensure your MeshCore device has Bluetooth enabled and is in range.</p>
-                <p>Click Connect to scan for nearby MeshCore devices.</p>
+                <p>{t('connectionPanel.hintMeshcoreBle1')}</p>
+                <p>{t('connectionPanel.hintMeshcoreBle2')}</p>
               </>
             )}
             {connectionType === 'serial' && protocol === 'meshtastic' && (
               <>
-                <p>Connect your Meshtastic device via USB cable.</p>
-                <p>Click Connect — a port picker will appear with available serial ports.</p>
+                <p>{t('connectionPanel.hintMeshtasticSerial1')}</p>
+                <p>{t('connectionPanel.hintMeshtasticSerial2')}</p>
               </>
             )}
             {connectionType === 'serial' && protocol === 'meshcore' && (
               <>
-                <p>Connect your MeshCore device via USB cable.</p>
-                <p>Click Connect — a port picker will appear with available serial ports.</p>
+                <p>{t('connectionPanel.hintMeshcoreSerial1')}</p>
+                <p>{t('connectionPanel.hintMeshcoreSerial2')}</p>
               </>
             )}
             {connectionType === 'http' && protocol === 'meshtastic' && (
               <>
-                <p>
-                  Enter the IP address or hostname of a WiFi-connected Meshtastic node. The device
-                  must have WiFi enabled in its config.
-                </p>
-                <p>
-                  If connection is unreliable (e.g. with meshtastic.local), try the device&apos;s IP
-                  address instead — desktop mDNS can be flaky.
-                </p>
+                <p>{t('connectionPanel.hintMeshtasticHttp1')}</p>
+                <p>{t('connectionPanel.hintMeshtasticHttp2')}</p>
               </>
             )}
             {connectionType === 'http' && protocol === 'meshcore' && (
-              <p>
-                Enter the hostname or IP address of your MeshCore companion radio. It must be
-                reachable on port 5000.
-              </p>
+              <p>{t('connectionPanel.hintMeshcoreHttp')}</p>
             )}
           </div>
 
@@ -2848,7 +2863,7 @@ export default function ConnectionPanel({
               }
               className="w-full rounded-lg bg-green-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Connect
+              {t('connectionPanel.connectButton')}
             </button>
           </div>
         </div>

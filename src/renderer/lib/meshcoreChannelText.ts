@@ -150,6 +150,8 @@ export interface BuildMeshcoreChannelIncomingOpts {
   channel: number;
   timestamp: number;
   receivedVia: ChatMessage['receivedVia'];
+  /** RF path hops from correlated raw packet when known */
+  rxHops?: number;
 }
 
 /**
@@ -165,6 +167,11 @@ export function buildMeshcoreChannelIncomingMessage(
   const fallbackPayload =
     colonIdx > 0 ? opts.rawText.slice(colonIdx + 1).trim() : opts.rawText.trim();
 
+  const rxFields =
+    opts.rxHops != null && Number.isFinite(opts.rxHops)
+      ? ({ rxHops: opts.rxHops } satisfies Pick<ChatMessage, 'rxHops'>)
+      : {};
+
   const base: Pick<
     ChatMessage,
     'sender_id' | 'sender_name' | 'channel' | 'timestamp' | 'status' | 'receivedVia'
@@ -176,6 +183,7 @@ export function buildMeshcoreChannelIncomingMessage(
     status: 'acked',
     receivedVia: opts.receivedVia,
     meshcoreDedupeKey: opts.rawText,
+    ...rxFields,
   };
 
   const target = normalized.bracketTargetName;
@@ -220,6 +228,8 @@ export interface BuildMeshcoreDmIncomingOpts {
   displayName: string;
   timestamp: number;
   receivedVia: ChatMessage['receivedVia'];
+  /** RF path hops from correlated raw packet when known */
+  rxHops?: number;
   /** The other party in this DM (remote contact when receiving their message). */
   peerNodeId: number;
   myNodeId: number;
@@ -235,6 +245,11 @@ export function buildMeshcoreDmIncomingMessage(
   opts: BuildMeshcoreDmIncomingOpts,
 ): ChatMessage {
   const parsed = parseMeshcorePlainBracketLine(opts.rawText);
+  const rxFields =
+    opts.rxHops != null && Number.isFinite(opts.rxHops)
+      ? ({ rxHops: opts.rxHops } satisfies Pick<ChatMessage, 'rxHops'>)
+      : {};
+
   const base: Pick<
     ChatMessage,
     'sender_id' | 'sender_name' | 'channel' | 'timestamp' | 'status' | 'receivedVia' | 'to'
@@ -247,6 +262,7 @@ export function buildMeshcoreDmIncomingMessage(
     receivedVia: opts.receivedVia,
     to: opts.to,
     meshcoreDedupeKey: opts.rawText,
+    ...rxFields,
   };
 
   const target = parsed.bracketTargetName;

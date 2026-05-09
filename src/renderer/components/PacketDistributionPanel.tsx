@@ -1,4 +1,6 @@
+import type { TFunction } from 'i18next';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 import type { RxPacketEntry } from '../hooks/useMeshCore';
@@ -53,11 +55,7 @@ const COLORS = [
 const OTHER_COLOR = '#6b7280'; // gray-500
 const OTHER_THRESHOLD = 0.02; // < 2% → "Other"
 
-const TIME_FILTERS: { label: string; value: TimeFilter }[] = [
-  { label: 'Last Hour', value: 'hour' },
-  { label: 'Last 24 Hours', value: 'day' },
-  { label: 'All Data', value: 'all' },
-];
+const TIME_FILTER_VALUES: TimeFilter[] = ['hour', 'day', 'all'];
 
 const TOOLTIP_STYLE = {
   backgroundColor: '#0f172a',
@@ -111,6 +109,7 @@ function applySourceFilter(
 function buildSlices(
   items: { key: string; count: number }[],
   labelFn: (key: string) => string,
+  otherLabel: string,
 ): SliceData[] {
   const total = items.reduce((s, i) => s + i.count, 0);
   if (total === 0) return [];
@@ -129,7 +128,7 @@ function buildSlices(
   }
 
   if (otherCount > 0) {
-    main.push({ name: 'Other', value: otherCount, fill: OTHER_COLOR });
+    main.push({ name: otherLabel, value: otherCount, fill: OTHER_COLOR });
   }
 
   return main;
@@ -144,10 +143,15 @@ function countBy(packets: NormalizedPacket[], key: keyof NormalizedPacket): Map<
   return map;
 }
 
-function resolveNodeKey(k: string, getNodeLabel: (id: number) => string, variant: Variant): string {
+function resolveNodeKey(
+  k: string,
+  getNodeLabel: (id: number) => string,
+  variant: Variant,
+  t: TFunction,
+): string {
   const id = parseInt(k, 10);
   if (k === 'null' || isNaN(id)) {
-    return variant === 'meshcore' ? 'No sender id in raw frame' : 'Unknown';
+    return variant === 'meshcore' ? t('packetDistribution.noSenderId') : t('common.unknown');
   }
   return getNodeLabel(id);
 }
@@ -190,13 +194,14 @@ interface DonutProps {
 }
 
 function DonutChart({ title, slices }: DonutProps) {
+  const { t } = useTranslation();
   const total = slices.reduce((s, d) => s + d.value, 0);
 
   if (slices.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2">
         <p className="text-sm font-medium text-gray-400">{title}</p>
-        <p className="text-xs text-gray-600">No data</p>
+        <p className="text-xs text-gray-600">{t('packetDistribution.noData')}</p>
       </div>
     );
   }
@@ -241,6 +246,7 @@ export default function PacketDistributionPanel({
   packets,
   getNodeLabel,
 }: PacketDistributionPanelProps) {
+  const { t } = useTranslation();
   const [mainView, setMainView] = useState<MainView>('overall');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
@@ -261,16 +267,20 @@ export default function PacketDistributionPanel({
     const sorted = [...counts.entries()]
       .map(([k, count]) => ({ key: k, count }))
       .sort((a, b) => b.count - a.count);
-    return buildSlices(sorted, (k) => resolveNodeKey(k, getNodeLabel, variant));
-  }, [filtered, getNodeLabel, variant]);
+    return buildSlices(
+      sorted,
+      (k) => resolveNodeKey(k, getNodeLabel, variant, t),
+      t('packetDistribution.other'),
+    );
+  }, [filtered, getNodeLabel, variant, t]);
 
   const typeSlices = useMemo(() => {
     const counts = countBy(filtered, 'packetType');
     const sorted = [...counts.entries()]
       .map(([k, count]) => ({ key: k, count }))
       .sort((a, b) => b.count - a.count);
-    return buildSlices(sorted, (k) => k);
-  }, [filtered]);
+    return buildSlices(sorted, (k) => k, t('packetDistribution.other'));
+  }, [filtered, t]);
 
   // ── Distribution by Type data ─────────────────────────────────────────────
 
@@ -293,8 +303,12 @@ export default function PacketDistributionPanel({
     const sorted = [...counts.entries()]
       .map(([k, count]) => ({ key: k, count }))
       .sort((a, b) => b.count - a.count);
-    return buildSlices(sorted, (k) => resolveNodeKey(k, getNodeLabel, variant));
-  }, [filtered, effectiveType, getNodeLabel, variant]);
+    return buildSlices(
+      sorted,
+      (k) => resolveNodeKey(k, getNodeLabel, variant, t),
+      t('packetDistribution.other'),
+    );
+  }, [filtered, effectiveType, getNodeLabel, variant, t]);
 
   const typeDeviceTotal = typeDeviceSlices.reduce((s, d) => s + d.value, 0);
 
@@ -308,8 +322,8 @@ export default function PacketDistributionPanel({
         <div className="flex rounded border border-gray-700 text-xs">
           {(
             [
-              { value: 'overall', label: 'Overall Distribution' },
-              { value: 'by-type', label: 'Distribution by Type' },
+              { value: 'overall', label: t('packetDistribution.overallDistribution') },
+              { value: 'by-type', label: t('packetDistribution.distributionByType') },
             ] as const
           ).map(({ value, label }) => (
             <button
@@ -337,30 +351,37 @@ export default function PacketDistributionPanel({
             }}
             className="rounded border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-gray-300 focus:outline-none"
           >
-            <option value="all">All Sources</option>
-            <option value="rf">RF Only</option>
-            <option value="mqtt">MQTT Only</option>
+            <option value="all">{t('packetDistribution.allSources')}</option>
+            <option value="rf">{t('packetDistribution.rfOnly')}</option>
+            <option value="mqtt">{t('packetDistribution.mqttOnly')}</option>
           </select>
         )}
 
         {/* Time filter — Overall view only */}
         {mainView === 'overall' && (
           <div className="flex rounded border border-gray-700 text-xs">
-            {TIME_FILTERS.map(({ label, value }) => (
-              <button
-                key={value}
-                onClick={() => {
-                  setTimeFilter(value);
-                }}
-                className={`px-3 py-1.5 transition-colors ${
-                  timeFilter === value
-                    ? 'bg-gray-700 text-gray-100'
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            {TIME_FILTER_VALUES.map((value) => {
+              const timeLabel = {
+                hour: t('packetDistribution.lastHour'),
+                day: t('packetDistribution.last24Hours'),
+                all: t('packetDistribution.allData'),
+              }[value];
+              return (
+                <button
+                  key={value}
+                  onClick={() => {
+                    setTimeFilter(value);
+                  }}
+                  className={`px-3 py-1.5 transition-colors ${
+                    timeFilter === value
+                      ? 'bg-gray-700 text-gray-100'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+                  }`}
+                >
+                  {timeLabel}
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -374,7 +395,7 @@ export default function PacketDistributionPanel({
             className="rounded border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-gray-300 focus:outline-none"
           >
             {typeOptions.length === 0 ? (
-              <option value="">No data</option>
+              <option value="">{t('packetDistribution.noData')}</option>
             ) : (
               typeOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -386,25 +407,27 @@ export default function PacketDistributionPanel({
         )}
 
         <span className="text-muted ml-auto text-xs">
-          {filtered.length.toLocaleString()} packet{filtered.length !== 1 ? 's' : ''}
+          {t('packetDistribution.packets', { count: filtered.length })}
         </span>
       </div>
 
       {/* ── Views ── */}
       {mainView === 'overall' ? (
         <div className="flex min-h-0 flex-1 flex-wrap gap-6">
-          <DonutChart title="Packets by Device" slices={deviceSlices} />
-          <DonutChart title="Packets by Type" slices={typeSlices} />
+          <DonutChart title={t('packetDistribution.packetsByDevice')} slices={deviceSlices} />
+          <DonutChart title={t('packetDistribution.packetsByType')} slices={typeSlices} />
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-4">
           {effectiveType ? (
             <>
               <p className="text-sm text-gray-400">
-                Devices transmitting{' '}
+                {t('packetDistribution.devicesTransmitting')}{' '}
                 <span className="font-mono text-gray-200">{effectiveType}</span>
                 {' — '}
-                <span className="text-gray-300">{typeDeviceTotal.toLocaleString()} packets</span>
+                <span className="text-gray-300">
+                  {t('packetDistribution.packets', { count: typeDeviceTotal })}
+                </span>
               </p>
               <div className="flex flex-1 items-start justify-center">
                 <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
@@ -442,7 +465,7 @@ export default function PacketDistributionPanel({
               </div>
             </>
           ) : (
-            <p className="text-sm text-gray-600">No packets captured yet.</p>
+            <p className="text-sm text-gray-600">{t('packetDistribution.noPacketsYet')}</p>
           )}
         </div>
       )}

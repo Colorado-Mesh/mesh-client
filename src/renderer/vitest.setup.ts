@@ -2,8 +2,12 @@ import '@testing-library/jest-dom';
 import 'vitest-axe/extend-expect';
 
 import { cleanup } from '@testing-library/react';
+import i18next from 'i18next';
+import { initReactI18next } from 'react-i18next';
 import { afterEach, expect, vi } from 'vitest';
 import * as matchers from 'vitest-axe/matchers';
+
+import en from './locales/en/translation.json';
 
 expect.extend(matchers);
 afterEach(cleanup);
@@ -37,6 +41,14 @@ window.HTMLElement.prototype.scrollTo = vi.fn();
 
 // jsdom doesn't implement canvas
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(null);
+
+// Initialise i18next with English translations so t() resolves to real strings in tests.
+void i18next.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  resources: { en: { translation: en } },
+  interpolation: { escapeValue: false },
+});
 
 import type { ElectronAPI } from '@/shared/electron-api.types';
 
@@ -135,9 +147,10 @@ const electronAPIMock = {
     onClientId: vi.fn().mockReturnValue(() => {}),
     getClientId: vi.fn().mockResolvedValue(''),
     getCachedNodes: vi.fn().mockResolvedValue([]),
-    publish: vi.fn().mockResolvedValue(undefined),
-    publishNodeInfo: vi.fn().mockResolvedValue(undefined),
-    publishPosition: vi.fn().mockResolvedValue(undefined),
+    publish: vi.fn().mockResolvedValue(1),
+    publishNodeInfo: vi.fn().mockResolvedValue(1),
+    publishPosition: vi.fn().mockResolvedValue(1),
+    publishWaypoint: vi.fn().mockResolvedValue(1),
     publishMeshcore: vi.fn().mockResolvedValue(undefined),
     publishMeshcorePacketLog: vi.fn().mockResolvedValue(undefined),
     onMeshcoreChat: vi.fn().mockReturnValue(() => {}),

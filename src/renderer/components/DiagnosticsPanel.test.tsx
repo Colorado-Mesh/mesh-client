@@ -2,11 +2,11 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import type { MeshNode, RoutingDiagnosticRow } from '../lib/types';
+import type { DiagnosticRow, MeshNode, RfDiagnosticRow, RoutingDiagnosticRow } from '../lib/types';
 import DiagnosticsPanel from './DiagnosticsPanel';
 
 const diagnosticsStoreState: {
-  diagnosticRows: RoutingDiagnosticRow[];
+  diagnosticRows: DiagnosticRow[];
   packetStats: Map<number, unknown>;
   packetCache: Map<number, unknown>;
   getCuStats24h: () => null;
@@ -187,5 +187,45 @@ describe('DiagnosticsPanel node click', () => {
     const fallbackLabel = `!${nodeId.toString(16)}`;
     fireEvent.click(screen.getAllByText(fallbackLabel)[0]);
     expect(onNodeClick).not.toHaveBeenCalled();
+  });
+});
+
+describe('DiagnosticsPanel cross-protocol RF', () => {
+  it('lists MeshCore interference at myNodeNum under dedicated MeshCore section, not Connected node (you)', () => {
+    const myId = 0xface;
+    const foreignRow: RfDiagnosticRow = {
+      kind: 'rf',
+      id: 'rf:face:meshcore_activity_detected',
+      nodeId: myId,
+      condition: 'MeshCore Activity Detected',
+      cause: 'MeshCore node transmitting on this frequency.',
+      severity: 'info',
+      detectedAt: Date.now(),
+    };
+    diagnosticsStoreState.diagnosticRows = [foreignRow];
+    diagnosticsStoreState.packetStats = new Map();
+    const node = minimalNode(myId);
+    const nodes = new Map<number, MeshNode>([[myId, node]]);
+
+    render(
+      <DiagnosticsPanel
+        nodes={nodes}
+        myNodeNum={myId}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={true}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshtastic"
+      />,
+    );
+
+    expect(screen.queryByText(/Connected node \(you\)/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /meshcore nodes heard on frequency/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/they can contribute to utilization and retry issues/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText('MeshCore Activity Detected')).toBeInTheDocument();
   });
 });

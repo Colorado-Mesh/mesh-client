@@ -83,7 +83,20 @@ export async function generateDataPackage(
 
   const buf = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
   const outputPath = path.join(app.getPath('userData'), 'tak-package.zip');
-  fs.writeFileSync(outputPath, buf);
+  const tmpPath = outputPath + '.tmp';
+  try {
+    fs.writeFileSync(tmpPath, buf);
+    fs.renameSync(tmpPath, outputPath);
+  } catch (e) {
+    try {
+      fs.rmSync(tmpPath, { force: true });
+    } catch {
+      // catch-no-log-ok best-effort cleanup
+    }
+    throw new Error(
+      `Failed to write TAK data package: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
 
   shell.showItemInFolder(outputPath);
   return outputPath;

@@ -41,6 +41,13 @@ describe('MeshCore packet log IPC (source contract)', () => {
   });
 });
 
+describe('Meshtastic MQTT waypoint IPC (source contract)', () => {
+  it('registers publishWaypoint handler with validation', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publishWaypoint'");
+    expect(INDEX_SOURCE).toContain('validateMqttPublishWaypointArgs');
+  });
+});
+
 describe('MQTT forwarder dropped-event logs (source contract)', () => {
   it('sanitizes dynamic MQTT fields when mainWindow is not ready', () => {
     expect((INDEX_SOURCE.match(/sanitizeLogMessage\(String\(s\)\)/g) ?? []).length).toBe(2);
@@ -53,6 +60,11 @@ describe('Meshtastic message DB IPC (source contract)', () => {
   it('registers db:updateMessagePacketId for optimistic packet_id → RF id (tapback reply_id)', () => {
     expect(INDEX_SOURCE).toContain("'db:updateMessagePacketId'");
     expect(INDEX_SOURCE).toMatch(/UPDATE messages SET packet_id = \? WHERE packet_id = \?/);
+  });
+
+  it('updateMessageReceivedVia merges rx_hops with COALESCE when upgrading to both', () => {
+    expect(INDEX_SOURCE).toContain("'db:updateMessageReceivedVia'");
+    expect(INDEX_SOURCE).toMatch(/rx_hops = COALESCE\(\?, rx_hops\)/);
   });
 });
 

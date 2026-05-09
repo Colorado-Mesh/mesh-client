@@ -161,7 +161,7 @@ export interface ElectronAPI {
     deleteNodesWithoutLongname: () => Promise<number>;
     prunePositionHistory: (days: number) => Promise<number>;
     clearNodePositions: () => Promise<unknown>;
-    updateMessageReceivedVia: (packetId: number) => Promise<unknown>;
+    updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<unknown>;
     /** Meshtastic: replace optimistic temp `packet_id` with RF `sendText()` id for `reply_id` / tapback matching. */
     updateMessagePacketId: (oldPacketId: number, newPacketId: number) => Promise<unknown>;
 
@@ -184,6 +184,7 @@ export interface ElectronAPI {
       rx_packet_fingerprint?: string | null;
       reply_preview_text?: string | null;
       reply_preview_sender?: string | null;
+      rx_hops?: number | null;
     }) => Promise<unknown>;
     saveMeshcoreContact: (contact: {
       node_id: number;
@@ -395,6 +396,7 @@ export interface ElectronAPI {
       channelName?: string;
       emoji?: number;
       replyId?: number;
+      publishJsonMirror: boolean;
     }) => Promise<unknown>;
     publishNodeInfo: (args: {
       from: number;
@@ -402,6 +404,7 @@ export interface ElectronAPI {
       shortName: string;
       channelName?: string;
       hwModel?: number;
+      publishJsonMirror: boolean;
     }) => Promise<unknown>;
     publishPosition: (args: {
       from: number;
@@ -410,6 +413,24 @@ export interface ElectronAPI {
       latitudeI: number;
       longitudeI: number;
       altitude?: number;
+      publishJsonMirror: boolean;
+    }) => Promise<unknown>;
+    publishWaypoint: (args: {
+      from: number;
+      to: number;
+      channel: number;
+      channelName: string;
+      publishJsonMirror: boolean;
+      waypoint: {
+        id: number;
+        latitudeI: number;
+        longitudeI: number;
+        name: string;
+        description?: string;
+        icon?: number;
+        lockedTo?: number;
+        expire?: number;
+      };
     }) => Promise<unknown>;
     publishMeshcore: (args: {
       text: string;

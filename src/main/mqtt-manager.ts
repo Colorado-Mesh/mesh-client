@@ -28,6 +28,7 @@ const {
   MeshPacketSchema,
   RoutingSchema,
   RouteDiscoverySchema,
+  WaypointSchema,
 } = Mesh;
 const { PortNum } = Portnums;
 
@@ -56,6 +57,18 @@ export function parsePsk(b64: string): Buffer | null {
   const out = Buffer.alloc(16, 0);
   raw.copy(out, 0, 0, Math.min(raw.length, 16));
   return out;
+}
+
+/** Map numeric PortNum to protobuf enum name string (e.g. TEXT_MESSAGE_APP). */
+function portNumEnumToProtoName(portnum: number): string {
+  const entries = Object.entries(PortNum).filter(([, v]) => typeof v === 'number') as [
+    string,
+    number,
+  ][];
+  for (const [name, value] of entries) {
+    if (value === portnum) return name;
+  }
+  return 'UNKNOWN_APP';
 }
 
 /**
@@ -115,6 +128,8 @@ interface MqttPublishOptions {
   channelName?: string;
   emoji?: number;
   replyId?: number;
+  /** When true, also publish firmware-style JSON on `/2/json/...` (cleartext); only for default public PSK channel. */
+  publishJsonMirror: boolean;
 }
 
 function coordWarning(lat: number, lon: number): string | null {
@@ -414,7 +429,7 @@ export class MQTTManager extends EventEmitter {
 
   /**
    * Publish an encrypted Data payload as a MeshPacket in a ServiceEnvelope.
-   * Used by publish(), publishNodeInfo(), and publishPosition().
+   * Used by publish(), publishNodeInfo(), publishPosition(), publishWaypoint().
    */
   private publishEncryptedData(
     from: number,
@@ -422,6 +437,7 @@ export class MQTTManager extends EventEmitter {
     channel: number,
     channelName: string,
     dataBytes: Uint8Array,
+    publishJsonMirror: boolean,
   ): number {
     if (!this.client?.connected || !this.currentSettings) {
       throw new Error('MQTT not connected');
@@ -459,7 +475,136 @@ export class MQTTManager extends EventEmitter {
     const publishTopic = `${prefix}2/e/${channelName}/${gatewayId}`;
     const publishPayload = Buffer.from(toBinary(ServiceEnvelopeSchema, envelope));
     this.client.publish(publishTopic, publishPayload);
+
+    if (publishJsonMirror) {
+      try {
+        this.publishDecodedJsonMirror(
+          fromId,
+          toId,
+          channelId,
+          channelName,
+          gatewayId,
+          packetId,
+          dataBytes,
+        );
+      } catch (e) {
+        console.warn(
+          '[Meshtastic MQTT] JSON mirror failed:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
+    }
+
     return packetId;
+  }
+
+  /**
+   * Firmware-style JSON on `/2/json/...` for MQTT monitors (cleartext — gated by publishJsonMirror).
+   * Failure point: malformed decoded protobuf — skip mirror only; encrypted uplink already sent.
+   */
+  private publishDecodedJsonMirror(
+    fromId: number,
+    toId: number,
+    channelId: number,
+    channelName: string,
+    gatewayId: string,
+    packetId: number,
+    dataBytes: Uint8Array,
+  ): void {
+    if (!this.client?.connected || !this.currentSettings) return;
+
+    let rawData;
+    try {
+      rawData = fromBinary(DataSchema, dataBytes);
+    } catch {
+      // catch-no-log-ok garbage ciphertext or corrupt Data — skip JSON mirror only
+      return;
+    }
+
+    const portnum = rawData.portnum ?? PortNum.UNKNOWN_APP;
+    const prefix = this.currentSettings.topicPrefix.endsWith('/')
+      ? this.currentSettings.topicPrefix
+      : `${this.currentSettings.topicPrefix}/`;
+    const topicJson = `${prefix}2/json/${channelName}/${gatewayId}`;
+    const ts = Math.floor(Date.now() / 1000);
+
+    const body: Record<string, unknown> = {
+      id: packetId >>> 0,
+      timestamp: ts,
+      to: toId >>> 0,
+      from: fromId >>> 0,
+      channel: channelId >>> 0,
+      sender: gatewayId,
+      portnum: portNumEnumToProtoName(portnum),
+    };
+
+    try {
+      if (portnum === PortNum.TEXT_MESSAGE_APP) {
+        body.type = 'text';
+        const textBytes = rawData.payload ?? new Uint8Array();
+        const textStr = new TextDecoder().decode(textBytes);
+        let payloadVal: unknown;
+        try {
+          const parsed: unknown = JSON.parse(textStr);
+          if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+            payloadVal = parsed;
+          } else {
+            payloadVal = { text: textStr };
+          }
+        } catch {
+          // catch-no-log-ok payload is plaintext, not JSON — use { text }
+          payloadVal = { text: textStr };
+        }
+        body.payload = payloadVal;
+        if (rawData.emoji != null && rawData.emoji !== 0) {
+          body.emoji = rawData.emoji;
+        }
+        if (rawData.replyId != null && rawData.replyId !== 0) {
+          body.replyId = rawData.replyId;
+        }
+      } else if (portnum === PortNum.NODEINFO_APP && rawData.payload?.length) {
+        body.type = 'nodeinfo';
+        const user = fromBinary(UserSchema, rawData.payload);
+        body.payload = {
+          id: user.id ?? '',
+          longname: user.longName ?? '',
+          shortname: user.shortName ?? '',
+          hardware: user.hwModel ?? 0,
+          role: user.role ?? 0,
+        };
+      } else if (portnum === PortNum.POSITION_APP && rawData.payload?.length) {
+        body.type = 'position';
+        const pos = fromBinary(PositionSchema, rawData.payload);
+        const p: Record<string, unknown> = {
+          latitude_i: pos.latitudeI ?? 0,
+          longitude_i: pos.longitudeI ?? 0,
+        };
+        if (pos.altitude != null) p.altitude = pos.altitude;
+        if (pos.time != null) p.time = pos.time;
+        body.payload = p;
+      } else if (portnum === PortNum.WAYPOINT_APP && rawData.payload?.length) {
+        body.type = 'waypoint';
+        const wp = fromBinary(WaypointSchema, rawData.payload);
+        body.payload = {
+          id: wp.id ?? 0,
+          name: wp.name ?? '',
+          description: wp.description ?? '',
+          expire: wp.expire ?? 0,
+          locked_to: wp.lockedTo ?? 0,
+          latitude_i: wp.latitudeI ?? 0,
+          longitude_i: wp.longitudeI ?? 0,
+        };
+      } else {
+        return;
+      }
+
+      this.client.publish(topicJson, JSON.stringify(body), { qos: 0 });
+    } catch (e) {
+      console.warn(
+        '[Meshtastic MQTT] JSON mirror encode failed:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+    }
   }
 
   publish(options: MqttPublishOptions): number {
@@ -471,6 +616,7 @@ export class MQTTManager extends EventEmitter {
       channelName = 'LongFast',
       emoji,
       replyId,
+      publishJsonMirror,
     } = options;
 
     const fromId = from >>> 0;
@@ -491,6 +637,7 @@ export class MQTTManager extends EventEmitter {
       channelId,
       channelName,
       toBinary(DataSchema, data),
+      publishJsonMirror,
     );
   }
 
@@ -503,7 +650,8 @@ export class MQTTManager extends EventEmitter {
     longName: string,
     shortName: string,
     channelName: string,
-    hwModel?: number,
+    hwModel: number | undefined,
+    publishJsonMirror: boolean,
   ): number {
     const user = create(UserSchema, {
       id: `!${from.toString(16).padStart(8, '0')}`,
@@ -521,6 +669,7 @@ export class MQTTManager extends EventEmitter {
       0,
       channelName,
       toBinary(DataSchema, data),
+      publishJsonMirror,
     );
   }
 
@@ -534,7 +683,8 @@ export class MQTTManager extends EventEmitter {
     channelName: string,
     latitudeI: number,
     longitudeI: number,
-    altitude?: number,
+    altitude: number | undefined,
+    publishJsonMirror: boolean,
   ): number {
     const position = create(PositionSchema, {
       latitudeI,
@@ -551,6 +701,51 @@ export class MQTTManager extends EventEmitter {
       channel,
       channelName,
       toBinary(DataSchema, data),
+      publishJsonMirror,
+    );
+  }
+
+  /**
+   * Publish a Waypoint packet (WAYPOINT_APP). Typically broadcast.
+   */
+  publishWaypoint(
+    from: number,
+    to: number,
+    channel: number,
+    channelName: string,
+    waypoint: {
+      id: number;
+      latitudeI: number;
+      longitudeI: number;
+      name: string;
+      description?: string;
+      icon?: number;
+      lockedTo?: number;
+      expire?: number;
+    },
+    publishJsonMirror: boolean,
+  ): number {
+    const wp = create(WaypointSchema, {
+      id: waypoint.id,
+      latitudeI: waypoint.latitudeI,
+      longitudeI: waypoint.longitudeI,
+      name: waypoint.name,
+      description: waypoint.description ?? '',
+      icon: waypoint.icon ?? 0,
+      lockedTo: waypoint.lockedTo ?? 0,
+      expire: waypoint.expire ?? 0,
+    });
+    const data = create(DataSchema, {
+      portnum: PortNum.WAYPOINT_APP,
+      payload: toBinary(WaypointSchema, wp),
+    });
+    return this.publishEncryptedData(
+      from >>> 0,
+      to >>> 0,
+      channel >>> 0,
+      channelName,
+      toBinary(DataSchema, data),
+      publishJsonMirror,
     );
   }
 
@@ -957,7 +1152,7 @@ export class MQTTManager extends EventEmitter {
     };
     this.emit('message', msg);
     this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-    this.emitMinimalNodeUpdate(nodeId);
+    this.emitMinimalNodeUpdate(nodeId, undefined, PortNum.TEXT_MESSAGE_APP);
   }
 
   private handleJsonPosition(json: Record<string, unknown>, topic: string): void {

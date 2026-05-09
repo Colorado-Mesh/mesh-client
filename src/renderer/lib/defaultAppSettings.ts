@@ -20,4 +20,6 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   distanceUnit: 'miles' as const,
   coordinateFormat: 'decimal' as const,
   autoFloodAdvertIntervalHours: 12,
+  locale: 'en' as string,
+  chatCompactMode: false,
 };

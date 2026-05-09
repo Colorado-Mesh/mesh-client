@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const DEFAULT_TAB_NAMES = [
   'Connection',
@@ -16,52 +17,73 @@ const DEFAULT_TAB_NAMES = [
   'Sniffer',
 ];
 
-function tabShortcutDisplayName(tabName: string): string {
-  return tabName === 'Sniffer' ? 'Packet Sniffer' : tabName;
-}
-
-const OTHER_SHORTCUTS = [
-  { keys: 'Cmd/Ctrl + Shift + F', action: 'Toggle message search (Chat tab)' },
-  { keys: 'Escape', action: 'Close search / close DM panel (Chat tab)' },
-  { keys: 'Enter', action: 'Send message' },
-  { keys: 'Shift + Enter', action: 'New line in message' },
-  { keys: '?', action: 'Open this keyboard shortcuts help' },
-  { keys: 'Cmd/Ctrl + [', action: 'Switch to Meshtastic' },
-  { keys: 'Cmd/Ctrl + ]', action: 'Switch to MeshCore' },
-];
-
 interface KeyboardShortcutsModalProps {
   onClose: () => void;
-  /** Current tab labels (e.g. from App). When in MeshCore mode, tab 6 is "Repeaters" instead of "Modules". */
-  tabNames?: string[];
+  /** Translated sidebar tab labels in visible order (from App). */
+  tabLabels?: string[];
+  /** Stable English slot ids per visible tab (from App). */
+  tabSlotIds?: string[];
 }
 
-export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardShortcutsModalProps) {
+export default function KeyboardShortcutsModal({
+  onClose,
+  tabLabels,
+  tabSlotIds,
+}: KeyboardShortcutsModalProps) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const shortcuts = useMemo(() => {
-    const currentNames = tabNames ?? DEFAULT_TAB_NAMES;
     const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A', 'M', 'S'];
-    const tabShortcuts = DEFAULT_TAB_NAMES.map((name, i) => {
-      const currentTabIndex = currentNames.indexOf(name);
-      const currentTabAtPosition = currentNames[i];
+    const slots = tabSlotIds ?? DEFAULT_TAB_NAMES;
+    const labels =
+      tabLabels ??
+      DEFAULT_TAB_NAMES.map((slot) =>
+        slot === 'Sniffer' ? t('shortcuts.packetSniffer') : t(`tabs.${slot.toLowerCase()}`),
+      );
+
+    const tabShortcuts = DEFAULT_TAB_NAMES.map((_canonical, i) => {
+      const slotAtPosition = slots[i] ?? DEFAULT_TAB_NAMES[i];
+      const labelAtPosition =
+        labels[i] ??
+        (DEFAULT_TAB_NAMES[i] === 'Sniffer'
+          ? t('shortcuts.packetSniffer')
+          : t(`tabs.${DEFAULT_TAB_NAMES[i].toLowerCase()}`));
+      const fromApp = tabLabels != null && tabLabels.length === tabSlotIds?.length;
+
+      const displayName =
+        slotAtPosition === 'Sniffer' ? t('shortcuts.packetSniffer') : labelAtPosition;
+
       let suffix = '';
-      if (currentTabAtPosition !== name) {
-        if (i === 7 && currentTabIndex === -1) {
-          suffix = ' (not available in MeshCore)';
-        } else if (i === 8 && currentTabIndex === -1) {
-          suffix = ' (not available in MeshCore)';
-        } else if (i === 5 && currentTabAtPosition === 'Repeaters') {
-          suffix = ' (MeshCore: Repeaters)';
+      if (!fromApp && i < slots.length) {
+        const currentTabIndex = slots.indexOf(DEFAULT_TAB_NAMES[i]);
+        if (slots[i] !== DEFAULT_TAB_NAMES[i]) {
+          if (i === 7 && currentTabIndex === -1) {
+            suffix = t('shortcuts.notInMeshCore');
+          } else if (i === 8 && currentTabIndex === -1) {
+            suffix = t('shortcuts.notInMeshCore');
+          } else if (i === 5 && slotAtPosition === 'Repeaters') {
+            suffix = t('shortcuts.meshCoreRepeaters');
+          }
         }
       }
+
       return {
         keys: `Cmd/Ctrl + ${keys[i]}`,
-        action: `Switch to ${tabShortcutDisplayName(name)} tab${suffix}`,
+        action: t('shortcuts.switchToTab', { name: displayName }) + suffix,
       };
     });
-    return [...tabShortcuts, ...OTHER_SHORTCUTS];
-  }, [tabNames]);
+    const otherShortcuts = [
+      { keys: 'Cmd/Ctrl + Shift + F', action: t('shortcuts.toggleSearch') },
+      { keys: 'Escape', action: t('shortcuts.closeSearch') },
+      { keys: 'Enter', action: t('shortcuts.sendMessage') },
+      { keys: 'Shift + Enter', action: t('shortcuts.newLine') },
+      { keys: '?', action: t('shortcuts.openHelp') },
+      { keys: 'Cmd/Ctrl + [', action: t('shortcuts.switchMeshtastic') },
+      { keys: 'Cmd/Ctrl + ]', action: t('shortcuts.switchMeshCore') },
+    ];
+    return [...tabShortcuts, ...otherShortcuts];
+  }, [tabLabels, tabSlotIds, t]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -108,7 +130,7 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
-        aria-label="Close dialog"
+        aria-label={t('aria.closeDialog')}
         className="absolute inset-0 cursor-pointer border-0 bg-black/50 p-0 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -121,11 +143,11 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
       >
         <div className="flex items-center justify-between border-b border-gray-700 px-5 py-4">
           <h2 id="shortcuts-title" className="text-lg font-semibold text-gray-100">
-            Keyboard Shortcuts
+            {t('shortcuts.title')}
           </h2>
           <button
             onClick={onClose}
-            aria-label="Close dialog"
+            aria-label={t('aria.closeDialog')}
             className="hover:bg-secondary-dark text-muted rounded-lg p-1.5 transition-colors hover:text-gray-200"
           >
             <svg
@@ -141,14 +163,14 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
         </div>
         <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
           <table className="w-full text-sm">
-            <caption className="sr-only">Application keyboard shortcuts</caption>
+            <caption className="sr-only">{t('shortcuts.caption')}</caption>
             <thead>
               <tr className="text-muted border-b border-gray-700 text-left text-xs tracking-wider uppercase">
                 <th scope="col" className="pb-2 font-medium">
-                  Shortcut
+                  {t('shortcuts.shortcutColumn')}
                 </th>
                 <th scope="col" className="pb-2 pl-4 font-medium">
-                  Action
+                  {t('shortcuts.actionColumn')}
                 </th>
               </tr>
             </thead>
@@ -165,11 +187,7 @@ export default function KeyboardShortcutsModal({ onClose, tabNames }: KeyboardSh
               ))}
             </tbody>
           </table>
-          <p className="text-muted mt-3 text-xs leading-relaxed">
-            Cmd/Ctrl+0, A, M, and S switch to the App, Diagnostics, Stats, and Packet Sniffer tabs
-            by name when those tabs are visible (not by fixed slot, so shortcuts stay correct when
-            some tabs are hidden).
-          </p>
+          <p className="text-muted mt-3 text-xs leading-relaxed">{t('shortcuts.footerNote')}</p>
         </div>
       </div>
     </div>

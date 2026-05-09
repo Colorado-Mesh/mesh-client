@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { LocationFilter } from '../App';
 import { getAppSettingsRaw, mergeAppSetting, setAppSettingsRaw } from '../lib/appSettingsStorage';
@@ -44,14 +45,6 @@ const GPS_REFRESH_INTERVAL_LABELS: Record<number, string> = {
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
 const CLEAR_ALL_CHANNELS_VALUE = -999_999;
 
-const HISTORY_WINDOW_LABELS: Record<number, string> = {
-  1: '1 hour',
-  4: '4 hours',
-  24: '24 hours',
-  72: '3 days',
-  168: '7 days',
-};
-
 // ─── Confirmation Modal ─────────────────────────────────────────
 function ConfirmModal({
   title,
@@ -68,11 +61,12 @@ function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <button
         type="button"
-        aria-label="Cancel"
+        aria-label={t('common.cancel')}
         className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0 backdrop-blur-sm"
         onClick={onCancel}
       />
@@ -83,10 +77,10 @@ function ConfirmModal({
         <div className="flex gap-3 pt-2">
           <button
             onClick={onCancel}
-            aria-label="Cancel"
+            aria-label={t('common.cancel')}
             className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={onConfirm}
@@ -125,6 +119,7 @@ interface AppSettings {
   messageLimitEnabled: boolean;
   messageLimitCount: number;
   autoFloodAdvertIntervalHours: number;
+  chatCompactMode: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -160,6 +155,7 @@ interface Props {
   onMessagesPruned?: () => void;
   onClearMeshcoreRepeaters?: () => Promise<void>;
   onAutoFloodAdvertIntervalChange?: (hours: number) => void;
+  onChatCompactModeChange?: (compact: boolean) => void;
 }
 
 interface PendingAction {
@@ -188,9 +184,11 @@ export default function AppPanel({
   onMessagesPruned,
   onClearMeshcoreRepeaters,
   onAutoFloodAdvertIntervalChange,
+  onChatCompactModeChange,
 }: Props) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const clearDiagnostics = useDiagnosticsStore((s) => s.clearDiagnostics);
   const showPaths = usePositionHistoryStore((s) => s.showPaths);
   const setShowPaths = usePositionHistoryStore((s) => s.setShowPaths);
@@ -198,6 +196,16 @@ export default function AppPanel({
   const setHistoryWindow = usePositionHistoryStore((s) => s.setHistoryWindow);
   const clearHistory = usePositionHistoryStore((s) => s.clearHistory);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
+
+  const historyWindowOptionLabels = useMemo((): Record<number, string> => {
+    return {
+      1: t('appPanel.historyWindow1h'),
+      4: t('appPanel.historyWindow4h'),
+      24: t('appPanel.historyWindow24h'),
+      72: t('appPanel.historyWindow3d'),
+      168: t('appPanel.historyWindow7d'),
+    };
+  }, [t]);
 
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
 
@@ -241,6 +249,10 @@ export default function AppPanel({
     settings.filterMqttOnly,
     onLocationFilterChange,
   ]);
+
+  useEffect(() => {
+    onChatCompactModeChange?.(settings.chatCompactMode);
+  }, [settings.chatCompactMode, onChatCompactModeChange]);
 
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -287,12 +299,12 @@ export default function AppPanel({
         },
         (err: unknown) => {
           console.error('[AppPanel] persist message retention failed', err);
-          addToast('Failed to save message retention setting.', 'error');
+          addToast(t('appPanel.failedSaveRetention'), 'error');
           setRetention(previous);
         },
       );
     },
-    [addToast],
+    [addToast, t],
   );
 
   const updateRetentionEnabled = useCallback(
@@ -392,11 +404,11 @@ export default function AppPanel({
     const lat = parseFloat(staticLatInput);
     const lon = parseFloat(staticLonInput);
     if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
-      addToast('Invalid latitude. Must be between -90 and 90.', 'error');
+      addToast(t('appPanel.invalidLatitude'), 'error');
       return;
     }
     if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
-      addToast('Invalid longitude. Must be between -180 and 180.', 'error');
+      addToast(t('appPanel.invalidLongitude'), 'error');
       return;
     }
     try {
@@ -413,12 +425,12 @@ export default function AppPanel({
       setGpsRefreshInterval(0);
       onGpsIntervalChange?.(0);
       onRefreshGps?.();
-      addToast('Static position saved.', 'success');
+      addToast(t('appPanel.staticPositionSaved'), 'success');
     } catch (e) {
       console.warn('[AppPanel] save static position failed', e);
-      addToast('Failed to save static position.', 'error');
+      addToast(t('appPanel.failedSavePosition'), 'error');
     }
-  }, [staticLatInput, staticLonInput, addToast, onRefreshGps, onGpsIntervalChange]);
+  }, [staticLatInput, staticLonInput, addToast, onRefreshGps, onGpsIntervalChange, t]);
 
   const clearStaticPosition = useCallback(() => {
     try {
@@ -435,12 +447,12 @@ export default function AppPanel({
       setStaticLonInput('');
       setHasStaticPosition(false);
       onRefreshGps?.();
-      addToast('Static position cleared.', 'success');
+      addToast(t('appPanel.staticPositionCleared'), 'success');
     } catch (e) {
       console.warn('[AppPanel] clear static position failed', e);
-      addToast('Failed to clear static position.', 'error');
+      addToast(t('appPanel.failedClearPosition'), 'error');
     }
-  }, [addToast, onRefreshGps]);
+  }, [addToast, onRefreshGps, t]);
 
   // ─── Message channel selection ──────────────────────────────
   const [msgChannels, setMsgChannels] = useState<number[]>([]);
@@ -474,11 +486,11 @@ export default function AppPanel({
 
   const getChannelLabel = useCallback(
     (ch: number) => {
-      if (ch === -1) return 'Direct messages';
+      if (ch === -1) return t('radioPanel.directMessages');
       const named = channels.find((c) => c.index === ch);
       return named ? `Channel ${ch} — ${named.name}` : `Channel ${ch}`;
     },
-    [channels],
+    [channels, t],
   );
 
   // ─── Confirmation flow ──────────────────────────────────────
@@ -505,21 +517,26 @@ export default function AppPanel({
       const messageActions = ['Clear Messages', 'Clear All Data'];
       if (nodeActions.includes(actionName)) onNodesPruned?.();
       if (messageActions.includes(actionName)) onMessagesPruned?.();
-      addToast(`${actionName} completed successfully.`, 'success');
+      addToast(t('appPanel.actionCompleted', { name: actionName }), 'success');
     } catch (err) {
       console.warn('[AppPanel] pending action failed', err);
-      addToast(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      addToast(
+        t('appPanel.actionFailed', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        'error',
+      );
     }
-  }, [pendingAction, addToast, onNodesPruned, onMessagesPruned]);
+  }, [pendingAction, addToast, onNodesPruned, onMessagesPruned, t]);
 
   return (
     <div className="w-full space-y-6">
-      <h2 className="text-xl font-semibold text-gray-200">App Settings</h2>
+      <h2 className="text-xl font-semibold text-gray-200">{t('appPanel.title')}</h2>
 
       {/* Log panel visibility */}
       {onLogPanelVisibleChange && (
         <div className="space-y-2">
-          <h3 className="text-muted text-sm font-medium">Log panel</h3>
+          <h3 className="text-muted text-sm font-medium">{t('appPanel.logPanelSection')}</h3>
           <div className="bg-secondary-dark rounded-lg p-4">
             <div className="flex items-center gap-2">
               <input
@@ -529,20 +546,17 @@ export default function AppPanel({
                 onChange={(e) => {
                   onLogPanelVisibleChange(e.target.checked);
                 }}
-                aria-label="Show log panel (right side)"
+                aria-label={t('appPanel.showLogPanel')}
                 className="rounded border-gray-600"
               />
               <label
                 htmlFor="log-panel-visible-checkbox"
                 className="cursor-pointer text-sm text-gray-300"
               >
-                Show log panel (right side)
+                {t('appPanel.showLogPanel')}
               </label>
             </div>
-            <p className="text-muted mt-2 text-xs">
-              When enabled, a live log stream appears on the right. Debug lines require the checkbox
-              inside the log panel.
-            </p>
+            <p className="text-muted mt-2 text-xs">{t('appPanel.logPanelHelp')}</p>
           </div>
         </div>
       )}
@@ -550,10 +564,10 @@ export default function AppPanel({
       {/* Flood Advert schedule (MeshCore only) */}
       {protocol === 'meshcore' && (
         <div className="space-y-2">
-          <h3 className="text-muted text-sm font-medium">Flood Advert</h3>
+          <h3 className="text-muted text-sm font-medium">{t('appPanel.floodAdvertSection')}</h3>
           <div className="bg-secondary-dark space-y-2 rounded-lg p-4">
             <label htmlFor="flood-advert-interval" className="text-sm text-gray-300">
-              Automatically send a flood advert on a schedule:
+              {t('appPanel.floodAdvertScheduleLabel')}
             </label>
             <select
               id="flood-advert-interval"
@@ -565,44 +579,46 @@ export default function AppPanel({
               }}
               className="bg-deep-black focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
             >
-              <option value={0}>Disabled</option>
-              <option value={12}>Every 12 hours</option>
-              <option value={24}>Every 24 hours</option>
+              <option value={0}>{t('common.disabled')}</option>
+              <option value={12}>{t('appPanel.floodAdvertEvery12h')}</option>
+              <option value={24}>{t('appPanel.floodAdvertEvery24h')}</option>
             </select>
-            <p className="text-muted text-xs">
-              Sends a flood advert when connected and repeats at the chosen interval to keep your
-              node visible on the mesh.
-            </p>
+            <p className="text-muted text-xs">{t('appPanel.floodAdvertHelp')}</p>
           </div>
         </div>
       )}
 
       {/* GPS / Location */}
       <div className="space-y-3">
-        <h3 className="text-muted text-sm font-medium">GPS / Location</h3>
+        <h3 className="text-muted text-sm font-medium">{t('appPanel.gpsSection')}</h3>
         <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
           {ourPosition && (
             <p className="text-brand-green text-xs">
               {ourPosition.source === 'device'
-                ? `Device GPS: ${formatCoordPair(ourPosition.lat, ourPosition.lon, coordinateFormat)}`
+                ? t('appPanel.gpsSourceDevice', {
+                    coords: formatCoordPair(ourPosition.lat, ourPosition.lon, coordinateFormat),
+                  })
                 : ourPosition.source === 'static'
-                  ? `Static position: ${formatCoordPair(ourPosition.lat, ourPosition.lon, coordinateFormat)}`
+                  ? t('appPanel.gpsSourceStatic', {
+                      coords: formatCoordPair(ourPosition.lat, ourPosition.lon, coordinateFormat),
+                    })
                   : ourPosition.source === 'browser'
-                    ? `Browser location: ${formatCoordPair(ourPosition.lat, ourPosition.lon, coordinateFormat)}`
-                    : `IP location (city-level): ${formatCoordPair(ourPosition.lat, ourPosition.lon, coordinateFormat)}`}
+                    ? t('appPanel.gpsSourceBrowser', {
+                        coords: formatCoordPair(ourPosition.lat, ourPosition.lon, coordinateFormat),
+                      })
+                    : t('appPanel.gpsSourceIp', {
+                        coords: formatCoordPair(ourPosition.lat, ourPosition.lon, coordinateFormat),
+                      })}
             </p>
           )}
-          {!ourPosition && <p className="text-muted text-xs">No GPS position resolved yet.</p>}
+          {!ourPosition && <p className="text-muted text-xs">{t('appPanel.noGpsPositionYet')}</p>}
 
           {/* Static position override */}
           <div className="space-y-2 border-t border-gray-700 pt-1">
-            <p className="text-muted text-xs leading-relaxed">
-              Set a precise static position. When saved, this overrides browser and IP-based
-              location.
-            </p>
+            <p className="text-muted text-xs leading-relaxed">{t('appPanel.staticPositionDesc')}</p>
             <div className="flex items-center gap-2">
               <label htmlFor="apppanel-static-lat" className="w-8 text-sm text-gray-300">
-                Lat:
+                {t('appPanel.latLabel')}
               </label>
               <input
                 id="apppanel-static-lat"
@@ -614,12 +630,12 @@ export default function AppPanel({
                 onChange={(e) => {
                   setStaticLatInput(e.target.value);
                 }}
-                placeholder="e.g. 40.12345"
-                aria-label={`Lat: ${staticLatInput || 'e.g. 40.12345'}`}
+                placeholder={t('appPanel.latPlaceholderExample')}
+                aria-label={`${t('appPanel.latLabel')} ${staticLatInput || t('appPanel.latPlaceholderExample')}`}
                 className="bg-deep-black focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
               />
               <label htmlFor="apppanel-static-lon" className="w-8 text-sm text-gray-300">
-                Lon:
+                {t('appPanel.lonLabel')}
               </label>
               <input
                 id="apppanel-static-lon"
@@ -631,26 +647,26 @@ export default function AppPanel({
                 onChange={(e) => {
                   setStaticLonInput(e.target.value);
                 }}
-                placeholder="e.g. -105.12345"
-                aria-label={`Lon: ${staticLonInput || 'e.g. -105.12345'}`}
+                placeholder={t('appPanel.lonPlaceholderExample')}
+                aria-label={`${t('appPanel.lonLabel')} ${staticLonInput || t('appPanel.lonPlaceholderExample')}`}
                 className="bg-deep-black focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
               />
             </div>
             <div className="flex gap-2">
               <button
                 onClick={saveStaticPosition}
-                aria-label="Save Static Position"
+                aria-label={t('appPanel.saveStaticPosition')}
                 className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 border-brand-green/40 flex-1 rounded border px-3 py-1.5 text-sm font-medium transition-colors"
               >
-                Save Static Position
+                {t('appPanel.saveStaticPosition')}
               </button>
               {hasStaticPosition && (
                 <button
                   onClick={clearStaticPosition}
-                  aria-label="Clear"
+                  aria-label={t('common.clear')}
                   className="bg-secondary-dark rounded px-3 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-600"
                 >
-                  Clear
+                  {t('common.clear')}
                 </button>
               )}
             </div>
@@ -658,7 +674,7 @@ export default function AppPanel({
 
           <div className="flex items-center gap-2">
             <label htmlFor="apppanel-gps-interval" className="flex-1 text-sm text-gray-300">
-              Auto-refresh interval:
+              {t('appPanel.autoRefreshInterval')}
             </label>
             <select
               id="apppanel-gps-interval"
@@ -667,24 +683,22 @@ export default function AppPanel({
                 handleGpsIntervalChange(Number(e.target.value));
               }}
               disabled={hasStaticPosition}
-              aria-label={`Auto-refresh interval: ${GPS_REFRESH_INTERVAL_LABELS[gpsRefreshInterval] ?? gpsRefreshInterval}`}
+              aria-label={`${t('appPanel.autoRefreshInterval')} ${GPS_REFRESH_INTERVAL_LABELS[gpsRefreshInterval] ?? gpsRefreshInterval}`}
               className={`bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none ${hasStaticPosition ? 'cursor-not-allowed opacity-40' : ''}`}
             >
-              <option value={0}>Manual only</option>
-              <option value={900}>Every 15 min</option>
-              <option value={1800}>Every 30 min</option>
-              <option value={3600}>Every hour</option>
-              <option value={7200}>Every 2 hours</option>
+              <option value={0}>{t('appPanel.gpsIntervalManual')}</option>
+              <option value={900}>{t('appPanel.gpsInterval15min')}</option>
+              <option value={1800}>{t('appPanel.gpsInterval30min')}</option>
+              <option value={3600}>{t('appPanel.gpsIntervalHour')}</option>
+              <option value={7200}>{t('appPanel.gpsInterval2hours')}</option>
             </select>
           </div>
           {hasStaticPosition && (
-            <p className="text-muted text-xs">
-              Auto-refresh is disabled while a static position is active.
-            </p>
+            <p className="text-muted text-xs">{t('appPanel.autoRefreshDisabledStatic')}</p>
           )}
           <div className="flex items-center gap-2">
             <label htmlFor="apppanel-coord-format" className="flex-1 text-sm text-gray-300">
-              Coordinate format:
+              {t('appPanel.coordinateFormat')}
             </label>
             <select
               id="apppanel-coord-format"
@@ -694,32 +708,29 @@ export default function AppPanel({
                 updateSetting('coordinateFormat', fmt);
                 useCoordFormatStore.getState().setCoordinateFormat(fmt);
               }}
-              aria-label={`Coordinate format: ${settings.coordinateFormat === 'mgrs' ? 'MGRS' : 'Decimal Degrees'}`}
+              aria-label={`${t('appPanel.coordinateFormat')} ${settings.coordinateFormat === 'mgrs' ? t('appPanel.coordFormatMgrs') : t('appPanel.coordFormatDecimal')}`}
               className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
             >
-              <option value="decimal">Decimal Degrees</option>
-              <option value="mgrs">MGRS</option>
+              <option value="decimal">{t('appPanel.coordFormatDecimal')}</option>
+              <option value="mgrs">{t('appPanel.coordFormatMgrs')}</option>
             </select>
           </div>
           <button
             onClick={() => onRefreshGps?.()}
             disabled={gpsLoading}
-            aria-label={gpsLoading ? 'Refreshing...' : 'Refresh Now'}
+            aria-label={gpsLoading ? t('appPanel.gpsRefreshing') : t('appPanel.gpsRefreshNow')}
             className={`bg-secondary-dark rounded-lg px-4 py-2 text-sm font-medium text-gray-300 transition-colors ${gpsLoading ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-600'}`}
           >
-            {gpsLoading ? 'Refreshing...' : 'Refresh Now'}
+            {gpsLoading ? t('appPanel.gpsRefreshing') : t('appPanel.gpsRefreshNow')}
           </button>
         </div>
       </div>
 
       {/* Map & Node Filtering */}
       <div className="space-y-3">
-        <h3 className="text-muted text-sm font-medium">Map &amp; Node Filtering</h3>
+        <h3 className="text-muted text-sm font-medium">{t('appPanel.mapFilterSection')}</h3>
         <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
-          <p className="text-muted text-xs leading-relaxed">
-            Hides nodes beyond a set distance from your device. Filtering is display-only — nodes
-            remain in the database.
-          </p>
+          <p className="text-muted text-xs leading-relaxed">{t('appPanel.mapFilterDesc')}</p>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -728,16 +739,16 @@ export default function AppPanel({
               onChange={(e) => {
                 updateSetting('distanceFilterEnabled', e.target.checked);
               }}
-              aria-label="Filter distant nodes from map and node list"
+              aria-label={t('appPanel.filterDistantNodes')}
               className="accent-brand-green"
             />
             <label htmlFor="distanceFilter" className="cursor-pointer text-sm text-gray-300">
-              Filter distant nodes from map and node list
+              {t('appPanel.filterDistantNodesCheckbox')}
             </label>
           </div>
           <div className="flex items-center gap-2">
             <label htmlFor="apppanel-max-distance" className="text-sm text-gray-300">
-              Max distance:
+              {t('appPanel.maxDistanceLabel')}
             </label>
             <input
               id="apppanel-max-distance"
@@ -752,7 +763,7 @@ export default function AppPanel({
               className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
             <label htmlFor="apppanel-distance-unit" className="text-sm text-gray-300">
-              Unit:
+              {t('appPanel.unitLabel')}
             </label>
             <select
               id="apppanel-distance-unit"
@@ -764,8 +775,8 @@ export default function AppPanel({
               aria-label={`Unit: ${settings.distanceUnit}`}
               className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             >
-              <option value="miles">miles</option>
-              <option value="km">km</option>
+              <option value="miles">{t('appPanel.distanceUnitMiles')}</option>
+              <option value="km">{t('appPanel.distanceUnitKm')}</option>
             </select>
           </div>
           {settings.distanceFilterEnabled &&
@@ -778,11 +789,11 @@ export default function AppPanel({
                 homeNode.longitude !== 0;
               return !homeHasLocation ? (
                 <p className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-1.5 text-xs text-yellow-300">
-                  Your device has no GPS fix — filter is enabled but all nodes are shown.
+                  {t('appPanel.noGpsFix')}
                 </p>
               ) : null;
             })()}
-          <p className="text-muted text-xs">Note: Requires your device to have a valid GPS fix.</p>
+          <p className="text-muted text-xs">{t('appPanel.requiresGpsFix')}</p>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -791,11 +802,11 @@ export default function AppPanel({
               onChange={(e) => {
                 updateSetting('filterMqttOnly', e.target.checked);
               }}
-              aria-label="Hide MQTT-only nodes from map and node list"
+              aria-label={t('appPanel.hideMqttOnlyNodes')}
               className="accent-brand-green"
             />
             <label htmlFor="filterMqttOnly" className="cursor-pointer text-sm text-gray-300">
-              Hide MQTT-only nodes from map and node list
+              {t('appPanel.hideMqttOnlyNodes')}
             </label>
           </div>
           <div className="flex items-center gap-2">
@@ -806,16 +817,16 @@ export default function AppPanel({
               onChange={(e) => {
                 setShowPaths(e.target.checked);
               }}
-              aria-label="Show movement paths"
+              aria-label={t('appPanel.showMovementPaths')}
               className="accent-brand-green"
             />
             <label htmlFor="showMovementPaths" className="cursor-pointer text-sm text-gray-300">
-              Show movement paths
+              {t('appPanel.showMovementPaths')}
             </label>
           </div>
           <div className="flex items-center gap-2">
             <label htmlFor="apppanel-history-window" className="shrink-0 text-sm text-gray-400">
-              Position history window:
+              {t('appPanel.positionHistoryWindowLabel')}
             </label>
             <select
               id="apppanel-history-window"
@@ -823,14 +834,14 @@ export default function AppPanel({
               onChange={(e) => {
                 setHistoryWindow(Number(e.target.value));
               }}
-              aria-label={`Position history window: ${HISTORY_WINDOW_LABELS[historyWindowHours] ?? historyWindowHours}`}
+              aria-label={`${t('appPanel.positionHistoryWindowLabel')} ${historyWindowOptionLabels[historyWindowHours] ?? historyWindowHours}`}
               className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
             >
-              <option value={1}>1 hour</option>
-              <option value={4}>4 hours</option>
-              <option value={24}>24 hours</option>
-              <option value={72}>3 days</option>
-              <option value={168}>7 days</option>
+              <option value={1}>{t('appPanel.historyWindow1h')}</option>
+              <option value={4}>{t('appPanel.historyWindow4h')}</option>
+              <option value={24}>{t('appPanel.historyWindow24h')}</option>
+              <option value={72}>{t('appPanel.historyWindow3d')}</option>
+              <option value={168}>{t('appPanel.historyWindow7d')}</option>
             </select>
           </div>
         </div>
@@ -838,7 +849,7 @@ export default function AppPanel({
 
       {/* Retention & limits (config only — destructive actions are in Danger Zone below) */}
       <div className="space-y-3">
-        <h3 className="text-muted text-sm font-medium">Retention &amp; limits</h3>
+        <h3 className="text-muted text-sm font-medium">{t('appPanel.retentionLimitsHeading')}</h3>
 
         {/* Meshtastic node retention */}
         {protocol !== 'meshcore' && (
@@ -852,7 +863,7 @@ export default function AppPanel({
                 onChange={(e) => {
                   updateSetting('autoPruneEnabled', e.target.checked);
                 }}
-                aria-label="Auto-prune nodes on startup, older than"
+                aria-label={t('appPanel.autoPruneNodesOlderThan')}
                 className="accent-brand-green"
               />
               <label
@@ -860,7 +871,7 @@ export default function AppPanel({
                 htmlFor="autoPrune"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Auto-prune nodes on startup, older than
+                {t('appPanel.autoPruneNodesOlderThan')}
               </label>
               <input
                 id="apppanel-auto-prune-days"
@@ -875,7 +886,7 @@ export default function AppPanel({
                 aria-label={`Auto-prune nodes on startup, older than ${settings.autoPruneDays} days`}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">days</span>
+              <span className="text-sm text-gray-300">{t('common.days')}</span>
             </div>
 
             {/* Prune unnamed nodes on startup */}
@@ -888,20 +899,17 @@ export default function AppPanel({
                   onChange={(e) => {
                     updateSetting('pruneEmptyNamesEnabled', e.target.checked);
                   }}
-                  aria-label="Remove unnamed nodes on startup"
+                  aria-label={t('appPanel.removeUnnamedNodes')}
                   className="accent-brand-green"
                 />
                 <label
                   htmlFor="pruneEmptyNames"
                   className="flex-1 cursor-pointer text-sm text-gray-300"
                 >
-                  Remove unnamed nodes on startup
+                  {t('appPanel.removeUnnamedNodesLabel')}
                 </label>
               </div>
-              <p className="text-muted pl-6 text-xs">
-                Includes MQTT-only placeholders that still use the default !hex ID; favorited nodes
-                are kept.
-              </p>
+              <p className="text-muted pl-6 text-xs">{t('appPanel.unnamedNodesHint')}</p>
             </div>
 
             {/* Node cap */}
@@ -913,7 +921,7 @@ export default function AppPanel({
                 onChange={(e) => {
                   updateSetting('nodeCapEnabled', e.target.checked);
                 }}
-                aria-label="Cap total nodes, keep newest"
+                aria-label={t('appPanel.capTotalNodes')}
                 className="accent-brand-green"
               />
               <label
@@ -921,7 +929,7 @@ export default function AppPanel({
                 htmlFor="nodeCap"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Cap total nodes, keep newest
+                {t('appPanel.capTotalNodesLabel')}
               </label>
               <input
                 id="apppanel-node-cap-count"
@@ -936,7 +944,7 @@ export default function AppPanel({
                 aria-label={`Cap total nodes, keep newest ${settings.nodeCapCount} nodes`}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">nodes</span>
+              <span className="text-sm text-gray-300">{t('common.nodes')}</span>
             </div>
 
             {/* Position history prune */}
@@ -948,7 +956,7 @@ export default function AppPanel({
                 onChange={(e) => {
                   updateSetting('positionHistoryPruneEnabled', e.target.checked);
                 }}
-                aria-label="Auto-prune position history on startup, older than"
+                aria-label={t('appPanel.autoPrunePositionHistory')}
                 className="accent-brand-green"
               />
               <label
@@ -956,7 +964,7 @@ export default function AppPanel({
                 htmlFor="positionHistoryPrune"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Auto-prune position history on startup, older than
+                {t('appPanel.autoPrunePositionHistoryLabel')}
               </label>
               <input
                 id="apppanel-position-history-prune-days"
@@ -974,7 +982,7 @@ export default function AppPanel({
                 aria-label={`Auto-prune position history on startup, older than ${settings.positionHistoryPruneDays} days`}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">days</span>
+              <span className="text-sm text-gray-300">{t('common.days')}</span>
             </div>
           </div>
         )}
@@ -992,19 +1000,18 @@ export default function AppPanel({
                   onChange={(e) => {
                     updateSetting('meshcoreDeleteNeverAdvertised', e.target.checked);
                   }}
-                  aria-label="Remove contacts that have never advertised on startup"
+                  aria-label={t('appPanel.removeContactsNeverAdvertised')}
                   className="accent-brand-green"
                 />
                 <label
                   htmlFor="meshcoreDeleteNeverAdvertised"
                   className="flex-1 cursor-pointer text-sm text-gray-300"
                 >
-                  Remove contacts that have never advertised on startup
+                  {t('appPanel.meshcoreRemoveNeverAdvertisedLabel')}
                 </label>
               </div>
               <p className="text-muted pl-6 text-xs">
-                Removes stale placeholder contacts with no advert history; favorited contacts are
-                kept.
+                {t('appPanel.meshcoreRemoveNeverAdvertisedHint')}
               </p>
             </div>
 
@@ -1017,7 +1024,7 @@ export default function AppPanel({
                 onChange={(e) => {
                   updateSetting('meshcoreAutoPruneEnabled', e.target.checked);
                 }}
-                aria-label="Auto-prune unheard contacts on startup, older than"
+                aria-label={t('appPanel.autoPruneUnheardContacts')}
                 className="accent-brand-green"
               />
               <label
@@ -1025,7 +1032,7 @@ export default function AppPanel({
                 htmlFor="meshcoreAutoPrune"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Auto-prune unheard contacts on startup, older than
+                {t('appPanel.autoPruneUnheardContactsLabel')}
               </label>
               <input
                 id="apppanel-meshcore-auto-prune-days"
@@ -1043,7 +1050,7 @@ export default function AppPanel({
                 aria-label={`Auto-prune unheard contacts on startup, older than ${settings.meshcoreAutoPruneDays} days`}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">days</span>
+              <span className="text-sm text-gray-300">{t('common.days')}</span>
             </div>
 
             {/* Contact cap */}
@@ -1055,7 +1062,7 @@ export default function AppPanel({
                 onChange={(e) => {
                   updateSetting('meshcoreContactCapEnabled', e.target.checked);
                 }}
-                aria-label="Cap total contacts, keep most recently seen"
+                aria-label={t('appPanel.capTotalContacts')}
                 className="accent-brand-green"
               />
               <label
@@ -1063,7 +1070,7 @@ export default function AppPanel({
                 htmlFor="meshcoreContactCap"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Cap total contacts, keep most recently seen
+                {t('appPanel.capTotalContactsLabel')}
               </label>
               <input
                 id="apppanel-meshcore-contact-cap-count"
@@ -1081,7 +1088,7 @@ export default function AppPanel({
                 aria-label={`Cap total contacts, keep most recently seen ${settings.meshcoreContactCapCount} contacts`}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">contacts</span>
+              <span className="text-sm text-gray-300">{t('common.contacts')}</span>
             </div>
           </div>
         )}
@@ -1089,9 +1096,7 @@ export default function AppPanel({
         {/* Messages: load limit (localStorage) + DB retention cap — single card (issue #387). */}
         <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
           <p className="text-muted text-xs leading-relaxed">
-            Limit how many messages load into memory for the UI, and cap how many rows stay in
-            SQLite. Loading fewer keeps RAM down on busy networks; the database cap prunes older
-            messages on app startup (stored per protocol).
+            {t('appPanel.messagesLoadLimitIntro')}
           </p>
           <div className="flex items-center gap-2">
             <input
@@ -1101,7 +1106,7 @@ export default function AppPanel({
               onChange={(e) => {
                 updateSetting('messageLimitEnabled', e.target.checked);
               }}
-              aria-label="Limit messages loaded"
+              aria-label={t('appPanel.limitMessagesLoaded')}
               className="accent-brand-green"
             />
             <label
@@ -1109,7 +1114,7 @@ export default function AppPanel({
               htmlFor="messageLimit"
               className="flex-1 cursor-pointer text-sm text-gray-300"
             >
-              Limit messages loaded
+              {t('appPanel.limitMessagesLoadedLabel')}
             </label>
             <input
               id="apppanel-message-limit-count"
@@ -1128,7 +1133,7 @@ export default function AppPanel({
               aria-label={`Limit messages loaded ${settings.messageLimitCount} messages`}
               className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
-            <span className="text-sm text-gray-300">messages</span>
+            <span className="text-sm text-gray-300">{t('common.messages')}</span>
           </div>
           {protocol !== 'meshcore' ? (
             <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
@@ -1139,7 +1144,7 @@ export default function AppPanel({
                 onChange={(e) => {
                   updateRetentionEnabled('meshtastic', e.target.checked);
                 }}
-                aria-label="Cap stored messages, keep newest"
+                aria-label={t('appPanel.capStoredMessages')}
                 className="accent-brand-green"
               />
               <label
@@ -1147,7 +1152,7 @@ export default function AppPanel({
                 htmlFor="messageRetentionMeshtastic"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Cap stored messages, keep newest
+                {t('appPanel.capStoredMessagesLabel')}
               </label>
               <input
                 id="apppanel-message-retention-meshtastic-count"
@@ -1166,7 +1171,7 @@ export default function AppPanel({
                 aria-label={`Cap stored messages, keep newest ${retention.meshtasticCount} messages`}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">messages</span>
+              <span className="text-sm text-gray-300">{t('common.messages')}</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
@@ -1177,7 +1182,7 @@ export default function AppPanel({
                 onChange={(e) => {
                   updateRetentionEnabled('meshcore', e.target.checked);
                 }}
-                aria-label="Cap stored messages, keep newest"
+                aria-label={t('appPanel.capStoredMessages')}
                 className="accent-brand-green"
               />
               <label
@@ -1185,7 +1190,7 @@ export default function AppPanel({
                 htmlFor="messageRetentionMeshcore"
                 className="flex-1 cursor-pointer text-sm text-gray-300"
               >
-                Cap stored messages, keep newest
+                {t('appPanel.capStoredMessagesLabel')}
               </label>
               <input
                 id="apppanel-message-retention-meshcore-count"
@@ -1204,75 +1209,94 @@ export default function AppPanel({
                 aria-label={`Cap stored messages, keep newest ${retention.meshcoreCount} messages`}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
-              <span className="text-sm text-gray-300">messages</span>
+              <span className="text-sm text-gray-300">{t('common.messages')}</span>
             </div>
           )}
+          <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+            <input
+              type="checkbox"
+              id="chatCompactMode"
+              checked={settings.chatCompactMode}
+              onChange={(e) => {
+                updateSetting('chatCompactMode', e.target.checked);
+              }}
+              aria-label={t('appPanel.compactMessages')}
+              className="accent-brand-green"
+            />
+            <label htmlFor="chatCompactMode" className="cursor-pointer text-sm text-gray-300">
+              {t('appPanel.compactMessages')}
+            </label>
+          </div>
         </div>
       </div>
 
       {/* Data Management */}
       <div className="space-y-3">
-        <h3 className="text-muted text-sm font-medium">Data Management</h3>
-        <p className="text-muted text-xs">
-          Export your local database (messages &amp; nodes) as a .db file, or import/merge another
-          user's database into yours.
-        </p>
+        <h3 className="text-muted text-sm font-medium">{t('appPanel.dataManagementSection')}</h3>
+        <p className="text-muted text-xs">{t('appPanel.dataManagementDesc')}</p>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           <button
-            aria-label="Export Database"
+            aria-label={t('appPanel.exportDatabase')}
             onClick={async () => {
               try {
                 console.debug('[AppPanel] exportDb');
                 const path = await window.electronAPI.db.exportDb();
                 if (path) {
-                  addToast(`Exported to: ${path}`, 'success');
+                  addToast(t('appPanel.exportedTo', { path }), 'success');
                 }
               } catch (err) {
                 console.warn('[AppPanel] export failed', err);
                 addToast(
-                  `Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+                  t('appPanel.exportFailed', {
+                    message: err instanceof Error ? err.message : 'Unknown error',
+                  }),
                   'error',
                 );
               }
             }}
             className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
-            Export Database
+            {t('appPanel.exportDatabaseButton')}
           </button>
 
           <button
-            aria-label="Import & Merge"
+            aria-label={t('appPanel.importMerge')}
             onClick={async () => {
               try {
                 console.debug('[AppPanel] importDb');
                 const result = await window.electronAPI.db.importDb();
                 if (result) {
                   addToast(
-                    `Merged: ${result.nodesAdded} new nodes, ${result.messagesAdded} new messages.`,
+                    t('appPanel.dbMerged', {
+                      nodesAdded: result.nodesAdded,
+                      messagesAdded: result.messagesAdded,
+                    }),
                     'success',
                   );
                 }
               } catch (err) {
                 console.warn('[AppPanel] import failed', err);
                 addToast(
-                  `Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+                  t('appPanel.importFailed', {
+                    message: err instanceof Error ? err.message : 'Unknown error',
+                  }),
                   'error',
                 );
               }
             }}
             className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
-            Import &amp; Merge
+            {t('appPanel.importMergeButton')}
           </button>
         </div>
       </div>
 
       {/* Appearance — collapsible; preset-only colors (no text input — Electron macOS menu warnings). */}
       <div className="space-y-2">
-        <h3 className="text-muted text-sm font-medium">Appearance</h3>
+        <h3 className="text-muted text-sm font-medium">{t('appPanel.appearanceSection')}</h3>
         <details className="group bg-secondary-dark rounded-lg border border-gray-700">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800/40 [&::-webkit-details-marker]:hidden">
-            <span>Color scheme</span>
+            <span>{t('appPanel.colorScheme')}</span>
             <svg
               className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
               fill="none"
@@ -1289,9 +1313,7 @@ export default function AppPanel({
             </svg>
           </summary>
           <div className="space-y-3 border-t border-gray-700 px-4 pt-1 pb-4">
-            <p className="text-muted text-xs">
-              Changes apply immediately and persist. Hover a token name for where it is used.
-            </p>
+            <p className="text-muted text-xs">{t('appPanel.themeColorsApplyHint')}</p>
             {THEME_TOKEN_META.map((meta) => {
               const hex = themeColors[meta.key];
               return (
@@ -1313,7 +1335,7 @@ export default function AppPanel({
                     {meta.label}
                   </div>
                   <div
-                    className="flex max-w-full min-w-0 flex-1 flex-nowrap gap-1 py-0.5 [scrollbar-width:thin]"
+                    className="flex max-w-full min-w-0 flex-1 [scrollbar-width:thin] flex-nowrap gap-1 py-0.5"
                     role="group"
                     aria-labelledby={`theme-color-heading-${meta.key}`}
                   >
@@ -1347,12 +1369,12 @@ export default function AppPanel({
               onClick={() => {
                 resetThemeColors();
                 setThemeColors({ ...DEFAULT_THEME_COLORS });
-                addToast('Colors reset to app defaults.', 'success');
+                addToast(t('appPanel.colorsReset'), 'success');
               }}
-              aria-label="Reset all colors to defaults"
+              aria-label={t('appPanel.resetAllColors')}
               className="bg-deep-black w-full rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
             >
-              Reset all colors to defaults
+              {t('appPanel.resetAllColorsButton')}
             </button>
           </div>
         </details>
@@ -1360,10 +1382,10 @@ export default function AppPanel({
 
       {/* Danger Zone — collapsible; same pattern as Appearance → Color scheme */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-red-400">Danger Zone</h3>
+        <h3 className="text-sm font-medium text-red-400">{t('appPanel.dangerZoneSection')}</h3>
         <details className="group rounded-lg border border-red-900 bg-red-950/20">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-red-300 hover:bg-red-950/40 [&::-webkit-details-marker]:hidden">
-            <span>Destructive actions</span>
+            <span>{t('appPanel.destructiveActions')}</span>
             <svg
               className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
               fill="none"
@@ -1380,22 +1402,19 @@ export default function AppPanel({
             </svg>
           </summary>
           <div className="space-y-4 border-t border-red-900/50 px-4 pt-1 pb-4">
-            <p className="text-xs text-red-400/80">
-              These actions are permanent and cannot be undone. Confirm each step carefully.
-            </p>
+            <p className="text-xs text-red-400/80">{t('appPanel.dangerZoneIntro')}</p>
 
             {/* Diagnostics (in-memory reset) */}
             <div className="space-y-2">
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-                Diagnostics
+                {t('appPanel.dangerZoneDiagnosticsHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
-                Clears in-memory routing anomalies, hop history, and packet stats. Rebuilds from new
-                packets.
+                {t('appPanel.dangerZoneDiagnosticsDesc')}
               </p>
               <button
                 type="button"
-                aria-label="Reset Diagnostics"
+                aria-label={t('appPanel.resetDiagnostics')}
                 onClick={() => {
                   executeWithConfirmation({
                     name: 'Reset Diagnostics',
@@ -1418,15 +1437,14 @@ export default function AppPanel({
 
             <div className="space-y-2 border-t border-red-900/50 pt-4">
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-                GPS positions
+                {t('appPanel.dangerZoneGpsHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
-                Removes stored GPS coordinates from all nodes without deleting nodes. Positions
-                repopulate as new data arrives.
+                {t('appPanel.dangerZoneGpsDesc')}
               </p>
               <button
                 type="button"
-                aria-label="Clear GPS Data"
+                aria-label={t('appPanel.clearGpsData')}
                 onClick={() => {
                   executeWithConfirmation({
                     name: 'Clear GPS Data',
@@ -1448,15 +1466,14 @@ export default function AppPanel({
 
             <div className="space-y-2 border-t border-red-900/50 pt-4">
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-                Position History
+                {t('appPanel.dangerZonePositionHistoryHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
-                Clears all persisted movement trail data and the current in-memory path overlay. New
-                positions will resume tracking immediately.
+                {t('appPanel.dangerZonePositionHistoryDesc')}
               </p>
               <button
                 type="button"
-                aria-label="Clear Position History"
+                aria-label={t('appPanel.clearPositionHistory')}
                 onClick={() => {
                   executeWithConfirmation({
                     name: 'Clear Position History',
@@ -1480,11 +1497,11 @@ export default function AppPanel({
             {/* Nodes */}
             <div className="space-y-3 border-t border-red-900/50 pt-4">
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-                Nodes
+                {t('appPanel.dangerZoneNodesHeading')}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <label htmlFor="apppanel-delete-age-days" className="text-sm text-gray-300">
-                  Delete nodes last heard more than
+                  {t('appPanel.deleteNodesOlderThanLabel')}
                 </label>
                 <input
                   id="apppanel-delete-age-days"
@@ -1497,10 +1514,10 @@ export default function AppPanel({
                   aria-label={`Delete nodes last heard more than ${deleteAgeDays} days`}
                   className="bg-deep-black w-20 rounded border border-red-800/60 px-2 py-1 text-right text-sm text-gray-200 focus:border-red-500 focus:outline-none"
                 />
-                <span className="text-sm text-gray-300">days</span>
+                <span className="text-sm text-gray-300">{t('common.days')}</span>
                 <button
                   type="button"
-                  aria-label="Delete Old Nodes"
+                  aria-label={t('appPanel.deleteOldNodes')}
                   onClick={() => {
                     executeWithConfirmation({
                       name: 'Delete Old Nodes',
@@ -1520,7 +1537,7 @@ export default function AppPanel({
               </div>
               <button
                 type="button"
-                aria-label="Prune MQTT-only Nodes"
+                aria-label={t('appPanel.pruneMqttOnlyNodes')}
                 onClick={() => {
                   executeWithConfirmation({
                     name: 'Prune MQTT-only Nodes',
@@ -1540,7 +1557,7 @@ export default function AppPanel({
               </button>
               <button
                 type="button"
-                aria-label="Prune Unnamed Nodes"
+                aria-label={t('appPanel.pruneUnnamedNodes')}
                 onClick={() => {
                   executeWithConfirmation({
                     name: 'Prune Unnamed Nodes',
@@ -1560,13 +1577,13 @@ export default function AppPanel({
               </button>
               <button
                 type="button"
-                aria-label="Prune No-Fix / Zero Island Nodes Removes nodes with null or near-zero coordinates (no GPS fix or at 0 deg N, 0 deg E)."
+                aria-label={t('appPanel.pruneNoFixNodes')}
                 onClick={() => {
                   const zeroIslandNodes = Array.from(nodes.values()).filter(
                     (n) => Math.abs(n.latitude ?? 0) < 0.5 && Math.abs(n.longitude ?? 0) < 0.5,
                   );
                   if (zeroIslandNodes.length === 0) {
-                    addToast('No no-fix or zero-island nodes found.', 'success');
+                    addToast(t('appPanel.noNoFixNodes'), 'success');
                     return;
                   }
                   executeWithConfirmation({
@@ -1584,14 +1601,14 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                <div className="font-medium">Prune No-Fix / Zero Island Nodes</div>
+                <div className="font-medium">{t('appPanel.pruneNoFixNodes')}</div>
                 <div className="mt-0.5 text-xs text-red-400/70">
-                  Removes nodes with no GPS fix (null coords) or near 0°N, 0°E.
+                  {t('appPanel.pruneNoFixSubtitle')}
                 </div>
               </button>
               <button
                 type="button"
-                aria-label="Prune Distant Nodes Beyond the distance threshold in Map & Node Filtering. Requires a valid GPS location."
+                aria-label={t('appPanel.pruneDistantNodes')}
                 onClick={() => {
                   const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
                   const homeLat = homeNode?.latitude ?? ourPosition?.lat;
@@ -1599,10 +1616,7 @@ export default function AppPanel({
                   const hasHome =
                     homeLat != null && homeLon != null && (homeLat !== 0 || homeLon !== 0);
                   if (!hasHome) {
-                    addToast(
-                      'No GPS position available. Use device node coordinates or enable GPS in the app.',
-                      'error',
-                    );
+                    addToast(t('appPanel.noGpsPosition'), 'error');
                     return;
                   }
                   const maxKm =
@@ -1616,7 +1630,7 @@ export default function AppPanel({
                     return d > maxKm;
                   });
                   if (distantNodes.length === 0) {
-                    addToast('No nodes found beyond the distance threshold.', 'success');
+                    addToast(t('appPanel.noNodesAboveDistance'), 'success');
                     return;
                   }
                   executeWithConfirmation({
@@ -1634,15 +1648,14 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                <div className="font-medium">Prune Distant Nodes</div>
+                <div className="font-medium">{t('appPanel.pruneDistantNodesTitle')}</div>
                 <div className="mt-0.5 text-xs text-red-400/70">
-                  Beyond the distance threshold in Map &amp; Node Filtering. Requires a valid GPS
-                  location.
+                  {t('appPanel.pruneDistantSubtitle')}
                 </div>
               </button>
               <button
                 type="button"
-                aria-label="Prune Offline Nodes that have not been heard within the offline threshold"
+                aria-label={t('appPanel.pruneOfflineNodes')}
                 onClick={() => {
                   const offlineNodes = Array.from(nodes.values()).filter(
                     (n) =>
@@ -1652,7 +1665,7 @@ export default function AppPanel({
                         'offline',
                   );
                   if (offlineNodes.length === 0) {
-                    addToast('No offline nodes found.', 'success');
+                    addToast(t('appPanel.noOfflineNodes'), 'success');
                     return;
                   }
                   const offlineDays = Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000));
@@ -1671,10 +1684,11 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                <div className="font-medium">Prune Offline Nodes</div>
+                <div className="font-medium">{t('appPanel.pruneOfflineNodesTitle')}</div>
                 <div className="mt-0.5 text-xs text-red-400/70">
-                  Not heard in over {Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000))}{' '}
-                  days. Favorited nodes are excluded.
+                  {t('appPanel.pruneOfflineSubtitle', {
+                    days: Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000)),
+                  })}
                 </div>
               </button>
               <button
@@ -1701,7 +1715,7 @@ export default function AppPanel({
               {protocol === 'meshcore' && (
                 <button
                   type="button"
-                  aria-label="Delete All Nodes Without Pubkeys"
+                  aria-label={t('appPanel.deleteNodesWithoutPubkeys')}
                   onClick={() => {
                     executeWithConfirmation({
                       name: 'Delete Contacts Without Pubkeys',
@@ -1714,7 +1728,10 @@ export default function AppPanel({
                         const result =
                           await window.electronAPI.db.deleteMeshcoreContactsWithoutPubkey();
                         addToast(
-                          `Deleted ${result.deleted} contacts. ${result.excludedStubCount} chat stub nodes excluded.`,
+                          t('appPanel.deletedContactsNoPubkey', {
+                            deleted: result.deleted,
+                            excludedStubCount: result.excludedStubCount,
+                          }),
                           'success',
                         );
                       },
@@ -1722,9 +1739,9 @@ export default function AppPanel({
                   }}
                   className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
                 >
-                  <div className="font-medium">Delete Contacts Without Pubkeys</div>
+                  <div className="font-medium">{t('appPanel.deleteContactsNoPubkeysTitle')}</div>
                   <div className="mt-0.5 text-xs text-red-400/70">
-                    Excludes chat stub nodes created from messages.
+                    {t('appPanel.deleteContactsWithoutPubkeysSubtitle')}
                   </div>
                 </button>
               )}
@@ -1733,11 +1750,11 @@ export default function AppPanel({
             {/* Messages */}
             <div className="space-y-2 border-t border-red-900/50 pt-4">
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
-                Messages
+                {t('appPanel.messagesSection')}
               </div>
               <div className="flex items-center gap-2">
                 <label htmlFor="apppanel-clear-channel" className="shrink-0 text-sm text-gray-400">
-                  Channel:
+                  {t('appPanel.clearChannelLabel')}
                 </label>
                 <select
                   id="apppanel-clear-channel"
@@ -1745,10 +1762,12 @@ export default function AppPanel({
                   onChange={(e) => {
                     setClearChannelTarget(parseInt(e.target.value, 10));
                   }}
-                  aria-label="Channel:"
+                  aria-label={t('common.channel')}
                   className="bg-deep-black flex-1 rounded-lg border border-red-800/60 px-3 py-1.5 text-sm text-gray-200 focus:border-red-500 focus:outline-none"
                 >
-                  <option value={CLEAR_ALL_CHANNELS_VALUE}>All Channels</option>
+                  <option value={CLEAR_ALL_CHANNELS_VALUE}>
+                    {t('appPanel.allChannelsOption')}
+                  </option>
                   {msgChannels.map((ch) => (
                     <option key={ch} value={ch}>
                       {getChannelLabel(ch)}
@@ -1801,7 +1820,7 @@ export default function AppPanel({
                 </div>
                 <button
                   type="button"
-                  aria-label="Clear All Repeaters"
+                  aria-label={t('appPanel.clearAllRepeaters')}
                   onClick={() => {
                     executeWithConfirmation({
                       name: 'Clear All Repeaters',
@@ -1827,7 +1846,7 @@ export default function AppPanel({
               </div>
               <button
                 type="button"
-                aria-label="Clear All Local Data & Cache"
+                aria-label={t('appPanel.clearAllLocalData')}
                 onClick={() => {
                   executeWithConfirmation({
                     name: 'Clear All Data',

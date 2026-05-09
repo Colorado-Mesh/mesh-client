@@ -319,8 +319,9 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
     try {
       const api = window.electronAPI?.db?.getAllMeshcorePathHistory;
       if (typeof api !== 'function') return;
-      const rows = (await api()) as MeshcorePathHistoryWireRow[];
-      if (!rows || rows.length === 0) return;
+      const rawResult = await api();
+      if (!Array.isArray(rawResult) || rawResult.length === 0) return;
+      const rows = rawResult as MeshcorePathHistoryWireRow[];
       if (rows.length >= MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT) {
         console.warn(
           '[pathHistory] loadAllFromDb: loaded row count hit global DB limit; some history may be missing',

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import type { MeshNode } from '../lib/types';
+import type { ChatMessage, MeshNode } from '../lib/types';
 import ChatPanel, { getDistFromChatBottom } from './ChatPanel';
 import { ToastProvider } from './Toast';
 
@@ -34,6 +34,15 @@ describe('ChatPanel accessibility', () => {
     await screen.findByPlaceholderText('Connect to send messages');
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+
+  it('does not render the top-right globe global-search button', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    expect(screen.queryByLabelText('Search all channels')).not.toBeInTheDocument();
   });
 
   it('emoji picker opens for the correct message when messages have no packetId', async () => {
@@ -566,7 +575,7 @@ describe('ChatPanel accessibility', () => {
         <ChatPanel {...defaultProps} isConnected onSend={onSend} />
       </ToastProvider>,
     );
-    const input = screen.getByPlaceholderText('Type a message...');
+    const input = screen.getByPlaceholderText('Enter message here');
     await user.type(input, 'hello');
     await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(onSend).toHaveBeenCalled();
@@ -578,6 +587,91 @@ describe('ChatPanel accessibility', () => {
       expect.any(Error),
     );
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('ChatPanel compact mode', () => {
+  const defaultProps = {
+    messages: [] as ChatMessage[],
+    channels: [{ index: 0, name: 'General' }],
+    myNodeNum: 1,
+    onSend: vi.fn().mockResolvedValue(undefined),
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    isConnected: true,
+    nodes: new Map(),
+    isActive: true,
+    compactMode: true,
+  };
+
+  it('merges consecutive same-sender channel bubbles when timestamps are more than 5 minutes apart', () => {
+    const base = new Date('2026-05-09T12:00:00').getTime();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'JCR2',
+              payload: 'Painting the front door',
+              channel: 0,
+              timestamp: base,
+              status: 'acked',
+            },
+            {
+              sender_id: 2,
+              sender_name: 'JCR2',
+              payload: 'Test 123',
+              channel: 0,
+              timestamp: base + 10 * 60 * 1000,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getAllByRole('button', { name: 'JCR2' })).toHaveLength(1);
+    expect(screen.getByText('Painting the front door')).toBeInTheDocument();
+    expect(screen.getByText('Test 123')).toBeInTheDocument();
+  });
+
+  it('renders compact continuation segment with flush top border so bubbles visually merge', () => {
+    const base = new Date('2026-05-09T12:00:00').getTime();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'JCR2',
+              payload: 'first line',
+              channel: 0,
+              timestamp: base,
+              status: 'acked',
+            },
+            {
+              sender_id: 2,
+              sender_name: 'JCR2',
+              payload: 'second line',
+              channel: 0,
+              timestamp: base + 60_000,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    const firstBubble = screen.getByText('first line').closest('.rounded-b-none');
+    const secondBubble = screen.getByText('second line').closest('.rounded-t-none');
+    expect(firstBubble).not.toBeNull();
+    expect(secondBubble).not.toBeNull();
+    expect(firstBubble).toHaveClass('border-b-0');
+    expect(secondBubble).toHaveClass('border-t-0');
   });
 });
 
@@ -991,52 +1085,13 @@ describe('ChatPanel unread watermarks', () => {
     });
   });
 
-  it('clears all channel unread state when the All view is opened', async () => {
-    const user = userEvent.setup();
-    const ts = Date.now();
+  it('does not render the All channel button', () => {
     render(
       <ToastProvider>
-        <ChatPanel
-          {...baseProps}
-          channels={[
-            { index: 2, name: 'Meta' },
-            { index: 0, name: 'General' },
-            { index: 1, name: 'Ops' },
-          ]}
-          messages={[
-            {
-              sender_id: 2,
-              sender_name: 'Alice',
-              payload: 'General unread',
-              channel: 0,
-              timestamp: ts,
-              status: 'acked',
-            },
-            {
-              sender_id: 3,
-              sender_name: 'Bob',
-              payload: 'Ops unread',
-              channel: 1,
-              timestamp: ts + 1_000,
-              status: 'acked',
-            },
-          ]}
-        />
+        <ChatPanel {...baseProps} />
       </ToastProvider>,
     );
-
-    expect(screen.getByRole('button', { name: 'General 1' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ops 1' })).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'All' }));
-    await user.click(screen.getByRole('button', { name: 'Meta' }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'General' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Ops' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'General 1' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Ops 1' })).not.toBeInTheDocument();
-    });
+    expect(screen.queryByRole('button', { name: 'All' })).not.toBeInTheDocument();
   });
 });
 
@@ -1067,7 +1122,7 @@ describe('ChatPanel compose emoji picker', () => {
         <ChatPanel {...defaultProps} />
       </ToastProvider>,
     );
-    const emojiBtn = screen.getByRole('button', { name: '😊' });
+    const emojiBtn = screen.getByRole('button', { name: 'Emoji' });
     await user.click(emojiBtn);
     expect(document.querySelector('emoji-picker')).toBeInTheDocument();
     expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
@@ -1081,7 +1136,7 @@ describe('ChatPanel compose emoji picker', () => {
         <ChatPanel {...defaultProps} />
       </ToastProvider>,
     );
-    const emojiBtn = screen.getByRole('button', { name: '😊' });
+    const emojiBtn = screen.getByRole('button', { name: 'Emoji' });
     await user.click(emojiBtn);
     expect(window.electronAPI.showEmojiPanel).toHaveBeenCalledOnce();
     expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
@@ -1095,7 +1150,7 @@ describe('ChatPanel compose emoji picker', () => {
         <ChatPanel {...defaultProps} />
       </ToastProvider>,
     );
-    const emojiBtn = screen.getByRole('button', { name: '😊' });
+    const emojiBtn = screen.getByRole('button', { name: 'Emoji' });
     await user.click(emojiBtn);
     expect(window.electronAPI.showEmojiPanel).toHaveBeenCalledOnce();
     expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
@@ -1162,4 +1217,42 @@ describe('ChatPanel tapback reaction picker', () => {
       expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
     },
   );
+});
+
+describe('ChatPanel RF hop label', () => {
+  const defaultProps = {
+    messages: [] as ChatMessage[],
+    channels: [{ index: 0, name: 'General' }],
+    myNodeNum: 99,
+    onSend: vi.fn().mockResolvedValue(undefined),
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    isConnected: true,
+    nodes: new Map(),
+    isActive: true,
+  };
+
+  it('shows rx hops for MeshCore RF incoming messages', async () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshcore"
+          messages={[
+            {
+              sender_id: 1,
+              sender_name: 'Peer',
+              payload: 'hello mesh',
+              channel: 0,
+              timestamp: Date.now(),
+              receivedVia: 'rf',
+              rxHops: 3,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText('3 hops')).toBeInTheDocument();
+  });
 });

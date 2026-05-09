@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import {
   BATTERY_GAUGE_TIER_FILL_CLASS,
   batteryGaugeFilledBars,
@@ -10,6 +12,7 @@ interface Props {
 }
 
 export default function ConnectionBatteryGauge({ percent, charging }: Props) {
+  const { t } = useTranslation();
   const tier = batteryGaugeTier(percent);
   const filled = batteryGaugeFilledBars(percent);
   const fillClass = BATTERY_GAUGE_TIER_FILL_CLASS[tier];
@@ -18,7 +21,7 @@ export default function ConnectionBatteryGauge({ percent, charging }: Props) {
     <div
       className="inline-flex items-center gap-2"
       role="img"
-      aria-label={charging ? `Battery ${percent} percent, charging` : `Battery ${percent} percent`}
+      aria-label={t(charging ? 'battery.percentCharging' : 'battery.percent', { percent })}
     >
       <div className="flex items-center gap-0.5" aria-hidden="true">
         {[0, 1, 2, 3, 4].map((i) => (

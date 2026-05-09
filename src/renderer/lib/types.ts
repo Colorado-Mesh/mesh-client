@@ -16,6 +16,12 @@ export type AnomalyType =
 /** How confident the detector is: proven uses distance/stats; heuristic is SNR/hops pattern only. */
 export type AnomalyConfidence = 'proven' | 'heuristic';
 
+/** Optional i18n template for UI; English `description` / `cause` kept for search and persistence fallback. */
+export interface DiagnosticTextI18n {
+  key: string;
+  params?: Record<string, string | number>;
+}
+
 export interface NodeAnomaly {
   nodeId: number;
   type: AnomalyType;
@@ -26,6 +32,7 @@ export interface NodeAnomaly {
   hopsAway?: number;
   /** Set when severity is based on pattern only (e.g. no GPS distance). Drives UI copy without string matching. */
   confidence?: AnomalyConfidence;
+  descriptionI18n?: DiagnosticTextI18n;
 }
 
 /** Routing anomaly as a table row (one per node from RoutingDiagnosticEngine). */
@@ -40,6 +47,7 @@ export interface RoutingDiagnosticRow {
   snr?: number;
   hopsAway?: number;
   confidence?: AnomalyConfidence;
+  descriptionI18n?: DiagnosticTextI18n;
 }
 
 /** RF finding as a table row (multiple per node from RFDiagnosticEngine). */
@@ -52,6 +60,7 @@ export interface RfDiagnosticRow {
   severity: 'warning' | 'info';
   detectedAt: number;
   isLastHop?: boolean;
+  causeI18n?: DiagnosticTextI18n;
 }
 
 export type DiagnosticRow = RoutingDiagnosticRow | RfDiagnosticRow;
@@ -77,6 +86,7 @@ export function nodeAnomalyToRoutingRow(a: NodeAnomaly): RoutingDiagnosticRow {
     snr: a.snr,
     hopsAway: a.hopsAway,
     confidence: a.confidence,
+    descriptionI18n: a.descriptionI18n,
   };
 }
 
@@ -90,6 +100,7 @@ export function routingRowToNodeAnomaly(r: RoutingDiagnosticRow): NodeAnomaly {
     snr: r.snr,
     hopsAway: r.hopsAway,
     confidence: r.confidence,
+    descriptionI18n: r.descriptionI18n,
   };
 }
 
@@ -186,6 +197,10 @@ export interface DiagnosticRemedy {
   description: string;
   category: RemediationCategory;
   severity: 'info' | 'warning' | 'critical';
+  titleKey?: string;
+  descriptionKey?: string;
+  titleParams?: Record<string, string | number>;
+  descriptionParams?: Record<string, string | number>;
 }
 
 export interface MQTTSettings {
@@ -265,6 +280,8 @@ export interface ChatMessage {
   replyPreviewText?: string;
   /** Sender name of the replied-to message */
   replyPreviewSender?: string;
+  /** RF-derived hops away for this receive when known (Meshtastic hopStart−hopLimit; MeshCore path hops). */
+  rxHops?: number;
 }
 
 export interface TelemetryPoint {
@@ -392,7 +409,7 @@ declare global {
         deleteNodesWithoutLongname: () => Promise<number>;
         prunePositionHistory: (days: number) => Promise<number>;
         clearNodePositions: () => Promise<unknown>;
-        updateMessageReceivedVia: (packetId: number) => Promise<unknown>;
+        updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<unknown>;
         updateMessagePacketId: (oldPacketId: number, newPacketId: number) => Promise<unknown>;
         saveMeshcoreMessage: (message: {
           sender_id?: number | null;
@@ -409,6 +426,7 @@ declare global {
           rx_packet_fingerprint?: string | null;
           reply_preview_text?: string | null;
           reply_preview_sender?: string | null;
+          rx_hops?: number | null;
         }) => Promise<unknown>;
         updateMeshcoreContactRfTransport: (
           nodeId: number,
@@ -631,6 +649,7 @@ declare global {
           channelName?: string;
           emoji?: number;
           replyId?: number;
+          publishJsonMirror: boolean;
         }) => Promise<number>;
         publishNodeInfo: (args: {
           from: number;
@@ -638,6 +657,7 @@ declare global {
           shortName: string;
           channelName?: string;
           hwModel?: number;
+          publishJsonMirror: boolean;
         }) => Promise<number>;
         publishPosition: (args: {
           from: number;
@@ -646,6 +666,24 @@ declare global {
           latitudeI: number;
           longitudeI: number;
           altitude?: number;
+          publishJsonMirror: boolean;
+        }) => Promise<number>;
+        publishWaypoint: (args: {
+          from: number;
+          to: number;
+          channel: number;
+          channelName: string;
+          publishJsonMirror: boolean;
+          waypoint: {
+            id: number;
+            latitudeI: number;
+            longitudeI: number;
+            name: string;
+            description?: string;
+            icon?: number;
+            lockedTo?: number;
+            expire?: number;
+          };
         }) => Promise<number>;
         publishMeshcore: (args: {
           text: string;

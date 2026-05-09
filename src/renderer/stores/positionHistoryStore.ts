@@ -7,6 +7,7 @@ import type { PositionPoint } from '../lib/types';
 
 const MOVEMENT_THRESHOLD_KM = 0.01; // 10 metres — filters GPS jitter
 const MAX_POINTS_PER_NODE = 2000; // Hard cap to prevent unbounded per-node memory growth
+const MAX_NODES = 2000; // Hard cap on number of distinct nodeIds tracked in memory
 
 function loadShowPaths(): boolean {
   const o = parseStoredJson<{ showMovementPaths?: boolean }>(
@@ -42,6 +43,7 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
   historyWindowHours: loadHistoryWindowHours(),
 
   recordPosition(nodeId, lat, lon, source = 'rf') {
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
     const now = Date.now();
     const windowMs = get().historyWindowHours * 3600 * 1000;
     const existing = get().history.get(nodeId) ?? [];
@@ -68,7 +70,15 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
     const shortenedByWindow = pruned.length !== existing.length;
     if (added || shortenedByWindow) {
       const newHistory = new Map(get().history);
-      newHistory.set(nodeId, pruned);
+      if (pruned.length === 0) {
+        newHistory.delete(nodeId);
+      } else {
+        if (!newHistory.has(nodeId) && newHistory.size >= MAX_NODES) {
+          const firstKey = newHistory.keys().next().value;
+          if (firstKey !== undefined) newHistory.delete(firstKey);
+        }
+        newHistory.set(nodeId, pruned);
+      }
       set({ history: newHistory });
     }
   },

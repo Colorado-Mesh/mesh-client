@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface RefreshButtonProps {
   onRefresh: () => Promise<void>;
@@ -13,6 +14,7 @@ export default function RefreshButton({
   disabled,
   minimumAnimationMs = 2500,
 }: RefreshButtonProps) {
+  const { t } = useTranslation();
   const [spinning, setSpinning] = useState(false);
 
   const handleClick = async () => {
@@ -42,7 +44,7 @@ export default function RefreshButton({
     <button
       onClick={handleClick}
       disabled={disabled || spinning}
-      title="Refresh"
+      title={t('common.refresh')}
       className="rounded-full p-1.5 transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
     >
       <svg

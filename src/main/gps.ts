@@ -90,9 +90,18 @@ function fetchIpEndpoint(url: string, extract: (data: unknown) => GpsFix | null)
 async function getIpFix(): Promise<GpsFix> {
   return fetchIpEndpoint('https://ipwho.is/', (d: unknown) => {
     const x = d as { success?: boolean; latitude?: number; longitude?: number };
-    return x.success && typeof x.latitude === 'number' && typeof x.longitude === 'number'
-      ? { lat: x.latitude, lon: x.longitude, source: 'ip' as const }
-      : null;
+    if (
+      !x.success ||
+      typeof x.latitude !== 'number' ||
+      typeof x.longitude !== 'number' ||
+      x.latitude < -90 ||
+      x.latitude > 90 ||
+      x.longitude < -180 ||
+      x.longitude > 180
+    ) {
+      return null;
+    }
+    return { lat: x.latitude, lon: x.longitude, source: 'ip' as const };
   });
 }
 

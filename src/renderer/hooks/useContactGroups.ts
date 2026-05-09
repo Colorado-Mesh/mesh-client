@@ -24,6 +24,7 @@ export function useContactGroups(selfNodeId: number | null): UseContactGroupsRes
   const selfNodeIdRef = useRef(selfNodeId);
   selfNodeIdRef.current = selfNodeId;
   const loadedGroupIdRef = useRef<number | null>(null);
+  const pendingGroupIdRef = useRef<number | null>(null);
 
   const reloadGroups = useCallback(async () => {
     const id = selfNodeIdRef.current;
@@ -50,11 +51,14 @@ export function useContactGroups(selfNodeId: number | null): UseContactGroupsRes
   const setSelectedGroupId = useCallback((id: number | null) => {
     setSelectedGroupIdState(id);
     setGroupMemberIds(new Set());
+    pendingGroupIdRef.current = id;
     if (id != null && id > 0) {
       window.electronAPI.db
         .getContactGroupMembers(id)
         .then((ids) => {
-          setGroupMemberIds(new Set(ids));
+          if (pendingGroupIdRef.current === id) {
+            setGroupMemberIds(new Set(ids));
+          }
         })
         .catch((e: unknown) => {
           console.error('[useContactGroups] getContactGroupMembers failed:', e);

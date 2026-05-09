@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface TabsProps {
   tabs: string[];
   active: number;
@@ -257,12 +259,13 @@ function TabIcon({ name }: { name: string }) {
 }
 
 export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledTabs }: TabsProps) {
+  const { t } = useTranslation();
   const safeActive = tabs.length === 0 ? 0 : Math.max(0, Math.min(active, tabs.length - 1));
 
   return (
     <div
       role="tablist"
-      aria-label="Application panels"
+      aria-label={t('aria.applicationPanels')}
       className="bg-deep-black flex gap-1 border-b border-gray-700 px-2"
     >
       {tabs.map((name, i) => {

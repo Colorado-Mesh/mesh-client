@@ -4,24 +4,24 @@ import {
   easeReadoutWipe,
   getSignalPulseTheme,
   horizontalReadoutFade,
-  INCLUSIVE_ONE_LINERS,
-  pickInclusiveOneLiner,
+  INCLUSIVE_ONE_LINER_KEYS,
+  pickInclusiveOneLinerKey,
   smoothstepEdge,
 } from './SignalPropagation';
 
-describe('pickInclusiveOneLiner', () => {
-  it('returns a phrase from the pool', () => {
-    const a = pickInclusiveOneLiner(0);
-    expect(INCLUSIVE_ONE_LINERS).toContain(a);
+describe('pickInclusiveOneLinerKey', () => {
+  it('returns a key from the pool', () => {
+    const a = pickInclusiveOneLinerKey(0);
+    expect(INCLUSIVE_ONE_LINER_KEYS).toContain(a);
   });
 
   it('is stable for the same seed', () => {
-    expect(pickInclusiveOneLiner(42)).toBe(pickInclusiveOneLiner(42));
+    expect(pickInclusiveOneLinerKey(42)).toBe(pickInclusiveOneLinerKey(42));
   });
 
   it('wraps negative seeds', () => {
-    const n = INCLUSIVE_ONE_LINERS.length;
-    expect(pickInclusiveOneLiner(-1)).toBe(INCLUSIVE_ONE_LINERS[n - 1]);
+    const n = INCLUSIVE_ONE_LINER_KEYS.length;
+    expect(pickInclusiveOneLinerKey(-1)).toBe(INCLUSIVE_ONE_LINER_KEYS[n - 1]);
   });
 });
 

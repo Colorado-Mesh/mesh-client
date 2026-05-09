@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   dismissedDmTabsStorageKey,
@@ -23,6 +24,7 @@ import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayChar, emojiDisplayLabel } from '../lib/reactions';
 import { truncateReplyPreviewText } from '../lib/replyPreview';
+import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '../lib/timeConstants';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
@@ -88,6 +90,7 @@ function StatusBadge({
 }
 
 function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
+  const { t } = useTranslation();
   const rfIcon = (
     <svg
       className="h-3 w-3 text-blue-400"
@@ -98,7 +101,7 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <title>Received via RF</title>
+      <title>{t('chatPanel.receivedViaRf')}</title>
       <path d="M5 12.55a11 11 0 0 1 14.08 0" />
       <path d="M1.42 9a16 16 0 0 1 21.16 0" />
       <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
@@ -115,7 +118,7 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <title>Received via MQTT</title>
+      <title>{t('chatPanel.receivedViaMqtt')}</title>
       <circle cx="12" cy="12" r="10" />
       <path d="M2 12h20" />
       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
@@ -124,7 +127,10 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
 
   if (via === 'both') {
     return (
-      <span className="flex flex-col items-center gap-px" title="Received via RF + MQTT">
+      <span
+        className="flex flex-col items-center gap-px"
+        title={t('chatPanel.receivedViaRfAndMqtt')}
+      >
         {rfIcon}
         {mqttIcon}
       </span>
@@ -177,18 +183,6 @@ function latestMessageTimestamp(messages: readonly ChatMessage[]): number {
     if (msg.timestamp > latest) latest = msg.timestamp;
   }
   return latest;
-}
-
-function latestChannelWatermarks(messages: readonly ChatMessage[]): Map<number, number> {
-  const watermarks = new Map<number, number>();
-  for (const msg of messages) {
-    if (msg.to != null) continue;
-    const prev = watermarks.get(msg.channel) ?? 0;
-    if (msg.timestamp > prev) {
-      watermarks.set(msg.channel, msg.timestamp);
-    }
-  }
-  return watermarks;
 }
 
 function mergeReadWatermarks(
@@ -255,7 +249,6 @@ export interface ChatPanelProps {
   initialDmTarget?: number | null;
   onDmTargetConsumed?: () => void;
   isActive?: boolean;
-  onGlobalSearch?: () => void;
   /** When `meshcore`, show full names, hide redundant RF-only transport badge. */
   protocol?: MeshProtocol;
   /** Ref for scroll-to-top (Chat has its own Top button positioned inside the message list). */
@@ -266,6 +259,7 @@ export interface ChatPanelProps {
    * it to measure whether the user has scrolled away from the latest messages.
    */
   outerScrollMetricsRootRef?: React.RefObject<HTMLElement | null>;
+  compactMode?: boolean;
 }
 
 function ChatPanel({
@@ -284,11 +278,12 @@ function ChatPanel({
   initialDmTarget,
   onDmTargetConsumed,
   isActive = true,
-  onGlobalSearch,
   protocol = 'meshtastic',
   scrollToTopRef,
   outerScrollMetricsRootRef,
+  compactMode = false,
 }: ChatPanelProps) {
+  const { t } = useTranslation();
   const ownNodeIdSet = useMemo(() => {
     const base = ownNodeIds != null && ownNodeIds.length > 0 ? ownNodeIds : [myNodeNum];
     return new Set(base.filter((id) => id > 0));
@@ -532,7 +527,7 @@ function ChatPanel({
       );
     }
 
-    return regularMessages.filter((m) => !m.to && (channel === -1 || m.channel === channel));
+    return regularMessages.filter((m) => !m.to && m.channel === channel);
   }, [activeDmNode, channel, isOwnNode, regularMessages, viewMode]);
 
   const filteredMessages = useMemo(() => {
@@ -554,21 +549,6 @@ function ChatPanel({
   const markCurrentViewRead = useCallback(() => {
     if (viewMode === 'dm' && activeDmNode == null) return;
 
-    if (viewKey === 'ch:-1') {
-      const watermarks = latestChannelWatermarks(viewMessages);
-      if (watermarks.size === 0) return;
-      setPersistedLastRead((prev) =>
-        mergeReadWatermarks(
-          prev,
-          Array.from(watermarks.entries(), ([channelIndex, timestamp]) => [
-            `ch:${channelIndex}`,
-            timestamp,
-          ]),
-        ),
-      );
-      return;
-    }
-
     const latest = latestMessageTimestamp(viewMessages);
     if (latest === 0) return;
     setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[viewKey, latest]]));
@@ -576,12 +556,6 @@ function ChatPanel({
 
   // On view switch: snapshot lastRead for divider + arm scroll trigger
   useEffect(() => {
-    if (viewKey === 'ch:-1') {
-      // "All" view: no divider, just scroll to bottom
-      setUnreadDividerTimestamp(0);
-      setTriggerScrollToUnread((n) => n + 1);
-      return;
-    }
     const snapshot = persistedLastReadRef.current[viewKey] ?? 0;
     setUnreadDividerTimestamp(snapshot);
     setTriggerScrollToUnread((n) => n + 1);
@@ -758,7 +732,7 @@ function ChatPanel({
     setChatActionError(null);
     try {
       console.debug('[ChatPanel] handleSend');
-      const sendChannel = channel === -1 ? 0 : channel;
+      const sendChannel = channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
       const replyKey = replyTo ? (replyTo.packetId ?? replyTo.timestamp) : undefined;
       const sendOutcome = onSend(input.trim(), sendChannel, destination, replyKey);
@@ -865,15 +839,15 @@ function ChatPanel({
   }, [filteredMessages]);
 
   // Index of first message from another node newer than unreadDividerTimestamp.
-  // Returns -1 when: All view, search active, timestamp=0, or no qualifying messages.
+  // Returns -1 when: search active, timestamp=0, or no qualifying messages.
   const unreadStartIndex = useMemo(() => {
-    if (channel === -1 || searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
+    if (searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
     for (let i = 0; i < filteredMessages.length; i++) {
       const msg = filteredMessages[i];
       if (!isOwnNode(msg.sender_id) && msg.timestamp > unreadDividerTimestamp) return i;
     }
     return -1;
-  }, [channel, filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
+  }, [filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
 
   useEffect(() => {
     const el = emojiPickerRef.current;
@@ -944,13 +918,13 @@ function ChatPanel({
   const composePlaceholder = useMemo(
     () =>
       isDmMode
-        ? `DM to ${dmNodeName}...`
+        ? t('chatPanel.composePlaceholderDm', { name: dmNodeName })
         : !isConnected
-          ? 'Connect to send messages'
+          ? t('chatPanel.composePlaceholderConnectFirst')
           : isMqttOnly
-            ? 'Type a message (via MQTT)...'
-            : 'Type a message...',
-    [isDmMode, dmNodeName, isConnected, isMqttOnly],
+            ? t('chatPanel.composePlaceholderMqttOnly')
+            : t('chatPanel.composePlaceholderDefault'),
+    [isDmMode, dmNodeName, isConnected, isMqttOnly, t],
   );
 
   return (
@@ -961,22 +935,8 @@ function ChatPanel({
       >
         <div className="flex min-w-0 flex-1 items-center gap-2 whitespace-nowrap">
           <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
-            Channels
+            {t('chatPanel.channels')}
           </span>
-          <button
-            aria-label="All"
-            onClick={() => {
-              setChannel(-1);
-              setViewMode('channels');
-            }}
-            className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              viewMode === 'channels' && channel === -1
-                ? 'bg-readable-green text-white'
-                : 'bg-secondary-dark text-muted hover:text-gray-200'
-            }`}
-          >
-            All
-          </button>
           {channels.map((ch) => {
             const unread = unreadCounts.get(ch.index) ?? 0;
             const channelUnreadSuffix =
@@ -1014,11 +974,11 @@ function ChatPanel({
             setShowSearch(!showSearch);
           }}
           aria-pressed={showSearch}
-          aria-label="Search messages"
+          aria-label={t('chatPanel.searchMessages')}
           className={`shrink-0 rounded-lg p-1.5 transition-colors ${
             showSearch ? 'bg-brand-green/20 text-bright-green' : 'text-muted hover:text-gray-300'
           }`}
-          title="Search messages (Cmd+F)"
+          title={t('chatPanel.searchButton')}
         >
           <svg
             className="h-4 w-4"
@@ -1035,30 +995,6 @@ function ChatPanel({
             />
           </svg>
         </button>
-        {onGlobalSearch && (
-          <button
-            onClick={onGlobalSearch}
-            aria-label="Search all channels"
-            className="text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-300"
-            title="Search all channels (Cmd+Shift+F)"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20M2 12h20"
-              />
-            </svg>
-          </button>
-        )}
       </div>
 
       {/* Row 2 — DM tabs */}
@@ -1104,9 +1040,9 @@ function ChatPanel({
                   onClick={() => {
                     closeDmTab(nodeNum);
                   }}
-                  aria-label="x"
+                  aria-label={t('chatPanel.closeDmTab')}
                   className="text-muted ml-0.5 text-[10px] leading-none hover:text-white"
-                  title="Close DM"
+                  title={t('chatPanel.closeDm')}
                 >
                   x
                 </button>
@@ -1131,14 +1067,14 @@ function ChatPanel({
             onChange={(e) => {
               setSearchQuery(e.target.value);
             }}
-            placeholder="Search messages..."
-            aria-label="Search messages..."
+            placeholder={t('chatPanel.searchMessagesPlaceholder')}
+            aria-label={t('chatPanel.searchMessagesPlaceholder')}
             spellCheck={false}
             className="bg-secondary-dark/80 focus:border-brand-green/50 w-full rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
           />
           {searchQuery && (
             <div className="text-muted mt-1 text-xs">
-              {filteredMessages.length} result{filteredMessages.length !== 1 ? 's' : ''}
+              {t('chatPanel.searchResults', { count: filteredMessages.length })}
             </div>
           )}
         </div>
@@ -1156,7 +1092,7 @@ function ChatPanel({
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="bg-deep-black/50 h-full space-y-1.5 overflow-y-auto rounded-xl p-3"
+          className={`bg-deep-black/50 h-full overflow-y-auto rounded-xl p-3 ${compactMode ? 'space-y-0.5' : 'space-y-1.5'}`}
         >
           {filteredMessages.length === 0 ? (
             <div className="text-muted py-12 text-center">
@@ -1193,11 +1129,34 @@ function ChatPanel({
 
               const isUnreadStart = i === unreadStartIndex;
 
+              const prevMsg = i > 0 ? filteredMessages[i - 1] : null;
+              const nextMsg = i < filteredMessages.length - 1 ? filteredMessages[i + 1] : null;
+              const isContinuation =
+                compactMode &&
+                daySeparator === null &&
+                prevMsg !== null &&
+                prevMsg.sender_id === msg.sender_id;
+              const isFollowedByContinuation =
+                compactMode &&
+                nextMsg !== null &&
+                nextMsg.sender_id === msg.sender_id &&
+                !daySeparatorIndices.has(i + 1);
+              const showContinuationTime =
+                isContinuation &&
+                prevMsg !== null &&
+                msg.timestamp - prevMsg.timestamp >= CHAT_COMPACT_CONTINUATION_TIME_GAP_MS;
+
+              /** Visually merge compact consecutive same-sender bubbles (flat seam + no double border). */
+              const compactMerged = compactMode && (isContinuation || isFollowedByContinuation);
+              const compactStackTop = compactMode && isContinuation;
+              const compactStackBottom = compactMode && isFollowedByContinuation;
+
               return (
                 <div
                   key={
                     msg.id != null ? `db-${msg.id}` : `${msg.timestamp}-${msg.packetId ?? 'x'}-${i}`
                   }
+                  className={isContinuation ? '!mt-0' : undefined}
                 >
                   {daySeparator}
                   {isUnreadStart && (
@@ -1217,42 +1176,62 @@ function ChatPanel({
                     >
                       {/* Message bubble */}
                       <div
-                        className={`min-w-0 rounded-2xl px-3 py-2 ${
-                          isDm
-                            ? isOwn
-                              ? 'rounded-br-sm border border-purple-500/30 bg-purple-600/20'
-                              : 'rounded-bl-sm border border-purple-600/30 bg-purple-700/20'
-                            : isOwn
-                              ? 'rounded-br-sm border border-blue-500/30 bg-blue-600/20'
-                              : 'bg-secondary-dark/50 rounded-bl-sm border border-gray-600/30'
+                        className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${
+                          compactMerged
+                            ? `${compactStackTop ? 'rounded-t-none border-t-0' : ''} ${compactStackBottom ? 'rounded-b-none border-b-0' : ''} ${
+                                isDm
+                                  ? isOwn
+                                    ? 'border border-purple-500/30 bg-purple-600/20'
+                                    : 'border border-purple-600/30 bg-purple-700/20'
+                                  : isOwn
+                                    ? 'border border-blue-500/30 bg-blue-600/20'
+                                    : 'border-chat-incoming-border bg-chat-incoming-bg border'
+                              }`
+                            : isDm
+                              ? isOwn
+                                ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-purple-500/30 bg-purple-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
+                                : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border border-purple-600/30 bg-purple-700/20${isContinuation ? 'rounded-tl-sm' : ''}`
+                              : isOwn
+                                ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-blue-500/30 bg-blue-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
+                                : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`
                         }`}
                       >
                         {/* Header: sender name (clickable) + DM indicator + time */}
-                        <div className="mb-0.5 flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              onNodeClick(msg.sender_id);
-                            }}
-                            className={`cursor-pointer text-xs font-semibold hover:underline ${
-                              isDm
-                                ? 'text-purple-400'
-                                : isOwn
-                                  ? 'text-blue-400'
-                                  : 'text-bright-green'
-                            }`}
-                          >
-                            {displaySenderName}
-                          </button>
-                          {isDm && (
-                            <span className="text-[10px] font-medium text-purple-400/70">DM</span>
-                          )}
-                          <span className="text-muted/70 text-[10px]">
-                            {formatTime(msg.timestamp)}
-                          </span>
-                          {channels.length > 1 && !isDm && (
-                            <span className="text-[10px] text-gray-600">ch{msg.channel}</span>
-                          )}
-                        </div>
+                        {!isContinuation && (
+                          <div className="mb-0.5 flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                onNodeClick(msg.sender_id);
+                              }}
+                              className={`cursor-pointer text-xs font-semibold hover:underline ${
+                                isDm
+                                  ? 'text-purple-400'
+                                  : isOwn
+                                    ? 'text-blue-400'
+                                    : 'text-bright-green'
+                              }`}
+                            >
+                              {displaySenderName}
+                            </button>
+                            {isDm && (
+                              <span className="text-[10px] font-medium text-purple-400/70">DM</span>
+                            )}
+                            <span className="text-muted/70 text-[10px]">
+                              {formatTime(msg.timestamp)}
+                            </span>
+                            {channels.length > 1 && !isDm && (
+                              <span className="text-[10px] text-gray-600">ch{msg.channel}</span>
+                            )}
+                          </div>
+                        )}
+
+                        {showContinuationTime && (
+                          <div className={`mb-0.5 ${isOwn ? 'flex justify-end' : ''}`}>
+                            <span className="text-muted/70 text-[10px]">
+                              {formatTime(msg.timestamp)}
+                            </span>
+                          </div>
+                        )}
 
                         {/* Quoted reply preview */}
                         {msg.replyId &&
@@ -1274,7 +1253,9 @@ function ChatPanel({
                                   scrollToQuotedParent(msg.replyId!);
                                 }}
                                 className="bg-secondary-dark/50 hover:bg-secondary-dark/80 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left transition-colors"
-                                aria-label={`Jump to quoted message from ${quotedLabel ?? ''}`}
+                                aria-label={t('chatPanel.jumpToQuotedMessage', {
+                                  sender: quotedLabel ?? '',
+                                })}
                               >
                                 <div className="min-h-[2rem] w-0.5 shrink-0 self-stretch rounded-full bg-gray-500" />
                                 <div className="min-w-0 flex-1">
@@ -1294,14 +1275,30 @@ function ChatPanel({
                           <ChatPayloadText text={msg.payload} query={searchQuery} />
                         </p>
 
-                        {/* Transport indicator for incoming messages (MeshCore is RF-first; hide redundant RF-only badge) */}
+                        {/* Transport + RF hop count (incoming) */}
                         {!isOwn &&
-                          msg.receivedVia &&
-                          (protocol !== 'meshcore' ||
-                            msg.receivedVia === 'mqtt' ||
-                            msg.receivedVia === 'both') && (
-                            <div className="mt-0.5 flex items-center justify-end">
-                              <TransportBadge via={msg.receivedVia} />
+                          ((msg.receivedVia &&
+                            (protocol !== 'meshcore' ||
+                              msg.receivedVia === 'mqtt' ||
+                              msg.receivedVia === 'both')) ||
+                            (msg.rxHops != null &&
+                              (msg.receivedVia === 'rf' || msg.receivedVia === 'both'))) && (
+                            <div className="mt-0.5 flex items-center justify-end gap-2">
+                              {msg.rxHops != null &&
+                                (msg.receivedVia === 'rf' || msg.receivedVia === 'both') && (
+                                  <span
+                                    className="text-[10px] text-gray-500"
+                                    title={t('nodeDetailModal.hopsFromRoutingTitle')}
+                                  >
+                                    {t('nodeDetailModal.hopLabel', { count: msg.rxHops })}
+                                  </span>
+                                )}
+                              {msg.receivedVia &&
+                                (protocol !== 'meshcore' ||
+                                  msg.receivedVia === 'mqtt' ||
+                                  msg.receivedVia === 'both') && (
+                                  <TransportBadge via={msg.receivedVia} />
+                                )}
                             </div>
                           )}
 
@@ -1315,7 +1312,7 @@ function ChatPanel({
                                   onResend(msg);
                                 }}
                                 className="text-gray-500 transition-colors hover:text-gray-300"
-                                title="Resend message"
+                                title={t('chatPanel.resendMessage')}
                               >
                                 <svg
                                   className="h-3.5 w-3.5"
@@ -1365,8 +1362,8 @@ function ChatPanel({
                               inputRef.current?.focus();
                             }}
                             className="rounded p-1 text-xs text-gray-600 hover:text-blue-400"
-                            aria-label="Reply to message"
-                            title="Reply"
+                            aria-label={t('chatPanel.replyToMessage')}
+                            title={t('chatPanel.replyButton')}
                           >
                             <svg
                               className="h-3.5 w-3.5"
@@ -1398,8 +1395,8 @@ function ChatPanel({
                               }
                             }}
                             className="rounded p-1 text-xs text-gray-600 hover:text-gray-300"
-                            aria-label="Add reaction"
-                            title="React"
+                            aria-label={t('chatPanel.addReaction')}
+                            title={t('chatPanel.reactButton')}
                           >
                             <svg
                               className="h-3.5 w-3.5"
@@ -1422,7 +1419,7 @@ function ChatPanel({
                                 openDmTo(msg.sender_id);
                               }}
                               className="rounded p-1 text-xs text-gray-600 hover:text-purple-400"
-                              title={`Direct message ${msg.sender_name}`}
+                              title={t('chatPanel.directMessage', { name: msg.sender_name })}
                             >
                               <svg
                                 className="h-3.5 w-3.5"
@@ -1573,7 +1570,7 @@ function ChatPanel({
               setReplyTo(null);
             }}
             className="text-muted ml-1 leading-none hover:text-gray-200"
-            title="Cancel reply"
+            title={t('chatPanel.cancelReply')}
           >
             ×
           </button>
@@ -1627,27 +1624,37 @@ function ChatPanel({
             }
           }}
           disabled={!isConnected || sending}
-          aria-label="😊"
+          aria-label={t('chatPanel.emojiButton')}
           className={`rounded-xl px-2.5 py-2.5 transition-colors disabled:opacity-50 ${
             showComposePicker
               ? 'bg-brand-green/20 text-bright-green'
               : 'bg-secondary-dark/80 text-muted border border-gray-600/50 hover:text-gray-300'
           }`}
-          title="Insert emoji"
+          title={t('chatPanel.insertEmoji')}
         >
           😊
         </button>
         <button
           onClick={handleSend}
           disabled={!isConnected || !input.trim() || sending}
-          aria-label={sending ? '...' : isDmMode ? 'DM' : 'Send'}
+          aria-label={
+            sending
+              ? t('chatPanel.sendButtonSending')
+              : isDmMode
+                ? t('chatPanel.sendButtonDm')
+                : t('chatPanel.sendButton')
+          }
           className={`rounded-xl px-5 py-2.5 font-medium transition-colors ${
             isDmMode
               ? 'disabled:text-muted bg-purple-600 text-white hover:bg-purple-500 disabled:bg-gray-600'
               : 'disabled:text-muted bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-600'
           }`}
         >
-          {sending ? '...' : isDmMode ? 'DM' : 'Send'}
+          {sending
+            ? t('chatPanel.sendButtonSending')
+            : isDmMode
+              ? t('chatPanel.sendButtonDm')
+              : t('chatPanel.sendButton')}
         </button>
       </div>
       {/* Character count — only show near limit */}
