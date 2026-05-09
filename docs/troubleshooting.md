@@ -212,7 +212,7 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 - Check your WiFi/signal strength
 - Verify the broker is online
-- For LetsMesh/Colorado Mesh: re-import your MeshCore identity to refresh the token
+- For LetsMesh/Colorado Mesh: mesh-client refreshes JWT automatically when MeshCore identity is already cached (including after a successful MeshCore radio session). If you never imported identity and have not connected a MeshCore radio yet, import under **Radio** or use **Custom** credentials; if refresh still fails, try re-importing MeshCore config JSON to replace a corrupt cache
 - Enable debug logs to see the disconnect reason
 
 ### MQTT connected but no messages from other nodes
@@ -225,7 +225,7 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 **Cause**: JWT tokens expire after 1 hour.
 
-**Fix**: Re-import your MeshCore config JSON in the Radio tab, or paste your v1\_ public key in the MQTT username field to regenerate a token.
+**Fix**: The client refreshes tokens proactively before expiry when identity is present. If you still see expiry errors, connect or re-import MeshCore so `public_key` / `private_key` are cached (Radio-tab JSON import, or automatic persistence after a successful MeshCore radio session). As a fallback, paste your `v1_<public key>` MQTT username and a manually generated token under **Custom** if your broker expects a different workflow.
 
 ### MQTT "Connection refused" or broker unreachable
 
