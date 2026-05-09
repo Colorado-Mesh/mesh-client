@@ -2,6 +2,50 @@
  * Pure helpers for i18n-auto-translate.mjs (unit-tested).
  */
 
+/** Segments that must not be used as nested object keys (prototype pollution). */
+const UNSAFE_LOCALE_KEY_PARTS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/**
+ * Set a nested string value on a plain locale object using a dotted path (e.g. `tabs.chat`).
+ * Rejects prototype-pollution paths; only assigns through own enumerable object slots.
+ *
+ * @param {Record<string, unknown>} obj
+ * @param {string} dotKey
+ * @param {string} value
+ */
+export function setDeepLocaleValue(obj, dotKey, value) {
+  const parts = dotKey.split('.');
+  if (parts.length === 0 || parts.some((p) => p.length === 0)) {
+    throw new Error(`Invalid locale key path (empty segment): "${dotKey}"`);
+  }
+  for (const part of parts) {
+    if (UNSAFE_LOCALE_KEY_PARTS.has(part)) {
+      throw new Error(`Unsafe locale key segment "${part}" in "${dotKey}"`);
+    }
+  }
+
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    const existing =
+      Object.hasOwn(cur, part) &&
+      typeof cur[part] === 'object' &&
+      cur[part] !== null &&
+      !Array.isArray(cur[part])
+        ? /** @type {Record<string, unknown>} */ (cur[part])
+        : undefined;
+    if (existing === undefined) {
+      const next = {};
+      cur[part] = next;
+      cur = next;
+    } else {
+      cur = existing;
+    }
+  }
+  const last = parts[parts.length - 1];
+  cur[last] = value;
+}
+
 /**
  * Keys to machine-translate for one locale: present in English but absent locally,
  * optionally restricted to keys newly added in English vs git HEAD.

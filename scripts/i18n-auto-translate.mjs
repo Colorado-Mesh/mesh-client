@@ -22,7 +22,7 @@ import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { filterMissingKeysToTranslate } from './i18n-auto-translate-lib.mjs';
+import { filterMissingKeysToTranslate, setDeepLocaleValue } from './i18n-auto-translate-lib.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR = join(__dirname, '../src/renderer/locales');
@@ -63,18 +63,6 @@ function flatten(obj, prefix = '') {
     }
   }
   return out;
-}
-
-function setDeep(obj, dotKey, value) {
-  const parts = dotKey.split('.');
-  let cur = obj;
-  for (let i = 0; i < parts.length - 1; i++) {
-    if (cur[parts[i]] === undefined || typeof cur[parts[i]] !== 'object') {
-      cur[parts[i]] = {};
-    }
-    cur = cur[parts[i]];
-  }
-  cur[parts[parts.length - 1]] = value;
 }
 
 function stripPlaceholders(str) {
@@ -380,7 +368,7 @@ async function main() {
       const englishValue = enFlat[key];
       try {
         const translated = await translate(englishValue, lang);
-        setDeep(target, key, translated);
+        setDeepLocaleValue(target, key, translated);
         count++;
         localeJobDone++;
         completedJobs++;

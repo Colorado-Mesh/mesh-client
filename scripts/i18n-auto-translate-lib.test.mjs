@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterMissingKeysToTranslate } from './i18n-auto-translate-lib.mjs';
+import { filterMissingKeysToTranslate, setDeepLocaleValue } from './i18n-auto-translate-lib.mjs';
 
 describe('filterMissingKeysToTranslate', () => {
   const enKeys = ['a', 'b', 'c'];
@@ -45,5 +45,34 @@ describe('filterMissingKeysToTranslate', () => {
         hasGitBaseline: false,
       }),
     ).toEqual(['b', 'c']);
+  });
+});
+
+describe('setDeepLocaleValue', () => {
+  it('writes nested keys on a plain object', () => {
+    const obj = { a: { b: 'keep' } };
+    setDeepLocaleValue(obj, 'a.c', 'new');
+    expect(obj).toEqual({ a: { b: 'keep', c: 'new' } });
+  });
+
+  it('creates missing intermediate objects', () => {
+    const obj = {};
+    setDeepLocaleValue(obj, 'x.y.z', 'v');
+    expect(obj).toEqual({ x: { y: { z: 'v' } } });
+  });
+
+  it('rejects __proto__ segments', () => {
+    const obj = {};
+    expect(() => setDeepLocaleValue(obj, '__proto__.polluted', 'x')).toThrow(/Unsafe locale key/);
+    expect(obj).toEqual({});
+  });
+
+  it('rejects constructor / prototype segments', () => {
+    expect(() => setDeepLocaleValue({}, 'a.constructor.foo', 'x')).toThrow(/Unsafe locale key/);
+    expect(() => setDeepLocaleValue({}, 'a.prototype.foo', 'x')).toThrow(/Unsafe locale key/);
+  });
+
+  it('rejects empty path segments', () => {
+    expect(() => setDeepLocaleValue({}, 'a..b', 'x')).toThrow(/empty segment/);
   });
 });
