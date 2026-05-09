@@ -28,7 +28,9 @@ Meshtastic MQTT working on the same machine does not guarantee MeshCore LetsMesh
 
 ## Manual token
 
-Import identity under **Radio**, or set **Custom** and paste username `v1_<public key>` and a token from tooling that matches your broker’s `AUTH_EXPECTED_AUDIENCE`.
+After you connect a **MeshCore** radio successfully, mesh-client persists identity from the radio (via `exportPrivateKey`) in the **same** local storage shape as a Radio-tab JSON import, so LetsMesh-style JWT credentials can be built **without** a manual import when you started from RF first.
+
+If you use MQTT **before** ever connecting a MeshCore radio, or stored identity is missing or corrupt, **import** identity under **Radio**, or set **Custom** and paste username `v1_<public key>` and a token from tooling that matches your broker’s `AUTH_EXPECTED_AUDIENCE`.
 
 ## Packet logger / Analyzer
 

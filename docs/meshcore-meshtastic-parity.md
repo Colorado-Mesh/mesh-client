@@ -114,9 +114,11 @@ LetsMesh uses WebSocket (`wss`) with JWT authentication. The implementation matc
 
 The JWT audience must match the regional broker hostname (`mqtt-us-v1.letsmesh.net` or `mqtt-eu-v1.letsmesh.net`).
 
+Signing uses cached **private key** material from either a **Radio**-tab MeshCore JSON import or **automatic persistence** after a successful MeshCore radio session (same storage shape as import).
+
 ### Configuration
 
-Import a MeshCore config JSON file (Radio tab) so `public_key` and `private_key` are cached. The implementation is in [`letsMeshJwt.ts`](../src/renderer/lib/letsMeshJwt.ts).
+Import a MeshCore config JSON file (Radio tab) when you need credentials before connecting a radio, or to replace missing data; otherwise connecting the MeshCore radio first fills the same cache. The implementation is in [`letsMeshJwt.ts`](../src/renderer/lib/letsMeshJwt.ts).
 
 ### Packet logger (optional)
 
