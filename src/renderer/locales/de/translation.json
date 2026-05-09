@@ -415,7 +415,7 @@
     "positionPrecisionChannelLabel": "Positionsgenauigkeit (0 = kein Ort)",
     "savingChannel": "Sichern …",
     "saveChannel": "Kanal speichern",
-    "hopLimitLabel": "Hopfenlimit",
+    "hopLimitLabel": "Hops-Limit",
     "hopLimitDescription": "Anzahl, wie oft eine Nachricht weitergeleitet werden kann (1–7). Höher = mehr Reichweite, mehr Sendezeit. Standard: 3.",
     "sx126xRxBoostedDesc": "Aktivieren Sie die verstärkte LNA-Verstärkung für eine bessere Empfangsempfindlichkeit (nur SX1262/1268-Chips).",
     "positionBroadcastIntervalDesc": "Wie oft die Position übertragen werden soll. 0 = Standard verwenden (900s). Höher einstellen, um Sendezeit zu sparen.",
@@ -1228,16 +1228,16 @@
     "meshDiagnosticsHeading": "Maschendiagnose ({{count}})",
     "rfTraceNotAvailable": "RF — Trace N/A",
     "routingAnomalyType": {
-      "hopGoblin": "Hopfen Kobold",
+      "hopGoblin": "Hop-Kobold",
       "badRoute": "Schlechte Route",
       "routeFlapping": "Routenschlag",
       "impossibleHop": "Impossible Hop",
       "noisyNode": "Rauschender Knoten"
     },
     "routingDesc": {
-      "hopGoblinKm": "Nur {{distanceKm}} km entfernt, aber mit {{hops}} Hopfen — kritisches Überhüpfen",
+      "hopGoblinKm": "Nur {{distanceKm}} km entfernt, aber mit {{hops}} Hops — kritisches Über-Hopping",
       "badRouteDuplication": "{{percent}}% Paketduplizierung — Routing-Schleife vermutet",
-      "badRouteSuboptimalMi": "Nur {{distanceMi}} mi entfernt, aber mit {{hops}} Hopfen — mögliche suboptimale Route",
+      "badRouteSuboptimalMi": "Nur {{distanceMi}} mi entfernt, aber mit {{hops}} Hops — mögliche suboptimale Route",
       "impossibleHopMi": "Als 0 Hops entfernt, aber {{miles}} Meilen entfernt gemeldet — GPS- oder Routing-Daten verdächtig",
       "routeFlapping": "Sprunganzahl in den letzten 10 Minuten {{changes}} geändert — instabile Route",
       "noisyNode": "Senden von {{ratePerHour}}/h auf {{ports}} — übermäßiger Verkehr"
@@ -1290,7 +1290,7 @@
       "mqttGhostTitle": "MQTT erkannt: Umschalten 'MQTT ignorieren' für diese ID",
       "mqttGhostDescription": "Knoten erscheint als 0 Sprünge, ist aber {{miles}} Meilen entfernt — wahrscheinlich über MQTT überbrückt, nicht über RF.",
       "highGroundTitle": "Op benachrichtigen: Hop-Limit auf 3 reduzieren",
-      "highGroundDescription": "SNR {{snr}} dB + {{hops}} Hopfen innerhalb von 10 Meilen — Knoten hat wahrscheinlich Hopfenlimit zu hoch eingestellt.",
+      "highGroundDescription": "SNR {{snr}} dB + {{hops}} Hops innerhalb von 10 Meilen — Knoten hat wahrscheinlich Hops-Limit zu hoch eingestellt.",
       "mqttRfOverlapTitle": "MQTT / RF-Überlappung prüfen",
       "mqttRfOverlapDescription": "{{percent}}% Paketduplizierung innerhalb von 5 Meilen — Gateway-Downlink oder überbrückte Pfade können RF widerspiegeln; versuchen Sie, MQTT für betroffene Knoten zu ignorieren.",
       "duplicateInterferenceTitle": "Platzierung prüfen: Weg von Elektronik/Lärm",
@@ -1298,7 +1298,7 @@
     },
     "remedyRf": {
       "utilizationVsTx": {
-        "title": "Lokales Rauschen / Hopfenlimit reduzieren",
+        "title": "Lokales Rauschen / Hops-Limit reduzieren",
         "description": "Eine hohe Kanalauslastung mit niedrigem TX deutet auf einen besetzten Kanal hin — reduzieren Sie die Sprunggrenze für nahegelegene Repeater oder verlagern Sie sie von Störungen weg."
       },
       "nonLoraNoiseRfi": {
@@ -1311,7 +1311,7 @@
       },
       "channelUtilizationSpike": {
         "title": "Auf Verkehrsüberlastung oder Störungen prüfen",
-        "description": "CU liegt deutlich über dem jüngsten Durchschnitt — vorübergehende Überlastung oder neue Störungen; Überwachung und Anpassung der Hopfengrenzwerte, wenn sie anhalten."
+        "description": "CU liegt deutlich über dem jüngsten Durchschnitt — vorübergehende Überlastung oder neue Störungen; Überwachung und Anpassung der Hops-Grenzwerte, wenn sie anhalten."
       },
       "meshCongestion": {
         "title": "Hop-Limit reduzieren /MQTT-Überlappung prüfen",
@@ -1393,7 +1393,7 @@
     "nodesTabName": "Knoten",
     "changeSessionRepeaterPassword": "Passwort des Sitzungswiederholers ändern",
     "title": "Wiederholer",
-    "columnsDataHint": "SNR, RSSI, Betriebszeit und Sendezeit stammen aus der Statusaktion (oder werden automatisch abgerufen, während dieses Bedienfeld geöffnet ist). Hopfen und Pfadverlauf benötigen Ping. MeshCore füllt diese Spalten nicht allein durch Werbung.",
+    "columnsDataHint": "SNR, RSSI, Betriebszeit und Sendezeit stammen aus der Statusaktion (oder werden automatisch abgerufen, während dieses Bedienfeld geöffnet ist). Hops und Pfadverlauf benötigen Ping. MeshCore füllt diese Spalten nicht allein durch Werbung.",
     "remoteAccessAriaLabel": "Repeater-Fernzugriff",
     "remoteAuthLabel": "Repeater-Administratorkennwort (optional)",
     "remoteAuthPlaceholder": "Leer lassen, wenn Repeater kein Admin-Passwort haben",
@@ -1455,7 +1455,7 @@
     "hopsFromTraceTitle": "Springt von der letzten Spur (stimmt mit der Pfadspur unten überein)",
     "hopsFromRoutingTitle": "Springt weg (von der Kontaktweiterleitung, wenn noch keine Spur vorhanden ist)",
     "hopLabel_one": "{{count}} Hop",
-    "hopLabel_other": "{{count}} Hopfen",
+    "hopLabel_other": "{{count}} Hops",
     "positionUpdated": "Position aktualisiert",
     "positionRequestTimedOut": "Zeitüberschreitung bei Positionsanforderung",
     "traceRouteTimedOut": "Zeitüberschreitung der Trace-Route",
@@ -1723,7 +1723,7 @@
     "routingHealth": "Gesundheit weiterleiten",
     "noRoutingIssues": "Es wurden keine Routing-Probleme festgestellt",
     "routeStability": "Streckenstabilität (1h)",
-    "hopCount24h": "Hopfenanzahl – 24 Stunden",
+    "hopCount24h": "Hop-Anzahl – 24 Stunden",
     "changes_one": "{{count}} ändern",
     "changes_other": "{{count}} ändert sich",
     "connectionHealth": "Verbindungszustand",

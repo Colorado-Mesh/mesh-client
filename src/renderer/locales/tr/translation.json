@@ -1393,7 +1393,7 @@
     "nodesTabName": "Düğümler",
     "changeSessionRepeaterPassword": "Oturum tekrarlayıcı şifresini değiştirin",
     "title": "Tekrarlayıcılar",
-    "columnsDataHint": "SNR, RSSI, çalışma süresi ve yayın süresi Durum işleminden (veya bu panel açıkken otomatik getirme) gelir. Şerbetçiotu ve yol geçmişinin Ping'e ihtiyacı var. MeshCore bu sütunları yalnızca reklamlardan doldurmaz.",
+    "columnsDataHint": "SNR, RSSI, çalışma süresi ve yayın süresi Durum işleminden (veya bu panel açıkken otomatik getirme) gelir. Hop ve yol geçmişinin Ping'e ihtiyacı var. MeshCore bu sütunları yalnızca reklamlardan doldurmaz.",
     "remoteAccessAriaLabel": "Tekrarlayıcı uzaktan erişim",
     "remoteAuthLabel": "Tekrarlayıcı yönetici şifresi (isteğe bağlı)",
     "remoteAuthPlaceholder": "Tekrarlayıcıların yönetici şifresi yoksa boş bırakın",

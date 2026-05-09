@@ -148,7 +148,51 @@ const LOCALE_ARTIFACT_RES = [
   /__PH\s*\d/i,
 ];
 
-// ── 3. Locale string quality: no CAT/XML artifacts; {{name}} sets match English ──
+// Brand / product names that must appear verbatim in every locale value
+// when present in the English source. Auto-translators frequently mangle
+// these (e.g. "TAK" → "JA"/"PRENDRE"/"ТАК"; "Discord" → "Zwietracht").
+// Match as a whole-word token so substrings like "Meshtastic" inside
+// "non-Meshtastic" still count as a single brand occurrence.
+const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore'];
+
+function brandOccurrenceCount(text, brand) {
+  // Whole-word, case-sensitive count.
+  const re = new RegExp(`\\b${brand}\\b`, 'g');
+  return (text.match(re) || []).length;
+}
+
+// "Hops" in mesh routing keeps tripping auto-translators into the brewing
+// ingredient. If any of these tokens appear in a locale value, fail with a
+// pointer to use the routing term instead. Substring match (no \b) because
+// non-ASCII letters don't participate in JS regex word boundaries.
+const FORBIDDEN_HOP_TOKENS = [
+  // de
+  'Hopfen',
+  'hopfen',
+  // es / pt-BR
+  'Lúpulo',
+  'lúpulo',
+  // fr
+  'Houblon',
+  'houblon',
+  // it
+  'Luppolo',
+  'luppolo',
+  // tr
+  'Şerbetçiotu',
+  // ru / uk / pl / cs
+  'Хмель',
+  'хмель',
+  'Хміль',
+  'хміль',
+  'Chmiel',
+  'chmiel',
+  // zh: 酒花 = beer hops; 链路数目 (number of links) is the correct routing term.
+  '酒花',
+];
+
+// ── 3. Locale string quality: no CAT/XML artifacts; {{name}} sets match English;
+//      no leading/trailing whitespace or BOM that English lacks; brand names preserved.
 for (const dir of localeDirs) {
   const localePath = join(LOCALES_DIR, dir, 'translation.json');
   let localeFlat;
@@ -178,6 +222,55 @@ for (const dir of localeDirs) {
         `Placeholder mismatch in "${dir}" key "${key}": English has {${enList}} but locale has {${locList}}.`,
       );
       errors++;
+    }
+
+    // Whitespace / BOM parity. If English lacks leading or trailing whitespace
+    // (or the U+FEFF byte-order mark anywhere), the locale must too — those
+    // creep in via copy/paste from CAT tools or auto-translate output and
+    // cause visible gaps in the rendered UI.
+    if (val.includes('\uFEFF') && !enVal.includes('\uFEFF')) {
+      console.error(`Stray BOM (U+FEFF) in "${dir}" key "${key}": remove the byte-order mark.`);
+      errors++;
+    }
+    if (val !== val.trimStart() && enVal === enVal.trimStart()) {
+      console.error(
+        `Leading whitespace in "${dir}" key "${key}": value=${JSON.stringify(val)} (English has none).`,
+      );
+      errors++;
+    }
+    if (val !== val.trimEnd() && enVal === enVal.trimEnd()) {
+      console.error(
+        `Trailing whitespace in "${dir}" key "${key}": value=${JSON.stringify(val)} (English has none).`,
+      );
+      errors++;
+    }
+
+    // Brand-name preservation. If the English value contains a protected
+    // brand token N times, the locale value must contain it at least N times
+    // (extra surrounding text is fine; what we forbid is dropping or
+    // translating the brand into a dictionary word).
+    for (const brand of PROTECTED_BRANDS) {
+      const enCount = brandOccurrenceCount(enVal, brand);
+      if (enCount === 0) continue;
+      const locCount = brandOccurrenceCount(val, brand);
+      if (locCount < enCount) {
+        console.error(
+          `Brand "${brand}" missing in "${dir}" key "${key}": English has ${enCount} occurrence(s), locale has ${locCount}. EN=${JSON.stringify(enVal)} LOC=${JSON.stringify(val)}`,
+        );
+        errors++;
+      }
+    }
+
+    // Brewing-ingredient false-friend check. The English source uses "Hop"
+    // / "Hops" only in the mesh-routing sense, never the plant. If a
+    // forbidden hop-the-plant token leaks in, fail with guidance.
+    for (const tok of FORBIDDEN_HOP_TOKENS) {
+      if (val.includes(tok)) {
+        console.error(
+          `Brewing-hops false friend in "${dir}" key "${key}": "${tok}" should be the routing term (e.g. "Hops", "Saltos", "Sauts", "Хопи"). LOC=${JSON.stringify(val)}`,
+        );
+        errors++;
+      }
     }
   }
 }

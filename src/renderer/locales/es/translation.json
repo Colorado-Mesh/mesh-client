@@ -1231,7 +1231,7 @@
       "hopGoblin": "Duende saltarín",
       "badRoute": "Ruta incorrecta",
       "routeFlapping": "Aleteo de ruta",
-      "impossibleHop": "Lúpulo imposible",
+      "impossibleHop": "Salto imposible",
       "noisyNode": "Nodo ruidoso"
     },
     "routingDesc": {
@@ -1314,7 +1314,7 @@
         "description": "La CU está muy por encima de la media reciente: congestión temporal o nuevas interferencias; supervise y ajuste los límites de salto si se mantiene."
       },
       "meshCongestion": {
-        "title": "Reducir el límite de lúpulo/ verificar la superposición de MQTT",
+        "title": "Reducir el límite de saltos/ verificar la superposición de MQTT",
         "description": "Alta tasa de duplicados: consulte Bloqueo de tráfico duplicado de Diagnostics; pruebe Ignorar MQTT para nodos puenteados."
       },
       "hiddenTerminalRisk": {
@@ -1455,7 +1455,7 @@
     "hopsFromTraceTitle": "Salta desde el último rastreo (coincide con el rastreo de ruta a continuación)",
     "hopsFromRoutingTitle": "Salta lejos (de la ruta de contacto cuando aún no hay rastro)",
     "hopLabel_one": "{{count}} hop",
-    "hopLabel_other": "{{count}} lúpulo",
+    "hopLabel_other": "{{count}} saltos",
     "positionUpdated": "Posición actualizada",
     "positionRequestTimedOut": "Se ha agotado el tiempo de espera de la solicitud de posición",
     "traceRouteTimedOut": "Se ha agotado el tiempo de espera para rastrear la ruta",
