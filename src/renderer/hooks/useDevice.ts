@@ -2556,7 +2556,7 @@ export function useDevice() {
       }
       deviceRef.current = device;
       wireSubscriptions(device, params.type);
-      void device.configure();
+      await device.configure();
 
       // Success
       console.debug(`[useDevice] Reconnect succeeded on attempt ${reconnectAttemptRef.current}`);
@@ -2616,7 +2616,7 @@ export function useDevice() {
         wireSubscriptions(device, type);
 
         // Start configuration AFTER all listeners are wired
-        void device.configure();
+        await device.configure();
       } catch (err) {
         clearConfigureTimeout();
         console.error('[Meshtastic] Connection failed:', err);
@@ -2685,7 +2685,7 @@ export function useDevice() {
         }
         deviceRef.current = device;
         wireSubscriptions(device, type);
-        void device.configure();
+        await device.configure();
       } catch (err) {
         clearConfigureTimeout();
         console.error('[Meshtastic] Auto-connect failed:', err);
