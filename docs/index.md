@@ -21,6 +21,7 @@ Key outcomes:
 - True message persistence with SQLite-backed history.
 - Unified interface across Meshtastic and MeshCore.
 - Advanced mesh visibility via diagnostics, map overlays, and routing insights.
+- Multi-language support (16+ languages) with offline static bundles.
 - Cross-platform desktop support for macOS, Linux, and Windows.
 
 ---
@@ -57,6 +58,7 @@ For development setup and local build/test workflow, see:
 - **Support**
   - [Diagnostics](diagnostics.md)
   - [Troubleshooting](troubleshooting.md)
+  - [Localization & Languages](localization.md)
   - [Meshtastic: mesh vs local client telemetry](meshtastic-telemetry-local-client.md)
 - **Project**
   - [License](license.md)
