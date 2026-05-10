@@ -114,4 +114,69 @@ describe('External link routing (source contract)', () => {
     expect(INDEX_SOURCE).toContain('shell.openExternal');
     expect(INDEX_SOURCE).toContain('event.preventDefault()');
   });
+
+  it('logs rejected external link opens instead of leaving unhandled rejections', () => {
+    expect(INDEX_SOURCE).toContain('shell.openExternal(target.toString()).catch((e: unknown) => {');
+    expect(INDEX_SOURCE).toContain("'[main] external link open failed'");
+    expect(INDEX_SOURCE).toContain(
+      'sanitizeLogMessage(e instanceof Error ? e.message : String(e))',
+    );
+  });
+});
+
+describe('About dialog crash guard (source contract)', () => {
+  it('catches and logs native dialog failures with a non-recursive error-box fallback', () => {
+    expect(INDEX_SOURCE).toContain('async function showAboutDialog(): Promise<void>');
+    expect(INDEX_SOURCE).toContain(
+      'console.debug(`[main] about dialog: opening app=${sanitizeLogMessage(appName)}`);',
+    );
+    expect(INDEX_SOURCE).toContain("'[main] about dialog failed'");
+    expect(INDEX_SOURCE).toContain(
+      'dialog.showErrorBox(`About ${appName}`, `${appName}\\nVersion ${version}`);',
+    );
+    expect(INDEX_SOURCE).toContain("'[main] about dialog fallback failed'");
+    expect(INDEX_SOURCE).not.toContain('showMessageBox(`About ${appName}`');
+  });
+
+  it('logs selected About responses and handles rejected About link opens', () => {
+    expect(INDEX_SOURCE).toContain(
+      'console.debug(`[main] about dialog: response=${sanitizeLogMessage(String(response))}`);',
+    );
+    expect(INDEX_SOURCE).toContain(
+      'console.debug(`[main] about dialog: openExternal url=${sanitizeLogMessage(target.toString())}`);',
+    );
+    expect(INDEX_SOURCE).toContain('await shell.openExternal(validatedTarget.toString());');
+    expect(INDEX_SOURCE).toContain("'[main] about dialog: openExternal failed'");
+  });
+});
+
+describe('Native Electron call guards (source contract)', () => {
+  it('keeps tray, badge, and power-save native calls best-effort', () => {
+    expect(INDEX_SOURCE).toContain("'[main] tray icon load failed:'");
+    expect(INDEX_SOURCE).toContain("'[main] tray unread icon overlay failed:'");
+    expect(INDEX_SOURCE).toContain("'[main] tray setup failed:'");
+    expect(INDEX_SOURCE).toContain("'[main] tray unread update failed:'");
+    expect(INDEX_SOURCE).toContain('function startPowerSaveBlocker(): void');
+    expect(INDEX_SOURCE).toContain('function stopPowerSaveBlocker(): void');
+    expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker start failed:'");
+    expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker stop failed:'");
+  });
+
+  it('logs native IPC helper failures locally before fallback or rejection', () => {
+    expect(INDEX_SOURCE).toContain("'[IPC] notify:message failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] storage:isAvailable failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] storage:encrypt failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] storage:decrypt failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] app:getLoginItem failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] app:setLoginItem failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] app:showEmojiPanel failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] meshcore:openJsonFile failed:'");
+  });
+
+  it('guards fatal startup error dialog fallback', () => {
+    expect(INDEX_SOURCE).toContain("dialog.showErrorBox('Mesh-Client — Startup Error', message);");
+    expect(INDEX_SOURCE).toContain(
+      'catch-no-log-ok dialog unavailable during fatal startup handling; error already logged above',
+    );
+  });
 });

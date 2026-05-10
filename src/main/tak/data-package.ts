@@ -6,6 +6,7 @@ import os from 'os';
 import path from 'path';
 
 import type { TAKSettings } from '../../shared/tak-types';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import type { CertBundle } from './certificate-manager';
 
 const PKCS12_PASSWORD = 'atakatak';
@@ -98,6 +99,13 @@ export async function generateDataPackage(
     );
   }
 
-  shell.showItemInFolder(outputPath);
+  try {
+    shell.showItemInFolder(outputPath);
+  } catch (e) {
+    console.warn(
+      '[TAK] show data package in folder failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  }
   return outputPath;
 }
