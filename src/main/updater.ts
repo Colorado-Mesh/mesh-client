@@ -7,14 +7,17 @@ import { sanitizeLogMessage } from './log-service';
 // We do a dynamic require so the dev path still works without it installed
 
 let autoUpdater: any = null;
+/** Silent periodic check (no renderer “checking” event). */
 let checkNow: (() => void) | null = null;
+/** App menu: emits `update:checking` with notify flag, then runs the same check as IPC. */
+let checkFromMenu: (() => void) | null = null;
 
 /** Last app release page URL (GitHub); set on update:available for download / macOS open-in-browser. */
 let lastAppReleaseUrl: string | null = null;
 
-/** Returns the current update-check function (set after initUpdater runs). Used by native menu. */
-export function getCheckNow(): (() => void) | null {
-  return checkNow;
+/** Menu “Check for Updates…” — shows footer progress + optional OS notify when settled. */
+export function getCheckNowFromMenu(): (() => void) | null {
+  return checkFromMenu;
 }
 
 const REPO = 'Colorado-Mesh/mesh-client';
@@ -87,11 +90,19 @@ function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boole
       send('update:error', { message: 'Update check failed — check network connection' });
     }
   };
+
   checkNow = () => {
     void doCheck();
   };
+  checkFromMenu = () => {
+    send('update:checking', { notifyOnSettled: true });
+    void doCheck();
+  };
 
-  ipcMain.handle('update:check', doCheck);
+  ipcMain.handle('update:check', async () => {
+    send('update:checking', { notifyOnSettled: false });
+    await doCheck();
+  });
 
   ipcMain.handle('update:download', async () => {
     if (!uiReportsPackaged) return;
@@ -155,11 +166,19 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
       send('update:error', { message: msg });
     }
   };
+
   checkNow = () => {
     void doCheck();
   };
+  checkFromMenu = () => {
+    send('update:checking', { notifyOnSettled: true });
+    void doCheck();
+  };
 
-  ipcMain.handle('update:check', doCheck);
+  ipcMain.handle('update:check', async () => {
+    send('update:checking', { notifyOnSettled: false });
+    await doCheck();
+  });
 
   ipcMain.handle('update:download', async () => {
     if (process.platform === 'darwin') {

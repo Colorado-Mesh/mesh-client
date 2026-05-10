@@ -153,11 +153,12 @@ Complete reference of all pnpm scripts in `package.json`, organized by category.
 
 #### Quality Checks
 
-| Script                | Description                                                |
-| --------------------- | ---------------------------------------------------------- |
-| `check:log-injection` | Detect unsanitized user data in log calls                  |
-| `check:db-migrations` | Verify SQLite migrations are valid                         |
-| `check:ipc-contract`  | Verify IPC channel contracts between main/preload/renderer |
+| Script                | Description                                                 |
+| --------------------- | ----------------------------------------------------------- |
+| `check:log-injection` | Detect unsanitized user data in log calls                   |
+| `check:db-migrations` | Verify SQLite migrations are valid                          |
+| `check:i18n`          | Verify all UI strings have English keys and locale coverage |
+| `check:ipc-contract`  | Verify IPC channel contracts between main/preload/renderer  |
 
 #### Documentation
 
@@ -169,12 +170,13 @@ Complete reference of all pnpm scripts in `package.json`, organized by category.
 
 #### Setup / Helpers
 
-| Script             | Description                                              |
-| ------------------ | -------------------------------------------------------- |
-| `setup:actionlint` | Install actionlint for GitHub workflow linting           |
-| `setup:build-deps` | Install native build dependencies                        |
-| `setup:dialout`    | Add user to dialout group for serial port access (Linux) |
-| `rebuild`          | Rebuild native Node modules for Electron                 |
+| Script                | Description                                              |
+| --------------------- | -------------------------------------------------------- |
+| `setup:actionlint`    | Install actionlint for GitHub workflow linting           |
+| `setup:build-deps`    | Install native build dependencies                        |
+| `setup:dialout`       | Add user to dialout group for serial port access (Linux) |
+| `i18n:auto-translate` | Machine-translate missing keys via MyMemory              |
+| `rebuild`             | Rebuild native Node modules for Electron                 |
 
 #### Lifecycle (automatic)
 
@@ -228,18 +230,23 @@ Not installed by pnpm (install separately when needed):
 
 Run these quality checks before opening a PR:
 
-```bash
+# Quality checks
+
 pnpm run test:run
 pnpm run lint
 pnpm run lint:md
 pnpm run typecheck
 pnpm run format:check
-```
+pnpm run check:i18n
+
+````
 
 Other useful test commands:
 
 - `pnpm test` (watch mode)
 - `pnpm run test:verbose` (verbose failures)
+- `pnpm run i18n:auto-translate` (fill missing keys)
+
 
 ### 5) Building a distributable
 
@@ -249,7 +256,7 @@ Use the platform-specific packaging command:
 pnpm run dist:mac   # macOS -> .dmg + .zip in release/
 pnpm run dist:linux # Linux -> .AppImage + .deb in release/
 pnpm run dist:win   # Windows -> .exe installer in release/
-```
+````
 
 Output goes to the `release/` directory.
 
@@ -309,7 +316,20 @@ These scripts try to install optional tooling automatically. If they fail (for e
    - `pnpm run setup:dialout`
    - Adds your user to the `dialout` group (requires sudo + re-login).
 
-### 9) Optional editor/tooling
+### 9) Internationalization (i18n)
+
+The app uses `i18next` for localization. English is the source of truth.
+
+- **Locale files**: `src/renderer/locales/{en,es,...}/translation.json`
+- **Adding strings**:
+  1. Add the new key and English value to `src/renderer/locales/en/translation.json`.
+  2. Use the `t('key.name')` hook in React components.
+  3. Run `pnpm run i18n:auto-translate` to machine-translate the new key into other supported languages.
+  4. Run `pnpm run check:i18n` to verify all keys are valid and accounted for.
+
+Auto-translation uses MyMemory by default. Incremental translations (new keys only) run automatically during the git pre-commit hook. Use `pnpm run i18n:auto-translate --all` to force a full re-scan of all missing keys.
+
+### 10) Optional editor/tooling
 
 - VS Code (or Cursor) with TypeScript + ESLint support
 - Prettier editor extension (optional convenience; repository already defines formatting rules)

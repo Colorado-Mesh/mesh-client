@@ -11,8 +11,10 @@ describe('updater source contracts', () => {
     expect(UPDATER_SOURCE).toContain('registerGithubReleaseApiHandlers(send, true)');
   });
 
-  it('tracks last release URL and opens it from helper (macOS download path)', () => {
-    expect(UPDATER_SOURCE).toContain('lastAppReleaseUrl');
-    expect(UPDATER_SOURCE).toContain('openAppReleasePage');
+  it('emits update:checking for interactive checks and exposes menu entry point', () => {
+    expect(UPDATER_SOURCE).toContain("send('update:checking'");
+    expect(UPDATER_SOURCE).toContain('notifyOnSettled: true');
+    expect(UPDATER_SOURCE).toContain('notifyOnSettled: false');
+    expect(UPDATER_SOURCE).toContain('getCheckNowFromMenu');
   });
 });

@@ -176,6 +176,8 @@
       "usb"
     ],
     "overrides": {
+      "@electron/asar": "^4.0.1",
+      "@meshtastic/core": "npm:@jsr/meshtastic__core@^2.6.6",
       "cacheable-request": "^10.0.0",
       "yauzl": "^3.2.1"
     },

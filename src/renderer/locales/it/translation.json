@@ -138,7 +138,12 @@
     "restart": "Riavvia",
     "restartTitle": "Riavvia e installa",
     "retryCheck": "Riprova il controllo dell'aggiornamento",
-    "updateError": "Errore di aggiornamento"
+    "updateError": "Errore di aggiornamento",
+    "menuToastUpToDateTitle": "Mesh-Client",
+    "menuToastUpToDateBody": "Sei nell'ultima versione.",
+    "menuToastAvailableTitle": "Aggiornamento disponibile",
+    "menuToastAvailableBody": "È disponibile la versione {{version}}.",
+    "menuToastErrorTitle": "Controllo aggiornamento non riuscito"
   },
   "app": {
     "loadingPanel": "Pannello di caricamento",

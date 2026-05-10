@@ -144,7 +144,12 @@
     "restart": "Restart",
     "restartTitle": "Restart and install",
     "retryCheck": "Retry update check",
-    "updateError": "Update error"
+    "updateError": "Update error",
+    "menuToastUpToDateTitle": "Mesh-Client",
+    "menuToastUpToDateBody": "You're on the latest version.",
+    "menuToastAvailableTitle": "Update available",
+    "menuToastAvailableBody": "Version {{version}} is available.",
+    "menuToastErrorTitle": "Update check failed"
   },
   "app": {
     "loadingPanel": "Loading panel",

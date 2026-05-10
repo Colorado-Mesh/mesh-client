@@ -134,7 +134,7 @@ describe('analyzeLogs', () => {
       makeEntry('[Meshtastic MQTT] Connection timeout (will reconnect): connack timeout', 'warn'),
       makeEntry('[Meshtastic MQTT] Network error (will reconnect): socket hang up', 'warn'),
       makeEntry('[Meshtastic MQTT] Fatal connection error: certificate has expired', 'error'),
-      makeEntry('[Meshtastic MQTT] Reconnecting in 500ms (attempt 1/3)', 'warn'),
+      makeEntry('[Meshtastic MQTT] Reconnecting in 250ms (attempt 1/5)', 'warn'),
     ];
     const result = analyzeLogs(entries, 'meshtastic');
     const mqttCategory = result.categories.find((c) => c.id === 'mqtt');

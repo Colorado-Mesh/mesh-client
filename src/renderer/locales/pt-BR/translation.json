@@ -138,7 +138,12 @@
     "restart": "Recomeçar",
     "restartTitle": "Reiniciar e instalar",
     "retryCheck": "Repetir verificação de atualização",
-    "updateError": "Chyba pri aktualizácii"
+    "updateError": "Chyba pri aktualizácii",
+    "menuToastUpToDateTitle": "Mesh-Client",
+    "menuToastUpToDateBody": "Você está na versão mais recente.",
+    "menuToastAvailableTitle": "Atualização disponível",
+    "menuToastAvailableBody": "A versão {{version}} está disponível.",
+    "menuToastErrorTitle": "verificação de atualização falhou"
   },
   "app": {
     "loadingPanel": "Painel de carregamento",

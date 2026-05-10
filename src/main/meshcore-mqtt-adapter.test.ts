@@ -75,6 +75,7 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
 
   afterEach(() => {
     adapter.disconnect();
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
@@ -160,6 +161,42 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
 
       vi.advanceTimersByTime(60 * 60 * 1000);
       expect(handler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('JWT reconnect backoff', () => {
+    it('defers token refresh until exponential delay elapses', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0);
+      const mqttMod = await import('mqtt');
+      const onToken = vi.fn();
+      adapter.on(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, onToken);
+
+      const v1Username = `v1_${'A'.repeat(64)}`;
+      const expiresAt = Date.now() + 60 * 60 * 1000;
+      adapter.connect({
+        ...BASE_SETTINGS,
+        username: v1Username,
+        tokenExpiresAt: expiresAt,
+      });
+
+      const client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+        on: ReturnType<typeof vi.fn>;
+      };
+      const connectHits = client.on.mock.calls.filter((c: unknown[]) => c[0] === 'connect');
+      const connectFn = connectHits[connectHits.length - 1]?.[1] as () => void;
+      connectFn();
+
+      expect(adapter.getStatus()).toBe('connected');
+
+      const closeHits = client.on.mock.calls.filter((c: unknown[]) => c[0] === 'close');
+      const closeFn = closeHits[closeHits.length - 1]?.[1] as () => void;
+      closeFn();
+
+      expect(onToken).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(60_000 - 1);
+      expect(onToken).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(2);
+      expect(onToken).toHaveBeenCalledTimes(1);
     });
   });
 

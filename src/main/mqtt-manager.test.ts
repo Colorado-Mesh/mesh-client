@@ -1726,20 +1726,23 @@ describe('MQTTManager reconnect backoff + connect watchdog', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.mocked(mqtt.connect).mockClear();
+    vi.spyOn(Math, 'random').mockReturnValue(0);
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
-  it('runs scheduled _doConnect after long backoff while UI status is disconnected', () => {
+  it('runs scheduled _doConnect after reconnect backoff while UI status is disconnected', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
     const manager = new MQTTManager();
     manager.connect(settings);
     expect(manager.getStatus()).toBe('connecting');
     const client = getLastMockMqttClient();
     lastHandler(client, 'close')();
     expect(manager.getStatus()).toBe('disconnected');
-    vi.advanceTimersByTime(600_000);
+    vi.advanceTimersByTime(60_000);
     expect(vi.mocked(mqtt.connect)).toHaveBeenCalledTimes(2);
   });
 

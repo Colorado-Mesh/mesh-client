@@ -138,7 +138,12 @@
     "restart": "Opnieuw opstarten",
     "restartTitle": "Opnieuw opstarten en installeren",
     "retryCheck": "Probeer de updatecontrole opnieuw",
-    "updateError": "Updatefout"
+    "updateError": "Updatefout",
+    "menuToastUpToDateTitle": "Mesh-client",
+    "menuToastUpToDateBody": "Je hebt de nieuwste versie.",
+    "menuToastAvailableTitle": "Güncelleme uygun",
+    "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
+    "menuToastErrorTitle": "Updatecontrole mislukt"
   },
   "app": {
     "loadingPanel": "Laadpaneel",

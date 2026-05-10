@@ -106,6 +106,23 @@ describe('generateDataPackage', () => {
     expect(vi.mocked(shell.showItemInFolder)).toHaveBeenCalledWith('/tmp/test-tak/tak-package.zip');
   });
 
+  it('still returns the package path when showing the folder fails', async () => {
+    vi.mocked(shell.showItemInFolder).mockImplementationOnce(() => {
+      throw new Error('native shell failed');
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(generateDataPackage(STUB_CERTS, STUB_SETTINGS)).resolves.toBe(
+      '/tmp/test-tak/tak-package.zip',
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[TAK] show data package in folder failed:',
+      'native shell failed',
+    );
+
+    warnSpy.mockRestore();
+  });
+
   it('connection.pref contains the correct port', async () => {
     await generateDataPackage(STUB_CERTS, { ...STUB_SETTINGS, port: 9999 });
     const prefEntry = fileCallArgs.find(([name]) => name === 'connection.pref');

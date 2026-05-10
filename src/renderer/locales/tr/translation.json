@@ -138,7 +138,12 @@
     "restart": "Tekrar başlat",
     "restartTitle": "Yeniden başlatın ve yükleyin",
     "retryCheck": "Güncelleme kontrolünü yeniden dene",
-    "updateError": "Güncelleme hatası"
+    "updateError": "Güncelleme hatası",
+    "menuToastUpToDateTitle": "Mesh - Client",
+    "menuToastUpToDateBody": "En son versiyona sahipsiniz.",
+    "menuToastAvailableTitle": "Güncelleme uygun",
+    "menuToastAvailableBody": "{{version}} sürümü mevcut.",
+    "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
   },
   "app": {
     "loadingPanel": "Yükleme paneli",

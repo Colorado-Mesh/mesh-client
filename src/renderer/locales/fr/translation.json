@@ -138,7 +138,12 @@
     "restart": "Redémarrer",
     "restartTitle": "Redémarrer et installer",
     "retryCheck": "Réessayer la vérification de mise à jour",
-    "updateError": "Erreur de mise à jour"
+    "updateError": "Erreur de mise à jour",
+    "menuToastUpToDateTitle": "MAILLE (CLIENT)",
+    "menuToastUpToDateBody": "Vous êtes sur la dernière version.",
+    "menuToastAvailableTitle": "mise à jour disponible",
+    "menuToastAvailableBody": "La version {{version}} est disponible.",
+    "menuToastErrorTitle": "Échec de la vérification de"
   },
   "app": {
     "loadingPanel": "Panneau de chargement",

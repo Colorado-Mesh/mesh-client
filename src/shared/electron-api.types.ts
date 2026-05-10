@@ -61,6 +61,11 @@ export interface SavedNode {
 
 // ─── Shared sub-types ─────────────────────────────────────────────────────────
 
+/** Payload for main → renderer `update:checking` (footer progress + menu completion toasts). */
+export interface UpdateCheckingPayload {
+  notifyOnSettled?: boolean;
+}
+
 export interface NobleBleDevice {
   deviceId: string;
   deviceName: string;
@@ -520,6 +525,7 @@ export interface ElectronAPI {
       }) => void,
     ) => () => void;
     onNotAvailable: (cb: () => void) => () => void;
+    onChecking: (cb: (payload?: UpdateCheckingPayload) => void) => () => void;
     onProgress: (cb: (info: { percent: number }) => void) => () => void;
     onDownloaded: (cb: () => void) => () => void;
     onError: (cb: (info: { message: string }) => void) => () => void;

@@ -138,7 +138,12 @@
     "restart": "Mulai ulang",
     "restartTitle": "Mulai ulang dan instal",
     "retryCheck": "Coba lagi pemeriksaan pembaruan",
-    "updateError": "Kesalahan pembaruan"
+    "updateError": "Kesalahan pembaruan",
+    "menuToastUpToDateTitle": "Mesh - Client",
+    "menuToastUpToDateBody": "Anda menggunakan versi terbaru.",
+    "menuToastAvailableTitle": "Pembaruan tersedia",
+    "menuToastAvailableBody": "Versi {{version}} tersedia.",
+    "menuToastErrorTitle": "Pemeriksaan pembaruan gagal"
   },
   "app": {
     "loadingPanel": "Memuat panel",

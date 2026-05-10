@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import {
   app,
   BrowserWindow,
+  crashReporter,
   dialog,
   ipcMain,
   Menu,
@@ -86,10 +87,22 @@ import { MQTTManager } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import type { TakServerManager } from './tak-server-manager';
-import { getCheckNow, initUpdater } from './updater';
+import { getCheckNowFromMenu, initUpdater } from './updater';
+import { buildWindowsAboutDocumentHtml } from './windows-about-html';
 
 // Route main-process console through log file + Log panel (must run before other code logs)
 patchMainConsole();
+
+// Capture native minidumps locally (no upload). Failure point: crashReporter unavailable in some test harnesses.
+try {
+  crashReporter.start({ uploadToServer: false });
+  console.debug('[main] crashReporter started (uploadToServer: false)');
+} catch (e: unknown) {
+  console.warn(
+    '[main] crashReporter.start failed:',
+    sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+  );
+}
 
 // Linux: SIGSEGV in Electron GPU process on some Wayland / driver stacks (electron#41980).
 // Must run before app.whenReady(). CLI flags --disable-gpu also work; env avoids wrapper scripts.
@@ -108,6 +121,11 @@ if (!app.requestSingleInstanceLock()) {
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.meshclient.app');
 }
+
+/** Trusted Help menu / About credits URLs (static, not user-controlled). */
+const HELP_URL_WEBSITE = 'https://coloradomesh.org/';
+const HELP_URL_GITHUB = 'https://github.com/Colorado-Mesh/mesh-client';
+const HELP_URL_DISCORD = 'https://discord.com/invite/McChKR5NpS';
 
 // ─── Window state persistence ───────────────────────────────────────
 interface WindowState {
@@ -215,6 +233,8 @@ function isAnyMqttConnected(): boolean {
 }
 
 let mainWindow: BrowserWindow | null = null;
+/** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
+let windowsAboutWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 /** Retain tray context menu so macOS menu bridge does not see a freed model (avoids console warning / crashes). */
 let trayContextMenu: Menu | null = null;
@@ -781,144 +801,347 @@ function getAppIconPath() {
 }
 
 function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
-  let base: Electron.NativeImage;
-  if (process.platform === 'darwin') {
-    const trayIconPath = app.isPackaged
-      ? path.join(process.resourcesPath, 'macos-menubar-icon-Template.png')
-      : path.join(
-          __dirname,
-          '../../resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template.png',
-        );
-    base = nativeImage.createFromPath(trayIconPath);
-    base.setTemplateImage(true);
-  } else {
-    const trayIconPath = app.isPackaged
-      ? path.join(process.resourcesPath, '256x256.png')
-      : path.join(__dirname, '../../resources/icons/linux/256x256.png');
-    try {
+  let base = nativeImage.createEmpty();
+  try {
+    if (process.platform === 'darwin') {
+      const trayIconPath = app.isPackaged
+        ? path.join(process.resourcesPath, 'macos-menubar-icon-Template.png')
+        : path.join(
+            __dirname,
+            '../../resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template.png',
+          );
+      base = nativeImage.createFromPath(trayIconPath);
+      base.setTemplateImage(true);
+    } else {
+      const trayIconPath = app.isPackaged
+        ? path.join(process.resourcesPath, '256x256.png')
+        : path.join(__dirname, '../../resources/icons/linux/256x256.png');
       base = nativeImage.createFromPath(trayIconPath).resize({ width: 22, height: 22 });
-    } catch (e) {
-      console.error(
-        '[main] tray icon load failed:',
-        trayIconPath,
-        e instanceof Error ? e.message : e,
-      ); // log-injection-ok: e is a local Error from nativeImage, not user input
-      base = nativeImage.createEmpty();
     }
+  } catch (e) {
+    console.error(
+      '[main] tray icon load failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 
   if (!hasUnread) return base;
 
-  // Overlay the red dot for unread messages
-  // Use getSize() after resize so the dot scales correctly with retina/2x template images.
-  // toBitmap() on macOS template images may return a buffer that is not exactly
-  // width*height*4 bytes, so we allocate the expected size and copy what we have.
-  const { width: actualW, height: actualH } = base.getSize();
-  const expectedSize = actualW * actualH * 4;
-  const rawBitmap = base.toBitmap();
-  const bitmap = Buffer.alloc(expectedSize, 0);
-  rawBitmap.copy(bitmap, 0, 0, Math.min(rawBitmap.length, expectedSize));
+  try {
+    // Overlay the red dot for unread messages
+    // Use getSize() after resize so the dot scales correctly with retina/2x template images.
+    // toBitmap() on macOS template images may return a buffer that is not exactly
+    // width*height*4 bytes, so we allocate the expected size and copy what we have.
+    const { width: actualW, height: actualH } = base.getSize();
+    const expectedSize = actualW * actualH * 4;
+    const rawBitmap = base.toBitmap();
+    const bitmap = Buffer.alloc(expectedSize, 0);
+    rawBitmap.copy(bitmap, 0, 0, Math.min(rawBitmap.length, expectedSize));
 
-  const dotR = Math.max(2, Math.round(actualW / 8));
-  const dotCx = actualW - dotR - 1;
-  const dotCy = dotR + 1;
+    const dotR = Math.max(2, Math.round(actualW / 8));
+    const dotCx = actualW - dotR - 1;
+    const dotCy = dotR + 1;
 
-  for (let py = 0; py < actualH; py++) {
-    for (let px = 0; px < actualW; px++) {
-      const dx = px - dotCx;
-      const dy = py - dotCy;
-      if (dx * dx + dy * dy <= dotR * dotR) {
-        const idx = (py * actualW + px) * 4;
-        bitmap[idx] = 239; // R
-        bitmap[idx + 1] = 68; // G
-        bitmap[idx + 2] = 68; // B
-        bitmap[idx + 3] = 255; // A
+    for (let py = 0; py < actualH; py++) {
+      for (let px = 0; px < actualW; px++) {
+        const dx = px - dotCx;
+        const dy = py - dotCy;
+        if (dx * dx + dy * dy <= dotR * dotR) {
+          const idx = (py * actualW + px) * 4;
+          bitmap[idx] = 239; // R
+          bitmap[idx + 1] = 68; // G
+          bitmap[idx + 2] = 68; // B
+          bitmap[idx + 3] = 255; // A
+        }
       }
     }
-  }
 
-  return nativeImage.createFromBitmap(bitmap, { width: actualW, height: actualH });
+    return nativeImage.createFromBitmap(bitmap, { width: actualW, height: actualH });
+  } catch (e) {
+    console.error(
+      '[main] tray unread icon overlay failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    return base;
+  }
 }
 
 function setupTray(window: BrowserWindow) {
-  tray = new Tray(buildTrayIcon(false));
-  tray.setToolTip('Mesh-Client');
-  tray.on('click', () => {
-    window.show();
-    window.focus();
-  });
-  trayContextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Show Mesh-Client',
-      click: () => {
-        window.show();
-        window.focus();
+  try {
+    tray = new Tray(buildTrayIcon(false));
+    tray.setToolTip('Mesh-Client');
+    tray.on('click', () => {
+      window.show();
+      window.focus();
+    });
+    trayContextMenu = Menu.buildFromTemplate([
+      {
+        label: 'Show Mesh-Client',
+        click: () => {
+          window.show();
+          window.focus();
+        },
       },
-    },
-    { type: 'separator' },
-    {
-      label: `About ${app.name}`,
-      click: () => void showAboutDialog(),
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit',
-      click: () => {
-        isQuitting = true;
-        mqttManager.disconnect();
-        meshcoreMqttAdapter.disconnect();
-        isConnected = false;
-        mainWindow?.destroy();
-        app.quit();
+      { type: 'separator' },
+      {
+        label: `About ${app.name}`,
+        click: () => {
+          showAboutDialog();
+        },
       },
-    },
-  ]);
-  tray.setContextMenu(trayContextMenu);
+      { type: 'separator' },
+      {
+        label: 'Quit',
+        click: () => {
+          isQuitting = true;
+          mqttManager.disconnect();
+          meshcoreMqttAdapter.disconnect();
+          isConnected = false;
+          mainWindow?.destroy();
+          app.quit();
+        },
+      },
+    ]);
+    tray.setContextMenu(trayContextMenu);
+  } catch (e) {
+    console.error(
+      '[main] tray setup failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    tray = null;
+    trayContextMenu = null;
+  }
 }
 
-async function showAboutDialog(): Promise<void> {
-  const w = BrowserWindow.getFocusedWindow() ?? mainWindow;
-  const detail = [
-    `Version ${app.getVersion()}`,
+function applyAboutPanelOptions(): void {
+  // GitHub #406: On Windows 11, Electron’s native About path (`setAboutPanelOptions` / `showAboutPanel`)
+  // can fault the process with no JS exception (upstream Electron + Win32 shell bug). We skip
+  // registering the panel on win32 because `showAboutDialog` uses the HTML fallback instead.
+  if (process.platform === 'win32') {
+    return;
+  }
+  const version = app.getVersion();
+  const credits = [
+    `Version ${version}`,
     '',
-    'Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows — BLE, USB serial, Wi‑Fi/TCP, MQTT, local SQLite history, routing diagnostics, and keyboard-first workflows.',
+    'Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows with multi-language support, BLE, USB serial, Wi‑Fi/TCP, MQTT, local SQLite history, routing diagnostics, and keyboard-first workflows.',
     '',
     'License: MIT',
     'Author: Colorado Mesh',
     '',
-    'Website:  https://coloradomesh.org/',
-    'GitHub:   https://github.com/Colorado-Mesh/mesh-client',
-    'Discord:  https://discord.com/invite/McChKR5NpS',
+    `Website:  ${HELP_URL_WEBSITE}`,
+    `GitHub:   ${HELP_URL_GITHUB}`,
+    `Discord:  ${HELP_URL_DISCORD}`,
   ].join('\n');
 
-  const opts = {
-    type: 'info' as const,
-    title: app.name,
-    message: app.name,
-    detail,
-    buttons: ['Close', 'Website', 'GitHub', 'Discord'],
-    defaultId: 0,
-    cancelId: 0,
-  };
+  const iconCandidate = path.join(process.resourcesPath, '256x256.png');
+  const iconPath = fs.existsSync(iconCandidate) ? iconCandidate : undefined;
 
-  const { response } = await (w ? dialog.showMessageBox(w, opts) : dialog.showMessageBox(opts));
+  try {
+    if (process.platform === 'linux') {
+      app.setAboutPanelOptions({
+        applicationName: app.name,
+        applicationVersion: version,
+        copyright: 'Copyright © Colorado Mesh',
+        credits,
+        authors: ['Colorado Mesh'],
+        website: HELP_URL_WEBSITE,
+        ...(iconPath ? { iconPath } : {}),
+      });
+    } else {
+      app.setAboutPanelOptions({
+        applicationName: app.name,
+        applicationVersion: version,
+        copyright: 'Copyright © Colorado Mesh',
+        credits,
+        ...(iconPath ? { iconPath } : {}),
+      });
+    }
+  } catch (e: unknown) {
+    console.warn(
+      '[main] setAboutPanelOptions failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  }
+}
 
-  const urls: (string | null)[] = [
-    null,
-    'https://coloradomesh.org/',
-    'https://github.com/Colorado-Mesh/mesh-client',
-    'https://discord.com/invite/McChKR5NpS',
+function openHelpExternalLink(rawUrl: string): void {
+  const target = parseHttpOrHttpsUrl(rawUrl);
+  if (!target) {
+    console.warn('[main] help link: invalid url', sanitizeLogMessage(rawUrl.slice(0, 200)));
+    return;
+  }
+  console.debug(`[main] help link: openExternal url=${sanitizeLogMessage(target.toString())}`);
+  void shell.openExternal(target.toString() /* parseHttpOrHttpsUrl */).catch((e: unknown) => {
+    console.error(
+      '[main] help link: openExternal failed',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  });
+}
+
+function buildHelpMenuExternalLinkItems(): (
+  | { type: 'separator' }
+  | { label: string; click: () => void }
+)[] {
+  return [
+    { type: 'separator' as const },
+    {
+      label: 'Colorado Mesh Website',
+      click: () => {
+        openHelpExternalLink(HELP_URL_WEBSITE);
+      },
+    },
+    {
+      label: 'GitHub Repository',
+      click: () => {
+        openHelpExternalLink(HELP_URL_GITHUB);
+      },
+    },
+    {
+      label: 'Discord',
+      click: () => {
+        openHelpExternalLink(HELP_URL_DISCORD);
+      },
+    },
   ];
-  const url = urls[response];
-  if (url) openExternalHttpOrHttpsIfExternal('', url);
 }
 
 /**
- * Application menu: macOS uses the app-name menu (About, updates, Hide, Quit) plus editMenu
- * for Cmd+C/V/X/Z/A via AppKit. Windows/Linux get File (Quit), Edit, and Help (About, updates)
+ * GitHub #406: Windows 11 can hard-exit the app inside Electron’s native About APIs (`showAboutPanel`
+ * and related Win32 shell UI) before any try/catch — upstream Electron/Win32 bug. This replaces
+ * that path with a sandboxed data-URL window; https navigations are routed to `openHelpExternalLink`.
+ */
+function showWindowsAboutFallbackWindow(): void {
+  try {
+    if (windowsAboutWindow && !windowsAboutWindow.isDestroyed()) {
+      windowsAboutWindow.show();
+      windowsAboutWindow.focus();
+      return;
+    }
+
+    const parent = BrowserWindow.getFocusedWindow() ?? mainWindow ?? undefined;
+    const html = buildWindowsAboutDocumentHtml(app.name, app.getVersion());
+    const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+
+    console.debug(
+      '[main] about: opening Windows HTML fallback',
+      sanitizeLogMessage(`parent=${Boolean(parent)}`),
+    );
+
+    const win = new BrowserWindow({
+      width: 440,
+      height: 480,
+      resizable: true,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      parent: parent ?? undefined,
+      modal: Boolean(parent),
+      title: `About ${app.name}`,
+      autoHideMenuBar: true,
+      show: false,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+        webviewTag: false,
+      },
+    });
+
+    windowsAboutWindow = win;
+
+    win.webContents.on('will-navigate', (event, url) => {
+      if (url.startsWith('data:') || url === 'about:blank') return;
+      const t = parseHttpOrHttpsUrl(url);
+      if (t) {
+        event.preventDefault();
+        openHelpExternalLink(t.toString());
+        return;
+      }
+      event.preventDefault();
+    });
+
+    win.webContents.setWindowOpenHandler(({ url }) => {
+      // deny unexpected child windows (check:electron-security scans this block)
+      const t = parseHttpOrHttpsUrl(url);
+      if (t) {
+        openHelpExternalLink(t.toString());
+      }
+      return { action: 'deny' };
+    });
+
+    win.once('ready-to-show', () => {
+      if (!win.isDestroyed()) win.show();
+    });
+
+    win.on('closed', () => {
+      if (windowsAboutWindow === win) windowsAboutWindow = null;
+    });
+
+    void win.loadURL(dataUrl).catch((e: unknown) => {
+      console.error(
+        '[main] about: Windows HTML load failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      if (!win.isDestroyed()) win.destroy();
+      if (windowsAboutWindow === win) windowsAboutWindow = null;
+    });
+  } catch (e: unknown) {
+    console.error(
+      '[main] about: Windows HTML fallback failed',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    try {
+      dialog.showErrorBox(
+        `About ${app.name}`,
+        `${app.name}\nVersion ${app.getVersion()}\n\nCould not open the About window.`,
+      );
+    } catch {
+      // catch-no-log-ok dialog unavailable; error already logged above
+    }
+  }
+}
+
+function showAboutDialog(): void {
+  const appName = app.name;
+  const version = app.getVersion();
+
+  try {
+    console.debug(`[main] about dialog: opening app=${sanitizeLogMessage(appName)}`);
+    // GitHub #406: same Electron/Win32 native About bug as above — do not call `showAboutPanel` here.
+    if (process.platform === 'win32') {
+      showWindowsAboutFallbackWindow();
+      return;
+    }
+    app.showAboutPanel();
+  } catch (e) {
+    console.error(
+      '[main] about dialog failed',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
+    try {
+      dialog.showErrorBox(`About ${appName}`, `${appName}\nVersion ${version}`);
+    } catch (fallbackError) {
+      console.error(
+        '[main] about dialog fallback failed',
+        sanitizeLogMessage(
+          fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+        ),
+      );
+    }
+  }
+}
+
+/**
+ * Application menu: macOS uses the app-name menu (About, updates, Hide, Quit), editMenu,
+ * and Help (project links). Windows/Linux get File (Quit), Edit, and Help (About, updates, links)
  * so About is reachable from the menu bar and standard edit shortcuts work.
  */
 function setupAppMenu() {
+  applyAboutPanelOptions();
+
   if (process.platform === 'darwin') {
     appMenu = Menu.buildFromTemplate([
       {
@@ -926,12 +1149,14 @@ function setupAppMenu() {
         submenu: [
           {
             label: `About ${app.name}`,
-            click: () => void showAboutDialog(),
+            click: () => {
+              showAboutDialog();
+            },
           },
           { type: 'separator' as const },
           {
             label: 'Check for Updates\u2026',
-            click: () => getCheckNow()?.(),
+            click: () => getCheckNowFromMenu()?.(),
           },
           { type: 'separator' as const },
           {
@@ -955,6 +1180,12 @@ function setupAppMenu() {
         ],
       },
       { role: 'editMenu' as const },
+      {
+        label: 'Help',
+        submenu: buildHelpMenuExternalLinkItems().filter(
+          (item): item is { label: string; click: () => void } => !('type' in item),
+        ),
+      },
     ]);
   } else {
     appMenu = Menu.buildFromTemplate([
@@ -979,13 +1210,16 @@ function setupAppMenu() {
         submenu: [
           {
             label: `About ${app.name}`,
-            click: () => void showAboutDialog(),
+            click: () => {
+              showAboutDialog();
+            },
           },
           { type: 'separator' as const },
           {
             label: 'Check for Updates\u2026',
-            click: () => getCheckNow()?.(),
+            click: () => getCheckNowFromMenu()?.(),
           },
+          ...buildHelpMenuExternalLinkItems(),
         ],
       },
     ]);
@@ -1055,7 +1289,12 @@ function openExternalHttpOrHttpsIfExternal(currentUrl: string, targetUrl: string
   const current = parseHttpOrHttpsUrl(currentUrl);
   if (current?.origin === target.origin) return false;
 
-  void shell.openExternal(target.toString());
+  shell.openExternal(target.toString()).catch((e: unknown) => {
+    console.error(
+      '[main] external link open failed',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  });
   return true;
 }
 
@@ -1470,34 +1709,72 @@ let _cachedTrayIconUnread: Electron.NativeImage | null = null;
 let _cachedTrayIconRead: Electron.NativeImage | null = null;
 let _lastTrayUnreadVariant: boolean | null = null;
 ipcMain.on('set-tray-unread', (_event, count: unknown) => {
-  const n = Math.max(0, Math.min(Math.floor(Number(count)) || 0, 99999));
-  const hasUnread = n > 0;
-  if (_lastTrayUnreadVariant !== hasUnread) {
-    _lastTrayUnreadVariant = hasUnread;
-    let img: NativeImage;
-    if (hasUnread) {
-      _cachedTrayIconUnread ??= buildTrayIcon(true);
-      img = _cachedTrayIconUnread;
-    } else {
-      _cachedTrayIconRead ??= buildTrayIcon(false);
-      img = _cachedTrayIconRead;
+  try {
+    const n = Math.max(0, Math.min(Math.floor(Number(count)) || 0, 99999));
+    const hasUnread = n > 0;
+    if (_lastTrayUnreadVariant !== hasUnread) {
+      _lastTrayUnreadVariant = hasUnread;
+      let img: NativeImage;
+      if (hasUnread) {
+        _cachedTrayIconUnread ??= buildTrayIcon(true);
+        img = _cachedTrayIconUnread;
+      } else {
+        _cachedTrayIconRead ??= buildTrayIcon(false);
+        img = _cachedTrayIconRead;
+      }
+      tray?.setImage(img);
     }
-    tray?.setImage(img);
-  }
-  tray?.setToolTip(hasUnread ? `Mesh-Client (${n} unread)` : 'Mesh-Client');
-  if (process.platform === 'darwin') {
-    app.dock?.setBadge(hasUnread ? String(n) : '');
-  } else if (process.platform === 'linux') {
-    app.setBadgeCount(hasUnread ? n : 0);
-  } else if (process.platform === 'win32' && mainWindow) {
-    if (hasUnread) {
-      _cachedBadgeIcon ??= nativeImage.createFromBuffer(buildBadgePng());
-      mainWindow.setOverlayIcon(_cachedBadgeIcon, `${n} unread messages`);
-    } else {
-      mainWindow.setOverlayIcon(null, '');
+    tray?.setToolTip(hasUnread ? `Mesh-Client (${n} unread)` : 'Mesh-Client');
+    if (process.platform === 'darwin') {
+      app.dock?.setBadge(hasUnread ? String(n) : '');
+    } else if (process.platform === 'linux') {
+      app.setBadgeCount(hasUnread ? n : 0);
+    } else if (process.platform === 'win32' && mainWindow) {
+      if (hasUnread) {
+        _cachedBadgeIcon ??= nativeImage.createFromBuffer(buildBadgePng());
+        mainWindow.setOverlayIcon(_cachedBadgeIcon, `${n} unread messages`);
+      } else {
+        mainWindow.setOverlayIcon(null, '');
+      }
     }
+  } catch (e) {
+    console.error(
+      '[main] tray unread update failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 });
+
+function startPowerSaveBlocker(): void {
+  if (powerSaveBlockerId !== null) return;
+  try {
+    powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+    console.debug('[main] powerSaveBlocker started, id =', powerSaveBlockerId);
+  } catch (e) {
+    console.error(
+      '[main] powerSaveBlocker start failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    powerSaveBlockerId = null;
+  }
+}
+
+function stopPowerSaveBlocker(): void {
+  if (powerSaveBlockerId === null) return;
+  try {
+    if (powerSaveBlocker.isStarted(powerSaveBlockerId)) {
+      powerSaveBlocker.stop(powerSaveBlockerId);
+      console.debug('[main] powerSaveBlocker stopped, id =', powerSaveBlockerId);
+    }
+  } catch (e) {
+    console.error(
+      '[main] powerSaveBlocker stop failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  } finally {
+    powerSaveBlockerId = null;
+  }
+}
 
 // ─── IPC: Serial port selected by user ──────────────────────────────
 ipcMain.on('serial-port-selected', (_event, portId: unknown) => {
@@ -1961,19 +2238,12 @@ ipcMain.on('ble-reset-pairing-retry-count', (_event, sessionKind?: unknown) => {
 ipcMain.on('device-connected', () => {
   console.debug('[main] device-connected: isConnected = true');
   isConnected = true;
-  if (powerSaveBlockerId === null) {
-    powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
-    console.debug('[main] powerSaveBlocker started, id =', powerSaveBlockerId);
-  }
+  startPowerSaveBlocker();
 });
 ipcMain.on('device-disconnected', () => {
   console.debug('[main] device-disconnected: isConnected = false');
   isConnected = false;
-  if (powerSaveBlockerId !== null && powerSaveBlocker.isStarted(powerSaveBlockerId)) {
-    powerSaveBlocker.stop(powerSaveBlockerId);
-    console.debug('[main] powerSaveBlocker stopped, id =', powerSaveBlockerId);
-  }
-  powerSaveBlockerId = null;
+  stopPowerSaveBlocker();
 });
 
 // ─── Noble BLE: Forward manager events to renderer ──────────────────
@@ -2511,43 +2781,87 @@ ipcMain.handle('gps:getFix', async () => {
 ipcMain.handle('notify:message', (_event, title: unknown, body: unknown) => {
   if (typeof title !== 'string' || title.length > 128) return;
   if (typeof body !== 'string' || body.length > 512) return;
-  if (Notification.isSupported()) {
-    new Notification({ title, body }).show();
+  try {
+    if (Notification.isSupported()) {
+      new Notification({ title, body }).show();
+    }
+  } catch (e) {
+    console.warn(
+      '[IPC] notify:message failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 });
 
 // ─── IPC: Safe storage (OS-keychain-backed encryption) ─────────────
-ipcMain.handle('storage:isAvailable', () => safeStorage.isEncryptionAvailable());
+ipcMain.handle('storage:isAvailable', () => {
+  try {
+    return safeStorage.isEncryptionAvailable();
+  } catch (e) {
+    console.warn(
+      '[IPC] storage:isAvailable failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    return false;
+  }
+});
 
 ipcMain.handle('storage:encrypt', (_event, plaintext: unknown) => {
   if (typeof plaintext !== 'string' || plaintext.length > 4096)
     throw new Error('storage:encrypt: invalid input');
-  if (!safeStorage.isEncryptionAvailable()) return null;
-  return safeStorage.encryptString(plaintext).toString('base64');
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return null;
+    return safeStorage.encryptString(plaintext).toString('base64');
+  } catch (e) {
+    console.warn(
+      '[IPC] storage:encrypt failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    return null;
+  }
 });
 
 ipcMain.handle('storage:decrypt', (_event, ciphertext: unknown) => {
   if (typeof ciphertext !== 'string' || ciphertext.length > 8192)
     throw new Error('storage:decrypt: invalid input');
-  if (!safeStorage.isEncryptionAvailable()) return null;
   try {
+    if (!safeStorage.isEncryptionAvailable()) return null;
     return safeStorage.decryptString(Buffer.from(ciphertext, 'base64'));
-  } catch {
-    // catch-no-log-ok: corrupted or wrong-key ciphertext; caller receives null
+  } catch (e) {
+    console.warn(
+      '[IPC] storage:decrypt failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
     return null;
   }
 });
 
 // ─── IPC: Login item (launch at startup) ───────────────────────────
 ipcMain.handle('app:getLoginItem', () => {
-  const settings = app.getLoginItemSettings();
-  return { openAtLogin: settings.openAtLogin };
+  try {
+    const settings = app.getLoginItemSettings();
+    return { openAtLogin: settings.openAtLogin };
+  } catch (e) {
+    console.error(
+      '[IPC] app:getLoginItem failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    throw e;
+  }
 });
 
 ipcMain.handle('app:setLoginItem', (_event, openAtLogin: unknown) => {
   if (typeof openAtLogin !== 'boolean')
     throw new Error('app:setLoginItem: openAtLogin must be a boolean');
-  app.setLoginItemSettings({ openAtLogin });
+  try {
+    app.setLoginItemSettings({ openAtLogin });
+  } catch (e) {
+    console.error(
+      '[IPC] app:setLoginItem failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    throw e;
+  }
 });
 
 // ─── IPC: Persistent app settings (SQLite-backed key/value) ────────
@@ -2613,7 +2927,15 @@ ipcMain.handle('app:showEmojiPanel', (event) => {
     throw new Error('IPC sender validation failed');
   }
   if (process.platform === 'darwin' || process.platform === 'win32') {
-    app.showEmojiPanel();
+    try {
+      app.showEmojiPanel();
+    } catch (e) {
+      console.error(
+        '[IPC] app:showEmojiPanel failed:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      throw e;
+    }
   }
 });
 
@@ -2651,10 +2973,7 @@ ipcMain.handle('app:quit', async (event) => {
       }
       meshcoreTcpSocket = null;
     }
-    if (powerSaveBlockerId !== null && powerSaveBlocker.isStarted(powerSaveBlockerId)) {
-      powerSaveBlocker.stop(powerSaveBlockerId);
-    }
-    powerSaveBlockerId = null;
+    stopPowerSaveBlocker();
 
     nobleBleManager.releaseNobleProcessHandles();
     tray?.destroy();
@@ -3758,14 +4077,14 @@ ipcMain.handle(
 );
 
 ipcMain.handle('meshcore:openJsonFile', async () => {
-  if (!mainWindow) return null;
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Import Contacts JSON',
-    filters: [{ name: 'JSON', extensions: ['json'] }],
-    properties: ['openFile'],
-  });
-  if (result.canceled || result.filePaths.length === 0) return null;
   try {
+    if (!mainWindow) return null;
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Import Contacts JSON',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
     const raw = fs.readFileSync(result.filePaths[0], 'utf-8');
     if (raw.length > 5 * 1024 * 1024) throw new Error('File too large (max 5 MB)');
     return raw;
@@ -4719,10 +5038,27 @@ app.on('second-instance', () => {
   }
 });
 
+app.on('child-process-gone', (_event, details) => {
+  console.error(
+    '[main] child-process-gone:',
+    sanitizeLogMessage(
+      `${details.type} ${details.reason ?? ''} exit=${String(details.exitCode ?? 'n/a')}`,
+    ),
+  );
+});
+
 void app.whenReady().then(() => {
   try {
     initLogFile();
     console.debug(`[Startup] runtime ${formatRuntimeLogTag()}`);
+    try {
+      console.debug('[main] crashDumps path:', sanitizeLogMessage(app.getPath('crashDumps')));
+    } catch (e: unknown) {
+      console.warn(
+        '[main] crashDumps path unavailable:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+    }
 
     initDatabase();
 
@@ -4790,7 +5126,11 @@ void app.whenReady().then(() => {
     const message = isNativeModuleError
       ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
       : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
-    dialog.showErrorBox('Mesh-Client — Startup Error', message);
+    try {
+      dialog.showErrorBox('Mesh-Client — Startup Error', message);
+    } catch {
+      // catch-no-log-ok dialog unavailable during fatal startup handling; error already logged above
+    }
     app.quit();
     return;
   }
@@ -4878,10 +5218,7 @@ app.on('will-quit', () => {
     }
     meshcoreTcpSocket = null;
   }
-  if (powerSaveBlockerId !== null && powerSaveBlocker.isStarted(powerSaveBlockerId)) {
-    powerSaveBlocker.stop(powerSaveBlockerId);
-  }
-  powerSaveBlockerId = null;
+  stopPowerSaveBlocker();
   nobleBleManager.releaseNobleProcessHandles();
   tray?.destroy();
   tray = null;

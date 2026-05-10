@@ -138,7 +138,12 @@
     "restart": "再起動",
     "restartTitle": "再起動してインストールする",
     "retryCheck": "更新チェックを再試行します",
-    "updateError": "アップデートエラー"
+    "updateError": "アップデートエラー",
+    "menuToastUpToDateTitle": "メッシュクライアント",
+    "menuToastUpToDateBody": "最新バージョンを使用しています。",
+    "menuToastAvailableTitle": "利用可能なアップデート",
+    "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
+    "menuToastErrorTitle": "アップデートチェックに失敗しました"
   },
   "app": {
     "loadingPanel": "ローディングパネル",

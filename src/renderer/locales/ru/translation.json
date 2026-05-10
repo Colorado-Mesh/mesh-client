@@ -138,7 +138,12 @@
     "restart": "Перезапуск",
     "restartTitle": "Перезагрузите и установите",
     "retryCheck": "Повторить проверку обновлений",
-    "updateError": "Ошибка обновления"
+    "updateError": "Ошибка обновления",
+    "menuToastUpToDateTitle": "Mesh-Client",
+    "menuToastUpToDateBody": "У вас последняя версия.",
+    "menuToastAvailableTitle": "Доступны обновления",
+    "menuToastAvailableBody": "Доступна версия {{version}}.",
+    "menuToastErrorTitle": "Не удалось выполнить проверку на наличие обновлений службы"
   },
   "app": {
     "loadingPanel": "Загрузочная панель",

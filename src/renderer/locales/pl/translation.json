@@ -138,7 +138,12 @@
     "restart": "Uruchom ponownie",
     "restartTitle": "Uruchom ponownie i zainstaluj",
     "retryCheck": "Ponów próbę aktualizacji",
-    "updateError": "Błąd aktualizacji"
+    "updateError": "Błąd aktualizacji",
+    "menuToastUpToDateTitle": "Mesh-Client",
+    "menuToastUpToDateBody": "Korzystasz z najnowszej wersji.",
+    "menuToastAvailableTitle": "Dostępna jest aktualizacja",
+    "menuToastAvailableBody": "Wersja {{version}} jest dostępna.",
+    "menuToastErrorTitle": "Kontrola aktualizacji nie powiodła się"
   },
   "app": {
     "loadingPanel": "Panel ładowania",

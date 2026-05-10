@@ -138,7 +138,12 @@
     "restart": "Restartujte",
     "restartTitle": "Restartujte a nainstalujte",
     "retryCheck": "Opakovat kontrolu aktualizací",
-    "updateError": "Chyba aktualizace"
+    "updateError": "Chyba aktualizace",
+    "menuToastUpToDateTitle": "Mesh-Client",
+    "menuToastUpToDateBody": "Používáš nejnovější verzi.",
+    "menuToastAvailableTitle": "Aktualizace k dispozici",
+    "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
+    "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
   },
   "app": {
     "loadingPanel": "Nakládací panel",

@@ -35,6 +35,7 @@ Run the full test suite locally:
 pnpm run format
 pnpm run lint
 pnpm run typecheck
+pnpm run check:i18n
 pnpm run test:run
 pnpm run build
 ```

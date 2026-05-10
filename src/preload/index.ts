@@ -7,6 +7,7 @@ import type {
   NobleBleDevice,
   NobleBleSessionId,
   SerialPort,
+  UpdateCheckingPayload,
 } from '../shared/electron-api.types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '../shared/tak-types';
 
@@ -653,6 +654,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       };
       ipcRenderer.on('update:not-available', handler);
       return () => ipcRenderer.off('update:not-available', handler);
+    },
+    onChecking: (cb: (payload?: UpdateCheckingPayload) => void) => {
+      const handler = (_: unknown, payload?: UpdateCheckingPayload) => {
+        cb(payload);
+      };
+      ipcRenderer.on('update:checking', handler);
+      return () => ipcRenderer.off('update:checking', handler);
     },
     onProgress: (cb: (info: { percent: number }) => void) => {
       const handler = (_: unknown, info: { percent: number }) => {

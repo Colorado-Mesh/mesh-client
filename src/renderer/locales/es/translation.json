@@ -138,7 +138,12 @@
     "restart": "Reiniciar",
     "restartTitle": "Reiniciar e instalar",
     "retryCheck": "Volver a intentar la comprobación de actualización",
-    "updateError": "Error al actualizar"
+    "updateError": "Error al actualizar",
+    "menuToastUpToDateTitle": "Cliente de malla",
+    "menuToastUpToDateBody": "Estás en la última versión.",
+    "menuToastAvailableTitle": "Actualización disponible",
+    "menuToastAvailableBody": "La versión {{version}} está disponible.",
+    "menuToastErrorTitle": "Error en la comprobación de actualizaciones"
   },
   "app": {
     "loadingPanel": "Panel de carga",

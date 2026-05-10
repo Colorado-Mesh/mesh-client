@@ -165,7 +165,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **Localization**
 
-- **16 languages**: English, Spanish, Ukrainian, German, Chinese (Simplified), Portuguese (Brazilian), French, Italian, Polish, Czech, Japanese, Russian, Dutch, Korean, Turkish, and Indonesian; select from the globe icon in the header
+- **16 languages**: English, Spanish, Ukrainian, German, Chinese (Simplified), Portuguese (Brazilian), French, Italian, Polish, Czech, Japanese, Russian, Dutch, Korean, Turkish, and Indonesian; select from the globe icon in the header; see [Localization & Languages](docs/localization.md) for more details.
 - Language preference persists across restarts (stored in SQLite + localStorage); falls back to English for any untranslated string
 - Translations are static JSON bundles — no network calls at runtime; works fully offline
 

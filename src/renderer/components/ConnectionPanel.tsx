@@ -438,7 +438,7 @@ const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
   password: '',
   topicPrefix: 'meshcore',
   autoLaunch: false,
-  maxRetries: 3,
+  maxRetries: MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   meshcorePacketLoggerEnabled: false,
   tokenExpiresAt: undefined,
 };
@@ -491,7 +491,12 @@ function loadMeshcoreMqttSettings(): MQTTSettings {
     raw,
     'ConnectionPanel loadMeshcoreMqttSettings',
   );
-  return parsed ? { ...MESHCORE_MQTT_DEFAULTS, ...parsed } : MESHCORE_MQTT_DEFAULTS;
+  const merged = parsed ? { ...MESHCORE_MQTT_DEFAULTS, ...parsed } : MESHCORE_MQTT_DEFAULTS;
+  const r = merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS;
+  return {
+    ...merged,
+    maxRetries: Math.min(MQTT_MAX_RECONNECT_ATTEMPTS, Math.max(1, r)),
+  };
 }
 
 function MqttGlobeIcon({ status }: { status: MQTTStatus }) {
@@ -1860,7 +1865,7 @@ export default function ConnectionPanel({
               <HelpTooltip
                 text={
                   protocol === 'meshcore'
-                    ? 'Reconnect tries before giving up (1–20). Saved with settings; press Connect again after changing so the main process picks it up.'
+                    ? `Reconnect tries before giving up (1–${MQTT_MAX_RECONNECT_ATTEMPTS}). Saved with settings; press Connect again after changing so the main process picks it up.`
                     : `Both protocols allow 1–${MQTT_MAX_RECONNECT_ATTEMPTS}. Saved with settings; disconnect and Connect again so the running session uses the new value.`
                 }
               />

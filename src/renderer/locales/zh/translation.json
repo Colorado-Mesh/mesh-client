@@ -138,7 +138,12 @@
     "restart": "重启",
     "restartTitle": "重新启动并安装",
     "retryCheck": "重试更新检查",
-    "updateError": "更新错误"
+    "updateError": "更新错误",
+    "menuToastUpToDateTitle": "Mesh-Client",
+    "menuToastUpToDateBody": "你是最新版本。",
+    "menuToastAvailableTitle": "更新可用",
+    "menuToastAvailableBody": "版本 {{version}} 可用。",
+    "menuToastErrorTitle": "更新检查失败"
   },
   "app": {
     "loadingPanel": "加载面板",

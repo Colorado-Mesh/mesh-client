@@ -175,6 +175,20 @@ CI builds avoid both issues by using short paths and clean agents; local Windows
 - **Mac/Linux**: `chmod 755 ~/Library/Application\ Support/mesh-client` (or `~/.config/mesh-client` on Linux)
 - **Windows**: Right-click `%APPDATA%\mesh-client` → Properties → Security → grant your user Full Control
 
+### Language and Translations
+
+**How do I change the language?**
+
+Click the **globe icon** in the header to select from the 16 supported languages. Your preference is saved across restarts.
+
+**A translation is incorrect or missing.**
+
+Translations are machine-generated using MyMemory and may contain errors. If you find a mistake, please open a [Translation Error issue](https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) on GitHub with the correct text.
+
+**Why are some strings still in English?**
+
+The app falls back to English for any key that hasn't been translated into your selected language yet. Translations are bundled statically at build time; new translations will appear in the next app update.
+
 ### HTTP / WiFi connection issues
 
 **`meshtastic.local` (or any `.local` hostname) not found on Windows:**

@@ -11,6 +11,8 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
+import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpTooltip } from './components/HelpTooltip';
@@ -503,6 +505,13 @@ export default function App() {
   const scrollToTopChatRef = useRef<(() => void) | null>(null);
   const [showMainScrollTop, setShowMainScrollTop] = useState(false);
   const [updateState, setUpdateState] = useState<UpdateState>({ phase: 'idle' });
+  const menuUpdateNotifyCtrl = useMemo(
+    () =>
+      createUpdateMenuNotifyController(t, (title, body) =>
+        window.electronAPI.notify.show(title, body),
+      ),
+    [t],
+  );
   const [firmwareCheckState, setFirmwareCheckState] = useState<FirmwareCheckResult>({
     phase: 'idle',
   });
@@ -1151,6 +1160,10 @@ export default function App() {
 
   // ─── Auto-update event subscriptions ─────────────────────────────
   useEffect(() => {
+    const offChecking = window.electronAPI.update.onChecking((payload?: UpdateCheckingPayload) => {
+      menuUpdateNotifyCtrl.onChecking(payload);
+      setUpdateState({ phase: 'idle' });
+    });
     const offAvailable = window.electronAPI.update.onAvailable((info) => {
       setUpdateState({
         phase: 'available',
@@ -1159,9 +1172,11 @@ export default function App() {
         isPackaged: info.isPackaged,
         isMac: info.isMac,
       });
+      menuUpdateNotifyCtrl.flushSettled('available', { version: info.version });
     });
     const offNotAvailable = window.electronAPI.update.onNotAvailable(() => {
       setUpdateState((s) => ({ ...s, phase: 'up-to-date' }));
+      menuUpdateNotifyCtrl.flushSettled('upToDate');
     });
     const offProgress = window.electronAPI.update.onProgress((info) => {
       setUpdateState((s) => ({ ...s, phase: 'downloading', percent: info.percent }));
@@ -1169,17 +1184,19 @@ export default function App() {
     const offDownloaded = window.electronAPI.update.onDownloaded(() => {
       setUpdateState((s) => ({ ...s, phase: 'ready' }));
     });
-    const offError = window.electronAPI.update.onError(() => {
+    const offError = window.electronAPI.update.onError((info) => {
       setUpdateState((s) => ({ ...s, phase: 'error' }));
+      menuUpdateNotifyCtrl.flushSettled('error', { message: info.message });
     });
     return () => {
+      offChecking();
       offAvailable();
       offNotAvailable();
       offProgress();
       offDownloaded();
       offError();
     };
-  }, []);
+  }, [menuUpdateNotifyCtrl]);
 
   // ─── Drop legacy update prefs (localStorage) — always check on startup below ───
   useEffect(() => {
@@ -2403,7 +2420,6 @@ export default function App() {
                 <UpdateStatusIndicator
                   updateState={updateState}
                   onCheck={() => {
-                    setUpdateState({ phase: 'idle' });
                     void window.electronAPI.update.check().catch((e: unknown) => {
                       console.warn('[App] update check failed ' + errLikeToLogString(e));
                       setUpdateState((s) => ({ ...s, phase: 'error' }));

@@ -207,8 +207,12 @@ describe('navigation security (source contract)', () => {
 
   it('uses setWindowOpenHandler to gate all window.open calls', () => {
     expect(INDEX_SOURCE).toContain('setWindowOpenHandler');
-    const idx = INDEX_SOURCE.indexOf('setWindowOpenHandler');
-    const body = INDEX_SOURCE.slice(idx, idx + 200);
+    const anchor = 'openExternalHttpOrHttpsIfExternal(currentUrl, url)';
+    const anchorIdx = INDEX_SOURCE.indexOf(anchor);
+    expect(anchorIdx).toBeGreaterThanOrEqual(0);
+    const idx = INDEX_SOURCE.lastIndexOf('setWindowOpenHandler', anchorIdx);
+    expect(idx).toBeGreaterThanOrEqual(0);
+    const body = INDEX_SOURCE.slice(idx, idx + 250);
     expect(body).toContain("{ action: 'deny' }");
   });
 });

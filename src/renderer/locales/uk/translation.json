@@ -138,7 +138,12 @@
     "restart": "Перезапуск",
     "restartTitle": "Перезапустіть і встановіть",
     "retryCheck": "Повторити перевірку оновлення",
-    "updateError": "Помилка оновлення"
+    "updateError": "Помилка оновлення",
+    "menuToastUpToDateTitle": "Mesh-Client",
+    "menuToastUpToDateBody": "Ви в останній версії.",
+    "menuToastAvailableTitle": "Доступне оновлення",
+    "menuToastAvailableBody": "Доступна версія {{version}}.",
+    "menuToastErrorTitle": "Помилка перевірки оновлення"
   },
   "app": {
     "loadingPanel": "Панель завантаження",

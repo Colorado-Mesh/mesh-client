@@ -8,6 +8,7 @@ import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '../shared/meshtasticMqttReconnect';
+import { computeMqttReconnectDelayMs } from '../shared/mqttReconnectSchedule';
 import { sanitizeLogMessage } from './log-service';
 
 export type { MeshcoreMqttChatEnvelopeV1 } from '../shared/meshcoreMqttEnvelope';
@@ -36,9 +37,6 @@ function buildMeshcoreUrlForLog(settings: MQTTSettings): string {
 const MESHCORE_MQTT_CONNECT_ACK_MS = 30_000;
 /** Send WebSocket-level ping frames so LB/proxy idle timers see traffic at ~10s intervals. */
 const MESHCORE_MQTT_WSS_PING_MS = 10_000;
-/** Reconnect delay base/cap. */
-const MESHCORE_MQTT_RECONNECT_IMMEDIATE_MS = 500;
-const MESHCORE_MQTT_RECONNECT_10_MINUTE_DELAY_MS = 600_000;
 /**
  * A session that lasted this long is considered stable. When the next disconnect occurs after a
  * stable session, retryCount resets to 0 so the full retry budget is available again.
@@ -449,6 +447,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       this.clearWssPing();
       this.clearConnectionWatchdog();
       this.clearConnectTimers();
+      this.clearReconnectTimer();
       const now = Date.now();
       this.disconnectCount++;
       const sessionDuration = this.lastConnected ? now - this.lastConnected : 0;
@@ -479,8 +478,13 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         ),
       );
 
-      // Bug 4 fix: increment retryCount BEFORE the token-refresh branch so that the max-retry
-      // guard fires even when we always enter the refresh path (JWT brokers).
+      if (this.retryCount >= maxRetries) {
+        this.setError(
+          `Connection lost after ${maxRetries} reconnect attempt${maxRetries === 1 ? '' : 's'}`,
+        );
+        return;
+      }
+
       this.retryCount++;
 
       const isJwtBroker = !!this.lastSettings?.tokenExpiresAt;
@@ -488,46 +492,44 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         `[MeshCore MQTT] close: session=${Math.round(sessionDuration / 1000)}s stable=${isStableSession} attempt=${this.retryCount}/${maxRetries} jwtBroker=${isJwtBroker}`,
       );
 
-      if (this.retryCount > maxRetries) {
-        this.setError(
-          `Connection lost after ${maxRetries} reconnect attempt${maxRetries === 1 ? '' : 's'}`,
-        );
-        return;
-      }
-
-      // Bug 2 fix: for JWT-auth brokers (tokenExpiresAt set) always request a fresh token before
-      // reconnecting — not only when within the 5-min grace window. meshcoretomqtt generates a
-      // new token on every reconnect; reusing a stale/rejected token on every attempt is the
-      // second cause of the infinite reconnect loop.
       if (isJwtBroker) {
-        console.debug('[MeshCore MQTT] JWT broker: requesting fresh token before reconnect');
-        this.pendingReconnect = true;
-        this.emit(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, this.lastSettings?.server ?? '');
-        this.pendingReconnectTimer = setTimeout(() => {
-          if (this.pendingReconnect && this.lastSettings) {
-            console.warn(
-              '[MeshCore MQTT] Token refresh timed out, reconnecting with existing token',
-            );
-            this.pendingReconnect = false;
-            this.pendingReconnectTimer = null;
-            this._doConnect(this.lastSettings);
-          }
-        }, MeshcoreMqttAdapter.PENDING_RECONNECT_TIMEOUT_MS);
+        const delay = computeMqttReconnectDelayMs({
+          protocol: 'meshcore',
+          attempt: this.retryCount,
+        });
+        console.warn(
+          `[MeshCore MQTT] JWT broker: waiting ${delay}ms before token refresh (attempt ${this.retryCount}/${maxRetries})`,
+        );
+        this.reconnectTimer = setTimeout(() => {
+          this.reconnectTimer = null;
+          if (!this.lastSettings) return;
+          console.debug('[MeshCore MQTT] JWT broker: requesting fresh token before reconnect');
+          this.pendingReconnect = true;
+          this.emit(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, this.lastSettings.server ?? '');
+          this.pendingReconnectTimer = setTimeout(() => {
+            if (this.pendingReconnect && this.lastSettings) {
+              console.warn(
+                '[MeshCore MQTT] Token refresh timed out, reconnecting with existing token',
+              );
+              this.pendingReconnect = false;
+              this.pendingReconnectTimer = null;
+              this._doConnect(this.lastSettings);
+            }
+          }, MeshcoreMqttAdapter.PENDING_RECONNECT_TIMEOUT_MS);
+        }, delay);
         return;
       }
 
-      // Bug 6 fix: add jitter to the first reconnect to avoid thundering herd on broker restart.
-      const jitterMs = Math.floor(Math.random() * 2000);
-      const delay =
-        this.retryCount === 1
-          ? MESHCORE_MQTT_RECONNECT_IMMEDIATE_MS + jitterMs
-          : MESHCORE_MQTT_RECONNECT_10_MINUTE_DELAY_MS;
+      const delay = computeMqttReconnectDelayMs({
+        protocol: 'meshcore',
+        attempt: this.retryCount,
+        meshcoreNonJwtFirstReconnectImmediate: this.retryCount === 1,
+      });
       console.warn(
         `[MeshCore MQTT] Reconnecting in ${delay}ms (attempt ${this.retryCount}/${maxRetries})`,
       );
       this.reconnectTimer = setTimeout(() => {
         this.reconnectTimer = null;
-        // disconnect() clears this timer; only lastSettings guard is needed for backoff → _doConnect.
         if (this.lastSettings) {
           this._doConnect(this.lastSettings);
         }

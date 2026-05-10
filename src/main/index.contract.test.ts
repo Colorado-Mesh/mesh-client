@@ -114,4 +114,91 @@ describe('External link routing (source contract)', () => {
     expect(INDEX_SOURCE).toContain('shell.openExternal');
     expect(INDEX_SOURCE).toContain('event.preventDefault()');
   });
+
+  it('logs rejected external link opens instead of leaving unhandled rejections', () => {
+    expect(INDEX_SOURCE).toContain('shell.openExternal(target.toString()).catch((e: unknown) => {');
+    expect(INDEX_SOURCE).toContain("'[main] external link open failed'");
+    expect(INDEX_SOURCE).toContain(
+      'sanitizeLogMessage(e instanceof Error ? e.message : String(e))',
+    );
+  });
+});
+
+describe('About dialog crash guard (source contract)', () => {
+  it('uses Windows HTML About fallback and native panel elsewhere (no showMessageBox About)', () => {
+    expect(INDEX_SOURCE).toContain('function showAboutDialog(): void {');
+    expect(INDEX_SOURCE).toContain(
+      'console.debug(`[main] about dialog: opening app=${sanitizeLogMessage(appName)}`);',
+    );
+    expect(INDEX_SOURCE).toContain(
+      "import { buildWindowsAboutDocumentHtml } from './windows-about-html';",
+    );
+    expect(INDEX_SOURCE).toContain('function showWindowsAboutFallbackWindow(): void {');
+    expect(INDEX_SOURCE).toContain('showWindowsAboutFallbackWindow();');
+    expect(INDEX_SOURCE).toContain('app.showAboutPanel();');
+    expect(INDEX_SOURCE).toContain('app.setAboutPanelOptions');
+    expect(INDEX_SOURCE).toContain('function applyAboutPanelOptions(): void');
+    expect(INDEX_SOURCE).toMatch(
+      /function applyAboutPanelOptions\(\): void \{[\s\S]*?if \(process\.platform === 'win32'\) \{\s*return;\s*\}/,
+    );
+    expect(INDEX_SOURCE).toContain("'[main] about dialog failed'");
+    expect(INDEX_SOURCE).toContain(
+      'dialog.showErrorBox(`About ${appName}`, `${appName}\\nVersion ${version}`);',
+    );
+    expect(INDEX_SOURCE).toContain("'[main] about dialog fallback failed'");
+    expect(INDEX_SOURCE).not.toContain('showMessageBox(`About ${appName}`');
+  });
+
+  it('exposes Help menu external link helper with validated openExternal', () => {
+    expect(INDEX_SOURCE).toContain('function openHelpExternalLink(');
+    expect(INDEX_SOURCE).toContain('function buildHelpMenuExternalLinkItems(');
+    expect(INDEX_SOURCE).toContain('[main] help link: openExternal url=');
+    expect(INDEX_SOURCE).toContain('[main] help link: openExternal failed');
+    expect(INDEX_SOURCE).toContain(
+      'void shell.openExternal(target.toString() /* parseHttpOrHttpsUrl */).catch((e: unknown) => {',
+    );
+    expect(INDEX_SOURCE).toContain('HELP_URL_WEBSITE');
+    expect(INDEX_SOURCE).toContain('HELP_URL_GITHUB');
+    expect(INDEX_SOURCE).toContain('HELP_URL_DISCORD');
+  });
+});
+
+describe('Native crash observability (source contract)', () => {
+  it('starts crashReporter without upload and logs child-process-gone', () => {
+    expect(INDEX_SOURCE).toContain('import {\n  app,\n  BrowserWindow,\n  crashReporter,');
+    expect(INDEX_SOURCE).toContain('crashReporter.start({ uploadToServer: false })');
+    expect(INDEX_SOURCE).toContain("'[main] crashDumps path:'");
+    expect(INDEX_SOURCE).toContain("'[main] child-process-gone:'");
+  });
+});
+
+describe('Native Electron call guards (source contract)', () => {
+  it('keeps tray, badge, and power-save native calls best-effort', () => {
+    expect(INDEX_SOURCE).toContain("'[main] tray icon load failed:'");
+    expect(INDEX_SOURCE).toContain("'[main] tray unread icon overlay failed:'");
+    expect(INDEX_SOURCE).toContain("'[main] tray setup failed:'");
+    expect(INDEX_SOURCE).toContain("'[main] tray unread update failed:'");
+    expect(INDEX_SOURCE).toContain('function startPowerSaveBlocker(): void');
+    expect(INDEX_SOURCE).toContain('function stopPowerSaveBlocker(): void');
+    expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker start failed:'");
+    expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker stop failed:'");
+  });
+
+  it('logs native IPC helper failures locally before fallback or rejection', () => {
+    expect(INDEX_SOURCE).toContain("'[IPC] notify:message failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] storage:isAvailable failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] storage:encrypt failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] storage:decrypt failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] app:getLoginItem failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] app:setLoginItem failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] app:showEmojiPanel failed:'");
+    expect(INDEX_SOURCE).toContain("'[IPC] meshcore:openJsonFile failed:'");
+  });
+
+  it('guards fatal startup error dialog fallback', () => {
+    expect(INDEX_SOURCE).toContain("dialog.showErrorBox('Mesh-Client — Startup Error', message);");
+    expect(INDEX_SOURCE).toContain(
+      'catch-no-log-ok dialog unavailable during fatal startup handling; error already logged above',
+    );
+  });
 });

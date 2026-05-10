@@ -37,10 +37,12 @@ Exact semver ranges live in [`package.json`](https://github.com/Colorado-Mesh/me
 | @meshtastic/protobufs | npm:@jsr/meshtastic\_\_protobufs@^2.7.20 | Apache-2.0   | Meshtastic protocol definitions |
 | @stoprocent/noble     | ^2.4.0                                   | MIT          | BLE (Bluetooth) interface       |
 | electron-updater      | ^6.8.3                                   | MIT          | Auto-updates for Electron       |
+| i18next               | ^26.0.10                                 | MIT          | Internationalization framework  |
 | jszip                 | ^3.10.1                                  | MIT          | ZIP file handling               |
 | mgrs                  | ^2.1.0                                   | MIT          | Military Grid Reference System  |
 | mqtt                  | ^5.15.1                                  | EPL-2.0      | MQTT client                     |
 | node-forge            | ^1.4.0                                   | BSD-3-Clause | Crypto utilities                |
+| react-i18next         | ^17.0.7                                  | MIT          | React i18n integration          |
 | systeminformation     | ^5.31.5                                  | MIT          | System info gathering           |
 
 ### Development dependencies

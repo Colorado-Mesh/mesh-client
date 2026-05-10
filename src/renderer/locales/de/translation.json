@@ -138,7 +138,12 @@
     "restart": "Neustart",
     "restartTitle": "Neustart und Installation",
     "retryCheck": "Aktualisierungsprüfung wiederholen",
-    "updateError": "Fehler bei der Aktualisierung"
+    "updateError": "Fehler bei der Aktualisierung",
+    "menuToastUpToDateTitle": "Mesh-Client",
+    "menuToastUpToDateBody": "Sie haben die neueste Version.",
+    "menuToastAvailableTitle": "Update verfügbar",
+    "menuToastAvailableBody": "Version {{version}} liegt vor.",
+    "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
   },
   "app": {
     "loadingPanel": "Das Panel wird geladen...",

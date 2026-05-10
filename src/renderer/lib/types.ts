@@ -1,3 +1,4 @@
+import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
 export type { TAKClientInfo, TAKServerStatus, TAKSettings };
@@ -771,6 +772,9 @@ declare global {
       quitApp: () => Promise<void>;
       getPlatform: () => string;
       showEmojiPanel: () => Promise<void>;
+      notify: {
+        show: (title: string, body: string) => Promise<void>;
+      };
       log: {
         getPath: () => Promise<string>;
         getRecentLines: () => Promise<
@@ -797,6 +801,7 @@ declare global {
           }) => void,
         ) => () => void;
         onNotAvailable: (cb: () => void) => () => void;
+        onChecking: (cb: (payload?: UpdateCheckingPayload) => void) => () => void;
         onProgress: (cb: (info: { percent: number }) => void) => () => void;
         onDownloaded: (cb: () => void) => () => void;
         onError: (cb: (info: { message: string }) => void) => () => void;

@@ -195,6 +195,7 @@ const electronAPIMock = {
     openReleases: vi.fn().mockResolvedValue(undefined),
     onAvailable: vi.fn().mockReturnValue(() => {}),
     onNotAvailable: vi.fn().mockReturnValue(() => {}),
+    onChecking: vi.fn().mockReturnValue(() => {}),
     onProgress: vi.fn().mockReturnValue(() => {}),
     onDownloaded: vi.fn().mockReturnValue(() => {}),
     onError: vi.fn().mockReturnValue(() => {}),
