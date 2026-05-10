@@ -53,6 +53,12 @@ jobs:
             libxi6 \
             rpm
 
+      - name: Validate Windows build runner
+        if: contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'
+        run: |
+          echo "Windows build scripts must run on windows-latest."
+          exit 1
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
