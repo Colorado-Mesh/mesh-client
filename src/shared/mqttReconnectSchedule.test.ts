@@ -39,7 +39,6 @@ describe('mqttReconnectSchedule', () => {
     expect(computeMqttExponentialReconnectDelayMs(1)).toBe(MQTT_RECONNECT_EXPONENTIAL_BASE_MS);
     expect(computeMqttExponentialReconnectDelayMs(2)).toBe(MQTT_RECONNECT_EXPONENTIAL_BASE_MS * 2);
     const huge = computeMqttExponentialReconnectDelayMs(20);
-    expect(huge).toBeLessThanOrEqual(MQTT_RECONNECT_EXPONENTIAL_CAP_MS + 1);
     expect(huge).toBe(MQTT_RECONNECT_EXPONENTIAL_CAP_MS);
   });
 });

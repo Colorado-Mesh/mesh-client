@@ -86,7 +86,7 @@
     "@stoprocent/noble": "^2.5.3",
     "electron-updater": "^6.8.3",
     "emoji-picker-element": "^1.29.1",
-    "i18next": "^26.0.10",
+    "i18next": "^26.1.0",
     "jszip": "^3.10.1",
     "leaflet.markercluster": "^1.5.3",
     "mgrs": "^2.1.0",
@@ -149,7 +149,7 @@
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.11",
+    "vite": "^8.0.12",
     "vitest": "^4.1.5",
     "vitest-axe": "1.0.0-pre.5",
     "zustand": "^5.0.13"

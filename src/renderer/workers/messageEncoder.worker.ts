@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import { toBinary } from '@bufbuild/protobuf';
+import { create, toBinary } from '@bufbuild/protobuf';
 import { Mesh } from '@meshtastic/protobufs';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
@@ -44,22 +44,22 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
       decodedPayload.replyId = cmd.replyId;
     }
 
-    const toRadio = {
+    const toRadio = create(Mesh.ToRadioSchema, {
       payloadVariant: {
-        case: 'packet' as const,
+        case: 'packet',
         value: {
           to: cmd.dest,
           from: cmd.from,
           channel: cmd.channel,
           payloadVariant: {
-            case: 'decoded' as const,
+            case: 'decoded',
             value: decodedPayload,
           },
         },
       },
-    };
+    });
 
-    const buffer = toBinary(Mesh.ToRadioSchema, toRadio as any).buffer;
+    const buffer = toBinary(Mesh.ToRadioSchema, toRadio).buffer;
 
     const reply: WorkerEvent = { type: 'ENCODED', id: cmd.id, buffer };
     (self as unknown as Worker).postMessage(reply, [buffer]);
