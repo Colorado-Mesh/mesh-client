@@ -2355,6 +2355,12 @@ export function useMeshCore() {
         pubKeyPrefixMapRef.current.set(prefix, node.node_id);
         const nick = nicknameMapRef.current.get(node.node_id);
         const nodeWithNick = nick ? { ...node, long_name: nick, short_name: '' } : node;
+        const prevHopsForDb = nodesRef.current.get(nodeWithNick.node_id)?.hops_away;
+        const mergedHopsForDb = meshcoreMergeContactHopsAwayFromPrevious(
+          nodeWithNick.hops_away,
+          prevHopsForDb,
+          0,
+        );
         setNodes((prev) => {
           const next = new Map(prev);
           const existing = prev.get(nodeWithNick.node_id);
@@ -2362,12 +2368,16 @@ export function useMeshCore() {
             ...(existing ?? {}),
             ...nodeWithNick,
             hw_model: mergeHwModelOnContactUpdate(existing?.hw_model, nodeWithNick.hw_model),
-            hops_away: nodeWithNick.hops_away ?? existing?.hops_away,
+            hops_away: meshcoreMergeContactHopsAwayFromPrevious(
+              nodeWithNick.hops_away,
+              existing?.hops_away,
+              0,
+            ),
           });
           return next;
         });
         void window.electronAPI.db
-          .saveMeshcoreContact(contactToDbRow(d, nick ?? null, 1))
+          .saveMeshcoreContact(contactToDbRow(d, nick ?? null, 1, undefined, mergedHopsForDb))
           .catch((e: unknown) => {
             console.warn(
               '[useMeshCore] saveMeshcoreContact (event 138) error ' + errLikeToLogString(e),

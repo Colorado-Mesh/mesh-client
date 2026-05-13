@@ -9,6 +9,12 @@ import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 
 const getSelfInfoMock = vi.fn();
 
+// Captures the most-recently-created WebSerial connection so tests can emit live events.
+let capturedConn: { emit: (event: string | number, ...args: unknown[]) => void } | null = null;
+function captureConnInstance(conn: { emit: (event: string | number, ...args: unknown[]) => void }) {
+  capturedConn = conn;
+}
+
 const REMOTE_PUBKEY = (() => {
   const b = new Uint8Array(32);
   b[0] = 0x55;
@@ -28,6 +34,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
 
     constructor(port: unknown) {
       void port;
+      captureConnInstance(this);
     }
     on(event: string | number, cb: (...args: unknown[]) => void) {
       const listeners = this.listeners.get(event) ?? new Set();
@@ -202,6 +209,7 @@ function makeMockSerialPort() {
 
 describe('useMeshCore initConn merges DB hops at first connect', () => {
   beforeEach(() => {
+    capturedConn = null;
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
       {
@@ -228,6 +236,47 @@ describe('useMeshCore initConn merges DB hops at first connect', () => {
       type: 1,
       txPower: 22,
       radioFreq: 902_000_000,
+    });
+  });
+
+  it('live contact event (event 138) preserves persisted hops when radio reports direct path', async () => {
+    const port = makeMockSerialPort();
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: { requestPort: vi.fn().mockResolvedValue(port) },
+    });
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await waitFor(() => {
+      expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(4);
+    });
+
+    await act(async () => {
+      await result.current.connect('serial');
+    });
+
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    // Simulate a live contact advertisement arriving after connect with outPathLen=1 (direct, inferred=0).
+    // Before the fix, this overwrote hops_away=4 with 0 in both memory and DB.
+    const liveContactPayload = {
+      publicKey: REMOTE_PUBKEY,
+      type: 2,
+      advName: 'RemoteInit',
+      lastAdvert: 1_700_000_001,
+      advLat: 0,
+      advLon: 0,
+      flags: 0,
+      outPathLen: 1,
+      outPath: new Uint8Array([REMOTE_PUBKEY[0], REMOTE_PUBKEY[1]]),
+    };
+    capturedConn?.emit(138, liveContactPayload);
+
+    await waitFor(() => {
+      expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(4);
     });
   });
 
