@@ -1723,6 +1723,26 @@ export function useMeshCore() {
       pubKeyMapRef.current.clear();
       pubKeyPrefixMapRef.current.clear();
       outPathMapRef.current.clear();
+      // Persisted hop counts from `nodes` are the source of truth across app restarts and
+      // contact-table cleanups. Pre-fetch so each contact merge can fall back when the radio
+      // reports no outPath and prevSnap has no entry yet.
+      const savedHopsByNodeId = new Map<number, number>();
+      try {
+        const savedRows = (await window.electronAPI.db.getNodes()) as {
+          node_id: number;
+          hops?: number | null;
+          hops_away?: number | null;
+        }[];
+        for (const r of savedRows) {
+          const h = r.hops ?? r.hops_away;
+          if (h != null && Number.isFinite(h)) savedHopsByNodeId.set(r.node_id, h);
+        }
+      } catch (e) {
+        console.warn(
+          '[useMeshCore] buildNodesFromContacts: getNodes for hops fallback ' +
+            errLikeToLogString(e),
+        );
+      }
       for (const contact of contacts) {
         const base = meshcoreContactToMeshNode(contact);
         const last_heard = mergeMeshcoreLastHeardFromAdvert(
@@ -1731,9 +1751,10 @@ export function useMeshCore() {
         );
         const prevNode = prevSnap.get(base.node_id);
         const slicedPath = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
+        const effectivePrevHops = prevNode?.hops_away ?? savedHopsByNodeId.get(base.node_id);
         const hopsAway = meshcoreMergeContactHopsAwayFromPrevious(
           base.hops_away,
-          prevNode?.hops_away,
+          effectivePrevHops,
           slicedPath.length,
         );
         const node: MeshNode = { ...base, last_heard, hops_away: hopsAway };
@@ -1923,6 +1944,16 @@ export function useMeshCore() {
             ...existing,
             hops_away: traceHops,
           });
+        }
+      }
+
+      // Final fallback: nodes still missing hops_away after radio/contact/trace merges fall back
+      // to persisted `nodes` rows. Critical when `meshcore_contacts` is sparse (off-radio cleanup).
+      for (const [nodeId, node] of nextNodes) {
+        if (node.hops_away !== undefined) continue;
+        const savedHops = savedHopsByNodeId.get(nodeId);
+        if (savedHops != null) {
+          nextNodes.set(nodeId, { ...node, hops_away: savedHops });
         }
       }
 

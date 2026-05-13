@@ -306,3 +306,50 @@ describe('useMeshCore initConn merges DB hops at first connect', () => {
     expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(4);
   });
 });
+
+/**
+ * Regression: sparse `meshcore_contacts` (e.g. after off-radio cleanup) must not leave hop counts
+ * empty when `buildNodesFromContacts` rebuilds from `getContacts` — persisted `nodes` rows are
+ * the fallback for contacts not present in prevSnap.
+ */
+describe('useMeshCore buildNodesFromContacts merges nodes-table hops when meshcore_contacts is empty', () => {
+  beforeEach(() => {
+    capturedConn = null;
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([
+      { node_id: REMOTE_NODE_ID, hops: 7, hops_away: null },
+    ] as never[]);
+    getSelfInfoMock.mockResolvedValue({
+      name: 'SelfRadio',
+      publicKey: SELF_PUBKEY,
+      type: 1,
+      txPower: 22,
+      radioFreq: 902_000_000,
+    });
+  });
+
+  it('first connect applies saved hops from nodes table when radio reports direct path', async () => {
+    const port = makeMockSerialPort();
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: { requestPort: vi.fn().mockResolvedValue(port) },
+    });
+
+    const { result } = renderHook(() => useMeshCore());
+
+    await waitFor(() => {
+      expect(vi.mocked(window.electronAPI.db.getMeshcoreContacts)).toHaveBeenCalled();
+    });
+
+    await act(async () => {
+      await result.current.connect('serial');
+    });
+
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(7);
+  });
+});
