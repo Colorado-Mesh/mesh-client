@@ -1,7 +1,10 @@
 /// <reference lib="webworker" />
 
 import { create, toBinary } from '@bufbuild/protobuf';
-import { Mesh } from '@meshtastic/protobufs';
+import { Mesh, Portnums } from '@meshtastic/protobufs';
+
+/** Meshtastic app port for plaintext channel messages (`PortNum.TEXT_MESSAGE_APP`). */
+const TEXT_MESSAGE_APP = Portnums.PortNum.TEXT_MESSAGE_APP;
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import type { WorkerCommand, WorkerEvent } from '../lib/transport/types';
@@ -32,11 +35,11 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
 
   try {
     const decodedPayload: {
-      portnum: 1;
+      portnum: typeof TEXT_MESSAGE_APP;
       payload: Uint8Array;
       replyId?: number;
     } = {
-      portnum: 1, // TEXT_MESSAGE_APP
+      portnum: TEXT_MESSAGE_APP,
       payload: new TextEncoder().encode(cmd.text),
     };
 

@@ -1,5 +1,5 @@
 import { Utils, verifyAuthToken } from '@michaelhart/meshcore-decoder';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
   generateLetsMeshAuthToken,
@@ -10,6 +10,7 @@ import {
   letsMeshMqttUsernameFromIdentity,
   MESHCORE_ENC_PK_KEY,
   MESHCORE_IDENTITY_STORAGE_KEY,
+  MESHCORE_PUBLIC_KEY_LENGTH,
   MESHMAPPER_HOST,
   readMeshcoreIdentity,
   tryPersistMeshcoreIdentityFromRadioExport,
@@ -89,10 +90,10 @@ describe('letsMeshJwt', () => {
     expect(await tryPersistMeshcoreIdentityFromRadioExport(pub, priv)).toBe(true);
     const id = readMeshcoreIdentity();
     expect(Array.isArray(id?.public_key)).toBe(true);
-    expect((id?.public_key as number[]).length).toBe(32);
+    expect((id?.public_key as number[]).length).toBe(MESHCORE_PUBLIC_KEY_LENGTH);
     // safeStorage mock returns null → plaintext fallback stores private_key in localStorage
     expect(Array.isArray(id?.private_key)).toBe(true);
-    expect((id?.private_key as number[]).length).toBe(32);
+    expect((id?.private_key as number[]).length).toBe(MESHCORE_PUBLIC_KEY_LENGTH);
     localStorage.removeItem(MESHCORE_IDENTITY_STORAGE_KEY);
     localStorage.removeItem(MESHCORE_ENC_PK_KEY);
   });
@@ -124,5 +125,24 @@ describe('letsMeshJwt', () => {
     );
     const priv = new Uint8Array(16);
     expect(await tryPersistMeshcoreIdentityFromRadioExport(pub, priv)).toBe(false);
+  });
+
+  it('tryPersistMeshcoreIdentityFromRadioExport logs and returns false when safeStorage.encrypt throws', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const encrypt = vi.mocked(window.electronAPI.safeStorage.encrypt);
+    encrypt.mockRejectedValueOnce(new Error('encrypt failed'));
+    const pub = Uint8Array.from(
+      sampleKeyPair.publicKey.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+    );
+    const priv = Uint8Array.from(
+      sampleKeyPair.privateKey.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+    );
+    expect(await tryPersistMeshcoreIdentityFromRadioExport(pub, priv)).toBe(false);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[letsMeshJwt] tryPersistMeshcoreIdentityFromRadioExport failed'),
+    );
+    expect(warnSpy.mock.calls[0]?.[0]).toContain('encrypt failed');
+    encrypt.mockResolvedValue(null);
+    warnSpy.mockRestore();
   });
 });

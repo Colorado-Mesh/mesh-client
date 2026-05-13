@@ -1,4 +1,11 @@
+import { errLikeToLogString } from './errLikeToLogString';
 import { meshcoreIsSyntheticPlaceholderPubKeyHex } from './meshcoreUtils';
+
+/** Ed25519 / MeshCore identity public key length in bytes (32-byte raw pubkey, 64 hex chars). */
+export const MESHCORE_PUBLIC_KEY_LENGTH = 32;
+
+/** JWT `exp` offset from `iat` for {@link generateLetsMeshAuthToken} (1 hour). */
+const TOKEN_EXPIRY_SECONDS = 3600;
 
 /** localStorage key for MeshCore keys used by LetsMesh / device-signing MQTT JWT (Radio import or radio export). */
 export const MESHCORE_IDENTITY_STORAGE_KEY = 'mesh-client:meshcoreIdentity';
@@ -51,16 +58,25 @@ function meshcorePubKeyBytesToHexLower(pub: Uint8Array): string {
  *
  * Private key is stored encrypted via Electron safeStorage when available; falls back to
  * plaintext localStorage on platforms without an OS keychain (e.g. Linux without keyring).
+ *
+ * Both `publicKey` and `privateKeyBytes` allow `null` and `undefined` so callers can pass through
+ * MeshCore export results without branching: e.g. `coerceMeshcoreExportPrivateKeyResult` returns
+ * `null` on failure, while `getSelfInfo` may omit keys until the device is ready.
+ *
  * @returns true if storage was updated.
  */
 export async function tryPersistMeshcoreIdentityFromRadioExport(
-  publicKey: Uint8Array | undefined,
+  publicKey: Uint8Array | null | undefined,
   privateKeyBytes: Uint8Array | null | undefined,
 ): Promise<boolean> {
-  if (publicKey?.length !== 32) return false;
+  if (publicKey?.length !== MESHCORE_PUBLIC_KEY_LENGTH) return false;
   const pubHex = meshcorePubKeyBytesToHexLower(publicKey);
   if (meshcoreIsSyntheticPlaceholderPubKeyHex(pubHex)) return false;
-  if (!privateKeyBytes || (privateKeyBytes.length !== 32 && privateKeyBytes.length !== 64)) {
+  const fullSkLen = MESHCORE_PUBLIC_KEY_LENGTH * 2;
+  if (
+    !privateKeyBytes ||
+    (privateKeyBytes.length !== MESHCORE_PUBLIC_KEY_LENGTH && privateKeyBytes.length !== fullSkLen)
+  ) {
     return false;
   }
   try {
@@ -81,8 +97,11 @@ export async function tryPersistMeshcoreIdentityFromRadioExport(
     }
     window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
     return true;
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode — same as RadioPanel import path
+  } catch (err) {
+    // Still return false (no partial identity write); log for safeStorage / quota / private mode.
+    console.warn(
+      '[letsMeshJwt] tryPersistMeshcoreIdentityFromRadioExport failed ' + errLikeToLogString(err),
+    );
     return false;
   }
 }
@@ -155,8 +174,8 @@ export function letsMeshMqttUsernameFromIdentity(
 function normalizePublicKeyHex(publicKey: string | number[] | undefined): string | null {
   if (!publicKey) return null;
   if (Array.isArray(publicKey)) {
-    if (publicKey.length < 32) return null;
-    return Array.from(publicKey.slice(0, 32))
+    if (publicKey.length < MESHCORE_PUBLIC_KEY_LENGTH) return null;
+    return Array.from(publicKey.slice(0, MESHCORE_PUBLIC_KEY_LENGTH))
       .map((b: number) => (b & 0xff).toString(16).padStart(2, '0'))
       .join('');
   }
@@ -165,7 +184,7 @@ function normalizePublicKeyHex(publicKey: string | number[] | undefined): string
   try {
     const s = raw.replace(/-/g, '+').replace(/_/g, '/');
     const bin = atob(s);
-    if (bin.length === 32) {
+    if (bin.length === MESHCORE_PUBLIC_KEY_LENGTH) {
       return Array.from(bin, (c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
     }
   } catch {
@@ -183,14 +202,15 @@ function meshcoreOrlpPrivateKeyHex(
   publicKeyHex: string | null,
 ): string | null {
   if (!publicKeyHex) return null;
+  const fullSkLen = MESHCORE_PUBLIC_KEY_LENGTH * 2;
   if (Array.isArray(privateKey)) {
-    if (privateKey.length >= 64) {
-      return Array.from(privateKey.slice(0, 64))
+    if (privateKey.length >= fullSkLen) {
+      return Array.from(privateKey.slice(0, fullSkLen))
         .map((b: number) => (b & 0xff).toString(16).padStart(2, '0'))
         .join('');
     }
-    if (privateKey.length >= 32) {
-      const seed = Array.from(privateKey.slice(0, 32))
+    if (privateKey.length >= MESHCORE_PUBLIC_KEY_LENGTH) {
+      const seed = Array.from(privateKey.slice(0, MESHCORE_PUBLIC_KEY_LENGTH))
         .map((b: number) => (b & 0xff).toString(16).padStart(2, '0'))
         .join('');
       return seed + publicKeyHex;
@@ -218,7 +238,7 @@ export async function generateLetsMeshAuthToken(
   if (!priv) throw new Error('LetsMesh auth: private key missing or invalid');
   const { createAuthToken } = await import('@michaelhart/meshcore-decoder');
   const now = Math.floor(Date.now() / 1000);
-  const exp = now + 3600;
+  const exp = now + TOKEN_EXPIRY_SECONDS;
   const aud = letsMeshJwtAudience(serverHost);
   const token = await createAuthToken(
     {
