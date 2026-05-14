@@ -3,11 +3,11 @@
 import { create, toBinary } from '@bufbuild/protobuf';
 import { Mesh, Portnums } from '@meshtastic/protobufs';
 
-/** Meshtastic app port for plaintext channel messages (`PortNum.TEXT_MESSAGE_APP`). */
-const TEXT_MESSAGE_APP = Portnums.PortNum.TEXT_MESSAGE_APP;
-
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import type { WorkerCommand, WorkerEvent } from '../lib/transport/types';
+
+/** Meshtastic app port for plaintext channel messages (`PortNum.TEXT_MESSAGE_APP`). */
+const TEXT_MESSAGE_APP = Portnums.PortNum.TEXT_MESSAGE_APP;
 
 // Only accept messages from our renderer (Electron: file/null in prod, localhost in dev).
 const ALLOWED_ORIGINS = [
@@ -23,7 +23,6 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
     return;
   }
   const data: unknown = event.data;
-  // @typescript-eslint/no-floating-promises: worker onmessage is fire-and-forget
   if (typeof data !== 'object' || data === null || !('type' in data)) {
     return;
   }
@@ -65,10 +64,10 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
     const buffer = toBinary(Mesh.ToRadioSchema, toRadio).buffer;
 
     const reply: WorkerEvent = { type: 'ENCODED', id: cmd.id, buffer };
-    (self as unknown as Worker).postMessage(reply, [buffer]);
+    self.postMessage(reply, [buffer]);
   } catch (err) {
     console.warn('[messageEncoder.worker] encode failed ' + errLikeToLogString(err));
     const reply: WorkerEvent = { type: 'ERROR', id: cmd.id, error: String(err) };
-    (self as unknown as Worker).postMessage(reply);
+    self.postMessage(reply);
   }
 };
