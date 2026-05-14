@@ -229,15 +229,6 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
     titleKey: 'diagnosticsPanel.remedyRf.excessiveFlooding.title',
     descriptionKey: 'diagnosticsPanel.remedyRf.excessiveFlooding.description',
   },
-  'Distant Repeater': {
-    title: 'Move repeater closer to mesh core',
-    description:
-      'Repeater more than 3 hops from your node contributes little to mesh coverage — relocate it to a more central position.',
-    category: 'Physical',
-    severity: 'info',
-    titleKey: 'diagnosticsPanel.remedyRf.distantRepeater.title',
-    descriptionKey: 'diagnosticsPanel.remedyRf.distantRepeater.description',
-  },
 };
 
 export function getRecommendedActionForRfCondition(condition: string): DiagnosticRemedy | null {

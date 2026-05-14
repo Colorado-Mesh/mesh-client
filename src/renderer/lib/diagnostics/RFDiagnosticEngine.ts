@@ -279,18 +279,5 @@ export function diagnoseOtherNode(
     }
   }
 
-  // MeshCore: Distant Repeater — flagged even without telemetry data
-  if (node.hw_model === 'Repeater' && (node.hops_away ?? 0) > 3) {
-    findings.push({
-      condition: 'Distant Repeater',
-      cause: `Repeater is ${node.hops_away} hops away — too far to improve routing for most of the mesh.`,
-      severity: 'info',
-      causeI18n: {
-        key: 'diagnosticsPanel.rfCause.distantRepeater',
-        params: { hops: node.hops_away ?? 0 },
-      },
-    });
-  }
-
   return findings.length > 0 ? findings : null;
 }

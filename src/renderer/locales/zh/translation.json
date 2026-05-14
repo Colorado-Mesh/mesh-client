@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "未知的LoRa流量",
       "potentialMeshcoreRepeaterConflict": "潜在的MeshCore中继器冲突",
       "elevatedNoiseFloor": "高架噪音地板",
-      "excessiveFlooding": "洪水泛滥",
-      "distantRepeater": "远程中继器"
+      "excessiveFlooding": "洪水泛滥"
     },
     "rfCause": {
       "channelUtilizationSpike": "当前的{{current}} %是近期平均值（ {{average}} % ）的2倍以上—可能是拥堵或干扰浪涌。",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "宽带干扰（电子设备故障、电源线噪声等）导致噪声底板升高。",
       "fringeWeakCoverage": "节点距离太远或与网格其余部分的连接不佳。",
       "elevatedNoiseFloor": "无线电噪声底板为{{noiseFloor}} dBm — 干扰升高，有效范围缩短。",
-      "excessiveFlooding": "{{percent}}%的传输是洪泛路由 — 可能未与附近节点建立直接路由。",
-      "distantRepeater": "中继器距离{{hops}}跳太远，无法改善大多数网格的路由。"
+      "excessiveFlooding": "{{percent}}%的传输是洪泛路由 — 可能未与附近节点建立直接路由。"
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "MeshCore节点非常接近（ RSSI {{rssi}} dBm ） —可能导致数据包冲突。",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "允许建立直接路由",
         "description": "洪水比非常高—等待节点积累直接路径触点，或检查中继器接近度。"
-      },
-      "distantRepeater": {
-        "title": "将中继器移动到更靠近网格核心的位置",
-        "description": "距离您的节点超过3跳的重复器对网格覆盖率几乎没有贡献—将其重新定位到更中心的位置。"
       }
     }
   },

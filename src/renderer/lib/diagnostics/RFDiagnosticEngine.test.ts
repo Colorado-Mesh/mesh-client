@@ -94,25 +94,6 @@ describe('diagnoseOtherNode', () => {
     expect(findings).not.toBeNull();
     expect(findings!.some((f) => f.condition === 'Channel Utilization Spike')).toBe(true);
   });
-
-  it('flags Distant Repeater when hw_model is Repeater and hops > 3', () => {
-    const node = baseNode({ hw_model: 'Repeater', hops_away: 4 });
-    const findings = diagnoseOtherNode(node);
-    expect(findings).not.toBeNull();
-    expect(findings!.some((f) => f.condition === 'Distant Repeater')).toBe(true);
-  });
-
-  it('does not flag Distant Repeater when hops <= 3', () => {
-    const node = baseNode({ hw_model: 'Repeater', hops_away: 3 });
-    const findings = diagnoseOtherNode(node);
-    expect(findings?.some((f) => f.condition === 'Distant Repeater') ?? false).toBe(false);
-  });
-
-  it('does not flag Distant Repeater for non-Repeater nodes far away', () => {
-    const node = baseNode({ hw_model: '', hops_away: 5 });
-    const findings = diagnoseOtherNode(node);
-    expect(findings?.some((f) => f.condition === 'Distant Repeater') ?? false).toBe(false);
-  });
 });
 
 describe('diagnoseConnectedNode — MeshCore stats', () => {

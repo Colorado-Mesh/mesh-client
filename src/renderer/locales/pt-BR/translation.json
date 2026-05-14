@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "Tráfego LoRa desconhecido",
       "potentialMeshcoreRepeaterConflict": "Potencial Conflito do Repetidor MeshCore",
       "elevatedNoiseFloor": "Piso de Ruído Elevado",
-      "excessiveFlooding": "Inundação excessiva",
-      "distantRepeater": "Repetidor Distante"
+      "excessiveFlooding": "Inundação excessiva"
     },
     "rfCause": {
       "channelUtilizationSpike": "O {{current}}% atual está acima de 2vezes a média recente ({{average}}%) — possível aumento de congestionamento ou interferência.",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "Interferência de banda larga (eletrônica defeituosa, ruído de linha de energia, etc.) elevando o nível de ruído.",
       "fringeWeakCoverage": "O nó está muito longe ou mal conectado ao resto da malha.",
       "elevatedNoiseFloor": "O nível de ruído de rádio é {{noiseFloor}} dBm — interferência elevada reduzindo o alcance efetivo.",
-      "excessiveFlooding": "{{percent}}% das transmissões são roteadas por inundação — o roteamento direto pode não ser estabelecido com nós próximos.",
-      "distantRepeater": "O repetidor está a {{hops}} de distância — longe demais para melhorar o roteamento para a maior parte da malha."
+      "excessiveFlooding": "{{percent}}% das transmissões são roteadas por inundação — o roteamento direto pode não ser estabelecido com nós próximos."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "Nó MeshCore muito próximo (RSSI {{rssi}} dBm) — provavelmente causando colisões de pacotes.",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "Permitir que rotas diretas sejam estabelecidas",
         "description": "A taxa de inundação é muito alta — aguarde o nó acumular contatos de caminho direto ou verifique a proximidade do repetidor."
-      },
-      "distantRepeater": {
-        "title": "Mova o repetidor para mais perto do núcleo da malha",
-        "description": "O repetidor a mais de 3 saltos do seu nó contribui pouco para a cobertura da malha — mude-o para uma posição mais central."
       }
     }
   },

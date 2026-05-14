@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "Unbekannter LoRa-Verkehr",
       "potentialMeshcoreRepeaterConflict": "Potenzieller MeshCore-Repeater-Konflikt",
       "elevatedNoiseFloor": "Boden mit erhöhtem Geräuschpegel",
-      "excessiveFlooding": "Übermäßige Überschwemmungen",
-      "distantRepeater": "Entfernter Repeater"
+      "excessiveFlooding": "Übermäßige Überschwemmungen"
     },
     "rfCause": {
       "channelUtilizationSpike": "Der aktuelle Wert von {{current}}% liegt über dem Zweifachen des aktuellen Durchschnitts ({{average}}%) — mögliche Stau- oder Störungsüberlastung.",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "Breitbandige Störungen (fehlerhafte Elektronik, Stromleitungsgeräusche usw.), die den Geräuschpegel erhöhen.",
       "fringeWeakCoverage": "Der Knoten ist zu weit entfernt oder schlecht mit dem Rest des Netzes verbunden.",
       "elevatedNoiseFloor": "Der Funkgeräuschpegel beträgt {{noiseFloor}} dBm — erhöhte Interferenz reduziert die effektive Reichweite.",
-      "excessiveFlooding": "{{percent}}% der Übertragungen werden überflutet - ein direktes Routing mit Knoten in der Nähe ist möglicherweise nicht möglich.",
-      "distantRepeater": "Repeater ist {{hops}} Sprünge entfernt — zu weit entfernt, um das Routing für den größten Teil des Netzes zu verbessern."
+      "excessiveFlooding": "{{percent}}% der Übertragungen werden überflutet - ein direktes Routing mit Knoten in der Nähe ist möglicherweise nicht möglich."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "MeshCore-Knoten sehr nahe (RSSI {{rssi}} dBm) — verursacht wahrscheinlich Paketkollisionen.",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "Ermöglichen Sie die Einrichtung direkter Routen",
         "description": "Das Überschwemmungsverhältnis ist sehr hoch — warten Sie, bis der Knoten Direktpfadkontakte akkumuliert hat, oder überprüfen Sie die Nähe des Repeaters."
-      },
-      "distantRepeater": {
-        "title": "Bewegen Sie den Repeater näher an den Mesh-Kern",
-        "description": "Wiederholen Sie mehr als 3 Hops von Ihrem Knoten und tragen Sie wenig zur Netzabdeckung bei — verlagern Sie ihn an eine zentralere Position."
       }
     }
   },

@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "Lalu Lintas LoRa Tidak Diketahui",
       "potentialMeshcoreRepeaterConflict": "Potensi Konflik Pengulang MeshCore",
       "elevatedNoiseFloor": "Lantai Kebisingan Tinggi",
-      "excessiveFlooding": "Banjir Berlebihan",
-      "distantRepeater": "Repeater Jauh"
+      "excessiveFlooding": "Banjir Berlebihan"
     },
     "rfCause": {
       "channelUtilizationSpike": "{{current}}% saat ini lebih dari 2× rata-rata terkini ({{average}}%) — kemungkinan kemacetan atau lonjakan gangguan.",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "Interferensi broadband (kerusakan elektronik, gangguan saluran listrik, dll.) meningkatkan tingkat kebisingan.",
       "fringeWeakCoverage": "Node terlalu jauh atau tidak terhubung dengan baik ke seluruh mesh.",
       "elevatedNoiseFloor": "Lantai kebisingan radio adalah {{noiseFloor}} dBm — gangguan tinggi yang mengurangi rentang efektif.",
-      "excessiveFlooding": "{{percent}}% transmisi dialiri banjir — perutean langsung mungkin tidak dilakukan dengan node terdekat.",
-      "distantRepeater": "Repeater berjarak {{hops}} hop — terlalu jauh untuk meningkatkan routing untuk sebagian besar mesh."
+      "excessiveFlooding": "{{percent}}% transmisi dialiri banjir — perutean langsung mungkin tidak dilakukan dengan node terdekat."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "Node MeshCore sangat dekat (RSSI {{rssi}} dBm) — kemungkinan menyebabkan tabrakan paket.",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "Izinkan rute langsung untuk ditetapkan",
         "description": "Rasio banjir sangat tinggi — tunggu hingga simpul menumpuk kontak jalur langsung, atau periksa kedekatan repeater."
-      },
-      "distantRepeater": {
-        "title": "Pindahkan repeater lebih dekat ke inti jala",
-        "description": "Pengulang lebih dari 3 hop dari simpul Anda berkontribusi sedikit pada cakupan mesh — pindahkan ke posisi yang lebih sentral."
       }
     }
   },

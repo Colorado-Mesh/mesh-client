@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "Trafic LoRa inconnu",
       "potentialMeshcoreRepeaterConflict": "Conflit potentiel de répéteur MeshCore",
       "elevatedNoiseFloor": "Plancher de bruit surélevé",
-      "excessiveFlooding": "Inondations excessives",
-      "distantRepeater": "Répéteur à distance"
+      "excessiveFlooding": "Inondations excessives"
     },
     "rfCause": {
       "channelUtilizationSpike": "Le {{current}}% actuel est supérieur à 2fois la moyenne récente ({{average}}%) — congestion ou interférence possible.",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "Interférence à large bande (électronique défectueuse, bruit de ligne électrique, etc.) élevant le plancher de bruit.",
       "fringeWeakCoverage": "Le nœud est trop éloigné ou mal connecté au reste du maillage.",
       "elevatedNoiseFloor": "Le plancher de bruit radio est de {{noiseFloor}} dBm — interférence élevée réduisant la portée effective.",
-      "excessiveFlooding": "{{percent}}% des transmissions sont acheminées par inondation - le routage direct peut ne pas être établi avec les nœuds à proximité.",
-      "distantRepeater": "Le répéteur est à {{hops}} hops — trop loin pour améliorer le routage de la majeure partie du maillage."
+      "excessiveFlooding": "{{percent}}% des transmissions sont acheminées par inondation - le routage direct peut ne pas être établi avec les nœuds à proximité."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "Nœud MeshCore très proche (RSSI {{rssi}} dBm) — causant probablement des collisions de paquets.",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "Autoriser les itinéraires directs à établir",
         "description": "Le taux d'inondation est très élevé — attendez que le nœud accumule des contacts directs ou vérifiez la proximité du répéteur."
-      },
-      "distantRepeater": {
-        "title": "Rapprochez le répéteur du noyau maillé",
-        "description": "Répéter plus de 3 sauts à partir de votre nœud contribue peu à la couverture du maillage — déplacez-le vers une position plus centrale."
       }
     }
   },

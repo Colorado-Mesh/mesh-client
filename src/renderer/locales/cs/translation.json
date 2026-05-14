@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "Neznámý provoz LoRa",
       "potentialMeshcoreRepeaterConflict": "Potenciální konflikt MeshCore Repeater",
       "elevatedNoiseFloor": "Zvýšená hluková podlaha",
-      "excessiveFlooding": "Nadměrné záplavy",
-      "distantRepeater": "Vzdálený opakovač"
+      "excessiveFlooding": "Nadměrné záplavy"
     },
     "rfCause": {
       "channelUtilizationSpike": "Aktuální {{current}}% je více než 2× nedávný průměr ({{average}}%) – možné přetížení nebo nárůst rušení.",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "Širokopásmové rušení (vadná elektronika, šum ve vedení atd.) zvyšující hladinu hluku.",
       "fringeWeakCoverage": "Uzel je příliš daleko nebo je špatně připojen ke zbytku sítě.",
       "elevatedNoiseFloor": "Podlaha rádiového šumu je {{noiseFloor}} dBm — zvýšený efektivní rozsah snížení rušení.",
-      "excessiveFlooding": "{{percent}}% přenosů je zaplaveno — přímé směrování nemusí být vytvořeno s blízkými uzly.",
-      "distantRepeater": "Opakovač je {{hops}} hops daleko — příliš daleko na zlepšení směrování pro většinu ok."
+      "excessiveFlooding": "{{percent}}% přenosů je zaplaveno — přímé směrování nemusí být vytvořeno s blízkými uzly."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "Uzel MeshCore velmi blízko (RSSI {{rssi}} dBm) — pravděpodobně způsobuje kolize paketů.",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "Povolit vytvoření přímých tras",
         "description": "Poměr zaplavení je velmi vysoký — počkejte, až se v uzlu nahromadí kontakty s přímou cestou, nebo zkontrolujte blízkost opakovače."
-      },
-      "distantRepeater": {
-        "title": "Přesuňte opakovač blíže k jádru sítě",
-        "description": "Opakujte více než 3 skoky z uzlu, které jen málo přispívají k pokrytí sítě — přemístěte ji do centrálnější polohy."
       }
     }
   },

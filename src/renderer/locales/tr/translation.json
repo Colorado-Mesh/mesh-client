@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "Bilinmeyen LoRa Trafiği",
       "potentialMeshcoreRepeaterConflict": "Potansiyel MeshCore Tekrarlayıcı Çatışması",
       "elevatedNoiseFloor": "Yükseltilmiş Gürültü Zemini",
-      "excessiveFlooding": "Aşırı Su Baskını",
-      "distantRepeater": "Uzak Yineleyici"
+      "excessiveFlooding": "Aşırı Su Baskını"
     },
     "rfCause": {
       "channelUtilizationSpike": "Mevcut {{current}}%, yakın zamandaki ortalamanın ({{average}}%) 2 katının üzerinde; olası tıkanıklık veya parazit dalgalanması.",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "Gürültü tabanını yükselten geniş bant paraziti (arızalı elektronikler, elektrik hattı gürültüsü vb.).",
       "fringeWeakCoverage": "Düğüm çok uzakta veya ağın geri kalanına zayıf bir şekilde bağlı.",
       "elevatedNoiseFloor": "Radyo gürültüsü zemini {{noiseFloor}} dBm'dir — etkili menzili azaltan yüksek parazit.",
-      "excessiveFlooding": "İletimlerin % {{percent}}kadarı taşkın yönlendirmelidir — yakındaki düğümlerle doğrudan yönlendirme kurulamayabilir.",
-      "distantRepeater": "Tekrarlayıcı {{hops}} sekerek uzaklaşır — ağın çoğu için yönlendirmeyi iyileştirmek için çok uzaktır."
+      "excessiveFlooding": "İletimlerin % {{percent}}kadarı taşkın yönlendirmelidir — yakındaki düğümlerle doğrudan yönlendirme kurulamayabilir."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "MeshCore düğümü çok yakın (RSSI {{rssi}} dBm) — muhtemelen paket çarpışmalarına neden oluyor.",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "Doğrudan rotaların oluşturulmasına izin ver",
         "description": "Taşkın oranı çok yüksektir — düğümün doğrudan yol temasları biriktirmesini bekleyin veya tekrarlayıcı yakınlığını kontrol edin."
-      },
-      "distantRepeater": {
-        "title": "Tekrarlayıcıyı ağ çekirdeğine yaklaştırın",
-        "description": "Düğümünüzden 3 'ten fazla atlamayı tekrarlamak, ağ kapsamına çok az katkıda bulunur — daha merkezi bir konuma yeniden konumlandırın."
       }
     }
   },

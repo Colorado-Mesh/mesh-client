@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "Onbekend LoRa-verkeer",
       "potentialMeshcoreRepeaterConflict": "Potentieel MeshCore Repeater-conflict",
       "elevatedNoiseFloor": "Verhoogde geluidsvloer",
-      "excessiveFlooding": "Overmatige overstromingen",
-      "distantRepeater": "Verre Repeater"
+      "excessiveFlooding": "Overmatige overstromingen"
     },
     "rfCause": {
       "channelUtilizationSpike": "De huidige {{current}}% is meer dan 2x het recente gemiddelde ({{average}}%) – mogelijke congestie of interferentiepiek.",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "Breedbandinterferentie (defecte elektronica, ruis op het elektriciteitsnet, enz.) waardoor de ruisvloer hoger wordt.",
       "fringeWeakCoverage": "Het knooppunt is te ver weg of slecht verbonden met de rest van de mesh.",
       "elevatedNoiseFloor": "Radiogeluidsvloer is {{noiseFloor}} dBm — verhoogde interferentie die het effectieve bereik vermindert.",
-      "excessiveFlooding": "{{percent}}% van de transmissies wordt via een overstromingsrouter geleid. Het is mogelijk dat er geen directe routering is met knooppunten in de buurt.",
-      "distantRepeater": "Repeater is {{hops}} springt weg — te ver om de routering voor het grootste deel van het gaas te verbeteren."
+      "excessiveFlooding": "{{percent}}% van de transmissies wordt via een overstromingsrouter geleid. Het is mogelijk dat er geen directe routering is met knooppunten in de buurt."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "MeshCore-knooppunt zeer dichtbij (RSSI {{rssi}} dBm) - veroorzaakt waarschijnlijk pakketbotsingen.",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "Laat directe routes tot stand komen",
         "description": "Overstromingsverhouding is zeer hoog — wacht tot het knooppunt directe padcontacten verzamelt of controleer de nabijheid van de repeater."
-      },
-      "distantRepeater": {
-        "title": "Verplaats de repeater dichter naar de kern van het gaas",
-        "description": "Repeater meer dan 3 hops van je knooppunt draagt weinig bij aan de maasdekking — verplaats het naar een meer centrale positie."
       }
     }
   },

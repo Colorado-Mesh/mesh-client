@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "Traffico LoRa sconosciuto",
       "potentialMeshcoreRepeaterConflict": "Potenziale conflitto del ripetitore MeshCore",
       "elevatedNoiseFloor": "Pavimento Rumoroso Elevato",
-      "excessiveFlooding": "Inondazioni eccessive",
-      "distantRepeater": "Ripetitore a distanza"
+      "excessiveFlooding": "Inondazioni eccessive"
     },
     "rfCause": {
       "channelUtilizationSpike": "L'attuale {{current}}% è superiore a 2 volte la media recente ({{average}}%): possibile congestione o aumento di interferenze.",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "Interferenze a banda larga (elettronica difettosa, rumore della linea elettrica, ecc.) che aumentano il rumore di fondo.",
       "fringeWeakCoverage": "Il nodo è troppo lontano o scarsamente connesso al resto della mesh.",
       "elevatedNoiseFloor": "Il rumore di fondo della radio è {{noiseFloor}} dBm — interferenza elevata che riduce la portata effettiva.",
-      "excessiveFlooding": "{{percent}}% delle trasmissioni sono instradate in modo alluvionale — l'instradamento diretto potrebbe non essere stabilito con nodi vicini.",
-      "distantRepeater": "Il ripetitore è a {{hops}} salti di distanza — troppo lontano per migliorare il routing per la maggior parte della mesh."
+      "excessiveFlooding": "{{percent}}% delle trasmissioni sono instradate in modo alluvionale — l'instradamento diretto potrebbe non essere stabilito con nodi vicini."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "Nodo MeshCore molto vicino (RSSI {{rssi}} dBm): potrebbe causare collisioni di pacchetti.",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "Consenti l'istituzione di percorsi diretti",
         "description": "Il rapporto di inondazione è molto alto: attendere che il nodo accumuli contatti a percorso diretto o controllare la prossimità del ripetitore."
-      },
-      "distantRepeater": {
-        "title": "Avvicinare il ripetitore al nucleo della rete",
-        "description": "Il ripetitore a più di 3 hop dal tuo nodo contribuisce poco alla copertura della mesh: spostalo in una posizione più centrale."
       }
     }
   },

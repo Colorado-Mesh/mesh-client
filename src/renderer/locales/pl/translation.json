@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "Nieznany ruch LoRa",
       "potentialMeshcoreRepeaterConflict": "Potencjalny konflikt wzmacniaków MeshCore",
       "elevatedNoiseFloor": "Podwyższona podłoga hałasu",
-      "excessiveFlooding": "Nadmierne powodzie",
-      "distantRepeater": "Wzmacniacz odległy"
+      "excessiveFlooding": "Nadmierne powodzie"
     },
     "rfCause": {
       "channelUtilizationSpike": "Prąd {{current}}% jest ponad 2 razy większy od ostatniej średniej ({{average}}%) — możliwe przeciążenie lub wzrost zakłóceń.",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "Zakłócenia szerokopasmowe (wadliwa elektronika, zakłócenia w linii energetycznej itp.) podnoszące poziom szumów.",
       "fringeWeakCoverage": "Węzeł jest zbyt daleko lub słabo połączony z resztą siatki.",
       "elevatedNoiseFloor": "Poziom szumów radiowych wynosi {{noiseFloor}} dBm — podwyższone zakłócenia zmniejszające skuteczny zasięg.",
-      "excessiveFlooding": "{{percent}}% transmisji jest kierowanych przez powódź — trasowanie bezpośrednie może nie zostać ustanowione z pobliskimi węzłami.",
-      "distantRepeater": "Repeater znajduje się w odległości {{hops}} przeskoków — zbyt daleko, aby poprawić trasę dla większości siatki."
+      "excessiveFlooding": "{{percent}}% transmisji jest kierowanych przez powódź — trasowanie bezpośrednie może nie zostać ustanowione z pobliskimi węzłami."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "Węzeł MeshCore bardzo blisko (RSSI {{rssi}} dBm) — prawdopodobnie powoduje kolizje pakietów.",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "Zezwalaj na bezpośrednie wyznaczanie tras",
         "description": "Wskaźnik powodzi jest bardzo wysoki — poczekaj, aż węzeł zgromadzi styki ścieżki bezpośredniej lub sprawdź bliskość przemiennika."
-      },
-      "distantRepeater": {
-        "title": "Przesuń wzmacniacz bliżej rdzenia siatki",
-        "description": "Powtórzenie więcej niż 3 przeskoków od węzła niewiele przyczynia się do pokrycia siatką — przenieś go do bardziej centralnej pozycji."
       }
     }
   },

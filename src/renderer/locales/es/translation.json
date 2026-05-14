@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "Tráfico LoRa desconocido",
       "potentialMeshcoreRepeaterConflict": "Conflicto potencial del repetidor MeshCore",
       "elevatedNoiseFloor": "Piso de ruido elevado",
-      "excessiveFlooding": "Inundaciones excesivas",
-      "distantRepeater": "Repetidor distante"
+      "excessiveFlooding": "Inundaciones excesivas"
     },
     "rfCause": {
       "channelUtilizationSpike": "El {{current}}% actual supera en más de 2veces la media reciente ({{average}}%) — posible congestión o aumento de interferencias.",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "Interferencia de banda ancha (electrónica defectuosa, ruido de la línea eléctrica, etc.) que eleva el nivel de ruido.",
       "fringeWeakCoverage": "El nodo está demasiado lejos o mal conectado con el resto de la malla.",
       "elevatedNoiseFloor": "El nivel mínimo de ruido de radio es {{noiseFloor}} dBm — interferencia elevada que reduce el alcance efectivo.",
-      "excessiveFlooding": "{{percent}}% de las transmisiones están enrutadas por inundación: es posible que no se establezca un enrutamiento directo con los nodos cercanos.",
-      "distantRepeater": "El repetidor está a {{hops}} saltos de distancia, demasiado lejos para mejorar el enrutamiento de la mayor parte de la malla."
+      "excessiveFlooding": "{{percent}}% de las transmisiones están enrutadas por inundación: es posible que no se establezca un enrutamiento directo con los nodos cercanos."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "Nodo MeshCore muy cerca (RSSI {{rssi}} dBm) — probablemente causando colisiones de paquetes.",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "Permita que se establezcan rutas directas",
         "description": "La relación de inundación es muy alta: espere a que el nodo acumule contactos de trayectoria directa o compruebe la proximidad del repetidor."
-      },
-      "distantRepeater": {
-        "title": "Acerque el repetidor al núcleo de malla",
-        "description": "Repetir más de 3 saltos desde su nodo contribuye poco a la cobertura de la malla: reubíquelo en una posición más central."
       }
     }
   },

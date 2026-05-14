@@ -1273,8 +1273,7 @@
       "unknownLoraTraffic": "Unknown LoRa Traffic",
       "potentialMeshcoreRepeaterConflict": "Potential MeshCore Repeater Conflict",
       "elevatedNoiseFloor": "Elevated Noise Floor",
-      "excessiveFlooding": "Excessive Flooding",
-      "distantRepeater": "Distant Repeater"
+      "excessiveFlooding": "Excessive Flooding"
     },
     "rfCause": {
       "channelUtilizationSpike": "Current {{current}}% is over 2× the recent average ({{average}}%) — possible congestion or interference surge.",
@@ -1288,8 +1287,7 @@
       "widebandNoiseFloor": "Broadband interference (faulty electronics, power-line noise, etc.) elevating the noise floor.",
       "fringeWeakCoverage": "Node is too far away or poorly connected to the rest of the mesh.",
       "elevatedNoiseFloor": "Radio noise floor is {{noiseFloor}} dBm — elevated interference reducing effective range.",
-      "excessiveFlooding": "{{percent}}% of transmissions are flood-routed — direct routing may not be established with nearby nodes.",
-      "distantRepeater": "Repeater is {{hops}} hops away — too far to improve routing for most of the mesh."
+      "excessiveFlooding": "{{percent}}% of transmissions are flood-routed — direct routing may not be established with nearby nodes."
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "MeshCore node very close (RSSI {{rssi}} dBm) — likely causing packet collisions.",
@@ -1367,10 +1365,6 @@
       "excessiveFlooding": {
         "title": "Allow direct routes to establish",
         "description": "Flood ratio is very high — wait for the node to accumulate direct-path contacts, or check repeater proximity."
-      },
-      "distantRepeater": {
-        "title": "Move repeater closer to mesh core",
-        "description": "Repeater more than 3 hops from your node contributes little to mesh coverage — relocate it to a more central position."
       }
     },
     "noDiagnosticsHealthy": "No diagnostics detected. The mesh looks healthy!",

@@ -1270,8 +1270,7 @@
       "unknownLoraTraffic": "不明な LoRa トラフィック",
       "potentialMeshcoreRepeaterConflict": "MeshCore リピーターの潜在的な競合",
       "elevatedNoiseFloor": "高所ノイズフロア",
-      "excessiveFlooding": "過度の洪水",
-      "distantRepeater": "遠隔リピーター"
+      "excessiveFlooding": "過度の洪水"
     },
     "rfCause": {
       "channelUtilizationSpike": "現在の {{current}}% は最近の平均 ({{average}}%) の 2 倍を超えています。輻輳または干渉サージの可能性があります。",
@@ -1285,8 +1284,7 @@
       "widebandNoiseFloor": "広帯域干渉 (電子機器の故障、電力線ノイズなど) によりノイズ フロアが上昇します。",
       "fringeWeakCoverage": "ノードが遠すぎるか、メッシュの残りの部分との接続が不十分です。",
       "elevatedNoiseFloor": "ラジオノイズフロアは{{noiseFloor}} dBm — 有効範囲を低下させる高レベルの干渉。",
-      "excessiveFlooding": "送信の{{percent}}%はフラッドルーティング — 近隣ノードとの直接ルーティングが確立されていない可能性があります。",
-      "distantRepeater": "リピーターは{{hops}}ホップ離れています — メッシュの大部分のルーティング改善には遠すぎます。"
+      "excessiveFlooding": "送信の{{percent}}%はフラッドルーティング — 近隣ノードとの直接ルーティングが確立されていない可能性があります。"
     },
     "foreignLoraCause": {
       "meshcoreVeryClose": "MeshCore ノードが非常に近い (RSSI {{rssi}} dBm) - パケット衝突が発生する可能性があります。",
@@ -1364,10 +1362,6 @@
       "excessiveFlooding": {
         "title": "直接ルートを確立できるようにする",
         "description": "フラッド比率は非常に高く、ノードが直接経路の接触を蓄積するのを待つか、リピーターの近接性を確認します。"
-      },
-      "distantRepeater": {
-        "title": "リピーターをメッシュコアに近づける",
-        "description": "ノードから3ホップ以上のリピーターは、メッシュカバレッジにほとんど貢献しません。中央の位置に移動します。"
       }
     }
   },

@@ -26,7 +26,6 @@ const RF_CONDITION_LABEL_KEY: Record<string, string> = {
     'diagnosticsPanel.rfCondition.potentialMeshcoreRepeaterConflict',
   'Elevated Noise Floor': 'diagnosticsPanel.rfCondition.elevatedNoiseFloor',
   'Excessive Flooding': 'diagnosticsPanel.rfCondition.excessiveFlooding',
-  'Distant Repeater': 'diagnosticsPanel.rfCondition.distantRepeater',
 };
 
 const ROUTING_ANOMALY_TYPE_KEY: Record<AnomalyType, string> = {
