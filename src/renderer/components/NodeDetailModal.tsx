@@ -1201,7 +1201,6 @@ export default function NodeDetailModal({
                       disabled
                       className="bg-secondary-dark min-w-[8rem] flex-1 cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-gray-200 opacity-40"
                     >
-                      🛤{' '}
                       {traceRoutePending
                         ? t('nodeDetailModal.tracingEllipsis')
                         : t('nodeDetailModal.traceRoute')}
@@ -1215,7 +1214,6 @@ export default function NodeDetailModal({
                   disabled={false}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600"
                 >
-                  🛤{' '}
                   {traceRoutePending
                     ? t('nodeDetailModal.tracingEllipsis')
                     : t('nodeDetailModal.traceRoute')}
@@ -1244,7 +1242,6 @@ export default function NodeDetailModal({
                   disabled={!isConnected || repeaterStatusPending}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  📊{' '}
                   {repeaterStatusPending
                     ? t('nodeDetailModal.requestingEllipsis')
                     : t('nodeDetailModal.requestStatus')}
@@ -1278,7 +1275,6 @@ export default function NodeDetailModal({
                   disabled={!isConnected || telemetryPending}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  🌡{' '}
                   {telemetryPending
                     ? t('nodeDetailModal.requestingEllipsis')
                     : t('nodeDetailModal.sensorTelemetryButton')}
@@ -1309,7 +1305,6 @@ export default function NodeDetailModal({
                   disabled={!isConnected || neighborsPending}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  🔗{' '}
                   {neighborsPending
                     ? t('nodeDetailModal.requestingEllipsis')
                     : t('nodeDetailModal.getNeighbors')}
@@ -1368,7 +1363,6 @@ export default function NodeDetailModal({
                   disabled={!isConnected || exportContactPending}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  📤{' '}
                   {exportContactPending
                     ? t('nodeDetailModal.exportingEllipsis')
                     : t('nodeDetailModal.exportContact')}
@@ -1397,7 +1391,6 @@ export default function NodeDetailModal({
                   disabled={!isConnected || shareContactPending}
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  📨{' '}
                   {shareContactPending
                     ? t('nodeDetailModal.sharingEllipsis')
                     : t('nodeDetailModal.shareContact')}
@@ -1432,7 +1425,6 @@ export default function NodeDetailModal({
                   disabled={!isConnected || addRemoveLoading}
                   className="min-w-[8rem] flex-1 rounded-lg bg-green-900/50 px-3 py-2 text-sm font-medium text-green-300 transition-colors hover:bg-green-800/50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  ➕{' '}
                   {addRemoveLoading
                     ? t('nodeDetailModal.addingEllipsis')
                     : t('nodeDetailModal.addToRadio')}
@@ -1468,7 +1460,6 @@ export default function NodeDetailModal({
                   disabled={!isConnected || addRemoveLoading}
                   className="min-w-[8rem] flex-1 rounded-lg bg-orange-900/50 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-800/50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  ➖{' '}
                   {addRemoveLoading
                     ? t('nodeDetailModal.removingEllipsis')
                     : t('nodeDetailModal.removeFromRadio')}
