@@ -140,18 +140,29 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 - **Key check:** `pnpm run check:i18n` — hard fails on missing English keys; warns (does not fail) on incomplete locale coverage so rate-limit gaps don't block commits.
 - **Language selector:** `src/renderer/components/LanguageSelector.tsx` — globe-icon dropdown in the header; calls `i18n.changeLanguage()` + `mergeAppSetting('locale', ...)` + `electronAPI.appSettings.set('locale', ...)`.
 
+### Chat Panel
+
+- **Component:** `src/renderer/components/ChatPanel.tsx` — sender filter, draft persistence, jump-to-date, sound notifications, @mention autocomplete, copy, export.
+- **Storage helpers:** `src/renderer/lib/chatPanelProtocolStorage.ts` — localStorage keys for drafts (`mesh-client:drafts:<protocol>`), open DM tabs, last-read timestamps.
+- **Notifications:** `src/renderer/lib/chatNotifications.ts` — `playMessageNotification()` (AudioContext beep); mute preference stored in `mesh-client:notifMuted`.
+- **Mention segments:** `src/renderer/lib/chatMentionSegments.ts` — parse/build `@[Name]` tokens; `MentionAutocomplete.tsx` renders the dropdown.
+- **Export IPC:** `chat:export` — renderer calls `window.electronAPI.chat.export(messages)`; main opens a Save dialog and writes a `.txt` file.
+
 ### Common issues
 
-| Symptom          | Where to check                                 |
-| ---------------- | ---------------------------------------------- |
-| Connection fails | `useDevice.ts`, `useMeshCore.ts`               |
-| Send fails       | `useDevice.sendText`, `useMeshCore` send paths |
-| UI stale         | Zustand store, effect deps                     |
-| BLE timeout      | `noble-ble-manager.ts`, `bleConnectErrors`     |
-| Serial missing   | `serialPortSignature.ts`                       |
-| MQTT loop        | `mqtt-manager.ts`                              |
-| DB errors        | `database.ts` migrations                       |
-| Log gaps         | `log-service.ts`, log tags                     |
+| Symptom                | Where to check                                      |
+| ---------------------- | --------------------------------------------------- |
+| Connection fails       | `useDevice.ts`, `useMeshCore.ts`                    |
+| Send fails             | `useDevice.sendText`, `useMeshCore` send paths      |
+| UI stale               | Zustand store, effect deps                          |
+| BLE timeout            | `noble-ble-manager.ts`, `bleConnectErrors`          |
+| Serial missing         | `serialPortSignature.ts`                            |
+| MQTT loop              | `mqtt-manager.ts`                                   |
+| DB errors              | `database.ts` migrations                            |
+| Log gaps               | `log-service.ts`, log tags                          |
+| Chat export fails      | `chat:export` handler in `src/main/index.ts`        |
+| Draft not restored     | `chatPanelProtocolStorage.ts`, `viewKey` logic      |
+| Mention picker missing | `MentionAutocomplete.tsx`, `buildMentionCandidates` |
 
 ## 9. Cursor / Claude indexing
 

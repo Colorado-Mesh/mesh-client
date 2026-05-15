@@ -138,6 +138,12 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - **`@[Display Name]` tokens** (Meshtastic / MeshCore reply, tapback, path, and inline-reference syntax) render as compact inline labels in the bubble instead of raw brackets; see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#chat-mention-tokens)
 - Unread message divider that persists across restarts; auto-scrolls on tab switch
 - Direct messages (DMs) to individual nodes
+- **Draft persistence**: unsent message is saved per channel/DM and restored when you return
+- **Sender filter**: click any message sender to filter the view to that sender; Escape clears
+- **Jump to date**: scroll the chat to a specific calendar date
+- **Sound notifications**: audio ping for new messages in non-active channels/DMs; mute toggle in the toolbar
+- **@mention autocomplete**: type `@` to open a node-name picker; Tab or Enter to insert; arrow keys to navigate
+- **Export chat**: save the current channel or DM history as a `.txt` file via Save dialog
 
 **Node Management**
 

@@ -3,10 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import * as chatNotifications from '../lib/chatNotifications';
 import { draftsStorageKey, saveDraft } from '../lib/chatPanelProtocolStorage';
 import type { ChatMessage, MeshNode } from '../lib/types';
 import ChatPanel, { getDistFromChatBottom } from './ChatPanel';
 import { ToastProvider } from './Toast';
+
+vi.mock('../lib/chatNotifications', () => ({ playMessageNotification: vi.fn() }));
 
 beforeEach(() => {
   localStorage.clear();
@@ -1595,5 +1598,25 @@ describe('ChatPanel — notification mute toggle', () => {
       'false',
     );
     expect(localStorage.getItem('mesh-client:notifMuted')).toBe('0');
+  });
+});
+
+describe('ChatPanel — notification sound on new messages', () => {
+  it('does not play sound for messages already present at mount (e.g. after protocol switch)', async () => {
+    const playMock = vi.mocked(chatNotifications.playMessageNotification);
+    playMock.mockClear();
+
+    // Message is in channel 1, but the default view starts on channel 0 — this is
+    // exactly the case that would trigger the erroneous sound before the fix.
+    const existingMsg = makeMsg({ sender_id: 2, channel: 1, isHistory: undefined });
+
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[existingMsg]} isActive />
+      </ToastProvider>,
+    );
+
+    await screen.findByRole('textbox');
+    expect(playMock).not.toHaveBeenCalled();
   });
 });

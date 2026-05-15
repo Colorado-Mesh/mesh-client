@@ -349,7 +349,7 @@ function ChatPanel({
   const [notifMuted, setNotifMuted] = useState(
     () => localStorage.getItem('mesh-client:notifMuted') === '1',
   );
-  const prevMessagesLengthRef = useRef(0);
+  const prevMessagesLengthRef = useRef(messages.length);
 
   // Feature: @mention autocomplete
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
