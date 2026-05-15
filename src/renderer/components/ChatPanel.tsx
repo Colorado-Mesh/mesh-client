@@ -1393,7 +1393,10 @@ function ChatPanel({
           const parts: string[] = [];
           if (dmNode.battery > 0) parts.push(t('chatPanel.dmNodeBattery', { pct: dmNode.battery }));
           if (dmNode.last_heard) {
-            const diff = Date.now() - dmNode.last_heard;
+            // MeshCore stores last_heard as Unix seconds; meshtastic uses milliseconds
+            const lastHeardMs =
+              protocol === 'meshcore' ? dmNode.last_heard * 1000 : dmNode.last_heard;
+            const diff = Date.now() - lastHeardMs;
             const rel =
               diff < 60_000
                 ? 'just now'

@@ -1474,6 +1474,36 @@ describe('ChatPanel — DM node info header', () => {
     expect(infoBar.textContent).toContain('72%');
     expect(infoBar.textContent).toContain('5');
   });
+
+  it('shows correct last-heard time for meshcore (last_heard in seconds, not ms)', async () => {
+    const twoMinutesAgoSec = Math.floor((Date.now() - 120_000) / 1000);
+    const dmNode: MeshNode = {
+      node_id: 2,
+      long_name: 'Bob',
+      short_name: 'B',
+      hw_model: '',
+      snr: 3,
+      battery: 50,
+      last_heard: twoMinutesAgoSec,
+      latitude: null,
+      longitude: null,
+    };
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshcore"
+          nodes={new Map([[2, dmNode]])}
+          messages={[makeMsg({ sender_id: 2, sender_name: 'Bob', payload: 'hey', to: 1 })]}
+          initialDmTarget={2}
+        />
+      </ToastProvider>,
+    );
+    const infoBar = await screen.findByRole('status', { name: 'DM peer info' });
+    // Should show "2m ago", not a wildly inflated day count
+    expect(infoBar.textContent).toMatch(/\d+m ago/);
+    expect(infoBar.textContent).not.toMatch(/\d{4,}d ago/);
+  });
 });
 
 describe('ChatPanel — @mention autocomplete', () => {
