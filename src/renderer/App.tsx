@@ -51,6 +51,7 @@ import {
   TelemetryPanel,
 } from './lazyTabPanels';
 import { getAppSettingsRaw } from './lib/appSettingsStorage';
+import { playMessageNotification } from './lib/chatNotifications';
 import { DEFAULT_APP_SETTINGS_SHARED } from './lib/defaultAppSettings';
 import {
   fetchLatestMeshCoreRelease,
@@ -1327,6 +1328,9 @@ export default function App() {
         (m) => m.sender_id !== meshtasticMyNodeNumRef.current && !m.emoji && !m.isHistory,
       );
       if (realNew.length > 0) {
+        if (localStorage.getItem('mesh-client:notifMuted') !== '1') {
+          playMessageNotification();
+        }
         queueMicrotask(() => {
           setMeshtasticUnread((prev) => prev + realNew.length);
         });
