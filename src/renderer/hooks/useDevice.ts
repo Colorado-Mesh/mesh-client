@@ -31,6 +31,12 @@ import { containsMeshCorePattern, extractRssiSnr } from '../lib/foreignLoraDetec
 import type { OurPosition } from '../lib/gpsSource';
 import { resolveOurPosition } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
+import {
+  findMeshtasticCrossTransportDuplicate,
+  mapMeshtasticCrossTransportUpgrade,
+  meshtasticPacketIdsEqual,
+  normalizeMeshtasticPacketId,
+} from '../lib/meshtasticMessageDedup';
 import { meshtasticComputedRfHopsAway } from '../lib/meshtasticRfHops';
 import {
   mergeMeshtasticTraceRouteIntoResultsMap,
@@ -870,8 +876,8 @@ export function useDevice() {
         // Upgrade receivedVia to 'both' if this packet was already saved via RF
         setMessages((prev) =>
           prev.map((m) =>
-            m.packetId === packetId && m.receivedVia === 'rf'
-              ? { ...m, receivedVia: 'both' as const }
+            meshtasticPacketIdsEqual(m.packetId, packetId) && m.receivedVia === 'rf'
+              ? { ...m, receivedVia: 'both' as const, packetId }
               : m,
           ),
         );
@@ -879,13 +885,44 @@ export function useDevice() {
         return;
       }
 
-      // Deduplicate by content too (same sender + timestamp)
-      const mqttMsg = { ...msg, receivedVia: 'mqtt' as const };
+      const normalizedPacketId = normalizeMeshtasticPacketId(msg.packetId);
+      const mqttMsg: ChatMessage = {
+        ...msg,
+        ...(normalizedPacketId !== undefined ? { packetId: normalizedPacketId } : {}),
+        receivedVia: 'mqtt',
+      };
       const mqttWithPreviews = enrichMeshtasticReplyPreviews(
         mqttMsg,
         messagesRef.current,
         getNodeName,
       );
+
+      if (!mqttWithPreviews.emoji) {
+        const crossDup = findMeshtasticCrossTransportDuplicate(
+          messagesRef.current,
+          mqttWithPreviews,
+        );
+        if (crossDup) {
+          setMessages((prev) => {
+            const { messages: next, matched } = mapMeshtasticCrossTransportUpgrade(
+              prev,
+              mqttWithPreviews,
+            );
+            if (!matched) return prev;
+            return next;
+          });
+          const pid =
+            normalizedPacketId !== undefined && normalizedPacketId !== 0
+              ? normalizedPacketId
+              : normalizeMeshtasticPacketId(crossDup.packetId);
+          if (pid !== undefined && pid !== 0) {
+            isDuplicate(pid);
+            void window.electronAPI.db.updateMessageReceivedVia(pid);
+          }
+          return;
+        }
+      }
+
       setMessages((prev) => {
         const isDup = prev.some(
           (m) =>
@@ -1200,11 +1237,12 @@ export function useDevice() {
           const rfDedupHops = meshtasticComputedRfHopsAway(meshPacket);
           setMessages((prev) =>
             prev.map((m) =>
-              m.packetId === rfDedupPacketId && m.receivedVia === 'mqtt'
+              meshtasticPacketIdsEqual(m.packetId, rfDedupPacketId) && m.receivedVia === 'mqtt'
                 ? {
                     ...m,
                     receivedVia: 'both' as const,
                     rxHops: m.rxHops ?? rfDedupHops,
+                    packetId: rfDedupPacketId,
                   }
                 : m,
             ),
@@ -1226,6 +1264,31 @@ export function useDevice() {
               receivedVia: 'rf' as const,
               isHistory: isConfiguringRef.current || undefined,
             };
+
+        if (!isEcho && !rfMsg.emoji) {
+          const crossDup = findMeshtasticCrossTransportDuplicate(messagesRef.current, rfMsg);
+          if (crossDup) {
+            const rfDedupHops = meshtasticComputedRfHopsAway(meshPacket);
+            setMessages((prev) => {
+              const { messages: next, matched } = mapMeshtasticCrossTransportUpgrade(prev, {
+                ...rfMsg,
+                rxHops: rfMsg.rxHops ?? rfDedupHops,
+              });
+              if (!matched) return prev;
+              return next;
+            });
+            const pid =
+              rfMsg.packetId !== undefined && rfMsg.packetId !== 0
+                ? rfMsg.packetId
+                : normalizeMeshtasticPacketId(crossDup.packetId);
+            if (pid !== undefined && pid !== 0) {
+              isDuplicate(pid);
+              void window.electronAPI.db.updateMessageReceivedVia(pid, rfDedupHops);
+            }
+            return;
+          }
+        }
+
         setMessages((prev) => {
           // Dedup reaction retransmissions before the DB write completes
           if (rfMsg.emoji && rfMsg.replyId) {

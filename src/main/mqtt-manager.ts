@@ -1185,7 +1185,9 @@ export class MQTTManager extends EventEmitter {
 
     if (!text && !emoji) return;
 
-    const packetId = typeof json.id === 'number' ? json.id : Date.now();
+    const packetId = typeof json.id === 'number' ? json.id >>> 0 : 0;
+    if (packetId !== 0 && this.isDuplicate(packetId)) return;
+
     const msg: Omit<ChatMessage, 'id'> & { from_mqtt: boolean } = {
       sender_id: nodeId,
       sender_name: `!${nodeId.toString(16)}`,
