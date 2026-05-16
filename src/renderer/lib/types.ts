@@ -775,6 +775,9 @@ declare global {
       quitApp: () => Promise<void>;
       getPlatform: () => string;
       showEmojiPanel: () => Promise<void>;
+      clipboard: {
+        writeText: (text: string) => Promise<void>;
+      };
       notify: {
         show: (title: string, body: string) => Promise<void>;
       };

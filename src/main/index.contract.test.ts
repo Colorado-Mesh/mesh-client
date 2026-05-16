@@ -165,7 +165,9 @@ describe('About dialog crash guard (source contract)', () => {
 
 describe('Native crash observability (source contract)', () => {
   it('starts crashReporter without upload and logs child-process-gone', () => {
-    expect(INDEX_SOURCE).toContain('import {\n  app,\n  BrowserWindow,\n  crashReporter,');
+    expect(INDEX_SOURCE).toContain(
+      'import {\n  app,\n  BrowserWindow,\n  clipboard,\n  crashReporter,',
+    );
     expect(INDEX_SOURCE).toContain('crashReporter.start({ uploadToServer: false })');
     expect(INDEX_SOURCE).toContain("'[main] crashDumps path:'");
     expect(INDEX_SOURCE).toContain("'[main] child-process-gone:'");
@@ -204,5 +206,13 @@ describe('Native Electron call guards (source contract)', () => {
 
   it('registers chat:fetchLinkPreview handler', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:fetchLinkPreview'");
+  });
+
+  it('registers clipboard:writeText with sender validation', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('clipboard:writeText'");
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('clipboard:writeText'[\s\S]*?validateIpcSender\(event\)/,
+    );
+    expect(INDEX_SOURCE).toContain('clipboard.writeText(text)');
   });
 });

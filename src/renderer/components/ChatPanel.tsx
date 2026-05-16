@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 
 import { useNowMs } from '../hooks/useNowMs';
@@ -1975,8 +1976,11 @@ function ChatPanel({
                         {/* Copy — always available */}
                         <button
                           type="button"
-                          onClick={() => {
-                            void navigator.clipboard.writeText(msg.payload);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void writeClipboardText(msg.payload).catch((err: unknown) => {
+                              console.warn('Failed to copy message:', errLikeToLogString(err));
+                            });
                           }}
                           className="rounded p-1 text-xs text-gray-600 hover:text-green-400"
                           aria-label={t('chatPanel.copyMessage')}

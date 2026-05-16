@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import {
   app,
   BrowserWindow,
+  clipboard,
   crashReporter,
   dialog,
   ipcMain,
@@ -2937,6 +2938,29 @@ ipcMain.handle('app:showEmojiPanel', (event) => {
       );
       throw e;
     }
+  }
+});
+
+const CLIPBOARD_WRITE_TEXT_MAX_CHARS = 256 * 1024;
+
+ipcMain.handle('clipboard:writeText', (event, text: unknown) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('IPC sender validation failed');
+  }
+  if (typeof text !== 'string') {
+    throw new Error('clipboard:writeText: text must be a string');
+  }
+  if (text.length > CLIPBOARD_WRITE_TEXT_MAX_CHARS) {
+    throw new Error('clipboard:writeText: text too long');
+  }
+  try {
+    clipboard.writeText(text);
+  } catch (e) {
+    console.warn(
+      '[IPC] clipboard:writeText failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    throw e;
   }
 });
 

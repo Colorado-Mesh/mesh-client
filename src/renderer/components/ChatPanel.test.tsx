@@ -1292,12 +1292,7 @@ function makeMsg(overrides: Partial<ChatMessage>): ChatMessage {
 describe('ChatPanel — copy button', () => {
   it('shows a Copy button on each message and writes payload to clipboard', async () => {
     const user = userEvent.setup();
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText },
-      writable: true,
-      configurable: true,
-    });
+    const writeText = vi.mocked(window.electronAPI.clipboard.writeText);
 
     render(
       <ToastProvider>
