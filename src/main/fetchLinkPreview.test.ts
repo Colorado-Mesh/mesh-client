@@ -1,7 +1,12 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchLinkPreview, isBlockedHostname } from './fetchLinkPreview';
+import {
+  clearLinkPreviewCachesForTests,
+  fetchLinkPreview,
+  isBlockedHostname,
+  shouldProxyPreviewImageUrl,
+} from './fetchLinkPreview';
 
 const mockFetch = vi.fn();
 
@@ -12,6 +17,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   mockFetch.mockReset();
+  clearLinkPreviewCachesForTests();
 });
 
 function makeStreamResponse(html: string, contentType = 'text/html; charset=utf-8'): Response {
@@ -55,6 +61,20 @@ describe('isBlockedHostname', () => {
   it('allows public hostnames', () => {
     expect(isBlockedHostname('example.com')).toBe(false);
     expect(isBlockedHostname('sub.example.org')).toBe(false);
+  });
+});
+
+describe('shouldProxyPreviewImageUrl', () => {
+  it('proxies GitHub opengraph CDN', () => {
+    expect(
+      shouldProxyPreviewImageUrl(
+        'https://opengraph.githubassets.com/52768cefbf1a3fa13ca046289d01a61233c6ad064abe523c29e2cf8e7771f81b/Colorado-Mesh/mesh-client',
+      ),
+    ).toBe(true);
+  });
+
+  it('does not proxy arbitrary image hosts', () => {
+    expect(shouldProxyPreviewImageUrl('https://example.com/img.png')).toBe(false);
   });
 });
 
@@ -184,6 +204,68 @@ describe('fetchLinkPreview', () => {
       description: 'Desc text',
       image: 'https://example.com/img.png',
     });
+  });
+
+  it('proxies GitHub opengraph images as data URLs in main', async () => {
+    const pageHtml = [
+      `<meta property="og:title" content="mesh-client">`,
+      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/Colorado-Mesh/mesh-client">`,
+    ].join('\n');
+    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47]);
+    const imageStream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(pngBytes);
+        controller.close();
+      },
+    });
+    mockFetch.mockImplementation((input: string | URL | Request) => {
+      const href =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (href.includes('opengraph.githubassets.com')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'image/png' }),
+          body: imageStream,
+        } as unknown as Response);
+      }
+      return Promise.resolve(makeStreamResponse(pageHtml));
+    });
+
+    const result = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
+    expect(result?.title).toBe('mesh-client');
+    expect(result?.image).toMatch(/^data:image\/png;base64,/);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('omits image when GitHub opengraph CDN returns 429', async () => {
+    const pageHtml = [
+      `<meta property="og:title" content="mesh-client">`,
+      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/Colorado-Mesh/mesh-client">`,
+    ].join('\n');
+    mockFetch.mockImplementation((input: string | URL | Request) => {
+      const href =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (href.includes('opengraph.githubassets.com')) {
+        return Promise.resolve({ ok: false, status: 429 } as Response);
+      }
+      return Promise.resolve(makeStreamResponse(pageHtml));
+    });
+
+    const result = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
+    expect(result).toEqual({ title: 'mesh-client', description: undefined, image: undefined });
+
+    const cached = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
+    expect(cached).toEqual(result);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('caches preview metadata by page URL', async () => {
+    const html = `<meta property="og:title" content="Cached">`;
+    mockFetch.mockResolvedValue(makeStreamResponse(html));
+    await fetchLinkPreview('https://example.com/cached');
+    await fetchLinkPreview('https://example.com/cached');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it('rejects http:// og:image (must be https)', async () => {

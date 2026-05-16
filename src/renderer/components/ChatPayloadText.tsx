@@ -32,13 +32,27 @@ interface LinkPreviewData {
   image?: string;
 }
 
+const linkPreviewFetchByUrl = new Map<string, Promise<LinkPreviewData | null>>();
+
+function fetchLinkPreviewDeduped(url: string): Promise<LinkPreviewData | null> {
+  const existing = linkPreviewFetchByUrl.get(url);
+  if (existing) return existing;
+  const pending = window.electronAPI.chat.linkPreview.fetch(url);
+  linkPreviewFetchByUrl.set(url, pending);
+  void pending.finally(() => {
+    if (linkPreviewFetchByUrl.get(url) === pending) {
+      linkPreviewFetchByUrl.delete(url);
+    }
+  });
+  return pending;
+}
+
 function LinkPreview({ url }: { url: string }) {
   const [preview, setPreview] = useState<LinkPreviewData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    window.electronAPI.chat.linkPreview
-      .fetch(url)
+    fetchLinkPreviewDeduped(url)
       .then((result: LinkPreviewData | null) => {
         if (!cancelled) setPreview(result);
       })
