@@ -1887,10 +1887,10 @@ function ChatPanel({
                             );
                           })()}
 
-                        {/* Message text with optional search highlight */}
-                        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
+                        {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
+                        <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
                           <ChatPayloadText text={msg.payload} query={searchQuery} />
-                        </p>
+                        </div>
 
                         {/* Transport + RF hop count (incoming) */}
                         {!isOwn &&
