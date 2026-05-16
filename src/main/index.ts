@@ -3873,6 +3873,80 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
   }
 });
 
+// ─── IPC: Chat link preview ──────────────────────────────────────────
+const LINK_PREVIEW_FETCH_TIMEOUT_MS = 10_000;
+const LINK_PREVIEW_MAX_HTML_BYTES = 65_536;
+const LINK_PREVIEW_IP_RE = /^(\d{1,3}\.){3}\d{1,3}$/;
+
+function isIpAddress(hostname: string): boolean {
+  return LINK_PREVIEW_IP_RE.test(hostname);
+}
+
+interface LinkPreviewMetadata {
+  title: string;
+  description?: string;
+  image?: string;
+}
+
+async function fetchLinkPreview(urlString: string): Promise<LinkPreviewMetadata | null> {
+  let url: URL;
+  try {
+    url = new URL(urlString);
+  } catch {
+    // catch-no-log-ok invalid URL string — silent failure by design
+    return null;
+  }
+  if (!['http:', 'https:'].includes(url.protocol)) return null;
+  if (isIpAddress(url.hostname)) return null;
+
+  try {
+    const response = await fetch(urlString, {
+      method: 'GET',
+      headers: { Accept: 'text/html' },
+      signal: AbortSignal.timeout(LINK_PREVIEW_FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!contentType.includes('text/html')) return null;
+
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength === 0) return null;
+    const html = new TextDecoder().decode(buffer.slice(0, LINK_PREVIEW_MAX_HTML_BYTES));
+
+    const ogTitle =
+      /<meta\s+property="og:title"\s+content="([^"]+)"/i.exec(html)?.[1] ??
+      /<meta\s+content="([^"]+)"\s+property="og:title"/i.exec(html)?.[1] ??
+      /<title[^>]*>([^<]+)<\/title>/i.exec(html)?.[1];
+    if (!ogTitle?.trim()) return null;
+
+    const title = ogTitle.trim();
+
+    const ogDesc =
+      /<meta\s+property="og:description"\s+content="([^"]+)"/i.exec(html)?.[1] ??
+      /<meta\s+content="([^"]+)"\s+property="og:description"/i.exec(html)?.[1] ??
+      /<meta\s+name="description"\s+content="([^"]+)"/i.exec(html)?.[1];
+    const description = ogDesc?.trim() || undefined;
+
+    const ogImage =
+      /<meta\s+property="og:image"\s+content="([^"]+)"/i.exec(html)?.[1] ??
+      /<meta\s+content="([^"]+)"\s+property="og:image"/i.exec(html)?.[1];
+    const image = ogImage?.trim().startsWith('https://') ? ogImage.trim() : undefined;
+
+    return { title, description, image };
+  } catch (err) {
+    console.debug(
+      '[chat] fetchLinkPreview error:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    return null;
+  }
+}
+
+ipcMain.handle('chat:fetchLinkPreview', async (_event, url: unknown) => {
+  if (typeof url !== 'string' || url.length === 0 || url.length > 2048) return null;
+  return await fetchLinkPreview(url);
+});
+
 // ─── IPC: MeshCore database operations ──────────────────────────────
 ipcMain.handle('db:getMeshcoreMessages', (_event, channelIdx?: number, limit = 200) => {
   try {

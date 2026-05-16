@@ -243,6 +243,9 @@ const electronAPIMock = {
   },
   chat: {
     export: vi.fn().mockResolvedValue({ success: false }),
+    linkPreview: {
+      fetch: vi.fn().mockResolvedValue(null),
+    },
   },
   log: {
     getPath: vi.fn().mockResolvedValue('/tmp/test.log'),

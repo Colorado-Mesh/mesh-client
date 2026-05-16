@@ -834,6 +834,11 @@ declare global {
       };
       chat: {
         export: (messages: ChatExportMessage[]) => Promise<{ success: boolean; path?: string }>;
+        linkPreview: {
+          fetch: (
+            url: string,
+          ) => Promise<{ title: string; description?: string; image?: string } | null>;
+        };
       };
     };
   }

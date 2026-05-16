@@ -825,6 +825,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   chat: {
     export: (messages: unknown[]) =>
       ipcRenderer.invoke('chat:export', messages) as Promise<{ success: boolean; path?: string }>,
+    linkPreview: {
+      fetch: (url: string) =>
+        ipcRenderer.invoke('chat:fetchLinkPreview', url) as Promise<{
+          title: string;
+          description?: string;
+          image?: string;
+        } | null>,
+    },
   },
 
   // ─── Log panel ───────────────────────────────────────────────────
