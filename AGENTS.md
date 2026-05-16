@@ -133,7 +133,7 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 ### i18n / Localization
 
 - **Framework:** i18next + react-i18next; static JSON bundles loaded at startup; `fallbackLng: 'en'`.
-- **Locale files:** `src/renderer/locales/{en,es,uk,de,zh,pt-BR,fr,it,pl,cs,ja,ru,nl,ko,tr,id}/translation.json` — English is source of truth (314 keys).
+- **Locale files:** `src/renderer/locales/{en,es,uk,de,zh,pt-BR,fr,it,pl,cs,ja,ru,nl,ko,tr,id}/translation.json` — English is source of truth (`pnpm run check:i18n` reports key count).
 - **Locale persistence:** `locale` key in `app_settings` SQLite table (canonical) and `mesh-client:appSettings` localStorage (fast startup read); reconciled in `App.tsx` on mount.
 - **Adding strings:** add to `src/renderer/locales/en/translation.json`, use `t('your.key')` in components; `check:i18n` enforces all call sites resolve to English keys.
 - **Auto-translate:** `pnpm run i18n:auto-translate` uses MyMemory (default) or LibreTranslate (`LIBRETRANSLATE_URL`). With git, the default run **only** fills keys that are **new in English vs `HEAD`** and still missing from each locale (pre-commit uses this). Use **`pnpm run i18n:auto-translate --all`** or **`I18N_TRANSLATE_ALL=1`** to machine-translate **every** key missing from a locale vs English (large runs). Existing entries in a locale file are never overwritten. MyMemory sends contact `info@coloradomesh.org` by default for the 50 k words/day quota; override with `MYMEMORY_EMAIL` if needed.
@@ -142,9 +142,11 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 
 ### Chat Panel
 
-- **Component:** `src/renderer/components/ChatPanel.tsx` — sender filter, draft persistence, jump-to-date, sound notifications, @mention autocomplete, copy, export.
-- **Storage helpers:** `src/renderer/lib/chatPanelProtocolStorage.ts` — localStorage keys for drafts (`mesh-client:drafts:<protocol>`), open DM tabs, last-read timestamps.
-- **Notifications:** `src/renderer/lib/chatNotifications.ts` — `playMessageNotification()` (AudioContext beep); mute preference stored in `mesh-client:notifMuted`.
+- **Component:** `src/renderer/components/ChatPanel.tsx` — sender filter, draft persistence, DM info header, jump-to-date, sound notifications, per-conversation mute, starring, @mention autocomplete, copy, export.
+- **Payload / links:** `ChatPayloadText.tsx` — mention highlighting, search marks, URL linkification; link previews via `chat:fetchLinkPreview` (`src/main/fetchLinkPreview.ts`, blocks localhost/private IPs, 10s timeout, 64 KiB HTML cap).
+- **Storage helpers:** `src/renderer/lib/chatPanelProtocolStorage.ts` — drafts (`mesh-client:drafts:<protocol>`), open DM tabs, last-read, per-view mute (`mesh-client:mutedViews:<protocol>`), starred (`mesh-client:starred:<protocol>`, cap 200).
+- **Notifications:** `src/renderer/lib/chatNotifications.ts` — `playMessageNotification()` (AudioContext beep); global mute `mesh-client:notifMuted`; per-view mute in `mutedViews`.
+- **Meshtastic dedup:** `src/renderer/lib/meshtasticMessageDedup.ts` — merges delayed RF/MQTT duplicates (10-minute content window) in `useDevice.ts`.
 - **Mention segments:** `src/renderer/lib/chatMentionSegments.ts` — parse/build `@[Name]` tokens; `MentionAutocomplete.tsx` renders the dropdown.
 - **Export IPC:** `chat:export` — renderer calls `window.electronAPI.chat.export(messages)`; main opens a Save dialog and writes a `.txt` file.
 
@@ -163,6 +165,8 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 | Chat export fails      | `chat:export` handler in `src/main/index.ts`        |
 | Draft not restored     | `chatPanelProtocolStorage.ts`, `viewKey` logic      |
 | Mention picker missing | `MentionAutocomplete.tsx`, `buildMentionCandidates` |
+| Link preview missing   | `fetchLinkPreview.ts`, `chat:fetchLinkPreview` IPC  |
+| Duplicate RF+MQTT msg  | `meshtasticMessageDedup.ts`, `useDevice.ts` ingest  |
 
 ## 9. Cursor / Claude indexing
 
