@@ -273,8 +273,6 @@ export interface ChatPanelProps {
    */
   outerScrollMetricsRootRef?: React.RefObject<HTMLElement | null>;
   compactMode?: boolean;
-  notifMuted: boolean;
-  onNotifMutedChange: (muted: boolean) => void;
 }
 
 function ChatPanel({
@@ -297,8 +295,6 @@ function ChatPanel({
   scrollToTopRef,
   outerScrollMetricsRootRef,
   compactMode = false,
-  notifMuted,
-  onNotifMutedChange,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const ownNodeIdSet = useMemo(() => {
@@ -355,6 +351,9 @@ function ChatPanel({
   const [jumpDate, setJumpDate] = useState('');
 
   // Feature: sound notifications
+  const [notifMuted, setNotifMuted] = useState(
+    () => localStorage.getItem('mesh-client:notifMuted') === '1',
+  );
   const prevMessagesLengthRef = useRef(messages.length);
 
   // Feature: @mention autocomplete
@@ -632,6 +631,11 @@ function ChatPanel({
     setMentionQuery(null);
     setFilterSender(null);
   }, [viewKey, protocol]);
+
+  // Persist notification mute preference
+  useEffect(() => {
+    localStorage.setItem('mesh-client:notifMuted', notifMuted ? '1' : '0');
+  }, [notifMuted]);
 
   // Persist per-conversation mute
   useEffect(() => {
@@ -1178,7 +1182,7 @@ function ChatPanel({
         {/* Notification mute toggle */}
         <button
           onClick={() => {
-            onNotifMutedChange(!notifMuted);
+            setNotifMuted((m) => !m);
           }}
           aria-pressed={notifMuted}
           aria-label={
