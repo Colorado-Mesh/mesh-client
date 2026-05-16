@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import 'emoji-picker-element';
 
+import type { TFunction } from 'i18next';
 import {
   memo,
   useCallback,
@@ -14,8 +15,10 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 
+import { useNowMs } from '../hooks/useNowMs';
 import { playMessageNotification } from '../lib/chatNotifications';
 import {
   clearDraft,
@@ -49,6 +52,34 @@ declare module 'react' {
       'emoji-picker': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
     }
   }
+}
+
+function DmPeerInfoBar({ dmNode, nowMs, t }: { dmNode: MeshNode; nowMs: number; t: TFunction }) {
+  const parts: string[] = [];
+  if (dmNode.battery > 0) parts.push(t('chatPanel.dmNodeBattery', { pct: dmNode.battery }));
+  const rel =
+    dmNode.last_heard != null && dmNode.last_heard > 0
+      ? formatShortRelativeAgo(nowMs, dmNode.last_heard)
+      : null;
+  if (rel) parts.push(t('chatPanel.dmNodeLastHeard', { time: rel }));
+  if (dmNode.snr !== 0) parts.push(t('chatPanel.dmNodeSignal', { snr: dmNode.snr }));
+  if (dmNode.hops_away != null && dmNode.hops_away > 0) {
+    parts.push(
+      dmNode.hops_away === 1
+        ? t('chatPanel.dmNodeHops', { count: dmNode.hops_away })
+        : t('chatPanel.dmNodeHopsPlural', { count: dmNode.hops_away }),
+    );
+  }
+  if (parts.length === 0) return null;
+  return (
+    <div
+      className="mb-2 flex items-center gap-1.5 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs text-gray-400"
+      role="status"
+      aria-label="DM peer info"
+    >
+      {parts.join(' · ')}
+    </div>
+  );
 }
 
 function StatusBadge({
@@ -1074,6 +1105,7 @@ function ChatPanel({
   }, []);
 
   const isDmMode = viewMode === 'dm' && activeDmNode != null;
+  const nowMs = useNowMs(isDmMode);
   const dmNodeName = activeDmNode != null ? getDmLabel(activeDmNode) : '';
   // @mention autocomplete candidates
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
@@ -1533,41 +1565,7 @@ function ChatPanel({
         (() => {
           const dmNode = nodes.get(activeDmNode);
           if (!dmNode) return null;
-          const parts: string[] = [];
-          if (dmNode.battery > 0) parts.push(t('chatPanel.dmNodeBattery', { pct: dmNode.battery }));
-          if (dmNode.last_heard) {
-            // MeshCore stores last_heard as Unix seconds; meshtastic uses milliseconds
-            const lastHeardMs =
-              protocol === 'meshcore' ? dmNode.last_heard * 1000 : dmNode.last_heard;
-            const diff = Date.now() - lastHeardMs;
-            const rel =
-              diff < 60_000
-                ? 'just now'
-                : diff < 3_600_000
-                  ? `${Math.floor(diff / 60_000)}m ago`
-                  : diff < 86_400_000
-                    ? `${Math.floor(diff / 3_600_000)}h ago`
-                    : `${Math.floor(diff / 86_400_000)}d ago`;
-            parts.push(t('chatPanel.dmNodeLastHeard', { time: rel }));
-          }
-          if (dmNode.snr !== 0) parts.push(t('chatPanel.dmNodeSignal', { snr: dmNode.snr }));
-          if (dmNode.hops_away != null && dmNode.hops_away > 0) {
-            parts.push(
-              dmNode.hops_away === 1
-                ? t('chatPanel.dmNodeHops', { count: dmNode.hops_away })
-                : t('chatPanel.dmNodeHopsPlural', { count: dmNode.hops_away }),
-            );
-          }
-          if (parts.length === 0) return null;
-          return (
-            <div
-              className="mb-2 flex items-center gap-1.5 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs text-gray-400"
-              role="status"
-              aria-label="DM peer info"
-            >
-              {parts.join(' · ')}
-            </div>
-          );
+          return <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} />;
         })()}
 
       {/* Starred messages view */}
