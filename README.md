@@ -77,7 +77,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **MQTT**
 
-- Subscribe to a broker to receive mesh traffic over the internet; AES-128-CTR decryption, automatic RF deduplication, **10-minute reconnect delay after failed attempts** (recovers faster on connack timeout), and an **active node cache** that periodically refreshes presence information so MQTT-only and RF+MQTT nodes stay visible even when your radio is offline
+- Subscribe to a broker to receive mesh traffic over the internet; AES-128-CTR decryption, automatic RF deduplication, **cross-transport chat dedup** (when the same message arrives on MQTT and RF within ~10 minutes, one bubble is kept and the transport badge upgrades to **both**), **10-minute reconnect delay after failed attempts** (recovers faster on connack timeout), and an **active node cache** that periodically refreshes presence information so MQTT-only and RF+MQTT nodes stay visible even when your radio is offline
 - Transport indicator (RF / MQTT / both) on received messages; MQTT messages are shown in chat but not rebroadcast over RF
 - Enter your broker URL, topic, and optional credentials in the MQTT section of the Connection tab; settings persist across sessions
 
@@ -137,11 +137,15 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - Emoji reactions (11 emojis with compose picker) and reply-to-message (quoted preview in bubble)
 - **`@[Display Name]` tokens** (Meshtastic / MeshCore reply, tapback, path, and inline-reference syntax) render as compact inline labels in the bubble instead of raw brackets; see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#chat-mention-tokens)
 - Unread message divider that persists across restarts; auto-scrolls on tab switch
-- Direct messages (DMs) to individual nodes
+- Direct messages (DMs) to individual nodes; **DM info header** shows battery, last heard, and SNR for the peer
 - **Draft persistence**: unsent message is saved per channel/DM and restored when you return
+- **Copy message**: hover action copies message text to the clipboard
 - **Sender filter**: click any message sender to filter the view to that sender; Escape clears
 - **Jump to date**: scroll the chat to a specific calendar date
-- **Sound notifications**: audio ping for new messages in non-active channels/DMs; mute toggle in the toolbar
+- **Link previews**: `http`/`https` URLs in message text fetch Open Graph metadata (title, description, image) via main-process IPC; localhost and private IPs are blocked
+- **Sound notifications**: audio ping for new messages in non-active channels/DMs; global mute in the toolbar; **per-conversation mute** (bell on channel/DM tabs) stored per protocol
+- **Message starring**: star messages from the hover row; **Starred** view lists bookmarks across conversations (newest first, cap 200)
+- **Timestamp tooltip**: hover the short time label for full date and time
 - **@mention autocomplete**: type `@` to open a node-name picker; Tab or Enter to insert; arrow keys to navigate
 - **Export chat**: save the current channel or DM history as a `.txt` file via Save dialog
 

@@ -9,8 +9,8 @@ These requirements apply to all platforms.
 ### 1) Required software
 
 - Git
-- Node.js **22.13.0+** (`package.json` `engines.node`; [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml) uses Node 22)
-- pnpm **10+**
+- Node.js **22.13.0+** and pnpm **10+** (`package.json` `engines`; `.npmrc` sets `engine-strict=true` so `pnpm install` fails on version mismatch)
+- [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml) uses Node 22
 - Python 3 + `pip` (needed for MkDocs documentation build and yamllint)
 
 Verify:
