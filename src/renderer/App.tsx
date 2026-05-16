@@ -1321,7 +1321,8 @@ export default function App() {
       if (count > 0) isMeshtasticInitialRef.current = false;
       return;
     }
-    const isActiveAndChatOpen = protocolRef.current === 'meshtastic' && activeTabRef.current === 1;
+    const isActiveAndChatOpen =
+      protocolRef.current === 'meshtastic' && activeTabRef.current === 1 && !document.hidden;
     if (count > prevMeshtasticMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshtasticMsgsRef.current.slice(prevMeshtasticMsgCountRef.current);
       const realNew = newMsgs.filter(
@@ -1347,7 +1348,8 @@ export default function App() {
       if (count > 0) isMeshcoreInitialRef.current = false;
       return;
     }
-    const isActiveAndChatOpen = protocolRef.current === 'meshcore' && activeTabRef.current === 1;
+    const isActiveAndChatOpen =
+      protocolRef.current === 'meshcore' && activeTabRef.current === 1 && !document.hidden;
     if (count > prevMeshcoreMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshcoreMsgsRef.current.slice(prevMeshcoreMsgCountRef.current);
       const realNew = newMsgs.filter(

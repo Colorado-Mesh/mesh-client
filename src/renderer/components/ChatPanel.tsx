@@ -659,7 +659,7 @@ function ChatPanel({
       const peer = msg.to != null ? (isOwnNode(msg.to) ? msg.sender_id : msg.to) : null;
       const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
       if (mutedViews.has(msgViewKey)) continue;
-      if (!isActive || msgViewKey !== viewKey || document.hidden) {
+      if ((!isActive || msgViewKey !== viewKey) && !document.hidden) {
         playMessageNotification();
         break;
       }
