@@ -60,8 +60,7 @@
     "protocolSwitcher": "Protokol değiştirici",
     "switchToMeshtastic": "Meshtastic'e geç",
     "switchToMeshCore": "MeshCore'a geç",
-    "backToTop": "Başa dön",
-    "keyboardShortcuts": "Klavye kısayolları (?)"
+    "backToTop": "Başa dön"
   },
   "tabs": {
     "connection": "Bağlantı",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Bu modda kullanılamaz"
-  },
-  "shortcuts": {
-    "title": "Klavye Kısayolları",
-    "caption": "Uygulama klavye kısayolları",
-    "shortcutColumn": "Kısayol",
-    "actionColumn": "Aksiyon",
-    "toggleSearch": "Mesaj aramayı aç/kapat (Sohbet sekmesi)",
-    "closeSearch": "Aramayı kapat / DM panelini kapat (Sohbet sekmesi)",
-    "sendMessage": "Mesaj gönder",
-    "newLine": "Mesajda yeni satır",
-    "openHelp": "Bu klavye kısayolları yardımını aç",
-    "switchMeshtastic": "Meshtastic'e geç",
-    "switchMeshCore": "MeshCore'a geç",
-    "switchToTab": "{{name}} sekmesine geç",
-    "notInMeshCore": "(MeshCore'da mevcut değildir)",
-    "meshCoreRepeaters": "(MeshCore: Tekrarlayıcılar)",
-    "packetSniffer": "Paket Dinleyici",
-    "footerNote": "Cmd/Ctrl+0, A, M ve S, Uygulama, Tanılama, İstatistikler ve Paket Algılayıcı sekmelerine, bu sekmeler görünür olduğunda ada göre geçiş yapar (sabit yuvaya göre değil, bu nedenle bazı sekmeler gizlendiğinde kısayollar doğru kalır)."
   },
   "logPanel": {
     "showLevels": "Seviyeleri göster",
@@ -161,7 +142,6 @@
     "mqttError": "MQTT hatası",
     "mqttDisconnected": "MQTT'nin bağlantısı kesildi",
     "footerSlogan": "Herkes için, her yerde. Bize katılın:",
-    "shortcuts": "Kısayollar",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} mesajları",
     "deviceStatus": {
       "disconnected": "Bağlantı kesildi",

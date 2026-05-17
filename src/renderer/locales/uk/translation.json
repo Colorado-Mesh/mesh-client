@@ -60,8 +60,7 @@
     "protocolSwitcher": "Перемикач протоколів",
     "switchToMeshtastic": "Перейти на Meshtastic",
     "switchToMeshCore": "Перемкнутися на MeshCore",
-    "backToTop": "Догори",
-    "keyboardShortcuts": "Гарячі клавіші"
+    "backToTop": "Догори"
   },
   "tabs": {
     "connection": "Підключення",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Недоступно в цьому режимі"
-  },
-  "shortcuts": {
-    "title": "Гарячі клавіші",
-    "caption": "Комбінації клавіш програми",
-    "shortcutColumn": "Комбінація клавіш",
-    "actionColumn": "Дія",
-    "toggleSearch": "Перемкнути пошук повідомлень (вкладка «Чат»)",
-    "closeSearch": "Закрити панель пошуку / закрити DM (вкладка «Чат»)",
-    "sendMessage": "Надіслати повідомлення",
-    "newLine": "Новий рядок у повідомленні",
-    "openHelp": "Відкрити цю довідку з комбінаціями клавіш",
-    "switchMeshtastic": "Перейти на Meshtastic",
-    "switchMeshCore": "Перемкнутися на MeshCore",
-    "switchToTab": "Перейти на вкладку {{name}}",
-    "notInMeshCore": "(недоступно в MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: повторювачі)",
-    "packetSniffer": "Аналізатор пакетів",
-    "footerNote": "Cmd/Ctrl+0, A, M та S перемикаються на вкладки App, Diagnostics, Stats та Packet Sniffer за назвою, коли ці вкладки видимі (не за допомогою фіксованого слота, тому ярлики залишаються правильними, коли деякі вкладки приховані)."
   },
   "logPanel": {
     "showLevels": "Показати рівні",
@@ -161,7 +142,6 @@
     "mqttError": "Помилка MQTT",
     "mqttDisconnected": "MQTT відключено",
     "footerSlogan": "Для всіх, всюди. Приєднуйтесь до нас:",
-    "shortcuts": "Ярлики",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} повідомлень",
     "deviceStatus": {
       "disconnected": "Втрата зв’язку",

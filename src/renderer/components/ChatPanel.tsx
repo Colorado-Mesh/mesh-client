@@ -839,20 +839,6 @@ function ChatPanel({
     };
   }, [showSearch, viewMode, replyTo, mentionQuery, filterSender, showDatePicker]);
 
-  // Toggle search with Cmd+F / Ctrl+F
-  useEffect(() => {
-    const handleKeys = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault();
-        setShowSearch((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeys);
-    return () => {
-      window.removeEventListener('keydown', handleKeys);
-    };
-  }, []);
-
   useEffect(() => {
     if (showSearch) {
       searchInputRef.current?.focus();

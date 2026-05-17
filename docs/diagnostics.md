@@ -8,8 +8,8 @@ This document is the authoritative reference for every diagnostic output in Mesh
 - **NodeDetailModal**: per-node routing health section, redundancy path history, RF findings, MQTT ignore toggle, node notes, watch toggle
 - **NodeListPanel**: inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming, Node Health Score badge, JSON export
 - **MapPanel**: channel utilization halos, routing anomaly aura circles
-- **RF Histograms panel** (`Cmd/Ctrl+R`): SNR, RSSI, and hop-count bar charts across all nodes
-- **Peer Graph panel** (`Cmd/Ctrl+G`): SVG force-directed graph of directly connected nodes (hops 0–1)
+- **RF Histograms panel**: SNR, RSSI, and hop-count bar charts across all nodes
+- **Peer Graph panel**: SVG force-directed graph of directly connected nodes (hops 0–1)
 
 ---
 
@@ -363,7 +363,7 @@ A 24-hour CU timeline chart in DiagnosticsPanel showing the connected node's cha
 
 ## 14. RF Histograms Panel
 
-Accessible via `Cmd/Ctrl+R` or the RF icon in the sidebar.
+Accessible via the RF icon in the sidebar.
 
 Three bar charts built from live node data across both protocols:
 
@@ -377,7 +377,7 @@ Data is read directly from the node store; no additional telemetry required.
 
 ## 15. Peer Graph Panel
 
-Accessible via `Cmd/Ctrl+G` or the graph icon in the sidebar.
+Accessible via the graph icon in the sidebar.
 
 SVG force-directed graph of nodes within direct reach (hops 0–1 from the connected device).
 

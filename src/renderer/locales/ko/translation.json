@@ -60,8 +60,7 @@
     "protocolSwitcher": "프로토콜 전환기",
     "switchToMeshtastic": "Meshtastic으로 전환",
     "switchToMeshCore": "MeshCore로 전환",
-    "backToTop": "맨 위로 돌아가기",
-    "keyboardShortcuts": "키보드 단축키(?)"
+    "backToTop": "맨 위로 돌아가기"
   },
   "tabs": {
     "connection": "연결",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "이 모드에서는 사용할 수 없습니다."
-  },
-  "shortcuts": {
-    "title": "키보드 단축키",
-    "caption": "애플리케이션 키보드 단축키",
-    "shortcutColumn": "지름길",
-    "actionColumn": "행동",
-    "toggleSearch": "메시지 검색 전환(채팅 탭)",
-    "closeSearch": "검색 닫기 / DM 패널 닫기(채팅 탭)",
-    "sendMessage": "메시지 보내기",
-    "newLine": "메시지의 새 줄",
-    "openHelp": "이 키보드 단축키 도움말을 엽니다.",
-    "switchMeshtastic": "Meshtastic으로 전환",
-    "switchMeshCore": "MeshCore로 전환",
-    "switchToTab": "{{name}} 탭으로 전환",
-    "notInMeshCore": "(MeshCore에서는 사용할 수 없음)",
-    "meshCoreRepeaters": " (MeshCore: 리피터)",
-    "packetSniffer": "패킷 스니퍼",
-    "footerNote": "Cmd/Ctrl+0, A, M 및 S 탭이 표시되면 이름별로 앱, 진단, 통계 및 패킷 스니퍼 탭으로 전환됩니다(고정 슬롯이 아닌 일부 탭이 숨겨져 있을 때 바로 가기가 올바르게 유지됨)."
   },
   "logPanel": {
     "showLevels": "레벨 표시",
@@ -161,7 +142,6 @@
     "mqttError": "MQTT 오류",
     "mqttDisconnected": "MQTT 연결이 끊어졌습니다.",
     "footerSlogan": "모든 사람을 위해, 어디서나. 우리와 함께하세요:",
-    "shortcuts": "단축키",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} 메시지",
     "deviceStatus": {
       "disconnected": "연결이 끊김",

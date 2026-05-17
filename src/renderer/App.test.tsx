@@ -174,9 +174,7 @@ vi.mock('./lazyTabPanels', () => ({
 
 vi.mock('./lazyModals', () => ({
   ContactGroupsModal: () => null,
-  KeyboardShortcutsModal: () => null,
   NodeDetailModal: () => null,
-  SearchModal: () => null,
 }));
 
 vi.mock('./lib/themeColors', () => ({

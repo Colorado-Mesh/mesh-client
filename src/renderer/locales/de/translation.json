@@ -60,8 +60,7 @@
     "protocolSwitcher": "Protokollumschalter",
     "switchToMeshtastic": "Zu Meshtastic wechseln",
     "switchToMeshCore": "Zu MeshCore wechseln",
-    "backToTop": "Zum Seitenanfang",
-    "keyboardShortcuts": "Tastaturkürzel"
+    "backToTop": "Zum Seitenanfang"
   },
   "tabs": {
     "connection": "verbindung",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Nicht verfügbar in diesem Modus."
-  },
-  "shortcuts": {
-    "title": "Tastaturkürzel",
-    "caption": "Tastenkombinationen für Anwendungen",
-    "shortcutColumn": "Abkürzung",
-    "actionColumn": "Handlung",
-    "toggleSearch": "Nachrichtensuche umschalten (Registerkarte Chat)",
-    "closeSearch": "Suche schließen/ DM-Panel schließen (Registerkarte Chat)",
-    "sendMessage": "Nachricht senden",
-    "newLine": "Neue Zeile in der Nachricht",
-    "openHelp": "Hilfe zu diesen Tastenkombinationen öffnen",
-    "switchMeshtastic": "Zu Meshtastic wechseln",
-    "switchMeshCore": "Zu MeshCore wechseln",
-    "switchToTab": "Zu Tab {{name}} wechseln",
-    "notInMeshCore": "(nicht in MeshCore verfügbar)",
-    "meshCoreRepeaters": "(MeshCore: Repeater)",
-    "packetSniffer": "Paket-Sniffer",
-    "footerNote": "Cmd/Strg+0, A, M und S wechseln zu den Registerkarten App, Diagnostics, Stats und Packet Sniffer nach Namen, wenn diese Registerkarten sichtbar sind (nicht nach festem Steckplatz, so dass Verknüpfungen korrekt bleiben, wenn einige Registerkarten ausgeblendet sind)."
   },
   "logPanel": {
     "showLevels": "Alle Ebenen anzeigen",
@@ -161,7 +142,6 @@
     "mqttError": "MQTT-Fehler",
     "mqttDisconnected": "MQTT-Verbindung getrennt",
     "footerSlogan": "Für alle, überall. Begleiten Sie uns:",
-    "shortcuts": "Verknüpfungen",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} Nachrichten",
     "deviceStatus": {
       "disconnected": "Nicht verbunden",

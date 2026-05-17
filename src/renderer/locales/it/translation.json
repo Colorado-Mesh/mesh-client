@@ -60,8 +60,7 @@
     "protocolSwitcher": "Switcher di protocollo",
     "switchToMeshtastic": "Passa a Meshtastic",
     "switchToMeshCore": "Passa a MeshCore",
-    "backToTop": "Torna all'inizio",
-    "keyboardShortcuts": "Scorciatoie da tastiera (?)"
+    "backToTop": "Torna all'inizio"
   },
   "tabs": {
     "connection": "Connessione",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Non disponibile in questa modalità"
-  },
-  "shortcuts": {
-    "title": "Scorciatoie da tastiera",
-    "caption": "Scorciatoie da tastiera dell'applicazione",
-    "shortcutColumn": "Iniziali",
-    "actionColumn": "Action",
-    "toggleSearch": "Attiva/disattiva ricerca messaggi (scheda Chat)",
-    "closeSearch": "Chiudi ricerca / chiudi pannello DM (scheda Chat)",
-    "sendMessage": "Invia messaggio",
-    "newLine": "Nuova riga nel messaggio",
-    "openHelp": "Apri questa guida sui tasti di scelta rapida",
-    "switchMeshtastic": "Passa a Meshtastic",
-    "switchMeshCore": "Passa a MeshCore",
-    "switchToTab": "Passa alla scheda {{name}}",
-    "notInMeshCore": "(non disponibile in MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: Ripetitori)",
-    "packetSniffer": "Sniffer di pacchetti",
-    "footerNote": "Cmd/Ctrl+0, A, M e S passano alle schede App, Diagnostica, Statistiche e Sniffer di pacchetti per nome quando tali schede sono visibili (non per slot fisso, quindi le scorciatoie rimangono corrette quando alcune schede sono nascoste)."
   },
   "logPanel": {
     "showLevels": "Mostra livelli",
@@ -161,7 +142,6 @@
     "mqttError": "Errore MQTT",
     "mqttDisconnected": "MQTT disconnesso",
     "footerSlogan": "Per tutti, ovunque. Unisciti a noi:",
-    "shortcuts": "Scorciatoie",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} messaggi",
     "deviceStatus": {
       "disconnected": "Disconnessione effettuata",

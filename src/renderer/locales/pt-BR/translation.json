@@ -60,8 +60,7 @@
     "protocolSwitcher": "Comutador de protocolo",
     "switchToMeshtastic": "Mudar para Meshtastic",
     "switchToMeshCore": "Mudar para MeshCore",
-    "backToTop": "Voltar ao topo",
-    "keyboardShortcuts": "Teclas de atalho"
+    "backToTop": "Voltar ao topo"
   },
   "tabs": {
     "connection": "Conexão",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Não disponível neste modo"
-  },
-  "shortcuts": {
-    "title": "Atalhos",
-    "caption": "Atalhos de teclado do aplicativo",
-    "shortcutColumn": "Atalho",
-    "actionColumn": "Ação",
-    "toggleSearch": "Alternar pesquisa de mensagens (separador Chat)",
-    "closeSearch": "Fechar pesquisa / fechar painel DM (guia Chat)",
-    "sendMessage": "Enviar Mensagem",
-    "newLine": "Nova linha na mensagem",
-    "openHelp": "Abrir esta ajuda de atalhos de teclado",
-    "switchMeshtastic": "Mudar para Meshtastic",
-    "switchMeshCore": "Mudar para MeshCore",
-    "switchToTab": "Mudar para o separador {{name}}",
-    "notInMeshCore": "(não disponível no MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: Repetidores)",
-    "packetSniffer": "Packet Sniffer",
-    "footerNote": "Cmd/Ctrl+0, A, M e S alternam para as guias Aplicativo, Diagnóstico, Estatísticas e Sniffer de Pacotes pelo nome quando essas guias estão visíveis (não por slot fixo, então os atalhos permanecem corretos quando algumas guias estão ocultas)."
   },
   "logPanel": {
     "showLevels": "Mostrar níveis",
@@ -161,7 +142,6 @@
     "mqttError": "Erro MQTT",
     "mqttDisconnected": "MQTT desconectado",
     "footerSlogan": "Para todos, em todos os lugares. Junte-se a nós:",
-    "shortcuts": "Atalhos",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} mensagens",
     "deviceStatus": {
       "disconnected": "Desconectado",

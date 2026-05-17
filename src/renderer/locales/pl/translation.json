@@ -60,8 +60,7 @@
     "protocolSwitcher": "Przełącznik protokołu",
     "switchToMeshtastic": "Przełącz na Meshtastic",
     "switchToMeshCore": "Przełącz na MeshCore",
-    "backToTop": "Powrót do góry",
-    "keyboardShortcuts": "Skróty klawiaturowe"
+    "backToTop": "Powrót do góry"
   },
   "tabs": {
     "connection": "Więzi",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Niedostępne w tym trybie"
-  },
-  "shortcuts": {
-    "title": "Skróty klawiaturowe",
-    "caption": "Skróty klawiaturowe aplikacji",
-    "shortcutColumn": "Skrót",
-    "actionColumn": "Czynność",
-    "toggleSearch": "Przełącz wyszukiwanie wiadomości (karta Czat)",
-    "closeSearch": "Zamknij panel wyszukiwania / zamykania DM (karta Czat)",
-    "sendMessage": "Wyślij wiadomość",
-    "newLine": "Nowa linia w wiadomości",
-    "openHelp": "Otwórz pomoc dotyczącą skrótów klawiaturowych",
-    "switchMeshtastic": "Przełącz na Meshtastic",
-    "switchMeshCore": "Przejdź na MeshCore",
-    "switchToTab": "Przejdź do zakładki {{name}}",
-    "notInMeshCore": "(niedostępne w MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: Repeatery)",
-    "packetSniffer": "Sniffer pakietów",
-    "footerNote": "Cmd/Ctrl+0, A, M i S przełączają się na zakładki App, Diagnostics, Stats i Packet Sniffer po nazwie, gdy te zakładki są widoczne (nie według stałego gniazda, więc skróty pozostają poprawne, gdy niektóre zakładki są ukryte)."
   },
   "logPanel": {
     "showLevels": "Pokaż poziomy",
@@ -161,7 +142,6 @@
     "mqttError": "Błąd MQTT",
     "mqttDisconnected": "MQTT rozłączony",
     "footerSlogan": "Dla każdego, wszędzie. Dołącz do nas:",
-    "shortcuts": "Skróty",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} wiadomości",
     "deviceStatus": {
       "disconnected": "Rozłączono",

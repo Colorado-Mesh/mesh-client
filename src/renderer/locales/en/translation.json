@@ -66,8 +66,7 @@
     "protocolSwitcher": "Protocol switcher",
     "switchToMeshtastic": "Switch to Meshtastic",
     "switchToMeshCore": "Switch to MeshCore",
-    "backToTop": "Back to top",
-    "keyboardShortcuts": "Keyboard shortcuts (?)"
+    "backToTop": "Back to top"
   },
   "tabs": {
     "connection": "Connection",
@@ -90,24 +89,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Not available in this mode"
-  },
-  "shortcuts": {
-    "title": "Keyboard Shortcuts",
-    "caption": "Application keyboard shortcuts",
-    "shortcutColumn": "Shortcut",
-    "actionColumn": "Action",
-    "toggleSearch": "Toggle message search (Chat tab)",
-    "closeSearch": "Close search / close DM panel (Chat tab)",
-    "sendMessage": "Send message",
-    "newLine": "New line in message",
-    "openHelp": "Open this keyboard shortcuts help",
-    "switchMeshtastic": "Switch to Meshtastic",
-    "switchMeshCore": "Switch to MeshCore",
-    "switchToTab": "Switch to {{name}} tab",
-    "notInMeshCore": " (not available in MeshCore)",
-    "meshCoreRepeaters": " (MeshCore: Repeaters)",
-    "packetSniffer": "Packet Sniffer",
-    "footerNote": "Cmd/Ctrl+0, A, M, R, G, and S switch to the App, Diagnostics, Stats, RF, Graph, and Packet Sniffer tabs by name when those tabs are visible (not by fixed slot, so shortcuts stay correct when some tabs are hidden)."
   },
   "logPanel": {
     "showLevels": "Show levels",
@@ -176,7 +157,6 @@
     },
     "nodeLabel": "Node: {{name}}",
     "footerSlogan": "For everyone, everywhere. Join us:",
-    "shortcuts": "Shortcuts",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} messages"
   },
   "toasts": {

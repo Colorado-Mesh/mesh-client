@@ -60,8 +60,7 @@
     "protocolSwitcher": "Sélecteur de protocole",
     "switchToMeshtastic": "Passer à Meshtastic",
     "switchToMeshCore": "Passer à MeshCore",
-    "backToTop": "Retour en haut",
-    "keyboardShortcuts": "Raccourcis clavier (?)"
+    "backToTop": "Retour en haut"
   },
   "tabs": {
     "connection": "Connexion",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Non disponible dans ce mode"
-  },
-  "shortcuts": {
-    "title": "Raccourcis clavier",
-    "caption": "Raccourcis clavier des applications",
-    "shortcutColumn": "Raccourci",
-    "actionColumn": "Action",
-    "toggleSearch": "Activer/désactiver la recherche de messages (onglet Chat)",
-    "sendMessage": "Envoyer un message",
-    "newLine": "Nouvelle ligne dans le message",
-    "openHelp": "Ouvrir cette aide sur les raccourcis clavier",
-    "switchMeshtastic": "Passer à Meshtastic",
-    "switchMeshCore": "Passer à MeshCore",
-    "switchToTab": "Passer à l'onglet {{name}}",
-    "notInMeshCore": "(non disponible dans MeshCore)",
-    "meshCoreRepeaters": "(MeshCore : répéteurs)",
-    "packetSniffer": "Renifleur de paquets",
-    "closeSearch": "Fermer le panneau de recherche / fermeture DM (onglet Chat)",
-    "footerNote": "Cmd/Ctrl+0, A, M et S basculent vers les onglets App, Diagnostics, Stats et Packet Sniffer par nom lorsque ces onglets sont visibles (pas par emplacement fixe, donc les raccourcis restent corrects lorsque certains onglets sont cachés)."
   },
   "logPanel": {
     "showLevels": "Afficher les niveaux",
@@ -161,7 +142,6 @@
     "mqttError": "Erreur MQTT",
     "mqttDisconnected": "MQTT déconnecté",
     "footerSlogan": "Pour tout le monde, partout. Rejoignez-nous :",
-    "shortcuts": "Raccourcis",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | Messages {{messageCount}}",
     "deviceStatus": {
       "disconnected": "Déconnecté",

@@ -29,12 +29,7 @@ import { useMeshCore } from './hooks/useMeshCore';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
-import {
-  ContactGroupsModal,
-  KeyboardShortcutsModal,
-  NodeDetailModal,
-  SearchModal,
-} from './lazyModals';
+import { ContactGroupsModal, NodeDetailModal } from './lazyModals';
 import {
   AppPanel,
   DiagnosticsPanel,
@@ -481,8 +476,6 @@ export default function App() {
       [selectedNodeId],
     ),
   );
-  const [showShortcuts, setShowShortcuts] = useState(false);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [locationFilter, setLocationFilter] = useState<LocationFilter>(() => {
     const s =
       parseStoredJson<Record<string, unknown>>(
@@ -1230,88 +1223,6 @@ export default function App() {
       clearTimeout(t);
     };
   }, []);
-
-  // ─── Keyboard shortcuts: Cmd/Ctrl+[ / ] to switch protocol ───────────────
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === '[') {
-        e.preventDefault();
-        handleProtocolChange('meshtastic');
-      } else if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === ']') {
-        e.preventDefault();
-        handleProtocolChange('meshcore');
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleProtocolChange]);
-
-  // ─── Keyboard shortcuts: Cmd/Ctrl+1-9, 0, A, S for tabs, ? for help ───────
-  // 1–9 = first nine visible tabs (indices 0–8). Cmd+0 / A / S jump by tab *name*
-  // (App, Diagnostics, Sniffer) so indices stay correct when Security/TAK are hidden.
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const maxTab = displayTabLabels.length - 1;
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
-        e.preventDefault();
-        setSearchModalOpen(true);
-      } else if ((e.metaKey || e.ctrlKey) && e.key >= '1' && e.key <= '9') {
-        const targetIndex = parseInt(e.key, 10) - 1;
-        if (targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key === '0') {
-        const targetIndex = tabSlotIds.indexOf('App');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
-        const targetIndex = tabSlotIds.indexOf('Diagnostics');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'm') {
-        const targetIndex = tabSlotIds.indexOf('Stats');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-        const targetIndex = tabSlotIds.indexOf('Sniffer');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'r') {
-        const targetIndex = tabSlotIds.indexOf('RF');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'g') {
-        const targetIndex = tabSlotIds.indexOf('Graph');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        const tag = (e.target as HTMLElement).tagName;
-        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
-          e.preventDefault();
-          setShowShortcuts(true);
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [displayTabLabels, tabSlotIds]);
 
   // ─── Track Meshtastic messages arriving while inactive ──────────
   useEffect(() => {
@@ -2472,21 +2383,6 @@ export default function App() {
                   {t('common.website')}
                 </a>
               </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowShortcuts(true);
-                }}
-                aria-label={t('aria.keyboardShortcuts')}
-                aria-haspopup="dialog"
-                title={t('aria.keyboardShortcuts')}
-                className="inline-flex shrink-0 items-center gap-1 justify-self-center rounded-full border border-slate-700 px-3 py-0.5 font-mono text-[10px] text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-300"
-              >
-                {t('app.shortcuts')}
-                <span className="font-mono text-[10px] text-gray-400" aria-hidden="true">
-                  ?
-                </span>
-              </button>
               <span className="inline-flex flex-wrap items-center justify-end gap-2 justify-self-end text-right font-mono text-[10px] whitespace-nowrap tabular-nums">
                 <span>
                   {t('app.footerStats', {
@@ -2546,37 +2442,6 @@ export default function App() {
               } catch (e) {
                 console.debug('[App] persist logPanelVisible ' + errLikeToLogString(e));
               }
-            }}
-          />
-        </Suspense>
-      )}
-
-      {/* Keyboard Shortcuts Modal */}
-      {showShortcuts && (
-        <Suspense fallback={<DialogLazyFallback />}>
-          <KeyboardShortcutsModal
-            onClose={() => {
-              setShowShortcuts(false);
-            }}
-            tabLabels={displayTabLabels}
-            tabSlotIds={tabSlotIds}
-          />
-        </Suspense>
-      )}
-
-      {/* Cross-channel Search Modal */}
-      {searchModalOpen && (
-        <Suspense fallback={<DialogLazyFallback />}>
-          <SearchModal
-            isOpen={searchModalOpen}
-            onClose={() => {
-              setSearchModalOpen(false);
-            }}
-            protocol={protocol}
-            nodes={nodesForUi}
-            channels={chatChannels}
-            onNavigateToChannel={() => {
-              setActiveTab(1);
             }}
           />
         </Suspense>

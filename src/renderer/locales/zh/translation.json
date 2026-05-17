@@ -60,8 +60,7 @@
     "protocolSwitcher": "协议切换器",
     "switchToMeshtastic": "切换到Meshtastic",
     "switchToMeshCore": "切换到MeshCore",
-    "backToTop": "返回顶部",
-    "keyboardShortcuts": "键盘快捷键"
+    "backToTop": "返回顶部"
   },
   "tabs": {
     "connection": "与公司的关系",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "在此模式下不可用"
-  },
-  "shortcuts": {
-    "title": "热键",
-    "caption": "应用程序键盘快捷方式",
-    "shortcutColumn": "快捷键",
-    "actionColumn": "动作",
-    "toggleSearch": "切换消息搜索（ “聊天”选项卡）",
-    "closeSearch": "关闭搜索/关闭DM面板（聊天选项卡）",
-    "sendMessage": "发讯",
-    "newLine": "消息中的新行",
-    "openHelp": "打开此键盘快捷键帮助",
-    "switchMeshtastic": "切换到Meshtastic",
-    "switchMeshCore": "切换到MeshCore",
-    "switchToTab": "切换到{{name}}选项卡",
-    "notInMeshCore": "（不适用于MeshCore ）",
-    "meshCoreRepeaters": " (MeshCore: 中继器)",
-    "packetSniffer": "数据包嗅探器",
-    "footerNote": "当App、Diagnostics、Stats和Packet Sniffer选项卡可见时， Cmd/Ctrl +0、A、M和S按名称切换到这些选项卡（而不是按固定插槽切换，因此当某些选项卡被隐藏时，快捷方式保持正确）。"
   },
   "logPanel": {
     "showLevels": "显示等级",
@@ -161,7 +142,6 @@
     "mqttError": "MQTT 错误",
     "mqttDisconnected": "MQTT 已断开连接",
     "footerSlogan": "对于每个人、任何地方。加入我们：",
-    "shortcuts": "快捷方式",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} 消息",
     "deviceStatus": {
       "disconnected": "已中斷連線",

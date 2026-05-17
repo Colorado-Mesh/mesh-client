@@ -60,8 +60,7 @@
     "protocolSwitcher": "Conmutador de protocolo",
     "switchToMeshtastic": "Cambiar a Meshtastic",
     "switchToMeshCore": "Cambiar a MeshCore",
-    "backToTop": "Volver al inicio",
-    "keyboardShortcuts": "Atajos de teclado"
+    "backToTop": "Volver al inicio"
   },
   "tabs": {
     "connection": "Conexión",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "No disponible en este modo"
-  },
-  "shortcuts": {
-    "title": "Atajos de teclado",
-    "caption": "Atajos del teclado de la aplicación",
-    "shortcutColumn": "Atajo",
-    "actionColumn": "Acción",
-    "toggleSearch": "Alternar búsqueda de mensajes (pestaña Chat)",
-    "closeSearch": "Cerrar la búsqueda / cerrar el panel DM (pestaña Chat)",
-    "sendMessage": "Enviar mensaje",
-    "newLine": "Nueva línea en el mensaje",
-    "openHelp": "Abrir esta ayuda de atajos de teclado",
-    "switchMeshtastic": "Cambiar a Meshtastic",
-    "switchMeshCore": "Cambiar a MeshCore",
-    "switchToTab": "Cambiar a la pestaña {{name}}",
-    "notInMeshCore": "(no disponible en MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: Repetidores)",
-    "packetSniffer": "Sniffer de paquetes",
-    "footerNote": "Cmd/Ctrl+0, A, M y S cambian a las pestañas App, Diagnostics, Stats y Packet Sniffer por nombre cuando esas pestañas están visibles (no por ranura fija, por lo que los accesos directos permanecen correctos cuando algunas pestañas están ocultas)."
   },
   "logPanel": {
     "showLevels": "Mostrar niveles",
@@ -161,7 +142,6 @@
     "mqttError": "Error MQTT",
     "mqttDisconnected": "MQTT desconectado",
     "footerSlogan": "Para todos, en todas partes. Únase a nosotros:",
-    "shortcuts": "Atajos",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} mensajes",
     "deviceStatus": {
       "disconnected": "Desconectado",

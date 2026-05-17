@@ -60,8 +60,7 @@
     "protocolSwitcher": "プロトコルスイッチャー",
     "switchToMeshtastic": "Meshtasticに切り替える",
     "switchToMeshCore": "MeshCore に切り替える",
-    "backToTop": "トップに戻る",
-    "keyboardShortcuts": "キーボードショートカット(?)"
+    "backToTop": "トップに戻る"
   },
   "tabs": {
     "connection": "繋がり",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "このモードでは使用できません"
-  },
-  "shortcuts": {
-    "title": "キーボードショートカット",
-    "caption": "アプリケーションのキーボード ショートカット",
-    "shortcutColumn": "ショートカット",
-    "actionColumn": "アクション",
-    "toggleSearch": "メッセージ検索の切り替え ([チャット] タブ)",
-    "sendMessage": "メッセージを送信する",
-    "newLine": "メッセージ内の改行",
-    "openHelp": "このキーボード ショートカット ヘルプを開く",
-    "switchMeshtastic": "Meshtasticに切り替える",
-    "switchMeshCore": "MeshCore に切り替える",
-    "switchToTab": "{{name}} タブに切り替えます",
-    "notInMeshCore": "(MeshCore では使用できません)",
-    "meshCoreRepeaters": "(MeshCore: リピーター)",
-    "packetSniffer": "パケットスニファー",
-    "closeSearch": "検索を閉じる/DMパネル（チャットタブ）を閉じる",
-    "footerNote": "Cmd/Ctrl+0、A、M、S を押すと、アプリ、診断、統計、およびパケット スニファーのタブが表示されているときに名前でこれらのタブに切り替わります (固定スロットではないため、一部のタブが非表示になっている場合でもショートカットは正しいままです)。"
   },
   "logPanel": {
     "showLevels": "レベルを表示",
@@ -161,7 +142,6 @@
     "mqttError": "MQTTエラー",
     "mqttDisconnected": "MQTT が切断されました",
     "footerSlogan": "どこにでも、誰にでも。参加しませんか：",
-    "shortcuts": "ショートカット",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} メッセージ",
     "deviceStatus": {
       "disconnected": "切断されました",

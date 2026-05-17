@@ -60,8 +60,7 @@
     "protocolSwitcher": "Pengalih protokol",
     "switchToMeshtastic": "Beralih ke Meshtastic",
     "switchToMeshCore": "Beralih ke MeshCore",
-    "backToTop": "Kembali ke atas",
-    "keyboardShortcuts": "Pintasan keyboard (?)"
+    "backToTop": "Kembali ke atas"
   },
   "tabs": {
     "connection": "Koneksi",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Tidak tersedia dalam mode ini"
-  },
-  "shortcuts": {
-    "title": "Pintasan Papan Ketik",
-    "caption": "Pintasan keyboard aplikasi",
-    "shortcutColumn": "Jalan pintas",
-    "actionColumn": "Tindakan",
-    "toggleSearch": "Alihkan pencarian pesan (tab Obrolan)",
-    "closeSearch": "Tutup pencarian / tutup panel DM (tab Obrolan)",
-    "sendMessage": "Kirim pesan",
-    "newLine": "Baris baru dalam pesan",
-    "openHelp": "Buka bantuan pintasan keyboard ini",
-    "switchMeshtastic": "Beralih ke Meshtastic",
-    "switchMeshCore": "Beralih ke MeshCore",
-    "switchToTab": "Beralih ke tab {{name}}",
-    "notInMeshCore": "(tidak tersedia di MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: Repeater)",
-    "packetSniffer": "Pengendus Paket",
-    "footerNote": "Cmd/Ctrl+0, A, M, dan S beralih ke tab Aplikasi, Diagnostik, Statistik, dan Paket Sniffer berdasarkan nama ketika tab tersebut terlihat (bukan berdasarkan slot tetap, sehingga pintasan tetap benar ketika beberapa tab disembunyikan)."
   },
   "logPanel": {
     "showLevels": "Tampilkan level",
@@ -161,7 +142,6 @@
     "mqttError": "kesalahan MQTT",
     "mqttDisconnected": "MQTT terputus",
     "footerSlogan": "Untuk semua orang, di mana pun. Bergabunglah dengan kami:",
-    "shortcuts": "Jalan pintas",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} pesan",
     "deviceStatus": {
       "disconnected": "Terputus",

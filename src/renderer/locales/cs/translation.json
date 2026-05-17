@@ -60,8 +60,7 @@
     "protocolSwitcher": "Přepínač protokolů",
     "switchToMeshtastic": "Přepněte na Meshtastic",
     "switchToMeshCore": "Přepněte na MeshCore",
-    "backToTop": "Zpět nahoru",
-    "keyboardShortcuts": "Klávesové zkratky (?)"
+    "backToTop": "Zpět nahoru"
   },
   "tabs": {
     "connection": "Spojení",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Není k dispozici v tomto režimu"
-  },
-  "shortcuts": {
-    "title": "Klávesové zkratky",
-    "caption": "Aplikační klávesové zkratky",
-    "shortcutColumn": "Zkratka",
-    "actionColumn": "Akce",
-    "toggleSearch": "Přepnout vyhledávání zpráv (karta Chat)",
-    "closeSearch": "Zavřít panel Hledat / Zavřít DM (karta Chat)",
-    "sendMessage": "Odeslat zprávu",
-    "newLine": "Nový řádek ve zprávě",
-    "openHelp": "Otevřete tuto nápovědu ke klávesovým zkratkám",
-    "switchMeshtastic": "Přepněte na Meshtastic",
-    "switchMeshCore": "Přepněte na MeshCore",
-    "switchToTab": "Přepněte na kartu {{name}}",
-    "notInMeshCore": "(není k dispozici v MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: opakovače)",
-    "packetSniffer": "Packet Sniffer",
-    "footerNote": "Cmd/Ctrl+0, A, M a S přepnou na karty App, Diagnostics, Stats a Packet Sniffer podle názvu, když jsou tyto karty viditelné (ne pevným slotem, takže zkratky zůstanou správné, když jsou některé karty skryté)."
   },
   "logPanel": {
     "showLevels": "Zobrazit úrovně",
@@ -161,7 +142,6 @@
     "mqttError": "Chyba MQTT",
     "mqttDisconnected": "MQTT odpojeno",
     "footerSlogan": "Pro všechny, všude. Přidejte se k nám:",
-    "shortcuts": "Zkratky",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} zpráv",
     "deviceStatus": {
       "disconnected": "Odpojeno",
