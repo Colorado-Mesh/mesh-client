@@ -1158,7 +1158,8 @@
       "connectionFailed": "连接失败"
     },
     "cancelMqttConnect": "取消",
-    "ripplePresetConfirm": "Ripple预设使用共享社区凭据并禁用TLS证书验证。仅在受信任的网络上使用此功能。是否继续？"
+    "ripplePresetConfirm": "Ripple预设使用共享社区凭据并禁用TLS证书验证。仅在受信任的网络上使用此功能。是否继续？",
+    "meshcorePort": "端口"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "删除早于{{hours}}小时的路由行(1–168)",

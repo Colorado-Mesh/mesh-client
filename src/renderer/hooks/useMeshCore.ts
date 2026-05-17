@@ -3547,8 +3547,18 @@ export function useMeshCore() {
           }
         } else {
           // tcp
-          const host = tcpHost ?? 'localhost';
-          const tcpConn = new IpcTcpConnection(host, 5000);
+          const rawAddr = tcpHost ?? 'localhost';
+          const colonIdx = rawAddr.lastIndexOf(':');
+          let host = rawAddr;
+          let port = 5000;
+          if (colonIdx > 0) {
+            const maybePort = Number(rawAddr.slice(colonIdx + 1));
+            if (Number.isInteger(maybePort) && maybePort >= 1 && maybePort <= 65535) {
+              host = rawAddr.slice(0, colonIdx);
+              port = maybePort;
+            }
+          }
+          const tcpConn = new IpcTcpConnection(host, port);
           ipcTcpRef.current = tcpConn;
           await tcpConn.connect();
           conn = tcpConn.connection as unknown as MeshCoreConnection;

@@ -1158,7 +1158,8 @@
       "connectionFailed": "La connexion a échoué"
     },
     "cancelMqttConnect": "Annuler",
-    "ripplePresetConfirm": "Le préréglage Ripple utilise les informations d'identification de la communauté partagée et désactive la vérification du certificat TLS. Utilisez-le uniquement sur un réseau de confiance. Continuer ?"
+    "ripplePresetConfirm": "Le préréglage Ripple utilise les informations d'identification de la communauté partagée et désactive la vérification du certificat TLS. Utilisez-le uniquement sur un réseau de confiance. Continuer ?",
+    "meshcorePort": "Port"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Collectez lignes de routage de plus de {{hours}} heures (1–168)",

@@ -1158,7 +1158,8 @@
       "connectionFailed": "接続に失敗しました"
     },
     "cancelMqttConnect": "キャンセル",
-    "ripplePresetConfirm": "Rippleプリセットは、共有コミュニティ資格情報を使用し、TLS証明書の検証を無効にします。これは信頼できるネットワークでのみ使用します。続行しますか？"
+    "ripplePresetConfirm": "Rippleプリセットは、共有コミュニティ資格情報を使用し、TLS証明書の検証を無効にします。これは信頼できるネットワークでのみ使用します。続行しますか？",
+    "meshcorePort": "ポート"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} 時間より古いルーティング行を削除 (1 ～ 168)",

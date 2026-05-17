@@ -1158,7 +1158,8 @@
       "connectionFailed": "Verbindung fehlgeschlagen"
     },
     "cancelMqttConnect": "Stornieren",
-    "ripplePresetConfirm": "Die Ripple-Voreinstellung verwendet gemeinsam genutzte Community-Anmeldeinformationen und deaktiviert die TLS-Zertifikatüberprüfung. Nur in einem vertrauenswürdigen Netzwerk verwenden. Fortfahren?"
+    "ripplePresetConfirm": "Die Ripple-Voreinstellung verwendet gemeinsam genutzte Community-Anmeldeinformationen und deaktiviert die TLS-Zertifikatüberprüfung. Nur in einem vertrauenswürdigen Netzwerk verwenden. Fortfahren?",
+    "meshcorePort": "Port"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Wirf Routingreihen, die älter als {{hours}} Stunden (1-168) sind",

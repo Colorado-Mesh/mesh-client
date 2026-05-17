@@ -1158,7 +1158,8 @@
       "connectionFailed": "Connessione non riuscita"
     },
     "cancelMqttConnect": "Cancellare",
-    "ripplePresetConfirm": "Il preset Ripple utilizza le credenziali della community condivise e disabilita la verifica del certificato TLS. Utilizzarlo solo su una rete attendibile. Continuare?"
+    "ripplePresetConfirm": "Il preset Ripple utilizza le credenziali della community condivise e disabilita la verifica del certificato TLS. Utilizzarlo solo su una rete attendibile. Continuare?",
+    "meshcorePort": "Porta"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Elimina le righe di routing più vecchie di {{hours}} ore (1–168)",

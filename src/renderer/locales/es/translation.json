@@ -1158,7 +1158,8 @@
       "connectionFailed": "La conexión falló"
     },
     "cancelMqttConnect": "Cancelar",
-    "ripplePresetConfirm": "El ajuste preestablecido de Ripple utiliza credenciales comunitarias compartidas y desactiva la verificación del certificado TLS. Utilice esto solo en una red de confianza. ¿Continuar?"
+    "ripplePresetConfirm": "El ajuste preestablecido de Ripple utiliza credenciales comunitarias compartidas y desactiva la verificación del certificado TLS. Utilice esto solo en una red de confianza. ¿Continuar?",
+    "meshcorePort": "Puerto"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Filas de enrutamiento de más de {{hours}} horas (1–168)",

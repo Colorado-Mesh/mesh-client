@@ -1158,7 +1158,8 @@
       "connectionFailed": "Bağlantı başarısız oldu"
     },
     "cancelMqttConnect": "İptal etmek",
-    "ripplePresetConfirm": "Ripple ön ayarı, paylaşılan topluluk kimlik bilgilerini kullanır ve TLS sertifika doğrulamasını devre dışı bırakır. Bunu yalnızca güvenilir bir ağda kullanın. Devam edilsin mi?"
+    "ripplePresetConfirm": "Ripple ön ayarı, paylaşılan topluluk kimlik bilgilerini kullanır ve TLS sertifika doğrulamasını devre dışı bırakır. Bunu yalnızca güvenilir bir ağda kullanın. Devam edilsin mi?",
+    "meshcorePort": "Liman"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} saatten (1-168) daha eski olan yönlendirme satırlarını bırak",

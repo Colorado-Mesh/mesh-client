@@ -1158,7 +1158,8 @@
       "connectionFailed": "연결 실패"
     },
     "cancelMqttConnect": "취소",
-    "ripplePresetConfirm": "리플 사전 설정은 공유 커뮤니티 자격 증명을 사용하고 TLS 인증서 확인을 비활성화합니다. 신뢰할 수 있는 네트워크에서만 사용하십시오. 계속하시겠습니까?"
+    "ripplePresetConfirm": "리플 사전 설정은 공유 커뮤니티 자격 증명을 사용하고 TLS 인증서 확인을 비활성화합니다. 신뢰할 수 있는 네트워크에서만 사용하십시오. 계속하시겠습니까?",
+    "meshcorePort": "포팅하기"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}}시간(1~168)보다 오래된 라우팅 행 삭제",

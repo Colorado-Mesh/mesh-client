@@ -1158,7 +1158,8 @@
       "connectionFailed": "Połączenie nie powiodło się"
     },
     "cancelMqttConnect": "Anulować",
-    "ripplePresetConfirm": "Ustawienie wstępne Ripple wykorzystuje udostępnione poświadczenia społeczności i wyłącza weryfikację certyfikatu TLS. Używaj tego tylko w zaufanej sieci. Kontynuować?"
+    "ripplePresetConfirm": "Ustawienie wstępne Ripple wykorzystuje udostępnione poświadczenia społeczności i wyłącza weryfikację certyfikatu TLS. Używaj tego tylko w zaufanej sieci. Kontynuować?",
+    "meshcorePort": "Port"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Usuń wiersze routingu starsze niż {{hours}} godzin (1–168)",
