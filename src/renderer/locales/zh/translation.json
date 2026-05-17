@@ -72,7 +72,6 @@
     "modules": "模块",
     "telemetry": "遥测",
     "security": "安全",
-    "tak": "TAK",
     "app": "应用",
     "diagnostics": "诊断",
     "stats": "属 性",
@@ -226,56 +225,41 @@
     "deviceMetricsDescription": "网状广播：通过 LoRa 发送电池、电压和信道利用率的频率。 0 = 禁用；默认 1800 秒（30 分钟）。连接的应用程序：当通过蓝牙、串行或 Wi-Fi 连接时，固件通常仍会每隔 60 秒向该客户端推送一次设备指标，以确保屏幕上的新鲜度，这与您的网格间隔不同。",
     "deviceMetricsTooltip": "Meshtastic 固件大约每分钟向连接的客户端发送一次设备指标以进行本地监控，无论网格遥测间隔如何。官方参考：https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
-      "0": {
-        "label": "公制"
-      },
-      "1": {
-        "label": "帝国"
-      }
+      "0": {},
+      "1": {}
     },
     "deviceRoles": {
       "0": {
-        "label": "客户",
         "description": "普通客户端模式"
       },
       "1": {
-        "label": "客户端静音",
         "description": "不传输的客户端"
       },
       "2": {
-        "label": "路由器",
         "description": "专用路由器/中继器"
       },
       "3": {
-        "label": "路由器客户端",
         "description": "路由器+客户端模式"
       },
       "4": {
-        "label": "客户群",
         "description": "客户端设备的基站"
       },
       "5": {
-        "label": "追踪器",
         "description": "仅 GPS 追踪器"
       },
       "6": {
-        "label": "传感器",
         "description": "遥测传感器节点"
       },
       "7": {
-        "label": "TAK",
         "description": "支持 TAK 的设备"
       },
       "8": {
-        "label": "客户端隐藏",
         "description": "客户端，从节点列表中隐藏"
       },
       "9": {
-        "label": "失物招领",
         "description": "广播恢复位置"
       },
       "10": {
-        "label": "TAK 追踪器",
         "description": "TAK跟踪模式"
       }
     },
@@ -297,8 +281,8 @@
     "wifiNetwork": "无线网络/网络",
     "ntpPlaceholder": "0.pool.ntp.org",
     "displayNamePlaceholder": "姓名",
-    "latPlaceholder": "0.000000",
-    "lonPlaceholder": "0.000000",
+    "latPlaceholder": "000000",
+    "lonPlaceholder": "000000",
     "altPlaceholder": "0",
     "channelNamePrimary": "基本的",
     "channelNameSecondary": "频道名称",
@@ -867,7 +851,7 @@
     "columnMqtt": "MQTT",
     "columnLat": "纬度",
     "columnLon": "经度",
-    "columnMgrs": "MGRS,",
+    "columnMgrs": "MGRS",
     "columnSignal": "信号源",
     "columnSnr": "信噪比",
     "columnBattery": "电池",
@@ -1379,14 +1363,14 @@
     "cuHistoryTooltipLabel": "频道利用率",
     "meshcoreUnknownForeignNode": "未知的MeshCore节点",
     "meshcoreRepeaterConflictBanner": "高MeshCore数据包速率（ > 5/min ） —附近的中继器可能导致您的Meshtastic通道发生冲突。",
-    "meshcoreHeardByMeshtasticHeading": "MeshCore nodes heard by your Meshtastic radio ({{count}})",
-    "meshcoreHeardByMeshtasticDescription": "MeshCore transmitters overheard on local RF in the last 90 minutes (Meshtastic device logs or MeshCore radio RX). Does not include MeshCore repeater contact sync. These are not your Meshtastic node.",
-    "meshcoreHeardByMeshtasticEmpty": "No MeshCore nodes heard on your Meshtastic frequency in the last 90 minutes.",
-    "meshcoreHeardUnknownNode": "Unidentified MeshCore transmitter",
-    "meshcoreHeardNearbyEncrypted": "Nearby MeshCore RF (encrypted)",
-    "foreignLoraHeading": "Other foreign LoRa on your Meshtastic frequency ({{count}})",
-    "foreignLoraDescription": "Meshtastic transmitters and unrecognized LoRa signals on your frequency in the last 90 minutes. MeshCore nodes are listed in the section above.",
-    "foreignLoraEmpty": "No Meshtastic or unknown LoRa activity on your Meshtastic frequency in the last 90 minutes."
+    "meshcoreHeardByMeshtasticHeading": "Meshtastic收音机听到的MeshCore节点（ {{count}} ）",
+    "meshcoreHeardByMeshtasticDescription": "MeshCore发射器在过去90分钟内无意中听到本地射频（ Meshtastic设备日志或MeshCore无线电接收器）。不包括MeshCore中继器触点同步。这些不是你的Meshtastic节点。",
+    "meshcoreHeardByMeshtasticEmpty": "在过去90分钟内，您的Meshtastic频率上没有听到任何MeshCore节点。",
+    "meshcoreHeardUnknownNode": "未识别的MeshCore变送器",
+    "meshcoreHeardNearbyEncrypted": "附近的MeshCore RF （加密）",
+    "foreignLoraHeading": "您Meshtastic频率上的其他外来LoRa （ {{count}} ）",
+    "foreignLoraDescription": "在过去90分钟内，您的频率上有Meshtastic发射器和无法识别的LoRa信号。上面的部分列出了MeshCore节点。",
+    "foreignLoraEmpty": "在过去90分钟内，您的Meshtastic频率上没有Meshtastic或未知的LoRa活动。"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -1828,79 +1812,60 @@
   "logAnalyzer": {
     "categories": {
       "ble-connection": {
-        "label": "BLE 连接问题",
         "recommendation": "BLE 连接不稳定。检查与设备的距离和蓝牙适配器状态。"
       },
       "mqtt": {
-        "label": "MQTT 问题",
         "recommendation": "MQTT 连接问题。验证代理 URL、凭据和网络连接。"
       },
       "mqtt-retries-exhausted": {
-        "label": "MQTT 重新连接限制",
         "recommendation": "MQTT 在最大重新连接数后放弃。确认代理可访问、凭据和端口正确并且防火墙允许出站流量。"
       },
       "watchdog": {
-        "label": "看门狗触发器",
         "recommendation": "看门狗触发重连。设备通信可能不稳定。"
       },
       "handshake": {
-        "label": "握手失败",
         "recommendation": "连接握手失败。尝试手动重新连接。"
       },
       "ble-connect-race": {
-        "label": "BLE 连接竞赛/超时",
         "recommendation": "BLE 握手超时或出现断开连接。检查 BLE 连接稳定性以及与设备的距离。"
       },
       "auth-decrypt": {
-        "label": "验证/解密失败",
         "recommendation": "认证或解密失败。验证设备之间的通道密钥是否匹配。"
       },
       "native-module": {
-        "label": "本机模块加载失败",
         "recommendation": "本机附加组件无法加载 - 升级后通常会出现错误的 Electron ABI。在项目文件夹中运行 pnpm install（或 pnpm runbuild），退出所有应用程序实例，然后重试。"
       },
       "internal-error": {
-        "label": "内部应用程序错误",
         "recommendation": "发生意外的内部错误。请通过日志文件报告此错误。"
       },
       "database-error": {
-        "label": "数据库故障",
         "recommendation": "数据库错误。这可能表明数据库文件损坏或权限问题。"
       },
       "database-chmod": {
-        "label": "数据库 chmod（非致命）",
         "recommendation": "数据库文件权限调整失败（在 Windows 上通常是良性的）。如果您在其他地方看到真正的数据库错误，请检查网格客户端 userData 目录的防病毒和文件夹权限。"
       },
       "database-writable": {
-        "label": "数据库不可写",
         "recommendation": "该应用程序无法写入其数据库文件夹。修复网格客户端 userData 目录的权限（请参阅故障排除：数据库目录不可写）。"
       },
       "tak-server": {
-        "label": "TAK 服务器问题",
         "recommendation": "TAK 服务器错误。检查证书状态和端口可用性。"
       },
       "updater": {
-        "label": "应用程序更新程序错误",
         "recommendation": "应用程序更新程序错误。检查您的互联网连接或尝试从 GitHub 手动更新。"
       },
       "meshcore-tcp": {
-        "label": "MeshCore IP 桥接错误",
         "recommendation": "MeshCore TCP 桥接错误。验证远程主机和端口是否可达。"
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "BLE 通知看门狗 (MeshCore)",
         "recommendation": "看门狗窗口内没有 GATT 通知数据（Windows 上常见）。重试连接；连接前确保无线电已在操作系统蓝牙设置中配对。"
       },
       "bluetooth-pairing": {
-        "label": "蓝牙配对问题",
         "recommendation": "蓝牙配对或取消配对失败，或者 PIN 提示超时。 Open the app when pairing, enter the PIN promptly, check the MAC address and Bluetooth permissions, or remove and re-pair from OS Bluetooth settings."
       },
       "sdk-meshtastic": {
-        "label": "Meshtastic SDK 警告/错误",
         "recommendation": "Meshtastic 堆栈报告警告或错误。如果重复出现，请检查固件、传输（BLE/串行）并重新连接。"
       },
       "sdk-meshcore": {
-        "label": "MeshCore SDK 警告/错误",
         "recommendation": "MeshCore stack reported a warning or error.如果重复出现，请检查 BLE 配对、MQTT 设置，然后重新连接。"
       }
     },
@@ -1935,7 +1900,6 @@
       "repeater": "中继器",
       "tracker": "追踪器",
       "sensor": "传感器",
-      "tak": "TAK",
       "clientHidden": "客户端隐藏",
       "lostAndFound": "失物招领处",
       "takTracker": "TAK 追踪器",

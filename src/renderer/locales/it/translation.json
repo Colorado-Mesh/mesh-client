@@ -224,7 +224,7 @@
     "importConfigJson": "Importa JSON di configurazione",
     "offloadContacts": "Scaricare",
     "deviceMetricsDescription": "Trasmissione mesh: la frequenza con cui la batteria, la tensione e l'utilizzo del canale vengono inviati tramite LoRa. 0 = disabilitato; predefinito 1800 s (30 min). App connessa: quando collegato tramite Bluetooth, seriale o Wi-Fi, il firmware spesso invia ancora le metriche del dispositivo a questo client circa ogni 60 s per la freschezza sullo schermo, che non è lo stesso dell'intervallo di mesh.",
-    "deviceMetricsTooltip": "Il firmware Meshtastic invia i parametri del dispositivo a un client connesso circa una volta al minuto per il monitoraggio locale, indipendentemente dall'intervallo di telemetria mesh. Riferimento ufficiale: https://meshtastic.org/docs/configuration/module/telemetry",
+    "deviceMetricsTooltip": "Il firmware Meshtastic invia i parametri del dispositivo a un client connesso circa una volta al minuto per il monitoraggio locale, indipendentemente dall'intervallo di telemetria mesh. Riferimento ufficiale: https://Meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
       "0": {
         "label": "Metrico"
@@ -527,7 +527,7 @@
     "waitingForModuleConfig": "In attesa della configurazione del modulo dal dispositivo…",
     "selectPreset": "Seleziona una preimpostazione...",
     "telemetryDeviceMetricsDescription": "Trasmissione mesh: la frequenza con cui la batteria, la tensione e l'utilizzo del canale vengono inviati su LoRa tramite il modulo di telemetria. 0 = disabilitato. App connessa: quando collegata, le metriche del dispositivo a questo client spesso si aggiornano circa ogni 60 s, separatamente dall'intervallo mesh/modulo.",
-    "telemetryDeviceMetricsTooltip": "Il firmware Meshtastic invia i parametri del dispositivo a un client connesso circa una volta al minuto per il monitoraggio locale, indipendentemente dall'intervallo di telemetria mesh. Riferimento ufficiale: https://meshtastic.org/docs/configuration/module/telemetry",
+    "telemetryDeviceMetricsTooltip": "Il firmware Meshtastic invia i parametri del dispositivo a un client connesso circa una volta al minuto per il monitoraggio locale, indipendentemente dall'intervallo di telemetria mesh. Riferimento ufficiale: https://Meshtastic.org/docs/configuration/module/telemetry",
     "statusNoPackets": "{{label}}: nessun pacchetto ricevuto",
     "statusLine_one": "{{label}}: {{total}} pacchetti da 1 nodo (ultimo {{lastSeen}})",
     "statusLine_other": "{{label}}: pacchetti {{total}} dai nodi {{count}} (ultimi {{lastSeen}})",
@@ -592,7 +592,7 @@
       "mqttRelayEnabled": "Relè MQTT abilitato",
       "mqttRelayEnabledDesc": "Abilita il dispositivo a inoltrare pacchetti a/da un broker MQTT.",
       "serverAddress": "Indirizzo del server",
-      "serverAddressDesc": "Lasciare vuoto per utilizzare mqtt.meshtastic.org predefinito",
+      "serverAddressDesc": "Lasciare vuoto per utilizzare mqtt.Meshtastic.org predefinito",
       "username": "Nome utente",
       "password": "Password",
       "rootTopic": "Argomento principale",
@@ -855,7 +855,7 @@
     "summaryOffline_one": "{{count}} offline",
     "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Nodi mesh connessi",
-    "columnStatus": "Status",
+    "columnStatus": "Stato",
     "columnFavorite": "Preferito",
     "columnId": "ID",
     "columnLongName": "Nome lungo",
@@ -1068,7 +1068,7 @@
     "tcpIp": "TCP/IP",
     "deviceAddress": "Indirizzo del dispositivo",
     "deviceAddressHint": "Inserisci il nome host o l'indirizzo IP (senza http://)",
-    "windowsMdnsNote": "Su Windows, meshtastic.local potrebbe non risolversi: utilizza invece l'indirizzo IP del dispositivo.",
+    "windowsMdnsNote": "Su Windows, Meshtastic.local potrebbe non risolversi: utilizza invece l'indirizzo IP del dispositivo.",
     "meshcoreHost": "Host (porta 5000)",
     "meshcoreHostHint": "Host radio complementare MeshCore (si connette alla porta 5000)",
     "hintMeshtasticBle1": "Assicurati che il tuo dispositivo Meshtastic abbia il Bluetooth abilitato e sia nel raggio d'azione.",
@@ -1080,7 +1080,7 @@
     "hintMeshcoreSerial1": "Collega il tuo dispositivo MeshCore tramite cavo USB.",
     "hintMeshcoreSerial2": "Fai clic su Connetti: verrà visualizzato un selettore di porte con le porte seriali disponibili.",
     "hintMeshtasticHttp1": "Inserisci l'indirizzo IP o il nome host di un nodo Meshtastic connesso al WiFi. Il dispositivo deve avere il WiFi abilitato nella sua configurazione.",
-    "hintMeshtasticHttp2": "Se la connessione non è affidabile (ad esempio con meshtastic.local), prova invece l'indirizzo IP del dispositivo: l'mDNS desktop può essere instabile.",
+    "hintMeshtasticHttp2": "Se la connessione non è affidabile (ad esempio con Meshtastic.local), prova invece l'indirizzo IP del dispositivo: l'mDNS desktop può essere instabile.",
     "hintMeshcoreHttp": "Inserisci il nome host o l'indirizzo IP della radio complementare MeshCore. Deve essere raggiungibile sulla porta 5000.",
     "stageLinuxUnpaired": "Il dispositivo salvato non è accoppiato in Linux Bluetooth: selezionalo di seguito per inserire il PIN e connetterti.",
     "liamServerNote": "Il server di Liam è solo uplink: il tuo nodo appare sulla sua mappa ma non riceverai messaggi da esso.",
@@ -1120,12 +1120,12 @@
         "timeoutHint": "Se la porta viene visualizzata brevemente, provare a ricollegare il cavo USB."
       },
       "http": {
-        "timeoutMdnsWindows": "Su Windows, meshtastic.local richiede Bonjour (installato con iTunes). Utilizza invece l'indirizzo IP del dispositivo.",
+        "timeoutMdnsWindows": "Su Windows, Meshtastic.local richiede Bonjour (installato con iTunes). Utilizza invece l'indirizzo IP del dispositivo.",
         "timeoutMdnsNonWindows": "mDNS potrebbe non risolversi: prova invece l'indirizzo IP del dispositivo.",
         "timeoutGeneric": "Assicurarsi che il dispositivo sia acceso e raggiungibile.",
         "unauthorizedHint": "Controlla le impostazioni di autenticazione del dispositivo.",
         "econnrefusedHint": "Assicurarsi che il dispositivo sia acceso e connesso alla stessa rete.",
-        "suffixMdnsWindows": "Su Windows, meshtastic.local richiede Bonjour (installato con iTunes). Utilizza invece l'indirizzo IP del dispositivo.",
+        "suffixMdnsWindows": "Su Windows, Meshtastic.local richiede Bonjour (installato con iTunes). Utilizza invece l'indirizzo IP del dispositivo.",
         "suffixMdnsNonWindows": "mDNS potrebbe non risolversi sulla tua rete; prova invece l'indirizzo IP del dispositivo."
       },
       "ble": {
@@ -1379,14 +1379,14 @@
     "cuHistoryTooltipLabel": "Utilità canale",
     "meshcoreUnknownForeignNode": "Nodo MeshCore sconosciuto",
     "meshcoreRepeaterConflictBanner": "Alta velocità dei pacchetti MeshCore (>5/min) — un ripetitore nelle vicinanze potrebbe causare collisioni sul tuo canale Meshtastic.",
-    "meshcoreHeardByMeshtasticHeading": "MeshCore nodes heard by your Meshtastic radio ({{count}})",
-    "meshcoreHeardByMeshtasticDescription": "MeshCore transmitters overheard on local RF in the last 90 minutes (Meshtastic device logs or MeshCore radio RX). Does not include MeshCore repeater contact sync. These are not your Meshtastic node.",
-    "meshcoreHeardByMeshtasticEmpty": "No MeshCore nodes heard on your Meshtastic frequency in the last 90 minutes.",
-    "meshcoreHeardUnknownNode": "Unidentified MeshCore transmitter",
-    "meshcoreHeardNearbyEncrypted": "Nearby MeshCore RF (encrypted)",
-    "foreignLoraHeading": "Other foreign LoRa on your Meshtastic frequency ({{count}})",
-    "foreignLoraDescription": "Meshtastic transmitters and unrecognized LoRa signals on your frequency in the last 90 minutes. MeshCore nodes are listed in the section above.",
-    "foreignLoraEmpty": "No Meshtastic or unknown LoRa activity on your Meshtastic frequency in the last 90 minutes."
+    "meshcoreHeardByMeshtasticHeading": "Nodi MeshCore ascoltati dalla tua radio Meshtastic ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Trasmettitori MeshCore ascoltati su RF locale negli ultimi 90 minuti (registri dei dispositivi Meshtastic o MeshCore radio RX). Non include la sincronizzazione dei contatti del ripetitore MeshCore. Questi non sono il tuo nodo Meshtastic.",
+    "meshcoreHeardByMeshtasticEmpty": "Nessun nodo MeshCore rilevato sulla tua frequenza Meshtastic negli ultimi 90 minuti.",
+    "meshcoreHeardUnknownNode": "Trasmettitore MeshCore non identificato",
+    "meshcoreHeardNearbyEncrypted": "MeshCore RF nelle vicinanze (crittografato)",
+    "foreignLoraHeading": "Altri LoRa stranieri sulla tua frequenza Meshtastic ({{count}})",
+    "foreignLoraDescription": "Trasmettitori Meshtastic e segnali LoRa non riconosciuti sulla tua frequenza negli ultimi 90 minuti. I nodi MeshCore sono elencati nella sezione precedente.",
+    "foreignLoraEmpty": "Nessuna attività Meshtastic o LoRa sconosciuta sulla tua frequenza Meshtastic negli ultimi 90 minuti."
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",

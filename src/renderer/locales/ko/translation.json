@@ -1379,14 +1379,14 @@
     "cuHistoryTooltipLabel": "채널 유틸",
     "meshcoreUnknownForeignNode": "알 수 없는 MeshCore 노드",
     "meshcoreRepeaterConflictBanner": "높은 MeshCore 패킷 속도 (> 5/분) — 인근 리피터가 Meshtastic 채널에서 충돌을 일으킬 수 있습니다.",
-    "meshcoreHeardByMeshtasticHeading": "MeshCore nodes heard by your Meshtastic radio ({{count}})",
-    "meshcoreHeardByMeshtasticDescription": "MeshCore transmitters overheard on local RF in the last 90 minutes (Meshtastic device logs or MeshCore radio RX). Does not include MeshCore repeater contact sync. These are not your Meshtastic node.",
-    "meshcoreHeardByMeshtasticEmpty": "No MeshCore nodes heard on your Meshtastic frequency in the last 90 minutes.",
-    "meshcoreHeardUnknownNode": "Unidentified MeshCore transmitter",
-    "meshcoreHeardNearbyEncrypted": "Nearby MeshCore RF (encrypted)",
-    "foreignLoraHeading": "Other foreign LoRa on your Meshtastic frequency ({{count}})",
-    "foreignLoraDescription": "Meshtastic transmitters and unrecognized LoRa signals on your frequency in the last 90 minutes. MeshCore nodes are listed in the section above.",
-    "foreignLoraEmpty": "No Meshtastic or unknown LoRa activity on your Meshtastic frequency in the last 90 minutes."
+    "meshcoreHeardByMeshtasticHeading": "Meshtastic 라디오로 듣는 MeshCore 노드 ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "MeshCore 송신기는 지난 90 분 동안 로컬 RF (Meshtastic 장치 로그 또는 MeshCore 라디오 RX) 에서 우연히 들었습니다. MeshCore 리피터 연락처 동기화는 포함되지 않습니다. 이것은 Meshtastic 노드가 아닙니다.",
+    "meshcoreHeardByMeshtasticEmpty": "지난 90분 동안 Meshtastic 주파수에서 MeshCore 노드가 들리지 않았습니다.",
+    "meshcoreHeardUnknownNode": "미확인 MeshCore 송신기",
+    "meshcoreHeardNearbyEncrypted": "근처 MeshCore RF (암호화)",
+    "foreignLoraHeading": "Meshtastic 주파수의 다른 외국 LoRa ({{count}})",
+    "foreignLoraDescription": "지난 90분 동안 주파수에서 Meshtastic 송신기 및 인식할 수 없는 LoRa 신호. MeshCore 노드는 위 섹션에 나열되어 있습니다.",
+    "foreignLoraEmpty": "지난 90분 동안 Meshtastic 빈도에 대한 Meshtastic 또는 알 수 없는 LoRa 활동이 없습니다."
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",

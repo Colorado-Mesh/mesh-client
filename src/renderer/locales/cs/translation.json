@@ -226,56 +226,41 @@
     "deviceMetricsDescription": "Mesh vysílání: jak často jsou baterie, napětí a využití kanálu odesílány přes LoRa. 0 = zakázáno; výchozí 1800 s (30 min). Připojená aplikace: při připojení přes Bluetooth, sériovou nebo Wi-Fi firmware často stále předává metriky zařízení tomuto klientovi přibližně každých 60 s, aby byla na obrazovce aktuálnost – to není stejné jako váš interval mesh.",
     "deviceMetricsTooltip": "Firmware Meshtastic odesílá metriky zařízení připojenému klientovi zhruba jednou za minutu pro místní monitorování, bez ohledu na interval telemetrie sítě. Oficiální odkaz: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
-      "0": {
-        "label": "Metrický"
-      },
-      "1": {
-        "label": "Císařský"
-      }
+      "0": {},
+      "1": {}
     },
     "deviceRoles": {
       "0": {
-        "label": "Klient",
         "description": "Normální klientský režim"
       },
       "1": {
-        "label": "Ztlumit klienta",
         "description": "Klient, který nepřenáší"
       },
       "2": {
-        "label": "Směrovač",
         "description": "Vyhrazený router/repeater"
       },
       "3": {
-        "label": "Klient routeru",
         "description": "Režim router + klient"
       },
       "4": {
-        "label": "Klientská základna",
         "description": "Základnová stanice pro klientská zařízení"
       },
       "5": {
-        "label": "Tracker",
         "description": "Pouze GPS tracker"
       },
       "6": {
-        "label": "Senzor",
         "description": "Uzel telemetrického senzoru"
       },
       "7": {
-        "label": "TAK",
         "description": "Zařízení s podporou TAK"
       },
       "8": {
-        "label": "Klient skrytý",
         "description": "Klient, skrytý v seznamu uzlů"
       },
       "9": {
-        "label": "Ztráty a nálezy",
         "description": "Vysílá pozici pro obnovení"
       },
       "10": {
-        "label": "TAK Tracker",
         "description": "Režim sledování TAK"
       }
     },
@@ -329,8 +314,8 @@
     "shutdownMessage": "Tím dojde k vypnutí připojeného zařízení. Budete jej muset fyzicky znovu zapnout.",
     "shutdownConfirm": "Vypnutí",
     "shutdownButton": "Vypnutí",
-    "factoryResetConfigName": "Factory Reset Config",
-    "factoryResetConfigTitle": "⚠ Factory Reset Config",
+    "factoryResetConfigName": "Konfigurace obnovení továrního nastavení",
+    "factoryResetConfigTitle": "⚠ Konfigurace obnovení továrního nastavení",
     "factoryResetConfigMessage": "Tím se resetuje konfigurace zařízení na výchozí tovární nastavení, ale zachová se databáze uzlů. Nastavení bude nutné překonfigurovat.",
     "factoryResetConfigConfirm": "Resetovat konfiguraci",
     "factoryResetConfigButton": "Pouze konfigurace obnovení továrního nastavení",
@@ -359,25 +344,25 @@
     "frequencyMhzLabel": "Frekvence (MHz)",
     "bandwidthLabel": "Šířka pásma",
     "bandwidthTooltip": "Šířka kanálu v kHz. Užší = delší dosah a menší rušení, ale nižší rychlost přenosu dat. Všechny uzly v síti musí používat stejnou šířku pásma.",
-    "spreadFactorLabel": "Spread Factor",
+    "spreadFactorLabel": "Faktor rozpětí",
     "spreadFactorDesc": "Vyšší = větší dosah, ale pomalejší vysílací čas. Výchozí: SF12.",
     "codingRateLabel": "Rychlost kódování",
     "codingRateTooltip": "Dopředná režie opravy chyb. 4/5 = minimální redundance (rychlejší). 4/8 = maximální redundance (odolnější vůči rušení). Všechny uzly se musí shodovat.",
-    "txPowerLabel": "TX Power",
+    "txPowerLabel": "Výkon TX",
     "txPowerDesc": "Vysílat výkon. Před zvýšením zkontrolujte místní předpisy.",
     "txPowerTooltip": "Vysílací výkon v dBm (1–30). Vyšší = delší dosah, ale větší spotřeba energie. Ověřte si v regionálních předpisech zákonné maximum ve vaší oblasti.",
     "regionLabel": "Kraj",
     "useModemPresetLabel": "Použijte přednastavený modem",
     "useModemPresetDesc": "Použijte předdefinovanou konfiguraci modemu. Zakázat pro vlastní parametry RF.",
     "modemPresetLabel": "Přednastavení modemu",
-    "sx126xRxBoostedLabel": "SX126x RX Boosted Gain",
+    "sx126xRxBoostedLabel": "Zesílený zisk SX126x RX",
     "positionBroadcastIntervalLabel": "Pozice interval vysílání",
     "gpsUpdateIntervalLabel": "Interval aktualizace GPS",
     "gpsModeLabel": "Režim GPS",
     "positionPrecisionLabel": "Přesnost polohy",
     "smartPositionBroadcastLabel": "Inteligentní vysílání polohy",
     "minDistanceTriggerLabel": "Minimální vzdálenost od spouště",
-    "minIntervalLabel": "Min interval",
+    "minIntervalLabel": "Min. interval",
     "fixedPositionLabel": "Pevná poloha",
     "sendPositionToDevice": "Odeslat pozici do zařízení",
     "powerSavingModeLabel": "Režim úspory energie",
@@ -443,7 +428,8 @@
     "rebootOtaMessage": "Tím se zařízení restartuje do režimu aktualizace firmwaru OTA (Over The Air).",
     "rebootOtaConfirm": "Restartujte do OTA",
     "rebootOtaButton": "Restartujte do OTA",
-    "directMessages": "Přímé zprávy"
+    "directMessages": "Přímé zprávy",
+    "debugLogApi": "Debug Log API"
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",
@@ -490,7 +476,7 @@
     "managedDeviceDesc": "Zařízení spravuje správce sítě.",
     "serialConsole": "Sériová konzole",
     "serialConsoleDesc": "Povolte sériovou konzolu přes rozhraní Stream API.",
-    "debugLogApi": "Debug Log API",
+    "debugLogApi": "Protokol režimu ladění",
     "debugLogApiDesc": "Výstup živého protokolování ladění přes sériové rozhraní nebo Bluetooth.",
     "adminChannel": "Kanál správce (nezabezpečený)",
     "adminChannelDesc": "Povolit ovládání příchozího zařízení nad nezabezpečeným starším kanálem správce.",
@@ -875,7 +861,7 @@
     "columnChUtil": "Ch.Util",
     "columnAirTx": "Air Tx",
     "columnAlt": "Alt",
-    "columnRedund": "Redund.",
+    "columnRedund": "Redundace.",
     "emptyNoSearchMatches": "Vašemu hledání neodpovídají žádné uzly.",
     "emptyNoNodesYet": "Dosud nebyly objeveny žádné uzly. Připojte se k zařízení a zobrazte síť mesh.",
     "buttonRefresh": "Obnovit",
@@ -1063,7 +1049,7 @@
     "reconnect": "Znovu se připojte",
     "forgetDevice": "Zapomeňte na toto zařízení",
     "bluetooth": "Bluetooth",
-    "usbSerial": "USB Serial",
+    "usbSerial": "USB sériový port",
     "wifiHttp": "WiFi/HTTP",
     "tcpIp": "TCP/IP",
     "deviceAddress": "Adresa zařízení",
@@ -1379,14 +1365,14 @@
     "cuHistoryTooltipLabel": "Využití kanálu",
     "meshcoreUnknownForeignNode": "Neznámý uzel MeshCore",
     "meshcoreRepeaterConflictBanner": "Vysoká rychlost paketů MeshCore (>5/min) — blízký opakovač může způsobovat kolize na vašem Meshtastic kanálu.",
-    "meshcoreHeardByMeshtasticHeading": "MeshCore nodes heard by your Meshtastic radio ({{count}})",
-    "meshcoreHeardByMeshtasticDescription": "MeshCore transmitters overheard on local RF in the last 90 minutes (Meshtastic device logs or MeshCore radio RX). Does not include MeshCore repeater contact sync. These are not your Meshtastic node.",
-    "meshcoreHeardByMeshtasticEmpty": "No MeshCore nodes heard on your Meshtastic frequency in the last 90 minutes.",
-    "meshcoreHeardUnknownNode": "Unidentified MeshCore transmitter",
-    "meshcoreHeardNearbyEncrypted": "Nearby MeshCore RF (encrypted)",
-    "foreignLoraHeading": "Other foreign LoRa on your Meshtastic frequency ({{count}})",
-    "foreignLoraDescription": "Meshtastic transmitters and unrecognized LoRa signals on your frequency in the last 90 minutes. MeshCore nodes are listed in the section above.",
-    "foreignLoraEmpty": "No Meshtastic or unknown LoRa activity on your Meshtastic frequency in the last 90 minutes."
+    "meshcoreHeardByMeshtasticHeading": "Uzly MeshCore slyšené vaším Meshtastic rádiem ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Vysílače MeshCore zaslechly v posledních 90 minutách místní RF (protokoly Meshtastic zařízení nebo MeshCore rádio RX). Nezahrnuje synchronizaci kontaktů opakovače MeshCore. Toto není váš Meshtastic uzel.",
+    "meshcoreHeardByMeshtasticEmpty": "Za posledních 90 minut nebyly na vaší Meshtastic frekvenci slyšet žádné uzly MeshCore.",
+    "meshcoreHeardUnknownNode": "Neidentifikovaný vysílač MeshCore",
+    "meshcoreHeardNearbyEncrypted": "Nedaleko MeshCore RF (šifrované)",
+    "foreignLoraHeading": "Další cizí LoRa na vaší Meshtastic frekvenci ({{count}})",
+    "foreignLoraDescription": "Meshtastic vysílače a nerozpoznané LoRa signály na vaší frekvenci za posledních 90 minut. Uzly MeshCore jsou uvedeny ve výše uvedené části.",
+    "foreignLoraEmpty": "Žádná Meshtastic nebo neznámá aktivita LoRa na vaší Meshtastic frekvenci za posledních 90 minut."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
@@ -1515,7 +1501,7 @@
     "pathTraceHeading": "Trasa cesty",
     "hopsLabel": "Skoky:",
     "hopNLabel": "Hop {{n}}",
-    "destLabel": "Dest",
+    "destLabel": "Cíl",
     "sensorTelemetryHeading": "Telemetrie senzoru (LPP)",
     "temperatureLabel": "Teplota",
     "humidityLabel": "Vlhkost",
@@ -1594,7 +1580,7 @@
     "mapReportHeading": "Zpráva o mapě",
     "noMapReportReceived": "Nebyla přijata žádná zpráva o mapě",
     "mapReportLastReport": "Poslední zpráva",
-    "mapReportDataLabel": "Data",
+    "mapReportDataLabel": "Údaj",
     "mapReportDataNa": "N/A",
     "positionHistoryHeading": "Historie pozice",
     "noPositionHistoryRecorded": "Nebyla zaznamenána žádná historie polohy",
@@ -1792,7 +1778,7 @@
     "hopsLabel": "Skoky: ",
     "olderCount": "+{{count}} starší",
     "hopN": "Hop {{n}}",
-    "dest": "Dest",
+    "dest": "Cíl",
     "routePath": "Trasa Cesta",
     "environment": "Prostředí",
     "temperature": "Teplota",
@@ -1828,79 +1814,60 @@
   "logAnalyzer": {
     "categories": {
       "ble-connection": {
-        "label": "Problémy s připojením BLE",
         "recommendation": "Nestabilní připojení BLE. Zkontrolujte vzdálenost k zařízení a stav adaptéru Bluetooth."
       },
       "mqtt": {
-        "label": "Problémy MQTT",
         "recommendation": "Problémy s připojením MQTT. Ověřte adresu URL zprostředkovatele, přihlašovací údaje a síťové připojení."
       },
       "mqtt-retries-exhausted": {
-        "label": "Limit opětovného připojení MQTT",
         "recommendation": "MQTT to vzdal po maximálním počtu opětovných připojení. Ověřte, že je zprostředkovatel dosažitelný, přihlašovací údaje a port jsou správné a brány firewall umožňují odchozí provoz."
       },
       "watchdog": {
-        "label": "Spouštěče hlídacího psa",
         "recommendation": "Watchdog spustil opětovné připojení. Komunikace zařízení může být nestabilní."
       },
       "handshake": {
-        "label": "Selhání podání ruky",
         "recommendation": "Navázání spojení se nezdařilo. Zkuste se znovu připojit ručně."
       },
       "ble-connect-race": {
-        "label": "BLE Connect Race/Timeout",
         "recommendation": "Vypršel časový limit BLE handshake nebo došlo k odpojení. Zkontrolujte stabilitu připojení BLE a vzdálenost k zařízení."
       },
       "auth-decrypt": {
-        "label": "Selhání ověření/dešifrování",
         "recommendation": "Selhání ověření nebo dešifrování. Ověřte, že se klíče kanálů mezi zařízeními shodují."
       },
       "native-module": {
-        "label": "Selhání načítání nativního modulu",
         "recommendation": "Nativní doplněk se nepodařilo načíst – po upgradu často chybné Electron ABI. Spusťte pnpm install ve složce projektu (nebo pnpm run rebuild), ukončete všechny instance aplikace a zkuste to znovu."
       },
       "internal-error": {
-        "label": "Interní chyby aplikace",
         "recommendation": "Došlo k neočekávané vnitřní chybě. Nahlaste prosím tuto chybu pomocí souboru protokolu."
       },
       "database-error": {
-        "label": "Selhání databáze",
         "recommendation": "Chyba databáze. To může znamenat poškozený databázový soubor nebo problém s oprávněním."
       },
       "database-chmod": {
-        "label": "Databáze chmod (nefatální)",
         "recommendation": "Vyladění oprávnění k souboru databáze se nezdařilo (v systému Windows často neškodné). Pokud někde jinde vidíte skutečné chyby DB, zkontrolujte antivirus a oprávnění složky pro adresář mesh-client userData."
       },
       "database-writable": {
-        "label": "Databáze nelze zapisovat",
         "recommendation": "Aplikace nemůže zapisovat do složky databáze. Opravte oprávnění v adresáři mesh-client userData (viz odstraňování problémů: Do adresáře databáze nelze zapisovat)."
       },
       "tak-server": {
-        "label": "Problémy se serverem TAK",
         "recommendation": "Chyba serveru TAK. Zkontrolujte stav certifikátu a dostupnost portu."
       },
       "updater": {
-        "label": "Chyby aplikace Updater",
         "recommendation": "Chyba aktualizátoru aplikace. Zkontrolujte připojení k internetu nebo vyzkoušejte ruční aktualizaci z GitHubu."
       },
       "meshcore-tcp": {
-        "label": "Chyby MeshCore IP Bridge",
         "recommendation": "Chyba mostu MeshCore TCP. Ověřte, že vzdálený hostitel a port jsou dosažitelné."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "BLE Notify Watchdog (MeshCore)",
         "recommendation": "Žádná oznamovací data GATT v okně Watchdog (běžné ve Windows). Retry connect; před připojením se ujistěte, že je rádio spárováno v nastavení Bluetooth OS."
       },
       "bluetooth-pairing": {
-        "label": "Problémy s párováním Bluetooth",
         "recommendation": "Párování Bluetooth nebo zrušení párování se nezdařilo nebo vypršel časový limit výzvy k zadání kódu PIN. Otevřete aplikaci při párování, okamžitě zadejte PIN, zkontrolujte MAC adresu a oprávnění Bluetooth nebo odeberte a znovu spárujte z nastavení Bluetooth OS."
       },
       "sdk-meshtastic": {
-        "label": "Varování/chyby sady Meshtastic SDK",
         "recommendation": "Meshtastic stack ohlásil varování nebo chybu. Pokud se to opakuje, zkontrolujte firmware, transport (BLE/sériový) a znovu připojte."
       },
       "sdk-meshcore": {
-        "label": "Varování/chyby sady MeshCore SDK",
         "recommendation": "Zásobník MeshCore hlásil varování nebo chybu. Pokud se to opakuje, zkontrolujte párování BLE, nastavení MQTT a znovu se připojte."
       }
     },
@@ -1938,7 +1905,6 @@
       "tak": "TAK",
       "clientHidden": "Klient skrytý",
       "lostAndFound": "Ztráty a nálezy",
-      "takTracker": "TAK Tracker",
       "routerLate": "Router Pozdě",
       "clientBase": "Klientská základna"
     }

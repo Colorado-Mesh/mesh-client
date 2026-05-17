@@ -1379,14 +1379,14 @@
     "cuHistoryTooltipLabel": "Util Saluran",
     "meshcoreUnknownForeignNode": "Simpul MeshCore tidak dikenal",
     "meshcoreRepeaterConflictBanner": "Kecepatan paket MeshCore tinggi (>5/menit) — repeater terdekat dapat menyebabkan tabrakan pada saluran Meshtastic Anda.",
-    "meshcoreHeardByMeshtasticHeading": "MeshCore nodes heard by your Meshtastic radio ({{count}})",
-    "meshcoreHeardByMeshtasticDescription": "MeshCore transmitters overheard on local RF in the last 90 minutes (Meshtastic device logs or MeshCore radio RX). Does not include MeshCore repeater contact sync. These are not your Meshtastic node.",
-    "meshcoreHeardByMeshtasticEmpty": "No MeshCore nodes heard on your Meshtastic frequency in the last 90 minutes.",
-    "meshcoreHeardUnknownNode": "Unidentified MeshCore transmitter",
-    "meshcoreHeardNearbyEncrypted": "Nearby MeshCore RF (encrypted)",
-    "foreignLoraHeading": "Other foreign LoRa on your Meshtastic frequency ({{count}})",
-    "foreignLoraDescription": "Meshtastic transmitters and unrecognized LoRa signals on your frequency in the last 90 minutes. MeshCore nodes are listed in the section above.",
-    "foreignLoraEmpty": "No Meshtastic or unknown LoRa activity on your Meshtastic frequency in the last 90 minutes."
+    "meshcoreHeardByMeshtasticHeading": "Node MeshCore didengar oleh radio Meshtastic Anda ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Pemancar MeshCore mendengar RF lokal dalam 90 menit terakhir (log perangkat Meshtastic atau RX radio MeshCore). Tidak termasuk sinkronisasi kontak repeater MeshCore. Ini bukan simpul Meshtastic Anda.",
+    "meshcoreHeardByMeshtasticEmpty": "Tidak ada node MeshCore yang terdengar pada frekuensi Meshtastic Anda dalam 90 menit terakhir.",
+    "meshcoreHeardUnknownNode": "Pemancar MeshCore tak dikenal",
+    "meshcoreHeardNearbyEncrypted": "RF MeshCore terdekat (terenkripsi)",
+    "foreignLoraHeading": "LoRa asing lainnya pada frekuensi Meshtastic Anda ({{count}})",
+    "foreignLoraDescription": "Pemancar Meshtastic dan sinyal LoRa yang tidak dikenal pada frekuensi Anda dalam 90 menit terakhir. Simpul MeshCore tercantum di bagian di atas.",
+    "foreignLoraEmpty": "Tidak ada aktivitas Meshtastic atau LoRa yang tidak diketahui pada frekuensi Meshtastic Anda dalam 90 menit terakhir."
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

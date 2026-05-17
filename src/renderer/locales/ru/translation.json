@@ -1378,14 +1378,14 @@
     "cuHistoryTooltipLabel": "Утилизация канала",
     "meshcoreUnknownForeignNode": "Неизвестный узел MeshCore",
     "meshcoreRepeaterConflictBanner": "Высокая скорость передачи пакетов MeshCore (>5/мин) — соседний ретранслятор может вызывать коллизии на вашем канале Meshtastic.",
-    "meshcoreHeardByMeshtasticHeading": "MeshCore nodes heard by your Meshtastic radio ({{count}})",
-    "meshcoreHeardByMeshtasticDescription": "MeshCore transmitters overheard on local RF in the last 90 minutes (Meshtastic device logs or MeshCore radio RX). Does not include MeshCore repeater contact sync. These are not your Meshtastic node.",
-    "meshcoreHeardByMeshtasticEmpty": "No MeshCore nodes heard on your Meshtastic frequency in the last 90 minutes.",
-    "meshcoreHeardUnknownNode": "Unidentified MeshCore transmitter",
-    "meshcoreHeardNearbyEncrypted": "Nearby MeshCore RF (encrypted)",
-    "foreignLoraHeading": "Other foreign LoRa on your Meshtastic frequency ({{count}})",
-    "foreignLoraDescription": "Meshtastic transmitters and unrecognized LoRa signals on your frequency in the last 90 minutes. MeshCore nodes are listed in the section above.",
-    "foreignLoraEmpty": "No Meshtastic or unknown LoRa activity on your Meshtastic frequency in the last 90 minutes."
+    "meshcoreHeardByMeshtasticHeading": "Узлы MeshCore, услышанные вашим Meshtastic-радио ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Передатчики MeshCore подслушали локальные радиочастоты за последние 90 минут (журналы Meshtastic устройств или MeshCore radio RX). Не включает синхронизацию контактов повторителя MeshCore. Это не ваш Meshtastic узел.",
+    "meshcoreHeardByMeshtasticEmpty": "За последние 90 минут на вашей частоте Meshtastic не было слышно ни одного узла MeshCore.",
+    "meshcoreHeardUnknownNode": "Неопознанный передатчик MeshCore",
+    "meshcoreHeardNearbyEncrypted": "Близлежащий MeshCore RF (зашифрованный)",
+    "foreignLoraHeading": "Другие иностранные LoRa на вашей частоте Meshtastic ({{count}})",
+    "foreignLoraDescription": "Meshtastic передатчики и нераспознанные сигналы LoRa на вашей частоте за последние 90 минут. Узлы MeshCore перечислены в разделе выше.",
+    "foreignLoraEmpty": "Отсутствие Meshtastic или неизвестной активности LoRa на вашей частоте Meshtastic активности за последние 90 минут."
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",
@@ -1887,7 +1887,7 @@
         "recommendation": "Ошибка моста MeshCore TCP. Убедитесь, что удаленный хост и порт доступны."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "BLE Notify Watchdog (MeshCore)",
+        "label": "Сторожевой таймер уведомлений BLE (MeshCore)",
         "recommendation": "Нет данных уведомления GATT в окне сторожевого таймера (обычно в Windows). Повторите попытку подключения; перед подключением убедитесь, что радиостанция сопряжена в настройках Bluetooth операционной системы."
       },
       "bluetooth-pairing": {

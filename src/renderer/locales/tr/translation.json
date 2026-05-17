@@ -1379,14 +1379,14 @@
     "cuHistoryTooltipLabel": "Channel Util",
     "meshcoreUnknownForeignNode": "Bilinmeyen MeshCore düğümü",
     "meshcoreRepeaterConflictBanner": "Yüksek MeshCore paket hızı (>5/dak) — yakındaki bir tekrarlayıcı Meshtastic kanalınızda çarpışmalara neden olabilir.",
-    "meshcoreHeardByMeshtasticHeading": "MeshCore nodes heard by your Meshtastic radio ({{count}})",
-    "meshcoreHeardByMeshtasticDescription": "MeshCore transmitters overheard on local RF in the last 90 minutes (Meshtastic device logs or MeshCore radio RX). Does not include MeshCore repeater contact sync. These are not your Meshtastic node.",
-    "meshcoreHeardByMeshtasticEmpty": "No MeshCore nodes heard on your Meshtastic frequency in the last 90 minutes.",
-    "meshcoreHeardUnknownNode": "Unidentified MeshCore transmitter",
-    "meshcoreHeardNearbyEncrypted": "Nearby MeshCore RF (encrypted)",
-    "foreignLoraHeading": "Other foreign LoRa on your Meshtastic frequency ({{count}})",
-    "foreignLoraDescription": "Meshtastic transmitters and unrecognized LoRa signals on your frequency in the last 90 minutes. MeshCore nodes are listed in the section above.",
-    "foreignLoraEmpty": "No Meshtastic or unknown LoRa activity on your Meshtastic frequency in the last 90 minutes."
+    "meshcoreHeardByMeshtasticHeading": "Meshtastic telsiziniz tarafından duyulan MeshCore düğümleri ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "MeshCore vericileri son 90 dakika içinde yerel RF'ye kulak misafiri oldu (Meshtastic cihaz günlükleri veya MeshCore radyo RX). MeshCore tekrarlayıcı kontak senkronizasyonunu içermez. Bunlar senin Meshtastic düğümün değil.",
+    "meshcoreHeardByMeshtasticEmpty": "Son 90 dakika içinde Meshtastic frekansınızda hiçbir MeshCore düğümü duyulmadı.",
+    "meshcoreHeardUnknownNode": "Tanımsız MeshCore verici",
+    "meshcoreHeardNearbyEncrypted": "Yakınlardaki MeshCore RF (şifreli)",
+    "foreignLoraHeading": "Meshtastic frekansınızdaki diğer yabancı LoRa ({{count}})",
+    "foreignLoraDescription": "Son 90 dakika içinde frekansınızda Meshtastic vericiler ve tanınmayan LoRa sinyalleri. MeshCore düğümleri yukarıdaki bölümde listelenmiştir.",
+    "foreignLoraEmpty": "Son 90 dakika içinde Meshtastic frekansınızda Meshtastic veya bilinmeyen LoRa aktivitesi yok."
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

@@ -948,7 +948,7 @@
     "showPublicKeysDesc": "Pokaż klucz publiczny każdego kontaktu pod nazwą.",
     "clearAllIntro": "Usuń wszystkie kontakty z radia i wyczyść bazę danych kontaktów aplikacji. Tego nie można cofnąć.",
     "clearAllContactsConfirm": "Usunąć wszystkie kontakty z radia i wyczyścić lokalne dane kontaktowe?",
-    "clearingContacts": "Clearing…",
+    "clearingContacts": "Czyszczenie...",
     "clearAllContactsButton": "Wyczyść wszystkie kontakty"
   },
   "chatPanel": {
@@ -1226,7 +1226,7 @@
     "autoTraceroute": "Automatyczne śledzenie trasy",
     "autoTracerouteHelp": "Sonduj wszystkie węzły co 30 minut",
     "environmentProfile": "Profil środowiska",
-    "environmentStandard": "Standard",
+    "environmentStandard": "Standardowy",
     "environmentCity": "Miasto",
     "environmentCanyon": "Kanion",
     "environmentStandardHint": "Domyślny próg 3 km",
@@ -1379,14 +1379,14 @@
     "cuHistoryTooltipLabel": "Channel Util",
     "meshcoreUnknownForeignNode": "Nieznany węzeł MeshCore",
     "meshcoreRepeaterConflictBanner": "Wysoka szybkość pakietów MeshCore (>5/min) — pobliski repeater może powodować kolizje na kanale Meshtastic.",
-    "meshcoreHeardByMeshtasticHeading": "MeshCore nodes heard by your Meshtastic radio ({{count}})",
-    "meshcoreHeardByMeshtasticDescription": "MeshCore transmitters overheard on local RF in the last 90 minutes (Meshtastic device logs or MeshCore radio RX). Does not include MeshCore repeater contact sync. These are not your Meshtastic node.",
-    "meshcoreHeardByMeshtasticEmpty": "No MeshCore nodes heard on your Meshtastic frequency in the last 90 minutes.",
-    "meshcoreHeardUnknownNode": "Unidentified MeshCore transmitter",
-    "meshcoreHeardNearbyEncrypted": "Nearby MeshCore RF (encrypted)",
-    "foreignLoraHeading": "Other foreign LoRa on your Meshtastic frequency ({{count}})",
-    "foreignLoraDescription": "Meshtastic transmitters and unrecognized LoRa signals on your frequency in the last 90 minutes. MeshCore nodes are listed in the section above.",
-    "foreignLoraEmpty": "No Meshtastic or unknown LoRa activity on your Meshtastic frequency in the last 90 minutes."
+    "meshcoreHeardByMeshtasticHeading": "Węzły MeshCore słyszane przez Meshtastic radio ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Nadajniki MeshCore podsłuchiwane na lokalnym falach radiowych w ciągu ostatnich 90 minut (dzienniki urządzeń Meshtastic lub MeshCore radio RX). Nie obejmuje synchronizacji styków wzmacniacza MeshCore. To nie jest Twój węzeł Meshtastic.",
+    "meshcoreHeardByMeshtasticEmpty": "W ciągu ostatnich 90 minut na częstotliwości Meshtastic nie słychać żadnych węzłów MeshCore.",
+    "meshcoreHeardUnknownNode": "Niezidentyfikowany nadajnik MeshCore",
+    "meshcoreHeardNearbyEncrypted": "W pobliżu MeshCore RF (zaszyfrowany)",
+    "foreignLoraHeading": "Inne obce LoRa na Twojej częstotliwości Meshtastic ({{count}})",
+    "foreignLoraDescription": "Nadajniki Meshtastic i nierozpoznane sygnały LoRa na Twojej częstotliwości w ciągu ostatnich 90 minut. Węzły MeshCore są wymienione w sekcji powyżej.",
+    "foreignLoraEmpty": "Brak aktywności Meshtastic lub nieznanej aktywności LoRa na częstotliwości Meshtastic w ciągu ostatnich 90 minut."
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

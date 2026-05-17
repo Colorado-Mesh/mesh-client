@@ -65,23 +65,53 @@ export function setDeepLocaleValue(obj, dotKey, value) {
   cur[last] = value;
 }
 
+// Tokens that are legitimately identical across languages and should not be
+// treated as "untranslated" when a locale value matches English verbatim.
+const SKIP_AUDIT_RE =
+  /\b(TAK|Discord|Meshtastic|MeshCore|MQTT|LoRa|GPS|BLE|SNR|RSSI|dBm|Hz|MHz|kHz|bps|ACK|NAK|CSV|JSON|URL|URI|UUID|API|WiFi|USB|Bluetooth|SX126x|GPIO|Base64|base64|AES-128|AES-256|SHA-256|NTP|Hops?|Mesh-Client|MGRS|Firmware|Router)\b/gi;
+
+/**
+ * Returns true when an English value contains enough non-technical content to
+ * be worth machine-translating. Values that reduce to nothing after stripping
+ * placeholders and known loanwords/brands are skipped in --audit mode.
+ * @param {string} enVal
+ */
+function hasTranslatableContent(enVal) {
+  const stripped = enVal
+    .replace(/\{\{[^}]+\}\}/g, '') // remove i18next {{placeholders}}
+    .replace(SKIP_AUDIT_RE, '')
+    .replace(/[^a-zA-Z]/g, '')
+    .trim();
+  return stripped.length >= 4;
+}
+
 /**
  * Keys to machine-translate for one locale: present in English but absent locally,
  * optionally restricted to keys newly added in English vs git HEAD.
+ * With auditIdentical=true, also includes keys whose locale value equals English
+ * (present but never translated), skipping values that are legitimately identical
+ * (pure brand names, technical loanwords, placeholder-only strings).
  *
  * @param {string[]} enKeys
  * @param {Record<string, unknown>} existingFlat
  * @param {Set<string> | null} addedEnglishKeysSet — keys in working-tree EN not in HEAD EN; null if unknown
- * @param {{ translateAllGaps: boolean; hasGitBaseline: boolean }} opts
+ * @param {{ translateAllGaps: boolean; hasGitBaseline: boolean; auditIdentical?: boolean; enFlat?: Record<string, unknown> | null }} opts
  * @returns {string[]}
  */
 export function filterMissingKeysToTranslate(enKeys, existingFlat, addedEnglishKeysSet, opts) {
-  const { translateAllGaps, hasGitBaseline } = opts;
+  const { translateAllGaps, hasGitBaseline, auditIdentical = false, enFlat = null } = opts;
   return enKeys.filter((k) => {
-    if (k in existingFlat) return false;
+    if (k in existingFlat) {
+      return (
+        auditIdentical &&
+        enFlat !== null &&
+        existingFlat[k] === enFlat[k] &&
+        typeof enFlat[k] === 'string' &&
+        hasTranslatableContent(enFlat[k])
+      );
+    }
     if (translateAllGaps) return true;
     if (!hasGitBaseline || addedEnglishKeysSet === null) {
-      // No git diff to HEAD.en — cannot restrict to “new” keys; fill all gaps (legacy behavior).
       return true;
     }
     return addedEnglishKeysSet.has(k);
