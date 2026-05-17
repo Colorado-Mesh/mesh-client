@@ -178,7 +178,7 @@ export function useDevice() {
   const isReconnectingRef = useRef<boolean>(false);
   const reconnectGenerationRef = useRef<number>(0);
   const transportManagerRef = useRef<TransportManager | null>(null);
-  const onStatusUpdateRef = useRef<(event: StatusUpdateEvent) => void>(() => {});
+  const onStatusUpdateRef = useRef<(event: StatusUpdateEvent) => void>(() => { });
   // Tracks the tempId of an in-flight optimistic message (device path) so the echo can be skipped
   const pendingTempIdRef = useRef<number | undefined>(undefined);
   /** After device ack, optimistic `tempId` → RF `packet_id` so MQTT status callbacks still find the row. */
@@ -523,8 +523,8 @@ export function useDevice() {
   }, [stopGpsInterval]);
 
   // ─── Forward declarations for mutual recursion ────────────────
-  const handleConnectionLostRef = useRef<() => void>(() => {});
-  const attemptReconnectRef = useRef<() => Promise<void>>(async () => {});
+  const handleConnectionLostRef = useRef<() => void>(() => { });
+  const attemptReconnectRef = useRef<() => Promise<void>>(async () => { });
 
   // ─── Watchdog: start monitoring data freshness ────────────────
   const startWatchdog = useCallback(() => {
@@ -848,11 +848,11 @@ export function useDevice() {
       const msg: Omit<ChatMessage, 'id'> & { from_mqtt?: boolean } =
         baseMsg.emoji != null && baseMsg.replyId != null
           ? {
-              ...baseMsg,
-              emoji:
-                normalizeReactionEmoji(baseMsg.emoji, baseMsg.payload) ??
-                sanitizeUnicodeReactionScalar(baseMsg.emoji),
-            }
+            ...baseMsg,
+            emoji:
+              normalizeReactionEmoji(baseMsg.emoji, baseMsg.payload) ??
+              sanitizeUnicodeReactionScalar(baseMsg.emoji),
+          }
           : baseMsg;
 
       if (msg.sender_id) {
@@ -1254,11 +1254,11 @@ export function useDevice() {
             prev.map((m) =>
               meshtasticPacketIdsEqual(m.packetId, rfDedupPacketId) && m.receivedVia === 'mqtt'
                 ? {
-                    ...m,
-                    receivedVia: 'both' as const,
-                    rxHops: m.rxHops ?? rfDedupHops,
-                    packetId: rfDedupPacketId,
-                  }
+                  ...m,
+                  receivedVia: 'both' as const,
+                  rxHops: m.rxHops ?? rfDedupHops,
+                  packetId: rfDedupPacketId,
+                }
                 : m,
             ),
           );
@@ -1275,10 +1275,10 @@ export function useDevice() {
         const rfMsg: ChatMessage = isEcho
           ? msg
           : {
-              ...msg,
-              receivedVia: 'rf' as const,
-              isHistory: isConfiguringRef.current || undefined,
-            };
+            ...msg,
+            receivedVia: 'rf' as const,
+            isHistory: isConfiguringRef.current || undefined,
+          };
 
         if (!isEcho && !rfMsg.emoji) {
           const crossDup = findMeshtasticCrossTransportDuplicate(messagesRef.current, rfMsg);
@@ -1944,10 +1944,10 @@ export function useDevice() {
                 ...(mp.rxSnr ? { snr: mp.rxSnr } : {}),
                 ...(mp.rxRssi ? { rssi: mp.rxRssi } : {}),
                 ...(hasHopUpdate &&
-                !(
-                  existing.last_heard > 0 &&
-                  Date.now() - existing.last_heard > MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs
-                )
+                  !(
+                    existing.last_heard > 0 &&
+                    Date.now() - existing.last_heard > MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs
+                  )
                   ? { hops_away: computedHopsAway }
                   : {}),
                 source: 'rf',
@@ -2646,8 +2646,8 @@ export function useDevice() {
     } catch (err) {
       console.warn(
         `[Meshtastic] Reconnect attempt ${reconnectAttemptRef.current} failed:` +
-          ' ' +
-          errLikeToLogString(err),
+        ' ' +
+        errLikeToLogString(err),
       );
       // Retry
       void attemptReconnectRef.current();
@@ -2840,10 +2840,10 @@ export function useDevice() {
             prev.map((m) =>
               m.packetId === tempId
                 ? {
-                    ...m,
-                    status: 'acked' as const,
-                    ...(resolvedPid !== tempId ? { packetId: resolvedPid } : {}),
-                  }
+                  ...m,
+                  status: 'acked' as const,
+                  ...(resolvedPid !== tempId ? { packetId: resolvedPid } : {}),
+                }
                 : m,
             ),
           );
@@ -3448,7 +3448,7 @@ export function useDevice() {
             replyId,
             MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
           )
-          .then(() => {})
+          .then(() => { })
           .catch((e: unknown) => {
             console.warn(
               '[useDevice] sendReaction device sendText failed ' + errLikeToLogString(e),
