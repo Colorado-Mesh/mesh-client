@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
@@ -584,7 +585,24 @@ export default function ConnectionPanel({
     const last = loadLastConnection(protocol);
     return last?.type === 'http' && last.httpAddress ? last.httpAddress : 'meshtastic.local';
   });
-  const [tcpHost, setTcpHost] = useState('localhost');
+  const [tcpHost, setTcpHost] = useState(() => {
+    const last = loadLastConnection(protocol);
+    if (last?.type === 'http' && last.httpAddress && protocol === 'meshcore') {
+      return parseTcpAddress(last.httpAddress).host;
+    }
+    return 'localhost';
+  });
+  const [tcpPortStr, setTcpPortStr] = useState<string>(() => {
+    const last = loadLastConnection(protocol);
+    if (last?.type === 'http' && last.httpAddress && protocol === 'meshcore') {
+      return String(parseTcpAddress(last.httpAddress).port);
+    }
+    return '5000';
+  });
+  const tcpPort = (() => {
+    const n = parseInt(tcpPortStr, 10);
+    return Number.isInteger(n) && n >= 1 && n <= 65535 ? n : 5000;
+  })();
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStage, setConnectionStage] = useState('');
@@ -596,7 +614,7 @@ export default function ConnectionPanel({
   const pinPromptSeenSinceRePairRef = useRef(false);
   const [pinCountdown, setPinCountdown] = useState<number | null>(null);
   const pinCountdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const activeHostAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
+  const activeHostAddress = protocol === 'meshcore' ? `${tcpHost}:${tcpPort}` : httpAddress;
 
   // ─── MQTT settings state ───────────────────────────────────────
   const [mqttSettings, setMqttSettings] = useState<MQTTSettings>(loadMqttSettings);
@@ -1539,7 +1557,9 @@ export default function ConnectionPanel({
       const fallbackAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
       const addr = lastConnection.httpAddress ?? fallbackAddress;
       if (protocol === 'meshcore') {
-        setTcpHost(addr);
+        const { host, port } = parseTcpAddress(addr);
+        setTcpHost(host);
+        setTcpPortStr(String(port));
       } else {
         setHttpAddress(addr);
       }
@@ -2860,20 +2880,42 @@ export default function ConnectionPanel({
           )}
           {connectionType === 'http' && protocol === 'meshcore' && (
             <div className="space-y-1">
-              <label htmlFor="connection-meshcore-tcp-host" className="text-muted text-xs">
-                {t('connectionPanel.meshcoreHost')}
-              </label>
-              <input
-                id="connection-meshcore-tcp-host"
-                type="text"
-                value={tcpHost}
-                onChange={(e) => {
-                  setTcpHost(e.target.value);
-                }}
-                placeholder="localhost or 192.168.1.x"
-                className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:border-purple-500 focus:outline-none"
-                autoComplete="off"
-              />
+              <div className="flex gap-2">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <label htmlFor="connection-meshcore-tcp-host" className="text-muted text-xs">
+                    {t('connectionPanel.meshcoreHost')}
+                  </label>
+                  <input
+                    id="connection-meshcore-tcp-host"
+                    type="text"
+                    value={tcpHost}
+                    onChange={(e) => {
+                      setTcpHost(e.target.value);
+                    }}
+                    placeholder="localhost or 192.168.1.x"
+                    className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:border-purple-500 focus:outline-none"
+                    autoComplete="off"
+                    aria-label={t('connectionPanel.meshcoreHost')}
+                  />
+                </div>
+                <div className="w-24 space-y-1">
+                  <label htmlFor="connection-meshcore-tcp-port" className="text-muted text-xs">
+                    {t('connectionPanel.meshcorePort')}
+                  </label>
+                  <input
+                    id="connection-meshcore-tcp-port"
+                    type="number"
+                    min={1}
+                    max={65535}
+                    value={tcpPortStr}
+                    onChange={(e) => {
+                      setTcpPortStr(e.target.value);
+                    }}
+                    className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:border-purple-500 focus:outline-none"
+                    aria-label={t('connectionPanel.meshcorePort')}
+                  />
+                </div>
+              </div>
               <p className="text-muted text-xs">{t('connectionPanel.meshcoreHostHint')}</p>
             </div>
           )}

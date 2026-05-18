@@ -211,7 +211,7 @@ function DonutChart({ title, slices }: DonutProps) {
       <p className="text-center text-sm font-medium text-gray-300">{title}</p>
       <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
         <div className="h-44 w-44 shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={176}>
             <PieChart>
               <Pie
                 data={slices}
@@ -432,7 +432,7 @@ export default function PacketDistributionPanel({
               <div className="flex flex-1 items-start justify-center">
                 <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
                   <div className="h-64 w-64 shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={256}>
                       <PieChart>
                         <Pie
                           data={typeDeviceSlices}

@@ -573,6 +573,11 @@ export interface ElectronAPI {
   getPlatform: () => string;
   showEmojiPanel: () => Promise<void>;
 
+  // ─── System clipboard (main process; renderer Async Clipboard API is unreliable in Electron) ─
+  clipboard: {
+    writeText: (text: string) => Promise<void>;
+  };
+
   // ─── Power events ────────────────────────────────────────────────────────────
   onPowerSuspend: (cb: () => void) => () => void;
   onPowerResume: (cb: () => void) => () => void;

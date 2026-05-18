@@ -48,10 +48,25 @@ describe('diagnosticsStore clearing behavior', () => {
     expect(localStorage.getItem(SNAPSHOT_KEY)).toBeNull();
   });
 
+  it('clearDiagnostics with preserveForeignLora keeps foreign LoRa detections', () => {
+    useDiagnosticsStore
+      .getState()
+      .recordForeignLora(42, 'meshcore', -55, 9, 0xabc, undefined, 'meshtastic-rf');
+    expect(useDiagnosticsStore.getState().foreignLoraDetections.get(42)?.size).toBe(1);
+
+    useDiagnosticsStore.getState().clearDiagnostics({ preserveForeignLora: true });
+
+    const state = useDiagnosticsStore.getState();
+    expect(state.diagnosticRows).toEqual([]);
+    expect(state.foreignLoraDetections.get(42)?.size).toBe(1);
+  });
+
   it('clearDiagnosticRowsSnapshot cancels pending snapshot persistence timer', () => {
     vi.useFakeTimers();
 
-    useDiagnosticsStore.getState().recordForeignLora(1, 'meshcore', -70, 12);
+    useDiagnosticsStore
+      .getState()
+      .recordForeignLora(1, 'meshcore', -70, 12, undefined, undefined, 'meshtastic-rf');
     useDiagnosticsStore.getState().clearDiagnosticRowsSnapshot();
 
     vi.advanceTimersByTime(3_000);

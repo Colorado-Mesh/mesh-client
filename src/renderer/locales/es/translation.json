@@ -60,8 +60,7 @@
     "protocolSwitcher": "Conmutador de protocolo",
     "switchToMeshtastic": "Cambiar a Meshtastic",
     "switchToMeshCore": "Cambiar a MeshCore",
-    "backToTop": "Volver al inicio",
-    "keyboardShortcuts": "Atajos de teclado"
+    "backToTop": "Volver al inicio"
   },
   "tabs": {
     "connection": "Conexión",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "No disponible en este modo"
-  },
-  "shortcuts": {
-    "title": "Atajos de teclado",
-    "caption": "Atajos del teclado de la aplicación",
-    "shortcutColumn": "Atajo",
-    "actionColumn": "Acción",
-    "toggleSearch": "Alternar búsqueda de mensajes (pestaña Chat)",
-    "closeSearch": "Cerrar la búsqueda / cerrar el panel DM (pestaña Chat)",
-    "sendMessage": "Enviar mensaje",
-    "newLine": "Nueva línea en el mensaje",
-    "openHelp": "Abrir esta ayuda de atajos de teclado",
-    "switchMeshtastic": "Cambiar a Meshtastic",
-    "switchMeshCore": "Cambiar a MeshCore",
-    "switchToTab": "Cambiar a la pestaña {{name}}",
-    "notInMeshCore": "(no disponible en MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: Repetidores)",
-    "packetSniffer": "Sniffer de paquetes",
-    "footerNote": "Cmd/Ctrl+0, A, M y S cambian a las pestañas App, Diagnostics, Stats y Packet Sniffer por nombre cuando esas pestañas están visibles (no por ranura fija, por lo que los accesos directos permanecen correctos cuando algunas pestañas están ocultas)."
   },
   "logPanel": {
     "showLevels": "Mostrar niveles",
@@ -161,7 +142,6 @@
     "mqttError": "Error MQTT",
     "mqttDisconnected": "MQTT desconectado",
     "footerSlogan": "Para todos, en todas partes. Únase a nosotros:",
-    "shortcuts": "Atajos",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} mensajes",
     "deviceStatus": {
       "disconnected": "Desconectado",
@@ -300,7 +280,7 @@
       }
     },
     "contactsOnRadioBadgeTitle": "{{part}} contactos en radio",
-    "pskBase64Placeholder": "base64...",
+    "pskBase64Placeholder": "Base64",
     "regeneratePsk": "Regenerado",
     "bluetoothEnabled": "Bluetooth habilitado",
     "bluetoothToggleDesc": "Active la radio Bluetooth en el dispositivo.",
@@ -317,8 +297,8 @@
     "wifiNetwork": "Wi-Fi / Red",
     "ntpPlaceholder": "0.pool.ntp.org",
     "displayNamePlaceholder": "NOMBRE",
-    "latPlaceholder": "0.000000",
-    "lonPlaceholder": "0.000000",
+    "latPlaceholder": "000000",
+    "lonPlaceholder": "000000",
     "altPlaceholder": "0",
     "channelNamePrimary": "Primario",
     "channelNameSecondary": "Nombre del canal",
@@ -779,7 +759,7 @@
     "allChannelsOption": "Todos los canales",
     "clearMessagesCount": "Borrar mensajes ({{count}})",
     "latLabel": "Latitud:",
-    "lonLabel": "Lon:",
+    "lonLabel": "Lon.:",
     "unitLabel": "Unidad:",
     "distanceUnitMiles": "millas",
     "distanceUnitKm": "kilómetros",
@@ -1178,7 +1158,8 @@
       "connectionFailed": "La conexión falló"
     },
     "cancelMqttConnect": "Cancelar",
-    "ripplePresetConfirm": "El ajuste preestablecido de Ripple utiliza credenciales comunitarias compartidas y desactiva la verificación del certificado TLS. Utilice esto solo en una red de confianza. ¿Continuar?"
+    "ripplePresetConfirm": "El ajuste preestablecido de Ripple utiliza credenciales comunitarias compartidas y desactiva la verificación del certificado TLS. Utilice esto solo en una red de confianza. ¿Continuar?",
+    "meshcorePort": "Puerto"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Filas de enrutamiento de más de {{hours}} horas (1–168)",
@@ -1235,7 +1216,6 @@
     "proximityNearby": "Cerca de ti",
     "proximityDistant": "Distante",
     "proximityUnknown": "Distancia desconocida",
-    "foreignLoraHeading": "Actividad LoRa extranjera (últimos 90 min)",
     "foreignClassColumn": "Curso",
     "foreignProximityColumn": "Proximidad",
     "foreignLastSeenColumn": "Visto por última vez",
@@ -1396,7 +1376,17 @@
       }
     },
     "cuHistoryHeading": "Utilización del canal (últimas 24h)",
-    "cuHistoryTooltipLabel": "Channel Util"
+    "cuHistoryTooltipLabel": "Channel Util",
+    "meshcoreUnknownForeignNode": "Nodo MeshCore desconocido",
+    "meshcoreRepeaterConflictBanner": "Alta velocidad de paquetes MeshCore (>5/min): un repetidor cercano puede estar causando colisiones en su canal Meshtastic.",
+    "meshcoreHeardByMeshtasticHeading": "Nodos MeshCore escuchados por tu radio Meshtastic ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Transmisores MeshCore escuchados en RF local en los últimos 90 minutos (registros de dispositivos Meshtastic o radio MeshCore RX). No incluye la sincronización de contactos del repetidor MeshCore. Estos no son tu nodo Meshtastic.",
+    "meshcoreHeardByMeshtasticEmpty": "No se han escuchado nodos MeshCore en su frecuencia Meshtastic en los últimos 90 minutos.",
+    "meshcoreHeardUnknownNode": "Transmisor MeshCore no identificado",
+    "meshcoreHeardNearbyEncrypted": "MeshCore RF cercano (cifrado)",
+    "foreignLoraHeading": "Otro LoRa extranjero en tu frecuencia de Meshtastic ({{count}})",
+    "foreignLoraDescription": "Transmisores Meshtastic y señales LoRa no reconocidas en tu frecuencia en los últimos 90 minutos. Los nodos MeshCore se enumeran en la sección anterior.",
+    "foreignLoraEmpty": "No hay actividad LoRa Meshtastic o desconocida en su frecuencia Meshtastic en los últimos 90 minutos."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",
@@ -1769,7 +1759,7 @@
     "shortName": "Nombre corto",
     "type": "Tipo",
     "hardware": "Hardware",
-    "role": "Role",
+    "role": "Rol",
     "pending": "(pendiente)",
     "pendingTitle": "Esperando el paquete NodeInfo completo",
     "notAvailableRemotely": "No disponible remotamente",

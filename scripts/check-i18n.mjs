@@ -143,6 +143,8 @@ const LOCALE_ARTIFACT_RES = [
   /<g\s+id=/i,
   /<\/g>/i,
   /<ph\s+id=/i,
+  /<bpt\b/i,
+  /<ept\b/i,
   /equiv-text=/i,
   /__\s*PH\s*\d/i,
   /__PH\s*\d/i,
@@ -154,6 +156,16 @@ const LOCALE_ARTIFACT_RES = [
 // Match as a whole-word token so substrings like "Meshtastic" inside
 // "non-Meshtastic" still count as a single brand occurrence.
 const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT'];
+
+// Leaf key names whose locale value must exactly equal the English value.
+// These are protocol terms / acronyms intentionally displayed in English across all locales.
+// Checked by leaf key name so nesting differences don't matter.
+const VERBATIM_KEY_NAMES = new Set([
+  'floodAdvertButton', // "Flood Advert" — mesh routing protocol term, not a water-flood advertisement
+  'floodAdvertSection', // same
+  'buttonFloodAdvert', // same
+  'sendButtonDm', // "DM" — direct-message abbreviation, used verbatim internationally
+]);
 
 function brandOccurrenceCount(text, brand) {
   // Whole-word, case-sensitive count.
@@ -180,9 +192,10 @@ const FORBIDDEN_HOP_TOKENS = [
   'luppolo',
   // tr
   'Şerbetçiotu',
-  // ru / uk / pl / cs
+  // ru / uk / pl / cs (include declined forms that stem-only checks miss)
   'Хмель',
   'хмель',
+  'хмелю', // dative/locative of both ru хмель and uk хміль
   'Хміль',
   'хміль',
   'Chmiel',
@@ -271,6 +284,17 @@ for (const dir of localeDirs) {
         );
         errors++;
       }
+    }
+
+    // Verbatim-key check. Certain protocol terms must display in English in
+    // all locales; their locale value must exactly equal the English value.
+    // Matched by leaf key name to be independent of nesting changes.
+    const leafKey = key.split('.').pop();
+    if (VERBATIM_KEY_NAMES.has(leafKey) && val !== enVal) {
+      console.error(
+        `Verbatim key "${dir}" key "${key}": must equal English value ${JSON.stringify(enVal)} but has ${JSON.stringify(val)}.`,
+      );
+      errors++;
     }
   }
 }

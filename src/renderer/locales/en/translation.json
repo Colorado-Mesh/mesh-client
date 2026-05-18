@@ -66,8 +66,7 @@
     "protocolSwitcher": "Protocol switcher",
     "switchToMeshtastic": "Switch to Meshtastic",
     "switchToMeshCore": "Switch to MeshCore",
-    "backToTop": "Back to top",
-    "keyboardShortcuts": "Keyboard shortcuts (?)"
+    "backToTop": "Back to top"
   },
   "tabs": {
     "connection": "Connection",
@@ -90,24 +89,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Not available in this mode"
-  },
-  "shortcuts": {
-    "title": "Keyboard Shortcuts",
-    "caption": "Application keyboard shortcuts",
-    "shortcutColumn": "Shortcut",
-    "actionColumn": "Action",
-    "toggleSearch": "Toggle message search (Chat tab)",
-    "closeSearch": "Close search / close DM panel (Chat tab)",
-    "sendMessage": "Send message",
-    "newLine": "New line in message",
-    "openHelp": "Open this keyboard shortcuts help",
-    "switchMeshtastic": "Switch to Meshtastic",
-    "switchMeshCore": "Switch to MeshCore",
-    "switchToTab": "Switch to {{name}} tab",
-    "notInMeshCore": " (not available in MeshCore)",
-    "meshCoreRepeaters": " (MeshCore: Repeaters)",
-    "packetSniffer": "Packet Sniffer",
-    "footerNote": "Cmd/Ctrl+0, A, M, R, G, and S switch to the App, Diagnostics, Stats, RF, Graph, and Packet Sniffer tabs by name when those tabs are visible (not by fixed slot, so shortcuts stay correct when some tabs are hidden)."
   },
   "logPanel": {
     "showLevels": "Show levels",
@@ -176,7 +157,6 @@
     },
     "nodeLabel": "Node: {{name}}",
     "footerSlogan": "For everyone, everywhere. Join us:",
-    "shortcuts": "Shortcuts",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} messages"
   },
   "toasts": {
@@ -1100,8 +1080,9 @@
     "deviceAddress": "Device Address",
     "deviceAddressHint": "Enter hostname or IP address (without http://)",
     "windowsMdnsNote": "On Windows, meshtastic.local may not resolve — use the device's IP address instead.",
-    "meshcoreHost": "Host (port 5000)",
-    "meshcoreHostHint": "MeshCore companion radio host (connects on port 5000)",
+    "meshcoreHost": "Host",
+    "meshcoreHostHint": "MeshCore companion radio TCP host and port",
+    "meshcorePort": "Port",
     "hintMeshtasticBle1": "Ensure your Meshtastic device has Bluetooth enabled and is in range.",
     "hintMeshtasticBle2": "Click Connect to scan — a device picker will appear with discovered Meshtastic devices.",
     "hintMeshcoreBle1": "Ensure your MeshCore device has Bluetooth enabled and is in range.",
@@ -1191,6 +1172,13 @@
     "searchAnomalies": "Search anomalies...",
     "meshcoreInterferenceHeading": "MeshCore nodes heard on frequency ({{count}})",
     "meshcoreInterferenceDescription": "These entries identify on-frequency MeshCore interference heard by this radio. They can contribute to utilization and retry issues, but are not Meshtastic route-failure diagnostics by themselves.",
+    "meshcoreUnknownForeignNode": "Unknown MeshCore node",
+    "meshcoreHeardByMeshtasticHeading": "MeshCore nodes heard by your Meshtastic radio ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "MeshCore transmitters overheard on local RF in the last 90 minutes (Meshtastic device logs or MeshCore radio RX). Does not include MeshCore repeater contact sync. These are not your Meshtastic node.",
+    "meshcoreHeardByMeshtasticEmpty": "No MeshCore nodes heard on your Meshtastic frequency in the last 90 minutes.",
+    "meshcoreHeardUnknownNode": "Unidentified MeshCore transmitter",
+    "meshcoreHeardNearbyEncrypted": "Nearby MeshCore RF (encrypted)",
+    "meshcoreRepeaterConflictBanner": "High MeshCore packet rate (>5/min) — a nearby repeater may be causing collisions on your Meshtastic channel.",
     "otherCrossProtocolHeading": "Other on-frequency / cross-stack traffic ({{count}})",
     "removeMqttFilter": "Remove per-node MQTT filter",
     "excludeMqttData": "Exclude this node's MQTT data from diagnostics",
@@ -1242,7 +1230,9 @@
     "proximityUnknown": "Unknown Distance",
     "cuHistoryHeading": "Channel Utilization (last 24h)",
     "cuHistoryTooltipLabel": "Channel Util",
-    "foreignLoraHeading": "Foreign LoRa Activity (last 90 min)",
+    "foreignLoraHeading": "Other foreign LoRa on your Meshtastic frequency ({{count}})",
+    "foreignLoraDescription": "Meshtastic transmitters and unrecognized LoRa signals on your frequency in the last 90 minutes. MeshCore nodes are listed in the section above.",
+    "foreignLoraEmpty": "No Meshtastic or unknown LoRa activity on your Meshtastic frequency in the last 90 minutes.",
     "foreignClassColumn": "Class",
     "foreignProximityColumn": "Proximity",
     "foreignLastSeenColumn": "Last Seen",

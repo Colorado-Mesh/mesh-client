@@ -208,6 +208,9 @@ const electronAPIMock = {
   quitApp: vi.fn().mockResolvedValue(undefined),
   getPlatform: vi.fn().mockReturnValue('linux'),
   showEmojiPanel: vi.fn().mockResolvedValue(undefined),
+  clipboard: {
+    writeText: vi.fn().mockResolvedValue(undefined),
+  },
   notify: {
     show: vi.fn().mockResolvedValue(undefined),
   },

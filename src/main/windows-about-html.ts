@@ -44,7 +44,7 @@ export function buildWindowsAboutDocumentHtml(appName: string, version: string):
 </style></head><body>
   <h1>${title}</h1>
   <div class="ver">Version ${ver}</div>
-  <p>Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows with multi-language support, BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, routing diagnostics, and keyboard-first workflows.</p>
+  <p>Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows with multi-language support, BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, and routing diagnostics.</p>
   <p>License: MIT &middot; Author: Colorado Mesh</p>
   <div class="actions" role="group" aria-label="About actions">
     <button type="button" class="close-btn" onclick="window.close()" aria-label="Close About window">Close</button>

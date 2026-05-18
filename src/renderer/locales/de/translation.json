@@ -60,8 +60,7 @@
     "protocolSwitcher": "Protokollumschalter",
     "switchToMeshtastic": "Zu Meshtastic wechseln",
     "switchToMeshCore": "Zu MeshCore wechseln",
-    "backToTop": "Zum Seitenanfang",
-    "keyboardShortcuts": "Tastaturkürzel"
+    "backToTop": "Zum Seitenanfang"
   },
   "tabs": {
     "connection": "verbindung",
@@ -73,7 +72,6 @@
     "modules": "Module",
     "telemetry": "Telemetrie",
     "security": "Sicherheit",
-    "tak": "TAK",
     "app": "App",
     "diagnostics": "Diagnostik",
     "stats": "Statistik",
@@ -84,24 +82,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Nicht verfügbar in diesem Modus."
-  },
-  "shortcuts": {
-    "title": "Tastaturkürzel",
-    "caption": "Tastenkombinationen für Anwendungen",
-    "shortcutColumn": "Abkürzung",
-    "actionColumn": "Handlung",
-    "toggleSearch": "Nachrichtensuche umschalten (Registerkarte Chat)",
-    "closeSearch": "Suche schließen/ DM-Panel schließen (Registerkarte Chat)",
-    "sendMessage": "Nachricht senden",
-    "newLine": "Neue Zeile in der Nachricht",
-    "openHelp": "Hilfe zu diesen Tastenkombinationen öffnen",
-    "switchMeshtastic": "Zu Meshtastic wechseln",
-    "switchMeshCore": "Zu MeshCore wechseln",
-    "switchToTab": "Zu Tab {{name}} wechseln",
-    "notInMeshCore": "(nicht in MeshCore verfügbar)",
-    "meshCoreRepeaters": "(MeshCore: Repeater)",
-    "packetSniffer": "Paket-Sniffer",
-    "footerNote": "Cmd/Strg+0, A, M und S wechseln zu den Registerkarten App, Diagnostics, Stats und Packet Sniffer nach Namen, wenn diese Registerkarten sichtbar sind (nicht nach festem Steckplatz, so dass Verknüpfungen korrekt bleiben, wenn einige Registerkarten ausgeblendet sind)."
   },
   "logPanel": {
     "showLevels": "Alle Ebenen anzeigen",
@@ -161,7 +141,6 @@
     "mqttError": "MQTT-Fehler",
     "mqttDisconnected": "MQTT-Verbindung getrennt",
     "footerSlogan": "Für alle, überall. Begleiten Sie uns:",
-    "shortcuts": "Verknüpfungen",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} Nachrichten",
     "deviceStatus": {
       "disconnected": "Nicht verbunden",
@@ -246,56 +225,41 @@
     "deviceMetricsDescription": "Mesh-Broadcast: Wie oft werden Batterie, Spannung und Kanalauslastung über LoRa gesendet? 0 = deaktiviert; Standard 1800 s (30 min). Verbundene App: Bei einer Verbindung über Bluetooth, seriell oder WLAN sendet die Firmware oft noch etwa alle 60 Sekunden Gerätemetriken an diesen Client, um die Aktualität auf dem Bildschirm zu gewährleisten – das ist nicht dasselbe wie Ihr Mesh-Intervall.",
     "deviceMetricsTooltip": "Die Meshtastic-Firmware sendet ungefähr einmal pro Minute Gerätemetriken zur lokalen Überwachung an einen verbundenen Client, unabhängig vom Mesh-Telemetrieintervall. Offizielle Referenz: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
-      "0": {
-        "label": "Metrisch"
-      },
-      "1": {
-        "label": "Kaiserlich"
-      }
+      "0": {},
+      "1": {}
     },
     "deviceRoles": {
       "0": {
-        "label": "Kunde",
         "description": "Normaler Client-Modus"
       },
       "1": {
-        "label": "Client-Stummschaltung",
         "description": "Client, der nicht sendet"
       },
       "2": {
-        "label": "Router",
         "description": "Dedizierter Router/Repeater"
       },
       "3": {
-        "label": "Router-Client",
         "description": "Router + Client-Modus"
       },
       "4": {
-        "label": "Kundenstamm",
         "description": "Basisstation für Client-Geräte"
       },
       "5": {
-        "label": "Tracker",
         "description": "Nur GPS-Tracker"
       },
       "6": {
-        "label": "Sensor",
         "description": "Telemetrie-Sensorknoten"
       },
       "7": {
-        "label": "TAK",
         "description": "TAK-fähiges Gerät"
       },
       "8": {
-        "label": "Kunde ausgeblendet",
         "description": "Client, aus der Knotenliste ausgeblendet"
       },
       "9": {
-        "label": "Verloren und gefunden",
         "description": "Sendet Position zur Genesung"
       },
       "10": {
-        "label": "TAK-Tracker",
         "description": "TAK-Tracker-Modus"
       }
     },
@@ -363,7 +327,7 @@
     "meshcoreDeriving": "Ableiten…",
     "meshcoreGenerateRandomKey": "Zufällig generieren",
     "meshcoreChannelNameLabel": "Name",
-    "roleFieldLabel": "Role",
+    "roleFieldLabel": "Funktion",
     "longNameFieldLabel": "Langname",
     "shortNameFieldLabel": "Initialien",
     "meshcoreNameFieldLabel": "Benennung",
@@ -441,7 +405,7 @@
     "gpsModeEnabled": "Aktiviert",
     "gpsModeNotPresent": "Nicht vorhanden",
     "wifiEnabledDesc": "Aktivieren Sie das WLAN-Radio des Geräts. Benötigt einen Neustart, um wirksam zu werden.",
-    "wifiSsidLabel": "WiFi SSID",
+    "wifiSsidLabel": "SSID",
     "ntpServerLabel": "NTP-Server",
     "ethernetEnabledDesc": "Aktivieren Sie Hardware-Ethernet (unterstützt auf ausgewählten Geräten).",
     "floodAdvertButton": "Flood Advert",
@@ -882,14 +846,14 @@
     "columnShort": "Kurz",
     "columnLastHeard": "Zuletzt gehört:",
     "columnType": "Art",
-    "columnRole": "Role",
+    "columnRole": "Funktion",
     "columnHops": "Hops",
     "columnMqtt": "MQTT",
     "columnLat": "LAT",
     "columnLon": "WS",
     "columnMgrs": "MGRS",
     "columnSignal": "Signal",
-    "columnSnr": "SNR (Signalrauschunterdrückung)",
+    "columnSnr": "SNR",
     "columnBattery": "Batterie",
     "columnVoltage": "Netzspannung",
     "columnChUtil": "Ch.Util",
@@ -1178,7 +1142,8 @@
       "connectionFailed": "Verbindung fehlgeschlagen"
     },
     "cancelMqttConnect": "Stornieren",
-    "ripplePresetConfirm": "Die Ripple-Voreinstellung verwendet gemeinsam genutzte Community-Anmeldeinformationen und deaktiviert die TLS-Zertifikatüberprüfung. Nur in einem vertrauenswürdigen Netzwerk verwenden. Fortfahren?"
+    "ripplePresetConfirm": "Die Ripple-Voreinstellung verwendet gemeinsam genutzte Community-Anmeldeinformationen und deaktiviert die TLS-Zertifikatüberprüfung. Nur in einem vertrauenswürdigen Netzwerk verwenden. Fortfahren?",
+    "meshcorePort": "Port"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Wirf Routingreihen, die älter als {{hours}} Stunden (1-168) sind",
@@ -1235,7 +1200,6 @@
     "proximityNearby": "In der Nähe",
     "proximityDistant": "Entfernt",
     "proximityUnknown": "Unbekannte Entfernung",
-    "foreignLoraHeading": "Ausländische LoRa-Aktivität (letzte 90 Minuten)",
     "foreignClassColumn": "Klasse",
     "foreignProximityColumn": "Nähe",
     "foreignLastSeenColumn": "Zuletzt Online",
@@ -1396,7 +1360,17 @@
       }
     },
     "cuHistoryHeading": "Kanalauslastung (letzte 24h)",
-    "cuHistoryTooltipLabel": "Kanal-Util"
+    "cuHistoryTooltipLabel": "Kanal-Util",
+    "meshcoreUnknownForeignNode": "Unbekannter MeshCore-Knoten",
+    "meshcoreRepeaterConflictBanner": "Hohe MeshCore-Paketrate (>5/min) — ein Repeater in der Nähe kann Kollisionen auf Ihrem Meshtastic-Kanal verursachen.",
+    "meshcoreHeardByMeshtasticHeading": "MeshCore-Knoten, die von Ihrem Meshtastic-Funkgerät ({{count}}) gehört werden",
+    "meshcoreHeardByMeshtasticDescription": "MeshCore-Sender haben in den letzten 90 Minuten auf lokaler HF mitgehört (Meshtastic-Geräteprotokolle oder MeshCore-Radio-RX). Enthält keine MeshCore-Repeater-Kontaktsynchronisierung. Dies sind nicht deine Meshtastic Knoten.",
+    "meshcoreHeardByMeshtasticEmpty": "In den letzten 90 Minuten wurden auf Ihrer Meshtastic-Frequenz keine MeshCore-Knoten gehört.",
+    "meshcoreHeardUnknownNode": "Nicht identifizierter MeshCore-Sender",
+    "meshcoreHeardNearbyEncrypted": "In der Nähe MeshCore RF (verschlüsselt)",
+    "foreignLoraHeading": "Andere fremde LoRa auf Ihrer Meshtastic-Frequenz ({{count}})",
+    "foreignLoraDescription": "Meshtastic Sender und nicht erkannte LoRa-Signale auf Ihrer Frequenz in den letzten 90 Minuten. MeshCore-Knoten sind im obigen Abschnitt aufgeführt.",
+    "foreignLoraEmpty": "Keine Meshtastic oder unbekannte LoRa-Aktivität auf Ihrer Meshtastic Frequenz in den letzten 90 Minuten."
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",
@@ -1662,7 +1636,7 @@
     "sectionPacketsMeshCore": "Pakete (MeshCore)",
     "seriesBatteryPct": "Batterie",
     "seriesVoltage": "Netzspannung",
-    "seriesSnr": "SNR (Signalrauschunterdrückung)",
+    "seriesSnr": "SNR",
     "seriesRssi": "RSSI",
     "seriesTempF": "temp-f",
     "seriesTempC": "Temp/C",
@@ -1799,7 +1773,7 @@
     "echoN": "Echo {{n}}",
     "paths": "{{count}} Pfade",
     "meshcorePathHistory": "MeshCore-Pfadverlauf",
-    "hopsLabel": "Hops: ",
+    "hopsLabel": "Hops:",
     "olderCount": "+{{count}} älter",
     "hopN": "Hop {{n}}",
     "dest": "Ziel",
@@ -1838,79 +1812,60 @@
   "logAnalyzer": {
     "categories": {
       "ble-connection": {
-        "label": "Probleme mit der BLE-Verbindung",
         "recommendation": "BLE-Verbindung instabil. Überprüfen Sie die Entfernung zum Gerät und den Status des Bluetooth-Adapters."
       },
       "mqtt": {
-        "label": "MQTT-Probleme",
         "recommendation": "Probleme mit der MQTT-Verbindung. Überprüfen Sie die Broker-URL, Anmeldeinformationen und Netzwerkkonnektivität."
       },
       "mqtt-retries-exhausted": {
-        "label": "MQTT-Wiederverbindungslimit",
         "recommendation": "MQTT gab nach maximaler Wiederverbindung auf. Stellen Sie sicher, dass der Broker erreichbar ist, Anmeldeinformationen und Port korrekt sind und Firewalls ausgehenden Datenverkehr zulassen."
       },
       "watchdog": {
-        "label": "Watchdog-Trigger",
         "recommendation": "Watchdog hat die Wiederverbindung ausgelöst. Die Gerätekommunikation ist möglicherweise instabil."
       },
       "handshake": {
-        "label": "Handshake-Fehler",
         "recommendation": "Verbindungs-Handshake ist fehlgeschlagen. Versuchen Sie, die Verbindung manuell wiederherzustellen."
       },
       "ble-connect-race": {
-        "label": "BLE Connect-Rennen/Timeout",
         "recommendation": "Zeitüberschreitung beim BLE-Handshake oder Unterbrechung der Verbindung. Überprüfen Sie die Stabilität der BLE-Verbindung und den Abstand zum Gerät."
       },
       "auth-decrypt": {
-        "label": "Authentifizierungs-/Entschlüsselungsfehler",
         "recommendation": "Authentifizierungs- oder Entschlüsselungsfehler. Überprüfen Sie, ob die Kanalschlüssel zwischen den Geräten übereinstimmen."
       },
       "native-module": {
-        "label": "Fehler beim Laden des nativen Moduls",
         "recommendation": "Ein natives Add-on konnte nicht geladen werden – häufig falsche Electron-ABI nach einem Upgrade. Führen Sie pnpm install im Projektordner aus (oder führen Sie pnpm rebuild aus), beenden Sie alle App-Instanzen und versuchen Sie es erneut."
       },
       "internal-error": {
-        "label": "Interne App-Fehler",
         "recommendation": "Es ist ein unerwarteter interner Fehler aufgetreten. Bitte melden Sie diesen Fehler mit der Protokolldatei."
       },
       "database-error": {
-        "label": "Datenbankfehler",
         "recommendation": "Datenbankfehler. Dies kann auf eine beschädigte Datenbankdatei oder ein Berechtigungsproblem hinweisen."
       },
       "database-chmod": {
-        "label": "Datenbank chmod (nicht schwerwiegend)",
         "recommendation": "Die Optimierung der Datenbankdateiberechtigungen ist fehlgeschlagen (häufig harmlos unter Windows). Wenn Sie an anderer Stelle echte DB-Fehler sehen, überprüfen Sie die Antiviren- und Ordnerberechtigungen für das Mesh-Client-Benutzerdatenverzeichnis."
       },
       "database-writable": {
-        "label": "Datenbank nicht beschreibbar",
         "recommendation": "Die App kann ihren Datenbankordner nicht schreiben. Korrigieren Sie die Berechtigungen für das Mesh-Client-Benutzerdatenverzeichnis (siehe Fehlerbehebung: Datenbankverzeichnis ist nicht beschreibbar)."
       },
       "tak-server": {
-        "label": "Probleme mit dem TAK-Server",
         "recommendation": "TAK-Serverfehler. Überprüfen Sie den Zertifikatsstatus und die Portverfügbarkeit."
       },
       "updater": {
-        "label": "App-Updater-Fehler",
         "recommendation": "Fehler beim App-Updater. Überprüfen Sie Ihre Internetverbindung oder versuchen Sie ein manuelles Update von GitHub."
       },
       "meshcore-tcp": {
-        "label": "MeshCore IP Bridge-Fehler",
         "recommendation": "MeshCore TCP-Bridge-Fehler. Stellen Sie sicher, dass der Remote-Host und der Remote-Port erreichbar sind."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "BLE Notify Watchdog (MeshCore)",
         "recommendation": "Keine GATT-Benachrichtigungsdaten innerhalb des Watchdog-Fensters (üblich unter Windows). Versuchen Sie erneut, eine Verbindung herzustellen. Stellen Sie sicher, dass das Radio in den Bluetooth-Einstellungen des Betriebssystems gekoppelt ist, bevor Sie eine Verbindung herstellen."
       },
       "bluetooth-pairing": {
-        "label": "Probleme mit der Bluetooth-Kopplung",
         "recommendation": "Die Bluetooth-Kopplung oder -Entkopplung ist fehlgeschlagen oder die PIN-Eingabeaufforderung ist abgelaufen. Öffnen Sie beim Koppeln die App, geben Sie sofort die PIN ein, überprüfen Sie die MAC-Adresse und Bluetooth-Berechtigungen oder entfernen Sie die Bluetooth-Einstellungen des Betriebssystems und koppeln Sie sie erneut."
       },
       "sdk-meshtastic": {
-        "label": "Meshtastic SDK-Warnungen/Fehler",
         "recommendation": "Der Meshtastic-Stack hat eine Warnung oder einen Fehler gemeldet. Wenn es erneut auftritt, überprüfen Sie die Firmware, den Transport (BLE/seriell) und stellen Sie die Verbindung wieder her."
       },
       "sdk-meshcore": {
-        "label": "MeshCore SDK-Warnungen/Fehler",
         "recommendation": "Der MeshCore-Stack hat eine Warnung oder einen Fehler gemeldet. Wenn es erneut auftritt, überprüfen Sie die BLE-Kopplung und die MQTT-Einstellungen und stellen Sie die Verbindung erneut her."
       }
     },
@@ -1940,12 +1895,10 @@
     "roles": {
       "client": "Kunde",
       "clientMute": "Client-Stummschaltung",
-      "router": "Router",
       "routerClient": "Router-Client",
       "repeater": "Repeater",
       "tracker": "Tracker",
       "sensor": "Sensor",
-      "tak": "TAK",
       "clientHidden": "Kunde ausgeblendet",
       "lostAndFound": "Verloren und gefunden",
       "takTracker": "TAK-Tracker",

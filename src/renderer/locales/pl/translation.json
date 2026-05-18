@@ -60,8 +60,7 @@
     "protocolSwitcher": "Przełącznik protokołu",
     "switchToMeshtastic": "Przełącz na Meshtastic",
     "switchToMeshCore": "Przełącz na MeshCore",
-    "backToTop": "Powrót do góry",
-    "keyboardShortcuts": "Skróty klawiaturowe"
+    "backToTop": "Powrót do góry"
   },
   "tabs": {
     "connection": "Więzi",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Niedostępne w tym trybie"
-  },
-  "shortcuts": {
-    "title": "Skróty klawiaturowe",
-    "caption": "Skróty klawiaturowe aplikacji",
-    "shortcutColumn": "Skrót",
-    "actionColumn": "Czynność",
-    "toggleSearch": "Przełącz wyszukiwanie wiadomości (karta Czat)",
-    "closeSearch": "Zamknij panel wyszukiwania / zamykania DM (karta Czat)",
-    "sendMessage": "Wyślij wiadomość",
-    "newLine": "Nowa linia w wiadomości",
-    "openHelp": "Otwórz pomoc dotyczącą skrótów klawiaturowych",
-    "switchMeshtastic": "Przełącz na Meshtastic",
-    "switchMeshCore": "Przejdź na MeshCore",
-    "switchToTab": "Przejdź do zakładki {{name}}",
-    "notInMeshCore": "(niedostępne w MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: Repeatery)",
-    "packetSniffer": "Sniffer pakietów",
-    "footerNote": "Cmd/Ctrl+0, A, M i S przełączają się na zakładki App, Diagnostics, Stats i Packet Sniffer po nazwie, gdy te zakładki są widoczne (nie według stałego gniazda, więc skróty pozostają poprawne, gdy niektóre zakładki są ukryte)."
   },
   "logPanel": {
     "showLevels": "Pokaż poziomy",
@@ -161,7 +142,6 @@
     "mqttError": "Błąd MQTT",
     "mqttDisconnected": "MQTT rozłączony",
     "footerSlogan": "Dla każdego, wszędzie. Dołącz do nas:",
-    "shortcuts": "Skróty",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} wiadomości",
     "deviceStatus": {
       "disconnected": "Rozłączono",
@@ -968,7 +948,7 @@
     "showPublicKeysDesc": "Pokaż klucz publiczny każdego kontaktu pod nazwą.",
     "clearAllIntro": "Usuń wszystkie kontakty z radia i wyczyść bazę danych kontaktów aplikacji. Tego nie można cofnąć.",
     "clearAllContactsConfirm": "Usunąć wszystkie kontakty z radia i wyczyścić lokalne dane kontaktowe?",
-    "clearingContacts": "Clearing…",
+    "clearingContacts": "Czyszczenie...",
     "clearAllContactsButton": "Wyczyść wszystkie kontakty"
   },
   "chatPanel": {
@@ -1178,7 +1158,8 @@
       "connectionFailed": "Połączenie nie powiodło się"
     },
     "cancelMqttConnect": "Anulować",
-    "ripplePresetConfirm": "Ustawienie wstępne Ripple wykorzystuje udostępnione poświadczenia społeczności i wyłącza weryfikację certyfikatu TLS. Używaj tego tylko w zaufanej sieci. Kontynuować?"
+    "ripplePresetConfirm": "Ustawienie wstępne Ripple wykorzystuje udostępnione poświadczenia społeczności i wyłącza weryfikację certyfikatu TLS. Używaj tego tylko w zaufanej sieci. Kontynuować?",
+    "meshcorePort": "Port"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Usuń wiersze routingu starsze niż {{hours}} godzin (1–168)",
@@ -1235,7 +1216,6 @@
     "proximityNearby": "W pobliżu",
     "proximityDistant": "Odległy",
     "proximityUnknown": "Nieznana odległość",
-    "foreignLoraHeading": "Aktywność zagraniczna LoRa (ostatnie 90 min)",
     "foreignClassColumn": "Klasa",
     "foreignProximityColumn": "Bliskość",
     "foreignLastSeenColumn": "Ostatnio widziany",
@@ -1246,7 +1226,7 @@
     "autoTraceroute": "Automatyczne śledzenie trasy",
     "autoTracerouteHelp": "Sonduj wszystkie węzły co 30 minut",
     "environmentProfile": "Profil środowiska",
-    "environmentStandard": "Standard",
+    "environmentStandard": "Standardowy",
     "environmentCity": "Miasto",
     "environmentCanyon": "Kanion",
     "environmentStandardHint": "Domyślny próg 3 km",
@@ -1396,7 +1376,17 @@
       }
     },
     "cuHistoryHeading": "Wykorzystanie kanału (ostatnie 24 godziny)",
-    "cuHistoryTooltipLabel": "Channel Util"
+    "cuHistoryTooltipLabel": "Channel Util",
+    "meshcoreUnknownForeignNode": "Nieznany węzeł MeshCore",
+    "meshcoreRepeaterConflictBanner": "Wysoka szybkość pakietów MeshCore (>5/min) — pobliski repeater może powodować kolizje na kanale Meshtastic.",
+    "meshcoreHeardByMeshtasticHeading": "Węzły MeshCore słyszane przez Meshtastic radio ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Nadajniki MeshCore podsłuchiwane na lokalnym falach radiowych w ciągu ostatnich 90 minut (dzienniki urządzeń Meshtastic lub MeshCore radio RX). Nie obejmuje synchronizacji styków wzmacniacza MeshCore. To nie jest Twój węzeł Meshtastic.",
+    "meshcoreHeardByMeshtasticEmpty": "W ciągu ostatnich 90 minut na częstotliwości Meshtastic nie słychać żadnych węzłów MeshCore.",
+    "meshcoreHeardUnknownNode": "Niezidentyfikowany nadajnik MeshCore",
+    "meshcoreHeardNearbyEncrypted": "W pobliżu MeshCore RF (zaszyfrowany)",
+    "foreignLoraHeading": "Inne obce LoRa na Twojej częstotliwości Meshtastic ({{count}})",
+    "foreignLoraDescription": "Nadajniki Meshtastic i nierozpoznane sygnały LoRa na Twojej częstotliwości w ciągu ostatnich 90 minut. Węzły MeshCore są wymienione w sekcji powyżej.",
+    "foreignLoraEmpty": "Brak aktywności Meshtastic lub nieznanej aktywności LoRa na częstotliwości Meshtastic w ciągu ostatnich 90 minut."
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

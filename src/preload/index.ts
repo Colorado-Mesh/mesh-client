@@ -704,6 +704,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlatform: () => process.platform,
   showEmojiPanel: () => ipcRenderer.invoke('app:showEmojiPanel'),
 
+  // ─── System clipboard (main process; preload direct access is unreliable on macOS) ─
+  clipboard: {
+    writeText: (text: string): Promise<void> => ipcRenderer.invoke('clipboard:writeText', text),
+  },
+
   // ─── Native OS notifications ───────────────────────────────────
   notify: {
     show: (title: string, body: string): Promise<void> =>

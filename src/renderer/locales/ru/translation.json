@@ -60,8 +60,7 @@
     "protocolSwitcher": "Переключатель протоколов",
     "switchToMeshtastic": "Переключиться на Meshtastic",
     "switchToMeshCore": "Переключиться на MeshCore",
-    "backToTop": "Вернуться наверх",
-    "keyboardShortcuts": "Сочетания клавиш (?)"
+    "backToTop": "Вернуться наверх"
   },
   "tabs": {
     "connection": "Связь",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Недоступно в этом режиме"
-  },
-  "shortcuts": {
-    "title": "Сочетания клавиш",
-    "caption": "Сочетания клавиш приложений",
-    "shortcutColumn": "Ярлык",
-    "actionColumn": "Действие",
-    "toggleSearch": "Переключить поиск сообщений (вкладка «Чат»)",
-    "closeSearch": "Закрыть поиск/закрыть панель DM (вкладка Чат)",
-    "sendMessage": "Отправить сообщение",
-    "newLine": "Новая строка в сообщении",
-    "openHelp": "Откройте справку по сочетаниям клавиш",
-    "switchMeshtastic": "Переключиться на Meshtastic",
-    "switchMeshCore": "Переключиться на MeshCore",
-    "switchToTab": "Перейдите на вкладку {{name}}",
-    "notInMeshCore": "(недоступно в MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: повторители)",
-    "packetSniffer": "Сниффер пакетов",
-    "footerNote": "Cmd/Ctrl+0, A, M и S переключаются на вкладки «Приложение», «Диагностика», «Статистика» и «Сниффер пакетов» по ​​имени, когда эти вкладки видны (а не по фиксированному слоту, поэтому ярлыки остаются корректными, когда некоторые вкладки скрыты)."
   },
   "logPanel": {
     "showLevels": "Показать уровни",
@@ -161,7 +142,6 @@
     "mqttError": "Ошибка MQTT",
     "mqttDisconnected": "MQTT отключен",
     "footerSlogan": "Для всех и везде. Присоединяйтесь к нам:",
-    "shortcuts": "Ярлыки",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} сообщений",
     "deviceStatus": {
       "disconnected": "Отключено",
@@ -1177,7 +1157,8 @@
       "connectionFailed": "Соединение не удалось"
     },
     "cancelMqttConnect": "Отмена",
-    "ripplePresetConfirm": "Предустановка Ripple использует учетные данные общего сообщества и отключает проверку сертификата TLS. Используйте только в доверенной сети. Продолжить?"
+    "ripplePresetConfirm": "Предустановка Ripple использует учетные данные общего сообщества и отключает проверку сертификата TLS. Используйте только в доверенной сети. Продолжить?",
+    "meshcorePort": "Порт"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Удалить строки маршрутизации старше {{hours}} часов (1–168).",
@@ -1234,7 +1215,6 @@
     "proximityNearby": "Рядом",
     "proximityDistant": "Далекий",
     "proximityUnknown": "Неизвестное расстояние",
-    "foreignLoraHeading": "Зарубежная деятельность LoRa (последние 90 минут)",
     "foreignClassColumn": "Сорт",
     "foreignProximityColumn": "Близость",
     "foreignLastSeenColumn": "Последний визит",
@@ -1395,7 +1375,17 @@
       }
     },
     "cuHistoryHeading": "Использование канала (последние 24 часа)",
-    "cuHistoryTooltipLabel": "Утилизация канала"
+    "cuHistoryTooltipLabel": "Утилизация канала",
+    "meshcoreUnknownForeignNode": "Неизвестный узел MeshCore",
+    "meshcoreRepeaterConflictBanner": "Высокая скорость передачи пакетов MeshCore (>5/мин) — соседний ретранслятор может вызывать коллизии на вашем канале Meshtastic.",
+    "meshcoreHeardByMeshtasticHeading": "Узлы MeshCore, услышанные вашим Meshtastic-радио ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Передатчики MeshCore подслушали локальные радиочастоты за последние 90 минут (журналы Meshtastic устройств или MeshCore radio RX). Не включает синхронизацию контактов повторителя MeshCore. Это не ваш Meshtastic узел.",
+    "meshcoreHeardByMeshtasticEmpty": "За последние 90 минут на вашей частоте Meshtastic не было слышно ни одного узла MeshCore.",
+    "meshcoreHeardUnknownNode": "Неопознанный передатчик MeshCore",
+    "meshcoreHeardNearbyEncrypted": "Близлежащий MeshCore RF (зашифрованный)",
+    "foreignLoraHeading": "Другие иностранные LoRa на вашей частоте Meshtastic ({{count}})",
+    "foreignLoraDescription": "Meshtastic передатчики и нераспознанные сигналы LoRa на вашей частоте за последние 90 минут. Узлы MeshCore перечислены в разделе выше.",
+    "foreignLoraEmpty": "Отсутствие Meshtastic или неизвестной активности LoRa на вашей частоте Meshtastic активности за последние 90 минут."
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",
@@ -1897,7 +1887,7 @@
         "recommendation": "Ошибка моста MeshCore TCP. Убедитесь, что удаленный хост и порт доступны."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "BLE Notify Watchdog (MeshCore)",
+        "label": "Сторожевой таймер уведомлений BLE (MeshCore)",
         "recommendation": "Нет данных уведомления GATT в окне сторожевого таймера (обычно в Windows). Повторите попытку подключения; перед подключением убедитесь, что радиостанция сопряжена в настройках Bluetooth операционной системы."
       },
       "bluetooth-pairing": {

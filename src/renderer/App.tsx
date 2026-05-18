@@ -29,12 +29,7 @@ import { useMeshCore } from './hooks/useMeshCore';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
-import {
-  ContactGroupsModal,
-  KeyboardShortcutsModal,
-  NodeDetailModal,
-  SearchModal,
-} from './lazyModals';
+import { ContactGroupsModal, NodeDetailModal } from './lazyModals';
 import {
   AppPanel,
   DiagnosticsPanel,
@@ -481,8 +476,6 @@ export default function App() {
       [selectedNodeId],
     ),
   );
-  const [showShortcuts, setShowShortcuts] = useState(false);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [locationFilter, setLocationFilter] = useState<LocationFilter>(() => {
     const s =
       parseStoredJson<Record<string, unknown>>(
@@ -626,6 +619,14 @@ export default function App() {
   const meshtasticMyNodeNumRef = useRef(meshtasticDevice.state.myNodeNum);
   const meshcoreSelfIdRef = useRef(meshcoreDevice.selfNodeId);
   const nodesForUi = protocol === 'meshcore' ? meshcoreDevice.nodes : meshtasticDevice.nodes;
+  /** Meshtastic + MeshCore nodes for Diagnostics (foreign MeshCore sender labels/links). */
+  const nodesForDiagnostics = useMemo(() => {
+    const merged = new Map(meshtasticDevice.nodes);
+    for (const [id, node] of meshcoreDevice.nodes) {
+      merged.set(id, node);
+    }
+    return merged;
+  }, [meshtasticDevice.nodes, meshcoreDevice.nodes]);
   const rawPacketGetNodeLabel = useCallback(
     (id: number) => nodeLabelForRawPacket(nodesForUi.get(id), id, protocol),
     [nodesForUi, protocol],
@@ -791,7 +792,7 @@ export default function App() {
         setActiveTab(targetTab);
       }
 
-      useDiagnosticsStore.getState().clearDiagnostics();
+      useDiagnosticsStore.getState().clearDiagnostics({ preserveForeignLora: true });
       localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, newProtocol);
       setProtocol(newProtocol);
     },
@@ -831,9 +832,23 @@ export default function App() {
   const isConfigured = device.state.status === 'configured';
   const isOperational = isConfigured || device.state.status === 'stale';
   const isConnectedOrOperational = isOperational || device.state.status === 'connected';
+  const detailModalProtocol = useMemo((): MeshProtocol => {
+    if (selectedNodeId == null) return protocol;
+    if (meshcoreDevice.nodes.has(selectedNodeId)) return 'meshcore';
+    return protocol;
+  }, [selectedNodeId, protocol, meshcoreDevice.nodes]);
+
+  const detailModalNodes = detailModalProtocol === 'meshcore' ? meshcoreDevice.nodes : nodesForUi;
+  const detailHomeNode =
+    detailModalProtocol === 'meshcore'
+      ? (meshcoreDevice.nodes.get(meshcoreDevice.selfNodeId) ?? null)
+      : (nodesForUi.get(device.state.myNodeNum) ?? null);
+  const detailMyNodeNum =
+    detailModalProtocol === 'meshcore' ? meshcoreDevice.selfNodeId : device.state.myNodeNum;
+
   const selectedNode = useMemo(() => {
     if (selectedNodeId == null) return null;
-    const liveNode = nodesForUi.get(selectedNodeId);
+    const liveNode = meshcoreDevice.nodes.get(selectedNodeId) ?? nodesForUi.get(selectedNodeId);
     if (liveNode) return liveNode;
 
     const fallback = meshNodeStubForDetailModal(selectedNodeId);
@@ -851,7 +866,7 @@ export default function App() {
       longitude: latest.lon,
       last_heard: Math.max(fallback.last_heard, Math.floor(latest.t / 1000)),
     };
-  }, [selectedNodeId, nodesForUi, selectedNodeHistoryPoints]);
+  }, [selectedNodeId, nodesForUi, meshcoreDevice.nodes, selectedNodeHistoryPoints]);
   const selectedNodeHistory = useMemo(() => {
     if (selectedNodeId == null || !selectedNodeHistoryPoints) return undefined;
     return new Map([[selectedNodeId, selectedNodeHistoryPoints]]);
@@ -1230,88 +1245,6 @@ export default function App() {
       clearTimeout(t);
     };
   }, []);
-
-  // ─── Keyboard shortcuts: Cmd/Ctrl+[ / ] to switch protocol ───────────────
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === '[') {
-        e.preventDefault();
-        handleProtocolChange('meshtastic');
-      } else if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === ']') {
-        e.preventDefault();
-        handleProtocolChange('meshcore');
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleProtocolChange]);
-
-  // ─── Keyboard shortcuts: Cmd/Ctrl+1-9, 0, A, S for tabs, ? for help ───────
-  // 1–9 = first nine visible tabs (indices 0–8). Cmd+0 / A / S jump by tab *name*
-  // (App, Diagnostics, Sniffer) so indices stay correct when Security/TAK are hidden.
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const maxTab = displayTabLabels.length - 1;
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
-        e.preventDefault();
-        setSearchModalOpen(true);
-      } else if ((e.metaKey || e.ctrlKey) && e.key >= '1' && e.key <= '9') {
-        const targetIndex = parseInt(e.key, 10) - 1;
-        if (targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key === '0') {
-        const targetIndex = tabSlotIds.indexOf('App');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
-        const targetIndex = tabSlotIds.indexOf('Diagnostics');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'm') {
-        const targetIndex = tabSlotIds.indexOf('Stats');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-        const targetIndex = tabSlotIds.indexOf('Sniffer');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'r') {
-        const targetIndex = tabSlotIds.indexOf('RF');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'g') {
-        const targetIndex = tabSlotIds.indexOf('Graph');
-        if (targetIndex >= 0 && targetIndex <= maxTab) {
-          e.preventDefault();
-          setActiveTab(targetIndex);
-        }
-      } else if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        const tag = (e.target as HTMLElement).tagName;
-        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
-          e.preventDefault();
-          setShowShortcuts(true);
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [displayTabLabels, tabSlotIds]);
 
   // ─── Track Meshtastic messages arriving while inactive ──────────
   useEffect(() => {
@@ -2306,8 +2239,14 @@ export default function App() {
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <DiagnosticsPanel
-                              nodes={nodesForUi}
+                              nodes={nodesForDiagnostics}
+                              meshcoreNodes={meshcoreDevice.nodes}
                               myNodeNum={device.selfNodeId}
+                              meshtasticListenerNodeId={
+                                meshtasticDevice.state.myNodeNum > 0
+                                  ? meshtasticDevice.state.myNodeNum
+                                  : meshtasticDevice.selfNodeId
+                              }
                               onTraceRoute={device.traceRoute}
                               isConnected={isOperational}
                               traceRouteResults={device.traceRouteResults}
@@ -2472,21 +2411,6 @@ export default function App() {
                   {t('common.website')}
                 </a>
               </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowShortcuts(true);
-                }}
-                aria-label={t('aria.keyboardShortcuts')}
-                aria-haspopup="dialog"
-                title={t('aria.keyboardShortcuts')}
-                className="inline-flex shrink-0 items-center gap-1 justify-self-center rounded-full border border-slate-700 px-3 py-0.5 font-mono text-[10px] text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-300"
-              >
-                {t('app.shortcuts')}
-                <span className="font-mono text-[10px] text-gray-400" aria-hidden="true">
-                  ?
-                </span>
-              </button>
               <span className="inline-flex flex-wrap items-center justify-end gap-2 justify-self-end text-right font-mono text-[10px] whitespace-nowrap tabular-nums">
                 <span>
                   {t('app.footerStats', {
@@ -2551,37 +2475,6 @@ export default function App() {
         </Suspense>
       )}
 
-      {/* Keyboard Shortcuts Modal */}
-      {showShortcuts && (
-        <Suspense fallback={<DialogLazyFallback />}>
-          <KeyboardShortcutsModal
-            onClose={() => {
-              setShowShortcuts(false);
-            }}
-            tabLabels={displayTabLabels}
-            tabSlotIds={tabSlotIds}
-          />
-        </Suspense>
-      )}
-
-      {/* Cross-channel Search Modal */}
-      {searchModalOpen && (
-        <Suspense fallback={<DialogLazyFallback />}>
-          <SearchModal
-            isOpen={searchModalOpen}
-            onClose={() => {
-              setSearchModalOpen(false);
-            }}
-            protocol={protocol}
-            nodes={nodesForUi}
-            channels={chatChannels}
-            onNavigateToChannel={() => {
-              setActiveTab(1);
-            }}
-          />
-        </Suspense>
-      )}
-
       {/* Contact Groups Modal */}
       {showGroupsModal && capabilities.hasUserManagedContactGroups && (
         <Suspense fallback={<DialogLazyFallback />}>
@@ -2610,80 +2503,91 @@ export default function App() {
       {selectedNodeId !== null && (
         <Suspense fallback={<DialogLazyFallback />}>
           <NodeDetailModal
-            nodes={nodesForUi}
+            nodes={detailModalNodes}
             node={selectedNode}
             onClose={() => {
               setSelectedNodeId(null);
             }}
             onRequestPosition={device.requestPosition}
-            onTraceRoute={protocol === 'meshcore' ? meshcoreDevice.traceRoute : device.traceRoute}
+            onTraceRoute={
+              detailModalProtocol === 'meshcore' ? meshcoreDevice.traceRoute : device.traceRoute
+            }
             traceRouteHops={traceRouteHops}
             onDeleteNode={async (nodeNum) => {
               await device.deleteNode(nodeNum);
               setSelectedNodeId(null);
             }}
             onMessageNode={
-              selectedNode?.node_id !== device.state.myNodeNum ? handleMessageNode : undefined
+              selectedNode?.node_id !== detailMyNodeNum ? handleMessageNode : undefined
             }
             onToggleFavorite={device.setNodeFavorited}
             isConnected={isOperational}
-            homeNode={nodesForUi.get(device.state.myNodeNum) ?? null}
+            homeNode={detailHomeNode}
             neighborInfo={device.neighborInfo}
             useFahrenheit={useFahrenheit}
-            protocol={protocol}
+            protocol={detailModalProtocol}
             meshcoreTraceResult={
-              protocol === 'meshcore' && selectedNode
+              detailModalProtocol === 'meshcore' && selectedNode
                 ? meshcoreDevice.meshcoreTraceResults.get(selectedNode.node_id)
                 : undefined
             }
             meshcorePingError={
-              protocol === 'meshcore' && selectedNode
+              detailModalProtocol === 'meshcore' && selectedNode
                 ? meshcoreDevice.meshcorePingErrors.get(selectedNode.node_id)
                 : undefined
             }
             meshcoreRepeaterStatus={
-              protocol === 'meshcore' && selectedNode
+              detailModalProtocol === 'meshcore' && selectedNode
                 ? meshcoreDevice.meshcoreNodeStatus.get(selectedNode.node_id)
                 : undefined
             }
             onRequestRepeaterStatus={
-              protocol === 'meshcore' ? meshcoreDevice.requestRepeaterStatus : undefined
+              detailModalProtocol === 'meshcore' ? meshcoreDevice.requestRepeaterStatus : undefined
             }
             meshcoreNodeTelemetry={
-              protocol === 'meshcore' && selectedNode
+              detailModalProtocol === 'meshcore' && selectedNode
                 ? meshcoreDevice.meshcoreNodeTelemetry.get(selectedNode.node_id)
                 : undefined
             }
             onRequestTelemetry={
-              protocol === 'meshcore' ? meshcoreDevice.requestTelemetry : undefined
+              detailModalProtocol === 'meshcore' ? meshcoreDevice.requestTelemetry : undefined
             }
             meshcoreNeighbors={
-              protocol === 'meshcore' && selectedNode
+              detailModalProtocol === 'meshcore' && selectedNode
                 ? meshcoreDevice.meshcoreNeighbors.get(selectedNode.node_id)
                 : undefined
             }
             onRequestNeighbors={
-              protocol === 'meshcore' ? meshcoreDevice.requestNeighbors : undefined
+              detailModalProtocol === 'meshcore' ? meshcoreDevice.requestNeighbors : undefined
             }
             meshcoreNeighborError={
-              protocol === 'meshcore' && selectedNode
+              detailModalProtocol === 'meshcore' && selectedNode
                 ? meshcoreDevice.meshcoreNeighborErrors.get(selectedNode.node_id)
                 : undefined
             }
-            paxCounterData={protocol === 'meshtastic' ? device.paxCounterData : undefined}
-            detectionSensorEvents={
-              protocol === 'meshtastic' ? device.detectionSensorEvents : undefined
+            paxCounterData={
+              detailModalProtocol === 'meshtastic' ? device.paxCounterData : undefined
             }
-            mapReports={protocol === 'meshtastic' ? device.mapReports : undefined}
-            onExportContact={protocol === 'meshcore' ? meshcoreDevice.exportContact : undefined}
-            onShareContact={protocol === 'meshcore' ? meshcoreDevice.shareContact : undefined}
+            detectionSensorEvents={
+              detailModalProtocol === 'meshtastic' ? device.detectionSensorEvents : undefined
+            }
+            mapReports={detailModalProtocol === 'meshtastic' ? device.mapReports : undefined}
+            onExportContact={
+              detailModalProtocol === 'meshcore' ? meshcoreDevice.exportContact : undefined
+            }
+            onShareContact={
+              detailModalProtocol === 'meshcore' ? meshcoreDevice.shareContact : undefined
+            }
             meshcoreLocalStats={
-              protocol === 'meshcore' && selectedNode?.node_id === meshcoreDevice.state.myNodeNum
+              detailModalProtocol === 'meshcore' &&
+              selectedNode?.node_id === meshcoreDevice.state.myNodeNum
                 ? meshcoreDevice.meshcoreLocalStats
                 : null
             }
             meshcoreManufacturerModel={
-              protocol === 'meshcore' ? meshcoreDevice.state.manufacturerModel : undefined
+              detailModalProtocol === 'meshcore'
+                ? meshcoreDevice.state.manufacturerModel
+                : undefined
             }
             positionHistory={selectedNodeHistory}
           />

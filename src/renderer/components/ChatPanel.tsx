@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 
 import { useNowMs } from '../hooks/useNowMs';
@@ -782,7 +783,10 @@ function ChatPanel({
       messagesEndRef.current?.scrollIntoView();
     }
     requestAnimationFrame(() => {
-      updateScrollButtonVisibility();
+      const dist = updateScrollButtonVisibility();
+      // When unread messages fit without scrolling, handleScroll never fires, so
+      // check here and clear the divider if the user is already at the bottom.
+      if (dist !== undefined && dist < 50) setUnreadDividerTimestamp(0);
     });
   }, [triggerScrollToUnread, isActive, updateScrollButtonVisibility]);
 
@@ -834,20 +838,6 @@ function ChatPanel({
       document.removeEventListener('keydown', handleEscape);
     };
   }, [showSearch, viewMode, replyTo, mentionQuery, filterSender, showDatePicker]);
-
-  // Toggle search with Cmd+F / Ctrl+F
-  useEffect(() => {
-    const handleKeys = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault();
-        setShowSearch((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeys);
-    return () => {
-      window.removeEventListener('keydown', handleKeys);
-    };
-  }, []);
 
   useEffect(() => {
     if (showSearch) {
@@ -1975,8 +1965,11 @@ function ChatPanel({
                         {/* Copy — always available */}
                         <button
                           type="button"
-                          onClick={() => {
-                            void navigator.clipboard.writeText(msg.payload);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void writeClipboardText(msg.payload).catch((err: unknown) => {
+                              console.warn('Failed to copy message:', errLikeToLogString(err));
+                            });
                           }}
                           className="rounded p-1 text-xs text-gray-600 hover:text-green-400"
                           aria-label={t('chatPanel.copyMessage')}

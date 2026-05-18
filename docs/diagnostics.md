@@ -8,8 +8,8 @@ This document is the authoritative reference for every diagnostic output in Mesh
 - **NodeDetailModal**: per-node routing health section, redundancy path history, RF findings, MQTT ignore toggle, node notes, watch toggle
 - **NodeListPanel**: inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming, Node Health Score badge, JSON export
 - **MapPanel**: channel utilization halos, routing anomaly aura circles
-- **RF Histograms panel** (`Cmd/Ctrl+R`): SNR, RSSI, and hop-count bar charts across all nodes
-- **Peer Graph panel** (`Cmd/Ctrl+G`): SVG force-directed graph of directly connected nodes (hops 0–1)
+- **RF Histograms panel**: SNR, RSSI, and hop-count bar charts across all nodes
+- **Peer Graph panel**: SVG force-directed graph of directly connected nodes (hops 0–1)
 
 ---
 
@@ -60,7 +60,7 @@ Routing rows persist for up to **24 hours** by default (configurable 1–168 h i
 
 If your GPS source is IP-geolocation (low accuracy), the distance threshold is doubled automatically and a yellow banner appears in the diagnostics panel.
 
-**MQTT behavior:** Skipped entirely for MQTT-only nodes when global or per-node MQTT ignore is active. For hybrid nodes (heard via both RF and MQTT), the anomaly still fires but a yellow advisory note suggests enabling MQTT filtering as a first step before adjusting node placement.
+**MQTT behavior:** Skipped entirely for MQTT-only nodes (`heard_via_mqtt_only`). For hybrid nodes (heard via both RF and MQTT), the anomaly still fires but a yellow advisory note suggests enabling MQTT filtering as a first diagnostic step before adjusting node placement.
 
 ---
 
@@ -252,14 +252,16 @@ Checkbox in DiagnosticsPanel settings.
 When enabled:
 
 - MQTT-only nodes are dimmed in NodeListPanel (`opacity-50`, strikethrough on name/short name)
-- `hop_goblin` and `impossible_hop` are skipped for MQTT-only nodes
+- `bad_route` duplication-rate checks are skipped for MQTT-only nodes (and per-node ignored IDs)
 - All nodes are re-analyzed immediately
+
+Hop-based routing anomalies (`impossible_hop`, `hop_goblin`, close-in `bad_route`, `route_flapping`) are **always** skipped for MQTT-only nodes — no toggle required. On MQTT, `hops_away === 0` means direct to the MQTT bridge, not RF-direct to you.
 
 ### Per-Node MQTT Ignore
 
 Toggle in NodeDetailModal ("MQTT Ignore" row); pill button in the anomaly table Action column.
 
-- Same skip logic as global ignore, but scoped to one node
+- Same duplication skip as global ignore, scoped to one node
 - Persisted to `localStorage['mesh-client:mqttIgnoredNodes']`
 - Active nodes shown as yellow badge in DiagnosticsPanel "Per-Node MQTT Filters" section
 - Active nodes show a yellow "MQTT Ignored" badge in the NodeDetailModal header
@@ -363,7 +365,7 @@ A 24-hour CU timeline chart in DiagnosticsPanel showing the connected node's cha
 
 ## 14. RF Histograms Panel
 
-Accessible via `Cmd/Ctrl+R` or the RF icon in the sidebar.
+Accessible via the RF icon in the sidebar.
 
 Three bar charts built from live node data across both protocols:
 
@@ -377,7 +379,7 @@ Data is read directly from the node store; no additional telemetry required.
 
 ## 15. Peer Graph Panel
 
-Accessible via `Cmd/Ctrl+G` or the graph icon in the sidebar.
+Accessible via the graph icon in the sidebar.
 
 SVG force-directed graph of nodes within direct reach (hops 0–1 from the connected device).
 
@@ -577,7 +579,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 **The 0-hop case:** `hops_away === 0` means the originating firmware stamped this packet as a direct transmission (no relays). In a legitimate direct link, 0 hops is only possible within LoRa range (typically ≤ ~20 km under ideal conditions). The 100-mile (~160 km) threshold is deliberately conservative to avoid false positives.
 
-**Why this happens:** Most commonly seen when an MQTT-bridged node appears to have 0 hops; the MQTT message does not carry hop-count metadata, so the app may receive the node without a hop field, which defaults to 0. Per-node MQTT ignore resolves this in most cases. Can also indicate stale GPS where a node moved but has not updated its position.
+**Why this happens:** On MQTT, `hops_away` is derived from packet `hopStart - hopLimit`; when equal, the bridge reports 0 hops (heard directly by the gateway). That is not comparable to RF distance to your device. MQTT-only nodes are excluded via `hopCountMeaningfulForNodeDiagnostics()`. Can also indicate stale GPS on RF-heard nodes where a node moved but has not updated its position.
 
 **MeshCore skip:** `capabilities?.hasHopCount === false` causes this check to be bypassed entirely.
 

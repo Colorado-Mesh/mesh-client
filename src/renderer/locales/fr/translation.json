@@ -60,8 +60,7 @@
     "protocolSwitcher": "Sélecteur de protocole",
     "switchToMeshtastic": "Passer à Meshtastic",
     "switchToMeshCore": "Passer à MeshCore",
-    "backToTop": "Retour en haut",
-    "keyboardShortcuts": "Raccourcis clavier (?)"
+    "backToTop": "Retour en haut"
   },
   "tabs": {
     "connection": "Connexion",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Non disponible dans ce mode"
-  },
-  "shortcuts": {
-    "title": "Raccourcis clavier",
-    "caption": "Raccourcis clavier des applications",
-    "shortcutColumn": "Raccourci",
-    "actionColumn": "Action",
-    "toggleSearch": "Activer/désactiver la recherche de messages (onglet Chat)",
-    "sendMessage": "Envoyer un message",
-    "newLine": "Nouvelle ligne dans le message",
-    "openHelp": "Ouvrir cette aide sur les raccourcis clavier",
-    "switchMeshtastic": "Passer à Meshtastic",
-    "switchMeshCore": "Passer à MeshCore",
-    "switchToTab": "Passer à l'onglet {{name}}",
-    "notInMeshCore": "(non disponible dans MeshCore)",
-    "meshCoreRepeaters": "(MeshCore : répéteurs)",
-    "packetSniffer": "Renifleur de paquets",
-    "closeSearch": "Fermer le panneau de recherche / fermeture DM (onglet Chat)",
-    "footerNote": "Cmd/Ctrl+0, A, M et S basculent vers les onglets App, Diagnostics, Stats et Packet Sniffer par nom lorsque ces onglets sont visibles (pas par emplacement fixe, donc les raccourcis restent corrects lorsque certains onglets sont cachés)."
   },
   "logPanel": {
     "showLevels": "Afficher les niveaux",
@@ -161,7 +142,6 @@
     "mqttError": "Erreur MQTT",
     "mqttDisconnected": "MQTT déconnecté",
     "footerSlogan": "Pour tout le monde, partout. Rejoignez-nous :",
-    "shortcuts": "Raccourcis",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | Messages {{messageCount}}",
     "deviceStatus": {
       "disconnected": "Déconnecté",
@@ -246,56 +226,41 @@
     "deviceMetricsDescription": "Diffusion maillée : à quelle fréquence la batterie, la tension et l'utilisation du canal sont envoyées via LoRa. 0 = désactivé ; par défaut 1800 s (30 min). Application connectée : lorsqu'il est lié via Bluetooth, série ou Wi-Fi, le micrologiciel envoie souvent les métriques de l'appareil à ce client toutes les 60 s environ pour assurer la fraîcheur de l'écran, ce qui n'est pas la même chose que votre intervalle de maillage.",
     "deviceMetricsTooltip": "Le micrologiciel Meshtastic envoie les métriques de l'appareil à un client connecté environ une fois par minute pour une surveillance locale, quel que soit l'intervalle de télémétrie du maillage. Référence officielle : https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
-      "0": {
-        "label": "Métrique"
-      },
-      "1": {
-        "label": "Impérial"
-      }
+      "0": {},
+      "1": {}
     },
     "deviceRoles": {
       "0": {
-        "label": "Client",
         "description": "Mode client normal"
       },
       "1": {
-        "label": "Client muet",
         "description": "Client qui ne transmet pas"
       },
       "2": {
-        "label": "Routeur",
         "description": "Routeur/répéteur dédié"
       },
       "3": {
-        "label": "Client routeur",
         "description": "Mode routeur + client"
       },
       "4": {
-        "label": "Clientèle",
         "description": "Station de base pour les appareils clients"
       },
       "5": {
-        "label": "Traqueur",
         "description": "Traceur GPS uniquement"
       },
       "6": {
-        "label": "Capteur",
         "description": "Nœud de capteur de télémétrie"
       },
       "7": {
-        "label": "TAK",
         "description": "Appareil compatible TAK"
       },
       "8": {
-        "label": "Client masqué",
         "description": "Client, masqué dans la liste des nœuds"
       },
       "9": {
-        "label": "PERDU ET TROUVÉ",
         "description": "Annonce la position pour la récupération"
       },
       "10": {
-        "label": "Traqueur TAK",
         "description": "Mode suivi TAK"
       }
     },
@@ -772,7 +737,7 @@
     "clearAllNodesCount": "Effacer tous les nœuds ({{count}})",
     "deleteContactsNoPubkeysTitle": "Supprimer des contacts sans Pubkeys",
     "deleteContactsNoPubkeysDesc": "Exclut les nœuds de stub de discussion créés à partir de messages.",
-    "messagesSection": "Messages",
+    "messagesSection": "Messagerie",
     "channelLabel": "Canal:",
     "allChannelsOption": "Toutes les chaînes",
     "clearMessagesCount": "Effacer les messages ({{count}})",
@@ -1178,7 +1143,8 @@
       "connectionFailed": "La connexion a échoué"
     },
     "cancelMqttConnect": "Annuler",
-    "ripplePresetConfirm": "Le préréglage Ripple utilise les informations d'identification de la communauté partagée et désactive la vérification du certificat TLS. Utilisez-le uniquement sur un réseau de confiance. Continuer ?"
+    "ripplePresetConfirm": "Le préréglage Ripple utilise les informations d'identification de la communauté partagée et désactive la vérification du certificat TLS. Utilisez-le uniquement sur un réseau de confiance. Continuer ?",
+    "meshcorePort": "Port"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Collectez lignes de routage de plus de {{hours}} heures (1–168)",
@@ -1235,7 +1201,6 @@
     "proximityNearby": "À proximité",
     "proximityDistant": "Ciel",
     "proximityUnknown": "Distance inconnue",
-    "foreignLoraHeading": "Activité LoRa étrangère (90 dernières minutes)",
     "foreignClassColumn": "Classe",
     "foreignProximityColumn": "Proximité",
     "foreignLastSeenColumn": "Consulté dernièrement",
@@ -1396,7 +1361,17 @@
       }
     },
     "cuHistoryHeading": "Utilisation des canaux (dernières 24 heures)",
-    "cuHistoryTooltipLabel": "Channel Util"
+    "cuHistoryTooltipLabel": "Channel Util",
+    "meshcoreUnknownForeignNode": "Nœud MeshCore inconnu",
+    "meshcoreRepeaterConflictBanner": "Débit de paquets MeshCore élevé (>5/min) — un répéteur à proximité peut provoquer des collisions sur votre canal Meshtastic.",
+    "meshcoreHeardByMeshtasticHeading": "Noeuds MeshCore entendus par votre radio Meshtastic ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Les émetteurs MeshCore ont été entendus sur des radiofréquences locales au cours des 90 dernières minutes (journaux de l'appareil Meshtastic ou radio MeshCore RX). Ne comprend pas la synchronisation des contacts du répéteur MeshCore. Ce n'est pas votre nœud Meshtastic.",
+    "meshcoreHeardByMeshtasticEmpty": "Aucun nœud MeshCore n'a été entendu sur votre fréquence Meshtastic au cours des 90 dernières minutes.",
+    "meshcoreHeardUnknownNode": "Émetteur MeshCore non identifié",
+    "meshcoreHeardNearbyEncrypted": "RF MeshCore à proximité (crypté)",
+    "foreignLoraHeading": "Autre LoRa étrangère sur votre fréquence Meshtastic ({{count}})",
+    "foreignLoraDescription": "Émetteurs Meshtastic et signaux LoRa non reconnus sur votre fréquence au cours des 90 dernières minutes. Les nœuds MeshCore sont répertoriés dans la section ci-dessus.",
+    "foreignLoraEmpty": "Pas d'activité Meshtastic ou LoRa inconnue sur votre fréquence Meshtastic au cours des 90 dernières minutes."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",
@@ -1838,79 +1813,60 @@
   "logAnalyzer": {
     "categories": {
       "ble-connection": {
-        "label": "Problèmes de connexion BLE",
         "recommendation": "Connexion BLE instable. Vérifiez la distance par rapport à l'appareil et l'état de l'adaptateur Bluetooth."
       },
       "mqtt": {
-        "label": "Problèmes MQTT",
         "recommendation": "Problèmes de connexion MQTT. Vérifiez l'URL du courtier, les informations d'identification et la connectivité réseau."
       },
       "mqtt-retries-exhausted": {
-        "label": "Limite de reconnexion MQTT",
         "recommendation": "MQTT a abandonné après un maximum de reconnexions. Vérifiez que le courtier est accessible, que les informations d'identification et le port sont corrects et que les pare-feu autorisent le trafic sortant."
       },
       "watchdog": {
-        "label": "Déclencheurs de surveillance",
         "recommendation": "Le chien de garde a déclenché la reconnexion. La communication de l'appareil peut être instable."
       },
       "handshake": {
-        "label": "Échecs de poignée de main",
         "recommendation": "La négociation de connexion a échoué. Essayez de vous reconnecter manuellement."
       },
       "ble-connect-race": {
-        "label": "Course/Timeout BLE Connect",
         "recommendation": "La poignée de main BLE a expiré ou a couru avec déconnexion. Vérifiez la stabilité de la connexion BLE et la distance par rapport à l'appareil."
       },
       "auth-decrypt": {
-        "label": "Échecs d'authentification/déchiffrement",
         "recommendation": "Échec d’authentification ou de décryptage. Vérifiez que les clés de canal correspondent entre les appareils."
       },
       "native-module": {
-        "label": "Échec de chargement du module natif",
         "recommendation": "Un module complémentaire natif n'a pas pu se charger – souvent un Electron ABI erroné après une mise à niveau. Exécutez l'installation de pnpm dans le dossier du projet (ou la reconstruction d'exécution de pnpm), quittez toutes les instances de l'application et réessayez."
       },
       "internal-error": {
-        "label": "Erreurs d'application internes",
         "recommendation": "Une erreur interne inattendue s'est produite. Veuillez signaler ce bug avec le fichier journal."
       },
       "database-error": {
-        "label": "Pannes de base de données",
         "recommendation": "Erreur de base de données. Cela peut indiquer un fichier de base de données corrompu ou un problème d'autorisation."
       },
       "database-chmod": {
-        "label": "Chmod de base de données (non fatal)",
         "recommendation": "L’ajustement des autorisations du fichier de base de données a échoué (souvent inoffensif sous Windows). Si vous voyez de vraies erreurs de base de données ailleurs, vérifiez les autorisations de l'antivirus et des dossiers pour le répertoire userData du client maillé."
       },
       "database-writable": {
-        "label": "Base de données non accessible en écriture",
         "recommendation": "L'application ne peut pas écrire son dossier de base de données. Corrigez les autorisations sur le répertoire userData du client maillé (voir dépannage : le répertoire de la base de données n'est pas accessible en écriture)."
       },
       "tak-server": {
-        "label": "Problèmes de serveur TAK",
         "recommendation": "Erreur du serveur TAK. Vérifiez l'état du certificat et la disponibilité du port."
       },
       "updater": {
-        "label": "Erreurs du programme de mise à jour de l'application",
         "recommendation": "Erreur du programme de mise à jour de l'application. Vérifiez votre connexion Internet ou essayez une mise à jour manuelle depuis GitHub."
       },
       "meshcore-tcp": {
-        "label": "Erreurs du pont IP MeshCore",
         "recommendation": "Erreur de pont TCP MeshCore. Vérifiez que l'hôte distant et le port sont accessibles."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "Chien de garde de notification BLE (MeshCore)",
         "recommendation": "Aucune donnée de notification du GATT dans la fenêtre de surveillance (courante sous Windows). Réessayez de vous connecter ; assurez-vous que la radio est couplée dans les paramètres Bluetooth du système d'exploitation avant de vous connecter."
       },
       "bluetooth-pairing": {
-        "label": "Problèmes de couplage Bluetooth",
         "recommendation": "Le couplage ou le dissociation Bluetooth a échoué, ou l'invite du code PIN a expiré. Ouvrez l'application lors du couplage, entrez le code PIN rapidement, vérifiez l'adresse MAC et les autorisations Bluetooth, ou supprimez et ré-appairez les paramètres Bluetooth du système d'exploitation."
       },
       "sdk-meshtastic": {
-        "label": "Avertissements/erreurs du SDK Meshtastic",
         "recommendation": "La pile Meshtastic a signalé un avertissement ou une erreur. Si cela se répète, vérifiez le micrologiciel, le transport (BLE/série) et reconnectez-vous."
       },
       "sdk-meshcore": {
-        "label": "Avertissements/erreurs du SDK MeshCore",
         "recommendation": "La pile MeshCore a signalé un avertissement ou une erreur. Si cela se répète, vérifiez le couplage BLE, les paramètres MQTT et reconnectez-vous."
       }
     },
@@ -1938,7 +1894,6 @@
     "placeholderDash": "-",
     "unknownRole": "Inconnu ({{role}})",
     "roles": {
-      "client": "Client",
       "clientMute": "Client muet",
       "router": "Routeur",
       "routerClient": "Client routeur",

@@ -4,6 +4,7 @@ import type { MeshNode } from '../types';
 import {
   detectBadRoute,
   detectHopGoblin,
+  detectImpossibleHop,
   detectNoisyNode,
   detectPathInstability,
   detectWeakLinkOnPath,
@@ -31,7 +32,7 @@ describe('detectHopGoblin', () => {
   it('returns null when no GPS — SNR-only heuristic removed', () => {
     const node = baseNode({ snr: 6, hops_away: 5, latitude: null, longitude: null });
     const home = baseNode({ node_id: 1, latitude: null, longitude: null });
-    expect(detectHopGoblin(node, home, false, 1, 0, 2)).toBeNull();
+    expect(detectHopGoblin(node, home, 1, 0, 2)).toBeNull();
   });
 
   it('returns null when coords exist but node not critically close — no SNR branch', () => {
@@ -46,7 +47,22 @@ describe('detectHopGoblin', () => {
       latitude: 37.0,
       longitude: -122.0,
     });
-    expect(detectHopGoblin(node, home, false, 1, 0, 2)).toBeNull();
+    expect(detectHopGoblin(node, home, 1, 0, 2)).toBeNull();
+  });
+
+  it('returns null for MQTT-only node even when very close with many hops', () => {
+    const node = baseNode({
+      hops_away: 5,
+      latitude: 37.0,
+      longitude: -122.0,
+      heard_via_mqtt_only: true,
+    });
+    const home = baseNode({
+      node_id: 1,
+      latitude: 37.001,
+      longitude: -122.001,
+    });
+    expect(detectHopGoblin(node, home, 1, 0, 2)).toBeNull();
   });
 
   it('returns error + proven when very close with many hops', () => {
@@ -61,10 +77,41 @@ describe('detectHopGoblin', () => {
       latitude: 37.001,
       longitude: -122.001,
     });
-    const a = detectHopGoblin(node, home, false, 1, 0, 2);
+    const a = detectHopGoblin(node, home, 1, 0, 2);
     expect(a).not.toBeNull();
     expect(a!.severity).toBe('error');
     expect(a!.confidence).toBe('proven');
+  });
+});
+
+describe('detectImpossibleHop', () => {
+  const home = baseNode({
+    node_id: 1,
+    latitude: 39.7392,
+    longitude: -104.9903,
+  });
+
+  it('returns null for MQTT-only node with 0 hops far away', () => {
+    const node = baseNode({
+      hops_away: 0,
+      latitude: 40.7608,
+      longitude: -111.891,
+      heard_via_mqtt_only: true,
+    });
+    expect(detectImpossibleHop(node, home)).toBeNull();
+  });
+
+  it('fires for RF node with 0 hops far away', () => {
+    const node = baseNode({
+      hops_away: 0,
+      latitude: 40.7608,
+      longitude: -111.891,
+      heard_via_mqtt_only: false,
+    });
+    const a = detectImpossibleHop(node, home);
+    expect(a).not.toBeNull();
+    expect(a!.type).toBe('impossible_hop');
+    expect(a!.severity).toBe('error');
   });
 });
 

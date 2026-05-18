@@ -60,8 +60,7 @@
     "protocolSwitcher": "Pengalih protokol",
     "switchToMeshtastic": "Beralih ke Meshtastic",
     "switchToMeshCore": "Beralih ke MeshCore",
-    "backToTop": "Kembali ke atas",
-    "keyboardShortcuts": "Pintasan keyboard (?)"
+    "backToTop": "Kembali ke atas"
   },
   "tabs": {
     "connection": "Koneksi",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Tidak tersedia dalam mode ini"
-  },
-  "shortcuts": {
-    "title": "Pintasan Papan Ketik",
-    "caption": "Pintasan keyboard aplikasi",
-    "shortcutColumn": "Jalan pintas",
-    "actionColumn": "Tindakan",
-    "toggleSearch": "Alihkan pencarian pesan (tab Obrolan)",
-    "closeSearch": "Tutup pencarian / tutup panel DM (tab Obrolan)",
-    "sendMessage": "Kirim pesan",
-    "newLine": "Baris baru dalam pesan",
-    "openHelp": "Buka bantuan pintasan keyboard ini",
-    "switchMeshtastic": "Beralih ke Meshtastic",
-    "switchMeshCore": "Beralih ke MeshCore",
-    "switchToTab": "Beralih ke tab {{name}}",
-    "notInMeshCore": "(tidak tersedia di MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: Repeater)",
-    "packetSniffer": "Pengendus Paket",
-    "footerNote": "Cmd/Ctrl+0, A, M, dan S beralih ke tab Aplikasi, Diagnostik, Statistik, dan Paket Sniffer berdasarkan nama ketika tab tersebut terlihat (bukan berdasarkan slot tetap, sehingga pintasan tetap benar ketika beberapa tab disembunyikan)."
   },
   "logPanel": {
     "showLevels": "Tampilkan level",
@@ -161,7 +142,6 @@
     "mqttError": "kesalahan MQTT",
     "mqttDisconnected": "MQTT terputus",
     "footerSlogan": "Untuk semua orang, di mana pun. Bergabunglah dengan kami:",
-    "shortcuts": "Jalan pintas",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} pesan",
     "deviceStatus": {
       "disconnected": "Terputus",
@@ -1178,7 +1158,8 @@
       "connectionFailed": "Koneksi gagal"
     },
     "cancelMqttConnect": "Membatalkan",
-    "ripplePresetConfirm": "Preset Ripple menggunakan kredensial komunitas bersama dan menonaktifkan verifikasi sertifikat TLS. Hanya gunakan ini di jaringan tepercaya. Lanjutkan?"
+    "ripplePresetConfirm": "Preset Ripple menggunakan kredensial komunitas bersama dan menonaktifkan verifikasi sertifikat TLS. Hanya gunakan ini di jaringan tepercaya. Lanjutkan?",
+    "meshcorePort": "Port"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Hapus baris perutean yang lebih lama dari {{hours}} jam (1–168)",
@@ -1235,7 +1216,6 @@
     "proximityNearby": "Di dekat sini",
     "proximityDistant": "Jauh",
     "proximityUnknown": "Jarak Tidak Diketahui",
-    "foreignLoraHeading": "Aktivitas LoRa Asing (90 menit terakhir)",
     "foreignClassColumn": "Kelas",
     "foreignProximityColumn": "Kedekatan",
     "foreignLastSeenColumn": "Terakhir terlihat",
@@ -1396,7 +1376,17 @@
       }
     },
     "cuHistoryHeading": "Pemanfaatan Saluran (24 jam terakhir)",
-    "cuHistoryTooltipLabel": "Util Saluran"
+    "cuHistoryTooltipLabel": "Util Saluran",
+    "meshcoreUnknownForeignNode": "Simpul MeshCore tidak dikenal",
+    "meshcoreRepeaterConflictBanner": "Kecepatan paket MeshCore tinggi (>5/menit) — repeater terdekat dapat menyebabkan tabrakan pada saluran Meshtastic Anda.",
+    "meshcoreHeardByMeshtasticHeading": "Node MeshCore didengar oleh radio Meshtastic Anda ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Pemancar MeshCore mendengar RF lokal dalam 90 menit terakhir (log perangkat Meshtastic atau RX radio MeshCore). Tidak termasuk sinkronisasi kontak repeater MeshCore. Ini bukan simpul Meshtastic Anda.",
+    "meshcoreHeardByMeshtasticEmpty": "Tidak ada node MeshCore yang terdengar pada frekuensi Meshtastic Anda dalam 90 menit terakhir.",
+    "meshcoreHeardUnknownNode": "Pemancar MeshCore tak dikenal",
+    "meshcoreHeardNearbyEncrypted": "RF MeshCore terdekat (terenkripsi)",
+    "foreignLoraHeading": "LoRa asing lainnya pada frekuensi Meshtastic Anda ({{count}})",
+    "foreignLoraDescription": "Pemancar Meshtastic dan sinyal LoRa yang tidak dikenal pada frekuensi Anda dalam 90 menit terakhir. Simpul MeshCore tercantum di bagian di atas.",
+    "foreignLoraEmpty": "Tidak ada aktivitas Meshtastic atau LoRa yang tidak diketahui pada frekuensi Meshtastic Anda dalam 90 menit terakhir."
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

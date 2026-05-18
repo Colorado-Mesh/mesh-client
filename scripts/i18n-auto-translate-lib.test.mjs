@@ -50,6 +50,59 @@ describe('filterMissingKeysToTranslate', () => {
       }),
     ).toEqual(['b', 'c']);
   });
+
+  it('auditIdentical: also includes present keys whose value matches English', () => {
+    const enFlat = { a: 'Translate me please', b: 'Flood Advert', c: 'Factory Reset' };
+    const existing = { a: 'Bereits übersetzt', b: 'Flood Advert' }; // a translated, b same as EN, c absent
+    expect(
+      filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+        translateAllGaps: false,
+        hasGitBaseline: false,
+        auditIdentical: true,
+        enFlat,
+      }),
+    ).toEqual(['b', 'c']);
+  });
+
+  it('auditIdentical: skips keys that are genuinely translated (value differs from English)', () => {
+    const enFlat = { a: 'A', b: 'B', c: 'C' };
+    const existing = { a: 'translated-a', b: 'translated-b', c: 'translated-c' };
+    expect(
+      filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+        translateAllGaps: false,
+        hasGitBaseline: false,
+        auditIdentical: true,
+        enFlat,
+      }),
+    ).toEqual([]);
+  });
+
+  it('auditIdentical: skips brand/loanword-only values that are legitimately identical to English', () => {
+    const enFlat = { tak: 'TAK', hops: 'Hops:', sentence: 'Flood Advert section' };
+    // all three are same as English in this locale
+    const existing = { tak: 'TAK', hops: 'Hops:', sentence: 'Flood Advert section' };
+    const result = filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+      translateAllGaps: false,
+      hasGitBaseline: false,
+      auditIdentical: true,
+      enFlat,
+    });
+    // TAK and Hops: are pure loanwords — skip; "Flood Advert section" has translatable content
+    expect(result).toEqual(['sentence']);
+  });
+
+  it('auditIdentical: skips MGRS, Firmware, Router (new SKIP_AUDIT_RE additions)', () => {
+    const enFlat = { mgrs: 'MGRS', fw: 'Firmware', router: 'Router' };
+    const existing = { mgrs: 'MGRS', fw: 'Firmware', router: 'Router' };
+    const result = filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+      translateAllGaps: false,
+      hasGitBaseline: false,
+      auditIdentical: true,
+      enFlat,
+    });
+    // Pure technical/brand terms — none should be re-translated
+    expect(result).toEqual([]);
+  });
 });
 
 describe('sanitizeLocaleTranslationJsonFileBodyForDisk', () => {

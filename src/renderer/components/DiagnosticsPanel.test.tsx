@@ -2,7 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import type { DiagnosticRow, MeshNode, RfDiagnosticRow, RoutingDiagnosticRow } from '../lib/types';
+import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
+import type { DiagnosticRow, MeshNode, RoutingDiagnosticRow } from '../lib/types';
+import type { ForeignLoraDetection } from '../stores/diagnosticsStore';
 import DiagnosticsPanel from './DiagnosticsPanel';
 
 const diagnosticsStoreState: {
@@ -10,44 +12,51 @@ const diagnosticsStoreState: {
   packetStats: Map<number, unknown>;
   packetCache: Map<number, unknown>;
   getCuStats24h: () => null;
+  foreignLoraDetections: Map<number, Map<string, ForeignLoraDetection>>;
 } = {
   diagnosticRows: [],
   packetStats: new Map(),
   packetCache: new Map(),
   getCuStats24h: () => null,
+  foreignLoraDetections: new Map(),
 };
 
-vi.mock('../stores/diagnosticsStore', () => ({
-  useDiagnosticsStore: (selector: (s: unknown) => unknown) => {
-    const store = {
-      diagnosticRows: diagnosticsStoreState.diagnosticRows,
-      diagnosticRowsRestoredAt: null,
-      clearDiagnosticRowsSnapshot: vi.fn(),
-      packetStats: diagnosticsStoreState.packetStats,
-      packetCache: diagnosticsStoreState.packetCache,
-      getCuStats24h: diagnosticsStoreState.getCuStats24h,
-      anomalyHalosEnabled: false,
-      congestionHalosEnabled: false,
-      autoTracerouteEnabledMeshtastic: false,
-      autoTracerouteEnabledMeshcore: false,
-      setAutoTracerouteEnabled: vi.fn(),
-      envMode: 'standard',
-      ignoreMqttEnabled: false,
-      mqttIgnoredNodes: new Set<number>(),
-      setAnomalyHalosEnabled: vi.fn(),
-      setCongestionHalosEnabled: vi.fn(),
-      setEnvMode: vi.fn(),
-      setIgnoreMqttEnabled: vi.fn(),
-      setNodeMqttIgnored: vi.fn(),
-      runReanalysis: vi.fn(),
-      diagnosticRowsMaxAgeHours: 24,
-      setDiagnosticRowsMaxAgeHours: vi.fn(),
-      getForeignLoraDetectionsList: () => [],
-      cuHistory: new Map(),
-    };
-    return selector(store);
-  },
-}));
+vi.mock('../stores/diagnosticsStore', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  const actual = await importOriginal<typeof import('../stores/diagnosticsStore')>();
+  return {
+    ...actual,
+    useDiagnosticsStore: (selector: (s: unknown) => unknown) => {
+      const store = {
+        diagnosticRows: diagnosticsStoreState.diagnosticRows,
+        diagnosticRowsRestoredAt: null,
+        clearDiagnosticRowsSnapshot: vi.fn(),
+        packetStats: diagnosticsStoreState.packetStats,
+        packetCache: diagnosticsStoreState.packetCache,
+        getCuStats24h: diagnosticsStoreState.getCuStats24h,
+        anomalyHalosEnabled: false,
+        congestionHalosEnabled: false,
+        autoTracerouteEnabledMeshtastic: false,
+        autoTracerouteEnabledMeshcore: false,
+        setAutoTracerouteEnabled: vi.fn(),
+        envMode: 'standard',
+        ignoreMqttEnabled: false,
+        mqttIgnoredNodes: new Set<number>(),
+        setAnomalyHalosEnabled: vi.fn(),
+        setCongestionHalosEnabled: vi.fn(),
+        setEnvMode: vi.fn(),
+        setIgnoreMqttEnabled: vi.fn(),
+        setNodeMqttIgnored: vi.fn(),
+        runReanalysis: vi.fn(),
+        diagnosticRowsMaxAgeHours: 24,
+        setDiagnosticRowsMaxAgeHours: vi.fn(),
+        foreignLoraDetections: diagnosticsStoreState.foreignLoraDetections,
+        cuHistory: new Map(),
+      };
+      return selector(store);
+    },
+  };
+});
 
 function minimalNode(nodeId: number): MeshNode {
   return {
@@ -192,26 +201,48 @@ describe('DiagnosticsPanel node click', () => {
 });
 
 describe('DiagnosticsPanel cross-protocol RF', () => {
-  it('lists MeshCore interference at myNodeNum under dedicated MeshCore section, not Connected node (you)', () => {
+  it('shows MeshCore heard-by-Meshtastic section with foreign node names', () => {
     const myId = 0xface;
-    const foreignRow: RfDiagnosticRow = {
-      kind: 'rf',
-      id: 'rf:face:meshcore_activity_detected',
-      nodeId: myId,
-      condition: 'MeshCore Activity Detected',
-      cause: 'MeshCore node transmitting on this frequency.',
-      severity: 'info',
-      detectedAt: Date.now(),
-    };
-    diagnosticsStoreState.diagnosticRows = [foreignRow];
+    const foreignId = 0xabc12345;
+    diagnosticsStoreState.diagnosticRows = [];
     diagnosticsStoreState.packetStats = new Map();
-    const node = minimalNode(myId);
-    const nodes = new Map<number, MeshNode>([[myId, node]]);
+    setMeshtasticConnectedMyNodeNum(myId);
+    diagnosticsStoreState.foreignLoraDetections = new Map([
+      [
+        myId,
+        new Map([
+          [
+            `meshcore:${foreignId}`,
+            {
+              detectedAt: Date.now(),
+              packetClass: 'meshcore',
+              proximity: 'nearby',
+              count: 3,
+              lastSenderId: foreignId,
+              longName: 'Nearby MeshCore',
+              rssi: -48,
+              snr: 11,
+              source: 'meshtastic-rf',
+            },
+          ],
+        ]),
+      ],
+    ]);
+    const homeNode = minimalNode(myId);
+    homeNode.long_name = 'My Meshtastic';
+    const foreignNode = minimalNode(foreignId);
+    foreignNode.long_name = 'Nearby MeshCore';
+    const nodes = new Map<number, MeshNode>([
+      [myId, homeNode],
+      [foreignId, foreignNode],
+    ]);
 
     render(
       <DiagnosticsPanel
         nodes={nodes}
+        meshcoreNodes={nodes}
         myNodeNum={myId}
+        meshtasticListenerNodeId={myId}
         onTraceRoute={vi.fn().mockResolvedValue(undefined)}
         isConnected={true}
         traceRouteResults={new Map()}
@@ -220,13 +251,220 @@ describe('DiagnosticsPanel cross-protocol RF', () => {
       />,
     );
 
-    expect(screen.queryByText(/Connected node \(you\)/)).not.toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /meshcore nodes heard on frequency/i }),
+      screen.getByRole('heading', { name: /meshcore nodes heard by your meshtastic radio/i }),
     ).toBeInTheDocument();
+    expect(screen.getByText('Nearby MeshCore')).toBeInTheDocument();
+    expect(screen.queryByText('My Meshtastic')).not.toBeInTheDocument();
+    setMeshtasticConnectedMyNodeNum(0);
+  });
+
+  it('shows own meshcore node when overheard on meshtastic frequency', () => {
+    const myMtId = 0xface;
+    const myMcId = 0xabc12345;
+    setMeshtasticConnectedMyNodeNum(myMtId);
+    diagnosticsStoreState.foreignLoraDetections = new Map([
+      [
+        myMtId,
+        new Map([
+          [
+            `meshcore:${myMcId}`,
+            {
+              detectedAt: Date.now(),
+              packetClass: 'meshcore',
+              proximity: 'very-close',
+              count: 2,
+              lastSenderId: myMcId,
+              longName: 'My MeshCore Radio',
+              rssi: -48,
+              snr: 12,
+              source: 'meshcore-radio-rf',
+            },
+          ],
+        ]),
+      ],
+    ]);
+    const homeNode = minimalNode(myMtId);
+    const selfMc = minimalNode(myMcId);
+    selfMc.long_name = 'My MeshCore Radio';
+    render(
+      <DiagnosticsPanel
+        nodes={new Map([[myMtId, homeNode]])}
+        meshcoreNodes={new Map([[myMcId, selfMc]])}
+        myNodeNum={myMtId}
+        meshtasticListenerNodeId={myMtId}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={true}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshtastic"
+      />,
+    );
+    expect(screen.getByText('My MeshCore Radio')).toBeInTheDocument();
+    setMeshtasticConnectedMyNodeNum(0);
+  });
+
+  it('shows meshcore overhear without meshcore contacts when longName is stored', () => {
+    const myId = 0xface;
+    const foreignId = 0xabc12345;
+    setMeshtasticConnectedMyNodeNum(myId);
+    diagnosticsStoreState.foreignLoraDetections = new Map([
+      [
+        myId,
+        new Map([
+          [
+            `meshcore:${foreignId}`,
+            {
+              detectedAt: Date.now(),
+              packetClass: 'meshcore',
+              proximity: 'nearby',
+              count: 1,
+              lastSenderId: foreignId,
+              longName: 'RF Overheard Repeater',
+              rssi: -52,
+              snr: 10,
+              source: 'meshtastic-rf',
+            },
+          ],
+        ]),
+      ],
+    ]);
+    const homeNode = minimalNode(myId);
+    render(
+      <DiagnosticsPanel
+        nodes={new Map([[myId, homeNode]])}
+        meshcoreNodes={new Map()}
+        myNodeNum={myId}
+        meshtasticListenerNodeId={myId}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={true}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshtastic"
+      />,
+    );
+    expect(screen.getByText('RF Overheard Repeater')).toBeInTheDocument();
+    setMeshtasticConnectedMyNodeNum(0);
+  });
+
+  it('shows other foreign LoRa section for meshtastic and unknown-lora classes', () => {
+    const myId = 0xface;
+    diagnosticsStoreState.foreignLoraDetections = new Map([
+      [
+        myId,
+        new Map([
+          [
+            'meshtastic:0x111',
+            {
+              detectedAt: Date.now(),
+              packetClass: 'meshtastic',
+              proximity: 'distant',
+              count: 2,
+              lastSenderId: 0x111,
+              source: 'meshtastic-rf',
+            },
+          ],
+          [
+            'unknown-lora',
+            {
+              detectedAt: Date.now(),
+              packetClass: 'unknown-lora',
+              proximity: 'nearby',
+              count: 1,
+              rssi: -90,
+              snr: 4,
+              source: 'meshtastic-rf',
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={myId}
+        meshtasticListenerNodeId={myId}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={true}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshtastic"
+      />,
+    );
+
     expect(
-      screen.getByText(/they can contribute to utilization and retry issues/i),
+      screen.getByRole('heading', {
+        name: /other foreign lora on your meshtastic frequency \(2\)/i,
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByText('MeshCore Activity Detected')).toBeInTheDocument();
+    expect(screen.getByText('Meshtastic Traffic')).toBeInTheDocument();
+    expect(screen.getByText('Unknown LoRa Signal')).toBeInTheDocument();
+  });
+
+  it('hides foreign LoRa sections when there is no matching traffic', () => {
+    const myId = 0xface;
+    diagnosticsStoreState.foreignLoraDetections = new Map();
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={myId}
+        meshtasticListenerNodeId={myId}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={true}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshtastic"
+      />,
+    );
+
+    expect(
+      screen.queryByRole('heading', { name: /meshcore nodes heard by your meshtastic radio/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: /other foreign lora on your meshtastic frequency/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('hides MeshCore heard-by-Meshtastic section on MeshCore diagnostics protocol', () => {
+    const myId = 0xface;
+    const foreignId = 0xabc12345;
+    diagnosticsStoreState.foreignLoraDetections = new Map([
+      [
+        myId,
+        new Map([
+          [
+            `meshcore:${foreignId}`,
+            {
+              detectedAt: Date.now(),
+              packetClass: 'meshcore',
+              proximity: 'nearby',
+              count: 1,
+              lastSenderId: foreignId,
+              longName: 'Nearby MeshCore',
+              source: 'meshtastic-rf',
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={0xbeef}
+        meshtasticListenerNodeId={myId}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={true}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshcore"
+      />,
+    );
+
+    expect(
+      screen.queryByRole('heading', { name: /meshcore nodes heard by your meshtastic radio/i }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -39,7 +39,7 @@
     "github": "GitHub",
     "website": "Website",
     "confirm": "Bevestigen",
-    "show": "Show",
+    "show": "Weergeven",
     "hide": "Verbergen",
     "justNow": "Zojuist",
     "secondsAgo": "{{count}}s geleden",
@@ -60,8 +60,7 @@
     "protocolSwitcher": "Protocolwisselaar",
     "switchToMeshtastic": "Schakel over naar Meshtastic",
     "switchToMeshCore": "Schakel over naar MeshCore",
-    "backToTop": "Terug naar boven",
-    "keyboardShortcuts": "Sneltoetsen (?)"
+    "backToTop": "Terug naar boven"
   },
   "tabs": {
     "connection": "Verbinding",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Niet beschikbaar in deze modus"
-  },
-  "shortcuts": {
-    "title": "Sneltoetsen op het toetsenbord",
-    "caption": "Sneltoetsen voor toepassingen",
-    "shortcutColumn": "Snelkoppeling",
-    "actionColumn": "Actie",
-    "toggleSearch": "Bericht zoeken in-/uitschakelen (tabblad Chat)",
-    "sendMessage": "Bericht verzenden",
-    "newLine": "Nieuwe regel in bericht",
-    "openHelp": "Open deze hulp bij sneltoetsen",
-    "switchMeshtastic": "Schakel over naar Meshtastic",
-    "switchMeshCore": "Schakel over naar MeshCore",
-    "switchToTab": "Schakel over naar het tabblad {{name}}",
-    "notInMeshCore": "(niet beschikbaar in MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: repeaters)",
-    "packetSniffer": "Pakketsniffer",
-    "closeSearch": "Zoekopdracht sluiten / DM-paneel sluiten (tabblad Chat)",
-    "footerNote": "Cmd/Ctrl+0, A, M en S schakelen op naam naar de tabbladen App, Diagnostiek, Statistieken en Packet Sniffer wanneer deze tabbladen zichtbaar zijn (niet via een vast slot, dus snelkoppelingen blijven correct wanneer sommige tabbladen verborgen zijn)."
   },
   "logPanel": {
     "showLevels": "Niveaus weergeven",
@@ -161,7 +142,6 @@
     "mqttError": "MQTT-fout",
     "mqttDisconnected": "MQTT-verbinding verbroken",
     "footerSlogan": "Voor iedereen, overal. Sluit je bij ons aan:",
-    "shortcuts": "Snelkoppelingen",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} berichten",
     "deviceStatus": {
       "disconnected": "Verbinding verbroken",
@@ -1178,7 +1158,8 @@
       "connectionFailed": "Verbinding mislukt"
     },
     "cancelMqttConnect": "Annuleren",
-    "ripplePresetConfirm": "De Ripple-voorinstelling gebruikt gedeelde gemeenschapsreferenties en schakelt TLS-certificaatverificatie uit. Gebruik dit alleen op een vertrouwd netwerk. Doorgaan?"
+    "ripplePresetConfirm": "De Ripple-voorinstelling gebruikt gedeelde gemeenschapsreferenties en schakelt TLS-certificaatverificatie uit. Gebruik dit alleen op een vertrouwd netwerk. Doorgaan?",
+    "meshcorePort": "Poort"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Rijen voor droprouting die ouder zijn dan {{hours}} uur (1–168)",
@@ -1235,7 +1216,6 @@
     "proximityNearby": "In de buurt",
     "proximityDistant": "Ver weg",
     "proximityUnknown": "Onbekende afstand",
-    "foreignLoraHeading": "Buitenlandse LoRa-activiteit (laatste 90 min)",
     "foreignClassColumn": "Klas",
     "foreignProximityColumn": "Nabijheid",
     "foreignLastSeenColumn": "Laatst gezien",
@@ -1396,7 +1376,17 @@
       }
     },
     "cuHistoryHeading": "Kanaalgebruik (laatste 24 uur)",
-    "cuHistoryTooltipLabel": "Kanaalgebruik"
+    "cuHistoryTooltipLabel": "Kanaalgebruik",
+    "meshcoreUnknownForeignNode": "Onbekend MeshCore-knooppunt",
+    "meshcoreRepeaterConflictBanner": "Hoge MeshCore-pakketfrequentie (>5/min) — een repeater in de buurt kan botsingen veroorzaken op je Meshtastic-kanaal.",
+    "meshcoreHeardByMeshtasticHeading": "MeshCore-knooppunten gehoord door je Meshtastic-radio ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "MeshCore-zenders afgeluisterd op lokale RF in de afgelopen 90 minuten (Meshtastic-apparaatlogboeken of MeshCore-radio RX). Bevat geen MeshCore repeater-contactsynchronisatie. Dit is niet je Meshtastic-knooppunt.",
+    "meshcoreHeardByMeshtasticEmpty": "Geen MeshCore-knooppunten gehoord op je Meshtastic-frequentie in de afgelopen 90 minuten.",
+    "meshcoreHeardUnknownNode": "Ongeïdentificeerde MeshCore-zender",
+    "meshcoreHeardNearbyEncrypted": "Nabij MeshCore RF (versleuteld)",
+    "foreignLoraHeading": "Andere buitenlandse LoRa op je Meshtastic-frequentie ({{count}})",
+    "foreignLoraDescription": "Meshtastic zenders en niet-herkende LoRa-signalen op uw frequentie in de afgelopen 90 minuten. MeshCore-knooppunten worden vermeld in het bovenstaande gedeelte.",
+    "foreignLoraEmpty": "Geen Meshtastic of onbekende LoRa-activiteit op je Meshtastic-frequentie in de afgelopen 90 minuten."
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",
@@ -1672,7 +1662,7 @@
     "statSent": "Verstuurd",
     "statReceived": "Ontvangen",
     "statFlood": "Overstroming",
-    "statDirect": "Direct",
+    "statDirect": "Rechtstreeks",
     "footerBattery": "Batterij: {{count}} punten",
     "footerSignal": "Signaal: {{count}} punten",
     "footerEnv": "Env: {{count}} punten",

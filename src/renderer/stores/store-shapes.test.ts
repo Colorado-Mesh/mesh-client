@@ -78,6 +78,7 @@ describe('store shape contracts', () => {
           "clearDiagnostics",
           "getCuStats24h",
           "getForeignLoraDetectionsList",
+          "getMeshcoreHeardByMeshtasticList",
           "loadMeshcorePathHistory",
           "migrateForeignLoraFromZero",
           "processNodeUpdate",

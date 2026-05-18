@@ -60,8 +60,7 @@
     "protocolSwitcher": "프로토콜 전환기",
     "switchToMeshtastic": "Meshtastic으로 전환",
     "switchToMeshCore": "MeshCore로 전환",
-    "backToTop": "맨 위로 돌아가기",
-    "keyboardShortcuts": "키보드 단축키(?)"
+    "backToTop": "맨 위로 돌아가기"
   },
   "tabs": {
     "connection": "연결",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "이 모드에서는 사용할 수 없습니다."
-  },
-  "shortcuts": {
-    "title": "키보드 단축키",
-    "caption": "애플리케이션 키보드 단축키",
-    "shortcutColumn": "지름길",
-    "actionColumn": "행동",
-    "toggleSearch": "메시지 검색 전환(채팅 탭)",
-    "closeSearch": "검색 닫기 / DM 패널 닫기(채팅 탭)",
-    "sendMessage": "메시지 보내기",
-    "newLine": "메시지의 새 줄",
-    "openHelp": "이 키보드 단축키 도움말을 엽니다.",
-    "switchMeshtastic": "Meshtastic으로 전환",
-    "switchMeshCore": "MeshCore로 전환",
-    "switchToTab": "{{name}} 탭으로 전환",
-    "notInMeshCore": "(MeshCore에서는 사용할 수 없음)",
-    "meshCoreRepeaters": " (MeshCore: 리피터)",
-    "packetSniffer": "패킷 스니퍼",
-    "footerNote": "Cmd/Ctrl+0, A, M 및 S 탭이 표시되면 이름별로 앱, 진단, 통계 및 패킷 스니퍼 탭으로 전환됩니다(고정 슬롯이 아닌 일부 탭이 숨겨져 있을 때 바로 가기가 올바르게 유지됨)."
   },
   "logPanel": {
     "showLevels": "레벨 표시",
@@ -161,7 +142,6 @@
     "mqttError": "MQTT 오류",
     "mqttDisconnected": "MQTT 연결이 끊어졌습니다.",
     "footerSlogan": "모든 사람을 위해, 어디서나. 우리와 함께하세요:",
-    "shortcuts": "단축키",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} 메시지",
     "deviceStatus": {
       "disconnected": "연결이 끊김",
@@ -1178,7 +1158,8 @@
       "connectionFailed": "연결 실패"
     },
     "cancelMqttConnect": "취소",
-    "ripplePresetConfirm": "리플 사전 설정은 공유 커뮤니티 자격 증명을 사용하고 TLS 인증서 확인을 비활성화합니다. 신뢰할 수 있는 네트워크에서만 사용하십시오. 계속하시겠습니까?"
+    "ripplePresetConfirm": "리플 사전 설정은 공유 커뮤니티 자격 증명을 사용하고 TLS 인증서 확인을 비활성화합니다. 신뢰할 수 있는 네트워크에서만 사용하십시오. 계속하시겠습니까?",
+    "meshcorePort": "포팅하기"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}}시간(1~168)보다 오래된 라우팅 행 삭제",
@@ -1235,7 +1216,6 @@
     "proximityNearby": "가까운",
     "proximityDistant": "먼",
     "proximityUnknown": "알 수 없는 거리",
-    "foreignLoraHeading": "해외 LoRa 활동(지난 90분)",
     "foreignClassColumn": "수업",
     "foreignProximityColumn": "근접성",
     "foreignLastSeenColumn": "마지막으로 본",
@@ -1396,7 +1376,17 @@
       }
     },
     "cuHistoryHeading": "채널 활용도 (마지막 24시간)",
-    "cuHistoryTooltipLabel": "채널 유틸"
+    "cuHistoryTooltipLabel": "채널 유틸",
+    "meshcoreUnknownForeignNode": "알 수 없는 MeshCore 노드",
+    "meshcoreRepeaterConflictBanner": "높은 MeshCore 패킷 속도 (> 5/분) — 인근 리피터가 Meshtastic 채널에서 충돌을 일으킬 수 있습니다.",
+    "meshcoreHeardByMeshtasticHeading": "Meshtastic 라디오로 듣는 MeshCore 노드 ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "MeshCore 송신기는 지난 90 분 동안 로컬 RF (Meshtastic 장치 로그 또는 MeshCore 라디오 RX) 에서 우연히 들었습니다. MeshCore 리피터 연락처 동기화는 포함되지 않습니다. 이것은 Meshtastic 노드가 아닙니다.",
+    "meshcoreHeardByMeshtasticEmpty": "지난 90분 동안 Meshtastic 주파수에서 MeshCore 노드가 들리지 않았습니다.",
+    "meshcoreHeardUnknownNode": "미확인 MeshCore 송신기",
+    "meshcoreHeardNearbyEncrypted": "근처 MeshCore RF (암호화)",
+    "foreignLoraHeading": "Meshtastic 주파수의 다른 외국 LoRa ({{count}})",
+    "foreignLoraDescription": "지난 90분 동안 주파수에서 Meshtastic 송신기 및 인식할 수 없는 LoRa 신호. MeshCore 노드는 위 섹션에 나열되어 있습니다.",
+    "foreignLoraEmpty": "지난 90분 동안 Meshtastic 빈도에 대한 Meshtastic 또는 알 수 없는 LoRa 활동이 없습니다."
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",

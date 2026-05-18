@@ -9,12 +9,14 @@
  * Usage:
  *   node scripts/i18n-auto-translate.mjs
  *   node scripts/i18n-auto-translate.mjs --all
+ *   node scripts/i18n-auto-translate.mjs --audit   (also retranslates values still identical to English)
  *   I18N_TRANSLATE_ALL=1 node scripts/i18n-auto-translate.mjs
  *   LIBRETRANSLATE_URL=https://lt.example.com LIBRETRANSLATE_KEY=xxx node scripts/i18n-auto-translate.mjs
  *   MYMEMORY_EMAIL=you@example.com node scripts/i18n-auto-translate.mjs
  *
  * By default (with git), only keys that are new in en/translation.json vs HEAD are translated
  * for each locale. Use --all or I18N_TRANSLATE_ALL=1 to backfill every key missing from a locale.
+ * Use --audit to additionally retranslate any key whose locale value is still identical to English.
  */
 
 import { readFileSync } from 'node:fs';
@@ -255,7 +257,8 @@ async function translate(text, lang) {
 }
 
 /** Short tag for startup line only. */
-function shortRunMode(translateAllGaps, hasGitBaseline) {
+function shortRunMode(translateAllGaps, hasGitBaseline, auditIdentical) {
+  if (auditIdentical) return translateAllGaps ? '--all --audit' : '--audit';
   if (translateAllGaps) return '--all gap vs EN';
   if (hasGitBaseline) return 'incremental (new EN vs HEAD)';
   return 'gap vs EN (no HEAD)';
@@ -265,6 +268,7 @@ function shortRunMode(translateAllGaps, hasGitBaseline) {
 
 async function main() {
   const translateAllGaps = process.argv.includes('--all') || process.env.I18N_TRANSLATE_ALL === '1';
+  const auditIdentical = process.argv.includes('--audit') || process.env.I18N_AUDIT === '1';
 
   const enPath = join(LOCALES_DIR, 'en/translation.json');
   const en = readJson(enPath);
@@ -279,7 +283,7 @@ async function main() {
   if (enAtHead) {
     const enAtHeadKeys = new Set(Object.keys(flatten(enAtHead)));
     const addedEnglishKeys = enKeys.filter((key) => !enAtHeadKeys.has(key));
-    if (addedEnglishKeys.length === 0 && !translateAllGaps) {
+    if (addedEnglishKeys.length === 0 && !translateAllGaps && !auditIdentical) {
       console.log(
         'No new English keys compared to git HEAD; incremental mode would fill nothing — skipping auto-translate.',
       );
@@ -299,9 +303,11 @@ async function main() {
     const missing = filterMissingKeysToTranslate(enKeys, existing, addedEnglishKeysSet, {
       translateAllGaps,
       hasGitBaseline,
+      auditIdentical,
+      enFlat,
     });
     const keysToTranslateCount =
-      !translateAllGaps && addedEnglishKeysOrdered.length > 0
+      !translateAllGaps && addedEnglishKeysOrdered.length > 0 && !auditIdentical
         ? addedEnglishKeysOrdered.filter((k) => !(k in existing) && typeof enFlat[k] === 'string')
             .length
         : missing.filter((k) => typeof enFlat[k] === 'string').length;
@@ -328,7 +334,7 @@ async function main() {
 
   const apiTag = LT_URL ? `LibreTranslate ${LT_URL}` : 'MyMemory→Google';
   console.log(
-    `${apiTag} · ${shortRunMode(translateAllGaps, hasGitBaseline)} · ` +
+    `${apiTag} · ${shortRunMode(translateAllGaps, hasGitBaseline, auditIdentical)} · ` +
       `${localeRunTotal}/${LANG_CODES.length} locales · ${totalScheduledJobs} jobs`,
   );
   if (!translateAllGaps && !hasGitBaseline) {
@@ -345,7 +351,7 @@ async function main() {
     const target = readJson(join(LOCALES_DIR, `${lang.dir}/translation.json`));
     const existingFlat = flatten(target);
     const keysToTranslate =
-      !translateAllGaps && addedEnglishKeysOrdered.length > 0
+      !translateAllGaps && !auditIdentical && addedEnglishKeysOrdered.length > 0
         ? addedEnglishKeysOrdered.filter(
             (k) => !(k in existingFlat) && typeof enFlat[k] === 'string',
           )
@@ -361,19 +367,22 @@ async function main() {
     if (missingTotal > workTotal) {
       console.log(`${q} · note: ${missingTotal - workTotal} non-string missing paths skipped`);
     }
-    if (!translateAllGaps && addedEnglishKeysSet) {
+    if (!translateAllGaps && !auditIdentical && addedEnglishKeysSet) {
       console.log(
         `${q} · translate ${workTotal}/${addedEnglishKeysSet.size} new-EN vs HEAD here · ${workTotal} API calls`,
       );
     } else {
-      console.log(
-        `${q} · ${workTotal} gap-fill API calls for this file (--all: missing vs EN only; existing keys untouched)`,
-      );
+      console.log(`${q} · ${workTotal} jobs`);
     }
     if ((localeRunTotal > 1 || totalScheduledJobs > workTotal) && completedJobs > 0) {
       console.log(`  run so far ${completedJobs}/${totalScheduledJobs}`);
     }
-    if (!translateAllGaps && addedEnglishKeysSet && workTotal > addedEnglishKeysSet.size) {
+    if (
+      !translateAllGaps &&
+      !auditIdentical &&
+      addedEnglishKeysSet &&
+      workTotal > addedEnglishKeysSet.size
+    ) {
       console.warn(
         `  Unexpected: locale job count (${workTotal}) exceeds incremental new-EN path count (${addedEnglishKeysSet.size}) — report this as a bug.`,
       );

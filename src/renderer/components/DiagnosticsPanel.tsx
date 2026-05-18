@@ -12,6 +12,12 @@ import {
 } from 'recharts';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import {
+  FOREIGN_LORA_WINDOW_MS,
+  type ForeignLoraDetection,
+  isRfForeignLoraHeard,
+  useDiagnosticsStore,
+} from '@/renderer/stores/diagnosticsStore';
 
 import {
   diagnosticRowsToRoutingMap,
@@ -42,8 +48,20 @@ import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
 import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
-import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
+
+function foreignLoraListFromBySender(
+  bySender: Map<string, ForeignLoraDetection> | undefined,
+  match: (d: ForeignLoraDetection) => boolean,
+): ForeignLoraDetection[] {
+  if (!bySender) return [];
+  const cutoff = Date.now() - FOREIGN_LORA_WINDOW_MS;
+  const list = [...bySender.values()].filter(
+    (d) => d.detectedAt >= cutoff && isRfForeignLoraHeard(d) && match(d),
+  );
+  list.sort((a, b) => b.detectedAt - a.detectedAt);
+  return list;
+}
 
 function isForeignLoraRfRow(r: DiagnosticRow): boolean {
   return r.kind === 'rf' && FOREIGN_LORA_RF_CONDITIONS.has(r.condition);
@@ -55,6 +73,44 @@ function isMeshCoreInterferenceRow(r: DiagnosticRow): boolean {
     (r.condition === 'MeshCore Activity Detected' ||
       r.condition === 'Potential MeshCore Repeater Conflict')
   );
+}
+
+function meshcoreHeardDisplay(
+  d: ForeignLoraDetection,
+  meshcoreNodes: Map<number, MeshNode>,
+  unknownLabel: string,
+  nearbyEncryptedLabel: string,
+): { displayName: string; hexId: string | null; node: MeshNode | undefined } {
+  const id = d.lastSenderId;
+  if (id == null) {
+    if (d.longName) {
+      return {
+        displayName: d.longName,
+        hexId: d.rfFingerprint ? `fp:${d.rfFingerprint}` : null,
+        node: undefined,
+      };
+    }
+    if (d.rfFingerprint) {
+      return {
+        displayName:
+          d.proximity === 'very-close' || d.proximity === 'nearby'
+            ? nearbyEncryptedLabel
+            : unknownLabel,
+        hexId: `fp:${d.rfFingerprint}`,
+        node: undefined,
+      };
+    }
+    return { displayName: unknownLabel, hexId: null, node: undefined };
+  }
+  const meshcoreNode = meshcoreNodes.get(id);
+  const hexId = `!${id.toString(16).padStart(8, '0')}`;
+  const displayName =
+    d.longName ?? meshcoreNode?.long_name ?? meshcoreNode?.short_name ?? unknownLabel;
+  return {
+    displayName,
+    hexId: meshcoreNode ? null : hexId,
+    node: meshcoreNode,
+  };
 }
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -80,6 +136,10 @@ interface Props {
   capabilities?: ProtocolCapabilities;
   /** Active radio protocol — auto-traceroute preference is stored per protocol. */
   protocol: MeshProtocol;
+  /** Meshtastic node id used to look up foreign-LoRa detections (stable across panel remounts). */
+  meshtasticListenerNodeId?: number;
+  /** MeshCore contacts only — used for heard-by-Meshtastic links (not merged Meshtastic nodes). */
+  meshcoreNodes?: Map<number, MeshNode>;
 }
 
 function AlertTriangleIcon({ className }: { className?: string }) {
@@ -129,6 +189,8 @@ export default function DiagnosticsPanel({
   onNodeClick,
   capabilities,
   protocol,
+  meshtasticListenerNodeId = 0,
+  meshcoreNodes = new Map(),
 }: Props) {
   const { t } = useTranslation();
   const formatRowTime = useCallback(
@@ -177,7 +239,33 @@ export default function DiagnosticsPanel({
   const setEnvMode = useDiagnosticsStore((s) => s.setEnvMode);
   const diagnosticRowsMaxAgeHours = useDiagnosticsStore((s) => s.diagnosticRowsMaxAgeHours);
   const setDiagnosticRowsMaxAgeHours = useDiagnosticsStore((s) => s.setDiagnosticRowsMaxAgeHours);
-  const getForeignLoraDetectionsList = useDiagnosticsStore((s) => s.getForeignLoraDetectionsList);
+  const foreignLoraDetections = useDiagnosticsStore((s) => s.foreignLoraDetections);
+  const foreignLoraBySender = useMemo(
+    () => foreignLoraDetections.get(meshtasticListenerNodeId),
+    [foreignLoraDetections, meshtasticListenerNodeId],
+  );
+  const meshcoreHeardList = useMemo(
+    () =>
+      foreignLoraListFromBySender(foreignLoraBySender, (d) => {
+        if (d.packetClass !== 'meshcore') return false;
+        return d.proximity === 'very-close' || d.proximity === 'nearby';
+      }),
+    [foreignLoraBySender],
+  );
+  const otherForeignList = useMemo(
+    () => foreignLoraListFromBySender(foreignLoraBySender, (d) => d.packetClass !== 'meshcore'),
+    [foreignLoraBySender],
+  );
+  const meshcoreRepeaterConflict = useDiagnosticsStore((s) =>
+    s.diagnosticRows.some(
+      (r) =>
+        r.kind === 'rf' &&
+        r.nodeId === meshtasticListenerNodeId &&
+        r.condition === 'Potential MeshCore Repeater Conflict',
+    ),
+  );
+  const showMeshtasticForeignLora =
+    protocol === 'meshtastic' && meshtasticListenerNodeId > 0 && isConnected;
 
   const [search, setSearch] = useState('');
   const [tracePendingNodes, setTracePendingNodes] = useState<Set<number>>(() => new Set());
@@ -393,11 +481,14 @@ export default function DiagnosticsPanel({
   });
 
   const selfRows = anomalyList.filter((r) => r.nodeId === myNodeNum && !isForeignLoraRfRow(r));
-  const crossProtocolRows = anomalyList.filter(
-    (r) => r.nodeId === myNodeNum && isForeignLoraRfRow(r),
+  const foreignLoraListenerId =
+    protocol === 'meshtastic' && meshtasticListenerNodeId > 0
+      ? meshtasticListenerNodeId
+      : myNodeNum;
+  const otherCrossProtocolRows = anomalyList.filter(
+    (r) =>
+      r.nodeId === foreignLoraListenerId && isForeignLoraRfRow(r) && !isMeshCoreInterferenceRow(r),
   );
-  const meshcoreRows = crossProtocolRows.filter(isMeshCoreInterferenceRow);
-  const otherCrossProtocolRows = crossProtocolRows.filter((r) => !isMeshCoreInterferenceRow(r));
   const meshRows = anomalyList.filter((r) => r.nodeId !== myNodeNum);
 
   const errorCount = diagnosticRows.filter(
@@ -479,11 +570,23 @@ export default function DiagnosticsPanel({
       }
       if (row.kind === 'rf') {
         const rf = row;
-        const node = nodes.get(rf.nodeId);
+        const foreignLoraRow = isForeignLoraRfRow(rf);
+        const linkNodeId =
+          foreignLoraRow && rf.foreignSenderId != null ? rf.foreignSenderId : rf.nodeId;
+        const node = nodes.get(linkNodeId);
         const isInfo = rf.severity === 'info';
         const colorClass = isInfo ? 'text-blue-400' : 'text-orange-400';
-        const hexId = `!${rf.nodeId.toString(16)}`;
-        const displayName = node?.long_name || node?.short_name || hexId;
+        const hexId =
+          foreignLoraRow && rf.foreignSenderId != null
+            ? `!${rf.foreignSenderId.toString(16).padStart(8, '0')}`
+            : foreignLoraRow
+              ? '—'
+              : `!${rf.nodeId.toString(16)}`;
+        const displayName = foreignLoraRow
+          ? node?.long_name ||
+            node?.short_name ||
+            (rf.foreignSenderId != null ? hexId : t('diagnosticsPanel.meshcoreUnknownForeignNode'))
+          : node?.long_name || node?.short_name || hexId;
         const remedy = getRecommendedActionForRfCondition(rf.condition);
         rows.push(
           <tr
@@ -877,88 +980,158 @@ export default function DiagnosticsPanel({
           );
         })()}
 
-      {/* Foreign LoRa activity (last 90 min) — connected node only */}
-      {isConnected &&
-        (() => {
-          const foreignList = getForeignLoraDetectionsList(myNodeNum);
-          if (foreignList.length === 0) return null;
-          const classLabels: Record<string, string> = {
-            meshcore: t('diagnosticsPanel.foreignClassMeshcore'),
-            meshtastic: t('diagnosticsPanel.foreignClassMeshtastic'),
-            'unknown-lora': t('diagnosticsPanel.foreignClassUnknownLora'),
-          };
-          const proximityLabels: Record<string, string> = {
-            'very-close': t('diagnosticsPanel.proximityVeryClose'),
-            nearby: t('diagnosticsPanel.proximityNearby'),
-            distant: t('diagnosticsPanel.proximityDistant'),
-            unknown: t('diagnosticsPanel.proximityUnknown'),
-          };
-          return (
-            <div className="space-y-3 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4">
-              <h3 className="flex items-center gap-1.5 text-sm font-medium text-orange-400">
-                <AlertTriangleIcon className="h-4 w-4 shrink-0" />
-                {t('diagnosticsPanel.foreignLoraHeading')}
-              </h3>
-              <div className="space-y-2">
-                {foreignList.map((d, i) => {
-                  const minutesAgo = Math.floor((Date.now() - d.detectedAt) / 60_000);
-                  const senderName =
-                    d.longName ??
-                    (d.lastSenderId
-                      ? nodes.get(d.lastSenderId)?.long_name ||
-                        nodes.get(d.lastSenderId)?.short_name
-                      : undefined);
+      {/* MeshCore nodes heard by Meshtastic radio (per transmitter) */}
+      {showMeshtasticForeignLora && meshcoreHeardList.length > 0 && (
+        <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <h3 className="flex items-center gap-1.5 text-sm font-medium text-amber-400">
+            <AlertTriangleIcon className="h-4 w-4 shrink-0" />
+            {t('diagnosticsPanel.meshcoreHeardByMeshtasticHeading', {
+              count: meshcoreHeardList.length,
+            })}
+          </h3>
+          <p className="text-xs text-amber-200/80">
+            {t('diagnosticsPanel.meshcoreHeardByMeshtasticDescription')}
+          </p>
+          {meshcoreRepeaterConflict && (
+            <p className="rounded border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-xs text-orange-300">
+              {t('diagnosticsPanel.meshcoreRepeaterConflictBanner')}
+            </p>
+          )}
+          <div className="overflow-auto rounded-lg border border-gray-700">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-deep-black text-muted sticky top-0 text-left">
+                  <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
+                  <th className="px-4 py-2.5">{t('diagnosticsPanel.foreignProximityColumn')}</th>
+                  <th className="px-4 py-2.5 text-right">
+                    {t('diagnosticsPanel.foreignLastSeenColumn')}
+                  </th>
+                  <th className="px-4 py-2.5 text-right">
+                    {t('diagnosticsPanel.foreignCountColumn')}
+                  </th>
+                  <th className="px-4 py-2.5 text-right">Signal</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700/50">
+                {meshcoreHeardList.map((d, i) => {
+                  const { displayName, hexId, node } = meshcoreHeardDisplay(
+                    d,
+                    meshcoreNodes,
+                    t('diagnosticsPanel.meshcoreHeardUnknownNode'),
+                    t('diagnosticsPanel.meshcoreHeardNearbyEncrypted'),
+                  );
+                  const proximityLabels: Record<string, string> = {
+                    'very-close': t('diagnosticsPanel.proximityVeryClose'),
+                    nearby: t('diagnosticsPanel.proximityNearby'),
+                    distant: t('diagnosticsPanel.proximityDistant'),
+                    unknown: t('diagnosticsPanel.proximityUnknown'),
+                  };
                   return (
-                    <div
-                      key={`${d.packetClass}-${d.lastSenderId ?? 'na'}-${d.detectedAt}-${i}`}
-                      className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs"
+                    <tr
+                      key={`mc-heard-${d.lastSenderId ?? d.rfFingerprint ?? 'unknown'}-${d.detectedAt}-${i}`}
+                      onClick={() => node && onNodeClick?.(node)}
+                      className={`hover:bg-secondary-dark/50 transition-colors ${
+                        onNodeClick && node ? 'cursor-pointer' : ''
+                      }`}
                     >
-                      <div className="text-muted">{t('diagnosticsPanel.foreignClassColumn')}</div>
-                      <div className="text-gray-200">
-                        {classLabels[d.packetClass] ?? d.packetClass}
-                      </div>
-                      <div className="text-muted">
-                        {t('diagnosticsPanel.foreignProximityColumn')}
-                      </div>
-                      <div className="text-gray-200">
+                      <td className="px-4 py-2.5">
+                        <div className="font-medium text-gray-200">{displayName}</div>
+                        {hexId ? <div className="text-muted font-mono text-xs">{hexId}</div> : null}
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-300">
                         {proximityLabels[d.proximity] ?? d.proximity}
-                      </div>
-                      <div className="text-muted">
-                        {t('diagnosticsPanel.foreignLastSeenColumn')}
-                      </div>
-                      <div className="text-gray-200">
-                        {minutesAgo < 1
-                          ? t('common.justNow')
-                          : t('common.minutesAgo', { count: minutesAgo })}
-                      </div>
-                      <div className="text-muted">{t('diagnosticsPanel.foreignCountColumn')}</div>
-                      <div className="text-gray-200">{d.count}×</div>
-                      {(d.rssi !== undefined || d.snr !== undefined) && (
-                        <>
-                          <div className="text-muted">Signal</div>
-                          <div className="font-mono text-gray-200">
-                            {d.rssi !== undefined ? `RSSI ${d.rssi} dBm` : ''}
-                            {d.rssi !== undefined && d.snr !== undefined ? ', ' : ''}
-                            {d.snr !== undefined ? `SNR ${d.snr.toFixed(1)} dB` : ''}
-                          </div>
-                        </>
-                      )}
-                      {d.lastSenderId != null && (
-                        <>
-                          <div className="text-muted">Sender</div>
-                          <div className="font-mono text-gray-200">
-                            !{d.lastSenderId.toString(16).padStart(8, '0')}
-                            {senderName ? ` (${senderName})` : ''}
-                          </div>
-                        </>
-                      )}
-                    </div>
+                      </td>
+                      <td className="text-muted px-4 py-2.5 text-right text-xs">
+                        {formatRowTime(d.detectedAt)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-gray-300">{d.count}×</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-xs text-gray-300">
+                        {d.rssi !== undefined ? `RSSI ${d.rssi}` : '—'}
+                        {d.snr !== undefined ? ` / SNR ${d.snr.toFixed(1)}` : ''}
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
-            </div>
-          );
-        })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Meshtastic + unknown-lora foreign traffic on Meshtastic frequency */}
+      {showMeshtasticForeignLora && otherForeignList.length > 0 && (
+        <div className="space-y-3 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4">
+          <h3 className="flex items-center gap-1.5 text-sm font-medium text-orange-400">
+            <AlertTriangleIcon className="h-4 w-4 shrink-0" />
+            {t('diagnosticsPanel.foreignLoraHeading', { count: otherForeignList.length })}
+          </h3>
+          <p className="text-xs text-orange-200/80">
+            {t('diagnosticsPanel.foreignLoraDescription')}
+          </p>
+          <div className="space-y-2">
+            {otherForeignList.map((d, i) => {
+              const minutesAgo = Math.floor((Date.now() - d.detectedAt) / 60_000);
+              const classLabel =
+                d.packetClass === 'meshtastic'
+                  ? t('diagnosticsPanel.foreignClassMeshtastic')
+                  : d.packetClass === 'unknown-lora'
+                    ? t('diagnosticsPanel.foreignClassUnknownLora')
+                    : d.packetClass;
+              const proximityLabel =
+                d.proximity === 'very-close'
+                  ? t('diagnosticsPanel.proximityVeryClose')
+                  : d.proximity === 'nearby'
+                    ? t('diagnosticsPanel.proximityNearby')
+                    : d.proximity === 'distant'
+                      ? t('diagnosticsPanel.proximityDistant')
+                      : t('diagnosticsPanel.proximityUnknown');
+              const senderName =
+                d.longName ??
+                (d.lastSenderId
+                  ? nodes.get(d.lastSenderId)?.long_name || nodes.get(d.lastSenderId)?.short_name
+                  : undefined);
+              return (
+                <div
+                  key={`${d.packetClass}-${d.lastSenderId ?? 'na'}-${d.detectedAt}-${i}`}
+                  className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs"
+                >
+                  <div className="text-muted">{t('diagnosticsPanel.foreignClassColumn')}</div>
+                  <div className="text-gray-200">{classLabel}</div>
+                  <div className="text-muted">{t('diagnosticsPanel.foreignProximityColumn')}</div>
+                  <div className="text-gray-200">{proximityLabel}</div>
+                  <div className="text-muted">{t('diagnosticsPanel.foreignLastSeenColumn')}</div>
+                  <div className="text-gray-200">
+                    {minutesAgo < 1
+                      ? t('common.justNow')
+                      : t('common.minutesAgo', { count: minutesAgo })}
+                  </div>
+                  <div className="text-muted">{t('diagnosticsPanel.foreignCountColumn')}</div>
+                  <div className="text-gray-200">{d.count}×</div>
+                  {(d.rssi !== undefined || d.snr !== undefined) && (
+                    <>
+                      <div className="text-muted">Signal</div>
+                      <div className="font-mono text-gray-200">
+                        {d.rssi !== undefined ? `RSSI ${d.rssi} dBm` : ''}
+                        {d.rssi !== undefined && d.snr !== undefined ? ', ' : ''}
+                        {d.snr !== undefined ? `SNR ${d.snr.toFixed(1)} dB` : ''}
+                      </div>
+                    </>
+                  )}
+                  {d.lastSenderId != null && (
+                    <>
+                      <div className="text-muted">Sender</div>
+                      <div className="font-mono text-gray-200">
+                        !{d.lastSenderId.toString(16).padStart(8, '0')}
+                        {senderName ? ` (${senderName})` : ''}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Settings */}
       <div className="bg-secondary-dark rounded-lg p-4">
@@ -1203,41 +1376,6 @@ export default function DiagnosticsPanel({
                     </thead>
                     <tbody className="divide-y divide-gray-700/50">
                       {renderTableBody(selfRows)}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-            {meshcoreRows.length > 0 && (
-              <div>
-                <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-                  {t('diagnosticsPanel.meshcoreInterferenceHeading', {
-                    count: meshcoreRows.length,
-                  })}
-                </h4>
-                <p className="mb-3 text-xs text-orange-300/90">
-                  {t('diagnosticsPanel.meshcoreInterferenceDescription')}
-                </p>
-                <div className="overflow-auto rounded-lg border border-amber-500/20 border-gray-700">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-deep-black text-muted sticky top-0 text-left">
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableHops')}
-                        </th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableDetected')}
-                        </th>
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableAction')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-700/50">
-                      {renderTableBody(meshcoreRows)}
                     </tbody>
                   </table>
                 </div>

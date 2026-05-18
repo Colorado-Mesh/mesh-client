@@ -1,6 +1,7 @@
 import { haversineDistanceKm } from '../nodeStatus';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import type { HopHistoryPoint, MeshNode, NodeAnomaly } from '../types';
+import { hopCountMeaningfulForNodeDiagnostics } from './hopCountMeaningfulForNodeDiagnostics';
 
 export const NOISY_PORTNUMS = {
   POSITION_APP: 3,
@@ -23,12 +24,11 @@ export interface NoiseStats {
 export function detectHopGoblin(
   node: MeshNode,
   homeNode: MeshNode | null,
-  ignoreMqtt = false,
   distanceMultiplier = 1,
   distanceOffsetKm = 0,
   hopsThreshold = 2,
 ): NodeAnomaly | null {
-  if (ignoreMqtt && node.heard_via_mqtt_only) return null;
+  if (!hopCountMeaningfulForNodeDiagnostics(node)) return null;
 
   // Only distance-proven over-hopping. SNR+hops heuristics removed: rxSnr is
   // last-hop only and meaningless for multi-hop originators and MQTT-only nodes.
@@ -94,7 +94,7 @@ export function detectBadRoute(
   }
   // Very close node taking many hops
   if (
-    (!ignoreMqtt || !node.heard_via_mqtt_only) &&
+    hopCountMeaningfulForNodeDiagnostics(node) &&
     homeNode?.latitude != null &&
     homeNode?.longitude != null &&
     node.latitude != null &&
@@ -131,12 +131,8 @@ export function detectBadRoute(
   return null;
 }
 
-export function detectImpossibleHop(
-  node: MeshNode,
-  homeNode: MeshNode | null,
-  ignoreMqtt = false,
-): NodeAnomaly | null {
-  if (ignoreMqtt && node.heard_via_mqtt_only) return null;
+export function detectImpossibleHop(node: MeshNode, homeNode: MeshNode | null): NodeAnomaly | null {
+  if (!hopCountMeaningfulForNodeDiagnostics(node)) return null;
   if (node.hops_away !== 0) return null;
   if (!homeNode?.latitude || !homeNode?.longitude) return null;
   if (!node.latitude || !node.longitude) return null;
@@ -261,7 +257,7 @@ export function analyzeNode(
   // Priority: errors first, then warnings
   // impossible_hop requires hops_away === 0 — skip for protocols without hop count
   const impossibleHop =
-    capabilities?.hasHopCount === false ? null : detectImpossibleHop(node, homeNode, ignoreMqtt);
+    capabilities?.hasHopCount === false ? null : detectImpossibleHop(node, homeNode);
   if (impossibleHop) return impossibleHop;
 
   const noisyNode = noiseStats ? detectNoisyNode(noiseStats) : null;
@@ -279,15 +275,16 @@ export function analyzeNode(
   if (badRoute?.severity === 'error') return badRoute;
 
   // Use PathUpdated events (MeshCore) when available; fall back to hop-count heuristic
-  const flapping = pathUpdatedTimestamps?.length
-    ? detectPathInstability(node.node_id, pathUpdatedTimestamps)
-    : detectRouteFlapping(node.node_id, hopHistory);
+  const flapping = hopCountMeaningfulForNodeDiagnostics(node)
+    ? pathUpdatedTimestamps?.length
+      ? detectPathInstability(node.node_id, pathUpdatedTimestamps)
+      : detectRouteFlapping(node.node_id, hopHistory)
+    : null;
   if (flapping) return flapping;
 
   const hopGoblin = detectHopGoblin(
     node,
     homeNode,
-    ignoreMqtt,
     distanceMultiplier,
     distanceOffsetKm,
     hopsThreshold,

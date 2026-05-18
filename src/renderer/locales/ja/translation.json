@@ -60,8 +60,7 @@
     "protocolSwitcher": "プロトコルスイッチャー",
     "switchToMeshtastic": "Meshtasticに切り替える",
     "switchToMeshCore": "MeshCore に切り替える",
-    "backToTop": "トップに戻る",
-    "keyboardShortcuts": "キーボードショートカット(?)"
+    "backToTop": "トップに戻る"
   },
   "tabs": {
     "connection": "繋がり",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "このモードでは使用できません"
-  },
-  "shortcuts": {
-    "title": "キーボードショートカット",
-    "caption": "アプリケーションのキーボード ショートカット",
-    "shortcutColumn": "ショートカット",
-    "actionColumn": "アクション",
-    "toggleSearch": "メッセージ検索の切り替え ([チャット] タブ)",
-    "sendMessage": "メッセージを送信する",
-    "newLine": "メッセージ内の改行",
-    "openHelp": "このキーボード ショートカット ヘルプを開く",
-    "switchMeshtastic": "Meshtasticに切り替える",
-    "switchMeshCore": "MeshCore に切り替える",
-    "switchToTab": "{{name}} タブに切り替えます",
-    "notInMeshCore": "(MeshCore では使用できません)",
-    "meshCoreRepeaters": "(MeshCore: リピーター)",
-    "packetSniffer": "パケットスニファー",
-    "closeSearch": "検索を閉じる/DMパネル（チャットタブ）を閉じる",
-    "footerNote": "Cmd/Ctrl+0、A、M、S を押すと、アプリ、診断、統計、およびパケット スニファーのタブが表示されているときに名前でこれらのタブに切り替わります (固定スロットではないため、一部のタブが非表示になっている場合でもショートカットは正しいままです)。"
   },
   "logPanel": {
     "showLevels": "レベルを表示",
@@ -161,7 +142,6 @@
     "mqttError": "MQTTエラー",
     "mqttDisconnected": "MQTT が切断されました",
     "footerSlogan": "どこにでも、誰にでも。参加しませんか：",
-    "shortcuts": "ショートカット",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} メッセージ",
     "deviceStatus": {
       "disconnected": "切断されました",
@@ -1084,7 +1064,7 @@
     "forgetDevice": "このデバイスを忘れてください",
     "bluetooth": "ブルートゥース",
     "usbSerial": "USBシリアル",
-    "wifiHttp": "WiFi/HTTP",
+    "wifiHttp": "Wi - Fi/HTTP",
     "tcpIp": "TCP/IP",
     "deviceAddress": "デバイスアドレス",
     "deviceAddressHint": "ホスト名または IP アドレスを入力します (http:// は除く)",
@@ -1178,7 +1158,8 @@
       "connectionFailed": "接続に失敗しました"
     },
     "cancelMqttConnect": "キャンセル",
-    "ripplePresetConfirm": "Rippleプリセットは、共有コミュニティ資格情報を使用し、TLS証明書の検証を無効にします。これは信頼できるネットワークでのみ使用します。続行しますか？"
+    "ripplePresetConfirm": "Rippleプリセットは、共有コミュニティ資格情報を使用し、TLS証明書の検証を無効にします。これは信頼できるネットワークでのみ使用します。続行しますか？",
+    "meshcorePort": "ポート"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} 時間より古いルーティング行を削除 (1 ～ 168)",
@@ -1235,7 +1216,6 @@
     "proximityNearby": "近く",
     "proximityDistant": "遠い",
     "proximityUnknown": "未知の距離",
-    "foreignLoraHeading": "海外 LoRa アクティビティ (最後の 90 分)",
     "foreignClassColumn": "クラス",
     "foreignProximityColumn": "近接性",
     "foreignLastSeenColumn": "最後に見たもの",
@@ -1396,7 +1376,17 @@
       }
     },
     "cuHistoryHeading": "チャネル使用率（過去24時間）",
-    "cuHistoryTooltipLabel": "Channel Util"
+    "cuHistoryTooltipLabel": "Channel Util",
+    "meshcoreUnknownForeignNode": "不明なMeshCoreノード",
+    "meshcoreRepeaterConflictBanner": "高いMeshCoreパケットレート（> 5/分） —近くのリピーターがMeshtasticチャンネルで衝突を引き起こしている可能性があります。",
+    "meshcoreHeardByMeshtasticHeading": "Meshtasticラジオで聞こえるMeshCoreノード（ {{count}} ）",
+    "meshcoreHeardByMeshtasticDescription": "MeshCoreトランスミッタは、過去90分間にローカルRFで聞こえました（ MeshtasticデバイスログまたはMeshCoreラジオRX ）。MeshCoreリピーターコンタクト同期は含まれていません。これはあなたのMeshtasticノードではありません。",
+    "meshcoreHeardByMeshtasticEmpty": "過去90分間にMeshtastic周波数で聞こえたMeshCoreノードはありません。",
+    "meshcoreHeardUnknownNode": "身元不明のMeshCore送信機",
+    "meshcoreHeardNearbyEncrypted": "近くのMeshCore RF （暗号化）",
+    "foreignLoraHeading": "あなたのMeshtastic周波数（ {{count}} ）の他の外国LoRa",
+    "foreignLoraDescription": "過去90分間のあなたの周波数のMeshtastic送信機と認識できないLoRa信号。MeshCoreノードは、上記のセクションに記載されています。",
+    "foreignLoraEmpty": "過去90分間に、Meshtastic周波数でのMeshtasticまたは不明なLoRaアクティビティはありません。"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -509,5 +509,95 @@ describe('ConnectionPanel MQTT cancel while connecting', () => {
     const cancelBtn = within(mqttCard as HTMLElement).getByRole('button', { name: /^Cancel$/i });
     await user.click(cancelBtn);
     expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshcore');
+  });
+});
+
+describe('ConnectionPanel MeshCore TCP port field', () => {
+  it('renders host and port inputs with default port 5000 when TCP/IP is selected', async () => {
+    const user = userEvent.setup();
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+
+    const tcpBtn = within(radioCard as HTMLElement).getByRole('radio', { name: /tcp\/ip/i });
+    await user.click(tcpBtn);
+
+    const hostInput = within(radioCard as HTMLElement).getByLabelText(/^Host$/i);
+    const portInput = within(radioCard as HTMLElement).getByLabelText(/^Port$/i);
+    expect(hostInput).toBeInTheDocument();
+    expect(portInput).toBeInTheDocument();
+    expect((portInput as HTMLInputElement).value).toBe('5000');
+  });
+
+  it('passes host:port to onConnect when a custom port is set', async () => {
+    const user = userEvent.setup();
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+
+    const tcpBtn = within(radioCard as HTMLElement).getByRole('radio', { name: /tcp\/ip/i });
+    await user.click(tcpBtn);
+
+    const portInput = within(radioCard as HTMLElement).getByLabelText(/^Port$/i);
+    fireEvent.change(portInput, { target: { value: '5001' } });
+
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(onConnect).toHaveBeenCalledWith('http', 'localhost:5001');
+    consoleWarnSpy.mockRestore();
+  });
+
+  it.each([
+    ['0', 'localhost:5000'],
+    ['65536', 'localhost:5000'],
+    ['abc', 'localhost:5000'],
+  ])('falls back to port 5000 for invalid port %s', async (badPort, expectedAddress) => {
+    const user = userEvent.setup();
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    const tcpBtn = within(radioCard as HTMLElement).getByRole('radio', { name: /tcp\/ip/i });
+    await user.click(tcpBtn);
+
+    const portInput = within(radioCard as HTMLElement).getByLabelText(/^Port$/i);
+    fireEvent.change(portInput, { target: { value: badPort } });
+
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(onConnect).toHaveBeenCalledWith('http', expectedAddress);
+    consoleWarnSpy.mockRestore();
   });
 });

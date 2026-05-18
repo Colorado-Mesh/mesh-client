@@ -18,8 +18,10 @@ import {
   MESHCORE_SETUP_ABORT_MESSAGE,
 } from '../lib/bleConnectErrors';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
+import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import {
   classifyPayload,
+  classifyProximity,
   extractMeshtasticSenderId,
   meshtasticSenderIdForRawLogFallback,
 } from '../lib/foreignLoraDetection';
@@ -52,6 +54,9 @@ import {
 import {
   meshcoreRawPacketLogFromBytesFallback,
   meshcoreRawPacketResolveFromParsed,
+  meshcoreRfIsSelfOriginated,
+  meshcoreRfNodeHashCandidates,
+  meshcoreRfResolvePathSender,
 } from '../lib/meshcoreRawPacketSender';
 import { shouldCoalesceSelfFloodAdvert } from '../lib/meshcoreRawSelfFloodAdvertCoalesce';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
@@ -97,8 +102,10 @@ import {
   pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
 import { MeshcoreWebBluetoothConnection } from '../lib/meshcoreWebBluetoothConnection';
+import { getMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import { lastHeardToUnixSeconds, mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { parseTcpAddress } from '../lib/parseTcpAddress';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../lib/rawPacketLogConstants';
 import { emojiDisplayChar } from '../lib/reactions';
 import {
@@ -413,7 +420,11 @@ class IpcNobleConnection {
   private inner: NobleIpcMeshcoreConnectionInstance | null = null;
   private cleanupFns: (() => void)[] = [];
 
-  constructor(peripheralId: string, sessionId: NobleBleSessionId = 'meshcore') {
+  constructor(
+    peripheralId: string,
+    sessionId: NobleBleSessionId = 'meshcore',
+    private readonly onInnerInstance?: (conn: NobleIpcMeshcoreConnectionInstance) => void,
+  ) {
     this.peripheralId = peripheralId;
     this.sessionId = sessionId;
   }
@@ -446,6 +457,7 @@ class IpcNobleConnection {
 
       const instance = new NobleOverIpc(sessionId) as unknown as NobleIpcMeshcoreConnectionInstance;
       this.inner = instance;
+      this.onInnerInstance?.(instance);
       /** Reject pending companion handshake when noble disconnects or aborts (e.g. Win32 pairing / watchdog). */
       let rejectHandshakeOnDisconnect: ((err: Error) => void) | undefined;
       const disconnectAbortsHandshake = new Promise<never>((_, reject) => {
@@ -1399,7 +1411,8 @@ export function useMeshCore() {
 
   useEffect(() => {
     nodesRef.current = nodes;
-  }, [nodes]);
+    setMeshcoreDiagnosticsNodes(nodes, myNodeNumRef.current);
+  }, [nodes, state.myNodeNum]);
 
   useEffect(() => {
     meshcoreTraceResultsRef.current = meshcoreTraceResults;
@@ -2159,6 +2172,7 @@ export function useMeshCore() {
               );
             });
         }
+        // Foreign LoRa for MeshCore overhear is recorded from RF RX (event 136), not advert sync (128).
       });
 
       // Push: path updated — event 0x81 = 129; update last_heard for that contact
@@ -3001,6 +3015,86 @@ export function useMeshCore() {
               useDiagnosticsStore.getState().recordNoisePort(fromNodeId, 1001);
             }
           }
+
+          // MeshCore radio RF RX → Meshtastic Foreign LoRa (local overhear, not contact-list sync).
+          const selfPubKey =
+            myNodeNumRef.current !== 0
+              ? (pubKeyMapRef.current.get(myNodeNumRef.current) ?? selfInfoRef.current?.publicKey)
+              : undefined;
+          const isSelfRf =
+            myNodeNumRef.current !== 0 &&
+            meshcoreRfIsSelfOriginated(rawU8, selfPubKey, myNodeNumRef.current);
+          if (loraPacketClass === 'meshcore') {
+            const mtNode = getMeshtasticConnectedMyNodeNum();
+            if (mtNode > 0) {
+              let rfSenderId = fromNodeId ?? undefined;
+              let rfDisplayName: string | undefined;
+              const meshcoreNodes = nodesRef.current;
+              if (parsed.ok) {
+                if (rfSenderId == null && parsed.advert) {
+                  const advertId = pubkeyToNodeId(parsed.advert.publicKey);
+                  if (advertId !== 0) rfSenderId = advertId;
+                  if (parsed.advert.name.length > 0) rfDisplayName = parsed.advert.name;
+                } else if (advertName) {
+                  rfDisplayName = advertName;
+                }
+                if (rfSenderId == null && parsed.pathBytes.length > 0) {
+                  const useAllContacts = hopCount <= 2 && rssi > -80 && parsed.pathBytes.length > 0;
+                  const pathCandidates = meshcoreRfNodeHashCandidates(
+                    meshcoreNodes,
+                    myNodeNumRef.current,
+                    useAllContacts ? { rssi: undefined } : { rssi },
+                  );
+                  const pathId = meshcoreRfResolvePathSender(parsed.pathBytes, pathCandidates);
+                  if (pathId != null) rfSenderId = pathId;
+                }
+              }
+              const isOwnMeshcoreTx =
+                isSelfRf ||
+                (rfSenderId != null && rfSenderId === myNodeNumRef.current) ||
+                (fromNodeId != null && fromNodeId === myNodeNumRef.current);
+              if (isOwnMeshcoreTx && myNodeNumRef.current !== 0) {
+                rfSenderId = myNodeNumRef.current;
+                rfDisplayName =
+                  rfDisplayName ??
+                  selfInfoRef.current?.name?.trim() ??
+                  meshcoreNodes.get(myNodeNumRef.current)?.long_name ??
+                  meshcoreNodes.get(myNodeNumRef.current)?.short_name ??
+                  nicknameMapRef.current.get(myNodeNumRef.current);
+              }
+              if (rfSenderId != null && rfDisplayName == null) {
+                const known = meshcoreNodes.get(rfSenderId);
+                rfDisplayName =
+                  known?.long_name ?? known?.short_name ?? nicknameMapRef.current.get(rfSenderId);
+              }
+              const proximity = classifyProximity(rssi || undefined, snr || undefined);
+              let rfFingerprint =
+                rfSenderId == null && messageFingerprintHex ? messageFingerprintHex : undefined;
+              if (isOwnMeshcoreTx) {
+                rfFingerprint = undefined;
+              }
+              // Local RF only — skip distant mesh floods (identified or not).
+              if (proximity !== 'very-close' && proximity !== 'nearby') {
+                return;
+              }
+              if (rfSenderId == null && rfFingerprint == null) {
+                return;
+              }
+              useDiagnosticsStore
+                .getState()
+                .recordForeignLora(
+                  mtNode,
+                  'meshcore',
+                  rssi || undefined,
+                  snr || undefined,
+                  rfSenderId,
+                  () => nodesRef.current,
+                  'meshcore-radio-rf',
+                  rfFingerprint,
+                  rfDisplayName,
+                );
+            }
+          }
         }
 
         // Foreign LoRa fingerprinting: only flag non-MeshCore packets as foreign (requires known self node ID)
@@ -3171,7 +3265,7 @@ export function useMeshCore() {
   const initConn = useCallback(
     async (conn: MeshCoreConnection, setupGen: number) => {
       connRef.current = conn;
-      meshcoreConnEventListenersTeardownRef.current = setupEventListeners(conn);
+      meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
 
       // meshcore.js runs deviceQuery(SupportedCompanionProtocolVersion) from onConnected() on the next
       // macrotask; register before any await so we capture that DeviceInfo (manufacturer string, build date).
@@ -3477,7 +3571,23 @@ export function useMeshCore() {
             let lastBleError: unknown = null;
             for (let attempt = 1; attempt <= NOBLE_IPC_CONNECT_MAX_ATTEMPTS; attempt++) {
               const attemptStartedAt = Date.now();
-              const nobleConn = new IpcNobleConnection(blePeripheralId, 'meshcore');
+              const registerMeshcoreConnListenersEarly = (
+                innerConn: NobleIpcMeshcoreConnectionInstance,
+              ) => {
+                if (meshcoreSetupGenerationRef.current !== setupGen) return;
+                connRef.current = innerConn as unknown as MeshCoreConnection;
+                if (meshcoreConnEventListenersTeardownRef.current) {
+                  meshcoreConnEventListenersTeardownRef.current();
+                }
+                meshcoreConnEventListenersTeardownRef.current = setupEventListeners(
+                  innerConn as unknown as MeshCoreConnection,
+                );
+              };
+              const nobleConn = new IpcNobleConnection(
+                blePeripheralId,
+                'meshcore',
+                registerMeshcoreConnListenersEarly,
+              );
               ipcNobleRef.current = nobleConn;
               try {
                 await nobleConn.connect();
@@ -3547,8 +3657,8 @@ export function useMeshCore() {
           }
         } else {
           // tcp
-          const host = tcpHost ?? 'localhost';
-          const tcpConn = new IpcTcpConnection(host, 5000);
+          const { host, port } = parseTcpAddress(tcpHost ?? 'localhost');
+          const tcpConn = new IpcTcpConnection(host, port);
           ipcTcpRef.current = tcpConn;
           await tcpConn.connect();
           conn = tcpConn.connection as unknown as MeshCoreConnection;
@@ -3559,6 +3669,8 @@ export function useMeshCore() {
           void conn.close().catch(() => {});
           throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
         }
+        connRef.current = conn;
+        meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
         await initConn(conn, setupGen);
         if (type === 'serial') {
           const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
@@ -3691,7 +3803,7 @@ export function useMeshCore() {
         if (type === 'ble') bleConnectInProgressRef.current = false;
       }
     },
-    [initConn, teardownMeshcoreConnEventListeners],
+    [initConn, setupEventListeners, teardownMeshcoreConnEventListeners],
   );
 
   /**

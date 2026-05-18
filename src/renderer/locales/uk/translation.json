@@ -60,8 +60,7 @@
     "protocolSwitcher": "Перемикач протоколів",
     "switchToMeshtastic": "Перейти на Meshtastic",
     "switchToMeshCore": "Перемкнутися на MeshCore",
-    "backToTop": "Догори",
-    "keyboardShortcuts": "Гарячі клавіші"
+    "backToTop": "Догори"
   },
   "tabs": {
     "connection": "Підключення",
@@ -84,24 +83,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Недоступно в цьому режимі"
-  },
-  "shortcuts": {
-    "title": "Гарячі клавіші",
-    "caption": "Комбінації клавіш програми",
-    "shortcutColumn": "Комбінація клавіш",
-    "actionColumn": "Дія",
-    "toggleSearch": "Перемкнути пошук повідомлень (вкладка «Чат»)",
-    "closeSearch": "Закрити панель пошуку / закрити DM (вкладка «Чат»)",
-    "sendMessage": "Надіслати повідомлення",
-    "newLine": "Новий рядок у повідомленні",
-    "openHelp": "Відкрити цю довідку з комбінаціями клавіш",
-    "switchMeshtastic": "Перейти на Meshtastic",
-    "switchMeshCore": "Перемкнутися на MeshCore",
-    "switchToTab": "Перейти на вкладку {{name}}",
-    "notInMeshCore": "(недоступно в MeshCore)",
-    "meshCoreRepeaters": "(MeshCore: повторювачі)",
-    "packetSniffer": "Аналізатор пакетів",
-    "footerNote": "Cmd/Ctrl+0, A, M та S перемикаються на вкладки App, Diagnostics, Stats та Packet Sniffer за назвою, коли ці вкладки видимі (не за допомогою фіксованого слота, тому ярлики залишаються правильними, коли деякі вкладки приховані)."
   },
   "logPanel": {
     "showLevels": "Показати рівні",
@@ -161,7 +142,6 @@
     "mqttError": "Помилка MQTT",
     "mqttDisconnected": "MQTT відключено",
     "footerSlogan": "Для всіх, всюди. Приєднуйтесь до нас:",
-    "shortcuts": "Ярлики",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} повідомлень",
     "deviceStatus": {
       "disconnected": "Втрата зв’язку",
@@ -1084,7 +1064,7 @@
     "forgetDevice": "Забудьте про цей пристрій",
     "bluetooth": "Bluetooth",
     "usbSerial": "Послідовний порт USB",
-    "wifiHttp": "WiFi/HTTP",
+    "wifiHttp": "Wi-Fi/HTTP",
     "tcpIp": "TCP/IP",
     "deviceAddress": "Адреса пристрою",
     "deviceAddressHint": "Введіть ім’я хоста або IP-адресу (без http://)",
@@ -1178,7 +1158,8 @@
       "connectionFailed": "Помилка підключення"
     },
     "cancelMqttConnect": "Скасувати",
-    "ripplePresetConfirm": "Попереднє налаштування Ripple використовує облікові дані спільноти та вимикає перевірку сертифіката TLS. Використовуйте цю функцію лише в надійній мережі. Продовжити?"
+    "ripplePresetConfirm": "Попереднє налаштування Ripple використовує облікові дані спільноти та вимикає перевірку сертифіката TLS. Використовуйте цю функцію лише в надійній мережі. Продовжити?",
+    "meshcorePort": "Порт"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Відкиньте рядки маршрутизації, старші за {{hours}} год (1–168)",
@@ -1235,7 +1216,6 @@
     "proximityNearby": "Поблизу",
     "proximityDistant": "Віддалені",
     "proximityUnknown": "Невідома відстань",
-    "foreignLoraHeading": "Іноземна діяльність LoRa (останні 90 хв)",
     "foreignClassColumn": "Клас",
     "foreignProximityColumn": "Безконтактний підривник",
     "foreignLastSeenColumn": "Останній раз в мережі",
@@ -1336,7 +1316,7 @@
       "antennaPolarizationDescription": "Вузол знаходиться на відстані <1 милі, але SNR {{snr}} дБ — ймовірно, нуль антени або невідповідність поляризації.",
       "mqttGhostTitle": "Виявлено MQTT: перемкніть «Ігнорувати MQTT» для цього ідентифікатора",
       "mqttGhostDescription": "Вузол відображається як 0 стрибків, але знаходиться на відстані {{miles}} миль — ймовірно, зв 'язаний через MQTT, а не RF.",
-      "highGroundTitle": "Повідомлення про операцію: Зменшити ліміт хмелю до 3",
+      "highGroundTitle": "Повідомлення про операцію: Зменшити ліміт хопів до 3",
       "highGroundDescription": "SNR {{snr}} dB + {{hops}} стрибки в межах 10 миль — вузол, ймовірно, має занадто високу межу стрибка.",
       "mqttRfOverlapTitle": "Перевірте перекриття MQTT / RF",
       "mqttRfOverlapDescription": "{{percent}}% дублювання пакетів у межах 5 миль — шлюзові низхідні або мостові шляхи можуть відбивати радіочастотні сигнали; спробуйте ігнорувати MQTT для уражених вузлів.",
@@ -1396,7 +1376,17 @@
       }
     },
     "cuHistoryHeading": "Використання каналу (останні 24 години)",
-    "cuHistoryTooltipLabel": "Використання каналу"
+    "cuHistoryTooltipLabel": "Використання каналу",
+    "meshcoreUnknownForeignNode": "Невідомий вузол MeshCore",
+    "meshcoreRepeaterConflictBanner": "Висока швидкість передачі пакетів MeshCore (>5/хв) — сусідній повторювач може спричинити зіткнення на вашому Meshtastic-каналі.",
+    "meshcoreHeardByMeshtasticHeading": "Вузли MeshCore, почуті вашим Meshtastic-радіо ({{count}})",
+    "meshcoreHeardByMeshtasticDescription": "Передавачі MeshCore підслуховувалися на локальному радіочастотному каналі протягом останніх 90 хвилин (журнали пристроїв Meshtastic або радіоприймач MeshCore RX). Не включає синхронізацію контактів ретранслятора MeshCore. Це не ваш Meshtastic вузол.",
+    "meshcoreHeardByMeshtasticEmpty": "За останні 90 хвилин на вашій частоті Meshtastic вузли MeshCore не чули.",
+    "meshcoreHeardUnknownNode": "Неідентифікований передавач MeshCore",
+    "meshcoreHeardNearbyEncrypted": "Поруч MeshCore RF (зашифровано)",
+    "foreignLoraHeading": "Інший іноземний LoRa на вашій частоті Meshtastic ({{count}})",
+    "foreignLoraDescription": "Meshtastic передавачі та нерозпізнані сигнали LoRa на вашій частоті за останні 90 хвилин. Вузли MeshCore перераховані в розділі вище.",
+    "foreignLoraEmpty": "Протягом останніх 90 хвилин на вашій частоті Meshtastic не було активності Meshtastic або невідомої LoRa."
   },
   "rawPacketLog": {
     "filterPackets": "Фільтрувати пакети",
@@ -1605,7 +1595,7 @@
     "noMapReportReceived": "Звіт про карту не отримано",
     "mapReportLastReport": "Останній звіт",
     "mapReportDataLabel": "Дані",
-    "mapReportDataNa": "N/A",
+    "mapReportDataNa": "Н/З",
     "positionHistoryHeading": "Історія позицій",
     "noPositionHistoryRecorded": "Історія позицій не записана",
     "positionHistoryRecordedPoints": "Записані бали",
@@ -1773,12 +1763,12 @@
     "pending": "(очікує)",
     "pendingTitle": "Очікування повного пакета NodeInfo",
     "notAvailableRemotely": "Недоступно віддалено",
-    "snr": "SNR",
+    "snr": "Відношення сигнал/ шум",
     "lastHopSnr": "SNR останнього стрибка",
     "battery": "Акумулятор",
     "lastHeard": "Востаннє почуте",
     "hops": "Хопи",
-    "channelUtil": "Channel Util",
+    "channelUtil": "Використання каналу",
     "source": "Джерело",
     "position": "Позиція",
     "lastTrackedPosition": "Остання відстежена позиція",
@@ -1858,7 +1848,7 @@
         "recommendation": "Помилка рукостискання підключення. Спробуйте повторно підключитися вручну."
       },
       "ble-connect-race": {
-        "label": "BLE Connect Race/Timeout",
+        "label": "BLE Connect Race/Тайм-аут",
         "recommendation": "Час очікування рукостискання BLE минув або перервався з роз’єднанням. Перевірте стабільність підключення BLE і відстань до пристрою."
       },
       "auth-decrypt": {
@@ -1935,7 +1925,7 @@
     "originatorPackets": "пакети"
   },
   "roleInfo": {
-    "placeholderDash": "-",
+    "placeholderDash": "обмеження,&#09;оскільки",
     "unknownRole": "Невідомо ({{role}})",
     "roles": {
       "client": "Клієнт",
@@ -1992,8 +1982,9 @@
     "snrTitle": "Розподіл SNR",
     "snrAxis": "SNR (дБ)",
     "rssiTitle": "Розподіл RSSI",
-    "rssiAxis": "<bpt i=\"1\" type=\"bold\">{}</bpt>Індикатор інтенсивності прийнятого сигналу (-дБм)<ept i=\"1\">{}</ept>",
-    "hopTitle": "Розподіл підрахунку хмелю",
-    "hopAxis": "Hops:"
-  }
+    "rssiAxis": "Індикатор інтенсивності прийнятого сигналу (-дБм)",
+    "hopTitle": "Розподіл кількості хопів",
+    "hopAxis": "Хопи"
+  },
+  "placeholderDash": "-"
 }
