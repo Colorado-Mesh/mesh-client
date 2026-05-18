@@ -117,9 +117,18 @@ export function isPersistableForeignLoraDetection(d: ForeignLoraDetection): bool
   return isLocallyDisplayableMeshcoreForeignLora(d);
 }
 
+/** In-memory retention predicate — more permissive than persistence.
+ * Allows nearby/very-close meshcore:unknown entries to survive until a senderId arrives. */
+function isInMemoryRetainableForeignLora(d: ForeignLoraDetection): boolean {
+  if (!isRfForeignLoraHeard(d)) return false;
+  if (d.packetClass === 'meshtastic') return true;
+  if (d.packetClass !== 'meshcore') return false;
+  return d.proximity === 'very-close' || d.proximity === 'nearby';
+}
+
 function pruneForeignLoraBySender(bySender: Map<string, ForeignLoraDetection>): void {
   for (const [key, det] of bySender) {
-    if (!isPersistableForeignLoraDetection(det)) bySender.delete(key);
+    if (!isInMemoryRetainableForeignLora(det)) bySender.delete(key);
   }
 }
 

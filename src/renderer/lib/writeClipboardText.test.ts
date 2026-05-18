@@ -49,4 +49,19 @@ describe('writeClipboardText', () => {
 
     expect(writeText).toHaveBeenCalledWith('hello from web');
   });
+
+  it('propagates navigator.clipboard.writeText rejection', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('NotAllowedError'));
+    vi.stubGlobal('electronAPI', {
+      ...window.electronAPI,
+      clipboard: {} as { writeText: (text: string) => void },
+    });
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      writable: true,
+      configurable: true,
+    });
+
+    await expect(writeClipboardText('blocked')).rejects.toThrow('NotAllowedError');
+  });
 });

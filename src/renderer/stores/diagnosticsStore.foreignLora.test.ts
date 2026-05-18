@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   foreignLoraSenderKey,
@@ -89,5 +89,59 @@ describe('getMeshcoreHeardByMeshtasticList', () => {
     expect(
       useDiagnosticsStore.getState().foreignLoraDetections.get(100)?.has('meshcore:fp:abc123'),
     ).toBe(true);
+  });
+
+  it('stores meshcore:unknown in memory when nearby (no senderId, no fingerprint)', () => {
+    useDiagnosticsStore
+      .getState()
+      .recordForeignLora(100, 'meshcore', -50, 9, undefined, undefined, 'meshtastic-rf');
+    expect(
+      useDiagnosticsStore.getState().foreignLoraDetections.get(100)?.has('meshcore:unknown'),
+    ).toBe(true);
+  });
+
+  it('promotes meshcore:unknown to identified entry when senderId arrives', () => {
+    useDiagnosticsStore
+      .getState()
+      .recordForeignLora(100, 'meshcore', -50, 9, undefined, undefined, 'meshtastic-rf');
+    expect(
+      useDiagnosticsStore.getState().foreignLoraDetections.get(100)?.has('meshcore:unknown'),
+    ).toBe(true);
+
+    useDiagnosticsStore
+      .getState()
+      .recordForeignLora(100, 'meshcore', -48, 9, 0xaabb, undefined, 'meshtastic-rf');
+    const bySender = useDiagnosticsStore.getState().foreignLoraDetections.get(100);
+    expect(bySender?.has('meshcore:unknown')).toBe(false);
+    expect(bySender?.has('meshcore:43707')).toBe(true); // 0xaabb in decimal
+  });
+
+  it('does not persist meshcore:unknown to localStorage', () => {
+    vi.useFakeTimers();
+    useDiagnosticsStore
+      .getState()
+      .recordForeignLora(100, 'meshcore', -50, 9, undefined, undefined, 'meshtastic-rf');
+    vi.advanceTimersByTime(600); // past 500ms debounce
+    const raw = localStorage.getItem('mesh-client:foreignLoraDetectionsSnapshot');
+    const parsed = raw ? (JSON.parse(raw) as { entries?: [number, [string, unknown][]][] }) : null;
+    const senderKeys = parsed?.entries?.flatMap(([, pairs]) => pairs.map(([k]) => k)) ?? [];
+    expect(senderKeys).not.toContain('meshcore:unknown');
+    vi.useRealTimers();
+  });
+
+  it('does not store meshcore:unknown when distant (rssi below -95)', () => {
+    useDiagnosticsStore
+      .getState()
+      .recordForeignLora(100, 'meshcore', -100, undefined, undefined, undefined, 'meshtastic-rf');
+    expect(
+      useDiagnosticsStore.getState().foreignLoraDetections.get(100)?.has('meshcore:unknown'),
+    ).toBe(false);
+  });
+
+  it('does not store unknown-lora detections (pruned immediately)', () => {
+    useDiagnosticsStore
+      .getState()
+      .recordForeignLora(100, 'unknown-lora', -60, 5, undefined, undefined, 'meshtastic-rf');
+    expect(useDiagnosticsStore.getState().foreignLoraDetections.get(100)?.size ?? 0).toBe(0);
   });
 });

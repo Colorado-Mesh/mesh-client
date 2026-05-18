@@ -248,9 +248,7 @@ export default function DiagnosticsPanel({
     () =>
       foreignLoraListFromBySender(foreignLoraBySender, (d) => {
         if (d.packetClass !== 'meshcore') return false;
-        if (d.proximity !== 'very-close' && d.proximity !== 'nearby') return false;
-        if (d.lastSenderId != null || d.longName) return true;
-        return Boolean(d.rfFingerprint);
+        return d.proximity === 'very-close' || d.proximity === 'nearby';
       }),
     [foreignLoraBySender],
   );

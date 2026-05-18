@@ -35,4 +35,15 @@ describe('parseTcpAddress', () => {
     expect(parseTcpAddress('host:1')).toEqual({ host: 'host', port: 1 });
     expect(parseTcpAddress('host:65535')).toEqual({ host: 'host', port: 65535 });
   });
+
+  it('treats bare IPv6 as host with default port', () => {
+    expect(parseTcpAddress('::1')).toEqual({ host: '::1', port: 5000 });
+    expect(parseTcpAddress('fd00::1:2:3')).toEqual({ host: 'fd00::1:2:3', port: 5000 });
+    expect(parseTcpAddress('2001:db8::1')).toEqual({ host: '2001:db8::1', port: 5000 });
+  });
+
+  it('parses bracketed IPv6 with port', () => {
+    expect(parseTcpAddress('[::1]:5000')).toEqual({ host: '[::1]', port: 5000 });
+    expect(parseTcpAddress('[::1]:4403')).toEqual({ host: '[::1]', port: 4403 });
+  });
 });
