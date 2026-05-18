@@ -6,96 +6,50 @@ import App from './App';
 import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
 
-const { createMeshCoreMock, getStoredMeshProtocolMock, lastChatPanelProps, useMeshCoreMock } =
-  vi.hoisted(() => ({
-    createMeshCoreMock: () => ({
-      state: { status: 'disconnected', myNodeNum: 0, connectionType: null },
-      messages: [],
-      nodes: new Map(),
-      channels: [],
-      selfInfo: null,
-      meshcoreContactsForTelemetry: [],
-      meshcoreAutoadd: null,
-      connect: vi.fn(),
-      connectAutomatic: vi.fn(),
-      disconnect: vi.fn(),
-      mqttStatus: null,
-      getPickerStyleNodeLabel: vi.fn((num) => `!${num.toString(16)}`),
-      getFullNodeLabel: vi.fn(),
-      sendText: vi.fn().mockResolvedValue(undefined),
-      traceRoute: vi.fn(),
-      meshcoreCanPingTrace: () => true,
-      meshcorePingRouteReadyEpoch: 0,
-      traceRouteResults: [],
-      meshcoreTraceResults: new Map(),
-      meshcoreNodeStatus: new Map(),
-      meshcoreStatusErrors: new Map(),
-      meshcorePingErrors: new Map(),
-      meshcoreNeighbors: new Map(),
-      meshcoreNeighborErrors: new Map(),
-      meshcoreNodeTelemetry: new Map(),
-      meshcoreTelemetryErrors: new Map(),
-      meshcoreCliHistories: new Map(),
-      meshcoreCliErrors: new Map(),
-      ourPosition: null,
-      telemetryEnabled: true,
-      queueStatus: null,
-      refreshNodesFromDb: vi.fn(),
-      refreshMessagesFromDb: vi.fn(),
-      refreshContacts: vi.fn(),
-      requestRefresh: vi.fn(),
-      getNodes: vi.fn(),
-      selfNodeId: 0,
-      meshcoreLocalStats: null,
-      rawPackets: [],
-      clearRawPackets: vi.fn(),
-      sendAdvert: vi.fn().mockResolvedValue(undefined),
-      syncClock: vi.fn().mockResolvedValue(undefined),
-      importContacts: vi.fn().mockResolvedValue(undefined),
-      setOwner: vi.fn().mockResolvedValue(undefined),
-      setMeshcoreChannel: vi.fn().mockResolvedValue(undefined),
-      deleteMeshcoreChannel: vi.fn().mockResolvedValue(undefined),
-      setRadioParams: vi.fn().mockResolvedValue(undefined),
-      applyMeshcoreTelemetryPrivacyPolicy: vi.fn().mockResolvedValue(undefined),
-      applyMeshcoreContactAutoAdd: vi.fn().mockResolvedValue(undefined),
-      refreshMeshcoreAutoaddFromDevice: vi.fn().mockResolvedValue(undefined),
-      clearAllMeshcoreContacts: vi.fn().mockResolvedValue(undefined),
-      clearAllRepeaters: vi.fn().mockResolvedValue(undefined),
-      requestRepeaterStatus: vi.fn().mockResolvedValue(undefined),
-      requestTelemetry: vi.fn().mockResolvedValue(undefined),
-      requestNeighbors: vi.fn().mockResolvedValue(undefined),
-      sendRepeaterCliCommand: vi.fn().mockResolvedValue(undefined),
-      clearCliHistory: vi.fn().mockResolvedValue(undefined),
-      signData: vi.fn().mockResolvedValue(undefined),
-      exportPrivateKey: vi.fn().mockResolvedValue(undefined),
-      importPrivateKey: vi.fn().mockResolvedValue(undefined),
-      exportContact: vi.fn().mockResolvedValue(undefined),
-      shareContact: vi.fn().mockResolvedValue(undefined),
-      sendReaction: vi.fn().mockResolvedValue(undefined),
-      setNodeFavorited: vi.fn().mockResolvedValue(undefined),
-    }),
-    getStoredMeshProtocolMock: vi.fn(() => 'meshtastic'),
-    lastChatPanelProps: { current: null as null | Record<string, unknown> },
-    useMeshCoreMock: vi.fn(),
-  }));
-
-beforeEach(() => {
-  getStoredMeshProtocolMock.mockReset();
-  getStoredMeshProtocolMock.mockReturnValue('meshtastic');
-  lastChatPanelProps.current = null;
-  useMeshCoreMock.mockReset();
-  useMeshCoreMock.mockImplementation(() => createMeshCoreMock());
-  vi.mocked(providerFactory.useRadioProvider).mockReset();
-  vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) =>
-    protocol === 'meshcore' ? MESHCORE_CAPABILITIES : MESHTASTIC_CAPABILITIES,
-  );
-});
-
-vi.mock('./hooks/useDevice', () => ({
-  useDevice: () => ({
-    state: { status: 'disconnected', myNodeNum: 0 },
+const {
+  createDeviceMock,
+  createMeshCoreMock,
+  getStoredMeshProtocolMock,
+  lastChatPanelProps,
+  useDeviceMock,
+  useMeshCoreMock,
+} = vi.hoisted(() => ({
+  createDeviceMock: () => ({
+    state: { status: 'disconnected', myNodeNum: 0, connectionType: null },
     messages: [],
     nodes: new Map(),
+    channels: [{ index: 0, name: 'Primary' }],
+    connect: vi.fn(),
+    connectAutomatic: vi.fn(),
+    disconnect: vi.fn(),
+    mqttStatus: null,
+    getPickerStyleNodeLabel: vi.fn((num) => `!${num.toString(16)}`),
+    getFullNodeLabel: vi.fn(),
+    sendText: vi.fn().mockResolvedValue(undefined),
+    sendMessage: vi.fn().mockResolvedValue(undefined),
+    sendReaction: vi.fn().mockResolvedValue(undefined),
+    traceRoute: vi.fn(),
+    traceRouteResults: new Map(),
+    ourPosition: null,
+    telemetryEnabled: true,
+    queueStatus: null,
+    refreshNodesFromDb: vi.fn(),
+    getNodes: vi.fn(),
+    selfNodeId: 0,
+    virtualNodeId: 0,
+    lastRfSelfNodeId: 0,
+    rawPackets: [],
+    clearRawPackets: vi.fn(),
+    deviceLogs: [],
+  }),
+  createMeshCoreMock: () => ({
+    state: { status: 'disconnected', myNodeNum: 0, connectionType: null },
+    messages: [],
+    nodes: new Map(),
+    channels: [],
+    selfInfo: null,
+    meshcoreContactsForTelemetry: [],
+    meshcoreAutoadd: null,
     connect: vi.fn(),
     connectAutomatic: vi.fn(),
     disconnect: vi.fn(),
@@ -104,14 +58,84 @@ vi.mock('./hooks/useDevice', () => ({
     getFullNodeLabel: vi.fn(),
     sendText: vi.fn().mockResolvedValue(undefined),
     traceRoute: vi.fn(),
+    meshcoreCanPingTrace: () => true,
+    meshcorePingRouteReadyEpoch: 0,
     traceRouteResults: [],
+    meshcoreTraceResults: new Map(),
+    meshcoreNodeStatus: new Map(),
+    meshcoreStatusErrors: new Map(),
+    meshcorePingErrors: new Map(),
+    meshcoreNeighbors: new Map(),
+    meshcoreNeighborErrors: new Map(),
+    meshcoreNodeTelemetry: new Map(),
+    meshcoreTelemetryErrors: new Map(),
+    meshcoreCliHistories: new Map(),
+    meshcoreCliErrors: new Map(),
     ourPosition: null,
     telemetryEnabled: true,
     queueStatus: null,
     refreshNodesFromDb: vi.fn(),
+    refreshMessagesFromDb: vi.fn(),
+    refreshContacts: vi.fn(),
+    requestRefresh: vi.fn(),
     getNodes: vi.fn(),
     selfNodeId: 0,
+    meshcoreLocalStats: null,
+    rawPackets: [],
+    clearRawPackets: vi.fn(),
+    sendAdvert: vi.fn().mockResolvedValue(undefined),
+    syncClock: vi.fn().mockResolvedValue(undefined),
+    importContacts: vi.fn().mockResolvedValue(undefined),
+    setOwner: vi.fn().mockResolvedValue(undefined),
+    setMeshcoreChannel: vi.fn().mockResolvedValue(undefined),
+    deleteMeshcoreChannel: vi.fn().mockResolvedValue(undefined),
+    setRadioParams: vi.fn().mockResolvedValue(undefined),
+    applyMeshcoreTelemetryPrivacyPolicy: vi.fn().mockResolvedValue(undefined),
+    applyMeshcoreContactAutoAdd: vi.fn().mockResolvedValue(undefined),
+    refreshMeshcoreAutoaddFromDevice: vi.fn().mockResolvedValue(undefined),
+    clearAllMeshcoreContacts: vi.fn().mockResolvedValue(undefined),
+    clearAllRepeaters: vi.fn().mockResolvedValue(undefined),
+    requestRepeaterStatus: vi.fn().mockResolvedValue(undefined),
+    requestTelemetry: vi.fn().mockResolvedValue(undefined),
+    requestNeighbors: vi.fn().mockResolvedValue(undefined),
+    sendRepeaterCliCommand: vi.fn().mockResolvedValue(undefined),
+    clearCliHistory: vi.fn().mockResolvedValue(undefined),
+    signData: vi.fn().mockResolvedValue(undefined),
+    exportPrivateKey: vi.fn().mockResolvedValue(undefined),
+    importPrivateKey: vi.fn().mockResolvedValue(undefined),
+    exportContact: vi.fn().mockResolvedValue(undefined),
+    shareContact: vi.fn().mockResolvedValue(undefined),
+    sendReaction: vi.fn().mockResolvedValue(undefined),
+    setNodeFavorited: vi.fn().mockResolvedValue(undefined),
   }),
+  getStoredMeshProtocolMock: vi.fn(() => 'meshtastic'),
+  lastChatPanelProps: { current: null as null | Record<string, unknown> },
+  useDeviceMock: vi.fn(),
+  useMeshCoreMock: vi.fn(),
+}));
+
+beforeEach(() => {
+  localStorage.clear();
+  Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+  getStoredMeshProtocolMock.mockReset();
+  getStoredMeshProtocolMock.mockReturnValue('meshtastic');
+  lastChatPanelProps.current = null;
+  useDeviceMock.mockReset();
+  useDeviceMock.mockImplementation(() => createDeviceMock());
+  useMeshCoreMock.mockReset();
+  useMeshCoreMock.mockImplementation(() => createMeshCoreMock());
+  vi.mocked(providerFactory.useRadioProvider).mockReset();
+  vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) =>
+    protocol === 'meshcore' ? MESHCORE_CAPABILITIES : MESHTASTIC_CAPABILITIES,
+  );
+});
+
+function setDocumentHidden(hidden: boolean): void {
+  Object.defineProperty(document, 'hidden', { value: hidden, configurable: true });
+}
+
+vi.mock('./hooks/useDevice', () => ({
+  useDevice: () => useDeviceMock(),
 }));
 
 vi.mock('./hooks/useMeshCore', () => ({
@@ -435,5 +459,113 @@ describe('App accessibility', () => {
 
     fireEvent.click(backToTop);
     expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+  });
+
+  it('clears the Sidebar Chat unread badge when visible again while Chat is already active', async () => {
+    const existingMessage = {
+      sender_id: 2,
+      sender_name: 'Alice',
+      payload: 'existing ping',
+      channel: 0,
+      timestamp: Date.now() - 1000,
+      status: 'acked' as const,
+    };
+    const initialDevice = {
+      ...createDeviceMock(),
+      state: { status: 'configured', myNodeNum: 1, connectionType: null },
+      selfNodeId: 1,
+      messages: [existingMessage],
+    };
+    useDeviceMock.mockReturnValue(initialDevice);
+    const { rerender } = render(<App />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
+    await waitFor(() => {
+      expect(lastChatPanelProps.current).not.toBeNull();
+    });
+
+    setDocumentHidden(true);
+    useDeviceMock.mockReturnValue({
+      ...initialDevice,
+      messages: [
+        existingMessage,
+        {
+          sender_id: 2,
+          sender_name: 'Alice',
+          payload: 'hidden ping',
+          channel: 0,
+          timestamp: Date.now(),
+          status: 'acked' as const,
+        },
+      ],
+    });
+    rerender(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+    });
+
+    setDocumentHidden(false);
+    fireEvent(document, new Event('visibilitychange'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Chat' })).toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: 'Chat 1 unread' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('clears only the active protocol Sidebar Chat unread badge on focus', async () => {
+    localStorage.setItem('mesh-client:meshcoreChatUnread', '4');
+    const existingMessage = {
+      sender_id: 2,
+      sender_name: 'Alice',
+      payload: 'existing ping',
+      channel: 0,
+      timestamp: Date.now() - 1000,
+      status: 'acked' as const,
+    };
+    const initialDevice = {
+      ...createDeviceMock(),
+      state: { status: 'configured', myNodeNum: 1, connectionType: null },
+      selfNodeId: 1,
+      messages: [existingMessage],
+    };
+    useDeviceMock.mockReturnValue(initialDevice);
+    const { rerender } = render(<App />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
+    await waitFor(() => {
+      expect(lastChatPanelProps.current).not.toBeNull();
+    });
+
+    setDocumentHidden(true);
+    useDeviceMock.mockReturnValue({
+      ...initialDevice,
+      messages: [
+        existingMessage,
+        {
+          sender_id: 2,
+          sender_name: 'Alice',
+          payload: 'focus ping',
+          channel: 0,
+          timestamp: Date.now(),
+          status: 'acked' as const,
+        },
+      ],
+    });
+    rerender(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+    });
+
+    setDocumentHidden(false);
+    fireEvent.focus(window);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('tab', { name: 'Chat 1 unread' })).not.toBeInTheDocument();
+      expect(localStorage.getItem('mesh-client:meshtasticChatUnread')).toBe('0');
+      expect(localStorage.getItem('mesh-client:meshcoreChatUnread')).toBe('4');
+    });
   });
 });

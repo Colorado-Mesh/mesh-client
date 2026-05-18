@@ -1307,15 +1307,44 @@ export default function App() {
     prevMeshcoreMsgCountRef.current = count;
   }, [meshcoreDevice.messages.length]);
 
-  // ─── Clear active protocol's unread when Chat tab becomes active ──
+  const clearChatUnreadForProtocol = useCallback((targetProtocol: MeshProtocol) => {
+    if (targetProtocol === 'meshtastic') {
+      setMeshtasticUnread(0);
+    } else {
+      setMeshcoreUnread(0);
+    }
+  }, []);
+
+  // ─── Clear active protocol's unread when Chat panel becomes active ──
   useEffect(() => {
-    if (activeTab === 1) {
+    if (activePanelIndex === 1) {
       queueMicrotask(() => {
-        if (protocol === 'meshtastic') setMeshtasticUnread(0);
-        else setMeshcoreUnread(0);
+        clearChatUnreadForProtocol(protocol);
       });
     }
-  }, [activeTab, protocol]);
+  }, [activePanelIndex, clearChatUnreadForProtocol, protocol]);
+
+  // If messages arrive while Chat is selected but the app is hidden/unfocused, the
+  // active-panel effect above will not rerun when the user returns.
+  useEffect(() => {
+    const clearIfVisibleChatActive = () => {
+      if (document.hidden || activePanelIndexRef.current !== 1) return;
+      queueMicrotask(() => {
+        clearChatUnreadForProtocol(protocolRef.current);
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      clearIfVisibleChatActive();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', clearIfVisibleChatActive);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', clearIfVisibleChatActive);
+    };
+  }, [clearChatUnreadForProtocol]);
 
   // ─── Persist unread + sync combined total to tray ────────────────
   useEffect(() => {
