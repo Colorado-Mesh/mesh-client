@@ -738,9 +738,15 @@ function ChatPanel({
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
     requestAnimationFrame(() => {
-      updateScrollButtonVisibility();
+      const dist = updateScrollButtonVisibility();
+      if (dist !== undefined) applyNearBottomReadState(dist);
     });
-  }, [filteredMessages.length, outerScrollMetricsRootRef, updateScrollButtonVisibility]);
+  }, [
+    filteredMessages.length,
+    outerScrollMetricsRootRef,
+    updateScrollButtonVisibility,
+    applyNearBottomReadState,
+  ]);
 
   // Outer shell scroll (when the message list box does not overflow on its own)
   useEffect(() => {
@@ -798,12 +804,25 @@ function ChatPanel({
   }, [isActive, viewKey, updateScrollButtonVisibility]);
 
   const scrollToUnreadOrBottom = useCallback(() => {
+    const el = scrollContainerRef.current;
     if (unreadDividerRef.current) {
+      if (el) {
+        const onEnd = () => {
+          el.removeEventListener('scrollend', onEnd);
+          const dist = getDistFromChatBottom(
+            el,
+            messagesEndRef.current,
+            outerScrollMetricsRootRef?.current ?? null,
+          );
+          if (dist !== null) applyNearBottomReadState(dist);
+        };
+        el.addEventListener('scrollend', onEnd, { once: true });
+      }
       unreadDividerRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
     } else {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, []);
+  }, [applyNearBottomReadState, outerScrollMetricsRootRef]);
 
   const scrollToQuotedParent = useCallback((replyKey: number) => {
     const root = scrollContainerRef.current;
