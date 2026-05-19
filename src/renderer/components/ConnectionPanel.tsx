@@ -1938,11 +1938,13 @@ export default function ConnectionPanel({
           </div>
           <button
             onClick={() =>
-              window.electronAPI.mqtt.disconnect().catch((err: unknown) => {
-                console.warn(
-                  '[ConnectionPanel] mqtt.disconnect failed: ' + errLikeToLogString(err),
-                );
-              })
+              window.electronAPI.mqtt
+                .disconnect(protocol === 'meshcore' ? 'meshcore' : 'meshtastic')
+                .catch((err: unknown) => {
+                  console.warn(
+                    '[ConnectionPanel] mqtt.disconnect failed: ' + errLikeToLogString(err),
+                  );
+                })
             }
             className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
           >

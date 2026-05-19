@@ -19,7 +19,15 @@ import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 
+import type { OutboxEntry } from '../../shared/electron-api.types';
+import { useChatOutbox } from '../hooks/useChatOutbox';
 import { useNowMs } from '../hooks/useNowMs';
+import {
+  countMessageChars,
+  getChatPayloadLimit,
+  MAX_CHUNKS,
+  splitChatMessage,
+} from '../lib/chatComposerLimits';
 import { playMessageNotification } from '../lib/chatNotifications';
 import {
   clearDraft,
@@ -89,11 +97,25 @@ function StatusBadge({
   connectionType,
   error,
 }: {
-  status: 'sending' | 'acked' | 'failed';
-  transport: 'device' | 'mqtt';
+  status: 'sending' | 'acked' | 'failed' | 'queued' | 'blocked';
+  transport: 'device' | 'mqtt' | 'outbox';
   connectionType?: 'ble' | 'serial' | 'http' | null;
   error?: string;
 }) {
+  if (status === 'queued') {
+    return (
+      <HelpTooltip text="Queued \u2014 will send when connected">
+        <span className="text-muted text-[10px]">\u23F3 Queued</span>
+      </HelpTooltip>
+    );
+  }
+  if (status === 'blocked') {
+    return (
+      <HelpTooltip text={error ?? 'Blocked \u2014 no encryption key available'}>
+        <span className="text-[10px] text-amber-400">\uD83D\uDD12 Blocked</span>
+      </HelpTooltip>
+    );
+  }
   const icon =
     status === 'sending'
       ? '\u23F3'
@@ -131,6 +153,68 @@ function StatusBadge({
         {label} {icon}
       </span>
     </HelpTooltip>
+  );
+}
+
+function OutboxBubble({
+  row,
+  onRetry,
+  onCancel,
+}: {
+  row: OutboxEntry;
+  onRetry: (id: number) => void;
+  onCancel: (id: number) => void;
+}) {
+  const statusLabel =
+    row.status === 'queued'
+      ? 'Queued'
+      : row.status === 'sending'
+        ? 'Sending…'
+        : row.status === 'blocked'
+          ? 'Blocked'
+          : 'Failed';
+  const statusColor =
+    row.status === 'queued'
+      ? 'text-muted'
+      : row.status === 'sending'
+        ? 'text-muted'
+        : row.status === 'blocked'
+          ? 'text-amber-400'
+          : 'text-red-400';
+  return (
+    <div className="mb-1 flex justify-end px-4">
+      <div className="max-w-[75%] rounded-xl bg-slate-700 px-3 py-2 opacity-80">
+        <div className="text-sm text-white">{row.payload}</div>
+        <div className={`mt-1 flex items-center gap-2 text-[11px] ${statusColor}`}>
+          <span>{statusLabel}</span>
+          {row.error && (
+            <span className="text-muted max-w-[140px] truncate" title={row.error}>
+              — {row.error}
+            </span>
+          )}
+          {(row.status === 'failed' || row.status === 'blocked') && (
+            <button
+              aria-label="Retry outbox message"
+              onClick={() => {
+                onRetry(row.id);
+              }}
+              className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-slate-500"
+            >
+              Retry
+            </button>
+          )}
+          <button
+            aria-label="Cancel outbox message"
+            onClick={() => {
+              onCancel(row.id);
+            }}
+            className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-slate-500"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -621,6 +705,31 @@ function ChatPanel({
     return `ch:${channel}`;
   }, [viewMode, activeDmNode, channel]);
 
+  // null = too many chunks (blocked); [] = fits in one; [..] = multi-part
+  const inputChunks = useMemo(() => splitChatMessage(input.trim(), protocol), [input, protocol]);
+
+  const outboxSendFn = useCallback(
+    (text: string, ch: number, dest?: number, replyId?: number) =>
+      Promise.resolve().then(() => onSend(text, ch, dest, replyId)),
+    [onSend],
+  );
+
+  const {
+    rows: outboxRows,
+    queue: queueOutbox,
+    retry: retryOutbox,
+    cancel: cancelOutbox,
+  } = useChatOutbox({
+    protocol,
+    isSendAvailable: isConnected && !(isMqttOnly && protocol === 'meshcore'),
+    sendFn: outboxSendFn,
+  });
+
+  const viewOutboxRows = useMemo(
+    () => outboxRows.filter((r) => r.viewKey === viewKey),
+    [outboxRows, viewKey],
+  );
+
   const markCurrentViewRead = useCallback(() => {
     if (viewMode === 'dm' && activeDmNode == null) return;
 
@@ -738,9 +847,15 @@ function ChatPanel({
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
     requestAnimationFrame(() => {
-      updateScrollButtonVisibility();
+      const dist = updateScrollButtonVisibility();
+      if (dist !== undefined) applyNearBottomReadState(dist);
     });
-  }, [filteredMessages.length, outerScrollMetricsRootRef, updateScrollButtonVisibility]);
+  }, [
+    filteredMessages.length,
+    outerScrollMetricsRootRef,
+    updateScrollButtonVisibility,
+    applyNearBottomReadState,
+  ]);
 
   // Outer shell scroll (when the message list box does not overflow on its own)
   useEffect(() => {
@@ -798,12 +913,25 @@ function ChatPanel({
   }, [isActive, viewKey, updateScrollButtonVisibility]);
 
   const scrollToUnreadOrBottom = useCallback(() => {
+    const el = scrollContainerRef.current;
     if (unreadDividerRef.current) {
+      if (el) {
+        const onEnd = () => {
+          el.removeEventListener('scrollend', onEnd);
+          const dist = getDistFromChatBottom(
+            el,
+            messagesEndRef.current,
+            outerScrollMetricsRootRef?.current ?? null,
+          );
+          if (dist !== null) applyNearBottomReadState(dist);
+        };
+        el.addEventListener('scrollend', onEnd, { once: true });
+      }
       unreadDividerRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
     } else {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, []);
+  }, [applyNearBottomReadState, outerScrollMetricsRootRef]);
 
   const scrollToQuotedParent = useCallback((replyKey: number) => {
     const root = scrollContainerRef.current;
@@ -846,16 +974,57 @@ function ChatPanel({
   }, [showSearch]);
 
   const handleSend = async () => {
-    if (!input.trim() || !isConnected || sending) return;
+    if (!input.trim() || sending) return;
+    const chunks = splitChatMessage(input.trim(), protocol);
+    if (chunks === null) return; // >MAX_CHUNKS, send button should already be disabled
+
+    const sendChannel = channel;
+    const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
+    const replyKey = replyTo ? (replyTo.packetId ?? replyTo.timestamp) : undefined;
+    const textsToSend = chunks.length === 0 ? [input.trim()] : chunks;
+
+    // Queue when: truly disconnected, OR MeshCore + MQTT-only (no device = packet-analyzer risk)
+    if (!isConnected || (isMqttOnly && protocol === 'meshcore')) {
+      const now = Date.now();
+      const groupId = textsToSend.length > 1 ? crypto.randomUUID() : null;
+      for (let i = 0; i < textsToSend.length; i++) {
+        await queueOutbox({
+          protocol,
+          viewKey,
+          channel: sendChannel,
+          toNode: destination ?? null,
+          payload: textsToSend[i],
+          replyId: i === 0 ? (replyKey ?? null) : null,
+          status: 'queued',
+          error: null,
+          nextRetryAt: null,
+          createdAt: now + i,
+          groupId,
+          groupIndex: groupId ? i : null,
+          groupTotal: groupId ? textsToSend.length : null,
+        });
+      }
+      setInput('');
+      clearDraft(protocol, viewKey);
+      setMentionQuery(null);
+      setReplyTo(null);
+      return;
+    }
+
     setSending(true);
     setChatActionError(null);
     try {
       console.debug('[ChatPanel] handleSend');
-      const sendChannel = channel;
-      const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
-      const replyKey = replyTo ? (replyTo.packetId ?? replyTo.timestamp) : undefined;
-      const sendOutcome = onSend(input.trim(), sendChannel, destination, replyKey);
-      await Promise.resolve(sendOutcome);
+      // Chunked send: first chunk carries the replyId; subsequent chunks do not
+      for (let i = 0; i < textsToSend.length; i++) {
+        const sendOutcome = onSend(
+          textsToSend[i],
+          sendChannel,
+          destination,
+          i === 0 ? replyKey : undefined,
+        );
+        await Promise.resolve(sendOutcome);
+      }
       setInput('');
       clearDraft(protocol, viewKey);
       setMentionQuery(null);
@@ -1884,10 +2053,7 @@ function ChatPanel({
 
                         {/* Transport + RF hop count (incoming) */}
                         {!isOwn &&
-                          ((msg.receivedVia &&
-                            (protocol !== 'meshcore' ||
-                              msg.receivedVia === 'mqtt' ||
-                              msg.receivedVia === 'both')) ||
+                          (msg.receivedVia ||
                             (msg.rxHops != null &&
                               (msg.receivedVia === 'rf' || msg.receivedVia === 'both'))) && (
                             <div className="mt-0.5 flex items-center justify-end gap-2">
@@ -1900,12 +2066,7 @@ function ChatPanel({
                                     {t('nodeDetailModal.hopLabel', { count: msg.rxHops })}
                                   </span>
                                 )}
-                              {msg.receivedVia &&
-                                (protocol !== 'meshcore' ||
-                                  msg.receivedVia === 'mqtt' ||
-                                  msg.receivedVia === 'both') && (
-                                  <TransportBadge via={msg.receivedVia} />
-                                )}
+                              {msg.receivedVia && <TransportBadge via={msg.receivedVia} />}
                             </div>
                           )}
 
@@ -2171,6 +2332,9 @@ function ChatPanel({
               );
             })
           )}
+          {viewOutboxRows.map((row) => (
+            <OutboxBubble key={row.id} row={row} onRetry={retryOutbox} onCancel={cancelOutbox} />
+          ))}
           <div ref={messagesEndRef} />
         </div>
 
@@ -2307,7 +2471,7 @@ function ChatPanel({
                 ? 'border-purple-600/50 bg-purple-900/20 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30'
                 : 'bg-secondary-dark/80 focus:border-brand-green/50 focus:ring-brand-green/30 border-gray-600/50 focus:ring-1'
             }`}
-            maxLength={228}
+            maxLength={getChatPayloadLimit(protocol) * MAX_CHUNKS}
           />
         </div>
         {/* end relative wrapper */}
@@ -2337,30 +2501,54 @@ function ChatPanel({
         </button>
         <button
           onClick={handleSend}
-          disabled={!isConnected || !input.trim() || sending}
+          disabled={!input.trim() || sending || inputChunks === null}
           aria-label={
             sending
               ? t('chatPanel.sendButtonSending')
-              : isDmMode
-                ? t('chatPanel.sendButtonDm')
-                : t('chatPanel.sendButton')
+              : !isConnected || (isMqttOnly && protocol === 'meshcore')
+                ? 'Queue message'
+                : isDmMode
+                  ? t('chatPanel.sendButtonDm')
+                  : t('chatPanel.sendButton')
           }
           className={`rounded-xl px-5 py-2.5 font-medium transition-colors ${
-            isDmMode
-              ? 'disabled:text-muted bg-purple-600 text-white hover:bg-purple-500 disabled:bg-gray-600'
-              : 'disabled:text-muted bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-600'
+            !isConnected || (isMqttOnly && protocol === 'meshcore')
+              ? 'disabled:text-muted bg-slate-600 text-white hover:bg-slate-500 disabled:bg-gray-600'
+              : isDmMode
+                ? 'disabled:text-muted bg-purple-600 text-white hover:bg-purple-500 disabled:bg-gray-600'
+                : 'disabled:text-muted bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-600'
           }`}
         >
           {sending
             ? t('chatPanel.sendButtonSending')
-            : isDmMode
-              ? t('chatPanel.sendButtonDm')
-              : t('chatPanel.sendButton')}
+            : !isConnected || (isMqttOnly && protocol === 'meshcore')
+              ? 'Queue'
+              : inputChunks !== null && inputChunks.length > 0
+                ? `Send ${inputChunks.length} Parts`
+                : isDmMode
+                  ? t('chatPanel.sendButtonDm')
+                  : t('chatPanel.sendButton')}
         </button>
       </div>
       {/* Character count — only show near limit */}
-      {input.length > 180 && (
-        <div className="text-muted mt-1 text-right text-xs">{input.length}/228</div>
+      {countMessageChars(input) > Math.floor(getChatPayloadLimit(protocol) * 0.8) && (
+        <div className="text-muted mt-1 text-right text-xs">
+          {inputChunks === null ? (
+            <span className="text-red-400">
+              {countMessageChars(input)}/{getChatPayloadLimit(protocol)} — too long (max{' '}
+              {MAX_CHUNKS} parts)
+            </span>
+          ) : inputChunks.length > 0 ? (
+            <span>
+              {countMessageChars(input)}/{getChatPayloadLimit(protocol)} — will send as{' '}
+              {inputChunks.length} parts
+            </span>
+          ) : (
+            <span>
+              {countMessageChars(input)}/{getChatPayloadLimit(protocol)}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

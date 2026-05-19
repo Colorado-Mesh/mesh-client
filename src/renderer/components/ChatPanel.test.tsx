@@ -153,7 +153,7 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByTitle('Received via RF')).toBeInTheDocument();
   });
 
-  it('hides RF-only transport badge in MeshCore mode (RF is the default path)', () => {
+  it('shows RF transport badge in MeshCore mode', () => {
     render(
       <ToastProvider>
         <ChatPanel
@@ -174,7 +174,7 @@ describe('ChatPanel accessibility', () => {
         />
       </ToastProvider>,
     );
-    expect(screen.queryByTitle('Received via RF')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Received via RF')).toBeInTheDocument();
   });
 
   it('still shows MQTT transport badge in MeshCore mode when receivedVia is mqtt', () => {
@@ -1601,7 +1601,16 @@ describe('ChatPanel — export chat', () => {
   it('calls window.electronAPI.chat.export with current messages', async () => {
     const user = userEvent.setup();
     const exportFn = vi.fn().mockResolvedValue({ success: true, path: '/tmp/chat.txt' });
-    (window.electronAPI as any).chat = { export: exportFn };
+    (window.electronAPI as any).chat = {
+      export: exportFn,
+      linkPreview: { fetch: vi.fn().mockResolvedValue(null) },
+      outbox: {
+        list: vi.fn().mockResolvedValue([]),
+        add: vi.fn().mockResolvedValue(null),
+        updateStatus: vi.fn().mockResolvedValue(undefined),
+        remove: vi.fn().mockResolvedValue(undefined),
+      },
+    };
 
     render(
       <ToastProvider>

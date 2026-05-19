@@ -1,4 +1,10 @@
-import type { ChatExportMessage, UpdateCheckingPayload } from '@/shared/electron-api.types';
+import type {
+  ChatExportMessage,
+  OutboxEntry,
+  OutboxEntryInput,
+  OutboxStatus,
+  UpdateCheckingPayload,
+} from '@/shared/electron-api.types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
 export type { TAKClientInfo, TAKServerStatus, TAKSettings };
@@ -265,7 +271,7 @@ export interface ChatMessage {
   timestamp: number;
   // Delivery status tracking
   packetId?: number;
-  status?: 'sending' | 'acked' | 'failed'; // device (RF) transport
+  status?: 'sending' | 'acked' | 'failed' | 'queued' | 'blocked'; // device (RF) transport; queued/blocked for outbox
   mqttStatus?: 'sending' | 'acked' | 'failed'; // MQTT transport (hybrid/MQTT-only)
   error?: string;
   // Emoji reactions / tapback
@@ -844,6 +850,17 @@ declare global {
           fetch: (
             url: string,
           ) => Promise<{ title: string; description?: string; image?: string } | null>;
+        };
+        outbox: {
+          list: (protocol: string) => Promise<OutboxEntry[]>;
+          add: (entry: OutboxEntryInput) => Promise<OutboxEntry>;
+          updateStatus: (
+            id: number,
+            status: OutboxStatus,
+            error?: string,
+            nextRetryAt?: number,
+          ) => Promise<void>;
+          remove: (id: number) => Promise<void>;
         };
       };
     };

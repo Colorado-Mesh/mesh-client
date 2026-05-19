@@ -208,6 +208,21 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:fetchLinkPreview'");
   });
 
+  it('registers chat:outbox handlers with protocol, status, and payload validation', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:outbox:list'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:outbox:add'");
+    expect(INDEX_SOURCE).toMatch(/'chat:outbox:updateStatus'/);
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:outbox:remove'");
+    expect(INDEX_SOURCE).toContain('OUTBOX_VALID_PROTOCOLS');
+    expect(INDEX_SOURCE).toContain('OUTBOX_VALID_STATUSES');
+    // payload length guard prevents oversized strings entering the DB
+    expect(INDEX_SOURCE).toMatch(/e\.payload\.length === 0 \|\| e\.payload\.length > 2048/);
+    // rowToOutboxEntry maps snake_case columns to camelCase
+    expect(INDEX_SOURCE).toContain('function rowToOutboxEntry(');
+    expect(INDEX_SOURCE).toContain('view_key');
+    expect(INDEX_SOURCE).toContain('attempt_count');
+  });
+
   it('registers clipboard:writeText with sender validation', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('clipboard:writeText'");
     expect(INDEX_SOURCE).toMatch(
