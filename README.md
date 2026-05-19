@@ -1,6 +1,6 @@
 # Mesh-Client
 
-> Cross-platform **Electron** desktop client for **Meshtastic** and **MeshCore** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, and **keyboard-first** workflows.
+> Cross-platform **Electron** desktop client for **Meshtastic** and **MeshCore** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, and **16-language UI**.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
@@ -18,7 +18,7 @@
 
 Reliable Desktop Power. Local Persistence. Total Insight.
 
-While official mobile apps cover the basics, desktop power users often face a fragmented ecosystem: limited app availability for MeshCore, inconsistent support across operating systems, and persistent sync issues on macOS. Mesh-Client fills those gaps with a high-performance, keyboard-driven desktop experience.
+While official mobile apps cover the basics, desktop power users often face a fragmented ecosystem: limited app availability for MeshCore, inconsistent support across operating systems, and persistent sync issues on macOS. Mesh-Client fills those gaps with a high-performance desktop experience.
 
 With a dedicated local SQLite database, Mesh-Client keeps message history and mesh logs durable across restarts and sync failures. It provides one reliable hub for both Meshtastic and MeshCore firmware, delivering a unified workflow regardless of protocol or hardware.
 
@@ -27,7 +27,7 @@ With a dedicated local SQLite database, Mesh-Client keeps message history and me
 - **True message persistence:** Local SQLite storage for reliable long-term history, without lost chats or broken logs.
 - **Universal protocol support:** One consistent interface for both Meshtastic and MeshCore devices.
 - **Advanced mesh visibility:** Routing diagnostics and mesh health insight that mobile apps often skip.
-- **Desktop-first workflow:** Keyboard-driven navigation and MQTT integration for power users.
+- **Desktop-first workflow:** MQTT integration and a full-featured interface for power users.
 - **Cross-platform stability:** A feature-rich experience across macOS, Linux, and Windows.
 
 From real-time diagnostics to permanent message archives, Mesh-Client delivers the desktop visibility serious mesh users require.
@@ -133,6 +133,8 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 **Chat**
 
 - Send/receive messages across channels with per-transport delivery badges and delivery ACK / failure states
+- **Durable outbox**: outgoing messages are queued in SQLite and retried until delivered; survive app restarts and connection drops
+- **Long message chunking**: messages over the payload limit are auto-split into sequential `[N/T]`-prefixed chunks (word-boundary split, max 9 chunks); MeshCore MQTT-only connections are guarded from sending when no RF path is available
 - **Spellcheck**: the message composer uses a textarea with inline misspelling marks; right‑click for replacements (Electron main process configures the spellchecker for **Meshtastic** and **MeshCore**)
 - Emoji reactions (11 emojis with compose picker) and reply-to-message (quoted preview in bubble)
 - **`@[Display Name]` tokens** (Meshtastic / MeshCore reply, tapback, path, and inline-reference syntax) render as compact inline labels in the bubble instead of raw brackets; see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#chat-mention-tokens)
@@ -254,7 +256,7 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 - BLE: waits for GATT init (`connected` event) before issuing commands; includes nudge timeout for stuck `deviceQuery` on some devices. On **Windows**, **pair the MeshCore device in Settings → Bluetooth & devices** before connecting in the app; WinRT may need a bonded device for a stable Nordic UART session. On **Linux**, the app checks BlueZ pairing and may prompt for the PIN **before** Web Bluetooth completes when the radio is not bonded. A **second connect attempt** may run automatically after some transient GATT discovery or handshake timeouts (retry reuses the granted device without a new picker gesture).
 - Serial: auto-reconnects on startup using a saved port signature so reconnect targets the same physical device when possible
-- TCP: connects to MeshCore companion radio on port **5000**
+- TCP: connects to MeshCore companion radio; default port **5000**, configurable per connection
 - **MQTT (JSON v1):** The Connection tab MQTT card includes **Network Preset** buttons; **LetsMesh** (WebSocket on port 443, topic prefix `meshcore`; broker auth uses `@michaelhart/meshcore-decoder`'s `createAuthToken`; MQTT username `v1_<64-hex public key>`, password token with JWT `aud` matching the **MQTT server hostname** (e.g. `mqtt-us-v1.letsmesh.net` for the US preset); optional **Packet logger (Analyzer)** forwards RX packet summaries to the broker when enabled; see [docs/letsmesh-mqtt-auth.md](docs/letsmesh-mqtt-auth.md)), **Ripple Networks** (TLS on port 8883, same topic prefix, preset default credentials, and **Allow insecure TLS** for brokers that use a non–public CA), **Colorado Mesh** (TLS on port 8883 or 443, same topic prefix, JWT auth with custom audience mapping), and **Custom** for your own broker
 
 ---
@@ -331,7 +333,7 @@ Both protocols run at the same time. Use the **Meshtastic / MeshCore** switcher 
 
 1. Power on your MeshCore firmware device
 2. In the Connection tab, select **MeshCore**
-3. Choose **Bluetooth**, **Serial**, or **TCP** (enter the device's IP address for TCP)
+3. Choose **Bluetooth**, **Serial**, or **TCP** (enter the device's IP address and optional port for TCP; default port 5000)
 4. Click **Connect**; the app fetches self info, contacts, and channels from the device
 5. Wait for status to show **Configured**; contacts and channels are loaded
 
