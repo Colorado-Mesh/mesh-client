@@ -1601,7 +1601,16 @@ describe('ChatPanel — export chat', () => {
   it('calls window.electronAPI.chat.export with current messages', async () => {
     const user = userEvent.setup();
     const exportFn = vi.fn().mockResolvedValue({ success: true, path: '/tmp/chat.txt' });
-    (window.electronAPI as any).chat = { export: exportFn };
+    (window.electronAPI as any).chat = {
+      export: exportFn,
+      linkPreview: { fetch: vi.fn().mockResolvedValue(null) },
+      outbox: {
+        list: vi.fn().mockResolvedValue([]),
+        add: vi.fn().mockResolvedValue(null),
+        updateStatus: vi.fn().mockResolvedValue(undefined),
+        remove: vi.fn().mockResolvedValue(undefined),
+      },
+    };
 
     render(
       <ToastProvider>

@@ -9,7 +9,7 @@ import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 31;
+export const CURRENT_SCHEMA_VERSION = 32;
 
 /**
  * Tables only — used during upgrades so we do not CREATE UNIQUE indexes before
@@ -170,6 +170,25 @@ export const CANONICAL_TABLES_DDL = `
         notes TEXT NOT NULL DEFAULT '',
         updated_at INTEGER
       );
+
+      CREATE TABLE IF NOT EXISTS chat_outbox (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        protocol TEXT NOT NULL CHECK(protocol IN ('meshtastic','meshcore')),
+        view_key TEXT NOT NULL,
+        channel INTEGER NOT NULL,
+        to_node INTEGER,
+        payload TEXT NOT NULL,
+        reply_id INTEGER,
+        status TEXT NOT NULL DEFAULT 'queued' CHECK(status IN ('queued','sending','blocked','failed')),
+        error TEXT,
+        attempt_count INTEGER NOT NULL DEFAULT 0,
+        next_retry_at INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        group_id TEXT,
+        group_index INTEGER,
+        group_total INTEGER
+      );
     `;
 
 /**
@@ -198,6 +217,8 @@ export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_contact_groups_self ON contact_groups(self_node_id)',
   'CREATE INDEX IF NOT EXISTS idx_meshcore_trace_history_node_id ON meshcore_trace_history(node_id)',
   'CREATE INDEX IF NOT EXISTS idx_meshcore_path_history_node ON meshcore_path_history(node_id)',
+  'CREATE INDEX IF NOT EXISTS idx_chat_outbox_drain ON chat_outbox(protocol, status, next_retry_at)',
+  'CREATE INDEX IF NOT EXISTS idx_chat_outbox_view ON chat_outbox(protocol, view_key, created_at)',
 ];
 
 /** Tables + indexes for empty new databases (createBaseTables). */

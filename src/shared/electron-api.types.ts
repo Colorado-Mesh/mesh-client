@@ -103,6 +103,29 @@ export interface ChatExportMessage {
   to?: number;
 }
 
+export type OutboxStatus = 'queued' | 'sending' | 'blocked' | 'failed';
+
+export interface OutboxEntry {
+  id: number;
+  protocol: string;
+  viewKey: string;
+  channel: number;
+  toNode: number | null;
+  payload: string;
+  replyId: number | null;
+  status: OutboxStatus;
+  error: string | null;
+  attemptCount: number;
+  nextRetryAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+  groupId: string | null;
+  groupIndex: number | null;
+  groupTotal: number | null;
+}
+
+export type OutboxEntryInput = Omit<OutboxEntry, 'id' | 'attemptCount' | 'updatedAt'>;
+
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
 export interface ElectronAPI {
@@ -610,6 +633,17 @@ export interface ElectronAPI {
       fetch: (
         url: string,
       ) => Promise<{ title: string; description?: string; image?: string } | null>;
+    };
+    outbox: {
+      list: (protocol: string) => Promise<OutboxEntry[]>;
+      add: (entry: OutboxEntryInput) => Promise<OutboxEntry>;
+      updateStatus: (
+        id: number,
+        status: OutboxStatus,
+        error?: string,
+        nextRetryAt?: number,
+      ) => Promise<void>;
+      remove: (id: number) => Promise<void>;
     };
   };
 

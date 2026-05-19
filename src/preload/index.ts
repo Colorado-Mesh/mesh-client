@@ -838,6 +838,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
           image?: string;
         } | null>,
     },
+    outbox: {
+      list: (protocol: unknown) => ipcRenderer.invoke('chat:outbox:list', protocol),
+      add: (entry: unknown) => ipcRenderer.invoke('chat:outbox:add', entry),
+      updateStatus: (id: unknown, status: unknown, error?: unknown, nextRetryAt?: unknown) =>
+        ipcRenderer.invoke('chat:outbox:updateStatus', id, status, error, nextRetryAt),
+      remove: (id: unknown) => ipcRenderer.invoke('chat:outbox:remove', id),
+    },
   },
 
   // ─── Log panel ───────────────────────────────────────────────────

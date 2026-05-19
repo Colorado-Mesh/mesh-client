@@ -249,6 +249,12 @@ const electronAPIMock = {
     linkPreview: {
       fetch: vi.fn().mockResolvedValue(null),
     },
+    outbox: {
+      list: vi.fn().mockResolvedValue([]),
+      add: vi.fn().mockResolvedValue(null),
+      updateStatus: vi.fn().mockResolvedValue(undefined),
+      remove: vi.fn().mockResolvedValue(undefined),
+    },
   },
   log: {
     getPath: vi.fn().mockResolvedValue('/tmp/test.log'),

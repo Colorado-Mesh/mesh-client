@@ -3904,6 +3904,108 @@ ipcMain.handle('chat:fetchLinkPreview', async (_event, url: unknown) => {
   return await fetchLinkPreview(url);
 });
 
+// ─── IPC: Chat outbox ─────────────────────────────────────────────────
+const OUTBOX_VALID_PROTOCOLS = new Set(['meshtastic', 'meshcore']);
+const OUTBOX_VALID_STATUSES = new Set(['queued', 'sending', 'blocked', 'failed']);
+
+ipcMain.handle('chat:outbox:list', (_event, protocol: unknown) => {
+  if (typeof protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(protocol)) {
+    throw new Error('chat:outbox:list: invalid protocol');
+  }
+  const db = getDatabase();
+  const rows = db
+    .prepareOnce('SELECT * FROM chat_outbox WHERE protocol = ? ORDER BY created_at ASC')
+    .all(protocol) as Record<string, unknown>[];
+  return rows.map(rowToOutboxEntry);
+});
+
+ipcMain.handle('chat:outbox:add', (_event, entry: unknown) => {
+  if (!entry || typeof entry !== 'object') throw new Error('chat:outbox:add: invalid entry');
+  const e = entry as Record<string, unknown>;
+  if (typeof e.protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(e.protocol))
+    throw new Error('chat:outbox:add: invalid protocol');
+  if (typeof e.viewKey !== 'string') throw new Error('chat:outbox:add: invalid viewKey');
+  if (typeof e.channel !== 'number') throw new Error('chat:outbox:add: invalid channel');
+  if (typeof e.payload !== 'string' || e.payload.length === 0 || e.payload.length > 2048)
+    throw new Error('chat:outbox:add: invalid payload');
+  const now = Date.now();
+  const db = getDatabase();
+  const result = db
+    .prepareOnce(
+      `INSERT INTO chat_outbox
+        (protocol, view_key, channel, to_node, payload, reply_id, status, error,
+         attempt_count, next_retry_at, created_at, updated_at, group_id, group_index, group_total)
+       VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?,?,?)`,
+    )
+    .run(
+      e.protocol,
+      e.viewKey,
+      e.channel,
+      e.toNode ?? null,
+      e.payload,
+      e.replyId ?? null,
+      typeof e.status === 'string' && OUTBOX_VALID_STATUSES.has(e.status) ? e.status : 'queued',
+      e.error ?? null,
+      e.nextRetryAt ?? null,
+      e.createdAt ?? now,
+      now,
+      e.groupId ?? null,
+      e.groupIndex ?? null,
+      e.groupTotal ?? null,
+    );
+  const row = db
+    .prepareOnce('SELECT * FROM chat_outbox WHERE id = ?')
+    .get(result.lastInsertRowid) as Record<string, unknown>;
+  return rowToOutboxEntry(row);
+});
+
+ipcMain.handle(
+  'chat:outbox:updateStatus',
+  (_event, id: unknown, status: unknown, error?: unknown, nextRetryAt?: unknown) => {
+    if (typeof id !== 'number' || !Number.isInteger(id))
+      throw new Error('chat:outbox:updateStatus: invalid id');
+    if (typeof status !== 'string' || !OUTBOX_VALID_STATUSES.has(status))
+      throw new Error('chat:outbox:updateStatus: invalid status');
+    const db = getDatabase();
+    db.prepareOnce(
+      'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
+    ).run(
+      status,
+      typeof error === 'string' ? error : null,
+      typeof nextRetryAt === 'number' ? nextRetryAt : null,
+      Date.now(),
+      id,
+    );
+  },
+);
+
+ipcMain.handle('chat:outbox:remove', (_event, id: unknown) => {
+  if (typeof id !== 'number' || !Number.isInteger(id))
+    throw new Error('chat:outbox:remove: invalid id');
+  getDatabase().prepareOnce('DELETE FROM chat_outbox WHERE id = ?').run(id);
+});
+
+function rowToOutboxEntry(row: Record<string, unknown>) {
+  return {
+    id: row.id as number,
+    protocol: row.protocol as string,
+    viewKey: row.view_key as string,
+    channel: row.channel as number,
+    toNode: (row.to_node as number | null) ?? null,
+    payload: row.payload as string,
+    replyId: (row.reply_id as number | null) ?? null,
+    status: row.status as string,
+    error: (row.error as string | null) ?? null,
+    attemptCount: (row.attempt_count as number) ?? 0,
+    nextRetryAt: (row.next_retry_at as number | null) ?? null,
+    createdAt: row.created_at as number,
+    updatedAt: row.updated_at as number,
+    groupId: (row.group_id as string | null) ?? null,
+    groupIndex: (row.group_index as number | null) ?? null,
+    groupTotal: (row.group_total as number | null) ?? null,
+  };
+}
+
 // ─── IPC: MeshCore database operations ──────────────────────────────
 ipcMain.handle('db:getMeshcoreMessages', (_event, channelIdx?: number, limit = 200) => {
   try {
