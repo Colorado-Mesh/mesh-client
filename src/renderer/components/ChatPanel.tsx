@@ -709,10 +709,8 @@ function ChatPanel({
   const inputChunks = useMemo(() => splitChatMessage(input.trim(), protocol), [input, protocol]);
 
   const outboxSendFn = useCallback(
-    (text: string, ch: number, dest?: number, replyId?: number) => {
-      const result = onSend(text, ch, dest, replyId);
-      return Promise.resolve(result);
-    },
+    (text: string, ch: number, dest?: number, replyId?: number) =>
+      Promise.resolve().then(() => onSend(text, ch, dest, replyId)),
     [onSend],
   );
 
@@ -723,7 +721,7 @@ function ChatPanel({
     cancel: cancelOutbox,
   } = useChatOutbox({
     protocol,
-    isSendAvailable: isConnected && !isMqttOnly,
+    isSendAvailable: isConnected && !(isMqttOnly && protocol === 'meshcore'),
     sendFn: outboxSendFn,
   });
 

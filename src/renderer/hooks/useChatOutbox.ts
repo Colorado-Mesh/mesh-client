@@ -34,16 +34,30 @@ export function useChatOutbox({
 }: UseChatOutboxOptions): UseChatOutbox {
   const [rows, setRows] = useState<OutboxEntry[]>([]);
   const drainingRef = useRef(false);
+  const isSendAvailableRef = useRef(isSendAvailable);
   const sendFnRef = useRef(sendFn);
   useEffect(() => {
+    isSendAvailableRef.current = isSendAvailable;
     sendFnRef.current = sendFn;
   });
 
-  // Load outbox rows on mount
+  // Load outbox rows on mount; reset any 'sending' rows left from a prior crash to 'queued'
   useEffect(() => {
     window.electronAPI.chat.outbox
       .list(protocol)
-      .then(setRows)
+      .then(async (loaded) => {
+        const stale = loaded.filter((r) => r.status === 'sending');
+        if (stale.length > 0) {
+          await Promise.all(
+            stale.map((r) => window.electronAPI.chat.outbox.updateStatus(r.id, 'queued')),
+          );
+        }
+        setRows(
+          loaded.map((r) =>
+            r.status === 'sending' ? { ...r, status: 'queued' satisfies OutboxStatus } : r,
+          ),
+        );
+      })
       .catch((err: unknown) => {
         console.warn('[useChatOutbox] load failed', err);
       });
@@ -71,7 +85,7 @@ export function useChatOutbox({
           (r.nextRetryAt == null || r.nextRetryAt <= now),
       );
       for (const row of eligible) {
-        if (!isSendAvailable) break;
+        if (!isSendAvailableRef.current) break;
         // Mark as sending optimistically
         await window.electronAPI.chat.outbox.updateStatus(row.id, 'sending');
         updateRow(row.id, { status: 'sending' });
@@ -123,13 +137,14 @@ export function useChatOutbox({
     }
   }, [protocol, isSendAvailable, updateRow, removeRow]);
 
-  // Drain when send becomes available
+  // Drain when send becomes available, or when protocol changes while already connected
   useEffect(() => {
     if (isSendAvailable) {
       void drainOnce();
     }
+    // drainOnce intentionally omitted: only trigger on availability/protocol change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSendAvailable]);
+  }, [isSendAvailable, protocol]);
 
   const queue = useCallback(
     async (entry: OutboxEntryInput): Promise<OutboxEntry> => {

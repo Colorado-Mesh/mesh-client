@@ -180,4 +180,64 @@ describe('useChatOutbox', () => {
     });
     expect(sendFn).not.toHaveBeenCalled();
   });
+
+  it('resets sending rows to queued on mount', async () => {
+    const staleRow = makeEntry({ id: 10, status: 'sending' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([staleRow]);
+    const sendFn = vi.fn();
+    const { result } = renderHook(() =>
+      useChatOutbox({ protocol: 'meshtastic', isSendAvailable: false, sendFn }),
+    );
+    await waitFor(() => {
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(10, 'queued');
+    });
+    await waitFor(() => {
+      expect(result.current.rows[0]?.status).toBe('queued');
+    });
+  });
+
+  it('drains on protocol change when already connected', async () => {
+    const entry = makeEntry({ id: 11, protocol: 'meshcore' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = renderHook(
+      ({ protocol }: { protocol: 'meshtastic' | 'meshcore' }) =>
+        useChatOutbox({ protocol, isSendAvailable: true, sendFn }),
+      { initialProps: { protocol: 'meshtastic' as 'meshtastic' | 'meshcore' } },
+    );
+    // Switch protocol while connected — should trigger a new drain
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    rerender({ protocol: 'meshcore' });
+    await waitFor(() => {
+      expect(mockOutbox.list).toHaveBeenCalledWith('meshcore');
+    });
+  });
+
+  it('catches synchronous throw from sendFn and marks row failed', async () => {
+    const entry = makeEntry({ id: 12 });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockImplementation(() => {
+      throw new Error('sync boom');
+    });
+    renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        12,
+        'failed',
+        'sync boom',
+        expect.any(Number),
+      );
+    });
+  });
+
+  it('permanently fails row after MAX_ATTEMPTS without nextRetryAt', async () => {
+    const entry = makeEntry({ id: 13, attemptCount: 4 }); // next attempt = 5 = MAX_ATTEMPTS
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockRejectedValue(new Error('radio busy'));
+    renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      // At MAX_ATTEMPTS: no nextRetryAt (undefined passed as 4th arg)
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(13, 'failed', 'radio busy');
+    });
+  });
 });
