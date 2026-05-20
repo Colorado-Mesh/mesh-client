@@ -2552,12 +2552,12 @@ export function useDevice() {
         unsubscribesRef.current.push(unsubNobleDisconnect);
       }
 
-      // ─── Serial heartbeat (existing behavior, keeps device alive)
-      if (type === 'serial') {
+      // ─── Serial/BLE heartbeat — periodic liveness for watchdog on quiet links
+      if (type === 'serial' || type === 'ble') {
         try {
           device.setHeartbeatInterval(60_000);
         } catch (e) {
-          console.warn('[useDevice] serial: setHeartbeatInterval failed ' + errLikeToLogString(e));
+          console.warn(`[useDevice] ${type}: setHeartbeatInterval failed ` + errLikeToLogString(e));
         }
       }
     },
@@ -2654,7 +2654,7 @@ export function useDevice() {
       let device: MeshDevice;
       if (params.type === 'ble') {
         if (!params.blePeripheralId) throw new Error('BLE peripheral ID not stored for reconnect');
-        device = await createBleConnection(params.blePeripheralId, 'meshtastic');
+        device = await createBleConnection(params.blePeripheralId, 'meshtastic', touchLastData);
       } else {
         device = await createConnection(params.type, params.httpAddress);
       }
@@ -2675,7 +2675,7 @@ export function useDevice() {
       // Retry
       void attemptReconnectRef.current();
     }
-  }, [wireSubscriptions]);
+  }, [wireSubscriptions, touchLastData]);
 
   // Keep the ref in sync
   attemptReconnectRef.current = attemptReconnect;
@@ -2714,7 +2714,7 @@ export function useDevice() {
         let device: MeshDevice;
         if (type === 'ble') {
           // On Linux, peripheralId is optional - createBleConnection will call requestDevice()
-          device = await createBleConnection(blePeripheralId, 'meshtastic');
+          device = await createBleConnection(blePeripheralId, 'meshtastic', touchLastData);
         } else {
           device = await createConnection(type, httpAddress);
         }
@@ -2741,7 +2741,7 @@ export function useDevice() {
         throw err;
       }
     },
-    [wireSubscriptions, cleanupSubscriptions, stopWatchdog, clearConfigureTimeout],
+    [wireSubscriptions, cleanupSubscriptions, stopWatchdog, clearConfigureTimeout, touchLastData],
   );
 
   /**
@@ -2787,7 +2787,7 @@ export function useDevice() {
         let device: MeshDevice;
         if (type === 'ble') {
           // On Linux, peripheralId is optional - createBleConnection will call requestDevice()
-          device = await createBleConnection(blePeripheralId, 'meshtastic');
+          device = await createBleConnection(blePeripheralId, 'meshtastic', touchLastData);
         } else if (type === 'serial') {
           device = await reconnectSerial(lastSerialPortId);
         } else {
@@ -2812,7 +2812,7 @@ export function useDevice() {
         throw err;
       }
     },
-    [wireSubscriptions, cleanupSubscriptions, stopWatchdog, clearConfigureTimeout],
+    [wireSubscriptions, cleanupSubscriptions, stopWatchdog, clearConfigureTimeout, touchLastData],
   );
 
   const disconnect = useCallback(async () => {

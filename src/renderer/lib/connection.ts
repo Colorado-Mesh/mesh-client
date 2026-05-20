@@ -56,6 +56,7 @@ function rethrowIfTransportWebSerialPipeToFailed(err: unknown, phase: string): n
 export async function createBleConnection(
   peripheralId?: string,
   sessionId: NobleBleSessionId = 'meshtastic',
+  onLinkHealthy?: () => void,
 ): Promise<MeshDevice> {
   const isLinux = navigator.userAgent.toLowerCase().includes('linux');
   const connectStartedAt = Date.now();
@@ -87,10 +88,15 @@ export async function createBleConnection(
           deviceId = deviceInfo.deviceId;
           const deviceName = deviceInfo.deviceName;
           console.debug('[connection] createBleConnection: device selected', deviceId, deviceName);
+        } else {
+          console.debug(
+            `[connection] createBleConnection: reusing granted device ${deviceId} (Linux)`,
+          );
+          await transport.requestGrantedDevice(deviceId);
         }
 
         // Now connect to the device
-        await transport.connect();
+        await transport.connect(onLinkHealthy);
         if (attempt > 1) {
           console.info(
             `[connection] createBleConnection recovered on retry ${formatJsonForRendererLog({
