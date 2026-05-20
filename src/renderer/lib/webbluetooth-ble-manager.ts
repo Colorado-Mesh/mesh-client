@@ -560,7 +560,7 @@ export class WebBluetoothManager {
       const isPairing = isWebBluetoothPairingError(err);
       const isDescriptorMissingNotSupported =
         domErr?.name === 'NotSupportedError' && this.fromRadioDescriptorUuids.length === 0;
-      if (this.sessionId === 'meshtastic' && isDescriptorMissingNotSupported && service) {
+      if (this.sessionId === 'meshtastic' && isDescriptorMissingNotSupported) {
         // `ed9da18c-…` is **fromNum**, not fromRadio — see `noble-ble-manager.ts` (FROMNUM_UUID).
         // Do not subscribe there for the Meshtastic protobuf stream. When Linux exposes no CCCD on
         // canonical fromRadio (`2c55…`), fall back to GATT read pump like Noble does.
