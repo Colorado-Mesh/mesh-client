@@ -14,6 +14,8 @@ interface ManagerTestHarness {
   fromRadioCharacteristic: BluetoothRemoteGATTCharacteristic | null;
   meshtasticFromRadioReadPump: boolean;
   gattKeepaliveTimer: ReturnType<typeof setInterval> | null;
+  fromNumNotifyHandler: (() => void) | null;
+  trySubscribeFromNum(service: BluetoothRemoteGATTService): Promise<void>;
   writeToRadio(data: Uint8Array): Promise<void>;
   setLinkHealthyCallback(callback: (() => void) | null): void;
   startGattKeepalive(): void;
@@ -187,6 +189,52 @@ describe('WebBluetoothManager writeToRadio', () => {
 
     await vi.advanceTimersByTimeAsync(45_000);
     expect(fromRadio.readValue).toHaveBeenCalled();
+  });
+
+  describe('fromNum notify', () => {
+    it('drains fromRadio when fromNum notify fires (covers unsolicited mesh traffic)', async () => {
+      const { harness } = makeManager();
+      const fromRadio = mockFromRadioChar();
+      harness.fromRadioCharacteristic = fromRadio;
+
+      let capturedHandler: (() => void) | null = null;
+      const mockFromNum = {
+        addEventListener: vi.fn((_event: string, handler: () => void) => {
+          capturedHandler = handler;
+        }),
+        removeEventListener: vi.fn(),
+        startNotifications: vi.fn().mockResolvedValue(undefined),
+      };
+      const mockService = {
+        getCharacteristic: vi.fn().mockResolvedValue(mockFromNum),
+      };
+
+      await harness.trySubscribeFromNum(mockService as unknown as BluetoothRemoteGATTService);
+      expect(mockFromNum.startNotifications).toHaveBeenCalled();
+      expect(capturedHandler).not.toBeNull();
+      expect(harness.fromNumNotifyHandler).not.toBeNull();
+
+      // Fire the handler as the BLE stack would when fromNum changes
+      capturedHandler!();
+      await Promise.resolve();
+
+      expect(fromRadio.readValue).toHaveBeenCalledTimes(1);
+    });
+
+    it('silently skips fromNum when the characteristic is not available', async () => {
+      const { harness } = makeManager();
+      const mockService = {
+        getCharacteristic: vi
+          .fn()
+          .mockRejectedValue(new DOMException('Not found', 'NotFoundError')),
+      };
+
+      await expect(
+        harness.trySubscribeFromNum(mockService as unknown as BluetoothRemoteGATTService),
+      ).resolves.toBeUndefined();
+
+      expect(harness.fromNumNotifyHandler).toBeNull();
+    });
   });
 });
 

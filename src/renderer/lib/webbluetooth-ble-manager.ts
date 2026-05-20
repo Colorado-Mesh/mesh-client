@@ -32,6 +32,12 @@ const POST_WRITE_SAFETY_READ_DELAYS_MS = [100, 500, 1500, 4000, 8000];
 const GATT_READ_VALUE_TIMEOUT_MS = 10_000;
 /** Periodic GATT read on quiet notify links — below useDevice BLE_STALE_THRESHOLD_MS (90s). */
 const GATT_KEEPALIVE_INTERVAL_MS = 45_000;
+/**
+ * Meshtastic fromNum characteristic — value increments when a new packet is queued in fromRadio.
+ * Subscribing to its NOTIFY fires a drain without waiting for the next client write.
+ * Mirrors FROMNUM_UUID in `noble-ble-manager.ts`.
+ */
+const FROMNUM_UUID = 'ed9da18c-a800-4f66-a670-aa7547e34453';
 
 /** Web Bluetooth experimental API not in all TS DOM libs (descriptor discovery). */
 type BluetoothRemoteGATTCharacteristicWithDescriptors = BluetoothRemoteGATTCharacteristic & {
@@ -107,6 +113,8 @@ export class WebBluetoothManager {
   private fromRadioDescriptorUuids: string[] = [];
   /** When true, `fromRadio` uses GATT readValue pump (Linux/BlueZ may lack CCCD for notify on 2c55…). */
   private meshtasticFromRadioReadPump = false;
+  private fromNumCharacteristic: BluetoothRemoteGATTCharacteristic | null = null;
+  private fromNumNotifyHandler: (() => void) | null = null;
   /** When set, `writeToRadio` splits payloads (Chromium `maximumWriteValueLength`); null = single writeValue. */
   private toRadioChunkLimitBytes: number | null = null;
   private _pendingDevicePromise?: Promise<BluetoothDevice>;
@@ -350,6 +358,46 @@ export class WebBluetoothManager {
     }
   }
 
+  /**
+   * Subscribe to fromNum GATT notify — fires whenever the radio queues a new packet in fromRadio.
+   * This covers unsolicited mesh traffic (messages from other nodes) without needing a client
+   * write to trigger a drain. Mirrors the fromNum subscription in `noble-ble-manager.ts`.
+   * Failure is silent; post-write safety reads remain the fallback.
+   */
+  private async trySubscribeFromNum(service: BluetoothRemoteGATTService): Promise<void> {
+    try {
+      this.fromNumCharacteristic = await withGattTimeout(
+        service.getCharacteristic(FROMNUM_UUID),
+        GATT_DISCOVERY_TIMEOUT_MS,
+        'GATT characteristic discovery (fromNum)',
+      );
+      this.fromNumNotifyHandler = () => {
+        this.notifyGattLinkHealthy();
+        void this.drainFromRadioUnchecked();
+      };
+      this.fromNumCharacteristic.addEventListener(
+        'characteristicvaluechanged',
+        this.fromNumNotifyHandler,
+      );
+      await withGattTimeout(
+        this.fromNumCharacteristic.startNotifications(),
+        GATT_NOTIFICATION_TIMEOUT_MS,
+        'GATT fromNum startNotifications',
+      );
+      console.debug(`[WebBluetooth:${this.sessionId}] fromNum notify active`);
+    } catch {
+      // catch-no-log-ok fromNum notify is optional; post-write read probes cover the fallback
+      if (this.fromNumCharacteristic && this.fromNumNotifyHandler) {
+        this.fromNumCharacteristic.removeEventListener(
+          'characteristicvaluechanged',
+          this.fromNumNotifyHandler,
+        );
+      }
+      this.fromNumCharacteristic = null;
+      this.fromNumNotifyHandler = null;
+    }
+  }
+
   private startGattKeepalive(): void {
     this.stopGattKeepalive();
     if (
@@ -506,6 +554,7 @@ export class WebBluetoothManager {
       );
       console.debug(`[WebBluetooth:${this.sessionId}] notifications started`);
       this.startGattKeepalive();
+      if (service) await this.trySubscribeFromNum(service);
     } catch (err) {
       const domErr = err as DOMException;
       const isPairing = isWebBluetoothPairingError(err);
@@ -526,6 +575,7 @@ export class WebBluetoothManager {
             `[WebBluetooth:${this.sessionId}] fromRadio: notify unavailable (no CCCD); using read pump`,
           );
           void this.drainMeshtasticFromRadioReads();
+          if (service) await this.trySubscribeFromNum(service);
           return;
         }
       }
@@ -555,6 +605,13 @@ export class WebBluetoothManager {
           this.fromRadioNotifyHandler,
         );
         await this.fromRadioCharacteristic.stopNotifications();
+      }
+      if (this.fromNumCharacteristic && this.fromNumNotifyHandler) {
+        this.fromNumCharacteristic.removeEventListener(
+          'characteristicvaluechanged',
+          this.fromNumNotifyHandler,
+        );
+        await this.fromNumCharacteristic.stopNotifications();
       }
     } catch (err) {
       console.debug(
@@ -587,6 +644,8 @@ export class WebBluetoothManager {
     this.fromRadioCharacteristic = null;
     this.fromRadioNotifyHandler = null;
     this.meshtasticFromRadioReadPump = false;
+    this.fromNumCharacteristic = null;
+    this.fromNumNotifyHandler = null;
     this.toRadioChunkLimitBytes = null;
   }
 
