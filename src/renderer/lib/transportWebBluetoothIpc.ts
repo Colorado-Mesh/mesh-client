@@ -78,10 +78,11 @@ export class TransportWebBluetoothIpc implements Types.Transport {
     return Promise.resolve();
   }
 
-  async connect(): Promise<void> {
+  async connect(onLinkHealthy?: () => void): Promise<void> {
     if (!this._bleManager) {
       throw new Error('No device selected. Call requestDevice() first.');
     }
+    this._bleManager.setLinkHealthyCallback(onLinkHealthy ?? null);
     await this._bleManager.connect();
 
     // Pipe the BLE manager's fromDevice stream to our fromDevice stream

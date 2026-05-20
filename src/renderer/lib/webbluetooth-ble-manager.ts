@@ -23,6 +23,10 @@ const GATT_DISCOVERY_TIMEOUT_MS = 30_000;
 const GATT_NOTIFICATION_TIMEOUT_MS = 20_000;
 /** Align with `noble-ble-manager.ts` — drain burst cap for Meshtastic fromRadio read pump. */
 const BLE_READ_PUMP_MAX_ITERATIONS = 512;
+/** Mirrors `noble-ble-manager.ts` POST_WRITE_READ_PUMP_DELAY_MS — recover dropped first notify after write. */
+const POST_WRITE_SAFETY_READ_DELAY_MS = 100;
+/** Periodic GATT read on quiet notify links — below useDevice BLE_STALE_THRESHOLD_MS (90s). */
+const GATT_KEEPALIVE_INTERVAL_MS = 45_000;
 
 /** Web Bluetooth experimental API not in all TS DOM libs (descriptor discovery). */
 type BluetoothRemoteGATTCharacteristicWithDescriptors = BluetoothRemoteGATTCharacteristic & {
@@ -103,6 +107,10 @@ export class WebBluetoothManager {
   private _pendingDevicePromise?: Promise<BluetoothDevice>;
   private _resolvePendingDevice?: (device: BluetoothDevice) => void;
   private _rejectPendingDevice?: (reason?: unknown) => void;
+  private postWriteSafetyReadTimer: ReturnType<typeof setTimeout> | null = null;
+  private gattKeepaliveTimer: ReturnType<typeof setInterval> | null = null;
+  /** Invoked when a GATT read/write succeeds — refreshes connection watchdog on quiet meshes. */
+  private onGattLinkHealthy: (() => void) | null = null;
 
   public readonly toDevice: WritableStream<Uint8Array>;
   public readonly fromDevice: ReadableStream<Types.DeviceOutput>;
@@ -273,8 +281,22 @@ export class WebBluetoothManager {
     }
   }
 
+  setLinkHealthyCallback(callback: (() => void) | null): void {
+    this.onGattLinkHealthy = callback;
+  }
+
+  private notifyGattLinkHealthy(): void {
+    this.onGattLinkHealthy?.();
+  }
+
   private async drainMeshtasticFromRadioReads(): Promise<void> {
     if (!this.meshtasticFromRadioReadPump || !this.fromRadioCharacteristic) return;
+    await this.drainFromRadioUnchecked();
+  }
+
+  /** GATT read drain without read-pump guard — post-write safety net and keepalive for notify mode. */
+  private async drainFromRadioUnchecked(): Promise<void> {
+    if (!this.fromRadioCharacteristic) return;
     const ch = this.fromRadioCharacteristic;
     for (let i = 0; i < BLE_READ_PUMP_MAX_ITERATIONS; i++) {
       if (!this.device?.gatt?.connected) return;
@@ -289,10 +311,43 @@ export class WebBluetoothManager {
         // catch-no-log-ok read pump end — expected when characteristic is drained or stack errors
         break;
       }
+      this.notifyGattLinkHealthy();
       if (!dataView.byteLength) break;
       const bytes = new Uint8Array(dataView.buffer, dataView.byteOffset, dataView.byteLength);
       this.enqueueFromRadioBytes(bytes);
       await Promise.resolve();
+    }
+  }
+
+  private schedulePostWriteSafetyRead(): void {
+    if (this.postWriteSafetyReadTimer !== null) {
+      clearTimeout(this.postWriteSafetyReadTimer);
+    }
+    this.postWriteSafetyReadTimer = setTimeout(() => {
+      this.postWriteSafetyReadTimer = null;
+      void this.drainFromRadioUnchecked();
+    }, POST_WRITE_SAFETY_READ_DELAY_MS);
+  }
+
+  private startGattKeepalive(): void {
+    this.stopGattKeepalive();
+    if (
+      this.sessionId !== 'meshtastic' ||
+      this.meshtasticFromRadioReadPump ||
+      !this.fromRadioCharacteristic?.properties.read
+    ) {
+      return;
+    }
+    this.gattKeepaliveTimer = setInterval(() => {
+      if (!this.device?.gatt?.connected) return;
+      void this.drainFromRadioUnchecked();
+    }, GATT_KEEPALIVE_INTERVAL_MS);
+  }
+
+  private stopGattKeepalive(): void {
+    if (this.gattKeepaliveTimer !== null) {
+      clearInterval(this.gattKeepaliveTimer);
+      this.gattKeepaliveTimer = null;
     }
   }
 
@@ -412,6 +467,7 @@ export class WebBluetoothManager {
       if (!target) return;
       const value = target.value;
       if (value && value.byteLength > 0) {
+        this.notifyGattLinkHealthy();
         const slicedBytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
         this.enqueueFromRadioBytes(slicedBytes);
       }
@@ -428,6 +484,7 @@ export class WebBluetoothManager {
         'GATT start notifications',
       );
       console.debug(`[WebBluetooth:${this.sessionId}] notifications started`);
+      this.startGattKeepalive();
     } catch (err) {
       const domErr = err as DOMException;
       const isPairing = isWebBluetoothPairingError(err);
@@ -498,6 +555,12 @@ export class WebBluetoothManager {
   }
 
   private cleanup(): void {
+    if (this.postWriteSafetyReadTimer !== null) {
+      clearTimeout(this.postWriteSafetyReadTimer);
+      this.postWriteSafetyReadTimer = null;
+    }
+    this.stopGattKeepalive();
+    this.onGattLinkHealthy = null;
     this._fromDeviceController = null;
     this.device = null;
     this.server = null;
@@ -514,17 +577,29 @@ export class WebBluetoothManager {
     }
 
     const ch = this.toRadioCharacteristic;
+    const writeChunk = async (chunk: Uint8Array): Promise<void> => {
+      if (ch.properties.writeWithoutResponse) {
+        await ch.writeValueWithoutResponse(chunk);
+      } else {
+        await ch.writeValue(chunk);
+      }
+    };
     const limit = this.toRadioChunkLimitBytes;
     if (limit == null || data.length <= limit) {
-      await ch.writeValue(data);
+      await writeChunk(data);
     } else {
       for (let offset = 0; offset < data.length; offset += limit) {
         const end = Math.min(offset + limit, data.length);
-        await ch.writeValue(data.subarray(offset, end));
+        await writeChunk(data.subarray(offset, end));
       }
     }
-    if (this.sessionId === 'meshtastic' && this.meshtasticFromRadioReadPump) {
-      await this.drainMeshtasticFromRadioReads();
+    this.notifyGattLinkHealthy();
+    if (this.sessionId === 'meshtastic') {
+      if (this.meshtasticFromRadioReadPump) {
+        await this.drainMeshtasticFromRadioReads();
+      } else if (this.fromRadioCharacteristic?.properties.read) {
+        this.schedulePostWriteSafetyRead();
+      }
     }
   }
 

@@ -16,6 +16,25 @@ vi.mock('./transportNobleIpc', () => ({
   }),
 }));
 
+const { mockRequestDevice, mockRequestGrantedDevice, mockConnect } = vi.hoisted(() => ({
+  mockRequestDevice: vi.fn(),
+  mockRequestGrantedDevice: vi.fn(),
+  mockConnect: vi.fn(),
+}));
+
+vi.mock('./transportWebBluetoothIpc', () => ({
+  TransportWebBluetoothIpc: vi.fn().mockImplementation(function TransportWebBluetoothIpc() {
+    return {
+      requestDevice: mockRequestDevice,
+      requestGrantedDevice: mockRequestGrantedDevice,
+      connect: mockConnect,
+      disconnect: vi.fn().mockResolvedValue(undefined),
+      fromDevice: new ReadableStream<Uint8Array>(),
+      toDevice: new WritableStream<Uint8Array>(),
+    };
+  }),
+}));
+
 import { MeshDevice } from '@meshtastic/core';
 
 import { createBleConnection } from './connection';
@@ -25,10 +44,14 @@ describe('createBleConnection retry behavior', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRequestDevice.mockResolvedValue({ deviceId: 'linux-dev-1', deviceName: 'Radio' });
+    mockRequestGrantedDevice.mockResolvedValue({ deviceId: 'linux-granted', deviceName: 'Radio' });
+    mockConnect.mockResolvedValue(undefined);
     userAgentSpy = vi
       .spyOn(window.navigator, 'userAgent', 'get')
       .mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
     vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.resetBlePairingRetryCount).mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -82,5 +105,43 @@ describe('createBleConnection retry behavior', () => {
       'Bluetooth adapter is not available',
     );
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('createBleConnection Linux Web Bluetooth', () => {
+  let userAgentSpy: { mockRestore: () => void } | null = null;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequestDevice.mockResolvedValue({ deviceId: 'linux-dev-1', deviceName: 'Radio' });
+    mockRequestGrantedDevice.mockResolvedValue({ deviceId: 'linux-granted', deviceName: 'Radio' });
+    mockConnect.mockResolvedValue(undefined);
+    userAgentSpy = vi
+      .spyOn(window.navigator, 'userAgent', 'get')
+      .mockReturnValue('Mozilla/5.0 (X11; Linux x86_64)');
+    vi.mocked(window.electronAPI.resetBlePairingRetryCount).mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    userAgentSpy?.mockRestore();
+    userAgentSpy = null;
+  });
+
+  it('calls requestGrantedDevice when peripheralId is provided (auto-reconnect)', async () => {
+    const onLinkHealthy = vi.fn();
+    await createBleConnection('linux-granted-id', 'meshtastic', onLinkHealthy);
+
+    expect(mockRequestGrantedDevice).toHaveBeenCalledWith('linux-granted-id');
+    expect(mockRequestDevice).not.toHaveBeenCalled();
+    expect(mockConnect).toHaveBeenCalledWith(onLinkHealthy);
+    expect(MeshDevice).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls requestDevice when peripheralId is omitted (picker flow)', async () => {
+    await createBleConnection(undefined, 'meshtastic');
+
+    expect(mockRequestDevice).toHaveBeenCalled();
+    expect(mockRequestGrantedDevice).not.toHaveBeenCalled();
+    expect(mockConnect).toHaveBeenCalledWith(undefined);
   });
 });
