@@ -64,6 +64,9 @@ importers:
       react-leaflet-cluster:
         specifier: ^4.1.3
         version: 4.1.3(@react-leaflet/core@3.0.0(leaflet@1.9.4)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(leaflet@1.9.4)(react-dom@19.2.6(react@19.2.6))(react-leaflet@5.0.0(leaflet@1.9.4)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react@19.2.6)
+      readable-stream:
+        specifier: ^4.7.0
+        version: 4.7.0(patch_hash=96023d9278085d7490d08bce1a5079dd202f7782a0daa66fa81c6b1424ef8ab1)
       systeminformation:
         specifier: ^5.31.6
         version: 5.31.6

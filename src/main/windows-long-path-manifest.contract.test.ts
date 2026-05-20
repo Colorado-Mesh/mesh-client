@@ -26,6 +26,17 @@ describe('Windows long-path application manifest (packaging contract)', () => {
     expect(manifest).toMatch(/ws2:longPathAware>true</);
   });
 
+  it('declares readable-stream as a direct production dep with pnpm patch for asar packaging', () => {
+    const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
+      dependencies?: Record<string, string>;
+      pnpm?: { patchedDependencies?: Record<string, string> };
+    };
+    expect(packageJson.dependencies?.['readable-stream']).toMatch(/^[\^~]?4\./);
+    expect(packageJson.pnpm?.patchedDependencies?.['readable-stream@4.7.0']).toBe(
+      'patches/readable-stream@4.7.0.patch',
+    );
+  });
+
   it('keeps the @electron/asar pnpm override on v4 or newer for Windows packaging', () => {
     const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
       pnpm?: { overrides?: Record<string, string> };

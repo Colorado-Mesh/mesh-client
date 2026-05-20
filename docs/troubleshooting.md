@@ -112,6 +112,14 @@ Node deprecates `spawn(..., { shell: true })` with an args array. This project c
 
 npm's JSON tree lists hoisted packages with many duplicate refs (one per edge). That's expected and not something you need to fix. The patched packaging dependency path keeps that summary at **debug** only so normal `dist:*` runs stay quiet. To see it: `DEBUG=electron-builder pnpm dlx electron-builder --mac` (or your usual dist command).
 
+### Linux packaged app: `Cannot find module 'readable-stream'`
+
+**Symptom**: On Linux, the installed or AppImage build shows a main-process error when loading MQTT (`bl` → `mqtt-packet` → `mqtt` require stack).
+
+**Cause**: pnpm 10.29.3+ marks some `pnpm list --json` nodes as deduped; electron-builder can omit those transitive packages from `app.asar` unless a full copy exists at a predictable path. `mqtt` is loaded from `node_modules` at runtime (not bundled into the main esbuild output).
+
+**Fix in this repo**: `readable-stream@^4.7.0` is a **direct** production dependency (with the existing `patches/readable-stream@4.7.0.patch` for Windows `process/` resolution). Do not remove it when bumping `mqtt` or pnpm. After `pnpm run dist:linux`, verify the asar contains `node_modules/readable-stream`, `node_modules/bl`, and `node_modules/mqtt`. See [electron-builder#9603](https://github.com/electron-userland/electron-builder/issues/9603) and [pnpm#10601](https://github.com/pnpm/pnpm/issues/10601).
+
 ### `[DEP0169]` / `url.parse()` deprecation warning
 
 The app uses npm package overrides to force `follow-redirects` and `cacheable-request` onto versions that use the WHATWG URL API, which removes this warning. To trace the source of any deprecation, run:
