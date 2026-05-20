@@ -1844,8 +1844,17 @@ ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
 
   return new Promise<void>((resolve, reject) => {
     const proc = spawn('bluetoothctl', ['remove', macAddress]);
+    let settled = false;
     let stderr = '';
     let stdout = '';
+
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        proc.kill();
+        reject(new Error('bluetooth-unpair: timed out after 5 s'));
+      }
+    }, 5_000);
 
     proc.stdout.on('data', (data: Buffer) => {
       stdout += data.toString();
@@ -1854,6 +1863,9 @@ ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
       stderr += data.toString();
     });
     proc.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       if (code !== 0) {
         console.error('[IPC] bluetooth-unpair failed:', stderr);
         reject(new Error(stderr || 'Failed to unpair device'));
@@ -1863,6 +1875,9 @@ ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
       resolve();
     });
     proc.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       console.error(
         '[IPC] bluetooth-unpair error:',
         sanitizeLogMessage(err?.message ?? String(err)),
@@ -3016,7 +3031,8 @@ ipcMain.handle('app:quit', async (event) => {
 });
 
 // ─── IPC: Database operations ──────────────────────────────────────
-ipcMain.handle('db:saveMessage', (_event, message) => {
+ipcMain.handle('db:saveMessage', (event, message) => {
+  if (!validateIpcSender(event)) throw new Error('db:saveMessage: unauthorized sender');
   try {
     validateSaveMessage(message);
     const db = getDatabase();
@@ -3060,7 +3076,8 @@ ipcMain.handle('db:saveMessage', (_event, message) => {
   }
 });
 
-ipcMain.handle('db:getMessages', (_event, channel?: number, limit = 200) => {
+ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
+  if (!validateIpcSender(event)) throw new Error('db:getMessages: unauthorized sender');
   try {
     const safeLimit = Math.min(Math.max(1, Number(limit) || 1000), 10000);
     const db = getDatabase();
@@ -5041,6 +5058,7 @@ let httpDevice: {
   host: string;
   tls: boolean;
   intervalId: NodeJS.Timeout;
+  fetchInFlight: boolean;
 } | null = null;
 
 const HTTP_FETCH_INTERVAL_MS = 3000;
@@ -5086,7 +5104,8 @@ async function httpWriteToRadio(host: string, tls: boolean, data: Uint8Array): P
   });
 }
 
-ipcMain.handle('http:preflight', async (_event, host: unknown, tls: unknown) => {
+ipcMain.handle('http:preflight', async (event, host: unknown, tls: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('http:preflight: unauthorized sender');
   validateHttpHost(host);
   if (typeof tls !== 'boolean') {
     throw new Error('Invalid tls');
@@ -5094,7 +5113,8 @@ ipcMain.handle('http:preflight', async (_event, host: unknown, tls: unknown) => 
   await httpPreflight(host, tls);
 });
 
-ipcMain.handle('http:connect', async (_event, host: unknown, tls: unknown) => {
+ipcMain.handle('http:connect', async (event, host: unknown, tls: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('http:connect: unauthorized sender');
   validateHttpHost(host);
   if (typeof tls !== 'boolean') {
     throw new Error('Invalid tls');
@@ -5105,7 +5125,9 @@ ipcMain.handle('http:connect', async (_event, host: unknown, tls: unknown) => {
   }
   await httpPreflight(host, tls);
   const intervalId = setInterval(() => {
+    if (httpDevice?.fetchInFlight) return;
     void (async () => {
+      if (httpDevice) httpDevice.fetchInFlight = true;
       try {
         const protocol = tls ? 'https' : 'http';
         let readBuffer = new ArrayBuffer(1);
@@ -5127,10 +5149,12 @@ ipcMain.handle('http:connect', async (_event, host: unknown, tls: unknown) => {
           '[IPC] http:connect read error:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
+      } finally {
+        if (httpDevice) httpDevice.fetchInFlight = false;
       }
     })();
   }, HTTP_FETCH_INTERVAL_MS);
-  httpDevice = { host, tls, intervalId };
+  httpDevice = { host, tls, intervalId, fetchInFlight: false };
   logDeviceConnection(
     `transport=http stack=meshtastic host=${sanitizeLogMessage(host)} tls=${tls}`,
   );

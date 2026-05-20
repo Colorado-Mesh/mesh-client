@@ -163,6 +163,57 @@ describe('About dialog crash guard (source contract)', () => {
   });
 });
 
+describe('IPC sender validation on high-value handlers (source contract)', () => {
+  it('db:saveMessage, db:getMessages validate IPC sender before executing', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('db:saveMessage'[\s\S]*?validateIpcSender\(event\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('db:getMessages'[\s\S]*?validateIpcSender\(event\)/,
+    );
+  });
+
+  it('http:preflight and http:connect validate IPC sender before executing', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('http:preflight'[\s\S]*?validateIpcSender\(event\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('http:connect'[\s\S]*?validateIpcSender\(event\)/,
+    );
+  });
+});
+
+describe('MQTT IPC handlers (source contract)', () => {
+  it('registers mqtt:connect, mqtt:disconnect handlers', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:connect'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:disconnect'");
+  });
+
+  it('registers mqtt:publish with payload validation', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publish'");
+    expect(INDEX_SOURCE).toMatch(/validateMqttPublish/);
+  });
+
+  it('registers mqtt:publishNodeInfo and mqtt:publishPosition', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publishNodeInfo'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publishPosition'");
+  });
+});
+
+describe('HTTP bridge IPC handlers (source contract)', () => {
+  it('registers all four HTTP bridge handlers', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('http:preflight'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('http:connect'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('http:write'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('http:disconnect'");
+  });
+
+  it('http:connect uses an in-flight guard to prevent concurrent fetches', () => {
+    expect(INDEX_SOURCE).toContain('fetchInFlight');
+    expect(INDEX_SOURCE).toMatch(/fetchInFlight.*return/);
+  });
+});
+
 describe('Native crash observability (source contract)', () => {
   it('starts crashReporter without upload and logs child-process-gone', () => {
     expect(INDEX_SOURCE).toContain(

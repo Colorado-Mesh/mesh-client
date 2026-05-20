@@ -95,11 +95,12 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
     }
     const ids = [...connectedIds].filter((id) => nodes.has(id));
 
+    const existingById = new Map(simRef.current.map((n) => [n.id, n]));
     simRef.current = ids.map((id, i) => {
       const node = nodes.get(id)!;
       const angle = (2 * Math.PI * i) / Math.max(1, ids.length);
       const r = Math.min(cx, cy) * 0.55;
-      const existing = simRef.current.find((n) => n.id === id);
+      const existing = existingById.get(id);
       return {
         id,
         label: node.short_name || `!${id.toString(16).slice(-4)}`,

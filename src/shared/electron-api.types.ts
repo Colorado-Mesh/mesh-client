@@ -138,7 +138,7 @@ export interface ElectronAPI {
       channel: number;
       timestamp: number;
       to?: number;
-    }) => Promise<unknown>;
+    }) => Promise<void>;
 
     getMessages: (channel?: number, limit?: number) => Promise<SavedMessage[]>;
 
@@ -167,44 +167,44 @@ export interface ElectronAPI {
       num_packets_tx?: number | null;
       heard_via_mqtt_only?: boolean;
       [key: string]: unknown;
-    }) => Promise<unknown>;
+    }) => Promise<void>;
 
-    saveNodePath: (nodeId: number, lastHeard: number, buffer: Buffer) => Promise<unknown>;
+    saveNodePath: (nodeId: number, lastHeard: number, buffer: Buffer) => Promise<void>;
 
     getNodes: () => Promise<SavedNode[]>;
-    clearMessages: () => Promise<unknown>;
-    clearNodes: () => Promise<unknown>;
-    deleteNode: (nodeId: number) => Promise<unknown>;
+    clearMessages: () => Promise<void>;
+    clearNodes: () => Promise<void>;
+    deleteNode: (nodeId: number) => Promise<void>;
     updateMessageStatus: (
       packetId: number,
       status: string,
       error?: string,
       mqttStatus?: string,
-    ) => Promise<unknown>;
+    ) => Promise<void>;
     exportDb: () => Promise<string | null>;
     importDb: () => Promise<{ nodesAdded: number; messagesAdded: number } | null>;
-    deleteNodesByAge: (days: number) => Promise<unknown>;
-    pruneNodesByCount: (maxCount: number) => Promise<unknown>;
-    pruneMessagesByCount: (maxCount: number) => Promise<unknown>;
-    pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<unknown>;
+    deleteNodesByAge: (days: number) => Promise<void>;
+    pruneNodesByCount: (maxCount: number) => Promise<void>;
+    pruneMessagesByCount: (maxCount: number) => Promise<void>;
+    pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<void>;
     deleteNodesNeverHeard: () => Promise<number>;
     deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
-    clearMessagesByChannel: (channel: number) => Promise<unknown>;
+    clearMessagesByChannel: (channel: number) => Promise<void>;
     getMessageChannels: () => Promise<{ channel: number }[]>;
-    setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<unknown>;
+    setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<void>;
     getNodeNote: (nodeId: number) => Promise<string | null>;
     setNodeNote: (nodeId: number, note: string) => Promise<void>;
     deleteNodesBySource: (source: string) => Promise<number>;
     migrateRfStubNodes: () => Promise<number>;
     deleteNodesWithoutLongname: () => Promise<number>;
     prunePositionHistory: (days: number) => Promise<number>;
-    clearNodePositions: () => Promise<unknown>;
-    updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<unknown>;
+    clearNodePositions: () => Promise<void>;
+    updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<void>;
     /** Meshtastic: replace optimistic temp `packet_id` with RF `sendText()` id for `reply_id` / tapback matching. */
-    updateMessagePacketId: (oldPacketId: number, newPacketId: number) => Promise<unknown>;
+    updateMessagePacketId: (oldPacketId: number, newPacketId: number) => Promise<void>;
 
     getMeshcoreMessages: (channelIdx?: number, limit?: number) => Promise<unknown[]>;
-    searchMessages: (query: string, limit?: number) => Promise<unknown[]>;
+    searchMessages: (query: string, limit?: number) => Promise<SavedMessage[]>;
     searchMeshcoreMessages: (query: string, limit?: number) => Promise<unknown[]>;
     getMeshcoreContacts: () => Promise<unknown[]>;
     saveMeshcoreMessage: (message: {
@@ -223,7 +223,7 @@ export interface ElectronAPI {
       reply_preview_text?: string | null;
       reply_preview_sender?: string | null;
       rx_hops?: number | null;
-    }) => Promise<unknown>;
+    }) => Promise<void>;
     saveMeshcoreContact: (contact: {
       node_id: number;
       public_key: string;
@@ -239,20 +239,20 @@ export interface ElectronAPI {
       hops_away?: number | null;
       on_radio?: number | null;
       last_synced_from_radio?: string | null;
-    }) => Promise<unknown>;
+    }) => Promise<void>;
     updateMeshcoreContactRfTransport: (
       nodeId: number,
       transportScope: number | null,
       transportReturn: number | null,
-    ) => Promise<unknown>;
+    ) => Promise<void>;
     updateMeshcoreContactAdvert: (
       nodeId: number,
       lastAdvert: number | null,
       advLat: number | null,
       advLon: number | null,
       advName?: string | null,
-    ) => Promise<unknown>;
-    updateMeshcoreContactType: (nodeId: number, contactType: number) => Promise<unknown>;
+    ) => Promise<void>;
+    updateMeshcoreContactType: (nodeId: number, contactType: number) => Promise<void>;
     updateMeshcoreContactLastRf: (
       nodeId: number,
       lastSnr: number,
@@ -260,17 +260,17 @@ export interface ElectronAPI {
       hops?: number | null,
       timestamp?: number | null,
     ) => Promise<void>;
-    updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<unknown>;
-    deleteMeshcoreContact: (nodeId: number) => Promise<unknown>;
-    clearMeshcoreMessages: () => Promise<unknown>;
+    updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<void>;
+    deleteMeshcoreContact: (nodeId: number) => Promise<void>;
+    clearMeshcoreMessages: () => Promise<void>;
     getMeshcoreMessageChannels: () => Promise<{ channel: number }[]>;
-    clearMeshcoreMessagesByChannel: (channelIdx: number) => Promise<unknown>;
-    clearMeshcoreContacts: () => Promise<unknown>;
-    deleteMeshcoreContactsNeverAdvertised: () => Promise<unknown>;
-    deleteMeshcoreContactsByAge: (days: number) => Promise<unknown>;
-    pruneMeshcoreContactsByCount: (maxCount: number) => Promise<unknown>;
-    clearMeshcoreRepeaters: () => Promise<unknown>;
-    markAllMeshcoreContactsOffRadio: () => Promise<unknown>;
+    clearMeshcoreMessagesByChannel: (channelIdx: number) => Promise<void>;
+    clearMeshcoreContacts: () => Promise<void>;
+    deleteMeshcoreContactsNeverAdvertised: () => Promise<void>;
+    deleteMeshcoreContactsByAge: (days: number) => Promise<void>;
+    pruneMeshcoreContactsByCount: (maxCount: number) => Promise<void>;
+    clearMeshcoreRepeaters: () => Promise<void>;
+    markAllMeshcoreContactsOffRadio: () => Promise<void>;
     getMeshcoreContactCount: () => Promise<number>;
     deleteMeshcoreContactsWithoutPubkey: () => Promise<{
       deleted: number;
@@ -278,19 +278,19 @@ export interface ElectronAPI {
     }>;
     offloadAllMeshcoreContacts: () => Promise<number>;
     getMeshcoreContactById: (nodeId: number) => Promise<unknown>;
-    updateMeshcoreContactNickname: (nodeId: number, nickname: string | null) => Promise<unknown>;
+    updateMeshcoreContactNickname: (nodeId: number, nickname: string | null) => Promise<void>;
     updateMeshcoreContactFavorited: (
       nodeId: number,
       favorited: boolean,
       publicKeyHex?: string | null,
-    ) => Promise<unknown>;
+    ) => Promise<void>;
     savePositionHistory: (
       nodeId: number,
       lat: number,
       lon: number,
       recordedAt: number,
       source: string,
-    ) => Promise<unknown>;
+    ) => Promise<void>;
     getPositionHistory: (sinceMs: number) => Promise<
       {
         node_id: number;
@@ -300,7 +300,7 @@ export interface ElectronAPI {
         source: string;
       }[]
     >;
-    clearPositionHistory: () => Promise<unknown>;
+    clearPositionHistory: () => Promise<void>;
     saveMeshcoreHopHistory: (
       nodeId: number,
       timestamp: number,
@@ -396,8 +396,8 @@ export interface ElectronAPI {
 
   // ─── MQTT ────────────────────────────────────────────────────────────────────
   mqtt: {
-    connect: (settings: unknown) => Promise<unknown>;
-    disconnect: (protocol?: 'meshtastic' | 'meshcore') => Promise<unknown>;
+    connect: (settings: unknown) => Promise<void>;
+    disconnect: (protocol?: 'meshtastic' | 'meshcore') => Promise<void>;
     onStatus: (
       cb: (payload: { status: string; protocol: 'meshtastic' | 'meshcore' }) => void,
     ) => () => void;
@@ -435,7 +435,7 @@ export interface ElectronAPI {
       emoji?: number;
       replyId?: number;
       publishJsonMirror: boolean;
-    }) => Promise<unknown>;
+    }) => Promise<void>;
     publishNodeInfo: (args: {
       from: number;
       longName: string;
@@ -443,7 +443,7 @@ export interface ElectronAPI {
       channelName?: string;
       hwModel?: number;
       publishJsonMirror: boolean;
-    }) => Promise<unknown>;
+    }) => Promise<void>;
     publishPosition: (args: {
       from: number;
       channel: number;
@@ -452,7 +452,7 @@ export interface ElectronAPI {
       longitudeI: number;
       altitude?: number;
       publishJsonMirror: boolean;
-    }) => Promise<unknown>;
+    }) => Promise<void>;
     publishWaypoint: (args: {
       from: number;
       to: number;
@@ -469,20 +469,20 @@ export interface ElectronAPI {
         lockedTo?: number;
         expire?: number;
       };
-    }) => Promise<unknown>;
+    }) => Promise<void>;
     publishMeshcore: (args: {
       text: string;
       channelIdx: number;
       senderName?: string;
       senderNodeId?: number;
       timestamp?: number;
-    }) => Promise<unknown>;
+    }) => Promise<void>;
     publishMeshcorePacketLog: (args: {
       origin: string;
       snr: number;
       rssi: number;
       rawHex?: string;
-    }) => Promise<unknown>;
+    }) => Promise<void>;
     onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
     refreshMeshcoreToken: (
       serverHost: string,
@@ -535,7 +535,7 @@ export interface ElectronAPI {
   resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => void;
 
   // ─── Session management ──────────────────────────────────────────────────────
-  clearSessionData: () => Promise<unknown>;
+  clearSessionData: () => Promise<void>;
 
   // ─── GPS ─────────────────────────────────────────────────────────────────────
   getGpsFix: () => Promise<
@@ -545,10 +545,10 @@ export interface ElectronAPI {
 
   // ─── Update notifications ────────────────────────────────────────────────────
   update: {
-    check: () => Promise<unknown>;
-    download: () => Promise<unknown>;
-    install: () => Promise<unknown>;
-    openReleases: (url?: string) => Promise<unknown>;
+    check: () => Promise<void>;
+    download: () => Promise<void>;
+    install: () => Promise<void>;
+    openReleases: (url?: string) => Promise<void>;
     onAvailable: (
       cb: (info: {
         version: string;
@@ -568,7 +568,7 @@ export interface ElectronAPI {
   notifyDeviceConnected: () => void;
   notifyDeviceDisconnected: () => void;
   setTrayUnread: (count: number) => void;
-  quitApp: () => Promise<unknown>;
+  quitApp: () => Promise<void>;
 
   // ─── Native OS notifications ─────────────────────────────────────────────────
   notify: {
@@ -608,9 +608,9 @@ export interface ElectronAPI {
   // ─── MeshCore TCP bridge ─────────────────────────────────────────────────────
   meshcore: {
     tcp: {
-      connect: (host: string, port: number) => Promise<unknown>;
-      write: (bytes: number[]) => Promise<unknown>;
-      disconnect: () => Promise<unknown>;
+      connect: (host: string, port: number) => Promise<void>;
+      write: (bytes: number[]) => Promise<void>;
+      disconnect: () => Promise<void>;
       onData: (cb: (bytes: Uint8Array) => void) => () => void;
       onDisconnected: (cb: () => void) => () => void;
     };
@@ -665,7 +665,7 @@ export interface ElectronAPI {
   log: {
     getPath: () => Promise<string>;
     getRecentLines: () => Promise<LogEntry[]>;
-    clear: () => Promise<unknown>;
+    clear: () => Promise<void>;
     export: () => Promise<string | null>;
     onLine: (cb: (entry: LogEntry) => void) => () => void;
     /** Main-process log line: `[Connection] …` + runtime tag (sanitized in main). */
