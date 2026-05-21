@@ -9,8 +9,11 @@ const ROOT = path.resolve(__dirname, '..');
 const METAINFO = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.metainfo.xml');
 const DESKTOP = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.desktop');
 const MANIFEST = path.join(ROOT, 'org.coloradomesh.MeshClient.yml');
+const WRAPPER = path.join(ROOT, 'flatpak', 'mesh-client-wrapper.sh');
 const PKG = path.join(ROOT, 'package.json');
 const EXPECTED_APP_ID = 'org.coloradomesh.MeshClient';
+const EXPECTED_MAIN = 'dist-electron/main/index.js';
+const EXPECTED_ELECTRON = '/app/lib/mesh-client/electron/electron';
 
 function checkMetainfoVersionMatchesPackage() {
   const violations = [];
@@ -79,6 +82,79 @@ function checkManifestAppId() {
   return violations;
 }
 
+function checkManifestBranchAndElectronPayload() {
+  const violations = [];
+  if (!fs.existsSync(MANIFEST)) return violations;
+
+  const yaml = fs.readFileSync(MANIFEST, 'utf8');
+  const rel = path.relative(ROOT, MANIFEST);
+
+  if (!/^branch:\s*stable\s*$/m.test(yaml)) {
+    violations.push({
+      file: rel,
+      message: 'expected branch: stable (CI bundles should not publish master refs)',
+    });
+  }
+
+  if (!yaml.includes('node_modules/electron/dist /app/lib/mesh-client/electron')) {
+    violations.push({
+      file: rel,
+      message: 'manifest must copy node_modules/electron/dist into the app (zypak needs Chromium)',
+    });
+  }
+
+  if (!yaml.includes('resources /app/lib/mesh-client/')) {
+    violations.push({
+      file: rel,
+      message: 'manifest must install resources/ for runtime icon paths',
+    });
+  }
+
+  return violations;
+}
+
+function checkWrapperLaunchPaths() {
+  const violations = [];
+  if (!fs.existsSync(WRAPPER)) {
+    violations.push({ file: path.relative(ROOT, WRAPPER), message: 'wrapper script missing' });
+    return violations;
+  }
+
+  const sh = fs.readFileSync(WRAPPER, 'utf8');
+  const rel = path.relative(ROOT, WRAPPER);
+
+  if (!sh.includes(EXPECTED_MAIN)) {
+    violations.push({
+      file: rel,
+      message: `wrapper must launch ${EXPECTED_MAIN} (package.json "main")`,
+    });
+  }
+
+  if (!sh.includes(EXPECTED_ELECTRON)) {
+    violations.push({
+      file: rel,
+      message: `wrapper must invoke bundled Chromium at ${EXPECTED_ELECTRON}`,
+    });
+  }
+
+  if (sh.includes('dist-electron/main.js')) {
+    violations.push({
+      file: rel,
+      message: 'wrapper must not reference dist-electron/main.js (file does not exist)',
+    });
+  }
+
+  if (sh.includes('/app/electron/electron')) {
+    violations.push({
+      file: rel,
+      message:
+        'wrapper must not reference /app/electron/electron (Electron is under lib/mesh-client)',
+    });
+  }
+
+  return violations;
+}
+
 function checkDesktopStartupWMClass() {
   const violations = [];
   if (!fs.existsSync(DESKTOP) || !fs.existsSync(PKG)) return violations;
@@ -106,6 +182,8 @@ function main() {
     ...checkMetainfoVersionMatchesPackage(),
     ...checkMetainfoAppId(),
     ...checkManifestAppId(),
+    ...checkManifestBranchAndElectronPayload(),
+    ...checkWrapperLaunchPaths(),
     ...checkDesktopStartupWMClass(),
   ];
 
