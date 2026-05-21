@@ -48,6 +48,9 @@ jobs:
         with:
           platforms: arm64
 
+      - name: Install flatpak and flatpak-builder
+        run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder
+
       - name: Generate offline pnpm sources
         run: |
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
