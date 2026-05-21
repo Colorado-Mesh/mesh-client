@@ -117,15 +117,80 @@ Complete reference of all pnpm scripts in `package.json`, organized by category.
 
 #### Package (distributables)
 
-| Script               | Description                                |
-| -------------------- | ------------------------------------------ |
-| `dist`               | Build for current platform                 |
-| `dist:mac`           | Build macOS .dmg + .zip → `release/`       |
-| `dist:mac:publish`   | Build macOS and upload to release server   |
-| `dist:linux`         | Build Linux .AppImage + .deb → `release/`  |
-| `dist:linux:publish` | Build Linux and upload to release server   |
-| `dist:win`           | Build Windows .exe installer → `release/`  |
-| `dist:win:publish`   | Build Windows and upload to release server |
+| Script               | Description                                      |
+| -------------------- | ------------------------------------------------ |
+| `dist`               | Build for current platform                       |
+| `dist:mac`           | Build macOS .dmg + .zip → `release/`             |
+| `dist:mac:publish`   | Build macOS and upload to release server         |
+| `dist:linux`         | Build Linux .AppImage + .deb + .rpm → `release/` |
+| `dist:linux:publish` | Build Linux and upload to release server         |
+| `dist:win`           | Build Windows .exe installer → `release/`        |
+| `dist:win:publish`   | Build Windows and upload to release server       |
+
+#### Building a Flatpak (Linux)
+
+Flatpak builds use `flatpak-builder` directly (not a pnpm script) and require a one-time local setup. The GitHub Actions workflow (`flatpak.yaml`) handles this in CI automatically; the steps below are for local iteration.
+
+**1. Install system tools (Debian/Ubuntu)**
+
+```bash
+sudo apt install flatpak flatpak-builder elfutils
+```
+
+**1. Install system tools (Fedora)**
+
+```bash
+sudo dnf install flatpak flatpak-builder elfutils
+```
+
+**2. Add Flathub and install runtimes** (one-time, ~500 MB)
+
+```bash
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --user -y flathub org.freedesktop.Platform//24.08
+flatpak install --user -y flathub org.freedesktop.Sdk//24.08
+flatpak install --user -y flathub org.freedesktop.Sdk.Extension.node22//24.08
+flatpak install --user -y flathub org.electronjs.Electron2.BaseApp//24.08
+```
+
+**3. Generate offline pnpm sources** (re-run whenever `pnpm-lock.yaml` changes)
+
+```bash
+pip install flatpak-node-generator
+flatpak-node-generator --type pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
+git add flatpak/generated-sources.json
+```
+
+`flatpak/generated-sources.json` is generated automatically in the `flatpak.yaml` CI workflow and does not need to be committed. For local builds you generate it manually as shown above; the file is only required locally and in a Flathub submission repo.
+
+**4. Build and install locally**
+
+```bash
+flatpak-builder --user --install --force-clean build-dir org.coloradomesh.MeshClient.yml
+```
+
+This installs the app into your user Flatpak store.
+
+**5. Run**
+
+```bash
+flatpak run org.coloradomesh.MeshClient
+```
+
+**6. Produce a `.flatpak` bundle** (for sharing without a repo)
+
+```bash
+flatpak build-bundle ~/.local/share/flatpak/repo \
+  org.coloradomesh.MeshClient.flatpak \
+  org.coloradomesh.MeshClient
+```
+
+**Lint the manifest** before submitting to Flathub:
+
+```bash
+flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
+  manifest org.coloradomesh.MeshClient.yml
+```
 
 #### Test
 

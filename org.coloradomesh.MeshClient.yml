@@ -1,0 +1,69 @@
+app-id: org.coloradomesh.MeshClient
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '24.08'
+command: mesh-client
+separate-locales: false
+
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node22
+
+build-options:
+  append-path: /usr/lib/sdk/node22/bin
+
+finish-args:
+  - --device=all
+  - --share=network
+  - --share=ipc
+  - --socket=x11
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --filesystem=home
+  - --system-talk-name=org.bluez
+  - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --env=NODE_ENV=production
+  - --env=ELECTRON_IS_DEV=0
+
+modules:
+  - name: mesh-client
+    buildsystem: simple
+    build-options:
+      env:
+        PNPM_HOME: /run/build/mesh-client/.pnpm
+        npm_config_cache: /run/build/mesh-client/.npm
+    build-commands:
+      # Install pnpm into the build environment
+      - npm install -g pnpm@10
+      # Offline install using generated-sources.json
+      - pnpm install --frozen-lockfile --offline
+      # Build renderer, main, and preload
+      - pnpm run build
+      # Rebuild native addons (noble BLE, sqlite) against the bundled Electron ABI
+      - pnpm run rebuild
+      # Install app payload
+      - install -dm755 /app/lib/mesh-client
+      - cp -r dist dist-electron node_modules /app/lib/mesh-client/
+      # Wrapper script
+      - install -Dm755 flatpak/mesh-client-wrapper.sh /app/bin/mesh-client
+      # Icons
+      - |
+        install -Dm644 resources/icons/linux/256x256.png \
+          /app/share/icons/hicolor/256x256/apps/org.coloradomesh.MeshClient.png
+        install -Dm644 resources/icons/linux/128x128.png \
+          /app/share/icons/hicolor/128x128/apps/org.coloradomesh.MeshClient.png
+        install -Dm644 resources/icons/linux/64x64.png \
+          /app/share/icons/hicolor/64x64/apps/org.coloradomesh.MeshClient.png
+      # Desktop entry and MetaInfo
+      - |
+        install -Dm644 flatpak/org.coloradomesh.MeshClient.desktop \
+          /app/share/applications/org.coloradomesh.MeshClient.desktop
+        install -Dm644 flatpak/org.coloradomesh.MeshClient.metainfo.xml \
+          /app/share/metainfo/org.coloradomesh.MeshClient.metainfo.xml
+    sources:
+      - type: dir
+        path: .
+      - flatpak/generated-sources.json
