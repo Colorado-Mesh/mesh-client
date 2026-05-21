@@ -1,12 +1,10 @@
 name: Build Flatpak
+run-name: Build Flatpak${{ github.event_name == 'workflow_dispatch' && ' (no release)' || '' }}
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
     tags: ['v*']
-  pull_request:
-    branches: [main]
 
 jobs:
   flatpak:
@@ -19,7 +17,7 @@ jobs:
       options: --privileged
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Generate offline pnpm sources
         run: |
