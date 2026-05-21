@@ -23,7 +23,7 @@ jobs:
         run: |
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
           pip3 install "${FBTOOLS}@6f3f08759ac9859492b728f57f5163bf584c47ff#subdirectory=node"
-          flatpak-node-generator pnpm pnpm-lock.yaml -a x86_64 -o flatpak/generated-sources.json
+          flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
 
       # flatpak/flatpak-github-actions v6
       - uses: flatpak/flatpak-github-actions/flatpak-builder@401fe28a8384095fc1531b9d320b292f0ee45adb
@@ -52,7 +52,7 @@ jobs:
         run: |
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
           pip3 install "${FBTOOLS}@6f3f08759ac9859492b728f57f5163bf584c47ff#subdirectory=node"
-          flatpak-node-generator pnpm pnpm-lock.yaml -a aarch64 -o flatpak/generated-sources.json
+          flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
 
       # flatpak/flatpak-github-actions v6
       - uses: flatpak/flatpak-github-actions/flatpak-builder@401fe28a8384095fc1531b9d320b292f0ee45adb
