@@ -45,6 +45,7 @@ jobs:
           bundle: ${{ matrix.bundle }}
           manifest-path: org.coloradomesh.MeshClient.yml
           arch: ${{ matrix.arch }}
+          branch: stable
           cache-key: flatpak-builder-${{ matrix.arch }}-${{ github.sha }}
           upload-artifact: true
 

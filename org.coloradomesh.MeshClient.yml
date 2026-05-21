@@ -1,4 +1,5 @@
 app-id: org.coloradomesh.MeshClient
+branch: stable
 runtime: org.freedesktop.Platform
 runtime-version: '24.08'
 sdk: org.freedesktop.Sdk
@@ -50,9 +51,11 @@ modules:
       - pnpm run build
       # Rebuild native addons (noble BLE, sqlite) against the bundled Electron ABI
       - pnpm run rebuild
-      # Install app payload
+      # Install app payload (Electron binary + app roots; zypak needs a real Chromium binary)
       - install -dm755 /app/lib/mesh-client
-      - cp -r dist dist-electron node_modules /app/lib/mesh-client/
+      - install -Dm644 package.json /app/lib/mesh-client/package.json
+      - cp -a node_modules/electron/dist /app/lib/mesh-client/electron
+      - cp -a dist dist-electron node_modules resources /app/lib/mesh-client/
       # Wrapper script
       - install -Dm755 flatpak/mesh-client-wrapper.sh /app/bin/mesh-client
       # Icons

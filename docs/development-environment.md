@@ -182,7 +182,17 @@ flatpak run org.coloradomesh.MeshClient
 ```bash
 flatpak build-bundle ~/.local/share/flatpak/repo \
   org.coloradomesh.MeshClient.flatpak \
-  org.coloradomesh.MeshClient
+  org.coloradomesh.MeshClient stable
+```
+
+Installing a `.flatpak` file creates a one-off remote named like `meshclient-origin` (not `flathub`); that is expected. The ref branch is `stable` (release CI sets this; older artifacts used `master`). Version is shown in MetaInfo / `flatpak info`, not in the remote name.
+
+**Reinstall after downloading a new bundle**
+
+```bash
+flatpak uninstall --user org.coloradomesh.MeshClient
+flatpak install --user ./org.coloradomesh.MeshClient-aarch64.flatpak
+flatpak run org.coloradomesh.MeshClient
 ```
 
 **Lint the manifest** before submitting to Flathub:
