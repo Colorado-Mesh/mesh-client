@@ -23,7 +23,7 @@ jobs:
 
       - name: Generate offline pnpm sources
         run: |
-          pip3 install flatpak-node-generator
+          pip3 install 'git+https://github.com/flatpak/flatpak-builder-tools#subdirectory=node'
           flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
 
       # flatpak/flatpak-github-actions v6
