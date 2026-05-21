@@ -1,4 +1,5 @@
 name: Build Flatpak
+run-name: Build Flatpak${{ github.event_name == 'workflow_dispatch' && ' (no release)' || '' }}
 
 on:
   workflow_dispatch:
