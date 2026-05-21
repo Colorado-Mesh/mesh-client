@@ -46,3 +46,15 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+      - name: Check Flatpak
+        run: pnpm run check:flatpak
+
+      - name: Install Flatpak validation tools
+        run: sudo apt-get install -y desktop-file-utils appstream
+
+      - name: Validate desktop file
+        run: desktop-file-validate flatpak/org.coloradomesh.MeshClient.desktop
+
+      - name: Validate metainfo
+        run: appstreamcli validate --no-net flatpak/org.coloradomesh.MeshClient.metainfo.xml
