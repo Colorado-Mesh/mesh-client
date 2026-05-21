@@ -388,8 +388,18 @@ generate_release_notes "$LAST_TAG" "v$NEW_VERSION_PREVIEW"
 print_header "Bumping version..."
 NEW_VERSION=$(pnpm version "$VERSION_TYPE" --no-git-tag-version)
 
+# 10a. Prepend a new <release> entry to the Flatpak MetaInfo file
+METAINFO_FILE="flatpak/org.coloradomesh.MeshClient.metainfo.xml"
+if [ -f "$METAINFO_FILE" ]; then
+  CLEAN_VERSION="${NEW_VERSION#v}"
+  TODAY=$(date +"%Y-%m-%d")
+  perl -i -pe "s|(<releases>)|\$1\n    <release version=\"${CLEAN_VERSION}\" date=\"${TODAY}\"/>|" "$METAINFO_FILE"
+  print_success "Updated $METAINFO_FILE with release $CLEAN_VERSION ($TODAY)"
+fi
+
 # 11. Commit the version bump
 git add package.json pnpm-lock.yaml
+[ -f "$METAINFO_FILE" ] && git add "$METAINFO_FILE"
 git commit -m "chore: release $NEW_VERSION"
 
 # 12. Create the git tag

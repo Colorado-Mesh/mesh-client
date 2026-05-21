@@ -42,62 +42,57 @@ pnpm run build
 
 ### 2. Update Version
 
-Update the version in `package.json`:
+Use the release script, which handles the version bump, MetaInfo update, commit, tag, and push in one step:
 
 ```bash
-# For patch release (1.2.3 → 1.2.4)
-pnpm version patch
-
-# For minor release (1.2.3 → 1.3.0)
-pnpm version minor
-
-# For major release (1.2.3 → 2.0.0)
-pnpm version major
+./release.sh
 ```
 
-The `pnpm version` command:
+The script auto-detects the bump type (patch / minor / major) from conventional commits since the last tag, confirms with you before applying, and:
 
-- Updates `package.json` version field
-- Creates a git commit with the version bump
-- Creates an annotated git tag
+1. Bumps `package.json` via `pnpm version`
+2. Prepends a new `<release>` entry to `flatpak/org.coloradomesh.MeshClient.metainfo.xml` with today's date
+3. Commits `package.json`, `pnpm-lock.yaml`, and the MetaInfo file
+4. Creates an annotated git tag
+5. Pushes the commit and tag to `origin`
 
-Alternatively, manually edit `package.json` and create the tag:
+If you need to bump manually instead:
 
 ```bash
-# Edit package.json, then:
-git add package.json
-git commit -m "chore: bump version to 1.2.4"
+# Edit package.json version, then:
+git add package.json pnpm-lock.yaml
+# Also update flatpak/org.coloradomesh.MeshClient.metainfo.xml — add a <release> entry
+git add flatpak/org.coloradomesh.MeshClient.metainfo.xml
+git commit -m "chore: release v1.2.4"
 git tag -a v1.2.4 -m "Release 1.2.4"
 ```
 
 ### 3. Push Tag
 
-Push the commit and tag to GitHub:
+`release.sh` pushes automatically. If doing a manual bump, push the commit and tag:
 
 ```bash
 git push origin main
 git push origin v1.2.4
 ```
 
-Or push all tags:
+### 4. Monitor Workflows
 
-```bash
-git push origin main --tags
-```
+Two workflows trigger automatically when the tag is pushed.
 
-### 4. Monitor Workflow
-
-The `release.yaml` workflow will automatically start when the tag is pushed.
-
-Monitor progress at:
-
-- GitHub → Actions → "Build/Release Electron App"
-
-The workflow runs three parallel jobs:
+**`release.yaml`** (GitHub → Actions → "Build/Release Electron App"):
 
 - `macos-latest` → builds macOS `.dmg` and `.zip`
 - `ubuntu-latest` → builds Linux `.AppImage`, `.deb`, and `.rpm`
 - `windows-latest` → builds Windows `.exe` (NSIS installer)
+
+**`flatpak.yaml`** (GitHub → Actions → "Build Flatpak"):
+
+- Builds inside a Freedesktop 24.08 container using `flatpak-builder`
+- Produces `org.coloradomesh.MeshClient.flatpak`
+- Attaches it to the GitHub Release once `release.yaml` has created the release object
+
+Both workflows must complete before the release is fully populated.
 
 ### 5. Verify Release
 
@@ -108,6 +103,7 @@ Once the workflow completes:
 3. Verify all platform artifacts are attached:
    - macOS: `.dmg`, `.zip` (x64 and arm64)
    - Linux: `.AppImage`, `.deb`, `.rpm`
+   - Linux Flatpak: `.flatpak` (added by `flatpak.yaml` — may arrive a few minutes after the others)
    - Windows: `.exe`
 4. Verify release notes are populated (auto-generated from commits)
 
@@ -186,12 +182,13 @@ If a release has critical issues:
 
 The workflow produces the following artifacts:
 
-| Platform      | Artifacts                                                                   |
-| ------------- | --------------------------------------------------------------------------- |
-| macOS (x64)   | `{name}-{version}-mac.zip`, `{name}-{version}.dmg`                          |
-| macOS (arm64) | `{name}-{version}-arm64-mac.zip`, `{name}-{version}-arm64.dmg`              |
-| Linux         | `{name}-{version}.AppImage`, `{name}-{version}.deb`, `{name}-{version}.rpm` |
-| Windows       | `{name} Setup {version}.exe`                                                |
+| Platform        | Artifacts                                                                   |
+| --------------- | --------------------------------------------------------------------------- |
+| macOS (x64)     | `{name}-{version}-mac.zip`, `{name}-{version}.dmg`                          |
+| macOS (arm64)   | `{name}-{version}-arm64-mac.zip`, `{name}-{version}-arm64.dmg`              |
+| Linux           | `{name}-{version}.AppImage`, `{name}-{version}.deb`, `{name}-{version}.rpm` |
+| Linux (Flatpak) | `org.coloradomesh.MeshClient.flatpak`                                       |
+| Windows         | `{name} Setup {version}.exe`                                                |
 
 Artifacts are signed with your developer certificate (macOS/Windows) if configured in `electron-builder` config.
 

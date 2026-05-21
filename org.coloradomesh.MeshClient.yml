@@ -1,0 +1,79 @@
+app-id: org.coloradomesh.MeshClient
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '24.08'
+command: mesh-client
+separate-locales: false
+
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node22
+
+build-options:
+  append-path: /usr/lib/sdk/node22/bin
+
+finish-args:
+  - --device=all
+  - --share=network
+  - --share=ipc
+  - --socket=x11
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --filesystem=home
+  - --system-talk-name=org.bluez
+  - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --env=NODE_ENV=production
+  - --env=ELECTRON_IS_DEV=0
+
+modules:
+  - name: mesh-client
+    buildsystem: simple
+    build-options:
+      prepend-path: /run/build/mesh-client/.pnpm-bin
+      env:
+        PNPM_HOME: /run/build/mesh-client/.pnpm
+        npm_config_cache: /run/build/mesh-client/.npm
+    build-commands:
+      # Install pnpm standalone binary (no network needed)
+      - install -Dm755 pnpm-linux-x64 /run/build/mesh-client/.pnpm-bin/pnpm
+      # Offline install using generated-sources.json.
+      # --store-dir must use the sandbox-absolute path because the type:shell
+      # source that writes .npmrc runs outside the sandbox, so $PWD there is
+      # the host cache path, not the in-sandbox /run/build/mesh-client path.
+      - >-
+        pnpm install --frozen-lockfile --offline --ignore-scripts
+        --store-dir /run/build/mesh-client/flatpak-node/pnpm-store
+      # Build renderer, main, and preload
+      - pnpm run build
+      # Rebuild native addons (noble BLE, sqlite) against the bundled Electron ABI
+      - pnpm run rebuild
+      # Install app payload
+      - install -dm755 /app/lib/mesh-client
+      - cp -r dist dist-electron node_modules /app/lib/mesh-client/
+      # Wrapper script
+      - install -Dm755 flatpak/mesh-client-wrapper.sh /app/bin/mesh-client
+      # Icons
+      - |
+        install -Dm644 resources/icons/linux/256x256.png \
+          /app/share/icons/hicolor/256x256/apps/org.coloradomesh.MeshClient.png
+        install -Dm644 resources/icons/linux/128x128.png \
+          /app/share/icons/hicolor/128x128/apps/org.coloradomesh.MeshClient.png
+        install -Dm644 resources/icons/linux/64x64.png \
+          /app/share/icons/hicolor/64x64/apps/org.coloradomesh.MeshClient.png
+      # Desktop entry and MetaInfo
+      - |
+        install -Dm644 flatpak/org.coloradomesh.MeshClient.desktop \
+          /app/share/applications/org.coloradomesh.MeshClient.desktop
+        install -Dm644 flatpak/org.coloradomesh.MeshClient.metainfo.xml \
+          /app/share/metainfo/org.coloradomesh.MeshClient.metainfo.xml
+    sources:
+      - type: dir
+        path: .
+      - flatpak/generated-sources.json
+      - type: file
+        url: https://github.com/pnpm/pnpm/releases/download/v10.33.2/pnpm-linux-x64
+        sha256: 39d7b6600239712bc9581ea219b17ffef46ba60998779cb717be2e068be029ef
+        dest-filename: pnpm-linux-x64

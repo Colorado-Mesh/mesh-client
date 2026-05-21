@@ -6,13 +6,14 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                    | Trigger             | Purpose                                |
-| --------------------------- | ------------------- | -------------------------------------- |
-| `ci.yaml`                   | Push/PR to `main`   | Lint, typecheck, build                 |
-| `tests.yaml`                | Push/PR to `main`   | Run unit tests, upload results         |
-| `release.yaml`              | Version tags (`v*`) | Build & publish releases               |
-| `docs.yml`                  | Push to `main`      | Deploy MkDocs to GitHub Pages          |
-| `dependency-submission.yml` | Push/PR to `main`   | Submit Python deps to dependency graph |
+| Workflow                    | Trigger                         | Purpose                                     |
+| --------------------------- | ------------------------------- | ------------------------------------------- |
+| `ci.yaml`                   | Push/PR to `main`               | Lint, typecheck, build                      |
+| `tests.yaml`                | Push/PR to `main`               | Run unit tests, upload results              |
+| `release.yaml`              | Version tags (`v*`)             | Build & publish releases (AppImage/deb/rpm) |
+| `flatpak.yaml`              | Push/PR to `main`, tags, manual | Build Flatpak; publish to release on tags   |
+| `docs.yml`                  | Push to `main`                  | Deploy MkDocs to GitHub Pages               |
+| `dependency-submission.yml` | Push/PR to `main`               | Submit Python deps to dependency graph      |
 
 ---
 
@@ -60,6 +61,25 @@ Triggered by pushing a version tag (e.g., `v1.2.3`):
 4. Publishes artifacts to GitHub Releases
 
 See [Release Process](release-process.md) for the maintainer workflow.
+
+---
+
+## Flatpak (`flatpak.yaml`)
+
+Builds a Flatpak bundle using [`flatpak/flatpak-github-actions`](https://github.com/flatpak/flatpak-github-actions).
+
+**Triggers:** push or PR to `main`, all version tags (`v*`), and manual `workflow_dispatch`.
+
+The job runs inside a privileged `ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08` container, which provides the Freedesktop 24.08 SDK and can fetch Flathub runtimes:
+
+1. Reads `org.coloradomesh.MeshClient.yml` as the manifest
+2. Installs runtimes (`org.freedesktop.Platform//24.08`, `org.electronjs.Electron2.BaseApp//24.08`, `org.freedesktop.Sdk.Extension.node22//24.08`)
+3. Builds the app offline using `flatpak/generated-sources.json` for pnpm dependencies
+4. Uploads `org.coloradomesh.MeshClient.flatpak` as a workflow artifact
+
+On **version tag pushes**, a second `publish` job downloads the artifact and attaches it to the GitHub Release alongside the AppImage/deb/rpm.
+
+`flatpak/generated-sources.json` is generated automatically in CI by `flatpak-node-generator` before each build — it does not need to be committed to the repo. For local builds, generate it manually; see [development-environment.md](development-environment.md) for steps. If submitting to Flathub's dedicated submission repo, the file must be committed there.
 
 ---
 

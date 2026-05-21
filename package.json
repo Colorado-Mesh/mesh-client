@@ -38,6 +38,7 @@
     "check:console-log": "node scripts/check-console-log.mjs",
     "check:db-migrations": "node scripts/check-db-migrations.mjs",
     "check:electron-security": "node scripts/check-electron-security.mjs",
+    "check:flatpak": "node scripts/check-flatpak.mjs",
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:ipc-contract": "node scripts/check-ipc-contract.mjs",
     "check:licenses": "license-checker-rseidelsohn --summary --excludePrivatePackages",
@@ -93,9 +94,9 @@
     "mgrs": "^2.1.0",
     "mqtt": "^5.15.1",
     "node-forge": "^1.4.0",
-    "readable-stream": "^4.7.0",
     "react-i18next": "^17.0.8",
     "react-leaflet-cluster": "^4.1.3",
+    "readable-stream": "^4.7.0",
     "systeminformation": "^5.31.6"
   },
   "devDependencies": {
