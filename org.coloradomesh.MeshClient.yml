@@ -32,12 +32,13 @@ modules:
   - name: mesh-client
     buildsystem: simple
     build-options:
+      prepend-path: /run/build/mesh-client/.pnpm-bin
       env:
         PNPM_HOME: /run/build/mesh-client/.pnpm
         npm_config_cache: /run/build/mesh-client/.npm
     build-commands:
-      # Install pnpm into the build environment
-      - npm install -g pnpm@10
+      # Install pnpm standalone binary (no network needed)
+      - install -Dm755 pnpm-linux-x64 /run/build/mesh-client/.pnpm-bin/pnpm
       # Offline install using generated-sources.json
       - pnpm install --frozen-lockfile --offline
       # Build renderer, main, and preload
@@ -67,3 +68,7 @@ modules:
       - type: dir
         path: .
       - flatpak/generated-sources.json
+      - type: file
+        url: https://github.com/pnpm/pnpm/releases/download/v10.33.2/pnpm-linux-x64
+        sha256: 39d7b6600239712bc9581ea219b17ffef46ba60998779cb717be2e068be029ef
+        dest-filename: pnpm-linux-x64
