@@ -39,8 +39,13 @@ modules:
     build-commands:
       # Install pnpm standalone binary (no network needed)
       - install -Dm755 pnpm-linux-x64 /run/build/mesh-client/.pnpm-bin/pnpm
-      # Offline install using generated-sources.json
-      - pnpm install --frozen-lockfile --offline
+      # Offline install using generated-sources.json.
+      # --store-dir must use the sandbox-absolute path because the type:shell
+      # source that writes .npmrc runs outside the sandbox, so $PWD there is
+      # the host cache path, not the in-sandbox /run/build/mesh-client path.
+      - >-
+        pnpm install --frozen-lockfile --offline
+        --store-dir /run/build/mesh-client/flatpak-node/pnpm-store
       # Build renderer, main, and preload
       - pnpm run build
       # Rebuild native addons (noble BLE, sqlite) against the bundled Electron ABI
