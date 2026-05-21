@@ -93,9 +93,9 @@
     "mgrs": "^2.1.0",
     "mqtt": "^5.15.1",
     "node-forge": "^1.4.0",
-    "readable-stream": "^4.7.0",
     "react-i18next": "^17.0.8",
     "react-leaflet-cluster": "^4.1.3",
+    "readable-stream": "^4.7.0",
     "systeminformation": "^5.31.6"
   },
   "devDependencies": {
