@@ -7,8 +7,8 @@ on:
     tags: ['v*']
 
 jobs:
-  flatpak:
-    name: Flatpak
+  flatpak-x86_64:
+    name: Flatpak (x86_64)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -22,19 +22,47 @@ jobs:
       - name: Generate offline pnpm sources
         run: |
           pip3 install 'git+https://github.com/flatpak/flatpak-builder-tools#subdirectory=node'
-          flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
+          flatpak-node-generator pnpm pnpm-lock.yaml -a x86_64 -o flatpak/generated-sources.json
 
       # flatpak/flatpak-github-actions v6
       - uses: flatpak/flatpak-github-actions/flatpak-builder@401fe28a8384095fc1531b9d320b292f0ee45adb
         with:
-          bundle: org.coloradomesh.MeshClient.flatpak
+          bundle: org.coloradomesh.MeshClient-x86_64.flatpak
           manifest-path: org.coloradomesh.MeshClient.yml
-          cache-key: flatpak-builder-${{ github.sha }}
+          cache-key: flatpak-builder-x86_64-${{ github.sha }}
+          upload-artifact: true
+
+  flatpak-aarch64:
+    name: Flatpak (aarch64)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Generate offline pnpm sources
+        run: |
+          pip3 install 'git+https://github.com/flatpak/flatpak-builder-tools#subdirectory=node'
+          flatpak-node-generator pnpm pnpm-lock.yaml -a aarch64 -o flatpak/generated-sources.json
+
+      # flatpak/flatpak-github-actions v6
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@401fe28a8384095fc1531b9d320b292f0ee45adb
+        with:
+          bundle: org.coloradomesh.MeshClient-aarch64.flatpak
+          manifest-path: org.coloradomesh.MeshClient.yml
+          arch: aarch64
+          cache-key: flatpak-builder-aarch64-${{ github.sha }}
           upload-artifact: true
 
   publish:
     name: Publish to GitHub Release
-    needs: flatpak
+    needs: [flatpak-x86_64, flatpak-aarch64]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -43,8 +71,9 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: org.coloradomesh.MeshClient
+          pattern: 'org.coloradomesh.MeshClient-*'
           path: flatpak-dist
+          merge-multiple: true
 
       - name: Attach Flatpak to release
         # softprops/action-gh-release v2
