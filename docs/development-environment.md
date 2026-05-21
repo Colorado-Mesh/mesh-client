@@ -157,7 +157,7 @@ flatpak install --user -y flathub org.electronjs.Electron2.BaseApp//24.08
 
 ```bash
 pip install flatpak-node-generator
-flatpak-node-generator --type pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
+flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
 git add flatpak/generated-sources.json
 ```
 
