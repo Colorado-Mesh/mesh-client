@@ -6,6 +6,7 @@
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
 [![CI Build](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/ci.yaml/badge.svg)](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/ci.yaml)
 [![Build/Release Electron App](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/release.yaml/badge.svg?event=push)](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/release.yaml?query=event%3Apush)
+[![Flatpak Build](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/flatpak.yaml/badge.svg)](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/flatpak.yaml)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/Colorado-Mesh/mesh-client)
 [![Publish Docs](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/docs.yml/badge.svg)](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/docs.yml)
 ![Discord](https://img.shields.io/discord/1436156966648152271?label=chat&logo=discord)
@@ -278,7 +279,7 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 ## Quick Start
 
-**Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) area. Download the installer or archive for your platform; no Node.js or build tools required.
+**Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) area. Download the installer or archive for your platform; no Node.js or build tools required. A **Flatpak** (`.flatpak`) is also published to GitHub Releases on each version tag for easy installation on any Flatpak-enabled Linux distribution.
 
 **macOS (release download):** If macOS reports **"Mesh-client" is damaged and can't be opened** (or **File is damaged and cannot be opened**):
 
@@ -386,7 +387,7 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 | Maps         | Leaflet + OpenStreetMap                                                                                                            |
 | Charts       | Recharts                                                                                                                           |
 | Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                               |
-| Build        | esbuild + Vite + electron-builder                                                                                                  |
+| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp)                                                 |
 
 ### Architecture
 
