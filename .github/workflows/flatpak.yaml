@@ -51,6 +51,13 @@ jobs:
       - name: Install flatpak and flatpak-builder
         run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder
 
+      # flatpak-github-actions only runs remote-add when repository-url is non-default;
+      # the x86_64 job's container image already has flathub configured.
+      - name: Add Flathub remote (system)
+        run: |
+          sudo flatpak remote-add --if-not-exists --system flathub \
+            https://flathub.org/repo/flathub.flatpakrepo
+
       - name: Generate offline pnpm sources
         run: |
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
