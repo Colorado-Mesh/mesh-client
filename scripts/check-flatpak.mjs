@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 const METAINFO = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.metainfo.xml');
+const DESKTOP = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.desktop');
 const MANIFEST = path.join(ROOT, 'org.coloradomesh.MeshClient.yml');
 const PKG = path.join(ROOT, 'package.json');
 const EXPECTED_APP_ID = 'org.coloradomesh.MeshClient';
@@ -78,11 +79,34 @@ function checkManifestAppId() {
   return violations;
 }
 
+function checkDesktopStartupWMClass() {
+  const violations = [];
+  if (!fs.existsSync(DESKTOP) || !fs.existsSync(PKG)) return violations;
+
+  const pkgName = JSON.parse(fs.readFileSync(PKG, 'utf8')).name;
+  const desktop = fs.readFileSync(DESKTOP, 'utf8');
+  const rel = path.relative(ROOT, DESKTOP);
+
+  const m = desktop.match(/^StartupWMClass=(.+)$/m);
+  if (!m) {
+    violations.push({ file: rel, message: 'missing StartupWMClass entry' });
+    return violations;
+  }
+  if (m[1].trim() !== pkgName) {
+    violations.push({
+      file: rel,
+      message: `StartupWMClass is "${m[1].trim()}", expected "${pkgName}" (package.json name — the WM_CLASS Electron emits under Flatpak/zypak)`,
+    });
+  }
+  return violations;
+}
+
 function main() {
   const violations = [
     ...checkMetainfoVersionMatchesPackage(),
     ...checkMetainfoAppId(),
     ...checkManifestAppId(),
+    ...checkDesktopStartupWMClass(),
   ];
 
   if (violations.length === 0) {

@@ -17,3 +17,4 @@ node_modules/
 release/
 test-results/
 .context-os
+flatpak/generated-sources.json
