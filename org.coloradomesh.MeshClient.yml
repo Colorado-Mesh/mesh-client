@@ -44,7 +44,7 @@ modules:
       # source that writes .npmrc runs outside the sandbox, so $PWD there is
       # the host cache path, not the in-sandbox /run/build/mesh-client path.
       - >-
-        pnpm install --frozen-lockfile --offline
+        pnpm install --frozen-lockfile --offline --ignore-scripts
         --store-dir /run/build/mesh-client/flatpak-node/pnpm-store
       # Build renderer, main, and preload
       - pnpm run build
