@@ -1,8 +1,10 @@
 # Troubleshooting
 
+Setup (clone, prerequisites, Flatpak build steps) is in [development-environment.md](development-environment.md). This page covers runtime failures, connections, and packaged installs.
+
 ### `pnpm install` fails on native module compilation
 
-See [development-environment.md](development-environment.md) for OS-specific prerequisite installation and troubleshooting.
+See [development-environment.md](development-environment.md) for OS-specific prerequisite installation.
 
 ### Windows: "Could not find any Visual Studio installation to use"
 
@@ -60,9 +62,90 @@ See [development-environment.md](development-environment.md#windows) for Python 
 
 See [development-environment.md](development-environment.md) for OS-specific serial setup and driver guidance.
 
-### Linux: `Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED`
+### Linux: serial port access denied
 
-See [development-environment.md#linux](development-environment.md#linux) for serial permission recovery steps.
+**Symptom**: `Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED`
+
+**Fix**:
+
+1. Ensure your user is in the `dialout` group (see [development-environment.md — Linux serial permissions](development-environment.md#serial-permissions)).
+2. Log out and back in after changing groups.
+3. Verify with `groups`.
+4. If the group is missing:
+   ```bash
+   sudo groupadd dialout
+   sudo usermod -a -G dialout $USER
+   newgrp dialout
+   ```
+
+### Flatpak: `vmwgfx: driver missing` (VMware on macOS)
+
+**Symptom**: `flatpak run org.coloradomesh.MeshClient` fails or exits after Mesa logs `vmwgfx: driver missing` (use `flatpak -v run ...` to see it). Common on **Linux guests in VMware Fusion or Workstation with a macOS host**, including **aarch64** Ubuntu/ARM VMs.
+
+**Cause**: The Flatpak uses the same GPU stack as the x86_64 bundle (`--device=all`, Wayland/X11). It expects a working virtual GPU in the guest. On macOS-hosted VMware, **3D acceleration / `vmwgfx` is often off or unsupported** unless you enable it in the VM settings — without that, Mesa cannot open the VMware DRI driver and Electron’s GPU process fails.
+
+**Fix** (preferred — hardware acceleration):
+
+1. Shut down the Linux VM.
+2. In **VMware Fusion** or **Workstation** (on the Mac host): turn on **Accelerate 3D graphics** / **3D acceleration** for this VM (exact label varies by VMware version).
+3. Boot the guest and confirm the driver is present, for example:
+   ```bash
+   grep DRIVER=vmwgfx /sys/class/drm/card*/device/uevent
+   ```
+4. Reinstall or rerun the Flatpak:
+   ```bash
+   flatpak run org.coloradomesh.MeshClient
+   ```
+
+**Workaround** (software rendering when the host cannot expose `vmwgfx`):
+
+```bash
+MESH_CLIENT_DISABLE_GPU=1 flatpak run org.coloradomesh.MeshClient
+```
+
+When `/sys/class/drm` is visible inside the sandbox, the wrapper may auto-detect `vmwgfx` and set `MESH_CLIENT_DISABLE_GPU=1` if DRI is unreliable there. Opt out of auto-detection: `MESH_CLIENT_DISABLE_GPU=0 flatpak run ...`. Force GPU despite detection: `MESH_CLIENT_ENABLE_GPU=1 flatpak run ...`.
+
+**Reinstall a release bundle** after downloading a new `.flatpak` from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases):
+
+```bash
+flatpak uninstall --user org.coloradomesh.MeshClient
+flatpak install --user ./org.coloradomesh.MeshClient-aarch64.flatpak # or -x86_64
+flatpak run org.coloradomesh.MeshClient
+```
+
+### Linux development: SIGILL during `pnpm install`
+
+**Symptom**: `electron exited with signal SIGILL` during install/rebuild (common in sandboxes or VMs without instructions the prebuilt Electron binary expects).
+
+**Fix**:
+
+```bash
+MESHTASTIC_SKIP_ELECTRON_REBUILD=1 pnpm install
+pnpm run rebuild
+```
+
+Run `pnpm run rebuild` on a host where the bundled Electron binary executes correctly.
+
+### Linux development: SIGSEGV on startup
+
+**Symptom**: `electron exited with signal SIGSEGV` when running from source (GPU process; see [electron#41980](https://github.com/electron/electron/issues/41980)).
+
+**Fix**:
+
+```bash
+pnpm run build && pnpm dlx electron . --disable-gpu
+```
+
+Or:
+
+```bash
+pnpm run electron:open -- --disable-gpu
+```
+
+Optional persistent mitigation:
+
+- `export MESH_CLIENT_DISABLE_GPU=1`
+- `ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm run electron:open`
 
 ### macOS: File is damaged and cannot be opened
 

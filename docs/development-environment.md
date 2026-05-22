@@ -1,6 +1,6 @@
 # Development Environment Setup
 
-This guide covers local development setup for Mesh Client, including cloning, prerequisites, test harness tooling, and OS-specific troubleshooting.
+This guide covers local development setup for Mesh Client, including cloning, prerequisites, and test harness tooling. For runtime errors, connection issues, and packaged-app problems, see [troubleshooting.md](troubleshooting.md).
 
 ## Shared Requirements and Tooling
 
@@ -195,7 +195,7 @@ flatpak install --user ./org.coloradomesh.MeshClient-aarch64.flatpak
 flatpak run org.coloradomesh.MeshClient
 ```
 
-**Flatpak GPU / `vmwgfx: driver missing` (aarch64):** On **aarch64** bundles the wrapper defaults to software rendering (`MESH_CLIENT_DISABLE_GPU=1` and Electron `--disable-gpu`) because the sandbox usually cannot see host DRM sysfs and drivers like VMware `vmwgfx` fail inside the bubble. x86_64 builds are unchanged unless you set the env vars yourself. To try hardware acceleration on ARM: `MESH_CLIENT_ENABLE_GPU=1 flatpak run org.coloradomesh.MeshClient`. To force GPU on: `MESH_CLIENT_DISABLE_GPU=0 flatpak run ...`.
+**Runtime issues** (GPU, VMware guests): see [Flatpak: `vmwgfx: driver missing` (VMware on macOS)](troubleshooting.md#flatpak-vmwgfx-driver-missing-vmware-on-macos).
 
 **Lint the manifest** before submitting to Flathub:
 
@@ -447,11 +447,7 @@ On first BLE connection, macOS prompts for Bluetooth access. If denied accidenta
 
 ### macOS release-download note (not required for source development)
 
-If a downloaded app reports "Mesh-client is damaged and can't be opened", remove quarantine:
-
-```bash
-xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
-```
+If a downloaded app reports "Mesh-client is damaged and can't be opened", see [macOS: File is damaged and cannot be opened](troubleshooting.md#macos-file-is-damaged-and-cannot-be-opened).
 
 ## Windows
 
@@ -495,43 +491,7 @@ If serial ports do not appear, install the right USB UART driver (for example CH
 
 ### Troubleshooting
 
-#### "Could not find any Visual Studio installation to use"
-
-Cause: outdated `node-gyp` resolution or missing C++ build tools workload.
-
-Fix:
-
-1. Install/confirm Visual Studio Build Tools with Desktop C++ workload.
-2. Upgrade node-gyp:
-   ```bash
-   pnpm install node-gyp@latest -g
-   pnpm install node-gyp@latest --save-dev
-   ```
-3. Restart terminal and rerun:
-   ```bash
-   pnpm install
-   ```
-
-#### "Could not find any Python installation to use"
-
-Cause: Python missing or not on PATH for node-gyp.
-
-Fix:
-
-1. Install Python 3 and add it to PATH.
-2. Restart terminal.
-3. Retry `pnpm install` (or `pnpm run dist:win`).
-4. If still failing, set Python path with `npm config set python ...`.
-
-#### `dist:win` fails with path spaces or `EPERM`
-
-- Prefer a path without spaces (for example `C:\dev\mesh-client`)
-- Close running Electron/Node processes before rebuild
-- Run:
-  ```bash
-  pnpm run rebuild
-  pnpm run dist:win
-  ```
+See [troubleshooting.md](troubleshooting.md#windows-could-not-find-any-visual-studio-installation-to-use) (Visual Studio), [Python](troubleshooting.md#windows-could-not-find-any-python-installation-to-use), and [`dist:win` path / `EPERM`](troubleshooting.md#windows-distwin-fails-with-path-spaces-or-eperm).
 
 ## Linux
 
@@ -594,32 +554,7 @@ The app automatically enables `--enable-experimental-web-platform-features` on L
 
 There is **no portable Web Bluetooth API** for the negotiated ATT MTU ([WebBluetoothCG#383](https://github.com/WebBluetoothCG/web-bluetooth/issues/383)). When Chromium exposes `maximumWriteValueLength` on the TX characteristic, the client chunks `writeValue` accordingly; otherwise it sends each payload in one call.
 
-#### Bluetooth Pairing on Linux
-
-Web Bluetooth may invoke the **Electron pairing handler** during GATT connect. Behavior differs by protocol:
-
-- **Meshtastic:** On the first Chromium `providePin` request, the client tries the standard Meshtastic PIN `123456`. If that fails, you are prompted to enter the PIN manually.
-- **MeshCore:** The MeshCore session does **not** auto-submit `123456`. When Chromium asks for a PIN, you enter the random code shown on the radio.
-
-**MeshCore and OS-level pairing (Linux / BlueZ):** A stable GATT session usually requires a bond in BlueZ first. After you choose a device in the in-app picker, the client runs `bluetoothctl info <MAC>`. If the device is **not** paired (`Paired: no`) or not yet known to the adapter, the UI prompts for the PIN on the **radio** and runs **`bluetooth-pair`** (main-process `bluetoothctl` pairing) **before** resolving the pending Web Bluetooth selection. If `Paired: yes` already, connection continues without that step.
-
-Handshake retries reuse the **same granted Web Bluetooth device** (`navigator.bluetooth.getDevices()`) so the second attempt does not call `requestDevice()` without a user gesture.
-
-If you encounter pairing issues (e.g., "Connection attempt failed" or device was previously paired with wrong PIN):
-
-1. Use the **"Remove & Re-pair Device"** button in the app
-2. Or manually remove via `bluetoothctl`:
-   ```bash
-   bluetoothctl
-   # Inside bluetoothctl:
-   remove XX:XX:XX:XX:XX:XX # Replace with your device MAC
-   # Then re-pair from the app
-   ```
-3. If the device still won't connect, power cycle Bluetooth:
-   ```bash
-   bluetoothctl power off
-   bluetoothctl power on
-   ```
+Pairing failures and BlueZ steps: [BLE known issues](troubleshooting.md#ble-known-issues).
 
 ### Linux launch notes
 
@@ -639,50 +574,4 @@ sudo sysctl -w kernel.unprivileged_userns_clone=1
 
 ### Troubleshooting
 
-#### SIGILL during `pnpm install` (`electron exited with signal SIGILL`)
-
-Install without running Electron rebuild first:
-
-```bash
-MESHTASTIC_SKIP_ELECTRON_REBUILD=1 pnpm install
-```
-
-Then run rebuild on a host where Electron executes correctly:
-
-```bash
-pnpm run rebuild
-```
-
-#### SIGSEGV on startup (`electron exited with signal SIGSEGV`)
-
-Use:
-
-```bash
-pnpm run build && pnpm dlx electron . --disable-gpu
-```
-
-Or:
-
-```bash
-pnpm run electron:open -- --disable-gpu
-```
-
-Optional persistent mitigation:
-
-- `export MESH_CLIENT_DISABLE_GPU=1`
-- `ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm run electron:open`
-
-#### `Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED`
-
-1. Ensure user is in `dialout`.
-2. Re-login.
-3. Verify with:
-   ```bash
-   groups
-   ```
-4. If missing, create and activate:
-   ```bash
-   sudo groupadd dialout
-   sudo usermod -a -G dialout $USER
-   newgrp dialout
-   ```
+See [Linux development: SIGILL / SIGSEGV](troubleshooting.md#linux-development-sigill-during-pnpm-install) and [Linux: serial port access denied](troubleshooting.md#linux-serial-port-access-denied).
