@@ -54,7 +54,8 @@ modules:
       # Install app payload (Electron binary + app roots; zypak needs a real Chromium binary)
       - install -dm755 /app/lib/mesh-client
       - install -Dm644 package.json /app/lib/mesh-client/package.json
-      - cp -a node_modules/electron/dist /app/lib/mesh-client/electron
+      # pnpm --ignore-scripts skips electron's postinstall; unpack vendored release zips instead
+      - cp -a electron-prebuilt /app/lib/mesh-client/electron
       - cp -a dist dist-electron node_modules resources /app/lib/mesh-client/
       # Wrapper script
       - install -Dm755 flatpak/mesh-client-wrapper.sh /app/bin/mesh-client
@@ -85,4 +86,14 @@ modules:
         url: https://github.com/pnpm/pnpm/releases/download/v10.33.2/pnpm-linux-arm64
         sha256: 0828e5ee23be89d22bd53cc36e93c181ce9d5c47d75f9fe9bf4bdc7a65c66322
         dest-filename: pnpm-standalone
+        only-arches: [aarch64]
+      - type: archive
+        url: https://github.com/electron/electron/releases/download/v41.7.0/electron-v41.7.0-linux-x64.zip
+        sha256: f3bf38de05ce8fafe1039251ebfaa75fd090b0a13cd861322ccd2f6db4d6bb82
+        dest: electron-prebuilt
+        only-arches: [x86_64]
+      - type: archive
+        url: https://github.com/electron/electron/releases/download/v41.7.0/electron-v41.7.0-linux-arm64.zip
+        sha256: c8d4294e052bc83b840523237538ae131d8e387243c25e763f0d14fabffa37c2
+        dest: electron-prebuilt
         only-arches: [aarch64]

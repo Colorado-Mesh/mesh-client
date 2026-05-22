@@ -82,12 +82,22 @@ function checkManifestAppId() {
   return violations;
 }
 
+function electronVersionFromPackage() {
+  if (!fs.existsSync(PKG)) return null;
+  const pkg = JSON.parse(fs.readFileSync(PKG, 'utf8'));
+  const spec = pkg.devDependencies?.electron ?? pkg.dependencies?.electron;
+  if (typeof spec !== 'string') return null;
+  const m = spec.match(/(\d+\.\d+\.\d+)/);
+  return m?.[1] ?? null;
+}
+
 function checkManifestBranchAndElectronPayload() {
   const violations = [];
   if (!fs.existsSync(MANIFEST)) return violations;
 
   const yaml = fs.readFileSync(MANIFEST, 'utf8');
   const rel = path.relative(ROOT, MANIFEST);
+  const electronVersion = electronVersionFromPackage();
 
   if (!/^branch:\s*stable\s*$/m.test(yaml)) {
     violations.push({
@@ -96,11 +106,30 @@ function checkManifestBranchAndElectronPayload() {
     });
   }
 
-  if (!yaml.includes('node_modules/electron/dist /app/lib/mesh-client/electron')) {
+  if (!yaml.includes('electron-prebuilt /app/lib/mesh-client/electron')) {
     violations.push({
       file: rel,
-      message: 'manifest must copy node_modules/electron/dist into the app (zypak needs Chromium)',
+      message: 'manifest must install electron-prebuilt into the app (zypak needs Chromium)',
     });
+  }
+
+  if (electronVersion) {
+    const releaseUrlPrefix = `electron/electron/releases/download/v${electronVersion}/`;
+    if (!yaml.includes(releaseUrlPrefix)) {
+      violations.push({
+        file: rel,
+        message: `manifest electron archive URLs must match package.json electron version ${electronVersion}`,
+      });
+    }
+    if (
+      !yaml.includes(`electron-v${electronVersion}-linux-x64.zip`) ||
+      !yaml.includes(`electron-v${electronVersion}-linux-arm64.zip`)
+    ) {
+      violations.push({
+        file: rel,
+        message: `manifest must vendor electron-v${electronVersion}-linux-{x64,arm64}.zip (offline; pnpm --ignore-scripts)`,
+      });
+    }
   }
 
   if (!yaml.includes('resources /app/lib/mesh-client/')) {
