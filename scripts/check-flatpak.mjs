@@ -181,6 +181,28 @@ function checkWrapperLaunchPaths() {
     });
   }
 
+  if (!sh.includes('MESH_CLIENT_DISABLE_GPU')) {
+    violations.push({
+      file: rel,
+      message:
+        'wrapper must set MESH_CLIENT_DISABLE_GPU for vmwgfx (VMware) stacks where Mesa DRI is missing',
+    });
+  }
+
+  if (!sh.includes('DRIVER=vmwgfx')) {
+    violations.push({
+      file: rel,
+      message: 'wrapper must detect vmwgfx via /sys/class/drm card device uevent',
+    });
+  }
+
+  if (!sh.includes('MESH_CLIENT_ENABLE_GPU')) {
+    violations.push({
+      file: rel,
+      message: 'wrapper must allow MESH_CLIENT_ENABLE_GPU=1 to opt out of vmwgfx GPU disable',
+    });
+  }
+
   return violations;
 }
 

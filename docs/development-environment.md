@@ -195,6 +195,8 @@ flatpak install --user ./org.coloradomesh.MeshClient-aarch64.flatpak
 flatpak run org.coloradomesh.MeshClient
 ```
 
+**VMware / `vmwgfx: driver missing`:** On VMware guests the Flatpak wrapper auto-sets `MESH_CLIENT_DISABLE_GPU=1` when the `vmwgfx` DRM driver is present (avoids GPU-process crashes). To force hardware acceleration anyway: `MESH_CLIENT_ENABLE_GPU=1 flatpak run org.coloradomesh.MeshClient`. To always disable GPU on other stacks: `MESH_CLIENT_DISABLE_GPU=1 flatpak run ...`.
+
 **Lint the manifest** before submitting to Flathub:
 
 ```bash
