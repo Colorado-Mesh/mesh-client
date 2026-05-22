@@ -151,7 +151,8 @@
       "stale": "Rafferma",
       "reconnecting": "La riconnessione"
     },
-    "nodeLabel": "Nodo: {{name}}"
+    "nodeLabel": "Nodo: {{name}}",
+    "takClientLost": "Cliente TAK PERSO"
   },
   "toasts": {
     "firmwareAvailable": "Aggiornamento firmware disponibile: v{{version}}",

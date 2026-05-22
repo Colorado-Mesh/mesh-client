@@ -23,6 +23,7 @@ const {
     connectAutomatic: vi.fn(),
     disconnect: vi.fn(),
     mqttStatus: null,
+    mqttConnectionLoss: false,
     getPickerStyleNodeLabel: vi.fn((num) => `!${num.toString(16)}`),
     getFullNodeLabel: vi.fn(),
     sendText: vi.fn().mockResolvedValue(undefined),
@@ -54,6 +55,7 @@ const {
     connectAutomatic: vi.fn(),
     disconnect: vi.fn(),
     mqttStatus: null,
+    mqttConnectionLoss: false,
     getPickerStyleNodeLabel: vi.fn((num) => `!${num.toString(16)}`),
     getFullNodeLabel: vi.fn(),
     sendText: vi.fn().mockResolvedValue(undefined),
@@ -145,6 +147,8 @@ vi.mock('./hooks/useMeshCore', () => ({
 vi.mock('./hooks/useTakServer', () => ({
   useTakServer: () => ({
     status: { running: false, port: 8087 },
+    error: null,
+    takClientLoss: false,
     start: vi.fn().mockResolvedValue(undefined),
     stop: vi.fn().mockResolvedValue(undefined),
   }),
@@ -358,6 +362,38 @@ describe('App accessibility', () => {
       'href',
       'https://coloradomesh.org/',
     );
+  });
+
+  it('shows pulsing red MQTT header when connection lost unexpectedly', async () => {
+    useDeviceMock.mockReturnValue({
+      ...createDeviceMock(),
+      mqttStatus: 'disconnected',
+      mqttConnectionLoss: true,
+    });
+
+    render(<App />);
+
+    const mqttLabel = await screen.findByLabelText('MQTT error');
+    expect(mqttLabel).toHaveClass('animate-pulse');
+    expect(mqttLabel).toHaveClass('text-red-400');
+  });
+
+  it('shows pulsing red device status when reconnecting after loss', async () => {
+    useDeviceMock.mockReturnValue({
+      ...createDeviceMock(),
+      state: {
+        status: 'reconnecting',
+        myNodeNum: 0x12345678,
+        connectionType: 'ble',
+        connectionLoss: true,
+      },
+    });
+
+    render(<App />);
+
+    const deviceLabel = await screen.findByLabelText('Reconnecting (BLE)');
+    expect(deviceLabel).toHaveClass('animate-pulse');
+    expect(deviceLabel).toHaveClass('text-red-400');
   });
 
   it('renders the queue badge in meshcore mode when queueStatus is available', async () => {

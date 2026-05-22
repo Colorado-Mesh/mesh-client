@@ -151,7 +151,8 @@
       "stale": "goût de vieux",
       "reconnecting": "Reconnexion"
     },
-    "nodeLabel": "Nœud : {{name}}"
+    "nodeLabel": "Nœud : {{name}}",
+    "takClientLost": "TAK client perdu"
   },
   "toasts": {
     "firmwareAvailable": "Mise à jour du micrologiciel disponible : v{{version}}",

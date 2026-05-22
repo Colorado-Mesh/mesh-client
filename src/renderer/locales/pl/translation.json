@@ -151,7 +151,8 @@
       "stale": "Nadpsute",
       "reconnecting": "Ponowne podłączenie"
     },
-    "nodeLabel": "Węzeł: {{name}}"
+    "nodeLabel": "Węzeł: {{name}}",
+    "takClientLost": "Klient TAK UTRACONY"
   },
   "toasts": {
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",

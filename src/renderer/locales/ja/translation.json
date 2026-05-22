@@ -151,7 +151,8 @@
       "stale": "古い",
       "reconnecting": "再接続中"
     },
-    "nodeLabel": "ノード: {{name}}"
+    "nodeLabel": "ノード: {{name}}",
+    "takClientLost": "TAKクライアントを失いました"
   },
   "toasts": {
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",

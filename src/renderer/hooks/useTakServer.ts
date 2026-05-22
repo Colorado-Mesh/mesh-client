@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
@@ -16,6 +16,7 @@ interface UseTakServerResult {
   settings: TAKSettings;
   isLoading: boolean;
   error: string | null;
+  takClientLoss: boolean;
   setSettings: (s: TAKSettings) => void;
   start: (s: TAKSettings) => Promise<void>;
   stop: () => Promise<void>;
@@ -33,6 +34,12 @@ export function useTakServer(): UseTakServerResult {
   const [settings, setSettings] = useState<TAKSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [takClientLoss, setTakClientLoss] = useState(false);
+  const statusRef = useRef(status);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   useEffect(() => {
     void window.electronAPI.tak
@@ -52,12 +59,15 @@ export function useTakServer(): UseTakServerResult {
       setStatus(s);
       if (s.error) setError(s.error);
       else setError(null);
+      if (!s.running) setTakClientLoss(false);
     });
     const unsubConnected = window.electronAPI.tak.onClientConnected((client) => {
       setClients((prev) => [...prev, client]);
+      setTakClientLoss(false);
     });
     const unsubDisconnected = window.electronAPI.tak.onClientDisconnected((id) => {
       setClients((prev) => prev.filter((c) => c.id !== id));
+      if (statusRef.current.running) setTakClientLoss(true);
     });
 
     return () => {
@@ -70,6 +80,7 @@ export function useTakServer(): UseTakServerResult {
   const start = async (s: TAKSettings) => {
     setIsLoading(true);
     setError(null);
+    setTakClientLoss(false);
     try {
       await window.electronAPI.tak.start(s);
       setSettings(s);
@@ -84,6 +95,7 @@ export function useTakServer(): UseTakServerResult {
   const stop = async () => {
     setIsLoading(true);
     setError(null);
+    setTakClientLoss(false);
     try {
       await window.electronAPI.tak.stop();
     } catch (err) {
@@ -118,7 +130,7 @@ export function useTakServer(): UseTakServerResult {
     } catch (err) {
       console.debug(
         '[TakServer] regenerateCertificates error:',
-        err instanceof Error ? err.message : err,
+        err instanceof Error ? err.message : String(err),
       );
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -132,6 +144,7 @@ export function useTakServer(): UseTakServerResult {
     settings,
     isLoading,
     error,
+    takClientLoss,
     setSettings,
     start,
     stop,

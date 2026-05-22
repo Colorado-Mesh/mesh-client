@@ -151,7 +151,8 @@
       "stale": "Basi",
       "reconnecting": "Menghubungkan kembali"
     },
-    "nodeLabel": "Simpul: {{name}}"
+    "nodeLabel": "Simpul: {{name}}",
+    "takClientLost": "Klien TAK HILANG"
   },
   "toasts": {
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",

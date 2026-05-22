@@ -151,7 +151,8 @@
       "stale": "Bayat",
       "reconnecting": "Yeniden bağlanılıyor"
     },
-    "nodeLabel": "Düğüm: {{name}}"
+    "nodeLabel": "Düğüm: {{name}}",
+    "takClientLost": "TAK müşterisi kaybetti"
   },
   "toasts": {
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",
