@@ -114,9 +114,8 @@ function checkManifestBranchAndElectronPayload() {
   }
 
   if (electronVersion) {
-    const escaped = electronVersion.replace(/\./g, '\\.');
-    const urlPattern = new RegExp(`electron/electron/releases/download/v${escaped}/`);
-    if (!urlPattern.test(yaml)) {
+    const releaseUrlPrefix = `electron/electron/releases/download/v${electronVersion}/`;
+    if (!yaml.includes(releaseUrlPrefix)) {
       violations.push({
         file: rel,
         message: `manifest electron archive URLs must match package.json electron version ${electronVersion}`,
