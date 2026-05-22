@@ -93,49 +93,55 @@ describe('useMeshCore importContacts', () => {
   });
 
   it('preserves last_heard on re-import when the node already exists (no stale nodesRef)', async () => {
-    vi.mocked(window.electronAPI.meshcore.openJsonFile).mockResolvedValue(
-      JSON.stringify([
-        {
-          name: 'First name',
-          public_key: HEX32,
-          latitude: 40,
-          longitude: -74,
-        },
-      ]),
-    );
+    const importMs = new Date('2026-05-20T12:00:00Z').getTime();
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(importMs);
+    try {
+      vi.mocked(window.electronAPI.meshcore.openJsonFile).mockResolvedValue(
+        JSON.stringify([
+          {
+            name: 'First name',
+            public_key: HEX32,
+            latitude: 40,
+            longitude: -74,
+          },
+        ]),
+      );
 
-    const { result } = renderHook(() => useMeshCore());
+      const { result } = renderHook(() => useMeshCore());
 
-    await act(async () => {
-      await result.current.importContacts();
-    });
+      await act(async () => {
+        await result.current.importContacts();
+      });
 
-    const firstHeard = result.current.nodes.get(IMPORT_NODE_ID)?.last_heard;
-    expect(firstHeard).toBeDefined();
-    expect(firstHeard).toBeGreaterThan(1_000_000_000);
+      const firstHeard = result.current.nodes.get(IMPORT_NODE_ID)?.last_heard;
+      expect(firstHeard).toBeDefined();
+      expect(firstHeard).toBeGreaterThan(1_000_000_000);
 
-    vi.mocked(window.electronAPI.meshcore.openJsonFile).mockResolvedValue(
-      JSON.stringify([
-        {
-          name: 'Second name',
-          public_key: HEX32,
-        },
-      ]),
-    );
-    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockClear();
+      vi.mocked(window.electronAPI.meshcore.openJsonFile).mockResolvedValue(
+        JSON.stringify([
+          {
+            name: 'Second name',
+            public_key: HEX32,
+          },
+        ]),
+      );
+      vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockClear();
 
-    await act(async () => {
-      await result.current.importContacts();
-    });
+      await act(async () => {
+        await result.current.importContacts();
+      });
 
-    expect(result.current.nodes.get(IMPORT_NODE_ID)?.long_name).toBe('Second name');
-    expect(result.current.nodes.get(IMPORT_NODE_ID)?.last_heard).toBe(firstHeard);
+      expect(result.current.nodes.get(IMPORT_NODE_ID)?.long_name).toBe('Second name');
+      expect(result.current.nodes.get(IMPORT_NODE_ID)?.last_heard).toBe(firstHeard);
 
-    await waitFor(() => {
-      expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalled();
-    });
+      await waitFor(() => {
+        expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalled();
+      });
 
-    const call = vi.mocked(window.electronAPI.db.saveMeshcoreContact).mock.calls[0][0];
-    expect(call.last_advert).toBe(firstHeard);
+      const call = vi.mocked(window.electronAPI.db.saveMeshcoreContact).mock.calls[0][0];
+      expect(call.last_advert).toBe(firstHeard);
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 });
