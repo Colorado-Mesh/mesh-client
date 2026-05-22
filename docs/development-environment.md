@@ -195,7 +195,13 @@ flatpak install --user ./org.coloradomesh.MeshClient-aarch64.flatpak
 flatpak run org.coloradomesh.MeshClient
 ```
 
-**Flatpak GPU / `vmwgfx: driver missing` (aarch64):** On **aarch64** bundles the wrapper defaults to software rendering (`MESH_CLIENT_DISABLE_GPU=1` and Electron `--disable-gpu`) because the sandbox usually cannot see host DRM sysfs and drivers like VMware `vmwgfx` fail inside the bubble. x86_64 builds are unchanged unless you set the env vars yourself. To try hardware acceleration on ARM: `MESH_CLIENT_ENABLE_GPU=1 flatpak run org.coloradomesh.MeshClient`. To force GPU on: `MESH_CLIENT_DISABLE_GPU=0 flatpak run ...`.
+**Flatpak graphics:** **aarch64** and **x86_64** bundles use the same GPU stack (`--device=all`, Wayland/X11). Do **not** enable or rely on VMware `vmwgfx` inside the guest to “fix” the app — the Flatpak sandbox often cannot use that DRI driver (`vmwgfx: driver missing`, GPU-process crash). On **virtualized** hosts (VMware, etc.), use software rendering instead:
+
+```bash
+MESH_CLIENT_DISABLE_GPU=1 flatpak run org.coloradomesh.MeshClient
+```
+
+When `/sys/class/drm` is visible to the app, the wrapper auto-detects `vmwgfx` and sets `MESH_CLIENT_DISABLE_GPU=1` (same on both arches). If auto-detection does not run in your VM, set the variable as above. To force hardware acceleration despite vmwgfx: `MESH_CLIENT_ENABLE_GPU=1 flatpak run ...`. To skip auto-detection but keep GPU: `MESH_CLIENT_DISABLE_GPU=0 flatpak run ...`.
 
 **Lint the manifest** before submitting to Flathub:
 

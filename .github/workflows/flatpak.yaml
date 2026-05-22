@@ -22,10 +22,8 @@ jobs:
         include:
           - arch: x86_64
             runner: ubuntu-latest
-            bundle: org.coloradomesh.MeshClient-x86_64.flatpak
           - arch: aarch64
             runner: ubuntu-24.04-arm
-            bundle: org.coloradomesh.MeshClient-aarch64.flatpak
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08
       options: --privileged
@@ -39,10 +37,11 @@ jobs:
           pip3 install "${FBTOOLS}@6f3f08759ac9859492b728f57f5163bf584c47ff#subdirectory=node"
           flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
 
-      # flatpak/flatpak-github-actions v6
+      # flatpak/flatpak-github-actions v6 appends -${arch} to the artifact name on upload;
+      # keep bundle arch-agnostic here to avoid org.coloradomesh.MeshClient-aarch64-aarch64.flatpak.
       - uses: flatpak/flatpak-github-actions/flatpak-builder@401fe28a8384095fc1531b9d320b292f0ee45adb
         with:
-          bundle: ${{ matrix.bundle }}
+          bundle: org.coloradomesh.MeshClient.flatpak
           manifest-path: org.coloradomesh.MeshClient.yml
           arch: ${{ matrix.arch }}
           branch: stable
@@ -62,7 +61,21 @@ jobs:
         with:
           pattern: 'org.coloradomesh.MeshClient-*'
           path: flatpak-dist
-          merge-multiple: true
+
+      - name: Flatten arch-suffixed bundles for release
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for dir in flatpak-dist/*/; do
+            name=$(basename "$dir")
+            flatpak=$(find "$dir" -maxdepth 1 -name '*.flatpak' -print -quit)
+            if [ -z "${flatpak:-}" ]; then
+              echo "no .flatpak in ${dir}" >&2
+              exit 1
+            fi
+            mv "$flatpak" "flatpak-dist/${name}"
+            rmdir "$dir"
+          done
 
       - name: Attach Flatpak to release
         # softprops/action-gh-release v2
