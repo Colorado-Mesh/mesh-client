@@ -200,6 +200,66 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
     });
   });
 
+  describe('connack timeout during connect', () => {
+    it('schedules JWT token refresh after error then close while status is disconnected', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0);
+      const mqttMod = await import('mqtt');
+      const onToken = vi.fn();
+      adapter.on(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, onToken);
+      adapter.on('error', () => {});
+
+      const v1Username = `v1_${'A'.repeat(64)}`;
+      const expiresAt = Date.now() + 60 * 60 * 1000;
+      adapter.connect({
+        ...BASE_SETTINGS,
+        username: v1Username,
+        tokenExpiresAt: expiresAt,
+      });
+
+      const client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+        on: ReturnType<typeof vi.fn>;
+      };
+      expect(adapter.getStatus()).toBe('connecting');
+
+      const errorHits = client.on.mock.calls.filter((c: unknown[]) => c[0] === 'error');
+      const errorFn = errorHits[errorHits.length - 1]?.[1] as (err: Error) => void;
+      errorFn(new Error('connack timeout'));
+      expect(adapter.getStatus()).toBe('disconnected');
+
+      const closeHits = client.on.mock.calls.filter((c: unknown[]) => c[0] === 'close');
+      const closeFn = closeHits[closeHits.length - 1]?.[1] as () => void;
+      closeFn();
+
+      expect(onToken).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(60_000 - 1);
+      expect(onToken).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(2);
+      expect(onToken).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not schedule reconnect after intentional disconnect()', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0);
+      const mqttMod = await import('mqtt');
+      const onToken = vi.fn();
+      adapter.on(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, onToken);
+
+      const expiresAt = Date.now() + 60 * 60 * 1000;
+      adapter.connect({ ...BASE_SETTINGS, tokenExpiresAt: expiresAt });
+
+      const client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+        on: ReturnType<typeof vi.fn>;
+      };
+      const closeHits = client.on.mock.calls.filter((c: unknown[]) => c[0] === 'close');
+      const closeFn = closeHits[closeHits.length - 1]?.[1] as () => void;
+
+      adapter.disconnect();
+      closeFn();
+
+      vi.advanceTimersByTime(120_000);
+      expect(onToken).not.toHaveBeenCalled();
+    });
+  });
+
   describe('updateToken with pendingReconnect', () => {
     it('clears pendingReconnect and calls _doConnect', () => {
       const expiresAt = Date.now() + 60 * 60 * 1000;

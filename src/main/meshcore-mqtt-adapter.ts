@@ -456,8 +456,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         `[MeshCore MQTT] connection closed after ${Math.round(sessionDuration / 1000)}s (disconnect #${this.lastConnected ? this.disconnectCount : 'first'})`,
         new Date().toISOString(),
       );
-      const skipReconnect =
-        this.status === 'disconnected' || this.status === 'error' || !this.lastSettings;
+      // Intentional disconnect() clears lastSettings; do not treat transient `disconnected`
+      // from the error handler (connack/keepalive during `connecting`) as user-initiated.
+      const skipReconnect = this.status === 'error' || !this.lastSettings;
       if (this.status === 'connected' || this.status === 'connecting') {
         this.setStatus('disconnected');
       }
