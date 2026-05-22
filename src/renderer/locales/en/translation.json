@@ -140,6 +140,7 @@
     "meshtasticQueueTooltip": "Transmit queue: packets waiting to be sent. Green = low, amber = filling up, red = congested.",
     "meshcoreQueueTooltip": "Because MeshCore sends messages rapidly, and we poll every 30 seconds, this should always be 0. If not 0, there is congestion.",
     "takRunning": "TAK running",
+    "takClientLost": "TAK client lost",
     "takStopped": "TAK stopped",
     "takServerRunning": "TAK server running",
     "takServerStopped": "TAK server stopped",

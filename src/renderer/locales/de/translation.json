@@ -150,7 +150,8 @@
       "stale": "a",
       "reconnecting": "Ankommen"
     },
-    "nodeLabel": "Knoten: {{name}}"
+    "nodeLabel": "Knoten: {{name}}",
+    "takClientLost": "TAK-CLIENT VERLOREN"
   },
   "toasts": {
     "firmwareAvailable": "Firmware-Update verfügbar: v{{version}}",

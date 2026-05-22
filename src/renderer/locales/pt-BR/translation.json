@@ -151,7 +151,8 @@
       "stale": "Rançoso",
       "reconnecting": "A restabelecer ligação"
     },
-    "nodeLabel": "Nó: {{name}}"
+    "nodeLabel": "Nó: {{name}}",
+    "takClientLost": "Cliente TAK PERDIDO"
   },
   "toasts": {
     "firmwareAvailable": "Atualização de firmware disponível: v{{version}}",

@@ -151,7 +151,8 @@
       "stale": "Muf",
       "reconnecting": "Opnieuw verbinding maken"
     },
-    "nodeLabel": "Knooppunt: {{name}}"
+    "nodeLabel": "Knooppunt: {{name}}",
+    "takClientLost": "TAK client verloren"
   },
   "toasts": {
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
@@ -1937,15 +1938,16 @@ export default function ConnectionPanel({
             />
           </div>
           <button
-            onClick={() =>
+            onClick={() => {
+              markMqttUserDisconnect();
               window.electronAPI.mqtt
                 .disconnect(protocol === 'meshcore' ? 'meshcore' : 'meshtastic')
                 .catch((err: unknown) => {
                   console.warn(
                     '[ConnectionPanel] mqtt.disconnect failed: ' + errLikeToLogString(err),
                   );
-                })
-            }
+                });
+            }}
             className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
           >
             {t('connectionPanel.disconnectMqtt')}
@@ -2415,7 +2417,8 @@ export default function ConnectionPanel({
               <button
                 type="button"
                 aria-label={t('connectionPanel.cancelMqttConnect')}
-                onClick={() =>
+                onClick={() => {
+                  markMqttUserDisconnect();
                   window.electronAPI.mqtt
                     .disconnect(protocol === 'meshcore' ? 'meshcore' : 'meshtastic')
                     .catch((err: unknown) => {
@@ -2423,8 +2426,8 @@ export default function ConnectionPanel({
                         '[ConnectionPanel] mqtt.disconnect (cancel) failed: ' +
                           errLikeToLogString(err),
                       );
-                    })
-                }
+                    });
+                }}
                 className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-500 hover:bg-gray-700"
               >
                 {t('connectionPanel.cancelMqttConnect')}
@@ -2514,6 +2517,7 @@ export default function ConnectionPanel({
               onDisconnect(),
               new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
             ]);
+            markMqttUserDisconnect();
             void window.electronAPI.mqtt.disconnect();
             await window.electronAPI.quitApp();
           }}
@@ -2646,6 +2650,7 @@ export default function ConnectionPanel({
         <button
           type="button"
           onClick={() => {
+            markMqttUserDisconnect();
             void window.electronAPI.mqtt.disconnect();
             void window.electronAPI.quitApp();
           }}

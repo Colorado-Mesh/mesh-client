@@ -103,6 +103,7 @@ import {
 } from '../lib/meshcoreUtils';
 import { MeshcoreWebBluetoothConnection } from '../lib/meshcoreWebBluetoothConnection';
 import { getMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
+import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
 import { lastHeardToUnixSeconds, mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { parseTcpAddress } from '../lib/parseTcpAddress';
@@ -1162,6 +1163,7 @@ export function useMeshCore() {
   });
   const [environmentTelemetry, setEnvironmentTelemetry] = useState<EnvironmentTelemetryPoint[]>([]);
   const [mqttStatus, setMqttStatus] = useState<MQTTStatus>('disconnected');
+  const [mqttConnectionLoss, setMqttConnectionLoss] = useState(false);
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
 
   const connRef = useRef<MeshCoreConnection | null>(null);
@@ -1462,9 +1464,17 @@ export function useMeshCore() {
   useEffect(() => {
     return window.electronAPI.mqtt.onStatus(({ status: s, protocol }) => {
       if (protocol !== 'meshcore') return;
+      const prev = mqttStatusRef.current;
       const st = s;
       mqttStatusRef.current = st;
       setMqttStatus(st);
+      if (st === 'connected') {
+        setMqttConnectionLoss(false);
+      } else if (consumeMqttUserDisconnect()) {
+        setMqttConnectionLoss(false);
+      } else if (prev === 'connected') {
+        setMqttConnectionLoss(true);
+      }
     });
   }, []);
 
@@ -3154,7 +3164,15 @@ export function useMeshCore() {
         ipcNobleRef.current = null;
         meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();
         setMeshcorePingRouteReadyEpoch((e) => e + 1);
-        setState((prev) => ({ ...prev, status: 'disconnected' }));
+        setState((prev) => {
+          const wasOperational =
+            prev.status === 'connected' || prev.status === 'configured' || prev.status === 'stale';
+          return {
+            ...prev,
+            status: 'disconnected',
+            connectionLoss: wasOperational,
+          };
+        });
         setQueueStatus(null);
         // Clear pending contacts refresh timer
         if (meshcoreContactsRefreshTimerRef.current) {
@@ -3305,7 +3323,12 @@ export function useMeshCore() {
       setState((prev) => ({ ...prev, status: 'connected' }));
 
       const myNodeId = pubkeyToNodeId(info.publicKey);
-      setState((prev) => ({ ...prev, myNodeNum: myNodeId, status: 'configured' }));
+      setState((prev) => ({
+        ...prev,
+        myNodeNum: myNodeId,
+        status: 'configured',
+        connectionLoss: false,
+      }));
       if (getStoredMeshProtocol() === 'meshcore') {
         useDiagnosticsStore.getState().migrateForeignLoraFromZero(myNodeId);
       }
@@ -3475,6 +3498,7 @@ export function useMeshCore() {
         status: 'connecting',
         myNodeNum: 0,
         connectionType: type === 'tcp' ? 'http' : type,
+        connectionLoss: false,
       });
 
       if (type === 'ble') bleConnectInProgressRef.current = true;
@@ -3819,7 +3843,12 @@ export function useMeshCore() {
       lastSerialPortId?: string | null,
     ) => {
       if (type === 'serial') {
-        setState({ status: 'connecting', myNodeNum: 0, connectionType: 'serial' });
+        setState({
+          status: 'connecting',
+          myNodeNum: 0,
+          connectionType: 'serial',
+          connectionLoss: false,
+        });
         let serialPort: SerialPort | null = null;
         let serialConn: MeshCoreConnection | null = null;
         try {
@@ -6114,6 +6143,7 @@ export function useMeshCore() {
       clearCliHistory,
       manualAddContacts,
       mqttStatus,
+      mqttConnectionLoss,
       selfNodeId: state.myNodeNum,
       getNodes,
       getFullNodeLabel,
@@ -6234,6 +6264,7 @@ export function useMeshCore() {
       clearCliHistory,
       manualAddContacts,
       mqttStatus,
+      mqttConnectionLoss,
       queueStatus,
       telemetry,
       signalTelemetry,

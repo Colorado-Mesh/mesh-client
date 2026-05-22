@@ -150,7 +150,8 @@
       "stale": "陈旧",
       "reconnecting": "重新连接"
     },
-    "nodeLabel": "节点： {{name}}"
+    "nodeLabel": "节点： {{name}}",
+    "takClientLost": "TAK客户丢失"
   },
   "toasts": {
     "firmwareAvailable": "固件更新可用： v {{version}}",

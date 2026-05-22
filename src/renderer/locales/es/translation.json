@@ -151,7 +151,8 @@
       "stale": "(Rancio)",
       "reconnecting": "Reconectando"
     },
-    "nodeLabel": "Nodo: {{name}}"
+    "nodeLabel": "Nodo: {{name}}",
+    "takClientLost": "Cliente TAK PERDIDO"
   },
   "toasts": {
     "firmwareAvailable": "Actualización de firmware disponible: v{{version}}",

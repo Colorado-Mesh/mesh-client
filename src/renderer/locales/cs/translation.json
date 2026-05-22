@@ -151,7 +151,8 @@
       "stale": "Zatuchlý",
       "reconnecting": "Opětovné připojení"
     },
-    "nodeLabel": "Uzel: {{name}}"
+    "nodeLabel": "Uzel: {{name}}",
+    "takClientLost": "Ztráta klienta TAK"
   },
   "toasts": {
     "firmwareAvailable": "Dostupná aktualizace firmwaru: v{{version}}",

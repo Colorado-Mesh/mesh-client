@@ -47,6 +47,14 @@ import {
 } from './lazyTabPanels';
 import { getAppSettingsRaw } from './lib/appSettingsStorage';
 import { playMessageNotification } from './lib/chatNotifications';
+import {
+  deviceHeaderVariant,
+  headerDotClass,
+  headerIconClass,
+  headerTextClass,
+  mqttHeaderVariant,
+  takHeaderVariant,
+} from './lib/connectionHeaderStatus';
 import { DEFAULT_APP_SETTINGS_SHARED } from './lib/defaultAppSettings';
 import {
   fetchLatestMeshCoreRelease,
@@ -77,7 +85,7 @@ import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
-import type { ChatMessage, DeviceState, MeshProtocol, MQTTSettings, MQTTStatus } from './lib/types';
+import type { ChatMessage, DeviceState, MeshProtocol, MQTTSettings } from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
@@ -102,15 +110,6 @@ const TAB_CAPABILITY_REQUIREMENTS: (keyof ProtocolCapabilities | undefined)[] = 
   undefined, // RF
   undefined, // Graph
 ];
-
-const STATUS_COLOR: Record<string, string> = {
-  disconnected: 'bg-red-500',
-  connecting: 'bg-yellow-500 animate-pulse',
-  connected: 'bg-blue-500',
-  configured: 'bg-green-500',
-  stale: 'bg-yellow-500 animate-pulse',
-  reconnecting: 'bg-orange-500 animate-pulse',
-};
 
 function deviceConnectionStatusLabel(
   t: ReturnType<typeof useTranslation>['t'],
@@ -271,27 +270,23 @@ function DialogLazyFallback() {
   );
 }
 
-function TakStatusIcon({ running }: { running: boolean }) {
-  const color = running ? 'text-brand-green' : 'text-gray-400';
+function TakStatusIcon({ variant }: { variant: ReturnType<typeof takHeaderVariant> }) {
   return (
-    <svg aria-hidden="true" className={`h-4 w-4 ${color}`} viewBox="0 0 24 24" fill="currentColor">
+    <svg
+      aria-hidden="true"
+      className={`h-4 w-4 ${headerIconClass(variant)}`}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
       <path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M3.05,13H1V11H3.05C3.5,6.83 6.83,3.5 11,3.05V1H13V3.05C17.17,3.5 20.5,6.83 20.95,11H23V13H20.95C20.5,17.17 17.17,20.5 13,20.95V23H11V20.95C6.83,20.5 3.5,17.17 3.05,13M12,5A7,7 0 0,0 5,12A7,7 0 0,0 12,19A7,7 0 0,0 19,12A7,7 0 0,0 12,5Z" />
     </svg>
   );
 }
 
-function MqttGlobeIcon({ status }: { status: MQTTStatus }) {
-  const color =
-    status === 'connected'
-      ? 'text-brand-green'
-      : status === 'connecting'
-        ? 'text-yellow-400'
-        : status === 'error'
-          ? 'text-red-400'
-          : 'text-gray-400';
+function MqttGlobeIcon({ variant }: { variant: ReturnType<typeof mqttHeaderVariant> }) {
   return (
     <svg
-      className={`h-4 w-4 ${color}`}
+      className={`h-4 w-4 ${headerIconClass(variant)}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -594,7 +589,7 @@ export default function App() {
 
   const meshtasticDevice = useDevice();
   const meshcoreDevice = useMeshCore();
-  const { status: takStatus } = useTakServer();
+  const { status: takStatus, error: takError, takClientLoss } = useTakServer();
   const contactGroupsSelfId =
     protocol === 'meshcore'
       ? meshcoreDevice.selfNodeId
@@ -1427,8 +1422,12 @@ export default function App() {
     setChatCompactMode(compact);
   }, []);
 
-  const statusColor = STATUS_COLOR[device.state.status] ?? 'bg-gray-500';
-
+  const mqttLoss = device.mqttConnectionLoss ?? false;
+  const mqttVariant = mqttHeaderVariant(device.mqttStatus ?? 'disconnected', mqttLoss);
+  const deviceLoss = device.state.connectionLoss ?? false;
+  const deviceVariant = deviceHeaderVariant(device.state.status, deviceLoss);
+  const takServerError = !takStatus.running && !!(takStatus.error || takError);
+  const takVariant = takHeaderVariant(takStatus.running, takServerError, takClientLoss);
   const queueUsed = device.queueStatus ? device.queueStatus.maxlen - device.queueStatus.free : 0;
   const queueShowBadge = device.queueStatus != null;
   const queueColorClass =
@@ -1574,66 +1573,58 @@ export default function App() {
           <div className="ml-auto flex min-w-0 shrink-0 items-center justify-end gap-2">
             {capabilities.hasTakPanel && (
               <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
-                <TakStatusIcon running={takStatus.running} />
+                <TakStatusIcon variant={takVariant} />
                 <span
                   aria-label={
-                    takStatus.running ? t('app.takServerRunning') : t('app.takServerStopped')
+                    takClientLoss && takStatus.running
+                      ? t('app.takClientLost')
+                      : takStatus.running
+                        ? t('app.takServerRunning')
+                        : t('app.takServerStopped')
                   }
-                  className={`text-xs ${takStatus.running ? 'text-brand-green' : 'text-gray-400'}`}
+                  className={`text-xs ${headerTextClass(takVariant)}`}
                 >
-                  {takStatus.running ? t('app.takRunning') : t('app.takStopped')}
+                  {takClientLoss && takStatus.running
+                    ? t('app.takClientLost')
+                    : takStatus.running
+                      ? t('app.takRunning')
+                      : t('app.takStopped')}
                 </span>
               </div>
             )}
             <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
-              <MqttGlobeIcon status={device.mqttStatus ?? 'disconnected'} />
+              <MqttGlobeIcon variant={mqttVariant} />
               <span
                 aria-label={
                   device.mqttStatus === 'connected'
                     ? t('app.mqttConnected')
                     : device.mqttStatus === 'connecting'
                       ? t('app.mqttConnecting')
-                      : device.mqttStatus === 'error'
+                      : device.mqttStatus === 'error' || mqttLoss
                         ? t('app.mqttError')
                         : t('app.mqttDisconnected')
                 }
-                className={`text-xs ${
-                  device.mqttStatus === 'connected'
-                    ? 'text-brand-green'
-                    : device.mqttStatus === 'connecting'
-                      ? 'animate-pulse text-yellow-400'
-                      : device.mqttStatus === 'error'
-                        ? 'text-red-400'
-                        : 'text-gray-400'
-                }`}
+                className={`text-xs ${headerTextClass(mqttVariant)}`}
               >
                 {device.mqttStatus === 'connected'
                   ? t('app.mqttConnected')
                   : device.mqttStatus === 'connecting'
                     ? t('app.mqttConnecting')
-                    : device.mqttStatus === 'error'
+                    : device.mqttStatus === 'error' || mqttLoss
                       ? t('app.mqttError')
                       : t('app.mqttDisconnected')}
               </span>
             </div>
             {isConnectedOrOperational && <LinkIcon className="h-4 w-4" aria-hidden="true" />}
             <div
-              className={`h-2.5 w-2.5 rounded-full ${statusColor}`}
+              className={`h-2.5 w-2.5 rounded-full ${headerDotClass(deviceVariant)}`}
               aria-hidden="true"
               title={deviceConnectionStatusLabel(t, device.state.status)}
             />
             <div role="status" aria-live="polite" aria-atomic="true">
               <span
                 aria-label={`${deviceConnectionStatusLabel(t, device.state.status)}${device.state.connectionType ? ` (${device.state.connectionType.toUpperCase()})` : ''}`}
-                className={`text-xs ${
-                  device.state.status === 'connecting'
-                    ? 'animate-pulse text-yellow-400'
-                    : device.state.status === 'stale'
-                      ? 'animate-pulse text-yellow-400'
-                      : device.state.status === 'reconnecting'
-                        ? 'animate-pulse text-orange-400'
-                        : 'text-muted'
-                }`}
+                className={`text-xs ${headerTextClass(deviceVariant)}`}
               >
                 {deviceConnectionStatusLabel(t, device.state.status)}
                 {device.state.connectionType

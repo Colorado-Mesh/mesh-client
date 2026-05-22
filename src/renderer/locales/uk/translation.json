@@ -151,7 +151,8 @@
       "stale": "Несвіжий",
       "reconnecting": "Повторне під’єднання"
     },
-    "nodeLabel": "Вузол: {{name}}"
+    "nodeLabel": "Вузол: {{name}}",
+    "takClientLost": "Клієнт TAK втрачений"
   },
   "toasts": {
     "firmwareAvailable": "Доступне оновлення прошивки: v{{version}}",

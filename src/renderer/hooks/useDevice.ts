@@ -50,6 +50,7 @@ import {
   mergeMeshtasticTraceRouteIntoResultsMap,
   meshtasticTraceRouteLookupKeys,
 } from '../lib/meshtasticTraceRouteLookupKeys';
+import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import {
@@ -218,6 +219,7 @@ export function useDevice() {
   const lastNodeInfoRequestAtRef = useRef<Map<number, number>>(new Map());
 
   const [mqttStatus, setMqttStatus] = useState<MQTTStatus>('disconnected');
+  const [mqttConnectionLoss, setMqttConnectionLoss] = useState(false);
   const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [deviceGpsMode, setDeviceGpsMode] = useState<number>(0);
@@ -629,8 +631,16 @@ export function useDevice() {
   useEffect(() => {
     const unsubStatus = window.electronAPI.mqtt.onStatus(({ status: s, protocol }) => {
       if (protocol !== 'meshtastic') return;
+      const prev = mqttStatusRef.current;
       mqttStatusRef.current = s;
       setMqttStatus(s);
+      if (s === 'connected') {
+        setMqttConnectionLoss(false);
+      } else if (consumeMqttUserDisconnect()) {
+        setMqttConnectionLoss(false);
+      } else if (prev === 'connected') {
+        setMqttConnectionLoss(true);
+      }
       if (s !== 'connected') {
         setMessages((prev) =>
           prev.map((m) =>
@@ -1050,7 +1060,11 @@ export function useDevice() {
           7: 'configured', // DeviceConfigured
         };
         const mapped = statusMap[status] ?? 'connected';
-        setState((s) => ({ ...s, status: mapped }));
+        setState((s) => ({
+          ...s,
+          status: mapped,
+          ...(mapped === 'configured' || mapped === 'connected' ? { connectionLoss: false } : {}),
+        }));
 
         // Track configuring phase so packet replays are marked as historical
         if (status === 3 || status === 5 || status === 6) {
@@ -2615,6 +2629,7 @@ export function useDevice() {
         ...s,
         status: 'disconnected',
         connectionType: null,
+        connectionLoss: false,
         batteryPercent: undefined,
         batteryCharging: undefined,
       }));
@@ -2628,6 +2643,7 @@ export function useDevice() {
         ...s,
         status: 'disconnected',
         connectionType: null,
+        connectionLoss: true,
         batteryPercent: undefined,
         batteryCharging: undefined,
       }));
@@ -2641,6 +2657,7 @@ export function useDevice() {
     setState((s) => ({
       ...s,
       status: 'reconnecting',
+      connectionLoss: true,
       reconnectAttempt: reconnectAttemptRef.current,
     }));
 
@@ -2708,6 +2725,7 @@ export function useDevice() {
         ...s,
         status: 'connecting',
         connectionType: type,
+        connectionLoss: false,
         batteryPercent: undefined,
         batteryCharging: undefined,
       }));
@@ -2781,6 +2799,7 @@ export function useDevice() {
         ...s,
         status: 'connecting',
         connectionType: type,
+        connectionLoss: false,
         batteryPercent: undefined,
         batteryCharging: undefined,
       }));
@@ -2838,6 +2857,7 @@ export function useDevice() {
       status: 'disconnected',
       myNodeNum: 0,
       connectionType: null,
+      connectionLoss: false,
       batteryPercent: undefined,
       batteryCharging: undefined,
     });
@@ -3526,6 +3546,7 @@ export function useDevice() {
   return {
     state,
     mqttStatus,
+    mqttConnectionLoss,
     messages,
     nodes,
     telemetry,

@@ -151,7 +151,8 @@
       "stale": "탁한",
       "reconnecting": "다시 연결하는 중"
     },
-    "nodeLabel": "노드: {{name}}"
+    "nodeLabel": "노드: {{name}}",
+    "takClientLost": "TAK 클라이언트 연결 끊김"
   },
   "toasts": {
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",
