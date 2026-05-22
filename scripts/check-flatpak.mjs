@@ -185,21 +185,36 @@ function checkWrapperLaunchPaths() {
     violations.push({
       file: rel,
       message:
-        'wrapper must set MESH_CLIENT_DISABLE_GPU for vmwgfx (VMware) stacks where Mesa DRI is missing',
+        'wrapper must set MESH_CLIENT_DISABLE_GPU on aarch64 (Flatpak GPU stacks often break)',
     });
   }
 
-  if (!sh.includes('DRIVER=vmwgfx')) {
+  if (!sh.includes('aarch64') || !sh.includes('arm64')) {
     violations.push({
       file: rel,
-      message: 'wrapper must detect vmwgfx via /sys/class/drm card device uevent',
+      message: 'wrapper must gate default GPU disable on aarch64/arm64 (uname -m)',
+    });
+  }
+
+  if (!sh.includes('--disable-gpu')) {
+    violations.push({
+      file: rel,
+      message:
+        'wrapper must pass --disable-gpu to Electron on aarch64 before main (Chromium startup flags)',
     });
   }
 
   if (!sh.includes('MESH_CLIENT_ENABLE_GPU')) {
     violations.push({
       file: rel,
-      message: 'wrapper must allow MESH_CLIENT_ENABLE_GPU=1 to opt out of vmwgfx GPU disable',
+      message: 'wrapper must allow MESH_CLIENT_ENABLE_GPU=1 to opt out of default GPU disable',
+    });
+  }
+
+  if (!sh.includes('MESH_CLIENT_DISABLE_GPU:-}" != "0"')) {
+    violations.push({
+      file: rel,
+      message: 'wrapper must allow MESH_CLIENT_DISABLE_GPU=0 to opt out of default GPU disable',
     });
   }
 
