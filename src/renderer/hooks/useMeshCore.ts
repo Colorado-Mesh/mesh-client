@@ -26,7 +26,12 @@ import {
   meshtasticSenderIdForRawLogFallback,
 } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
-import { resolveOurPosition } from '../lib/gpsSource';
+import {
+  hasStoredStaticGps,
+  readStoredStaticGps,
+  resolveOurPosition,
+  shouldPreserveStaticGpsForSelfNode,
+} from '../lib/gpsSource';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
 import {
   buildMeshcoreChannelIncomingMessage,
@@ -1940,14 +1945,15 @@ export function useMeshCore() {
               }
             : null;
         const fromSelfAdv = meshcoreScaledAdvLatLonToDeg(self.advLat ?? 0, self.advLon ?? 0);
+        const storedStatic = hasStoredStaticGps() ? readStoredStaticGps() : null;
         if (selfNode) {
           nextNodes.set(myNodeId, {
             ...selfNode,
             long_name: displayLongName,
             short_name: displayShortName,
             hops_away: 0,
-            latitude: fromSelfAdv.lat ?? selfNode.latitude ?? null,
-            longitude: fromSelfAdv.lon ?? selfNode.longitude ?? null,
+            latitude: storedStatic?.lat ?? fromSelfAdv.lat ?? selfNode.latitude ?? null,
+            longitude: storedStatic?.lon ?? fromSelfAdv.lon ?? selfNode.longitude ?? null,
             ...(fromSelfBattery ?? {}),
           });
         } else {
@@ -1960,8 +1966,8 @@ export function useMeshCore() {
             snr: 0,
             rssi: 0,
             last_heard: Math.floor(Date.now() / 1000),
-            latitude: fromSelfAdv.lat,
-            longitude: fromSelfAdv.lon,
+            latitude: storedStatic?.lat ?? fromSelfAdv.lat,
+            longitude: storedStatic?.lon ?? fromSelfAdv.lon,
             hops_away: 0,
             ...(fromSelfBattery?.voltage != null ? { voltage: fromSelfBattery.voltage } : {}),
           });
@@ -2109,12 +2115,18 @@ export function useMeshCore() {
           }
           persistOut.kind = 'update';
           const next = new Map(prev);
-          persistOut.persistLat = hasLat
-            ? d.advLat! / MESHCORE_COORD_SCALE
-            : (existing.latitude ?? null);
-          persistOut.persistLon = hasLon
-            ? d.advLon! / MESHCORE_COORD_SCALE
-            : (existing.longitude ?? null);
+          const skipSelfStaticCoords = shouldPreserveStaticGpsForSelfNode(
+            nodeId,
+            myNodeNumRef.current,
+          );
+          persistOut.persistLat =
+            skipSelfStaticCoords || !hasLat
+              ? (existing.latitude ?? null)
+              : d.advLat! / MESHCORE_COORD_SCALE;
+          persistOut.persistLon =
+            skipSelfStaticCoords || !hasLon
+              ? (existing.longitude ?? null)
+              : d.advLon! / MESHCORE_COORD_SCALE;
           const advNameTrim =
             typeof d.advName === 'string' && d.advName.trim() ? d.advName.trim() : '';
           const applyAdvertName = !nick && Boolean(advNameTrim);
@@ -2129,8 +2141,14 @@ export function useMeshCore() {
             ...existing,
             last_heard: lastHeard,
             hw_model: mergedHwModel,
-            latitude: hasLat ? d.advLat! / MESHCORE_COORD_SCALE : existing.latitude,
-            longitude: hasLon ? d.advLon! / MESHCORE_COORD_SCALE : existing.longitude,
+            latitude:
+              skipSelfStaticCoords || !hasLat
+                ? existing.latitude
+                : d.advLat! / MESHCORE_COORD_SCALE,
+            longitude:
+              skipSelfStaticCoords || !hasLon
+                ? existing.longitude
+                : d.advLon! / MESHCORE_COORD_SCALE,
             ...(nick
               ? { long_name: nick, short_name: '' }
               : applyAdvertName
@@ -5995,31 +6013,64 @@ export function useMeshCore() {
 
   const refreshOurPositionNoop = useCallback(async () => {
     const myNode = nodesRef.current.get(myNodeNumRef.current);
-    let staticLat: number | undefined;
-    let staticLon: number | undefined;
-    try {
-      const s = JSON.parse(localStorage.getItem('mesh-client:gpsSettings') || '{}') as {
-        staticLat?: number;
-        staticLon?: number;
-      };
-      if (typeof s.staticLat === 'number' && typeof s.staticLon === 'number') {
-        staticLat = s.staticLat;
-        staticLon = s.staticLon;
-      }
-    } catch {
-      // catch-no-log-ok localStorage read for GPS settings — ignore parse errors
-    }
+    const storedStatic = readStoredStaticGps();
+    const staticLat = storedStatic?.lat;
+    const staticLon = storedStatic?.lon;
     // Match useDevice: when a static override exists, do not let device coords win over it.
-    const devLat = staticLat != null ? undefined : myNode?.latitude;
-    const devLon = staticLon != null ? undefined : myNode?.longitude;
-    const devAlt = staticLat != null ? undefined : myNode?.altitude;
+    const devLat = storedStatic != null ? undefined : myNode?.latitude;
+    const devLon = storedStatic != null ? undefined : myNode?.longitude;
+    const devAlt = storedStatic != null ? undefined : myNode?.altitude;
     const pos = await resolveOurPosition(devLat, devLon, staticLat, staticLon, devAlt);
     setOurPosition(pos);
     if (getStoredMeshProtocol() === 'meshcore') {
       useDiagnosticsStore.getState().setOurPositionSource(pos?.source ?? null);
     }
+
+    if (pos) {
+      const selfNodeId = myNodeNumRef.current;
+      if (selfNodeId > 0) {
+        const nowSec = Math.floor(Date.now() / 1000);
+        setNodes((prev) => {
+          const next = new Map(prev);
+          const existing = next.get(selfNodeId);
+          if (existing) {
+            next.set(selfNodeId, {
+              ...existing,
+              latitude: pos.lat,
+              longitude: pos.lon,
+              last_heard: nowSec,
+              lastPositionWarning: undefined,
+            });
+          } else {
+            const trimmedName = selfInfo?.name?.trim() ?? '';
+            next.set(selfNodeId, {
+              node_id: selfNodeId,
+              long_name: trimmedName || `Node-${selfNodeId.toString(16).toUpperCase()}`,
+              short_name: '',
+              hw_model: CONTACT_TYPE_LABELS[selfInfo?.type ?? 0] ?? 'Unknown',
+              battery: 0,
+              snr: 0,
+              rssi: 0,
+              last_heard: nowSec,
+              latitude: pos.lat,
+              longitude: pos.lon,
+            });
+          }
+          return next;
+        });
+      }
+
+      if (pos.source === 'static' && connRef.current) {
+        sendPositionToDeviceMeshCore(pos.lat, pos.lon).catch((e: unknown) => {
+          console.debug(
+            '[useMeshCore] refreshOurPosition setAdvertLatLong non-fatal ' + errLikeToLogString(e),
+          );
+        });
+      }
+    }
+
     return pos;
-  }, []);
+  }, [selfInfo?.name, selfInfo?.type, sendPositionToDeviceMeshCore]);
 
   refreshOurPositionMeshCoreRef.current = refreshOurPositionNoop;
 

@@ -55,7 +55,11 @@ import {
   matchForeignLoraFromMeshtasticLog,
 } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
-import { resolveOurPosition } from '../lib/gpsSource';
+import {
+  readStoredStaticGps,
+  resolveOurPosition,
+  shouldPreserveStaticGpsForSelfNode,
+} from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
@@ -1539,7 +1543,11 @@ export function useDevice() {
           let newAlt = info.position?.altitude ?? existing.altitude;
           let posWarn: string | undefined = existing.lastPositionWarning;
 
-          if (info.position?.latitudeI != null && info.position?.longitudeI != null) {
+          if (
+            info.position?.latitudeI != null &&
+            info.position?.longitudeI != null &&
+            !shouldPreserveStaticGpsForSelfNode(nodeNum, myNodeNumRef.current)
+          ) {
             const lat = info.position.latitudeI / 1e7;
             const lon = info.position.longitudeI / 1e7;
             const r = validateCoords(lat, lon);
@@ -1713,6 +1721,10 @@ export function useDevice() {
             updated.set(packet.from, { ...existing, lastPositionWarning: r.warning });
             return updated;
           });
+          return;
+        }
+
+        if (shouldPreserveStaticGpsForSelfNode(packet.from, myNodeNumRef.current)) {
           return;
         }
 
@@ -3483,25 +3495,13 @@ export function useDevice() {
     setGpsLoading(true);
     try {
       const myNode = nodesRef.current.get(myNodeNumRef.current);
-      let staticLat: number | undefined;
-      let staticLon: number | undefined;
-      try {
-        const s =
-          parseStoredJson<{ staticLat?: number; staticLon?: number }>(
-            localStorage.getItem('mesh-client:gpsSettings'),
-            'useDevice refreshOurPosition gpsSettings',
-          ) ?? {};
-        if (typeof s.staticLat === 'number' && typeof s.staticLon === 'number') {
-          staticLat = s.staticLat;
-          staticLon = s.staticLon;
-        }
-      } catch {
-        // catch-no-log-ok localStorage read for GPS settings — ignore parse errors
-      }
+      const storedStatic = readStoredStaticGps();
+      const staticLat = storedStatic?.lat;
+      const staticLon = storedStatic?.lon;
       // When a static position is set, don't let device coords override it
-      const devLat = staticLat != null ? undefined : myNode?.latitude;
-      const devLon = staticLon != null ? undefined : myNode?.longitude;
-      const devAlt = staticLat != null ? undefined : myNode?.altitude;
+      const devLat = storedStatic != null ? undefined : myNode?.latitude;
+      const devLon = storedStatic != null ? undefined : myNode?.longitude;
+      const devAlt = storedStatic != null ? undefined : myNode?.altitude;
       const pos = await resolveOurPosition(devLat, devLon, staticLat, staticLon, devAlt);
       setOurPosition(pos);
       if (getStoredMeshProtocol() === 'meshtastic') {
@@ -3541,8 +3541,7 @@ export function useDevice() {
         const isClientMute = nodesRef.current.get(myNodeNumRef.current)?.role === ROLE_CLIENT_MUTE;
         const wouldSendWithoutMute =
           deviceRef.current &&
-          ((pos.source === 'static' && deviceGpsModeRef.current !== 1) ||
-            (pos.source === 'browser' && deviceGpsModeRef.current === 2));
+          (pos.source === 'static' || (pos.source === 'browser' && deviceGpsModeRef.current === 2));
         const shouldSendToDevice = !isClientMute && wouldSendWithoutMute;
 
         if (shouldSendToDevice && deviceRef.current) {

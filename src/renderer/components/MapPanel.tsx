@@ -957,10 +957,10 @@ export default function MapPanel({
 
     return Array.from(nodes.values())
       .flatMap((n) => {
-        const displayPos = resolveNodeMapPosition(
-          n,
-          latestPositionHistoryPoint(positionHistory.get(n.node_id)),
-        );
+        const displayPos =
+          n.node_id === myNodeNum && ourPosition?.source === 'static'
+            ? { lat: ourPosition.lat, lon: ourPosition.lon }
+            : resolveNodeMapPosition(n, latestPositionHistoryPoint(positionHistory.get(n.node_id)));
         if (!displayPos) return [];
         const mapped: MeshNode = { ...n, latitude: displayPos.lat, longitude: displayPos.lon };
         if (
@@ -984,7 +984,14 @@ export default function MapPanel({
         return [mapped];
       })
       .sort((a, b) => a.node_id - b.node_id);
-  }, [nodes, myNodeNum, locationFilter, excludeMeshcoreContactTypesInMeshtastic, positionHistory]);
+  }, [
+    nodes,
+    myNodeNum,
+    locationFilter,
+    excludeMeshcoreContactTypesInMeshtastic,
+    positionHistory,
+    ourPosition,
+  ]);
   const nodesToRender = useMemo(() => {
     const idSet = new Set(nodesWithPosition.map((n) => n.node_id));
     const out: MeshNode[] = [...nodesWithPosition];
