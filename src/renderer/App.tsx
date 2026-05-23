@@ -1967,6 +1967,12 @@ export default function App() {
                               onSetChannel={device.setDeviceChannel}
                               onClearChannel={device.clearChannel}
                               channelConfigs={device.channelConfigs}
+                              meshtasticLoraConfig={
+                                protocol === 'meshtastic' ? device.loraConfig : undefined
+                              }
+                              onApplyChannelSet={
+                                protocol === 'meshtastic' ? device.applyChannelSet : undefined
+                              }
                               isConnected={isOperational}
                               telemetryDeviceUpdateInterval={device.telemetryDeviceUpdateInterval}
                               deviceFixedPosition={device.deviceFixedPosition}

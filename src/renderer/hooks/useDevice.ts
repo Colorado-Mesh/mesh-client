@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
-import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/protobufs';
+import { Admin, Channel as ProtobufChannel, Config, Mesh, Portnums } from '@meshtastic/protobufs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -12,6 +12,11 @@ import {
   mqttMessageTreatAsHistory,
 } from '@/renderer/lib/meshtasticBacklogUtils';
 import { isMeshtasticDefaultPublicPsk } from '@/shared/meshtasticDefaultPublicPsk';
+import {
+  MESHTASTIC_CHANNEL_ROLE,
+  type MeshtasticLoraConfig,
+  type ParsedChannelSet,
+} from '@/shared/meshtasticUrlEncoder';
 
 import {
   formatMeshtasticNodeId,
@@ -303,6 +308,7 @@ export function useDevice() {
     debugLogApiEnabled: boolean;
     adminChannelEnabled: boolean;
   } | null>(null);
+  const [loraConfig, setLoraConfig] = useState<MeshtasticLoraConfig | null>(null);
 
   // ─── Additional packet type state ─────────────────────────────────
   const [remoteHardwareMessages, setRemoteHardwareMessages] = useState<
@@ -1147,6 +1153,11 @@ export function useDevice() {
               }
             }
           }
+          void deviceRef.current
+            ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
+            .catch((e: unknown) => {
+              console.debug('[useDevice] LoRa config request failed ' + errLikeToLogString(e));
+            });
         }
 
         // Always clean up on disconnect, even if we never reached configured
@@ -1166,6 +1177,7 @@ export function useDevice() {
           setWaypoints(new Map());
           setModuleConfigs({});
           setSecurityConfig(null);
+          setLoraConfig(null);
           deviceRef.current = null;
           sfHistoryRequestedRef.current = false;
           setState((s) => ({
@@ -2103,6 +2115,9 @@ export function useDevice() {
               adminChannelEnabled: boolean;
             },
           );
+        }
+        if (cfg.payloadVariant?.case === 'lora' && cfg.payloadVariant.value != null) {
+          setLoraConfig(cfg.payloadVariant.value as MeshtasticLoraConfig);
         }
       });
       unsubscribesRef.current.push(unsubConfig);
@@ -3106,6 +3121,67 @@ export function useDevice() {
     await deviceRef.current.clearChannel(index);
   }, []);
 
+  const applyChannelSet = useCallback(
+    async (parsed: ParsedChannelSet, options?: { applyLora?: boolean }) => {
+      if (!deviceRef.current) {
+        throw new Error('Not connected to a device');
+      }
+
+      const applyLora =
+        options?.applyLora ?? (parsed.mode === 'replace' && parsed.loraConfig != null);
+
+      if (parsed.mode === 'replace') {
+        for (let i = 0; i < parsed.settings.length; i++) {
+          const settings = parsed.settings[i];
+          if (!settings) continue;
+          await setDeviceChannel({
+            index: i,
+            role: i === 0 ? MESHTASTIC_CHANNEL_ROLE.PRIMARY : MESHTASTIC_CHANNEL_ROLE.SECONDARY,
+            settings,
+          });
+        }
+        for (let i = parsed.settings.length; i < 8; i++) {
+          await clearChannel(i);
+        }
+      } else {
+        for (const settings of parsed.settings) {
+          if (!settings.name) continue;
+          const exists = channelConfigsRef.current.some(
+            (c) => c.role !== MESHTASTIC_CHANNEL_ROLE.DISABLED && c.name === settings.name,
+          );
+          if (exists) continue;
+
+          let freeIndex: number | null = null;
+          for (let i = 1; i < 8; i++) {
+            const cfg = channelConfigsRef.current.find((c) => c.index === i);
+            if (!cfg || cfg.role === MESHTASTIC_CHANNEL_ROLE.DISABLED) {
+              freeIndex = i;
+              break;
+            }
+          }
+          if (freeIndex === null) {
+            throw new Error('No free channel slots');
+          }
+          await setDeviceChannel({
+            index: freeIndex,
+            role: MESHTASTIC_CHANNEL_ROLE.SECONDARY,
+            settings,
+          });
+        }
+      }
+
+      if (applyLora && parsed.loraConfig) {
+        await setConfig(
+          create(Config.ConfigSchema, {
+            payloadVariant: { case: 'lora', value: parsed.loraConfig },
+          }),
+        );
+      }
+      await commitConfig();
+    },
+    [setDeviceChannel, clearChannel, setConfig, commitConfig],
+  );
+
   const setOwner = useCallback(
     async (owner: { longName: string; shortName: string; isLicensed: boolean }) => {
       if (!deviceRef.current) return;
@@ -3616,6 +3692,7 @@ export function useDevice() {
     environmentTelemetry,
     channels,
     channelConfigs,
+    loraConfig,
     traceRouteResults,
     ourPosition,
     selfNodeId,
@@ -3634,6 +3711,7 @@ export function useDevice() {
     commitConfig,
     setDeviceChannel,
     clearChannel,
+    applyChannelSet,
     reboot,
     shutdown,
     factoryReset,

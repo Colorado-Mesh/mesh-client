@@ -3,6 +3,15 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import {
+  generateConfigUrl,
+  type MeshtasticLoraConfig,
+  MeshtasticUrlError,
+  parseConfigUrl,
+  type ParsedChannelSet,
+  pskFingerprint,
+} from '@/shared/meshtasticUrlEncoder';
 
 import {
   type MeshCoreContactRaw,
@@ -89,6 +98,11 @@ interface Props {
     telemetryModeEnv: number;
   }) => Promise<void>;
   meshcoreAutoadd?: MeshcoreAutoaddWireState | null;
+  meshtasticLoraConfig?: MeshtasticLoraConfig | null;
+  onApplyChannelSet?: (
+    parsed: ParsedChannelSet,
+    options?: { applyLora?: boolean },
+  ) => Promise<void>;
   onApplyMeshcoreContactAutoAdd?: (params: {
     autoAddAll: boolean;
     overwriteOldest: boolean;
@@ -574,6 +588,8 @@ export default function RadioPanel({
   onMeshcoreDeleteChannel,
   onApplyLoraParams,
   loraConfig,
+  meshtasticLoraConfig,
+  onApplyChannelSet,
   meshcoreSelfInfo,
   meshcoreContactsForTelemetry,
   onApplyMeshcoreTelemetryPrivacy,
@@ -1035,6 +1051,8 @@ export default function RadioPanel({
           onCommit={onCommit}
           disabled={disabled}
           setStatus={setStatus}
+          meshtasticLoraConfig={meshtasticLoraConfig}
+          onApplyChannelSet={onApplyChannelSet}
         />
       )}
 
@@ -2153,6 +2171,317 @@ function SecurityIcon({ level }: { level: SecurityLevel }) {
   );
 }
 
+// ─── Channel URL import / export (Meshtastic) ───────────────────
+function ChannelUrlImportExport({
+  channelConfigs,
+  meshtasticLoraConfig,
+  onApplyChannelSet,
+  disabled,
+  setStatus,
+}: {
+  channelConfigs: ChannelConfig[];
+  meshtasticLoraConfig?: MeshtasticLoraConfig | null;
+  onApplyChannelSet?: (
+    parsed: ParsedChannelSet,
+    options?: { applyLora?: boolean },
+  ) => Promise<void>;
+  disabled: boolean;
+  setStatus: (s: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [includeSecondary, setIncludeSecondary] = useState(true);
+  const [httpsUrl, setHttpsUrl] = useState('');
+  const [meshtasticUrl, setMeshtasticUrl] = useState('');
+  const [importUrl, setImportUrl] = useState('');
+  const [parsed, setParsed] = useState<ParsedChannelSet | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [applyLoraOnAdd, setApplyLoraOnAdd] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [confirmApply, setConfirmApply] = useState<ParsedChannelSet | null>(null);
+
+  const channelRowsForExport = useMemo(
+    () =>
+      channelConfigs.map((c) => ({
+        index: c.index,
+        role: c.role,
+        name: c.name,
+        psk: c.psk,
+        uplinkEnabled: c.uplinkEnabled,
+        downlinkEnabled: c.downlinkEnabled,
+        positionPrecision: c.positionPrecision,
+      })),
+    [channelConfigs],
+  );
+
+  const handleGenerate = () => {
+    try {
+      const urls = generateConfigUrl(channelRowsForExport, meshtasticLoraConfig ?? undefined, {
+        includeAll: includeSecondary,
+      });
+      setHttpsUrl(urls.httpsUrl);
+      setMeshtasticUrl(urls.meshtasticUrl);
+    } catch (e) {
+      console.debug('[RadioPanel] channel URL export failed ' + errLikeToLogString(e));
+      const msg = e instanceof Error ? e.message : t('common.unknown');
+      setStatus(t('radioPanel.channelUrl.exportFailed', { message: msg }));
+    }
+  };
+
+  const handleCopy = async (text: string) => {
+    if (!text) return;
+    try {
+      await writeClipboardText(text);
+      setStatus(t('radioPanel.channelUrl.copied'));
+    } catch (e) {
+      console.warn('[RadioPanel] channel URL copy failed ' + errLikeToLogString(e));
+      setStatus(t('radioPanel.channelUrl.copyFailed'));
+    }
+  };
+
+  useEffect(() => {
+    const trimmed = importUrl.trim();
+    if (!trimmed) {
+      setParsed(null);
+      setParseError(null);
+      return;
+    }
+    try {
+      setParsed(parseConfigUrl(trimmed));
+      setParseError(null);
+    } catch (e) {
+      // catch-no-log-ok expected while user pastes invalid channel URLs; parseError shown in UI
+      setParsed(null);
+      setParseError(
+        e instanceof MeshtasticUrlError
+          ? e.message
+          : t('radioPanel.channelUrl.exportFailed', { message: t('common.unknown') }),
+      );
+    }
+  }, [importUrl, t]);
+
+  const runApply = async (target: ParsedChannelSet) => {
+    if (!onApplyChannelSet) return;
+    setApplying(true);
+    try {
+      await onApplyChannelSet(target, {
+        applyLora: target.mode === 'replace' ? true : applyLoraOnAdd,
+      });
+      setStatus(t('radioPanel.channelUrl.applySuccess'));
+      setImportUrl('');
+      setConfirmApply(null);
+    } catch (e) {
+      console.warn('[RadioPanel] apply channel URL failed ' + errLikeToLogString(e));
+      setStatus(
+        t('radioPanel.channelUrl.applyFailed', {
+          message: e instanceof Error ? e.message : t('common.unknown'),
+        }),
+      );
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 border-t border-gray-700/80 pt-3">
+      <h4 className="text-sm font-medium text-gray-300">
+        {t('radioPanel.channelUrl.sectionTitle')}
+      </h4>
+
+      <div className="space-y-2">
+        <p className="text-muted text-xs font-medium">{t('radioPanel.channelUrl.exportTitle')}</p>
+        <label className="flex items-center gap-2 text-sm text-gray-300">
+          <input
+            type="checkbox"
+            checked={includeSecondary}
+            onChange={(e) => {
+              setIncludeSecondary(e.target.checked);
+            }}
+            disabled={disabled}
+            className="rounded"
+          />
+          {t('radioPanel.channelUrl.includeSecondary')}
+        </label>
+        {!meshtasticLoraConfig && (
+          <p className="text-xs text-yellow-500/90">
+            {t('radioPanel.channelUrl.loraMissingWarning')}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={disabled}
+          className="bg-secondary-dark disabled:text-muted rounded-lg px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-600 disabled:opacity-50"
+          aria-label={t('radioPanel.channelUrl.generateLink')}
+        >
+          {t('radioPanel.channelUrl.generateLink')}
+        </button>
+        {httpsUrl && (
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <label className="text-muted text-xs">
+                {t('radioPanel.channelUrl.httpsUrlLabel')}
+              </label>
+              <input
+                readOnly
+                value={httpsUrl}
+                className="bg-deep-black/60 w-full rounded border border-gray-700 px-2 py-1 font-mono text-xs text-gray-300"
+                aria-label={t('radioPanel.channelUrl.httpsUrlLabel')}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  void handleCopy(httpsUrl);
+                }}
+                className="text-bright-green text-xs hover:underline"
+                aria-label={t('radioPanel.channelUrl.copyHttps')}
+              >
+                {t('radioPanel.channelUrl.copyHttps')}
+              </button>
+            </div>
+            <div className="space-y-1">
+              <label className="text-muted text-xs">
+                {t('radioPanel.channelUrl.meshtasticUrlLabel')}
+              </label>
+              <input
+                readOnly
+                value={meshtasticUrl}
+                className="bg-deep-black/60 w-full rounded border border-gray-700 px-2 py-1 font-mono text-xs text-gray-300"
+                aria-label={t('radioPanel.channelUrl.meshtasticUrlLabel')}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  void handleCopy(meshtasticUrl);
+                }}
+                className="text-bright-green text-xs hover:underline"
+                aria-label={t('radioPanel.channelUrl.copyMeshtastic')}
+              >
+                {t('radioPanel.channelUrl.copyMeshtastic')}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-muted text-xs font-medium">{t('radioPanel.channelUrl.importTitle')}</p>
+        <label className="text-muted text-xs">{t('radioPanel.channelUrl.pasteUrlLabel')}</label>
+        <input
+          type="text"
+          value={importUrl}
+          onChange={(e) => {
+            setImportUrl(e.target.value);
+          }}
+          placeholder={t('radioPanel.channelUrl.pasteUrlPlaceholder')}
+          disabled={disabled || applying}
+          className="bg-deep-black/60 w-full rounded border border-gray-700 px-2 py-1.5 text-sm text-gray-200"
+          aria-label={t('radioPanel.channelUrl.pasteUrlLabel')}
+        />
+        {parseError && <p className="text-xs text-red-400">{parseError}</p>}
+        {parsed && (
+          <div className="bg-deep-black/40 space-y-2 rounded-lg border border-gray-700/60 p-3 text-xs">
+            <span
+              className={`inline-block rounded px-2 py-0.5 font-medium ${
+                parsed.mode === 'add'
+                  ? 'bg-blue-900/50 text-blue-300'
+                  : 'bg-yellow-900/40 text-yellow-300'
+              }`}
+            >
+              {parsed.mode === 'add'
+                ? t('radioPanel.channelUrl.modeAdd')
+                : t('radioPanel.channelUrl.modeReplace')}
+            </span>
+            <p className="text-muted">
+              {parsed.mode === 'add'
+                ? t('radioPanel.channelUrl.addWarning')
+                : t('radioPanel.channelUrl.replaceWarning')}
+            </p>
+            <p className="font-medium text-gray-300">
+              {t('radioPanel.channelUrl.previewChannels')}
+            </p>
+            <ul className="text-muted space-y-1">
+              {parsed.settings.map((ch, i) => (
+                <li key={i}>
+                  {t('radioPanel.channelUrl.channelRow', {
+                    role:
+                      i === 0
+                        ? t('radioPanel.channelUrl.rolePrimary')
+                        : t('radioPanel.channelUrl.roleSecondary'),
+                    name: ch.name || t('radioPanel.channelRolePrimary'),
+                    psk: pskFingerprint(ch.psk),
+                    uplink: ch.uplinkEnabled ? '✓' : '✗',
+                    downlink: ch.downlinkEnabled ? '✓' : '✗',
+                  })}
+                </li>
+              ))}
+            </ul>
+            {parsed.loraConfig && (
+              <p className="text-muted">
+                {typeof parsed.loraConfig.region === 'number'
+                  ? t('radioPanel.channelUrl.previewLora', {
+                      region: parsed.loraConfig.region,
+                      preset: parsed.loraConfig.modemPreset ?? 0,
+                      usePreset: String(parsed.loraConfig.usePreset ?? true),
+                    })
+                  : t('radioPanel.channelUrl.previewLoraUnknown')}
+              </p>
+            )}
+            {parsed.mode === 'add' && parsed.loraConfig && (
+              <label className="flex items-center gap-2 text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={applyLoraOnAdd}
+                  onChange={(e) => {
+                    setApplyLoraOnAdd(e.target.checked);
+                  }}
+                  className="rounded"
+                />
+                {t('radioPanel.channelUrl.applyLoraOnAdd')}
+              </label>
+            )}
+            {!onApplyChannelSet ? (
+              <p className="text-yellow-500/90">{t('radioPanel.channelUrl.connectToImport')}</p>
+            ) : (
+              <button
+                type="button"
+                disabled={disabled || applying}
+                onClick={() => {
+                  setConfirmApply(parsed);
+                }}
+                className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted rounded-lg px-3 py-1.5 text-sm font-medium text-white disabled:bg-gray-600"
+                aria-label={t('radioPanel.channelUrl.apply')}
+              >
+                {applying ? '…' : t('radioPanel.channelUrl.apply')}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {confirmApply && (
+        <ConfirmModal
+          title={
+            confirmApply.mode === 'add'
+              ? t('radioPanel.channelUrl.confirmAddTitle')
+              : t('radioPanel.channelUrl.confirmReplaceTitle')
+          }
+          message={
+            confirmApply.mode === 'add'
+              ? t('radioPanel.channelUrl.confirmAddMessage')
+              : t('radioPanel.channelUrl.confirmReplaceMessage')
+          }
+          confirmLabel={t('radioPanel.channelUrl.confirmApply')}
+          danger={confirmApply.mode === 'replace'}
+          onConfirm={() => void runApply(confirmApply)}
+          onCancel={() => {
+            setConfirmApply(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Channel Management Section ─────────────────────────────────
 function ChannelSection({
   channelConfigs,
@@ -2161,6 +2490,8 @@ function ChannelSection({
   onCommit,
   disabled,
   setStatus,
+  meshtasticLoraConfig,
+  onApplyChannelSet,
 }: {
   channelConfigs: ChannelConfig[];
   onSetChannel: Props['onSetChannel'];
@@ -2168,6 +2499,11 @@ function ChannelSection({
   onCommit: Props['onCommit'];
   disabled: boolean;
   setStatus: (s: string) => void;
+  meshtasticLoraConfig?: MeshtasticLoraConfig | null;
+  onApplyChannelSet?: (
+    parsed: ParsedChannelSet,
+    options?: { applyLora?: boolean },
+  ) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -2541,6 +2877,14 @@ function ChannelSection({
         <p className="text-muted text-xs">
           Select a channel to edit. AES-128/256 keys are shown in base64 (Meshtastic convention).
         </p>
+
+        <ChannelUrlImportExport
+          channelConfigs={channelConfigs}
+          meshtasticLoraConfig={meshtasticLoraConfig}
+          onApplyChannelSet={onApplyChannelSet}
+          disabled={disabled}
+          setStatus={setStatus}
+        />
       </div>
     </details>
   );

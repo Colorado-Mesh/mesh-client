@@ -7,6 +7,18 @@ declare module '@meshtastic/protobufs' {
   const Config: any;
   const ModuleConfig: any;
   const Admin: any;
+  const AppOnly: any;
   const LocalOnly: any;
-  export { Mesh, Mqtt, Portnums, Channel, Telemetry, Config, ModuleConfig, Admin, LocalOnly };
+  export {
+    Mesh,
+    Mqtt,
+    Portnums,
+    Channel,
+    Telemetry,
+    Config,
+    ModuleConfig,
+    Admin,
+    AppOnly,
+    LocalOnly,
+  };
 }
