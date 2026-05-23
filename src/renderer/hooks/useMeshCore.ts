@@ -105,7 +105,11 @@ import {
 import { MeshcoreWebBluetoothConnection } from '../lib/meshcoreWebBluetoothConnection';
 import { getMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
-import { lastHeardToUnixSeconds, mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
+import {
+  LAST_HEARD_MAX_FUTURE_SKEW_SEC,
+  lastHeardToUnixSeconds,
+  mergeMeshcoreLastHeardFromAdvert,
+} from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { parseTcpAddress } from '../lib/parseTcpAddress';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../lib/rawPacketLogConstants';
@@ -2060,10 +2064,20 @@ export function useMeshCore() {
             typeof d.advLat === 'number' && Number.isFinite(d.advLat) && d.advLat !== 0;
           const hasLon =
             typeof d.advLon === 'number' && Number.isFinite(d.advLon) && d.advLon !== 0;
-          const lastHeard =
+          const rawAdvertSec =
             typeof d.lastAdvert === 'number' && Number.isFinite(d.lastAdvert) && d.lastAdvert > 0
-              ? d.lastAdvert
-              : nowSec;
+              ? Math.floor(d.lastAdvert)
+              : undefined;
+          const lastHeard = mergeMeshcoreLastHeardFromAdvert(
+            rawAdvertSec,
+            existing?.last_heard ?? nowSec,
+            nowSec,
+          );
+          if (rawAdvertSec != null && rawAdvertSec > nowSec + LAST_HEARD_MAX_FUTURE_SKEW_SEC) {
+            console.debug(
+              `[useMeshCore] clamped future lastAdvert nodeId=${nodeId.toString(16)} advertSec=${rawAdvertSec} nowSec=${nowSec}`,
+            );
+          }
           persistOut.persistLastAdvert = lastHeard;
           if (!existing) {
             const built = meshcoreMinimalNodeFromAdvertEvent(d.publicKey, {
