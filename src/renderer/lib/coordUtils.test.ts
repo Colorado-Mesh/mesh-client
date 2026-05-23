@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isDisplayableCoord,
   latestPositionHistoryPoint,
+  latestTrackedPositionEqual,
   nodeHasDisplayablePosition,
   resolveNodeMapPosition,
 } from './coordUtils';
@@ -44,6 +45,18 @@ describe('isDisplayableCoord', () => {
     expect(isDisplayableCoord(0, 0)).toBe(false);
     expect(isDisplayableCoord(Number.NaN, 1)).toBe(false);
     expect(isDisplayableCoord(39.7, -104.9)).toBe(true);
+  });
+});
+
+describe('latestTrackedPositionEqual', () => {
+  it('treats identical coordinates as equal despite different object refs', () => {
+    expect(latestTrackedPositionEqual({ lat: 40, lon: -105 }, { lat: 40, lon: -105 })).toBe(true);
+  });
+
+  it('detects coordinate changes and null transitions', () => {
+    expect(latestTrackedPositionEqual({ lat: 40, lon: -105 }, { lat: 41, lon: -105 })).toBe(false);
+    expect(latestTrackedPositionEqual(null, null)).toBe(true);
+    expect(latestTrackedPositionEqual(null, { lat: 1, lon: 2 })).toBe(false);
   });
 });
 

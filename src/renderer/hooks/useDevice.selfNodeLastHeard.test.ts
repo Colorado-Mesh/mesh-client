@@ -49,6 +49,16 @@ describe('self-node last_heard initialisation (#272)', () => {
     const lastHeardMs = computeNodeInfoLastHeardMs(0, 0, false);
     expect(getNodeStatus(lastHeardMs)).toBe('offline');
   });
+
+  it('clamps future info.lastHeard from device RTC skew to Date.now()', () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const futureSec = nowSec + 86_400;
+    const before = Date.now();
+    const lastHeardMs = computeNodeInfoLastHeardMs(futureSec, 0, false);
+    const after = Date.now();
+    expect(lastHeardMs).toBeGreaterThanOrEqual(before);
+    expect(lastHeardMs).toBeLessThanOrEqual(after);
+  });
 });
 
 describe('mergeMeshtasticUserPacketLastHeard', () => {

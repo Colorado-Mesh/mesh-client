@@ -118,6 +118,16 @@ describe('meshcoreMinimalNodeFromAdvertEvent', () => {
     expect(r!.lastHeardSec).toBe(1_700_000_200);
   });
 
+  it('clamps future lastAdvert to nowSec', () => {
+    const nowSec = 1_700_000_000;
+    const r = meshcoreMinimalNodeFromAdvertEvent(key32, {
+      nowSec,
+      lastAdvert: nowSec + 86_400,
+    });
+    expect(r!.lastHeardSec).toBe(nowSec);
+    expect(r!.node.last_heard).toBe(nowSec);
+  });
+
   it('maps scaled lat/lon to degrees and contact type', () => {
     const r = meshcoreMinimalNodeFromAdvertEvent(key32, {
       nowSec: 1,

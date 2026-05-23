@@ -1,6 +1,43 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
+
+export const GPS_SETTINGS_STORAGE_KEY = 'mesh-client:gpsSettings';
 
 export type GpsSource = 'device' | 'browser' | 'ip' | 'static';
+
+interface StoredGpsSettings {
+  staticLat?: number;
+  staticLon?: number;
+}
+
+/** User-configured static coordinates from App tab GPS settings. */
+export function readStoredStaticGps(): { lat: number; lon: number } | null {
+  if (typeof localStorage === 'undefined') return null;
+  const s =
+    parseStoredJson<StoredGpsSettings>(
+      localStorage.getItem(GPS_SETTINGS_STORAGE_KEY),
+      'gpsSource readStoredStaticGps',
+    ) ?? {};
+  const { staticLat: lat, staticLon: lon } = s;
+  if (
+    typeof lat === 'number' &&
+    typeof lon === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lon)
+  ) {
+    return { lat, lon };
+  }
+  return null;
+}
+
+export function hasStoredStaticGps(): boolean {
+  return readStoredStaticGps() != null;
+}
+
+/** When true, RF/advert position for the connected self-node must not overwrite app static GPS. */
+export function shouldPreserveStaticGpsForSelfNode(nodeId: number, selfNodeId: number): boolean {
+  return selfNodeId > 0 && nodeId === selfNodeId && hasStoredStaticGps();
+}
 
 /** Sources that provide only city-level (~10–50 km) accuracy (browser WiFi/IP positioning included) */
 export const LOW_ACCURACY_SOURCES: ReadonlySet<GpsSource> = new Set(['ip', 'browser']);

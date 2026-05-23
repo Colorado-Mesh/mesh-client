@@ -20,7 +20,7 @@ import {
   meshcoreIsRepeaterRemoteAuthTouched,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
-import { getNodeStatus, normalizeLastHeardMs } from '../lib/nodeStatus';
+import { effectiveLastHeardMs, getNodeStatus, normalizeLastHeardMs } from '../lib/nodeStatus';
 import type { PathRecord } from '../lib/pathHistoryTypes';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { MeshNode } from '../lib/types';
@@ -70,24 +70,12 @@ function isSignalRecent(lastAdvert: number | null | undefined): boolean {
   return Date.now() - advertMs < SIGNAL_MAX_AGE_MS;
 }
 
-function formatRelativeTime(
-  t: TFunction,
-  lastHeard: number | null | undefined,
-  nodeId?: number,
-  nodeName?: string,
-): string {
+function formatRelativeTime(t: TFunction, lastHeard: number | null | undefined): string {
   if (!lastHeard) return t('common.never');
-  const lastMs = normalizeLastHeardMs(lastHeard);
+  const lastMs = effectiveLastHeardMs(lastHeard);
   if (!lastMs) return t('common.never');
   const ageMs = Date.now() - lastMs;
   const ageSec = Math.floor(ageMs / 1000);
-  if (ageSec < 0) {
-    const timeDeltaSec = Math.abs(ageSec);
-    if (timeDeltaSec > 60)
-      console.warn(
-        `[formatRelativeTime] future timestamp detected: node=${nodeName ?? nodeId?.toString(16) ?? 'unknown'}, timeDelta=${timeDeltaSec}s, lastHeard=${lastHeard}, lastMs=${lastMs}`,
-      );
-  }
   const clampedSec = Math.max(0, ageSec);
   if (clampedSec < 60) return t('common.justNow');
   const ageMin = Math.floor(clampedSec / 60);
@@ -690,7 +678,7 @@ export default function RepeatersPanel({
                           </span>
                         </td>
                         <td className="py-2 pr-4 text-xs text-gray-400">
-                          {formatRelativeTime(t, node.last_heard, node.node_id, node.long_name)}
+                          {formatRelativeTime(t, node.last_heard)}
                         </td>
                         <td
                           className="py-2 pr-4"

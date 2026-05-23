@@ -6,11 +6,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
-  buildStoreForwardHistoryRequestBytes,
+  buildStoreForwardHistoryToRadioBytes,
   decodeStoreForwardTextPayload,
   isDuplicateHistoryMessage,
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
+  parseStoreForwardHeartbeat,
+  releaseStoreForwardHistoryRequest,
+  reserveStoreForwardHistoryRequest,
+  shouldRequestStoreForwardHistoryOnHeartbeat,
+  writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
 import { channelNameExists, findNextFreeChannelSlot } from '@/shared/meshtasticChannelApply';
 import { isMeshtasticDefaultPublicPsk } from '@/shared/meshtasticDefaultPublicPsk';
@@ -50,7 +55,11 @@ import {
   matchForeignLoraFromMeshtasticLog,
 } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
-import { resolveOurPosition } from '../lib/gpsSource';
+import {
+  readStoredStaticGps,
+  resolveOurPosition,
+  shouldPreserveStaticGpsForSelfNode,
+} from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
@@ -65,6 +74,7 @@ import {
   meshtasticTraceRouteLookupKeys,
 } from '../lib/meshtasticTraceRouteLookupKeys';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
+import { LAST_HEARD_MAX_FUTURE_SKEW_SEC } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import {
@@ -294,9 +304,9 @@ export function useDevice() {
   const [waypoints, setWaypoints] = useState<Map<number, MeshWaypoint>>(new Map());
   const [moduleConfigs, setModuleConfigs] = useState<Record<string, unknown>>({});
   const moduleConfigsRef = useRef(moduleConfigs);
-  const sfHistoryRequestedRef = useRef(false);
+  const sfHistoryRequestedServersRef = useRef<Set<number>>(new Set());
+  const deviceConfiguredRef = useRef(false);
   const mqttReconnectBacklogUntilRef = useRef(0);
-  const MESHTASTIC_BROADCAST_NODE_NUM = 0xffffffff;
   const [securityConfig, setSecurityConfig] = useState<{
     publicKey: Uint8Array;
     privateKey: Uint8Array;
@@ -1135,39 +1145,7 @@ export function useDevice() {
           void refreshOurPositionRef.current();
           startGpsInterval();
           setQueueStatus({ free: 16, maxlen: 16, res: 0 });
-          if (!sfHistoryRequestedRef.current && deviceRef.current) {
-            sfHistoryRequestedRef.current = true;
-            const sfCfg = moduleConfigsRef.current.storeForward as
-              | {
-                  enabled?: boolean;
-                  isServer?: boolean;
-                  historyReturnWindow?: number;
-                }
-              | undefined;
-            if (sfCfg?.enabled && !sfCfg.isServer) {
-              void (async () => {
-                try {
-                  const requestBytes = buildStoreForwardHistoryRequestBytes({
-                    windowMinutes: sfCfg.historyReturnWindow ?? 0,
-                  });
-                  // History replay arrives as async STORE_FORWARD_APP packets, not a routing reply.
-                  await deviceRef.current!.sendPacket(
-                    requestBytes,
-                    Portnums.PortNum.STORE_FORWARD_APP,
-                    MESHTASTIC_BROADCAST_NODE_NUM,
-                    0,
-                    false,
-                    false,
-                  );
-                  console.debug('[useDevice] requested Store & Forward history (CLIENT_HISTORY)');
-                } catch (e: unknown) {
-                  console.warn(
-                    '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
-                  );
-                }
-              })();
-            }
-          }
+          deviceConfiguredRef.current = true;
           void deviceRef.current
             ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
             .catch((e: unknown) => {
@@ -1194,7 +1172,8 @@ export function useDevice() {
           setSecurityConfig(null);
           setLoraConfig(null);
           deviceRef.current = null;
-          sfHistoryRequestedRef.current = false;
+          deviceConfiguredRef.current = false;
+          sfHistoryRequestedServersRef.current = new Set();
           setState((s) => ({
             ...s,
             status: 'disconnected',
@@ -1564,7 +1543,11 @@ export function useDevice() {
           let newAlt = info.position?.altitude ?? existing.altitude;
           let posWarn: string | undefined = existing.lastPositionWarning;
 
-          if (info.position?.latitudeI != null && info.position?.longitudeI != null) {
+          if (
+            info.position?.latitudeI != null &&
+            info.position?.longitudeI != null &&
+            !shouldPreserveStaticGpsForSelfNode(nodeNum, myNodeNumRef.current)
+          ) {
             const lat = info.position.latitudeI / 1e7;
             const lon = info.position.longitudeI / 1e7;
             const r = validateCoords(lat, lon);
@@ -1738,6 +1721,10 @@ export function useDevice() {
             updated.set(packet.from, { ...existing, lastPositionWarning: r.warning });
             return updated;
           });
+          return;
+        }
+
+        if (shouldPreserveStaticGpsForSelfNode(packet.from, myNodeNumRef.current)) {
           return;
         }
 
@@ -2516,6 +2503,52 @@ export function useDevice() {
           return updated;
         });
 
+        const serverNodeId = packet.from;
+        const heartbeat = parseStoreForwardHeartbeat(packet.data);
+        if (serverNodeId && heartbeat) {
+          const sfCfg = moduleConfigsRef.current.storeForward as { isServer?: boolean } | undefined;
+          const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
+          if (
+            shouldRequestStoreForwardHistoryOnHeartbeat({
+              heartbeatSecondary: heartbeat.secondary,
+              connectedIsStoreForwardServer: sfCfg?.isServer === true,
+              alreadyRequestedServer: alreadyRequested,
+              deviceConfigured: deviceConfiguredRef.current,
+            }) &&
+            reserveStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId)
+          ) {
+            const myNode = myNodeNumRef.current;
+            const activeDevice = deviceRef.current;
+            if (myNode && activeDevice) {
+              const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
+              const toRadioBytes = buildStoreForwardHistoryToRadioBytes({
+                from: myNode,
+                to: serverNodeId,
+                channel: packet.channel ?? 0,
+                packetId,
+                windowMinutes: heartbeat.period > 0 ? heartbeat.period : 0,
+              });
+              void writeToRadioWithoutQueue(activeDevice, toRadioBytes)
+                .then(() => {
+                  console.debug(
+                    `[useDevice] Store & Forward CLIENT_HISTORY sent to 0x${serverNodeId.toString(16)} ch=${packet.channel ?? 0}`,
+                  );
+                })
+                .catch((e: unknown) => {
+                  releaseStoreForwardHistoryRequest(
+                    sfHistoryRequestedServersRef.current,
+                    serverNodeId,
+                  );
+                  console.warn(
+                    '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
+                  );
+                });
+            } else {
+              releaseStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId);
+            }
+          }
+        }
+
         const from = packet.from;
         const payloadText = decodeStoreForwardTextPayload(packet.data);
         if (!from || !payloadText) return;
@@ -2523,7 +2556,7 @@ export function useDevice() {
           sender_id: from,
           sender_name: getNodeName(from),
           payload: payloadText,
-          channel: 0,
+          channel: packet.channel ?? 0,
           timestamp: Date.now(),
           isHistory: true,
           receivedVia: 'rf',
@@ -3462,25 +3495,13 @@ export function useDevice() {
     setGpsLoading(true);
     try {
       const myNode = nodesRef.current.get(myNodeNumRef.current);
-      let staticLat: number | undefined;
-      let staticLon: number | undefined;
-      try {
-        const s =
-          parseStoredJson<{ staticLat?: number; staticLon?: number }>(
-            localStorage.getItem('mesh-client:gpsSettings'),
-            'useDevice refreshOurPosition gpsSettings',
-          ) ?? {};
-        if (typeof s.staticLat === 'number' && typeof s.staticLon === 'number') {
-          staticLat = s.staticLat;
-          staticLon = s.staticLon;
-        }
-      } catch {
-        // catch-no-log-ok localStorage read for GPS settings — ignore parse errors
-      }
+      const storedStatic = readStoredStaticGps();
+      const staticLat = storedStatic?.lat;
+      const staticLon = storedStatic?.lon;
       // When a static position is set, don't let device coords override it
-      const devLat = staticLat != null ? undefined : myNode?.latitude;
-      const devLon = staticLon != null ? undefined : myNode?.longitude;
-      const devAlt = staticLat != null ? undefined : myNode?.altitude;
+      const devLat = storedStatic != null ? undefined : myNode?.latitude;
+      const devLon = storedStatic != null ? undefined : myNode?.longitude;
+      const devAlt = storedStatic != null ? undefined : myNode?.altitude;
       const pos = await resolveOurPosition(devLat, devLon, staticLat, staticLon, devAlt);
       setOurPosition(pos);
       if (getStoredMeshProtocol() === 'meshtastic') {
@@ -3520,8 +3541,7 @@ export function useDevice() {
         const isClientMute = nodesRef.current.get(myNodeNumRef.current)?.role === ROLE_CLIENT_MUTE;
         const wouldSendWithoutMute =
           deviceRef.current &&
-          ((pos.source === 'static' && deviceGpsModeRef.current !== 1) ||
-            (pos.source === 'browser' && deviceGpsModeRef.current === 2));
+          (pos.source === 'static' || (pos.source === 'browser' && deviceGpsModeRef.current === 2));
         const shouldSendToDevice = !isClientMute && wouldSendWithoutMute;
 
         if (shouldSendToDevice && deviceRef.current) {
@@ -3830,9 +3850,12 @@ export function computeNodeInfoLastHeardMs(
   existingLastHeard: number,
   isSelf: boolean,
 ): number {
-  return (infoLastHeard ?? 0) > 0
-    ? infoLastHeard! * 1000
-    : existingLastHeard || (isSelf ? Date.now() : 0);
+  if ((infoLastHeard ?? 0) > 0) {
+    const ms = infoLastHeard! * 1000;
+    const maxMs = Date.now() + LAST_HEARD_MAX_FUTURE_SKEW_SEC * 1000;
+    return ms > maxMs ? Date.now() : ms;
+  }
+  return existingLastHeard || (isSelf ? Date.now() : 0);
 }
 
 /**

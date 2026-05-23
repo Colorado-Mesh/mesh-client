@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  clampLastHeardSec,
+  effectiveLastHeardMs,
   getNodeStatus,
   lastHeardToUnixSeconds,
   mergeMeshcoreLastHeardFromAdvert,
@@ -19,6 +21,25 @@ describe('lastHeardToUnixSeconds', () => {
 
   it('treats values at or above 1e12 as epoch milliseconds', () => {
     expect(lastHeardToUnixSeconds(1_700_000_000_000)).toBe(1_700_000_000);
+  });
+});
+
+describe('clampLastHeardSec', () => {
+  const nowSec = 1_700_000_000;
+
+  it('returns 0 for invalid input', () => {
+    expect(clampLastHeardSec(0, nowSec)).toBe(0);
+    expect(clampLastHeardSec(NaN, nowSec)).toBe(0);
+  });
+
+  it('returns floored seconds when within skew tolerance', () => {
+    expect(clampLastHeardSec(1_700_000_100, nowSec)).toBe(1_700_000_100);
+    expect(clampLastHeardSec(nowSec + 300, nowSec)).toBe(nowSec + 300);
+  });
+
+  it('clamps to nowSec when unreasonably far in the future', () => {
+    expect(clampLastHeardSec(nowSec + 301, nowSec)).toBe(nowSec);
+    expect(clampLastHeardSec(nowSec + 86_400, nowSec)).toBe(nowSec);
   });
 });
 
@@ -47,6 +68,24 @@ describe('mergeMeshcoreLastHeardFromAdvert', () => {
   it('aligns with normalizeLastHeardMs for UI freshness', () => {
     const merged = mergeMeshcoreLastHeardFromAdvert(0, 1_700_000_000);
     expect(normalizeLastHeardMs(merged)).toBe(1_700_000_000_000);
+  });
+
+  it('clamps future device lastAdvert to nowSec', () => {
+    const nowSec = 1_700_000_000;
+    const futureAdvert = nowSec + 86_400;
+    expect(mergeMeshcoreLastHeardFromAdvert(futureAdvert, 0, nowSec)).toBe(nowSec);
+  });
+
+  it('preserves previous live-event last_heard when newer than stale device advert', () => {
+    const nowSec = 1_700_000_000;
+    const staleAdvert = nowSec - 3600;
+    const prevSec = nowSec - 120;
+    expect(mergeMeshcoreLastHeardFromAdvert(staleAdvert, prevSec, nowSec)).toBe(prevSec);
+  });
+
+  it('clamps previous last_heard stored in the future', () => {
+    const nowSec = 1_700_000_000;
+    expect(mergeMeshcoreLastHeardFromAdvert(0, nowSec + 86_400, nowSec)).toBe(nowSec);
   });
 });
 
@@ -101,5 +140,11 @@ describe('getNodeStatus', () => {
 
     const oneSecondOver7d = Date.now() - meshtasticOffline - 1000;
     expect(getNodeStatus(oneSecondOver7d, meshtasticStale, meshtasticOffline)).toBe('offline');
+  });
+
+  it('effectiveLastHeardMs clamps far-future timestamps to now', () => {
+    const nowMs = 1_700_000_000_000;
+    const farFutureSec = 1_700_000_000 + 86_400;
+    expect(effectiveLastHeardMs(farFutureSec, nowMs)).toBe(nowMs);
   });
 });

@@ -1,3 +1,4 @@
+import { mergeMeshcoreLastHeardFromAdvert } from './nodeStatus';
 import type { ConnectionType, MeshNode } from './types';
 
 /** MeshCore companion scaled coordinates: integer × degrees (same as firmware advert fields). */
@@ -438,9 +439,7 @@ export function meshcoreMinimalNodeFromAdvertEvent(
       ? Math.max(0, Math.floor(opts.contactType))
       : 0;
   const lastHeardSec =
-    typeof opts.lastAdvert === 'number' && Number.isFinite(opts.lastAdvert) && opts.lastAdvert > 0
-      ? opts.lastAdvert
-      : opts.nowSec;
+    mergeMeshcoreLastHeardFromAdvert(opts.lastAdvert, undefined, opts.nowSec) || opts.nowSec;
   const advLat = typeof opts.advLat === 'number' ? opts.advLat : 0;
   const advLon = typeof opts.advLon === 'number' ? opts.advLon : 0;
   const { lat: latDeg, lon: lonDeg } = meshcoreScaledAdvLatLonToDeg(advLat, advLon);

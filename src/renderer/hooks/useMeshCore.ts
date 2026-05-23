@@ -26,7 +26,12 @@ import {
   meshtasticSenderIdForRawLogFallback,
 } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
-import { resolveOurPosition } from '../lib/gpsSource';
+import {
+  hasStoredStaticGps,
+  readStoredStaticGps,
+  resolveOurPosition,
+  shouldPreserveStaticGpsForSelfNode,
+} from '../lib/gpsSource';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
 import {
   buildMeshcoreChannelIncomingMessage,
@@ -34,6 +39,7 @@ import {
   findMeshcoreDmReplyParent,
   normalizeMeshcoreIncomingText,
 } from '../lib/meshcoreChannelText';
+import { MeshcoreCompanionTxEchoFilter } from '../lib/meshcoreCompanionTxEchoFilter';
 import {
   buildGetAutoaddConfigFrame,
   buildSetAutoaddConfigFrame,
@@ -104,7 +110,11 @@ import {
 import { MeshcoreWebBluetoothConnection } from '../lib/meshcoreWebBluetoothConnection';
 import { getMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
-import { lastHeardToUnixSeconds, mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
+import {
+  LAST_HEARD_MAX_FUTURE_SKEW_SEC,
+  lastHeardToUnixSeconds,
+  mergeMeshcoreLastHeardFromAdvert,
+} from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { parseTcpAddress } from '../lib/parseTcpAddress';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../lib/rawPacketLogConstants';
@@ -433,6 +443,7 @@ class IpcNobleConnection {
   async connect() {
     const runConnect = async () => {
       const sessionId = this.sessionId;
+      const txEchoFilter = new MeshcoreCompanionTxEchoFilter();
       class NobleOverIpc extends MeshcoreConnectionBase {
         constructor(private readonly session: NobleBleSessionId) {
           super();
@@ -443,6 +454,7 @@ class IpcNobleConnection {
          * USB framing (0x3c/0x3e + length) used for WebSerial/TCP.
          */
         async sendToRadioFrame(data: Uint8Array) {
+          txEchoFilter.noteOutbound(data);
           this.emit('tx', data);
           await this.write(data);
         }
@@ -469,6 +481,9 @@ class IpcNobleConnection {
       const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
         if (sid !== sessionId) return;
         const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        if (txEchoFilter.isEcho(frame)) {
+          return;
+        }
         instance.onFrameReceived(frame);
       });
       const offDisc = window.electronAPI.onNobleBleDisconnected((sid) => {
@@ -1930,14 +1945,15 @@ export function useMeshCore() {
               }
             : null;
         const fromSelfAdv = meshcoreScaledAdvLatLonToDeg(self.advLat ?? 0, self.advLon ?? 0);
+        const storedStatic = hasStoredStaticGps() ? readStoredStaticGps() : null;
         if (selfNode) {
           nextNodes.set(myNodeId, {
             ...selfNode,
             long_name: displayLongName,
             short_name: displayShortName,
             hops_away: 0,
-            latitude: fromSelfAdv.lat ?? selfNode.latitude ?? null,
-            longitude: fromSelfAdv.lon ?? selfNode.longitude ?? null,
+            latitude: storedStatic?.lat ?? fromSelfAdv.lat ?? selfNode.latitude ?? null,
+            longitude: storedStatic?.lon ?? fromSelfAdv.lon ?? selfNode.longitude ?? null,
             ...(fromSelfBattery ?? {}),
           });
         } else {
@@ -1950,8 +1966,8 @@ export function useMeshCore() {
             snr: 0,
             rssi: 0,
             last_heard: Math.floor(Date.now() / 1000),
-            latitude: fromSelfAdv.lat,
-            longitude: fromSelfAdv.lon,
+            latitude: storedStatic?.lat ?? fromSelfAdv.lat,
+            longitude: storedStatic?.lon ?? fromSelfAdv.lon,
             hops_away: 0,
             ...(fromSelfBattery?.voltage != null ? { voltage: fromSelfBattery.voltage } : {}),
           });
@@ -2054,10 +2070,20 @@ export function useMeshCore() {
             typeof d.advLat === 'number' && Number.isFinite(d.advLat) && d.advLat !== 0;
           const hasLon =
             typeof d.advLon === 'number' && Number.isFinite(d.advLon) && d.advLon !== 0;
-          const lastHeard =
+          const rawAdvertSec =
             typeof d.lastAdvert === 'number' && Number.isFinite(d.lastAdvert) && d.lastAdvert > 0
-              ? d.lastAdvert
-              : nowSec;
+              ? Math.floor(d.lastAdvert)
+              : undefined;
+          const lastHeard = mergeMeshcoreLastHeardFromAdvert(
+            rawAdvertSec,
+            existing?.last_heard ?? nowSec,
+            nowSec,
+          );
+          if (rawAdvertSec != null && rawAdvertSec > nowSec + LAST_HEARD_MAX_FUTURE_SKEW_SEC) {
+            console.debug(
+              `[useMeshCore] clamped future lastAdvert nodeId=${nodeId.toString(16)} advertSec=${rawAdvertSec} nowSec=${nowSec}`,
+            );
+          }
           persistOut.persistLastAdvert = lastHeard;
           if (!existing) {
             const built = meshcoreMinimalNodeFromAdvertEvent(d.publicKey, {
@@ -2089,12 +2115,18 @@ export function useMeshCore() {
           }
           persistOut.kind = 'update';
           const next = new Map(prev);
-          persistOut.persistLat = hasLat
-            ? d.advLat! / MESHCORE_COORD_SCALE
-            : (existing.latitude ?? null);
-          persistOut.persistLon = hasLon
-            ? d.advLon! / MESHCORE_COORD_SCALE
-            : (existing.longitude ?? null);
+          const skipSelfStaticCoords = shouldPreserveStaticGpsForSelfNode(
+            nodeId,
+            myNodeNumRef.current,
+          );
+          persistOut.persistLat =
+            skipSelfStaticCoords || !hasLat
+              ? (existing.latitude ?? null)
+              : d.advLat! / MESHCORE_COORD_SCALE;
+          persistOut.persistLon =
+            skipSelfStaticCoords || !hasLon
+              ? (existing.longitude ?? null)
+              : d.advLon! / MESHCORE_COORD_SCALE;
           const advNameTrim =
             typeof d.advName === 'string' && d.advName.trim() ? d.advName.trim() : '';
           const applyAdvertName = !nick && Boolean(advNameTrim);
@@ -2109,8 +2141,14 @@ export function useMeshCore() {
             ...existing,
             last_heard: lastHeard,
             hw_model: mergedHwModel,
-            latitude: hasLat ? d.advLat! / MESHCORE_COORD_SCALE : existing.latitude,
-            longitude: hasLon ? d.advLon! / MESHCORE_COORD_SCALE : existing.longitude,
+            latitude:
+              skipSelfStaticCoords || !hasLat
+                ? existing.latitude
+                : d.advLat! / MESHCORE_COORD_SCALE,
+            longitude:
+              skipSelfStaticCoords || !hasLon
+                ? existing.longitude
+                : d.advLon! / MESHCORE_COORD_SCALE,
             ...(nick
               ? { long_name: nick, short_name: '' }
               : applyAdvertName
@@ -5975,31 +6013,64 @@ export function useMeshCore() {
 
   const refreshOurPositionNoop = useCallback(async () => {
     const myNode = nodesRef.current.get(myNodeNumRef.current);
-    let staticLat: number | undefined;
-    let staticLon: number | undefined;
-    try {
-      const s = JSON.parse(localStorage.getItem('mesh-client:gpsSettings') || '{}') as {
-        staticLat?: number;
-        staticLon?: number;
-      };
-      if (typeof s.staticLat === 'number' && typeof s.staticLon === 'number') {
-        staticLat = s.staticLat;
-        staticLon = s.staticLon;
-      }
-    } catch {
-      // catch-no-log-ok localStorage read for GPS settings — ignore parse errors
-    }
+    const storedStatic = readStoredStaticGps();
+    const staticLat = storedStatic?.lat;
+    const staticLon = storedStatic?.lon;
     // Match useDevice: when a static override exists, do not let device coords win over it.
-    const devLat = staticLat != null ? undefined : myNode?.latitude;
-    const devLon = staticLon != null ? undefined : myNode?.longitude;
-    const devAlt = staticLat != null ? undefined : myNode?.altitude;
+    const devLat = storedStatic != null ? undefined : myNode?.latitude;
+    const devLon = storedStatic != null ? undefined : myNode?.longitude;
+    const devAlt = storedStatic != null ? undefined : myNode?.altitude;
     const pos = await resolveOurPosition(devLat, devLon, staticLat, staticLon, devAlt);
     setOurPosition(pos);
     if (getStoredMeshProtocol() === 'meshcore') {
       useDiagnosticsStore.getState().setOurPositionSource(pos?.source ?? null);
     }
+
+    if (pos) {
+      const selfNodeId = myNodeNumRef.current;
+      if (selfNodeId > 0) {
+        const nowSec = Math.floor(Date.now() / 1000);
+        setNodes((prev) => {
+          const next = new Map(prev);
+          const existing = next.get(selfNodeId);
+          if (existing) {
+            next.set(selfNodeId, {
+              ...existing,
+              latitude: pos.lat,
+              longitude: pos.lon,
+              last_heard: nowSec,
+              lastPositionWarning: undefined,
+            });
+          } else {
+            const trimmedName = selfInfo?.name?.trim() ?? '';
+            next.set(selfNodeId, {
+              node_id: selfNodeId,
+              long_name: trimmedName || `Node-${selfNodeId.toString(16).toUpperCase()}`,
+              short_name: '',
+              hw_model: CONTACT_TYPE_LABELS[selfInfo?.type ?? 0] ?? 'Unknown',
+              battery: 0,
+              snr: 0,
+              rssi: 0,
+              last_heard: nowSec,
+              latitude: pos.lat,
+              longitude: pos.lon,
+            });
+          }
+          return next;
+        });
+      }
+
+      if (pos.source === 'static' && connRef.current) {
+        sendPositionToDeviceMeshCore(pos.lat, pos.lon).catch((e: unknown) => {
+          console.debug(
+            '[useMeshCore] refreshOurPosition setAdvertLatLong non-fatal ' + errLikeToLogString(e),
+          );
+        });
+      }
+    }
+
     return pos;
-  }, []);
+  }, [selfInfo?.name, selfInfo?.type, sendPositionToDeviceMeshCore]);
 
   refreshOurPositionMeshCoreRef.current = refreshOurPositionNoop;
 
