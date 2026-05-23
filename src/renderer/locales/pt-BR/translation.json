@@ -455,7 +455,7 @@
       "httpsUrlLabel": "Link da web (QR do Android)",
       "meshtasticUrlLabel": "meshtastic:// link",
       "copyHttps": "Copiar link da web",
-      "copyMeshtastic": "Copy meshtastic:// link",
+      "copyMeshtastic": "Copiar link meshtastic://",
       "copied": "Copiado para a Área de Transferência",
       "copyFailed": "Falha ao copiar",
       "pasteUrlLabel": "Colar URL do canal",

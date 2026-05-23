@@ -433,8 +433,8 @@
     "debugLogApi": "Debug Log API",
     "channelUrl": {
       "sectionTitle": "Sdílet / importovat adresu URL kanálu",
-      "exportTitle": "Export",
-      "importTitle": "Import",
+      "exportTitle": "Exportovat",
+      "importTitle": "Importovat",
       "generateLink": "Vygenerovat odkaz",
       "includeSecondary": "Zahrnout sekundární kanály",
       "loraMissingWarning": "Nastavení LoRa ještě není načteno z rádia; spojení může přednastavení modemu vynechat, dokud nebude připojeno.",

@@ -447,7 +447,7 @@
     "directMessages": "Directe berichten",
     "channelUrl": {
       "sectionTitle": "Kanaal-URL delen / importeren",
-      "exportTitle": "Export",
+      "exportTitle": "Exporteren",
       "importTitle": "Importeren",
       "generateLink": "Koppeling genereren",
       "includeSecondary": "Secundaire kanalen opnemen",
