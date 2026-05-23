@@ -32,6 +32,16 @@ export function latestPositionHistoryPoint(
   return { lat: latest.lat, lon: latest.lon };
 }
 
+/** Value equality for Zustand selectors that return latestPositionHistoryPoint results. */
+export function latestTrackedPositionEqual(
+  a: { lat: number; lon: number } | null,
+  b: { lat: number; lon: number } | null,
+): boolean {
+  if (a === b) return true;
+  if (a == null || b == null) return a === b;
+  return a.lat === b.lat && a.lon === b.lon;
+}
+
 /** NodeDB lat/lon when present, otherwise newest valid tracked point. */
 export function resolveNodeMapPosition(
   node: { latitude?: number | null; longitude?: number | null },

@@ -218,13 +218,12 @@ export default function NodeDetailModal({
     setShareContactPending(false);
   }, [node?.node_id]);
 
-  // Detect position update after a request was sent
+  // Detect position update after a request was sent (gate on state, not ref — avoids flash on open)
   useEffect(() => {
-    if (positionRequestedAtRef.current !== null) {
-      setPositionRequestedAt(null);
-      setActionStatus(t('nodeDetailModal.positionUpdated'));
-    }
-  }, [node?.latitude, node?.longitude, t]);
+    if (positionRequestedAt === null) return;
+    setPositionRequestedAt(null);
+    setActionStatus(t('nodeDetailModal.positionUpdated'));
+  }, [node?.latitude, node?.longitude, positionRequestedAt, t]);
 
   // 30-second timeout for position request
   useEffect(() => {

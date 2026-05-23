@@ -3,6 +3,7 @@ import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useLatestTrackedPosition } from '../hooks/useLatestTrackedPosition';
 import {
   formatCoordPair,
   latestPositionHistoryPoint,
@@ -46,7 +47,6 @@ import type { HopHistoryPoint, MeshNode, MeshProtocol, NodeAnomaly } from '../li
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
-import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import SnrIndicator from './SnrIndicator';
 
@@ -185,9 +185,7 @@ export default function NodeInfoBody({
   const meshcoreTraceHistory = useDiagnosticsStore((s) => s.meshcoreTraceHistory.get(node.node_id));
   const loadMeshcorePathHistory = useDiagnosticsStore((s) => s.loadMeshcorePathHistory);
   const [pathHistoryOpen, setPathHistoryOpen] = useState(false);
-  const latestTrackedPositionFromStore = usePositionHistoryStore((s) =>
-    latestPositionHistoryPoint(s.history.get(node.node_id)),
-  );
+  const latestTrackedPositionFromStore = useLatestTrackedPosition(node.node_id);
   const latestTrackedPositionFromProps = latestPositionHistoryPoint(
     positionHistory?.get(node.node_id),
   );

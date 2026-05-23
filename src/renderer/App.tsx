@@ -469,6 +469,7 @@ export default function App() {
   }, [sidebarCollapsed]);
 
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
+  // Stable array ref from Map.get — safe for React 19 useSyncExternalStore (not latestPositionHistoryPoint).
   const selectedNodeHistoryPoints = usePositionHistoryStore(
     useCallback(
       (s) => (selectedNodeId == null ? undefined : s.history.get(selectedNodeId)),
