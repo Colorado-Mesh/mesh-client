@@ -122,6 +122,14 @@ Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-m
 
 **ATT MTU / writes:** Noble `toRadio` writes in `noble-ble-manager.ts` are chunked using negotiated `peripheral.mtu` (sanitized via `src/shared/bleAttWriteLimit.ts`; values below spec min 23 are coerced—NobleMac may log `MTU updated: 20` before a full exchange). Linux Web Bluetooth uses `webbluetooth-ble-manager.ts`; when Chromium exposes `maximumWriteValueLength`, writes are chunked—there is no standard Web API for negotiated MTU ([WebBluetoothCG#383](https://github.com/WebBluetoothCG/web-bluetooth/issues/383)).
 
+**Linux Web Bluetooth (Meshtastic):** `webbluetooth-ble-manager.ts` subscribes to **fromNum** GATT notify for unsolicited mesh traffic, runs a **3 s background fromRadio poll** between write cycles, and uses **multi-shot read probes** instead of a single post-write safety read (LoRa latency). MeshCore BLE echo filtering: `meshcoreCompanionTxEchoFilter.ts` (Noble + Web Bluetooth).
+
+### Meshtastic channel URLs & Store & Forward
+
+- **Channel URLs:** `src/shared/meshtasticUrlEncoder.ts` (parse/generate), `src/shared/meshtasticChannelApply.ts` (replace vs add-only apply); Radio panel UI; Meshtastic-only.
+- **S&F chat history:** `src/renderer/lib/meshtasticBacklogUtils.ts` — `CLIENT_HISTORY` on primary router heartbeat, protobuf decode for replayed text, `via_store_forward` on messages; do not await SDK queue for history (async replay).
+- **Static GPS:** `src/renderer/lib/gpsSource.ts` — App tab static coordinates sync to self-node, map, and radio `setPosition`.
+
 ### MQTT
 
 Meshtastic: `mqtt-manager.ts` (AES, protobuf, dedup). MeshCore: `meshcore-mqtt-adapter.ts` (JSON v1 envelope).
@@ -137,7 +145,7 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 - **Locale persistence:** `locale` key in `app_settings` SQLite table (canonical) and `mesh-client:appSettings` localStorage (fast startup read); reconciled in `App.tsx` on mount.
 - **Adding strings:** add to `src/renderer/locales/en/translation.json`, use `t('your.key')` in components; `check:i18n` enforces all call sites resolve to English keys.
 - **Auto-translate:** `pnpm run i18n:auto-translate` uses MyMemory (default) or LibreTranslate (`LIBRETRANSLATE_URL`). With git, the default run **only** fills keys that are **new in English vs `HEAD`** and still missing from each locale (pre-commit uses this). Use **`pnpm run i18n:auto-translate --all`** or **`I18N_TRANSLATE_ALL=1`** to backfill every key missing from a locale vs English. Use **`--audit`** (or `I18N_AUDIT=1`) to additionally retranslate any key whose locale value is still identical to English (i.e. never actually translated). Existing translated entries are never overwritten. MyMemory sends contact `info@coloradomesh.org` by default for the 50 k words/day quota; override with `MYMEMORY_EMAIL` if needed.
-- **Key check:** `pnpm run check:i18n` — hard fails on missing English keys; warns (does not fail) on incomplete locale coverage so rate-limit gaps don't block commits.
+- **Key check:** `pnpm run check:i18n` — hard fails on missing English keys; warns (does not fail) on incomplete locale coverage so rate-limit gaps don't block commits. Also runs locale quality rules via `scripts/check-i18n-quality.mjs` (mojibake, `meshtastic://` spacing, false friends).
 - **Language selector:** `src/renderer/components/LanguageSelector.tsx` — globe-icon dropdown in the header; calls `i18n.changeLanguage()` + `mergeAppSetting('locale', ...)` + `electronAPI.appSettings.set('locale', ...)`.
 
 ### Chat Panel
@@ -152,21 +160,24 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 
 ### Common issues
 
-| Symptom                | Where to check                                      |
-| ---------------------- | --------------------------------------------------- |
-| Connection fails       | `useDevice.ts`, `useMeshCore.ts`                    |
-| Send fails             | `useDevice.sendText`, `useMeshCore` send paths      |
-| UI stale               | Zustand store, effect deps                          |
-| BLE timeout            | `noble-ble-manager.ts`, `bleConnectErrors`          |
-| Serial missing         | `serialPortSignature.ts`                            |
-| MQTT loop              | `mqtt-manager.ts`                                   |
-| DB errors              | `database.ts` migrations                            |
-| Log gaps               | `log-service.ts`, log tags                          |
-| Chat export fails      | `chat:export` handler in `src/main/index.ts`        |
-| Draft not restored     | `chatPanelProtocolStorage.ts`, `viewKey` logic      |
-| Mention picker missing | `MentionAutocomplete.tsx`, `buildMentionCandidates` |
-| Link preview missing   | `fetchLinkPreview.ts`, `chat:fetchLinkPreview` IPC  |
-| Duplicate RF+MQTT msg  | `meshtasticMessageDedup.ts`, `useDevice.ts` ingest  |
+| Symptom                | Where to check                                         |
+| ---------------------- | ------------------------------------------------------ |
+| Connection fails       | `useDevice.ts`, `useMeshCore.ts`                       |
+| Send fails             | `useDevice.sendText`, `useMeshCore` send paths         |
+| UI stale               | Zustand store, effect deps                             |
+| BLE timeout            | `noble-ble-manager.ts`, `bleConnectErrors`             |
+| Serial missing         | `serialPortSignature.ts`                               |
+| MQTT loop              | `mqtt-manager.ts`                                      |
+| DB errors              | `database.ts` migrations                               |
+| Log gaps               | `log-service.ts`, log tags                             |
+| Chat export fails      | `chat:export` handler in `src/main/index.ts`           |
+| Draft not restored     | `chatPanelProtocolStorage.ts`, `viewKey` logic         |
+| Mention picker missing | `MentionAutocomplete.tsx`, `buildMentionCandidates`    |
+| Link preview missing   | `fetchLinkPreview.ts`, `chat:fetchLinkPreview` IPC     |
+| Duplicate RF+MQTT msg  | `meshtasticMessageDedup.ts`, `useDevice.ts` ingest     |
+| S&F history garbled    | `meshtasticBacklogUtils.ts` decode, heartbeat trigger  |
+| Channel URL apply      | `meshtasticChannelApply.ts`, `meshtasticUrlEncoder.ts` |
+| Header red on loss     | `connectionHeaderStatus.ts`, `mqttDisconnectIntent.ts` |
 
 ## 9. Cursor / Claude indexing
 
