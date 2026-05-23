@@ -1061,7 +1061,8 @@
     "unstarMessage": "Usuń oznaczenie gwiazdką wiadomości",
     "starredMessages": "Wyróżnione powiadomienia",
     "noStarredMessages": "Nie ma jeszcze wiadomości oznaczonych gwiazdką. Zaznacz dowolną wiadomość, aby zapisać ją tutaj.",
-    "goToMessage": "Przejdź do wiadomości"
+    "goToMessage": "Przejdź do wiadomości",
+    "receivedViaStoreForward": "Odtworzono ze sklepu i przekazano dalej"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksymalna liczba prób ponownego połączenia MQTT",

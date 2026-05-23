@@ -14,6 +14,13 @@ export function formatMeshtasticNodeId(nodeId: number): string {
   return `!${formatMeshtasticNodeIdHex(nodeId)}`;
 }
 
+/** Meshtastic broadcast address (`!ffffffff`); never a valid DM peer. */
+export const MESHTASTIC_BROADCAST_NODE_NUM = 0xffffffff >>> 0;
+
+export function isMeshtasticBroadcastNodeNum(nodeId: number): boolean {
+  return nodeId >>> 0 === MESHTASTIC_BROADCAST_NODE_NUM;
+}
+
 /** Match node id against a search query (with or without leading `!` / leading zeros). */
 export function meshtasticNodeIdMatchesHexQuery(nodeId: number, query: string): boolean {
   const q = query.trim().toLowerCase().replace(/^!/, '');

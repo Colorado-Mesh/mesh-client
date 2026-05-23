@@ -1031,6 +1031,7 @@
     "receivedViaRf": "Received via RF",
     "receivedViaMqtt": "Received via MQTT",
     "receivedViaRfAndMqtt": "Received via RF + MQTT",
+    "receivedViaStoreForward": "Replayed from Store & Forward",
     "searchButton": "Search messages (Cmd+F)",
     "closeDm": "Close DM",
     "resendMessage": "Resend message",

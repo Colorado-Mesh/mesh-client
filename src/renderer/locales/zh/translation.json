@@ -1045,7 +1045,8 @@
     "unstarMessage": "无星级消息",
     "starredMessages": "已加标记的私信",
     "noStarredMessages": "还没有加星标的消息。为任何消息加星标，以便在此处保存。",
-    "goToMessage": "转到邮件"
+    "goToMessage": "转到邮件",
+    "receivedViaStoreForward": "已从商店和转发中重播"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "最大MQTT重新连接尝试次数",

@@ -9,6 +9,7 @@ declare module '@meshtastic/protobufs' {
   const Admin: any;
   const AppOnly: any;
   const LocalOnly: any;
+  const StoreForward: any;
   export {
     Mesh,
     Mqtt,
@@ -20,5 +21,6 @@ declare module '@meshtastic/protobufs' {
     Admin,
     AppOnly,
     LocalOnly,
+    StoreForward,
   };
 }

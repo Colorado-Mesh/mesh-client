@@ -1061,7 +1061,8 @@
     "unstarMessage": "Batalkan bintang pesan",
     "starredMessages": "Pesan berbintang",
     "noStarredMessages": "Belum ada pesan berbintang. Bintangi pesan apa pun untuk menyimpannya di sini.",
-    "goToMessage": "“Pergi ke pesan”"
+    "goToMessage": "“Pergi ke pesan”",
+    "receivedViaStoreForward": "Diputar Ulang dari Store & Forward"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Upaya penyambungan kembali MQTT maks",

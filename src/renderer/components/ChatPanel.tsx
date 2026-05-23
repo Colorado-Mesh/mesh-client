@@ -18,7 +18,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
-import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { useChatOutbox } from '../hooks/useChatOutbox';
@@ -269,6 +269,25 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
   return via === 'rf' ? rfIcon : mqttIcon;
 }
 
+function StoreForwardBadge() {
+  const { t } = useTranslation();
+  return (
+    <svg
+      className="h-3 w-3 text-amber-400"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <title>{t('chatPanel.receivedViaStoreForward')}</title>
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    </svg>
+  );
+}
+
 /** Format a date for day separators */
 function formatDayLabel(ts: number): string {
   const date = new Date(ts);
@@ -420,6 +439,20 @@ function ChatPanel({
   }, [myNodeNum, ownNodeIds]);
 
   const isOwnNode = useCallback((nodeId: number) => ownNodeIdSet.has(nodeId), [ownNodeIdSet]);
+
+  /** DM peer for a message, excluding broadcast and non-DM traffic. */
+  const resolveDmPeer = useCallback(
+    (msg: ChatMessage): number | undefined => {
+      if (msg.to == null) return undefined;
+      let peer: number | undefined;
+      if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
+      else if (isOwnNode(msg.to) && !isOwnNode(msg.sender_id)) peer = msg.sender_id;
+      if (peer == null) return undefined;
+      if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;
+      return peer >>> 0;
+    },
+    [isOwnNode, protocol],
+  );
 
   const scrollToTop = useCallback(() => {
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -606,18 +639,12 @@ function ChatPanel({
   const inferredDmTabs = useMemo(() => {
     const peers = new Map<number, number>();
     for (const msg of regularMessages) {
-      if (msg.to == null) continue;
-      // Mirror the DM thread filter in `filteredMessages`:
-      // - outgoing: sender_id == me, to == peer
-      // - incoming: sender_id == peer, to == me
-      let peer: number | undefined;
-      if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
-      if (isOwnNode(msg.to) && !isOwnNode(msg.sender_id)) peer = msg.sender_id;
+      const peer = resolveDmPeer(msg);
       if (peer == null) continue;
       peers.set(peer, (peers.get(peer) ?? 0) + 1);
     }
     return peers;
-  }, [isOwnNode, regularMessages]);
+  }, [regularMessages, resolveDmPeer]);
 
   const visibleDmTabs = useMemo(() => {
     const all = new Set(openDmTabs);
@@ -627,8 +654,10 @@ function ChatPanel({
         all.add(nodeNum);
       }
     }
-    return Array.from(all);
-  }, [openDmTabs, inferredDmTabs, dismissedDmTabs]);
+    return Array.from(all).filter(
+      (nodeNum) => protocol !== 'meshtastic' || !isMeshtasticBroadcastNodeNum(nodeNum),
+    );
+  }, [openDmTabs, inferredDmTabs, dismissedDmTabs, protocol]);
 
   const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
 
@@ -636,11 +665,8 @@ function ChatPanel({
   const dmUnreadCounts = useMemo(() => {
     const counts = new Map<number, number>();
     for (const msg of regularMessages) {
-      if (msg.to == null) continue;
       if (msg.isHistory) continue;
-      let peer: number | undefined;
-      if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
-      if (isOwnNode(msg.to) && !isOwnNode(msg.sender_id)) peer = msg.sender_id;
+      const peer = resolveDmPeer(msg);
       if (peer == null) continue;
       if (isOwnNode(msg.sender_id)) continue;
       const lr = persistedLastRead[`dm:${peer}`] ?? 0;
@@ -649,7 +675,7 @@ function ChatPanel({
       }
     }
     return counts;
-  }, [isOwnNode, persistedLastRead, regularMessages]);
+  }, [isOwnNode, persistedLastRead, regularMessages, resolveDmPeer]);
 
   // Lookup map for rendering quoted replies (packetId in Meshtastic, timestamp fallback in MeshCore)
   const messageByReplyKey = useMemo(() => {
@@ -790,7 +816,7 @@ function ChatPanel({
     for (const msg of newMsgs) {
       if (isOwnNode(msg.sender_id)) continue;
       if (msg.isHistory) continue;
-      const peer = msg.to != null ? (isOwnNode(msg.to) ? msg.sender_id : msg.to) : null;
+      const peer = resolveDmPeer(msg);
       const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
       if (mutedViews.has(msgViewKey)) continue;
       if ((!isActive || msgViewKey !== viewKey) && !document.hidden) {
@@ -798,7 +824,7 @@ function ChatPanel({
         break;
       }
     }
-  }, [messages, isActive, mutedViews, viewKey, isOwnNode]);
+  }, [messages, isActive, mutedViews, viewKey, isOwnNode, resolveDmPeer]);
 
   const updateScrollButtonVisibility = useCallback(() => {
     const distFromBottom = getDistFromChatBottom(
@@ -2055,6 +2081,7 @@ function ChatPanel({
                         {/* Transport + RF hop count (incoming) */}
                         {!isOwn &&
                           (msg.receivedVia ||
+                            msg.viaStoreForward ||
                             (msg.rxHops != null &&
                               (msg.receivedVia === 'rf' || msg.receivedVia === 'both'))) && (
                             <div className="mt-0.5 flex items-center justify-end gap-2">
@@ -2067,6 +2094,7 @@ function ChatPanel({
                                     {t('nodeDetailModal.hopLabel', { count: msg.rxHops })}
                                   </span>
                                 )}
+                              {msg.viaStoreForward && <StoreForwardBadge />}
                               {msg.receivedVia && <TransportBadge via={msg.receivedVia} />}
                             </div>
                           )}

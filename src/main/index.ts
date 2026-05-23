@@ -3038,8 +3038,8 @@ ipcMain.handle('db:saveMessage', (event, message) => {
     validateSaveMessage(message);
     const db = getDatabase();
     const stmt = db.prepareOnce(`
-      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status, received_via, reply_preview_text, reply_preview_sender, rx_hops)
-      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status, @received_via, @reply_preview_text, @reply_preview_sender, @rx_hops)
+      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status, received_via, reply_preview_text, reply_preview_sender, rx_hops, via_store_forward)
+      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status, @received_via, @reply_preview_text, @reply_preview_sender, @rx_hops, @via_store_forward)
     `);
     const validReceivedVia = ['rf', 'mqtt', 'both'];
     return stmt.run({
@@ -3067,6 +3067,7 @@ ipcMain.handle('db:saveMessage', (event, message) => {
         Number.isFinite(message.rxHops)
           ? Math.trunc(message.rxHops)
           : null,
+      via_store_forward: message.viaStoreForward ? 1 : 0,
     });
   } catch (err) {
     console.error(
@@ -3086,7 +3087,7 @@ ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
          packet_id AS packetId, status, error, emoji, reply_id AS replyId, to_node,
          mqtt_status AS mqttStatus, received_via AS receivedVia,
          reply_preview_text AS replyPreviewText, reply_preview_sender AS replyPreviewSender,
-         rx_hops AS rxHops`;
+         rx_hops AS rxHops, via_store_forward AS viaStoreForward`;
     let rows: any[];
     if (channel != null) {
       const ch = safeNonNegativeInt(channel);
@@ -3103,10 +3104,16 @@ ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
 
     // Map to_node back to `to` for the renderer; drop invalid reaction scalars from legacy rows
     return rows.map((r: any) => {
-      const { to_node, emoji: emojiRaw, ...rest } = r;
+      const { to_node, emoji: emojiRaw, viaStoreForward: viaSfRaw, ...rest } = r;
       const emoji =
         emojiRaw != null ? (sanitizeUnicodeReactionScalar(emojiRaw) ?? undefined) : undefined;
-      return { ...rest, emoji, to: to_node ?? undefined };
+      const viaStoreForward = viaSfRaw === 1 || viaSfRaw === true;
+      return {
+        ...rest,
+        emoji,
+        to: to_node ?? undefined,
+        ...(viaStoreForward ? { viaStoreForward: true } : {}),
+      };
     });
   } catch (err) {
     console.error(

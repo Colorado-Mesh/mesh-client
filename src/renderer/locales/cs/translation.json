@@ -1047,7 +1047,8 @@
     "unstarMessage": "Zpráva bez hvězdičky",
     "starredMessages": "Označené zprávy",
     "noStarredMessages": "Zatím žádné zprávy označené hvězdičkou. Označte jakoukoli zprávu hvězdičkou a uložte ji zde.",
-    "goToMessage": "Přejít na zprávu"
+    "goToMessage": "Přejít na zprávu",
+    "receivedViaStoreForward": "Přehráno z obchodu & Vpřed"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maximální počet pokusů o opětovné připojení MQTT",
