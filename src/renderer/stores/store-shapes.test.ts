@@ -11,6 +11,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { useDiagnosticsStore } from './diagnosticsStore';
+import { useMapLayerStore } from './mapLayerStore';
 import { useMapViewportStore } from './mapViewportStore';
 import { usePositionHistoryStore } from './positionHistoryStore';
 import { useRepeaterSignalStore } from './repeaterSignalStore';
@@ -19,6 +20,7 @@ const initialDiagnosticsState = useDiagnosticsStore.getInitialState();
 const initialMapViewportState = useMapViewportStore.getInitialState();
 const initialPositionHistoryState = usePositionHistoryStore.getInitialState();
 const initialRepeaterSignalState = useRepeaterSignalStore.getInitialState();
+const initialMapLayerState = useMapLayerStore.getInitialState();
 
 function stateKeys(stateObject: object) {
   const state = stateObject as Record<string, unknown>;
@@ -35,6 +37,7 @@ describe('store shape contracts', () => {
   afterEach(() => {
     useDiagnosticsStore.setState(initialDiagnosticsState, true);
     useMapViewportStore.setState(initialMapViewportState, true);
+    useMapLayerStore.setState({ ...initialMapLayerState, layersPanelOpen: false });
     usePositionHistoryStore.setState(initialPositionHistoryState, true);
     useRepeaterSignalStore.setState(initialRepeaterSignalState, true);
   });
@@ -156,6 +159,7 @@ describe('store shape contracts', () => {
       const { data } = stateKeys(useMapViewportStore.getState());
       expect(data).toMatchInlineSnapshot(`
         [
+          "pendingFocus",
           "viewport",
         ]
       `);
@@ -165,7 +169,36 @@ describe('store shape contracts', () => {
       const { fns } = stateKeys(useMapViewportStore.getState());
       expect(fns).toMatchInlineSnapshot(`
         [
+          "clearPendingFocus",
+          "requestFocus",
           "setViewport",
+        ]
+      `);
+    });
+  });
+
+  describe('useMapLayerStore', () => {
+    it('data property names are stable', () => {
+      const { data } = stateKeys(useMapLayerStore.getState());
+      expect(data).toMatchInlineSnapshot(`
+        [
+          "basemapId",
+          "layersPanelOpen",
+          "showNodes",
+          "showWaypoints",
+        ]
+      `);
+    });
+
+    it('action method names are stable', () => {
+      const { fns } = stateKeys(useMapLayerStore.getState());
+      expect(fns).toMatchInlineSnapshot(`
+        [
+          "hydrateFromDatabase",
+          "setBasemapId",
+          "setLayersPanelOpen",
+          "setShowNodes",
+          "setShowWaypoints",
         ]
       `);
     });

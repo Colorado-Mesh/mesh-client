@@ -369,3 +369,46 @@ describe('NodeListPanel flood advert (MeshCore)', () => {
     expect(screen.getByRole('button', { name: 'Send flood advert' })).toBeDisabled();
   });
 });
+
+describe('NodeListPanel meshtastic node id display', () => {
+  it('shows 8-digit hex id with leading zeros preserved', () => {
+    const nodeId = 0x0bcd5737;
+    const nodes = new Map<number, MeshNode>([
+      [nodeId, makeNode({ node_id: nodeId, long_name: 'LeadingZero' })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    expect(screen.getByText('!0bcd5737')).toBeInTheDocument();
+  });
+});
+
+describe('NodeListPanel show on map', () => {
+  it('calls onShowOnMap when map pin is clicked for node with coordinates', async () => {
+    const user = userEvent.setup();
+    const onShowOnMap = vi.fn();
+    const nodes = new Map<number, MeshNode>([
+      [42, makeNode({ node_id: 42, long_name: 'HasPos', latitude: 39.74, longitude: -104.99 })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+        onShowOnMap={onShowOnMap}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Show on map' }));
+    expect(onShowOnMap).toHaveBeenCalledWith(42, 39.74, -104.99);
+  });
+});

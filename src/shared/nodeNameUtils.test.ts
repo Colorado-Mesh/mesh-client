@@ -1,6 +1,28 @@
 import { describe, expect, it } from 'vitest';
 
-import { meshtasticNodeLacksDisplayIdentity } from './nodeNameUtils';
+import {
+  formatMeshtasticNodeId,
+  formatMeshtasticNodeIdHex,
+  meshtasticNodeIdMatchesHexQuery,
+  meshtasticNodeLacksDisplayIdentity,
+} from './nodeNameUtils';
+
+describe('formatMeshtasticNodeId', () => {
+  it('pads leading zeros for canonical 8-digit hex', () => {
+    expect(formatMeshtasticNodeIdHex(0x0bcd5737)).toBe('0bcd5737');
+    expect(formatMeshtasticNodeId(0x0bcd5737)).toBe('!0bcd5737');
+    expect(formatMeshtasticNodeIdHex(0x0aca472c)).toBe('0aca472c');
+    expect(formatMeshtasticNodeId(0xabcd1234)).toBe('!abcd1234');
+  });
+
+  it('matches hex queries with or without leading zeros', () => {
+    const id = 0x0bcd5737;
+    expect(meshtasticNodeIdMatchesHexQuery(id, '0bcd5737')).toBe(true);
+    expect(meshtasticNodeIdMatchesHexQuery(id, '!0bcd5737')).toBe(true);
+    expect(meshtasticNodeIdMatchesHexQuery(id, 'bcd5737')).toBe(true);
+    expect(meshtasticNodeIdMatchesHexQuery(id, 'deadbeef')).toBe(false);
+  });
+});
 
 describe('meshtasticNodeLacksDisplayIdentity', () => {
   const id = 0xabcd1234;

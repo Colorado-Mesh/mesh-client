@@ -35,6 +35,7 @@ import { formatCoordPair } from '../lib/coordUtils';
 import { getRoutingRowForNode, routingAnomalyNodeIds } from '../lib/diagnostics/diagnosticRows';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
+import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
@@ -44,6 +45,7 @@ import type { MeshNode, MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/t
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { useMapLayerStore } from '../stores/mapLayerStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
 import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
@@ -198,17 +200,14 @@ function getMarkerIcon(
   cu: number,
   isMqttOnly = false,
   nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = null,
+  isDarkBasemap = true,
 ): L.Icon {
-  const color = status === 'online' ? '#86efac' : status === 'stale' ? '#4c1d95' : '#334155';
+  const colors = getMapOverlayColors(isDarkBasemap);
+  const color = colors[status];
   const opacity = status === 'online' ? 1 : status === 'stale' ? 0.65 : 0.45;
   return createMarkerIcon(color, isSelf, cu, opacity, isMqttOnly, nodeBadge);
 }
 
-const PATH_COLORS = {
-  online: '#86efac',
-  stale: '#4c1d95',
-  offline: '#334155',
-} as const;
 const MAX_PATH_POINTS_RENDER = 500; // Avoid huge polyline arrays in renderer memory
 
 function downsamplePathPoints(points: [number, number][], maxPoints: number): [number, number][] {
@@ -257,6 +256,7 @@ interface MapMarkerProps {
   protocol: MeshProtocol;
   onNodeClick?: (nodeId: number) => void;
   congestionHalosEnabled: boolean;
+  isDarkBasemap: boolean;
 }
 
 interface HaloMarkerProps {
@@ -357,6 +357,7 @@ const MapMarker = memo(
     onNodeClick,
     congestionHalosEnabled,
     protocol,
+    isDarkBasemap,
   }: MapMarkerProps) {
     const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
     const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
@@ -373,8 +374,16 @@ const MapMarker = memo(
 
     const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
     const icon = useMemo(
-      () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge),
-      [status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge],
+      () =>
+        getMarkerIcon(
+          status,
+          isSelf,
+          cuForIcon,
+          node.heard_via_mqtt_only,
+          nodeBadge,
+          isDarkBasemap,
+        ),
+      [status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge, isDarkBasemap],
     );
 
     return (
@@ -397,6 +406,7 @@ const MapMarker = memo(
       prev.isSelf !== next.isSelf ||
       prev.protocol !== next.protocol ||
       prev.congestionHalosEnabled !== next.congestionHalosEnabled ||
+      prev.isDarkBasemap !== next.isDarkBasemap ||
       prev.onNodeClick !== next.onNodeClick ||
       prev.nodeRenderSignature !== next.nodeRenderSignature ||
       prev.homeNodeRenderSignature !== next.homeNodeRenderSignature ||
@@ -600,6 +610,130 @@ function PathPolyline({
   );
 }
 
+function MapFocusController() {
+  const map = useMap();
+  const pendingFocus = useMapViewportStore((s) => s.pendingFocus);
+  const clearPendingFocus = useMapViewportStore((s) => s.clearPendingFocus);
+
+  useEffect(() => {
+    if (!pendingFocus) return;
+    const { lat, lon, zoom = 14 } = pendingFocus;
+    map.flyTo([lat, lon], zoom, { duration: 0.5 });
+    clearPendingFocus();
+  }, [pendingFocus, map, clearPendingFocus]);
+
+  return null;
+}
+
+function MapLayerControl({
+  routeWeightsSupported,
+  showRouteWeights,
+  onToggleRouteWeights,
+}: {
+  routeWeightsSupported: boolean;
+  showRouteWeights: boolean;
+  onToggleRouteWeights: (enabled: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const layersPanelOpen = useMapLayerStore((s) => s.layersPanelOpen);
+  const setLayersPanelOpen = useMapLayerStore((s) => s.setLayersPanelOpen);
+  const basemapId = useMapLayerStore((s) => s.basemapId);
+  const setBasemapId = useMapLayerStore((s) => s.setBasemapId);
+  const showNodes = useMapLayerStore((s) => s.showNodes);
+  const setShowNodes = useMapLayerStore((s) => s.setShowNodes);
+  const showWaypoints = useMapLayerStore((s) => s.showWaypoints);
+  const setShowWaypoints = useMapLayerStore((s) => s.setShowWaypoints);
+  const showPaths = usePositionHistoryStore((s) => s.showPaths);
+  const setShowPaths = usePositionHistoryStore((s) => s.setShowPaths);
+  const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
+  const setAnomalyHalosEnabled = useDiagnosticsStore((s) => s.setAnomalyHalosEnabled);
+  const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
+  const setCongestionHalosEnabled = useDiagnosticsStore((s) => s.setCongestionHalosEnabled);
+
+  const layerRow = (
+    id: string,
+    label: string,
+    checked: boolean,
+    onChange: (v: boolean) => void,
+  ) => (
+    <label key={id} className="text-muted flex cursor-pointer items-center gap-2 text-xs">
+      <input
+        type="checkbox"
+        className="accent-brand-green"
+        checked={checked}
+        onChange={(e) => {
+          onChange(e.target.checked);
+        }}
+      />
+      {label}
+    </label>
+  );
+
+  return (
+    <div className="flex w-52 flex-col items-stretch gap-2">
+      <button
+        type="button"
+        aria-label={t('mapPanel.layerControlsAria')}
+        aria-expanded={layersPanelOpen}
+        className="bg-deep-black/80 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 backdrop-blur-sm transition-colors hover:border-gray-500"
+        onClick={() => {
+          setLayersPanelOpen(!layersPanelOpen);
+        }}
+      >
+        {t('mapPanel.layerControls')}
+      </button>
+      {layersPanelOpen && (
+        <div className="bg-deep-black/90 w-52 space-y-3 rounded-lg border border-gray-700 p-3 text-gray-200 shadow-lg backdrop-blur-sm">
+          <div className="space-y-1">
+            <div className="text-[10px] font-medium tracking-wide text-gray-400 uppercase">
+              {t('mapPanel.basemapHeading')}
+            </div>
+            <select
+              aria-label={t('mapPanel.basemapSelectAria')}
+              className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-200"
+              value={basemapId}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === 'dark' || v === 'osm') setBasemapId(v);
+              }}
+            >
+              <option value="dark">{t('mapPanel.basemapDark')}</option>
+              <option value="osm">{t('mapPanel.basemapOsm')}</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-medium tracking-wide text-gray-400 uppercase">
+              {t('mapPanel.layersHeading')}
+            </div>
+            {layerRow('nodes', t('mapPanel.layerNodes'), showNodes, setShowNodes)}
+            {layerRow('paths', t('mapPanel.layerPaths'), showPaths, setShowPaths)}
+            {layerRow('waypoints', t('mapPanel.layerWaypoints'), showWaypoints, setShowWaypoints)}
+            {routeWeightsSupported &&
+              layerRow(
+                'routeWeights',
+                t('mapPanel.layerRouteWeights'),
+                showRouteWeights,
+                onToggleRouteWeights,
+              )}
+            {layerRow(
+              'anomalyHalos',
+              t('mapPanel.layerAnomalyHalos'),
+              anomalyHalosEnabled,
+              setAnomalyHalosEnabled,
+            )}
+            {layerRow(
+              'congestionHalos',
+              t('mapPanel.layerCongestionHalos'),
+              congestionHalosEnabled,
+              setCongestionHalosEnabled,
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── MapPanel ─────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -680,6 +814,12 @@ export default function MapPanel({
   const loadPathHistoryForNode = usePathHistoryStore((s) => s.loadForNode);
   const showPaths = usePositionHistoryStore((s) => s.showPaths);
   const loadHistoryFromDb = usePositionHistoryStore((s) => s.loadHistoryFromDb);
+
+  const basemapId = useMapLayerStore((s) => s.basemapId);
+  const showNodes = useMapLayerStore((s) => s.showNodes);
+  const showWaypoints = useMapLayerStore((s) => s.showWaypoints);
+  const basemap = MAP_BASEMAPS[basemapId];
+  const overlayColors = useMemo(() => getMapOverlayColors(basemap.isDark), [basemap.isDark]);
 
   const [showRouteWeights, setShowRouteWeights] = useState(false);
   const routeWeightLoadedNodeIdsRef = useRef<Set<number>>(new Set());
@@ -950,11 +1090,18 @@ export default function MapPanel({
           points.map((p) => [p.lat, p.lon] as [number, number]),
           MAX_PATH_POINTS_RENDER,
         ),
-        pathOptions: { color: PATH_COLORS[status], weight: 3, opacity: 0.65 },
+        pathOptions: { color: overlayColors[status], weight: 3, opacity: 0.65 },
       });
     }
     return result;
-  }, [positionHistory, showPaths, nodes, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
+  }, [
+    positionHistory,
+    showPaths,
+    nodes,
+    nodeStaleThresholdMs,
+    nodeOfflineThresholdMs,
+    overlayColors,
+  ]);
 
   const savedViewport = useMapViewportStore((s) => s.viewport);
   const computedCenter: [number, number] =
@@ -979,42 +1126,31 @@ export default function MapPanel({
     return counts;
   }, [nodesToRender, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
 
-  const iconCreateFunction = useCallback((cluster: { getChildCount(): number }) => {
-    const count = cluster.getChildCount();
-    let size = 40;
-    if (count > 10) size = 50;
-    if (count > 100) size = 60;
-    return L.divIcon({
-      html: `<div style="background:rgba(134,239,172,0.2);border:3px solid #86efac;border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"><span style="display:inline-flex;align-items:center;justify-content:center;padding:0 4px;min-width:18px;height:18px;border-radius:9999px;background:#86efac;color:#020617;font-size:12px;font-weight:800;line-height:1;opacity:1;">${count}</span></div>`,
-      className: '',
-      iconSize: [size, size],
-    });
-  }, []);
+  const iconCreateFunction = useCallback(
+    (cluster: { getChildCount(): number }) => {
+      const count = cluster.getChildCount();
+      let size = 40;
+      if (count > 10) size = 50;
+      if (count > 100) size = 60;
+      const border = overlayColors.online;
+      const fill = basemap.isDark ? overlayColors.online : '#15803d';
+      const text = basemap.isDark ? '#020617' : '#ffffff';
+      return L.divIcon({
+        html: `<div style="background:${border}33;border:3px solid ${border};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"><span style="display:inline-flex;align-items:center;justify-content:center;padding:0 4px;min-width:18px;height:18px;border-radius:9999px;background:${fill};color:${text};font-size:12px;font-weight:800;line-height:1;opacity:1;">${count}</span></div>`,
+        className: '',
+        iconSize: [size, size],
+      });
+    },
+    [overlayColors.online, basemap.isDark],
+  );
 
   return (
     <div
       className="relative h-full min-h-[500px] overflow-hidden rounded-lg border border-gray-700/50"
       aria-label={t('mapPanel.networkMap')}
     >
-      {/* Controls overlay — top right */}
-      <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
-        {routeWeightsSupported && (
-          <button
-            type="button"
-            onClick={() => {
-              setShowRouteWeights((v) => !v);
-            }}
-            className={`bg-deep-black/80 rounded-lg border px-3 py-1.5 text-xs backdrop-blur-sm transition-colors ${
-              showRouteWeights
-                ? 'border-brand-green text-brand-green'
-                : 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200'
-            }`}
-            title={t('mapPanel.toggleRouteWeightLines')}
-            aria-label={t('mapPanel.toggleRouteWeightLines')}
-          >
-            {t('mapPanel.routeWeights')}
-          </button>
-        )}
+      {/* Status legend + layer controls — top right, below Leaflet zoom (+/-) on the left */}
+      <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
         <div className="bg-deep-black/80 flex items-center gap-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs backdrop-blur-sm">
           <span className="flex items-center gap-1">
             <span className="bg-brand-green inline-block h-2 w-2 rounded-full" />
@@ -1029,6 +1165,11 @@ export default function MapPanel({
             {statusCounts.offline}
           </span>
         </div>
+        <MapLayerControl
+          routeWeightsSupported={routeWeightsSupported}
+          showRouteWeights={showRouteWeights}
+          onToggleRouteWeights={setShowRouteWeights}
+        />
       </div>
 
       <MapContainer
@@ -1039,6 +1180,7 @@ export default function MapPanel({
       >
         <DiagnosticPanes />
         <ViewportSaver hasAnyPositions={positions.length > 0 || !!ourPosition} />
+        <MapFocusController />
         <MapFitter
           positions={positions}
           ourPosition={ourPosition}
@@ -1046,8 +1188,9 @@ export default function MapPanel({
         />
         <LocateMeControl onLocateMe={onLocateMe} />
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          key={basemapId}
+          url={basemap.url}
+          attribution={basemap.attribution}
           keepBuffer={1}
           updateWhenIdle
         />
@@ -1061,7 +1204,7 @@ export default function MapPanel({
           />
         ))}
         {routeWeightPolylines}
-        {anomalyHalosEnabled || congestionHalosEnabled
+        {showNodes && (anomalyHalosEnabled || congestionHalosEnabled)
           ? nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
               <NodeHalo
                 key={`halo-${node.node_id}`}
@@ -1073,29 +1216,33 @@ export default function MapPanel({
               />
             ))
           : null}
-        <MarkerClusterGroup
-          showCoverageOnHover={false}
-          chunkedLoading
-          maxClusterRadius={60}
-          disableClusteringAtZoom={9}
-          iconCreateFunction={iconCreateFunction}
-        >
-          {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly }) => (
-            <MapMarker
-              key={node.node_id}
-              node={node}
-              anomaly={anomaly}
-              nodeRenderSignature={toNodeRenderSignature(node)}
-              homeNodeRenderSignature={homeNode ? toNodeRenderSignature(homeNode) : 'none'}
-              anomalyRenderSignature={toAnomalyRenderSignature(anomaly)}
-              isSelf={node.node_id === myNodeNum}
-              protocol={protocol}
-              onNodeClick={onNodeClick}
-              congestionHalosEnabled={congestionHalosEnabled}
-            />
-          ))}
-        </MarkerClusterGroup>
-        {waypoints &&
+        {showNodes && (
+          <MarkerClusterGroup
+            showCoverageOnHover={false}
+            chunkedLoading
+            maxClusterRadius={60}
+            disableClusteringAtZoom={9}
+            iconCreateFunction={iconCreateFunction}
+          >
+            {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly }) => (
+              <MapMarker
+                key={node.node_id}
+                node={node}
+                anomaly={anomaly}
+                nodeRenderSignature={toNodeRenderSignature(node)}
+                homeNodeRenderSignature={homeNode ? toNodeRenderSignature(homeNode) : 'none'}
+                anomalyRenderSignature={toAnomalyRenderSignature(anomaly)}
+                isSelf={node.node_id === myNodeNum}
+                protocol={protocol}
+                onNodeClick={onNodeClick}
+                congestionHalosEnabled={congestionHalosEnabled}
+                isDarkBasemap={basemap.isDark}
+              />
+            ))}
+          </MarkerClusterGroup>
+        )}
+        {showWaypoints &&
+          waypoints &&
           [...waypoints.values()].map((wp) => (
             <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
               <Popup>

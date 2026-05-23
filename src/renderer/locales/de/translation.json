@@ -876,7 +876,8 @@
     "addToFavorites": "Zu Favoriten hinzufügen",
     "healthTooltip": "Gesundheitsbewertung: {{total}}/100 (Signal {{signal}}, Aktualität {{recency}}, Last {{load}}, Batterie {{battery}})",
     "healthAriaLabel": "Node Health Score {{total}} von 100",
-    "buttonExportJson": "Exportieren JSON"
+    "buttonExportJson": "Exportieren JSON",
+    "showOnMap": "Auf Karte anzeigen"
   },
   "mapPanel": {
     "locationUnavailable": "Standort nicht verfügbar.",
@@ -886,7 +887,20 @@
     "showMyLocation": "Mein Ort",
     "networkMap": "Netzwerkkarte mit Knotenpositionen",
     "toggleRouteWeightLines": "Streckengewichtslinien ein-/ausblenden",
-    "routeWeights": "Routengewichte"
+    "routeWeights": "Routengewichte",
+    "layerControls": "Schichten",
+    "layerControlsAria": "Steuerelemente der Kartenebene ein-/ausblenden",
+    "basemapHeading": "Basiskarte",
+    "basemapSelectAria": "Karten-Grundkarte auswählen",
+    "basemapDark": "Dunkel (Karton)",
+    "basemapOsm": "OpenStreetMap (light)",
+    "layersHeading": "Deckschichten",
+    "layerNodes": "Knotenmarker",
+    "layerPaths": "Bewegungspfade",
+    "layerWaypoints": "Fahrtroute",
+    "layerRouteWeights": "Routengewichte",
+    "layerAnomalyHalos": "Anomalie Halos",
+    "layerCongestionHalos": "Stauhalos"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -1593,7 +1607,8 @@
     "notesLabel": "Vermerke",
     "notesPlaceholder": "Private Notizen zu diesem Knoten (nicht übertragen)...",
     "watchNode": "Ansehen",
-    "unwatchNode": "schaue gerade"
+    "unwatchNode": "schaue gerade",
+    "showOnMap": "Auf Karte anzeigen"
   },
   "firmwareStatus": {
     "checking": "Überprüfung der Firmwareversion",

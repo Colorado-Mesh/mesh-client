@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -181,5 +182,26 @@ describe('NodeDetailModal accessibility', () => {
     );
 
     expect(screen.getByText('Online')).toBeInTheDocument();
+  });
+
+  it('shows Show on map next to position when onShowOnMap is provided', async () => {
+    const user = userEvent.setup();
+    const onShowOnMap = vi.fn();
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+        onShowOnMap={onShowOnMap}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Show on map' }));
+    expect(onShowOnMap).toHaveBeenCalledWith(mockNode.node_id, 40, -105);
   });
 });

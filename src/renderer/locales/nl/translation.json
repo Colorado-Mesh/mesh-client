@@ -892,7 +892,8 @@
     "addToFavorites": "Toevoegen aan favorieten",
     "healthTooltip": "Gezondheidsscore: {{total}}/100 (signaal {{signal}}, recent {{recency}}, belasting {{load}}, batterij {{battery}})",
     "healthAriaLabel": "Knooppuntgezondheidsscore {{total}} van de 100",
-    "buttonExportJson": "Exporteer als JSON"
+    "buttonExportJson": "Exporteer als JSON",
+    "showOnMap": "Weergeven op kaart"
   },
   "mapPanel": {
     "locationUnavailable": "Locatie niet beschikbaar.",
@@ -902,7 +903,20 @@
     "showMyLocation": "Toon mijn locatie",
     "networkMap": "Netwerkkaart met knooppuntposities",
     "toggleRouteWeightLines": "Schakel routegewichtslijnen in of uit",
-    "routeWeights": "Routegewichten"
+    "routeWeights": "Routegewichten",
+    "layerControls": "Lagen",
+    "layerControlsAria": "Kaartlaagbesturingselementen in-/uitschakelen",
+    "basemapHeading": "\"Basiskaart\"",
+    "basemapSelectAria": "Selecteer kaart basiskaart",
+    "basemapDark": "Donker (Carto)",
+    "basemapOsm": "OpenStreetMap (licht)",
+    "layersHeading": "Overlays",
+    "layerNodes": "Knooppuntmarkeringen",
+    "layerPaths": "Bewegingspaden",
+    "layerWaypoints": "Routepunten",
+    "layerRouteWeights": "Routegewichten",
+    "layerAnomalyHalos": "Anomalie halo's",
+    "layerCongestionHalos": "Congestiehalo's"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -1609,7 +1623,8 @@
     "notesLabel": "Opmerkingen",
     "notesPlaceholder": "Privénotities over dit knooppunt (niet verzonden)...",
     "watchNode": "Bekijken",
-    "unwatchNode": "Bekijken"
+    "unwatchNode": "Bekijken",
+    "showOnMap": "Weergeven op kaart"
   },
   "firmwareStatus": {
     "checking": "Firmwareversie controleren",

@@ -1,6 +1,8 @@
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 
+import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+
 import type {
   CongestionLine,
   RfDuplicateOriginator,
@@ -72,7 +74,7 @@ export default function MeshCongestionAttributionBlock({
           <ul className="space-y-1">
             {originators.map((o) => {
               const n = nodes?.get(o.nodeId);
-              const name = n?.short_name || n?.long_name || `!${o.nodeId.toString(16)}`;
+              const name = n?.short_name || n?.long_name || formatMeshtasticNodeId(o.nodeId);
               const role = getRoleInfo(n?.role);
               return (
                 <li key={o.nodeId} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">

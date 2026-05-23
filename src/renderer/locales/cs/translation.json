@@ -878,7 +878,8 @@
     "addToFavorites": "Přidat k oblíbeným",
     "healthTooltip": "Zdravotní skóre: {{total}}/100 (signál {{signal}}, aktuálnost {{recency}}, zatížení {{load}}, baterie {{battery}})",
     "healthAriaLabel": "Zdravotní skóre uzlu {{total}} ze 100",
-    "buttonExportJson": "Exportovat JSON"
+    "buttonExportJson": "Exportovat JSON",
+    "showOnMap": "Zobrazit na mapě"
   },
   "mapPanel": {
     "locationUnavailable": "Poloha není k dispozici.",
@@ -888,7 +889,20 @@
     "showMyLocation": "Zobrazit moji polohu",
     "networkMap": "Mapa sítě zobrazující pozice uzlů",
     "toggleRouteWeightLines": "Přepnout čáry hmotnosti trasy",
-    "routeWeights": "Váhy trasy"
+    "routeWeights": "Váhy trasy",
+    "layerControls": "Vrstvy",
+    "layerControlsAria": "Přepnout ovládací prvky mapové vrstvy",
+    "basemapHeading": "Podkladová mapa",
+    "basemapSelectAria": "Vybrat podkladovou mapu",
+    "basemapDark": "Tmavá (karto)",
+    "basemapOsm": "OpenStreetMap (světlá)",
+    "layersHeading": "Překryvné vrstvy",
+    "layerNodes": "Značky uzlů",
+    "layerPaths": "Pohybové stezky",
+    "layerWaypoints": "Trasové body",
+    "layerRouteWeights": "Závaží trasy",
+    "layerAnomalyHalos": "Anomálie halos",
+    "layerCongestionHalos": "Halo přetížení"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -1595,7 +1609,8 @@
     "notesLabel": "Poznámky",
     "notesPlaceholder": "Soukromé poznámky k tomuto uzlu (nejsou přenášeny)…",
     "watchNode": "Sledovat",
-    "unwatchNode": "Sleduje"
+    "unwatchNode": "Sleduje",
+    "showOnMap": "Zobrazit na mapě"
   },
   "firmwareStatus": {
     "checking": "Kontrola verze firmwaru",

@@ -4,6 +4,7 @@ import {
   APP_SETTINGS_STORAGE_KEY,
   getAppSettingsRaw,
   mergeAppSetting,
+  mergeAppSettingsPartial,
   setAppSettingsRaw,
 } from './appSettingsStorage';
 
@@ -39,6 +40,21 @@ describe('appSettingsStorage', () => {
     expect(parsed.existing).toBe(true);
     expect(parsed.newKey).toBe(42);
     expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
+  });
+
+  it('mergeAppSettingsPartial preserves unrelated keys', () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ mapBasemapId: 'dark', other: 1 }),
+    );
+    mergeAppSettingsPartial({ chatCompactMode: true }, 'appSettingsStorage.test partial');
+    const parsed = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      unknown
+    >;
+    expect(parsed.mapBasemapId).toBe('dark');
+    expect(parsed.chatCompactMode).toBe(true);
+    expect(parsed.other).toBe(1);
   });
 
   it('setAppSettingsRaw replaces after migrating legacy', () => {

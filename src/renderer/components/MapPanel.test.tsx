@@ -1,8 +1,11 @@
-import { act, render } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import type { PathRecord } from '../lib/pathHistoryTypes';
+import { useMapLayerStore } from '../stores/mapLayerStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import MapPanel from './MapPanel';
@@ -35,7 +38,13 @@ vi.mock('../stores/diagnosticsStore', () => ({
 
 vi.mock('../stores/mapViewportStore', () => ({
   useMapViewportStore: (selector: (s: unknown) => unknown) => {
-    const store = { viewport: null, setViewport: vi.fn() };
+    const store = {
+      viewport: null,
+      setViewport: vi.fn(),
+      pendingFocus: null,
+      requestFocus: vi.fn(),
+      clearPendingFocus: vi.fn(),
+    };
     return selector(store);
   },
 }));
@@ -494,5 +503,55 @@ describe('MapPanel accessibility', () => {
       duration: 0.35,
     });
     expect(onNodeClick).toHaveBeenCalledWith(7);
+  });
+});
+
+describe('MapPanel layer controls', () => {
+  beforeEach(() => {
+    useMapLayerStore.setState({
+      basemapId: 'osm',
+      showNodes: true,
+      showWaypoints: true,
+      layersPanelOpen: false,
+    });
+  });
+
+  it('shows layers control and switches basemap in store', async () => {
+    const user = userEvent.setup();
+    const nowSec = Math.floor(Date.now() / 1000);
+    const nodes = new Map([
+      [
+        1,
+        {
+          node_id: 1,
+          long_name: 'A',
+          short_name: 'A',
+          hw_model: 'T-Echo',
+          snr: 0,
+          battery: 0,
+          last_heard: nowSec,
+          latitude: 40.185,
+          longitude: -105.073,
+        },
+      ],
+    ]);
+
+    render(
+      <MapPanel
+        nodes={nodes}
+        myNodeNum={1}
+        locationFilter={defaultFilter}
+        ourPosition={null}
+        onLocateMe={vi.fn().mockResolvedValue(null)}
+        protocol="meshtastic"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Toggle map layer controls' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Toggle map layer controls' }));
+    const select = screen.getByRole('combobox', { name: 'Select map basemap' });
+    await user.selectOptions(select, 'dark');
+    expect(useMapLayerStore.getState().basemapId).toBe('dark');
+    expect(MAP_BASEMAPS.dark.isDark).toBe(true);
   });
 });

@@ -892,7 +892,8 @@
     "addToFavorites": "お気に入りに追加",
     "healthTooltip": "健康スコア: {{total}}/100 (信号 {{signal}}, 最近 {{recency}}, 負荷 {{load}}, バッテリー {{battery}})",
     "healthAriaLabel": "ノードヘルススコア{{total}} / 100",
-    "buttonExportJson": "JSON のエクスポート"
+    "buttonExportJson": "JSON のエクスポート",
+    "showOnMap": "周辺地図を見る"
   },
   "mapPanel": {
     "locationUnavailable": "場所が利用できません。",
@@ -902,7 +903,20 @@
     "showMyLocation": "私の現在地を表示",
     "networkMap": "ノードの位置を示すネットワーク マップ",
     "toggleRouteWeightLines": "ルートの重み線を切り替えます",
-    "routeWeights": "ルートの重み"
+    "routeWeights": "ルートの重み",
+    "layerControls": "レイヤー",
+    "layerControlsAria": "マップレイヤーコントロールの切り替え",
+    "basemapHeading": "ベースマップ",
+    "basemapSelectAria": "マップベースマップを選択",
+    "basemapDark": "ダーク（カート）",
+    "basemapOsm": "OpenStreetMap (ライト)",
+    "layersHeading": "Overlays",
+    "layerNodes": "ノードマーカー",
+    "layerPaths": "ムーブメントトレイル",
+    "layerWaypoints": "ウェイ ポイント",
+    "layerRouteWeights": "ルートウェイト",
+    "layerAnomalyHalos": "異常な光輪",
+    "layerCongestionHalos": "輻輳ハロー"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -1609,7 +1623,8 @@
     "notesLabel": "注",
     "notesPlaceholder": "このノードに関する非公開メモ（送信されていません） …",
     "watchNode": "Watch",
-    "unwatchNode": "見張っているんだ"
+    "unwatchNode": "見張っているんだ",
+    "showOnMap": "周辺地図を見る"
   },
   "firmwareStatus": {
     "checking": "ファームウェアのバージョンを確認する",

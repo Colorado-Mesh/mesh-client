@@ -892,7 +892,8 @@
     "addToFavorites": "Додати до обраних",
     "healthTooltip": "Оцінка здоров 'я: {{total}}/100 (сигнал {{signal}}, давність {{recency}}, навантаження {{load}}, батарея {{battery}})",
     "healthAriaLabel": "Шкала здоров 'я вузла {{total}} зі 100",
-    "buttonExportJson": "Експортувати JSON"
+    "buttonExportJson": "Експортувати JSON",
+    "showOnMap": "показати на карті"
   },
   "mapPanel": {
     "locationUnavailable": "Місцерозташування недоступне",
@@ -902,7 +903,20 @@
     "showMyLocation": "Моє місцезнаходження",
     "networkMap": "Карта мережі, що показує положення вузлів",
     "toggleRouteWeightLines": "Увімкнути або вимкнути лінії ваги маршруту",
-    "routeWeights": "Вага маршруту"
+    "routeWeights": "Вага маршруту",
+    "layerControls": "Леєри",
+    "layerControlsAria": "Перемикання елементів керування шаром карти",
+    "basemapHeading": "Basemap",
+    "basemapSelectAria": "Виберіть базову карту карти",
+    "basemapDark": "Темний (Carto)",
+    "basemapOsm": "OpenStreetMap (світлий)",
+    "layersHeading": "Оверлеї.",
+    "layerNodes": "Вузлові маркери",
+    "layerPaths": "Стежки руху",
+    "layerWaypoints": "Точки маршруту",
+    "layerRouteWeights": "Вага маршруту",
+    "layerAnomalyHalos": "Ореоли аномалій",
+    "layerCongestionHalos": "Ореоли заторів"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -1609,7 +1623,8 @@
     "notesLabel": "Примітки!",
     "notesPlaceholder": "Приватні нотатки про цей вузол (не передаються)…",
     "watchNode": "Дивитись",
-    "unwatchNode": "Спостереження"
+    "unwatchNode": "Спостереження",
+    "showOnMap": "показати на карті"
   },
   "firmwareStatus": {
     "checking": "Перевірка версії прошивки",

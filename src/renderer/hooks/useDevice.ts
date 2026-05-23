@@ -5,9 +5,16 @@ import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/p
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import {
+  decodeStoreForwardTextPayload,
+  isDuplicateHistoryMessage,
+  MQTT_RECONNECT_BACKLOG_MS,
+  mqttMessageTreatAsHistory,
+} from '@/renderer/lib/meshtasticBacklogUtils';
 import { isMeshtasticDefaultPublicPsk } from '@/shared/meshtasticDefaultPublicPsk';
 
 import {
+  formatMeshtasticNodeId,
   meshtasticNodeLacksDisplayIdentity,
   meshtasticShortNameAfterClearingDefault,
   preferNonEmptyTrimmedString,
@@ -199,6 +206,9 @@ export function useDevice() {
   const refreshOurPositionRef = useRef<() => Promise<OurPosition | null>>(() =>
     Promise.resolve(null),
   );
+  const sendMessageRef = useRef<
+    ((text: string, channel?: number, destination?: number, replyId?: number) => void) | null
+  >(null);
 
   // ─── MQTT session tracking ────────────────────────────────────
   // Tracks current MQTT connection status in a ref for use in callbacks
@@ -280,6 +290,10 @@ export function useDevice() {
   const [neighborInfo, setNeighborInfo] = useState<Map<number, NeighborInfoRecord>>(new Map());
   const [waypoints, setWaypoints] = useState<Map<number, MeshWaypoint>>(new Map());
   const [moduleConfigs, setModuleConfigs] = useState<Record<string, unknown>>({});
+  const moduleConfigsRef = useRef(moduleConfigs);
+  const sfHistoryRequestedRef = useRef(false);
+  const mqttReconnectBacklogUntilRef = useRef(0);
+  const MESHTASTIC_BROADCAST_NODE_NUM = 0xffffffff;
   const [securityConfig, setSecurityConfig] = useState<{
     publicKey: Uint8Array;
     privateKey: Uint8Array;
@@ -403,7 +417,7 @@ export function useDevice() {
     if (node?.short_name) return node.short_name;
     if (node?.long_name)
       return node.long_name.length > 7 ? node.long_name.slice(0, 7) : node.long_name;
-    return `!${nodeNum.toString(16).padStart(8, '0')}`;
+    return formatMeshtasticNodeId(nodeNum);
   }, []);
 
   // Picker-style label: "icon_XXXX" (same format as BLE picker). If short_name
@@ -419,14 +433,14 @@ export function useDevice() {
       return node.long_name.length > 7
         ? `${node.long_name.slice(0, 7)}_${fourHex}`
         : `${node.long_name}_${fourHex}`;
-    return `!${nodeNum.toString(16)}`;
+    return formatMeshtasticNodeId(nodeNum);
   }, []);
 
   // Extended label: short_name + hex suffix, long_name, or hex fallback.
   // Used in the header for the connected node display.
   const getFullNodeLabel = useCallback((nodeNum: number): string => {
     const node = nodesRef.current.get(nodeNum);
-    const hexId = `!${nodeNum.toString(16)}`;
+    const hexId = formatMeshtasticNodeId(nodeNum);
     if (node?.short_name) {
       // Avoid double-appending hex if short_name already contains it
       return node.short_name.includes(hexId) ? node.short_name : `${node.short_name} ${hexId}`;
@@ -627,6 +641,10 @@ export function useDevice() {
       });
   }, []);
 
+  useEffect(() => {
+    moduleConfigsRef.current = moduleConfigs;
+  }, [moduleConfigs]);
+
   // ─── MQTT event subscriptions (independent of RF device) ──────
   useEffect(() => {
     const unsubStatus = window.electronAPI.mqtt.onStatus(({ status: s, protocol }) => {
@@ -636,6 +654,9 @@ export function useDevice() {
       setMqttStatus(s);
       if (s === 'connected') {
         setMqttConnectionLoss(false);
+        if (prev !== 'connected') {
+          mqttReconnectBacklogUntilRef.current = Date.now() + MQTT_RECONNECT_BACKLOG_MS;
+        }
       } else if (consumeMqttUserDisconnect()) {
         setMqttConnectionLoss(false);
       } else if (prev === 'connected') {
@@ -905,10 +926,15 @@ export function useDevice() {
       }
 
       const normalizedPacketId = normalizeMeshtasticPacketId(msg.packetId);
+      const mqttTreatAsBacklog = mqttMessageTreatAsHistory(
+        Date.now(),
+        mqttReconnectBacklogUntilRef.current,
+      );
       const mqttMsg: ChatMessage = {
         ...msg,
         ...(normalizedPacketId !== undefined ? { packetId: normalizedPacketId } : {}),
         receivedVia: 'mqtt',
+        isHistory: mqttTreatAsBacklog || undefined,
       };
       const mqttWithPreviews = enrichMeshtasticReplyPreviews(
         mqttMsg,
@@ -1105,6 +1131,22 @@ export function useDevice() {
           void refreshOurPositionRef.current();
           startGpsInterval();
           setQueueStatus({ free: 16, maxlen: 16, res: 0 });
+          if (!sfHistoryRequestedRef.current && deviceRef.current) {
+            sfHistoryRequestedRef.current = true;
+            const sfCfg = moduleConfigsRef.current.storeForward as
+              | { enabled?: boolean }
+              | undefined;
+            if (sfCfg?.enabled) {
+              try {
+                sendMessageRef.current?.('SF', 0, MESHTASTIC_BROADCAST_NODE_NUM);
+                console.debug('[useDevice] requested Store & Forward history (SF)');
+              } catch (e: unknown) {
+                console.warn(
+                  '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
+                );
+              }
+            }
+          }
         }
 
         // Always clean up on disconnect, even if we never reached configured
@@ -1125,6 +1167,7 @@ export function useDevice() {
           setModuleConfigs({});
           setSecurityConfig(null);
           deviceRef.current = null;
+          sfHistoryRequestedRef.current = false;
           setState((s) => ({
             ...s,
             status: 'disconnected',
@@ -2442,6 +2485,24 @@ export function useDevice() {
           ]);
           return updated;
         });
+
+        const from = packet.from;
+        const payloadText = decodeStoreForwardTextPayload(packet.data);
+        if (!from || !payloadText) return;
+        const sfChat: ChatMessage = {
+          sender_id: from,
+          sender_name: getNodeName(from),
+          payload: payloadText,
+          channel: 0,
+          timestamp: Date.now(),
+          isHistory: true,
+          receivedVia: 'rf',
+        };
+        setMessages((prev) => {
+          if (isDuplicateHistoryMessage(prev, sfChat)) return prev;
+          return trimChatMessagesToMax([...prev, sfChat], MAX_IN_MEMORY_CHAT_MESSAGES);
+        });
+        void window.electronAPI.db.saveMessage(sfChat);
       });
       unsubscribesRef.current.push(unsubStoreForward);
 
@@ -3395,6 +3456,7 @@ export function useDevice() {
 
   // Keep ref in sync so intervals/callbacks always call the latest version
   refreshOurPositionRef.current = refreshOurPosition;
+  sendMessageRef.current = sendMessage;
 
   // Resolve position on app startup regardless of device connection
   useEffect(() => {

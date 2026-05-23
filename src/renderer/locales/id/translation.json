@@ -892,7 +892,8 @@
     "addToFavorites": "Tambahkan ke favorit",
     "healthTooltip": "Skor kesehatan: {{total}}/100 (signal {{signal}}, recency {{recency}}, load {{load}}, battery {{battery}})",
     "healthAriaLabel": "Skor kesehatan node {{total}} dari 100",
-    "buttonExportJson": "Ekspor ke JSON"
+    "buttonExportJson": "Ekspor ke JSON",
+    "showOnMap": "Tampilkan di peta"
   },
   "mapPanel": {
     "locationUnavailable": "Lokasi tidak tersedia.",
@@ -902,7 +903,20 @@
     "showMyLocation": "Tunjukkan lokasi saya",
     "networkMap": "Peta jaringan menunjukkan posisi node",
     "toggleRouteWeightLines": "Alihkan garis bobot rute",
-    "routeWeights": "Bobot rute"
+    "routeWeights": "Bobot rute",
+    "layerControls": "Lapisan",
+    "layerControlsAria": "Alihkan kontrol lapisan peta",
+    "basemapHeading": "Peta dasar",
+    "basemapSelectAria": "Pilih peta dasar",
+    "basemapDark": "Gelap (Carto)",
+    "basemapOsm": "OpenStreetMap (Light)",
+    "layersHeading": "Overlay",
+    "layerNodes": "Penanda simpul",
+    "layerPaths": "Jalur pergerakan",
+    "layerWaypoints": "Waypoint",
+    "layerRouteWeights": "Bobot rute",
+    "layerAnomalyHalos": "Halo anomali",
+    "layerCongestionHalos": "Halo kemacetan"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -1609,7 +1623,8 @@
     "notesLabel": "Catatan",
     "notesPlaceholder": "Catatan pribadi tentang simpul ini (tidak dikirimkan)...",
     "watchNode": "Watvh",
-    "unwatchNode": "Menonton"
+    "unwatchNode": "Menonton",
+    "showOnMap": "Tampilkan di peta"
   },
   "firmwareStatus": {
     "checking": "Memeriksa versi firmware",

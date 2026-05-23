@@ -892,7 +892,8 @@
     "addToFavorites": "Add to favorites",
     "healthTooltip": "Pontuação de saúde: {{total}}/100 (sinal {{signal}}, recência {{recency}}, carga {{load}}, bateria {{battery}})",
     "healthAriaLabel": "Pontuação de integridade do nó {{total}} de 100",
-    "buttonExportJson": "Exportar como JSON"
+    "buttonExportJson": "Exportar como JSON",
+    "showOnMap": "Mostrar no mapa"
   },
   "mapPanel": {
     "locationUnavailable": "Localização não disponível.",
@@ -902,7 +903,20 @@
     "showMyLocation": "Meu local",
     "networkMap": "Mapa de rede mostrando as posições dos nós",
     "toggleRouteWeightLines": "Alternar linhas de peso da rota",
-    "routeWeights": "Pesos das rotas"
+    "routeWeights": "Pesos das rotas",
+    "layerControls": "Camadas",
+    "layerControlsAria": "Alternar controles de camada de mapa",
+    "basemapHeading": "MAPA BASE",
+    "basemapSelectAria": "Selecionar mapa base do mapa",
+    "basemapDark": "Escuro (Carto)",
+    "basemapOsm": "OpenStreetMap (light)",
+    "layersHeading": "Sobreposições",
+    "layerNodes": "Marcadores de nó",
+    "layerPaths": "Trilhas de movimento",
+    "layerWaypoints": "Pontos de referência",
+    "layerRouteWeights": "Pesos das rotas",
+    "layerAnomalyHalos": "Halos de anomalias",
+    "layerCongestionHalos": "Halos de congestionamento"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -1609,7 +1623,8 @@
     "notesLabel": "Notas",
     "notesPlaceholder": "Notas privadas sobre este nó (não transmitidas)...",
     "watchNode": "Acompanhar",
-    "unwatchNode": "Acompanhando"
+    "unwatchNode": "Acompanhando",
+    "showOnMap": "Mostrar no mapa"
   },
   "firmwareStatus": {
     "checking": "Verificando a versão do firmware",

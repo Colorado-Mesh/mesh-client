@@ -37,14 +37,20 @@ export function setAppSettingsRaw(json: string): void {
 }
 
 export function mergeAppSetting(key: string, value: unknown, parseContext: string): void {
+  mergeAppSettingsPartial({ [key]: value }, parseContext);
+}
+
+/** Merge keys into existing app settings without dropping unrelated persisted fields. */
+export function mergeAppSettingsPartial(
+  partial: Record<string, unknown>,
+  parseContext: string,
+): void {
   try {
     migrateLegacyAppSettingsIfNeeded();
     const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY);
-    const s = parseStoredJson<Record<string, unknown>>(raw, parseContext) ?? {};
-    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ ...s, [key]: value }));
+    const existing = parseStoredJson<Record<string, unknown>>(raw, parseContext) ?? {};
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ ...existing, ...partial }));
   } catch (e) {
-    console.warn(
-      '[appSettingsStorage] mergeAppSetting failed ' + key + ' ' + errLikeToLogString(e),
-    );
+    console.warn('[appSettingsStorage] mergeAppSettingsPartial failed ' + errLikeToLogString(e));
   }
 }

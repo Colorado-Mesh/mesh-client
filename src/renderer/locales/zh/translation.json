@@ -876,7 +876,8 @@
     "addToFavorites": "添加到收藏夹",
     "healthTooltip": "健康评分: {{total}}/100 (信号 {{signal}}, 最新 {{recency}}, 负载 {{load}}, 电池 {{battery}})",
     "healthAriaLabel": "节点健康评分{{total}}/100",
-    "buttonExportJson": "导出JSON"
+    "buttonExportJson": "导出JSON",
+    "showOnMap": "显示在地图上"
   },
   "mapPanel": {
     "locationUnavailable": "無法取得位置。",
@@ -886,7 +887,20 @@
     "showMyLocation": "顯示我的位置",
     "networkMap": "显示节点位置的网络图",
     "toggleRouteWeightLines": "切换工艺路线权重线",
-    "routeWeights": "工艺路线权重"
+    "routeWeights": "工艺路线权重",
+    "layerControls": "层数",
+    "layerControlsAria": "切换地图图层控件",
+    "basemapHeading": "底图",
+    "basemapSelectAria": "选择地图底图",
+    "basemapDark": "深色（卡通）",
+    "basemapOsm": "OpenStreetMap (light)",
+    "layersHeading": "叠加",
+    "layerNodes": "节点标记",
+    "layerPaths": "机芯轨迹",
+    "layerWaypoints": "点",
+    "layerRouteWeights": "工艺路线权重",
+    "layerAnomalyHalos": "异常光晕",
+    "layerCongestionHalos": "拥堵光环"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -1593,7 +1607,8 @@
     "notesLabel": "注意事项",
     "notesPlaceholder": "关于此节点的私人备注（未传输） ……",
     "watchNode": "观看",
-    "unwatchNode": "正在查看"
+    "unwatchNode": "正在查看",
+    "showOnMap": "显示在地图上"
   },
   "firmwareStatus": {
     "checking": "正在检查固件版本",

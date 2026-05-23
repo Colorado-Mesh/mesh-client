@@ -892,7 +892,8 @@
     "addToFavorites": "Favorilere ekle",
     "healthTooltip": "Sağlık skoru: {{total}}/100 (sinyal {{signal}}, son kullanım {{recency}}, yük {{load}}, pil {{battery}})",
     "healthAriaLabel": "Düğüm sağlık puanı {{total}} 100 üzerinden",
-    "buttonExportJson": "JSON olarak dışa aktar"
+    "buttonExportJson": "JSON olarak dışa aktar",
+    "showOnMap": "Haritada göster"
   },
   "mapPanel": {
     "locationUnavailable": "Konum kullanılamıyor.",
@@ -902,7 +903,20 @@
     "showMyLocation": "Konumumu göster",
     "networkMap": "Düğüm konumlarını gösteren ağ haritası",
     "toggleRouteWeightLines": "Rota ağırlık çizgilerini değiştir",
-    "routeWeights": "Rota ağırlıkları"
+    "routeWeights": "Rota ağırlıkları",
+    "layerControls": "Katmanlar",
+    "layerControlsAria": "Harita katmanı kontrollerini aç/kapat",
+    "basemapHeading": "\"Basemap\"",
+    "basemapSelectAria": "Harita altlık haritasını seçin",
+    "basemapDark": "Koyu (Carto)",
+    "basemapOsm": "OpenStreetMap (açık)",
+    "layersHeading": "Kaplamalar",
+    "layerNodes": "Düğüm belirteçleri",
+    "layerPaths": "Hareket izleri",
+    "layerWaypoints": "Ara noktalar",
+    "layerRouteWeights": "Güzergah ağırlıkları",
+    "layerAnomalyHalos": "Anomali haleleri",
+    "layerCongestionHalos": "Tıkanıklık haleleri"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -1609,7 +1623,8 @@
     "notesLabel": "Notlar",
     "notesPlaceholder": "Bu düğüm hakkında özel notlar (iletilmedi )…",
     "watchNode": "İzle",
-    "unwatchNode": "İzliyorum"
+    "unwatchNode": "İzliyorum",
+    "showOnMap": "Haritada göster"
   },
   "firmwareStatus": {
     "checking": "Ürün yazılımı sürümünün kontrol edilmesi",

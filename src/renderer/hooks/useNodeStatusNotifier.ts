@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+
 import { getNodeStatus } from '../lib/nodeStatus';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { MeshNode } from '../lib/types';
@@ -53,7 +55,12 @@ export function useNodeStatusNotifier(
       const wasOnline = prev.get(nodeId)!;
 
       const protocolLabel = capabilities?.protocol === 'meshcore' ? 'MeshCore' : 'Meshtastic';
-      const name = node.long_name || node.short_name || `!${nodeId.toString(16)}`;
+      const name =
+        node.long_name ||
+        node.short_name ||
+        (capabilities?.protocol === 'meshcore'
+          ? `Node-${nodeId.toString(16).toUpperCase()}`
+          : formatMeshtasticNodeId(nodeId));
       if (!wasOnline && isOnline) {
         fireNotification(`${name} is online`, `${protocolLabel} node came online`);
       } else if (wasOnline && !isOnline) {

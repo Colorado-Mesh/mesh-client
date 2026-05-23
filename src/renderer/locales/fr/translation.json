@@ -877,7 +877,8 @@
     "addToFavorites": "Ajouter aux favoris",
     "healthTooltip": "Score de santé : {{total}}/100 (signal {{signal}}, récence {{recency}}, charge {{load}}, batterie {{battery}})",
     "healthAriaLabel": "Score de santé des nœuds {{total}} sur 100",
-    "buttonExportJson": "Exporter JSON"
+    "buttonExportJson": "Exporter JSON",
+    "showOnMap": "Voir sur la carte"
   },
   "mapPanel": {
     "locationUnavailable": "Localisation indisponible.",
@@ -887,7 +888,20 @@
     "showMyLocation": "Afficher mon emplacement ?",
     "networkMap": "Carte du réseau montrant les positions des nœuds",
     "toggleRouteWeightLines": "Basculer les lignes de poids de l'itinéraire",
-    "routeWeights": "Poids des itinéraires"
+    "routeWeights": "Poids des itinéraires",
+    "layerControls": "Calques",
+    "layerControlsAria": "Activer/désactiver les contrôles de calque de carte",
+    "basemapHeading": "\"Carte de référence\"",
+    "basemapSelectAria": "Sélectionner le fond de carte de la carte",
+    "basemapDark": "Sombre (Carto)",
+    "basemapOsm": "OpenStreetMap (Light)",
+    "layersHeading": "Superpositions",
+    "layerNodes": "Marqueurs de nœud",
+    "layerPaths": "Traces de mouvement",
+    "layerWaypoints": "Point de passage",
+    "layerRouteWeights": "Poids des itinéraires",
+    "layerAnomalyHalos": "Halos d'anomalie",
+    "layerCongestionHalos": "Halos de congestion"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
@@ -1594,7 +1608,8 @@
     "notesLabel": "Notes",
     "notesPlaceholder": "Notes privées sur ce nœud (non transmises)…",
     "watchNode": "Regarder",
-    "unwatchNode": "Marseille"
+    "unwatchNode": "Marseille",
+    "showOnMap": "Voir sur la carte"
   },
   "firmwareStatus": {
     "checking": "Vérification de la version du firmware...",

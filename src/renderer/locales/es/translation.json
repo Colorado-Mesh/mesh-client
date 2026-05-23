@@ -892,7 +892,8 @@
     "addToFavorites": "Añadir a favoritos",
     "healthTooltip": "Puntuación de salud: {{total}}/100 (señal {{signal}}, reciente {{recency}}, carga {{load}}, batería {{battery}})",
     "healthAriaLabel": "Puntuación de salud del nodo {{total}} de 100",
-    "buttonExportJson": "Exportar a Json"
+    "buttonExportJson": "Exportar a Json",
+    "showOnMap": "Mostrar en el mapa"
   },
   "mapPanel": {
     "locationUnavailable": "Ubicación no disponible.",
@@ -902,7 +903,20 @@
     "showMyLocation": "Mostrar automáticamente Mi ubicación",
     "networkMap": "Mapa de red que muestra las posiciones de los nodos",
     "toggleRouteWeightLines": "Alternar líneas de peso de ruta",
-    "routeWeights": "Pesos de ruta"
+    "routeWeights": "Pesos de ruta",
+    "layerControls": "Capas",
+    "layerControlsAria": "Alternar controles de capa de mapa",
+    "basemapHeading": "\"Mapa base\"",
+    "basemapSelectAria": "Seleccionar mapa base",
+    "basemapDark": "Oscuro (Carto)",
+    "basemapOsm": "OpenStreetMap (claro)",
+    "layersHeading": "Superposiciones",
+    "layerNodes": "Marcadores de nodo",
+    "layerPaths": "Senderos de movimiento",
+    "layerWaypoints": "Waypoints",
+    "layerRouteWeights": "Pesos de ruta",
+    "layerAnomalyHalos": "Halos de anomalía",
+    "layerCongestionHalos": "Halos de congestión"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -1609,7 +1623,8 @@
     "notesLabel": "Notas",
     "notesPlaceholder": "Notas privadas sobre este nodo (no transmitidas)...",
     "watchNode": "Watch",
-    "unwatchNode": "Viendo"
+    "unwatchNode": "Viendo",
+    "showOnMap": "Mostrar en el mapa"
   },
   "firmwareStatus": {
     "checking": "Comprobación de la versión del firmware...",

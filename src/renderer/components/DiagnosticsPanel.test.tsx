@@ -2,6 +2,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import type { DiagnosticRow, MeshNode, RoutingDiagnosticRow } from '../lib/types';
 import type { ForeignLoraDetection } from '../stores/diagnosticsStore';
@@ -194,7 +196,7 @@ describe('DiagnosticsPanel node click', () => {
       />,
     );
 
-    const fallbackLabel = `!${nodeId.toString(16)}`;
+    const fallbackLabel = formatMeshtasticNodeId(nodeId);
     fireEvent.click(screen.getAllByText(fallbackLabel)[0]);
     expect(onNodeClick).not.toHaveBeenCalled();
   });

@@ -17,7 +17,10 @@ import {
   MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '../shared/meshtasticMqttReconnect';
 import { computeMqttReconnectDelayMs } from '../shared/mqttReconnectSchedule';
-import { meshtasticShortNameAfterClearingDefault } from '../shared/nodeNameUtils';
+import {
+  formatMeshtasticNodeId,
+  meshtasticShortNameAfterClearingDefault,
+} from '../shared/nodeNameUtils';
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '../shared/reactionEmoji';
 import { sanitizeLogMessage } from './log-service';
 
@@ -1190,7 +1193,7 @@ export class MQTTManager extends EventEmitter {
 
     const msg: Omit<ChatMessage, 'id'> & { from_mqtt: boolean } = {
       sender_id: nodeId,
-      sender_name: `!${nodeId.toString(16)}`,
+      sender_name: formatMeshtasticNodeId(nodeId),
       payload: text,
       channel: typeof json.channel === 'number' ? json.channel : 0,
       timestamp: typeof json.timestamp === 'number' ? json.timestamp * 1000 : Date.now(),
@@ -1444,7 +1447,7 @@ export class MQTTManager extends EventEmitter {
         const replyId = data.replyId || undefined;
         const msg: Omit<ChatMessage, 'id'> & { from_mqtt: boolean } = {
           sender_id: nodeId,
-          sender_name: `!${nodeId.toString(16)}`,
+          sender_name: formatMeshtasticNodeId(nodeId),
           payload: text,
           channel: 0,
           timestamp: Date.now(),

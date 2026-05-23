@@ -892,7 +892,8 @@
     "addToFavorites": "Добавить в избранное",
     "healthTooltip": "Показатель здоровья: {{total}}/100 (сигнал {{signal}}, актуальность {{recency}}, нагрузка {{load}}, батарея {{battery}})",
     "healthAriaLabel": "Оценка здоровья узла {{total}} из 100",
-    "buttonExportJson": "Экспортировать в JSON"
+    "buttonExportJson": "Экспортировать в JSON",
+    "showOnMap": "Показать на карте"
   },
   "mapPanel": {
     "locationUnavailable": "Местоположение недоступно.",
@@ -902,7 +903,20 @@
     "showMyLocation": "Показать мое местоположение",
     "networkMap": "Карта сети с указанием положения узлов",
     "toggleRouteWeightLines": "Переключить весовые линии маршрута",
-    "routeWeights": "Вес маршрута"
+    "routeWeights": "Вес маршрута",
+    "layerControls": "Слои",
+    "layerControlsAria": "Переключить элементы управления слоем карты",
+    "basemapHeading": "Обзорная карта с топоосновой",
+    "basemapSelectAria": "Выберите базовую карту карты",
+    "basemapDark": "Темный (Carto)",
+    "basemapOsm": "OpenStreetMap (светлый)",
+    "layersHeading": "Верхний слой",
+    "layerNodes": "Узловые маркеры",
+    "layerPaths": "Следы движения",
+    "layerWaypoints": "Путевые точки",
+    "layerRouteWeights": "Вес маршрута",
+    "layerAnomalyHalos": "Ореолы аномалий",
+    "layerCongestionHalos": "Ореолы заторов"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -1608,7 +1622,8 @@
     "notesLabel": "Комментарий",
     "notesPlaceholder": "Частные заметки об этом узле (не передаются)...",
     "watchNode": "Часы",
-    "unwatchNode": "Просмотр"
+    "unwatchNode": "Просмотр",
+    "showOnMap": "Показать на карте"
   },
   "firmwareStatus": {
     "checking": "Проверяем версию прошивки",

@@ -3,8 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
+import {
+  formatMeshtasticNodeId,
+  meshtasticNodeIdMatchesHexQuery,
+} from '../../shared/nodeNameUtils';
 import type { LocationFilter } from '../App';
-import { formatCoordColumns } from '../lib/coordUtils';
+import { formatCoordColumns, nodeHasDisplayablePosition } from '../lib/coordUtils';
 import { getRoutingRowForNode } from '../lib/diagnostics/diagnosticRows';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import {
@@ -156,6 +160,7 @@ interface Props {
   meshcoreRadioOperational?: boolean;
   meshcoreShowPublicKeys?: boolean;
   meshcorePublicKeyHexByNodeId?: Map<number, string>;
+  onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
 }
 
 export default function NodeListPanel({
@@ -179,6 +184,7 @@ export default function NodeListPanel({
   meshcoreRadioOperational = true,
   meshcoreShowPublicKeys = false,
   meshcorePublicKeyHexByNodeId,
+  onShowOnMap,
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
@@ -285,7 +291,7 @@ export default function NodeListPanel({
           n.long_name.toLowerCase().includes(q) ||
           n.short_name.toLowerCase().includes(q) ||
           n.hw_model?.toLowerCase().includes(q) ||
-          n.node_id.toString(16).includes(q),
+          (mode !== 'meshcore' && meshtasticNodeIdMatchesHexQuery(n.node_id, q)),
       );
     }
 
@@ -553,7 +559,7 @@ export default function NodeListPanel({
             onClick={() => {
               const payload = nodeList.map((n) => ({
                 node_id: n.node_id,
-                hex_id: `!${n.node_id.toString(16)}`,
+                hex_id: formatMeshtasticNodeId(n.node_id),
                 long_name: n.long_name,
                 short_name: n.short_name,
                 hw_model: n.hw_model,
@@ -1121,7 +1127,7 @@ export default function NodeListPanel({
                       )}
                     </td>
                     <td className="text-muted px-3 py-2 font-mono text-xs">
-                      !{node.node_id.toString(16)}
+                      {formatMeshtasticNodeId(node.node_id)}
                       {mode === 'meshcore' && meshcorePublicKeyHexByNodeId?.has(node.node_id) && (
                         <span className="ml-1">🔑</span>
                       )}
@@ -1266,10 +1272,27 @@ export default function NodeListPanel({
                         node.longitude,
                         coordinateFormat,
                       );
+                      const canShowOnMap = onShowOnMap != null && nodeHasDisplayablePosition(node);
                       return (
                         <>
                           <td className="text-muted px-3 py-2 text-right font-mono text-xs">
-                            {latCell}
+                            <span className="inline-flex items-center justify-end gap-1">
+                              {latCell}
+                              {canShowOnMap && (
+                                <button
+                                  type="button"
+                                  className="text-brand-green hover:text-bright-green rounded p-0.5 transition-colors"
+                                  aria-label={t('nodeListPanel.showOnMap')}
+                                  title={t('nodeListPanel.showOnMap')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onShowOnMap(node.node_id, node.latitude!, node.longitude!);
+                                  }}
+                                >
+                                  📍
+                                </button>
+                              )}
+                            </span>
                           </td>
                           {coordinateFormat !== 'mgrs' && (
                             <td className="text-muted px-3 py-2 text-right font-mono text-xs">

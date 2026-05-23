@@ -892,7 +892,8 @@
     "addToFavorites": "즐겨찾기에 추가",
     "healthTooltip": "건강 점수: {{total}}/100 (신호 {{signal}}, 최신성 {{recency}}, 부하 {{load}}, 배터리 {{battery}})",
     "healthAriaLabel": "100점 만점에 노드 체력 점수 {{total}}",
-    "buttonExportJson": "JSON 내보내기"
+    "buttonExportJson": "JSON 내보내기",
+    "showOnMap": "(지도에서 표시)"
   },
   "mapPanel": {
     "locationUnavailable": "위치를 확인할 수 없습니다.",
@@ -902,7 +903,20 @@
     "showMyLocation": "내 위치 표시",
     "networkMap": "노드 위치를 보여주는 네트워크 맵",
     "toggleRouteWeightLines": "경로 가중치 선 전환",
-    "routeWeights": "경로 가중치"
+    "routeWeights": "경로 가중치",
+    "layerControls": "레이어",
+    "layerControlsAria": "지도 레이어 컨트롤 토글",
+    "basemapHeading": "베이스맵",
+    "basemapSelectAria": "지도 베이스맵 선택",
+    "basemapDark": "다크 (카르토)",
+    "basemapOsm": "OpenStreetMap (light)",
+    "layersHeading": "Overlays",
+    "layerNodes": "노드 마커",
+    "layerPaths": "무브먼트 흔적",
+    "layerWaypoints": "중간지점",
+    "layerRouteWeights": "경로 가중치",
+    "layerAnomalyHalos": "이상 후광",
+    "layerCongestionHalos": "혼잡 후광"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -1609,7 +1623,8 @@
     "notesLabel": "노트",
     "notesPlaceholder": "이 노드에 대한 비공개 메모 (전송되지 않음)...",
     "watchNode": "보기",
-    "unwatchNode": "보는중.."
+    "unwatchNode": "보는중..",
+    "showOnMap": "(지도에서 표시)"
   },
   "firmwareStatus": {
     "checking": "펌웨어 버전 확인 중",

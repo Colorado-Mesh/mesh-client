@@ -892,7 +892,8 @@
     "addToFavorites": "Dodaj do ulubionych",
     "healthTooltip": "Wynik zdrowotny: {{total}}/100 (sygnał {{signal}}, aktualny {{recency}}, obciążenie {{load}}, bateria {{battery}})",
     "healthAriaLabel": "Wynik zdrowotny węzła {{total}} ze 100",
-    "buttonExportJson": "Eksportowanie jako JSON"
+    "buttonExportJson": "Eksportowanie jako JSON",
+    "showOnMap": "Pokaż na mapie"
   },
   "mapPanel": {
     "locationUnavailable": "Lokalizacja niedostępna.",
@@ -902,7 +903,20 @@
     "showMyLocation": "Pokaż moją lokalizację",
     "networkMap": "Mapa sieci pokazująca pozycje węzłów",
     "toggleRouteWeightLines": "Przełącz linie ciężaru trasy",
-    "routeWeights": "Wagi tras"
+    "routeWeights": "Wagi tras",
+    "layerControls": "Warstwy",
+    "layerControlsAria": "Przełącz kontrolki warstwy mapy",
+    "basemapHeading": "\"Mapa bazowa\"",
+    "basemapSelectAria": "Wybierz mapę bazową mapy",
+    "basemapDark": "Ciemny (Carto)",
+    "basemapOsm": "OpenStreetMap (light)",
+    "layersHeading": "Nakładki",
+    "layerNodes": "Znaczniki węzłów",
+    "layerPaths": "Ścieżki ruchu",
+    "layerWaypoints": "Waypointy",
+    "layerRouteWeights": "Wagi trasy",
+    "layerAnomalyHalos": "Aureole anomalii",
+    "layerCongestionHalos": "Halo z przeciążeniami"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -1609,7 +1623,8 @@
     "notesLabel": "Uwagi",
     "notesPlaceholder": "Prywatne notatki o tym węźle (nie przesyłane)…",
     "watchNode": "Watch",
-    "unwatchNode": "Patrzy."
+    "unwatchNode": "Patrzy.",
+    "showOnMap": "Pokaż na mapie"
   },
   "firmwareStatus": {
     "checking": "Sprawdzanie wersji oprogramowania sprzętowego",
