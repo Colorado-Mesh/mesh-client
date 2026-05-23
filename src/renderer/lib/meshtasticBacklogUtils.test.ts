@@ -1,13 +1,21 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
-import { StoreForward } from '@meshtastic/protobufs';
-import { describe, expect, it } from 'vitest';
+import type { MeshDevice } from '@meshtastic/core';
+import { Mesh, Portnums, StoreForward } from '@meshtastic/protobufs';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildStoreForwardHistoryRequestBytes,
+  buildStoreForwardHistoryToRadioBytes,
   decodeStoreForwardTextPayload,
   isDuplicateHistoryMessage,
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
+  parseStoreForwardHeartbeat,
+  parseStoreForwardHistory,
+  releaseStoreForwardHistoryRequest,
+  reserveStoreForwardHistoryRequest,
+  shouldRequestStoreForwardHistoryOnHeartbeat,
+  writeToRadioWithoutQueue,
 } from './meshtasticBacklogUtils';
 
 function sfPacket(rr: number, variant: { case: string; value: unknown }): Uint8Array {
@@ -34,7 +42,39 @@ describe('meshtasticBacklogUtils', () => {
     expect(decodeStoreForwardTextPayload(new Uint8Array())).toBeNull();
   });
 
-  it('returns null for non-text store-forward variants', () => {
+  it('parses ROUTER_HEARTBEAT payloads', () => {
+    const heartbeat = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
+      case: 'heartbeat',
+      value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 120, secondary: 0 }),
+    });
+    expect(parseStoreForwardHeartbeat(heartbeat)).toEqual({ period: 120, secondary: 0 });
+
+    const secondary = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
+      case: 'heartbeat',
+      value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 60, secondary: 1 }),
+    });
+    expect(parseStoreForwardHeartbeat(secondary)).toEqual({ period: 60, secondary: 1 });
+    expect(parseStoreForwardHeartbeat(new Uint8Array())).toBeNull();
+  });
+
+  it('parses ROUTER_HISTORY payloads', () => {
+    const history = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HISTORY, {
+      case: 'history',
+      value: create(StoreForward.StoreAndForward_HistorySchema, {
+        historyMessages: 5,
+        window: 60,
+        lastRequest: 42,
+      }),
+    });
+    expect(parseStoreForwardHistory(history)).toEqual({
+      historyMessages: 5,
+      window: 60,
+      lastRequest: 42,
+    });
+    expect(parseStoreForwardHistory(new Uint8Array())).toBeNull();
+  });
+
+  it('returns null for non-text store-forward variants in decodeStoreForwardTextPayload', () => {
     const heartbeat = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
       case: 'heartbeat',
       value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 300, secondary: 0 }),
@@ -107,6 +147,92 @@ describe('meshtasticBacklogUtils', () => {
       expect(parsedCustom.variant.value.window).toBe(120);
       expect(parsedCustom.variant.value.lastRequest).toBe(42);
     }
+  });
+
+  it('builds ToRadio CLIENT_HISTORY packet with wantAck and wantResponse false', () => {
+    const bytes = buildStoreForwardHistoryToRadioBytes({
+      from: 0x11111111,
+      to: 0x22222222,
+      channel: 1,
+      packetId: 99,
+      windowMinutes: 120,
+    });
+    const toRadio = fromBinary(Mesh.ToRadioSchema, bytes) as unknown as {
+      payloadVariant: {
+        case?: string;
+        value?: {
+          from?: number;
+          to?: number;
+          channel?: number;
+          id?: number;
+          wantAck?: boolean;
+          payloadVariant?: {
+            case?: string;
+            value?: { portnum?: number; wantResponse?: boolean; payload?: Uint8Array };
+          };
+        };
+      };
+    };
+    expect(toRadio.payloadVariant.case).toBe('packet');
+    const pkt = toRadio.payloadVariant.value;
+    expect(pkt?.from).toBe(0x11111111);
+    expect(pkt?.to).toBe(0x22222222);
+    expect(pkt?.channel).toBe(1);
+    expect(pkt?.id).toBe(99);
+    expect(pkt?.wantAck).toBe(false);
+    expect(pkt?.payloadVariant?.case).toBe('decoded');
+    const decoded = pkt?.payloadVariant?.value;
+    expect(decoded?.portnum).toBe(Portnums.PortNum.STORE_FORWARD_APP);
+    expect(decoded?.wantResponse).toBe(false);
+    expect(decoded?.payload?.length).toBeGreaterThan(0);
+  });
+
+  it('gates heartbeat-triggered history requests', () => {
+    const base = {
+      heartbeatSecondary: 0,
+      connectedIsStoreForwardServer: false,
+      alreadyRequestedServer: false,
+      deviceConfigured: true,
+    };
+    expect(shouldRequestStoreForwardHistoryOnHeartbeat(base)).toBe(true);
+    expect(shouldRequestStoreForwardHistoryOnHeartbeat({ ...base, heartbeatSecondary: 1 })).toBe(
+      false,
+    );
+    expect(
+      shouldRequestStoreForwardHistoryOnHeartbeat({ ...base, connectedIsStoreForwardServer: true }),
+    ).toBe(false);
+    expect(
+      shouldRequestStoreForwardHistoryOnHeartbeat({ ...base, alreadyRequestedServer: true }),
+    ).toBe(false);
+    expect(shouldRequestStoreForwardHistoryOnHeartbeat({ ...base, deviceConfigured: false })).toBe(
+      false,
+    );
+  });
+
+  it('reserves and releases per-server history requests for one session', () => {
+    const requested = new Set<number>();
+    const server = 0xabcd1234;
+    expect(reserveStoreForwardHistoryRequest(requested, server)).toBe(true);
+    expect(reserveStoreForwardHistoryRequest(requested, server)).toBe(false);
+    releaseStoreForwardHistoryRequest(requested, server);
+    expect(reserveStoreForwardHistoryRequest(requested, server)).toBe(true);
+  });
+
+  it('writes ToRadio bytes directly to transport without queue', async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    const releaseLock = vi.fn();
+    const device = {
+      transport: {
+        toDevice: {
+          getWriter: () => ({ write, releaseLock }),
+        },
+      },
+    } as unknown as MeshDevice;
+
+    const bytes = new Uint8Array([1, 2, 3]);
+    await writeToRadioWithoutQueue(device, bytes);
+    expect(write).toHaveBeenCalledWith(bytes);
+    expect(releaseLock).toHaveBeenCalled();
   });
 
   it('dedupes history messages within time window', () => {

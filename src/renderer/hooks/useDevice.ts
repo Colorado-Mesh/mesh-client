@@ -6,11 +6,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
-  buildStoreForwardHistoryRequestBytes,
+  buildStoreForwardHistoryToRadioBytes,
   decodeStoreForwardTextPayload,
   isDuplicateHistoryMessage,
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
+  parseStoreForwardHeartbeat,
+  releaseStoreForwardHistoryRequest,
+  reserveStoreForwardHistoryRequest,
+  shouldRequestStoreForwardHistoryOnHeartbeat,
+  writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
 import { channelNameExists, findNextFreeChannelSlot } from '@/shared/meshtasticChannelApply';
 import { isMeshtasticDefaultPublicPsk } from '@/shared/meshtasticDefaultPublicPsk';
@@ -295,9 +300,9 @@ export function useDevice() {
   const [waypoints, setWaypoints] = useState<Map<number, MeshWaypoint>>(new Map());
   const [moduleConfigs, setModuleConfigs] = useState<Record<string, unknown>>({});
   const moduleConfigsRef = useRef(moduleConfigs);
-  const sfHistoryRequestedRef = useRef(false);
+  const sfHistoryRequestedServersRef = useRef<Set<number>>(new Set());
+  const deviceConfiguredRef = useRef(false);
   const mqttReconnectBacklogUntilRef = useRef(0);
-  const MESHTASTIC_BROADCAST_NODE_NUM = 0xffffffff;
   const [securityConfig, setSecurityConfig] = useState<{
     publicKey: Uint8Array;
     privateKey: Uint8Array;
@@ -1136,39 +1141,7 @@ export function useDevice() {
           void refreshOurPositionRef.current();
           startGpsInterval();
           setQueueStatus({ free: 16, maxlen: 16, res: 0 });
-          if (!sfHistoryRequestedRef.current && deviceRef.current) {
-            sfHistoryRequestedRef.current = true;
-            const sfCfg = moduleConfigsRef.current.storeForward as
-              | {
-                  enabled?: boolean;
-                  isServer?: boolean;
-                  historyReturnWindow?: number;
-                }
-              | undefined;
-            if (sfCfg?.enabled && !sfCfg.isServer) {
-              void (async () => {
-                try {
-                  const requestBytes = buildStoreForwardHistoryRequestBytes({
-                    windowMinutes: sfCfg.historyReturnWindow ?? 0,
-                  });
-                  // History replay arrives as async STORE_FORWARD_APP packets, not a routing reply.
-                  await deviceRef.current!.sendPacket(
-                    requestBytes,
-                    Portnums.PortNum.STORE_FORWARD_APP,
-                    MESHTASTIC_BROADCAST_NODE_NUM,
-                    0,
-                    false,
-                    false,
-                  );
-                  console.debug('[useDevice] requested Store & Forward history (CLIENT_HISTORY)');
-                } catch (e: unknown) {
-                  console.warn(
-                    '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
-                  );
-                }
-              })();
-            }
-          }
+          deviceConfiguredRef.current = true;
           void deviceRef.current
             ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
             .catch((e: unknown) => {
@@ -1195,7 +1168,8 @@ export function useDevice() {
           setSecurityConfig(null);
           setLoraConfig(null);
           deviceRef.current = null;
-          sfHistoryRequestedRef.current = false;
+          deviceConfiguredRef.current = false;
+          sfHistoryRequestedServersRef.current = new Set();
           setState((s) => ({
             ...s,
             status: 'disconnected',
@@ -2517,6 +2491,52 @@ export function useDevice() {
           return updated;
         });
 
+        const serverNodeId = packet.from;
+        const heartbeat = parseStoreForwardHeartbeat(packet.data);
+        if (serverNodeId && heartbeat) {
+          const sfCfg = moduleConfigsRef.current.storeForward as { isServer?: boolean } | undefined;
+          const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
+          if (
+            shouldRequestStoreForwardHistoryOnHeartbeat({
+              heartbeatSecondary: heartbeat.secondary,
+              connectedIsStoreForwardServer: sfCfg?.isServer === true,
+              alreadyRequestedServer: alreadyRequested,
+              deviceConfigured: deviceConfiguredRef.current,
+            }) &&
+            reserveStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId)
+          ) {
+            const myNode = myNodeNumRef.current;
+            const activeDevice = deviceRef.current;
+            if (myNode && activeDevice) {
+              const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
+              const toRadioBytes = buildStoreForwardHistoryToRadioBytes({
+                from: myNode,
+                to: serverNodeId,
+                channel: packet.channel ?? 0,
+                packetId,
+                windowMinutes: heartbeat.period > 0 ? heartbeat.period : 0,
+              });
+              void writeToRadioWithoutQueue(activeDevice, toRadioBytes)
+                .then(() => {
+                  console.debug(
+                    `[useDevice] Store & Forward CLIENT_HISTORY sent to 0x${serverNodeId.toString(16)} ch=${packet.channel ?? 0}`,
+                  );
+                })
+                .catch((e: unknown) => {
+                  releaseStoreForwardHistoryRequest(
+                    sfHistoryRequestedServersRef.current,
+                    serverNodeId,
+                  );
+                  console.warn(
+                    '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
+                  );
+                });
+            } else {
+              releaseStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId);
+            }
+          }
+        }
+
         const from = packet.from;
         const payloadText = decodeStoreForwardTextPayload(packet.data);
         if (!from || !payloadText) return;
@@ -2524,7 +2544,7 @@ export function useDevice() {
           sender_id: from,
           sender_name: getNodeName(from),
           payload: payloadText,
-          channel: 0,
+          channel: packet.channel ?? 0,
           timestamp: Date.now(),
           isHistory: true,
           receivedVia: 'rf',
