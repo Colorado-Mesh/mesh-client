@@ -73,6 +73,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 **Radio & Channel Configuration**
 
 - Edit channels: name, PSK, and role; 18 region presets and 7 modem presets
+- **Channel URL import/export** (Radio tab): generate, copy, preview, and apply `https://meshtastic.org/e/#…` or `meshtastic://` links (same ChannelSet protobuf format as the Android/web clients); replace all channels or add-only mode
 - Device roles: Client, Router, Tracker, Sensor, TAK, and more
 - Per-channel MQTT gateway uplink (RF → MQTT); device reboot, shutdown, and factory reset
 
@@ -86,6 +87,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 - Telemetry module (device, environment, air quality intervals), MQTT relay settings, Canned Messages, Serial module, Range Test, Store & Forward, Detection Sensor, Pax Counter, **External Notification**, **Ambient Lighting**, and **RTTTL** (ringtone); all editable from the Modules tab; module sections are listed **alphabetically**
 - **Module status displays**: Range Test, Serial, Store & Forward, Remote Hardware (GPIO), and IP Tunnel show packet counts and last-received timestamps when the corresponding module is enabled on the device
+- **Store & Forward chat history**: when a router with S&F enabled sends a primary heartbeat, the client requests `CLIENT_HISTORY` and ingests replayed text into chat (marked with a **Store & Forward** badge alongside RF/MQTT); MQTT reconnect floods within ~30 s are treated as history and deduped
 
 **Security (PKI)** (Meshtastic only)
 
@@ -130,6 +132,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - **USB Serial**: plug in via USB; auto-reconnects silently on startup (saved port signature matches the same physical device across re-enumeration)
 - **WiFi / HTTP / TCP**: connect to network-enabled nodes; saves last address for quick reconnect
 - **Dual-mode**: both Meshtastic and MeshCore run simultaneously; use the protocol switcher pill in the header to switch which view is active (the inactive protocol stays connected in the background); per-protocol unread badges (Meshtastic = green, MeshCore = cyan); passive toast notifications when the inactive protocol receives messages
+- **Connection status in header**: device, MQTT, and TAK indicators pulse **red** after an unexpected disconnect; manual stop/disconnect stays gray; in-progress connect keeps yellow
 
 **Chat**
 
@@ -163,7 +166,9 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **Map & Position**
 
-- Interactive OpenStreetMap with node positions and your current location (device GPS → browser geolocation → IP-based city-level fallback)
+- Interactive map with node positions and your current location (device GPS → browser geolocation → IP-based city-level fallback); default **OpenStreetMap** basemap with optional **Carto Dark**
+- **Layers** control (Map tab, top right): switch basemap, toggle overlays (markers, movement trails, waypoints, diagnostic halos); basemap preference persists in SQLite and localStorage
+- **Show on map** from the node list pin or node detail; switches to the Map tab and flies to that node
 - **Position trail**: persisted path overlay (configurable 1 h – 7 days); survives restarts via SQLite; toggle and window size in App tab; wipe via Danger Zone
 - Auto-refresh at configurable intervals; manual static position entry; send your position back to your device
 
@@ -279,7 +284,14 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 ## Quick Start
 
-**Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) area. Download the installer or archive for your platform; no Node.js or build tools required. A **Flatpak** (`.flatpak`) is also published to GitHub Releases on each version tag for easy installation on any Flatpak-enabled Linux distribution.
+**Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) area. Download the installer or archive for your platform; no Node.js or build tools required. **Flatpak** bundles (`org.coloradomesh.MeshClient-x86_64.flatpak` and `org.coloradomesh.MeshClient-aarch64.flatpak`) are published on each version tag for Flatpak-enabled Linux:
+
+```bash
+flatpak install --user ./org.coloradomesh.MeshClient-x86_64.flatpak # or -aarch64
+flatpak run org.coloradomesh.MeshClient
+```
+
+VMware guests and other GPU edge cases: [Flatpak troubleshooting](docs/troubleshooting.md#flatpak-vmwgfx-driver-missing-vmware-on-macos).
 
 **macOS (release download):** If macOS reports **"Mesh-client" is damaged and can't be opened** (or **File is damaged and cannot be opened**):
 

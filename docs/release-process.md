@@ -88,9 +88,9 @@ Two workflows trigger automatically when the tag is pushed.
 
 **`flatpak.yaml`** (GitHub → Actions → "Build Flatpak"):
 
-- Builds inside a Freedesktop 24.08 container using `flatpak-builder`
-- Produces `org.coloradomesh.MeshClient.flatpak`
-- Attaches it to the GitHub Release once `release.yaml` has created the release object
+- Matrix build inside a Freedesktop 24.08 container using `flatpak-builder` (**x86_64** and **aarch64**)
+- Produces `org.coloradomesh.MeshClient-x86_64.flatpak` and `org.coloradomesh.MeshClient-aarch64.flatpak`
+- Attaches both bundles to the GitHub Release once `release.yaml` has created the release object
 
 Both workflows must complete before the release is fully populated.
 
@@ -103,7 +103,7 @@ Once the workflow completes:
 3. Verify all platform artifacts are attached:
    - macOS: `.dmg`, `.zip` (x64 and arm64)
    - Linux: `.AppImage`, `.deb`, `.rpm`
-   - Linux Flatpak: `.flatpak` (added by `flatpak.yaml` — may arrive a few minutes after the others)
+   - Linux Flatpak: `org.coloradomesh.MeshClient-x86_64.flatpak` and `org.coloradomesh.MeshClient-aarch64.flatpak` (added by `flatpak.yaml` — may arrive a few minutes after the others)
    - Windows: `.exe`
 4. Verify release notes are populated (auto-generated from commits)
 
@@ -182,13 +182,13 @@ If a release has critical issues:
 
 The workflow produces the following artifacts:
 
-| Platform        | Artifacts                                                                   |
-| --------------- | --------------------------------------------------------------------------- |
-| macOS (x64)     | `{name}-{version}-mac.zip`, `{name}-{version}.dmg`                          |
-| macOS (arm64)   | `{name}-{version}-arm64-mac.zip`, `{name}-{version}-arm64.dmg`              |
-| Linux           | `{name}-{version}.AppImage`, `{name}-{version}.deb`, `{name}-{version}.rpm` |
-| Linux (Flatpak) | `org.coloradomesh.MeshClient.flatpak`                                       |
-| Windows         | `{name} Setup {version}.exe`                                                |
+| Platform        | Artifacts                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| macOS (x64)     | `{name}-{version}-mac.zip`, `{name}-{version}.dmg`                                          |
+| macOS (arm64)   | `{name}-{version}-arm64-mac.zip`, `{name}-{version}-arm64.dmg`                              |
+| Linux           | `{name}-{version}.AppImage`, `{name}-{version}.deb`, `{name}-{version}.rpm`                 |
+| Linux (Flatpak) | `org.coloradomesh.MeshClient-x86_64.flatpak`, `org.coloradomesh.MeshClient-aarch64.flatpak` |
+| Windows         | `{name} Setup {version}.exe`                                                                |
 
 Artifacts are signed with your developer certificate (macOS/Windows) if configured in `electron-builder` config.
 

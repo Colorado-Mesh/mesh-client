@@ -158,7 +158,6 @@ flatpak install --user -y flathub org.electronjs.Electron2.BaseApp//24.08
 ```bash
 pip install flatpak-node-generator
 flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
-git add flatpak/generated-sources.json
 ```
 
 `flatpak/generated-sources.json` is generated automatically in the `flatpak.yaml` CI workflow and does not need to be committed. For local builds you generate it manually as shown above; the file is only required locally and in a Flathub submission repo.
