@@ -1061,7 +1061,8 @@
     "unstarMessage": "Marcar Mensaje como no favorito",
     "starredMessages": "Mensajes con estrellas",
     "noStarredMessages": "Aún no hay mensajes destacados. Marca cualquier mensaje para guardarlo aquí.",
-    "goToMessage": "Ir al mensaje"
+    "goToMessage": "Ir al mensaje",
+    "receivedViaStoreForward": "Reproducido desde Store & Forward"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Intentos de reconexión MQTT máximos",

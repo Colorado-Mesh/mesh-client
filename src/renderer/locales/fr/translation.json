@@ -1046,7 +1046,8 @@
     "unstarMessage": "Message non étoilé",
     "starredMessages": "Messages favoris",
     "noStarredMessages": "Pas encore de messages marqués d'une étoile. Cochez n'importe quel message pour l'enregistrer ici.",
-    "goToMessage": "Aller au message"
+    "goToMessage": "Aller au message",
+    "receivedViaStoreForward": "Rejoué à partir de Store & Forward"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Nombre maximal de tentatives de reconnexion MQTT",

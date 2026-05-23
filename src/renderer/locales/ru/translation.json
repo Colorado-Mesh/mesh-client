@@ -1060,7 +1060,8 @@
     "unstarMessage": "Неизбранное сообщение",
     "starredMessages": "Помеченные сообщения",
     "noStarredMessages": "Сообщений с пометками пока нет. Отметьте любое сообщение, чтобы сохранить его здесь.",
-    "goToMessage": "1. Выберите в меню Письмо"
+    "goToMessage": "1. Выберите в меню Письмо",
+    "receivedViaStoreForward": "Воспроизводится из магазина и вперед"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Максимальное количество попыток переподключения MQTT",

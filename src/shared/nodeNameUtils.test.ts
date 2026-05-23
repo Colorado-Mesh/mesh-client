@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatMeshtasticNodeId,
   formatMeshtasticNodeIdHex,
+  isMeshtasticBroadcastNodeNum,
   meshtasticNodeIdMatchesHexQuery,
   meshtasticNodeLacksDisplayIdentity,
 } from './nodeNameUtils';
@@ -21,6 +22,12 @@ describe('formatMeshtasticNodeId', () => {
     expect(meshtasticNodeIdMatchesHexQuery(id, '!0bcd5737')).toBe(true);
     expect(meshtasticNodeIdMatchesHexQuery(id, 'bcd5737')).toBe(true);
     expect(meshtasticNodeIdMatchesHexQuery(id, 'deadbeef')).toBe(false);
+  });
+
+  it('identifies Meshtastic broadcast node num', () => {
+    expect(isMeshtasticBroadcastNodeNum(0xffffffff)).toBe(true);
+    expect(formatMeshtasticNodeId(0xffffffff)).toBe('!ffffffff');
+    expect(isMeshtasticBroadcastNodeNum(0xabcd1234)).toBe(false);
   });
 });
 

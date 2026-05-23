@@ -1061,7 +1061,8 @@
     "unstarMessage": "メッセージのスターマークを外す",
     "starredMessages": "スター付きメッセージ",
     "noStarredMessages": "お気に入りのメッセージはまだありません。メッセージにスターを付けてここに保存します。",
-    "goToMessage": "メッセージに移動"
+    "goToMessage": "メッセージに移動",
+    "receivedViaStoreForward": "ストア&フォワードからリプレイ"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "MQTT 再接続の最大試行回数",

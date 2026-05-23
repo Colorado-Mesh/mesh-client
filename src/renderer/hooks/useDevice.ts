@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
+  buildStoreForwardHistoryRequestBytes,
   decodeStoreForwardTextPayload,
   isDuplicateHistoryMessage,
   MQTT_RECONNECT_BACKLOG_MS,
@@ -212,10 +213,6 @@ export function useDevice() {
   const refreshOurPositionRef = useRef<() => Promise<OurPosition | null>>(() =>
     Promise.resolve(null),
   );
-  const sendMessageRef = useRef<
-    ((text: string, channel?: number, destination?: number, replyId?: number) => void) | null
-  >(null);
-
   // ─── MQTT session tracking ────────────────────────────────────
   // Tracks current MQTT connection status in a ref for use in callbacks
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
@@ -1141,17 +1138,34 @@ export function useDevice() {
           if (!sfHistoryRequestedRef.current && deviceRef.current) {
             sfHistoryRequestedRef.current = true;
             const sfCfg = moduleConfigsRef.current.storeForward as
-              | { enabled?: boolean }
+              | {
+                  enabled?: boolean;
+                  isServer?: boolean;
+                  historyReturnWindow?: number;
+                }
               | undefined;
-            if (sfCfg?.enabled) {
-              try {
-                sendMessageRef.current?.('SF', 0, MESHTASTIC_BROADCAST_NODE_NUM);
-                console.debug('[useDevice] requested Store & Forward history (SF)');
-              } catch (e: unknown) {
-                console.warn(
-                  '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
-                );
-              }
+            if (sfCfg?.enabled && !sfCfg.isServer) {
+              void (async () => {
+                try {
+                  const requestBytes = buildStoreForwardHistoryRequestBytes({
+                    windowMinutes: sfCfg.historyReturnWindow ?? 0,
+                  });
+                  // History replay arrives as async STORE_FORWARD_APP packets, not a routing reply.
+                  await deviceRef.current!.sendPacket(
+                    requestBytes,
+                    Portnums.PortNum.STORE_FORWARD_APP,
+                    MESHTASTIC_BROADCAST_NODE_NUM,
+                    0,
+                    false,
+                    false,
+                  );
+                  console.debug('[useDevice] requested Store & Forward history (CLIENT_HISTORY)');
+                } catch (e: unknown) {
+                  console.warn(
+                    '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
+                  );
+                }
+              })();
             }
           }
           void deviceRef.current
@@ -2513,6 +2527,7 @@ export function useDevice() {
           timestamp: Date.now(),
           isHistory: true,
           receivedVia: 'rf',
+          viaStoreForward: true,
         };
         setMessages((prev) => {
           if (isDuplicateHistoryMessage(prev, sfChat)) return prev;
@@ -3046,7 +3061,7 @@ export function useDevice() {
           packetId: tempId,
           status: deviceRef.current ? ('sending' as const) : undefined,
           mqttStatus: shouldUplink ? ('sending' as const) : undefined,
-          to: destination,
+          to: destination != null && destination >>> 0 !== BROADCAST_ADDR ? destination : undefined,
           replyId,
         },
         messagesRef.current,
@@ -3531,7 +3546,6 @@ export function useDevice() {
 
   // Keep ref in sync so intervals/callbacks always call the latest version
   refreshOurPositionRef.current = refreshOurPosition;
-  sendMessageRef.current = sendMessage;
 
   // Resolve position on app startup regardless of device connection
   useEffect(() => {

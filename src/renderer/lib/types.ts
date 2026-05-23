@@ -293,6 +293,8 @@ export interface ChatMessage {
   replyPreviewSender?: string;
   /** RF-derived hops away for this receive when known (Meshtastic hopStart−hopLimit; MeshCore path hops). */
   rxHops?: number;
+  /** Message was replayed from a Store & Forward server (Meshtastic only). */
+  viaStoreForward?: boolean;
 }
 
 export interface TelemetryPoint {

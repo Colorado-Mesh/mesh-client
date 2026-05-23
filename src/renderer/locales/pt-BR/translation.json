@@ -1061,7 +1061,8 @@
     "unstarMessage": "Desmarcar Mensagem",
     "starredMessages": "Mensagens marcadas com estrela",
     "noStarredMessages": "Ainda não há mensagens marcadas com estrela. Marque qualquer mensagem para salvá-la aqui.",
-    "goToMessage": "Ir para a mensagem"
+    "goToMessage": "Ir para a mensagem",
+    "receivedViaStoreForward": "Reproduzido de Store & Forward"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Tentativas máximas de reconexão do MQTT",

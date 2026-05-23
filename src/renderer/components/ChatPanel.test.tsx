@@ -153,6 +153,30 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByTitle('Received via RF')).toBeInTheDocument();
   });
 
+  it('shows Store & Forward badge alongside RF transport badge', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          myNodeNum={1}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Other',
+              payload: 'Cached hello',
+              channel: 0,
+              timestamp: Date.now(),
+              receivedVia: 'rf',
+              viaStoreForward: true,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByTitle('Replayed from Store & Forward')).toBeInTheDocument();
+    expect(screen.getByTitle('Received via RF')).toBeInTheDocument();
+  });
+
   it('shows RF transport badge in MeshCore mode', () => {
     render(
       <ToastProvider>
@@ -292,6 +316,32 @@ describe('ChatPanel accessibility', () => {
     );
 
     expect(screen.getByTitle('Close DM')).toBeInTheDocument();
+  });
+
+  it('does not infer a DM tab for Meshtastic broadcast (!ffffffff)', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshtastic"
+          isConnected
+          myNodeNum={1}
+          messages={[
+            {
+              sender_id: 1,
+              sender_name: 'Me',
+              payload: 'history request',
+              channel: 0,
+              timestamp: Date.now(),
+              to: 0xffffffff,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.queryByText('!ffffffff')).not.toBeInTheDocument();
+    expect(screen.getByText('No conversations')).toBeInTheDocument();
   });
 
   it('allows closing inferred DM tab and resurfaces on subsequent message (even if timestamp is stale)', async () => {

@@ -1061,7 +1061,8 @@
     "unstarMessage": "Het bericht uit de favorieten verwijderen",
     "starredMessages": "Favoriete berichten",
     "noStarredMessages": "Nog geen berichten met een ster. Geef elk bericht een ster om het hier op te slaan.",
-    "goToMessage": "Ga naar bericht"
+    "goToMessage": "Ga naar bericht",
+    "receivedViaStoreForward": "Opnieuw afgespeeld vanuit Store & Forward"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-pogingen om opnieuw verbinding te maken",

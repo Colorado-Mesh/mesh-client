@@ -1045,7 +1045,8 @@
     "unstarMessage": "Markierung der Nachricht aufheben",
     "starredMessages": "Markierte Nachrichten",
     "noStarredMessages": "Noch keine markierten Nachrichten. Markieren Sie eine Nachricht, um sie hier zu speichern.",
-    "goToMessage": "Gehe zu Nachricht"
+    "goToMessage": "Gehe zu Nachricht",
+    "receivedViaStoreForward": "Wiederholungen aus Store & Forward"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-Wiederverbindungsversuche",

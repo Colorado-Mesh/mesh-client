@@ -1061,7 +1061,8 @@
     "unstarMessage": "Mesajın Yıldızını Kaldır",
     "starredMessages": "Yıldızlı iletileri",
     "noStarredMessages": "Henüz yıldızlı mesaj yok. Buraya kaydetmek için herhangi bir mesajı yıldızla.",
-    "goToMessage": "Mesaja git"
+    "goToMessage": "Mesaja git",
+    "receivedViaStoreForward": "Store & Forward'dan yeniden oynatıldı"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksimum MQTT yeniden bağlanma denemesi",

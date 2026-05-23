@@ -29,6 +29,7 @@ export interface SavedMessage {
   to: number | undefined;
   mqttStatus: string | null;
   receivedVia: string | null;
+  viaStoreForward?: boolean;
 }
 
 export interface SavedNode {
