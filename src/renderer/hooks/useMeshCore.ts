@@ -34,6 +34,7 @@ import {
   findMeshcoreDmReplyParent,
   normalizeMeshcoreIncomingText,
 } from '../lib/meshcoreChannelText';
+import { MeshcoreCompanionTxEchoFilter } from '../lib/meshcoreCompanionTxEchoFilter';
 import {
   buildGetAutoaddConfigFrame,
   buildSetAutoaddConfigFrame,
@@ -433,6 +434,7 @@ class IpcNobleConnection {
   async connect() {
     const runConnect = async () => {
       const sessionId = this.sessionId;
+      const txEchoFilter = new MeshcoreCompanionTxEchoFilter();
       class NobleOverIpc extends MeshcoreConnectionBase {
         constructor(private readonly session: NobleBleSessionId) {
           super();
@@ -443,6 +445,7 @@ class IpcNobleConnection {
          * USB framing (0x3c/0x3e + length) used for WebSerial/TCP.
          */
         async sendToRadioFrame(data: Uint8Array) {
+          txEchoFilter.noteOutbound(data);
           this.emit('tx', data);
           await this.write(data);
         }
@@ -469,6 +472,9 @@ class IpcNobleConnection {
       const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
         if (sid !== sessionId) return;
         const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        if (txEchoFilter.isEcho(frame)) {
+          return;
+        }
         instance.onFrameReceived(frame);
       });
       const offDisc = window.electronAPI.onNobleBleDisconnected((sid) => {

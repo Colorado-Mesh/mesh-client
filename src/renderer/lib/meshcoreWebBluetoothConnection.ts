@@ -2,6 +2,7 @@ import { Connection } from '@liamcottle/meshcore.js';
 import type { Types } from '@meshtastic/core';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { MeshcoreCompanionTxEchoFilter } from '@/renderer/lib/meshcoreCompanionTxEchoFilter';
 
 import { withTimeout } from '../../shared/withTimeout';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- TransportWebBluetoothIpc is used as a value (new) in connect()
@@ -14,6 +15,7 @@ const WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS = 20_000;
 
 export class MeshcoreWebBluetoothConnection extends Connection {
   private readonly transport: TransportWebBluetoothIpc;
+  private readonly txEchoFilter = new MeshcoreCompanionTxEchoFilter();
   private _fromDeviceReader: ReadableStreamDefaultReader<Types.DeviceOutput> | null = null;
 
   constructor(transport: TransportWebBluetoothIpc) {
@@ -22,6 +24,7 @@ export class MeshcoreWebBluetoothConnection extends Connection {
   }
 
   async sendToRadioFrame(data: Uint8Array): Promise<void> {
+    this.txEchoFilter.noteOutbound(data);
     this.emit('tx', data);
     const writer = this.transport.toDevice.getWriter();
     try {
@@ -80,6 +83,9 @@ export class MeshcoreWebBluetoothConnection extends Connection {
           break;
         }
         if (value.type === 'packet') {
+          if (this.txEchoFilter.isEcho(value.data)) {
+            continue;
+          }
           this.onFrameReceived(value.data);
         }
       }
