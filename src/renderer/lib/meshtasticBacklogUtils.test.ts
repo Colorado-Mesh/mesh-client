@@ -12,6 +12,7 @@ describe('meshtasticBacklogUtils', () => {
     const now = 1_000_000;
     const until = now + MQTT_RECONNECT_BACKLOG_MS;
     expect(mqttMessageTreatAsHistory(now + 1000, until)).toBe(true);
+    expect(mqttMessageTreatAsHistory(until, until)).toBe(false);
     expect(mqttMessageTreatAsHistory(until + 1, until)).toBe(false);
     expect(mqttMessageTreatAsHistory(now, 0)).toBe(false);
   });

@@ -481,7 +481,10 @@
       "applyFailed": "Gagal menerapkan URL: {{message}}",
       "exportFailed": "Gagal membuat URL: {{message}}",
       "connectToImport": "Sambungkan ke perangkat untuk menerapkan pengaturan saluran.",
-      "noChannelsToExport": "Tidak ada saluran yang diaktifkan untuk diekspor."
+      "noChannelsToExport": "Tidak ada saluran yang diaktifkan untuk diekspor.",
+      "parseFailed": "URL saluran tidak valid: {{message}}",
+      "applying": "Menerapkan",
+      "unnamedChannel": "Tanpa nama"
     }
   },
   "securityPanel": {

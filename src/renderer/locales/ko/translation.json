@@ -481,7 +481,10 @@
       "applyFailed": "URL을 적용하지 못했습니다: {{message}}",
       "exportFailed": "URL 생성 실패: {{message}}",
       "connectToImport": "채널 설정을 적용하려면 장치에 연결하세요.",
-      "noChannelsToExport": "내보낼 수 있는 채널이 없습니다."
+      "noChannelsToExport": "내보낼 수 있는 채널이 없습니다.",
+      "parseFailed": "유효하지 않은 채널 URL: {{message}}",
+      "applying": "적용 중…",
+      "unnamedChannel": "(이름 없음)"
     }
   },
   "securityPanel": {

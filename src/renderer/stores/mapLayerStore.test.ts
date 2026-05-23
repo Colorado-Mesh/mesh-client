@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
-import { useMapLayerStore } from './mapLayerStore';
+import { readPersistedBoolean, useMapLayerStore } from './mapLayerStore';
 
 describe('mapLayerStore', () => {
   beforeEach(() => {
@@ -44,6 +44,12 @@ describe('mapLayerStore', () => {
       unknown
     >;
     expect(parsed.mapBasemapId).toBe('dark');
+  });
+
+  it('readPersistedBoolean ignores non-boolean strings', () => {
+    expect(readPersistedBoolean('false', true)).toBe(true);
+    expect(readPersistedBoolean(false, true)).toBe(false);
+    expect(readPersistedBoolean(true, false)).toBe(true);
   });
 
   it('seeds SQLite from current basemap when DB has no value', async () => {

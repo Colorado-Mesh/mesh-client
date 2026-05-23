@@ -3,7 +3,11 @@ import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { formatCoordPair, resolveNodeMapPosition } from '../lib/coordUtils';
+import {
+  formatCoordPair,
+  latestPositionHistoryPoint,
+  resolveNodeMapPosition,
+} from '../lib/coordUtils';
 import {
   diagnosticRowsToRoutingMap,
   getRoutingRowForNode,
@@ -181,24 +185,12 @@ export default function NodeInfoBody({
   const meshcoreTraceHistory = useDiagnosticsStore((s) => s.meshcoreTraceHistory.get(node.node_id));
   const loadMeshcorePathHistory = useDiagnosticsStore((s) => s.loadMeshcorePathHistory);
   const [pathHistoryOpen, setPathHistoryOpen] = useState(false);
-  const latestTrackedPositionFromStore = usePositionHistoryStore((s) => {
-    const points = s.history.get(node.node_id);
-    if (!points || points.length === 0) return null;
-    let latest = points[0];
-    for (let i = 1; i < points.length; i++) {
-      if (points[i].t > latest.t) latest = points[i];
-    }
-    return latest;
-  });
-  const latestTrackedPositionFromProps = (() => {
-    const points = positionHistory?.get(node.node_id);
-    if (!points || points.length === 0) return null;
-    let latest = points[0];
-    for (let i = 1; i < points.length; i++) {
-      if (points[i].t > latest.t) latest = points[i];
-    }
-    return latest;
-  })();
+  const latestTrackedPositionFromStore = usePositionHistoryStore((s) =>
+    latestPositionHistoryPoint(s.history.get(node.node_id)),
+  );
+  const latestTrackedPositionFromProps = latestPositionHistoryPoint(
+    positionHistory?.get(node.node_id),
+  );
   const latestTrackedPosition = latestTrackedPositionFromProps ?? latestTrackedPositionFromStore;
 
   const meshcoreTraceFirst = meshcoreTraceHistory?.[0];

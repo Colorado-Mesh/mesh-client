@@ -49,6 +49,9 @@ export interface ParsedChannelSet {
   mode: 'replace' | 'add';
 }
 
+/** Max base64url payload length before decode (guards pasted URLs in the renderer). */
+export const MESHTASTIC_CONFIG_URL_MAX_PAYLOAD_CHARS = 16 * 1024;
+
 export class MeshtasticUrlError extends Error {
   constructor(message = 'Invalid or corrupted Meshtastic configuration link') {
     super(message);
@@ -156,22 +159,33 @@ function buildChannelSet(
   });
 }
 
+/** Matches Meshtastic Python client add-only links (`/?add=true#` before payload). */
+function isAddOnlyConfigUrl(url: string): boolean {
+  return /\/\?add=true#/i.test(url) || /\?add=true#/i.test(url);
+}
+
 function extractPayloadFromUrl(url: string): { payload: string; mode: 'replace' | 'add' } {
   const trimmed = url.trim();
   if (!trimmed) {
     throw new MeshtasticUrlError();
   }
 
-  const mode: 'replace' | 'add' = /\?add=true/i.test(trimmed) ? 'add' : 'replace';
+  const mode: 'replace' | 'add' = isAddOnlyConfigUrl(trimmed) ? 'add' : 'replace';
 
   const hashIdx = trimmed.indexOf('#');
   if (hashIdx >= 0) {
     const payload = trimmed.slice(hashIdx + 1).trim();
     if (!payload) throw new MeshtasticUrlError();
+    if (payload.length > MESHTASTIC_CONFIG_URL_MAX_PAYLOAD_CHARS) {
+      throw new MeshtasticUrlError('Configuration link payload is too large');
+    }
     return { payload, mode };
   }
 
   if (/^[A-Za-z0-9_-]+$/.test(trimmed)) {
+    if (trimmed.length > MESHTASTIC_CONFIG_URL_MAX_PAYLOAD_CHARS) {
+      throw new MeshtasticUrlError('Configuration link payload is too large');
+    }
     return { payload: trimmed, mode };
   }
 

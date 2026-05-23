@@ -31,7 +31,11 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { ElectronAPI } from '@/shared/electron-api.types';
 
 import type { LocationFilter } from '../App';
-import { formatCoordPair } from '../lib/coordUtils';
+import {
+  formatCoordPair,
+  latestPositionHistoryPoint,
+  resolveNodeMapPosition,
+} from '../lib/coordUtils';
 import { getRoutingRowForNode, routingAnomalyNodeIds } from '../lib/diagnostics/diagnosticRows';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
@@ -618,6 +622,10 @@ function MapFocusController() {
   useEffect(() => {
     if (!pendingFocus) return;
     const { lat, lon, zoom = 14 } = pendingFocus;
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      clearPendingFocus();
+      return;
+    }
     map.flyTo([lat, lon], zoom, { duration: 0.5 });
     clearPendingFocus();
   }, [pendingFocus, map, clearPendingFocus]);
@@ -826,7 +834,7 @@ export default function MapPanel({
   const routeWeightsSupported = protocol === 'meshcore';
 
   const routeWeightPolylines = useMemo(() => {
-    if (!routeWeightsSupported || !showRouteWeights) return null;
+    if (!showNodes || !routeWeightsSupported || !showRouteWeights) return null;
     const paths = getWeightedPaths(pathRecords);
 
     const homeNodeForRoute = myNodeNum ? nodes.get(myNodeNum) : undefined;
@@ -903,7 +911,15 @@ export default function MapPanel({
         />
       );
     });
-  }, [routeWeightsSupported, showRouteWeights, pathRecords, myNodeNum, nodes, ourPosition]);
+  }, [
+    showNodes,
+    routeWeightsSupported,
+    showRouteWeights,
+    pathRecords,
+    myNodeNum,
+    nodes,
+    ourPosition,
+  ]);
 
   useEffect(() => {
     ensureMapStyles();
@@ -940,38 +956,35 @@ export default function MapPanel({
         : locationFilter.maxDistance;
 
     return Array.from(nodes.values())
-      .filter((n) => {
-        let rejectReason: string | null = null;
+      .flatMap((n) => {
+        const displayPos = resolveNodeMapPosition(
+          n,
+          latestPositionHistoryPoint(positionHistory.get(n.node_id)),
+        );
+        if (!displayPos) return [];
+        const mapped: MeshNode = { ...n, latitude: displayPos.lat, longitude: displayPos.lon };
         if (
-          rejectReason === null &&
           excludeMeshcoreContactTypesInMeshtastic &&
-          meshcoreHwModelIsContactTypeLabel(n.hw_model)
+          meshcoreHwModelIsContactTypeLabel(mapped.hw_model)
         ) {
-          rejectReason = 'meshcore_contact_type_filtered_for_meshtastic';
+          return [];
         }
-        if (
-          n.latitude == null ||
-          n.longitude == null ||
-          !(Math.abs(n.latitude) > 0.0001 || Math.abs(n.longitude) > 0.0001)
-        ) {
-          rejectReason = 'invalid_or_zero_coords';
+        if (locationFilter.hideMqttOnly && mapped.heard_via_mqtt_only) {
+          return [];
         }
-        if (rejectReason === null && locationFilter.hideMqttOnly && n.heard_via_mqtt_only) {
-          rejectReason = 'mqtt_only_filtered';
-        }
-        if (rejectReason === null && locationFilter.enabled && homeHasLocation) {
+        if (locationFilter.enabled && homeHasLocation) {
           const d = haversineDistanceKm(
             homeNode?.latitude ?? 0,
             homeNode?.longitude ?? 0,
-            n.latitude!,
-            n.longitude!,
+            mapped.latitude!,
+            mapped.longitude!,
           );
-          if (d > maxKm) rejectReason = 'distance_filtered';
+          if (d > maxKm) return [];
         }
-        return rejectReason === null;
+        return [mapped];
       })
       .sort((a, b) => a.node_id - b.node_id);
-  }, [nodes, myNodeNum, locationFilter, excludeMeshcoreContactTypesInMeshtastic]);
+  }, [nodes, myNodeNum, locationFilter, excludeMeshcoreContactTypesInMeshtastic, positionHistory]);
   const nodesToRender = useMemo(() => {
     const idSet = new Set(nodesWithPosition.map((n) => n.node_id));
     const out: MeshNode[] = [...nodesWithPosition];
@@ -979,18 +992,26 @@ export default function MapPanel({
       if (idSet.has(nodeId)) continue;
       const node = nodes.get(nodeId);
       if (
-        (excludeMeshcoreContactTypesInMeshtastic &&
-          meshcoreHwModelIsContactTypeLabel(node?.hw_model)) ||
-        node?.latitude == null ||
-        node.longitude == null ||
-        !(Math.abs(node.latitude) > 0.0001 || Math.abs(node.longitude) > 0.0001)
-      )
+        excludeMeshcoreContactTypesInMeshtastic &&
+        meshcoreHwModelIsContactTypeLabel(node?.hw_model)
+      ) {
         continue;
+      }
+      const displayPos = node
+        ? resolveNodeMapPosition(node, latestPositionHistoryPoint(positionHistory.get(nodeId)))
+        : null;
+      if (!node || !displayPos) continue;
       idSet.add(nodeId);
-      out.push(node);
+      out.push({ ...node, latitude: displayPos.lat, longitude: displayPos.lon });
     }
     return out.sort((a, b) => a.node_id - b.node_id);
-  }, [nodesWithPosition, routingNodeIds, nodes, excludeMeshcoreContactTypesInMeshtastic]);
+  }, [
+    nodesWithPosition,
+    routingNodeIds,
+    nodes,
+    excludeMeshcoreContactTypesInMeshtastic,
+    positionHistory,
+  ]);
 
   const nodesWithStatus = useMemo(
     () =>
@@ -1157,7 +1178,10 @@ export default function MapPanel({
             {statusCounts.online}
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-violet-900" />
+            <span
+              className="inline-block h-2 w-2 rounded-full"
+              style={{ backgroundColor: overlayColors.stale }}
+            />
             {statusCounts.stale}
           </span>
           <span className="flex items-center gap-1">

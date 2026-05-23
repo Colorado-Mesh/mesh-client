@@ -481,7 +481,10 @@
       "applyFailed": "URL uygulanamadı: {{message}}",
       "exportFailed": "URL oluşturulamadı: {{message}}",
       "connectToImport": "Kanal ayarlarını uygulamak için bir cihaza bağlanın.",
-      "noChannelsToExport": "Dışa aktarılacak etkin kanal yok."
+      "noChannelsToExport": "Dışa aktarılacak etkin kanal yok.",
+      "parseFailed": "Geçersiz kanal URL'si: {{message}}",
+      "applying": "Uygulayan",
+      "unnamedChannel": "(isimsiz)"
     }
   },
   "securityPanel": {

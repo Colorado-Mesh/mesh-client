@@ -11,6 +11,7 @@ import {
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
 } from '@/renderer/lib/meshtasticBacklogUtils';
+import { channelNameExists, findNextFreeChannelSlot } from '@/shared/meshtasticChannelApply';
 import { isMeshtasticDefaultPublicPsk } from '@/shared/meshtasticDefaultPublicPsk';
 import {
   MESHTASTIC_CHANNEL_ROLE,
@@ -3144,24 +3145,22 @@ export function useDevice() {
           await clearChannel(i);
         }
       } else {
+        const reserved = new Set<number>();
+        const slotSnapshot = () =>
+          channelConfigsRef.current.map((c) => ({
+            index: c.index,
+            role: c.role,
+            name: c.name,
+          }));
         for (const settings of parsed.settings) {
           if (!settings.name) continue;
-          const exists = channelConfigsRef.current.some(
-            (c) => c.role !== MESHTASTIC_CHANNEL_ROLE.DISABLED && c.name === settings.name,
-          );
-          if (exists) continue;
+          if (channelNameExists(slotSnapshot(), settings.name)) continue;
 
-          let freeIndex: number | null = null;
-          for (let i = 1; i < 8; i++) {
-            const cfg = channelConfigsRef.current.find((c) => c.index === i);
-            if (!cfg || cfg.role === MESHTASTIC_CHANNEL_ROLE.DISABLED) {
-              freeIndex = i;
-              break;
-            }
-          }
+          const freeIndex = findNextFreeChannelSlot(slotSnapshot(), reserved);
           if (freeIndex === null) {
             throw new Error('No free channel slots');
           }
+          reserved.add(freeIndex);
           await setDeviceChannel({
             index: freeIndex,
             role: MESHTASTIC_CHANNEL_ROLE.SECONDARY,

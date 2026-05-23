@@ -481,7 +481,10 @@
       "applyFailed": "Nie udało się zastosować adresu URL: {{message}}",
       "exportFailed": "Nie udało się wygenerować adresu URL: {{message}}",
       "connectToImport": "Połącz się z urządzeniem, aby zastosować ustawienia kanału.",
-      "noChannelsToExport": "Brak włączonych kanałów do wyeksportowania."
+      "noChannelsToExport": "Brak włączonych kanałów do wyeksportowania.",
+      "parseFailed": "Nieprawidłowy adres URL kanału: {{message}}",
+      "applying": "Stosowanie…",
+      "unnamedChannel": "(bez nazwy)"
     }
   },
   "securityPanel": {

@@ -161,4 +161,68 @@ describe('useNodeStatusNotifier', () => {
     const [title] = notificationSpy.mock.calls[0] as [string];
     expect(title).toBe('SN is online');
   });
+
+  it('uses padded Meshtastic node id when names are empty', () => {
+    useWatchedNodesStore.setState({ watchedNodeIds: new Set([0x0bcd5737]) });
+    const nodeId = 0x0bcd5737;
+    const offlineNodes = new Map([
+      [
+        nodeId,
+        makeNode({
+          node_id: nodeId,
+          long_name: '',
+          short_name: '',
+          last_heard: OFFLINE_LAST_HEARD,
+        }),
+      ],
+    ]);
+    const onlineNodes = new Map([
+      [
+        nodeId,
+        makeNode({ node_id: nodeId, long_name: '', short_name: '', last_heard: ONLINE_LAST_HEARD }),
+      ],
+    ]);
+
+    const { rerender } = renderHook(
+      ({ nodes }: { nodes: Map<number, MeshNode> }) => {
+        useNodeStatusNotifier(nodes, meshtasticCaps);
+      },
+      { initialProps: { nodes: offlineNodes } },
+    );
+    rerender({ nodes: onlineNodes });
+    const [title] = notificationSpy.mock.calls[0] as [string];
+    expect(title).toBe('!0bcd5737 is online');
+  });
+
+  it('uses MeshCore hex fallback when names are empty', () => {
+    useWatchedNodesStore.setState({ watchedNodeIds: new Set([0xf6]) });
+    const nodeId = 0xf6;
+    const offlineNodes = new Map([
+      [
+        nodeId,
+        makeNode({
+          node_id: nodeId,
+          long_name: '',
+          short_name: '',
+          last_heard: OFFLINE_LAST_HEARD,
+        }),
+      ],
+    ]);
+    const onlineNodes = new Map([
+      [
+        nodeId,
+        makeNode({ node_id: nodeId, long_name: '', short_name: '', last_heard: ONLINE_LAST_HEARD }),
+      ],
+    ]);
+
+    const { rerender } = renderHook(
+      ({ nodes }: { nodes: Map<number, MeshNode> }) => {
+        useNodeStatusNotifier(nodes, meshcoreCaps);
+      },
+      { initialProps: { nodes: offlineNodes } },
+    );
+    rerender({ nodes: onlineNodes });
+    const [title] = notificationSpy.mock.calls[0] as [string];
+    expect(title).toBe('Node-F6 is online');
+  });
 });

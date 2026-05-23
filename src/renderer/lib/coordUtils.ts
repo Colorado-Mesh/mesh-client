@@ -2,6 +2,11 @@ import { forward as mgrsForward } from 'mgrs';
 
 export type CoordinateFormat = 'decimal' | 'mgrs';
 
+/** True when lat/lon are finite and not the null-island placeholder (0, 0). */
+export function isDisplayableCoord(lat: number, lon: number): boolean {
+  return Number.isFinite(lat) && Number.isFinite(lon) && !(lat === 0 && lon === 0);
+}
+
 /** True when lat/lon are present and not the null-island placeholder (0, 0). */
 export function nodeHasDisplayablePosition(node: {
   latitude?: number | null;
@@ -10,7 +15,7 @@ export function nodeHasDisplayablePosition(node: {
   return (
     node.latitude != null &&
     node.longitude != null &&
-    !(node.latitude === 0 && node.longitude === 0)
+    isDisplayableCoord(node.latitude, node.longitude)
   );
 }
 
@@ -23,11 +28,11 @@ export function latestPositionHistoryPoint(
   for (let i = 1; i < points.length; i++) {
     if (points[i].t > latest.t) latest = points[i];
   }
-  if (latest.lat === 0 && latest.lon === 0) return null;
+  if (!isDisplayableCoord(latest.lat, latest.lon)) return null;
   return { lat: latest.lat, lon: latest.lon };
 }
 
-/** NodeDB lat/lon when present, otherwise newest tracked point. */
+/** NodeDB lat/lon when present, otherwise newest valid tracked point. */
 export function resolveNodeMapPosition(
   node: { latitude?: number | null; longitude?: number | null },
   latestTracked?: { lat: number; lon: number } | null,
@@ -35,7 +40,10 @@ export function resolveNodeMapPosition(
   if (nodeHasDisplayablePosition(node)) {
     return { lat: node.latitude!, lon: node.longitude! };
   }
-  return latestTracked ?? null;
+  if (latestTracked && isDisplayableCoord(latestTracked.lat, latestTracked.lon)) {
+    return { lat: latestTracked.lat, lon: latestTracked.lon };
+  }
+  return null;
 }
 
 export function formatCoordPair(lat: number, lon: number, format: CoordinateFormat): string {

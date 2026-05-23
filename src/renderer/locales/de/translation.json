@@ -465,7 +465,10 @@
       "applyFailed": "Fehler beim Anwenden der URL: {{message}}",
       "exportFailed": "URL konnte nicht generiert werden: {{message}}",
       "connectToImport": "Verbinden Sie sich mit einem Gerät, um die Kanaleinstellungen anzuwenden.",
-      "noChannelsToExport": "Keine aktivierten Kanäle zum Exportieren."
+      "noChannelsToExport": "Keine aktivierten Kanäle zum Exportieren.",
+      "parseFailed": "Ungültige Kanal-URL: {{message}}",
+      "applying": "Anwenden",
+      "unnamedChannel": "(unbenannt)"
     }
   },
   "securityPanel": {

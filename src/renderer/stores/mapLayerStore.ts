@@ -16,6 +16,10 @@ interface MapLayerPersisted {
   mapShowWaypoints?: unknown;
 }
 
+export function readPersistedBoolean(value: unknown, defaultValue: boolean): boolean {
+  return typeof value === 'boolean' ? value : defaultValue;
+}
+
 function loadPersisted(): { basemapId: MapBasemapId; showNodes: boolean; showWaypoints: boolean } {
   const settings = parseStoredJson<MapLayerPersisted>(
     getAppSettingsRaw(),
@@ -26,8 +30,8 @@ function loadPersisted(): { basemapId: MapBasemapId; showNodes: boolean; showWay
       settings?.mapBasemapId != null && isValidMapBasemapId(settings.mapBasemapId)
         ? settings.mapBasemapId
         : DEFAULT_MAP_BASEMAP_ID,
-    showNodes: settings?.mapShowNodes !== false,
-    showWaypoints: settings?.mapShowWaypoints !== false,
+    showNodes: readPersistedBoolean(settings?.mapShowNodes, true),
+    showWaypoints: readPersistedBoolean(settings?.mapShowWaypoints, true),
   };
 }
 

@@ -378,6 +378,9 @@
       "applySuccess": "Channel configuration applied from URL.",
       "applyFailed": "Failed to apply URL: {{message}}",
       "exportFailed": "Failed to generate URL: {{message}}",
+      "parseFailed": "Invalid channel URL: {{message}}",
+      "applying": "Applying…",
+      "unnamedChannel": "(unnamed)",
       "connectToImport": "Connect to a device to apply channel settings.",
       "noChannelsToExport": "No enabled channels to export."
     },

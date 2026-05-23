@@ -465,7 +465,10 @@
       "applyFailed": "无法应用 URL：{{message}}",
       "exportFailed": "生成网址失败： {{message}}",
       "connectToImport": "连接到设备以应用频道设置。",
-      "noChannelsToExport": "没有已启用的频道可导出。"
+      "noChannelsToExport": "没有已启用的频道可导出。",
+      "parseFailed": "频道 URL 无效：{{message}}",
+      "applying": "正在应用…",
+      "unnamedChannel": "（未命名）"
     }
   },
   "securityPanel": {

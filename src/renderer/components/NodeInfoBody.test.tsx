@@ -65,4 +65,23 @@ describe('NodeInfoBody', () => {
     expect(screen.getByText('Last Tracked Position')).toBeInTheDocument();
     expect(screen.getByText('40.54321, -105.54321')).toBeInTheDocument();
   });
+
+  it('shows show-on-map for tracked-only position', () => {
+    positionHistoryStoreState.history = new Map([[42, [{ t: 1_000, lat: 40.1, lon: -105.1 }]]]);
+    const onShowOnMap = vi.fn();
+    const node: MeshNode = {
+      node_id: 42,
+      long_name: 'Tracked',
+      short_name: 'TRK',
+      hw_model: 'T-Echo',
+      snr: 0,
+      battery: 0,
+      last_heard: Math.floor(Date.now() / 1000),
+      latitude: null,
+      longitude: null,
+    };
+    render(<NodeInfoBody node={node} protocol="meshtastic" onShowOnMap={onShowOnMap} />);
+    screen.getByRole('button', { name: 'Show on map' }).click();
+    expect(onShowOnMap).toHaveBeenCalledWith(42, 40.1, -105.1);
+  });
 });

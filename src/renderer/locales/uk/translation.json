@@ -481,7 +481,10 @@
       "applyFailed": "Не вдалося застосувати URL-адресу: {{message}}",
       "exportFailed": "Не вдалося створити URL-адресу: {{message}}",
       "connectToImport": "Підключіться до пристрою, щоб застосувати налаштування каналу.",
-      "noChannelsToExport": "Немає ввімкнених каналів для експорту"
+      "noChannelsToExport": "Немає ввімкнених каналів для експорту",
+      "parseFailed": "Недійсна URL-адреса каналу: {{message}}",
+      "applying": "Застосування…",
+      "unnamedChannel": "(без імені)"
     }
   },
   "securityPanel": {

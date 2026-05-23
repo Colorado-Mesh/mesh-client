@@ -8,9 +8,14 @@ import {
   meshtasticNodeIdMatchesHexQuery,
 } from '../../shared/nodeNameUtils';
 import type { LocationFilter } from '../App';
-import { formatCoordColumns, nodeHasDisplayablePosition } from '../lib/coordUtils';
+import {
+  formatCoordColumns,
+  latestPositionHistoryPoint,
+  resolveNodeMapPosition,
+} from '../lib/coordUtils';
 import { getRoutingRowForNode } from '../lib/diagnostics/diagnosticRows';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
+import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import {
   MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS,
   MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS,
@@ -33,6 +38,8 @@ import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
 import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { useMapLayerStore } from '../stores/mapLayerStore';
+import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import SignalBars from './SignalBars';
 import { useToast } from './Toast';
 
@@ -190,6 +197,9 @@ export default function NodeListPanel({
   const { t } = useTranslation();
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(mode);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
+  const basemapId = useMapLayerStore((s) => s.basemapId);
+  const staleLegendColor = getMapOverlayColors(MAP_BASEMAPS[basemapId].isDark).stale;
+  const positionHistory = usePositionHistoryStore((s) => s.history);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
   const nodeRedundancy = useDiagnosticsStore((s) => s.nodeRedundancy);
@@ -291,7 +301,9 @@ export default function NodeListPanel({
           n.long_name.toLowerCase().includes(q) ||
           n.short_name.toLowerCase().includes(q) ||
           n.hw_model?.toLowerCase().includes(q) ||
-          (mode !== 'meshcore' && meshtasticNodeIdMatchesHexQuery(n.node_id, q)),
+          (mode === 'meshcore'
+            ? n.node_id.toString(16).includes(q.replace(/^!/, ''))
+            : meshtasticNodeIdMatchesHexQuery(n.node_id, q)),
       );
     }
 
@@ -697,7 +709,10 @@ export default function NodeListPanel({
           })}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-violet-900" />
+          <span
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ backgroundColor: staleLegendColor }}
+          />
           {t('nodeListPanel.summaryStale', {
             count: nodeList.filter(
               (n) =>
@@ -1267,12 +1282,16 @@ export default function NodeListPanel({
                       </td>
                     )}
                     {(() => {
+                      const mapPosition = resolveNodeMapPosition(
+                        node,
+                        latestPositionHistoryPoint(positionHistory.get(node.node_id)),
+                      );
                       const { latCell, lonCell } = formatCoordColumns(
-                        node.latitude,
-                        node.longitude,
+                        mapPosition?.lat ?? node.latitude,
+                        mapPosition?.lon ?? node.longitude,
                         coordinateFormat,
                       );
-                      const canShowOnMap = onShowOnMap != null && nodeHasDisplayablePosition(node);
+                      const canShowOnMap = onShowOnMap != null && mapPosition != null;
                       return (
                         <>
                           <td className="text-muted px-3 py-2 text-right font-mono text-xs">
@@ -1286,7 +1305,9 @@ export default function NodeListPanel({
                                   title={t('nodeListPanel.showOnMap')}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onShowOnMap(node.node_id, node.latitude!, node.longitude!);
+                                    if (mapPosition) {
+                                      onShowOnMap(node.node_id, mapPosition.lat, mapPosition.lon);
+                                    }
                                   }}
                                 >
                                   📍

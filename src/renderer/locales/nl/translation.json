@@ -481,7 +481,10 @@
       "applyFailed": "Kan URL niet toepassen: {{message}}",
       "exportFailed": "URL genereren mislukt: {{message}}",
       "connectToImport": "Maak verbinding met een apparaat om kanaalinstellingen toe te passen.",
-      "noChannelsToExport": "Geen ingeschakelde kanalen om te exporteren."
+      "noChannelsToExport": "Geen ingeschakelde kanalen om te exporteren.",
+      "parseFailed": "Ongeldige kanaal-URL: {{message}}",
+      "applying": "Toepassen…",
+      "unnamedChannel": "(naamloos)"
     }
   },
   "securityPanel": {

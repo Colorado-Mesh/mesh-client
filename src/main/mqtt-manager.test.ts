@@ -1320,6 +1320,24 @@ describe('onMessage — JSON text large node ID', () => {
 
     expect(messages).toHaveLength(1);
     expect((messages[0] as Record<string, unknown>).sender_id).toBe(0xb2a7c770);
+    expect((messages[0] as Record<string, unknown>).sender_name).toBe('!b2a7c770');
+  });
+
+  it('uses padded hex sender_name for small node IDs', () => {
+    const nodeId = 0x0bcd5737;
+    const json = {
+      type: 'text',
+      from: nodeId,
+      channel: 0,
+      text: 'hi',
+    };
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage(
+      'msh/US/2/json/LongFast/!0bcd5737',
+      Buffer.from(JSON.stringify(json)),
+    );
+    expect((messages[0] as Record<string, unknown>).sender_name).toBe('!0bcd5737');
   });
 });
 

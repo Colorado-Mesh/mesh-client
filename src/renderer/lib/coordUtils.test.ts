@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isDisplayableCoord,
   latestPositionHistoryPoint,
   nodeHasDisplayablePosition,
   resolveNodeMapPosition,
@@ -30,6 +31,20 @@ describe('resolveNodeMapPosition', () => {
       lon: -106,
     });
   });
+
+  it('rejects null-island tracked fallback', () => {
+    expect(
+      resolveNodeMapPosition({ latitude: null, longitude: null }, { lat: 0, lon: 0 }),
+    ).toBeNull();
+  });
+});
+
+describe('isDisplayableCoord', () => {
+  it('rejects null island and non-finite values', () => {
+    expect(isDisplayableCoord(0, 0)).toBe(false);
+    expect(isDisplayableCoord(Number.NaN, 1)).toBe(false);
+    expect(isDisplayableCoord(39.7, -104.9)).toBe(true);
+  });
 });
 
 describe('latestPositionHistoryPoint', () => {
@@ -41,5 +56,14 @@ describe('latestPositionHistoryPoint', () => {
         { t: 200, lat: 5, lon: 6 },
       ]),
     ).toEqual({ lat: 3, lon: 4 });
+  });
+
+  it('returns null when newest point is null island', () => {
+    expect(
+      latestPositionHistoryPoint([
+        { t: 100, lat: 40, lon: -105 },
+        { t: 200, lat: 0, lon: 0 },
+      ]),
+    ).toBeNull();
   });
 });

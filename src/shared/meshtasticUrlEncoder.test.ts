@@ -8,10 +8,12 @@ import {
   base64UrlEncode,
   generateConfigUrl,
   MESHTASTIC_CHANNEL_ROLE,
+  MESHTASTIC_CONFIG_URL_MAX_PAYLOAD_CHARS,
   type MeshtasticChannelConfigInput,
   type MeshtasticLoraConfig,
   MeshtasticUrlError,
   parseConfigUrl,
+  pskFingerprint,
 } from './meshtasticUrlEncoder';
 
 const samplePsk = new Uint8Array(16);
@@ -90,10 +92,44 @@ describe('meshtasticUrlEncoder', () => {
     expect(fromHash.settings[0]?.name).toBe('TestChan');
   });
 
-  it('detects add-only mode from ?add=true', () => {
+  it('detects add-only mode from ?add=true# marker', () => {
     const { httpsUrl } = generateConfigUrl(sampleChannels, sampleLora, { addOnly: true });
     expect(httpsUrl).toContain('?add=true#');
     expect(parseConfigUrl(httpsUrl).mode).toBe('add');
+  });
+
+  it('does not treat ?add=true query without hash marker as add mode', () => {
+    const { httpsUrl } = generateConfigUrl(sampleChannels, sampleLora);
+    const hash = httpsUrl.split('#')[1] ?? '';
+    const spoofed = `https://meshtastic.org/e/?add=true&noise=1#${hash}`;
+    expect(parseConfigUrl(spoofed).mode).toBe('replace');
+  });
+
+  it('throws for oversized payload', () => {
+    const huge = 'A'.repeat(MESHTASTIC_CONFIG_URL_MAX_PAYLOAD_CHARS + 1);
+    expect(() => parseConfigUrl(`https://meshtastic.org/e/#${huge}`)).toThrow(MeshtasticUrlError);
+  });
+
+  it('throws when no channels selected for export', () => {
+    const disabled = sampleChannels[2];
+    expect(() =>
+      generateConfigUrl([{ ...disabled, role: MESHTASTIC_CHANNEL_ROLE.DISABLED }], undefined),
+    ).toThrow(MeshtasticUrlError);
+  });
+
+  it('exports channelIndexes subset', () => {
+    const { httpsUrl } = generateConfigUrl(sampleChannels, undefined, {
+      channelIndexes: [1],
+      includeAll: true,
+    });
+    const parsed = parseConfigUrl(httpsUrl);
+    expect(parsed.settings).toHaveLength(1);
+    expect(parsed.settings[0]?.name).toBe('Secondary');
+  });
+
+  it('pskFingerprint shows head bytes and length', () => {
+    expect(pskFingerprint(samplePsk)).toBe('abcd0000… (16 B)');
+    expect(pskFingerprint(new Uint8Array())).toBe('empty');
   });
 
   it('throws MeshtasticUrlError for invalid input', () => {

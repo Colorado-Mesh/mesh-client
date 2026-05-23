@@ -467,7 +467,10 @@
       "applyFailed": "Nepodařilo se použít adresu URL: {{message}}",
       "exportFailed": "Nepodařilo se vygenerovat adresu URL: {{message}}",
       "connectToImport": "Připojte se k zařízení a použijte nastavení kanálu.",
-      "noChannelsToExport": "Žádné povolené kanály k exportu."
+      "noChannelsToExport": "Žádné povolené kanály k exportu.",
+      "parseFailed": "Neplatná adresa URL kanálu: {{message}}",
+      "applying": "Uplatňuje se...",
+      "unnamedChannel": "(nepojmenované)"
     }
   },
   "securityPanel": {

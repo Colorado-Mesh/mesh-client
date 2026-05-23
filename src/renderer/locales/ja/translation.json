@@ -481,7 +481,10 @@
       "applyFailed": "URLを適用できませんでした: {{message}}",
       "exportFailed": "URLを生成できませんでした: {{message}}",
       "connectToImport": "デバイスに接続してチャンネル設定を適用します。",
-      "noChannelsToExport": "エクスポートできる有効なチャンネルがありません。"
+      "noChannelsToExport": "エクスポートできる有効なチャンネルがありません。",
+      "parseFailed": "無効なチャンネルURL: {{message}}",
+      "applying": "適用中…",
+      "unnamedChannel": "(名称なし)"
     }
   },
   "securityPanel": {

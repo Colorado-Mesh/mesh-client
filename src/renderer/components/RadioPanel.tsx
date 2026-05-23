@@ -2222,8 +2222,12 @@ function ChannelUrlImportExport({
       setMeshtasticUrl(urls.meshtasticUrl);
     } catch (e) {
       console.debug('[RadioPanel] channel URL export failed ' + errLikeToLogString(e));
-      const msg = e instanceof Error ? e.message : t('common.unknown');
-      setStatus(t('radioPanel.channelUrl.exportFailed', { message: msg }));
+      if (e instanceof MeshtasticUrlError && e.message.includes('No channels selected')) {
+        setStatus(t('radioPanel.channelUrl.noChannelsToExport'));
+      } else {
+        const msg = e instanceof Error ? e.message : t('common.unknown');
+        setStatus(t('radioPanel.channelUrl.exportFailed', { message: msg }));
+      }
     }
   };
 
@@ -2245,18 +2249,23 @@ function ChannelUrlImportExport({
       setParseError(null);
       return;
     }
-    try {
-      setParsed(parseConfigUrl(trimmed));
-      setParseError(null);
-    } catch (e) {
-      // catch-no-log-ok expected while user pastes invalid channel URLs; parseError shown in UI
-      setParsed(null);
-      setParseError(
-        e instanceof MeshtasticUrlError
-          ? e.message
-          : t('radioPanel.channelUrl.exportFailed', { message: t('common.unknown') }),
-      );
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        setParsed(parseConfigUrl(trimmed));
+        setParseError(null);
+      } catch (e) {
+        // catch-no-log-ok expected while user pastes invalid channel URLs; parseError shown in UI
+        setParsed(null);
+        setParseError(
+          e instanceof MeshtasticUrlError
+            ? t('radioPanel.channelUrl.parseFailed', { message: e.message })
+            : t('radioPanel.channelUrl.parseFailed', { message: t('common.unknown') }),
+        );
+      }
+    }, 300);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [importUrl, t]);
 
   const runApply = async (target: ParsedChannelSet) => {
@@ -2407,7 +2416,7 @@ function ChannelUrlImportExport({
                       i === 0
                         ? t('radioPanel.channelUrl.rolePrimary')
                         : t('radioPanel.channelUrl.roleSecondary'),
-                    name: ch.name || t('radioPanel.channelRolePrimary'),
+                    name: ch.name || t('radioPanel.channelUrl.unnamedChannel'),
                     psk: pskFingerprint(ch.psk),
                     uplink: ch.uplinkEnabled ? '✓' : '✗',
                     downlink: ch.downlinkEnabled ? '✓' : '✗',
@@ -2451,7 +2460,7 @@ function ChannelUrlImportExport({
                 className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted rounded-lg px-3 py-1.5 text-sm font-medium text-white disabled:bg-gray-600"
                 aria-label={t('radioPanel.channelUrl.apply')}
               >
-                {applying ? '…' : t('radioPanel.channelUrl.apply')}
+                {applying ? t('radioPanel.channelUrl.applying') : t('radioPanel.channelUrl.apply')}
               </button>
             )}
           </div>

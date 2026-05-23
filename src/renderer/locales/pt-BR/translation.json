@@ -481,7 +481,10 @@
       "applyFailed": "Falha ao aplicar URL: {{message}}",
       "exportFailed": "Falha ao gerar URL: {{message}}",
       "connectToImport": "Conecte-se a um dispositivo para aplicar as configurações do canal.",
-      "noChannelsToExport": "Nenhum canal habilitado para exportar."
+      "noChannelsToExport": "Nenhum canal habilitado para exportar.",
+      "parseFailed": "URL do canal inválido: {{message}}",
+      "applying": "Aplicando",
+      "unnamedChannel": "(Sem Nome)"
     }
   },
   "securityPanel": {

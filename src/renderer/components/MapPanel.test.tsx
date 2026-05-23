@@ -36,17 +36,18 @@ vi.mock('../stores/diagnosticsStore', () => ({
   useDiagnosticsStore: (selector: (s: unknown) => unknown) => selector(diagnosticsStoreState),
 }));
 
+const mapViewportStoreState = {
+  viewport: null,
+  setViewport: vi.fn(),
+  pendingFocus: null as null | { nodeId: number; lat: number; lon: number; zoom?: number },
+  requestFocus: vi.fn(),
+  clearPendingFocus: vi.fn(() => {
+    mapViewportStoreState.pendingFocus = null;
+  }),
+};
+
 vi.mock('../stores/mapViewportStore', () => ({
-  useMapViewportStore: (selector: (s: unknown) => unknown) => {
-    const store = {
-      viewport: null,
-      setViewport: vi.fn(),
-      pendingFocus: null,
-      requestFocus: vi.fn(),
-      clearPendingFocus: vi.fn(),
-    };
-    return selector(store);
-  },
+  useMapViewportStore: (selector: (s: unknown) => unknown) => selector(mapViewportStoreState),
 }));
 
 // Leaflet doesn't work in jsdom — mock react-leaflet
@@ -506,8 +507,65 @@ describe('MapPanel accessibility', () => {
   });
 });
 
+describe('MapFocusController', () => {
+  beforeEach(() => {
+    mapViewportStoreState.pendingFocus = null;
+    mockMapInstance.flyTo.mockClear();
+  });
+
+  it('flies to pending focus coordinates', () => {
+    mapViewportStoreState.pendingFocus = { nodeId: 9, lat: 40.12, lon: -105.34, zoom: 14 };
+    const nowSec = Math.floor(Date.now() / 1000);
+    const nodes = new Map([
+      [
+        9,
+        {
+          node_id: 9,
+          long_name: 'Focus',
+          short_name: 'F',
+          hw_model: 'T-Echo',
+          snr: 0,
+          battery: 0,
+          last_heard: nowSec,
+          latitude: 40.12,
+          longitude: -105.34,
+        },
+      ],
+    ]);
+    render(
+      <MapPanel
+        nodes={nodes}
+        myNodeNum={9}
+        locationFilter={defaultFilter}
+        ourPosition={null}
+        onLocateMe={vi.fn().mockResolvedValue(null)}
+        protocol="meshtastic"
+      />,
+    );
+    expect(mockMapInstance.flyTo).toHaveBeenCalledWith([40.12, -105.34], 14, { duration: 0.5 });
+  });
+
+  it('clears invalid pending focus without flying', () => {
+    mapViewportStoreState.pendingFocus = { nodeId: 1, lat: Number.NaN, lon: 0 };
+    render(
+      <MapPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        locationFilter={defaultFilter}
+        ourPosition={null}
+        onLocateMe={vi.fn().mockResolvedValue(null)}
+        protocol="meshtastic"
+      />,
+    );
+    expect(mockMapInstance.flyTo).not.toHaveBeenCalled();
+    expect(mapViewportStoreState.pendingFocus).toBeNull();
+  });
+});
+
 describe('MapPanel layer controls', () => {
   beforeEach(() => {
+    mapViewportStoreState.pendingFocus = null;
+    markerMock.mockClear();
     useMapLayerStore.setState({
       basemapId: 'osm',
       showNodes: true,
@@ -553,5 +611,37 @@ describe('MapPanel layer controls', () => {
     await user.selectOptions(select, 'dark');
     expect(useMapLayerStore.getState().basemapId).toBe('dark');
     expect(MAP_BASEMAPS.dark.isDark).toBe(true);
+  });
+
+  it('hides node markers when showNodes is false', () => {
+    useMapLayerStore.setState({ showNodes: false, showWaypoints: false });
+    const nowSec = Math.floor(Date.now() / 1000);
+    const nodes = new Map([
+      [
+        1,
+        {
+          node_id: 1,
+          long_name: 'A',
+          short_name: 'A',
+          hw_model: 'T-Echo',
+          snr: 0,
+          battery: 0,
+          last_heard: nowSec,
+          latitude: 40.185,
+          longitude: -105.073,
+        },
+      ],
+    ]);
+    render(
+      <MapPanel
+        nodes={nodes}
+        myNodeNum={1}
+        locationFilter={defaultFilter}
+        ourPosition={null}
+        onLocateMe={vi.fn().mockResolvedValue(null)}
+        protocol="meshtastic"
+      />,
+    );
+    expect(markerMock).not.toHaveBeenCalled();
   });
 });

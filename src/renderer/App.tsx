@@ -156,6 +156,8 @@ const TAB_SLOT_IDS = [
   'Graph',
 ] as const;
 
+const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
+
 function tabLabelKey(protocol: MeshProtocol, panelIndex: number): `tabs.${string}` {
   if (panelIndex === 2 && protocol === 'meshcore') return 'tabs.contacts';
   if (panelIndex === 5 && protocol === 'meshcore') return 'tabs.repeaters';
@@ -805,7 +807,7 @@ export default function App() {
       useMapViewportStore.getState().requestFocus({ nodeId, lat, lon });
       setSelectedNodeId(null);
       const tabs = protocol === 'meshtastic' ? meshtasticTabs : meshcoreTabs;
-      const mapTabIndex = tabs.tabIndexToPanelIndex.findIndex((idx) => idx === 3);
+      const mapTabIndex = tabs.tabIndexToPanelIndex.findIndex((idx) => idx === MAP_TAB_PANEL_INDEX);
       if (mapTabIndex >= 0) {
         setActiveTab(mapTabIndex);
       }
