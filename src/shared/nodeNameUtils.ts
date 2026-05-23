@@ -4,6 +4,24 @@
  * clear that default so the UI prefers long_name.
  */
 
+/** Unsigned 32-bit node id as 8-digit lowercase hex (no leading `!`). */
+export function formatMeshtasticNodeIdHex(nodeId: number): string {
+  return (nodeId >>> 0).toString(16).padStart(8, '0');
+}
+
+/** Canonical Meshtastic node id display: `!` + 8-digit hex. */
+export function formatMeshtasticNodeId(nodeId: number): string {
+  return `!${formatMeshtasticNodeIdHex(nodeId)}`;
+}
+
+/** Match node id against a search query (with or without leading `!` / leading zeros). */
+export function meshtasticNodeIdMatchesHexQuery(nodeId: number, query: string): boolean {
+  const q = query.trim().toLowerCase().replace(/^!/, '');
+  if (!q) return false;
+  const padded = formatMeshtasticNodeIdHex(nodeId);
+  return padded.includes(q) || padded.replace(/^0+/, '').includes(q.replace(/^0+/, ''));
+}
+
 /**
  * When merging protobuf User / NodeInfo fields, `""` is not nullish and would
  * otherwise overwrite stored names. Prefer trimmed non-empty input; else fallback.
@@ -21,7 +39,7 @@ export function preferNonEmptyTrimmedString(
 }
 
 export function isPlaceholderLongName(longName: string, nodeId: number): boolean {
-  const expected = `!${(nodeId >>> 0).toString(16).padStart(8, '0')}`;
+  const expected = formatMeshtasticNodeId(nodeId);
   return longName.trim().toLowerCase() === expected.toLowerCase();
 }
 
@@ -39,7 +57,7 @@ export function meshtasticNodeLacksDisplayIdentity(
 /** True when shortName matches the firmware/client default (last 4 hex of node id). */
 export function isDefaultShortName(shortName: string, nodeId: number): boolean {
   if (!shortName.trim()) return false;
-  const suffix = (nodeId >>> 0).toString(16).padStart(8, '0').slice(-4);
+  const suffix = formatMeshtasticNodeIdHex(nodeId).slice(-4);
   return shortName.trim().toLowerCase() === suffix.toLowerCase();
 }
 

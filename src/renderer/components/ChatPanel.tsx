@@ -18,6 +18,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
+import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { useChatOutbox } from '../hooks/useChatOutbox';
@@ -550,7 +551,7 @@ function ChatPanel({
     (nodeNum: number) => {
       const node = nodes.get(nodeNum);
       const label = nodeDisplayName(node, protocol);
-      return label || `!${nodeNum.toString(16)}`;
+      return label || formatMeshtasticNodeId(nodeNum);
     },
     [nodes, protocol],
   );

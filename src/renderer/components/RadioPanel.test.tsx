@@ -1,7 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
+
+import { generateConfigUrl, MESHTASTIC_CHANNEL_ROLE } from '@/shared/meshtasticUrlEncoder';
 
 import RadioPanel, { ConfigNumber } from './RadioPanel';
 import { ToastProvider } from './Toast';
@@ -135,6 +137,79 @@ describe('ConfigNumber NaN guard', () => {
       fireEvent.change(input, { target: { value } });
     }
     expect(onChange.mock.calls.some(([v]) => Number.isNaN(v))).toBe(false);
+  });
+});
+
+const primaryChannelConfig = {
+  index: 0,
+  role: MESHTASTIC_CHANNEL_ROLE.PRIMARY,
+  name: 'Primary',
+  psk: new Uint8Array([0x01]),
+  uplinkEnabled: true,
+  downlinkEnabled: false,
+  positionPrecision: 0,
+};
+
+async function openChannelsSection(user: ReturnType<typeof userEvent.setup>) {
+  const channelsDetails = [...document.querySelectorAll('details')].find((d) => {
+    const span = d.querySelector(':scope > summary > span');
+    return span?.textContent?.trim() === 'Channels';
+  });
+  expect(channelsDetails).toBeTruthy();
+  await user.click(channelsDetails!.querySelector('summary')!);
+}
+
+describe('RadioPanel channel URL import/export', () => {
+  it('generates export URL when connected', async () => {
+    const user = userEvent.setup();
+    const lora = { region: 1, modemPreset: 0, usePreset: true };
+    const { httpsUrl } = generateConfigUrl([primaryChannelConfig], lora, {
+      includeAll: true,
+    });
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          channelConfigs={[primaryChannelConfig]}
+          meshtasticLoraConfig={{ region: 1, modemPreset: 0, usePreset: true }}
+        />
+      </ToastProvider>,
+    );
+    await openChannelsSection(user);
+    await user.click(screen.getByRole('button', { name: 'Generate link' }));
+    expect(screen.getByLabelText('Web link (Android QR)')).toHaveValue(httpsUrl);
+  });
+
+  it('parses pasted URL and calls onApplyChannelSet after confirm', async () => {
+    const user = userEvent.setup();
+    const onApplyChannelSet = vi.fn().mockResolvedValue(undefined);
+    const { httpsUrl } = generateConfigUrl([primaryChannelConfig], undefined, {
+      includeAll: false,
+    });
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          channelConfigs={[primaryChannelConfig]}
+          onApplyChannelSet={onApplyChannelSet}
+        />
+      </ToastProvider>,
+    );
+    await openChannelsSection(user);
+    fireEvent.change(screen.getByLabelText('Paste channel URL'), {
+      target: { value: httpsUrl },
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Replace channels')).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: 'Apply to radio' }));
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(onApplyChannelSet).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'replace', settings: expect.any(Array) }),
+      expect.objectContaining({ applyLora: true }),
+    );
   });
 });
 

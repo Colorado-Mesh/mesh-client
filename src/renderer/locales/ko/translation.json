@@ -444,7 +444,48 @@
     "rebootOtaMessage": "그러면 장치가 OTA(Over The Air) 펌웨어 업데이트 모드로 재부팅됩니다.",
     "rebootOtaConfirm": "OTA로 재부팅",
     "rebootOtaButton": "OTA로 재부팅",
-    "directMessages": "다이렉트 메시지"
+    "directMessages": "다이렉트 메시지",
+    "channelUrl": {
+      "sectionTitle": "채널 URL 공유/가져오기",
+      "exportTitle": "내보내기",
+      "importTitle": "가져오기",
+      "generateLink": "링크 생성",
+      "includeSecondary": "보조 채널 포함",
+      "loraMissingWarning": "LoRa 설정은 아직 라디오에서 로드되지 않았습니다. 링크는 연결될 때까지 모뎀 사전 설정을 생략할 수 있습니다.",
+      "httpsUrlLabel": "웹 링크 (Android QR)",
+      "meshtasticUrlLabel": "meshtastic:// 링크",
+      "copyHttps": "웹 링크 복사",
+      "copyMeshtastic": "meshtastic:// 링크 복사",
+      "copied": "클립보드에 복사되었습니다",
+      "copyFailed": "복사 실패",
+      "pasteUrlLabel": "채널 URL 붙여넣기",
+      "pasteUrlPlaceholder": "https://meshtastic.org/e/#… 또는 meshtastic://…",
+      "modeReplace": "채널 교체",
+      "modeAdd": "채널 추가",
+      "previewChannels": "링크의 채널",
+      "previewLora": "LoRa: region {{region}}, preset {{preset}}, usePreset {{usePreset}}",
+      "previewLoraUnknown": "LoRa 설정 포함",
+      "channelRow": "{{role}}: {{name}} (PSK {{psk}}) ↑{{uplink}} ↓{{downlink}}",
+      "rolePrimary": "1차",
+      "roleSecondary": "2차",
+      "replaceWarning": "이렇게 하면 연결된 라디오의 채널 구성 및 LoRa 설정이 대체됩니다.",
+      "addWarning": "그러면 새 채널이 추가됩니다. 같은 이름의 기존 채널은 건너뜁니다.",
+      "applyLoraOnAdd": "또한 링크에서 LoRa 설정 적용",
+      "apply": "라디오에 적용",
+      "confirmReplaceTitle": "채널 URL을 적용하시겠습니까?",
+      "confirmReplaceMessage": "연결된 라디오의 붙여넣기된 링크에서 채널과 설정을 바꾸시겠습니까?",
+      "confirmAddTitle": "URL에서 채널을 추가하시겠습니까?",
+      "confirmAddMessage": "붙여넣은 링크의 채널을 연결된 라디오에 추가하시겠습니까?",
+      "confirmApply": "적용",
+      "applySuccess": "URL에서 적용된 채널 구성.",
+      "applyFailed": "URL을 적용하지 못했습니다: {{message}}",
+      "exportFailed": "URL 생성 실패: {{message}}",
+      "connectToImport": "채널 설정을 적용하려면 장치에 연결하세요.",
+      "noChannelsToExport": "내보낼 수 있는 채널이 없습니다.",
+      "parseFailed": "유효하지 않은 채널 URL: {{message}}",
+      "applying": "적용 중…",
+      "unnamedChannel": "(이름 없음)"
+    }
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",
@@ -892,7 +933,8 @@
     "addToFavorites": "즐겨찾기에 추가",
     "healthTooltip": "건강 점수: {{total}}/100 (신호 {{signal}}, 최신성 {{recency}}, 부하 {{load}}, 배터리 {{battery}})",
     "healthAriaLabel": "100점 만점에 노드 체력 점수 {{total}}",
-    "buttonExportJson": "JSON 내보내기"
+    "buttonExportJson": "JSON 내보내기",
+    "showOnMap": "(지도에서 표시)"
   },
   "mapPanel": {
     "locationUnavailable": "위치를 확인할 수 없습니다.",
@@ -902,7 +944,20 @@
     "showMyLocation": "내 위치 표시",
     "networkMap": "노드 위치를 보여주는 네트워크 맵",
     "toggleRouteWeightLines": "경로 가중치 선 전환",
-    "routeWeights": "경로 가중치"
+    "routeWeights": "경로 가중치",
+    "layerControls": "레이어",
+    "layerControlsAria": "지도 레이어 컨트롤 토글",
+    "basemapHeading": "베이스맵",
+    "basemapSelectAria": "지도 베이스맵 선택",
+    "basemapDark": "다크 (카르토)",
+    "basemapOsm": "OpenStreetMap (light)",
+    "layersHeading": "Overlays",
+    "layerNodes": "노드 마커",
+    "layerPaths": "무브먼트 흔적",
+    "layerWaypoints": "중간지점",
+    "layerRouteWeights": "경로 가중치",
+    "layerAnomalyHalos": "이상 후광",
+    "layerCongestionHalos": "혼잡 후광"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -1609,7 +1664,8 @@
     "notesLabel": "노트",
     "notesPlaceholder": "이 노드에 대한 비공개 메모 (전송되지 않음)...",
     "watchNode": "보기",
-    "unwatchNode": "보는중.."
+    "unwatchNode": "보는중..",
+    "showOnMap": "(지도에서 표시)"
   },
   "firmwareStatus": {
     "checking": "펌웨어 버전 확인 중",

@@ -444,7 +444,48 @@
     "rebootOtaMessage": "Это перезагрузит устройство в режим обновления прошивки OTA (по воздуху).",
     "rebootOtaConfirm": "Перезагрузитесь в ОТА",
     "rebootOtaButton": "Перезагрузитесь в ОТА",
-    "directMessages": "Прямые сообщения"
+    "directMessages": "Прямые сообщения",
+    "channelUrl": {
+      "sectionTitle": "URL-адрес канала общего доступа / импорта",
+      "exportTitle": "Экспорт",
+      "importTitle": "Импорт",
+      "generateLink": "Генерировать ссылку",
+      "includeSecondary": "Включить вторичные каналы",
+      "loraMissingWarning": "Настройки LoRa еще не загружены с радиостанции; канал может пропустить предустановку модема до тех пор, пока он не будет подключен.",
+      "httpsUrlLabel": "Веб-ссылка (Android QR)",
+      "meshtasticUrlLabel": "ссылка meshtastic://",
+      "copyHttps": "Копировать веб-ссылку",
+      "copyMeshtastic": "Копировать ссылку meshtastic://",
+      "copied": "Скопировано в буфер обмена",
+      "copyFailed": "Ошибка при копировании",
+      "pasteUrlLabel": "Вставить URL канала",
+      "pasteUrlPlaceholder": "https://meshtastic.org/e/#… или meshtastic://…",
+      "modeReplace": "Заменить каналы",
+      "modeAdd": "Добавить каналы",
+      "previewChannels": "Каналы в ссылке",
+      "previewLora": "LoRa: регион {{region}}, предустановка {{preset}}, usePreset {{usePreset}}",
+      "previewLoraUnknown": "Настройки LoRa включены",
+      "channelRow": "{{role}}: {{name}} (PSK {{psk}}) ↑{{uplink}} ↓{{downlink}}",
+      "rolePrimary": "Основной",
+      "roleSecondary": "Вторичный",
+      "replaceWarning": "Это заменит конфигурацию канала и настройки LoRa на подключенном радио.",
+      "addWarning": "Это добавит новые каналы. Существующие каналы с таким же именем пропускаются.",
+      "applyLoraOnAdd": "Также примените настройки LoRa по ссылке",
+      "apply": "Применить к радио",
+      "confirmReplaceTitle": "Применить URL канала?",
+      "confirmReplaceMessage": "Заменить каналы и настройки из вставленной ссылки на подключенном радио?",
+      "confirmAddTitle": "Добавить каналы из URL-адреса?",
+      "confirmAddMessage": "Добавить каналы из вставленной ссылки на подключенное радио?",
+      "confirmApply": "Применить",
+      "applySuccess": "Конфигурация канала применена из URL-адреса.",
+      "applyFailed": "Не удалось применить URL-адрес: {{message}}",
+      "exportFailed": "Не удалось создать URL-адрес: {{message}}",
+      "connectToImport": "Подключитесь к устройству, чтобы применить настройки канала.",
+      "noChannelsToExport": "Нет включенных каналов для экспорта.",
+      "parseFailed": "Недопустимый URL канала: {{message}}",
+      "applying": "Применение…",
+      "unnamedChannel": "(без имени)"
+    }
   },
   "securityPanel": {
     "keyRegenRequested": "Запрошено восстановление ключа. Устройство сгенерирует новые ключи.",
@@ -892,7 +933,8 @@
     "addToFavorites": "Добавить в избранное",
     "healthTooltip": "Показатель здоровья: {{total}}/100 (сигнал {{signal}}, актуальность {{recency}}, нагрузка {{load}}, батарея {{battery}})",
     "healthAriaLabel": "Оценка здоровья узла {{total}} из 100",
-    "buttonExportJson": "Экспортировать в JSON"
+    "buttonExportJson": "Экспортировать в JSON",
+    "showOnMap": "Показать на карте"
   },
   "mapPanel": {
     "locationUnavailable": "Местоположение недоступно.",
@@ -902,7 +944,20 @@
     "showMyLocation": "Показать мое местоположение",
     "networkMap": "Карта сети с указанием положения узлов",
     "toggleRouteWeightLines": "Переключить весовые линии маршрута",
-    "routeWeights": "Вес маршрута"
+    "routeWeights": "Вес маршрута",
+    "layerControls": "Слои",
+    "layerControlsAria": "Переключить элементы управления слоем карты",
+    "basemapHeading": "Обзорная карта с топоосновой",
+    "basemapSelectAria": "Выберите базовую карту карты",
+    "basemapDark": "Темный (Carto)",
+    "basemapOsm": "OpenStreetMap (светлый)",
+    "layersHeading": "Верхний слой",
+    "layerNodes": "Узловые маркеры",
+    "layerPaths": "Следы движения",
+    "layerWaypoints": "Путевые точки",
+    "layerRouteWeights": "Вес маршрута",
+    "layerAnomalyHalos": "Ореолы аномалий",
+    "layerCongestionHalos": "Ореолы заторов"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -1608,7 +1663,8 @@
     "notesLabel": "Комментарий",
     "notesPlaceholder": "Частные заметки об этом узле (не передаются)...",
     "watchNode": "Часы",
-    "unwatchNode": "Просмотр"
+    "unwatchNode": "Просмотр",
+    "showOnMap": "Показать на карте"
   },
   "firmwareStatus": {
     "checking": "Проверяем версию прошивки",

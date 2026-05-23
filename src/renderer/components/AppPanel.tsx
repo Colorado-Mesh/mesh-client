@@ -5,7 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import type { LocationFilter } from '../App';
-import { getAppSettingsRaw, mergeAppSetting, setAppSettingsRaw } from '../lib/appSettingsStorage';
+import {
+  getAppSettingsRaw,
+  mergeAppSetting,
+  mergeAppSettingsPartial,
+} from '../lib/appSettingsStorage';
 import { formatCoordPair } from '../lib/coordUtils';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
 import type { OurPosition } from '../lib/gpsSource';
@@ -236,7 +240,10 @@ export default function AppPanel({
   useEffect(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      setAppSettingsRaw(JSON.stringify(settings));
+      mergeAppSettingsPartial(
+        settings as unknown as Record<string, unknown>,
+        'AppPanel saveSettings',
+      );
     }, 300);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);

@@ -444,7 +444,48 @@
     "rebootOtaMessage": "Hierdoor wordt het apparaat opnieuw opgestart in de OTA-firmware-updatemodus (Over The Air).",
     "rebootOtaConfirm": "Start opnieuw op naar OTA",
     "rebootOtaButton": "Start opnieuw op naar OTA",
-    "directMessages": "Directe berichten"
+    "directMessages": "Directe berichten",
+    "channelUrl": {
+      "sectionTitle": "Kanaal-URL delen / importeren",
+      "exportTitle": "Exporteren",
+      "importTitle": "Importeren",
+      "generateLink": "Koppeling genereren",
+      "includeSecondary": "Secundaire kanalen opnemen",
+      "loraMissingWarning": "LoRa-instellingen zijn nog niet geladen vanaf de radio; de link kan de vooraf ingestelde modem weglaten totdat deze is aangesloten.",
+      "httpsUrlLabel": "Weblink (Android QR)",
+      "meshtasticUrlLabel": "meshtastic:// link",
+      "copyHttps": "Weblink kopiëren",
+      "copyMeshtastic": "Kopieer meshtastic:// link",
+      "copied": "Gekopieerd naar klembord",
+      "copyFailed": "Kopiëren mislukt",
+      "pasteUrlLabel": "Kanaal-URL plakken",
+      "pasteUrlPlaceholder": "https://meshtastic.org/e/#… of meshtastic://…",
+      "modeReplace": "Kanalen vervangen",
+      "modeAdd": "Kanalen toevoegen",
+      "previewChannels": "Kanalen in link",
+      "previewLora": "LoRa: regio {{region}}, vooraf ingesteld {{preset}}, usePreset {{usePreset}}",
+      "previewLoraUnknown": "LoRa-instellingen inbegrepen",
+      "channelRow": "{{role}}: {{name}} (PSK {{psk}}) ↑{{uplink}} ↓{{downlink}}",
+      "rolePrimary": "Primaire",
+      "roleSecondary": "Secundair",
+      "replaceWarning": "Dit vervangt uw kanaalconfiguratie en LoRa-instellingen op de aangesloten radio.",
+      "addWarning": "Hiermee worden nieuwe kanalen toegevoegd. Bestaande kanalen met dezelfde naam worden overgeslagen.",
+      "applyLoraOnAdd": "Pas ook LoRa-instellingen toe via link",
+      "apply": "Toepassen op radio",
+      "confirmReplaceTitle": "Kanaal-URL toepassen?",
+      "confirmReplaceMessage": "Kanalen en instellingen van de geplakte link op uw aangesloten radio vervangen?",
+      "confirmAddTitle": "Kanalen van URL toevoegen?",
+      "confirmAddMessage": "Kanalen van de geplakte link toevoegen aan uw verbonden radio?",
+      "confirmApply": "Toepassen",
+      "applySuccess": "Kanaalconfiguratie toegepast vanaf URL.",
+      "applyFailed": "Kan URL niet toepassen: {{message}}",
+      "exportFailed": "URL genereren mislukt: {{message}}",
+      "connectToImport": "Maak verbinding met een apparaat om kanaalinstellingen toe te passen.",
+      "noChannelsToExport": "Geen ingeschakelde kanalen om te exporteren.",
+      "parseFailed": "Ongeldige kanaal-URL: {{message}}",
+      "applying": "Toepassen…",
+      "unnamedChannel": "(naamloos)"
+    }
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",
@@ -892,7 +933,8 @@
     "addToFavorites": "Toevoegen aan favorieten",
     "healthTooltip": "Gezondheidsscore: {{total}}/100 (signaal {{signal}}, recent {{recency}}, belasting {{load}}, batterij {{battery}})",
     "healthAriaLabel": "Knooppuntgezondheidsscore {{total}} van de 100",
-    "buttonExportJson": "Exporteer als JSON"
+    "buttonExportJson": "Exporteer als JSON",
+    "showOnMap": "Weergeven op kaart"
   },
   "mapPanel": {
     "locationUnavailable": "Locatie niet beschikbaar.",
@@ -902,7 +944,20 @@
     "showMyLocation": "Toon mijn locatie",
     "networkMap": "Netwerkkaart met knooppuntposities",
     "toggleRouteWeightLines": "Schakel routegewichtslijnen in of uit",
-    "routeWeights": "Routegewichten"
+    "routeWeights": "Routegewichten",
+    "layerControls": "Lagen",
+    "layerControlsAria": "Kaartlaagbesturingselementen in-/uitschakelen",
+    "basemapHeading": "\"Basiskaart\"",
+    "basemapSelectAria": "Selecteer kaart basiskaart",
+    "basemapDark": "Donker (Carto)",
+    "basemapOsm": "OpenStreetMap (licht)",
+    "layersHeading": "Overlays",
+    "layerNodes": "Knooppuntmarkeringen",
+    "layerPaths": "Bewegingspaden",
+    "layerWaypoints": "Routepunten",
+    "layerRouteWeights": "Routegewichten",
+    "layerAnomalyHalos": "Anomalie halo's",
+    "layerCongestionHalos": "Congestiehalo's"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -1609,7 +1664,8 @@
     "notesLabel": "Opmerkingen",
     "notesPlaceholder": "Privénotities over dit knooppunt (niet verzonden)...",
     "watchNode": "Bekijken",
-    "unwatchNode": "Bekijken"
+    "unwatchNode": "Bekijken",
+    "showOnMap": "Weergeven op kaart"
   },
   "firmwareStatus": {
     "checking": "Firmwareversie controleren",

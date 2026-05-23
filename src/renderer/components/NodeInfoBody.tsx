@@ -3,7 +3,11 @@ import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { formatCoordPair } from '../lib/coordUtils';
+import {
+  formatCoordPair,
+  latestPositionHistoryPoint,
+  resolveNodeMapPosition,
+} from '../lib/coordUtils';
 import {
   diagnosticRowsToRoutingMap,
   getRoutingRowForNode,
@@ -143,6 +147,7 @@ export interface NodeInfoBodyProps {
   meshcoreManufacturerModel?: string;
   /** Optional tracked positions passed from parent to avoid relying on store timing. */
   positionHistory?: Map<number, { t: number; lat: number; lon: number }[]>;
+  onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
 }
 
 const SEVERITY_STYLES: Record<RFDiagnosis['severity'], string> = {
@@ -164,6 +169,7 @@ export default function NodeInfoBody({
   protocol = 'meshtastic',
   meshcoreManufacturerModel,
   positionHistory,
+  onShowOnMap,
 }: NodeInfoBodyProps) {
   const { t } = useTranslation();
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
@@ -179,24 +185,12 @@ export default function NodeInfoBody({
   const meshcoreTraceHistory = useDiagnosticsStore((s) => s.meshcoreTraceHistory.get(node.node_id));
   const loadMeshcorePathHistory = useDiagnosticsStore((s) => s.loadMeshcorePathHistory);
   const [pathHistoryOpen, setPathHistoryOpen] = useState(false);
-  const latestTrackedPositionFromStore = usePositionHistoryStore((s) => {
-    const points = s.history.get(node.node_id);
-    if (!points || points.length === 0) return null;
-    let latest = points[0];
-    for (let i = 1; i < points.length; i++) {
-      if (points[i].t > latest.t) latest = points[i];
-    }
-    return latest;
-  });
-  const latestTrackedPositionFromProps = (() => {
-    const points = positionHistory?.get(node.node_id);
-    if (!points || points.length === 0) return null;
-    let latest = points[0];
-    for (let i = 1; i < points.length; i++) {
-      if (points[i].t > latest.t) latest = points[i];
-    }
-    return latest;
-  })();
+  const latestTrackedPositionFromStore = usePositionHistoryStore((s) =>
+    latestPositionHistoryPoint(s.history.get(node.node_id)),
+  );
+  const latestTrackedPositionFromProps = latestPositionHistoryPoint(
+    positionHistory?.get(node.node_id),
+  );
   const latestTrackedPosition = latestTrackedPositionFromProps ?? latestTrackedPositionFromStore;
 
   const meshcoreTraceFirst = meshcoreTraceHistory?.[0];
@@ -465,29 +459,39 @@ export default function NodeInfoBody({
       )}
 
       {/* Location */}
-      {node.latitude != null &&
-        node.longitude != null &&
-        (node.latitude !== 0 || node.longitude !== 0) && (
-          <InfoRow
-            label={t('nodeInfoBody.position')}
-            value={formatCoordPair(node.latitude, node.longitude, coordinateFormat)}
-            className="font-mono text-xs text-gray-300"
-          />
-        )}
-      {(node.latitude == null ||
-        node.longitude == null ||
-        (node.latitude === 0 && node.longitude === 0)) &&
-        latestTrackedPosition && (
-          <InfoRow
-            label={t('nodeInfoBody.lastTrackedPosition')}
-            value={formatCoordPair(
-              latestTrackedPosition.lat,
-              latestTrackedPosition.lon,
-              coordinateFormat,
-            )}
-            className="font-mono text-xs text-gray-300"
-          />
-        )}
+      {(() => {
+        const mapPosition = resolveNodeMapPosition(node, latestTrackedPosition);
+        if (!mapPosition) return null;
+        const hasNodeDbPosition =
+          node.latitude != null &&
+          node.longitude != null &&
+          (node.latitude !== 0 || node.longitude !== 0);
+        const label = hasNodeDbPosition
+          ? t('nodeInfoBody.position')
+          : t('nodeInfoBody.lastTrackedPosition');
+        return (
+          <div className="flex items-center justify-between gap-2 border-b border-gray-700/50 py-2 last:border-b-0">
+            <span className="text-muted shrink-0 text-sm">{label}</span>
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+              <span className="font-mono text-xs text-gray-300">
+                {formatCoordPair(mapPosition.lat, mapPosition.lon, coordinateFormat)}
+              </span>
+              {onShowOnMap && (
+                <button
+                  type="button"
+                  aria-label={t('nodeDetailModal.showOnMap')}
+                  className="bg-secondary-dark shrink-0 rounded-lg border border-gray-600 px-2.5 py-1 text-xs font-medium text-gray-200 transition-colors hover:bg-gray-600"
+                  onClick={() => {
+                    onShowOnMap(node.node_id, mapPosition.lat, mapPosition.lon);
+                  }}
+                >
+                  {t('nodeDetailModal.showOnMap')}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* GPS warning */}
       {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (

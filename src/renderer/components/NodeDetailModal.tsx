@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import type {
   MeshCoreNeighborResult,
@@ -74,6 +75,7 @@ interface NodeDetailModalProps {
   meshcoreManufacturerModel?: string;
   /** GPS position history (tracking path) for mobile nodes */
   positionHistory?: Map<number, { t: number; lat: number; lon: number }[]>;
+  onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
 }
 
 function WatchToggleButton({ nodeId }: { nodeId: number }) {
@@ -126,6 +128,7 @@ export default function NodeDetailModal({
   meshcoreLocalStats,
   meshcoreManufacturerModel,
   positionHistory,
+  onShowOnMap,
 }: NodeDetailModalProps) {
   const { t } = useTranslation();
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
@@ -326,7 +329,7 @@ export default function NodeDetailModal({
 
   if (!node) return null;
 
-  const hexId = `!${node.node_id.toString(16)}`;
+  const hexId = formatMeshtasticNodeId(node.node_id);
   // Check if this appears to be a node with incomplete data (empty names and no role)
   const isIncomplete = !node.short_name && !node.long_name && node.role === undefined;
   const displayName = node.short_name || node.long_name || hexId;
@@ -560,6 +563,7 @@ export default function NodeDetailModal({
               protocol={protocol}
               meshcoreManufacturerModel={meshcoreManufacturerModel}
               positionHistory={positionHistory}
+              onShowOnMap={onShowOnMap}
             />
 
             {protocol === 'meshcore' &&
@@ -719,7 +723,7 @@ export default function NodeDetailModal({
                       const label =
                         nb.resolvedNodeId !== 0
                           ? (nodes?.get(nb.resolvedNodeId)?.long_name ??
-                            `!${nb.resolvedNodeId.toString(16)}`)
+                            formatMeshtasticNodeId(nb.resolvedNodeId))
                           : nb.prefixHex;
                       return (
                         <div
@@ -922,7 +926,7 @@ export default function NodeDetailModal({
                     <div className="space-y-1">
                       {record.neighbors.map((nb) => {
                         const nbNode = nodes?.get(nb.nodeId);
-                        const label = nbNode?.short_name || `!${nb.nodeId.toString(16)}`;
+                        const label = nbNode?.short_name || formatMeshtasticNodeId(nb.nodeId);
                         return (
                           <div
                             key={nb.nodeId}

@@ -430,7 +430,48 @@
     "rebootOtaConfirm": "Restartujte do OTA",
     "rebootOtaButton": "Restartujte do OTA",
     "directMessages": "Přímé zprávy",
-    "debugLogApi": "Debug Log API"
+    "debugLogApi": "Debug Log API",
+    "channelUrl": {
+      "sectionTitle": "Sdílet / importovat adresu URL kanálu",
+      "exportTitle": "Exportovat",
+      "importTitle": "Importovat",
+      "generateLink": "Vygenerovat odkaz",
+      "includeSecondary": "Zahrnout sekundární kanály",
+      "loraMissingWarning": "Nastavení LoRa ještě není načteno z rádia; spojení může přednastavení modemu vynechat, dokud nebude připojeno.",
+      "httpsUrlLabel": "Webový odkaz (Android QR)",
+      "meshtasticUrlLabel": "meshtastic:// link",
+      "copyHttps": "Kopírovat webový odkaz",
+      "copyMeshtastic": "Kopírovat meshtastic:// link",
+      "copied": "Zkopírováno do schránky",
+      "copyFailed": "Kopírování se nezdařilo",
+      "pasteUrlLabel": "Vložit adresu URL kanálu",
+      "pasteUrlPlaceholder": "https://meshtastic.org/e/#… nebo meshtastic://…",
+      "modeReplace": "Nahradit kanály",
+      "modeAdd": "Přidat kanály",
+      "previewChannels": "Kanály v odkazu",
+      "previewLora": "LoRa: region {{region}}, přednastaveno {{preset}}, usePreset {{usePreset}}",
+      "previewLoraUnknown": "Včetně nastavení LoRa",
+      "channelRow": "{{role}}: {{name}} (PSK {{psk}}) ↑{{uplink}} ↓{{downlink}}",
+      "rolePrimary": "Primární",
+      "roleSecondary": "Sekundární",
+      "replaceWarning": "Tím nahradíte konfiguraci kanálu a nastavení LoRa na připojeném rádiu.",
+      "addWarning": "Tím se přidají nové kanály. Existující kanály se stejným názvem jsou přeskočeny.",
+      "applyLoraOnAdd": "Použít také nastavení LoRa z odkazu",
+      "apply": "Použít pro rádio",
+      "confirmReplaceTitle": "Použít adresu URL kanálu?",
+      "confirmReplaceMessage": "Nahradit kanály a nastavení z vloženého odkazu na připojeném rádiu?",
+      "confirmAddTitle": "Přidat kanály z adresy URL?",
+      "confirmAddMessage": "Přidat kanály z vloženého odkazu do připojeného rádia?",
+      "confirmApply": "Použít",
+      "applySuccess": "Konfigurace kanálu použita z adresy URL.",
+      "applyFailed": "Nepodařilo se použít adresu URL: {{message}}",
+      "exportFailed": "Nepodařilo se vygenerovat adresu URL: {{message}}",
+      "connectToImport": "Připojte se k zařízení a použijte nastavení kanálu.",
+      "noChannelsToExport": "Žádné povolené kanály k exportu.",
+      "parseFailed": "Neplatná adresa URL kanálu: {{message}}",
+      "applying": "Uplatňuje se...",
+      "unnamedChannel": "(nepojmenované)"
+    }
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",
@@ -878,7 +919,8 @@
     "addToFavorites": "Přidat k oblíbeným",
     "healthTooltip": "Zdravotní skóre: {{total}}/100 (signál {{signal}}, aktuálnost {{recency}}, zatížení {{load}}, baterie {{battery}})",
     "healthAriaLabel": "Zdravotní skóre uzlu {{total}} ze 100",
-    "buttonExportJson": "Exportovat JSON"
+    "buttonExportJson": "Exportovat JSON",
+    "showOnMap": "Zobrazit na mapě"
   },
   "mapPanel": {
     "locationUnavailable": "Poloha není k dispozici.",
@@ -888,7 +930,20 @@
     "showMyLocation": "Zobrazit moji polohu",
     "networkMap": "Mapa sítě zobrazující pozice uzlů",
     "toggleRouteWeightLines": "Přepnout čáry hmotnosti trasy",
-    "routeWeights": "Váhy trasy"
+    "routeWeights": "Váhy trasy",
+    "layerControls": "Vrstvy",
+    "layerControlsAria": "Přepnout ovládací prvky mapové vrstvy",
+    "basemapHeading": "Podkladová mapa",
+    "basemapSelectAria": "Vybrat podkladovou mapu",
+    "basemapDark": "Tmavá (karto)",
+    "basemapOsm": "OpenStreetMap (světlá)",
+    "layersHeading": "Překryvné vrstvy",
+    "layerNodes": "Značky uzlů",
+    "layerPaths": "Pohybové stezky",
+    "layerWaypoints": "Trasové body",
+    "layerRouteWeights": "Závaží trasy",
+    "layerAnomalyHalos": "Anomálie halos",
+    "layerCongestionHalos": "Halo přetížení"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -1595,7 +1650,8 @@
     "notesLabel": "Poznámky",
     "notesPlaceholder": "Soukromé poznámky k tomuto uzlu (nejsou přenášeny)…",
     "watchNode": "Sledovat",
-    "unwatchNode": "Sleduje"
+    "unwatchNode": "Sleduje",
+    "showOnMap": "Zobrazit na mapě"
   },
   "firmwareStatus": {
     "checking": "Kontrola verze firmwaru",

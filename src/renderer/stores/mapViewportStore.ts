@@ -8,9 +8,19 @@ export interface MapViewport {
   zoom: number;
 }
 
+export interface MapFocusRequest {
+  nodeId: number;
+  lat: number;
+  lon: number;
+  zoom?: number;
+}
+
 interface MapViewportState {
   viewport: MapViewport | null;
   setViewport: (viewport: MapViewport) => void;
+  pendingFocus: MapFocusRequest | null;
+  requestFocus: (focus: MapFocusRequest) => void;
+  clearPendingFocus: () => void;
 }
 
 function isValidViewport(value: unknown): value is MapViewport {
@@ -41,5 +51,12 @@ export const useMapViewportStore = create<MapViewportState>((set) => ({
   setViewport: (viewport) => {
     mergeAppSetting('mapViewport', viewport, 'mapViewportStore setViewport');
     set({ viewport });
+  },
+  pendingFocus: null,
+  requestFocus: (focus) => {
+    set({ pendingFocus: focus });
+  },
+  clearPendingFocus: () => {
+    set({ pendingFocus: null });
   },
 }));

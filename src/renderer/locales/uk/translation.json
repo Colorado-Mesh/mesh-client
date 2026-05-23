@@ -444,7 +444,48 @@
     "rebootOtaMessage": "Це перезавантажить пристрій у режимі оновлення прошивки OTA (Over The Air).",
     "rebootOtaConfirm": "Перезавантажити в режим OTA",
     "rebootOtaButton": "Перезавантажити в режим OTA",
-    "directMessages": "Прямі повідомлення"
+    "directMessages": "Прямі повідомлення",
+    "channelUrl": {
+      "sectionTitle": "Поділитися / імпортувати URL-адресу каналу",
+      "exportTitle": "Експортувати",
+      "importTitle": "Імпортувати",
+      "generateLink": "Створити посилання",
+      "includeSecondary": "Включити вторинні канали",
+      "loraMissingWarning": "Налаштування LoRa ще не завантажені з радіо; посилання може пропускати попередньо встановлений модем, поки не буде підключено.",
+      "httpsUrlLabel": "Веб-посилання (Android QR)",
+      "meshtasticUrlLabel": "посилання meshtastic://",
+      "copyHttps": "Скопіювати веб-посилання",
+      "copyMeshtastic": "Скопіювати посилання meshtastic://",
+      "copied": "Скопійовано в буфер обміну",
+      "copyFailed": "Не вдалося скопіювати",
+      "pasteUrlLabel": "Вставити URL-адресу каналу",
+      "pasteUrlPlaceholder": "https://meshtastic.org/e/#… або meshtastic://…",
+      "modeReplace": "Замінити канали",
+      "modeAdd": "Додати канали",
+      "previewChannels": "Канали в посиланні",
+      "previewLora": "LoRa: регіон {{region}}, попереднє налаштування {{preset}}, використання попереднього налаштування {{usePreset}}",
+      "previewLoraUnknown": "Налаштування LoRa включено",
+      "channelRow": "{{role}}: {{name}} (PSK {{psk}}) ↑{{uplink}} ↓{{downlink}}",
+      "rolePrimary": "Осн.",
+      "roleSecondary": "Зап.",
+      "replaceWarning": "Це замінить конфігурацію каналу та налаштування LoRa на підключеному радіо.",
+      "addWarning": "Це додасть нові канали. Існуючі канали з однаковою назвою пропускаються.",
+      "applyLoraOnAdd": "Також застосуйте налаштування LoRa за посиланням",
+      "apply": "Застосувати до радіо",
+      "confirmReplaceTitle": "Застосувати URL-адресу каналу?",
+      "confirmReplaceMessage": "Замінити канали та налаштування з вставленого посилання на підключеному радіо?",
+      "confirmAddTitle": "Додати канали з URL-адреси?",
+      "confirmAddMessage": "Додати канали з вставленого посилання на підключене радіо?",
+      "confirmApply": "Застосувати",
+      "applySuccess": "Налаштування каналу застосовано з URL-адреси.",
+      "applyFailed": "Не вдалося застосувати URL-адресу: {{message}}",
+      "exportFailed": "Не вдалося створити URL-адресу: {{message}}",
+      "connectToImport": "Підключіться до пристрою, щоб застосувати налаштування каналу.",
+      "noChannelsToExport": "Немає ввімкнених каналів для експорту",
+      "parseFailed": "Недійсна URL-адреса каналу: {{message}}",
+      "applying": "Застосування…",
+      "unnamedChannel": "(без імені)"
+    }
   },
   "securityPanel": {
     "keyRegenRequested": "Запит на регенерацію ключа. Пристрій генеруватиме нові ключі.",
@@ -892,7 +933,8 @@
     "addToFavorites": "Додати до обраних",
     "healthTooltip": "Оцінка здоров 'я: {{total}}/100 (сигнал {{signal}}, давність {{recency}}, навантаження {{load}}, батарея {{battery}})",
     "healthAriaLabel": "Шкала здоров 'я вузла {{total}} зі 100",
-    "buttonExportJson": "Експортувати JSON"
+    "buttonExportJson": "Експортувати JSON",
+    "showOnMap": "показати на карті"
   },
   "mapPanel": {
     "locationUnavailable": "Місцерозташування недоступне",
@@ -902,7 +944,20 @@
     "showMyLocation": "Моє місцезнаходження",
     "networkMap": "Карта мережі, що показує положення вузлів",
     "toggleRouteWeightLines": "Увімкнути або вимкнути лінії ваги маршруту",
-    "routeWeights": "Вага маршруту"
+    "routeWeights": "Вага маршруту",
+    "layerControls": "Леєри",
+    "layerControlsAria": "Перемикання елементів керування шаром карти",
+    "basemapHeading": "Basemap",
+    "basemapSelectAria": "Виберіть базову карту карти",
+    "basemapDark": "Темний (Carto)",
+    "basemapOsm": "OpenStreetMap (світлий)",
+    "layersHeading": "Оверлеї.",
+    "layerNodes": "Вузлові маркери",
+    "layerPaths": "Стежки руху",
+    "layerWaypoints": "Точки маршруту",
+    "layerRouteWeights": "Вага маршруту",
+    "layerAnomalyHalos": "Ореоли аномалій",
+    "layerCongestionHalos": "Ореоли заторів"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -1609,7 +1664,8 @@
     "notesLabel": "Примітки!",
     "notesPlaceholder": "Приватні нотатки про цей вузол (не передаються)…",
     "watchNode": "Дивитись",
-    "unwatchNode": "Спостереження"
+    "unwatchNode": "Спостереження",
+    "showOnMap": "показати на карті"
   },
   "firmwareStatus": {
     "checking": "Перевірка версії прошивки",

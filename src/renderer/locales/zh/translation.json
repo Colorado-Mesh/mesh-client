@@ -428,7 +428,48 @@
     "rebootOtaMessage": "这将使设备重新启动到OTA （无线）固件更新模式。",
     "rebootOtaConfirm": "重新启动到OTA",
     "rebootOtaButton": "重新启动到OTA",
-    "directMessages": "直接消息"
+    "directMessages": "直接消息",
+    "channelUrl": {
+      "sectionTitle": "分享/导入频道网址",
+      "exportTitle": "导出",
+      "importTitle": "导入",
+      "generateLink": "生成链接",
+      "includeSecondary": "包含次要频道",
+      "loraMissingWarning": "LoRa设置尚未从无线电加载；在连接之前，链路可能会省略调制解调器预设。",
+      "httpsUrlLabel": "网页链接（安卓二维码）",
+      "meshtasticUrlLabel": "meshtastic:// 链接",
+      "copyHttps": "复制网页链接",
+      "copyMeshtastic": "复制 meshtastic:// 链接",
+      "copied": "复制到剪贴板",
+      "copyFailed": "复制失败",
+      "pasteUrlLabel": "粘贴频道网址",
+      "pasteUrlPlaceholder": "https://meshtastic.org/e/#…或meshtastic://…",
+      "modeReplace": "替换频道",
+      "modeAdd": "添加频道",
+      "previewChannels": "链接中的频道",
+      "previewLora": "LoRa：区域 {{region}}，预设 {{preset}}，usePreset {{usePreset}}",
+      "previewLoraUnknown": "包括LoRa设置",
+      "channelRow": "{{role}}： {{name}} (PSK {{psk}}) ↑{{uplink}} ↓{{downlink}}",
+      "rolePrimary": "一级",
+      "roleSecondary": "二级",
+      "replaceWarning": "这将替换您在已连接无线电上的频道配置和LoRa设置。",
+      "addWarning": "这将添加新频道。跳过同名的现有频道。",
+      "applyLoraOnAdd": "也从链接应用LoRa设置",
+      "apply": "应用于收音机",
+      "confirmReplaceTitle": "应用频道网址？",
+      "confirmReplaceMessage": "从已连接收音机上粘贴的链接替换频道和设置？",
+      "confirmAddTitle": "从网址添加频道？",
+      "confirmAddMessage": "从粘贴的链接添加频道到已连接的收音机？",
+      "confirmApply": "应用",
+      "applySuccess": "已从 URL 应用频道配置。",
+      "applyFailed": "无法应用 URL：{{message}}",
+      "exportFailed": "生成网址失败： {{message}}",
+      "connectToImport": "连接到设备以应用频道设置。",
+      "noChannelsToExport": "没有已启用的频道可导出。",
+      "parseFailed": "频道 URL 无效：{{message}}",
+      "applying": "正在应用…",
+      "unnamedChannel": "（未命名）"
+    }
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",
@@ -876,7 +917,8 @@
     "addToFavorites": "添加到收藏夹",
     "healthTooltip": "健康评分: {{total}}/100 (信号 {{signal}}, 最新 {{recency}}, 负载 {{load}}, 电池 {{battery}})",
     "healthAriaLabel": "节点健康评分{{total}}/100",
-    "buttonExportJson": "导出JSON"
+    "buttonExportJson": "导出JSON",
+    "showOnMap": "显示在地图上"
   },
   "mapPanel": {
     "locationUnavailable": "無法取得位置。",
@@ -886,7 +928,20 @@
     "showMyLocation": "顯示我的位置",
     "networkMap": "显示节点位置的网络图",
     "toggleRouteWeightLines": "切换工艺路线权重线",
-    "routeWeights": "工艺路线权重"
+    "routeWeights": "工艺路线权重",
+    "layerControls": "层数",
+    "layerControlsAria": "切换地图图层控件",
+    "basemapHeading": "底图",
+    "basemapSelectAria": "选择地图底图",
+    "basemapDark": "深色（卡通）",
+    "basemapOsm": "OpenStreetMap (light)",
+    "layersHeading": "叠加",
+    "layerNodes": "节点标记",
+    "layerPaths": "机芯轨迹",
+    "layerWaypoints": "点",
+    "layerRouteWeights": "工艺路线权重",
+    "layerAnomalyHalos": "异常光晕",
+    "layerCongestionHalos": "拥堵光环"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -1593,7 +1648,8 @@
     "notesLabel": "注意事项",
     "notesPlaceholder": "关于此节点的私人备注（未传输） ……",
     "watchNode": "观看",
-    "unwatchNode": "正在查看"
+    "unwatchNode": "正在查看",
+    "showOnMap": "显示在地图上"
   },
   "firmwareStatus": {
     "checking": "正在检查固件版本",

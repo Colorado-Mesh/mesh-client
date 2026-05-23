@@ -444,7 +444,48 @@
     "rebootOtaMessage": "Ini akan mem-boot ulang perangkat ke mode pembaruan firmware OTA (Over The Air).",
     "rebootOtaConfirm": "Mulai ulang ke OTA",
     "rebootOtaButton": "Mulai ulang ke OTA",
-    "directMessages": "Pesan langsung"
+    "directMessages": "Pesan langsung",
+    "channelUrl": {
+      "sectionTitle": "Bagikan / impor URL saluran",
+      "exportTitle": "Ekspor",
+      "importTitle": "Impor",
+      "generateLink": "Buat Link",
+      "includeSecondary": "Sertakan saluran sekunder",
+      "loraMissingWarning": "Pengaturan LoRa belum dimuat dari radio; tautan dapat menghilangkan preset modem hingga tersambung.",
+      "httpsUrlLabel": "Tautan web (QR Android)",
+      "meshtasticUrlLabel": "tautan meshtastic://",
+      "copyHttps": "Salin tautan web",
+      "copyMeshtastic": "Salin tautan meshtastic://",
+      "copied": "Disalin ke papan klip",
+      "copyFailed": "Salinan gagal",
+      "pasteUrlLabel": "Tempel URL saluran",
+      "pasteUrlPlaceholder": "https://meshtastic.org/e/#… atau meshtastic://…",
+      "modeReplace": "Ganti saluran",
+      "modeAdd": "Tambahkan saluran",
+      "previewChannels": "Saluran dalam tautan",
+      "previewLora": "LoRa: wilayah {{region}}, prasetel {{preset}}, usePreset {{usePreset}}",
+      "previewLoraUnknown": "Pengaturan LoRa disertakan",
+      "channelRow": "{{role}}: {{name}} (PSK {{psk}}) ↑{{uplink}} ↓{{downlink}}",
+      "rolePrimary": "Primer",
+      "roleSecondary": "Sekunder",
+      "replaceWarning": "Ini akan menggantikan konfigurasi saluran dan pengaturan LoRa Anda pada radio yang terhubung.",
+      "addWarning": "Ini akan menambahkan saluran baru. Saluran yang ada dengan nama yang sama dilewati.",
+      "applyLoraOnAdd": "Terapkan juga pengaturan LoRa dari tautan",
+      "apply": "Terapkan ke radio",
+      "confirmReplaceTitle": "Terapkan URL saluran?",
+      "confirmReplaceMessage": "Ganti saluran dan pengaturan dari tautan yang ditempelkan di radio Anda yang terhubung?",
+      "confirmAddTitle": "Tambahkan saluran dari URL?",
+      "confirmAddMessage": "Tambahkan saluran dari tautan yang ditempelkan ke radio Anda yang terhubung?",
+      "confirmApply": "Terapkan",
+      "applySuccess": "Konfigurasi saluran diterapkan dari URL.",
+      "applyFailed": "Gagal menerapkan URL: {{message}}",
+      "exportFailed": "Gagal membuat URL: {{message}}",
+      "connectToImport": "Sambungkan ke perangkat untuk menerapkan pengaturan saluran.",
+      "noChannelsToExport": "Tidak ada saluran yang diaktifkan untuk diekspor.",
+      "parseFailed": "URL saluran tidak valid: {{message}}",
+      "applying": "Menerapkan",
+      "unnamedChannel": "Tanpa nama"
+    }
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
@@ -892,7 +933,8 @@
     "addToFavorites": "Tambahkan ke favorit",
     "healthTooltip": "Skor kesehatan: {{total}}/100 (signal {{signal}}, recency {{recency}}, load {{load}}, battery {{battery}})",
     "healthAriaLabel": "Skor kesehatan node {{total}} dari 100",
-    "buttonExportJson": "Ekspor ke JSON"
+    "buttonExportJson": "Ekspor ke JSON",
+    "showOnMap": "Tampilkan di peta"
   },
   "mapPanel": {
     "locationUnavailable": "Lokasi tidak tersedia.",
@@ -902,7 +944,20 @@
     "showMyLocation": "Tunjukkan lokasi saya",
     "networkMap": "Peta jaringan menunjukkan posisi node",
     "toggleRouteWeightLines": "Alihkan garis bobot rute",
-    "routeWeights": "Bobot rute"
+    "routeWeights": "Bobot rute",
+    "layerControls": "Lapisan",
+    "layerControlsAria": "Alihkan kontrol lapisan peta",
+    "basemapHeading": "Peta dasar",
+    "basemapSelectAria": "Pilih peta dasar",
+    "basemapDark": "Gelap (Carto)",
+    "basemapOsm": "OpenStreetMap (Light)",
+    "layersHeading": "Overlay",
+    "layerNodes": "Penanda simpul",
+    "layerPaths": "Jalur pergerakan",
+    "layerWaypoints": "Waypoint",
+    "layerRouteWeights": "Bobot rute",
+    "layerAnomalyHalos": "Halo anomali",
+    "layerCongestionHalos": "Halo kemacetan"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -1609,7 +1664,8 @@
     "notesLabel": "Catatan",
     "notesPlaceholder": "Catatan pribadi tentang simpul ini (tidak dikirimkan)...",
     "watchNode": "Watvh",
-    "unwatchNode": "Menonton"
+    "unwatchNode": "Menonton",
+    "showOnMap": "Tampilkan di peta"
   },
   "firmwareStatus": {
     "checking": "Memeriksa versi firmware",

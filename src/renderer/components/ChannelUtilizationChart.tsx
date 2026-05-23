@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
+import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+
 import type { MeshNode } from '../lib/types';
 
 interface ChannelUtilizationChartProps {
@@ -17,7 +19,7 @@ export default function ChannelUtilizationChart({ nodes, protocol }: ChannelUtil
     for (const node of nodes.values()) {
       if (typeof node.channel_utilization === 'number' && node.channel_utilization > 0) {
         const pct = Math.min(100, Math.round(node.channel_utilization * 10) / 10);
-        const name = node.long_name || node.short_name || `!${node.node_id.toString(16)}`;
+        const name = node.long_name || node.short_name || formatMeshtasticNodeId(node.node_id);
         out.push({ name, pct });
       }
     }

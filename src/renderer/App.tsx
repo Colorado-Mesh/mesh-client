@@ -87,6 +87,8 @@ import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMe
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
 import type { ChatMessage, DeviceState, MeshProtocol, MQTTSettings } from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
+import { useMapLayerStore } from './stores/mapLayerStore';
+import { useMapViewportStore } from './stores/mapViewportStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
 
@@ -153,6 +155,8 @@ const TAB_SLOT_IDS = [
   'RF',
   'Graph',
 ] as const;
+
+const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
 
 function tabLabelKey(protocol: MeshProtocol, panelIndex: number): `tabs.${string}` {
   if (panelIndex === 2 && protocol === 'meshcore') return 'tabs.contacts';
@@ -674,6 +678,10 @@ export default function App() {
   const prevPanelIndexForChatFreezeRef = useRef(activePanelIndex);
 
   useEffect(() => {
+    void useMapLayerStore.getState().hydrateFromDatabase();
+  }, []);
+
+  useEffect(() => {
     activeTabRef.current = activeTab;
     protocolRef.current = protocol;
     meshtasticMsgsRef.current = meshtasticDevice.messages;
@@ -792,6 +800,19 @@ export default function App() {
       setProtocol(newProtocol);
     },
     [protocol, activeTab, activePanelIndex, meshtasticTabs, meshcoreTabs],
+  );
+
+  const handleShowOnMap = useCallback(
+    (nodeId: number, lat: number, lon: number) => {
+      useMapViewportStore.getState().requestFocus({ nodeId, lat, lon });
+      setSelectedNodeId(null);
+      const tabs = protocol === 'meshtastic' ? meshtasticTabs : meshcoreTabs;
+      const mapTabIndex = tabs.tabIndexToPanelIndex.findIndex((idx) => idx === MAP_TAB_PANEL_INDEX);
+      if (mapTabIndex >= 0) {
+        setActiveTab(mapTabIndex);
+      }
+    },
+    [protocol, meshtasticTabs, meshcoreTabs],
   );
 
   const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);
@@ -1897,6 +1918,7 @@ export default function App() {
                               protocol === 'meshcore' ? meshcoreDevice.sendAdvert : undefined
                             }
                             meshcoreRadioOperational={isOperational}
+                            onShowOnMap={handleShowOnMap}
                           />
                         </Suspense>
                       ) : null}
@@ -1947,6 +1969,12 @@ export default function App() {
                               onSetChannel={device.setDeviceChannel}
                               onClearChannel={device.clearChannel}
                               channelConfigs={device.channelConfigs}
+                              meshtasticLoraConfig={
+                                protocol === 'meshtastic' ? device.loraConfig : undefined
+                              }
+                              onApplyChannelSet={
+                                protocol === 'meshtastic' ? device.applyChannelSet : undefined
+                              }
                               isConnected={isOperational}
                               telemetryDeviceUpdateInterval={device.telemetryDeviceUpdateInterval}
                               deviceFixedPosition={device.deviceFixedPosition}
@@ -2610,6 +2638,7 @@ export default function App() {
                 : undefined
             }
             positionHistory={selectedNodeHistory}
+            onShowOnMap={handleShowOnMap}
           />
         </Suspense>
       )}

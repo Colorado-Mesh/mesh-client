@@ -7,6 +7,8 @@
  * 3. Verifies every key in en/translation.json exists in every other locale file (warn only).
  * 4. Fails on CAT/XLIFF/Memsource residue in non-English strings; fails if {{placeholder}}
  *    name sets differ from English for the same key.
+ * 5. Fails on locale quality issues (mojibake, broken meshtastic://, false friends, etc.)
+ *    via check-i18n-quality.mjs.
  *
  * Add a comment  // i18n-ok <reason>  on the same line to suppress a dynamic-key warning.
  */
@@ -14,6 +16,8 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { localeStringQualityIssues } from './check-i18n-quality.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR = join(__dirname, '../src/renderer/locales');
@@ -293,6 +297,18 @@ for (const dir of localeDirs) {
     if (VERBATIM_KEY_NAMES.has(leafKey) && val !== enVal) {
       console.error(
         `Verbatim key "${dir}" key "${key}": must equal English value ${JSON.stringify(enVal)} but has ${JSON.stringify(val)}.`,
+      );
+      errors++;
+    }
+
+    for (const issue of localeStringQualityIssues({
+      locale: dir,
+      flatKey: key,
+      val,
+      enVal,
+    })) {
+      console.error(
+        `Locale quality in "${dir}" key "${key}": ${issue}. LOC=${JSON.stringify(val)}`,
       );
       errors++;
     }

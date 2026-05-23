@@ -10,6 +10,7 @@ import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '@/shared/meshtasticMqttReconnect';
+import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { MESHCORE_SETUP_ABORT_MESSAGE } from '../lib/bleConnectErrors';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
@@ -1894,7 +1895,7 @@ export default function ConnectionPanel({
             <div className="flex justify-between text-sm">
               <span className="text-muted">{t('connectionPanel.from')}</span>
               <span className="font-mono text-xs text-gray-200">
-                !{state.myNodeNum.toString(16)}
+                {formatMeshtasticNodeId(state.myNodeNum)}
               </span>
             </div>
           )}
@@ -2563,7 +2564,7 @@ export default function ConnectionPanel({
               <div className="flex justify-between text-sm">
                 <span className="text-muted">{t('connectionPanel.myNode')}</span>
                 <span className="font-mono text-gray-200">
-                  {myNodeLabel ?? `!${state.myNodeNum.toString(16)}`}
+                  {myNodeLabel ?? formatMeshtasticNodeId(state.myNodeNum)}
                 </span>
               </div>
             )}

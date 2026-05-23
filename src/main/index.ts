@@ -2889,6 +2889,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreMessageRetentionEnabled',
   'meshcoreMessageRetentionCount',
   'locale',
+  'mapBasemapId',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
 

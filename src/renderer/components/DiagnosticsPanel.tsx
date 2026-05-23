@@ -18,6 +18,7 @@ import {
   isRfForeignLoraHeard,
   useDiagnosticsStore,
 } from '@/renderer/stores/diagnosticsStore';
+import { formatMeshtasticNodeId, meshtasticNodeIdMatchesHexQuery } from '@/shared/nodeNameUtils';
 
 import {
   diagnosticRowsToRoutingMap,
@@ -103,7 +104,7 @@ function meshcoreHeardDisplay(
     return { displayName: unknownLabel, hexId: null, node: undefined };
   }
   const meshcoreNode = meshcoreNodes.get(id);
-  const hexId = `!${id.toString(16).padStart(8, '0')}`;
+  const hexId = formatMeshtasticNodeId(id);
   const displayName =
     d.longName ?? meshcoreNode?.long_name ?? meshcoreNode?.short_name ?? unknownLabel;
   return {
@@ -440,7 +441,7 @@ export default function DiagnosticsPanel({
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     const node = nodes.get(row.nodeId);
-    const hexMatch = row.nodeId.toString(16).includes(q);
+    const hexMatch = meshtasticNodeIdMatchesHexQuery(row.nodeId, q);
     const nameMatch =
       node?.long_name?.toLowerCase().includes(q) || node?.short_name?.toLowerCase().includes(q);
     if (row.kind === 'routing') {
@@ -578,10 +579,10 @@ export default function DiagnosticsPanel({
         const colorClass = isInfo ? 'text-blue-400' : 'text-orange-400';
         const hexId =
           foreignLoraRow && rf.foreignSenderId != null
-            ? `!${rf.foreignSenderId.toString(16).padStart(8, '0')}`
+            ? formatMeshtasticNodeId(rf.foreignSenderId)
             : foreignLoraRow
               ? '—'
-              : `!${rf.nodeId.toString(16)}`;
+              : formatMeshtasticNodeId(rf.nodeId);
         const displayName = foreignLoraRow
           ? node?.long_name ||
             node?.short_name ||
@@ -649,7 +650,7 @@ export default function DiagnosticsPanel({
       const isError = anomaly.severity === 'error';
       const isInfo = anomaly.severity === 'info';
       const colorClass = isError ? 'text-red-400' : isInfo ? 'text-blue-400' : 'text-orange-400';
-      const hexId = `!${anomaly.nodeId.toString(16)}`;
+      const hexId = formatMeshtasticNodeId(anomaly.nodeId);
       const displayName = node?.long_name || node?.short_name || hexId;
       const isPending = tracePendingNodes.has(anomaly.nodeId);
       const isFailed = traceFailed.has(anomaly.nodeId);
@@ -1121,7 +1122,7 @@ export default function DiagnosticsPanel({
                     <>
                       <div className="text-muted">Sender</div>
                       <div className="font-mono text-gray-200">
-                        !{d.lastSenderId.toString(16).padStart(8, '0')}
+                        {formatMeshtasticNodeId(d.lastSenderId)}
                         {senderName ? ` (${senderName})` : ''}
                       </div>
                     </>
@@ -1274,7 +1275,7 @@ export default function DiagnosticsPanel({
           <div className="flex flex-wrap gap-1.5">
             {[...mqttIgnoredNodes].map((nodeId) => {
               const n = nodes.get(nodeId);
-              const label = n?.short_name || n?.long_name || `!${nodeId.toString(16)}`;
+              const label = n?.short_name || n?.long_name || formatMeshtasticNodeId(nodeId);
               return (
                 <span
                   key={nodeId}

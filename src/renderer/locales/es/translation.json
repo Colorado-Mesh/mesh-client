@@ -444,7 +444,48 @@
     "rebootOtaMessage": "Esto reiniciará el dispositivo en modo de actualización de firmware OTA (Over The Air).",
     "rebootOtaConfirm": "Reiniciar a OTA",
     "rebootOtaButton": "Reiniciar a OTA",
-    "directMessages": "Mensajes directos"
+    "directMessages": "Mensajes directos",
+    "channelUrl": {
+      "sectionTitle": "Compartir / importar URL del canal",
+      "exportTitle": "Exportar",
+      "importTitle": "Importar",
+      "generateLink": "Generar enlace",
+      "includeSecondary": "Incluir canales secundarios",
+      "loraMissingWarning": "La configuración de LoRa aún no se carga desde la radio; el enlace puede omitir el preajuste del módem hasta que se conecte.",
+      "httpsUrlLabel": "Enlace web (Android QR)",
+      "meshtasticUrlLabel": "enlace meshtastic://",
+      "copyHttps": "Copiar enlace web",
+      "copyMeshtastic": "Copiar enlace meshtastic://",
+      "copied": "Copiado al portapapeles",
+      "copyFailed": "Error al Copiar",
+      "pasteUrlLabel": "Pegar URL del canal",
+      "pasteUrlPlaceholder": "https://meshtastic.org/e/#… o meshtastic://…",
+      "modeReplace": "Reemplazar canales",
+      "modeAdd": "Añadir canales",
+      "previewChannels": "Canales en enlace",
+      "previewLora": "LoRa: región {{region}}, preset {{preset}}, usePreset {{usePreset}}",
+      "previewLoraUnknown": "Configuración de LoRa incluida",
+      "channelRow": "{{role}}: {{name}} (PSK {{psk}}) ↑{{uplink}} ↓{{downlink}}",
+      "rolePrimary": "Principal",
+      "roleSecondary": "Secundario",
+      "replaceWarning": "Esto reemplazará la configuración de su canal y la configuración de LoRa en la radio conectada.",
+      "addWarning": "Esto añadirá nuevos canales. Se omiten los canales existentes con el mismo nombre.",
+      "applyLoraOnAdd": "Aplicar también la configuración de LoRa desde el enlace",
+      "apply": "Aplicar a la radio",
+      "confirmReplaceTitle": "¿Aplicar URL del canal?",
+      "confirmReplaceMessage": "¿Reemplazar canales y configuraciones del enlace pegado en su radio conectada?",
+      "confirmAddTitle": "¿Añadir canales desde URL?",
+      "confirmAddMessage": "¿Añadir canales desde el enlace pegado a su radio conectada?",
+      "confirmApply": "Aplicar",
+      "applySuccess": "Configuración de canal aplicada desde URL.",
+      "applyFailed": "Error al aplicar la URL: {{message}}",
+      "exportFailed": "Error al generar la URL: {{message}}",
+      "connectToImport": "Conéctate a un dispositivo para aplicar la configuración del canal.",
+      "noChannelsToExport": "No hay canales habilitados para exportar.",
+      "parseFailed": "URL de canal no válida: {{message}}",
+      "applying": "Aplicando…",
+      "unnamedChannel": "(sin nombre)"
+    }
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneración de claves solicitada. El dispositivo generará nuevas claves.",
@@ -892,7 +933,8 @@
     "addToFavorites": "Añadir a favoritos",
     "healthTooltip": "Puntuación de salud: {{total}}/100 (señal {{signal}}, reciente {{recency}}, carga {{load}}, batería {{battery}})",
     "healthAriaLabel": "Puntuación de salud del nodo {{total}} de 100",
-    "buttonExportJson": "Exportar a Json"
+    "buttonExportJson": "Exportar a Json",
+    "showOnMap": "Mostrar en el mapa"
   },
   "mapPanel": {
     "locationUnavailable": "Ubicación no disponible.",
@@ -902,7 +944,20 @@
     "showMyLocation": "Mostrar automáticamente Mi ubicación",
     "networkMap": "Mapa de red que muestra las posiciones de los nodos",
     "toggleRouteWeightLines": "Alternar líneas de peso de ruta",
-    "routeWeights": "Pesos de ruta"
+    "routeWeights": "Pesos de ruta",
+    "layerControls": "Capas",
+    "layerControlsAria": "Alternar controles de capa de mapa",
+    "basemapHeading": "\"Mapa base\"",
+    "basemapSelectAria": "Seleccionar mapa base",
+    "basemapDark": "Oscuro (Carto)",
+    "basemapOsm": "OpenStreetMap (claro)",
+    "layersHeading": "Superposiciones",
+    "layerNodes": "Marcadores de nodo",
+    "layerPaths": "Senderos de movimiento",
+    "layerWaypoints": "Waypoints",
+    "layerRouteWeights": "Pesos de ruta",
+    "layerAnomalyHalos": "Halos de anomalía",
+    "layerCongestionHalos": "Halos de congestión"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -1609,7 +1664,8 @@
     "notesLabel": "Notas",
     "notesPlaceholder": "Notas privadas sobre este nodo (no transmitidas)...",
     "watchNode": "Watch",
-    "unwatchNode": "Viendo"
+    "unwatchNode": "Viendo",
+    "showOnMap": "Mostrar en el mapa"
   },
   "firmwareStatus": {
     "checking": "Comprobación de la versión del firmware...",
