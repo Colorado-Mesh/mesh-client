@@ -89,7 +89,7 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 ### MQTT
 
-- Meshtastic: `mqtt-manager.ts` (AES, protobuf, dedup). MeshCore: `meshcore-mqtt-adapter.ts` (JSON v1 envelope).
+- Meshtastic: `mqtt-manager.ts` (AES-128/256-CTR, channel key map, protobuf, dedup; per-channel publish in `meshtasticMqttPublish.ts`). PKC remote admin: `meshtasticRemoteAdmin.ts` (requires local radio). MeshCore: `meshcore-mqtt-adapter.ts` (JSON v1 envelope).
 
 ### UI
 

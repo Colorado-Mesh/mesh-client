@@ -79,7 +79,10 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **MQTT**
 
-- Subscribe to a broker to receive mesh traffic over the internet; AES-128-CTR decryption, automatic RF deduplication, **cross-transport chat dedup** (when the same message arrives on MQTT and RF within ~10 minutes, one bubble is kept and the transport badge upgrades to **both**), **10-minute reconnect delay after failed attempts** (recovers faster on connack timeout), and an **active node cache** that periodically refreshes presence information so MQTT-only and RF+MQTT nodes stay visible even when your radio is offline
+- Subscribe to a broker to receive mesh traffic over the internet; **AES-128/256-CTR** decryption (16- or 32-byte channel PSKs), automatic RF deduplication, **cross-transport chat dedup** (when the same message arrives on MQTT and RF within ~10 minutes, one bubble is kept and the transport badge upgrades to **both**), **10-minute reconnect delay after failed attempts** (recovers faster on connack timeout), and an **active node cache** that periodically refreshes presence information so MQTT-only and RF+MQTT nodes stay visible even when your radio is offline
+- **Channel PSKs** on the Connection tab: base64 keys per line (optional `ChannelName=base64` for MQTT-only channels); LongFast default is always tried; keys from the Radio tab sync automatically when the radio is connected
+- **Enable TLS (mqtts / wss)** toggle for private brokers (not only port 8883/443); optional **Allow insecure TLS** for self-signed or non–public CA chains
+- **Per-channel MQTT uplink** (RF → MQTT) uses each channel’s real name and PSK when publishing
 - Transport indicator (RF / MQTT / both) on received messages; MQTT messages are shown in chat but not rebroadcast over RF
 - Enter your broker URL, topic, and optional credentials in the MQTT section of the Connection tab; settings persist across sessions
 
@@ -92,6 +95,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 **Security (PKI)** (Meshtastic only)
 
 - **Security** tab (between Telemetry and App): admin / PKI key management; backup, restore, regenerate, and apply keys and related toggles from the device. Not available in MeshCore mode (no matching firmware surface; the tab is hidden).
+- **PKC remote node administration** (firmware 2.5+): **Configure node** selector on Radio, Modules, and Security tabs to edit another node’s settings through your connected local radio; **Configure node remotely** from node detail; **Copy** public key in Security for one-time trust setup. Requires a **connected local Meshtastic radio** — MQTT-only sessions cannot administer remote nodes.
 
 **Network Diagnostics**
 
@@ -270,6 +274,7 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 ## Limitations
 
 - **MQTT → RF**: Messages received via MQTT are shown in chat but are not rebroadcast over the radio. Previous relay behavior caused duplicate or misattributed messages.
+- **Meshtastic - PKC remote admin**: Configure-node-over-MQTT is not supported; a connected local RF radio is required to reach remote nodes (firmware 2.5+).
 - **MeshCore - MQTT (JSON v1)**: The Connection tab can connect to an MQTT broker in MeshCore mode using a small JSON chat envelope (see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md)). This is separate from Meshtastic's protobuf MQTT pipeline.
 - **MeshCore - partial routing diagnostics**: MeshCore now supports `route_flapping` / `path_instability` (PathUpdated events), `hop_goblin` / `bad_route` (when `hasHopCount`), and `weak_link` (when `hasPerHopSnr` and a trace is completed). Full hop-anomaly detection and Meshtastic-style LocalStats RF findings require Meshtastic packets; MeshCore provides its own RF findings (Elevated Noise Floor, Excessive Flooding) from Repeater Status packet stats.
 - **MeshCore - channel editing**: Can add/edit/delete channels (name + PSK) via the Radio tab, but does not expose Meshtastic-style full protobuf config. Radio parameters (frequency, bandwidth, spreading factor, coding rate, TX power) can be set via the Radio tab.
