@@ -836,7 +836,8 @@
     "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu.",
     "compactMessages": "Kompaktní zobrazení zpráv",
     "notificationsSection": "Oznámení",
-    "soundNotifications": "Zvuková upozornění"
+    "soundNotifications": "Zvuková upozornění",
+    "storeForwardAutoFetchHistory": "Automaticky načíst historii chatu v obchodě a přeposlat při připojení"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakty byly obnoveny.",
@@ -1048,7 +1049,9 @@
     "starredMessages": "Označené zprávy",
     "noStarredMessages": "Zatím žádné zprávy označené hvězdičkou. Označte jakoukoli zprávu hvězdičkou a uložte ji zde.",
     "goToMessage": "Přejít na zprávu",
-    "receivedViaStoreForward": "Přehráno z obchodu & Vpřed"
+    "receivedViaStoreForward": "Přehráno z obchodu & Vpřed",
+    "fetchStoreForwardHistory": "Dohnat od Store & Forward",
+    "fetchStoreForwardHistoryHint": "Vyžádejte si nedávnou historii chatu ze síťového směrovače (až 100 zpráv)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maximální počet pokusů o opětovné připojení MQTT",

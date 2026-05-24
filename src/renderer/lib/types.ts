@@ -246,6 +246,11 @@ export interface MQTTSettings {
   tokenExpiresAt?: number;
   /** WebSocket path (e.g. '/mqtt' or '/ws'). Default '/mqtt'. */
   wsPath?: string;
+  /**
+   * Stable MQTT broker clientId (set by main process before connect).
+   * Not user-editable in the UI.
+   */
+  clientId?: string;
 }
 
 export type MQTTStatus = 'disconnected' | 'connecting' | 'connected' | 'error';

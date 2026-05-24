@@ -224,8 +224,9 @@ export class MQTTManager extends EventEmitter {
       }
       this.client = null;
     }
-    this.clientId = `meshtastic-electron-${randomBytes(3).toString('hex')}`;
-    const clientId = this.clientId;
+    const clientId =
+      settings.clientId?.trim() || `meshtastic-electron-${randomBytes(3).toString('hex')}`;
+    this.clientId = clientId;
     this.meshtasticConnectT0 = Date.now();
     const hostTrim = settings.server.trim();
 

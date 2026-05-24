@@ -1865,6 +1865,12 @@ export default function App() {
                             scrollToTopRef={scrollToTopChatRef}
                             outerScrollMetricsRootRef={mainViewportRef}
                             compactMode={chatCompactMode}
+                            onFetchStoreForwardHistory={
+                              protocol === 'meshtastic'
+                                ? () =>
+                                    meshtasticDevice.requestStoreForwardHistory({ manual: true })
+                                : undefined
+                            }
                           />
                         </Suspense>
                       </div>

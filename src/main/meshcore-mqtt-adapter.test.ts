@@ -45,7 +45,9 @@ function seedConnected(adapter: MeshcoreMqttAdapter, expiresAt: number): void {
 describe('MeshcoreMqttAdapter — clientId', () => {
   let adapter: MeshcoreMqttAdapter;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    const mqtt = await import('mqtt');
+    vi.mocked(mqtt.connect).mockClear();
     adapter = new MeshcoreMqttAdapter();
   });
 
@@ -56,12 +58,24 @@ describe('MeshcoreMqttAdapter — clientId', () => {
     expect(mqtt.connect).toHaveBeenCalledWith(expect.objectContaining({ clientId: v1Username }));
   });
 
-  it('uses random clientId if username does not match v1_ pattern', async () => {
+  it('uses provided clientId when username does not match v1_ pattern', async () => {
     const mqtt = await import('mqtt');
-    adapter.connect({ ...BASE_SETTINGS, username: 'normal-user' });
+    const stableId = 'meshcore-mqtt-abcdef0123456789';
+    adapter.connect({ ...BASE_SETTINGS, username: 'normal-user', clientId: stableId });
     const call = vi.mocked(mqtt.connect).mock.calls[vi.mocked(mqtt.connect).mock.calls.length - 1];
     const opts = call[0] as IClientOptions;
-    expect(opts.clientId).toMatch(/^meshcore-mqtt-[a-z0-9]{8}$/);
+    expect(opts.clientId).toBe(stableId);
+  });
+
+  it('reuses the same clientId on reconnect when provided', async () => {
+    const mqtt = await import('mqtt');
+    const stableId = 'meshcore-mqtt-fedcba9876543210';
+    adapter.connect({ ...BASE_SETTINGS, clientId: stableId });
+    adapter.disconnect();
+    adapter.connect({ ...BASE_SETTINGS, clientId: stableId });
+    const calls = vi.mocked(mqtt.connect).mock.calls;
+    expect((calls[calls.length - 1][0] as IClientOptions).clientId).toBe(stableId);
+    expect((calls[0][0] as IClientOptions).clientId).toBe(stableId);
   });
 });
 

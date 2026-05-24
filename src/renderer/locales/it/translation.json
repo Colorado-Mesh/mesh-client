@@ -850,7 +850,8 @@
     "logPanelHelp": "Se abilitato, sulla destra viene visualizzato un flusso di registro in tempo reale. Le righe di debug richiedono la casella di controllo all'interno del pannello di registro.",
     "compactMessages": "Visualizzazione compatta dei messaggi",
     "notificationsSection": "Notifiche",
-    "soundNotifications": "Notifiche sonore"
+    "soundNotifications": "Notifiche sonore",
+    "storeForwardAutoFetchHistory": "Recupera automaticamente la cronologia della chat Store & Forward su Connect"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contatti aggiornati.",
@@ -1062,7 +1063,9 @@
     "starredMessages": "Messaggi marcati",
     "noStarredMessages": "Ancora nessun messaggio in evidenza. Metti in primo piano qualsiasi messaggio per salvarlo qui.",
     "goToMessage": "Vai al messaggio",
-    "receivedViaStoreForward": "Riprodotto da Store & Forward"
+    "receivedViaStoreForward": "Riprodotto da Store & Forward",
+    "fetchStoreForwardHistory": "Recupera da Store & Forward",
+    "fetchStoreForwardHistoryHint": "Richiedi la cronologia chat recente dal router mesh (fino a 100 messaggi)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Numero massimo di tentativi di riconnessione MQTT",

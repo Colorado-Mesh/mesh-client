@@ -835,7 +835,8 @@
     "logPanelHelp": "Lorsqu'il est activé, un flux de journaux en direct apparaît sur la droite. Les lignes de débogage nécessitent la case à cocher dans le panneau de journal.",
     "compactMessages": "Affichage compact des messages",
     "notificationsSection": "Notifications",
-    "soundNotifications": "Notifications sonores"
+    "soundNotifications": "Notifications sonores",
+    "storeForwardAutoFetchHistory": "Récupérer automatiquement l'historique du chat Store & Forward lors de la connexion"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacts actualisés.",
@@ -1047,7 +1048,9 @@
     "starredMessages": "Messages favoris",
     "noStarredMessages": "Pas encore de messages marqués d'une étoile. Cochez n'importe quel message pour l'enregistrer ici.",
     "goToMessage": "Aller au message",
-    "receivedViaStoreForward": "Rejoué à partir de Store & Forward"
+    "receivedViaStoreForward": "Rejoué à partir de Store & Forward",
+    "fetchStoreForwardHistory": "Rattraper depuis Store & Forward",
+    "fetchStoreForwardHistoryHint": "Demander l'historique des discussions récentes au routeur maillé (jusqu'à 100 messages)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Nombre maximal de tentatives de reconnexion MQTT",

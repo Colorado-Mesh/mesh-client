@@ -834,7 +834,8 @@
     "logPanelHelp": "Wenn diese Option aktiviert ist, wird rechts ein Live-Protokollstream angezeigt. Für Debugzeilen ist das Kontrollkästchen im Protokollbereich erforderlich.",
     "compactMessages": "Kompakte Nachrichtenansicht",
     "notificationsSection": "Benachrichtigungen",
-    "soundNotifications": "Sound-Benachrichtigungen"
+    "soundNotifications": "Sound-Benachrichtigungen",
+    "storeForwardAutoFetchHistory": "Store & Forward Chat-Verlauf bei Connect automatisch abrufen"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakte aktualisiert.",
@@ -1046,7 +1047,9 @@
     "starredMessages": "Markierte Nachrichten",
     "noStarredMessages": "Noch keine markierten Nachrichten. Markieren Sie eine Nachricht, um sie hier zu speichern.",
     "goToMessage": "Gehe zu Nachricht",
-    "receivedViaStoreForward": "Wiederholungen aus Store & Forward"
+    "receivedViaStoreForward": "Wiederholungen aus Store & Forward",
+    "fetchStoreForwardHistory": "Vom Store & Forward einholen",
+    "fetchStoreForwardHistoryHint": "Fordern Sie den letzten Chat-Verlauf vom Mesh-Router an (bis zu 100 Nachrichten)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-Wiederverbindungsversuche",

@@ -22,4 +22,6 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   autoFloodAdvertIntervalHours: 12,
   locale: 'en' as string,
   chatCompactMode: false,
+  /** Auto-request Store & Forward chat history on RF connect (with cap/cooldown). */
+  storeForwardAutoFetchHistory: true,
 };

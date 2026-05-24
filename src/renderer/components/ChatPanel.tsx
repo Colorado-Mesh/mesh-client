@@ -409,6 +409,8 @@ export interface ChatPanelProps {
    */
   outerScrollMetricsRootRef?: React.RefObject<HTMLElement | null>;
   compactMode?: boolean;
+  /** Meshtastic RF: request Store & Forward chat history from the router. */
+  onFetchStoreForwardHistory?: () => void | Promise<void>;
 }
 
 function ChatPanel({
@@ -431,6 +433,7 @@ function ChatPanel({
   scrollToTopRef,
   outerScrollMetricsRootRef,
   compactMode = false,
+  onFetchStoreForwardHistory,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const ownNodeIdSet = useMemo(() => {
@@ -1418,6 +1421,33 @@ function ChatPanel({
             />
           </svg>
         </button>
+
+        {protocol === 'meshtastic' && isConnected && !isMqttOnly && onFetchStoreForwardHistory && (
+          <button
+            type="button"
+            onClick={() => {
+              void onFetchStoreForwardHistory();
+            }}
+            aria-label={t('chatPanel.fetchStoreForwardHistory')}
+            className="text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-300"
+            title={t('chatPanel.fetchStoreForwardHistoryHint')}
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </button>
+        )}
 
         {/* Export chat */}
         <button

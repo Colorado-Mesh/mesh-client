@@ -850,7 +850,8 @@
     "logPanelHelp": "Po włączeniu po prawej stronie pojawia się strumień dziennika na żywo. Linie debugowania wymagają pola wyboru w panelu dziennika.",
     "compactMessages": "Kompaktowy widok wiadomości",
     "notificationsSection": "Zawiadomienia",
-    "soundNotifications": "Powiadomienia dźwiękowe"
+    "soundNotifications": "Powiadomienia dźwiękowe",
+    "storeForwardAutoFetchHistory": "Automatycznie pobierz historię Sklepu i Przekaż dalej historię czatu podczas połączenia"
   },
   "nodeListPanel": {
     "refreshFailed": "Odświeżanie nie powiodło się: {{message}}",
@@ -1062,7 +1063,9 @@
     "starredMessages": "Wyróżnione powiadomienia",
     "noStarredMessages": "Nie ma jeszcze wiadomości oznaczonych gwiazdką. Zaznacz dowolną wiadomość, aby zapisać ją tutaj.",
     "goToMessage": "Przejdź do wiadomości",
-    "receivedViaStoreForward": "Odtworzono ze sklepu i przekazano dalej"
+    "receivedViaStoreForward": "Odtworzono ze sklepu i przekazano dalej",
+    "fetchStoreForwardHistory": "Nadrobić zaległości ze sklepu i przekazać dalej",
+    "fetchStoreForwardHistoryHint": "Poproś o historię ostatnich czatów z routera mesh (do 100 wiadomości)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksymalna liczba prób ponownego połączenia MQTT",

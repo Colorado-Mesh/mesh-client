@@ -850,7 +850,8 @@
     "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다.",
     "compactMessages": "간결한 메시지 보기",
     "notificationsSection": "토",
-    "soundNotifications": "소리 알림"
+    "soundNotifications": "소리 알림",
+    "storeForwardAutoFetchHistory": "연결 시 스토어 및 전달 채팅 내역 자동 가져오기"
   },
   "nodeListPanel": {
     "contactsRefreshed": "연락처가 새로 고쳐졌습니다.",
@@ -1062,7 +1063,9 @@
     "starredMessages": "별표 표시된 메세지",
     "noStarredMessages": "아직 별표 표시된 메시지가 없습니다. 여기에 저장하려면 메시지에 별표를 표시하세요.",
     "goToMessage": "메시지",
-    "receivedViaStoreForward": "스토어 & 포워드에서 재생됨"
+    "receivedViaStoreForward": "스토어 & 포워드에서 재생됨",
+    "fetchStoreForwardHistory": "스토어 & 포워드에서 따라잡기",
+    "fetchStoreForwardHistoryHint": "메시 라우터에서 최근 채팅 기록 요청 (최대 100개 메시지)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "최대 MQTT 재연결 시도",

@@ -850,7 +850,8 @@
     "logPanelHelp": "Quando ativado, um fluxo de log ao vivo aparece à direita. As linhas de depuração exigem a caixa de seleção dentro do painel de log.",
     "compactMessages": "Visualização de mensagem compacta",
     "notificationsSection": "Notificações",
-    "soundNotifications": "Notificações sonoras"
+    "soundNotifications": "Notificações sonoras",
+    "storeForwardAutoFetchHistory": "Buscar automaticamente o histórico de bate-papo Armazenar e Encaminhar no Connect"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contatos atualizados.",
@@ -1062,7 +1063,9 @@
     "starredMessages": "Mensagens marcadas com estrela",
     "noStarredMessages": "Ainda não há mensagens marcadas com estrela. Marque qualquer mensagem para salvá-la aqui.",
     "goToMessage": "Ir para a mensagem",
-    "receivedViaStoreForward": "Reproduzido de Store & Forward"
+    "receivedViaStoreForward": "Reproduzido de Store & Forward",
+    "fetchStoreForwardHistory": "Atualizar a partir da Loja e Encaminhar",
+    "fetchStoreForwardHistoryHint": "Solicitar histórico de conversas recentes do roteador mesh (até 100 mensagens)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Tentativas máximas de reconexão do MQTT",

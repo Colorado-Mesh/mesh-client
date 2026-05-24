@@ -850,7 +850,8 @@
     "logPanelHelp": "Indien ingeschakeld, verschijnt er aan de rechterkant een live logstream. Voor foutopsporingsregels is het selectievakje in het logpaneel vereist.",
     "compactMessages": "Compacte berichtweergave",
     "notificationsSection": "Meldingen",
-    "soundNotifications": "Geluidsmeldingen"
+    "soundNotifications": "Geluidsmeldingen",
+    "storeForwardAutoFetchHistory": "Automatisch Store ophalen en chatgeschiedenis doorsturen bij verbinden"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacten vernieuwd.",
@@ -1062,7 +1063,9 @@
     "starredMessages": "Favoriete berichten",
     "noStarredMessages": "Nog geen berichten met een ster. Geef elk bericht een ster om het hier op te slaan.",
     "goToMessage": "Ga naar bericht",
-    "receivedViaStoreForward": "Opnieuw afgespeeld vanuit Store & Forward"
+    "receivedViaStoreForward": "Opnieuw afgespeeld vanuit Store & Forward",
+    "fetchStoreForwardHistory": "Inhalen bij Store & Forward",
+    "fetchStoreForwardHistoryHint": "Vraag recente chatgeschiedenis op bij de mesh-router (maximaal 100 berichten)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-pogingen om opnieuw verbinding te maken",

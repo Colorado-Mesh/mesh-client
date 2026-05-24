@@ -7,15 +7,26 @@ import {
   buildStoreForwardHistoryRequestBytes,
   buildStoreForwardHistoryToRadioBytes,
   decodeStoreForwardTextPayload,
+  getLastSfHistoryFetchMs,
   isDuplicateHistoryMessage,
   isLikelyReadableChatText,
+  loadSfHistoryFetchState,
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
   parseStoreForwardHeartbeat,
   parseStoreForwardHistory,
+  recordSfHistoryFetch,
   releaseStoreForwardHistoryRequest,
   reserveStoreForwardHistoryRequest,
+  resolveAutoStoreForwardHistoryWindowMinutes,
   resolveMeshtasticTextMessagePayload,
+  SF_AUTO_HISTORY_COOLDOWN_MS,
+  SF_AUTO_HISTORY_MESSAGE_CAP,
+  SF_AUTO_HISTORY_OFFLINE_MIN_MS,
+  SF_AUTO_HISTORY_WINDOW_CAP_MIN,
+  SF_HISTORY_FETCH_STATE_STORAGE_KEY,
+  SF_MANUAL_HISTORY_MESSAGE_CAP,
+  shouldAutoRequestStoreForwardHistoryOnHeartbeat,
   shouldRequestStoreForwardHistoryOnHeartbeat,
   writeToRadioWithoutQueue,
 } from './meshtasticBacklogUtils';
@@ -113,6 +124,75 @@ describe('meshtasticBacklogUtils', () => {
   it('returns null for invalid store-forward bytes', () => {
     expect(decodeStoreForwardTextPayload(new Uint8Array([0xff, 0xff]))).toBeNull();
     expect(decodeStoreForwardTextPayload(new TextEncoder().encode('plain text'))).toBeNull();
+  });
+
+  it('builds CLIENT_HISTORY request bytes with message cap', () => {
+    const capped = buildStoreForwardHistoryRequestBytes({
+      messageCap: SF_AUTO_HISTORY_MESSAGE_CAP,
+    });
+    const parsed = fromBinary(StoreForward.StoreAndForwardSchema, capped) as unknown as {
+      variant: { case?: string; value?: { historyMessages?: number } };
+    };
+    if (parsed.variant.case === 'history' && parsed.variant.value) {
+      expect(parsed.variant.value.historyMessages).toBe(SF_AUTO_HISTORY_MESSAGE_CAP);
+    }
+  });
+
+  it('resolves auto history window from heartbeat period', () => {
+    expect(resolveAutoStoreForwardHistoryWindowMinutes(0)).toBe(SF_AUTO_HISTORY_WINDOW_CAP_MIN);
+    expect(resolveAutoStoreForwardHistoryWindowMinutes(30)).toBe(30);
+    expect(resolveAutoStoreForwardHistoryWindowMinutes(999)).toBe(SF_AUTO_HISTORY_WINDOW_CAP_MIN);
+  });
+
+  it('gates auto-fetch on cooldown, offline, and opt-out', () => {
+    const now = 1_000_000;
+    const base = {
+      heartbeatSecondary: 0,
+      connectedIsStoreForwardServer: false,
+      alreadyRequestedServer: false,
+      deviceConfigured: true,
+      autoFetchEnabled: true,
+      now,
+      lastFetchMs: null as number | null,
+      lastDisconnectMs: null as number | null,
+    };
+    expect(shouldAutoRequestStoreForwardHistoryOnHeartbeat(base)).toBe(true);
+    expect(
+      shouldAutoRequestStoreForwardHistoryOnHeartbeat({ ...base, autoFetchEnabled: false }),
+    ).toBe(false);
+    expect(
+      shouldAutoRequestStoreForwardHistoryOnHeartbeat({
+        ...base,
+        lastFetchMs: now - SF_AUTO_HISTORY_COOLDOWN_MS + 1000,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoRequestStoreForwardHistoryOnHeartbeat({
+        ...base,
+        lastDisconnectMs: now - SF_AUTO_HISTORY_OFFLINE_MIN_MS + 1000,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoRequestStoreForwardHistoryOnHeartbeat({
+        ...base,
+        lastFetchMs: now - SF_AUTO_HISTORY_COOLDOWN_MS - 1000,
+        lastDisconnectMs: now - SF_AUTO_HISTORY_OFFLINE_MIN_MS - 1000,
+      }),
+    ).toBe(true);
+  });
+
+  it('persists per-server fetch timestamps in localStorage', () => {
+    localStorage.removeItem(SF_HISTORY_FETCH_STATE_STORAGE_KEY);
+    const server = 0xabcd1234;
+    expect(getLastSfHistoryFetchMs(server)).toBeNull();
+    recordSfHistoryFetch(server, 42_000);
+    expect(getLastSfHistoryFetchMs(server)).toBe(42_000);
+    expect(loadSfHistoryFetchState()[String(server)]).toBe(42_000);
+    localStorage.removeItem(SF_HISTORY_FETCH_STATE_STORAGE_KEY);
+  });
+
+  it('uses higher cap constant for manual fetch', () => {
+    expect(SF_MANUAL_HISTORY_MESSAGE_CAP).toBeGreaterThan(SF_AUTO_HISTORY_MESSAGE_CAP);
   });
 
   it('builds CLIENT_HISTORY request bytes with defaults and custom window', () => {

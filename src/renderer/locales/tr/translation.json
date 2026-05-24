@@ -850,7 +850,8 @@
     "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir.",
     "compactMessages": "Kompakt mesaj görünümü",
     "notificationsSection": "Bildirimler",
-    "soundNotifications": "Sesli Bildirimler"
+    "soundNotifications": "Sesli Bildirimler",
+    "storeForwardAutoFetchHistory": "Bağlanıldığında Mağaza ve İlet sohbet geçmişini otomatik olarak getir"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",
@@ -1062,7 +1063,9 @@
     "starredMessages": "Yıldızlı iletileri",
     "noStarredMessages": "Henüz yıldızlı mesaj yok. Buraya kaydetmek için herhangi bir mesajı yıldızla.",
     "goToMessage": "Mesaja git",
-    "receivedViaStoreForward": "Store & Forward'dan yeniden oynatıldı"
+    "receivedViaStoreForward": "Store & Forward'dan yeniden oynatıldı",
+    "fetchStoreForwardHistory": "Store & Forward'dan bilgi alın",
+    "fetchStoreForwardHistoryHint": "Ağ yönlendiriciden en son sohbet geçmişini isteyin (100 mesaja kadar)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksimum MQTT yeniden bağlanma denemesi",

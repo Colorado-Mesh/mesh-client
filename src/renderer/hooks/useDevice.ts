@@ -8,14 +8,19 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   buildStoreForwardHistoryToRadioBytes,
   decodeStoreForwardTextPayload,
+  getLastSfHistoryFetchMs,
   isDuplicateHistoryMessage,
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
   parseStoreForwardHeartbeat,
+  recordSfHistoryFetch,
   releaseStoreForwardHistoryRequest,
   reserveStoreForwardHistoryRequest,
+  resolveAutoStoreForwardHistoryWindowMinutes,
   resolveMeshtasticTextMessagePayload,
-  shouldRequestStoreForwardHistoryOnHeartbeat,
+  SF_AUTO_HISTORY_MESSAGE_CAP,
+  SF_MANUAL_HISTORY_MESSAGE_CAP,
+  shouldAutoRequestStoreForwardHistoryOnHeartbeat,
   writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
 import { channelNameExists, findNextFreeChannelSlot } from '@/shared/meshtasticChannelApply';
@@ -312,6 +317,10 @@ export function useDevice() {
   const [moduleConfigs, setModuleConfigs] = useState<Record<string, unknown>>({});
   const moduleConfigsRef = useRef(moduleConfigs);
   const sfHistoryRequestedServersRef = useRef<Set<number>>(new Set());
+  const lastRfDisconnectAtRef = useRef<number | null>(null);
+  const lastSfHeartbeatServerRef = useRef<number | null>(null);
+  const lastSfHeartbeatChannelRef = useRef(0);
+  const lastSfHeartbeatPeriodRef = useRef(0);
   const deviceConfiguredRef = useRef(false);
   const mqttReconnectBacklogUntilRef = useRef(0);
   const [securityConfig, setSecurityConfig] = useState<{
@@ -1091,6 +1100,98 @@ export function useDevice() {
       );
   }, []);
 
+  const requestStoreForwardHistoryRef = useRef<
+    (options?: { serverNodeId?: number; manual?: boolean }) => Promise<void>
+  >(() => Promise.resolve());
+
+  const requestStoreForwardHistory = useCallback(
+    async (options?: { serverNodeId?: number; manual?: boolean }) => {
+      const manual = options?.manual === true;
+      const serverNodeId = options?.serverNodeId ?? lastSfHeartbeatServerRef.current;
+      if (serverNodeId == null) {
+        console.warn(
+          '[useDevice] Store & Forward history: no server node (wait for a router heartbeat)',
+        );
+        return;
+      }
+
+      const myNode = myNodeNumRef.current;
+      const activeDevice = deviceRef.current;
+      if (!myNode || !activeDevice || !deviceConfiguredRef.current) {
+        if (manual) {
+          console.warn('[useDevice] Store & Forward history: radio not configured');
+        }
+        return;
+      }
+
+      const sfCfg = moduleConfigsRef.current.storeForward as { isServer?: boolean } | undefined;
+      if (sfCfg?.isServer === true) return;
+
+      const now = Date.now();
+      const channel = lastSfHeartbeatChannelRef.current;
+      const heartbeatPeriod = lastSfHeartbeatPeriodRef.current;
+
+      if (!manual) {
+        const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
+        const settings = parseStoredJson<Record<string, unknown>>(
+          getAppSettingsRaw(),
+          'useDevice storeForwardAutoFetchHistory',
+        );
+        const sfAuto = settings?.storeForwardAutoFetchHistory;
+        const autoFetchEnabled = sfAuto !== false && sfAuto !== 'false';
+        if (
+          !shouldAutoRequestStoreForwardHistoryOnHeartbeat({
+            heartbeatSecondary: 0,
+            connectedIsStoreForwardServer: false,
+            alreadyRequestedServer: alreadyRequested,
+            deviceConfigured: true,
+            autoFetchEnabled,
+            now,
+            lastFetchMs: getLastSfHistoryFetchMs(serverNodeId),
+            lastDisconnectMs: lastRfDisconnectAtRef.current,
+          })
+        ) {
+          return;
+        }
+        if (
+          !reserveStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId)
+        ) {
+          return;
+        }
+      }
+
+      const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
+      const toRadioBytes = buildStoreForwardHistoryToRadioBytes({
+        from: myNode,
+        to: serverNodeId,
+        channel,
+        packetId,
+        windowMinutes: resolveAutoStoreForwardHistoryWindowMinutes(heartbeatPeriod),
+        messageCap: manual ? SF_MANUAL_HISTORY_MESSAGE_CAP : SF_AUTO_HISTORY_MESSAGE_CAP,
+      });
+
+      try {
+        await writeToRadioWithoutQueue(activeDevice, toRadioBytes);
+        recordSfHistoryFetch(serverNodeId, now);
+        console.debug(
+          `[useDevice] Store & Forward CLIENT_HISTORY sent to 0x${serverNodeId.toString(16)} ch=${channel} manual=${manual}`,
+        );
+      } catch (e: unknown) {
+        if (!manual) {
+          releaseStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId);
+        }
+        console.error(
+          '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
+        );
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    requestStoreForwardHistoryRef.current = requestStoreForwardHistory;
+  }, [requestStoreForwardHistory]);
+
   // ─── Wire up all event subscriptions for a device ─────────────
   const wireSubscriptions = useCallback(
     (device: MeshDevice, type: ConnectionType) => {
@@ -1162,6 +1263,7 @@ export function useDevice() {
 
         // Always clean up on disconnect, even if we never reached configured
         if (status === 2) {
+          lastRfDisconnectAtRef.current = Date.now();
           rfHeardNodeIds.current.clear();
           lastNodeInfoRequestAtRef.current.clear();
           clearConfigureTimeout();
@@ -2583,46 +2685,11 @@ export function useDevice() {
         const serverNodeId = packet.from;
         const heartbeat = parseStoreForwardHeartbeat(packet.data);
         if (serverNodeId && heartbeat) {
-          const sfCfg = moduleConfigsRef.current.storeForward as { isServer?: boolean } | undefined;
-          const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
-          if (
-            shouldRequestStoreForwardHistoryOnHeartbeat({
-              heartbeatSecondary: heartbeat.secondary,
-              connectedIsStoreForwardServer: sfCfg?.isServer === true,
-              alreadyRequestedServer: alreadyRequested,
-              deviceConfigured: deviceConfiguredRef.current,
-            }) &&
-            reserveStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId)
-          ) {
-            const myNode = myNodeNumRef.current;
-            const activeDevice = deviceRef.current;
-            if (myNode && activeDevice) {
-              const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
-              const toRadioBytes = buildStoreForwardHistoryToRadioBytes({
-                from: myNode,
-                to: serverNodeId,
-                channel: packet.channel ?? 0,
-                packetId,
-                windowMinutes: heartbeat.period > 0 ? heartbeat.period : 0,
-              });
-              void writeToRadioWithoutQueue(activeDevice, toRadioBytes)
-                .then(() => {
-                  console.debug(
-                    `[useDevice] Store & Forward CLIENT_HISTORY sent to 0x${serverNodeId.toString(16)} ch=${packet.channel ?? 0}`,
-                  );
-                })
-                .catch((e: unknown) => {
-                  releaseStoreForwardHistoryRequest(
-                    sfHistoryRequestedServersRef.current,
-                    serverNodeId,
-                  );
-                  console.error(
-                    '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
-                  );
-                });
-            } else {
-              releaseStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId);
-            }
+          lastSfHeartbeatServerRef.current = serverNodeId;
+          lastSfHeartbeatChannelRef.current = packet.channel ?? 0;
+          lastSfHeartbeatPeriodRef.current = heartbeat.period;
+          if (heartbeat.secondary === 0 && deviceConfiguredRef.current) {
+            void requestStoreForwardHistoryRef.current({ serverNodeId, manual: false });
           }
         }
 
@@ -3869,6 +3936,7 @@ export function useDevice() {
     paxCounterData,
     serialMessages,
     storeForwardMessages,
+    requestStoreForwardHistory,
     rangeTestPackets,
     zpsMessages,
     simulatorPackets,

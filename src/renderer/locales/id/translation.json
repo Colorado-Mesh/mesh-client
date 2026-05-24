@@ -850,7 +850,8 @@
     "logPanelHelp": "Saat diaktifkan, streaming log langsung muncul di sebelah kanan. Baris debug memerlukan kotak centang di dalam panel log.",
     "compactMessages": "Tampilan pesan ringkas",
     "notificationsSection": "Notifikasi",
-    "soundNotifications": "Pemberitahuan suara"
+    "soundNotifications": "Pemberitahuan suara",
+    "storeForwardAutoFetchHistory": "Ambil riwayat obrolan Toko & Teruskan secara otomatis saat terhubung"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontak disegarkan.",
@@ -1062,7 +1063,9 @@
     "starredMessages": "Pesan berbintang",
     "noStarredMessages": "Belum ada pesan berbintang. Bintangi pesan apa pun untuk menyimpannya di sini.",
     "goToMessage": "“Pergi ke pesan”",
-    "receivedViaStoreForward": "Diputar Ulang dari Store & Forward"
+    "receivedViaStoreForward": "Diputar Ulang dari Store & Forward",
+    "fetchStoreForwardHistory": "Kejar dari Toko & Teruskan",
+    "fetchStoreForwardHistoryHint": "Minta riwayat obrolan terbaru dari router mesh (hingga 100 pesan)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Upaya penyambungan kembali MQTT maks",

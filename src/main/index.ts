@@ -85,6 +85,7 @@ import {
   isPathPacket,
   isTracePacket,
 } from './meshcore-path-decoder';
+import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { MQTTManager } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
@@ -2477,12 +2478,15 @@ ipcMain.handle('mqtt:connect', (_event, settings) => {
     const mode = s.mqttTransportProtocol === 'meshcore' ? 'meshcore' : 'meshtastic';
     // Dual-mode: only disconnect the target manager before reconnecting it.
     // The other manager stays connected independently.
+    const mqttSettings = settings as MQTTSettings;
+    const clientId = resolveMqttBrokerClientId(mode, mqttSettings);
+    const settingsWithClientId: MQTTSettings = { ...mqttSettings, clientId };
     if (mode === 'meshcore') {
       meshcoreMqttAdapter.disconnect();
-      meshcoreMqttAdapter.connect(settings as MQTTSettings);
+      meshcoreMqttAdapter.connect(settingsWithClientId);
     } else {
       mqttManager.disconnect();
-      mqttManager.connect(settings);
+      mqttManager.connect(settingsWithClientId);
     }
   } catch (err) {
     console.error(
@@ -2890,6 +2894,9 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreMessageRetentionCount',
   'locale',
   'mapBasemapId',
+  'meshtasticMqttClientId',
+  'meshcoreMqttClientId',
+  'storeForwardAutoFetchHistory',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
 

@@ -87,7 +87,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 - Telemetry module (device, environment, air quality intervals), MQTT relay settings, Canned Messages, Serial module, Range Test, Store & Forward, Detection Sensor, Pax Counter, **External Notification**, **Ambient Lighting**, and **RTTTL** (ringtone); all editable from the Modules tab; module sections are listed **alphabetically**
 - **Module status displays**: Range Test, Serial, Store & Forward, Remote Hardware (GPIO), and IP Tunnel show packet counts and last-received timestamps when the corresponding module is enabled on the device
-- **Store & Forward chat history**: when a router with S&F enabled sends a primary heartbeat, the client requests `CLIENT_HISTORY` and ingests replayed text into chat (marked with a **Store & Forward** badge alongside RF/MQTT); MQTT reconnect floods within ~30 s are treated as history and deduped
+- **Store & Forward chat history**: after RF configure, the client may request `CLIENT_HISTORY` on the first primary router heartbeat (capped messages/window, 15 min cooldown, 5 min offline gate; opt-out in App settings). Use **Catch up from Store & Forward** in Chat for manual fetch. Replayed text shows a **Store & Forward** badge; MQTT reconnect floods within ~30 s are treated as history and deduped
 
 **Security (PKI)** (Meshtastic only)
 

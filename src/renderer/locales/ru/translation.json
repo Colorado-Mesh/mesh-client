@@ -850,7 +850,8 @@
     "logPanelHelp": "Если этот параметр включен, справа отображается поток журнала в реальном времени. Строки отладки требуют наличия флажка внутри панели журнала.",
     "compactMessages": "Компактный просмотр сообщений",
     "notificationsSection": "Уведомления",
-    "soundNotifications": "Звуковые уведомления"
+    "soundNotifications": "Звуковые уведомления",
+    "storeForwardAutoFetchHistory": "Автоматически получать историю чата магазина и переадресации при подключении"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакты обновлены.",
@@ -1061,7 +1062,9 @@
     "starredMessages": "Помеченные сообщения",
     "noStarredMessages": "Сообщений с пометками пока нет. Отметьте любое сообщение, чтобы сохранить его здесь.",
     "goToMessage": "1. Выберите в меню Письмо",
-    "receivedViaStoreForward": "Воспроизводится из магазина и вперед"
+    "receivedViaStoreForward": "Воспроизводится из магазина и вперед",
+    "fetchStoreForwardHistory": "Догнать из магазина и вперед",
+    "fetchStoreForwardHistoryHint": "Запрос недавней истории чата от сетевого маршрутизатора (до 100 сообщений)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Максимальное количество попыток переподключения MQTT",

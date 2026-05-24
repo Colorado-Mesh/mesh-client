@@ -5,6 +5,23 @@ import { Mesh, Portnums, StoreForward } from '@meshtastic/protobufs';
 /** Duration after MQTT connect during which inbound messages are treated as backlog. */
 export const MQTT_RECONNECT_BACKLOG_MS = 30_000;
 
+/** Max messages for automatic CLIENT_HISTORY (Android uses ~25). */
+export const SF_AUTO_HISTORY_MESSAGE_CAP = 50;
+
+/** Max messages for manual “catch up” CLIENT_HISTORY. */
+export const SF_MANUAL_HISTORY_MESSAGE_CAP = 100;
+
+/** Skip auto-fetch if last successful fetch for this server was within this window. */
+export const SF_AUTO_HISTORY_COOLDOWN_MS = 15 * 60 * 1000;
+
+/** Require RF to have been disconnected at least this long before auto-fetch. */
+export const SF_AUTO_HISTORY_OFFLINE_MIN_MS = 5 * 60 * 1000;
+
+/** When router heartbeat period is 0, use this window instead of server default. */
+export const SF_AUTO_HISTORY_WINDOW_CAP_MIN = 120;
+
+export const SF_HISTORY_FETCH_STATE_STORAGE_KEY = 'mesh-client:sfHistoryFetchByServer';
+
 export function mqttMessageTreatAsHistory(now: number, reconnectBacklogUntil: number): boolean {
   return reconnectBacklogUntil > 0 && now < reconnectBacklogUntil;
 }
@@ -14,6 +31,8 @@ export interface StoreForwardHistoryRequestOptions {
   windowMinutes?: number;
   /** Index from a prior ROUTER_HISTORY response; 0 for first request. */
   lastRequest?: number;
+  /** Max messages to return; 0 lets the server decide (avoid for auto-fetch). */
+  messageCap?: number;
 }
 
 export interface StoreForwardHeartbeatInfo {
@@ -34,6 +53,7 @@ export interface BuildStoreForwardHistoryToRadioParams {
   packetId: number;
   windowMinutes?: number;
   lastRequest?: number;
+  messageCap?: number;
 }
 
 export interface ShouldRequestStoreForwardHistoryParams {
@@ -47,18 +67,30 @@ export interface ShouldRequestStoreForwardHistoryParams {
   deviceConfigured: boolean;
 }
 
+export interface ShouldAutoRequestStoreForwardHistoryParams extends ShouldRequestStoreForwardHistoryParams {
+  autoFetchEnabled: boolean;
+  now: number;
+  lastFetchMs: number | null;
+  lastDisconnectMs: number | null;
+  cooldownMs?: number;
+  offlineMinMs?: number;
+}
+
+export type SfHistoryFetchState = Record<string, number>;
+
 /** Build CLIENT_HISTORY request bytes for STORE_FORWARD_APP port. */
 export function buildStoreForwardHistoryRequestBytes(
   options: StoreForwardHistoryRequestOptions = {},
 ): Uint8Array {
   const windowMinutes = options.windowMinutes ?? 0;
   const lastRequest = options.lastRequest ?? 0;
+  const historyMessages = options.messageCap ?? 0;
   const msg = create(StoreForward.StoreAndForwardSchema, {
     rr: StoreForward.StoreAndForward_RequestResponse.CLIENT_HISTORY,
     variant: {
       case: 'history',
       value: create(StoreForward.StoreAndForward_HistorySchema, {
-        historyMessages: 0,
+        historyMessages,
         window: windowMinutes,
         lastRequest,
       }),
@@ -123,6 +155,7 @@ export function buildStoreForwardHistoryToRadioBytes(
   const payload = buildStoreForwardHistoryRequestBytes({
     windowMinutes: params.windowMinutes,
     lastRequest: params.lastRequest,
+    messageCap: params.messageCap,
   });
   const meshPacket = create(Mesh.MeshPacketSchema, {
     payloadVariant: {
@@ -154,6 +187,81 @@ export function shouldRequestStoreForwardHistoryOnHeartbeat(
   if (params.heartbeatSecondary !== 0) return false;
   if (params.alreadyRequestedServer) return false;
   return true;
+}
+
+/** Window minutes for auto CLIENT_HISTORY (caps server-default floods). */
+export function resolveAutoStoreForwardHistoryWindowMinutes(heartbeatPeriod: number): number {
+  if (heartbeatPeriod > 0) {
+    return Math.min(heartbeatPeriod, SF_AUTO_HISTORY_WINDOW_CAP_MIN);
+  }
+  return SF_AUTO_HISTORY_WINDOW_CAP_MIN;
+}
+
+/** Auto-fetch gates: base heartbeat rules plus cooldown, offline, and user opt-out. */
+export function shouldAutoRequestStoreForwardHistoryOnHeartbeat(
+  params: ShouldAutoRequestStoreForwardHistoryParams,
+): boolean {
+  if (!shouldRequestStoreForwardHistoryOnHeartbeat(params)) return false;
+  if (!params.autoFetchEnabled) return false;
+
+  const cooldownMs = params.cooldownMs ?? SF_AUTO_HISTORY_COOLDOWN_MS;
+  const offlineMinMs = params.offlineMinMs ?? SF_AUTO_HISTORY_OFFLINE_MIN_MS;
+
+  if (params.lastFetchMs != null && params.now - params.lastFetchMs < cooldownMs) {
+    return false;
+  }
+
+  if (params.lastDisconnectMs != null && params.now - params.lastDisconnectMs < offlineMinMs) {
+    return false;
+  }
+
+  return true;
+}
+
+function parseSfHistoryFetchState(raw: string | null): SfHistoryFetchState {
+  if (!raw) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out: SfHistoryFetchState = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+        out[key] = value;
+      }
+    }
+    return out;
+  } catch {
+    // catch-no-log-ok corrupt localStorage
+    return {};
+  }
+}
+
+export function loadSfHistoryFetchState(): SfHistoryFetchState {
+  if (typeof localStorage === 'undefined') return {};
+  return parseSfHistoryFetchState(localStorage.getItem(SF_HISTORY_FETCH_STATE_STORAGE_KEY));
+}
+
+export function getLastSfHistoryFetchMs(
+  serverNodeId: number,
+  state: SfHistoryFetchState = loadSfHistoryFetchState(),
+): number | null {
+  const ts = state[String(serverNodeId)];
+  return ts != null && ts > 0 ? ts : null;
+}
+
+export function recordSfHistoryFetch(
+  serverNodeId: number,
+  now: number = Date.now(),
+): SfHistoryFetchState {
+  const state = { ...loadSfHistoryFetchState(), [String(serverNodeId)]: now };
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(SF_HISTORY_FETCH_STATE_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // catch-no-log-ok quota or private mode
+    }
+  }
+  return state;
 }
 
 /** Reserve a one-shot history request for this server per session; false if already reserved. */

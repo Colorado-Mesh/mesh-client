@@ -850,7 +850,8 @@
     "logPanelHelp": "Cuando está habilitado, aparece una transmisión de registro en vivo a la derecha. Las líneas de depuración requieren la casilla de verificación dentro del panel de registro.",
     "compactMessages": "Vista compacta de mensajes",
     "notificationsSection": "Notificaciones",
-    "soundNotifications": "Notificaciones con Sonido"
+    "soundNotifications": "Notificaciones con Sonido",
+    "storeForwardAutoFetchHistory": "Obtener automáticamente el historial de chat de almacenamiento y reenvío en Connect"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contactos actualizados.",
@@ -1062,7 +1063,9 @@
     "starredMessages": "Mensajes con estrellas",
     "noStarredMessages": "Aún no hay mensajes destacados. Marca cualquier mensaje para guardarlo aquí.",
     "goToMessage": "Ir al mensaje",
-    "receivedViaStoreForward": "Reproducido desde Store & Forward"
+    "receivedViaStoreForward": "Reproducido desde Store & Forward",
+    "fetchStoreForwardHistory": "Póngase al día con Store & Forward",
+    "fetchStoreForwardHistoryHint": "Solicite el historial de chat reciente desde el router de malla (hasta 100 mensajes)"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Intentos de reconexión MQTT máximos",

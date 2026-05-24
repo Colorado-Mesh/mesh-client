@@ -850,7 +850,8 @@
     "logPanelHelp": "有効にすると、右側にライブ ログ ストリームが表示されます。デバッグ行では、ログ パネル内のチェックボックスが必要です。",
     "compactMessages": "コンパクトなメッセージビュー",
     "notificationsSection": "通知",
-    "soundNotifications": "サウンド通知"
+    "soundNotifications": "サウンド通知",
+    "storeForwardAutoFetchHistory": "接続時にストアと転送のチャット履歴を自動的に取得する"
   },
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",
@@ -1062,7 +1063,9 @@
     "starredMessages": "スター付きメッセージ",
     "noStarredMessages": "お気に入りのメッセージはまだありません。メッセージにスターを付けてここに保存します。",
     "goToMessage": "メッセージに移動",
-    "receivedViaStoreForward": "ストア&フォワードからリプレイ"
+    "receivedViaStoreForward": "ストア&フォワードからリプレイ",
+    "fetchStoreForwardHistory": "店舗から追いついて進む",
+    "fetchStoreForwardHistoryHint": "メッシュルーターに最近のチャット履歴をリクエストする（最大100件のメッセージ）"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "MQTT 再接続の最大試行回数",
