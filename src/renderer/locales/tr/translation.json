@@ -1076,7 +1076,7 @@
       "not_configured": "Radyo hala yapılandırılıyor. Birkaç saniye sonra tekrar deneyin.",
       "local_is_server": "Bu cihaz bir Store & Forward sunucusudur; geçmiş diğer düğümler tarafından getirilir.",
       "send_failed": "Radyoya geçmiş isteği gönderilemedi. Yeniden bağlanın veya tekrar deneyin.",
-      "cooldown": "Bu yönlendirici için yakın zamanda geçmiş getirildi. Yeniden araç çağırmadan önce bekleyin.",
+      "cooldown": "Bu yönlendirici için geçmiş yakın zamanda alındı. Yeniden istek göndermeden önce bekleyin.",
       "offline_gate": "Otomatik yakalama çalıştırmadan önce yeniden bağladıktan sonra birkaç dakika bekleyin; manuel olarak Yakala'yı kullanın.",
       "already_requested": "Bu yönlendirici için bir geçmiş isteği zaten devam ediyor."
     }

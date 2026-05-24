@@ -18,6 +18,32 @@ describe('localeStringQualityIssues', () => {
   const enRequiresLocalRadio = 'Connect a local Meshtastic radio to use remote administration.';
   const enRemoteAdminSetupHint =
     'Copy this key and add it as an Admin Key on remote nodes you want to configure. See Meshtastic remote admin docs.';
+  const enOfflineGate =
+    'Wait a few minutes after reconnecting before auto-fetch runs; use Catch up manually.';
+
+  it('flags untranslated Catch up in offline_gate', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'chatPanel.fetchStoreForwardHistoryError.offline_gate',
+      val: 'Espere unos minutos; use Catch up manualmente.',
+      enVal: enOfflineGate,
+    });
+    expectIssue(
+      issues,
+      'translate "Catch up" using the locale fetchStoreForwardHistory button label',
+    );
+  });
+
+  it('passes offline_gate when Catch up is localized', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'es',
+        flatKey: 'chatPanel.fetchStoreForwardHistoryError.offline_gate',
+        val: 'Espere unos minutos; utilice Póngase al día manualmente.',
+        enVal: enOfflineGate,
+      }),
+    ).toEqual([]);
+  });
 
   it('flags CAT __ PH __ placeholders in remoteBanner', () => {
     const issues = localeStringQualityIssues({

@@ -1076,8 +1076,8 @@
       "not_configured": "Radio masih dikonfigurasi. Coba lagi dalam beberapa detik.",
       "local_is_server": "Perangkat ini adalah server Store & Forward; riwayat diambil oleh node lain.",
       "send_failed": "Tidak dapat mengirim permintaan riwayat ke radio. Sambungkan kembali atau coba lagi.",
-      "cooldown": "Riwayat diambil baru - baru ini untuk router ini. Tunggu sebelum memesan lagi.",
-      "offline_gate": "Tunggu beberapa menit setelah tersambung kembali sebelum pengambilan otomatis berjalan; gunakan Catch up secara manual.",
+      "cooldown": "Riwayat baru saja diambil untuk router ini. Tunggu sebelum meminta lagi.",
+      "offline_gate": "Tunggu beberapa menit setelah tersambung kembali sebelum pengambilan otomatis berjalan; gunakan Kejar dari Toko & Teruskan secara manual.",
       "already_requested": "Permintaan riwayat sudah berlangsung untuk router ini."
     }
   },

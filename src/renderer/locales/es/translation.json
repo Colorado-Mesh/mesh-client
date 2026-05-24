@@ -485,7 +485,7 @@
       "parseFailed": "URL de canal no válida: {{message}}",
       "applying": "Aplicando…",
       "unnamedChannel": "(sin nombre)",
-      "applySuccessWithSkipped": "{{applied}} canal(es) aplicado (s); omitió {{skipped}} duplicado (s) o sin nombre."
+      "applySuccessWithSkipped": "Se aplicaron {{applied}} canal(es); se omitieron {{skipped}} duplicado(s) o sin nombre."
     }
   },
   "securityPanel": {
@@ -1077,7 +1077,7 @@
       "local_is_server": "Este dispositivo es un servidor de almacenamiento y reenvío; el historial es recuperado por otros nodos.",
       "send_failed": "No se ha podido enviar la solicitud de historial a la radio. Vuelve a conectarte o inténtalo de nuevo.",
       "cooldown": "Recientemente se ha recuperado el historial de este router. Espera antes de volver a solicitar.",
-      "offline_gate": "Espere unos minutos después de volver a conectarse antes de que se ejecute la búsqueda automática; use Catch up manualmente.",
+      "offline_gate": "Espere unos minutos después de volver a conectarse antes de que se ejecute la recuperación automática; utilice Póngase al día manualmente.",
       "already_requested": "Ya hay una solicitud de historial en curso para este router."
     }
   },

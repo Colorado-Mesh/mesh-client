@@ -1077,7 +1077,7 @@
       "local_is_server": "Dieses Gerät ist ein Store & Forward-Server; der Verlauf wird von anderen Knoten abgerufen.",
       "send_failed": "Verlaufsanfrage konnte nicht an das Funkgerät gesendet werden. Verbinden Sie sich erneut oder versuchen Sie es erneut.",
       "cooldown": "Der Verlauf wurde kürzlich für diesen Router abgerufen. Warten Sie, bevor Sie erneut anfordern.",
-      "offline_gate": "Warten Sie nach dem Wiederverbinden einige Minuten, bevor der automatische Abruf ausgeführt wird. Verwenden Sie Catch up manuell.",
+      "offline_gate": "Warten Sie nach dem Wiederverbinden einige Minuten, bevor der automatische Abruf ausgeführt wird. Verwenden Sie „Vom Store & Forward einholen“ manuell.",
       "already_requested": "Für diesen Router wird bereits eine Verlaufsanforderung ausgeführt."
     }
   },

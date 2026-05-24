@@ -150,6 +150,15 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     issues.push('translate "remote admin docs" — do not leave the English phrase');
   }
 
+  if (
+    locale !== 'en' &&
+    leafKey === 'offline_gate' &&
+    enVal.includes('Catch up') &&
+    /\bCatch up\b/i.test(val)
+  ) {
+    issues.push('translate "Catch up" using the locale fetchStoreForwardHistory button label');
+  }
+
   // Single Latin letter (e.g. de "B") is a bad MT truncation; short CJK labels are OK.
   if (leafKey === 'roleSecondary' && enVal.length > 5 && /^[A-Za-z]$/.test(val)) {
     issues.push('roleSecondary looks truncated');

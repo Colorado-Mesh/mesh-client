@@ -1076,7 +1076,7 @@
       "not_configured": "Radio jest nadal konfigurowane. Spróbuj ponownie za kilka sekund.",
       "local_is_server": "To urządzenie jest serwerem Store & Forward; historia jest pobierana przez inne węzły.",
       "send_failed": "Nie można wysłać żądania historii do radia. Połącz ponownie lub spróbuj ponownie.",
-      "cooldown": "Niedawno pobrano historię tego routera. Poczekaj, zanim zamówisz ponownie.",
+      "cooldown": "Niedawno pobrano historię tego routera. Poczekaj, zanim ponownie wyślesz żądanie.",
       "offline_gate": "Odczekaj kilka minut po ponownym połączeniu przed automatycznym pobieraniem cykli; użyj ręcznego nadrobienia zaległości.",
       "already_requested": "Żądanie historii dla tego routera jest już w toku."
     }

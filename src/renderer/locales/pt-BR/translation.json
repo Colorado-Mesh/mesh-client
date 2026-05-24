@@ -1077,7 +1077,7 @@
       "local_is_server": "Este dispositivo é um histórico do Servidor de Armazenamento e Encaminhamento; é obtido por outros nós.",
       "send_failed": "Não foi possível enviar a solicitação de histórico para o rádio. Reconecte ou tente novamente.",
       "cooldown": "O histórico foi obtido recentemente para este roteador. Aguarde antes de solicitar novamente.",
-      "offline_gate": "Aguarde alguns minutos após a reconexão antes de executar a busca automática; use Catch up manualmente.",
+      "offline_gate": "Aguarde alguns minutos após a reconexão antes de executar a busca automática; use Atualizar a partir da Loja e Encaminhar manualmente.",
       "already_requested": "Uma solicitação de histórico já está em andamento para este roteador."
     }
   },

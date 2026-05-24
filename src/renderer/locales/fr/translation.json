@@ -1076,7 +1076,7 @@
       "not_configured": "La radio est toujours en cours de configuration. Réessayez dans quelques secondes.",
       "local_is_server": "Cet appareil est un serveur Store & Forward ; l'historique est récupéré par d'autres nœuds.",
       "send_failed": "Impossible d'envoyer la demande d'historique à la radio. Reconnectez-vous ou réessayez.",
-      "cooldown": "L'historique a été récupéré récemment pour ce routeur. Attendez avant de commander à nouveau.",
+      "cooldown": "L'historique a été récupéré récemment pour ce routeur. Attendez avant de refaire une demande.",
       "offline_gate": "Attendez quelques minutes après la reconnexion avant que la récupération automatique ne s'exécute ; utilisez Rattraper manuellement.",
       "already_requested": "Une demande d'historique est déjà en cours pour ce routeur."
     }
