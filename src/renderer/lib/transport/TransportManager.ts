@@ -1,7 +1,7 @@
 import type { MeshDevice } from '@meshtastic/core';
 import type { RefObject } from 'react';
 
-import { isMeshtasticDefaultPublicPsk } from '@/shared/meshtasticDefaultPublicPsk';
+import { meshtasticMqttPublishFields } from '@/renderer/lib/meshtasticMqttPublish';
 
 import type { StatusUpdateEvent } from './types';
 
@@ -11,7 +11,9 @@ export interface TransportManagerDeps {
   deviceRef: RefObject<MeshDevice | null>;
   myNodeNumRef: RefObject<number>;
   mqttStatusRef: RefObject<string>;
-  channelConfigsRef: RefObject<{ index: number; uplinkEnabled?: boolean; psk: Uint8Array }[]>;
+  channelConfigsRef: RefObject<
+    { index: number; name: string; role: number; uplinkEnabled?: boolean; psk: Uint8Array }[]
+  >;
   isDuplicate: (packetId: number) => boolean;
   /** Stored as a ref so TransportManager always calls the latest handler across re-renders */
   onStatusUpdateRef: RefObject<(event: StatusUpdateEvent) => void>;
@@ -49,19 +51,26 @@ export class TransportManager {
 
     const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
     const cfg = chCfg ?? channelConfigsRef.current.find((c) => c.index === 0);
-    const publishJsonMirror = cfg ? isMeshtasticDefaultPublicPsk(cfg.psk) : false;
+    const mqttFields = meshtasticMqttPublishFields(cfg);
     const shouldUplink =
-      chCfg?.uplinkEnabled && mqttStatusRef.current === 'connected' && myNodeNumRef.current;
+      chCfg?.uplinkEnabled &&
+      mqttStatusRef.current === 'connected' &&
+      myNodeNumRef.current &&
+      mqttFields.channelName;
     // ── MQTT transport (path 1) ──────────────────────────────────────────────
-    if (shouldUplink || (!deviceRef.current && mqttStatusRef.current === 'connected')) {
+    if (
+      shouldUplink ||
+      (!deviceRef.current && mqttStatusRef.current === 'connected' && mqttFields.channelName)
+    ) {
       window.electronAPI.mqtt
         .publish({
           text,
           from,
           channel,
           destination: destination ?? BROADCAST_ADDR,
-          channelName: 'LongFast',
-          publishJsonMirror,
+          channelName: mqttFields.channelName,
+          pskBase64: mqttFields.pskBase64,
+          publishJsonMirror: mqttFields.publishJsonMirror,
           ...(emoji != null ? { emoji, replyId } : {}),
         })
         .then((mqttPacketId: number) => {

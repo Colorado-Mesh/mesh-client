@@ -11,12 +11,15 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, randomInt } 
 import { EventEmitter } from 'events';
 import * as mqtt from 'mqtt';
 
-import { resolveMeshtasticTextMessagePayload } from '../renderer/lib/meshtasticBacklogUtils';
 import type { ChatMessage, MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '../shared/meshtasticMqttReconnect';
+import {
+  isLikelyReadableChatText,
+  resolveMeshtasticTextMessagePayload,
+} from '../shared/meshtasticTextMessagePayload';
 import { computeMqttReconnectDelayMs } from '../shared/mqttReconnectSchedule';
 import {
   formatMeshtasticNodeId,
@@ -49,19 +52,52 @@ const DEFAULT_PSK = Buffer.from([
 ]);
 
 /**
- * Parse a base64-encoded PSK string into a 16-byte AES-128 key.
- * Short keys (e.g. "AQ==" = 1 byte) are zero-padded to 16 bytes.
- * Keys longer than 16 bytes are truncated.
- * Empty strings are rejected (returns null).
+ * Parse a base64-encoded PSK for Meshtastic MQTT (AES-128-CTR or AES-256-CTR).
+ * Accepts exactly 16 or 32 decoded bytes; short keys (e.g. "AQ==") zero-pad to 16.
+ * Other lengths are rejected (returns null).
  */
 export function parsePsk(b64: string): Buffer | null {
   if (!b64.trim()) return null;
-  const raw = Buffer.from(b64, 'base64');
+  let raw: Buffer;
+  try {
+    raw = Buffer.from(b64, 'base64');
+  } catch {
+    // catch-no-log-ok malformed base64 input — caller skips key
+    return null;
+  }
   if (raw.length === 0) return null;
-  if (raw.length === 16) return raw;
-  const out = Buffer.alloc(16, 0);
-  raw.copy(out, 0, 0, Math.min(raw.length, 16));
-  return out;
+  if (raw.length === 16 || raw.length === 32) return raw;
+  if (raw.length < 16) {
+    const out = Buffer.alloc(16, 0);
+    raw.copy(out, 0, 0, raw.length);
+    return out;
+  }
+  return null;
+}
+
+/** Meshtastic firmware: 16-byte PSK → AES-128-CTR, 32-byte → AES-256-CTR. */
+export function cipherForKey(key: Buffer): 'aes-128-ctr' | 'aes-256-ctr' {
+  if (key.length === 16) return 'aes-128-ctr';
+  if (key.length === 32) return 'aes-256-ctr';
+  throw new Error(`Invalid PSK length: ${key.length}`);
+}
+
+/** Parse `ChannelName=base64` or bare base64 for manual MQTT channel PSK lines. */
+export function parseChannelPskLine(line: string): { name?: string; psk: Buffer } | null {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  const eq = trimmed.indexOf('=');
+  if (eq > 0) {
+    const name = trimmed.slice(0, eq).trim();
+    const b64 = trimmed.slice(eq + 1).trim();
+    // Avoid treating padding "=" in bare base64 as ChannelName=psk (names lack +/=).
+    if (name.length > 0 && b64.length > 0 && !/[+/=]/.test(name)) {
+      const psk = parsePsk(b64);
+      if (psk) return { name, psk };
+    }
+  }
+  const psk = parsePsk(trimmed);
+  return psk ? { psk } : null;
 }
 
 /** Map numeric PortNum to protobuf enum name string (e.g. TEXT_MESSAGE_APP). */
@@ -131,10 +167,17 @@ interface MqttPublishOptions {
   channel: number;
   destination?: number;
   channelName?: string;
+  /** Base64 PSK (16 or 32 bytes decoded); overrides channel map when set. */
+  pskBase64?: string;
   emoji?: number;
   replyId?: number;
   /** When true, also publish firmware-style JSON on `/2/json/...` (cleartext); only for default public PSK channel. */
   publishJsonMirror: boolean;
+}
+
+export interface MqttChannelKeyEntry {
+  name: string;
+  pskBase64: string;
 }
 
 function coordWarning(lat: number, lon: number): string | null {
@@ -173,8 +216,14 @@ export class MQTTManager extends EventEmitter {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private currentSettings: MQTTSettings | null = null;
   private clientId = '';
-  /** Parsed additional PSKs from settings.channelPsks, tried after DEFAULT_PSK. */
-  private extraPsks: Buffer[] = [];
+  /** Channel name → PSK (manual connect lines + radio sync via updateChannelKeys). */
+  private channelKeysByName = new Map<string, Buffer>();
+  /** Names registered by the last updateChannelKeys (radio); cleared on next sync. */
+  private radioChannelKeyNames = new Set<string>();
+  /** Unnamed manual PSKs (decrypt-only brute force). */
+  private decryptOnlyPsks: Buffer[] = [];
+  /** Deduped keys for tryDecryptAllKeys (DEFAULT_PSK + map values + decrypt-only). */
+  private allDecryptKeys: Buffer[] = [DEFAULT_PSK];
   private wssPingTimer: ReturnType<typeof setInterval> | null = null;
   private keepaliveRescheduleTimer: ReturnType<typeof setInterval> | null = null;
   private sampledDebugLogs = new Map<string, SampledDebugLogState>();
@@ -198,11 +247,61 @@ export class MQTTManager extends EventEmitter {
     this.disconnect();
 
     this.currentSettings = settings;
-    this.extraPsks = (settings.channelPsks ?? [])
-      .map(parsePsk)
-      .filter((k): k is Buffer => k !== null);
+    this.channelKeysByName.clear();
+    this.radioChannelKeyNames.clear();
+    this.decryptOnlyPsks = [];
+    this.applyManualChannelPskLines(settings.channelPsks ?? []);
+    this.rebuildAllDecryptKeys();
     this.retryCount = 0;
     this._doConnect(settings);
+  }
+
+  /** Merge channel PSKs from connected radio (Android-like); replaces prior radio sync. */
+  updateChannelKeys(entries: MqttChannelKeyEntry[]): void {
+    for (const name of this.radioChannelKeyNames) {
+      this.channelKeysByName.delete(name);
+    }
+    this.radioChannelKeyNames.clear();
+    for (const entry of entries) {
+      const name = entry.name.trim();
+      const psk = parsePsk(entry.pskBase64);
+      if (!name || !psk) continue;
+      this.channelKeysByName.set(name, psk);
+      this.radioChannelKeyNames.add(name);
+    }
+    this.rebuildAllDecryptKeys();
+  }
+
+  private applyManualChannelPskLines(lines: string[]): void {
+    for (const line of lines) {
+      const parsed = parseChannelPskLine(line);
+      if (!parsed) continue;
+      if (parsed.name) {
+        this.channelKeysByName.set(parsed.name, parsed.psk);
+      } else {
+        this.decryptOnlyPsks.push(parsed.psk);
+      }
+    }
+  }
+
+  private rebuildAllDecryptKeys(): void {
+    const seen = new Set<string>();
+    const keys: Buffer[] = [];
+    const add = (k: Buffer) => {
+      const sig = k.toString('base64');
+      if (seen.has(sig)) return;
+      seen.add(sig);
+      keys.push(k);
+    };
+    add(DEFAULT_PSK);
+    for (const k of this.channelKeysByName.values()) add(k);
+    for (const k of this.decryptOnlyPsks) add(k);
+    this.allDecryptKeys = keys;
+  }
+
+  private resolvePskForChannel(channelName: string, explicit?: Buffer): Buffer {
+    if (explicit) return explicit;
+    return this.channelKeysByName.get(channelName) ?? DEFAULT_PSK;
   }
 
   private clearConnectAckTimer(): void {
@@ -224,13 +323,14 @@ export class MQTTManager extends EventEmitter {
       }
       this.client = null;
     }
-    this.clientId = `meshtastic-electron-${randomBytes(3).toString('hex')}`;
-    const clientId = this.clientId;
+    const clientId =
+      settings.clientId?.trim() || `meshtastic-electron-${randomBytes(3).toString('hex')}`;
+    this.clientId = clientId;
     this.meshtasticConnectT0 = Date.now();
     const hostTrim = settings.server.trim();
 
-    // Port 8883 is the conventional MQTT-over-TLS port: use mqtts and verify certs unless tlsInsecure is set.
-    const useTls = settings.port === 8883;
+    const useTls =
+      settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 8883);
     const rejectUnauthorized = useTls ? !settings.tlsInsecure : false;
 
     const wsEnabled = settings.useWebSocket === true;
@@ -261,7 +361,7 @@ export class MQTTManager extends EventEmitter {
         connectTimeout: MESHTASTIC_MQTT_CONNECT_ACK_MS,
         reconnectPeriod: 0,
         protocolVersion: 4, // force MQTT 3.1.1; avoids v5 negotiation issues
-        rejectUnauthorized: settings.port === 443 ? true : rejectUnauthorized,
+        rejectUnauthorized,
         // Prefer IPv4 when DNS returns AAAA first but the path is broken (same as MeshcoreMqttAdapter).
         wsOptions: { family: 4 },
       };
@@ -486,6 +586,7 @@ export class MQTTManager extends EventEmitter {
     channelName: string,
     dataBytes: Uint8Array,
     publishJsonMirror: boolean,
+    explicitPsk?: Buffer,
   ): number {
     if (!this.client?.connected || !this.currentSettings) {
       throw new Error('MQTT not connected');
@@ -500,7 +601,8 @@ export class MQTTManager extends EventEmitter {
     const nonce = Buffer.alloc(16, 0);
     nonce.writeUInt32LE(packetId >>> 0, 0);
     nonce.writeUInt32LE(fromId >>> 0, 4);
-    const cipher = createCipheriv('aes-128-ctr', DEFAULT_PSK, nonce);
+    const psk = this.resolvePskForChannel(channelName, explicitPsk);
+    const cipher = createCipheriv(cipherForKey(psk), psk, nonce);
     const encrypted = Buffer.concat([cipher.update(Buffer.from(dataBytes)), cipher.final()]);
 
     const packet = create(MeshPacketSchema, {
@@ -662,10 +764,17 @@ export class MQTTManager extends EventEmitter {
       channel,
       destination = BROADCAST_ID,
       channelName = 'LongFast',
+      pskBase64,
       emoji,
       replyId,
       publishJsonMirror,
     } = options;
+    const explicitPsk = pskBase64 ? parsePsk(pskBase64) : undefined;
+    if (pskBase64 && !explicitPsk) {
+      console.warn(
+        '[Meshtastic MQTT] Invalid publish PSK; falling back to channel map or default key',
+      );
+    }
 
     const fromId = from >>> 0;
     const destId = destination >>> 0;
@@ -686,6 +795,7 @@ export class MQTTManager extends EventEmitter {
       channelName,
       toBinary(DataSchema, data),
       publishJsonMirror,
+      explicitPsk ?? undefined,
     );
   }
 
@@ -700,7 +810,9 @@ export class MQTTManager extends EventEmitter {
     channelName: string,
     hwModel: number | undefined,
     publishJsonMirror: boolean,
+    pskBase64?: string,
   ): number {
+    const explicitPsk = pskBase64 ? parsePsk(pskBase64) : undefined;
     const user = create(UserSchema, {
       id: `!${from.toString(16).padStart(8, '0')}`,
       longName,
@@ -718,6 +830,7 @@ export class MQTTManager extends EventEmitter {
       channelName,
       toBinary(DataSchema, data),
       publishJsonMirror,
+      explicitPsk ?? undefined,
     );
   }
 
@@ -733,7 +846,9 @@ export class MQTTManager extends EventEmitter {
     longitudeI: number,
     altitude: number | undefined,
     publishJsonMirror: boolean,
+    pskBase64?: string,
   ): number {
+    const explicitPsk = pskBase64 ? parsePsk(pskBase64) : undefined;
     const position = create(PositionSchema, {
       latitudeI,
       longitudeI,
@@ -750,6 +865,7 @@ export class MQTTManager extends EventEmitter {
       channelName,
       toBinary(DataSchema, data),
       publishJsonMirror,
+      explicitPsk ?? undefined,
     );
   }
 
@@ -772,7 +888,9 @@ export class MQTTManager extends EventEmitter {
       expire?: number;
     },
     publishJsonMirror: boolean,
+    pskBase64?: string,
   ): number {
+    const explicitPsk = pskBase64 ? parsePsk(pskBase64) : undefined;
     const wp = create(WaypointSchema, {
       id: waypoint.id,
       latitudeI: waypoint.latitudeI,
@@ -794,6 +912,7 @@ export class MQTTManager extends EventEmitter {
       channelName,
       toBinary(DataSchema, data),
       publishJsonMirror,
+      explicitPsk ?? undefined,
     );
   }
 
@@ -1188,6 +1307,11 @@ export class MQTTManager extends EventEmitter {
     const replyId = typeof replyIdRaw === 'number' && replyIdRaw !== 0 ? replyIdRaw : undefined;
 
     if (!text && !emoji) return;
+
+    if (text) {
+      const textBytes = new TextEncoder().encode(text);
+      if (!isLikelyReadableChatText(textBytes)) return;
+    }
 
     const packetId = typeof json.id === 'number' ? json.id >>> 0 : 0;
     if (packetId !== 0 && this.isDuplicate(packetId)) return;
@@ -1628,7 +1752,7 @@ export class MQTTManager extends EventEmitter {
   }
 
   /**
-   * Attempt AES-128-CTR decryption with a specific key.
+   * Attempt AES-CTR decryption with a specific key (128- or 256-bit per key length).
    * Returns raw bytes on success, null if the crypto operation itself fails (e.g. bad key length).
    * Note: AES-CTR always "succeeds" cryptographically — a wrong key just produces garbage bytes.
    * Use tryDecryptAllKeys to validate by attempting protobuf decode across all known keys.
@@ -1640,11 +1764,10 @@ export class MQTTManager extends EventEmitter {
     key: Buffer,
   ): Buffer | null {
     try {
-      // AES-128-CTR nonce: packetId (4 bytes LE) + from (4 bytes LE) + 8 zero bytes
       const nonce = Buffer.alloc(16, 0);
       nonce.writeUInt32LE(packetId >>> 0, 0);
       nonce.writeUInt32LE(from >>> 0, 4);
-      const decipher = createDecipheriv('aes-128-ctr', key, nonce);
+      const decipher = createDecipheriv(cipherForKey(key), key, nonce);
       return Buffer.concat([decipher.update(Buffer.from(encrypted)), decipher.final()]);
     } catch {
       // catch-no-log-ok AES decrypt failed with this key — caller tries next key
@@ -1653,7 +1776,7 @@ export class MQTTManager extends EventEmitter {
   }
 
   /**
-   * Try decrypting with DEFAULT_PSK first, then any configured extraPsks.
+   * Try decrypting with all known PSKs (default, named channels, manual extras).
    * Validates each decryption attempt by parsing the result as a DataSchema protobuf.
    * Returns the decoded Data message if any key succeeds, null if all fail.
    */
@@ -1662,7 +1785,7 @@ export class MQTTManager extends EventEmitter {
     packetId: number,
     from: number,
   ): { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number } | null {
-    const allKeys = [DEFAULT_PSK, ...this.extraPsks];
+    const allKeys = this.allDecryptKeys;
     for (const key of allKeys) {
       const raw = this.tryDecryptWithKey(encrypted, packetId, from, key);
       if (!raw) continue;

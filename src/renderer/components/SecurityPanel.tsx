@@ -3,12 +3,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import type { ConfigTargetContext } from '@/renderer/lib/types';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
 import { useToast } from './Toast';
 
 interface SecurityConfig {
   publicKey: Uint8Array;
-  privateKey: Uint8Array;
+  privateKey?: Uint8Array;
   adminKey: Uint8Array[];
   isManaged: boolean;
   serialEnabled: boolean;
@@ -17,6 +19,7 @@ interface SecurityConfig {
 }
 
 interface Props {
+  configTarget?: ConfigTargetContext;
   onSetConfig: (config: unknown) => Promise<void>;
   onCommit: () => Promise<void>;
   isConnected: boolean;
@@ -167,6 +170,7 @@ function ConfirmModal({
 // ─── Main component ─────────────────────────────────────────────
 
 export default function SecurityPanel({
+  configTarget,
   onSetConfig,
   onCommit,
   isConnected,
@@ -178,7 +182,8 @@ export default function SecurityPanel({
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
-  const disabled = !isConnected;
+  const isRemoteTarget = configTarget?.mode === 'remote';
+  const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
 
   // ── Admin keys section state
   const [adminKeys, setAdminKeys] = useState<string[]>([]);
@@ -240,18 +245,27 @@ export default function SecurityPanel({
   const applyConfig = useCallback(
     async (value: Partial<SecurityConfig>) => {
       if (!securityConfig) return;
+      const merged = { ...securityConfig, ...value };
+      let payload: SecurityConfig = merged;
+      if (isRemoteTarget && (!merged.privateKey || merged.privateKey.length === 0)) {
+        payload = {
+          publicKey: merged.publicKey,
+          adminKey: merged.adminKey,
+          isManaged: merged.isManaged,
+          serialEnabled: merged.serialEnabled,
+          debugLogApiEnabled: merged.debugLogApiEnabled,
+          adminChannelEnabled: merged.adminChannelEnabled,
+        };
+      }
       await onSetConfig({
         payloadVariant: {
           case: 'security',
-          value: {
-            ...securityConfig,
-            ...value,
-          },
+          value: payload,
         },
       });
       await onCommit();
     },
-    [onSetConfig, onCommit, securityConfig],
+    [onSetConfig, onCommit, securityConfig, isRemoteTarget],
   );
 
   // ── DM Key regeneration
@@ -330,7 +344,7 @@ export default function SecurityPanel({
     try {
       const payload = JSON.stringify({
         publicKey: bytesToBase64(securityConfig.publicKey),
-        privateKey: bytesToBase64(securityConfig.privateKey),
+        privateKey: bytesToBase64(securityConfig.privateKey ?? new Uint8Array()),
       });
       const encrypted = await window.electronAPI.safeStorage.encrypt(payload);
       if (!encrypted) throw new Error('Encryption failed');
@@ -456,12 +470,22 @@ export default function SecurityPanel({
   }, [onImportPrivateKey, importKeyInput, addToast, t]);
 
   const publicKeyB64 = securityConfig ? bytesToBase64(securityConfig.publicKey) : '';
-  const privateKeyB64 = securityConfig ? bytesToBase64(securityConfig.privateKey) : '';
+  const privateKeyB64 = securityConfig?.privateKey?.length
+    ? bytesToBase64(securityConfig.privateKey)
+    : '';
 
   return (
     <div className="w-full max-w-5xl space-y-6 p-4">
       {!isConnected && (
         <p className="text-muted py-4 text-center text-sm">{t('securityPanel.connectToManage')}</p>
+      )}
+
+      {configTarget?.mode === 'remote' && configTarget.isLoading && (
+        <p className="text-muted text-sm">{t('configureNode.loading')}</p>
+      )}
+
+      {configTarget?.mode === 'remote' && configTarget.error && (
+        <p className="text-sm text-red-400">{t(configTarget.error)}</p>
       )}
 
       {/* ── DM Keys ─────────────────────────────────────────────── */}
@@ -471,49 +495,80 @@ export default function SecurityPanel({
           <label htmlFor="security-public-key" className="text-muted text-sm">
             {t('securityPanel.publicKeyLabel')}
           </label>
-          <input
-            id="security-public-key"
-            type="text"
-            value={publicKeyB64}
-            readOnly
-            className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
-          />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="security-private-key" className="text-muted text-sm">
-            {t('securityPanel.privateKeyLabel')}
-          </label>
           <div className="flex items-center gap-2">
             <input
-              id="security-private-key"
-              type={showPrivateKey ? 'text' : 'password'}
-              value={privateKeyB64}
+              id="security-public-key"
+              type="text"
+              value={publicKeyB64}
               readOnly
               className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
             />
             <button
               type="button"
+              disabled={disabled || !publicKeyB64}
+              aria-label={t('securityPanel.copyPublicKey')}
+              className="text-muted shrink-0 rounded-lg border border-gray-600 px-3 py-2 text-xs hover:text-gray-200 disabled:opacity-50"
               onClick={() => {
-                setShowPrivateKey((s) => !s);
+                void writeClipboardText(publicKeyB64)
+                  .then(() => {
+                    addToast(t('securityPanel.publicKeyCopied'), 'success');
+                  })
+                  .catch((e: unknown) => {
+                    addToast(
+                      t('securityPanel.failed', { message: errLikeToLogString(e) }),
+                      'error',
+                    );
+                  });
               }}
-              disabled={disabled}
-              className="text-muted px-3 py-2 text-xs hover:text-gray-300 disabled:opacity-50"
             >
-              {showPrivateKey ? t('common.hide') : t('common.show')}
+              {t('securityPanel.copyPublicKey')}
             </button>
           </div>
-          <p className="text-muted text-xs">{t('securityPanel.privateKeyHint')}</p>
+          {!isRemoteTarget && (
+            <p className="text-muted text-xs">{t('securityPanel.remoteAdminSetupHint')}</p>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setPendingRegenerate(true);
-          }}
-          disabled={disabled || applyingRegen || !securityConfig}
-          className="w-full rounded-lg border border-yellow-700/60 bg-yellow-700/40 px-4 py-2 text-sm font-medium text-yellow-300 transition-colors hover:bg-yellow-700/60 disabled:opacity-50"
-        >
-          {applyingRegen ? t('securityPanel.regeneratingKeys') : t('securityPanel.regenerateKeys')}
-        </button>
+        {!isRemoteTarget && (
+          <>
+            <div className="space-y-1">
+              <label htmlFor="security-private-key" className="text-muted text-sm">
+                {t('securityPanel.privateKeyLabel')}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="security-private-key"
+                  type={showPrivateKey ? 'text' : 'password'}
+                  value={privateKeyB64}
+                  readOnly
+                  className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPrivateKey((s) => !s);
+                  }}
+                  disabled={disabled}
+                  className="text-muted px-3 py-2 text-xs hover:text-gray-300 disabled:opacity-50"
+                >
+                  {showPrivateKey ? t('common.hide') : t('common.show')}
+                </button>
+              </div>
+              <p className="text-muted text-xs">{t('securityPanel.privateKeyHint')}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingRegenerate(true);
+              }}
+              disabled={disabled || applyingRegen || !securityConfig}
+              className="w-full rounded-lg border border-yellow-700/60 bg-yellow-700/40 px-4 py-2 text-sm font-medium text-yellow-300 transition-colors hover:bg-yellow-700/60 disabled:opacity-50"
+            >
+              {applyingRegen
+                ? t('securityPanel.regeneratingKeys')
+                : t('securityPanel.regenerateKeys')}
+            </button>
+          </>
+        )}
       </section>
 
       {/* ── Admin Keys ──────────────────────────────────────────── */}
@@ -624,47 +679,49 @@ export default function SecurityPanel({
       </section>
 
       {/* ── Key Backup / Restore ─────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionHeader title={t('securityPanel.sectionKeyBackup')} />
-        {safeStorageAvailable === false && (
-          <p className="text-xs text-yellow-400">{t('securityPanel.keyBackupUnavailable')}</p>
-        )}
-        {safeStorageAvailable !== false && (
-          <>
-            <p className="text-muted text-xs">{t('securityPanel.keyBackupDesc')}</p>
-            <div className="text-muted flex items-center gap-2 text-xs">
-              <span
-                className={`h-2 w-2 rounded-full ${backupAvailable ? 'bg-readable-green' : 'bg-gray-600'}`}
-              />
-              {backupAvailable
-                ? t('securityPanel.backupAvailable')
-                : t('securityPanel.noBackupStored')}
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  void handleBackup();
-                }}
-                disabled={disabled || backupInProgress || !securityConfig}
-                className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
-              >
-                {backupInProgress ? t('securityPanel.working') : t('securityPanel.backupKeys')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void handleRestore();
-                }}
-                disabled={disabled || backupInProgress || !backupAvailable}
-                className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
-              >
-                {backupInProgress ? t('securityPanel.working') : t('securityPanel.restoreKeys')}
-              </button>
-            </div>
-          </>
-        )}
-      </section>
+      {!isRemoteTarget && (
+        <section className="space-y-4">
+          <SectionHeader title={t('securityPanel.sectionKeyBackup')} />
+          {safeStorageAvailable === false && (
+            <p className="text-xs text-yellow-400">{t('securityPanel.keyBackupUnavailable')}</p>
+          )}
+          {safeStorageAvailable !== false && (
+            <>
+              <p className="text-muted text-xs">{t('securityPanel.keyBackupDesc')}</p>
+              <div className="text-muted flex items-center gap-2 text-xs">
+                <span
+                  className={`h-2 w-2 rounded-full ${backupAvailable ? 'bg-readable-green' : 'bg-gray-600'}`}
+                />
+                {backupAvailable
+                  ? t('securityPanel.backupAvailable')
+                  : t('securityPanel.noBackupStored')}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleBackup();
+                  }}
+                  disabled={disabled || backupInProgress || !securityConfig}
+                  className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {backupInProgress ? t('securityPanel.working') : t('securityPanel.backupKeys')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleRestore();
+                  }}
+                  disabled={disabled || backupInProgress || !backupAvailable}
+                  className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {backupInProgress ? t('securityPanel.working') : t('securityPanel.restoreKeys')}
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
       {/* ── MeshCore Crypto Operations ───────────────────────────────── */}
       {protocol === 'meshcore' && (onSignData || onExportPrivateKey || onImportPrivateKey) && (

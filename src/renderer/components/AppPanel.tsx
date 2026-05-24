@@ -38,6 +38,7 @@ import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
+import { HelpTooltip } from './HelpTooltip';
 import { useToast } from './Toast';
 
 const GPS_REFRESH_INTERVAL_LABELS: Record<number, string> = {
@@ -126,6 +127,7 @@ interface AppSettings {
   messageLimitCount: number;
   autoFloodAdvertIntervalHours: number;
   chatCompactMode: boolean;
+  storeForwardAutoFetchHistory: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -1242,6 +1244,36 @@ export default function AppPanel({
               {t('appPanel.compactMessages')}
             </label>
           </div>
+          {protocol === 'meshtastic' && (
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                type="checkbox"
+                id="storeForwardAutoFetchHistory"
+                checked={settings.storeForwardAutoFetchHistory}
+                onChange={(e) => {
+                  const enabled = e.target.checked;
+                  updateSetting('storeForwardAutoFetchHistory', enabled);
+                  void window.electronAPI.appSettings
+                    .set('storeForwardAutoFetchHistory', enabled ? 'true' : 'false')
+                    .catch((err: unknown) => {
+                      console.warn(
+                        '[AppPanel] storeForwardAutoFetchHistory persist failed ' +
+                          errLikeToLogString(err),
+                      );
+                    });
+                }}
+                aria-label={t('appPanel.storeForwardAutoFetchHistory')}
+                className="accent-brand-green"
+              />
+              <label
+                htmlFor="storeForwardAutoFetchHistory"
+                className="cursor-pointer text-sm text-gray-300"
+              >
+                {t('appPanel.storeForwardAutoFetchHistory')}
+              </label>
+              <HelpTooltip text={t('appPanel.storeForwardAutoFetchHistoryHint')} />
+            </div>
+          )}
         </div>
       </div>
 

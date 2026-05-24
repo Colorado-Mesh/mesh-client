@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   channelNameExists,
   type ChannelSlotSnapshot,
+  countFreeChannelSlots,
   findNextFreeChannelSlot,
 } from './meshtasticChannelApply';
 import { MESHTASTIC_CHANNEL_ROLE } from './meshtasticUrlEncoder';
@@ -53,5 +54,15 @@ describe('meshtasticChannelApply', () => {
       { index: 1, role: MESHTASTIC_CHANNEL_ROLE.SECONDARY, name: 'Mesh' },
     ];
     expect(channelNameExists(channels, 'Mesh')).toBe(true);
+  });
+
+  it('countFreeChannelSlots counts disabled and empty secondary slots', () => {
+    expect(countFreeChannelSlots([primary])).toBe(7);
+    expect(
+      countFreeChannelSlots([
+        primary,
+        { index: 1, role: MESHTASTIC_CHANNEL_ROLE.SECONDARY, name: 'Used' },
+      ]),
+    ).toBe(6);
   });
 });

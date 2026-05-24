@@ -484,7 +484,8 @@
       "noChannelsToExport": "No hay canales habilitados para exportar.",
       "parseFailed": "URL de canal no válida: {{message}}",
       "applying": "Aplicando…",
-      "unnamedChannel": "(sin nombre)"
+      "unnamedChannel": "(sin nombre)",
+      "applySuccessWithSkipped": "Se aplicaron {{applied}} canal(es); se omitieron {{skipped}} duplicado(s) o sin nombre."
     }
   },
   "securityPanel": {
@@ -555,7 +556,10 @@
     "importPrivateKeyLabel": "Importar clave privada",
     "importPrivateKeyButton": "Importar clave privada",
     "importingPrivateKey": "Importador...",
-    "regenerateKeysConfirm": "La regeneración de claves reemplazará sus claves públicas y privadas de DM actuales. Cualquier mensaje cifrado existente ya no se podrá descifrar. ¿Está seguro?"
+    "regenerateKeysConfirm": "La regeneración de claves reemplazará sus claves públicas y privadas de DM actuales. Cualquier mensaje cifrado existente ya no se podrá descifrar. ¿Está seguro?",
+    "copyPublicKey": "Copiar",
+    "publicKeyCopied": "Clave pública copiada al portapapeles.",
+    "remoteAdminSetupHint": "Copie esta clave y añádala como clave de administrador en los nodos remotos que desee configurar. Consulta los documentos del administrador remoto de Meshtastic."
   },
   "modulePanel": {
     "sectionSent": "{{name}} enviado. El dispositivo puede reiniciarse brevemente.",
@@ -850,7 +854,9 @@
     "logPanelHelp": "Cuando está habilitado, aparece una transmisión de registro en vivo a la derecha. Las líneas de depuración requieren la casilla de verificación dentro del panel de registro.",
     "compactMessages": "Vista compacta de mensajes",
     "notificationsSection": "Notificaciones",
-    "soundNotifications": "Notificaciones con Sonido"
+    "soundNotifications": "Notificaciones con Sonido",
+    "storeForwardAutoFetchHistory": "Obtener automáticamente el historial de chat de almacenamiento y reenvío en Connect",
+    "storeForwardAutoFetchHistoryHint": "En la conexión de RF, solicite hasta 50 mensajes (15 minutos de tiempo de reutilización entre tomas). Apague si el puente MQTT de su puerta de enlace está sobrecargado."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contactos actualizados.",
@@ -1026,7 +1032,6 @@
     "receivedViaRf": "Recibido vía RF",
     "receivedViaMqtt": "Recibido vía MQTT",
     "receivedViaRfAndMqtt": "Recibido vía RF + MQTT",
-    "searchButton": "Buscar mensajes (Cmd+F)",
     "closeDm": "Cerrar DM",
     "resendMessage": "Reenviar mensaje",
     "replyButton": "Responder",
@@ -1062,7 +1067,19 @@
     "starredMessages": "Mensajes con estrellas",
     "noStarredMessages": "Aún no hay mensajes destacados. Marca cualquier mensaje para guardarlo aquí.",
     "goToMessage": "Ir al mensaje",
-    "receivedViaStoreForward": "Reproducido desde Store & Forward"
+    "receivedViaStoreForward": "Reproducido desde Store & Forward",
+    "fetchStoreForwardHistory": "Póngase al día con Store & Forward",
+    "fetchStoreForwardHistoryHint": "Solicite el historial de chat reciente desde el router de malla (hasta 100 mensajes)",
+    "fetchStoreForwardHistorySent": "Solicitud de historial de almacenamiento y reenvío enviada",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Aún no se ha visto el router de almacenamiento y reenvío. Espere un latido del router o consulte la pestaña Módulos.",
+      "not_configured": "La radio aún se está configurando. Inténtalo de nuevo en unos segundos.",
+      "local_is_server": "Este dispositivo es un servidor de almacenamiento y reenvío; el historial es recuperado por otros nodos.",
+      "send_failed": "No se ha podido enviar la solicitud de historial a la radio. Vuelve a conectarte o inténtalo de nuevo.",
+      "cooldown": "Recientemente se ha recuperado el historial de este router. Espera antes de volver a solicitar.",
+      "offline_gate": "Espere unos minutos después de volver a conectarse antes de que se ejecute la recuperación automática; utilice Póngase al día manualmente.",
+      "already_requested": "Ya hay una solicitud de historial en curso para este router."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Intentos de reconexión MQTT máximos",
@@ -1216,7 +1233,13 @@
     },
     "cancelMqttConnect": "Cancelar",
     "ripplePresetConfirm": "El ajuste preestablecido de Ripple utiliza credenciales comunitarias compartidas y desactiva la verificación del certificado TLS. Utilice esto solo en una red de confianza. ¿Continuar?",
-    "meshcorePort": "Puerto"
+    "meshcorePort": "Puerto",
+    "channelPsksHelp": "Claves base64 AES-128 (16 bytes) o AES-256 (32 bytes), una por línea. Nombre de canal opcional =base64 solo para MQTT. Siempre se intenta el valor predeterminado de LongFast. Las teclas de la pestaña Radio se sincronizan automáticamente cuando la radio está conectada.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Cada clave debe decodificar a 16 bytes (AES-128) o 32 bytes (AES-256).",
+    "channelPsksInvalidBase64": "Base64 no válido en una línea PSK de canal.",
+    "mqttTlsEnabled": "Habilitar TLS (mqtts / wss)",
+    "mqttTlsInsecure": "Permitir TLS (certificado autofirmado) inseguro. Desactivado de forma predeterminada: solo habilítalo si tu bróker utiliza una CA no pública."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Filas de enrutamiento de más de {{hours}} horas (1–168)",
@@ -1666,7 +1689,8 @@
     "notesPlaceholder": "Notas privadas sobre este nodo (no transmitidas)...",
     "watchNode": "Watch",
     "unwatchNode": "Viendo",
-    "showOnMap": "Mostrar en el mapa"
+    "showOnMap": "Mostrar en el mapa",
+    "configureRemotely": "Configurar nodo de forma remota"
   },
   "firmwareStatus": {
     "checking": "Comprobación de la versión del firmware...",
@@ -1960,6 +1984,10 @@
       "sdk-meshcore": {
         "label": "Advertencias/Errores del SDK de MeshCore",
         "recommendation": "La pila MeshCore informó una advertencia o un error. Si se repite, verifique el emparejamiento BLE, la configuración de MQTT y vuelva a conectarse."
+      },
+      "store-forward": {
+        "label": "Problemas con el historial de almacenamiento y reenvío",
+        "recommendation": "No se pudo solicitar el historial de chat de almacenamiento y reenvío desde un router (a menudo una breve carrera con otro tráfico de radio). Si el trabajo pendiente del chat permanece vacío, vuelva a conectarse o espere el próximo latido del router."
       }
     },
     "recommendationGroups": {
@@ -2043,5 +2071,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribución del recuento de saltos",
     "hopAxis": "Saltos"
+  },
+  "configureNode": {
+    "label": "Configurar nodo",
+    "localDevice": "Este dispositivo (local)",
+    "remoteBanner": "Configuración del nodo remoto: {{name}} ({{nodeId}})",
+    "switchToLocal": "Cambiar a local",
+    "refresh": "Actualizar",
+    "loading": "Cargando configuración remota...",
+    "requiresLocalRadio": "Conecte una radio Meshtastic local para utilizar la administración remota."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Conecte una radio local para administrar nodos remotos.",
+      "publicKeyUnauthorized": "No autorizado: añada la clave pública de esta radio a las claves de administración del nodo remoto.",
+      "badSessionKey": "La sesión de administrador ha caducado. Actualiza e inténtalo de nuevo.",
+      "pkiFailed": "El cifrado PKI falló. Verifique las claves de nodo y elimine los conflictos de canal de administración heredados.",
+      "notAuthorized": "Administrador remoto no autorizado en el nodo de destino.",
+      "timeout": "Se ha agotado el tiempo de espera de la solicitud de administrador remoto.",
+      "generic": "Error en la solicitud de administrador remoto."
+    }
   }
 }

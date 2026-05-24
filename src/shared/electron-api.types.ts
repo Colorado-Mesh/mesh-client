@@ -427,12 +427,14 @@ export interface ElectronAPI {
     ) => () => void;
     getClientId: (protocol?: 'meshtastic' | 'meshcore') => Promise<string>;
     getCachedNodes: () => Promise<unknown>;
+    updateChannelKeys: (args: { entries: { name: string; pskBase64: string }[] }) => Promise<void>;
     publish: (args: {
       text: string;
       from: number;
       channel: number;
       destination?: number;
       channelName?: string;
+      pskBase64?: string;
       emoji?: number;
       replyId?: number;
       publishJsonMirror: boolean;
@@ -443,6 +445,7 @@ export interface ElectronAPI {
       shortName: string;
       channelName?: string;
       hwModel?: number;
+      pskBase64?: string;
       publishJsonMirror: boolean;
     }) => Promise<void>;
     publishPosition: (args: {
@@ -452,6 +455,7 @@ export interface ElectronAPI {
       latitudeI: number;
       longitudeI: number;
       altitude?: number;
+      pskBase64?: string;
       publishJsonMirror: boolean;
     }) => Promise<void>;
     publishWaypoint: (args: {
@@ -459,6 +463,7 @@ export interface ElectronAPI {
       to: number;
       channel: number;
       channelName: string;
+      pskBase64?: string;
       publishJsonMirror: boolean;
       waypoint: {
         id: number;

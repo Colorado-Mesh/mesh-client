@@ -85,7 +85,8 @@ import {
   isPathPacket,
   isTracePacket,
 } from './meshcore-path-decoder';
-import { MQTTManager } from './mqtt-manager';
+import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
+import { MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import type { TakServerManager } from './tak-server-manager';
@@ -617,6 +618,8 @@ function validateMqttSettings(settings: unknown): void {
     throw new Error('mqtt:connect: password must be a string');
   if (s.tlsInsecure != null && typeof s.tlsInsecure !== 'boolean')
     throw new Error('mqtt:connect: tlsInsecure must be a boolean');
+  if (s.tlsEnabled != null && typeof s.tlsEnabled !== 'boolean')
+    throw new Error('mqtt:connect: tlsEnabled must be a boolean');
   if (s.useWebSocket != null && typeof s.useWebSocket !== 'boolean')
     throw new Error('mqtt:connect: useWebSocket must be a boolean');
   if (s.meshcorePacketLoggerEnabled != null && typeof s.meshcorePacketLoggerEnabled !== 'boolean') {
@@ -679,6 +682,30 @@ function validateMqttPublishMeshcorePacketLogArgs(args: unknown): void {
   }
 }
 
+function validateOptionalPskBase64(value: unknown, channel: string): void {
+  if (value == null) return;
+  if (typeof value !== 'string') throw new Error(`${channel}: pskBase64 must be a string`);
+  if (!parsePsk(value)) throw new Error(`${channel}: pskBase64 must decode to 16 or 32 bytes`);
+}
+
+function validateMqttUpdateChannelKeysArgs(args: unknown): void {
+  if (!args || typeof args !== 'object')
+    throw new Error('mqtt:updateChannelKeys: args must be an object');
+  const a = args as Record<string, unknown>;
+  if (!Array.isArray(a.entries))
+    throw new Error('mqtt:updateChannelKeys: entries must be an array');
+  if (a.entries.length > 32) throw new Error('mqtt:updateChannelKeys: too many entries');
+  for (const entry of a.entries) {
+    if (!entry || typeof entry !== 'object')
+      throw new Error('mqtt:updateChannelKeys: each entry must be an object');
+    const e = entry as Record<string, unknown>;
+    if (typeof e.name !== 'string' || !e.name.trim())
+      throw new Error('mqtt:updateChannelKeys: name must be a non-empty string');
+    if (e.name.length > 64) throw new Error('mqtt:updateChannelKeys: name too long');
+    validateOptionalPskBase64(e.pskBase64, 'mqtt:updateChannelKeys');
+  }
+}
+
 function validateMqttPublishArgs(args: unknown): void {
   if (!args || typeof args !== 'object') throw new Error('mqtt:publish: args must be an object');
   const a = args as Record<string, unknown>;
@@ -710,6 +737,7 @@ function validateMqttPublishArgs(args: unknown): void {
   if (typeof a.publishJsonMirror !== 'boolean') {
     throw new Error('mqtt:publish: publishJsonMirror must be a boolean');
   }
+  validateOptionalPskBase64(a.pskBase64, 'mqtt:publish');
 }
 
 function validateMqttPublishWaypointArgs(args: unknown): void {
@@ -771,6 +799,7 @@ function validateMqttPublishWaypointArgs(args: unknown): void {
     if (!Number.isFinite(ex) || ex < 0)
       throw new Error('mqtt:publishWaypoint: waypoint.expire invalid');
   }
+  validateOptionalPskBase64(a.pskBase64, 'mqtt:publishWaypoint');
 }
 
 // Enable Web Serial (experimental)
@@ -2477,12 +2506,15 @@ ipcMain.handle('mqtt:connect', (_event, settings) => {
     const mode = s.mqttTransportProtocol === 'meshcore' ? 'meshcore' : 'meshtastic';
     // Dual-mode: only disconnect the target manager before reconnecting it.
     // The other manager stays connected independently.
+    const mqttSettings = settings as MQTTSettings;
+    const clientId = resolveMqttBrokerClientId(mode, mqttSettings);
+    const settingsWithClientId: MQTTSettings = { ...mqttSettings, clientId };
     if (mode === 'meshcore') {
       meshcoreMqttAdapter.disconnect();
-      meshcoreMqttAdapter.connect(settings as MQTTSettings);
+      meshcoreMqttAdapter.connect(settingsWithClientId);
     } else {
       mqttManager.disconnect();
-      mqttManager.connect(settings);
+      mqttManager.connect(settingsWithClientId);
     }
   } catch (err) {
     console.error(
@@ -2548,6 +2580,20 @@ ipcMain.handle(
     }
   },
 );
+ipcMain.handle('mqtt:updateChannelKeys', (_event, args) => {
+  try {
+    console.debug('[IPC] mqtt:updateChannelKeys');
+    validateMqttUpdateChannelKeysArgs(args);
+    const a = args as { entries: { name: string; pskBase64: string }[] };
+    mqttManager.updateChannelKeys(a.entries);
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:updateChannelKeys failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
 ipcMain.handle('mqtt:publish', (_event, args) => {
   try {
     console.debug('[IPC] mqtt:publish');
@@ -2558,6 +2604,7 @@ ipcMain.handle('mqtt:publish', (_event, args) => {
       channel: number;
       destination?: number;
       channelName?: string;
+      pskBase64?: string;
       emoji?: number;
       replyId?: number;
       publishJsonMirror: boolean;
@@ -2568,6 +2615,7 @@ ipcMain.handle('mqtt:publish', (_event, args) => {
       channel: a.channel,
       destination: a.destination,
       channelName: a.channelName,
+      pskBase64: a.pskBase64,
       emoji: a.emoji,
       replyId: a.replyId,
       publishJsonMirror: a.publishJsonMirror,
@@ -2665,6 +2713,7 @@ ipcMain.handle('mqtt:publishNodeInfo', (_event, args) => {
       shortName: string;
       channelName?: string;
       hwModel?: number;
+      pskBase64?: string;
       publishJsonMirror: boolean;
     };
     if (
@@ -2677,6 +2726,7 @@ ipcMain.handle('mqtt:publishNodeInfo', (_event, args) => {
         'mqtt:publishNodeInfo requires from (number), longName (string), shortName (string), publishJsonMirror (boolean)',
       );
     }
+    validateOptionalPskBase64(a.pskBase64, 'mqtt:publishNodeInfo');
     return mqttManager.publishNodeInfo(
       a.from,
       a.longName,
@@ -2684,6 +2734,7 @@ ipcMain.handle('mqtt:publishNodeInfo', (_event, args) => {
       a.channelName ?? 'LongFast',
       a.hwModel,
       a.publishJsonMirror,
+      a.pskBase64,
     );
   } catch (err) {
     // Presence broadcast is fire-and-forget; silently ignore if MQTT just disconnected
@@ -2706,6 +2757,7 @@ ipcMain.handle('mqtt:publishPosition', (_event, args) => {
       latitudeI: number;
       longitudeI: number;
       altitude?: number;
+      pskBase64?: string;
       publishJsonMirror: boolean;
     };
     if (
@@ -2720,6 +2772,7 @@ ipcMain.handle('mqtt:publishPosition', (_event, args) => {
         'mqtt:publishPosition requires from, channel, channelName, latitudeI, longitudeI, publishJsonMirror',
       );
     }
+    validateOptionalPskBase64(a.pskBase64, 'mqtt:publishPosition');
     return mqttManager.publishPosition(
       a.from,
       a.channel,
@@ -2728,6 +2781,7 @@ ipcMain.handle('mqtt:publishPosition', (_event, args) => {
       a.longitudeI,
       a.altitude,
       a.publishJsonMirror,
+      a.pskBase64,
     );
   } catch (err) {
     console.error(
@@ -2747,6 +2801,7 @@ ipcMain.handle('mqtt:publishWaypoint', (_event, args) => {
       to: number;
       channel: number;
       channelName: string;
+      pskBase64?: string;
       publishJsonMirror: boolean;
       waypoint: {
         id: number;
@@ -2766,6 +2821,7 @@ ipcMain.handle('mqtt:publishWaypoint', (_event, args) => {
       a.channelName,
       a.waypoint,
       a.publishJsonMirror,
+      a.pskBase64,
     );
   } catch (err) {
     console.error(
@@ -2890,6 +2946,10 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreMessageRetentionCount',
   'locale',
   'mapBasemapId',
+  'meshtasticMqttClientId',
+  'meshcoreMqttClientId',
+  'meshtasticConfigureTargetNodeNum',
+  'storeForwardAutoFetchHistory',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
 

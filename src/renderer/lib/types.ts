@@ -5,6 +5,7 @@ import type {
   OutboxStatus,
   UpdateCheckingPayload,
 } from '@/shared/electron-api.types';
+import type { MeshtasticLoraConfig } from '@/shared/meshtasticUrlEncoder';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
 export type { TAKClientInfo, TAKServerStatus, TAKSettings };
@@ -175,6 +176,47 @@ export interface MeshNode {
   pax_count?: number;
   // Detection sensor text alert from MQTT
   detection_text?: string;
+  /** Meshtastic PKC public key from NodeInfo/User when available */
+  public_key_hex?: string;
+}
+
+export type RemoteAdminStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+export interface ConfigTargetContext {
+  mode: 'local' | 'remote';
+  nodeNum: number | null;
+  isReady: boolean;
+  isLoading: boolean;
+  error?: string;
+  onRefresh?: () => Promise<void>;
+}
+
+export interface MeshtasticRemoteConfigSnapshot {
+  metadata?: unknown;
+  loraConfig?: MeshtasticLoraConfig | null;
+  deviceOwner?: { longName: string; shortName: string; isLicensed: boolean } | null;
+  securityConfig?: {
+    publicKey: Uint8Array;
+    privateKey?: Uint8Array;
+    adminKey: Uint8Array[];
+    isManaged: boolean;
+    serialEnabled: boolean;
+    debugLogApiEnabled: boolean;
+    adminChannelEnabled: boolean;
+  } | null;
+  channelConfigs?: {
+    index: number;
+    name: string;
+    role: number;
+    psk: Uint8Array;
+    uplinkEnabled: boolean;
+    downlinkEnabled: boolean;
+    positionPrecision: number;
+  }[];
+  moduleConfigs?: Record<string, unknown>;
+  deviceFixedPosition?: boolean | null;
+  telemetryDeviceUpdateInterval?: number | null;
+  deviceGpsMode?: number | null;
 }
 
 export interface MeshCoreLocalStats {
@@ -222,13 +264,16 @@ export interface MQTTSettings {
   topicPrefix: string;
   autoLaunch: boolean;
   maxRetries?: number;
-  /** When using TLS (port 8883), set true to skip certificate verification (self-signed brokers). Default false = verify. */
+  /** When using TLS, set true to skip certificate verification (self-signed brokers). Default false = verify. */
   tlsInsecure?: boolean;
-  /** Explicitly enable TLS for WebSocket connections. When true, uses wss:// scheme. */
+  /**
+   * Enable TLS (mqtts/wss). When undefined, port 8883 implies TLS on native TCP; port 443 implies wss.
+   * Set false to use plaintext on 8883 during broker testing; set true for TLS on port 1883.
+   */
   tlsEnabled?: boolean;
   /**
-   * Additional base64-encoded AES-128 PSKs to try when decrypting packets from custom channels.
-   * The default PSK (AQ==, padded to 16 bytes) is always tried first.
+   * Manual channel PSKs: one base64 key per line (AES-128 = 16 bytes, AES-256 = 32 bytes), or
+   * `ChannelName=base64`. Default LongFast key is always tried. Radio channel keys sync when connected.
    */
   channelPsks?: string[];
   /** Broker codec: Meshtastic protobuf vs MeshCore JSON adapter (main process). */
@@ -246,6 +291,11 @@ export interface MQTTSettings {
   tokenExpiresAt?: number;
   /** WebSocket path (e.g. '/mqtt' or '/ws'). Default '/mqtt'. */
   wsPath?: string;
+  /**
+   * Stable MQTT broker clientId (set by main process before connect).
+   * Not user-editable in the UI.
+   */
+  clientId?: string;
 }
 
 export type MQTTStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -658,12 +708,16 @@ declare global {
         ) => () => void;
         getClientId: (protocol?: 'meshtastic' | 'meshcore') => Promise<string>;
         getCachedNodes: () => Promise<CachedNode[]>;
+        updateChannelKeys: (args: {
+          entries: { name: string; pskBase64: string }[];
+        }) => Promise<void>;
         publish: (args: {
           text: string;
           from: number;
           channel: number;
           destination?: number;
           channelName?: string;
+          pskBase64?: string;
           emoji?: number;
           replyId?: number;
           publishJsonMirror: boolean;
@@ -674,6 +728,7 @@ declare global {
           shortName: string;
           channelName?: string;
           hwModel?: number;
+          pskBase64?: string;
           publishJsonMirror: boolean;
         }) => Promise<number>;
         publishPosition: (args: {
@@ -683,6 +738,7 @@ declare global {
           latitudeI: number;
           longitudeI: number;
           altitude?: number;
+          pskBase64?: string;
           publishJsonMirror: boolean;
         }) => Promise<number>;
         publishWaypoint: (args: {
@@ -690,6 +746,7 @@ declare global {
           to: number;
           channel: number;
           channelName: string;
+          pskBase64?: string;
           publishJsonMirror: boolean;
           waypoint: {
             id: number;

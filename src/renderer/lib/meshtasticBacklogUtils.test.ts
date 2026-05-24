@@ -7,15 +7,27 @@ import {
   buildStoreForwardHistoryRequestBytes,
   buildStoreForwardHistoryToRadioBytes,
   decodeStoreForwardTextPayload,
+  getLastSfHistoryFetchMs,
   isDuplicateHistoryMessage,
   isLikelyReadableChatText,
+  loadSfHistoryFetchState,
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
   parseStoreForwardHeartbeat,
   parseStoreForwardHistory,
+  recordSfHistoryFetch,
   releaseStoreForwardHistoryRequest,
   reserveStoreForwardHistoryRequest,
+  resolveAutoStoreForwardHistoryWindowMinutes,
   resolveMeshtasticTextMessagePayload,
+  resolveStoreForwardServerFromObservedPackets,
+  SF_AUTO_HISTORY_COOLDOWN_MS,
+  SF_AUTO_HISTORY_MESSAGE_CAP,
+  SF_AUTO_HISTORY_OFFLINE_MIN_MS,
+  SF_AUTO_HISTORY_WINDOW_CAP_MIN,
+  SF_HISTORY_FETCH_STATE_STORAGE_KEY,
+  SF_MANUAL_HISTORY_MESSAGE_CAP,
+  shouldAutoRequestStoreForwardHistoryOnHeartbeat,
   shouldRequestStoreForwardHistoryOnHeartbeat,
   writeToRadioWithoutQueue,
 } from './meshtasticBacklogUtils';
@@ -113,6 +125,110 @@ describe('meshtasticBacklogUtils', () => {
   it('returns null for invalid store-forward bytes', () => {
     expect(decodeStoreForwardTextPayload(new Uint8Array([0xff, 0xff]))).toBeNull();
     expect(decodeStoreForwardTextPayload(new TextEncoder().encode('plain text'))).toBeNull();
+  });
+
+  it('builds CLIENT_HISTORY request bytes with message cap', () => {
+    const capped = buildStoreForwardHistoryRequestBytes({
+      messageCap: SF_AUTO_HISTORY_MESSAGE_CAP,
+    });
+    const parsed = fromBinary(StoreForward.StoreAndForwardSchema, capped) as unknown as {
+      variant: { case?: string; value?: { historyMessages?: number } };
+    };
+    if (parsed.variant.case === 'history' && parsed.variant.value) {
+      expect(parsed.variant.value.historyMessages).toBe(SF_AUTO_HISTORY_MESSAGE_CAP);
+    }
+  });
+
+  it('resolves auto history window from heartbeat period', () => {
+    expect(resolveAutoStoreForwardHistoryWindowMinutes(0)).toBe(SF_AUTO_HISTORY_WINDOW_CAP_MIN);
+    expect(resolveAutoStoreForwardHistoryWindowMinutes(30)).toBe(30);
+    expect(resolveAutoStoreForwardHistoryWindowMinutes(999)).toBe(SF_AUTO_HISTORY_WINDOW_CAP_MIN);
+  });
+
+  it('gates auto-fetch on cooldown, offline, and opt-out', () => {
+    const now = 1_000_000;
+    const base = {
+      heartbeatSecondary: 0,
+      connectedIsStoreForwardServer: false,
+      alreadyRequestedServer: false,
+      deviceConfigured: true,
+      autoFetchEnabled: true,
+      now,
+      lastFetchMs: null as number | null,
+      lastDisconnectMs: null as number | null,
+    };
+    expect(shouldAutoRequestStoreForwardHistoryOnHeartbeat(base)).toBe(true);
+    expect(
+      shouldAutoRequestStoreForwardHistoryOnHeartbeat({ ...base, autoFetchEnabled: false }),
+    ).toBe(false);
+    expect(
+      shouldAutoRequestStoreForwardHistoryOnHeartbeat({
+        ...base,
+        lastFetchMs: now - SF_AUTO_HISTORY_COOLDOWN_MS + 1000,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoRequestStoreForwardHistoryOnHeartbeat({
+        ...base,
+        lastDisconnectMs: now - SF_AUTO_HISTORY_OFFLINE_MIN_MS + 1000,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoRequestStoreForwardHistoryOnHeartbeat({
+        ...base,
+        lastFetchMs: now - SF_AUTO_HISTORY_COOLDOWN_MS - 1000,
+        lastDisconnectMs: now - SF_AUTO_HISTORY_OFFLINE_MIN_MS - 1000,
+      }),
+    ).toBe(true);
+  });
+
+  it('resolves S&F server from latest primary heartbeat in observed packets', () => {
+    const serverA = 0xaaaa;
+    const serverB = 0xbbbb;
+    const hbA = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
+      case: 'heartbeat',
+      value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 60, secondary: 0 }),
+    });
+    const hbB = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
+      case: 'heartbeat',
+      value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 120, secondary: 0 }),
+    });
+    const map = new Map([
+      [serverA, [{ data: hbA, timestamp: 1000 }]],
+      [serverB, [{ data: hbB, timestamp: 2000 }]],
+    ]);
+    expect(resolveStoreForwardServerFromObservedPackets(map, null)).toEqual({
+      serverNodeId: serverB,
+      heartbeatPeriod: 120,
+    });
+    expect(resolveStoreForwardServerFromObservedPackets(map, serverA)).toEqual({
+      serverNodeId: serverA,
+      heartbeatPeriod: 60,
+    });
+  });
+
+  it('returns null when only secondary heartbeats are observed', () => {
+    const server = 0xcccc;
+    const hb = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
+      case: 'heartbeat',
+      value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 60, secondary: 1 }),
+    });
+    const map = new Map([[server, [{ data: hb, timestamp: 1000 }]]]);
+    expect(resolveStoreForwardServerFromObservedPackets(map, null)).toBeNull();
+  });
+
+  it('persists per-server fetch timestamps in localStorage', () => {
+    localStorage.removeItem(SF_HISTORY_FETCH_STATE_STORAGE_KEY);
+    const server = 0xabcd1234;
+    expect(getLastSfHistoryFetchMs(server)).toBeNull();
+    recordSfHistoryFetch(server, 42_000);
+    expect(getLastSfHistoryFetchMs(server)).toBe(42_000);
+    expect(loadSfHistoryFetchState()[String(server)]).toBe(42_000);
+    localStorage.removeItem(SF_HISTORY_FETCH_STATE_STORAGE_KEY);
+  });
+
+  it('uses higher cap constant for manual fetch', () => {
+    expect(SF_MANUAL_HISTORY_MESSAGE_CAP).toBeGreaterThan(SF_AUTO_HISTORY_MESSAGE_CAP);
   });
 
   it('builds CLIENT_HISTORY request bytes with defaults and custom window', () => {
@@ -270,6 +386,58 @@ describe('meshtasticBacklogUtils', () => {
     expect(write).toHaveBeenCalledTimes(2);
     expect(order).toEqual([1, 2]);
     expect(releaseLock).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries when WritableStream writer is locked by SDK traffic', async () => {
+    let getWriterAttempts = 0;
+    const write = vi.fn().mockResolvedValue(undefined);
+    const releaseLock = vi.fn();
+    const lockedError = new Error(
+      "Failed to execute 'getWriter' on 'WritableStream': Cannot create writer when WritableStream is locked",
+    );
+    const device = {
+      transport: {
+        toDevice: {
+          getWriter: () => {
+            getWriterAttempts++;
+            if (getWriterAttempts < 3) throw lockedError;
+            return { write, releaseLock };
+          },
+        },
+      },
+    } as unknown as MeshDevice;
+
+    vi.useFakeTimers();
+    const promise = writeToRadioWithoutQueue(device, new Uint8Array([9]));
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(getWriterAttempts).toBe(3);
+    expect(write).toHaveBeenCalledWith(new Uint8Array([9]));
+    expect(releaseLock).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('throws after WritableStream lock retries are exhausted', async () => {
+    const lockedError = new Error(
+      "Failed to execute 'getWriter' on 'WritableStream': Cannot create writer when WritableStream is locked",
+    );
+    const device = {
+      transport: {
+        toDevice: {
+          getWriter: () => {
+            throw lockedError;
+          },
+        },
+      },
+    } as unknown as MeshDevice;
+
+    vi.useFakeTimers();
+    const promise = writeToRadioWithoutQueue(device, new Uint8Array([1]));
+    const rejection = expect(promise).rejects.toThrow(/WritableStream is locked/);
+    await vi.runAllTimersAsync();
+    await rejection;
+    vi.useRealTimers();
   });
 
   describe('resolveMeshtasticTextMessagePayload', () => {

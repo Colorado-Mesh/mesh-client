@@ -484,7 +484,8 @@
       "noChannelsToExport": "Nessun canale abilitato da esportare.",
       "parseFailed": "URL del canale non valido: {{message}}",
       "applying": "Applicazione in corso...",
-      "unnamedChannel": "(Senza nome)"
+      "unnamedChannel": "(Senza nome)",
+      "applySuccessWithSkipped": "Ha applicato {{applied}} canale/i; ha saltato {{skipped}} duplicato o senza nome."
     }
   },
   "securityPanel": {
@@ -555,7 +556,10 @@
     "importPrivateKeyLabel": "Importa chiave privata",
     "importPrivateKeyButton": "Importa chiave privata",
     "importingPrivateKey": "Importazione...",
-    "regenerateKeysConfirm": "La rigenerazione delle chiavi sostituirà le attuali chiavi pubbliche e private DM. Tutti i messaggi crittografati esistenti non saranno più decrittografabili. Sei sicuro?"
+    "regenerateKeysConfirm": "La rigenerazione delle chiavi sostituirà le attuali chiavi pubbliche e private DM. Tutti i messaggi crittografati esistenti non saranno più decrittografabili. Sei sicuro?",
+    "copyPublicKey": "Copia",
+    "publicKeyCopied": "Chiave pubblica copiata negli appunti.",
+    "remoteAdminSetupHint": "Copiare questa chiave e aggiungerla come chiave di amministrazione sui nodi remoti che si desidera configurare. Consulta i documenti dell'amministratore remoto di Meshtastic."
   },
   "modulePanel": {
     "sectionSent": "{{name}} inviato. Il dispositivo potrebbe riavviarsi brevemente.",
@@ -850,7 +854,9 @@
     "logPanelHelp": "Se abilitato, sulla destra viene visualizzato un flusso di registro in tempo reale. Le righe di debug richiedono la casella di controllo all'interno del pannello di registro.",
     "compactMessages": "Visualizzazione compatta dei messaggi",
     "notificationsSection": "Notifiche",
-    "soundNotifications": "Notifiche sonore"
+    "soundNotifications": "Notifiche sonore",
+    "storeForwardAutoFetchHistory": "Recupera automaticamente la cronologia della chat Store & Forward su Connect",
+    "storeForwardAutoFetchHistoryHint": "Su RF Connect, richiedi fino a 50 messaggi (15 minuti di ricarica tra un recupero e l'altro). Spegnere se il ponte MQTT del gateway è sovraccarico."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contatti aggiornati.",
@@ -1026,7 +1032,6 @@
     "receivedViaRf": "Ricevuto tramite RF",
     "receivedViaMqtt": "Ricevuto tramite MQTT",
     "receivedViaRfAndMqtt": "Ricevuto tramite RF + MQTT",
-    "searchButton": "Cerca messaggi (Cmd+F)",
     "closeDm": "Chiudi DM",
     "resendMessage": "Invia nuovamente il messaggio",
     "replyButton": "Rispondere",
@@ -1062,7 +1067,19 @@
     "starredMessages": "Messaggi marcati",
     "noStarredMessages": "Ancora nessun messaggio in evidenza. Metti in primo piano qualsiasi messaggio per salvarlo qui.",
     "goToMessage": "Vai al messaggio",
-    "receivedViaStoreForward": "Riprodotto da Store & Forward"
+    "receivedViaStoreForward": "Riprodotto da Store & Forward",
+    "fetchStoreForwardHistory": "Recupera da Store & Forward",
+    "fetchStoreForwardHistoryHint": "Richiedi la cronologia chat recente dal router mesh (fino a 100 messaggi)",
+    "fetchStoreForwardHistorySent": "Richiesta di cronologia Store & Forward inviata",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Nessun router Store & Forward ancora visto. Attendi un heartbeat del router o controlla la scheda Moduli.",
+      "not_configured": "La radio è ancora in fase di configurazione. Riprova tra qualche secondo.",
+      "local_is_server": "Questo dispositivo è un server Store & Forward; la cronologia viene recuperata da altri nodi.",
+      "send_failed": "Impossibile inviare la richiesta di cronologia alla radio. Riconnettiti o riprova.",
+      "cooldown": "La cronologia è stata recuperata di recente per questo router. Attendi prima di richiedere di nuovo.",
+      "offline_gate": "Attendere alcuni minuti dopo la riconnessione prima di eseguire il recupero automatico; utilizzare Recupera manualmente.",
+      "already_requested": "È già in corso una richiesta di cronologia per questo router."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Numero massimo di tentativi di riconnessione MQTT",
@@ -1216,7 +1233,13 @@
     },
     "cancelMqttConnect": "Cancellare",
     "ripplePresetConfirm": "Il preset Ripple utilizza le credenziali della community condivise e disabilita la verifica del certificato TLS. Utilizzarlo solo su una rete attendibile. Continuare?",
-    "meshcorePort": "Porta"
+    "meshcorePort": "Porta",
+    "channelPsksHelp": "Chiavi AES-128 (16 byte) o AES-256 (32 byte) base64, una per riga. NomeCanale Facoltativo =base64 solo per MQTT. L'impostazione predefinita LongFast viene sempre provata. I tasti della scheda Radio si sincronizzano automaticamente quando la radio è collegata.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Ogni tasto deve decodificare a 16 byte (AES-128) o 32 byte (AES-256).",
+    "channelPsksInvalidBase64": "Base64 non valida su una linea PSK del canale.",
+    "mqttTlsEnabled": "Abilita TLS (mqtts / wss)",
+    "mqttTlsInsecure": "Consenti TLS non sicuro (certificato autofirmato). Disattivato per impostazione predefinita: abilita solo se il tuo broker utilizza una CA non pubblica."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Elimina le righe di routing più vecchie di {{hours}} ore (1–168)",
@@ -1666,7 +1689,8 @@
     "notesPlaceholder": "Note private su questo nodo (non trasmesse)...",
     "watchNode": "Osserva",
     "unwatchNode": "Guardando",
-    "showOnMap": "Mostrare sulla mappa"
+    "showOnMap": "Mostrare sulla mappa",
+    "configureRemotely": "Configura il nodo da remoto"
   },
   "firmwareStatus": {
     "checking": "Controllo della versione del firmware",
@@ -1960,6 +1984,10 @@
       "sdk-meshcore": {
         "label": "Avvisi/Errori dell'SDK MeshCore",
         "recommendation": "Lo stack MeshCore ha segnalato un avviso o un errore. Se si ripete, controlla l'associazione BLE, le impostazioni MQTT e riconnettiti."
+      },
+      "store-forward": {
+        "label": "Problemi relativi alla cronologia di archiviazione e inoltro",
+        "recommendation": "Non è stato possibile richiedere la cronologia chat Store & Forward da un router (spesso una breve corsa con altro traffico radio). Se il backlog della chat rimane vuoto, riconnettiti o attendi il prossimo heartbeat del router."
       }
     },
     "recommendationGroups": {
@@ -2043,5 +2071,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribuzione conteggio hop",
     "hopAxis": "Hop"
+  },
+  "configureNode": {
+    "label": "Configura nodo",
+    "localDevice": "Questo dispositivo (locale)",
+    "remoteBanner": "Configurazione del nodo remoto: {{name}} ({{nodeId}})",
+    "switchToLocal": "Passa a locale",
+    "refresh": "Aggiorna",
+    "loading": "Caricamento della configurazione remota in corso...",
+    "requiresLocalRadio": "Collegare una radio Meshtastic locale per utilizzare l'amministrazione remota."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Collegare una radio locale per amministrare i nodi remoti.",
+      "publicKeyUnauthorized": "Non autorizzato: aggiungi la chiave pubblica di questa radio alle chiavi di amministrazione del nodo remoto.",
+      "badSessionKey": "Sessione di amministrazione scaduta. Aggiorna e riprova.",
+      "pkiFailed": "Crittografia PKI non riuscita. Verificare le chiavi del nodo e rimuovere i conflitti del canale di amministrazione legacy.",
+      "notAuthorized": "Amministratore remoto non autorizzato sul nodo di destinazione.",
+      "timeout": "Richiesta di amministratore remoto scaduta.",
+      "generic": "Richiesta di amministratore remoto non riuscita."
+    }
   }
 }

@@ -484,7 +484,8 @@
       "noChannelsToExport": "Brak włączonych kanałów do wyeksportowania.",
       "parseFailed": "Nieprawidłowy adres URL kanału: {{message}}",
       "applying": "Stosowanie…",
-      "unnamedChannel": "(bez nazwy)"
+      "unnamedChannel": "(bez nazwy)",
+      "applySuccessWithSkipped": "Zastosowano kanał(y) {{applied}}; pominięto duplikat lub nienazwany kanał (y) {{skipped}}."
     }
   },
   "securityPanel": {
@@ -555,7 +556,10 @@
     "importPrivateKeyLabel": "Importuj klucz prywatny",
     "importPrivateKeyButton": "Importuj klucz prywatny",
     "importingPrivateKey": "Importowanie...",
-    "regenerateKeysConfirm": "Regeneracja kluczy zastąpi Twoje obecne klucze publiczne i prywatne DM. Wszelkie istniejące zaszyfrowane wiadomości nie będą już możliwe do odszyfrowania. Czy jesteś pewien?"
+    "regenerateKeysConfirm": "Regeneracja kluczy zastąpi Twoje obecne klucze publiczne i prywatne DM. Wszelkie istniejące zaszyfrowane wiadomości nie będą już możliwe do odszyfrowania. Czy jesteś pewien?",
+    "copyPublicKey": "Kopiuj",
+    "publicKeyCopied": "Klucz publiczny skopiowano do schowka.",
+    "remoteAdminSetupHint": "Skopiuj ten klucz i dodaj go jako klucz administratora na zdalnych węzłach, które chcesz skonfigurować. Zobacz dokumenty zdalnych administratorów Meshtastic."
   },
   "modulePanel": {
     "sectionSent": "Wysłano: {{name}}. Urządzenie może się na chwilę zrestartować.",
@@ -850,7 +854,9 @@
     "logPanelHelp": "Po włączeniu po prawej stronie pojawia się strumień dziennika na żywo. Linie debugowania wymagają pola wyboru w panelu dziennika.",
     "compactMessages": "Kompaktowy widok wiadomości",
     "notificationsSection": "Zawiadomienia",
-    "soundNotifications": "Powiadomienia dźwiękowe"
+    "soundNotifications": "Powiadomienia dźwiękowe",
+    "storeForwardAutoFetchHistory": "Automatycznie pobierz historię Sklepu i Przekaż dalej historię czatu podczas połączenia",
+    "storeForwardAutoFetchHistoryHint": "W przypadku połączenia radiowego zażądaj do 50 wiadomości (15-minutowe schładzanie między pobieraniem). Wyłącz, jeśli mostek bramki MQTT jest przeciążony."
   },
   "nodeListPanel": {
     "refreshFailed": "Odświeżanie nie powiodło się: {{message}}",
@@ -1026,7 +1032,6 @@
     "receivedViaRf": "Otrzymano za pośrednictwem RF",
     "receivedViaMqtt": "Odebrane poprzez MQTT",
     "receivedViaRfAndMqtt": "Odebrane przez RF + MQTT",
-    "searchButton": "Wyszukaj wiadomości (Cmd+F)",
     "closeDm": "Zamknij DM",
     "resendMessage": "Wyślij wiadomość ponownie",
     "replyButton": "Odpowiedź",
@@ -1062,7 +1067,19 @@
     "starredMessages": "Wyróżnione powiadomienia",
     "noStarredMessages": "Nie ma jeszcze wiadomości oznaczonych gwiazdką. Zaznacz dowolną wiadomość, aby zapisać ją tutaj.",
     "goToMessage": "Przejdź do wiadomości",
-    "receivedViaStoreForward": "Odtworzono ze sklepu i przekazano dalej"
+    "receivedViaStoreForward": "Odtworzono ze sklepu i przekazano dalej",
+    "fetchStoreForwardHistory": "Nadrobić zaległości ze sklepu i przekazać dalej",
+    "fetchStoreForwardHistoryHint": "Poproś o historię ostatnich czatów z routera mesh (do 100 wiadomości)",
+    "fetchStoreForwardHistorySent": "Wysłano żądanie historii sklepu i przekazywania",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Nie widać jeszcze routera Store & Forward. Poczekaj na bicie serca routera lub sprawdź kartę Moduły.",
+      "not_configured": "Radio jest nadal konfigurowane. Spróbuj ponownie za kilka sekund.",
+      "local_is_server": "To urządzenie jest serwerem Store & Forward; historia jest pobierana przez inne węzły.",
+      "send_failed": "Nie można wysłać żądania historii do radia. Połącz ponownie lub spróbuj ponownie.",
+      "cooldown": "Niedawno pobrano historię tego routera. Poczekaj, zanim ponownie wyślesz żądanie.",
+      "offline_gate": "Odczekaj kilka minut po ponownym połączeniu przed automatycznym pobieraniem cykli; użyj ręcznego nadrobienia zaległości.",
+      "already_requested": "Żądanie historii dla tego routera jest już w toku."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksymalna liczba prób ponownego połączenia MQTT",
@@ -1216,7 +1233,13 @@
     },
     "cancelMqttConnect": "Anulować",
     "ripplePresetConfirm": "Ustawienie wstępne Ripple wykorzystuje udostępnione poświadczenia społeczności i wyłącza weryfikację certyfikatu TLS. Używaj tego tylko w zaufanej sieci. Kontynuować?",
-    "meshcorePort": "Port"
+    "meshcorePort": "Port",
+    "channelPsksHelp": "Klawisze AES-128 (16-bajtowe) lub AES-256 (32-bajtowe) Base64, po jednym w wierszu. Opcjonalny ChannelName=base64 tylko dla MQTT. Domyślne ustawienie LongFast jest zawsze próbowane. Klawisze z zakładki Radio synchronizują się automatycznie po podłączeniu radia.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Każdy klucz musi dekodować do 16 bajtów (AES-128) lub 32 bajtów (AES-256).",
+    "channelPsksInvalidBase64": "Nieprawidłowy base64 na kanale PSK.",
+    "mqttTlsEnabled": "Włącz TLS (mqtts / wss)",
+    "mqttTlsInsecure": "Zezwalaj na niezabezpieczony TLS (certyfikat z podpisem własnym). Domyślnie wyłączone — włącz tylko wtedy, gdy broker korzysta z niepublicznego urzędu certyfikacji."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Usuń wiersze routingu starsze niż {{hours}} godzin (1–168)",
@@ -1666,7 +1689,8 @@
     "notesPlaceholder": "Prywatne notatki o tym węźle (nie przesyłane)…",
     "watchNode": "Watch",
     "unwatchNode": "Patrzy.",
-    "showOnMap": "Pokaż na mapie"
+    "showOnMap": "Pokaż na mapie",
+    "configureRemotely": "Skonfiguruj węzeł zdalnie"
   },
   "firmwareStatus": {
     "checking": "Sprawdzanie wersji oprogramowania sprzętowego",
@@ -1960,6 +1984,10 @@
       "sdk-meshcore": {
         "label": "Ostrzeżenia/błędy pakietu MeshCore SDK",
         "recommendation": "Stos MeshCore zgłosił ostrzeżenie lub błąd. Jeśli problem się powtórzy, sprawdź parowanie BLE, ustawienia MQTT i połącz się ponownie."
+      },
+      "store-forward": {
+        "label": "Problemy z historią przechowywania i przekazywania",
+        "recommendation": "Nie można zażądać historii czatu Store & Forward od routera (często krótki wyścig z innym ruchem radiowym). Jeśli backlog czatu pozostaje pusty, podłącz ponownie lub poczekaj na kolejne tętno routera."
       }
     },
     "recommendationGroups": {
@@ -2043,5 +2071,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Dystrybucja liczby przeskoków",
     "hopAxis": "Przeskoków"
+  },
+  "configureNode": {
+    "label": "Skonfiguruj węzeł",
+    "localDevice": "To urządzenie (lokalne)",
+    "remoteBanner": "Konfiguracja zdalnego węzła: {{name}} ({{nodeId}})",
+    "switchToLocal": "Przełącz na lokalny",
+    "refresh": "Odśwież",
+    "loading": "Ładowanie zdalnej konfiguracji…",
+    "requiresLocalRadio": "Podłącz lokalne radio Meshtastic, aby korzystać ze zdalnej administracji."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Podłącz lokalne radio, aby administrować zdalnymi węzłami.",
+      "publicKeyUnauthorized": "Nieautoryzowany: dodaj klucz publiczny tego radia do kluczy administratora zdalnego węzła.",
+      "badSessionKey": "Sesja administratora wygasła. Odśwież i spróbuj ponownie.",
+      "pkiFailed": "Szyfrowanie PKI nie powiodło się. Zweryfikuj klucze węzłów i usuń starsze konflikty kanałów administracyjnych.",
+      "notAuthorized": "Administrator zdalny nie jest autoryzowany w węźle docelowym.",
+      "timeout": "Upłynął limit czasu żądania zdalnego administratora.",
+      "generic": "Żądanie zdalnego administratora nie powiodło się."
+    }
   }
 }

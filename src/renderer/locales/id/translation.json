@@ -484,7 +484,8 @@
       "noChannelsToExport": "Tidak ada saluran yang diaktifkan untuk diekspor.",
       "parseFailed": "URL saluran tidak valid: {{message}}",
       "applying": "Menerapkan",
-      "unnamedChannel": "Tanpa nama"
+      "unnamedChannel": "Tanpa nama",
+      "applySuccessWithSkipped": "Terapan {{applied}} saluran; dilewati {{skipped}} duplikat atau tanpa nama."
     }
   },
   "securityPanel": {
@@ -555,7 +556,10 @@
     "importPrivateKeyLabel": "Impor Kunci Pribadi",
     "importPrivateKeyButton": "Impor Kunci Pribadi",
     "importingPrivateKey": "Pengimporan...",
-    "regenerateKeysConfirm": "Regenerasi kunci akan menggantikan kunci publik dan pribadi DM Anda saat ini. Pesan terenkripsi apa pun yang ada tidak dapat didekripsi lagi. Apa kamu yakin?"
+    "regenerateKeysConfirm": "Regenerasi kunci akan menggantikan kunci publik dan pribadi DM Anda saat ini. Pesan terenkripsi apa pun yang ada tidak dapat didekripsi lagi. Apa kamu yakin?",
+    "copyPublicKey": "Salin",
+    "publicKeyCopied": "Kunci publik disalin ke clipboard.",
+    "remoteAdminSetupHint": "Salin kunci ini dan tambahkan sebagai Kunci Admin pada node jarak jauh yang ingin Anda konfigurasikan. Lihat dokumen admin jarak jauh Meshtastic."
   },
   "modulePanel": {
     "sectionSent": "{{name}} terkirim. Perangkat mungkin akan reboot sebentar.",
@@ -850,7 +854,9 @@
     "logPanelHelp": "Saat diaktifkan, streaming log langsung muncul di sebelah kanan. Baris debug memerlukan kotak centang di dalam panel log.",
     "compactMessages": "Tampilan pesan ringkas",
     "notificationsSection": "Notifikasi",
-    "soundNotifications": "Pemberitahuan suara"
+    "soundNotifications": "Pemberitahuan suara",
+    "storeForwardAutoFetchHistory": "Ambil riwayat obrolan Toko & Teruskan secara otomatis saat terhubung",
+    "storeForwardAutoFetchHistoryHint": "Pada koneksi RF, minta hingga 50 pesan (mode tenang 15 menit di antara pengambilan). Matikan jika jembatan gerbang MQTT Anda kelebihan beban."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontak disegarkan.",
@@ -1026,7 +1032,6 @@
     "receivedViaRf": "Diterima melalui RF",
     "receivedViaMqtt": "Diterima melalui MQTT",
     "receivedViaRfAndMqtt": "Diterima melalui RF + MQTT",
-    "searchButton": "Pesan pencarian (Cmd+F)",
     "closeDm": "Tutup DM",
     "resendMessage": "Kirim ulang pesan",
     "replyButton": "Membalas",
@@ -1062,7 +1067,19 @@
     "starredMessages": "Pesan berbintang",
     "noStarredMessages": "Belum ada pesan berbintang. Bintangi pesan apa pun untuk menyimpannya di sini.",
     "goToMessage": "“Pergi ke pesan”",
-    "receivedViaStoreForward": "Diputar Ulang dari Store & Forward"
+    "receivedViaStoreForward": "Diputar Ulang dari Store & Forward",
+    "fetchStoreForwardHistory": "Kejar dari Toko & Teruskan",
+    "fetchStoreForwardHistoryHint": "Minta riwayat obrolan terbaru dari router mesh (hingga 100 pesan)",
+    "fetchStoreForwardHistorySent": "Permintaan riwayat Simpan & Teruskan terkirim",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Belum ada router Store & Forward yang terlihat. Tunggu detak jantung router atau periksa tab Modul.",
+      "not_configured": "Radio masih dikonfigurasi. Coba lagi dalam beberapa detik.",
+      "local_is_server": "Perangkat ini adalah server Store & Forward; riwayat diambil oleh node lain.",
+      "send_failed": "Tidak dapat mengirim permintaan riwayat ke radio. Sambungkan kembali atau coba lagi.",
+      "cooldown": "Riwayat baru saja diambil untuk router ini. Tunggu sebelum meminta lagi.",
+      "offline_gate": "Tunggu beberapa menit setelah tersambung kembali sebelum pengambilan otomatis berjalan; gunakan Kejar dari Toko & Teruskan secara manual.",
+      "already_requested": "Permintaan riwayat sudah berlangsung untuk router ini."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Upaya penyambungan kembali MQTT maks",
@@ -1216,7 +1233,13 @@
     },
     "cancelMqttConnect": "Membatalkan",
     "ripplePresetConfirm": "Preset Ripple menggunakan kredensial komunitas bersama dan menonaktifkan verifikasi sertifikat TLS. Hanya gunakan ini di jaringan tepercaya. Lanjutkan?",
-    "meshcorePort": "Port"
+    "meshcorePort": "Port",
+    "channelPsksHelp": "Tombol base64 AES -128 (16 - byte) atau AES -256 (32 - byte), satu per baris. Nama Saluran Opsional=base64 hanya untuk MQTT. LongFast default selalu dicoba. Tombol dari tab Radio disinkronkan secara otomatis saat radio terhubung.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Setiap kunci harus diterjemahkan menjadi 16 byte (AES -128) atau 32 byte (AES -256).",
+    "channelPsksInvalidBase64": "Base64 tidak valid pada saluran PSK.",
+    "mqttTlsEnabled": "Aktifkan TLS (mqtts / wss)",
+    "mqttTlsInsecure": "Izinkan TLS yang tidak aman (sertifikat yang ditandatangani sendiri). Tidak aktif secara default — hanya aktifkan jika broker Anda menggunakan CA non - publik."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Hapus baris perutean yang lebih lama dari {{hours}} jam (1–168)",
@@ -1666,7 +1689,8 @@
     "notesPlaceholder": "Catatan pribadi tentang simpul ini (tidak dikirimkan)...",
     "watchNode": "Watvh",
     "unwatchNode": "Menonton",
-    "showOnMap": "Tampilkan di peta"
+    "showOnMap": "Tampilkan di peta",
+    "configureRemotely": "Konfigurasikan node dari jarak jauh"
   },
   "firmwareStatus": {
     "checking": "Memeriksa versi firmware",
@@ -1960,6 +1984,10 @@
       "sdk-meshcore": {
         "label": "Peringatan/Kesalahan MeshCore SDK",
         "recommendation": "Tumpukan MeshCore melaporkan peringatan atau kesalahan. Jika berulang, periksa pemasangan BLE, pengaturan MQTT, dan sambungkan kembali."
+      },
+      "store-forward": {
+        "label": "Simpan & Teruskan Masalah Riwayat",
+        "recommendation": "Riwayat obrolan Simpan & Teruskan tidak dapat diminta dari router (sering kali perlombaan singkat dengan lalu lintas radio lainnya). Jika backlog obrolan tetap kosong, sambungkan kembali atau tunggu detak jantung router berikutnya."
       }
     },
     "recommendationGroups": {
@@ -2043,5 +2071,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribusi Hop Count",
     "hopAxis": "Hop"
+  },
+  "configureNode": {
+    "label": "Konfigurasikan simpul",
+    "localDevice": "Perangkat ini (lokal)",
+    "remoteBanner": "Mengonfigurasi simpul jarak jauh: {{name}} ({{nodeId}})",
+    "switchToLocal": "Beralih ke lokal",
+    "refresh": "Perbarui",
+    "loading": "Memuat konfigurasi jarak jauh…",
+    "requiresLocalRadio": "Sambungkan radio Meshtastic lokal untuk menggunakan administrasi jarak jauh."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Hubungkan radio lokal untuk mengelola node jarak jauh.",
+      "publicKeyUnauthorized": "Tidak sah: tambahkan kunci publik radio ini ke Tombol Admin simpul jauh.",
+      "badSessionKey": "Sesi admin kedaluwarsa. Segarkan dan coba lagi.",
+      "pkiFailed": "Enkripsi PKI gagal. Verifikasi kunci simpul dan hapus konflik saluran admin lama.",
+      "notAuthorized": "Admin jarak jauh tidak diotorisasi pada node target.",
+      "timeout": "Waktu permintaan admin jarak jauh habis.",
+      "generic": "Permintaan admin jarak jauh gagal."
+    }
   }
 }

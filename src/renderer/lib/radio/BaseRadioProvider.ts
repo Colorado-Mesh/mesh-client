@@ -59,6 +59,8 @@ export interface ProtocolCapabilities {
   hasFullPositionConfig: boolean;
   /** Whether Security panel (PKI config) is available */
   hasSecurityPanel: boolean;
+  /** Whether PKC remote node administration is available (Meshtastic 2.5+) */
+  hasRemoteAdmin: boolean;
   /** Whether the TAK server panel is available (Meshtastic only) */
   hasTakPanel: boolean;
   /** Whether Remote Hardware (GPIO) control is available */
@@ -122,6 +124,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasFactoryReset: true,
   hasFullPositionConfig: true,
   hasSecurityPanel: true,
+  hasRemoteAdmin: true,
   hasTakPanel: true,
   hasRemoteHardware: true,
   hasSerial: true,
@@ -170,6 +173,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasFactoryReset: false,
   hasFullPositionConfig: false,
   hasSecurityPanel: false,
+  hasRemoteAdmin: false,
   hasTakPanel: false,
   hasRemoteHardware: false,
   hasSerial: false,

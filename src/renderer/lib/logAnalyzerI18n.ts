@@ -19,6 +19,7 @@ export const LOG_ANALYZER_CATEGORY_LABEL_KEYS: Record<string, string> = {
   'meshcore-tcp': 'logAnalyzer.categories.meshcore-tcp.label',
   'ble-meshcore-notify-watchdog': 'logAnalyzer.categories.ble-meshcore-notify-watchdog.label',
   'bluetooth-pairing': 'logAnalyzer.categories.bluetooth-pairing.label',
+  'store-forward': 'logAnalyzer.categories.store-forward.label',
   'sdk-meshtastic': 'logAnalyzer.categories.sdk-meshtastic.label',
   'sdk-meshcore': 'logAnalyzer.categories.sdk-meshcore.label',
 };
@@ -42,6 +43,7 @@ export const LOG_ANALYZER_CATEGORY_RECOMMENDATION_KEYS: Record<string, string> =
   'ble-meshcore-notify-watchdog':
     'logAnalyzer.categories.ble-meshcore-notify-watchdog.recommendation',
   'bluetooth-pairing': 'logAnalyzer.categories.bluetooth-pairing.recommendation',
+  'store-forward': 'logAnalyzer.categories.store-forward.recommendation',
   'sdk-meshtastic': 'logAnalyzer.categories.sdk-meshtastic.recommendation',
   'sdk-meshcore': 'logAnalyzer.categories.sdk-meshcore.recommendation',
 };

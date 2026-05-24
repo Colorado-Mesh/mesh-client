@@ -484,7 +484,8 @@
       "noChannelsToExport": "Dışa aktarılacak etkin kanal yok.",
       "parseFailed": "Geçersiz kanal URL'si: {{message}}",
       "applying": "Uygulayan",
-      "unnamedChannel": "(isimsiz)"
+      "unnamedChannel": "(isimsiz)",
+      "applySuccessWithSkipped": "Uygulanan {{applied}} kanal(lar); {{skipped}} çift veya isimsiz olarak atlandı."
     }
   },
   "securityPanel": {
@@ -555,7 +556,10 @@
     "importPrivateKeyLabel": "Özel Anahtarı İçe Aktar",
     "importPrivateKeyButton": "Özel Anahtarı İçe Aktar",
     "importingPrivateKey": "İçe aktarılıyor...",
-    "regenerateKeysConfirm": "Anahtarların yenilenmesi mevcut DM genel ve özel anahtarlarınızın yerini alacaktır. Mevcut şifrelenmiş mesajların şifresi artık çözülemez. Emin misin?"
+    "regenerateKeysConfirm": "Anahtarların yenilenmesi mevcut DM genel ve özel anahtarlarınızın yerini alacaktır. Mevcut şifrelenmiş mesajların şifresi artık çözülemez. Emin misin?",
+    "copyPublicKey": "Kopyala",
+    "publicKeyCopied": "Genel anahtar panoya kopyalandı.",
+    "remoteAdminSetupHint": "Bu anahtarı kopyalayın ve yapılandırmak istediğiniz uzak düğümlere Yönetici Anahtarı olarak ekleyin. Meshtastic uzak yönetici belgelerine bakın."
   },
   "modulePanel": {
     "sectionSent": "{{name}} gönderildi. Cihaz kısa süreliğine yeniden başlatılabilir.",
@@ -850,7 +854,9 @@
     "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir.",
     "compactMessages": "Kompakt mesaj görünümü",
     "notificationsSection": "Bildirimler",
-    "soundNotifications": "Sesli Bildirimler"
+    "soundNotifications": "Sesli Bildirimler",
+    "storeForwardAutoFetchHistory": "Bağlanıldığında Mağaza ve İlet sohbet geçmişini otomatik olarak getir",
+    "storeForwardAutoFetchHistoryHint": "RF bağlantısında, 50 'ye kadar mesaj isteyin (getirmeler arasında 15 dakika bekleme süresi). Ağ geçidi MQTT köprünüz aşırı yüklüyse kapatın."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",
@@ -1026,7 +1032,6 @@
     "receivedViaRf": "RF aracılığıyla alındı",
     "receivedViaMqtt": "MQTT aracılığıyla alındı",
     "receivedViaRfAndMqtt": "RF + MQTT aracılığıyla alındı",
-    "searchButton": "Mesajlarda arama yapın (Cmd+F)",
     "closeDm": "DM'yi kapat",
     "resendMessage": "Mesajı yeniden gönder",
     "replyButton": "Cevap vermek",
@@ -1062,7 +1067,19 @@
     "starredMessages": "Yıldızlı iletileri",
     "noStarredMessages": "Henüz yıldızlı mesaj yok. Buraya kaydetmek için herhangi bir mesajı yıldızla.",
     "goToMessage": "Mesaja git",
-    "receivedViaStoreForward": "Store & Forward'dan yeniden oynatıldı"
+    "receivedViaStoreForward": "Store & Forward'dan yeniden oynatıldı",
+    "fetchStoreForwardHistory": "Store & Forward'dan bilgi alın",
+    "fetchStoreForwardHistoryHint": "Ağ yönlendiriciden en son sohbet geçmişini isteyin (100 mesaja kadar)",
+    "fetchStoreForwardHistorySent": "Saklama ve İletme geçmişi isteği gönderildi",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Henüz Store & Forward yönlendirici görülmedi. Yönlendiricinin kalp atışını bekleyin veya Modüller sekmesini kontrol edin.",
+      "not_configured": "Radyo hala yapılandırılıyor. Birkaç saniye sonra tekrar deneyin.",
+      "local_is_server": "Bu cihaz bir Store & Forward sunucusudur; geçmiş diğer düğümler tarafından getirilir.",
+      "send_failed": "Radyoya geçmiş isteği gönderilemedi. Yeniden bağlanın veya tekrar deneyin.",
+      "cooldown": "Bu yönlendirici için geçmiş yakın zamanda alındı. Yeniden istek göndermeden önce bekleyin.",
+      "offline_gate": "Otomatik yakalama çalıştırmadan önce yeniden bağladıktan sonra birkaç dakika bekleyin; manuel olarak Yakala'yı kullanın.",
+      "already_requested": "Bu yönlendirici için bir geçmiş isteği zaten devam ediyor."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksimum MQTT yeniden bağlanma denemesi",
@@ -1216,7 +1233,13 @@
     },
     "cancelMqttConnect": "İptal etmek",
     "ripplePresetConfirm": "Ripple ön ayarı, paylaşılan topluluk kimlik bilgilerini kullanır ve TLS sertifika doğrulamasını devre dışı bırakır. Bunu yalnızca güvenilir bir ağda kullanın. Devam edilsin mi?",
-    "meshcorePort": "Liman"
+    "meshcorePort": "Liman",
+    "channelPsksHelp": "AES -128 (16 bayt) veya AES -256 (32 bayt) base64 tuşları, satır başına bir adet. İsteğe bağlı ChannelName= yalnızca MQTT için base64. LongFast varsayılanı her zaman denenir. Radyo sekmesindeki tuşlar, radyo bağlandığında otomatik olarak senkronize edilir.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Her anahtarın kodu 16 bayta (AES -128) veya 32 bayta (AES -256) kadar çözülmelidir.",
+    "channelPsksInvalidBase64": "Bir kanal PSK hattında geçersiz base64.",
+    "mqttTlsEnabled": "TLS'yi etkinleştir (mqtts / wss)",
+    "mqttTlsInsecure": "Güvensiz TLS'ye (kendinden imzalı sertifika) izin verin. Varsayılan olarak kapalı — yalnızca brokeriniz halka açık olmayan bir CA kullanıyorsa etkinleştirin."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} saatten (1-168) daha eski olan yönlendirme satırlarını bırak",
@@ -1666,7 +1689,8 @@
     "notesPlaceholder": "Bu düğüm hakkında özel notlar (iletilmedi )…",
     "watchNode": "İzle",
     "unwatchNode": "İzliyorum",
-    "showOnMap": "Haritada göster"
+    "showOnMap": "Haritada göster",
+    "configureRemotely": "Düğümü uzaktan yapılandır"
   },
   "firmwareStatus": {
     "checking": "Ürün yazılımı sürümünün kontrol edilmesi",
@@ -1960,6 +1984,10 @@
       "sdk-meshcore": {
         "label": "MeshCore SDK Uyarıları/Hataları",
         "recommendation": "MeshCore yığını bir uyarı veya hata bildirdi. Tekrarlanırsa BLE eşleştirmesini, MQTT ayarlarını kontrol edin ve yeniden bağlanın."
+      },
+      "store-forward": {
+        "label": "Saklama ve İletme Geçmişi Sorunları",
+        "recommendation": "Sohbet geçmişini sakla ve ilet bir yönlendiriciden talep edilemez (genellikle diğer radyo trafiğiyle kısa bir yarış). Sohbet iş yığını boş kalırsa, yeniden bağlanın veya bir sonraki yönlendiricinin kalp atışını bekleyin."
       }
     },
     "recommendationGroups": {
@@ -2043,5 +2071,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Sayısı Dağılımı",
     "hopAxis": "Şerbetçi otu"
+  },
+  "configureNode": {
+    "label": "Düğümü yapılandır",
+    "localDevice": "Bu cihaz (yerel)",
+    "remoteBanner": "Uzak düğüm yapılandırılıyor: {{name}} ({{nodeId}})",
+    "switchToLocal": "Yerel ağa geç",
+    "refresh": "Yenile",
+    "loading": "Uzaktan yapılandırma yükleniyor…",
+    "requiresLocalRadio": "Uzaktan yönetimi kullanmak için yerel bir Meshtastic telsiz bağlayın."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Uzak düğümleri yönetmek için yerel bir radyo bağlayın.",
+      "publicKeyUnauthorized": "Yetkisiz: Bu radyonun genel anahtarını uzak düğümün Yönetici Anahtarlarına ekleyin.",
+      "badSessionKey": "Yönetici oturumu sona erdi. Yenile ve tekrar dene.",
+      "pkiFailed": "PKI şifrelemesi başarısız oldu. Düğüm anahtarlarını doğrulayın ve eski yönetici kanalı çakışmalarını kaldırın.",
+      "notAuthorized": "Hedef düğümde uzaktan yönetici yetkilendirilmemiş.",
+      "timeout": "Uzaktan yönetici isteği zaman aşımına uğradı.",
+      "generic": "Uzaktan yönetici isteği başarısız oldu."
+    }
   }
 }

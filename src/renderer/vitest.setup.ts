@@ -149,6 +149,7 @@ const electronAPIMock = {
     onClientId: vi.fn().mockReturnValue(() => {}),
     getClientId: vi.fn().mockResolvedValue(''),
     getCachedNodes: vi.fn().mockResolvedValue([]),
+    updateChannelKeys: vi.fn().mockResolvedValue(undefined),
     publish: vi.fn().mockResolvedValue(1),
     publishNodeInfo: vi.fn().mockResolvedValue(1),
     publishPosition: vi.fn().mockResolvedValue(1),

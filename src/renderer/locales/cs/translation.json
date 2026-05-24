@@ -227,42 +227,57 @@
     "deviceMetricsDescription": "Mesh vysílání: jak často jsou baterie, napětí a využití kanálu odesílány přes LoRa. 0 = zakázáno; výchozí 1800 s (30 min). Připojená aplikace: při připojení přes Bluetooth, sériovou nebo Wi-Fi firmware často stále předává metriky zařízení tomuto klientovi přibližně každých 60 s, aby byla na obrazovce aktuálnost – to není stejné jako váš interval mesh.",
     "deviceMetricsTooltip": "Firmware Meshtastic odesílá metriky zařízení připojenému klientovi zhruba jednou za minutu pro místní monitorování, bez ohledu na interval telemetrie sítě. Oficiální odkaz: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
-      "0": {},
-      "1": {}
+      "0": {
+        "label": "Metrický"
+      },
+      "1": {
+        "label": "Imperial"
+      }
     },
     "deviceRoles": {
       "0": {
-        "description": "Normální klientský režim"
+        "description": "Normální klientský režim",
+        "label": "Zákazník"
       },
       "1": {
-        "description": "Klient, který nepřenáší"
+        "description": "Klient, který nepřenáší",
+        "label": "Ztlumení klienta"
       },
       "2": {
-        "description": "Vyhrazený router/repeater"
+        "description": "Vyhrazený router/repeater",
+        "label": "Router"
       },
       "3": {
-        "description": "Režim router + klient"
+        "description": "Režim router + klient",
+        "label": "Klient směrovače"
       },
       "4": {
-        "description": "Základnová stanice pro klientská zařízení"
+        "description": "Základnová stanice pro klientská zařízení",
+        "label": "Klientská základna"
       },
       "5": {
-        "description": "Pouze GPS tracker"
+        "description": "Pouze GPS tracker",
+        "label": "Stopař"
       },
       "6": {
-        "description": "Uzel telemetrického senzoru"
+        "description": "Uzel telemetrického senzoru",
+        "label": "Snímač"
       },
       "7": {
-        "description": "Zařízení s podporou TAK"
+        "description": "Zařízení s podporou TAK",
+        "label": "TAK"
       },
       "8": {
-        "description": "Klient, skrytý v seznamu uzlů"
+        "description": "Klient, skrytý v seznamu uzlů",
+        "label": "Skrytý klient"
       },
       "9": {
-        "description": "Vysílá pozici pro obnovení"
+        "description": "Vysílá pozici pro obnovení",
+        "label": "Ztráty a nálezy"
       },
       "10": {
-        "description": "Režim sledování TAK"
+        "description": "Režim sledování TAK",
+        "label": "TAK TRACKER"
       }
     },
     "contactsOnRadioBadgeTitle": "{{part}} kontaktů v rádiu",
@@ -470,7 +485,8 @@
       "noChannelsToExport": "Žádné povolené kanály k exportu.",
       "parseFailed": "Neplatná adresa URL kanálu: {{message}}",
       "applying": "Uplatňuje se...",
-      "unnamedChannel": "(nepojmenované)"
+      "unnamedChannel": "(nepojmenované)",
+      "applySuccessWithSkipped": "Aplikováno {{applied}} kanálů; přeskočeno {{skipped}} duplikát nebo nepojmenováno."
     }
   },
   "securityPanel": {
@@ -541,7 +557,10 @@
     "importPrivateKeyLabel": "Importovat soukromý klíč",
     "importPrivateKeyButton": "Importovat soukromý klíč",
     "importingPrivateKey": "Import...",
-    "regenerateKeysConfirm": "Obnovení klíčů nahradí vaše aktuální veřejné a soukromé klíče DM. Jakékoli existující zašifrované zprávy již nebudou dešifrovatelné. jsi si jistý?"
+    "regenerateKeysConfirm": "Obnovení klíčů nahradí vaše aktuální veřejné a soukromé klíče DM. Jakékoli existující zašifrované zprávy již nebudou dešifrovatelné. jsi si jistý?",
+    "copyPublicKey": "Kopírovat",
+    "publicKeyCopied": "Veřejný klíč zkopírován do schránky.",
+    "remoteAdminSetupHint": "Zkopírujte tento klíč a přidejte jej jako administrátorský klíč na vzdálené uzly, které chcete konfigurovat. Viz dokumentaci Meshtastic k vzdálené správě."
   },
   "modulePanel": {
     "sectionSent": "{{name}} odesláno. Zařízení se může krátce restartovat.",
@@ -836,7 +855,9 @@
     "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu.",
     "compactMessages": "Kompaktní zobrazení zpráv",
     "notificationsSection": "Oznámení",
-    "soundNotifications": "Zvuková upozornění"
+    "soundNotifications": "Zvuková upozornění",
+    "storeForwardAutoFetchHistory": "Automaticky načíst historii chatu v obchodě a přeposlat při připojení",
+    "storeForwardAutoFetchHistoryHint": "Při RF připojení si vyžádejte až 50 zpráv (15minutový cooldown mezi načteními). Vypněte, pokud je váš most brány MQTT přetížen."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakty byly obnoveny.",
@@ -1012,7 +1033,6 @@
     "receivedViaRf": "Přijato přes RF",
     "receivedViaMqtt": "Přijato přes MQTT",
     "receivedViaRfAndMqtt": "Přijato přes RF + MQTT",
-    "searchButton": "Hledat zprávy (Cmd+F)",
     "closeDm": "Zavřít DM",
     "resendMessage": "Znovu odeslat zprávu",
     "replyButton": "Odpověď",
@@ -1048,7 +1068,19 @@
     "starredMessages": "Označené zprávy",
     "noStarredMessages": "Zatím žádné zprávy označené hvězdičkou. Označte jakoukoli zprávu hvězdičkou a uložte ji zde.",
     "goToMessage": "Přejít na zprávu",
-    "receivedViaStoreForward": "Přehráno z obchodu & Vpřed"
+    "receivedViaStoreForward": "Přehráno z obchodu & Vpřed",
+    "fetchStoreForwardHistory": "Dohnat od Store & Forward",
+    "fetchStoreForwardHistoryHint": "Vyžádejte si nedávnou historii chatu ze síťového směrovače (až 100 zpráv)",
+    "fetchStoreForwardHistorySent": "Žádost o historii ukládání a přeposílání byla odeslána",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Zatím nebyl zobrazen žádný směrovač Store & Forward. Počkejte na srdeční tep routeru nebo zkontrolujte kartu Moduly.",
+      "not_configured": "Rádio se stále konfiguruje. Zkuste to znovu za několik sekund.",
+      "local_is_server": "Toto zařízení je server Store & Forward; historie je načtena jinými uzly.",
+      "send_failed": "Nelze odeslat požadavek na historii do rádia. Připojte se znovu nebo to zkuste znovu.",
+      "cooldown": "Pro tento směrovač byla nedávno načtena historie. Než požádáš znovu, počkej.",
+      "offline_gate": "Před spuštěním automatického načítání počkejte několik minut po opětovném připojení; použijte možnost Dohnat ručně.",
+      "already_requested": "Žádost o historii pro tento směrovač již probíhá."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maximální počet pokusů o opětovné připojení MQTT",
@@ -1202,7 +1234,13 @@
     },
     "cancelMqttConnect": "Zrušit",
     "ripplePresetConfirm": "Přednastavení Ripple používá sdílené přihlašovací údaje komunity a zakazuje ověření certifikátu TLS. Použít pouze v důvěryhodné síti. Pokračovat?",
-    "meshcorePort": "Port"
+    "meshcorePort": "Port",
+    "channelPsksHelp": "Klávesy AES-128 (16 bajtů) nebo AES-256 (32 bajtů) base64, jeden na řádek. Volitelný název kanálu=base64 pouze pro MQTT. Výchozí hodnota LongFast je vždy vyzkoušena. Klávesy z karty Rádio se automaticky synchronizují, když je rádio připojeno.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Každý klíč musí dekódovat na 16 bajtů (AES-128) nebo 32 bajtů (AES-256).",
+    "channelPsksInvalidBase64": "Neplatná base64 na kanálu PSK linky.",
+    "mqttTlsEnabled": "Povolit TLS (mqtts / wss)",
+    "mqttTlsInsecure": "Povolit nezabezpečený TLS (self-signed certifikát). Vypnuto ve výchozím nastavení — povolte pouze v případě, že váš makléř používá neveřejnou CA."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Vypustit řádky směrování starší než {{hours}} hodin (1–168)",
@@ -1652,7 +1690,8 @@
     "notesPlaceholder": "Soukromé poznámky k tomuto uzlu (nejsou přenášeny)…",
     "watchNode": "Sledovat",
     "unwatchNode": "Sleduje",
-    "showOnMap": "Zobrazit na mapě"
+    "showOnMap": "Zobrazit na mapě",
+    "configureRemotely": "Konfigurovat uzel vzdáleně"
   },
   "firmwareStatus": {
     "checking": "Kontrola verze firmwaru",
@@ -1872,61 +1911,84 @@
   "logAnalyzer": {
     "categories": {
       "ble-connection": {
-        "recommendation": "Nestabilní připojení BLE. Zkontrolujte vzdálenost k zařízení a stav adaptéru Bluetooth."
+        "recommendation": "Nestabilní připojení BLE. Zkontrolujte vzdálenost k zařízení a stav adaptéru Bluetooth.",
+        "label": "Problémy s připojením"
       },
       "mqtt": {
-        "recommendation": "Problémy s připojením MQTT. Ověřte adresu URL zprostředkovatele, přihlašovací údaje a síťové připojení."
+        "recommendation": "Problémy s připojením MQTT. Ověřte adresu URL zprostředkovatele, přihlašovací údaje a síťové připojení.",
+        "label": "Problémy s MQTT"
       },
       "mqtt-retries-exhausted": {
-        "recommendation": "MQTT to vzdal po maximálním počtu opětovných připojení. Ověřte, že je zprostředkovatel dosažitelný, přihlašovací údaje a port jsou správné a brány firewall umožňují odchozí provoz."
+        "recommendation": "MQTT to vzdal po maximálním počtu opětovných připojení. Ověřte, že je zprostředkovatel dosažitelný, přihlašovací údaje a port jsou správné a brány firewall umožňují odchozí provoz.",
+        "label": "Limit opětovného připojení MQTT"
       },
       "watchdog": {
-        "recommendation": "Watchdog spustil opětovné připojení. Komunikace zařízení může být nestabilní."
+        "recommendation": "Watchdog spustil opětovné připojení. Komunikace zařízení může být nestabilní.",
+        "label": "Spouštěče hlídacího psa"
       },
       "handshake": {
-        "recommendation": "Navázání spojení se nezdařilo. Zkuste se znovu připojit ručně."
+        "recommendation": "Navázání spojení se nezdařilo. Zkuste se znovu připojit ručně.",
+        "label": "Selhání potřesení rukou"
       },
       "ble-connect-race": {
-        "recommendation": "Vypršel časový limit BLE handshake nebo došlo k odpojení. Zkontrolujte stabilitu připojení BLE a vzdálenost k zařízení."
+        "recommendation": "Vypršel časový limit BLE handshake nebo došlo k odpojení. Zkontrolujte stabilitu připojení BLE a vzdálenost k zařízení.",
+        "label": "Závod ble Connect/vypršení časového limitu"
       },
       "auth-decrypt": {
-        "recommendation": "Selhání ověření nebo dešifrování. Ověřte, že se klíče kanálů mezi zařízeními shodují."
+        "recommendation": "Selhání ověření nebo dešifrování. Ověřte, že se klíče kanálů mezi zařízeními shodují.",
+        "label": "Selhání ověření/dešifrování"
       },
       "native-module": {
-        "recommendation": "Nativní doplněk se nepodařilo načíst – po upgradu často chybné Electron ABI. Spusťte pnpm install ve složce projektu (nebo pnpm run rebuild), ukončete všechny instance aplikace a zkuste to znovu."
+        "recommendation": "Nativní doplněk se nepodařilo načíst – po upgradu často chybné Electron ABI. Spusťte pnpm install ve složce projektu (nebo pnpm run rebuild), ukončete všechny instance aplikace a zkuste to znovu.",
+        "label": "Selhání nativního načítání modulu"
       },
       "internal-error": {
-        "recommendation": "Došlo k neočekávané vnitřní chybě. Nahlaste prosím tuto chybu pomocí souboru protokolu."
+        "recommendation": "Došlo k neočekávané vnitřní chybě. Nahlaste prosím tuto chybu pomocí souboru protokolu.",
+        "label": "Interní chyby aplikace"
       },
       "database-error": {
-        "recommendation": "Chyba databáze. To může znamenat poškozený databázový soubor nebo problém s oprávněním."
+        "recommendation": "Chyba databáze. To může znamenat poškozený databázový soubor nebo problém s oprávněním.",
+        "label": "Selhání databáze"
       },
       "database-chmod": {
-        "recommendation": "Vyladění oprávnění k souboru databáze se nezdařilo (v systému Windows často neškodné). Pokud někde jinde vidíte skutečné chyby DB, zkontrolujte antivirus a oprávnění složky pro adresář mesh-client userData."
+        "recommendation": "Vyladění oprávnění k souboru databáze se nezdařilo (v systému Windows často neškodné). Pokud někde jinde vidíte skutečné chyby DB, zkontrolujte antivirus a oprávnění složky pro adresář mesh-client userData.",
+        "label": "Databázový chmod (nefatální)"
       },
       "database-writable": {
-        "recommendation": "Aplikace nemůže zapisovat do složky databáze. Opravte oprávnění v adresáři mesh-client userData (viz odstraňování problémů: Do adresáře databáze nelze zapisovat)."
+        "recommendation": "Aplikace nemůže zapisovat do složky databáze. Opravte oprávnění v adresáři mesh-client userData (viz odstraňování problémů: Do adresáře databáze nelze zapisovat).",
+        "label": "Databáze nelze zapisovat"
       },
       "tak-server": {
-        "recommendation": "Chyba serveru TAK. Zkontrolujte stav certifikátu a dostupnost portu."
+        "recommendation": "Chyba serveru TAK. Zkontrolujte stav certifikátu a dostupnost portu.",
+        "label": "TAK-Server-Probleme"
       },
       "updater": {
-        "recommendation": "Chyba aktualizátoru aplikace. Zkontrolujte připojení k internetu nebo vyzkoušejte ruční aktualizaci z GitHubu."
+        "recommendation": "Chyba aktualizátoru aplikace. Zkontrolujte připojení k internetu nebo vyzkoušejte ruční aktualizaci z GitHubu.",
+        "label": "Chyby nástroje pro aktualizaci aplikací"
       },
       "meshcore-tcp": {
-        "recommendation": "Chyba mostu MeshCore TCP. Ověřte, že vzdálený hostitel a port jsou dosažitelné."
+        "recommendation": "Chyba mostu MeshCore TCP. Ověřte, že vzdálený hostitel a port jsou dosažitelné.",
+        "label": "Chyby mostu IP MeshCore"
       },
       "ble-meshcore-notify-watchdog": {
-        "recommendation": "Žádná oznamovací data GATT v okně Watchdog (běžné ve Windows). Retry connect; před připojením se ujistěte, že je rádio spárováno v nastavení Bluetooth OS."
+        "recommendation": "Žádná oznamovací data GATT v okně Watchdog (běžné ve Windows). Retry connect; před připojením se ujistěte, že je rádio spárováno v nastavení Bluetooth OS.",
+        "label": "Ble Upozornit hlídacího psa (MeshCore)"
       },
       "bluetooth-pairing": {
-        "recommendation": "Párování Bluetooth nebo zrušení párování se nezdařilo nebo vypršel časový limit výzvy k zadání kódu PIN. Otevřete aplikaci při párování, okamžitě zadejte PIN, zkontrolujte MAC adresu a oprávnění Bluetooth nebo odeberte a znovu spárujte z nastavení Bluetooth OS."
+        "recommendation": "Párování Bluetooth nebo zrušení párování se nezdařilo nebo vypršel časový limit výzvy k zadání kódu PIN. Otevřete aplikaci při párování, okamžitě zadejte PIN, zkontrolujte MAC adresu a oprávnění Bluetooth nebo odeberte a znovu spárujte z nastavení Bluetooth OS.",
+        "label": "Problémy s párováním Bluetooth"
       },
       "sdk-meshtastic": {
-        "recommendation": "Meshtastic stack ohlásil varování nebo chybu. Pokud se to opakuje, zkontrolujte firmware, transport (BLE/sériový) a znovu připojte."
+        "recommendation": "Meshtastic stack ohlásil varování nebo chybu. Pokud se to opakuje, zkontrolujte firmware, transport (BLE/sériový) a znovu připojte.",
+        "label": "Meshtastic SDK varování/chyby"
       },
       "sdk-meshcore": {
-        "recommendation": "Zásobník MeshCore hlásil varování nebo chybu. Pokud se to opakuje, zkontrolujte párování BLE, nastavení MQTT a znovu se připojte."
+        "recommendation": "Zásobník MeshCore hlásil varování nebo chybu. Pokud se to opakuje, zkontrolujte párování BLE, nastavení MQTT a znovu se připojte.",
+        "label": "Varování/chyby sady MeshCore SDK"
+      },
+      "store-forward": {
+        "label": "Problémy s historií ukládání a přeposílání",
+        "recommendation": "Z routeru nebylo možné vyžádat historii chatu Store & Forward (často se jedná o krátký závod s jiným rádiovým provozem). Pokud nevyřízený chat zůstane prázdný, znovu se připojte nebo počkejte na další srdeční tep směrovače."
       }
     },
     "recommendationGroups": {
@@ -1964,7 +2026,8 @@
       "clientHidden": "Klient skrytý",
       "lostAndFound": "Ztráty a nálezy",
       "routerLate": "Router Pozdě",
-      "clientBase": "Klientská základna"
+      "clientBase": "Klientská základna",
+      "takTracker": "TAK TRACKER"
     }
   },
   "signalPropagation": {
@@ -2009,5 +2072,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribuce počtu chmele",
     "hopAxis": "Chmel"
+  },
+  "configureNode": {
+    "label": "Konfigurovat uzel",
+    "localDevice": "Toto zařízení (místní)",
+    "remoteBanner": "Konfigurace vzdáleného uzlu: {{name}} ({{nodeId}})",
+    "switchToLocal": "Přepnout na místní",
+    "refresh": "Obnovit",
+    "loading": "Načítání vzdálené konfigurace...",
+    "requiresLocalRadio": "Připojte místní rádio Meshtastic a použijte vzdálenou správu."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Připojte místní rádio pro správu vzdálených uzlů.",
+      "publicKeyUnauthorized": "Neoprávněné: přidejte veřejný klíč tohoto rádia do správcovských klíčů vzdáleného uzlu.",
+      "badSessionKey": "Platnost relace správce vypršela. Obnovte ji a zkuste to znovu.",
+      "pkiFailed": "Šifrování PKI se nezdařilo. Ověřte klíče uzlů a odstraňte starší konflikty kanálů správce.",
+      "notAuthorized": "Vzdálený správce není autorizován v cílovém uzlu.",
+      "timeout": "Časový limit požadavku vzdáleného správce vypršel.",
+      "generic": "Požadavek vzdáleného správce se nezdařil."
+    }
   }
 }

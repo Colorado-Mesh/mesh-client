@@ -484,7 +484,8 @@
       "noChannelsToExport": "Geen ingeschakelde kanalen om te exporteren.",
       "parseFailed": "Ongeldige kanaal-URL: {{message}}",
       "applying": "Toepassen…",
-      "unnamedChannel": "(naamloos)"
+      "unnamedChannel": "(naamloos)",
+      "applySuccessWithSkipped": "Toegepast {{applied}} kanaal/kanalen; {{skipped}} duplicaat of naamloos overgeslagen."
     }
   },
   "securityPanel": {
@@ -555,7 +556,10 @@
     "importPrivateKeyLabel": "Privésleutel importeren",
     "importPrivateKeyButton": "Privésleutel importeren",
     "importingPrivateKey": "Importeren...",
-    "regenerateKeysConfirm": "Als u sleutels opnieuw genereert, worden uw huidige openbare en privésleutels voor DM vervangen. Alle bestaande gecodeerde berichten kunnen niet langer worden gedecodeerd. Weet je het zeker?"
+    "regenerateKeysConfirm": "Als u sleutels opnieuw genereert, worden uw huidige openbare en privésleutels voor DM vervangen. Alle bestaande gecodeerde berichten kunnen niet langer worden gedecodeerd. Weet je het zeker?",
+    "copyPublicKey": "Kopie",
+    "publicKeyCopied": "Openbare sleutel gekopieerd naar klembord.",
+    "remoteAdminSetupHint": "Kopieer deze sleutel en voeg deze toe als een beheerderssleutel op externe knooppunten die u wilt configureren. Zie de Meshtastic-documentatie voor beheer op afstand."
   },
   "modulePanel": {
     "sectionSent": "{{name}} verzonden. Het apparaat kan kortstondig opnieuw opstarten.",
@@ -850,7 +854,9 @@
     "logPanelHelp": "Indien ingeschakeld, verschijnt er aan de rechterkant een live logstream. Voor foutopsporingsregels is het selectievakje in het logpaneel vereist.",
     "compactMessages": "Compacte berichtweergave",
     "notificationsSection": "Meldingen",
-    "soundNotifications": "Geluidsmeldingen"
+    "soundNotifications": "Geluidsmeldingen",
+    "storeForwardAutoFetchHistory": "Automatisch Store ophalen en chatgeschiedenis doorsturen bij verbinden",
+    "storeForwardAutoFetchHistoryHint": "Vraag op RF Connect maximaal 50 berichten aan (15 minuten afkoelen tussen ophalingen). Schakel uit als uw gateway MQTT-brug overbelast is."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacten vernieuwd.",
@@ -1026,7 +1032,6 @@
     "receivedViaRf": "Ontvangen via RF",
     "receivedViaMqtt": "Ontvangen via MQTT",
     "receivedViaRfAndMqtt": "Ontvangen via RF + MQTT",
-    "searchButton": "Berichten zoeken (Cmd+F)",
     "closeDm": "Sluit DM",
     "resendMessage": "Bericht opnieuw verzenden",
     "replyButton": "Antwoord",
@@ -1062,7 +1067,19 @@
     "starredMessages": "Favoriete berichten",
     "noStarredMessages": "Nog geen berichten met een ster. Geef elk bericht een ster om het hier op te slaan.",
     "goToMessage": "Ga naar bericht",
-    "receivedViaStoreForward": "Opnieuw afgespeeld vanuit Store & Forward"
+    "receivedViaStoreForward": "Opnieuw afgespeeld vanuit Store & Forward",
+    "fetchStoreForwardHistory": "Inhalen bij Store & Forward",
+    "fetchStoreForwardHistoryHint": "Vraag recente chatgeschiedenis op bij de mesh-router (maximaal 100 berichten)",
+    "fetchStoreForwardHistorySent": "Verzoek om opslag- en doorstuurgeschiedenis verzonden",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Nog geen Store & Forward-router gezien. Wacht op een routerhartslag of controleer het tabblad Modules.",
+      "not_configured": "Radio is nog aan het configureren. Probeer het over een paar seconden opnieuw.",
+      "local_is_server": "Dit apparaat is een Store & Forward-server; geschiedenis wordt opgehaald door andere knooppunten.",
+      "send_failed": "Kan geschiedenisverzoek niet naar de radio sturen. Maak opnieuw verbinding of probeer het opnieuw.",
+      "cooldown": "Er is onlangs geschiedenis opgehaald voor deze router. Wacht voordat je opnieuw een aanvraag indient.",
+      "offline_gate": "Wacht een paar minuten na het opnieuw verbinden voordat de auto-fetch wordt uitgevoerd; gebruik Inhalen handmatig.",
+      "already_requested": "Er wordt al een geschiedenisverzoek uitgevoerd voor deze router."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-pogingen om opnieuw verbinding te maken",
@@ -1216,7 +1233,13 @@
     },
     "cancelMqttConnect": "Annuleren",
     "ripplePresetConfirm": "De Ripple-voorinstelling gebruikt gedeelde gemeenschapsreferenties en schakelt TLS-certificaatverificatie uit. Gebruik dit alleen op een vertrouwd netwerk. Doorgaan?",
-    "meshcorePort": "Poort"
+    "meshcorePort": "Poort",
+    "channelPsksHelp": "AES-128 (16-byte) of AES-256 (32-byte) base64-toetsen, één per regel. Optionele kanaalnaam=base64 voor alleen MQTT. LongFast-standaard wordt altijd geprobeerd. Toetsen van het tabblad Radio worden automatisch gesynchroniseerd wanneer de radio is aangesloten.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Elke sleutel moet worden gedecodeerd tot 16 bytes (AES-128) of 32 bytes (AES-256).",
+    "channelPsksInvalidBase64": "Ongeldige base64 op een PSK-kanaalregel.",
+    "mqttTlsEnabled": "TLS (mqtts/ wss) inschakelen",
+    "mqttTlsInsecure": "Sta onveilige TLS (zelfondertekend certificaat) toe. Standaard uitgeschakeld — alleen inschakelen als uw makelaar een niet-openbare CA gebruikt."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Rijen voor droprouting die ouder zijn dan {{hours}} uur (1–168)",
@@ -1666,7 +1689,8 @@
     "notesPlaceholder": "Privénotities over dit knooppunt (niet verzonden)...",
     "watchNode": "Bekijken",
     "unwatchNode": "Bekijken",
-    "showOnMap": "Weergeven op kaart"
+    "showOnMap": "Weergeven op kaart",
+    "configureRemotely": "Knooppunt op afstand configureren"
   },
   "firmwareStatus": {
     "checking": "Firmwareversie controleren",
@@ -1960,6 +1984,10 @@
       "sdk-meshcore": {
         "label": "MeshCore SDK-waarschuwingen/fouten",
         "recommendation": "MeshCore-stack meldde een waarschuwing of fout. Als het probleem zich herhaalt, controleer dan de BLE-koppeling en de MQTT-instellingen en maak opnieuw verbinding."
+      },
+      "store-forward": {
+        "label": "Problemen met winkel- en doorstuurgeschiedenis",
+        "recommendation": "Chatgeschiedenis opslaan en doorsturen kon niet worden aangevraagd bij een router (vaak een korte race met ander radioverkeer). Als de chatachterstand leeg blijft, maak dan opnieuw verbinding of wacht op de volgende hartslag van de router."
       }
     },
     "recommendationGroups": {
@@ -2043,5 +2071,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Telling Distributie",
     "hopAxis": "Hop"
+  },
+  "configureNode": {
+    "label": "Node configureren",
+    "localDevice": "Dit apparaat (lokaal)",
+    "remoteBanner": "Externe node configureren: {{name}} ({{nodeId}})",
+    "switchToLocal": "Overschakelen naar lokaal",
+    "refresh": "Vernieuwen",
+    "loading": "Configuratie op afstand laden...",
+    "requiresLocalRadio": "Sluit een lokale Meshtastic-radio aan om extern beheer te gebruiken."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Sluit een lokale radio aan om externe knooppunten te beheren.",
+      "publicKeyUnauthorized": "Onbevoegd: voeg de openbare sleutel van deze radio toe aan de beheerderssleutels van het externe knooppunt.",
+      "badSessionKey": "Beheerderssessie verlopen. Vernieuw en probeer het opnieuw.",
+      "pkiFailed": "PKI-codering mislukt. Verifieer knooppuntsleutels en verwijder verouderde admin-kanaalconflicten.",
+      "notAuthorized": "Externe beheerder niet geautoriseerd op het doelknooppunt.",
+      "timeout": "Verzoek voor externe beheerder is verlopen.",
+      "generic": "Verzoek voor externe beheerder mislukt."
+    }
   }
 }

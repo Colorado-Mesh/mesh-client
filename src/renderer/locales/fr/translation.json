@@ -227,42 +227,57 @@
     "deviceMetricsDescription": "Diffusion maillée : à quelle fréquence la batterie, la tension et l'utilisation du canal sont envoyées via LoRa. 0 = désactivé ; par défaut 1800 s (30 min). Application connectée : lorsqu'il est lié via Bluetooth, série ou Wi-Fi, le micrologiciel envoie souvent les métriques de l'appareil à ce client toutes les 60 s environ pour assurer la fraîcheur de l'écran, ce qui n'est pas la même chose que votre intervalle de maillage.",
     "deviceMetricsTooltip": "Le micrologiciel Meshtastic envoie les métriques de l'appareil à un client connecté environ une fois par minute pour une surveillance locale, quel que soit l'intervalle de télémétrie du maillage. Référence officielle : https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
-      "0": {},
-      "1": {}
+      "0": {
+        "label": "Métrique"
+      },
+      "1": {
+        "label": "Impérial"
+      }
     },
     "deviceRoles": {
       "0": {
-        "description": "Mode client normal"
+        "description": "Mode client normal",
+        "label": "Maître d'Ouvrage"
       },
       "1": {
-        "description": "Client qui ne transmet pas"
+        "description": "Client qui ne transmet pas",
+        "label": "Mise en sourdine du client"
       },
       "2": {
-        "description": "Routeur/répéteur dédié"
+        "description": "Routeur/répéteur dédié",
+        "label": "Routeur"
       },
       "3": {
-        "description": "Mode routeur + client"
+        "description": "Mode routeur + client",
+        "label": "Routeur client"
       },
       "4": {
-        "description": "Station de base pour les appareils clients"
+        "description": "Station de base pour les appareils clients",
+        "label": "La base de données clients"
       },
       "5": {
-        "description": "Traceur GPS uniquement"
+        "description": "Traceur GPS uniquement",
+        "label": "Tracker"
       },
       "6": {
-        "description": "Nœud de capteur de télémétrie"
+        "description": "Nœud de capteur de télémétrie",
+        "label": "Capteur"
       },
       "7": {
-        "description": "Appareil compatible TAK"
+        "description": "Appareil compatible TAK",
+        "label": "TAK"
       },
       "8": {
-        "description": "Client, masqué dans la liste des nœuds"
+        "description": "Client, masqué dans la liste des nœuds",
+        "label": "Client masqué"
       },
       "9": {
-        "description": "Annonce la position pour la récupération"
+        "description": "Annonce la position pour la récupération",
+        "label": "Objets trouvés"
       },
       "10": {
-        "description": "Mode suivi TAK"
+        "description": "Mode suivi TAK",
+        "label": "TAK TRACKER"
       }
     },
     "contactsOnRadioBadgeTitle": "Contacts {{part}} à la radio",
@@ -469,7 +484,8 @@
       "noChannelsToExport": "Aucun canal activé à exporter.",
       "parseFailed": "URL du canal non valide : {{message}}",
       "applying": "Application…",
-      "unnamedChannel": "(anonyme)"
+      "unnamedChannel": "(anonyme)",
+      "applySuccessWithSkipped": "Canal(x) {{applied}} appliqué (s) ; {{skipped}} en double ou sans nom ignoré."
     }
   },
   "securityPanel": {
@@ -540,7 +556,10 @@
     "importPrivateKeyLabel": "Importer la clé privée",
     "importPrivateKeyButton": "Importer la clé privée",
     "importingPrivateKey": "Importation...",
-    "regenerateKeysConfirm": "La régénération des clés remplacera vos clés publiques et privées DM actuelles. Tous les messages chiffrés existants ne seront plus déchiffrables. Es-tu sûr?"
+    "regenerateKeysConfirm": "La régénération des clés remplacera vos clés publiques et privées DM actuelles. Tous les messages chiffrés existants ne seront plus déchiffrables. Es-tu sûr?",
+    "copyPublicKey": "Copier",
+    "publicKeyCopied": "Clé publique copiée dans le presse-papiers.",
+    "remoteAdminSetupHint": "Copiez cette clé et ajoutez-la en tant que clé d'administration sur les nœuds distants que vous souhaitez configurer. Voir Docs d'administration à distance Meshtastic."
   },
   "modulePanel": {
     "sectionSent": "{{name}} envoyé. L'appareil peut redémarrer brièvement.",
@@ -835,7 +854,9 @@
     "logPanelHelp": "Lorsqu'il est activé, un flux de journaux en direct apparaît sur la droite. Les lignes de débogage nécessitent la case à cocher dans le panneau de journal.",
     "compactMessages": "Affichage compact des messages",
     "notificationsSection": "Notifications",
-    "soundNotifications": "Notifications sonores"
+    "soundNotifications": "Notifications sonores",
+    "storeForwardAutoFetchHistory": "Récupérer automatiquement l'historique du chat Store & Forward lors de la connexion",
+    "storeForwardAutoFetchHistoryHint": "Sur RF Connect, demandez jusqu'à 50 messages (temps de recharge de 15 minutes entre les extractions). Éteignez si votre passerelle MQTT Bridge est surchargée."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacts actualisés.",
@@ -1011,7 +1032,6 @@
     "receivedViaRf": "Reçu par RF",
     "receivedViaMqtt": "Reçu via MQTT",
     "receivedViaRfAndMqtt": "Reçu via RF + MQTT",
-    "searchButton": "Rechercher des messages (Cmd+F)",
     "closeDm": "Fermer DM",
     "resendMessage": "Renvoyer le message",
     "replyButton": "Répondre",
@@ -1047,7 +1067,19 @@
     "starredMessages": "Messages favoris",
     "noStarredMessages": "Pas encore de messages marqués d'une étoile. Cochez n'importe quel message pour l'enregistrer ici.",
     "goToMessage": "Aller au message",
-    "receivedViaStoreForward": "Rejoué à partir de Store & Forward"
+    "receivedViaStoreForward": "Rejoué à partir de Store & Forward",
+    "fetchStoreForwardHistory": "Rattraper depuis Store & Forward",
+    "fetchStoreForwardHistoryHint": "Demander l'historique des discussions récentes au routeur maillé (jusqu'à 100 messages)",
+    "fetchStoreForwardHistorySent": "Demande d'historique de stockage et de transfert envoyée",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Aucun routeur Store & Forward vu pour le moment. Attendez un battement de cœur du routeur ou vérifiez l'onglet Modules.",
+      "not_configured": "La radio est toujours en cours de configuration. Réessayez dans quelques secondes.",
+      "local_is_server": "Cet appareil est un serveur Store & Forward ; l'historique est récupéré par d'autres nœuds.",
+      "send_failed": "Impossible d'envoyer la demande d'historique à la radio. Reconnectez-vous ou réessayez.",
+      "cooldown": "L'historique a été récupéré récemment pour ce routeur. Attendez avant de refaire une demande.",
+      "offline_gate": "Attendez quelques minutes après la reconnexion avant que la récupération automatique ne s'exécute ; utilisez Rattraper manuellement.",
+      "already_requested": "Une demande d'historique est déjà en cours pour ce routeur."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Nombre maximal de tentatives de reconnexion MQTT",
@@ -1201,7 +1233,13 @@
     },
     "cancelMqttConnect": "Annuler",
     "ripplePresetConfirm": "Le préréglage Ripple utilise les informations d'identification de la communauté partagée et désactive la vérification du certificat TLS. Utilisez-le uniquement sur un réseau de confiance. Continuer ?",
-    "meshcorePort": "Port"
+    "meshcorePort": "Port",
+    "channelPsksHelp": "Clés AES-128 (16 octets) ou AES-256 (32 octets) base64, une par ligne. Nom de canal facultatif =base64 pour MQTT uniquement. La valeur par défaut LongFast est toujours essayée. Les touches de l'onglet Radio se synchronisent automatiquement lorsque la radio est connectée.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Chaque clé doit décoder à 16 octets (AES-128) ou 32 octets (AES-256).",
+    "channelPsksInvalidBase64": "Base64 non valide sur une ligne PSK de canal.",
+    "mqttTlsEnabled": "Activer TLS (mqtts / wss)",
+    "mqttTlsInsecure": "Autoriser les TLS non sécurisés (certificat auto-signé). Désactivé par défaut — activer uniquement si votre courtier utilise une autorité de certification non publique."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Collectez lignes de routage de plus de {{hours}} heures (1–168)",
@@ -1651,7 +1689,8 @@
     "notesPlaceholder": "Notes privées sur ce nœud (non transmises)…",
     "watchNode": "Regarder",
     "unwatchNode": "Marseille",
-    "showOnMap": "Voir sur la carte"
+    "showOnMap": "Voir sur la carte",
+    "configureRemotely": "Configurer le nœud à distance"
   },
   "firmwareStatus": {
     "checking": "Vérification de la version du firmware...",
@@ -1871,61 +1910,84 @@
   "logAnalyzer": {
     "categories": {
       "ble-connection": {
-        "recommendation": "Connexion BLE instable. Vérifiez la distance par rapport à l'appareil et l'état de l'adaptateur Bluetooth."
+        "recommendation": "Connexion BLE instable. Vérifiez la distance par rapport à l'appareil et l'état de l'adaptateur Bluetooth.",
+        "label": "Problèmes de connexion"
       },
       "mqtt": {
-        "recommendation": "Problèmes de connexion MQTT. Vérifiez l'URL du courtier, les informations d'identification et la connectivité réseau."
+        "recommendation": "Problèmes de connexion MQTT. Vérifiez l'URL du courtier, les informations d'identification et la connectivité réseau.",
+        "label": "Problèmes MQTT"
       },
       "mqtt-retries-exhausted": {
-        "recommendation": "MQTT a abandonné après un maximum de reconnexions. Vérifiez que le courtier est accessible, que les informations d'identification et le port sont corrects et que les pare-feu autorisent le trafic sortant."
+        "recommendation": "MQTT a abandonné après un maximum de reconnexions. Vérifiez que le courtier est accessible, que les informations d'identification et le port sont corrects et que les pare-feu autorisent le trafic sortant.",
+        "label": "Limite de reconnexion MQTT"
       },
       "watchdog": {
-        "recommendation": "Le chien de garde a déclenché la reconnexion. La communication de l'appareil peut être instable."
+        "recommendation": "Le chien de garde a déclenché la reconnexion. La communication de l'appareil peut être instable.",
+        "label": "Déclencheurs de chien de garde"
       },
       "handshake": {
-        "recommendation": "La négociation de connexion a échoué. Essayez de vous reconnecter manuellement."
+        "recommendation": "La négociation de connexion a échoué. Essayez de vous reconnecter manuellement.",
+        "label": "Échecs de poignée de main"
       },
       "ble-connect-race": {
-        "recommendation": "La poignée de main BLE a expiré ou a couru avec déconnexion. Vérifiez la stabilité de la connexion BLE et la distance par rapport à l'appareil."
+        "recommendation": "La poignée de main BLE a expiré ou a couru avec déconnexion. Vérifiez la stabilité de la connexion BLE et la distance par rapport à l'appareil.",
+        "label": "Ble Connect Race/Timeout"
       },
       "auth-decrypt": {
-        "recommendation": "Échec d’authentification ou de décryptage. Vérifiez que les clés de canal correspondent entre les appareils."
+        "recommendation": "Échec d’authentification ou de décryptage. Vérifiez que les clés de canal correspondent entre les appareils.",
+        "label": "Échecs d'authentification/décryptage"
       },
       "native-module": {
-        "recommendation": "Un module complémentaire natif n'a pas pu se charger – souvent un Electron ABI erroné après une mise à niveau. Exécutez l'installation de pnpm dans le dossier du projet (ou la reconstruction d'exécution de pnpm), quittez toutes les instances de l'application et réessayez."
+        "recommendation": "Un module complémentaire natif n'a pas pu se charger – souvent un Electron ABI erroné après une mise à niveau. Exécutez l'installation de pnpm dans le dossier du projet (ou la reconstruction d'exécution de pnpm), quittez toutes les instances de l'application et réessayez.",
+        "label": "Échec de chargement du module natif"
       },
       "internal-error": {
-        "recommendation": "Une erreur interne inattendue s'est produite. Veuillez signaler ce bug avec le fichier journal."
+        "recommendation": "Une erreur interne inattendue s'est produite. Veuillez signaler ce bug avec le fichier journal.",
+        "label": "Erreurs internes de l'application"
       },
       "database-error": {
-        "recommendation": "Erreur de base de données. Cela peut indiquer un fichier de base de données corrompu ou un problème d'autorisation."
+        "recommendation": "Erreur de base de données. Cela peut indiquer un fichier de base de données corrompu ou un problème d'autorisation.",
+        "label": "Défaillances de la base de données"
       },
       "database-chmod": {
-        "recommendation": "L’ajustement des autorisations du fichier de base de données a échoué (souvent inoffensif sous Windows). Si vous voyez de vraies erreurs de base de données ailleurs, vérifiez les autorisations de l'antivirus et des dossiers pour le répertoire userData du client maillé."
+        "recommendation": "L’ajustement des autorisations du fichier de base de données a échoué (souvent inoffensif sous Windows). Si vous voyez de vraies erreurs de base de données ailleurs, vérifiez les autorisations de l'antivirus et des dossiers pour le répertoire userData du client maillé.",
+        "label": "Base de données chmod (non fatale)"
       },
       "database-writable": {
-        "recommendation": "L'application ne peut pas écrire son dossier de base de données. Corrigez les autorisations sur le répertoire userData du client maillé (voir dépannage : le répertoire de la base de données n'est pas accessible en écriture)."
+        "recommendation": "L'application ne peut pas écrire son dossier de base de données. Corrigez les autorisations sur le répertoire userData du client maillé (voir dépannage : le répertoire de la base de données n'est pas accessible en écriture).",
+        "label": "Base de données non inscriptible"
       },
       "tak-server": {
-        "recommendation": "Erreur du serveur TAK. Vérifiez l'état du certificat et la disponibilité du port."
+        "recommendation": "Erreur du serveur TAK. Vérifiez l'état du certificat et la disponibilité du port.",
+        "label": "Problèmes de serveur TAK"
       },
       "updater": {
-        "recommendation": "Erreur du programme de mise à jour de l'application. Vérifiez votre connexion Internet ou essayez une mise à jour manuelle depuis GitHub."
+        "recommendation": "Erreur du programme de mise à jour de l'application. Vérifiez votre connexion Internet ou essayez une mise à jour manuelle depuis GitHub.",
+        "label": "Erreurs du programme de mise à jour de l'application"
       },
       "meshcore-tcp": {
-        "recommendation": "Erreur de pont TCP MeshCore. Vérifiez que l'hôte distant et le port sont accessibles."
+        "recommendation": "Erreur de pont TCP MeshCore. Vérifiez que l'hôte distant et le port sont accessibles.",
+        "label": "Erreurs de pont IP MeshCore"
       },
       "ble-meshcore-notify-watchdog": {
-        "recommendation": "Aucune donnée de notification du GATT dans la fenêtre de surveillance (courante sous Windows). Réessayez de vous connecter ; assurez-vous que la radio est couplée dans les paramètres Bluetooth du système d'exploitation avant de vous connecter."
+        "recommendation": "Aucune donnée de notification du GATT dans la fenêtre de surveillance (courante sous Windows). Réessayez de vous connecter ; assurez-vous que la radio est couplée dans les paramètres Bluetooth du système d'exploitation avant de vous connecter.",
+        "label": "Chien de garde ble Notify (MeshCore)"
       },
       "bluetooth-pairing": {
-        "recommendation": "Le couplage ou le dissociation Bluetooth a échoué, ou l'invite du code PIN a expiré. Ouvrez l'application lors du couplage, entrez le code PIN rapidement, vérifiez l'adresse MAC et les autorisations Bluetooth, ou supprimez et ré-appairez les paramètres Bluetooth du système d'exploitation."
+        "recommendation": "Le couplage ou le dissociation Bluetooth a échoué, ou l'invite du code PIN a expiré. Ouvrez l'application lors du couplage, entrez le code PIN rapidement, vérifiez l'adresse MAC et les autorisations Bluetooth, ou supprimez et ré-appairez les paramètres Bluetooth du système d'exploitation.",
+        "label": "Problèmes de couplage Bluetooth"
       },
       "sdk-meshtastic": {
-        "recommendation": "La pile Meshtastic a signalé un avertissement ou une erreur. Si cela se répète, vérifiez le micrologiciel, le transport (BLE/série) et reconnectez-vous."
+        "recommendation": "La pile Meshtastic a signalé un avertissement ou une erreur. Si cela se répète, vérifiez le micrologiciel, le transport (BLE/série) et reconnectez-vous.",
+        "label": "Avertissements/erreurs du SDK Meshtastic"
       },
       "sdk-meshcore": {
-        "recommendation": "La pile MeshCore a signalé un avertissement ou une erreur. Si cela se répète, vérifiez le couplage BLE, les paramètres MQTT et reconnectez-vous."
+        "recommendation": "La pile MeshCore a signalé un avertissement ou une erreur. Si cela se répète, vérifiez le couplage BLE, les paramètres MQTT et reconnectez-vous.",
+        "label": "Avertissements/erreurs du SDK MeshCore"
+      },
+      "store-forward": {
+        "label": "Problèmes d'historique de stockage et de transfert",
+        "recommendation": "L'historique du chat Store & Forward n'a pas pu être demandé à un routeur (souvent une brève course avec d'autres trafics radio). Si le backlog de discussion reste vide, reconnectez-vous ou attendez le prochain battement de cœur du routeur."
       }
     },
     "recommendationGroups": {
@@ -1963,7 +2025,8 @@
       "lostAndFound": "Perdu et retrouvé",
       "takTracker": "Traqueur TAK",
       "routerLate": "Routeur en retard",
-      "clientBase": "Clientèle"
+      "clientBase": "Clientèle",
+      "client": "Maître d'Ouvrage"
     }
   },
   "signalPropagation": {
@@ -2008,5 +2071,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribution du nombre de sauts",
     "hopAxis": "Sauts"
+  },
+  "configureNode": {
+    "label": "Configurer le nœud",
+    "localDevice": "Cet appareil (local)",
+    "remoteBanner": "Configuration du nœud distant : {{name}} ({{nodeId}})",
+    "switchToLocal": "Passer en local",
+    "refresh": "Renouvellement",
+    "loading": "Chargement de la configuration à distance…",
+    "requiresLocalRadio": "Connectez une radio Meshtastic locale pour utiliser l'administration à distance."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Connectez une radio locale pour administrer les nœuds distants.",
+      "publicKeyUnauthorized": "Non autorisé : ajoutez la clé publique de cette radio aux clés d'administration du nœud distant.",
+      "badSessionKey": "La session d'administration a expiré. Actualisez et réessayez.",
+      "pkiFailed": "Le chiffrement PKI a échoué. Vérifiez les clés de nœud et supprimez les conflits de canaux d'administration hérités.",
+      "notAuthorized": "Administrateur distant non autorisé sur le nœud cible.",
+      "timeout": "La demande d'administration à distance a expiré.",
+      "generic": "Échec de la demande d'administration à distance."
+    }
   }
 }

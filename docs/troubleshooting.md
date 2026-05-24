@@ -342,6 +342,26 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 - Check that port 1883 (or 8883/443 for TLS/WebSocket) is allowed through your firewall
 - For WebSocket brokers (port 443), ensure "Use WebSocket" is enabled in the MQTT settings
 
+### MQTT: private broker — no decrypt or no uplink
+
+**Cause**: Wrong channel PSK, missing AES-256 key, or TLS not enabled when the broker expects `mqtts`/`wss` on a non-standard port.
+
+**Fix**:
+
+- In the Connection tab **Channel PSKs** field, enter base64 keys (16 bytes for AES-128, 32 bytes for AES-256), one per line; use `ChannelName=base64` for MQTT-only channel names. LongFast default is always tried; connect your radio so Radio-tab keys sync automatically.
+- Enable **Enable TLS (mqtts / wss)** when the broker requires TLS but you are not on port 8883/443. Use **Allow insecure TLS** only for self-signed or private CA certificates.
+
+### Meshtastic: Configure node remotely does nothing or is disabled
+
+**Cause**: PKC remote administration (firmware 2.5+) requires a **connected local Meshtastic radio** as the admin path. MQTT-only connections cannot administer remote nodes. The target node must be reachable through your radio, and trust may require a one-time public-key exchange.
+
+**Fix**:
+
+- Connect via BLE, Serial, or HTTP/WiFi (not MQTT-only).
+- Use **Configure node** on Radio, Modules, or Security, or **Configure node remotely** from node detail.
+- For first-time trust, use **Copy** public key on the Security tab and complete setup on the remote node per Meshtastic PKC docs.
+- See [README — Security (PKI)](../README.md#key-features) for the full feature list.
+
 ### BLE auto-reconnect: "No previously connected BLE device found"
 
 **Cause**: The reconnect card appeared, but the browser lost the cached device handle; for example, the app was fully quit and relaunched.

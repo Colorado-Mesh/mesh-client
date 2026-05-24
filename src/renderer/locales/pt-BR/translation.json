@@ -484,7 +484,8 @@
       "noChannelsToExport": "Nenhum canal habilitado para exportar.",
       "parseFailed": "URL do canal inválido: {{message}}",
       "applying": "Aplicando",
-      "unnamedChannel": "(Sem Nome)"
+      "unnamedChannel": "(Sem Nome)",
+      "applySuccessWithSkipped": "Canal(is) {{applied}} aplicado (s); ignorado (s) {{skipped}} duplicado (s) ou sem nome."
     }
   },
   "securityPanel": {
@@ -555,7 +556,10 @@
     "importPrivateKeyLabel": "Importar chave privada",
     "importPrivateKeyButton": "Importar chave privada",
     "importingPrivateKey": "Importando...",
-    "regenerateKeysConfirm": "A regeneração de chaves substituirá suas chaves públicas e privadas DM atuais. Quaisquer mensagens criptografadas existentes não serão mais descriptografáveis. Tem certeza?"
+    "regenerateKeysConfirm": "A regeneração de chaves substituirá suas chaves públicas e privadas DM atuais. Quaisquer mensagens criptografadas existentes não serão mais descriptografáveis. Tem certeza?",
+    "copyPublicKey": "Copiar",
+    "publicKeyCopied": "Chave pública copiada para a área de transferência.",
+    "remoteAdminSetupHint": "Copie esta chave e adicione-a como uma chave de administrador nos nós remotos que você deseja configurar. Consulte os documentos de administração remota do Meshtastic."
   },
   "modulePanel": {
     "sectionSent": "{{name}} enviado. O dispositivo pode reiniciar brevemente.",
@@ -850,7 +854,9 @@
     "logPanelHelp": "Quando ativado, um fluxo de log ao vivo aparece à direita. As linhas de depuração exigem a caixa de seleção dentro do painel de log.",
     "compactMessages": "Visualização de mensagem compacta",
     "notificationsSection": "Notificações",
-    "soundNotifications": "Notificações sonoras"
+    "soundNotifications": "Notificações sonoras",
+    "storeForwardAutoFetchHistory": "Buscar automaticamente o histórico de bate-papo Armazenar e Encaminhar no Connect",
+    "storeForwardAutoFetchHistoryHint": "Na conexão RF, solicite até 50 mensagens (recarga de 15 minutos entre as capturas). Desligue se a ponte MQTT do gateway estiver sobrecarregada."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contatos atualizados.",
@@ -1026,7 +1032,6 @@
     "receivedViaRf": "Recebido via RF",
     "receivedViaMqtt": "Recebido via MQTT",
     "receivedViaRfAndMqtt": "Recebido via RF + MQTT",
-    "searchButton": "Pesquisar mensagens (Cmd+F)",
     "closeDm": "Fechar DM",
     "resendMessage": "Reenviar mensagem",
     "replyButton": "Responder",
@@ -1062,7 +1067,19 @@
     "starredMessages": "Mensagens marcadas com estrela",
     "noStarredMessages": "Ainda não há mensagens marcadas com estrela. Marque qualquer mensagem para salvá-la aqui.",
     "goToMessage": "Ir para a mensagem",
-    "receivedViaStoreForward": "Reproduzido de Store & Forward"
+    "receivedViaStoreForward": "Reproduzido de Store & Forward",
+    "fetchStoreForwardHistory": "Atualizar a partir da Loja e Encaminhar",
+    "fetchStoreForwardHistoryHint": "Solicitar histórico de conversas recentes do roteador mesh (até 100 mensagens)",
+    "fetchStoreForwardHistorySent": "Pedido de histórico de armazenamento e encaminhamento enviado",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Ainda não foi visto nenhum roteador Store & Forward. Aguarde um batimento cardíaco do roteador ou verifique a guia Módulos.",
+      "not_configured": "O rádio ainda está configurando. Tente novamente em alguns segundos.",
+      "local_is_server": "Este dispositivo é um histórico do Servidor de Armazenamento e Encaminhamento; é obtido por outros nós.",
+      "send_failed": "Não foi possível enviar a solicitação de histórico para o rádio. Reconecte ou tente novamente.",
+      "cooldown": "O histórico foi obtido recentemente para este roteador. Aguarde antes de solicitar novamente.",
+      "offline_gate": "Aguarde alguns minutos após a reconexão antes de executar a busca automática; use Atualizar a partir da Loja e Encaminhar manualmente.",
+      "already_requested": "Uma solicitação de histórico já está em andamento para este roteador."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Tentativas máximas de reconexão do MQTT",
@@ -1216,7 +1233,13 @@
     },
     "cancelMqttConnect": "Cancelar",
     "ripplePresetConfirm": "A predefinição do Ripple usa credenciais compartilhadas da comunidade e desabilita a verificação do certificado TLS. Use isso apenas em uma rede confiável. Continuar?",
-    "meshcorePort": "Porto"
+    "meshcorePort": "Porto",
+    "channelPsksHelp": "Chaves AES-128 (16 bytes) ou AES-256 (32 bytes) base64, uma por linha. ChannelName opcional =base64 apenas para MQTT. O padrão LongFast é sempre tentado. As teclas da guia Rádio são sincronizadas automaticamente quando o rádio está conectado.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Cada chave deve decodificar para 16 bytes (AES-128) ou 32 bytes (AES-256).",
+    "channelPsksInvalidBase64": "Base64 inválida em uma linha PSK do canal.",
+    "mqttTlsEnabled": "Ativar TLS (mqtts / wss)",
+    "mqttTlsInsecure": "Permitir TLS (certificado autoassinado) inseguro. Desativado por padrão — ative apenas se a sua corretora usar uma autoridade de certificação não pública."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Remova as linhas de roteamento com mais de {{hours}} horas (1–168)",
@@ -1666,7 +1689,8 @@
     "notesPlaceholder": "Notas privadas sobre este nó (não transmitidas)...",
     "watchNode": "Acompanhar",
     "unwatchNode": "Acompanhando",
-    "showOnMap": "Mostrar no mapa"
+    "showOnMap": "Mostrar no mapa",
+    "configureRemotely": "Configurar nó remotamente"
   },
   "firmwareStatus": {
     "checking": "Verificando a versão do firmware",
@@ -1960,6 +1984,10 @@
       "sdk-meshcore": {
         "label": "Avisos/erros do SDK do MeshCore",
         "recommendation": "A pilha MeshCore relatou um aviso ou erro. Se isso se repetir, verifique o emparelhamento BLE, as configurações MQTT e reconecte."
+      },
+      "store-forward": {
+        "label": "Armazenar e encaminhar problemas de histórico",
+        "recommendation": "O histórico de bate-papo de armazenamento e encaminhamento não pôde ser solicitado a um roteador (geralmente uma breve corrida com outro tráfego de rádio). Se o backlog do chat permanecer vazio, reconecte-se ou aguarde o próximo batimento cardíaco do roteador."
       }
     },
     "recommendationGroups": {
@@ -2043,5 +2071,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribuição de Contagem de Saltos",
     "hopAxis": "Saltos"
+  },
+  "configureNode": {
+    "label": "Configurar nó",
+    "localDevice": "Este dispositivo (local)",
+    "remoteBanner": "Configurando o nó remoto: {{name}} ({{nodeId}})",
+    "switchToLocal": "Mudar para Local",
+    "refresh": "Atualizar",
+    "loading": "Carregando configuração remota…",
+    "requiresLocalRadio": "Conecte um rádio Meshtastic local para usar a administração remota."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Conecte um rádio local para administrar nós remotos.",
+      "publicKeyUnauthorized": "Não autorizado: adicione a chave pública deste rádio às chaves de administrador do nó remoto.",
+      "badSessionKey": "A sessão de administrador expirou. Atualize e tente novamente.",
+      "pkiFailed": "Falha na criptografia PKI. Verifique as chaves do nó e remova os conflitos de canal de administração herdados.",
+      "notAuthorized": "Administrador remoto não autorizado no nó de destino.",
+      "timeout": "A solicitação de administrador remoto expirou.",
+      "generic": "Falha na solicitação de administração remota."
+    }
   }
 }

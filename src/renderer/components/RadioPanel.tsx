@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import type { ApplyChannelSetResult } from '@/shared/meshtasticChannelApply';
 import {
   generateConfigUrl,
   type MeshtasticLoraConfig,
@@ -29,6 +30,7 @@ import {
   meshcoreSelfInfoFreqToDisplayHz,
 } from '../lib/meshcoreUtils';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
+import type { ConfigTargetContext } from '../lib/types';
 import { HelpTooltip } from './HelpTooltip';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
 import MeshcoreTelemetryPrivacySection from './MeshcoreTelemetryPrivacySection';
@@ -45,6 +47,7 @@ interface ChannelConfig {
 }
 
 interface Props {
+  configTarget?: ConfigTargetContext;
   onSetConfig: (config: unknown) => Promise<void>;
   onCommit: () => Promise<void>;
   onSetChannel: (config: {
@@ -102,7 +105,7 @@ interface Props {
   onApplyChannelSet?: (
     parsed: ParsedChannelSet,
     options?: { applyLora?: boolean },
-  ) => Promise<void>;
+  ) => Promise<ApplyChannelSetResult>;
   onApplyMeshcoreContactAutoAdd?: (params: {
     autoAddAll: boolean;
     overwriteOldest: boolean;
@@ -563,6 +566,7 @@ interface PendingAction {
 }
 
 export default function RadioPanel({
+  configTarget,
   onSetConfig,
   onCommit,
   onSetChannel,
@@ -737,7 +741,7 @@ export default function RadioPanel({
   const [advertLoading, setAdvertLoading] = useState(false);
   const [syncClockLoading, setSyncClockLoading] = useState(false);
 
-  const disabled = !isConnected;
+  const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
 
   const applyConfig = async (
     section: string,
@@ -1008,6 +1012,14 @@ export default function RadioPanel({
         <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
           {t('radioPanel.connectToConfigure')}
         </div>
+      )}
+
+      {configTarget?.mode === 'remote' && configTarget.isLoading && (
+        <p className="text-muted text-sm">{t('configureNode.loading')}</p>
+      )}
+
+      {configTarget?.mode === 'remote' && configTarget.error && (
+        <p className="text-sm text-red-400">{t(configTarget.error)}</p>
       )}
 
       {/* ═══ Bluetooth ═══ */}
@@ -2184,7 +2196,7 @@ function ChannelUrlImportExport({
   onApplyChannelSet?: (
     parsed: ParsedChannelSet,
     options?: { applyLora?: boolean },
-  ) => Promise<void>;
+  ) => Promise<ApplyChannelSetResult>;
   disabled: boolean;
   setStatus: (s: string) => void;
 }) {
@@ -2272,10 +2284,19 @@ function ChannelUrlImportExport({
     if (!onApplyChannelSet) return;
     setApplying(true);
     try {
-      await onApplyChannelSet(target, {
+      const result = await onApplyChannelSet(target, {
         applyLora: target.mode === 'replace' ? true : applyLoraOnAdd,
       });
-      setStatus(t('radioPanel.channelUrl.applySuccess'));
+      if (result.skipped.length > 0) {
+        setStatus(
+          t('radioPanel.channelUrl.applySuccessWithSkipped', {
+            applied: result.appliedCount,
+            skipped: result.skipped.length,
+          }),
+        );
+      } else {
+        setStatus(t('radioPanel.channelUrl.applySuccess'));
+      }
       setImportUrl('');
       setConfirmApply(null);
     } catch (e) {
@@ -2413,9 +2434,9 @@ function ChannelUrlImportExport({
                 <li key={i}>
                   {t('radioPanel.channelUrl.channelRow', {
                     role:
-                      i === 0
-                        ? t('radioPanel.channelUrl.rolePrimary')
-                        : t('radioPanel.channelUrl.roleSecondary'),
+                      parsed.mode === 'add' || i > 0
+                        ? t('radioPanel.channelUrl.roleSecondary')
+                        : t('radioPanel.channelUrl.rolePrimary'),
                     name: ch.name || t('radioPanel.channelUrl.unnamedChannel'),
                     psk: pskFingerprint(ch.psk),
                     uplink: ch.uplinkEnabled ? '✓' : '✗',
@@ -2512,7 +2533,7 @@ function ChannelSection({
   onApplyChannelSet?: (
     parsed: ParsedChannelSet,
     options?: { applyLora?: boolean },
-  ) => Promise<void>;
+  ) => Promise<ApplyChannelSetResult>;
 }) {
   const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);

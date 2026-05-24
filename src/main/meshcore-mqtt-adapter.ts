@@ -29,9 +29,9 @@ function buildMeshcoreUrlForLog(settings: MQTTSettings): string {
     const scheme = wsTlsEnabled ? 'wss' : 'ws';
     return `${scheme}://${host}:${settings.port}${wsPath}`;
   }
-  return settings.port === 8883
-    ? `mqtts://${host}:${settings.port}`
-    : `mqtt://${host}:${settings.port}`;
+  const useTls =
+    settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 8883);
+  return useTls ? `mqtts://${host}:${settings.port}` : `mqtt://${host}:${settings.port}`;
 }
 
 /** Time allowed for TCP/TLS/WebSocket + MQTT CONNACK (slow networks, captive portals). */
@@ -252,8 +252,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     const isV1Username = /^v1_[0-9A-Fa-f]{64}$/i.test(settings.username ?? '');
     const clientId = isV1Username
       ? settings.username
-      : `meshcore-mqtt-${randomBytes(4).toString('hex')}`;
-    const useTls = settings.port === 8883;
+      : settings.clientId?.trim() || `meshcore-mqtt-${randomBytes(4).toString('hex')}`;
+    const useTls =
+      settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 8883);
     const rejectUnauthorizedTls = useTls ? !settings.tlsInsecure : false;
     const logUrl = buildMeshcoreUrlForLog(settings);
 

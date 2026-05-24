@@ -484,7 +484,8 @@
       "noChannelsToExport": "내보낼 수 있는 채널이 없습니다.",
       "parseFailed": "유효하지 않은 채널 URL: {{message}}",
       "applying": "적용 중…",
-      "unnamedChannel": "(이름 없음)"
+      "unnamedChannel": "(이름 없음)",
+      "applySuccessWithSkipped": "{{applied}}개 채널을 적용했습니다. {{skipped}}개의 중복 또는 이름 없는 채널을 건너뛰었습니다."
     }
   },
   "securityPanel": {
@@ -555,7 +556,10 @@
     "importPrivateKeyLabel": "개인 키 가져오기",
     "importPrivateKeyButton": "개인 키 가져오기",
     "importingPrivateKey": "가져오는 중...",
-    "regenerateKeysConfirm": "키를 다시 생성하면 현재 DM 공개 및 개인 키가 대체됩니다. 기존의 암호화된 메시지는 더 이상 해독할 수 없습니다. 확실합니까?"
+    "regenerateKeysConfirm": "키를 다시 생성하면 현재 DM 공개 및 개인 키가 대체됩니다. 기존의 암호화된 메시지는 더 이상 해독할 수 없습니다. 확실합니까?",
+    "copyPublicKey": "복사",
+    "publicKeyCopied": "공개 키가 클립보드에 복사되었습니다.",
+    "remoteAdminSetupHint": "이 키를 복사하여 구성하려는 원격 노드에 관리 키로 추가합니다. Meshtastic 원격 관리자 문서를 참조하세요."
   },
   "modulePanel": {
     "sectionSent": "{{name}} 보냈습니다. 장치가 잠시 재부팅될 수 있습니다.",
@@ -850,7 +854,9 @@
     "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다.",
     "compactMessages": "간결한 메시지 보기",
     "notificationsSection": "토",
-    "soundNotifications": "소리 알림"
+    "soundNotifications": "소리 알림",
+    "storeForwardAutoFetchHistory": "연결 시 스토어 및 전달 채팅 내역 자동 가져오기",
+    "storeForwardAutoFetchHistoryHint": "RF 연결 시 최대 50개의 메시지를 요청합니다 (가져오기 사이의 재사용 대기 시간 15분). 게이트웨이 MQTT 브리지에 과부하가 걸리면 끄십시오."
   },
   "nodeListPanel": {
     "contactsRefreshed": "연락처가 새로 고쳐졌습니다.",
@@ -1026,7 +1032,6 @@
     "receivedViaRf": "RF를 통해 수신됨",
     "receivedViaMqtt": "MQTT를 통해 수신됨",
     "receivedViaRfAndMqtt": "RF + MQTT를 통해 수신됨",
-    "searchButton": "메시지 검색(Cmd+F)",
     "closeDm": "DM 닫기",
     "resendMessage": "메시지 다시 보내기",
     "replyButton": "회신하다",
@@ -1062,7 +1067,19 @@
     "starredMessages": "별표 표시된 메세지",
     "noStarredMessages": "아직 별표 표시된 메시지가 없습니다. 여기에 저장하려면 메시지에 별표를 표시하세요.",
     "goToMessage": "메시지",
-    "receivedViaStoreForward": "스토어 & 포워드에서 재생됨"
+    "receivedViaStoreForward": "스토어 & 포워드에서 재생됨",
+    "fetchStoreForwardHistory": "스토어 & 포워드에서 따라잡기",
+    "fetchStoreForwardHistoryHint": "메시 라우터에서 최근 채팅 기록 요청 (최대 100개 메시지)",
+    "fetchStoreForwardHistorySent": "스토어 및 전달 내역 요청 전송됨",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "아직 스토어 및 포워드 라우터가 없습니다. 라우터 하트비트를 기다리거나 모듈 탭을 확인하십시오.",
+      "not_configured": "라디오는 여전히 구성 중입니다. 몇 초 후에 다시 시도하세요.",
+      "local_is_server": "이 장치는 스토어 및 포워드 서버입니다. 히스토리는 다른 노드에서 가져옵니다.",
+      "send_failed": "라디오에 기록 요청을 보낼 수 없습니다. 다시 연결하거나 다시 시도하세요.",
+      "cooldown": "최근 이 라우터에 대한 기록을 가져왔습니다. 다시 요청하기 전에 기다리세요.",
+      "offline_gate": "자동 가져오기가 실행되기 전에 다시 연결한 후 몇 분 정도 기다리십시오. 수동으로 따라잡기를 사용하십시오.",
+      "already_requested": "이 라우터에 대한 기록 요청이 이미 진행 중입니다."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "최대 MQTT 재연결 시도",
@@ -1216,7 +1233,13 @@
     },
     "cancelMqttConnect": "취소",
     "ripplePresetConfirm": "리플 사전 설정은 공유 커뮤니티 자격 증명을 사용하고 TLS 인증서 확인을 비활성화합니다. 신뢰할 수 있는 네트워크에서만 사용하십시오. 계속하시겠습니까?",
-    "meshcorePort": "포팅하기"
+    "meshcorePort": "포팅하기",
+    "channelPsksHelp": "AES-128 (16바이트) 또는 AES-256 (32바이트) base64 키 (한 줄에 하나씩). 선택적 ChannelName = MQTT 전용 base64. LongFast 기본값은 항상 시도됩니다. 라디오 탭의 키는 라디오가 연결될 때 자동으로 동기화됩니다.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP + rz05pAQ = =\nHamNet = yourBase64KeyHere",
+    "channelPsksInvalidLength": "각 키는 16바이트 (AES-128) 또는 32바이트 (AES-256) 로 디코딩해야 합니다.",
+    "channelPsksInvalidBase64": "채널 PSK 라인에서 유효하지 않은 base64.",
+    "mqttTlsEnabled": "TLS 활성화 (mqtts/wss)",
+    "mqttTlsInsecure": "안전하지 않은 TLS (자체 서명된 인증서) 를 허용합니다. 기본적으로 사용 안 함 — 브로커가 비공개 CA를 사용하는 경우에만 사용하도록 설정합니다."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}}시간(1~168)보다 오래된 라우팅 행 삭제",
@@ -1666,7 +1689,8 @@
     "notesPlaceholder": "이 노드에 대한 비공개 메모 (전송되지 않음)...",
     "watchNode": "보기",
     "unwatchNode": "보는중..",
-    "showOnMap": "(지도에서 표시)"
+    "showOnMap": "(지도에서 표시)",
+    "configureRemotely": "원격으로 노드 구성"
   },
   "firmwareStatus": {
     "checking": "펌웨어 버전 확인 중",
@@ -1960,6 +1984,10 @@
       "sdk-meshcore": {
         "label": "MeshCore SDK 경고/오류",
         "recommendation": "MeshCore 스택이 경고 또는 오류를 보고했습니다. 반복되면 BLE 페어링, MQTT 설정을 확인하고 다시 연결하세요."
+      },
+      "store-forward": {
+        "label": "스토어 및 전달 내역 문제",
+        "recommendation": "라우터에서 스토어 및 포워드 채팅 기록을 요청할 수 없습니다 (종종 다른 무선 트래픽과의 짧은 레이스). 채팅 백로그가 비어 있는 경우 다시 연결하거나 다음 라우터 하트비트를 기다립니다."
       }
     },
     "recommendationGroups": {
@@ -2043,5 +2071,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "홉 수 분포",
     "hopAxis": "홉"
+  },
+  "configureNode": {
+    "label": "노드 구성",
+    "localDevice": "이 장치 (로컬)",
+    "remoteBanner": "원격 노드 구성: {{name}} ({{nodeId}})",
+    "switchToLocal": "로컬로 전환",
+    "refresh": "새로 고침",
+    "loading": "원격 구성 로드 중...",
+    "requiresLocalRadio": "원격 관리를 사용하려면 로컬 Meshtastic 라디오를 연결하십시오."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "로컬 라디오를 연결하여 원격 노드를 관리합니다.",
+      "publicKeyUnauthorized": "승인되지 않음: 이 라디오의 공개 키를 원격 노드의 관리 키에 추가합니다.",
+      "badSessionKey": "관리자 세션이 만료되었습니다. 새로 고침하고 다시 시도하십시오.",
+      "pkiFailed": "PKI 암호화에 실패했습니다. 노드 키를 확인하고 레거시 관리 채널 충돌을 제거하십시오.",
+      "notAuthorized": "대상 노드에서 원격 관리자가 승인되지 않았습니다.",
+      "timeout": "원격 관리자 요청 시간이 초과되었습니다.",
+      "generic": "원격 관리자 요청에 실패했습니다."
+    }
   }
 }

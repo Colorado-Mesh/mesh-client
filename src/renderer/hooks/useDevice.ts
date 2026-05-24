@@ -8,18 +8,34 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   buildStoreForwardHistoryToRadioBytes,
   decodeStoreForwardTextPayload,
+  getLastSfHistoryFetchMs,
   isDuplicateHistoryMessage,
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
   parseStoreForwardHeartbeat,
+  recordSfHistoryFetch,
   releaseStoreForwardHistoryRequest,
   reserveStoreForwardHistoryRequest,
-  resolveMeshtasticTextMessagePayload,
-  shouldRequestStoreForwardHistoryOnHeartbeat,
+  resolveAutoStoreForwardHistoryWindowMinutes,
+  resolveStoreForwardServerFromObservedPackets,
+  SF_AUTO_HISTORY_COOLDOWN_MS,
+  SF_AUTO_HISTORY_MESSAGE_CAP,
+  SF_AUTO_HISTORY_OFFLINE_MIN_MS,
+  SF_MANUAL_HISTORY_MESSAGE_CAP,
+  shouldAutoRequestStoreForwardHistoryOnHeartbeat,
   writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
-import { channelNameExists, findNextFreeChannelSlot } from '@/shared/meshtasticChannelApply';
-import { isMeshtasticDefaultPublicPsk } from '@/shared/meshtasticDefaultPublicPsk';
+import {
+  meshtasticMqttChannelKeyEntries,
+  meshtasticMqttPublishFields,
+} from '@/renderer/lib/meshtasticMqttPublish';
+import {
+  type ApplyChannelSetResult,
+  channelNameExists,
+  countFreeChannelSlots,
+  findNextFreeChannelSlot,
+} from '@/shared/meshtasticChannelApply';
+import { resolveMeshtasticTextMessagePayload } from '@/shared/meshtasticTextMessagePayload';
 import {
   MESHTASTIC_CHANNEL_ROLE,
   type MeshtasticLoraConfig,
@@ -38,7 +54,7 @@ import {
   meshtasticWireUint32NonZero,
   sanitizeUnicodeReactionScalar,
 } from '../../shared/reactionEmoji';
-import { getAppSettingsRaw } from '../lib/appSettingsStorage';
+import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import {
   createBleConnection,
@@ -62,6 +78,7 @@ import {
   shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
+import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
   computeNodeInfoLastHeardMs,
@@ -76,6 +93,11 @@ import {
   meshtasticPacketIdsEqual,
   normalizeMeshtasticPacketId,
 } from '../lib/meshtasticMessageDedup';
+import {
+  MeshtasticRemoteAdminClient,
+  normalizeRemoteAdminError,
+} from '../lib/meshtasticRemoteAdmin';
+import { fetchMeshtasticRemoteConfigSnapshot } from '../lib/meshtasticRemoteAdminSnapshot';
 import { meshtasticComputedRfHopsAway } from '../lib/meshtasticRfHops';
 import {
   mergeMeshtasticTraceRouteIntoResultsMap,
@@ -101,9 +123,11 @@ import type {
   EnvironmentTelemetryPoint,
   MeshNeighbor,
   MeshNode,
+  MeshtasticRemoteConfigSnapshot,
   MeshWaypoint,
   MQTTStatus,
   NeighborInfoRecord,
+  RemoteAdminStatus,
   TelemetryPoint,
 } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -170,6 +194,20 @@ function getOrCreateVirtualNodeId(): number {
 function clearVirtualNodeId(): void {
   localStorage.removeItem('mesh-client:mqttVirtualNodeId');
 }
+
+export type RequestStoreForwardHistoryResult =
+  | { ok: true }
+  | {
+      ok: false;
+      code:
+        | 'no_server'
+        | 'not_configured'
+        | 'local_is_server'
+        | 'send_failed'
+        | 'cooldown'
+        | 'offline_gate'
+        | 'already_requested';
+    };
 
 function meshtasticRawPacketPortLabel(packet: unknown): string {
   const p = packet as {
@@ -312,6 +350,10 @@ export function useDevice() {
   const [moduleConfigs, setModuleConfigs] = useState<Record<string, unknown>>({});
   const moduleConfigsRef = useRef(moduleConfigs);
   const sfHistoryRequestedServersRef = useRef<Set<number>>(new Set());
+  const lastRfDisconnectAtRef = useRef<number | null>(null);
+  const lastSfHeartbeatServerRef = useRef<number | null>(null);
+  const lastSfHeartbeatChannelRef = useRef(0);
+  const lastSfHeartbeatPeriodRef = useRef(0);
   const deviceConfiguredRef = useRef(false);
   const mqttReconnectBacklogUntilRef = useRef(0);
   const [securityConfig, setSecurityConfig] = useState<{
@@ -323,6 +365,14 @@ export function useDevice() {
     debugLogApiEnabled: boolean;
     adminChannelEnabled: boolean;
   } | null>(null);
+  const [configureTargetNodeNum, setConfigureTargetNodeNumState] = useState<number | null>(null);
+  const configureTargetNodeNumRef = useRef<number | null>(null);
+  const configureTargetPersistRestoredRef = useRef(false);
+  const [remoteAdminStatus, setRemoteAdminStatus] = useState<RemoteAdminStatus>('idle');
+  const [remoteAdminError, setRemoteAdminError] = useState<string | undefined>();
+  const [remoteConfigSnapshot, setRemoteConfigSnapshot] =
+    useState<MeshtasticRemoteConfigSnapshot | null>(null);
+  const remoteAdminClientRef = useRef<MeshtasticRemoteAdminClient | null>(null);
   const [loraConfig, setLoraConfig] = useState<MeshtasticLoraConfig | null>(null);
 
   // ─── Additional packet type state ─────────────────────────────────
@@ -350,6 +400,7 @@ export function useDevice() {
   const [storeForwardMessages, setStoreForwardMessages] = useState<
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
+  const storeForwardMessagesRef = useRef(storeForwardMessages);
   const [rangeTestPackets, setRangeTestPackets] = useState<
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
@@ -416,6 +467,19 @@ export function useDevice() {
   useEffect(() => {
     channelConfigsRef.current = channelConfigs;
   }, [channelConfigs]);
+
+  const pushMqttChannelKeys = useCallback(() => {
+    if (mqttStatusRef.current !== 'connected') return;
+    const entries = meshtasticMqttChannelKeyEntries(channelConfigsRef.current);
+    if (entries.length === 0) return;
+    void window.electronAPI.mqtt.updateChannelKeys({ entries }).catch((e: unknown) => {
+      console.warn('[useDevice] mqtt.updateChannelKeys failed ' + errLikeToLogString(e));
+    });
+  }, []);
+
+  useEffect(() => {
+    pushMqttChannelKeys();
+  }, [channelConfigs, mqttStatus, pushMqttChannelKeys]);
 
   // ─── Packet dedup helper (shared by RF and MQTT handlers) ──────
   const isDuplicate = useCallback((packetId: number): boolean => {
@@ -666,6 +730,25 @@ export function useDevice() {
     moduleConfigsRef.current = moduleConfigs;
   }, [moduleConfigs]);
 
+  useEffect(() => {
+    configureTargetNodeNumRef.current = configureTargetNodeNum;
+  }, [configureTargetNodeNum]);
+
+  useEffect(() => {
+    remoteAdminClientRef.current = new MeshtasticRemoteAdminClient(
+      () => deviceRef.current,
+      () => myNodeNumRef.current,
+    );
+    return () => {
+      remoteAdminClientRef.current?.dispose();
+      remoteAdminClientRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    storeForwardMessagesRef.current = storeForwardMessages;
+  }, [storeForwardMessages]);
+
   // ─── MQTT event subscriptions (independent of RF device) ──────
   useEffect(() => {
     const unsubStatus = window.electronAPI.mqtt.onStatus(({ status: s, protocol }) => {
@@ -678,6 +761,7 @@ export function useDevice() {
         if (prev !== 'connected') {
           mqttReconnectBacklogUntilRef.current = Date.now() + MQTT_RECONNECT_BACKLOG_MS;
         }
+        pushMqttChannelKeys();
       } else if (consumeMqttUserDisconnect()) {
         setMqttConnectionLoss(false);
       } else if (prev === 'connected') {
@@ -725,13 +809,15 @@ export function useDevice() {
             return;
           }
           const primaryCh = channelConfigsRef.current.find((c) => c.index === 0);
+          const presenceMqtt = meshtasticMqttPublishFields(primaryCh);
           window.electronAPI.mqtt
             .publishNodeInfo({
               from: virtualNodeIdRef.current,
               longName: MQTT_ONLY_VIRTUAL_LONG_NAME,
               shortName: 'MQTT',
-              channelName: 'LongFast',
-              publishJsonMirror: primaryCh ? isMeshtasticDefaultPublicPsk(primaryCh.psk) : false,
+              channelName: presenceMqtt.channelName,
+              pskBase64: presenceMqtt.pskBase64,
+              publishJsonMirror: presenceMqtt.publishJsonMirror,
             })
             .catch((e: unknown) => {
               console.warn('[useDevice] MQTT presence publish failed ' + errLikeToLogString(e));
@@ -1043,6 +1129,7 @@ export function useDevice() {
     getNodeName,
     ensureNonConflictingVirtualNodeId,
     state.myNodeNum,
+    pushMqttChannelKeys,
   ]);
 
   // Cleanup on unmount — stop all intervals and subscriptions
@@ -1090,6 +1177,137 @@ export function useDevice() {
         displayName,
       );
   }, []);
+
+  const requestStoreForwardHistoryRef = useRef<
+    (options?: {
+      serverNodeId?: number;
+      manual?: boolean;
+    }) => Promise<RequestStoreForwardHistoryResult>
+  >(() => Promise.resolve({ ok: false, code: 'no_server' }));
+
+  const requestStoreForwardHistory = useCallback(
+    async (options?: {
+      serverNodeId?: number;
+      manual?: boolean;
+    }): Promise<RequestStoreForwardHistoryResult> => {
+      const manual = options?.manual === true;
+      let serverNodeId = options?.serverNodeId ?? lastSfHeartbeatServerRef.current;
+      let heartbeatPeriod = lastSfHeartbeatPeriodRef.current;
+
+      if (serverNodeId == null || manual) {
+        const resolved = resolveStoreForwardServerFromObservedPackets(
+          storeForwardMessagesRef.current,
+          serverNodeId ?? lastSfHeartbeatServerRef.current,
+        );
+        if (resolved) {
+          serverNodeId = resolved.serverNodeId;
+          if (resolved.heartbeatPeriod > 0) {
+            heartbeatPeriod = resolved.heartbeatPeriod;
+          }
+        }
+      }
+
+      if (serverNodeId == null) {
+        if (!manual) {
+          console.debug('[useDevice] Store & Forward history skipped: no server node yet');
+        }
+        return { ok: false, code: 'no_server' };
+      }
+
+      const myNode = myNodeNumRef.current;
+      const activeDevice = deviceRef.current;
+      if (!myNode || !activeDevice || !deviceConfiguredRef.current) {
+        if (!manual) {
+          console.debug('[useDevice] Store & Forward history skipped: radio not configured');
+        }
+        return { ok: false, code: 'not_configured' };
+      }
+
+      const sfCfg = moduleConfigsRef.current.storeForward as { isServer?: boolean } | undefined;
+      if (sfCfg?.isServer === true) {
+        return { ok: false, code: 'local_is_server' };
+      }
+
+      const now = Date.now();
+      const channel = lastSfHeartbeatChannelRef.current;
+
+      if (!manual) {
+        const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
+        const settings = parseStoredJson<Record<string, unknown>>(
+          getAppSettingsRaw(),
+          'useDevice storeForwardAutoFetchHistory',
+        );
+        const sfAuto = settings?.storeForwardAutoFetchHistory;
+        const autoFetchEnabled = sfAuto !== false && sfAuto !== 'false';
+        if (
+          !shouldAutoRequestStoreForwardHistoryOnHeartbeat({
+            heartbeatSecondary: 0,
+            connectedIsStoreForwardServer: false,
+            alreadyRequestedServer: alreadyRequested,
+            deviceConfigured: true,
+            autoFetchEnabled,
+            now,
+            lastFetchMs: getLastSfHistoryFetchMs(serverNodeId),
+            lastDisconnectMs: lastRfDisconnectAtRef.current,
+          })
+        ) {
+          if (!autoFetchEnabled) {
+            return { ok: false, code: 'no_server' };
+          }
+          const cooldownMs = SF_AUTO_HISTORY_COOLDOWN_MS;
+          const offlineMinMs = SF_AUTO_HISTORY_OFFLINE_MIN_MS;
+          const lastFetchMs = getLastSfHistoryFetchMs(serverNodeId);
+          if (lastFetchMs != null && now - lastFetchMs < cooldownMs) {
+            return { ok: false, code: 'cooldown' };
+          }
+          if (
+            lastRfDisconnectAtRef.current != null &&
+            now - lastRfDisconnectAtRef.current < offlineMinMs
+          ) {
+            return { ok: false, code: 'offline_gate' };
+          }
+          return { ok: false, code: 'no_server' };
+        }
+        if (
+          !reserveStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId)
+        ) {
+          return { ok: false, code: 'already_requested' };
+        }
+      }
+
+      const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
+      const toRadioBytes = buildStoreForwardHistoryToRadioBytes({
+        from: myNode,
+        to: serverNodeId,
+        channel,
+        packetId,
+        windowMinutes: resolveAutoStoreForwardHistoryWindowMinutes(heartbeatPeriod),
+        messageCap: manual ? SF_MANUAL_HISTORY_MESSAGE_CAP : SF_AUTO_HISTORY_MESSAGE_CAP,
+      });
+
+      try {
+        await writeToRadioWithoutQueue(activeDevice, toRadioBytes);
+        recordSfHistoryFetch(serverNodeId, now);
+        console.debug(
+          `[useDevice] Store & Forward CLIENT_HISTORY sent to 0x${serverNodeId.toString(16)} ch=${channel} manual=${manual}`,
+        );
+        return { ok: true };
+      } catch (e: unknown) {
+        if (!manual) {
+          releaseStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId);
+        }
+        console.error(
+          '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
+        );
+        return { ok: false, code: 'send_failed' };
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    requestStoreForwardHistoryRef.current = requestStoreForwardHistory;
+  }, [requestStoreForwardHistory]);
 
   // ─── Wire up all event subscriptions for a device ─────────────
   const wireSubscriptions = useCallback(
@@ -1162,6 +1380,7 @@ export function useDevice() {
 
         // Always clean up on disconnect, even if we never reached configured
         if (status === 2) {
+          lastRfDisconnectAtRef.current = Date.now();
           rfHeardNodeIds.current.clear();
           lastNodeInfoRequestAtRef.current.clear();
           clearConfigureTimeout();
@@ -1178,6 +1397,14 @@ export function useDevice() {
           setModuleConfigs({});
           setSecurityConfig(null);
           setLoraConfig(null);
+          setConfigureTargetNodeNumState(null);
+          configureTargetNodeNumRef.current = null;
+          configureTargetPersistRestoredRef.current = false;
+          setRemoteConfigSnapshot(null);
+          setRemoteAdminStatus('idle');
+          setRemoteAdminError(undefined);
+          remoteAdminClientRef.current?.resetEditState();
+          remoteAdminClientRef.current?.sessionStore.clear();
           deviceRef.current = null;
           deviceConfiguredRef.current = false;
           sfHistoryRequestedServersRef.current = new Set();
@@ -1434,21 +1661,25 @@ export function useDevice() {
         if (!isEcho && !emoji && !msg.to && mqttStatusRef.current === 'connected') {
           const chCfg = channelConfigsRef.current.find((c) => c.index === msg.channel);
           if (chCfg?.uplinkEnabled) {
-            window.electronAPI.mqtt
-              .publish({
-                text: msg.payload,
-                from: msg.sender_id,
-                channel: msg.channel,
-                destination: BROADCAST_ADDR,
-                channelName: 'LongFast',
-                publishJsonMirror: chCfg ? isMeshtasticDefaultPublicPsk(chCfg.psk) : false,
-              })
-              .then(isDuplicate)
-              .catch((e: unknown) => {
-                console.debug(
-                  '[useDevice] MQTT publish echo register non-fatal ' + errLikeToLogString(e),
-                );
-              });
+            const uplinkMqtt = meshtasticMqttPublishFields(chCfg);
+            if (uplinkMqtt.channelName) {
+              window.electronAPI.mqtt
+                .publish({
+                  text: msg.payload,
+                  from: msg.sender_id,
+                  channel: msg.channel,
+                  destination: BROADCAST_ADDR,
+                  channelName: uplinkMqtt.channelName,
+                  pskBase64: uplinkMqtt.pskBase64,
+                  publishJsonMirror: uplinkMqtt.publishJsonMirror,
+                })
+                .then(isDuplicate)
+                .catch((e: unknown) => {
+                  console.debug(
+                    '[useDevice] MQTT publish echo register non-fatal ' + errLikeToLogString(e),
+                  );
+                });
+            }
           }
         }
 
@@ -1477,6 +1708,7 @@ export function useDevice() {
           shortName?: string;
           hwModel?: number;
           role?: number;
+          publicKey?: Uint8Array;
         };
         const packetRxMs = meshtasticPacketRxTimeMs(packet.rxTime);
         updateNodes((prev) => {
@@ -1495,6 +1727,7 @@ export function useDevice() {
             packetRxMs,
             isConfiguringRef.current,
           );
+          const public_key_hex = meshtasticPublicKeyHex(user.publicKey) ?? existing.public_key_hex;
           const node: MeshNode = {
             ...existing,
             node_id: packet.from,
@@ -1503,6 +1736,7 @@ export function useDevice() {
             hw_model:
               user.hwModel != null ? meshtasticHwModelName(user.hwModel) : existing.hw_model,
             role: user.role ?? existing.role,
+            public_key_hex,
             // During configure, skip rxTime bumps (NodeDB replay). After configure, use mesh rxTime.
             last_heard,
             heard_via_mqtt_only: false,
@@ -1738,7 +1972,15 @@ export function useDevice() {
             ) {
               return prev; // no change
             }
-            updated.set(packet.from, { ...existing, lastPositionWarning: r.warning });
+            updated.set(packet.from, {
+              ...existing,
+              lastPositionWarning: r.warning,
+              last_heard: mergeMeshtasticLivePacketLastHeard(
+                existing.last_heard || 0,
+                Date.now(),
+                isConfiguringRef.current,
+              ),
+            });
             return updated;
           });
           return;
@@ -2074,6 +2316,15 @@ export function useDevice() {
                 ...existing,
                 ...(mp.rxSnr ? { snr: mp.rxSnr } : {}),
                 ...(mp.rxRssi ? { rssi: mp.rxRssi } : {}),
+                ...(hasSignal
+                  ? {
+                      last_heard: mergeMeshtasticLivePacketLastHeard(
+                        existing.last_heard || 0,
+                        Date.now(),
+                        isConfiguringRef.current,
+                      ),
+                    }
+                  : {}),
                 ...(hasHopUpdate &&
                 !(
                   existing.last_heard > 0 &&
@@ -2115,6 +2366,7 @@ export function useDevice() {
 
       // ─── Device config (track GPS mode and telemetry) ───────────
       const unsubConfig = device.events.onConfigPacket.subscribe((config) => {
+        if (configureTargetNodeNumRef.current != null) return;
         const cfg = config as {
           payloadVariant?: {
             case?: string;
@@ -2416,13 +2668,15 @@ export function useDevice() {
         ) {
           const chCfg = channelConfigsRef.current.find((c) => c.index === chanIdx);
           if (chCfg?.uplinkEnabled) {
+            const wpMqtt = meshtasticMqttPublishFields(chCfg);
             void window.electronAPI.mqtt
               .publishWaypoint({
                 from: fromNode,
                 to: toNode,
                 channel: chanIdx,
-                channelName: 'LongFast',
-                publishJsonMirror: isMeshtasticDefaultPublicPsk(chCfg.psk),
+                channelName: wpMqtt.channelName,
+                pskBase64: wpMqtt.pskBase64,
+                publishJsonMirror: wpMqtt.publishJsonMirror,
                 waypoint: {
                   id: data.id,
                   latitudeI: data.latitudeI ?? 0,
@@ -2444,6 +2698,7 @@ export function useDevice() {
 
       // ─── Module config packets ─────────────────────────────────
       const unsubModuleConfig = device.events.onModuleConfigPacket.subscribe((config) => {
+        if (configureTargetNodeNumRef.current != null) return;
         const cfg = config as { payloadVariant?: { case?: string; value?: unknown } };
         if (cfg.payloadVariant?.case) {
           setModuleConfigs((prev) => ({
@@ -2453,6 +2708,11 @@ export function useDevice() {
         }
       });
       unsubscribesRef.current.push(unsubModuleConfig);
+
+      const unsubRemoteAdmin = device.events.onMeshPacket.subscribe((meshPacket) => {
+        remoteAdminClientRef.current?.handleMeshPacket(meshPacket as never);
+      });
+      unsubscribesRef.current.push(unsubRemoteAdmin);
 
       // ─── Remote Hardware packets ──────────────────────────────────
       const unsubRemoteHardware = device.events.onRemoteHardwarePacket.subscribe((packet) => {
@@ -2583,46 +2843,11 @@ export function useDevice() {
         const serverNodeId = packet.from;
         const heartbeat = parseStoreForwardHeartbeat(packet.data);
         if (serverNodeId && heartbeat) {
-          const sfCfg = moduleConfigsRef.current.storeForward as { isServer?: boolean } | undefined;
-          const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
-          if (
-            shouldRequestStoreForwardHistoryOnHeartbeat({
-              heartbeatSecondary: heartbeat.secondary,
-              connectedIsStoreForwardServer: sfCfg?.isServer === true,
-              alreadyRequestedServer: alreadyRequested,
-              deviceConfigured: deviceConfiguredRef.current,
-            }) &&
-            reserveStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId)
-          ) {
-            const myNode = myNodeNumRef.current;
-            const activeDevice = deviceRef.current;
-            if (myNode && activeDevice) {
-              const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
-              const toRadioBytes = buildStoreForwardHistoryToRadioBytes({
-                from: myNode,
-                to: serverNodeId,
-                channel: packet.channel ?? 0,
-                packetId,
-                windowMinutes: heartbeat.period > 0 ? heartbeat.period : 0,
-              });
-              void writeToRadioWithoutQueue(activeDevice, toRadioBytes)
-                .then(() => {
-                  console.debug(
-                    `[useDevice] Store & Forward CLIENT_HISTORY sent to 0x${serverNodeId.toString(16)} ch=${packet.channel ?? 0}`,
-                  );
-                })
-                .catch((e: unknown) => {
-                  releaseStoreForwardHistoryRequest(
-                    sfHistoryRequestedServersRef.current,
-                    serverNodeId,
-                  );
-                  console.warn(
-                    '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
-                  );
-                });
-            } else {
-              releaseStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId);
-            }
+          lastSfHeartbeatServerRef.current = serverNodeId;
+          lastSfHeartbeatChannelRef.current = packet.channel ?? 0;
+          lastSfHeartbeatPeriodRef.current = heartbeat.period;
+          if (heartbeat.secondary === 0 && deviceConfiguredRef.current) {
+            void requestStoreForwardHistoryRef.current({ serverNodeId, manual: false });
           }
         }
 
@@ -3063,6 +3288,14 @@ export function useDevice() {
       batteryPercent: undefined,
       batteryCharging: undefined,
     });
+    setConfigureTargetNodeNumState(null);
+    configureTargetNodeNumRef.current = null;
+    configureTargetPersistRestoredRef.current = false;
+    setRemoteConfigSnapshot(null);
+    setRemoteAdminStatus('idle');
+    setRemoteAdminError(undefined);
+    remoteAdminClientRef.current?.resetEditState();
+    remoteAdminClientRef.current?.sessionStore.clear();
   }, [cleanupSubscriptions, stopWatchdog, stopGpsInterval, clearConfigureTimeout]);
 
   // ─── TransportManager status handler ─────────────────────────────────────
@@ -3199,17 +3432,132 @@ export function useDevice() {
     [getNodeName, isDuplicate],
   );
 
-  const setConfig = useCallback(async (config: unknown) => {
-    if (!deviceRef.current) return;
-    // `config` is typed as `unknown` at the call site; cast required to satisfy the SDK's
-    // setConfig overload. `as any` keeps the React Compiler memoization analysis intact.
-    await deviceRef.current.setConfig(config as any);
+  const refreshRemoteConfigSnapshot = useCallback(async (destNodeNum: number) => {
+    const client = remoteAdminClientRef.current;
+    if (!client || !deviceRef.current) {
+      setRemoteAdminStatus('error');
+      setRemoteAdminError('remoteAdmin.errors.noLocalRadio');
+      return;
+    }
+    setRemoteAdminStatus('loading');
+    setRemoteAdminError(undefined);
+    try {
+      const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, destNodeNum);
+      setRemoteConfigSnapshot(snapshot);
+      setRemoteAdminStatus('ready');
+    } catch (e) {
+      const msg = normalizeRemoteAdminError(e);
+      setRemoteAdminStatus('error');
+      setRemoteAdminError(msg);
+      console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
+    }
   }, []);
 
+  const runRemoteAdminOp = useCallback(async <T>(operation: () => Promise<T>): Promise<T> => {
+    try {
+      return await operation();
+    } catch (e) {
+      const msg = normalizeRemoteAdminError(e);
+      setRemoteAdminStatus('error');
+      setRemoteAdminError(msg);
+      console.warn('[useDevice] remote admin operation failed ' + errLikeToLogString(e));
+      throw e;
+    }
+  }, []);
+
+  const setConfigureTargetNodeNum = useCallback(
+    (nodeNum: number | null) => {
+      const normalized =
+        nodeNum != null && nodeNum > 0 && nodeNum !== myNodeNumRef.current ? nodeNum : null;
+      setConfigureTargetNodeNumState(normalized);
+      configureTargetNodeNumRef.current = normalized;
+      const persistValue = normalized == null ? '' : String(normalized);
+      mergeAppSetting(
+        'meshtasticConfigureTargetNodeNum',
+        persistValue,
+        'useDevice setConfigureTargetNodeNum',
+      );
+      void window.electronAPI.appSettings
+        .set('meshtasticConfigureTargetNodeNum', persistValue)
+        .catch((e: unknown) => {
+          console.warn(
+            '[useDevice] meshtasticConfigureTargetNodeNum persist failed ' + errLikeToLogString(e),
+          );
+        });
+      remoteAdminClientRef.current?.resetEditState();
+      if (normalized == null) {
+        setRemoteConfigSnapshot(null);
+        setRemoteAdminStatus('idle');
+        setRemoteAdminError(undefined);
+        remoteAdminClientRef.current?.sessionStore.clear();
+        return;
+      }
+      remoteAdminClientRef.current?.sessionStore.clear();
+      void refreshRemoteConfigSnapshot(normalized);
+    },
+    [refreshRemoteConfigSnapshot],
+  );
+
+  useEffect(() => {
+    if (configureTargetPersistRestoredRef.current) return;
+    if (state.status !== 'configured') return;
+    configureTargetPersistRestoredRef.current = true;
+
+    const settings = parseStoredJson<Record<string, unknown>>(
+      getAppSettingsRaw(),
+      'useDevice meshtasticConfigureTargetNodeNum restore',
+    );
+    const raw = settings?.meshtasticConfigureTargetNodeNum;
+    if (raw == null || raw === '' || raw === 'null') return;
+    const nodeNum = typeof raw === 'number' ? raw : Number(raw);
+    if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum === myNodeNumRef.current) return;
+    const restoredNode = nodesRef.current.get(nodeNum);
+    if (!restoredNode || meshcoreHwModelIsContactTypeLabel(restoredNode.hw_model)) {
+      mergeAppSetting(
+        'meshtasticConfigureTargetNodeNum',
+        '',
+        restoredNode
+          ? 'useDevice restore meshcore configure target node'
+          : 'useDevice restore missing configure target node',
+      );
+      void window.electronAPI.appSettings.set('meshtasticConfigureTargetNodeNum', '').catch(() => {
+        // catch-no-log-ok best-effort clear stale persisted target
+      });
+      return;
+    }
+
+    setConfigureTargetNodeNumState(nodeNum);
+    configureTargetNodeNumRef.current = nodeNum;
+    void refreshRemoteConfigSnapshot(nodeNum);
+  }, [state.status, refreshRemoteConfigSnapshot]);
+
+  const setConfig = useCallback(
+    async (config: unknown) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.setRemoteConfig(dest, config));
+        return;
+      }
+      if (!deviceRef.current) return;
+      // `config` is typed as `unknown` at the call site; cast required to satisfy the SDK's
+      // setConfig overload. `as any` keeps the React Compiler memoization analysis intact.
+      await deviceRef.current.setConfig(config as any);
+    },
+    [runRemoteAdminOp],
+  );
+
   const commitConfig = useCallback(async () => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await runRemoteAdminOp(() => client.commitRemoteEdit(dest));
+      await refreshRemoteConfigSnapshot(dest);
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.commitEditSettings();
-  }, []);
+  }, [refreshRemoteConfigSnapshot, runRemoteAdminOp]);
 
   const setDeviceChannel = useCallback(
     async (args: {
@@ -3223,7 +3571,8 @@ export function useDevice() {
         positionPrecision: number;
       };
     }) => {
-      if (!deviceRef.current) return;
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
       const channel = create(ProtobufChannel.ChannelSchema, {
         index: args.index,
         role: args.role,
@@ -3237,24 +3586,48 @@ export function useDevice() {
           }),
         }),
       }) as ChannelType;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.setRemoteChannel(dest, channel));
+        return;
+      }
+      if (!deviceRef.current) return;
       await deviceRef.current.setChannel(channel);
     },
-    [],
+    [runRemoteAdminOp],
   );
 
-  const clearChannel = useCallback(async (index: number) => {
-    if (!deviceRef.current) return;
-    await deviceRef.current.clearChannel(index);
-  }, []);
+  const clearChannel = useCallback(
+    async (index: number) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        const channel = create(ProtobufChannel.ChannelSchema, {
+          index,
+          role: ProtobufChannel.Channel_Role.DISABLED,
+        });
+        await runRemoteAdminOp(() => client.setRemoteChannel(dest, channel));
+        return;
+      }
+      if (!deviceRef.current) return;
+      await deviceRef.current.clearChannel(index);
+    },
+    [runRemoteAdminOp],
+  );
 
   const applyChannelSet = useCallback(
-    async (parsed: ParsedChannelSet, options?: { applyLora?: boolean }) => {
+    async (
+      parsed: ParsedChannelSet,
+      options?: { applyLora?: boolean },
+    ): Promise<ApplyChannelSetResult> => {
       if (!deviceRef.current) {
         throw new Error('Not connected to a device');
       }
 
       const applyLora =
         options?.applyLora ?? (parsed.mode === 'replace' && parsed.loraConfig != null);
+
+      const skipped: ApplyChannelSetResult['skipped'] = [];
+      let appliedCount = 0;
 
       if (parsed.mode === 'replace') {
         for (let i = 0; i < parsed.settings.length; i++) {
@@ -3265,22 +3638,38 @@ export function useDevice() {
             role: i === 0 ? MESHTASTIC_CHANNEL_ROLE.PRIMARY : MESHTASTIC_CHANNEL_ROLE.SECONDARY,
             settings,
           });
+          appliedCount++;
         }
         for (let i = parsed.settings.length; i < 8; i++) {
           await clearChannel(i);
         }
       } else {
-        const reserved = new Set<number>();
         const slotSnapshot = () =>
           channelConfigsRef.current.map((c) => ({
             index: c.index,
             role: c.role,
             name: c.name,
           }));
+        const toApply: typeof parsed.settings = [];
         for (const settings of parsed.settings) {
-          if (!settings.name) continue;
-          if (channelNameExists(slotSnapshot(), settings.name)) continue;
-
+          if (!settings.name) {
+            skipped.push({ name: '', reason: 'empty_name' });
+            continue;
+          }
+          if (channelNameExists(slotSnapshot(), settings.name)) {
+            skipped.push({ name: settings.name, reason: 'duplicate_name' });
+            continue;
+          }
+          toApply.push(settings);
+        }
+        const freeSlots = countFreeChannelSlots(slotSnapshot());
+        if (toApply.length > freeSlots) {
+          throw new Error(
+            `Need ${toApply.length} free channel slots but only ${freeSlots} available`,
+          );
+        }
+        const reserved = new Set<number>();
+        for (const settings of toApply) {
           const freeIndex = findNextFreeChannelSlot(slotSnapshot(), reserved);
           if (freeIndex === null) {
             throw new Error('No free channel slots');
@@ -3291,6 +3680,7 @@ export function useDevice() {
             role: MESHTASTIC_CHANNEL_ROLE.SECONDARY,
             settings,
           });
+          appliedCount++;
         }
       }
 
@@ -3302,42 +3692,79 @@ export function useDevice() {
         );
       }
       await commitConfig();
+      return { appliedCount, skipped };
     },
     [setDeviceChannel, clearChannel, setConfig, commitConfig],
   );
 
   const setOwner = useCallback(
     async (owner: { longName: string; shortName: string; isLicensed: boolean }) => {
-      if (!deviceRef.current) return;
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
       const user = create(Mesh.UserSchema, {
         longName: owner.longName,
         shortName: owner.shortName,
         isLicensed: owner.isLicensed,
       }) as UserType;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.setRemoteOwner(dest, user));
+        return;
+      }
+      if (!deviceRef.current) return;
       await deviceRef.current.setOwner(user);
     },
-    [],
+    [runRemoteAdminOp],
   );
 
-  const reboot = useCallback(async (delay: number) => {
-    if (!deviceRef.current) return;
-    await deviceRef.current.reboot(delay);
-  }, []);
+  const reboot = useCallback(
+    async (delay: number) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.remoteReboot(dest, delay));
+        return;
+      }
+      if (!deviceRef.current) return;
+      await deviceRef.current.reboot(delay);
+    },
+    [runRemoteAdminOp],
+  );
 
-  const shutdown = useCallback(async (delay: number) => {
-    if (!deviceRef.current) return;
-    await deviceRef.current.shutdown(delay);
-  }, []);
+  const shutdown = useCallback(
+    async (delay: number) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.remoteShutdown(dest, delay));
+        return;
+      }
+      if (!deviceRef.current) return;
+      await deviceRef.current.shutdown(delay);
+    },
+    [runRemoteAdminOp],
+  );
 
   const factoryReset = useCallback(async () => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await runRemoteAdminOp(() => client.remoteFactoryResetDevice(dest));
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.factoryResetDevice();
-  }, []);
+  }, [runRemoteAdminOp]);
 
   const resetNodeDb = useCallback(async () => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await runRemoteAdminOp(() => client.remoteResetNodeDb(dest));
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.resetNodes();
-  }, []);
+  }, [runRemoteAdminOp]);
 
   const rebootOta = useCallback(async (delay = 2) => {
     if (!deviceRef.current) return;
@@ -3350,9 +3777,15 @@ export function useDevice() {
   }, []);
 
   const factoryResetConfig = useCallback(async () => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await runRemoteAdminOp(() => client.remoteFactoryResetConfig(dest));
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.factoryResetConfig();
-  }, []);
+  }, [runRemoteAdminOp]);
 
   const sendWaypoint = useCallback(
     async (wp: Omit<MeshWaypoint, 'from' | 'timestamp'>, dest = 0xffffffff, channel = 0) => {
@@ -3372,13 +3805,15 @@ export function useDevice() {
       const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
       const fromNum = myNodeNumRef.current ?? 0;
       if (mqttStatusRef.current === 'connected' && fromNum && chCfg?.uplinkEnabled) {
+        const sendWpMqtt = meshtasticMqttPublishFields(chCfg);
         void window.electronAPI.mqtt
           .publishWaypoint({
             from: fromNum,
             to: dest >>> 0,
             channel,
-            channelName: 'LongFast',
-            publishJsonMirror: isMeshtasticDefaultPublicPsk(chCfg.psk),
+            channelName: sendWpMqtt.channelName,
+            pskBase64: sendWpMqtt.pskBase64,
+            publishJsonMirror: sendWpMqtt.publishJsonMirror,
             waypoint: {
               id: wp.id,
               latitudeI: Math.round(wp.latitude * 1e7),
@@ -3406,13 +3841,15 @@ export function useDevice() {
     const chCfg = channelConfigsRef.current.find((c) => c.index === 0);
     const fromNum = myNodeNumRef.current ?? 0;
     if (mqttStatusRef.current === 'connected' && fromNum && chCfg?.uplinkEnabled) {
+      const delWpMqtt = meshtasticMqttPublishFields(chCfg);
       void window.electronAPI.mqtt
         .publishWaypoint({
           from: fromNum,
           to: BROADCAST_ADDR,
           channel: 0,
-          channelName: 'LongFast',
-          publishJsonMirror: chCfg ? isMeshtasticDefaultPublicPsk(chCfg.psk) : false,
+          channelName: delWpMqtt.channelName,
+          pskBase64: delWpMqtt.pskBase64,
+          publishJsonMirror: delWpMqtt.publishJsonMirror,
           waypoint: {
             id,
             latitudeI: 0,
@@ -3432,13 +3869,22 @@ export function useDevice() {
     }
   }, []);
 
-  const setModuleConfig = useCallback(async (config: unknown) => {
-    if (!deviceRef.current) return;
-    // setModuleConfig/setCannedMessages/sendPacket exist at runtime but are not in @meshtastic/js
-    // SDK types; `as any` is required because `as unknown as T` breaks the React Compiler's
-    // memoization analysis inside useCallback.
-    await (deviceRef.current as any).setModuleConfig(config);
-  }, []);
+  const setModuleConfig = useCallback(
+    async (config: unknown) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.setRemoteModuleConfig(dest, config));
+        return;
+      }
+      if (!deviceRef.current) return;
+      // setModuleConfig/setCannedMessages/sendPacket exist at runtime but are not in @meshtastic/js
+      // SDK types; `as any` is required because `as unknown as T` breaks the React Compiler's
+      // memoization analysis inside useCallback.
+      await (deviceRef.current as any).setModuleConfig(config);
+    },
+    [runRemoteAdminOp],
+  );
 
   const setCannedMessages = useCallback(async (messages: string[]) => {
     if (!deviceRef.current) return;
@@ -3860,6 +4306,12 @@ export function useDevice() {
     ringtone,
     setRingtone,
     securityConfig,
+    configureTargetNodeNum,
+    setConfigureTargetNodeNum,
+    remoteAdminStatus,
+    remoteAdminError,
+    remoteConfigSnapshot,
+    refreshRemoteConfigSnapshot,
     // ─── Additional packet type state ───────────────────────────────
     remoteHardwareMessages,
     audioMessages,
@@ -3869,6 +4321,7 @@ export function useDevice() {
     paxCounterData,
     serialMessages,
     storeForwardMessages,
+    requestStoreForwardHistory,
     rangeTestPackets,
     zpsMessages,
     simulatorPackets,
@@ -3878,7 +4331,12 @@ export function useDevice() {
   };
 }
 
-// ─── Helper functions ──
+function meshtasticPublicKeyHex(bytes: Uint8Array | undefined): string | undefined {
+  if (bytes?.length !== 32) return undefined;
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 // Maps legacy string role labels (stored by older app versions) to numeric IDs
 const LEGACY_ROLE_STRINGS: Record<string, number> = {

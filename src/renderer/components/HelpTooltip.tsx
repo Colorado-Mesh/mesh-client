@@ -4,7 +4,16 @@ import { useRef, useState } from 'react';
 const TOOLTIP_WIDTH = 256; // w-64
 const TOOLTIP_MARGIN = 8;
 
-export function HelpTooltip({ text, children }: { text: string; children?: ReactNode }) {
+export function HelpTooltip({
+  text,
+  children,
+  className,
+}: {
+  text: string;
+  children?: ReactNode;
+  /** Extra classes on the wrapper (e.g. `shrink-0` in toolbars). */
+  className?: string;
+}) {
   const [pos, setPos] = useState<{ top: number; left: number; below: boolean } | null>(null);
   const ref = useRef<HTMLSpanElement>(null);
   const updatePosition = () => {
@@ -21,7 +30,7 @@ export function HelpTooltip({ text, children }: { text: string; children?: React
   return (
     <span
       ref={ref}
-      className="inline-flex cursor-help"
+      className={`inline-flex cursor-help${className ? ` ${className}` : ''}`}
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard focus shows same tooltip as hover
       tabIndex={0}
       onMouseEnter={updatePosition}

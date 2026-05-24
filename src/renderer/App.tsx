@@ -15,9 +15,11 @@ import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotif
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 
 import ChannelUtilizationChart from './components/ChannelUtilizationChart';
+import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpTooltip } from './components/HelpTooltip';
 import LanguageSelector from './components/LanguageSelector';
+import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
 import SignalPropagation from './components/SignalPropagation';
@@ -85,7 +87,13 @@ import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
-import type { ChatMessage, DeviceState, MeshProtocol, MQTTSettings } from './lib/types';
+import type {
+  ChatMessage,
+  ConfigTargetContext,
+  DeviceState,
+  MeshProtocol,
+  MQTTSettings,
+} from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
 import { useMapViewportStore } from './stores/mapViewportStore';
@@ -849,6 +857,69 @@ export default function App() {
   const isConfigured = device.state.status === 'configured';
   const isOperational = isConfigured || device.state.status === 'stale';
   const isConnectedOrOperational = isOperational || device.state.status === 'connected';
+  const hasLocalMeshtasticRadio =
+    protocol === 'meshtastic' &&
+    device.state.myNodeNum > 0 &&
+    device.state.connectionType != null &&
+    device.state.status !== 'disconnected';
+  const isRemoteConfigureTarget =
+    protocol === 'meshtastic' && device.configureTargetNodeNum != null;
+  const configTarget = useMemo((): ConfigTargetContext => {
+    const remote = isRemoteConfigureTarget;
+    return {
+      mode: remote ? 'remote' : 'local',
+      nodeNum: device.configureTargetNodeNum,
+      isReady: !remote || device.remoteAdminStatus === 'ready',
+      isLoading: device.remoteAdminStatus === 'loading',
+      error: device.remoteAdminError,
+      onRefresh:
+        remote && device.configureTargetNodeNum != null
+          ? () => device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum!)
+          : undefined,
+    };
+  }, [isRemoteConfigureTarget, device]);
+  const effectiveChannelConfigs = isRemoteConfigureTarget
+    ? (device.remoteConfigSnapshot?.channelConfigs ?? device.channelConfigs)
+    : device.channelConfigs;
+  const effectiveLoraConfig = isRemoteConfigureTarget
+    ? (device.remoteConfigSnapshot?.loraConfig ?? device.loraConfig)
+    : device.loraConfig;
+  const effectiveModuleConfigs = isRemoteConfigureTarget
+    ? (device.remoteConfigSnapshot?.moduleConfigs ?? device.moduleConfigs)
+    : device.moduleConfigs;
+  const effectiveSecurityConfig = isRemoteConfigureTarget
+    ? (device.remoteConfigSnapshot?.securityConfig ?? device.securityConfig)
+    : device.securityConfig;
+  const effectiveDeviceOwner = isRemoteConfigureTarget
+    ? (device.remoteConfigSnapshot?.deviceOwner ?? device.deviceOwner)
+    : device.deviceOwner;
+  const effectiveTelemetryInterval = isRemoteConfigureTarget
+    ? (device.remoteConfigSnapshot?.telemetryDeviceUpdateInterval ??
+      device.telemetryDeviceUpdateInterval)
+    : device.telemetryDeviceUpdateInterval;
+  const effectiveDeviceFixedPosition = isRemoteConfigureTarget
+    ? (device.remoteConfigSnapshot?.deviceFixedPosition ?? device.deviceFixedPosition)
+    : device.deviceFixedPosition;
+  const configureNodeSelector =
+    capabilities.hasRemoteAdmin && hasLocalMeshtasticRadio ? (
+      <div className="mb-4">
+        <ConfigureNodeSelector
+          nodes={nodesForUi}
+          myNodeNum={device.state.myNodeNum}
+          configureTargetNodeNum={device.configureTargetNodeNum}
+          onConfigureTargetChange={device.setConfigureTargetNodeNum}
+          remoteAdminStatus={device.remoteAdminStatus}
+          remoteAdminError={device.remoteAdminError}
+          isLocalRadioConnected={hasLocalMeshtasticRadio}
+          getNodeName={device.getNodeName}
+          onRefresh={
+            device.configureTargetNodeNum != null
+              ? () => device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum!)
+              : undefined
+          }
+        />
+      </div>
+    ) : null;
   const detailModalProtocol = useMemo((): MeshProtocol => {
     if (selectedNodeId == null) return protocol;
     if (meshcoreDevice.nodes.has(selectedNodeId)) return 'meshcore';
@@ -1469,6 +1540,12 @@ export default function App() {
         meshtasticDevice={meshtasticDevice}
         meshcoreDevice={meshcoreDevice}
       />
+      {protocol === 'meshtastic' && (
+        <RemoteAdminErrorNotifier
+          status={meshtasticDevice.remoteAdminStatus}
+          errorKey={meshtasticDevice.remoteAdminError}
+        />
+      )}
       {/* Firmware update check on connect */}
       <FirmwareUpdateNotifier
         meshtasticState={meshtasticDevice.state}
@@ -1865,6 +1942,12 @@ export default function App() {
                             scrollToTopRef={scrollToTopChatRef}
                             outerScrollMetricsRootRef={mainViewportRef}
                             compactMode={chatCompactMode}
+                            onFetchStoreForwardHistory={
+                              protocol === 'meshtastic'
+                                ? () =>
+                                    meshtasticDevice.requestStoreForwardHistory({ manual: true })
+                                : undefined
+                            }
                           />
                         </Suspense>
                       </div>
@@ -1964,21 +2047,23 @@ export default function App() {
                       {activePanelIndex === 4 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
+                            {configureNodeSelector}
                             <RadioPanel
+                              configTarget={configTarget}
                               onSetConfig={device.setConfig}
                               onCommit={device.commitConfig}
                               onSetChannel={device.setDeviceChannel}
                               onClearChannel={device.clearChannel}
-                              channelConfigs={device.channelConfigs}
+                              channelConfigs={effectiveChannelConfigs}
                               meshtasticLoraConfig={
-                                protocol === 'meshtastic' ? device.loraConfig : undefined
+                                protocol === 'meshtastic' ? effectiveLoraConfig : undefined
                               }
                               onApplyChannelSet={
                                 protocol === 'meshtastic' ? device.applyChannelSet : undefined
                               }
                               isConnected={isOperational}
-                              telemetryDeviceUpdateInterval={device.telemetryDeviceUpdateInterval}
-                              deviceFixedPosition={device.deviceFixedPosition}
+                              telemetryDeviceUpdateInterval={effectiveTelemetryInterval}
+                              deviceFixedPosition={effectiveDeviceFixedPosition}
                               onReboot={
                                 protocol === 'meshcore'
                                   ? () => meshcoreDevice.reboot()
@@ -1989,7 +2074,7 @@ export default function App() {
                               onResetNodeDb={device.resetNodeDb}
                               ourPosition={device.ourPosition}
                               onSendPositionToDevice={device.sendPositionToDevice}
-                              deviceOwner={device.deviceOwner}
+                              deviceOwner={effectiveDeviceOwner}
                               onSetOwner={
                                 protocol === 'meshcore'
                                   ? async (owner) => meshcoreDevice.setOwner(owner)
@@ -2131,8 +2216,10 @@ export default function App() {
                       {activePanelIndex === 5 && protocol !== 'meshcore' ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
+                            {configureNodeSelector}
                             <ModulePanel
-                              moduleConfigs={device.moduleConfigs}
+                              configTarget={configTarget}
+                              moduleConfigs={effectiveModuleConfigs}
                               onSetModuleConfig={device.setModuleConfig}
                               onSetCannedMessages={device.setCannedMessages}
                               onSetRingtone={device.setRingtone}
@@ -2186,11 +2273,13 @@ export default function App() {
                       {activePanelIndex === 7 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
+                            {configureNodeSelector}
                             <SecurityPanel
+                              configTarget={configTarget}
                               onSetConfig={device.setConfig}
                               onCommit={device.commitConfig}
                               isConnected={isOperational}
-                              securityConfig={device.securityConfig}
+                              securityConfig={effectiveSecurityConfig}
                               protocol={protocol}
                               onSignData={
                                 protocol === 'meshcore' ? meshcoreDevice.signData : undefined
@@ -2570,6 +2659,17 @@ export default function App() {
               selectedNode?.node_id !== detailMyNodeNum ? handleMessageNode : undefined
             }
             onToggleFavorite={device.setNodeFavorited}
+            onConfigureRemotely={
+              detailModalProtocol === 'meshtastic' &&
+              hasLocalMeshtasticRadio &&
+              selectedNode != null &&
+              selectedNode.node_id !== device.state.myNodeNum
+                ? () => {
+                    device.setConfigureTargetNodeNum(selectedNode.node_id);
+                    setSelectedNodeId(null);
+                  }
+                : undefined
+            }
             isConnected={isOperational}
             homeNode={detailHomeNode}
             neighborInfo={device.neighborInfo}
