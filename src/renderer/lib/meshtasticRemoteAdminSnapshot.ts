@@ -123,30 +123,26 @@ export async function fetchMeshtasticRemoteConfigSnapshot(
     Admin.AdminMessage_ConfigType.TELEMETRY_CONFIG,
   ] as const;
 
-  const configResults = await Promise.all(
-    configTypes.map(async (type) => ({
-      type,
-      value: await client.getRemoteConfig(destNodeNum, type),
-    })),
-  );
+  const configResults: { type: (typeof configTypes)[number]; value: unknown }[] = [];
+  for (const type of configTypes) {
+    configResults.push({ type, value: await client.getRemoteConfig(destNodeNum, type) });
+  }
 
-  const channelResults = await Promise.all(
-    Array.from({ length: 8 }, (_, index) =>
-      client.getRemoteChannel(destNodeNum, index).then((value) => ({ index, value })),
-    ),
-  );
+  const channelResults: { index: number; value: unknown }[] = [];
+  for (let index = 0; index < 8; index++) {
+    channelResults.push({ index, value: await client.getRemoteChannel(destNodeNum, index) });
+  }
 
-  const moduleResults = await Promise.all(
-    MODULE_CONFIG_FETCHES.map(async ({ type, key }) => {
-      try {
-        const value = await client.getRemoteModuleConfig(destNodeNum, type);
-        return { key, value };
-      } catch {
-        // catch-no-log-ok optional module config may be unsupported on target firmware
-        return { key, value: null };
-      }
-    }),
-  );
+  const moduleResults: { key: string; value: unknown }[] = [];
+  for (const { type, key } of MODULE_CONFIG_FETCHES) {
+    try {
+      const value = await client.getRemoteModuleConfig(destNodeNum, type);
+      moduleResults.push({ key, value });
+    } catch {
+      // catch-no-log-ok optional module config may be unsupported on target firmware
+      moduleResults.push({ key, value: null });
+    }
+  }
 
   let deviceOwner: MeshtasticRemoteConfigSnapshot['deviceOwner'];
   try {

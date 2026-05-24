@@ -40,4 +40,59 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
     expect(snapshot.channelConfigs?.[0]?.name).toBe('Primary');
     expect(snapshot.deviceOwner?.longName).toBe('Remote');
   });
+
+  it('fetches config sections sequentially without overlapping calls', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const order: string[] = [];
+
+    const track = (label: string) => {
+      order.push(label);
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      return () => {
+        inFlight -= 1;
+      };
+    };
+
+    const client = {
+      getRemoteMetadata: vi.fn(async () => {
+        const done = track('metadata');
+        await Promise.resolve();
+        done();
+        return { firmwareVersion: '2.5.0' };
+      }),
+      getRemoteConfig: vi.fn(async (_dest: number, type: number) => {
+        const done = track(`config:${type}`);
+        await Promise.resolve();
+        done();
+        return { payloadVariant: { case: 'device', value: {} } };
+      }),
+      getRemoteChannel: vi.fn(async (_dest: number, index: number) => {
+        const done = track(`channel:${index}`);
+        await Promise.resolve();
+        done();
+        return { index, role: 0, settings: { name: '', psk: new Uint8Array() } };
+      }),
+      getRemoteModuleConfig: vi.fn(async (_dest: number, type: number) => {
+        const done = track(`module:${type}`);
+        await Promise.resolve();
+        done();
+        return { payloadVariant: { case: 'mqtt', value: {} } };
+      }),
+      getRemoteOwner: vi.fn(async () => {
+        const done = track('owner');
+        await Promise.resolve();
+        done();
+        return { longName: 'Remote', shortName: 'RM' };
+      }),
+    } as unknown as MeshtasticRemoteAdminClient;
+
+    await fetchMeshtasticRemoteConfigSnapshot(client, 0x200);
+
+    expect(maxInFlight).toBe(1);
+    expect(order[0]).toBe('metadata');
+    expect(order.at(-1)).toBe('owner');
+    expect(order.indexOf('metadata')).toBeLessThan(order.findIndex((e) => e.startsWith('config:')));
+  });
 });
