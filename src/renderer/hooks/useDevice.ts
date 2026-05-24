@@ -14,6 +14,7 @@ import {
   parseStoreForwardHeartbeat,
   releaseStoreForwardHistoryRequest,
   reserveStoreForwardHistoryRequest,
+  resolveMeshtasticTextMessagePayload,
   shouldRequestStoreForwardHistoryOnHeartbeat,
   writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
@@ -1299,7 +1300,15 @@ export function useDevice() {
 
         touchLastData();
         const isEcho = meshPacket.from === myNodeNumRef.current;
-        let payloadText = new TextDecoder().decode(dataPacket.payload);
+        const payloadBytes = dataPacket.payload ?? new Uint8Array();
+        const resolvedText = resolveMeshtasticTextMessagePayload(payloadBytes);
+        if (!resolvedText) {
+          console.debug(
+            `[useDevice] Dropped non-readable TEXT_MESSAGE from 0x${meshPacket.from.toString(16)} len=${payloadBytes.length}`,
+          );
+          return;
+        }
+        let payloadText = resolvedText.text;
         const data = dataPacket as { replyId?: number; reply_id?: number; emoji?: number };
 
         const replyId = meshtasticWireUint32NonZero(data.replyId ?? data.reply_id);
@@ -1328,6 +1337,7 @@ export function useDevice() {
           replyId,
           to: meshPacket.to && meshPacket.to !== BROADCAST_ADDR ? meshPacket.to : undefined,
           ...(incomingRxHops !== undefined ? { rxHops: incomingRxHops } : {}),
+          ...(resolvedText.viaStoreForward ? { viaStoreForward: true } : {}),
         };
         const msg = enrichMeshtasticReplyPreviews(msgBase, messagesRef.current, getNodeName);
 

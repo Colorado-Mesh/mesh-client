@@ -11,6 +11,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, randomInt } 
 import { EventEmitter } from 'events';
 import * as mqtt from 'mqtt';
 
+import { resolveMeshtasticTextMessagePayload } from '../renderer/lib/meshtasticBacklogUtils';
 import type { ChatMessage, MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
@@ -1442,19 +1443,29 @@ export class MQTTManager extends EventEmitter {
       }
     } else if (portnum === PortNum.TEXT_MESSAGE_APP && (payload?.length || data.emoji)) {
       try {
-        const text = new TextDecoder().decode(payload ?? new Uint8Array());
+        const payloadBytes = payload ?? new Uint8Array();
+        const resolved = resolveMeshtasticTextMessagePayload(payloadBytes);
+        if (!resolved) {
+          console.debug(
+            `[Meshtastic MQTT] Dropped non-readable TEXT_MESSAGE from node ${nodeId} len=${payloadBytes.length}`,
+          ); // log-filter-ok Meshtastic MQTT logs → App log panel
+          this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
+          this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
+          return;
+        }
         const emoji = data.emoji || undefined;
         const replyId = data.replyId || undefined;
         const msg: Omit<ChatMessage, 'id'> & { from_mqtt: boolean } = {
           sender_id: nodeId,
           sender_name: formatMeshtasticNodeId(nodeId),
-          payload: text,
+          payload: resolved.text,
           channel: 0,
           timestamp: Date.now(),
           packetId,
           from_mqtt: true,
           emoji,
           replyId,
+          ...(resolved.viaStoreForward ? { viaStoreForward: true } : {}),
         };
         this.emit('message', msg);
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });

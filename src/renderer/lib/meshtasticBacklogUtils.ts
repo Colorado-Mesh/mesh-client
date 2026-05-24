@@ -174,8 +174,57 @@ export function releaseStoreForwardHistoryRequest(
   requestedServers.delete(serverNodeId);
 }
 
+/** Max share of control bytes (excluding tab/LF/CR) before payload is treated as non-chat. */
+export const MESHTASTIC_CHAT_CONTROL_BYTE_RATIO_MAX = 0.25;
+
+export interface ResolvedMeshtasticTextPayload {
+  text: string;
+  viaStoreForward?: boolean;
+}
+
+/**
+ * Returns false when payload is mostly non-printable control bytes (corrupt decrypt, mis-ported SF).
+ */
+export function isLikelyReadableChatText(bytes: Uint8Array): boolean {
+  if (!bytes.length) return true;
+  let control = 0;
+  for (const b of bytes) {
+    if (b < 0x20 && b !== 0x09 && b !== 0x0a && b !== 0x0d) control++;
+  }
+  return control / bytes.length <= MESHTASTIC_CHAT_CONTROL_BYTE_RATIO_MAX;
+}
+
+/**
+ * Resolve TEXT_MESSAGE_APP payload for chat ingest (RF and MQTT).
+ * Failure point: mis-ported StoreAndForward or corrupt binary on text port.
+ * Fallback: return null so callers skip chat insert.
+ */
+export function resolveMeshtasticTextMessagePayload(
+  data: Uint8Array,
+): ResolvedMeshtasticTextPayload | null {
+  const sfText = decodeStoreForwardTextPayload(data);
+  if (sfText != null) {
+    return { text: sfText, viaStoreForward: true };
+  }
+
+  const parsed = parseStoreForwardPacket(data);
+  if (parsed && parsed.variant.case !== 'text') {
+    return null;
+  }
+
+  if (!isLikelyReadableChatText(data)) {
+    return null;
+  }
+
+  const text = new TextDecoder().decode(data);
+  return { text };
+}
+
+let toRadioDirectWriteChain: Promise<void> = Promise.resolve();
+
 /**
  * Write ToRadio bytes directly to the transport, bypassing MeshDevice queue ack wait.
+ * Serialized so concurrent writes do not race getWriter() on a locked WritableStream.
  * Failure point: transport write rejects (BLE disconnect, backpressure).
  * Fallback: caller logs and may retry on next heartbeat.
  */
@@ -183,12 +232,20 @@ export async function writeToRadioWithoutQueue(
   device: MeshDevice,
   toRadioBytes: Uint8Array,
 ): Promise<void> {
-  const writer = device.transport.toDevice.getWriter();
-  try {
-    await writer.write(toRadioBytes);
-  } finally {
-    writer.releaseLock();
-  }
+  const run = async (): Promise<void> => {
+    const writer = device.transport.toDevice.getWriter();
+    try {
+      await writer.write(toRadioBytes);
+    } finally {
+      writer.releaseLock();
+    }
+  };
+  const next = toRadioDirectWriteChain.then(run, run);
+  toRadioDirectWriteChain = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  await next;
 }
 
 export function decodeStoreForwardTextPayload(data: Uint8Array): string | null {
