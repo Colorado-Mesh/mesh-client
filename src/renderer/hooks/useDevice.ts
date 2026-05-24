@@ -23,8 +23,11 @@ import {
   shouldAutoRequestStoreForwardHistoryOnHeartbeat,
   writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
+import {
+  meshtasticMqttChannelKeyEntries,
+  meshtasticMqttPublishFields,
+} from '@/renderer/lib/meshtasticMqttPublish';
 import { channelNameExists, findNextFreeChannelSlot } from '@/shared/meshtasticChannelApply';
-import { isMeshtasticDefaultPublicPsk } from '@/shared/meshtasticDefaultPublicPsk';
 import {
   MESHTASTIC_CHANNEL_ROLE,
   type MeshtasticLoraConfig,
@@ -426,6 +429,19 @@ export function useDevice() {
     channelConfigsRef.current = channelConfigs;
   }, [channelConfigs]);
 
+  const pushMqttChannelKeys = useCallback(() => {
+    if (mqttStatusRef.current !== 'connected') return;
+    const entries = meshtasticMqttChannelKeyEntries(channelConfigsRef.current);
+    if (entries.length === 0) return;
+    void window.electronAPI.mqtt.updateChannelKeys({ entries }).catch((e: unknown) => {
+      console.warn('[useDevice] mqtt.updateChannelKeys failed ' + errLikeToLogString(e));
+    });
+  }, []);
+
+  useEffect(() => {
+    pushMqttChannelKeys();
+  }, [channelConfigs, mqttStatus, pushMqttChannelKeys]);
+
   // ─── Packet dedup helper (shared by RF and MQTT handlers) ──────
   const isDuplicate = useCallback((packetId: number): boolean => {
     const now = Date.now();
@@ -687,6 +703,7 @@ export function useDevice() {
         if (prev !== 'connected') {
           mqttReconnectBacklogUntilRef.current = Date.now() + MQTT_RECONNECT_BACKLOG_MS;
         }
+        pushMqttChannelKeys();
       } else if (consumeMqttUserDisconnect()) {
         setMqttConnectionLoss(false);
       } else if (prev === 'connected') {
@@ -734,13 +751,15 @@ export function useDevice() {
             return;
           }
           const primaryCh = channelConfigsRef.current.find((c) => c.index === 0);
+          const presenceMqtt = meshtasticMqttPublishFields(primaryCh);
           window.electronAPI.mqtt
             .publishNodeInfo({
               from: virtualNodeIdRef.current,
               longName: MQTT_ONLY_VIRTUAL_LONG_NAME,
               shortName: 'MQTT',
-              channelName: 'LongFast',
-              publishJsonMirror: primaryCh ? isMeshtasticDefaultPublicPsk(primaryCh.psk) : false,
+              channelName: presenceMqtt.channelName,
+              pskBase64: presenceMqtt.pskBase64,
+              publishJsonMirror: presenceMqtt.publishJsonMirror,
             })
             .catch((e: unknown) => {
               console.warn('[useDevice] MQTT presence publish failed ' + errLikeToLogString(e));
@@ -1052,6 +1071,7 @@ export function useDevice() {
     getNodeName,
     ensureNonConflictingVirtualNodeId,
     state.myNodeNum,
+    pushMqttChannelKeys,
   ]);
 
   // Cleanup on unmount — stop all intervals and subscriptions
@@ -1536,14 +1556,16 @@ export function useDevice() {
         if (!isEcho && !emoji && !msg.to && mqttStatusRef.current === 'connected') {
           const chCfg = channelConfigsRef.current.find((c) => c.index === msg.channel);
           if (chCfg?.uplinkEnabled) {
+            const uplinkMqtt = meshtasticMqttPublishFields(chCfg);
             window.electronAPI.mqtt
               .publish({
                 text: msg.payload,
                 from: msg.sender_id,
                 channel: msg.channel,
                 destination: BROADCAST_ADDR,
-                channelName: 'LongFast',
-                publishJsonMirror: chCfg ? isMeshtasticDefaultPublicPsk(chCfg.psk) : false,
+                channelName: uplinkMqtt.channelName,
+                pskBase64: uplinkMqtt.pskBase64,
+                publishJsonMirror: uplinkMqtt.publishJsonMirror,
               })
               .then(isDuplicate)
               .catch((e: unknown) => {
@@ -2518,13 +2540,15 @@ export function useDevice() {
         ) {
           const chCfg = channelConfigsRef.current.find((c) => c.index === chanIdx);
           if (chCfg?.uplinkEnabled) {
+            const wpMqtt = meshtasticMqttPublishFields(chCfg);
             void window.electronAPI.mqtt
               .publishWaypoint({
                 from: fromNode,
                 to: toNode,
                 channel: chanIdx,
-                channelName: 'LongFast',
-                publishJsonMirror: isMeshtasticDefaultPublicPsk(chCfg.psk),
+                channelName: wpMqtt.channelName,
+                pskBase64: wpMqtt.pskBase64,
+                publishJsonMirror: wpMqtt.publishJsonMirror,
                 waypoint: {
                   id: data.id,
                   latitudeI: data.latitudeI ?? 0,
@@ -3439,13 +3463,15 @@ export function useDevice() {
       const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
       const fromNum = myNodeNumRef.current ?? 0;
       if (mqttStatusRef.current === 'connected' && fromNum && chCfg?.uplinkEnabled) {
+        const sendWpMqtt = meshtasticMqttPublishFields(chCfg);
         void window.electronAPI.mqtt
           .publishWaypoint({
             from: fromNum,
             to: dest >>> 0,
             channel,
-            channelName: 'LongFast',
-            publishJsonMirror: isMeshtasticDefaultPublicPsk(chCfg.psk),
+            channelName: sendWpMqtt.channelName,
+            pskBase64: sendWpMqtt.pskBase64,
+            publishJsonMirror: sendWpMqtt.publishJsonMirror,
             waypoint: {
               id: wp.id,
               latitudeI: Math.round(wp.latitude * 1e7),
@@ -3473,13 +3499,15 @@ export function useDevice() {
     const chCfg = channelConfigsRef.current.find((c) => c.index === 0);
     const fromNum = myNodeNumRef.current ?? 0;
     if (mqttStatusRef.current === 'connected' && fromNum && chCfg?.uplinkEnabled) {
+      const delWpMqtt = meshtasticMqttPublishFields(chCfg);
       void window.electronAPI.mqtt
         .publishWaypoint({
           from: fromNum,
           to: BROADCAST_ADDR,
           channel: 0,
-          channelName: 'LongFast',
-          publishJsonMirror: chCfg ? isMeshtasticDefaultPublicPsk(chCfg.psk) : false,
+          channelName: delWpMqtt.channelName,
+          pskBase64: delWpMqtt.pskBase64,
+          publishJsonMirror: delWpMqtt.publishJsonMirror,
           waypoint: {
             id,
             latitudeI: 0,

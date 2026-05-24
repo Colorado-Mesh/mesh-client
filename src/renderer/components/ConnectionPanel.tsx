@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
+import { mqttUsesTls } from '@/renderer/lib/mqttTls';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
@@ -625,6 +626,7 @@ export default function ConnectionPanel({
   const [showMqttPassword, setShowMqttPassword] = useState(false);
   const [mqttError, setMqttError] = useState<string | null>(null);
   const [mqttWarning, setMqttWarning] = useState<string | null>(null);
+  const [channelPskWarn, setChannelPskWarn] = useState<string | null>(null);
   const mqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const meshcoreMqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [meshcorePreset, setMeshcorePreset] = useState<
@@ -741,6 +743,7 @@ export default function ConnectionPanel({
 
   const activeMqttSettings = protocol === 'meshcore' ? meshcoreMqttSettings : mqttSettings;
   const setActiveMqttSettings = protocol === 'meshcore' ? setMeshcoreMqttSettings : setMqttSettings;
+  const activeMqttTls = mqttUsesTls(activeMqttSettings);
 
   const updateMqtt = <K extends keyof MQTTSettings>(
     key: K,
@@ -2188,7 +2191,24 @@ export default function ConnectionPanel({
               />
             </div>
           </div>
-          {activeMqttSettings.port === 8883 && (
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="mqtt-tls-enabled"
+              checked={
+                activeMqttSettings.tlsEnabled === true ||
+                (activeMqttSettings.tlsEnabled !== false && activeMqttTls)
+              }
+              onChange={(e) => {
+                updateMqtt('tlsEnabled', e.target.checked);
+              }}
+              className="accent-brand-green"
+            />
+            <label htmlFor="mqtt-tls-enabled" className="cursor-pointer text-xs text-gray-300">
+              {t('connectionPanel.mqttTlsEnabled')}
+            </label>
+          </div>
+          {activeMqttTls && (
             <div className="flex items-center gap-2 rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2">
               <input
                 type="checkbox"
@@ -2203,8 +2223,7 @@ export default function ConnectionPanel({
                 htmlFor="mqtt-tls-insecure"
                 className="cursor-pointer text-xs text-amber-200/90"
               >
-                Allow insecure TLS (self-signed certificate). Off by default — only enable if your
-                broker uses a non-public CA.
+                {t('connectionPanel.mqttTlsInsecure')}
               </label>
             </div>
           )}
@@ -2380,11 +2399,11 @@ export default function ConnectionPanel({
                 <label htmlFor="mqtt-channel-psks" className="text-muted text-xs">
                   {t('connectionPanel.channelPsks')}
                 </label>
-                <HelpTooltip text="Base64-encoded AES-128 keys for custom channels, one per line. The default LongFast key is always tried automatically." />
+                <HelpTooltip text={t('connectionPanel.channelPsksHelp')} />
               </div>
               <textarea
                 id="mqtt-channel-psks"
-                rows={3}
+                rows={5}
                 value={(activeMqttSettings.channelPsks ?? []).join('\n')}
                 onChange={(e) => {
                   const lines = e.target.value
@@ -2392,11 +2411,43 @@ export default function ConnectionPanel({
                     .map((s) => s.trim())
                     .filter(Boolean);
                   updateMqtt('channelPsks', lines.length > 0 ? lines : undefined, false);
+                  setChannelPskWarn(null);
+                }}
+                onBlur={(e) => {
+                  const lines = e.target.value
+                    .split('\n')
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  if (lines.length === 0) {
+                    setChannelPskWarn(null);
+                    return;
+                  }
+                  for (const line of lines) {
+                    let b64 = line;
+                    const eq = line.indexOf('=');
+                    if (eq > 0) b64 = line.slice(eq + 1).trim();
+                    try {
+                      const raw = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+                      if (raw.length === 16 || raw.length === 32 || raw.length < 16) continue;
+                      setChannelPskWarn(t('connectionPanel.channelPsksInvalidLength'));
+                      return;
+                    } catch {
+                      // catch-no-log-ok invalid base64 on blur — user-facing warning only
+                      setChannelPskWarn(t('connectionPanel.channelPsksInvalidBase64'));
+                      return;
+                    }
+                  }
+                  setChannelPskWarn(null);
                 }}
                 className="bg-secondary-dark focus:border-brand-green w-full resize-none rounded border border-gray-600 px-2 py-1.5 font-mono text-sm text-gray-200 focus:outline-none"
-                placeholder={'1PG7OiApB1nwvP+rz05pAQ==\n(one key per line)'}
+                placeholder={t('connectionPanel.channelPsksPlaceholder')}
                 spellCheck={false}
               />
+              {channelPskWarn && (
+                <p className="text-xs text-amber-300/90" role="status">
+                  {channelPskWarn}
+                </p>
+              )}
             </div>
           )}
           <div className="flex items-center gap-2">

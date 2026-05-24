@@ -1219,7 +1219,13 @@
     },
     "cancelMqttConnect": "취소",
     "ripplePresetConfirm": "리플 사전 설정은 공유 커뮤니티 자격 증명을 사용하고 TLS 인증서 확인을 비활성화합니다. 신뢰할 수 있는 네트워크에서만 사용하십시오. 계속하시겠습니까?",
-    "meshcorePort": "포팅하기"
+    "meshcorePort": "포팅하기",
+    "channelPsksHelp": "AES-128 (16바이트) 또는 AES-256 (32바이트) base64 키 (한 줄에 하나씩). 선택적 ChannelName = MQTT 전용 base64. LongFast 기본값은 항상 시도됩니다. 라디오 탭의 키는 라디오가 연결될 때 자동으로 동기화됩니다.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP + rz05pAQ = =\nHamNet = yourBase64KeyHere",
+    "channelPsksInvalidLength": "각 키는 16바이트 (AES-128) 또는 32바이트 (AES-256) 로 디코딩해야 합니다.",
+    "channelPsksInvalidBase64": "채널 PSK 라인에서 유효하지 않은 base64.",
+    "mqttTlsEnabled": "TLS 활성화 (mqtts/wss)",
+    "mqttTlsInsecure": "안전하지 않은 TLS (자체 서명된 인증서) 를 허용합니다. 기본적으로 사용 안 함 — 브로커가 비공개 CA를 사용하는 경우에만 사용하도록 설정합니다."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}}시간(1~168)보다 오래된 라우팅 행 삭제",

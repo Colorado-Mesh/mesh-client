@@ -1203,7 +1203,13 @@
     },
     "cancelMqttConnect": "Stornieren",
     "ripplePresetConfirm": "Die Ripple-Voreinstellung verwendet gemeinsam genutzte Community-Anmeldeinformationen und deaktiviert die TLS-Zertifikatüberprüfung. Nur in einem vertrauenswürdigen Netzwerk verwenden. Fortfahren?",
-    "meshcorePort": "Port"
+    "meshcorePort": "Port",
+    "channelPsksHelp": "AES-128 (16 Byte) oder AES-256 (32 Byte) Base64-Schlüssel, einer pro Zeile. Optionaler ChannelName=base64 nur für MQTT. LongFast-Standard wird immer versucht. Die Tasten auf der Registerkarte Radio werden automatisch synchronisiert, wenn das Radio angeschlossen ist.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Jeder Schlüssel muss auf 16 Byte (AES-128) oder 32 Byte (AES-256) decodiert werden.",
+    "channelPsksInvalidBase64": "Ungültiges base64 auf einer Kanal-PSK-Leitung.",
+    "mqttTlsEnabled": "TLS aktivieren (mqtts / wss)",
+    "mqttTlsInsecure": "Unsichere TLS (selbstsigniertes Zertifikat) zulassen. Standardmäßig deaktiviert — nur aktivieren, wenn Ihr Broker eine nicht öffentliche CA verwendet."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Wirf Routingreihen, die älter als {{hours}} Stunden (1-168) sind",

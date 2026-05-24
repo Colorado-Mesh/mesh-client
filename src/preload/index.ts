@@ -379,12 +379,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getClientId: (protocol?: 'meshtastic' | 'meshcore'): Promise<string> =>
       ipcRenderer.invoke('mqtt:getClientId', protocol),
     getCachedNodes: () => ipcRenderer.invoke('mqtt:getCachedNodes'),
+    updateChannelKeys: (args: { entries: { name: string; pskBase64: string }[] }) =>
+      ipcRenderer.invoke('mqtt:updateChannelKeys', args),
     publish: (args: {
       text: string;
       from: number;
       channel: number;
       destination?: number;
       channelName?: string;
+      pskBase64?: string;
       emoji?: number;
       replyId?: number;
       publishJsonMirror: boolean;
@@ -395,6 +398,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       shortName: string;
       channelName?: string;
       hwModel?: number;
+      pskBase64?: string;
       publishJsonMirror: boolean;
     }) => ipcRenderer.invoke('mqtt:publishNodeInfo', args),
     publishPosition: (args: {
@@ -404,6 +408,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       latitudeI: number;
       longitudeI: number;
       altitude?: number;
+      pskBase64?: string;
       publishJsonMirror: boolean;
     }) => ipcRenderer.invoke('mqtt:publishPosition', args),
     publishWaypoint: (args: {
@@ -411,6 +416,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       to: number;
       channel: number;
       channelName: string;
+      pskBase64?: string;
       publishJsonMirror: boolean;
       waypoint: {
         id: number;

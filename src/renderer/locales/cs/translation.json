@@ -1205,7 +1205,13 @@
     },
     "cancelMqttConnect": "Zrušit",
     "ripplePresetConfirm": "Přednastavení Ripple používá sdílené přihlašovací údaje komunity a zakazuje ověření certifikátu TLS. Použít pouze v důvěryhodné síti. Pokračovat?",
-    "meshcorePort": "Port"
+    "meshcorePort": "Port",
+    "channelPsksHelp": "Klávesy AES-128 (16 bajtů) nebo AES-256 (32 bajtů) base64, jeden na řádek. Volitelný název kanálu=base64 pouze pro MQTT. Výchozí hodnota LongFast je vždy vyzkoušena. Klávesy z karty Rádio se automaticky synchronizují, když je rádio připojeno.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Každý klíč musí dekódovat na 16 bajtů (AES-128) nebo 32 bajtů (AES-256).",
+    "channelPsksInvalidBase64": "Neplatná base64 na kanálu PSK linky.",
+    "mqttTlsEnabled": "Povolit TLS (mqtts / wss)",
+    "mqttTlsInsecure": "Povolit nezabezpečený TLS (self-signed certifikát). Vypnuto ve výchozím nastavení — povolte pouze v případě, že váš makléř používá neveřejnou CA."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Vypustit řádky směrování starší než {{hours}} hodin (1–168)",

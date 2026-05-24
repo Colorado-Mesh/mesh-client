@@ -222,13 +222,16 @@ export interface MQTTSettings {
   topicPrefix: string;
   autoLaunch: boolean;
   maxRetries?: number;
-  /** When using TLS (port 8883), set true to skip certificate verification (self-signed brokers). Default false = verify. */
+  /** When using TLS, set true to skip certificate verification (self-signed brokers). Default false = verify. */
   tlsInsecure?: boolean;
-  /** Explicitly enable TLS for WebSocket connections. When true, uses wss:// scheme. */
+  /**
+   * Enable TLS (mqtts/wss). When undefined, port 8883 implies TLS on native TCP; port 443 implies wss.
+   * Set false to use plaintext on 8883 during broker testing; set true for TLS on port 1883.
+   */
   tlsEnabled?: boolean;
   /**
-   * Additional base64-encoded AES-128 PSKs to try when decrypting packets from custom channels.
-   * The default PSK (AQ==, padded to 16 bytes) is always tried first.
+   * Manual channel PSKs: one base64 key per line (AES-128 = 16 bytes, AES-256 = 32 bytes), or
+   * `ChannelName=base64`. Default LongFast key is always tried. Radio channel keys sync when connected.
    */
   channelPsks?: string[];
   /** Broker codec: Meshtastic protobuf vs MeshCore JSON adapter (main process). */
@@ -663,12 +666,16 @@ declare global {
         ) => () => void;
         getClientId: (protocol?: 'meshtastic' | 'meshcore') => Promise<string>;
         getCachedNodes: () => Promise<CachedNode[]>;
+        updateChannelKeys: (args: {
+          entries: { name: string; pskBase64: string }[];
+        }) => Promise<void>;
         publish: (args: {
           text: string;
           from: number;
           channel: number;
           destination?: number;
           channelName?: string;
+          pskBase64?: string;
           emoji?: number;
           replyId?: number;
           publishJsonMirror: boolean;
@@ -679,6 +686,7 @@ declare global {
           shortName: string;
           channelName?: string;
           hwModel?: number;
+          pskBase64?: string;
           publishJsonMirror: boolean;
         }) => Promise<number>;
         publishPosition: (args: {
@@ -688,6 +696,7 @@ declare global {
           latitudeI: number;
           longitudeI: number;
           altitude?: number;
+          pskBase64?: string;
           publishJsonMirror: boolean;
         }) => Promise<number>;
         publishWaypoint: (args: {
@@ -695,6 +704,7 @@ declare global {
           to: number;
           channel: number;
           channelName: string;
+          pskBase64?: string;
           publishJsonMirror: boolean;
           waypoint: {
             id: number;

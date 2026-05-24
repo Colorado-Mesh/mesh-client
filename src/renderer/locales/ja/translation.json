@@ -1219,7 +1219,13 @@
     },
     "cancelMqttConnect": "キャンセル",
     "ripplePresetConfirm": "Rippleプリセットは、共有コミュニティ資格情報を使用し、TLS証明書の検証を無効にします。これは信頼できるネットワークでのみ使用します。続行しますか？",
-    "meshcorePort": "ポート"
+    "meshcorePort": "ポート",
+    "channelPsksHelp": "AES -128 （ 16バイト）またはAES -256 （ 32バイト）ベース64キー、1行に1つ。MQTTのみの場合、オプションのChannelName = base 64。LongFastのデフォルトは常に試されます。ラジオタブのキーは、ラジオが接続されると自動的に同期されます。",
+    "channelPsksPlaceholder": "1 PG 7 OiApB 1 nwvP + rz 05 pAQ ==\nHamNet = yourBase 64 KeyHere",
+    "channelPsksInvalidLength": "各キーは、16バイト（ AES -128 ）または32バイト（ AES -256 ）にデコードする必要があります。",
+    "channelPsksInvalidBase64": "チャネルPSK回線上のbase 64が無効です。",
+    "mqttTlsEnabled": "TLSを有効にする(mqtts/wss)",
+    "mqttTlsInsecure": "安全でないTLS （自己署名証明書）を許可します。デフォルトでオフ—ブローカーが非公開CAを使用している場合にのみ有効にします。"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} 時間より古いルーティング行を削除 (1 ～ 168)",

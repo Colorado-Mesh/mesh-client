@@ -1219,7 +1219,13 @@
     },
     "cancelMqttConnect": "Annuleren",
     "ripplePresetConfirm": "De Ripple-voorinstelling gebruikt gedeelde gemeenschapsreferenties en schakelt TLS-certificaatverificatie uit. Gebruik dit alleen op een vertrouwd netwerk. Doorgaan?",
-    "meshcorePort": "Poort"
+    "meshcorePort": "Poort",
+    "channelPsksHelp": "AES-128 (16-byte) of AES-256 (32-byte) base64-toetsen, één per regel. Optionele kanaalnaam=base64 voor alleen MQTT. LongFast-standaard wordt altijd geprobeerd. Toetsen van het tabblad Radio worden automatisch gesynchroniseerd wanneer de radio is aangesloten.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Elke sleutel moet worden gedecodeerd tot 16 bytes (AES-128) of 32 bytes (AES-256).",
+    "channelPsksInvalidBase64": "Ongeldige base64 op een PSK-kanaalregel.",
+    "mqttTlsEnabled": "TLS (mqtts/ wss) inschakelen",
+    "mqttTlsInsecure": "Sta onveilige TLS (zelfondertekend certificaat) toe. Standaard uitgeschakeld — alleen inschakelen als uw makelaar een niet-openbare CA gebruikt."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Rijen voor droprouting die ouder zijn dan {{hours}} uur (1–168)",

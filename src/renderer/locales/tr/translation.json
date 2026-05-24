@@ -1219,7 +1219,13 @@
     },
     "cancelMqttConnect": "İptal etmek",
     "ripplePresetConfirm": "Ripple ön ayarı, paylaşılan topluluk kimlik bilgilerini kullanır ve TLS sertifika doğrulamasını devre dışı bırakır. Bunu yalnızca güvenilir bir ağda kullanın. Devam edilsin mi?",
-    "meshcorePort": "Liman"
+    "meshcorePort": "Liman",
+    "channelPsksHelp": "AES -128 (16 bayt) veya AES -256 (32 bayt) base64 tuşları, satır başına bir adet. İsteğe bağlı ChannelName= yalnızca MQTT için base64. LongFast varsayılanı her zaman denenir. Radyo sekmesindeki tuşlar, radyo bağlandığında otomatik olarak senkronize edilir.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Her anahtarın kodu 16 bayta (AES -128) veya 32 bayta (AES -256) kadar çözülmelidir.",
+    "channelPsksInvalidBase64": "Bir kanal PSK hattında geçersiz base64.",
+    "mqttTlsEnabled": "TLS'yi etkinleştir (mqtts / wss)",
+    "mqttTlsInsecure": "Güvensiz TLS'ye (kendinden imzalı sertifika) izin verin. Varsayılan olarak kapalı — yalnızca brokeriniz halka açık olmayan bir CA kullanıyorsa etkinleştirin."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} saatten (1-168) daha eski olan yönlendirme satırlarını bırak",

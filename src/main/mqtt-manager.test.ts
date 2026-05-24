@@ -6,7 +6,13 @@ import * as mqtt from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MQTTSettings } from '../renderer/lib/types';
-import { MQTTManager, parsePsk, prepareMqttProtobufBytes } from './mqtt-manager';
+import {
+  cipherForKey,
+  MQTTManager,
+  parseChannelPskLine,
+  parsePsk,
+  prepareMqttProtobufBytes,
+} from './mqtt-manager';
 
 vi.mock('mqtt', () => {
   const mockClient = {
@@ -40,10 +46,10 @@ function makeNonce(packetId: number, fromId: number): Buffer {
   return nonce;
 }
 
-/** Encrypt `plaintext` bytes with a given PSK using AES-128-CTR */
+/** Encrypt `plaintext` bytes with a given PSK using Meshtastic AES-CTR (128 or 256). */
 function encrypt(plaintext: Uint8Array, packetId: number, fromId: number, psk: Buffer): Buffer {
   const nonce = makeNonce(packetId, fromId);
-  const cipher = createCipheriv('aes-128-ctr', psk, nonce);
+  const cipher = createCipheriv(cipherForKey(psk), psk, nonce);
   return Buffer.concat([cipher.update(Buffer.from(plaintext)), cipher.final()]);
 }
 
@@ -147,11 +153,39 @@ describe('parsePsk', () => {
     expect(result!.subarray(1).every((b) => b === 0)).toBe(true);
   });
 
-  it('truncates a key longer than 16 bytes to 16 bytes', () => {
-    const longKey = Buffer.alloc(32, 0xab).toString('base64');
-    const result = parsePsk(longKey);
+  it('accepts a 32-byte AES-256 key', () => {
+    const longKey = Buffer.alloc(32, 0xab);
+    const result = parsePsk(longKey.toString('base64'));
     expect(result).not.toBeNull();
-    expect(result!.length).toBe(16);
+    expect(result!.length).toBe(32);
+    expect(result).toEqual(longKey);
+  });
+
+  it('rejects invalid lengths between 17 and 31 bytes', () => {
+    expect(parsePsk(Buffer.alloc(20, 1).toString('base64'))).toBeNull();
+  });
+});
+
+describe('cipherForKey', () => {
+  it('maps 16-byte keys to aes-128-ctr and 32-byte to aes-256-ctr', () => {
+    expect(cipherForKey(Buffer.alloc(16))).toBe('aes-128-ctr');
+    expect(cipherForKey(Buffer.alloc(32))).toBe('aes-256-ctr');
+  });
+});
+
+describe('parseChannelPskLine', () => {
+  it('parses ChannelName=base64', () => {
+    const b64 = CUSTOM_PSK.toString('base64');
+    const parsed = parseChannelPskLine(`HamNet=${b64}`);
+    expect(parsed?.name).toBe('HamNet');
+    expect(parsed?.psk).toEqual(CUSTOM_PSK);
+  });
+
+  it('parses bare base64 with padding equals (not ChannelName=)', () => {
+    const b64 = CUSTOM_PSK.toString('base64');
+    const parsed = parseChannelPskLine(b64);
+    expect(parsed?.name).toBeUndefined();
+    expect(parsed?.psk).toEqual(CUSTOM_PSK);
   });
 });
 
@@ -360,6 +394,18 @@ describe('tryDecryptWithKey', () => {
     expect(result.toString()).toBe('custom channel payload');
   });
 
+  it('decrypts a payload encrypted with AES-256-CTR', () => {
+    const aes256 = Buffer.alloc(32, 0x42);
+    const plaintext = Buffer.from('ham private net');
+    const packetId = 0x55667788;
+    const fromId = 0xaabbccdd;
+    const encrypted = encrypt(plaintext, packetId, fromId, aes256);
+
+    const result = (manager as any).tryDecryptWithKey(encrypted, packetId, fromId, aes256);
+    expect(result).not.toBeNull();
+    expect(result.toString()).toBe('ham private net');
+  });
+
   it('returns garbage (not null) when wrong key is used — AES-CTR never throws', () => {
     const plaintext = Buffer.from('secret');
     const packetId = 0x1;
@@ -414,7 +460,7 @@ describe('tryDecryptAllKeys', () => {
     expect(result).toBeNull();
   });
 
-  it('succeeds with a custom PSK when it is in extraPsks', () => {
+  it('succeeds with a custom PSK when it is in allDecryptKeys', () => {
     const dataBytes = toBinary(
       DataSchema,
       create(DataSchema, {
@@ -424,7 +470,7 @@ describe('tryDecryptAllKeys', () => {
     );
     const encrypted = encrypt(dataBytes, 3, 0x22222222, CUSTOM_PSK);
 
-    (manager as any).extraPsks = [CUSTOM_PSK];
+    (manager as any).allDecryptKeys = [DEFAULT_PSK, CUSTOM_PSK];
     const result = (manager as any).tryDecryptAllKeys(encrypted, 3, 0x22222222);
     expect(result).not.toBeNull();
     expect(result!.portnum).toBe(PortNum.TEXT_MESSAGE_APP);
@@ -443,7 +489,7 @@ describe('tryDecryptAllKeys', () => {
     );
     const encrypted = encrypt(dataBytes, 4, 0x33333333, CUSTOM_PSK);
 
-    (manager as any).extraPsks = [CUSTOM_PSK];
+    (manager as any).allDecryptKeys = [DEFAULT_PSK, CUSTOM_PSK];
     const result = (manager as any).tryDecryptAllKeys(encrypted, 4, 0x33333333);
     expect(result).not.toBeNull();
     expect(result!.portnum).toBe(PortNum.POSITION_APP);
@@ -523,7 +569,7 @@ describe('onMessage — NODEINFO_APP', () => {
     manager.on('nodeUpdate', (u) => updates.push(u));
 
     // Register the custom PSK before processing
-    (manager as any).extraPsks = [CUSTOM_PSK];
+    (manager as any).allDecryptKeys = [DEFAULT_PSK, CUSTOM_PSK];
     (manager as any).onMessage('msh/US/2/e/MyChannel/!55667788', payload);
 
     const u = updates[0] as Record<string, unknown>;
@@ -794,6 +840,56 @@ describe('_doConnect — WebSocket scheme', () => {
     ).toBe('ws');
   });
 
+  it('uses mqtts for native TCP on port 8883', () => {
+    new MQTTManager().connect({
+      server: 'broker.example.com',
+      port: 8883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh',
+      autoLaunch: false,
+    });
+
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
+    ).toBe('mqtts');
+  });
+
+  it('uses mqtt without TLS when tlsEnabled is false on port 8883', () => {
+    new MQTTManager().connect({
+      server: 'broker.example.com',
+      port: 8883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh',
+      autoLaunch: false,
+      tlsEnabled: false,
+    });
+
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
+    ).toBe('mqtt');
+  });
+
+  it('uses mqtts on port 1883 when tlsEnabled is true', () => {
+    new MQTTManager().connect({
+      server: 'broker.example.com',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh',
+      autoLaunch: false,
+      tlsEnabled: true,
+    });
+
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
+    ).toBe('mqtts');
+  });
+
   it('uses wss:// when tlsEnabled is true on port 1883', () => {
     new MQTTManager().connect({
       server: 'mqtt.meshcore.coloradomesh.org',
@@ -836,11 +932,10 @@ describe('_doConnect — WebSocket scheme', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('connect — channelPsks parsing', () => {
-  it('populates extraPsks from settings.channelPsks', () => {
+  it('adds unnamed channelPsks to decrypt key set', () => {
     const manager = new MQTTManager();
     const customB64 = CUSTOM_PSK.toString('base64');
 
-    // Intercept _doConnect to avoid actual network activity
     (manager as any)._doConnect = () => {};
 
     manager.connect({
@@ -853,9 +948,27 @@ describe('connect — channelPsks parsing', () => {
       channelPsks: [customB64],
     });
 
-    const extraPsks: Buffer[] = (manager as any).extraPsks;
-    expect(extraPsks).toHaveLength(1);
-    expect(extraPsks[0]).toEqual(CUSTOM_PSK);
+    const allDecryptKeys: Buffer[] = (manager as any).allDecryptKeys;
+    expect(allDecryptKeys.some((k) => k.equals(CUSTOM_PSK))).toBe(true);
+  });
+
+  it('maps ChannelName=base64 lines to channelKeysByName', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    const customB64 = CUSTOM_PSK.toString('base64');
+
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: [`Private=${customB64}`],
+    });
+
+    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
+    expect(byName.get('Private')?.equals(CUSTOM_PSK)).toBe(true);
   });
 
   it('filters out empty PSK strings', () => {
@@ -872,10 +985,11 @@ describe('connect — channelPsks parsing', () => {
       channelPsks: ['', '  ', CUSTOM_PSK.toString('base64')],
     });
 
-    expect((manager as any).extraPsks).toHaveLength(1);
+    const allDecryptKeys: Buffer[] = (manager as any).allDecryptKeys;
+    expect(allDecryptKeys.filter((k) => k.equals(CUSTOM_PSK))).toHaveLength(1);
   });
 
-  it('sets extraPsks to empty array when channelPsks is omitted', () => {
+  it('keeps only DEFAULT_PSK in allDecryptKeys when channelPsks is omitted', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};
 
@@ -888,7 +1002,32 @@ describe('connect — channelPsks parsing', () => {
       autoLaunch: false,
     });
 
-    expect((manager as any).extraPsks).toEqual([]);
+    const allDecryptKeys: Buffer[] = (manager as any).allDecryptKeys;
+    expect(allDecryptKeys).toHaveLength(1);
+    expect(allDecryptKeys[0]).toEqual(DEFAULT_PSK);
+  });
+});
+
+describe('updateChannelKeys', () => {
+  it('registers radio channel keys for decrypt and publish', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    const aes256 = Buffer.alloc(32, 0xcd);
+    manager.updateChannelKeys([{ name: 'HamPrivate', pskBase64: aes256.toString('base64') }]);
+
+    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
+    expect(byName.get('HamPrivate')?.equals(aes256)).toBe(true);
+    const allDecryptKeys: Buffer[] = (manager as any).allDecryptKeys;
+    expect(allDecryptKeys.some((k) => k.equals(aes256))).toBe(true);
   });
 });
 

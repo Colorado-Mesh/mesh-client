@@ -1203,7 +1203,13 @@
     },
     "cancelMqttConnect": "取消",
     "ripplePresetConfirm": "Ripple预设使用共享社区凭据并禁用TLS证书验证。仅在受信任的网络上使用此功能。是否继续？",
-    "meshcorePort": "端口"
+    "meshcorePort": "端口",
+    "channelPsksHelp": "AES-128 （ 16字节）或AES-256 （ 32字节） base64密钥，每行一个。仅限MQTT的可选ChannelName = base64。始终尝试LongFast默认值。当收音机连接时， “收音机”选项卡中的按键会自动同步。",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP + rz05pAQ = =\nHamNet = yourBase64KeyHere",
+    "channelPsksInvalidLength": "每个密钥必须解码为16字节（ AES-128 ）或32字节（ AES-256 ）。",
+    "channelPsksInvalidBase64": "通道PSK线上的base64无效。",
+    "mqttTlsEnabled": "启用TLS (mqtts/wss)",
+    "mqttTlsInsecure": "允许不安全的TLS （自签名证书）。默认情况下关闭—仅当您的经纪人使用非公开CA时才启用。"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "删除早于{{hours}}小时的路由行(1–168)",

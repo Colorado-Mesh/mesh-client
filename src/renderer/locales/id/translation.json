@@ -1219,7 +1219,13 @@
     },
     "cancelMqttConnect": "Membatalkan",
     "ripplePresetConfirm": "Preset Ripple menggunakan kredensial komunitas bersama dan menonaktifkan verifikasi sertifikat TLS. Hanya gunakan ini di jaringan tepercaya. Lanjutkan?",
-    "meshcorePort": "Port"
+    "meshcorePort": "Port",
+    "channelPsksHelp": "Tombol base64 AES -128 (16 - byte) atau AES -256 (32 - byte), satu per baris. Nama Saluran Opsional=base64 hanya untuk MQTT. LongFast default selalu dicoba. Tombol dari tab Radio disinkronkan secara otomatis saat radio terhubung.",
+    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksInvalidLength": "Setiap kunci harus diterjemahkan menjadi 16 byte (AES -128) atau 32 byte (AES -256).",
+    "channelPsksInvalidBase64": "Base64 tidak valid pada saluran PSK.",
+    "mqttTlsEnabled": "Aktifkan TLS (mqtts / wss)",
+    "mqttTlsInsecure": "Izinkan TLS yang tidak aman (sertifikat yang ditandatangani sendiri). Tidak aktif secara default — hanya aktifkan jika broker Anda menggunakan CA non - publik."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Hapus baris perutean yang lebih lama dari {{hours}} jam (1–168)",
