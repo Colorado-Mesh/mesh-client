@@ -57,26 +57,31 @@ export default function ConfigureNodeSelector({
 
   return (
     <div className="space-y-2">
-      <label htmlFor="configure-node-select" className="text-muted text-xs font-medium uppercase">
-        {t('configureNode.label')}
-      </label>
-      <select
-        id="configure-node-select"
-        aria-label={t('configureNode.label')}
-        className="bg-secondary-dark focus:border-brand-green w-full max-w-md rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
-        value={configureTargetNodeNum ?? ''}
-        onChange={(e) => {
-          const raw = e.target.value;
-          onConfigureTargetChange(raw === '' ? null : Number(raw));
-        }}
-      >
-        <option value="">{t('configureNode.localDevice')}</option>
-        {remoteCandidates.map((node) => (
-          <option key={node.node_id} value={node.node_id}>
-            {getNodeName(node.node_id)} ({formatMeshtasticNodeId(node.node_id)})
-          </option>
-        ))}
-      </select>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <label
+          htmlFor="configure-node-select"
+          className="text-muted shrink-0 text-xs font-medium uppercase"
+        >
+          {t('configureNode.label')}
+        </label>
+        <select
+          id="configure-node-select"
+          aria-label={t('configureNode.label')}
+          className="bg-secondary-dark focus:border-brand-green max-w-md min-w-[12rem] flex-1 rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+          value={configureTargetNodeNum ?? ''}
+          onChange={(e) => {
+            const raw = e.target.value;
+            onConfigureTargetChange(raw === '' ? null : Number(raw));
+          }}
+        >
+          <option value="">{t('configureNode.localDevice')}</option>
+          {remoteCandidates.map((node) => (
+            <option key={node.node_id} value={node.node_id}>
+              {getNodeName(node.node_id)} ({formatMeshtasticNodeId(node.node_id)})
+            </option>
+          ))}
+        </select>
+      </div>
 
       {configTarget.mode === 'remote' && selectedRemote && (
         <div
