@@ -53,9 +53,15 @@ export class TransportManager {
     const cfg = chCfg ?? channelConfigsRef.current.find((c) => c.index === 0);
     const mqttFields = meshtasticMqttPublishFields(cfg);
     const shouldUplink =
-      chCfg?.uplinkEnabled && mqttStatusRef.current === 'connected' && myNodeNumRef.current;
+      chCfg?.uplinkEnabled &&
+      mqttStatusRef.current === 'connected' &&
+      myNodeNumRef.current &&
+      mqttFields.channelName;
     // ── MQTT transport (path 1) ──────────────────────────────────────────────
-    if (shouldUplink || (!deviceRef.current && mqttStatusRef.current === 'connected')) {
+    if (
+      shouldUplink ||
+      (!deviceRef.current && mqttStatusRef.current === 'connected' && mqttFields.channelName)
+    ) {
       window.electronAPI.mqtt
         .publish({
           text,

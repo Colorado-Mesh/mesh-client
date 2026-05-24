@@ -197,7 +197,7 @@ export interface MeshtasticRemoteConfigSnapshot {
   deviceOwner?: { longName: string; shortName: string; isLicensed: boolean } | null;
   securityConfig?: {
     publicKey: Uint8Array;
-    privateKey: Uint8Array;
+    privateKey?: Uint8Array;
     adminKey: Uint8Array[];
     isManaged: boolean;
     serialEnabled: boolean;

@@ -71,7 +71,7 @@ export class RemoteAdminSessionStore {
 }
 
 export type ParsedAdminResponse =
-  | { kind: 'admin'; message: AdminMessage; from: number }
+  | { kind: 'admin'; message: AdminMessage; from: number; requestId: number }
   | { kind: 'routing_error'; error: RemoteAdminRoutingErrorCode; requestId: number; from: number };
 
 export function extractAdminSessionPasskey(message: AdminMessage): Uint8Array | undefined {
@@ -113,7 +113,7 @@ export function parseIncomingRemoteAdminPacket(meshPacket: MeshPacket): ParsedAd
         Admin.AdminMessageSchema,
         data.payload!,
       ) as unknown as AdminMessage;
-      return { kind: 'admin', message, from };
+      return { kind: 'admin', message, from, requestId: (data.requestId ?? 0) >>> 0 };
     } catch {
       // catch-no-log-ok malformed ADMIN_APP payload on unrelated mesh traffic
       return null;
@@ -204,12 +204,17 @@ export class MeshtasticRemoteAdminClient {
   ) {}
 
   dispose(): void {
+    this.resetEditState(new Error('Remote admin client disposed'));
+    this.sessionStore.clear();
+  }
+
+  /** Clears in-flight requests and edit state (target switch, disconnect). */
+  resetEditState(reason: Error = new Error('remoteAdmin.errors.generic')): void {
     for (const entry of this.pending.values()) {
       clearTimeout(entry.timeoutId);
-      entry.reject(new Error('Remote admin client disposed'));
+      entry.reject(reason);
     }
     this.pending.clear();
-    this.sessionStore.clear();
     this.pendingEdit = false;
   }
 
@@ -232,22 +237,31 @@ export class MeshtasticRemoteAdminClient {
       this.sessionStore.set(parsed.from, passkey);
     }
 
-    for (const [packetId, pending] of this.pending.entries()) {
-      if (pending.destNodeNum !== parsed.from) continue;
-      const responseCase = parsed.message.payloadVariant.case;
-      if (!responseCase) continue;
-      if (pending.expectedResponseCases && !pending.expectedResponseCases.includes(responseCase)) {
-        continue;
-      }
-      clearTimeout(pending.timeoutId);
-      this.pending.delete(packetId);
-      pending.resolve(parsed.message);
+    if (parsed.requestId === 0) return;
+
+    const pending = this.pending.get(parsed.requestId);
+    if (pending?.destNodeNum !== parsed.from) return;
+
+    const responseCase = parsed.message.payloadVariant.case;
+    if (!responseCase) return;
+    if (pending.expectedResponseCases && !pending.expectedResponseCases.includes(responseCase)) {
       return;
     }
+    clearTimeout(pending.timeoutId);
+    this.pending.delete(parsed.requestId);
+    pending.resolve(parsed.message);
   }
 
   private generatePacketId(): number {
-    return Math.floor(Math.random() * 0xffffffff);
+    const device = this.getDevice() as { generateRandId?: () => number } | null;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const id =
+        device?.generateRandId != null
+          ? device.generateRandId() >>> 0
+          : Math.floor(Math.random() * 0xffffffff) >>> 0;
+      if (id !== 0 && !this.pending.has(id)) return id;
+    }
+    return (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
   }
 
   private attachSessionPasskey(
@@ -479,19 +493,23 @@ export class MeshtasticRemoteAdminClient {
         }),
       { wantResponse: false, requireSession: true },
     );
+    await this.commitRemoteEdit(destNodeNum);
   }
 
   async commitRemoteEdit(destNodeNum: number): Promise<void> {
-    await this.ensureSessionKey(destNodeNum);
-    await this.sendAdminRequest(
-      destNodeNum,
-      () =>
-        adminMessage({
-          payloadVariant: { case: 'commitEditSettings', value: true },
-        }),
-      { wantResponse: false, requireSession: true },
-    );
-    this.pendingEdit = false;
+    try {
+      await this.ensureSessionKey(destNodeNum);
+      await this.sendAdminRequest(
+        destNodeNum,
+        () =>
+          adminMessage({
+            payloadVariant: { case: 'commitEditSettings', value: true },
+          }),
+        { wantResponse: false, requireSession: true },
+      );
+    } finally {
+      this.pendingEdit = false;
+    }
   }
 
   async remoteReboot(destNodeNum: number, seconds: number): Promise<void> {

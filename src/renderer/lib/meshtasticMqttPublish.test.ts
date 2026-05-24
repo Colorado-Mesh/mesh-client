@@ -23,6 +23,12 @@ describe('resolveMeshtasticMqttChannelName', () => {
       resolveMeshtasticMqttChannelName({ index: 0, name: '', role: 1, psk: new Uint8Array([1]) }),
     ).toBe('LongFast');
   });
+
+  it('returns empty string for unnamed secondary (skip MQTT publish)', () => {
+    expect(
+      resolveMeshtasticMqttChannelName({ index: 1, name: '', role: 2, psk: new Uint8Array([1]) }),
+    ).toBe('');
+  });
 });
 
 describe('meshtasticMqttPublishFields', () => {

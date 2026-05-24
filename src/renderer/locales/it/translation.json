@@ -484,7 +484,8 @@
       "noChannelsToExport": "Nessun canale abilitato da esportare.",
       "parseFailed": "URL del canale non valido: {{message}}",
       "applying": "Applicazione in corso...",
-      "unnamedChannel": "(Senza nome)"
+      "unnamedChannel": "(Senza nome)",
+      "applySuccessWithSkipped": "Ha applicato {{applied}} canale/i; ha saltato {{skipped}} duplicato o senza nome."
     }
   },
   "securityPanel": {
@@ -1074,7 +1075,10 @@
       "no_server": "Nessun router Store & Forward ancora visto. Attendi un heartbeat del router o controlla la scheda Moduli.",
       "not_configured": "La radio è ancora in fase di configurazione. Riprova tra qualche secondo.",
       "local_is_server": "Questo dispositivo è un server Store & Forward; la cronologia viene recuperata da altri nodi.",
-      "send_failed": "Impossibile inviare la richiesta di cronologia alla radio. Riconnettiti o riprova."
+      "send_failed": "Impossibile inviare la richiesta di cronologia alla radio. Riconnettiti o riprova.",
+      "cooldown": "La cronologia è stata recuperata di recente per questo router. Attendi prima di richiedere di nuovo.",
+      "offline_gate": "Attendere alcuni minuti dopo la riconnessione prima di eseguire il recupero automatico; utilizzare Recupera manualmente.",
+      "already_requested": "È già in corso una richiesta di cronologia per questo router."
     }
   },
   "connectionPanel": {

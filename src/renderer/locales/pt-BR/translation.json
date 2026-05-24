@@ -484,7 +484,8 @@
       "noChannelsToExport": "Nenhum canal habilitado para exportar.",
       "parseFailed": "URL do canal inválido: {{message}}",
       "applying": "Aplicando",
-      "unnamedChannel": "(Sem Nome)"
+      "unnamedChannel": "(Sem Nome)",
+      "applySuccessWithSkipped": "Canal(is) {{applied}} aplicado (s); ignorado (s) {{skipped}} duplicado (s) ou sem nome."
     }
   },
   "securityPanel": {
@@ -1074,7 +1075,10 @@
       "no_server": "Ainda não foi visto nenhum roteador Store & Forward. Aguarde um batimento cardíaco do roteador ou verifique a guia Módulos.",
       "not_configured": "O rádio ainda está configurando. Tente novamente em alguns segundos.",
       "local_is_server": "Este dispositivo é um histórico do Servidor de Armazenamento e Encaminhamento; é obtido por outros nós.",
-      "send_failed": "Não foi possível enviar a solicitação de histórico para o rádio. Reconecte ou tente novamente."
+      "send_failed": "Não foi possível enviar a solicitação de histórico para o rádio. Reconecte ou tente novamente.",
+      "cooldown": "O histórico foi obtido recentemente para este roteador. Aguarde antes de solicitar novamente.",
+      "offline_gate": "Aguarde alguns minutos após a reconexão antes de executar a busca automática; use Catch up manualmente.",
+      "already_requested": "Uma solicitação de histórico já está em andamento para este roteador."
     }
   },
   "connectionPanel": {

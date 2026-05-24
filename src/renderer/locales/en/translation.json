@@ -376,6 +376,7 @@
       "confirmAddMessage": "Add channels from the pasted link to your connected radio?",
       "confirmApply": "Apply",
       "applySuccess": "Channel configuration applied from URL.",
+      "applySuccessWithSkipped": "Applied {{applied}} channel(s); skipped {{skipped}} duplicate or unnamed.",
       "applyFailed": "Failed to apply URL: {{message}}",
       "exportFailed": "Failed to generate URL: {{message}}",
       "parseFailed": "Invalid channel URL: {{message}}",
@@ -1084,7 +1085,10 @@
       "no_server": "No Store & Forward router seen yet. Wait for a router heartbeat or check the Modules tab.",
       "not_configured": "Radio is still configuring. Try again in a few seconds.",
       "local_is_server": "This device is a Store & Forward server; history is fetched by other nodes.",
-      "send_failed": "Could not send history request to the radio. Reconnect or try again."
+      "send_failed": "Could not send history request to the radio. Reconnect or try again.",
+      "cooldown": "History was fetched recently for this router. Wait before requesting again.",
+      "offline_gate": "Wait a few minutes after reconnecting before auto-fetch runs; use Catch up manually.",
+      "already_requested": "A history request is already in progress for this router."
     },
     "exportChatSuccess": "Chat exported",
     "exportChatFailed": "Export failed",

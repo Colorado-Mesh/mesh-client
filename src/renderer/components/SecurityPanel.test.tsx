@@ -155,6 +155,20 @@ describe('SecurityPanel', () => {
     });
   });
 
+  it('hides key backup when configuring a remote target', () => {
+    renderWithToast(
+      <SecurityPanel
+        onSetConfig={vi.fn().mockResolvedValue(undefined)}
+        onCommit={vi.fn().mockResolvedValue(undefined)}
+        isConnected
+        securityConfig={makeSecurityConfig()}
+        configTarget={{ mode: 'remote', nodeNum: 0x200, isReady: true, isLoading: false }}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Backup Keys' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Regenerate Keys' })).not.toBeInTheDocument();
+  });
+
   it('confirms regenerate before calling apply', async () => {
     const user = userEvent.setup();
     const onSetConfig = vi.fn().mockResolvedValue(undefined);

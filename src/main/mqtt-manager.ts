@@ -11,12 +11,15 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, randomInt } 
 import { EventEmitter } from 'events';
 import * as mqtt from 'mqtt';
 
-import { resolveMeshtasticTextMessagePayload } from '../renderer/lib/meshtasticBacklogUtils';
 import type { ChatMessage, MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '../shared/meshtasticMqttReconnect';
+import {
+  isLikelyReadableChatText,
+  resolveMeshtasticTextMessagePayload,
+} from '../shared/meshtasticTextMessagePayload';
 import { computeMqttReconnectDelayMs } from '../shared/mqttReconnectSchedule';
 import {
   formatMeshtasticNodeId,
@@ -358,7 +361,7 @@ export class MQTTManager extends EventEmitter {
         connectTimeout: MESHTASTIC_MQTT_CONNECT_ACK_MS,
         reconnectPeriod: 0,
         protocolVersion: 4, // force MQTT 3.1.1; avoids v5 negotiation issues
-        rejectUnauthorized: settings.port === 443 ? true : rejectUnauthorized,
+        rejectUnauthorized,
         // Prefer IPv4 when DNS returns AAAA first but the path is broken (same as MeshcoreMqttAdapter).
         wsOptions: { family: 4 },
       };
@@ -767,6 +770,11 @@ export class MQTTManager extends EventEmitter {
       publishJsonMirror,
     } = options;
     const explicitPsk = pskBase64 ? parsePsk(pskBase64) : undefined;
+    if (pskBase64 && !explicitPsk) {
+      console.warn(
+        '[Meshtastic MQTT] Invalid publish PSK; falling back to channel map or default key',
+      );
+    }
 
     const fromId = from >>> 0;
     const destId = destination >>> 0;
@@ -1299,6 +1307,11 @@ export class MQTTManager extends EventEmitter {
     const replyId = typeof replyIdRaw === 'number' && replyIdRaw !== 0 ? replyIdRaw : undefined;
 
     if (!text && !emoji) return;
+
+    if (text) {
+      const textBytes = new TextEncoder().encode(text);
+      if (!isLikelyReadableChatText(textBytes)) return;
+    }
 
     const packetId = typeof json.id === 'number' ? json.id >>> 0 : 0;
     if (packetId !== 0 && this.isDuplicate(packetId)) return;

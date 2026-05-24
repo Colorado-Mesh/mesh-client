@@ -86,7 +86,7 @@ function parseSecurityConfig(value: unknown): MeshtasticRemoteConfigSnapshot['se
   if (!sec) return null;
   return {
     publicKey: sec.publicKey ?? new Uint8Array(),
-    privateKey: sec.privateKey ?? new Uint8Array(),
+    ...(sec.privateKey && sec.privateKey.length > 0 ? { privateKey: sec.privateKey } : {}),
     adminKey: sec.adminKey ?? [],
     isManaged: sec.isManaged ?? false,
     serialEnabled: sec.serialEnabled ?? false,

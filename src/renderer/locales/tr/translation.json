@@ -484,7 +484,8 @@
       "noChannelsToExport": "Dışa aktarılacak etkin kanal yok.",
       "parseFailed": "Geçersiz kanal URL'si: {{message}}",
       "applying": "Uygulayan",
-      "unnamedChannel": "(isimsiz)"
+      "unnamedChannel": "(isimsiz)",
+      "applySuccessWithSkipped": "Uygulanan {{applied}} kanal(lar); {{skipped}} çift veya isimsiz olarak atlandı."
     }
   },
   "securityPanel": {
@@ -1074,7 +1075,10 @@
       "no_server": "Henüz Store & Forward yönlendirici görülmedi. Yönlendiricinin kalp atışını bekleyin veya Modüller sekmesini kontrol edin.",
       "not_configured": "Radyo hala yapılandırılıyor. Birkaç saniye sonra tekrar deneyin.",
       "local_is_server": "Bu cihaz bir Store & Forward sunucusudur; geçmiş diğer düğümler tarafından getirilir.",
-      "send_failed": "Radyoya geçmiş isteği gönderilemedi. Yeniden bağlanın veya tekrar deneyin."
+      "send_failed": "Radyoya geçmiş isteği gönderilemedi. Yeniden bağlanın veya tekrar deneyin.",
+      "cooldown": "Bu yönlendirici için yakın zamanda geçmiş getirildi. Yeniden araç çağırmadan önce bekleyin.",
+      "offline_gate": "Otomatik yakalama çalıştırmadan önce yeniden bağladıktan sonra birkaç dakika bekleyin; manuel olarak Yakala'yı kullanın.",
+      "already_requested": "Bu yönlendirici için bir geçmiş isteği zaten devam ediyor."
     }
   },
   "connectionPanel": {

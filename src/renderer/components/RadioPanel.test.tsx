@@ -183,7 +183,7 @@ describe('RadioPanel channel URL import/export', () => {
 
   it('parses pasted URL and calls onApplyChannelSet after confirm', async () => {
     const user = userEvent.setup();
-    const onApplyChannelSet = vi.fn().mockResolvedValue(undefined);
+    const onApplyChannelSet = vi.fn().mockResolvedValue({ appliedCount: 1, skipped: [] });
     const { httpsUrl } = generateConfigUrl([primaryChannelConfig], undefined, {
       includeAll: false,
     });

@@ -10,7 +10,7 @@ import { useToast } from './Toast';
 
 interface SecurityConfig {
   publicKey: Uint8Array;
-  privateKey: Uint8Array;
+  privateKey?: Uint8Array;
   adminKey: Uint8Array[];
   isManaged: boolean;
   serialEnabled: boolean;
@@ -245,18 +245,27 @@ export default function SecurityPanel({
   const applyConfig = useCallback(
     async (value: Partial<SecurityConfig>) => {
       if (!securityConfig) return;
+      const merged = { ...securityConfig, ...value };
+      let payload: SecurityConfig = merged;
+      if (isRemoteTarget && (!merged.privateKey || merged.privateKey.length === 0)) {
+        payload = {
+          publicKey: merged.publicKey,
+          adminKey: merged.adminKey,
+          isManaged: merged.isManaged,
+          serialEnabled: merged.serialEnabled,
+          debugLogApiEnabled: merged.debugLogApiEnabled,
+          adminChannelEnabled: merged.adminChannelEnabled,
+        };
+      }
       await onSetConfig({
         payloadVariant: {
           case: 'security',
-          value: {
-            ...securityConfig,
-            ...value,
-          },
+          value: payload,
         },
       });
       await onCommit();
     },
-    [onSetConfig, onCommit, securityConfig],
+    [onSetConfig, onCommit, securityConfig, isRemoteTarget],
   );
 
   // ── DM Key regeneration
@@ -335,7 +344,7 @@ export default function SecurityPanel({
     try {
       const payload = JSON.stringify({
         publicKey: bytesToBase64(securityConfig.publicKey),
-        privateKey: bytesToBase64(securityConfig.privateKey),
+        privateKey: bytesToBase64(securityConfig.privateKey ?? new Uint8Array()),
       });
       const encrypted = await window.electronAPI.safeStorage.encrypt(payload);
       if (!encrypted) throw new Error('Encryption failed');
@@ -461,7 +470,9 @@ export default function SecurityPanel({
   }, [onImportPrivateKey, importKeyInput, addToast, t]);
 
   const publicKeyB64 = securityConfig ? bytesToBase64(securityConfig.publicKey) : '';
-  const privateKeyB64 = securityConfig ? bytesToBase64(securityConfig.privateKey) : '';
+  const privateKeyB64 = securityConfig?.privateKey?.length
+    ? bytesToBase64(securityConfig.privateKey)
+    : '';
 
   return (
     <div className="w-full max-w-5xl space-y-6 p-4">
@@ -668,47 +679,49 @@ export default function SecurityPanel({
       </section>
 
       {/* ── Key Backup / Restore ─────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionHeader title={t('securityPanel.sectionKeyBackup')} />
-        {safeStorageAvailable === false && (
-          <p className="text-xs text-yellow-400">{t('securityPanel.keyBackupUnavailable')}</p>
-        )}
-        {safeStorageAvailable !== false && (
-          <>
-            <p className="text-muted text-xs">{t('securityPanel.keyBackupDesc')}</p>
-            <div className="text-muted flex items-center gap-2 text-xs">
-              <span
-                className={`h-2 w-2 rounded-full ${backupAvailable ? 'bg-readable-green' : 'bg-gray-600'}`}
-              />
-              {backupAvailable
-                ? t('securityPanel.backupAvailable')
-                : t('securityPanel.noBackupStored')}
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  void handleBackup();
-                }}
-                disabled={disabled || backupInProgress || !securityConfig}
-                className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
-              >
-                {backupInProgress ? t('securityPanel.working') : t('securityPanel.backupKeys')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void handleRestore();
-                }}
-                disabled={disabled || backupInProgress || !backupAvailable}
-                className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
-              >
-                {backupInProgress ? t('securityPanel.working') : t('securityPanel.restoreKeys')}
-              </button>
-            </div>
-          </>
-        )}
-      </section>
+      {!isRemoteTarget && (
+        <section className="space-y-4">
+          <SectionHeader title={t('securityPanel.sectionKeyBackup')} />
+          {safeStorageAvailable === false && (
+            <p className="text-xs text-yellow-400">{t('securityPanel.keyBackupUnavailable')}</p>
+          )}
+          {safeStorageAvailable !== false && (
+            <>
+              <p className="text-muted text-xs">{t('securityPanel.keyBackupDesc')}</p>
+              <div className="text-muted flex items-center gap-2 text-xs">
+                <span
+                  className={`h-2 w-2 rounded-full ${backupAvailable ? 'bg-readable-green' : 'bg-gray-600'}`}
+                />
+                {backupAvailable
+                  ? t('securityPanel.backupAvailable')
+                  : t('securityPanel.noBackupStored')}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleBackup();
+                  }}
+                  disabled={disabled || backupInProgress || !securityConfig}
+                  className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {backupInProgress ? t('securityPanel.working') : t('securityPanel.backupKeys')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleRestore();
+                  }}
+                  disabled={disabled || backupInProgress || !backupAvailable}
+                  className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {backupInProgress ? t('securityPanel.working') : t('securityPanel.restoreKeys')}
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
       {/* ── MeshCore Crypto Operations ───────────────────────────────── */}
       {protocol === 'meshcore' && (onSignData || onExportPrivateKey || onImportPrivateKey) && (

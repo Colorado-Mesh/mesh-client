@@ -485,7 +485,8 @@
       "noChannelsToExport": "Žádné povolené kanály k exportu.",
       "parseFailed": "Neplatná adresa URL kanálu: {{message}}",
       "applying": "Uplatňuje se...",
-      "unnamedChannel": "(nepojmenované)"
+      "unnamedChannel": "(nepojmenované)",
+      "applySuccessWithSkipped": "Aplikováno {{applied}} kanálů; přeskočeno {{skipped}} duplikát nebo nepojmenováno."
     }
   },
   "securityPanel": {
@@ -1075,7 +1076,10 @@
       "no_server": "Zatím nebyl zobrazen žádný směrovač Store & Forward. Počkejte na srdeční tep routeru nebo zkontrolujte kartu Moduly.",
       "not_configured": "Rádio se stále konfiguruje. Zkuste to znovu za několik sekund.",
       "local_is_server": "Toto zařízení je server Store & Forward; historie je načtena jinými uzly.",
-      "send_failed": "Nelze odeslat požadavek na historii do rádia. Připojte se znovu nebo to zkuste znovu."
+      "send_failed": "Nelze odeslat požadavek na historii do rádia. Připojte se znovu nebo to zkuste znovu.",
+      "cooldown": "Pro tento směrovač byla nedávno načtena historie. Než požádáš znovu, počkej.",
+      "offline_gate": "Před spuštěním automatického načítání počkejte několik minut po opětovném připojení; použijte možnost Dohnat ručně.",
+      "already_requested": "Žádost o historii pro tento směrovač již probíhá."
     }
   },
   "connectionPanel": {

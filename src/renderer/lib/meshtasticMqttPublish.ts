@@ -14,14 +14,14 @@ export interface MeshtasticMqttPublishFields {
   publishJsonMirror: boolean;
 }
 
-/** MQTT topic channel name: configured name, or LongFast for unnamed primary. */
+/** MQTT topic channel name: configured name, or LongFast for unnamed primary. Unnamed secondary returns empty (skip MQTT). */
 export function resolveMeshtasticMqttChannelName(
   chCfg: MeshtasticChannelConfigForMqtt | undefined,
 ): string {
   const trimmed = chCfg?.name?.trim();
   if (trimmed) return trimmed;
   if (chCfg?.index === 0) return 'LongFast';
-  return 'LongFast';
+  return '';
 }
 
 /** Browser-safe base64 (renderer has no Node Buffer). */

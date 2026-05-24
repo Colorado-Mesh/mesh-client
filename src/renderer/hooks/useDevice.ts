@@ -17,9 +17,10 @@ import {
   releaseStoreForwardHistoryRequest,
   reserveStoreForwardHistoryRequest,
   resolveAutoStoreForwardHistoryWindowMinutes,
-  resolveMeshtasticTextMessagePayload,
   resolveStoreForwardServerFromObservedPackets,
+  SF_AUTO_HISTORY_COOLDOWN_MS,
   SF_AUTO_HISTORY_MESSAGE_CAP,
+  SF_AUTO_HISTORY_OFFLINE_MIN_MS,
   SF_MANUAL_HISTORY_MESSAGE_CAP,
   shouldAutoRequestStoreForwardHistoryOnHeartbeat,
   writeToRadioWithoutQueue,
@@ -28,7 +29,13 @@ import {
   meshtasticMqttChannelKeyEntries,
   meshtasticMqttPublishFields,
 } from '@/renderer/lib/meshtasticMqttPublish';
-import { channelNameExists, findNextFreeChannelSlot } from '@/shared/meshtasticChannelApply';
+import {
+  type ApplyChannelSetResult,
+  channelNameExists,
+  countFreeChannelSlots,
+  findNextFreeChannelSlot,
+} from '@/shared/meshtasticChannelApply';
+import { resolveMeshtasticTextMessagePayload } from '@/shared/meshtasticTextMessagePayload';
 import {
   MESHTASTIC_CHANNEL_ROLE,
   type MeshtasticLoraConfig,
@@ -186,7 +193,17 @@ function clearVirtualNodeId(): void {
 
 export type RequestStoreForwardHistoryResult =
   | { ok: true }
-  | { ok: false; code: 'no_server' | 'not_configured' | 'local_is_server' | 'send_failed' };
+  | {
+      ok: false;
+      code:
+        | 'no_server'
+        | 'not_configured'
+        | 'local_is_server'
+        | 'send_failed'
+        | 'cooldown'
+        | 'offline_gate'
+        | 'already_requested';
+    };
 
 function meshtasticRawPacketPortLabel(packet: unknown): string {
   const p = packet as {
@@ -1230,12 +1247,27 @@ export function useDevice() {
             lastDisconnectMs: lastRfDisconnectAtRef.current,
           })
         ) {
+          if (!autoFetchEnabled) {
+            return { ok: false, code: 'no_server' };
+          }
+          const cooldownMs = SF_AUTO_HISTORY_COOLDOWN_MS;
+          const offlineMinMs = SF_AUTO_HISTORY_OFFLINE_MIN_MS;
+          const lastFetchMs = getLastSfHistoryFetchMs(serverNodeId);
+          if (lastFetchMs != null && now - lastFetchMs < cooldownMs) {
+            return { ok: false, code: 'cooldown' };
+          }
+          if (
+            lastRfDisconnectAtRef.current != null &&
+            now - lastRfDisconnectAtRef.current < offlineMinMs
+          ) {
+            return { ok: false, code: 'offline_gate' };
+          }
           return { ok: false, code: 'no_server' };
         }
         if (
           !reserveStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId)
         ) {
-          return { ok: false, code: 'no_server' };
+          return { ok: false, code: 'already_requested' };
         }
       }
 
@@ -1367,6 +1399,7 @@ export function useDevice() {
           setRemoteConfigSnapshot(null);
           setRemoteAdminStatus('idle');
           setRemoteAdminError(undefined);
+          remoteAdminClientRef.current?.resetEditState();
           remoteAdminClientRef.current?.sessionStore.clear();
           deviceRef.current = null;
           deviceConfiguredRef.current = false;
@@ -1625,22 +1658,24 @@ export function useDevice() {
           const chCfg = channelConfigsRef.current.find((c) => c.index === msg.channel);
           if (chCfg?.uplinkEnabled) {
             const uplinkMqtt = meshtasticMqttPublishFields(chCfg);
-            window.electronAPI.mqtt
-              .publish({
-                text: msg.payload,
-                from: msg.sender_id,
-                channel: msg.channel,
-                destination: BROADCAST_ADDR,
-                channelName: uplinkMqtt.channelName,
-                pskBase64: uplinkMqtt.pskBase64,
-                publishJsonMirror: uplinkMqtt.publishJsonMirror,
-              })
-              .then(isDuplicate)
-              .catch((e: unknown) => {
-                console.debug(
-                  '[useDevice] MQTT publish echo register non-fatal ' + errLikeToLogString(e),
-                );
-              });
+            if (uplinkMqtt.channelName) {
+              window.electronAPI.mqtt
+                .publish({
+                  text: msg.payload,
+                  from: msg.sender_id,
+                  channel: msg.channel,
+                  destination: BROADCAST_ADDR,
+                  channelName: uplinkMqtt.channelName,
+                  pskBase64: uplinkMqtt.pskBase64,
+                  publishJsonMirror: uplinkMqtt.publishJsonMirror,
+                })
+                .then(isDuplicate)
+                .catch((e: unknown) => {
+                  console.debug(
+                    '[useDevice] MQTT publish echo register non-fatal ' + errLikeToLogString(e),
+                  );
+                });
+            }
           }
         }
 
@@ -1933,7 +1968,15 @@ export function useDevice() {
             ) {
               return prev; // no change
             }
-            updated.set(packet.from, { ...existing, lastPositionWarning: r.warning });
+            updated.set(packet.from, {
+              ...existing,
+              lastPositionWarning: r.warning,
+              last_heard: mergeMeshtasticLivePacketLastHeard(
+                existing.last_heard || 0,
+                Date.now(),
+                isConfiguringRef.current,
+              ),
+            });
             return updated;
           });
           return;
@@ -2269,6 +2312,15 @@ export function useDevice() {
                 ...existing,
                 ...(mp.rxSnr ? { snr: mp.rxSnr } : {}),
                 ...(mp.rxRssi ? { rssi: mp.rxRssi } : {}),
+                ...(hasSignal
+                  ? {
+                      last_heard: mergeMeshtasticLivePacketLastHeard(
+                        existing.last_heard || 0,
+                        Date.now(),
+                        isConfiguringRef.current,
+                      ),
+                    }
+                  : {}),
                 ...(hasHopUpdate &&
                 !(
                   existing.last_heard > 0 &&
@@ -3238,6 +3290,7 @@ export function useDevice() {
     setRemoteConfigSnapshot(null);
     setRemoteAdminStatus('idle');
     setRemoteAdminError(undefined);
+    remoteAdminClientRef.current?.resetEditState();
     remoteAdminClientRef.current?.sessionStore.clear();
   }, [cleanupSubscriptions, stopWatchdog, stopGpsInterval, clearConfigureTimeout]);
 
@@ -3415,6 +3468,7 @@ export function useDevice() {
             '[useDevice] meshtasticConfigureTargetNodeNum persist failed ' + errLikeToLogString(e),
           );
         });
+      remoteAdminClientRef.current?.resetEditState();
       if (normalized == null) {
         setRemoteConfigSnapshot(null);
         setRemoteAdminStatus('idle');
@@ -3422,6 +3476,7 @@ export function useDevice() {
         remoteAdminClientRef.current?.sessionStore.clear();
         return;
       }
+      remoteAdminClientRef.current?.sessionStore.clear();
       void refreshRemoteConfigSnapshot(normalized);
     },
     [refreshRemoteConfigSnapshot],
@@ -3440,6 +3495,17 @@ export function useDevice() {
     if (raw == null || raw === '' || raw === 'null') return;
     const nodeNum = typeof raw === 'number' ? raw : Number(raw);
     if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum === myNodeNumRef.current) return;
+    if (!nodesRef.current.has(nodeNum)) {
+      mergeAppSetting(
+        'meshtasticConfigureTargetNodeNum',
+        '',
+        'useDevice restore missing configure target node',
+      );
+      void window.electronAPI.appSettings.set('meshtasticConfigureTargetNodeNum', '').catch(() => {
+        // catch-no-log-ok best-effort clear stale persisted target
+      });
+      return;
+    }
 
     setConfigureTargetNodeNumState(nodeNum);
     configureTargetNodeNumRef.current = nodeNum;
@@ -3524,13 +3590,19 @@ export function useDevice() {
   }, []);
 
   const applyChannelSet = useCallback(
-    async (parsed: ParsedChannelSet, options?: { applyLora?: boolean }) => {
+    async (
+      parsed: ParsedChannelSet,
+      options?: { applyLora?: boolean },
+    ): Promise<ApplyChannelSetResult> => {
       if (!deviceRef.current) {
         throw new Error('Not connected to a device');
       }
 
       const applyLora =
         options?.applyLora ?? (parsed.mode === 'replace' && parsed.loraConfig != null);
+
+      const skipped: ApplyChannelSetResult['skipped'] = [];
+      let appliedCount = 0;
 
       if (parsed.mode === 'replace') {
         for (let i = 0; i < parsed.settings.length; i++) {
@@ -3541,22 +3613,38 @@ export function useDevice() {
             role: i === 0 ? MESHTASTIC_CHANNEL_ROLE.PRIMARY : MESHTASTIC_CHANNEL_ROLE.SECONDARY,
             settings,
           });
+          appliedCount++;
         }
         for (let i = parsed.settings.length; i < 8; i++) {
           await clearChannel(i);
         }
       } else {
-        const reserved = new Set<number>();
         const slotSnapshot = () =>
           channelConfigsRef.current.map((c) => ({
             index: c.index,
             role: c.role,
             name: c.name,
           }));
+        const toApply: typeof parsed.settings = [];
         for (const settings of parsed.settings) {
-          if (!settings.name) continue;
-          if (channelNameExists(slotSnapshot(), settings.name)) continue;
-
+          if (!settings.name) {
+            skipped.push({ name: '', reason: 'empty_name' });
+            continue;
+          }
+          if (channelNameExists(slotSnapshot(), settings.name)) {
+            skipped.push({ name: settings.name, reason: 'duplicate_name' });
+            continue;
+          }
+          toApply.push(settings);
+        }
+        const freeSlots = countFreeChannelSlots(slotSnapshot());
+        if (toApply.length > freeSlots) {
+          throw new Error(
+            `Need ${toApply.length} free channel slots but only ${freeSlots} available`,
+          );
+        }
+        const reserved = new Set<number>();
+        for (const settings of toApply) {
           const freeIndex = findNextFreeChannelSlot(slotSnapshot(), reserved);
           if (freeIndex === null) {
             throw new Error('No free channel slots');
@@ -3567,6 +3655,7 @@ export function useDevice() {
             role: MESHTASTIC_CHANNEL_ROLE.SECONDARY,
             settings,
           });
+          appliedCount++;
         }
       }
 
@@ -3578,6 +3667,7 @@ export function useDevice() {
         );
       }
       await commitConfig();
+      return { appliedCount, skipped };
     },
     [setDeviceChannel, clearChannel, setConfig, commitConfig],
   );

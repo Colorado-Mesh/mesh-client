@@ -484,7 +484,8 @@
       "noChannelsToExport": "エクスポートできる有効なチャンネルがありません。",
       "parseFailed": "無効なチャンネルURL: {{message}}",
       "applying": "適用中…",
-      "unnamedChannel": "(名称なし)"
+      "unnamedChannel": "(名称なし)",
+      "applySuccessWithSkipped": "{{applied}}件のチャンネルを適用しました。{{skipped}}件の重複または無名をスキップしました。"
     }
   },
   "securityPanel": {
@@ -1074,7 +1075,10 @@
       "no_server": "Store & Forwardルーターはまだ表示されていません。ルーターのハートビートを待つか、[モジュール]タブを確認します。",
       "not_configured": "ラジオはまだ設定中です。数秒後にもう一度お試しください。",
       "local_is_server": "このデバイスはStore & Forwardサーバーです。履歴は他のノードによって取得されます。",
-      "send_failed": "ラジオに履歴リクエストを送信できませんでした。再接続するか、もう一度お試しください。"
+      "send_failed": "ラジオに履歴リクエストを送信できませんでした。再接続するか、もう一度お試しください。",
+      "cooldown": "このルーターの履歴は最近取得されました。再度リクエストする前にお待ちください。",
+      "offline_gate": "自動フェッチが実行されるまで、再接続後数分待ちます。手動でキャッチアップを使用してください。",
+      "already_requested": "このルーターの履歴リクエストはすでに進行中です。"
     }
   },
   "connectionPanel": {

@@ -207,6 +207,16 @@ describe('meshtasticBacklogUtils', () => {
     });
   });
 
+  it('returns null when only secondary heartbeats are observed', () => {
+    const server = 0xcccc;
+    const hb = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
+      case: 'heartbeat',
+      value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 60, secondary: 1 }),
+    });
+    const map = new Map([[server, [{ data: hb, timestamp: 1000 }]]]);
+    expect(resolveStoreForwardServerFromObservedPackets(map, null)).toBeNull();
+  });
+
   it('persists per-server fetch timestamps in localStorage', () => {
     localStorage.removeItem(SF_HISTORY_FETCH_STATE_STORAGE_KEY);
     const server = 0xabcd1234;

@@ -484,7 +484,8 @@
       "noChannelsToExport": "내보낼 수 있는 채널이 없습니다.",
       "parseFailed": "유효하지 않은 채널 URL: {{message}}",
       "applying": "적용 중…",
-      "unnamedChannel": "(이름 없음)"
+      "unnamedChannel": "(이름 없음)",
+      "applySuccessWithSkipped": "{{applied}}개 채널을 적용했습니다. {{skipped}}개의 중복 또는 이름 없는 채널을 건너뛰었습니다."
     }
   },
   "securityPanel": {
@@ -1074,7 +1075,10 @@
       "no_server": "아직 스토어 및 포워드 라우터가 없습니다. 라우터 하트비트를 기다리거나 모듈 탭을 확인하십시오.",
       "not_configured": "라디오는 여전히 구성 중입니다. 몇 초 후에 다시 시도하세요.",
       "local_is_server": "이 장치는 스토어 및 포워드 서버입니다. 히스토리는 다른 노드에서 가져옵니다.",
-      "send_failed": "라디오에 기록 요청을 보낼 수 없습니다. 다시 연결하거나 다시 시도하세요."
+      "send_failed": "라디오에 기록 요청을 보낼 수 없습니다. 다시 연결하거나 다시 시도하세요.",
+      "cooldown": "최근 이 라우터에 대한 기록을 가져왔습니다. 다시 요청하기 전에 기다리세요.",
+      "offline_gate": "자동 가져오기가 실행되기 전에 다시 연결한 후 몇 분 정도 기다리십시오. 수동으로 따라잡기를 사용하십시오.",
+      "already_requested": "이 라우터에 대한 기록 요청이 이미 진행 중입니다."
     }
   },
   "connectionPanel": {

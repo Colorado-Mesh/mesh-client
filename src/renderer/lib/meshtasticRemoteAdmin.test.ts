@@ -143,12 +143,13 @@ describe('MeshtasticRemoteAdminClient', () => {
     client.dispose();
   });
 
-  it('resolves pending admin responses from the target node', async () => {
+  it('resolves pending admin responses from the target node by request id', async () => {
     const promise = client.getRemoteMetadata(0x200);
     await new Promise<void>((resolve) => {
       setImmediate(resolve);
     });
     expect(sendRaw).toHaveBeenCalledTimes(1);
+    const packetId = sendRaw.mock.calls[0]?.[1] as number;
 
     const response = create(Admin.AdminMessageSchema, {
       sessionPasskey: new Uint8Array(8).fill(7),
@@ -165,6 +166,7 @@ describe('MeshtasticRemoteAdminClient', () => {
           value: {
             portnum: Portnums.PortNum.ADMIN_APP,
             payload: toBinary(Admin.AdminMessageSchema, response),
+            requestId: packetId,
           },
         },
       }) as never,
@@ -173,6 +175,98 @@ describe('MeshtasticRemoteAdminClient', () => {
     const result = await promise;
     expect((result as { firmwareVersion?: string }).firmwareVersion).toBe('2.5.0');
     expect(client.sessionStore.get(0x200)).toEqual(new Uint8Array(8).fill(7));
+  });
+
+  it('correlates concurrent getRemoteConfig responses by request id', async () => {
+    let nextId = 1000;
+    sendRaw.mockImplementation((_bytes: Uint8Array, id: number) => id);
+    device.generateRandId = () => nextId++;
+
+    const loraPromise = client.getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.LORA_CONFIG);
+    const devicePromise = client.getRemoteConfig(
+      0x200,
+      Admin.AdminMessage_ConfigType.DEVICE_CONFIG,
+    );
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+
+    const loraPacketId = sendRaw.mock.calls[0]?.[1] as number;
+    const devicePacketId = sendRaw.mock.calls[1]?.[1] as number;
+
+    const loraResponse = create(Admin.AdminMessageSchema, {
+      payloadVariant: {
+        case: 'getConfigResponse',
+        value: {
+          payloadVariant: { case: 'lora', value: { region: 1 } },
+        } as never,
+      },
+    });
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(Admin.AdminMessageSchema, loraResponse),
+            requestId: loraPacketId,
+          },
+        },
+      }) as never,
+    );
+
+    const deviceResponse = create(Admin.AdminMessageSchema, {
+      payloadVariant: {
+        case: 'getConfigResponse',
+        value: {
+          payloadVariant: { case: 'device', value: { role: 0 } },
+        } as never,
+      },
+    });
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(Admin.AdminMessageSchema, deviceResponse),
+            requestId: devicePacketId,
+          },
+        },
+      }) as never,
+    );
+
+    const [loraResult, deviceResult] = await Promise.all([loraPromise, devicePromise]);
+    expect((loraResult as { payloadVariant?: { case?: string } }).payloadVariant?.case).toBe(
+      'lora',
+    );
+    expect((deviceResult as { payloadVariant?: { case?: string } }).payloadVariant?.case).toBe(
+      'device',
+    );
+  });
+
+  it('resetEditState clears pendingEdit so a new target can begin edits', async () => {
+    client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
+    client.sessionStore.set(0x300, new Uint8Array(8).fill(2));
+    await client.beginRemoteEdit(0x200);
+    client.resetEditState();
+    await client.beginRemoteEdit(0x300);
+    expect(sendRaw).toHaveBeenCalled();
+  });
+
+  it('commitRemoteEdit clears pendingEdit when commit fails', async () => {
+    client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
+    await client.beginRemoteEdit(0x200);
+    const callsAfterBegin = sendRaw.mock.calls.length;
+    sendRaw.mockImplementation(() => {
+      throw new Error('transport failed');
+    });
+    await expect(client.commitRemoteEdit(0x200)).rejects.toThrow('transport failed');
+    sendRaw.mockImplementation((_bytes: Uint8Array, id: number) => id);
+    await client.beginRemoteEdit(0x200);
+    expect(sendRaw.mock.calls.length).toBeGreaterThan(callsAfterBegin);
   });
 
   it('rejects on routing errors correlated to packet id', async () => {

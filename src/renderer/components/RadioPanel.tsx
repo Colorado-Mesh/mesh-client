@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import type { ApplyChannelSetResult } from '@/shared/meshtasticChannelApply';
 import {
   generateConfigUrl,
   type MeshtasticLoraConfig,
@@ -104,7 +105,7 @@ interface Props {
   onApplyChannelSet?: (
     parsed: ParsedChannelSet,
     options?: { applyLora?: boolean },
-  ) => Promise<void>;
+  ) => Promise<ApplyChannelSetResult>;
   onApplyMeshcoreContactAutoAdd?: (params: {
     autoAddAll: boolean;
     overwriteOldest: boolean;
@@ -2195,7 +2196,7 @@ function ChannelUrlImportExport({
   onApplyChannelSet?: (
     parsed: ParsedChannelSet,
     options?: { applyLora?: boolean },
-  ) => Promise<void>;
+  ) => Promise<ApplyChannelSetResult>;
   disabled: boolean;
   setStatus: (s: string) => void;
 }) {
@@ -2283,10 +2284,19 @@ function ChannelUrlImportExport({
     if (!onApplyChannelSet) return;
     setApplying(true);
     try {
-      await onApplyChannelSet(target, {
+      const result = await onApplyChannelSet(target, {
         applyLora: target.mode === 'replace' ? true : applyLoraOnAdd,
       });
-      setStatus(t('radioPanel.channelUrl.applySuccess'));
+      if (result.skipped.length > 0) {
+        setStatus(
+          t('radioPanel.channelUrl.applySuccessWithSkipped', {
+            applied: result.appliedCount,
+            skipped: result.skipped.length,
+          }),
+        );
+      } else {
+        setStatus(t('radioPanel.channelUrl.applySuccess'));
+      }
       setImportUrl('');
       setConfirmApply(null);
     } catch (e) {
@@ -2424,9 +2434,9 @@ function ChannelUrlImportExport({
                 <li key={i}>
                   {t('radioPanel.channelUrl.channelRow', {
                     role:
-                      i === 0
-                        ? t('radioPanel.channelUrl.rolePrimary')
-                        : t('radioPanel.channelUrl.roleSecondary'),
+                      parsed.mode === 'add' || i > 0
+                        ? t('radioPanel.channelUrl.roleSecondary')
+                        : t('radioPanel.channelUrl.rolePrimary'),
                     name: ch.name || t('radioPanel.channelUrl.unnamedChannel'),
                     psk: pskFingerprint(ch.psk),
                     uplink: ch.uplinkEnabled ? '✓' : '✗',
@@ -2523,7 +2533,7 @@ function ChannelSection({
   onApplyChannelSet?: (
     parsed: ParsedChannelSet,
     options?: { applyLora?: boolean },
-  ) => Promise<void>;
+  ) => Promise<ApplyChannelSetResult>;
 }) {
   const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);

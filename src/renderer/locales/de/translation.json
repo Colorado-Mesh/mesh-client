@@ -484,7 +484,8 @@
       "noChannelsToExport": "Keine aktivierten Kanäle zum Exportieren.",
       "parseFailed": "Ungültige Kanal-URL: {{message}}",
       "applying": "Anwenden",
-      "unnamedChannel": "(unbenannt)"
+      "unnamedChannel": "(unbenannt)",
+      "applySuccessWithSkipped": "{{applied}} Kanal(e) angewendet; {{skipped}} doppelt oder unbenannt übersprungen."
     }
   },
   "securityPanel": {
@@ -1074,7 +1075,10 @@
       "no_server": "Noch kein Store & Forward Router gesehen. Warten Sie auf einen Herzschlag des Routers oder überprüfen Sie die Registerkarte Module.",
       "not_configured": "Radio wird noch konfiguriert. Versuchen Sie es in ein paar Sekunden erneut.",
       "local_is_server": "Dieses Gerät ist ein Store & Forward-Server; der Verlauf wird von anderen Knoten abgerufen.",
-      "send_failed": "Verlaufsanfrage konnte nicht an das Funkgerät gesendet werden. Verbinden Sie sich erneut oder versuchen Sie es erneut."
+      "send_failed": "Verlaufsanfrage konnte nicht an das Funkgerät gesendet werden. Verbinden Sie sich erneut oder versuchen Sie es erneut.",
+      "cooldown": "Der Verlauf wurde kürzlich für diesen Router abgerufen. Warten Sie, bevor Sie erneut anfordern.",
+      "offline_gate": "Warten Sie nach dem Wiederverbinden einige Minuten, bevor der automatische Abruf ausgeführt wird. Verwenden Sie Catch up manuell.",
+      "already_requested": "Für diesen Router wird bereits eine Verlaufsanforderung ausgeführt."
     }
   },
   "connectionPanel": {

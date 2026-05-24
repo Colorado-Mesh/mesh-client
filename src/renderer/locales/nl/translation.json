@@ -484,7 +484,8 @@
       "noChannelsToExport": "Geen ingeschakelde kanalen om te exporteren.",
       "parseFailed": "Ongeldige kanaal-URL: {{message}}",
       "applying": "Toepassen…",
-      "unnamedChannel": "(naamloos)"
+      "unnamedChannel": "(naamloos)",
+      "applySuccessWithSkipped": "Toegepast {{applied}} kanaal/kanalen; {{skipped}} duplicaat of naamloos overgeslagen."
     }
   },
   "securityPanel": {
@@ -1074,7 +1075,10 @@
       "no_server": "Nog geen Store & Forward-router gezien. Wacht op een routerhartslag of controleer het tabblad Modules.",
       "not_configured": "Radio is nog aan het configureren. Probeer het over een paar seconden opnieuw.",
       "local_is_server": "Dit apparaat is een Store & Forward-server; geschiedenis wordt opgehaald door andere knooppunten.",
-      "send_failed": "Kan geschiedenisverzoek niet naar de radio sturen. Maak opnieuw verbinding of probeer het opnieuw."
+      "send_failed": "Kan geschiedenisverzoek niet naar de radio sturen. Maak opnieuw verbinding of probeer het opnieuw.",
+      "cooldown": "Er is onlangs geschiedenis opgehaald voor deze router. Wacht voordat je opnieuw een aanvraag indient.",
+      "offline_gate": "Wacht een paar minuten na het opnieuw verbinden voordat de auto-fetch wordt uitgevoerd; gebruik Inhalen handmatig.",
+      "already_requested": "Er wordt al een geschiedenisverzoek uitgevoerd voor deze router."
     }
   },
   "connectionPanel": {
