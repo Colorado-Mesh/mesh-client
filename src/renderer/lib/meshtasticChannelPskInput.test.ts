@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   formatChannelPskInput,
   parseChannelPskInput,
+  parseManualChannelPublishEntries,
+  parseManualChannelPublishEntry,
   validateChannelPskEntries,
 } from './meshtasticChannelPskInput';
 
@@ -71,5 +73,44 @@ describe('validateChannelPskEntries', () => {
 
   it('returns ok for empty list', () => {
     expect(validateChannelPskEntries([])).toBe('ok');
+  });
+});
+
+describe('parseManualChannelPublishEntry', () => {
+  it('parses ChannelName@index=base64 with index and psk', () => {
+    const entry = parseManualChannelPublishEntry(`HamNet@2=${KEY_B}`);
+    expect(entry).toEqual({
+      name: 'HamNet',
+      index: 2,
+      psk: Uint8Array.from(atob(KEY_B), (c) => c.charCodeAt(0)),
+    });
+  });
+
+  it('parses ChannelName=base64 without index', () => {
+    const entry = parseManualChannelPublishEntry(`LongFast=${KEY_AES256}`);
+    expect(entry?.name).toBe('LongFast');
+    expect(entry?.index).toBeUndefined();
+    expect(entry?.psk.length).toBe(32);
+  });
+
+  it('returns null for bare base64 (decrypt-only)', () => {
+    expect(parseManualChannelPublishEntry(KEY_A)).toBeNull();
+  });
+
+  it('returns null for invalid named lines', () => {
+    expect(parseManualChannelPublishEntry('BadName=not!!!base64')).toBeNull();
+  });
+});
+
+describe('parseManualChannelPublishEntries', () => {
+  it('collects only valid named entries', () => {
+    const entries = parseManualChannelPublishEntries([
+      `HamNet=${KEY_B}`,
+      KEY_A,
+      `LongFast@0=${KEY_AES256}`,
+    ]);
+    expect(entries).toHaveLength(2);
+    expect(entries[0]?.name).toBe('HamNet');
+    expect(entries[1]?.index).toBe(0);
   });
 });

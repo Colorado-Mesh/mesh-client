@@ -247,6 +247,7 @@ describe('publish — MQTT uplink JSON mirror', () => {
   it('publishes only protobuf when publishJsonMirror is false', () => {
     const manager = new MQTTManager();
     const publish = wireConnected(manager);
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     manager.publish({
       text: 'hello',
       from: 0x11223344,
@@ -255,6 +256,12 @@ describe('publish — MQTT uplink JSON mirror', () => {
     });
     expect(publish).toHaveBeenCalledTimes(1);
     expect((publish.mock.calls[0][0] as string).includes('2/e/')).toBe(true);
+    expect(
+      debugSpy.mock.calls.some((args) =>
+        String(args[0]).includes('[Meshtastic MQTT] Publish channel="LongFast"'),
+      ),
+    ).toBe(true);
+    debugSpy.mockRestore();
   });
 
   it('publishes protobuf and JSON when publishJsonMirror is true', () => {

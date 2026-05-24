@@ -1,5 +1,11 @@
 export type ChannelPskValidation = 'ok' | 'invalidBase64' | 'invalidLength';
 
+export interface ManualChannelPublishEntry {
+  name: string;
+  index?: number;
+  psk: Uint8Array;
+}
+
 /** Split manual MQTT channel PSK input on newlines or commas. */
 export function parseChannelPskInput(raw: string): string[] {
   return raw
@@ -53,4 +59,44 @@ export function validateChannelPskEntries(lines: string[]): ChannelPskValidation
     }
   }
   return 'ok';
+}
+
+/** Parse `ChannelName=base64` or `ChannelName@index=base64` for MQTT publish (named lines only). */
+export function parseManualChannelPublishEntry(line: string): ManualChannelPublishEntry | null {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  const eq = trimmed.indexOf('=');
+  if (eq <= 0) return null;
+
+  let namePart = trimmed.slice(0, eq).trim();
+  const b64 = trimmed.slice(eq + 1).trim();
+  let index: number | undefined;
+  const atIdx = namePart.lastIndexOf('@');
+  if (atIdx > 0) {
+    const indexStr = namePart.slice(atIdx + 1);
+    const parsedIndex = parseInt(indexStr, 10);
+    if (Number.isInteger(parsedIndex) && parsedIndex >= 0 && parsedIndex <= 7) {
+      index = parsedIndex;
+      namePart = namePart.slice(0, atIdx).trim();
+    }
+  }
+  const name = namePart;
+  if (name.length === 0 || b64.length === 0 || /[+/=@]/.test(name)) return null;
+  try {
+    const psk = decodeChannelPskBase64(`${name}=${b64}`);
+    if (psk.length !== 16 && psk.length !== 32 && psk.length >= 16) return null;
+    return { name, index, psk };
+  } catch {
+    // catch-no-log-ok invalid base64 on a named publish line — skip entry
+    return null;
+  }
+}
+
+export function parseManualChannelPublishEntries(lines: string[]): ManualChannelPublishEntry[] {
+  const entries: ManualChannelPublishEntry[] = [];
+  for (const line of lines) {
+    const parsed = parseManualChannelPublishEntry(line);
+    if (parsed) entries.push(parsed);
+  }
+  return entries;
 }

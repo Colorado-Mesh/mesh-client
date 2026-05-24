@@ -1239,7 +1239,8 @@
     "channelPsksInvalidLength": "Jeder Schlüssel muss auf 16 Byte (AES-128) oder 32 Byte (AES-256) decodiert werden.",
     "channelPsksInvalidBase64": "Ungültiges base64 auf einer Kanal-PSK-Leitung.",
     "mqttTlsEnabled": "TLS aktivieren (mqtts / wss)",
-    "mqttTlsInsecure": "Unsichere TLS (selbstsigniertes Zertifikat) zulassen. Standardmäßig deaktiviert — nur aktivieren, wenn Ihr Broker eine nicht öffentliche CA verwendet."
+    "mqttTlsInsecure": "Unsichere TLS (selbstsigniertes Zertifikat) zulassen. Standardmäßig deaktiviert — nur aktivieren, wenn Ihr Broker eine nicht öffentliche CA verwendet.",
+    "channelPsksPrivateUplinkNote": "Kanal-Uplink ist AES-PSK-verschlüsselt auf /2/e/ (kein JSON-Spiegel für private Schlüssel). Broker-Monitore können immer noch Fehler bei der Entschlüsselung des PKI/DM-Verkehrs zwischen anderen Knoten protokollieren — das ist normal und hat nichts mit Kanal-PSKs zu tun."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Wirf Routingreihen, die älter als {{hours}} Stunden (1-168) sind",

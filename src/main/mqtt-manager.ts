@@ -673,6 +673,10 @@ export class MQTTManager extends EventEmitter {
       : `${this.currentSettings.topicPrefix}/`;
     const publishTopic = `${prefix}2/e/${channelName}/${gatewayId}`;
     const publishPayload = Buffer.from(toBinary(ServiceEnvelopeSchema, envelope));
+    this.logSampledDebug(
+      `mqtt-publish:${channelName}`,
+      `[Meshtastic MQTT] Publish channel="${sanitizeLogMessage(channelName)}" rf=${channelId} pskBytes=${psk.length} dataBytes=${dataBytes.length} jsonMirror=${publishJsonMirror} encryptedBytes=${encrypted.length} topic="${sanitizeLogMessage(publishTopic)}"`,
+    );
     this.client.publish(publishTopic, publishPayload);
 
     if (publishJsonMirror) {

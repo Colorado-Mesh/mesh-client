@@ -1239,7 +1239,8 @@
     "channelPsksInvalidLength": "Cada clave debe decodificar a 16 bytes (AES-128) o 32 bytes (AES-256).",
     "channelPsksInvalidBase64": "Base64 no válido en una línea PSK de canal.",
     "mqttTlsEnabled": "Habilitar TLS (mqtts / wss)",
-    "mqttTlsInsecure": "Permitir TLS (certificado autofirmado) inseguro. Desactivado de forma predeterminada: solo habilítalo si tu bróker utiliza una CA no pública."
+    "mqttTlsInsecure": "Permitir TLS (certificado autofirmado) inseguro. Desactivado de forma predeterminada: solo habilítalo si tu bróker utiliza una CA no pública.",
+    "channelPsksPrivateUplinkNote": "El enlace ascendente del canal está cifrado AES-PSK en/2/e/ (sin espejo JSON para claves privadas). Los monitores de bróker aún pueden registrar fallas de descifrado para el tráfico PKI/DM entre otros nodos, lo que es normal y no está relacionado con los PSK de canal aquí."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Filas de enrutamiento de más de {{hours}} horas (1–168)",

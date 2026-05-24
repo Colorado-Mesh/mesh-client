@@ -1,7 +1,10 @@
 import type { MeshDevice } from '@meshtastic/core';
 import type { RefObject } from 'react';
 
-import { meshtasticMqttPublishFields } from '@/renderer/lib/meshtasticMqttPublish';
+import {
+  loadMeshtasticMqttManualChannelPsks,
+  resolveMeshtasticMqttPublishFieldsForChannel,
+} from '@/renderer/lib/meshtasticMqttPublish';
 
 import type { StatusUpdateEvent } from './types';
 
@@ -50,8 +53,11 @@ export class TransportManager {
     } = this.deps;
 
     const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
-    const cfg = chCfg ?? channelConfigsRef.current.find((c) => c.index === 0);
-    const mqttFields = meshtasticMqttPublishFields(cfg);
+    const mqttFields = resolveMeshtasticMqttPublishFieldsForChannel(
+      channel,
+      channelConfigsRef.current,
+      loadMeshtasticMqttManualChannelPsks(),
+    );
     const shouldUplink =
       chCfg?.uplinkEnabled &&
       mqttStatusRef.current === 'connected' &&

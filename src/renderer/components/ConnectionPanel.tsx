@@ -2452,6 +2452,9 @@ export default function ConnectionPanel({
                   {channelPskWarn}
                 </p>
               )}
+              <p className="text-muted text-xs">
+                {t('connectionPanel.channelPsksPrivateUplinkNote')}
+              </p>
             </div>
           )}
           <div className="flex items-center gap-2">
