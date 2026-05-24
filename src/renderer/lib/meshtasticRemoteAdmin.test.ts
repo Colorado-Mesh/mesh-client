@@ -2,6 +2,7 @@ import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import { Admin, Mesh, Portnums } from '@meshtastic/protobufs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { writeToRadioWithoutQueue } from './meshtasticBacklogUtils';
 import {
   buildRemoteAdminToRadio,
   extractAdminSessionPasskey,
@@ -13,6 +14,10 @@ import {
   RemoteAdminSessionStore,
   routingErrorToRemoteAdminKey,
 } from './meshtasticRemoteAdmin';
+
+vi.mock('./meshtasticBacklogUtils', () => ({
+  writeToRadioWithoutQueue: vi.fn(),
+}));
 
 const TEST_DEST_PUBKEY_HEX = '4852b69364572b52efa1b6bb3e6d0abed4f389a1cbfbb60a9bba2cce649caf0e';
 const TEST_DEST_PUBKEY = meshtasticNodePublicKeyBytesFromHex(TEST_DEST_PUBKEY_HEX)!;
@@ -198,15 +203,16 @@ describe('routingErrorToRemoteAdminKey', () => {
 });
 
 describe('MeshtasticRemoteAdminClient', () => {
-  let sendRaw: ReturnType<typeof vi.fn>;
-  let device: { sendRaw: typeof sendRaw; generateRandId: () => number };
+  let packetIdSeq: number;
+  let device: { generateRandId: () => number };
   let client: MeshtasticRemoteAdminClient;
 
   beforeEach(() => {
-    sendRaw = vi.fn((_bytes: Uint8Array, id: number) => id);
+    packetIdSeq = 555;
+    vi.mocked(writeToRadioWithoutQueue).mockReset();
+    vi.mocked(writeToRadioWithoutQueue).mockResolvedValue(undefined);
     device = {
-      sendRaw,
-      generateRandId: () => 555,
+      generateRandId: () => packetIdSeq++,
     };
     client = new MeshtasticRemoteAdminClient(
       () => device as never,
@@ -224,8 +230,8 @@ describe('MeshtasticRemoteAdminClient', () => {
     await new Promise<void>((resolve) => {
       setImmediate(resolve);
     });
-    expect(sendRaw).toHaveBeenCalledTimes(1);
-    const packetId = sendRaw.mock.calls[0]?.[1] as number;
+    expect(writeToRadioWithoutQueue).toHaveBeenCalledTimes(1);
+    const packetId = 555;
 
     const response = create(Admin.AdminMessageSchema, {
       sessionPasskey: new Uint8Array(8).fill(7),
@@ -263,26 +269,22 @@ describe('MeshtasticRemoteAdminClient', () => {
       await expect(noKeyClient.getRemoteMetadata(0x200)).rejects.toThrow(
         'remoteAdmin.errors.pkiFailed',
       );
-      expect(sendRaw).not.toHaveBeenCalled();
+      expect(writeToRadioWithoutQueue).not.toHaveBeenCalled();
     } finally {
       noKeyClient.dispose();
     }
   });
 
-  it('serializes sendRaw so the second request waits for the first to finish sending', async () => {
+  it('serializes writes so the second request waits for the first to finish sending', async () => {
     let releaseFirst: (() => void) | undefined;
-    const firstGate = new Promise<number>((resolve) => {
-      releaseFirst = () => {
-        resolve(1001);
-      };
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
     });
-    sendRaw
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises -- sendRaw returns Promise<number>
+    vi.mocked(writeToRadioWithoutQueue)
       .mockImplementationOnce(() => firstGate)
-      .mockImplementation((_bytes: Uint8Array, id: number) => id);
+      .mockResolvedValue(undefined);
 
-    let nextId = 2000;
-    device.generateRandId = () => nextId++;
+    packetIdSeq = 2000;
 
     const firstPromise = client.getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.LORA_CONFIG);
     const secondPromise = client.getRemoteConfig(
@@ -293,16 +295,16 @@ describe('MeshtasticRemoteAdminClient', () => {
       setImmediate(resolve);
     });
 
-    expect(sendRaw).toHaveBeenCalledTimes(1);
+    expect(writeToRadioWithoutQueue).toHaveBeenCalledTimes(1);
 
     releaseFirst!();
     await new Promise<void>((resolve) => {
       setImmediate(resolve);
     });
-    expect(sendRaw).toHaveBeenCalledTimes(2);
+    expect(writeToRadioWithoutQueue).toHaveBeenCalledTimes(2);
 
-    const loraPacketId = sendRaw.mock.calls[0]?.[1] as number;
-    const devicePacketId = sendRaw.mock.calls[1]?.[1] as number;
+    const loraPacketId = 2000;
+    const devicePacketId = 2001;
 
     client.handleMeshPacket(
       create(Mesh.MeshPacketSchema, {
@@ -365,7 +367,7 @@ describe('MeshtasticRemoteAdminClient', () => {
     await new Promise<void>((resolve) => {
       setImmediate(resolve);
     });
-    const packetId = sendRaw.mock.calls[0]?.[1] as number;
+    const packetId = 555;
 
     client.handleMeshPacket(
       create(Mesh.MeshPacketSchema, {
@@ -400,24 +402,55 @@ describe('MeshtasticRemoteAdminClient', () => {
     await client.beginRemoteEdit(0x200);
     client.resetEditState();
     await client.beginRemoteEdit(0x300);
-    expect(sendRaw).toHaveBeenCalled();
+    expect(writeToRadioWithoutQueue).toHaveBeenCalled();
   });
 
   it('commitRemoteEdit clears pendingEdit when commit fails', async () => {
     client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
     await client.beginRemoteEdit(0x200);
-    const callsAfterBegin = sendRaw.mock.calls.length;
-    sendRaw.mockImplementation(() => {
-      throw new Error('transport failed');
-    });
-    await expect(client.commitRemoteEdit(0x200)).rejects.toThrow('remoteAdmin.errors.generic');
-    sendRaw.mockImplementation((_bytes: Uint8Array, id: number) => id);
+    const callsAfterBegin = vi.mocked(writeToRadioWithoutQueue).mock.calls.length;
+    vi.mocked(writeToRadioWithoutQueue).mockRejectedValueOnce(new Error('transport failed'));
+    await expect(client.commitRemoteEdit(0x200)).rejects.toThrow('transport failed');
+    vi.mocked(writeToRadioWithoutQueue).mockResolvedValue(undefined);
     await client.beginRemoteEdit(0x200);
-    expect(sendRaw.mock.calls.length).toBeGreaterThan(callsAfterBegin);
+    expect(vi.mocked(writeToRadioWithoutQueue).mock.calls.length).toBeGreaterThan(callsAfterBegin);
   });
 
-  it('rejects and clears pending when sendRaw fails with SDK queue error', async () => {
-    sendRaw.mockRejectedValueOnce({
+  it('resolves metadata when admin response has from=0 (Linux BLE quirk)', async () => {
+    const promise = client.getRemoteMetadata(0x200);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const packetId = 555;
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getDeviceMetadataResponse',
+                  value: { firmwareVersion: '2.5.1' } as never,
+                },
+              }),
+            ),
+            requestId: packetId,
+          },
+        },
+      }) as never,
+    );
+
+    const result = await promise;
+    expect((result as { firmwareVersion?: string }).firmwareVersion).toBe('2.5.1');
+  });
+
+  it('rejects and clears pending when write fails with SDK-shaped error object', async () => {
+    vi.mocked(writeToRadioWithoutQueue).mockRejectedValueOnce({
       id: 718745655,
       error: Mesh.Routing_Error.ADMIN_PUBLIC_KEY_UNAUTHORIZED,
     });
@@ -425,12 +458,13 @@ describe('MeshtasticRemoteAdminClient', () => {
       'remoteAdmin.errors.publicKeyUnauthorized',
     );
 
-    sendRaw.mockImplementation((_bytes: Uint8Array, id: number) => id);
+    vi.mocked(writeToRadioWithoutQueue).mockResolvedValue(undefined);
+    packetIdSeq = 900;
     const promise = client.getRemoteMetadata(0x200);
     await new Promise<void>((resolve) => {
       setImmediate(resolve);
     });
-    const packetId = sendRaw.mock.calls.at(-1)?.[1] as number;
+    const packetId = 900;
     client.handleMeshPacket(
       create(Mesh.MeshPacketSchema, {
         from: 0x200,
@@ -461,8 +495,7 @@ describe('MeshtasticRemoteAdminClient', () => {
     await new Promise<void>((resolve) => {
       setImmediate(resolve);
     });
-    const packetId = sendRaw.mock.calls[0]?.[1] as number;
-    expect(packetId).toBeGreaterThan(0);
+    const packetId = 555;
     client.handleMeshPacket(
       create(Mesh.MeshPacketSchema, {
         from: 0x200,

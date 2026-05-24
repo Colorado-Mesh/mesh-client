@@ -374,6 +374,7 @@ export function useDevice() {
   const [remoteConfigSnapshot, setRemoteConfigSnapshot] =
     useState<MeshtasticRemoteConfigSnapshot | null>(null);
   const remoteAdminClientRef = useRef<MeshtasticRemoteAdminClient | null>(null);
+  const remoteConfigFetchGenerationRef = useRef(0);
   const [loraConfig, setLoraConfig] = useState<MeshtasticLoraConfig | null>(null);
 
   // ─── Additional packet type state ─────────────────────────────────
@@ -3435,27 +3436,44 @@ export function useDevice() {
     [getNodeName, isDuplicate],
   );
 
-  const refreshRemoteConfigSnapshot = useCallback(async (destNodeNum: number) => {
-    const client = remoteAdminClientRef.current;
-    if (!client || !deviceRef.current) {
-      setRemoteAdminStatus('error');
-      setRemoteAdminError('remoteAdmin.errors.noLocalRadio');
-      return;
-    }
-    setRemoteAdminStatus('loading');
-    setRemoteAdminError(undefined);
-    try {
-      const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, destNodeNum);
-      setRemoteConfigSnapshot(snapshot);
-      setRemoteAdminStatus('ready');
-    } catch (e) {
-      remoteAdminClientRef.current?.resetEditState();
-      const msg = normalizeRemoteAdminError(e);
-      setRemoteAdminStatus('error');
-      setRemoteAdminError(msg);
-      console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
-    }
-  }, []);
+  const refreshRemoteConfigSnapshot = useCallback(
+    async (destNodeNum: number) => {
+      const client = remoteAdminClientRef.current;
+      if (!client || !deviceRef.current) {
+        setRemoteAdminStatus('error');
+        setRemoteAdminError('remoteAdmin.errors.noLocalRadio');
+        return;
+      }
+      if (state.status !== 'configured') return;
+
+      const generation = ++remoteConfigFetchGenerationRef.current;
+      setRemoteAdminStatus('loading');
+      setRemoteAdminError(undefined);
+
+      const applyIfCurrent = (): boolean =>
+        generation === remoteConfigFetchGenerationRef.current &&
+        configureTargetNodeNumRef.current === destNodeNum;
+
+      try {
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 500);
+        });
+        if (!applyIfCurrent()) return;
+
+        const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, destNodeNum);
+        if (!applyIfCurrent()) return;
+        setRemoteConfigSnapshot(snapshot);
+        setRemoteAdminStatus('ready');
+      } catch (e) {
+        if (!applyIfCurrent()) return;
+        const msg = normalizeRemoteAdminError(e);
+        setRemoteAdminStatus('error');
+        setRemoteAdminError(msg);
+        console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
+      }
+    },
+    [state.status],
+  );
 
   const runRemoteAdminOp = useCallback(async <T>(operation: () => Promise<T>): Promise<T> => {
     try {
@@ -3471,6 +3489,7 @@ export function useDevice() {
 
   const setConfigureTargetNodeNum = useCallback(
     (nodeNum: number | null) => {
+      const prevTarget = configureTargetNodeNumRef.current;
       const normalized =
         nodeNum != null && nodeNum > 0 && nodeNum !== myNodeNumRef.current ? nodeNum : null;
       setConfigureTargetNodeNumState(normalized);
@@ -3488,15 +3507,20 @@ export function useDevice() {
             '[useDevice] meshtasticConfigureTargetNodeNum persist failed ' + errLikeToLogString(e),
           );
         });
-      remoteAdminClientRef.current?.resetEditState();
       if (normalized == null) {
+        remoteConfigFetchGenerationRef.current += 1;
+        remoteAdminClientRef.current?.resetEditState();
         setRemoteConfigSnapshot(null);
         setRemoteAdminStatus('idle');
         setRemoteAdminError(undefined);
         remoteAdminClientRef.current?.sessionStore.clear();
         return;
       }
-      remoteAdminClientRef.current?.sessionStore.clear();
+      if (prevTarget !== normalized) {
+        remoteConfigFetchGenerationRef.current += 1;
+        remoteAdminClientRef.current?.resetEditState();
+        remoteAdminClientRef.current?.sessionStore.clear();
+      }
       void refreshRemoteConfigSnapshot(normalized);
     },
     [refreshRemoteConfigSnapshot],
