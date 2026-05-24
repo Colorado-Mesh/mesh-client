@@ -64,6 +64,13 @@ import {
 import { meshtasticHwModelName } from '../lib/hardwareModels';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
+  computeNodeInfoLastHeardMs,
+  mergeMeshtasticLivePacketLastHeard,
+  mergeMeshtasticUserPacketLastHeard,
+  meshtasticPacketRxTimeMs,
+  meshtasticTracerouteLastHeardNodeIds,
+} from '../lib/meshtasticLastHeard';
+import {
   findMeshtasticCrossTransportDuplicate,
   mapMeshtasticCrossTransportUpgrade,
   meshtasticPacketIdsEqual,
@@ -75,7 +82,6 @@ import {
   meshtasticTraceRouteLookupKeys,
 } from '../lib/meshtasticTraceRouteLookupKeys';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
-import { LAST_HEARD_MAX_FUTURE_SKEW_SEC } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import {
@@ -1282,7 +1288,11 @@ export function useDevice() {
           updateNodes((prev) => {
             const existing = prev.get(meshPacket.from);
             if (!existing) return prev;
-            const now = meshPacket.rxTime ? meshPacket.rxTime * 1000 : Date.now();
+            const now = mergeMeshtasticLivePacketLastHeard(
+              existing.last_heard || 0,
+              meshtasticPacketRxTimeMs(meshPacket.rxTime),
+              false,
+            );
             if (now <= (existing.last_heard || 0)) return prev;
             const next = new Map(prev);
             const updated: MeshNode = {
@@ -1468,7 +1478,7 @@ export function useDevice() {
           hwModel?: number;
           role?: number;
         };
-        const packetRxMs = packet.rxTime instanceof Date ? packet.rxTime.getTime() : 0;
+        const packetRxMs = meshtasticPacketRxTimeMs(packet.rxTime);
         updateNodes((prev) => {
           const updated = new Map(prev);
           const existing = updated.get(packet.from) ?? emptyNode(packet.from);
@@ -1745,8 +1755,12 @@ export function useDevice() {
           latitude: lat,
           longitude: lon,
           altitude: pos.altitude ?? existing.altitude,
-          // Position replays at connect must not bump last_heard to now.
-          last_heard: existing.last_heard,
+          // Position replays at connect must not bump last_heard (configure guard).
+          last_heard: mergeMeshtasticLivePacketLastHeard(
+            existing.last_heard || 0,
+            meshtasticPacketRxTimeMs(packet.rxTime),
+            isConfiguringRef.current,
+          ),
           lastPositionWarning: undefined,
           source: 'rf',
           heard_via_mqtt_only: false,
@@ -1835,6 +1849,11 @@ export function useDevice() {
                 env_lux: env.lux ?? existing.env_lux,
                 env_wind_speed: env.windSpeed ?? existing.env_wind_speed,
                 env_wind_direction: env.windDirection ?? existing.env_wind_direction,
+                last_heard: mergeMeshtasticLivePacketLastHeard(
+                  existing.last_heard || 0,
+                  meshtasticPacketRxTimeMs(packet.rxTime),
+                  isConfiguringRef.current,
+                ),
                 source: 'rf',
                 heard_via_mqtt_only: false,
                 via_mqtt: false,
@@ -1893,6 +1912,14 @@ export function useDevice() {
             const node: MeshNode = {
               ...existing,
               battery: metrics.batteryLevel,
+              last_heard: mergeMeshtasticLivePacketLastHeard(
+                existing.last_heard || 0,
+                meshtasticPacketRxTimeMs(packet.rxTime),
+                isConfiguringRef.current,
+              ),
+              source: 'rf',
+              heard_via_mqtt_only: false,
+              via_mqtt: false,
             };
             updateNodes((prev) => {
               const updated = new Map(prev);
@@ -2145,6 +2172,7 @@ export function useDevice() {
           requestId?: number;
         },
         dataLayerSource?: number,
+        packetRxTimeMs?: number,
       ) => {
         const baseLookupKeys = meshtasticTraceRouteLookupKeys({
           from: meshFrom,
@@ -2198,6 +2226,37 @@ export function useDevice() {
             dataLayerSource,
           ),
         );
+
+        if (!isConfiguringRef.current) {
+          const bumpIds = meshtasticTracerouteLastHeardNodeIds(meshFrom, correlatedDest);
+          if (bumpIds.length > 0) {
+            updateNodes((prev) => {
+              const updated = new Map(prev);
+              let changed = false;
+              for (const nodeId of bumpIds) {
+                const existing = updated.get(nodeId);
+                if (!existing) continue;
+                const last_heard = mergeMeshtasticLivePacketLastHeard(
+                  existing.last_heard || 0,
+                  packetRxTimeMs ?? 0,
+                  false,
+                );
+                if (last_heard <= (existing.last_heard || 0)) continue;
+                const node: MeshNode = {
+                  ...existing,
+                  last_heard,
+                  source: 'rf',
+                  heard_via_mqtt_only: false,
+                  via_mqtt: false,
+                };
+                updated.set(nodeId, node);
+                void window.electronAPI.db.saveNode(node);
+                changed = true;
+              }
+              return changed ? updated : prev;
+            });
+          }
+        }
       };
 
       const unsubTraceMesh = device.events.onMeshPacket.subscribe((meshPacket) => {
@@ -2228,6 +2287,7 @@ export function useDevice() {
               requestId: typeof rawReq === 'number' && Number.isFinite(rawReq) ? rawReq : undefined,
             },
             dataLayerSource,
+            meshtasticPacketRxTimeMs(meshPacket.rxTime),
           );
         } catch {
           // catch-no-log-ok RouteDiscovery decode failed (non-traceroute payload on port)
@@ -2240,7 +2300,14 @@ export function useDevice() {
           route: readonly number[];
           routeBack: readonly number[];
         };
-        applyMeshtasticTracerouteReply(packet.from, rd, undefined, undefined, undefined);
+        applyMeshtasticTracerouteReply(
+          packet.from,
+          rd,
+          undefined,
+          undefined,
+          undefined,
+          meshtasticPacketRxTimeMs(packet.rxTime),
+        );
       });
       unsubscribesRef.current.push(unsubTraceLegacy);
 
@@ -3855,32 +3922,10 @@ export function emptyNode(nodeId: number): MeshNode {
   };
 }
 
-export function computeNodeInfoLastHeardMs(
-  infoLastHeard: number | undefined,
-  existingLastHeard: number,
-  isSelf: boolean,
-): number {
-  if ((infoLastHeard ?? 0) > 0) {
-    const ms = infoLastHeard! * 1000;
-    const maxMs = Date.now() + LAST_HEARD_MAX_FUTURE_SKEW_SEC * 1000;
-    return ms > maxMs ? Date.now() : ms;
-  }
-  return existingLastHeard || (isSelf ? Date.now() : 0);
-}
-
-/**
- * Merge last_heard from onUserPacket using packet rxTime; skip bumps during configure replay.
- */
-export function mergeMeshtasticUserPacketLastHeard(
-  existingLastHeard: number,
-  packetRxTimeMs: number,
-  isConfiguring: boolean,
-): number {
-  if (isConfiguring || !Number.isFinite(packetRxTimeMs) || packetRxTimeMs <= 0) {
-    return existingLastHeard;
-  }
-  return Math.max(existingLastHeard || 0, packetRxTimeMs);
-}
+export {
+  computeNodeInfoLastHeardMs,
+  mergeMeshtasticUserPacketLastHeard,
+} from '../lib/meshtasticLastHeard';
 
 export function createChatStubNode(nodeId: number, source: 'rf' | 'mqtt'): MeshNode {
   const base = emptyNode(nodeId);
