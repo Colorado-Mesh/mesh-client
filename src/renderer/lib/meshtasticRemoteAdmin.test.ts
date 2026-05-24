@@ -6,6 +6,7 @@ import {
   buildRemoteAdminToRadio,
   extractAdminSessionPasskey,
   MeshtasticRemoteAdminClient,
+  normalizeRemoteAdminError,
   parseIncomingRemoteAdminPacket,
   REMOTE_ADMIN_SESSION_TTL_MS,
   RemoteAdminSessionStore,
@@ -108,6 +109,23 @@ describe('buildRemoteAdminToRadio', () => {
     });
     expect(bytes.length).toBeGreaterThan(0);
     expect(bytes).toBeInstanceOf(Uint8Array);
+  });
+});
+
+describe('normalizeRemoteAdminError', () => {
+  it('maps SDK queue error objects with numeric error codes', () => {
+    expect(
+      normalizeRemoteAdminError({
+        id: 718745655,
+        error: Mesh.Routing_Error.ADMIN_PUBLIC_KEY_UNAUTHORIZED,
+      }),
+    ).toBe('remoteAdmin.errors.publicKeyUnauthorized');
+  });
+
+  it('preserves existing i18n keys on Error instances', () => {
+    expect(normalizeRemoteAdminError(new Error('remoteAdmin.errors.badSessionKey'))).toBe(
+      'remoteAdmin.errors.badSessionKey',
+    );
   });
 });
 
@@ -263,7 +281,7 @@ describe('MeshtasticRemoteAdminClient', () => {
     sendRaw.mockImplementation(() => {
       throw new Error('transport failed');
     });
-    await expect(client.commitRemoteEdit(0x200)).rejects.toThrow('transport failed');
+    await expect(client.commitRemoteEdit(0x200)).rejects.toThrow('remoteAdmin.errors.generic');
     sendRaw.mockImplementation((_bytes: Uint8Array, id: number) => id);
     await client.beginRemoteEdit(0x200);
     expect(sendRaw.mock.calls.length).toBeGreaterThan(callsAfterBegin);

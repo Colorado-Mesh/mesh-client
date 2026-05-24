@@ -80,6 +80,30 @@ export function extractAdminSessionPasskey(message: AdminMessage): Uint8Array | 
   return key.slice();
 }
 
+/** Map SDK / routing failures to i18n keys under `remoteAdmin.errors.*`. */
+export function normalizeRemoteAdminError(e: unknown): string {
+  if (e instanceof Error) {
+    const msg = e.message;
+    if (msg.startsWith('remoteAdmin.errors.')) return msg;
+    const RoutingError = Mesh.Routing_Error as Record<string, number>;
+    for (const [name, code] of Object.entries(RoutingError)) {
+      if (msg.includes(name)) return routingErrorToRemoteAdminKey(code);
+    }
+  }
+  if (typeof e === 'object' && e !== null) {
+    const o = e as { error?: number | string };
+    if (typeof o.error === 'number') {
+      return routingErrorToRemoteAdminKey(o.error);
+    }
+    if (typeof o.error === 'string') {
+      const RoutingError = Mesh.Routing_Error as Record<string, number>;
+      const code = RoutingError[o.error];
+      if (code != null) return routingErrorToRemoteAdminKey(code);
+    }
+  }
+  return 'remoteAdmin.errors.generic';
+}
+
 export function routingErrorToRemoteAdminKey(error: RemoteAdminRoutingErrorCode): string {
   const RoutingError = Mesh.Routing_Error as Record<string, number>;
   switch (error) {
@@ -282,20 +306,15 @@ export class MeshtasticRemoteAdminClient {
     });
   }
 
-  private async sendRawAdmin(
+  private buildRawAdminPacket(
     destNodeNum: number,
     message: AdminMessage,
+    packetId: number,
     options: RemoteAdminSendOptions,
-  ): Promise<number> {
-    const device = this.getDevice();
+  ): Uint8Array {
     const myNodeNum = this.getMyNodeNum();
-    if (!device || myNodeNum <= 0) {
-      throw new Error('remoteAdmin.errors.noLocalRadio');
-    }
-
     const payload = toBinary(Admin.AdminMessageSchema, message as never);
-    const packetId = this.generatePacketId();
-    const toRadio = buildRemoteAdminToRadio({
+    return buildRemoteAdminToRadio({
       myNodeNum,
       destNodeNum,
       adminPayload: payload,
@@ -303,8 +322,27 @@ export class MeshtasticRemoteAdminClient {
       wantAck: options.wantAck ?? true,
       wantResponse: options.wantResponse ?? true,
     });
+  }
 
-    return device.sendRaw(toRadio, packetId);
+  private async sendRawAdmin(
+    destNodeNum: number,
+    message: AdminMessage,
+    options: RemoteAdminSendOptions,
+    packetId?: number,
+  ): Promise<number> {
+    const device = this.getDevice();
+    const myNodeNum = this.getMyNodeNum();
+    if (!device || myNodeNum <= 0) {
+      throw new Error('remoteAdmin.errors.noLocalRadio');
+    }
+
+    const id = packetId ?? this.generatePacketId();
+    const toRadio = this.buildRawAdminPacket(destNodeNum, message, id, options);
+    try {
+      return await device.sendRaw(toRadio, id);
+    } catch (e) {
+      throw new Error(normalizeRemoteAdminError(e));
+    }
   }
 
   private waitForAdminResponse(
@@ -340,11 +378,23 @@ export class MeshtasticRemoteAdminClient {
       buildMessage(),
       options.requireSession ?? false,
     );
-    const packetId = await this.sendRawAdmin(destNodeNum, message, options);
+    const packetId = this.generatePacketId();
     if (options.wantResponse === false) {
+      await this.sendRawAdmin(destNodeNum, message, options, packetId);
       return adminMessage({});
     }
-    return this.waitForAdminResponse(destNodeNum, packetId, options);
+    const responsePromise = this.waitForAdminResponse(destNodeNum, packetId, options);
+    try {
+      await this.sendRawAdmin(destNodeNum, message, options, packetId);
+    } catch (e) {
+      const pending = this.pending.get(packetId);
+      if (pending) {
+        clearTimeout(pending.timeoutId);
+        this.pending.delete(packetId);
+      }
+      throw e;
+    }
+    return responsePromise;
   }
 
   async ensureSessionKey(destNodeNum: number): Promise<void> {

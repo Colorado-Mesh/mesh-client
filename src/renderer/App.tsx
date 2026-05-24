@@ -19,6 +19,7 @@ import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpTooltip } from './components/HelpTooltip';
 import LanguageSelector from './components/LanguageSelector';
+import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
 import SignalPropagation from './components/SignalPropagation';
@@ -1539,6 +1540,12 @@ export default function App() {
         meshtasticDevice={meshtasticDevice}
         meshcoreDevice={meshcoreDevice}
       />
+      {protocol === 'meshtastic' && (
+        <RemoteAdminErrorNotifier
+          status={meshtasticDevice.remoteAdminStatus}
+          errorKey={meshtasticDevice.remoteAdminError}
+        />
+      )}
       {/* Firmware update check on connect */}
       <FirmwareUpdateNotifier
         meshtasticState={meshtasticDevice.state}

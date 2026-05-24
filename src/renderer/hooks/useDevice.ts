@@ -78,6 +78,7 @@ import {
   shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
+import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
   computeNodeInfoLastHeardMs,
@@ -92,7 +93,10 @@ import {
   meshtasticPacketIdsEqual,
   normalizeMeshtasticPacketId,
 } from '../lib/meshtasticMessageDedup';
-import { MeshtasticRemoteAdminClient } from '../lib/meshtasticRemoteAdmin';
+import {
+  MeshtasticRemoteAdminClient,
+  normalizeRemoteAdminError,
+} from '../lib/meshtasticRemoteAdmin';
 import { fetchMeshtasticRemoteConfigSnapshot } from '../lib/meshtasticRemoteAdminSnapshot';
 import { meshtasticComputedRfHopsAway } from '../lib/meshtasticRfHops';
 import {
@@ -3442,7 +3446,7 @@ export function useDevice() {
       setRemoteConfigSnapshot(snapshot);
       setRemoteAdminStatus('ready');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'remoteAdmin.errors.generic';
+      const msg = normalizeRemoteAdminError(e);
       setRemoteAdminStatus('error');
       setRemoteAdminError(msg);
       console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
@@ -3495,11 +3499,14 @@ export function useDevice() {
     if (raw == null || raw === '' || raw === 'null') return;
     const nodeNum = typeof raw === 'number' ? raw : Number(raw);
     if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum === myNodeNumRef.current) return;
-    if (!nodesRef.current.has(nodeNum)) {
+    const restoredNode = nodesRef.current.get(nodeNum);
+    if (!restoredNode || meshcoreHwModelIsContactTypeLabel(restoredNode.hw_model)) {
       mergeAppSetting(
         'meshtasticConfigureTargetNodeNum',
         '',
-        'useDevice restore missing configure target node',
+        restoredNode
+          ? 'useDevice restore meshcore configure target node'
+          : 'useDevice restore missing configure target node',
       );
       void window.electronAPI.appSettings.set('meshtasticConfigureTargetNodeNum', '').catch(() => {
         // catch-no-log-ok best-effort clear stale persisted target
