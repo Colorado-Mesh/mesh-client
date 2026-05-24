@@ -6,6 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SecurityPanel from './SecurityPanel';
 import { ToastProvider } from './Toast';
 
+vi.mock('../lib/writeClipboardText', () => ({
+  writeClipboardText: vi.fn().mockResolvedValue(undefined),
+}));
+
 function renderWithToast(ui: ReactElement) {
   return render(<ToastProvider>{ui}</ToastProvider>);
 }
@@ -128,6 +132,27 @@ describe('SecurityPanel', () => {
     );
     expect(screen.getByLabelText('Sign Data')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign Data' })).toBeDisabled();
+  });
+
+  it('copies public key to clipboard when copy button is clicked', async () => {
+    const user = userEvent.setup();
+    const { writeClipboardText } = await import('../lib/writeClipboardText');
+
+    renderWithToast(
+      <SecurityPanel
+        onSetConfig={vi.fn().mockResolvedValue(undefined)}
+        onCommit={vi.fn().mockResolvedValue(undefined)}
+        isConnected
+        securityConfig={makeSecurityConfig()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Copy' }));
+
+    await waitFor(() => {
+      expect(writeClipboardText).toHaveBeenCalled();
+      expect(screen.getByText('Public key copied to clipboard.')).toBeInTheDocument();
+    });
   });
 
   it('confirms regenerate before calling apply', async () => {

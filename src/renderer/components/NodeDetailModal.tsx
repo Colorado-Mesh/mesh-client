@@ -76,6 +76,8 @@ interface NodeDetailModalProps {
   /** GPS position history (tracking path) for mobile nodes */
   positionHistory?: Map<number, { t: number; lat: number; lon: number }[]>;
   onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
+  /** Meshtastic: switch Configure Node target to this node (requires local radio). */
+  onConfigureRemotely?: () => void;
 }
 
 function WatchToggleButton({ nodeId }: { nodeId: number }) {
@@ -129,6 +131,7 @@ export default function NodeDetailModal({
   meshcoreManufacturerModel,
   positionHistory,
   onShowOnMap,
+  onConfigureRemotely,
 }: NodeDetailModalProps) {
   const { t } = useTranslation();
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
@@ -1193,6 +1196,17 @@ export default function NodeDetailModal({
                   className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {t('nodeDetailModal.requestPosition')}
+                </button>
+              )}
+              {protocol === 'meshtastic' && onConfigureRemotely && (
+                <button
+                  type="button"
+                  onClick={onConfigureRemotely}
+                  disabled={!isConnected}
+                  aria-label={t('nodeDetailModal.configureRemotely')}
+                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-blue-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {t('nodeDetailModal.configureRemotely')}
                 </button>
               )}
               {traceHardDisabled && traceBlockReason ? (

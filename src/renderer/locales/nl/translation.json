@@ -555,7 +555,10 @@
     "importPrivateKeyLabel": "Privésleutel importeren",
     "importPrivateKeyButton": "Privésleutel importeren",
     "importingPrivateKey": "Importeren...",
-    "regenerateKeysConfirm": "Als u sleutels opnieuw genereert, worden uw huidige openbare en privésleutels voor DM vervangen. Alle bestaande gecodeerde berichten kunnen niet langer worden gedecodeerd. Weet je het zeker?"
+    "regenerateKeysConfirm": "Als u sleutels opnieuw genereert, worden uw huidige openbare en privésleutels voor DM vervangen. Alle bestaande gecodeerde berichten kunnen niet langer worden gedecodeerd. Weet je het zeker?",
+    "copyPublicKey": "Kopie",
+    "publicKeyCopied": "Openbare sleutel gekopieerd naar klembord.",
+    "remoteAdminSetupHint": "Kopieer deze sleutel en voeg deze toe als een beheerderssleutel op externe knooppunten die u wilt configureren. Zie Meshtastic remote admin docs."
   },
   "modulePanel": {
     "sectionSent": "{{name}} verzonden. Het apparaat kan kortstondig opnieuw opstarten.",
@@ -1682,7 +1685,8 @@
     "notesPlaceholder": "Privénotities over dit knooppunt (niet verzonden)...",
     "watchNode": "Bekijken",
     "unwatchNode": "Bekijken",
-    "showOnMap": "Weergeven op kaart"
+    "showOnMap": "Weergeven op kaart",
+    "configureRemotely": "Knooppunt op afstand configureren"
   },
   "firmwareStatus": {
     "checking": "Firmwareversie controleren",
@@ -2063,5 +2067,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Telling Distributie",
     "hopAxis": "Hop"
+  },
+  "configureNode": {
+    "label": "Node configureren",
+    "localDevice": "Dit apparaat (lokaal)",
+    "remoteBanner": "Externe node configureren: {{name}} ({{nodeId}})",
+    "switchToLocal": "Overschakelen naar lokaal",
+    "refresh": "Vernieuwen",
+    "loading": "Configuratie op afstand laden...",
+    "requiresLocalRadio": "Sluit een lokale Meshtastic-radio aan om extern beheer te gebruiken."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Sluit een lokale radio aan om externe knooppunten te beheren.",
+      "publicKeyUnauthorized": "Onbevoegd: voeg de openbare sleutel van deze radio toe aan de beheerderssleutels van het externe knooppunt.",
+      "badSessionKey": "Beheerderssessie verlopen. Vernieuw en probeer het opnieuw.",
+      "pkiFailed": "PKI-codering mislukt. Verifieer knooppuntsleutels en verwijder verouderde admin-kanaalconflicten.",
+      "notAuthorized": "Externe beheerder niet geautoriseerd op het doelknooppunt.",
+      "timeout": "Verzoek voor externe beheerder is verlopen.",
+      "generic": "Verzoek voor externe beheerder mislukt."
+    }
   }
 }

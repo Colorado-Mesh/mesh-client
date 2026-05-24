@@ -29,6 +29,7 @@ import {
   meshcoreSelfInfoFreqToDisplayHz,
 } from '../lib/meshcoreUtils';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
+import type { ConfigTargetContext } from '../lib/types';
 import { HelpTooltip } from './HelpTooltip';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
 import MeshcoreTelemetryPrivacySection from './MeshcoreTelemetryPrivacySection';
@@ -45,6 +46,7 @@ interface ChannelConfig {
 }
 
 interface Props {
+  configTarget?: ConfigTargetContext;
   onSetConfig: (config: unknown) => Promise<void>;
   onCommit: () => Promise<void>;
   onSetChannel: (config: {
@@ -563,6 +565,7 @@ interface PendingAction {
 }
 
 export default function RadioPanel({
+  configTarget,
   onSetConfig,
   onCommit,
   onSetChannel,
@@ -737,7 +740,7 @@ export default function RadioPanel({
   const [advertLoading, setAdvertLoading] = useState(false);
   const [syncClockLoading, setSyncClockLoading] = useState(false);
 
-  const disabled = !isConnected;
+  const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
 
   const applyConfig = async (
     section: string,
@@ -1008,6 +1011,14 @@ export default function RadioPanel({
         <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
           {t('radioPanel.connectToConfigure')}
         </div>
+      )}
+
+      {configTarget?.mode === 'remote' && configTarget.isLoading && (
+        <p className="text-muted text-sm">{t('configureNode.loading')}</p>
+      )}
+
+      {configTarget?.mode === 'remote' && configTarget.error && (
+        <p className="text-sm text-red-400">{t(configTarget.error)}</p>
       )}
 
       {/* ═══ Bluetooth ═══ */}

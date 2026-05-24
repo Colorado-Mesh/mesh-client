@@ -78,7 +78,8 @@
     "sniffer": "Sniffer",
     "repeaters": "Wiederholbare Felder",
     "rf": "RF",
-    "graph": "Grafik"
+    "graph": "Grafik",
+    "tak": "TAK"
   },
   "sidebar": {
     "disabledTabTooltip": "Nicht verfügbar in diesem Modus."
@@ -226,42 +227,57 @@
     "deviceMetricsDescription": "Mesh-Broadcast: Wie oft werden Batterie, Spannung und Kanalauslastung über LoRa gesendet? 0 = deaktiviert; Standard 1800 s (30 min). Verbundene App: Bei einer Verbindung über Bluetooth, seriell oder WLAN sendet die Firmware oft noch etwa alle 60 Sekunden Gerätemetriken an diesen Client, um die Aktualität auf dem Bildschirm zu gewährleisten – das ist nicht dasselbe wie Ihr Mesh-Intervall.",
     "deviceMetricsTooltip": "Die Meshtastic-Firmware sendet ungefähr einmal pro Minute Gerätemetriken zur lokalen Überwachung an einen verbundenen Client, unabhängig vom Mesh-Telemetrieintervall. Offizielle Referenz: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
-      "0": {},
-      "1": {}
+      "0": {
+        "label": "Metrik"
+      },
+      "1": {
+        "label": "zöllig"
+      }
     },
     "deviceRoles": {
       "0": {
-        "description": "Normaler Client-Modus"
+        "description": "Normaler Client-Modus",
+        "label": "Auftraggeber"
       },
       "1": {
-        "description": "Client, der nicht sendet"
+        "description": "Client, der nicht sendet",
+        "label": "Client stummschalten"
       },
       "2": {
-        "description": "Dedizierter Router/Repeater"
+        "description": "Dedizierter Router/Repeater",
+        "label": "Oberfräse"
       },
       "3": {
-        "description": "Router + Client-Modus"
+        "description": "Router + Client-Modus",
+        "label": "Router-Client"
       },
       "4": {
-        "description": "Basisstation für Client-Geräte"
+        "description": "Basisstation für Client-Geräte",
+        "label": "Kundenstamm"
       },
       "5": {
-        "description": "Nur GPS-Tracker"
+        "description": "Nur GPS-Tracker",
+        "label": "Tracker"
       },
       "6": {
-        "description": "Telemetrie-Sensorknoten"
+        "description": "Telemetrie-Sensorknoten",
+        "label": "Sensor"
       },
       "7": {
-        "description": "TAK-fähiges Gerät"
+        "description": "TAK-fähiges Gerät",
+        "label": "TAK"
       },
       "8": {
-        "description": "Client, aus der Knotenliste ausgeblendet"
+        "description": "Client, aus der Knotenliste ausgeblendet",
+        "label": "Kunde ausgeblendet"
       },
       "9": {
-        "description": "Sendet Position zur Genesung"
+        "description": "Sendet Position zur Genesung",
+        "label": "Fundbüro"
       },
       "10": {
-        "description": "TAK-Tracker-Modus"
+        "description": "TAK-Tracker-Modus",
+        "label": "TAK TRACKER"
       }
     },
     "contactsOnRadioBadgeTitle": "{{part}} Kontakte im Radio",
@@ -539,7 +555,10 @@
     "importPrivateKeyLabel": "Privaten Schlüssel importieren",
     "importPrivateKeyButton": "Privaten Schlüssel importieren",
     "importingPrivateKey": "Importieren...",
-    "regenerateKeysConfirm": "Durch die Neugenerierung von Schlüsseln werden Ihre aktuellen öffentlichen und privaten DM-Schlüssel ersetzt. Vorhandene verschlüsselte Nachrichten können nicht mehr entschlüsselt werden. Bist du sicher?"
+    "regenerateKeysConfirm": "Durch die Neugenerierung von Schlüsseln werden Ihre aktuellen öffentlichen und privaten DM-Schlüssel ersetzt. Vorhandene verschlüsselte Nachrichten können nicht mehr entschlüsselt werden. Bist du sicher?",
+    "copyPublicKey": "Kopie",
+    "publicKeyCopied": "Öffentlicher Schlüssel in die Zwischenablage kopiert.",
+    "remoteAdminSetupHint": "Kopieren Sie diesen Schlüssel und fügen Sie ihn als Admin-Schlüssel auf Remote-Knoten hinzu, die Sie konfigurieren möchten. Siehe Meshtastic Remote-Admin-Dokumente."
   },
   "modulePanel": {
     "sectionSent": "{{name}} gesendet. Das Gerät kann kurzzeitig neu gestartet werden.",
@@ -1666,7 +1685,8 @@
     "notesPlaceholder": "Private Notizen zu diesem Knoten (nicht übertragen)...",
     "watchNode": "Ansehen",
     "unwatchNode": "schaue gerade",
-    "showOnMap": "Auf Karte anzeigen"
+    "showOnMap": "Auf Karte anzeigen",
+    "configureRemotely": "Knoten aus der Ferne konfigurieren"
   },
   "firmwareStatus": {
     "checking": "Überprüfung der Firmwareversion",
@@ -1886,61 +1906,80 @@
   "logAnalyzer": {
     "categories": {
       "ble-connection": {
-        "recommendation": "BLE-Verbindung instabil. Überprüfen Sie die Entfernung zum Gerät und den Status des Bluetooth-Adapters."
+        "recommendation": "BLE-Verbindung instabil. Überprüfen Sie die Entfernung zum Gerät und den Status des Bluetooth-Adapters.",
+        "label": "Verbindungsprobleme"
       },
       "mqtt": {
-        "recommendation": "Probleme mit der MQTT-Verbindung. Überprüfen Sie die Broker-URL, Anmeldeinformationen und Netzwerkkonnektivität."
+        "recommendation": "Probleme mit der MQTT-Verbindung. Überprüfen Sie die Broker-URL, Anmeldeinformationen und Netzwerkkonnektivität.",
+        "label": "MQTT-Probleme"
       },
       "mqtt-retries-exhausted": {
-        "recommendation": "MQTT gab nach maximaler Wiederverbindung auf. Stellen Sie sicher, dass der Broker erreichbar ist, Anmeldeinformationen und Port korrekt sind und Firewalls ausgehenden Datenverkehr zulassen."
+        "recommendation": "MQTT gab nach maximaler Wiederverbindung auf. Stellen Sie sicher, dass der Broker erreichbar ist, Anmeldeinformationen und Port korrekt sind und Firewalls ausgehenden Datenverkehr zulassen.",
+        "label": "MQTT Wiederverbindungslimit"
       },
       "watchdog": {
-        "recommendation": "Watchdog hat die Wiederverbindung ausgelöst. Die Gerätekommunikation ist möglicherweise instabil."
+        "recommendation": "Watchdog hat die Wiederverbindung ausgelöst. Die Gerätekommunikation ist möglicherweise instabil.",
+        "label": "Watchdog-Trigger"
       },
       "handshake": {
-        "recommendation": "Verbindungs-Handshake ist fehlgeschlagen. Versuchen Sie, die Verbindung manuell wiederherzustellen."
+        "recommendation": "Verbindungs-Handshake ist fehlgeschlagen. Versuchen Sie, die Verbindung manuell wiederherzustellen.",
+        "label": "Handshake-Fehler"
       },
       "ble-connect-race": {
-        "recommendation": "Zeitüberschreitung beim BLE-Handshake oder Unterbrechung der Verbindung. Überprüfen Sie die Stabilität der BLE-Verbindung und den Abstand zum Gerät."
+        "recommendation": "Zeitüberschreitung beim BLE-Handshake oder Unterbrechung der Verbindung. Überprüfen Sie die Stabilität der BLE-Verbindung und den Abstand zum Gerät.",
+        "label": "BLE Connect Race/Timeout"
       },
       "auth-decrypt": {
-        "recommendation": "Authentifizierungs- oder Entschlüsselungsfehler. Überprüfen Sie, ob die Kanalschlüssel zwischen den Geräten übereinstimmen."
+        "recommendation": "Authentifizierungs- oder Entschlüsselungsfehler. Überprüfen Sie, ob die Kanalschlüssel zwischen den Geräten übereinstimmen.",
+        "label": "Authentifizierungs-/Entschlüsselungsfehler"
       },
       "native-module": {
-        "recommendation": "Ein natives Add-on konnte nicht geladen werden – häufig falsche Electron-ABI nach einem Upgrade. Führen Sie pnpm install im Projektordner aus (oder führen Sie pnpm rebuild aus), beenden Sie alle App-Instanzen und versuchen Sie es erneut."
+        "recommendation": "Ein natives Add-on konnte nicht geladen werden – häufig falsche Electron-ABI nach einem Upgrade. Führen Sie pnpm install im Projektordner aus (oder führen Sie pnpm rebuild aus), beenden Sie alle App-Instanzen und versuchen Sie es erneut.",
+        "label": "Fehler beim Laden des systemeigenen Moduls"
       },
       "internal-error": {
-        "recommendation": "Es ist ein unerwarteter interner Fehler aufgetreten. Bitte melden Sie diesen Fehler mit der Protokolldatei."
+        "recommendation": "Es ist ein unerwarteter interner Fehler aufgetreten. Bitte melden Sie diesen Fehler mit der Protokolldatei.",
+        "label": "Interne App-Fehler"
       },
       "database-error": {
-        "recommendation": "Datenbankfehler. Dies kann auf eine beschädigte Datenbankdatei oder ein Berechtigungsproblem hinweisen."
+        "recommendation": "Datenbankfehler. Dies kann auf eine beschädigte Datenbankdatei oder ein Berechtigungsproblem hinweisen.",
+        "label": "Datenbankausfälle"
       },
       "database-chmod": {
-        "recommendation": "Die Optimierung der Datenbankdateiberechtigungen ist fehlgeschlagen (häufig harmlos unter Windows). Wenn Sie an anderer Stelle echte DB-Fehler sehen, überprüfen Sie die Antiviren- und Ordnerberechtigungen für das Mesh-Client-Benutzerdatenverzeichnis."
+        "recommendation": "Die Optimierung der Datenbankdateiberechtigungen ist fehlgeschlagen (häufig harmlos unter Windows). Wenn Sie an anderer Stelle echte DB-Fehler sehen, überprüfen Sie die Antiviren- und Ordnerberechtigungen für das Mesh-Client-Benutzerdatenverzeichnis.",
+        "label": "Datenbank chmod (nicht tödlich)"
       },
       "database-writable": {
-        "recommendation": "Die App kann ihren Datenbankordner nicht schreiben. Korrigieren Sie die Berechtigungen für das Mesh-Client-Benutzerdatenverzeichnis (siehe Fehlerbehebung: Datenbankverzeichnis ist nicht beschreibbar)."
+        "recommendation": "Die App kann ihren Datenbankordner nicht schreiben. Korrigieren Sie die Berechtigungen für das Mesh-Client-Benutzerdatenverzeichnis (siehe Fehlerbehebung: Datenbankverzeichnis ist nicht beschreibbar).",
+        "label": "Datenbank nicht beschreibbar"
       },
       "tak-server": {
-        "recommendation": "TAK-Serverfehler. Überprüfen Sie den Zertifikatsstatus und die Portverfügbarkeit."
+        "recommendation": "TAK-Serverfehler. Überprüfen Sie den Zertifikatsstatus und die Portverfügbarkeit.",
+        "label": "TAK-Server-Probleme"
       },
       "updater": {
-        "recommendation": "Fehler beim App-Updater. Überprüfen Sie Ihre Internetverbindung oder versuchen Sie ein manuelles Update von GitHub."
+        "recommendation": "Fehler beim App-Updater. Überprüfen Sie Ihre Internetverbindung oder versuchen Sie ein manuelles Update von GitHub.",
+        "label": "App-Updater-Fehler"
       },
       "meshcore-tcp": {
-        "recommendation": "MeshCore TCP-Bridge-Fehler. Stellen Sie sicher, dass der Remote-Host und der Remote-Port erreichbar sind."
+        "recommendation": "MeshCore TCP-Bridge-Fehler. Stellen Sie sicher, dass der Remote-Host und der Remote-Port erreichbar sind.",
+        "label": "MeshCore IP-Bridge-Fehler"
       },
       "ble-meshcore-notify-watchdog": {
-        "recommendation": "Keine GATT-Benachrichtigungsdaten innerhalb des Watchdog-Fensters (üblich unter Windows). Versuchen Sie erneut, eine Verbindung herzustellen. Stellen Sie sicher, dass das Radio in den Bluetooth-Einstellungen des Betriebssystems gekoppelt ist, bevor Sie eine Verbindung herstellen."
+        "recommendation": "Keine GATT-Benachrichtigungsdaten innerhalb des Watchdog-Fensters (üblich unter Windows). Versuchen Sie erneut, eine Verbindung herzustellen. Stellen Sie sicher, dass das Radio in den Bluetooth-Einstellungen des Betriebssystems gekoppelt ist, bevor Sie eine Verbindung herstellen.",
+        "label": "BLE Notify Watchdog (MeshCore)"
       },
       "bluetooth-pairing": {
-        "recommendation": "Die Bluetooth-Kopplung oder -Entkopplung ist fehlgeschlagen oder die PIN-Eingabeaufforderung ist abgelaufen. Öffnen Sie beim Koppeln die App, geben Sie sofort die PIN ein, überprüfen Sie die MAC-Adresse und Bluetooth-Berechtigungen oder entfernen Sie die Bluetooth-Einstellungen des Betriebssystems und koppeln Sie sie erneut."
+        "recommendation": "Die Bluetooth-Kopplung oder -Entkopplung ist fehlgeschlagen oder die PIN-Eingabeaufforderung ist abgelaufen. Öffnen Sie beim Koppeln die App, geben Sie sofort die PIN ein, überprüfen Sie die MAC-Adresse und Bluetooth-Berechtigungen oder entfernen Sie die Bluetooth-Einstellungen des Betriebssystems und koppeln Sie sie erneut.",
+        "label": "Probleme bei der Bluetooth-Kopplung"
       },
       "sdk-meshtastic": {
-        "recommendation": "Der Meshtastic-Stack hat eine Warnung oder einen Fehler gemeldet. Wenn es erneut auftritt, überprüfen Sie die Firmware, den Transport (BLE/seriell) und stellen Sie die Verbindung wieder her."
+        "recommendation": "Der Meshtastic-Stack hat eine Warnung oder einen Fehler gemeldet. Wenn es erneut auftritt, überprüfen Sie die Firmware, den Transport (BLE/seriell) und stellen Sie die Verbindung wieder her.",
+        "label": "Meshtastic SDK Warnungen/Fehler"
       },
       "sdk-meshcore": {
-        "recommendation": "Der MeshCore-Stack hat eine Warnung oder einen Fehler gemeldet. Wenn es erneut auftritt, überprüfen Sie die BLE-Kopplung und die MQTT-Einstellungen und stellen Sie die Verbindung erneut her."
+        "recommendation": "Der MeshCore-Stack hat eine Warnung oder einen Fehler gemeldet. Wenn es erneut auftritt, überprüfen Sie die BLE-Kopplung und die MQTT-Einstellungen und stellen Sie die Verbindung erneut her.",
+        "label": "MeshCore SDK Warnungen/Fehler"
       },
       "store-forward": {
         "label": "Store- & Forward-Verlaufsprobleme",
@@ -1981,7 +2020,9 @@
       "lostAndFound": "Verloren und gefunden",
       "takTracker": "TAK-Tracker",
       "routerLate": "Router zu spät",
-      "clientBase": "Kundenstamm"
+      "clientBase": "Kundenstamm",
+      "router": "Oberfräse",
+      "tak": "TAK"
     }
   },
   "signalPropagation": {
@@ -2026,5 +2067,25 @@
     "rssiAxis": "Rssi (dBm)",
     "hopTitle": "Hop-Anzahl-Verteilung",
     "hopAxis": "Hops"
+  },
+  "configureNode": {
+    "label": "Knoten konfigurieren",
+    "localDevice": "Dieses Gerät (lokal)",
+    "remoteBanner": "Remote-Knoten konfigurieren: {{name}} ({{nodeId}})",
+    "switchToLocal": "Zu lokal wechseln",
+    "refresh": "Aktualisieren",
+    "loading": "Remote-Konfiguration wird geladen...",
+    "requiresLocalRadio": "Schließen Sie ein lokales Meshtastic-Funkgerät an, um die Remote-Verwaltung zu nutzen."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Schließen Sie ein lokales Funkgerät an, um Remote-Knoten zu verwalten.",
+      "publicKeyUnauthorized": "Nicht autorisiert: Fügen Sie den öffentlichen Schlüssel dieses Radios zu den Admin-Schlüsseln des Remote-Knotens hinzu.",
+      "badSessionKey": "Admin-Sitzung abgelaufen. Aktualisieren und erneut versuchen.",
+      "pkiFailed": "PKI-Verschlüsselung fehlgeschlagen. Überprüfen Sie die Knotenschlüssel und entfernen Sie ältere Admin-Kanal-Konflikte.",
+      "notAuthorized": "Remote-Administrator auf dem Zielknoten nicht autorisiert.",
+      "timeout": "Zeitüberschreitung der Remote-Administrationsanforderung.",
+      "generic": "Remote-Admin-Anfrage fehlgeschlagen."
+    }
   }
 }

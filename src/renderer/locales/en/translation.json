@@ -493,6 +493,26 @@
     "ntpServerLabel": "NTP Server",
     "ethernetEnabledDesc": "Enable hardware Ethernet (supported on select devices)."
   },
+  "configureNode": {
+    "label": "Configure node",
+    "localDevice": "This device (local)",
+    "remoteBanner": "Configuring remote node: {{name}} ({{nodeId}})",
+    "switchToLocal": "Switch to local",
+    "refresh": "Refresh",
+    "loading": "Loading remote configuration…",
+    "requiresLocalRadio": "Connect a local Meshtastic radio to use remote administration."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Connect a local radio to administer remote nodes.",
+      "publicKeyUnauthorized": "Unauthorized: add this radio's public key to the remote node's Admin Keys.",
+      "badSessionKey": "Admin session expired. Refresh and try again.",
+      "pkiFailed": "PKI encryption failed. Verify node keys and remove legacy admin channel conflicts.",
+      "notAuthorized": "Remote admin not authorized on the target node.",
+      "timeout": "Remote admin request timed out.",
+      "generic": "Remote admin request failed."
+    }
+  },
   "securityPanel": {
     "keyRegenRequested": "Key regeneration requested. Device will generate new keys.",
     "failed": "Failed: {{message}}",
@@ -523,6 +543,9 @@
     "importKeyPlaceholder": "Paste base64-encoded private key...",
     "connectToManage": "Connect to a device to manage security settings.",
     "publicKeyLabel": "Public Key",
+    "copyPublicKey": "Copy",
+    "publicKeyCopied": "Public key copied to clipboard.",
+    "remoteAdminSetupHint": "Copy this key and add it as an Admin Key on remote nodes you want to configure. See Meshtastic remote admin docs.",
     "privateKeyLabel": "Private Key",
     "privateKeyHint": "Keep your private key secret. It is used to encrypt direct messages.",
     "regenerateKeys": "Regenerate Keys",
@@ -1637,6 +1660,7 @@
     "txAirTimeLabel": "TX Air Time",
     "rxAirTimeLabel": "RX Air Time",
     "requestPosition": "📍 Request Position",
+    "configureRemotely": "Configure node remotely",
     "showOnMap": "Show on map",
     "traceRoute": "🛤 Trace Route",
     "tracingEllipsis": "Tracing...",

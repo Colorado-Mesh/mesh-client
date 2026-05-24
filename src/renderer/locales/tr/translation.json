@@ -555,7 +555,10 @@
     "importPrivateKeyLabel": "Özel Anahtarı İçe Aktar",
     "importPrivateKeyButton": "Özel Anahtarı İçe Aktar",
     "importingPrivateKey": "İçe aktarılıyor...",
-    "regenerateKeysConfirm": "Anahtarların yenilenmesi mevcut DM genel ve özel anahtarlarınızın yerini alacaktır. Mevcut şifrelenmiş mesajların şifresi artık çözülemez. Emin misin?"
+    "regenerateKeysConfirm": "Anahtarların yenilenmesi mevcut DM genel ve özel anahtarlarınızın yerini alacaktır. Mevcut şifrelenmiş mesajların şifresi artık çözülemez. Emin misin?",
+    "copyPublicKey": "Kopyala",
+    "publicKeyCopied": "Genel anahtar panoya kopyalandı.",
+    "remoteAdminSetupHint": "Bu anahtarı kopyalayın ve yapılandırmak istediğiniz uzak düğümlere Yönetici Anahtarı olarak ekleyin. Meshtastic uzak yönetici belgelerine bakın."
   },
   "modulePanel": {
     "sectionSent": "{{name}} gönderildi. Cihaz kısa süreliğine yeniden başlatılabilir.",
@@ -1682,7 +1685,8 @@
     "notesPlaceholder": "Bu düğüm hakkında özel notlar (iletilmedi )…",
     "watchNode": "İzle",
     "unwatchNode": "İzliyorum",
-    "showOnMap": "Haritada göster"
+    "showOnMap": "Haritada göster",
+    "configureRemotely": "Düğümü uzaktan yapılandır"
   },
   "firmwareStatus": {
     "checking": "Ürün yazılımı sürümünün kontrol edilmesi",
@@ -2063,5 +2067,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Sayısı Dağılımı",
     "hopAxis": "Şerbetçi otu"
+  },
+  "configureNode": {
+    "label": "Düğümü yapılandır",
+    "localDevice": "Bu cihaz (yerel)",
+    "remoteBanner": "Uzak düğüm yapılandırılıyor: {{name}} ({{nodeId}})",
+    "switchToLocal": "Yerel ağa geç",
+    "refresh": "Yenile",
+    "loading": "Uzaktan yapılandırma yükleniyor…",
+    "requiresLocalRadio": "Uzaktan yönetimi kullanmak için yerel bir Meshtastic telsiz bağlayın."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Uzak düğümleri yönetmek için yerel bir radyo bağlayın.",
+      "publicKeyUnauthorized": "Yetkisiz: Bu radyonun genel anahtarını uzak düğümün Yönetici Anahtarlarına ekleyin.",
+      "badSessionKey": "Yönetici oturumu sona erdi. Yenile ve tekrar dene.",
+      "pkiFailed": "PKI şifrelemesi başarısız oldu. Düğüm anahtarlarını doğrulayın ve eski yönetici kanalı çakışmalarını kaldırın.",
+      "notAuthorized": "Hedef düğümde uzaktan yönetici yetkilendirilmemiş.",
+      "timeout": "Uzaktan yönetici isteği zaman aşımına uğradı.",
+      "generic": "Uzaktan yönetici isteği başarısız oldu."
+    }
   }
 }

@@ -78,7 +78,8 @@
     "sniffer": "嗅探",
     "repeaters": "中继器",
     "rf": "射频",
-    "graph": "图"
+    "graph": "图",
+    "tak": "TAK"
   },
   "sidebar": {
     "disabledTabTooltip": "在此模式下不可用"
@@ -226,42 +227,57 @@
     "deviceMetricsDescription": "网状广播：通过 LoRa 发送电池、电压和信道利用率的频率。 0 = 禁用；默认 1800 秒（30 分钟）。连接的应用程序：当通过蓝牙、串行或 Wi-Fi 连接时，固件通常仍会每隔 60 秒向该客户端推送一次设备指标，以确保屏幕上的新鲜度，这与您的网格间隔不同。",
     "deviceMetricsTooltip": "Meshtastic 固件大约每分钟向连接的客户端发送一次设备指标以进行本地监控，无论网格遥测间隔如何。官方参考：https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
-      "0": {},
-      "1": {}
+      "0": {
+        "label": "指标"
+      },
+      "1": {
+        "label": "英制"
+      }
     },
     "deviceRoles": {
       "0": {
-        "description": "普通客户端模式"
+        "description": "普通客户端模式",
+        "label": "客户端"
       },
       "1": {
-        "description": "不传输的客户端"
+        "description": "不传输的客户端",
+        "label": "客户端静音"
       },
       "2": {
-        "description": "专用路由器/中继器"
+        "description": "专用路由器/中继器",
+        "label": "路由器"
       },
       "3": {
-        "description": "路由器+客户端模式"
+        "description": "路由器+客户端模式",
+        "label": "路由器客户端"
       },
       "4": {
-        "description": "客户端设备的基站"
+        "description": "客户端设备的基站",
+        "label": "客户群"
       },
       "5": {
-        "description": "仅 GPS 追踪器"
+        "description": "仅 GPS 追踪器",
+        "label": "Tracker"
       },
       "6": {
-        "description": "遥测传感器节点"
+        "description": "遥测传感器节点",
+        "label": "测传"
       },
       "7": {
-        "description": "支持 TAK 的设备"
+        "description": "支持 TAK 的设备",
+        "label": "TAK"
       },
       "8": {
-        "description": "客户端，从节点列表中隐藏"
+        "description": "客户端，从节点列表中隐藏",
+        "label": "客户端已隐藏"
       },
       "9": {
-        "description": "广播恢复位置"
+        "description": "广播恢复位置",
+        "label": "失物认领"
       },
       "10": {
-        "description": "TAK跟踪模式"
+        "description": "TAK跟踪模式",
+        "label": "TAK跟踪器"
       }
     },
     "contactsOnRadioBadgeTitle": "{{part}} 无线电联系人",
@@ -539,7 +555,10 @@
     "importPrivateKeyLabel": "导入私钥",
     "importPrivateKeyButton": "导入私钥",
     "importingPrivateKey": "输入...",
-    "regenerateKeysConfirm": "重新生成密钥将替换您当前的 DM 公钥和私钥。任何现有的加密消息将不再可解密。你确定吗？"
+    "regenerateKeysConfirm": "重新生成密钥将替换您当前的 DM 公钥和私钥。任何现有的加密消息将不再可解密。你确定吗？",
+    "copyPublicKey": "复制",
+    "publicKeyCopied": "公钥已复制到剪贴板。",
+    "remoteAdminSetupHint": "复制此密钥并将其添加为要配置的远程节点上的管理密钥。请参阅Meshtastic远程管理文档。"
   },
   "modulePanel": {
     "sectionSent": "{{name}}已发送。设备可能会短暂重新启动。",
@@ -1666,7 +1685,8 @@
     "notesPlaceholder": "关于此节点的私人备注（未传输） ……",
     "watchNode": "观看",
     "unwatchNode": "正在查看",
-    "showOnMap": "显示在地图上"
+    "showOnMap": "显示在地图上",
+    "configureRemotely": "远程配置节点"
   },
   "firmwareStatus": {
     "checking": "正在检查固件版本",
@@ -1886,61 +1906,80 @@
   "logAnalyzer": {
     "categories": {
       "ble-connection": {
-        "recommendation": "BLE 连接不稳定。检查与设备的距离和蓝牙适配器状态。"
+        "recommendation": "BLE 连接不稳定。检查与设备的距离和蓝牙适配器状态。",
+        "label": "BLE连接问题"
       },
       "mqtt": {
-        "recommendation": "MQTT 连接问题。验证代理 URL、凭据和网络连接。"
+        "recommendation": "MQTT 连接问题。验证代理 URL、凭据和网络连接。",
+        "label": "MQTT问题"
       },
       "mqtt-retries-exhausted": {
-        "recommendation": "MQTT 在最大重新连接数后放弃。确认代理可访问、凭据和端口正确并且防火墙允许出站流量。"
+        "recommendation": "MQTT 在最大重新连接数后放弃。确认代理可访问、凭据和端口正确并且防火墙允许出站流量。",
+        "label": "MQTT重新连接限制"
       },
       "watchdog": {
-        "recommendation": "看门狗触发重连。设备通信可能不稳定。"
+        "recommendation": "看门狗触发重连。设备通信可能不稳定。",
+        "label": "看门狗触发器"
       },
       "handshake": {
-        "recommendation": "连接握手失败。尝试手动重新连接。"
+        "recommendation": "连接握手失败。尝试手动重新连接。",
+        "label": "握手失败"
       },
       "ble-connect-race": {
-        "recommendation": "BLE 握手超时或出现断开连接。检查 BLE 连接稳定性以及与设备的距离。"
+        "recommendation": "BLE 握手超时或出现断开连接。检查 BLE 连接稳定性以及与设备的距离。",
+        "label": "BLE连接种族/超时"
       },
       "auth-decrypt": {
-        "recommendation": "认证或解密失败。验证设备之间的通道密钥是否匹配。"
+        "recommendation": "认证或解密失败。验证设备之间的通道密钥是否匹配。",
+        "label": "身份验证/解密失败"
       },
       "native-module": {
-        "recommendation": "本机附加组件无法加载 - 升级后通常会出现错误的 Electron ABI。在项目文件夹中运行 pnpm install（或 pnpm runbuild），退出所有应用程序实例，然后重试。"
+        "recommendation": "本机附加组件无法加载 - 升级后通常会出现错误的 Electron ABI。在项目文件夹中运行 pnpm install（或 pnpm runbuild），退出所有应用程序实例，然后重试。",
+        "label": "本机模块加载失败"
       },
       "internal-error": {
-        "recommendation": "发生意外的内部错误。请通过日志文件报告此错误。"
+        "recommendation": "发生意外的内部错误。请通过日志文件报告此错误。",
+        "label": "内部应用错误"
       },
       "database-error": {
-        "recommendation": "数据库错误。这可能表明数据库文件损坏或权限问题。"
+        "recommendation": "数据库错误。这可能表明数据库文件损坏或权限问题。",
+        "label": "数据库故障"
       },
       "database-chmod": {
-        "recommendation": "数据库文件权限调整失败（在 Windows 上通常是良性的）。如果您在其他地方看到真正的数据库错误，请检查网格客户端 userData 目录的防病毒和文件夹权限。"
+        "recommendation": "数据库文件权限调整失败（在 Windows 上通常是良性的）。如果您在其他地方看到真正的数据库错误，请检查网格客户端 userData 目录的防病毒和文件夹权限。",
+        "label": "数据库chmod （非致命）"
       },
       "database-writable": {
-        "recommendation": "该应用程序无法写入其数据库文件夹。修复网格客户端 userData 目录的权限（请参阅故障排除：数据库目录不可写）。"
+        "recommendation": "该应用程序无法写入其数据库文件夹。修复网格客户端 userData 目录的权限（请参阅故障排除：数据库目录不可写）。",
+        "label": "数据库不可写"
       },
       "tak-server": {
-        "recommendation": "TAK 服务器错误。检查证书状态和端口可用性。"
+        "recommendation": "TAK 服务器错误。检查证书状态和端口可用性。",
+        "label": "TAK服务器问题"
       },
       "updater": {
-        "recommendation": "应用程序更新程序错误。检查您的互联网连接或尝试从 GitHub 手动更新。"
+        "recommendation": "应用程序更新程序错误。检查您的互联网连接或尝试从 GitHub 手动更新。",
+        "label": "应用更新程序错误"
       },
       "meshcore-tcp": {
-        "recommendation": "MeshCore TCP 桥接错误。验证远程主机和端口是否可达。"
+        "recommendation": "MeshCore TCP 桥接错误。验证远程主机和端口是否可达。",
+        "label": "MeshCore IP网桥错误"
       },
       "ble-meshcore-notify-watchdog": {
-        "recommendation": "看门狗窗口内没有 GATT 通知数据（Windows 上常见）。重试连接；连接前确保无线电已在操作系统蓝牙设置中配对。"
+        "recommendation": "看门狗窗口内没有 GATT 通知数据（Windows 上常见）。重试连接；连接前确保无线电已在操作系统蓝牙设置中配对。",
+        "label": "BLE通知看门狗（ MeshCore ）"
       },
       "bluetooth-pairing": {
-        "recommendation": "蓝牙配对或取消配对失败，或者 PIN 提示超时。 Open the app when pairing, enter the PIN promptly, check the MAC address and Bluetooth permissions, or remove and re-pair from OS Bluetooth settings."
+        "recommendation": "蓝牙配对或取消配对失败，或者 PIN 提示超时。 Open the app when pairing, enter the PIN promptly, check the MAC address and Bluetooth permissions, or remove and re-pair from OS Bluetooth settings.",
+        "label": "蓝牙配对问题"
       },
       "sdk-meshtastic": {
-        "recommendation": "Meshtastic 堆栈报告警告或错误。如果重复出现，请检查固件、传输（BLE/串行）并重新连接。"
+        "recommendation": "Meshtastic 堆栈报告警告或错误。如果重复出现，请检查固件、传输（BLE/串行）并重新连接。",
+        "label": "Meshtastic SDK警告/错误"
       },
       "sdk-meshcore": {
-        "recommendation": "MeshCore stack reported a warning or error.如果重复出现，请检查 BLE 配对、MQTT 设置，然后重新连接。"
+        "recommendation": "MeshCore stack reported a warning or error.如果重复出现，请检查 BLE 配对、MQTT 设置，然后重新连接。",
+        "label": "MeshCore SDK警告/错误"
       },
       "store-forward": {
         "label": "存储和转发历史问题",
@@ -1982,7 +2021,8 @@
       "lostAndFound": "失物招领处",
       "takTracker": "TAK 追踪器",
       "routerLate": "路由器延迟",
-      "clientBase": "客户群"
+      "clientBase": "客户群",
+      "tak": "TAK"
     }
   },
   "signalPropagation": {
@@ -2027,5 +2067,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "跳数分布",
     "hopAxis": "链路数目"
+  },
+  "configureNode": {
+    "label": "配置节点",
+    "localDevice": "此设备（本地）",
+    "remoteBanner": "配置远程节点： {{name}} ({{nodeId}})",
+    "switchToLocal": "切换到本地",
+    "refresh": "重新整理",
+    "loading": "正在加载远程配置…",
+    "requiresLocalRadio": "连接本地Meshtastic收音机以使用远程管理。"
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "连接本地无线电以管理远程节点。",
+      "publicKeyUnauthorized": "未经授权：将此收音机的公钥添加到远程节点的管理密钥。",
+      "badSessionKey": "管理会话已过期。请刷新并重试。",
+      "pkiFailed": "PKI加密失败。请验证节点密钥并删除旧版管理通道冲突。",
+      "notAuthorized": "远程管理员未在目标节点上获得授权。",
+      "timeout": "远程管理员请求超时。",
+      "generic": "远程管理员请求失败。"
+    }
   }
 }

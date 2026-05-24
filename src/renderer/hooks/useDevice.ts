@@ -47,7 +47,7 @@ import {
   meshtasticWireUint32NonZero,
   sanitizeUnicodeReactionScalar,
 } from '../../shared/reactionEmoji';
-import { getAppSettingsRaw } from '../lib/appSettingsStorage';
+import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import {
   createBleConnection,
@@ -85,6 +85,8 @@ import {
   meshtasticPacketIdsEqual,
   normalizeMeshtasticPacketId,
 } from '../lib/meshtasticMessageDedup';
+import { MeshtasticRemoteAdminClient } from '../lib/meshtasticRemoteAdmin';
+import { fetchMeshtasticRemoteConfigSnapshot } from '../lib/meshtasticRemoteAdminSnapshot';
 import { meshtasticComputedRfHopsAway } from '../lib/meshtasticRfHops';
 import {
   mergeMeshtasticTraceRouteIntoResultsMap,
@@ -110,9 +112,11 @@ import type {
   EnvironmentTelemetryPoint,
   MeshNeighbor,
   MeshNode,
+  MeshtasticRemoteConfigSnapshot,
   MeshWaypoint,
   MQTTStatus,
   NeighborInfoRecord,
+  RemoteAdminStatus,
   TelemetryPoint,
 } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -340,6 +344,14 @@ export function useDevice() {
     debugLogApiEnabled: boolean;
     adminChannelEnabled: boolean;
   } | null>(null);
+  const [configureTargetNodeNum, setConfigureTargetNodeNumState] = useState<number | null>(null);
+  const configureTargetNodeNumRef = useRef<number | null>(null);
+  const configureTargetPersistRestoredRef = useRef(false);
+  const [remoteAdminStatus, setRemoteAdminStatus] = useState<RemoteAdminStatus>('idle');
+  const [remoteAdminError, setRemoteAdminError] = useState<string | undefined>();
+  const [remoteConfigSnapshot, setRemoteConfigSnapshot] =
+    useState<MeshtasticRemoteConfigSnapshot | null>(null);
+  const remoteAdminClientRef = useRef<MeshtasticRemoteAdminClient | null>(null);
   const [loraConfig, setLoraConfig] = useState<MeshtasticLoraConfig | null>(null);
 
   // ─── Additional packet type state ─────────────────────────────────
@@ -696,6 +708,21 @@ export function useDevice() {
   useEffect(() => {
     moduleConfigsRef.current = moduleConfigs;
   }, [moduleConfigs]);
+
+  useEffect(() => {
+    configureTargetNodeNumRef.current = configureTargetNodeNum;
+  }, [configureTargetNodeNum]);
+
+  useEffect(() => {
+    remoteAdminClientRef.current = new MeshtasticRemoteAdminClient(
+      () => deviceRef.current,
+      () => myNodeNumRef.current,
+    );
+    return () => {
+      remoteAdminClientRef.current?.dispose();
+      remoteAdminClientRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     storeForwardMessagesRef.current = storeForwardMessages;
@@ -1334,6 +1361,13 @@ export function useDevice() {
           setModuleConfigs({});
           setSecurityConfig(null);
           setLoraConfig(null);
+          setConfigureTargetNodeNumState(null);
+          configureTargetNodeNumRef.current = null;
+          configureTargetPersistRestoredRef.current = false;
+          setRemoteConfigSnapshot(null);
+          setRemoteAdminStatus('idle');
+          setRemoteAdminError(undefined);
+          remoteAdminClientRef.current?.sessionStore.clear();
           deviceRef.current = null;
           deviceConfiguredRef.current = false;
           sfHistoryRequestedServersRef.current = new Set();
@@ -1635,6 +1669,7 @@ export function useDevice() {
           shortName?: string;
           hwModel?: number;
           role?: number;
+          publicKey?: Uint8Array;
         };
         const packetRxMs = meshtasticPacketRxTimeMs(packet.rxTime);
         updateNodes((prev) => {
@@ -1653,6 +1688,7 @@ export function useDevice() {
             packetRxMs,
             isConfiguringRef.current,
           );
+          const public_key_hex = meshtasticPublicKeyHex(user.publicKey) ?? existing.public_key_hex;
           const node: MeshNode = {
             ...existing,
             node_id: packet.from,
@@ -1661,6 +1697,7 @@ export function useDevice() {
             hw_model:
               user.hwModel != null ? meshtasticHwModelName(user.hwModel) : existing.hw_model,
             role: user.role ?? existing.role,
+            public_key_hex,
             // During configure, skip rxTime bumps (NodeDB replay). After configure, use mesh rxTime.
             last_heard,
             heard_via_mqtt_only: false,
@@ -2273,6 +2310,7 @@ export function useDevice() {
 
       // ─── Device config (track GPS mode and telemetry) ───────────
       const unsubConfig = device.events.onConfigPacket.subscribe((config) => {
+        if (configureTargetNodeNumRef.current != null) return;
         const cfg = config as {
           payloadVariant?: {
             case?: string;
@@ -2604,6 +2642,7 @@ export function useDevice() {
 
       // ─── Module config packets ─────────────────────────────────
       const unsubModuleConfig = device.events.onModuleConfigPacket.subscribe((config) => {
+        if (configureTargetNodeNumRef.current != null) return;
         const cfg = config as { payloadVariant?: { case?: string; value?: unknown } };
         if (cfg.payloadVariant?.case) {
           setModuleConfigs((prev) => ({
@@ -2613,6 +2652,11 @@ export function useDevice() {
         }
       });
       unsubscribesRef.current.push(unsubModuleConfig);
+
+      const unsubRemoteAdmin = device.events.onMeshPacket.subscribe((meshPacket) => {
+        remoteAdminClientRef.current?.handleMeshPacket(meshPacket as never);
+      });
+      unsubscribesRef.current.push(unsubRemoteAdmin);
 
       // ─── Remote Hardware packets ──────────────────────────────────
       const unsubRemoteHardware = device.events.onRemoteHardwarePacket.subscribe((packet) => {
@@ -3188,6 +3232,13 @@ export function useDevice() {
       batteryPercent: undefined,
       batteryCharging: undefined,
     });
+    setConfigureTargetNodeNumState(null);
+    configureTargetNodeNumRef.current = null;
+    configureTargetPersistRestoredRef.current = false;
+    setRemoteConfigSnapshot(null);
+    setRemoteAdminStatus('idle');
+    setRemoteAdminError(undefined);
+    remoteAdminClientRef.current?.sessionStore.clear();
   }, [cleanupSubscriptions, stopWatchdog, stopGpsInterval, clearConfigureTimeout]);
 
   // ─── TransportManager status handler ─────────────────────────────────────
@@ -3324,7 +3375,84 @@ export function useDevice() {
     [getNodeName, isDuplicate],
   );
 
+  const refreshRemoteConfigSnapshot = useCallback(async (destNodeNum: number) => {
+    const client = remoteAdminClientRef.current;
+    if (!client || !deviceRef.current) {
+      setRemoteAdminStatus('error');
+      setRemoteAdminError('remoteAdmin.errors.noLocalRadio');
+      return;
+    }
+    setRemoteAdminStatus('loading');
+    setRemoteAdminError(undefined);
+    try {
+      const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, destNodeNum);
+      setRemoteConfigSnapshot(snapshot);
+      setRemoteAdminStatus('ready');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'remoteAdmin.errors.generic';
+      setRemoteAdminStatus('error');
+      setRemoteAdminError(msg);
+      console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
+    }
+  }, []);
+
+  const setConfigureTargetNodeNum = useCallback(
+    (nodeNum: number | null) => {
+      const normalized =
+        nodeNum != null && nodeNum > 0 && nodeNum !== myNodeNumRef.current ? nodeNum : null;
+      setConfigureTargetNodeNumState(normalized);
+      configureTargetNodeNumRef.current = normalized;
+      const persistValue = normalized == null ? '' : String(normalized);
+      mergeAppSetting(
+        'meshtasticConfigureTargetNodeNum',
+        persistValue,
+        'useDevice setConfigureTargetNodeNum',
+      );
+      void window.electronAPI.appSettings
+        .set('meshtasticConfigureTargetNodeNum', persistValue)
+        .catch((e: unknown) => {
+          console.warn(
+            '[useDevice] meshtasticConfigureTargetNodeNum persist failed ' + errLikeToLogString(e),
+          );
+        });
+      if (normalized == null) {
+        setRemoteConfigSnapshot(null);
+        setRemoteAdminStatus('idle');
+        setRemoteAdminError(undefined);
+        remoteAdminClientRef.current?.sessionStore.clear();
+        return;
+      }
+      void refreshRemoteConfigSnapshot(normalized);
+    },
+    [refreshRemoteConfigSnapshot],
+  );
+
+  useEffect(() => {
+    if (configureTargetPersistRestoredRef.current) return;
+    if (state.status !== 'configured') return;
+    configureTargetPersistRestoredRef.current = true;
+
+    const settings = parseStoredJson<Record<string, unknown>>(
+      getAppSettingsRaw(),
+      'useDevice meshtasticConfigureTargetNodeNum restore',
+    );
+    const raw = settings?.meshtasticConfigureTargetNodeNum;
+    if (raw == null || raw === '' || raw === 'null') return;
+    const nodeNum = typeof raw === 'number' ? raw : Number(raw);
+    if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum === myNodeNumRef.current) return;
+
+    setConfigureTargetNodeNumState(nodeNum);
+    configureTargetNodeNumRef.current = nodeNum;
+    void refreshRemoteConfigSnapshot(nodeNum);
+  }, [state.status, refreshRemoteConfigSnapshot]);
+
   const setConfig = useCallback(async (config: unknown) => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await client.setRemoteConfig(dest, config);
+      return;
+    }
     if (!deviceRef.current) return;
     // `config` is typed as `unknown` at the call site; cast required to satisfy the SDK's
     // setConfig overload. `as any` keeps the React Compiler memoization analysis intact.
@@ -3332,9 +3460,16 @@ export function useDevice() {
   }, []);
 
   const commitConfig = useCallback(async () => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await client.commitRemoteEdit(dest);
+      await refreshRemoteConfigSnapshot(dest);
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.commitEditSettings();
-  }, []);
+  }, [refreshRemoteConfigSnapshot]);
 
   const setDeviceChannel = useCallback(
     async (args: {
@@ -3348,7 +3483,8 @@ export function useDevice() {
         positionPrecision: number;
       };
     }) => {
-      if (!deviceRef.current) return;
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
       const channel = create(ProtobufChannel.ChannelSchema, {
         index: args.index,
         role: args.role,
@@ -3362,12 +3498,27 @@ export function useDevice() {
           }),
         }),
       }) as ChannelType;
+      if (dest != null && client) {
+        await client.setRemoteChannel(dest, channel);
+        return;
+      }
+      if (!deviceRef.current) return;
       await deviceRef.current.setChannel(channel);
     },
     [],
   );
 
   const clearChannel = useCallback(async (index: number) => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      const channel = create(ProtobufChannel.ChannelSchema, {
+        index,
+        role: ProtobufChannel.Channel_Role.DISABLED,
+      });
+      await client.setRemoteChannel(dest, channel);
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.clearChannel(index);
   }, []);
@@ -3433,33 +3584,63 @@ export function useDevice() {
 
   const setOwner = useCallback(
     async (owner: { longName: string; shortName: string; isLicensed: boolean }) => {
-      if (!deviceRef.current) return;
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
       const user = create(Mesh.UserSchema, {
         longName: owner.longName,
         shortName: owner.shortName,
         isLicensed: owner.isLicensed,
       }) as UserType;
+      if (dest != null && client) {
+        await client.setRemoteOwner(dest, user);
+        return;
+      }
+      if (!deviceRef.current) return;
       await deviceRef.current.setOwner(user);
     },
     [],
   );
 
   const reboot = useCallback(async (delay: number) => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await client.remoteReboot(dest, delay);
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.reboot(delay);
   }, []);
 
   const shutdown = useCallback(async (delay: number) => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await client.remoteShutdown(dest, delay);
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.shutdown(delay);
   }, []);
 
   const factoryReset = useCallback(async () => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await client.remoteFactoryResetDevice(dest);
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.factoryResetDevice();
   }, []);
 
   const resetNodeDb = useCallback(async () => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await client.remoteResetNodeDb(dest);
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.resetNodes();
   }, []);
@@ -3475,6 +3656,12 @@ export function useDevice() {
   }, []);
 
   const factoryResetConfig = useCallback(async () => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await client.remoteFactoryResetConfig(dest);
+      return;
+    }
     if (!deviceRef.current) return;
     await deviceRef.current.factoryResetConfig();
   }, []);
@@ -3562,6 +3749,12 @@ export function useDevice() {
   }, []);
 
   const setModuleConfig = useCallback(async (config: unknown) => {
+    const dest = configureTargetNodeNumRef.current;
+    const client = remoteAdminClientRef.current;
+    if (dest != null && client) {
+      await client.setRemoteModuleConfig(dest, config);
+      return;
+    }
     if (!deviceRef.current) return;
     // setModuleConfig/setCannedMessages/sendPacket exist at runtime but are not in @meshtastic/js
     // SDK types; `as any` is required because `as unknown as T` breaks the React Compiler's
@@ -3989,6 +4182,12 @@ export function useDevice() {
     ringtone,
     setRingtone,
     securityConfig,
+    configureTargetNodeNum,
+    setConfigureTargetNodeNum,
+    remoteAdminStatus,
+    remoteAdminError,
+    remoteConfigSnapshot,
+    refreshRemoteConfigSnapshot,
     // ─── Additional packet type state ───────────────────────────────
     remoteHardwareMessages,
     audioMessages,
@@ -4008,7 +4207,12 @@ export function useDevice() {
   };
 }
 
-// ─── Helper functions ──
+function meshtasticPublicKeyHex(bytes: Uint8Array | undefined): string | undefined {
+  if (bytes?.length !== 32) return undefined;
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 // Maps legacy string role labels (stored by older app versions) to numeric IDs
 const LEGACY_ROLE_STRINGS: Record<string, number> = {

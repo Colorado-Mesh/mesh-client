@@ -555,7 +555,10 @@
     "importPrivateKeyLabel": "Importar chave privada",
     "importPrivateKeyButton": "Importar chave privada",
     "importingPrivateKey": "Importando...",
-    "regenerateKeysConfirm": "A regeneração de chaves substituirá suas chaves públicas e privadas DM atuais. Quaisquer mensagens criptografadas existentes não serão mais descriptografáveis. Tem certeza?"
+    "regenerateKeysConfirm": "A regeneração de chaves substituirá suas chaves públicas e privadas DM atuais. Quaisquer mensagens criptografadas existentes não serão mais descriptografáveis. Tem certeza?",
+    "copyPublicKey": "Copy",
+    "publicKeyCopied": "Chave pública copiada para a área de transferência.",
+    "remoteAdminSetupHint": "Copie esta chave e adicione-a como uma chave de administrador nos nós remotos que você deseja configurar. Consulte os documentos de administração remota do Meshtastic."
   },
   "modulePanel": {
     "sectionSent": "{{name}} enviado. O dispositivo pode reiniciar brevemente.",
@@ -1682,7 +1685,8 @@
     "notesPlaceholder": "Notas privadas sobre este nó (não transmitidas)...",
     "watchNode": "Acompanhar",
     "unwatchNode": "Acompanhando",
-    "showOnMap": "Mostrar no mapa"
+    "showOnMap": "Mostrar no mapa",
+    "configureRemotely": "Configurar nó remotamente"
   },
   "firmwareStatus": {
     "checking": "Verificando a versão do firmware",
@@ -2063,5 +2067,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribuição de Contagem de Saltos",
     "hopAxis": "Saltos"
+  },
+  "configureNode": {
+    "label": "Configurar nó",
+    "localDevice": "Este dispositivo (local)",
+    "remoteBanner": "Configurando o nó remoto: {{name}} ({{nodeId}})",
+    "switchToLocal": "Mudar para Local",
+    "refresh": "Atualizar",
+    "loading": "Carregando configuração remota…",
+    "requiresLocalRadio": "Conecte um rádio Meshtastic local para usar a administração remota."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Conecte um rádio local para administrar nós remotos.",
+      "publicKeyUnauthorized": "Não autorizado: adicione a chave pública deste rádio às chaves de administrador do nó remoto.",
+      "badSessionKey": "A sessão de administrador expirou. Atualize e tente novamente.",
+      "pkiFailed": "Falha na criptografia PKI. Verifique as chaves do nó e remova os conflitos de canal de administração herdados.",
+      "notAuthorized": "Administrador remoto não autorizado no nó de destino.",
+      "timeout": "A solicitação de administrador remoto expirou.",
+      "generic": "Falha na solicitação de administração remota."
+    }
   }
 }

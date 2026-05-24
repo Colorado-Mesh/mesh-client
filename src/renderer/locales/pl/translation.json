@@ -555,7 +555,10 @@
     "importPrivateKeyLabel": "Importuj klucz prywatny",
     "importPrivateKeyButton": "Importuj klucz prywatny",
     "importingPrivateKey": "Importowanie...",
-    "regenerateKeysConfirm": "Regeneracja kluczy zastąpi Twoje obecne klucze publiczne i prywatne DM. Wszelkie istniejące zaszyfrowane wiadomości nie będą już możliwe do odszyfrowania. Czy jesteś pewien?"
+    "regenerateKeysConfirm": "Regeneracja kluczy zastąpi Twoje obecne klucze publiczne i prywatne DM. Wszelkie istniejące zaszyfrowane wiadomości nie będą już możliwe do odszyfrowania. Czy jesteś pewien?",
+    "copyPublicKey": "Kopiuj",
+    "publicKeyCopied": "Klucz publiczny skopiowano do schowka.",
+    "remoteAdminSetupHint": "Skopiuj ten klucz i dodaj go jako klucz administratora na zdalnych węzłach, które chcesz skonfigurować. Zobacz dokumenty zdalnych administratorów Meshtastic."
   },
   "modulePanel": {
     "sectionSent": "Wysłano: {{name}}. Urządzenie może się na chwilę zrestartować.",
@@ -1682,7 +1685,8 @@
     "notesPlaceholder": "Prywatne notatki o tym węźle (nie przesyłane)…",
     "watchNode": "Watch",
     "unwatchNode": "Patrzy.",
-    "showOnMap": "Pokaż na mapie"
+    "showOnMap": "Pokaż na mapie",
+    "configureRemotely": "Skonfiguruj węzeł zdalnie"
   },
   "firmwareStatus": {
     "checking": "Sprawdzanie wersji oprogramowania sprzętowego",
@@ -2063,5 +2067,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Dystrybucja liczby przeskoków",
     "hopAxis": "Przeskoków"
+  },
+  "configureNode": {
+    "label": "Skonfiguruj węzeł",
+    "localDevice": "To urządzenie (lokalne)",
+    "remoteBanner": "Konfiguracja zdalnego węzła: {{name}} ({{nodeId}})",
+    "switchToLocal": "Przełącz na lokalny",
+    "refresh": "Odśwież",
+    "loading": "Ładowanie zdalnej konfiguracji…",
+    "requiresLocalRadio": "Podłącz lokalne radio Meshtastic, aby korzystać ze zdalnej administracji."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Podłącz lokalne radio, aby administrować zdalnymi węzłami.",
+      "publicKeyUnauthorized": "Nieautoryzowany: dodaj klucz publiczny tego radia do kluczy administratora zdalnego węzła.",
+      "badSessionKey": "Sesja administratora wygasła. Odśwież i spróbuj ponownie.",
+      "pkiFailed": "Szyfrowanie PKI nie powiodło się. Zweryfikuj klucze węzłów i usuń starsze konflikty kanałów administracyjnych.",
+      "notAuthorized": "Administrator zdalny nie jest autoryzowany w węźle docelowym.",
+      "timeout": "Upłynął limit czasu żądania zdalnego administratora.",
+      "generic": "Żądanie zdalnego administratora nie powiodło się."
+    }
   }
 }

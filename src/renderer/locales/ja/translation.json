@@ -555,7 +555,10 @@
     "importPrivateKeyLabel": "秘密キーのインポート",
     "importPrivateKeyButton": "秘密キーのインポート",
     "importingPrivateKey": "インポート中...",
-    "regenerateKeysConfirm": "キーを再生成すると、現在の DM 公開キーと秘密キーが置き換えられます。既存の暗号化されたメッセージは復号化できなくなります。本気ですか？"
+    "regenerateKeysConfirm": "キーを再生成すると、現在の DM 公開キーと秘密キーが置き換えられます。既存の暗号化されたメッセージは復号化できなくなります。本気ですか？",
+    "copyPublicKey": "コピー",
+    "publicKeyCopied": "公開鍵をクリップボードにコピーしました。",
+    "remoteAdminSetupHint": "このキーをコピーし、設定するリモートノードに管理者キーとして追加します。Meshtasticリモート管理ドキュメントを参照してください。"
   },
   "modulePanel": {
     "sectionSent": "{{name}} が送信されました。デバイスが短時間再起動する場合があります。",
@@ -1682,7 +1685,8 @@
     "notesPlaceholder": "このノードに関する非公開メモ（送信されていません） …",
     "watchNode": "Watch",
     "unwatchNode": "見張っているんだ",
-    "showOnMap": "周辺地図を見る"
+    "showOnMap": "周辺地図を見る",
+    "configureRemotely": "ノードをリモートで構成する"
   },
   "firmwareStatus": {
     "checking": "ファームウェアのバージョンを確認する",
@@ -2063,5 +2067,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "ホップカウント分布",
     "hopAxis": "ホップ"
+  },
+  "configureNode": {
+    "label": "ノードを構成する",
+    "localDevice": "このデバイス（ローカル）",
+    "remoteBanner": "リモートノードの設定： {{name}} ({{nodeId}})",
+    "switchToLocal": "ローカルに切り替える",
+    "refresh": "再表示",
+    "loading": "リモート設定を読み込んでいます…",
+    "requiresLocalRadio": "リモート管理を使用するには、ローカルのMeshtasticラジオを接続します。"
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "ローカル無線を接続して、リモートノードを管理します。",
+      "publicKeyUnauthorized": "無許可：このラジオの公開鍵をリモートノードの管理鍵に追加します。",
+      "badSessionKey": "管理セッションの有効期限が切れました。更新してもう一度お試しください。",
+      "pkiFailed": "PKI暗号化に失敗しました。ノードキーを確認し、レガシー管理チャネルの競合を削除します。",
+      "notAuthorized": "ターゲットノードでリモート管理者が承認されていません。",
+      "timeout": "リモート管理者リクエストがタイムアウトしました。",
+      "generic": "リモート管理者リクエストに失敗しました。"
+    }
   }
 }

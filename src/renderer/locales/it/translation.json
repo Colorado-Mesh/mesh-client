@@ -555,7 +555,10 @@
     "importPrivateKeyLabel": "Importa chiave privata",
     "importPrivateKeyButton": "Importa chiave privata",
     "importingPrivateKey": "Importazione...",
-    "regenerateKeysConfirm": "La rigenerazione delle chiavi sostituirà le attuali chiavi pubbliche e private DM. Tutti i messaggi crittografati esistenti non saranno più decrittografabili. Sei sicuro?"
+    "regenerateKeysConfirm": "La rigenerazione delle chiavi sostituirà le attuali chiavi pubbliche e private DM. Tutti i messaggi crittografati esistenti non saranno più decrittografabili. Sei sicuro?",
+    "copyPublicKey": "Copia",
+    "publicKeyCopied": "Chiave pubblica copiata negli appunti.",
+    "remoteAdminSetupHint": "Copiare questa chiave e aggiungerla come chiave di amministrazione sui nodi remoti che si desidera configurare. Consulta i documenti dell'amministratore remoto di Meshtastic."
   },
   "modulePanel": {
     "sectionSent": "{{name}} inviato. Il dispositivo potrebbe riavviarsi brevemente.",
@@ -1682,7 +1685,8 @@
     "notesPlaceholder": "Note private su questo nodo (non trasmesse)...",
     "watchNode": "Osserva",
     "unwatchNode": "Guardando",
-    "showOnMap": "Mostrare sulla mappa"
+    "showOnMap": "Mostrare sulla mappa",
+    "configureRemotely": "Configura il nodo da remoto"
   },
   "firmwareStatus": {
     "checking": "Controllo della versione del firmware",
@@ -2063,5 +2067,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribuzione conteggio hop",
     "hopAxis": "Hop"
+  },
+  "configureNode": {
+    "label": "Configura nodo",
+    "localDevice": "Questo dispositivo (locale)",
+    "remoteBanner": "Configurazione del nodo remoto: {{name}} ({{nodeId}})",
+    "switchToLocal": "Passa a locale",
+    "refresh": "Aggiorna",
+    "loading": "Caricamento della configurazione remota in corso...",
+    "requiresLocalRadio": "Collegare una radio Meshtastic locale per utilizzare l'amministrazione remota."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Collegare una radio locale per amministrare i nodi remoti.",
+      "publicKeyUnauthorized": "Non autorizzato: aggiungi la chiave pubblica di questa radio alle chiavi di amministrazione del nodo remoto.",
+      "badSessionKey": "Sessione di amministrazione scaduta. Aggiorna e riprova.",
+      "pkiFailed": "Crittografia PKI non riuscita. Verificare le chiavi del nodo e rimuovere i conflitti del canale di amministrazione legacy.",
+      "notAuthorized": "Amministratore remoto non autorizzato sul nodo di destinazione.",
+      "timeout": "Richiesta di amministratore remoto scaduta.",
+      "generic": "Richiesta di amministratore remoto non riuscita."
+    }
   }
 }

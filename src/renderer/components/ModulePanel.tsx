@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
+import type { ConfigTargetContext } from '@/renderer/lib/types';
 
 import { HelpTooltip } from './HelpTooltip';
 import { useToast } from './Toast';
@@ -35,6 +36,7 @@ function cfgStr(v: unknown, fallback: string): string {
 }
 
 interface Props {
+  configTarget?: ConfigTargetContext;
   moduleConfigs: Record<string, unknown>;
   onSetModuleConfig: (config: unknown) => Promise<void>;
   onSetCannedMessages: (messages: string[]) => Promise<void>;
@@ -313,6 +315,7 @@ function StatusOnlySection({ title, children }: { title: string; children: React
 }
 
 export default function ModulePanel({
+  configTarget,
   moduleConfigs,
   onSetModuleConfig,
   onSetCannedMessages,
@@ -328,7 +331,7 @@ export default function ModulePanel({
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
-  const disabled = !isConnected;
+  const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
 
   // ─── Telemetry module ──────────────────────────────────────────
@@ -501,6 +504,14 @@ export default function ModulePanel({
         <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
           {t('modulePanel.connectToDevice')}
         </div>
+      )}
+
+      {configTarget?.mode === 'remote' && configTarget.isLoading && (
+        <p className="text-muted text-sm">{t('configureNode.loading')}</p>
+      )}
+
+      {configTarget?.mode === 'remote' && configTarget.error && (
+        <p className="text-sm text-red-400">{t(configTarget.error)}</p>
       )}
 
       {Object.keys(moduleConfigs).length === 0 && isConnected && (

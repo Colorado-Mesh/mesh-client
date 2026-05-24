@@ -555,7 +555,10 @@
     "importPrivateKeyLabel": "Impor Kunci Pribadi",
     "importPrivateKeyButton": "Impor Kunci Pribadi",
     "importingPrivateKey": "Pengimporan...",
-    "regenerateKeysConfirm": "Regenerasi kunci akan menggantikan kunci publik dan pribadi DM Anda saat ini. Pesan terenkripsi apa pun yang ada tidak dapat didekripsi lagi. Apa kamu yakin?"
+    "regenerateKeysConfirm": "Regenerasi kunci akan menggantikan kunci publik dan pribadi DM Anda saat ini. Pesan terenkripsi apa pun yang ada tidak dapat didekripsi lagi. Apa kamu yakin?",
+    "copyPublicKey": "Salin",
+    "publicKeyCopied": "Kunci publik disalin ke clipboard.",
+    "remoteAdminSetupHint": "Salin kunci ini dan tambahkan sebagai Kunci Admin pada node jarak jauh yang ingin Anda konfigurasikan. Lihat dokumen admin jarak jauh Meshtastic."
   },
   "modulePanel": {
     "sectionSent": "{{name}} terkirim. Perangkat mungkin akan reboot sebentar.",
@@ -1682,7 +1685,8 @@
     "notesPlaceholder": "Catatan pribadi tentang simpul ini (tidak dikirimkan)...",
     "watchNode": "Watvh",
     "unwatchNode": "Menonton",
-    "showOnMap": "Tampilkan di peta"
+    "showOnMap": "Tampilkan di peta",
+    "configureRemotely": "Konfigurasikan node dari jarak jauh"
   },
   "firmwareStatus": {
     "checking": "Memeriksa versi firmware",
@@ -2063,5 +2067,25 @@
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribusi Hop Count",
     "hopAxis": "Hop"
+  },
+  "configureNode": {
+    "label": "Konfigurasikan simpul",
+    "localDevice": "Perangkat ini (lokal)",
+    "remoteBanner": "Mengonfigurasi simpul jarak jauh: {{name}} ({{nodeId}})",
+    "switchToLocal": "Beralih ke lokal",
+    "refresh": "Perbarui",
+    "loading": "Memuat konfigurasi jarak jauh…",
+    "requiresLocalRadio": "Sambungkan radio Meshtastic lokal untuk menggunakan administrasi jarak jauh."
+  },
+  "remoteAdmin": {
+    "errors": {
+      "noLocalRadio": "Hubungkan radio lokal untuk mengelola node jarak jauh.",
+      "publicKeyUnauthorized": "Tidak sah: tambahkan kunci publik radio ini ke Tombol Admin simpul jauh.",
+      "badSessionKey": "Sesi admin kedaluwarsa. Segarkan dan coba lagi.",
+      "pkiFailed": "Enkripsi PKI gagal. Verifikasi kunci simpul dan hapus konflik saluran admin lama.",
+      "notAuthorized": "Admin jarak jauh tidak diotorisasi pada node target.",
+      "timeout": "Waktu permintaan admin jarak jauh habis.",
+      "generic": "Permintaan admin jarak jauh gagal."
+    }
   }
 }

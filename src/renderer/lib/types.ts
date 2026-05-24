@@ -5,6 +5,7 @@ import type {
   OutboxStatus,
   UpdateCheckingPayload,
 } from '@/shared/electron-api.types';
+import type { MeshtasticLoraConfig } from '@/shared/meshtasticUrlEncoder';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
 export type { TAKClientInfo, TAKServerStatus, TAKSettings };
@@ -175,6 +176,47 @@ export interface MeshNode {
   pax_count?: number;
   // Detection sensor text alert from MQTT
   detection_text?: string;
+  /** Meshtastic PKC public key from NodeInfo/User when available */
+  public_key_hex?: string;
+}
+
+export type RemoteAdminStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+export interface ConfigTargetContext {
+  mode: 'local' | 'remote';
+  nodeNum: number | null;
+  isReady: boolean;
+  isLoading: boolean;
+  error?: string;
+  onRefresh?: () => Promise<void>;
+}
+
+export interface MeshtasticRemoteConfigSnapshot {
+  metadata?: unknown;
+  loraConfig?: MeshtasticLoraConfig | null;
+  deviceOwner?: { longName: string; shortName: string; isLicensed: boolean } | null;
+  securityConfig?: {
+    publicKey: Uint8Array;
+    privateKey: Uint8Array;
+    adminKey: Uint8Array[];
+    isManaged: boolean;
+    serialEnabled: boolean;
+    debugLogApiEnabled: boolean;
+    adminChannelEnabled: boolean;
+  } | null;
+  channelConfigs?: {
+    index: number;
+    name: string;
+    role: number;
+    psk: Uint8Array;
+    uplinkEnabled: boolean;
+    downlinkEnabled: boolean;
+    positionPrecision: number;
+  }[];
+  moduleConfigs?: Record<string, unknown>;
+  deviceFixedPosition?: boolean | null;
+  telemetryDeviceUpdateInterval?: number | null;
+  deviceGpsMode?: number | null;
 }
 
 export interface MeshCoreLocalStats {

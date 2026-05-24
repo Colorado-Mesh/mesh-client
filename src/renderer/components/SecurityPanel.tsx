@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import type { ConfigTargetContext } from '@/renderer/lib/types';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
 import { useToast } from './Toast';
 
@@ -17,6 +19,7 @@ interface SecurityConfig {
 }
 
 interface Props {
+  configTarget?: ConfigTargetContext;
   onSetConfig: (config: unknown) => Promise<void>;
   onCommit: () => Promise<void>;
   isConnected: boolean;
@@ -167,6 +170,7 @@ function ConfirmModal({
 // ─── Main component ─────────────────────────────────────────────
 
 export default function SecurityPanel({
+  configTarget,
   onSetConfig,
   onCommit,
   isConnected,
@@ -178,7 +182,8 @@ export default function SecurityPanel({
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
-  const disabled = !isConnected;
+  const isRemoteTarget = configTarget?.mode === 'remote';
+  const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
 
   // ── Admin keys section state
   const [adminKeys, setAdminKeys] = useState<string[]>([]);
@@ -464,6 +469,14 @@ export default function SecurityPanel({
         <p className="text-muted py-4 text-center text-sm">{t('securityPanel.connectToManage')}</p>
       )}
 
+      {configTarget?.mode === 'remote' && configTarget.isLoading && (
+        <p className="text-muted text-sm">{t('configureNode.loading')}</p>
+      )}
+
+      {configTarget?.mode === 'remote' && configTarget.error && (
+        <p className="text-sm text-red-400">{t(configTarget.error)}</p>
+      )}
+
       {/* ── DM Keys ─────────────────────────────────────────────── */}
       <section className="space-y-4">
         <SectionHeader title={t('securityPanel.sectionDmKeys')} />
@@ -471,49 +484,80 @@ export default function SecurityPanel({
           <label htmlFor="security-public-key" className="text-muted text-sm">
             {t('securityPanel.publicKeyLabel')}
           </label>
-          <input
-            id="security-public-key"
-            type="text"
-            value={publicKeyB64}
-            readOnly
-            className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
-          />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="security-private-key" className="text-muted text-sm">
-            {t('securityPanel.privateKeyLabel')}
-          </label>
           <div className="flex items-center gap-2">
             <input
-              id="security-private-key"
-              type={showPrivateKey ? 'text' : 'password'}
-              value={privateKeyB64}
+              id="security-public-key"
+              type="text"
+              value={publicKeyB64}
               readOnly
               className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
             />
             <button
               type="button"
+              disabled={disabled || !publicKeyB64}
+              aria-label={t('securityPanel.copyPublicKey')}
+              className="text-muted shrink-0 rounded-lg border border-gray-600 px-3 py-2 text-xs hover:text-gray-200 disabled:opacity-50"
               onClick={() => {
-                setShowPrivateKey((s) => !s);
+                void writeClipboardText(publicKeyB64)
+                  .then(() => {
+                    addToast(t('securityPanel.publicKeyCopied'), 'success');
+                  })
+                  .catch((e: unknown) => {
+                    addToast(
+                      t('securityPanel.failed', { message: errLikeToLogString(e) }),
+                      'error',
+                    );
+                  });
               }}
-              disabled={disabled}
-              className="text-muted px-3 py-2 text-xs hover:text-gray-300 disabled:opacity-50"
             >
-              {showPrivateKey ? t('common.hide') : t('common.show')}
+              {t('securityPanel.copyPublicKey')}
             </button>
           </div>
-          <p className="text-muted text-xs">{t('securityPanel.privateKeyHint')}</p>
+          {!isRemoteTarget && (
+            <p className="text-muted text-xs">{t('securityPanel.remoteAdminSetupHint')}</p>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setPendingRegenerate(true);
-          }}
-          disabled={disabled || applyingRegen || !securityConfig}
-          className="w-full rounded-lg border border-yellow-700/60 bg-yellow-700/40 px-4 py-2 text-sm font-medium text-yellow-300 transition-colors hover:bg-yellow-700/60 disabled:opacity-50"
-        >
-          {applyingRegen ? t('securityPanel.regeneratingKeys') : t('securityPanel.regenerateKeys')}
-        </button>
+        {!isRemoteTarget && (
+          <>
+            <div className="space-y-1">
+              <label htmlFor="security-private-key" className="text-muted text-sm">
+                {t('securityPanel.privateKeyLabel')}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="security-private-key"
+                  type={showPrivateKey ? 'text' : 'password'}
+                  value={privateKeyB64}
+                  readOnly
+                  className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPrivateKey((s) => !s);
+                  }}
+                  disabled={disabled}
+                  className="text-muted px-3 py-2 text-xs hover:text-gray-300 disabled:opacity-50"
+                >
+                  {showPrivateKey ? t('common.hide') : t('common.show')}
+                </button>
+              </div>
+              <p className="text-muted text-xs">{t('securityPanel.privateKeyHint')}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingRegenerate(true);
+              }}
+              disabled={disabled || applyingRegen || !securityConfig}
+              className="w-full rounded-lg border border-yellow-700/60 bg-yellow-700/40 px-4 py-2 text-sm font-medium text-yellow-300 transition-colors hover:bg-yellow-700/60 disabled:opacity-50"
+            >
+              {applyingRegen
+                ? t('securityPanel.regeneratingKeys')
+                : t('securityPanel.regenerateKeys')}
+            </button>
+          </>
+        )}
       </section>
 
       {/* ── Admin Keys ──────────────────────────────────────────── */}
