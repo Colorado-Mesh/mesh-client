@@ -28,6 +28,10 @@ describe('parseChannelPskInput', () => {
     expect(parseChannelPskInput(`HamNet=${KEY_B}`)).toEqual([`HamNet=${KEY_B}`]);
   });
 
+  it('parses ChannelName@index=base64 entries', () => {
+    expect(parseChannelPskInput(`HamNet@2=${KEY_B}`)).toEqual([`HamNet@2=${KEY_B}`]);
+  });
+
   it('trims whitespace and drops empty segments', () => {
     expect(parseChannelPskInput(`  ${KEY_A}  ,  , \n  ${KEY_B}  `)).toEqual([KEY_A, KEY_B]);
   });
@@ -50,6 +54,10 @@ describe('validateChannelPskEntries', () => {
 
   it('accepts ChannelName=base64 form', () => {
     expect(validateChannelPskEntries([`HamNet=${KEY_B}`])).toBe('ok');
+  });
+
+  it('accepts ChannelName@index=base64 form', () => {
+    expect(validateChannelPskEntries([`HamNet@2=${KEY_B}`])).toBe('ok');
   });
 
   it('rejects invalid base64', () => {

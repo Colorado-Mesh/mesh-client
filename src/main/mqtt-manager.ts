@@ -82,22 +82,46 @@ export function cipherForKey(key: Buffer): 'aes-128-ctr' | 'aes-256-ctr' {
   throw new Error(`Invalid PSK length: ${key.length}`);
 }
 
-/** Parse `ChannelName=base64` or bare base64 for manual MQTT channel PSK lines. */
-export function parseChannelPskLine(line: string): { name?: string; psk: Buffer } | null {
+/** Parse `ChannelName=base64`, `ChannelName@index=base64`, or bare base64 for manual MQTT channel PSK lines. */
+export function parseChannelPskLine(
+  line: string,
+): { name?: string; index?: number; psk: Buffer } | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
   const eq = trimmed.indexOf('=');
   if (eq > 0) {
-    const name = trimmed.slice(0, eq).trim();
+    let namePart = trimmed.slice(0, eq).trim();
     const b64 = trimmed.slice(eq + 1).trim();
+    let index: number | undefined;
+    const atIdx = namePart.lastIndexOf('@');
+    if (atIdx > 0) {
+      const indexStr = namePart.slice(atIdx + 1);
+      const parsedIndex = parseInt(indexStr, 10);
+      if (Number.isInteger(parsedIndex) && parsedIndex >= 0 && parsedIndex <= 7) {
+        index = parsedIndex;
+        namePart = namePart.slice(0, atIdx).trim();
+      }
+    }
+    const name = namePart;
     // Avoid treating padding "=" in bare base64 as ChannelName=psk (names lack +/=).
-    if (name.length > 0 && b64.length > 0 && !/[+/=]/.test(name)) {
+    if (name.length > 0 && b64.length > 0 && !/[+/=@]/.test(name)) {
       const psk = parsePsk(b64);
-      if (psk) return { name, psk };
+      if (psk) return { name, index, psk };
     }
   }
   const psk = parsePsk(trimmed);
   return psk ? { psk } : null;
+}
+
+/** Extract MQTT encrypted topic channel name from `.../2/e/{channelName}/{gatewayId}`. */
+export function parseMeshtasticMqttEncryptedTopicChannelName(topic: string): string | undefined {
+  const marker = '/2/e/';
+  const idx = topic.indexOf(marker);
+  if (idx === -1) return undefined;
+  const rest = topic.slice(idx + marker.length);
+  const slash = rest.indexOf('/');
+  const channelName = slash === -1 ? rest : rest.slice(0, slash);
+  return channelName.length > 0 ? channelName : undefined;
 }
 
 /** Map numeric PortNum to protobuf enum name string (e.g. TEXT_MESSAGE_APP). */
@@ -178,6 +202,7 @@ interface MqttPublishOptions {
 export interface MqttChannelKeyEntry {
   name: string;
   pskBase64: string;
+  index?: number;
 }
 
 function coordWarning(lat: number, lon: number): string | null {
@@ -218,6 +243,8 @@ export class MQTTManager extends EventEmitter {
   private clientId = '';
   /** Channel name → PSK (manual connect lines + radio sync via updateChannelKeys). */
   private channelKeysByName = new Map<string, Buffer>();
+  /** MQTT topic channel name → RF channel index for inbound message attribution. */
+  private channelNameToIndex = new Map<string, number>();
   /** Names registered by the last updateChannelKeys (radio); cleared on next sync. */
   private radioChannelKeyNames = new Set<string>();
   /** Unnamed manual PSKs (decrypt-only brute force). */
@@ -248,6 +275,7 @@ export class MQTTManager extends EventEmitter {
 
     this.currentSettings = settings;
     this.channelKeysByName.clear();
+    this.channelNameToIndex.clear();
     this.radioChannelKeyNames.clear();
     this.decryptOnlyPsks = [];
     this.applyManualChannelPskLines(settings.channelPsks ?? []);
@@ -260,6 +288,7 @@ export class MQTTManager extends EventEmitter {
   updateChannelKeys(entries: MqttChannelKeyEntry[]): void {
     for (const name of this.radioChannelKeyNames) {
       this.channelKeysByName.delete(name);
+      this.channelNameToIndex.delete(name);
     }
     this.radioChannelKeyNames.clear();
     for (const entry of entries) {
@@ -268,6 +297,10 @@ export class MQTTManager extends EventEmitter {
       if (!name || !psk) continue;
       this.channelKeysByName.set(name, psk);
       this.radioChannelKeyNames.add(name);
+      if (entry.index !== undefined && Number.isInteger(entry.index)) {
+        const idx = entry.index >>> 0;
+        if (idx <= 7) this.channelNameToIndex.set(name, idx);
+      }
     }
     this.rebuildAllDecryptKeys();
   }
@@ -278,6 +311,9 @@ export class MQTTManager extends EventEmitter {
       if (!parsed) continue;
       if (parsed.name) {
         this.channelKeysByName.set(parsed.name, parsed.psk);
+        if (parsed.index !== undefined) {
+          this.channelNameToIndex.set(parsed.name, parsed.index);
+        }
       } else {
         this.decryptOnlyPsks.push(parsed.psk);
       }
@@ -302,6 +338,19 @@ export class MQTTManager extends EventEmitter {
   private resolvePskForChannel(channelName: string, explicit?: Buffer): Buffer {
     if (explicit) return explicit;
     return this.channelKeysByName.get(channelName) ?? DEFAULT_PSK;
+  }
+
+  private resolveChannelIndexFromTopic(topic: string): number {
+    const channelName = parseMeshtasticMqttEncryptedTopicChannelName(topic);
+    if (!channelName) return 0;
+    const mapped = this.channelNameToIndex.get(channelName);
+    if (mapped !== undefined) return mapped;
+    if (channelName === 'LongFast') return 0;
+    this.logSampledDebug(
+      `mqtt-unknown-channel-name:${channelName}`,
+      `[Meshtastic MQTT] Unknown topic channel name "${sanitizeLogMessage(channelName)}"; attributing to channel 0`,
+    );
+    return 0;
   }
 
   private clearConnectAckTimer(): void {
@@ -1144,9 +1193,9 @@ export class MQTTManager extends EventEmitter {
       this.handleDecoded(nodeId, packetId, decoded, hopsAway);
     } else if (payloadCase === 'encrypted') {
       const encrypted = packet.payloadVariant.value;
-      const decodedData = this.tryDecryptAllKeys(encrypted, packetId, nodeId);
+      const decodedData = this.tryDecryptAllKeys(encrypted, packetId, nodeId, topic);
       if (decodedData) {
-        this.handleDecoded(nodeId, packetId, decodedData, hopsAway);
+        this.handleDecoded(nodeId, packetId, decodedData, hopsAway, topic);
       }
     }
   }
@@ -1468,6 +1517,7 @@ export class MQTTManager extends EventEmitter {
     packetId: number,
     data: { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number },
     hopsAway?: number,
+    topic?: string,
   ): void {
     const portnum = data.portnum ?? 0;
     const payload = data.payload;
@@ -1583,7 +1633,7 @@ export class MQTTManager extends EventEmitter {
           sender_id: nodeId,
           sender_name: formatMeshtasticNodeId(nodeId),
           payload: resolved.text,
-          channel: 0,
+          channel: topic !== undefined ? this.resolveChannelIndexFromTopic(topic) : 0,
           timestamp: Date.now(),
           packetId,
           from_mqtt: true,
@@ -1784,6 +1834,7 @@ export class MQTTManager extends EventEmitter {
     encrypted: Uint8Array,
     packetId: number,
     from: number,
+    topic?: string,
   ): { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number } | null {
     const allKeys = this.allDecryptKeys;
     for (const key of allKeys) {
@@ -1795,7 +1846,13 @@ export class MQTTManager extends EventEmitter {
         // catch-no-log-ok wrong PSK produces garbage bytes that fail protobuf decode — try next key
       }
     }
-    // Wrong PSK / foreign channel traffic on global brokers — silent discard (no log firehose).
+    if (topic) {
+      const channelName = parseMeshtasticMqttEncryptedTopicChannelName(topic) ?? 'unknown';
+      this.logSampledDebug(
+        `mqtt-decrypt-failed:${channelName}`,
+        `[Meshtastic MQTT] Decrypt failed for topic channel "${sanitizeLogMessage(channelName)}" (${allKeys.length} keys tried)`,
+      );
+    }
     return null;
   }
 

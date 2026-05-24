@@ -272,8 +272,9 @@ export interface MQTTSettings {
    */
   tlsEnabled?: boolean;
   /**
-   * Manual channel PSKs: one base64 key per line (AES-128 = 16 bytes, AES-256 = 32 bytes), or
-   * `ChannelName=base64`. Default LongFast key is always tried. Radio channel keys sync when connected.
+   * Manual channel PSKs: one base64 key per line (AES-128 = 16 bytes, AES-256 = 32 bytes),
+   * `ChannelName=base64`, or `ChannelName@index=base64`. Default LongFast key is always tried.
+   * Radio channel keys sync when connected.
    */
   channelPsks?: string[];
   /** Broker codec: Meshtastic protobuf vs MeshCore JSON adapter (main process). */
@@ -709,7 +710,7 @@ declare global {
         getClientId: (protocol?: 'meshtastic' | 'meshcore') => Promise<string>;
         getCachedNodes: () => Promise<CachedNode[]>;
         updateChannelKeys: (args: {
-          entries: { name: string; pskBase64: string }[];
+          entries: { name: string; pskBase64: string; index?: number }[];
         }) => Promise<void>;
         publish: (args: {
           text: string;

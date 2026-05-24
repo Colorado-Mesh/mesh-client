@@ -703,6 +703,11 @@ function validateMqttUpdateChannelKeysArgs(args: unknown): void {
       throw new Error('mqtt:updateChannelKeys: name must be a non-empty string');
     if (e.name.length > 64) throw new Error('mqtt:updateChannelKeys: name too long');
     validateOptionalPskBase64(e.pskBase64, 'mqtt:updateChannelKeys');
+    if (e.index !== undefined) {
+      if (typeof e.index !== 'number' || !Number.isInteger(e.index) || e.index < 0 || e.index > 7) {
+        throw new Error('mqtt:updateChannelKeys: index must be an integer 0–7');
+      }
+    }
   }
 }
 

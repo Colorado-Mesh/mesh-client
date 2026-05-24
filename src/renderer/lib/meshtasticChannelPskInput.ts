@@ -13,14 +13,26 @@ export function formatChannelPskInput(entries: string[] | undefined): string {
   return (entries ?? []).join('\n');
 }
 
+function stripChannelIndexFromNamePart(namePart: string): string {
+  const atIdx = namePart.lastIndexOf('@');
+  if (atIdx > 0) {
+    const indexStr = namePart.slice(atIdx + 1);
+    const parsedIndex = parseInt(indexStr, 10);
+    if (Number.isInteger(parsedIndex) && parsedIndex >= 0 && parsedIndex <= 7) {
+      return namePart.slice(0, atIdx).trim();
+    }
+  }
+  return namePart;
+}
+
 function decodeChannelPskBase64(line: string): Uint8Array {
   const trimmed = line.trim();
   const eq = trimmed.indexOf('=');
   if (eq > 0) {
-    const name = trimmed.slice(0, eq).trim();
+    const namePart = stripChannelIndexFromNamePart(trimmed.slice(0, eq).trim());
     const b64 = trimmed.slice(eq + 1).trim();
-    // Match mqtt-manager parseChannelPskLine: names lack +/= (padding is only in base64).
-    if (name.length > 0 && b64.length > 0 && !/[+/=]/.test(name)) {
+    // Match mqtt-manager parseChannelPskLine: names lack +/=/@ (padding is only in base64).
+    if (namePart.length > 0 && b64.length > 0 && !/[+/=@]/.test(namePart)) {
       return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     }
   }

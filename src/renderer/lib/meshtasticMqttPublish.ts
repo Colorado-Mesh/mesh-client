@@ -43,15 +43,15 @@ export function meshtasticMqttPublishFields(
 /** Entries for mqtt.updateChannelKeys from radio channel configs. */
 export function meshtasticMqttChannelKeyEntries(
   channelConfigs: MeshtasticChannelConfigForMqtt[],
-): { name: string; pskBase64: string }[] {
-  const entries: { name: string; pskBase64: string }[] = [];
+): { name: string; pskBase64: string; index: number }[] {
+  const entries: { name: string; pskBase64: string; index: number }[] = [];
   for (const ch of channelConfigs) {
     if (ch.role === MESHTASTIC_CHANNEL_ROLE.DISABLED) continue;
     const name = resolveMeshtasticMqttChannelName(ch);
     if (!name) continue;
     const isTrivial = ch.psk.length === 0 || (ch.psk.length === 1 && ch.psk[0] === 0);
     if (isTrivial) continue;
-    entries.push({ name, pskBase64: pskToBase64(ch.psk) });
+    entries.push({ name, pskBase64: pskToBase64(ch.psk), index: ch.index });
   }
   return entries;
 }

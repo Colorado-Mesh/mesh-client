@@ -427,7 +427,9 @@ export interface ElectronAPI {
     ) => () => void;
     getClientId: (protocol?: 'meshtastic' | 'meshcore') => Promise<string>;
     getCachedNodes: () => Promise<unknown>;
-    updateChannelKeys: (args: { entries: { name: string; pskBase64: string }[] }) => Promise<void>;
+    updateChannelKeys: (args: {
+      entries: { name: string; pskBase64: string; index?: number }[];
+    }) => Promise<void>;
     publish: (args: {
       text: string;
       from: number;

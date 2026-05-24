@@ -49,5 +49,13 @@ describe('meshtasticMqttChannelKeyEntries', () => {
     ]);
     expect(entries).toHaveLength(1);
     expect(entries[0]?.name).toBe('Primary');
+    expect(entries[0]?.index).toBe(0);
+  });
+
+  it('includes channel index for each entry', () => {
+    const entries = meshtasticMqttChannelKeyEntries([
+      { index: 2, name: 'HamNet', role: 2, psk: new Uint8Array(32).fill(3) },
+    ]);
+    expect(entries).toEqual([expect.objectContaining({ name: 'HamNet', index: 2 })]);
   });
 });
