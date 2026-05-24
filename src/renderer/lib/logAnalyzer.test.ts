@@ -222,7 +222,7 @@ describe('analyzeLogs', () => {
     const entries: LogEntry[] = [
       makeEntry(
         "[useDevice] Store & Forward history request failed Failed to execute 'getWriter' on 'WritableStream': Cannot create writer when WritableStream is locked",
-        'warn',
+        'error',
       ),
     ];
     const result = analyzeLogs(entries, 'meshtastic');

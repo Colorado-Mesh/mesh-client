@@ -213,7 +213,7 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
   {
     id: 'store-forward',
     patterns: [/Store & Forward history request failed/i],
-    severity: 'warning',
+    severity: 'error',
     protocols: ['meshtastic'],
     requireWarnOrError: true,
   },

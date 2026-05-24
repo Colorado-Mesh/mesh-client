@@ -2616,7 +2616,7 @@ export function useDevice() {
                     sfHistoryRequestedServersRef.current,
                     serverNodeId,
                   );
-                  console.warn(
+                  console.error(
                     '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
                   );
                 });
