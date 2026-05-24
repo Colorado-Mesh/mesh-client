@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -599,5 +599,67 @@ describe('ConnectionPanel MeshCore TCP port field', () => {
 
     expect(onConnect).toHaveBeenCalledWith('http', expectedAddress);
     consoleWarnSpy.mockRestore();
+  });
+});
+
+describe('ConnectionPanel MQTT channel PSKs', () => {
+  const KEY_A = '1PG7OiApB1nwvP+rz05pAQ==';
+  const KEY_B = 'AAAAAAAAAAAAAAAAAAAAAA==';
+
+  function renderMeshtasticMqtt() {
+    return render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+  }
+
+  it('passes multiple comma-separated channel PSKs to mqtt.connect without blur', async () => {
+    const user = userEvent.setup();
+    const connect = vi.mocked(window.electronAPI.mqtt.connect);
+    connect.mockClear();
+    connect.mockResolvedValue(undefined);
+
+    renderMeshtasticMqtt();
+
+    const mqttCard = screen.getByText('MQTT Connection').closest('.bg-deep-black');
+    expect(mqttCard).toBeTruthy();
+    const textarea = document.getElementById('mqtt-channel-psks') as HTMLTextAreaElement;
+    await user.clear(textarea);
+    await user.type(textarea, `${KEY_A}, ${KEY_B}`);
+
+    const connectBtn = within(mqttCard as HTMLElement).getByRole('button', { name: 'Connect' });
+    await user.click(connectBtn);
+
+    expect(connect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channelPsks: [KEY_A, KEY_B],
+      }),
+    );
+  });
+
+  it('keeps a trailing newline while typing a second PSK and commits both on blur', async () => {
+    const user = userEvent.setup();
+    localStorage.removeItem('mesh-client:mqttSettings');
+    renderMeshtasticMqtt();
+
+    const textarea = document.getElementById('mqtt-channel-psks') as HTMLTextAreaElement;
+    await user.clear(textarea);
+    await user.type(textarea, KEY_A);
+    await user.keyboard('{Enter}');
+    expect(textarea.value).toBe(`${KEY_A}\n`);
+    await user.type(textarea, KEY_B);
+    expect(textarea.value).toBe(`${KEY_A}\n${KEY_B}`);
+    fireEvent.blur(textarea);
+
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem('mesh-client:mqttSettings') ?? '{}');
+      expect(saved.channelPsks).toEqual([KEY_A, KEY_B]);
+    });
   });
 });
