@@ -33,6 +33,11 @@ import {
 } from '../lib/letsMeshJwt';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
+  formatChannelPskInput,
+  parseChannelPskInput,
+  validateChannelPskEntries,
+} from '../lib/meshtasticChannelPskInput';
+import {
   isLiamBrokerSettings,
   isMeshtasticOfficialBrokerSettings,
   MESHTASTIC_LIAM_1883,
@@ -627,6 +632,11 @@ export default function ConnectionPanel({
   const [mqttError, setMqttError] = useState<string | null>(null);
   const [mqttWarning, setMqttWarning] = useState<string | null>(null);
   const [channelPskWarn, setChannelPskWarn] = useState<string | null>(null);
+  const [channelPskDraft, setChannelPskDraft] = useState(() =>
+    formatChannelPskInput(
+      (protocol === 'meshcore' ? loadMeshcoreMqttSettings() : loadMqttSettings()).channelPsks,
+    ),
+  );
   const mqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const meshcoreMqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [meshcorePreset, setMeshcorePreset] = useState<
@@ -759,6 +769,27 @@ export default function ConnectionPanel({
     }
     setActiveMqttSettings((prev) => ({ ...prev, [key]: value }));
   };
+
+  useEffect(() => {
+    setChannelPskDraft(formatChannelPskInput(activeMqttSettings.channelPsks));
+  }, [protocol, activeMqttSettings.channelPsks]);
+
+  const commitChannelPskDraft = useCallback((): string[] => {
+    const lines = parseChannelPskInput(channelPskDraft);
+    setActiveMqttSettings((prev) => ({
+      ...prev,
+      channelPsks: lines.length > 0 ? lines : undefined,
+    }));
+    const validation = validateChannelPskEntries(lines);
+    if (validation === 'invalidLength') {
+      setChannelPskWarn(t('connectionPanel.channelPsksInvalidLength'));
+    } else if (validation === 'invalidBase64') {
+      setChannelPskWarn(t('connectionPanel.channelPsksInvalidBase64'));
+    } else {
+      setChannelPskWarn(null);
+    }
+    return lines;
+  }, [channelPskDraft, t, setActiveMqttSettings]);
 
   // ─── BLE device picker state ──────────────────────────────────
   const [bleDevices, setBleDevices] = useState<NobleBleDevice[]>([]);
@@ -2404,40 +2435,13 @@ export default function ConnectionPanel({
               <textarea
                 id="mqtt-channel-psks"
                 rows={5}
-                value={(activeMqttSettings.channelPsks ?? []).join('\n')}
+                value={channelPskDraft}
                 onChange={(e) => {
-                  const lines = e.target.value
-                    .split('\n')
-                    .map((s) => s.trim())
-                    .filter(Boolean);
-                  updateMqtt('channelPsks', lines.length > 0 ? lines : undefined, false);
+                  setChannelPskDraft(e.target.value);
                   setChannelPskWarn(null);
                 }}
-                onBlur={(e) => {
-                  const lines = e.target.value
-                    .split('\n')
-                    .map((s) => s.trim())
-                    .filter(Boolean);
-                  if (lines.length === 0) {
-                    setChannelPskWarn(null);
-                    return;
-                  }
-                  for (const line of lines) {
-                    let b64 = line;
-                    const eq = line.indexOf('=');
-                    if (eq > 0) b64 = line.slice(eq + 1).trim();
-                    try {
-                      const raw = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-                      if (raw.length === 16 || raw.length === 32 || raw.length < 16) continue;
-                      setChannelPskWarn(t('connectionPanel.channelPsksInvalidLength'));
-                      return;
-                    } catch {
-                      // catch-no-log-ok invalid base64 on blur — user-facing warning only
-                      setChannelPskWarn(t('connectionPanel.channelPsksInvalidBase64'));
-                      return;
-                    }
-                  }
-                  setChannelPskWarn(null);
+                onBlur={() => {
+                  commitChannelPskDraft();
                 }}
                 className="bg-secondary-dark focus:border-brand-green w-full resize-none rounded border border-gray-600 px-2 py-1.5 font-mono text-sm text-gray-200 focus:outline-none"
                 placeholder={t('connectionPanel.channelPsksPlaceholder')}
@@ -2488,8 +2492,10 @@ export default function ConnectionPanel({
             <button
               onClick={async () => {
                 setMqttError(null);
+                const committedPsks = commitChannelPskDraft();
                 const settings: Parameters<typeof window.electronAPI.mqtt.connect>[0] = {
                   ...activeMqttSettings,
+                  channelPsks: committedPsks.length > 0 ? committedPsks : undefined,
                   mqttTransportProtocol: protocol === 'meshcore' ? 'meshcore' : 'meshtastic',
                 };
                 if (
