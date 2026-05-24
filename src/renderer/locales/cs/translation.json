@@ -1927,6 +1927,10 @@
       },
       "sdk-meshcore": {
         "recommendation": "Zásobník MeshCore hlásil varování nebo chybu. Pokud se to opakuje, zkontrolujte párování BLE, nastavení MQTT a znovu se připojte."
+      },
+      "store-forward": {
+        "label": "Problémy s historií ukládání a přeposílání",
+        "recommendation": "Z routeru nebylo možné vyžádat historii chatu Store & Forward (často se jedná o krátký závod s jiným rádiovým provozem). Pokud nevyřízený chat zůstane prázdný, znovu se připojte nebo počkejte na další srdeční tep směrovače."
       }
     },
     "recommendationGroups": {

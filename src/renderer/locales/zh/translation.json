@@ -1925,6 +1925,10 @@
       },
       "sdk-meshcore": {
         "recommendation": "MeshCore stack reported a warning or error.如果重复出现，请检查 BLE 配对、MQTT 设置，然后重新连接。"
+      },
+      "store-forward": {
+        "label": "存储和转发历史问题",
+        "recommendation": "无法从路由器请求存储和转发聊天历史记录（通常是与其他无线电流量的短暂比赛）。如果聊天积压保持为空，请重新连接或等待下一个路由器心跳。"
       }
     },
     "recommendationGroups": {

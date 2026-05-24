@@ -1952,6 +1952,10 @@
         "label": "Bluetooth Pairing Issues",
         "recommendation": "Bluetooth pairing or unpair failed, or the PIN prompt timed out. Open the app when pairing, enter the PIN promptly, check the MAC address and Bluetooth permissions, or remove and re-pair from OS Bluetooth settings."
       },
+      "store-forward": {
+        "label": "Store & Forward History Issues",
+        "recommendation": "Store & Forward chat history could not be requested from a router (often a brief race with other radio traffic). If chat backlog stays empty, reconnect or wait for the next router heartbeat."
+      },
       "sdk-meshtastic": {
         "label": "Meshtastic SDK Warnings/Errors",
         "recommendation": "Meshtastic stack reported a warning or error. If it repeats, check firmware, transport (BLE/serial), and reconnect."

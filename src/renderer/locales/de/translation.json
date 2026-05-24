@@ -1925,6 +1925,10 @@
       },
       "sdk-meshcore": {
         "recommendation": "Der MeshCore-Stack hat eine Warnung oder einen Fehler gemeldet. Wenn es erneut auftritt, überprüfen Sie die BLE-Kopplung und die MQTT-Einstellungen und stellen Sie die Verbindung erneut her."
+      },
+      "store-forward": {
+        "label": "Store- & Forward-Verlaufsprobleme",
+        "recommendation": "Store & Forward Chat-Verlauf konnte nicht von einem Router angefordert werden (oft ein kurzes Rennen mit anderem Funkverkehr). Wenn das Chat-Backlog leer bleibt, verbinden Sie sich erneut oder warten Sie auf den nächsten Herzschlag des Routers."
       }
     },
     "recommendationGroups": {

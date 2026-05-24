@@ -1960,6 +1960,10 @@
       "sdk-meshcore": {
         "label": "MeshCore SDK-waarschuwingen/fouten",
         "recommendation": "MeshCore-stack meldde een waarschuwing of fout. Als het probleem zich herhaalt, controleer dan de BLE-koppeling en de MQTT-instellingen en maak opnieuw verbinding."
+      },
+      "store-forward": {
+        "label": "Problemen met winkel- en doorstuurgeschiedenis",
+        "recommendation": "Chatgeschiedenis opslaan en doorsturen kon niet worden aangevraagd bij een router (vaak een korte race met ander radioverkeer). Als de chatachterstand leeg blijft, maak dan opnieuw verbinding of wacht op de volgende hartslag van de router."
       }
     },
     "recommendationGroups": {

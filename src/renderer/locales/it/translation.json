@@ -1960,6 +1960,10 @@
       "sdk-meshcore": {
         "label": "Avvisi/Errori dell'SDK MeshCore",
         "recommendation": "Lo stack MeshCore ha segnalato un avviso o un errore. Se si ripete, controlla l'associazione BLE, le impostazioni MQTT e riconnettiti."
+      },
+      "store-forward": {
+        "label": "Problemi relativi alla cronologia di archiviazione e inoltro",
+        "recommendation": "Non è stato possibile richiedere la cronologia chat Store & Forward da un router (spesso una breve corsa con altro traffico radio). Se il backlog della chat rimane vuoto, riconnettiti o attendi il prossimo heartbeat del router."
       }
     },
     "recommendationGroups": {

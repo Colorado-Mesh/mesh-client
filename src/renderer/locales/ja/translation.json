@@ -1960,6 +1960,10 @@
       "sdk-meshcore": {
         "label": "MeshCore SDK の警告/エラー",
         "recommendation": "MeshCore スタックが警告またはエラーを報告しました。繰り返し発生する場合は、BLE ペアリング、MQTT 設定を確認し、再接続してください。"
+      },
+      "store-forward": {
+        "label": "ストアと転送履歴の問題",
+        "recommendation": "Store & Forwardチャット履歴をルーターから要求できませんでした（多くの場合、他の無線トラフィックとの短いレース）。チャットバックログが空のままの場合は、再接続するか、次のルーターのハートビートを待ちます。"
       }
     },
     "recommendationGroups": {

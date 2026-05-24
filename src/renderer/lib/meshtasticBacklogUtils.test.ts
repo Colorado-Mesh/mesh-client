@@ -272,6 +272,58 @@ describe('meshtasticBacklogUtils', () => {
     expect(releaseLock).toHaveBeenCalledTimes(2);
   });
 
+  it('retries when WritableStream writer is locked by SDK traffic', async () => {
+    let getWriterAttempts = 0;
+    const write = vi.fn().mockResolvedValue(undefined);
+    const releaseLock = vi.fn();
+    const lockedError = new Error(
+      "Failed to execute 'getWriter' on 'WritableStream': Cannot create writer when WritableStream is locked",
+    );
+    const device = {
+      transport: {
+        toDevice: {
+          getWriter: () => {
+            getWriterAttempts++;
+            if (getWriterAttempts < 3) throw lockedError;
+            return { write, releaseLock };
+          },
+        },
+      },
+    } as unknown as MeshDevice;
+
+    vi.useFakeTimers();
+    const promise = writeToRadioWithoutQueue(device, new Uint8Array([9]));
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(getWriterAttempts).toBe(3);
+    expect(write).toHaveBeenCalledWith(new Uint8Array([9]));
+    expect(releaseLock).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('throws after WritableStream lock retries are exhausted', async () => {
+    const lockedError = new Error(
+      "Failed to execute 'getWriter' on 'WritableStream': Cannot create writer when WritableStream is locked",
+    );
+    const device = {
+      transport: {
+        toDevice: {
+          getWriter: () => {
+            throw lockedError;
+          },
+        },
+      },
+    } as unknown as MeshDevice;
+
+    vi.useFakeTimers();
+    const promise = writeToRadioWithoutQueue(device, new Uint8Array([1]));
+    const rejection = expect(promise).rejects.toThrow(/WritableStream is locked/);
+    await vi.runAllTimersAsync();
+    await rejection;
+    vi.useRealTimers();
+  });
+
   describe('resolveMeshtasticTextMessagePayload', () => {
     const garbledUserBytes = new Uint8Array([
       0x16, 0x15, 0x18, 0x0d, 0x25, 0x11, 0x6a, 0x28, 0x02, 0x58, 0x04, 0x78, 0x03, 0x01, 0x0e,

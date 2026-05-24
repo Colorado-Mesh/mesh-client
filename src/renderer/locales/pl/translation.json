@@ -1960,6 +1960,10 @@
       "sdk-meshcore": {
         "label": "Ostrzeżenia/błędy pakietu MeshCore SDK",
         "recommendation": "Stos MeshCore zgłosił ostrzeżenie lub błąd. Jeśli problem się powtórzy, sprawdź parowanie BLE, ustawienia MQTT i połącz się ponownie."
+      },
+      "store-forward": {
+        "label": "Problemy z historią przechowywania i przekazywania",
+        "recommendation": "Nie można zażądać historii czatu Store & Forward od routera (często krótki wyścig z innym ruchem radiowym). Jeśli backlog czatu pozostaje pusty, podłącz ponownie lub poczekaj na kolejne tętno routera."
       }
     },
     "recommendationGroups": {

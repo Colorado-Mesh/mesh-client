@@ -1960,6 +1960,10 @@
       "sdk-meshcore": {
         "label": "Peringatan/Kesalahan MeshCore SDK",
         "recommendation": "Tumpukan MeshCore melaporkan peringatan atau kesalahan. Jika berulang, periksa pemasangan BLE, pengaturan MQTT, dan sambungkan kembali."
+      },
+      "store-forward": {
+        "label": "Simpan & Teruskan Masalah Riwayat",
+        "recommendation": "Riwayat obrolan Simpan & Teruskan tidak dapat diminta dari router (sering kali perlombaan singkat dengan lalu lintas radio lainnya). Jika backlog obrolan tetap kosong, sambungkan kembali atau tunggu detak jantung router berikutnya."
       }
     },
     "recommendationGroups": {

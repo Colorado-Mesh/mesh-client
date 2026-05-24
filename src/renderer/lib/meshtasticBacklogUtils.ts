@@ -222,9 +222,57 @@ export function resolveMeshtasticTextMessagePayload(
 
 let toRadioDirectWriteChain: Promise<void> = Promise.resolve();
 
+const TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS = 5;
+const TO_RADIO_WRITER_LOCK_RETRY_MS = 25;
+
+const WRITABLE_STREAM_LOCKED_PATTERN = /WritableStream is locked/i;
+
+function isWritableStreamLockedError(error: unknown): boolean {
+  if (error instanceof Error) {
+    return WRITABLE_STREAM_LOCKED_PATTERN.test(error.message);
+  }
+  return typeof error === 'string' && WRITABLE_STREAM_LOCKED_PATTERN.test(error);
+}
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function writeToRadioDirectOnce(device: MeshDevice, toRadioBytes: Uint8Array): Promise<void> {
+  const writer = device.transport.toDevice.getWriter();
+  try {
+    await writer.write(toRadioBytes);
+  } finally {
+    writer.releaseLock();
+  }
+}
+
+/**
+ * Retry getWriter when MeshDevice SDK traffic holds the transport lock.
+ * Failure point: lock never clears within retry budget.
+ * Fallback: rethrow so caller logs and may retry on next S&F heartbeat.
+ */
+async function writeToRadioDirectWithLockRetry(
+  device: MeshDevice,
+  toRadioBytes: Uint8Array,
+): Promise<void> {
+  for (let attempt = 1; attempt <= TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS; attempt++) {
+    try {
+      await writeToRadioDirectOnce(device, toRadioBytes);
+      return;
+    } catch (e: unknown) {
+      if (!isWritableStreamLockedError(e) || attempt >= TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS) {
+        throw e;
+      }
+      await sleepMs(TO_RADIO_WRITER_LOCK_RETRY_MS * attempt);
+    }
+  }
+}
+
 /**
  * Write ToRadio bytes directly to the transport, bypassing MeshDevice queue ack wait.
- * Serialized so concurrent writes do not race getWriter() on a locked WritableStream.
+ * Serialized so concurrent direct writes do not race getWriter(); retries when the SDK
+ * holds the WritableStream writer lock.
  * Failure point: transport write rejects (BLE disconnect, backpressure).
  * Fallback: caller logs and may retry on next heartbeat.
  */
@@ -232,14 +280,7 @@ export async function writeToRadioWithoutQueue(
   device: MeshDevice,
   toRadioBytes: Uint8Array,
 ): Promise<void> {
-  const run = async (): Promise<void> => {
-    const writer = device.transport.toDevice.getWriter();
-    try {
-      await writer.write(toRadioBytes);
-    } finally {
-      writer.releaseLock();
-    }
-  };
+  const run = (): Promise<void> => writeToRadioDirectWithLockRetry(device, toRadioBytes);
   const next = toRadioDirectWriteChain.then(run, run);
   toRadioDirectWriteChain = next.then(
     () => undefined,

@@ -218,6 +218,22 @@ describe('analyzeLogs', () => {
     expect(cat?.count).toBe(2);
   });
 
+  it('detects Store & Forward history request failures', () => {
+    const entries: LogEntry[] = [
+      makeEntry(
+        "[useDevice] Store & Forward history request failed Failed to execute 'getWriter' on 'WritableStream': Cannot create writer when WritableStream is locked",
+        'warn',
+      ),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    const cat = result.categories.find((c) => c.id === 'store-forward');
+    expect(cat).toBeDefined();
+    expect(cat?.count).toBe(1);
+    expect(
+      analyzeLogs(entries, 'meshcore').categories.find((c) => c.id === 'store-forward'),
+    ).toBeUndefined();
+  });
+
   it('detects internal app errors', () => {
     const entries: LogEntry[] = [
       makeEntry('[main] Uncaught exception: Error: boom', 'error'),

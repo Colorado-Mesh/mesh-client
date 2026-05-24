@@ -1926,6 +1926,10 @@
       },
       "sdk-meshcore": {
         "recommendation": "La pile MeshCore a signalé un avertissement ou une erreur. Si cela se répète, vérifiez le couplage BLE, les paramètres MQTT et reconnectez-vous."
+      },
+      "store-forward": {
+        "label": "Problèmes d'historique de stockage et de transfert",
+        "recommendation": "L'historique du chat Store & Forward n'a pas pu être demandé à un routeur (souvent une brève course avec d'autres trafics radio). Si le backlog de discussion reste vide, reconnectez-vous ou attendez le prochain battement de cœur du routeur."
       }
     },
     "recommendationGroups": {

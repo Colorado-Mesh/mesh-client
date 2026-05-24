@@ -211,6 +211,13 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     severity: 'warning',
   },
   {
+    id: 'store-forward',
+    patterns: [/Store & Forward history request failed/i],
+    severity: 'warning',
+    protocols: ['meshtastic'],
+    requireWarnOrError: true,
+  },
+  {
     id: 'sdk-meshtastic',
     patterns: [
       /\[iMeshDevice\]/i,

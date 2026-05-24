@@ -1960,6 +1960,10 @@
       "sdk-meshcore": {
         "label": "MeshCore SDK Uyarıları/Hataları",
         "recommendation": "MeshCore yığını bir uyarı veya hata bildirdi. Tekrarlanırsa BLE eşleştirmesini, MQTT ayarlarını kontrol edin ve yeniden bağlanın."
+      },
+      "store-forward": {
+        "label": "Saklama ve İletme Geçmişi Sorunları",
+        "recommendation": "Sohbet geçmişini sakla ve ilet bir yönlendiriciden talep edilemez (genellikle diğer radyo trafiğiyle kısa bir yarış). Sohbet iş yığını boş kalırsa, yeniden bağlanın veya bir sonraki yönlendiricinin kalp atışını bekleyin."
       }
     },
     "recommendationGroups": {

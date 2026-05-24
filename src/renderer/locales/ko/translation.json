@@ -1960,6 +1960,10 @@
       "sdk-meshcore": {
         "label": "MeshCore SDK 경고/오류",
         "recommendation": "MeshCore 스택이 경고 또는 오류를 보고했습니다. 반복되면 BLE 페어링, MQTT 설정을 확인하고 다시 연결하세요."
+      },
+      "store-forward": {
+        "label": "스토어 및 전달 내역 문제",
+        "recommendation": "라우터에서 스토어 및 포워드 채팅 기록을 요청할 수 없습니다 (종종 다른 무선 트래픽과의 짧은 레이스). 채팅 백로그가 비어 있는 경우 다시 연결하거나 다음 라우터 하트비트를 기다립니다."
       }
     },
     "recommendationGroups": {

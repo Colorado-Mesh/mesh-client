@@ -1960,6 +1960,10 @@
       "sdk-meshcore": {
         "label": "Advertencias/Errores del SDK de MeshCore",
         "recommendation": "La pila MeshCore informó una advertencia o un error. Si se repite, verifique el emparejamiento BLE, la configuración de MQTT y vuelva a conectarse."
+      },
+      "store-forward": {
+        "label": "Problemas con el historial de almacenamiento y reenvío",
+        "recommendation": "No se pudo solicitar el historial de chat de almacenamiento y reenvío desde un router (a menudo una breve carrera con otro tráfico de radio). Si el trabajo pendiente del chat permanece vacío, vuelva a conectarse o espere el próximo latido del router."
       }
     },
     "recommendationGroups": {
