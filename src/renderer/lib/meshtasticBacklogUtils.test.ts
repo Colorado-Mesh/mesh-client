@@ -8,12 +8,14 @@ import {
   buildStoreForwardHistoryToRadioBytes,
   decodeStoreForwardTextPayload,
   isDuplicateHistoryMessage,
+  isLikelyReadableChatText,
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
   parseStoreForwardHeartbeat,
   parseStoreForwardHistory,
   releaseStoreForwardHistoryRequest,
   reserveStoreForwardHistoryRequest,
+  resolveMeshtasticTextMessagePayload,
   shouldRequestStoreForwardHistoryOnHeartbeat,
   writeToRadioWithoutQueue,
 } from './meshtasticBacklogUtils';
@@ -233,6 +235,88 @@ describe('meshtasticBacklogUtils', () => {
     await writeToRadioWithoutQueue(device, bytes);
     expect(write).toHaveBeenCalledWith(bytes);
     expect(releaseLock).toHaveBeenCalled();
+  });
+
+  it('queues concurrent ToRadio writes when WritableStream writer is locked', async () => {
+    let locked = false;
+    const order: number[] = [];
+    const write = vi.fn().mockImplementation(async (chunk: Uint8Array) => {
+      order.push(chunk[0] ?? 0);
+      await new Promise((r) => setTimeout(r, 5));
+    });
+    const releaseLock = vi.fn().mockImplementation(() => {
+      locked = false;
+    });
+    const device = {
+      transport: {
+        toDevice: {
+          getWriter: () => {
+            if (locked) {
+              throw new Error(
+                "Failed to execute 'getWriter' on 'WritableStream': Cannot create writer when WritableStream is locked",
+              );
+            }
+            locked = true;
+            return { write, releaseLock };
+          },
+        },
+      },
+    } as unknown as MeshDevice;
+
+    await Promise.all([
+      writeToRadioWithoutQueue(device, new Uint8Array([1])),
+      writeToRadioWithoutQueue(device, new Uint8Array([2])),
+    ]);
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(order).toEqual([1, 2]);
+    expect(releaseLock).toHaveBeenCalledTimes(2);
+  });
+
+  describe('resolveMeshtasticTextMessagePayload', () => {
+    const garbledUserBytes = new Uint8Array([
+      0x16, 0x15, 0x18, 0x0d, 0x25, 0x11, 0x6a, 0x28, 0x02, 0x58, 0x04, 0x78, 0x03, 0x01, 0x0e,
+      0x01, 0x05, 0x01,
+    ]);
+
+    it('rejects garbled control-heavy payloads from the field report', () => {
+      expect(resolveMeshtasticTextMessagePayload(garbledUserBytes)).toBeNull();
+      expect(isLikelyReadableChatText(garbledUserBytes)).toBe(false);
+    });
+
+    it('rejects store-forward heartbeat protobuf on TEXT port', () => {
+      const heartbeat = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
+        case: 'heartbeat',
+        value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 120, secondary: 0 }),
+      });
+      expect(resolveMeshtasticTextMessagePayload(heartbeat)).toBeNull();
+    });
+
+    it('accepts store-forward text variant with viaStoreForward flag', () => {
+      const bytes = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_TEXT_BROADCAST, {
+        case: 'text',
+        value: new TextEncoder().encode('summit check-in'),
+      });
+      expect(resolveMeshtasticTextMessagePayload(bytes)).toEqual({
+        text: 'summit check-in',
+        viaStoreForward: true,
+      });
+    });
+
+    it('accepts normal UTF-8 chat text', () => {
+      const bytes = new TextEncoder().encode("Yes, I'm on the summit");
+      expect(resolveMeshtasticTextMessagePayload(bytes)).toEqual({
+        text: "Yes, I'm on the summit",
+      });
+    });
+
+    it('accepts short and emoji payloads', () => {
+      expect(resolveMeshtasticTextMessagePayload(new TextEncoder().encode('OK'))).toEqual({
+        text: 'OK',
+      });
+      expect(resolveMeshtasticTextMessagePayload(new TextEncoder().encode('🦥'))).toEqual({
+        text: '🦥',
+      });
+    });
   });
 
   it('dedupes history messages within time window', () => {
