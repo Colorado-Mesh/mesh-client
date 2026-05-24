@@ -8,7 +8,12 @@
 export const CHANNEL_URL_PREFIX = 'radioPanel.channelUrl.';
 
 /** Leaf keys that must be translated (not left identical to English). */
-export const MUST_TRANSLATE_LEAF_KEYS = new Set(['copyMeshtastic', 'generateLink', 'copyFailed']);
+export const MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'copyMeshtastic',
+  'copyPublicKey',
+  'generateLink',
+  'copyFailed',
+]);
 
 /** appPanel filter where French "chaînes" is a known false friend. */
 export const FR_MESH_CHANNEL_KEYS = new Set([
@@ -19,6 +24,12 @@ export const FR_MESH_CHANNEL_KEYS = new Set([
   'appPanel.allChannelsOption',
 ]);
 
+/** CAT / Memsource placeholder tokens (e.g. __ PH0 __) that must be {{name}} instead. */
+export const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
+
+/** Brand / product names preserved verbatim when present in English. */
+export const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT'];
+
 // UTF-8 Cyrillic (etc.) misread as Latin-1 in JSON.
 const MOJIBAKE_RE = /Ð[\u0080-\u00FF]{2,}|Ã[\u0080-\u00BF]{2,}|Â[\u0080-\u00BF]{2,}/;
 
@@ -26,15 +37,45 @@ const BROKEN_MESHTASTIC_SCHEME_RE = /meshtastic[\s\u00a0]+:\/\//i;
 
 const MESHTASTIC_MISSPELLING_RE = /meshtastisch/i;
 
+const MESHTASTIC_CYRILLIC_TRANSLIT_RE = /мештаст/i;
+
 const ZH_CAT_GARBAGE_RE = /%\s*\d+.*文件夹|文件夹.*%\s*\d+/;
 
 const FR_CHANNEL_FALSE_FRIEND_RE = /\bchaînes?\b/i;
 
 const UNTRANSLATED_COPY_MESHTASTIC_RE = /^Copy meshtastic/i;
 
+const UNTRANSLATED_REMOTE_ADMIN_DOCS_RE = /remote admin docs/i;
+
 /** True if the string contains at least one cased lowercase letter (incl. Polish, etc.). */
 function hasLowercaseLetter(s) {
   return [...s].some((ch) => ch === ch.toLowerCase() && ch !== ch.toUpperCase());
+}
+
+function brandOccurrenceCount(text, brand) {
+  const re = new RegExp(`\\b${brand}\\b`, 'g');
+  return (text.match(re) || []).length;
+}
+
+/**
+ * @param {string} enVal
+ * @param {string} val
+ * @param {string[]} [brands]
+ * @returns {string[]} Human-readable issue descriptions (empty if OK).
+ */
+export function protectedBrandIssues(enVal, val, brands = PROTECTED_BRANDS) {
+  const issues = [];
+  for (const brand of brands) {
+    const enCount = brandOccurrenceCount(enVal, brand);
+    if (enCount === 0) continue;
+    const locCount = brandOccurrenceCount(val, brand);
+    if (locCount < enCount) {
+      issues.push(
+        `Brand "${brand}" missing: English has ${enCount} occurrence(s), locale has ${locCount}`,
+      );
+    }
+  }
+  return issues;
 }
 
 /**
@@ -44,6 +85,10 @@ function hasLowercaseLetter(s) {
 export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
   const issues = [];
   const leafKey = flatKey.split('.').pop() ?? flatKey;
+
+  if (CAT_PH_PLACEHOLDER_RE.test(val)) {
+    issues.push('CAT/XLIFF __ PH __ placeholder residue is not allowed');
+  }
 
   if (MOJIBAKE_RE.test(val)) {
     issues.push('mojibake/encoding corruption detected');
@@ -63,6 +108,14 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
 
   if (MESHTASTIC_MISSPELLING_RE.test(val)) {
     issues.push('use protocol spelling "meshtastic", not "meshtastisch"');
+  }
+
+  if (
+    enVal.includes('Meshtastic') &&
+    !val.includes('Meshtastic') &&
+    MESHTASTIC_CYRILLIC_TRANSLIT_RE.test(val)
+  ) {
+    issues.push('use brand name "Meshtastic", not Cyrillic transliteration');
   }
 
   if (locale === 'zh' && ZH_CAT_GARBAGE_RE.test(val)) {
@@ -87,6 +140,14 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     UNTRANSLATED_COPY_MESHTASTIC_RE.test(val)
   ) {
     issues.push('copyMeshtastic still starts with English "Copy meshtastic"');
+  }
+
+  if (
+    locale !== 'en' &&
+    enVal.includes('remote admin docs') &&
+    UNTRANSLATED_REMOTE_ADMIN_DOCS_RE.test(val)
+  ) {
+    issues.push('translate "remote admin docs" — do not leave the English phrase');
   }
 
   // Single Latin letter (e.g. de "B") is a bad MT truncation; short CJK labels are OK.

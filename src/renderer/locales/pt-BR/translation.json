@@ -556,7 +556,7 @@
     "importPrivateKeyButton": "Importar chave privada",
     "importingPrivateKey": "Importando...",
     "regenerateKeysConfirm": "A regeneração de chaves substituirá suas chaves públicas e privadas DM atuais. Quaisquer mensagens criptografadas existentes não serão mais descriptografáveis. Tem certeza?",
-    "copyPublicKey": "Copy",
+    "copyPublicKey": "Copiar",
     "publicKeyCopied": "Chave pública copiada para a área de transferência.",
     "remoteAdminSetupHint": "Copie esta chave e adicione-a como uma chave de administrador nos nós remotos que você deseja configurar. Consulte os documentos de administração remota do Meshtastic."
   },

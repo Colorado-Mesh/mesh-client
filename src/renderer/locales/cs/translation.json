@@ -557,9 +557,9 @@
     "importPrivateKeyButton": "Importovat soukromý klíč",
     "importingPrivateKey": "Import...",
     "regenerateKeysConfirm": "Obnovení klíčů nahradí vaše aktuální veřejné a soukromé klíče DM. Jakékoli existující zašifrované zprávy již nebudou dešifrovatelné. jsi si jistý?",
-    "copyPublicKey": "Kopírování",
+    "copyPublicKey": "Kopírovat",
     "publicKeyCopied": "Veřejný klíč zkopírován do schránky.",
-    "remoteAdminSetupHint": "Zkopírujte tento klíč a přidejte jej jako administrátorský klíč na vzdálené uzly, které chcete konfigurovat. Viz Meshtastic remote admin docs."
+    "remoteAdminSetupHint": "Zkopírujte tento klíč a přidejte jej jako administrátorský klíč na vzdálené uzly, které chcete konfigurovat. Viz dokumentaci Meshtastic k vzdálené správě."
   },
   "modulePanel": {
     "sectionSent": "{{name}} odesláno. Zařízení se může krátce restartovat.",

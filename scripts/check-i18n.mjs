@@ -17,7 +17,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { localeStringQualityIssues } from './check-i18n-quality.mjs';
+import { localeStringQualityIssues, protectedBrandIssues } from './check-i18n-quality.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR = join(__dirname, '../src/renderer/locales');
@@ -150,16 +150,7 @@ const LOCALE_ARTIFACT_RES = [
   /<bpt\b/i,
   /<ept\b/i,
   /equiv-text=/i,
-  /__\s*PH\s*\d/i,
-  /__PH\s*\d/i,
 ];
-
-// Brand / product names that must appear verbatim in every locale value
-// when present in the English source. Auto-translators frequently mangle
-// these (e.g. "TAK" → "JA"/"PRENDRE"/"ТАК"; "Discord" → "Zwietracht").
-// Match as a whole-word token so substrings like "Meshtastic" inside
-// "non-Meshtastic" still count as a single brand occurrence.
-const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT'];
 
 // Leaf key names whose locale value must exactly equal the English value.
 // These are protocol terms / acronyms intentionally displayed in English across all locales.
@@ -170,12 +161,6 @@ const VERBATIM_KEY_NAMES = new Set([
   'buttonFloodAdvert', // same
   'sendButtonDm', // "DM" — direct-message abbreviation, used verbatim internationally
 ]);
-
-function brandOccurrenceCount(text, brand) {
-  // Whole-word, case-sensitive count.
-  const re = new RegExp(`\\b${brand}\\b`, 'g');
-  return (text.match(re) || []).length;
-}
 
 // "Hops" in mesh routing keeps tripping auto-translators into the brewing
 // ingredient. If any of these tokens appear in a locale value, fail with a
@@ -262,20 +247,11 @@ for (const dir of localeDirs) {
       errors++;
     }
 
-    // Brand-name preservation. If the English value contains a protected
-    // brand token N times, the locale value must contain it at least N times
-    // (extra surrounding text is fine; what we forbid is dropping or
-    // translating the brand into a dictionary word).
-    for (const brand of PROTECTED_BRANDS) {
-      const enCount = brandOccurrenceCount(enVal, brand);
-      if (enCount === 0) continue;
-      const locCount = brandOccurrenceCount(val, brand);
-      if (locCount < enCount) {
-        console.error(
-          `Brand "${brand}" missing in "${dir}" key "${key}": English has ${enCount} occurrence(s), locale has ${locCount}. EN=${JSON.stringify(enVal)} LOC=${JSON.stringify(val)}`,
-        );
-        errors++;
-      }
+    for (const issue of protectedBrandIssues(enVal, val)) {
+      console.error(
+        `Locale quality in "${dir}" key "${key}": ${issue}. EN=${JSON.stringify(enVal)} LOC=${JSON.stringify(val)}`,
+      );
+      errors++;
     }
 
     // Brewing-ingredient false-friend check. The English source uses "Hop"

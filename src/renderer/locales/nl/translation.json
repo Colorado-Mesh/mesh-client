@@ -558,7 +558,7 @@
     "regenerateKeysConfirm": "Als u sleutels opnieuw genereert, worden uw huidige openbare en privésleutels voor DM vervangen. Alle bestaande gecodeerde berichten kunnen niet langer worden gedecodeerd. Weet je het zeker?",
     "copyPublicKey": "Kopie",
     "publicKeyCopied": "Openbare sleutel gekopieerd naar klembord.",
-    "remoteAdminSetupHint": "Kopieer deze sleutel en voeg deze toe als een beheerderssleutel op externe knooppunten die u wilt configureren. Zie Meshtastic remote admin docs."
+    "remoteAdminSetupHint": "Kopieer deze sleutel en voeg deze toe als een beheerderssleutel op externe knooppunten die u wilt configureren. Zie de Meshtastic-documentatie voor beheer op afstand."
   },
   "modulePanel": {
     "sectionSent": "{{name}} verzonden. Het apparaat kan kortstondig opnieuw opstarten.",
