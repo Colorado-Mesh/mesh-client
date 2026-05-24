@@ -94,6 +94,7 @@ import {
   normalizeMeshtasticPacketId,
 } from '../lib/meshtasticMessageDedup';
 import {
+  meshtasticNodePublicKeyBytesFromHex,
   MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
 } from '../lib/meshtasticRemoteAdmin';
@@ -738,6 +739,8 @@ export function useDevice() {
     remoteAdminClientRef.current = new MeshtasticRemoteAdminClient(
       () => deviceRef.current,
       () => myNodeNumRef.current,
+      (nodeNum) =>
+        meshtasticNodePublicKeyBytesFromHex(nodesRef.current.get(nodeNum)?.public_key_hex),
     );
     return () => {
       remoteAdminClientRef.current?.dispose();
@@ -3446,6 +3449,7 @@ export function useDevice() {
       setRemoteConfigSnapshot(snapshot);
       setRemoteAdminStatus('ready');
     } catch (e) {
+      remoteAdminClientRef.current?.resetEditState();
       const msg = normalizeRemoteAdminError(e);
       setRemoteAdminStatus('error');
       setRemoteAdminError(msg);

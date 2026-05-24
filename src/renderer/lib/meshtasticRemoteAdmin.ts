@@ -22,12 +22,17 @@ interface MeshPacketDecoded {
   portnum?: number;
   payload?: Uint8Array;
   requestId?: number;
+  replyId?: number;
 }
 
 interface MeshPacket {
+  id?: number;
   from?: number;
   payloadVariant?: { case?: string; value?: MeshPacketDecoded };
 }
+
+/** Meshtastic Android PKC sentinel; channel field is omitted on wire for PKI admin. */
+export const REMOTE_ADMIN_PKC_CHANNEL_INDEX = 8;
 
 /** Firmware session_passkey TTL (AdminModule.cpp). */
 export const REMOTE_ADMIN_SESSION_TTL_MS = 300_000;
@@ -40,6 +45,19 @@ export type RemoteAdminRoutingErrorCode = number;
 export interface RemoteAdminSessionEntry {
   passkey: Uint8Array;
   expiresAt: number;
+}
+
+export function meshtasticNodePublicKeyBytesFromHex(
+  hex: string | undefined,
+): Uint8Array | undefined {
+  if (hex?.length !== 64) return undefined;
+  const bytes = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) {
+    const byte = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    if (!Number.isFinite(byte)) return undefined;
+    bytes[i] = byte;
+  }
+  return bytes;
 }
 
 export class RemoteAdminSessionStore {
@@ -127,6 +145,20 @@ export function routingErrorToRemoteAdminKey(error: RemoteAdminRoutingErrorCode)
   }
 }
 
+function resolveAdminRequestId(meshPacket: MeshPacket, dataRequestId: number): number {
+  if (dataRequestId !== 0) return dataRequestId >>> 0;
+  const packetId = meshPacket.id;
+  if (typeof packetId === 'number' && Number.isFinite(packetId) && packetId !== 0) {
+    return packetId >>> 0;
+  }
+  const data = meshPacket.payloadVariant?.value;
+  const replyId = data?.replyId;
+  if (typeof replyId === 'number' && Number.isFinite(replyId) && replyId !== 0) {
+    return replyId >>> 0;
+  }
+  return 0;
+}
+
 export function parseIncomingRemoteAdminPacket(meshPacket: MeshPacket): ParsedAdminResponse | null {
   if (meshPacket.payloadVariant?.case !== 'decoded') return null;
   const data = meshPacket.payloadVariant.value;
@@ -139,7 +171,12 @@ export function parseIncomingRemoteAdminPacket(meshPacket: MeshPacket): ParsedAd
         Admin.AdminMessageSchema,
         data.payload!,
       ) as unknown as AdminMessage;
-      return { kind: 'admin', message, from, requestId: (data.requestId ?? 0) >>> 0 };
+      return {
+        kind: 'admin',
+        message,
+        from,
+        requestId: resolveAdminRequestId(meshPacket, (data.requestId ?? 0) >>> 0),
+      };
     } catch {
       // catch-no-log-ok malformed ADMIN_APP payload on unrelated mesh traffic
       return null;
@@ -152,7 +189,7 @@ export function parseIncomingRemoteAdminPacket(meshPacket: MeshPacket): ParsedAd
         variant?: { case?: string; value?: number };
       };
       if (routing.variant?.case === 'errorReason') {
-        const requestId = (data.requestId ?? 0) >>> 0;
+        const requestId = resolveAdminRequestId(meshPacket, (data.requestId ?? 0) >>> 0);
         if (requestId !== 0 && routing.variant.value != null) {
           return {
             kind: 'routing_error',
@@ -176,17 +213,17 @@ export function buildRemoteAdminToRadio(params: {
   destNodeNum: number;
   adminPayload: Uint8Array;
   packetId: number;
+  publicKey: Uint8Array;
   wantAck?: boolean;
   wantResponse?: boolean;
-  channel?: number;
 }): Uint8Array {
   const meshPacket = create(Mesh.MeshPacketSchema, {
     from: params.myNodeNum >>> 0,
     to: params.destNodeNum >>> 0,
     id: params.packetId >>> 0,
     wantAck: params.wantAck ?? true,
-    channel: params.channel ?? 0,
     pkiEncrypted: true,
+    publicKey: params.publicKey,
     payloadVariant: {
       case: 'decoded',
       value: {
@@ -223,10 +260,12 @@ export class MeshtasticRemoteAdminClient {
   readonly sessionStore = new RemoteAdminSessionStore();
   private readonly pending = new Map<number, PendingRemoteAdmin>();
   private pendingEdit = false;
+  private sendRawChain: Promise<unknown> = Promise.resolve();
 
   constructor(
     private readonly getDevice: () => MeshDevice | null,
     private readonly getMyNodeNum: () => number,
+    private readonly getDestPublicKey: (nodeNum: number) => Uint8Array | undefined,
   ) {}
 
   dispose(): void {
@@ -266,7 +305,19 @@ export class MeshtasticRemoteAdminClient {
     if (parsed.requestId === 0) return;
 
     const pending = this.pending.get(parsed.requestId);
-    if (pending?.destNodeNum !== parsed.from) return;
+    if (!pending) return;
+
+    if (pending.destNodeNum !== parsed.from) {
+      console.debug(
+        '[MeshtasticRemoteAdmin] admin response sender mismatch expected=0x' +
+          pending.destNodeNum.toString(16) +
+          ' got=0x' +
+          parsed.from.toString(16) +
+          ' requestId=' +
+          String(parsed.requestId),
+      );
+      return;
+    }
 
     const responseCase = parsed.message.payloadVariant.case;
     if (!responseCase) return;
@@ -308,6 +359,12 @@ export class MeshtasticRemoteAdminClient {
     });
   }
 
+  private resolveDestPublicKey(destNodeNum: number): Uint8Array {
+    const publicKey = this.getDestPublicKey(destNodeNum);
+    if (publicKey?.length === 32) return publicKey;
+    throw new Error('remoteAdmin.errors.pkiFailed');
+  }
+
   private buildRawAdminPacket(
     destNodeNum: number,
     message: AdminMessage,
@@ -321,6 +378,7 @@ export class MeshtasticRemoteAdminClient {
       destNodeNum,
       adminPayload: payload,
       packetId,
+      publicKey: this.resolveDestPublicKey(destNodeNum),
       wantAck: options.wantAck ?? true,
       wantResponse: options.wantResponse ?? true,
     });
@@ -340,12 +398,22 @@ export class MeshtasticRemoteAdminClient {
 
     const id = packetId ?? this.generatePacketId();
     const toRadio = this.buildRawAdminPacket(destNodeNum, message, id, options);
-    try {
-      return await device.sendRaw(toRadio, id);
-    } catch (e) {
-      console.warn('[MeshtasticRemoteAdmin] sendRaw failed ' + errLikeToLogString(e));
-      throw new Error(normalizeRemoteAdminError(e));
-    }
+
+    const run = async (): Promise<number> => {
+      try {
+        return await device.sendRaw(toRadio, id);
+      } catch (e) {
+        console.warn('[MeshtasticRemoteAdmin] sendRaw failed ' + errLikeToLogString(e));
+        throw new Error(normalizeRemoteAdminError(e));
+      }
+    };
+
+    const next = this.sendRawChain.then(run, run);
+    this.sendRawChain = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
   }
 
   private waitForAdminResponse(
