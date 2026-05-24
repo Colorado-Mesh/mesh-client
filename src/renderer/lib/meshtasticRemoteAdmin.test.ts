@@ -122,6 +122,15 @@ describe('normalizeRemoteAdminError', () => {
     ).toBe('remoteAdmin.errors.publicKeyUnauthorized');
   });
 
+  it('maps SDK queue error objects with string error names', () => {
+    expect(
+      normalizeRemoteAdminError({
+        id: 1,
+        error: 'ADMIN_PUBLIC_KEY_UNAUTHORIZED',
+      }),
+    ).toBe('remoteAdmin.errors.publicKeyUnauthorized');
+  });
+
   it('preserves existing i18n keys on Error instances', () => {
     expect(normalizeRemoteAdminError(new Error('remoteAdmin.errors.badSessionKey'))).toBe(
       'remoteAdmin.errors.badSessionKey',
@@ -285,6 +294,46 @@ describe('MeshtasticRemoteAdminClient', () => {
     sendRaw.mockImplementation((_bytes: Uint8Array, id: number) => id);
     await client.beginRemoteEdit(0x200);
     expect(sendRaw.mock.calls.length).toBeGreaterThan(callsAfterBegin);
+  });
+
+  it('rejects and clears pending when sendRaw fails with SDK queue error', async () => {
+    sendRaw.mockRejectedValueOnce({
+      id: 718745655,
+      error: Mesh.Routing_Error.ADMIN_PUBLIC_KEY_UNAUTHORIZED,
+    });
+    await expect(client.getRemoteMetadata(0x200)).rejects.toThrow(
+      'remoteAdmin.errors.publicKeyUnauthorized',
+    );
+
+    sendRaw.mockImplementation((_bytes: Uint8Array, id: number) => id);
+    const promise = client.getRemoteMetadata(0x200);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const packetId = sendRaw.mock.calls.at(-1)?.[1] as number;
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getDeviceMetadataResponse',
+                  value: { firmwareVersion: '2.5.0' } as never,
+                },
+              }),
+            ),
+            requestId: packetId,
+          },
+        },
+      }) as never,
+    );
+    const result = await promise;
+    expect((result as { firmwareVersion?: string }).firmwareVersion).toBe('2.5.0');
   });
 
   it('rejects on routing errors correlated to packet id', async () => {

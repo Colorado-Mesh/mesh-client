@@ -3453,6 +3453,18 @@ export function useDevice() {
     }
   }, []);
 
+  const runRemoteAdminOp = useCallback(async <T>(operation: () => Promise<T>): Promise<T> => {
+    try {
+      return await operation();
+    } catch (e) {
+      const msg = normalizeRemoteAdminError(e);
+      setRemoteAdminStatus('error');
+      setRemoteAdminError(msg);
+      console.warn('[useDevice] remote admin operation failed ' + errLikeToLogString(e));
+      throw e;
+    }
+  }, []);
+
   const setConfigureTargetNodeNum = useCallback(
     (nodeNum: number | null) => {
       const normalized =
@@ -3519,30 +3531,33 @@ export function useDevice() {
     void refreshRemoteConfigSnapshot(nodeNum);
   }, [state.status, refreshRemoteConfigSnapshot]);
 
-  const setConfig = useCallback(async (config: unknown) => {
-    const dest = configureTargetNodeNumRef.current;
-    const client = remoteAdminClientRef.current;
-    if (dest != null && client) {
-      await client.setRemoteConfig(dest, config);
-      return;
-    }
-    if (!deviceRef.current) return;
-    // `config` is typed as `unknown` at the call site; cast required to satisfy the SDK's
-    // setConfig overload. `as any` keeps the React Compiler memoization analysis intact.
-    await deviceRef.current.setConfig(config as any);
-  }, []);
+  const setConfig = useCallback(
+    async (config: unknown) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.setRemoteConfig(dest, config));
+        return;
+      }
+      if (!deviceRef.current) return;
+      // `config` is typed as `unknown` at the call site; cast required to satisfy the SDK's
+      // setConfig overload. `as any` keeps the React Compiler memoization analysis intact.
+      await deviceRef.current.setConfig(config as any);
+    },
+    [runRemoteAdminOp],
+  );
 
   const commitConfig = useCallback(async () => {
     const dest = configureTargetNodeNumRef.current;
     const client = remoteAdminClientRef.current;
     if (dest != null && client) {
-      await client.commitRemoteEdit(dest);
+      await runRemoteAdminOp(() => client.commitRemoteEdit(dest));
       await refreshRemoteConfigSnapshot(dest);
       return;
     }
     if (!deviceRef.current) return;
     await deviceRef.current.commitEditSettings();
-  }, [refreshRemoteConfigSnapshot]);
+  }, [refreshRemoteConfigSnapshot, runRemoteAdminOp]);
 
   const setDeviceChannel = useCallback(
     async (args: {
@@ -3572,29 +3587,32 @@ export function useDevice() {
         }),
       }) as ChannelType;
       if (dest != null && client) {
-        await client.setRemoteChannel(dest, channel);
+        await runRemoteAdminOp(() => client.setRemoteChannel(dest, channel));
         return;
       }
       if (!deviceRef.current) return;
       await deviceRef.current.setChannel(channel);
     },
-    [],
+    [runRemoteAdminOp],
   );
 
-  const clearChannel = useCallback(async (index: number) => {
-    const dest = configureTargetNodeNumRef.current;
-    const client = remoteAdminClientRef.current;
-    if (dest != null && client) {
-      const channel = create(ProtobufChannel.ChannelSchema, {
-        index,
-        role: ProtobufChannel.Channel_Role.DISABLED,
-      });
-      await client.setRemoteChannel(dest, channel);
-      return;
-    }
-    if (!deviceRef.current) return;
-    await deviceRef.current.clearChannel(index);
-  }, []);
+  const clearChannel = useCallback(
+    async (index: number) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        const channel = create(ProtobufChannel.ChannelSchema, {
+          index,
+          role: ProtobufChannel.Channel_Role.DISABLED,
+        });
+        await runRemoteAdminOp(() => client.setRemoteChannel(dest, channel));
+        return;
+      }
+      if (!deviceRef.current) return;
+      await deviceRef.current.clearChannel(index);
+    },
+    [runRemoteAdminOp],
+  );
 
   const applyChannelSet = useCallback(
     async (
@@ -3689,58 +3707,64 @@ export function useDevice() {
         isLicensed: owner.isLicensed,
       }) as UserType;
       if (dest != null && client) {
-        await client.setRemoteOwner(dest, user);
+        await runRemoteAdminOp(() => client.setRemoteOwner(dest, user));
         return;
       }
       if (!deviceRef.current) return;
       await deviceRef.current.setOwner(user);
     },
-    [],
+    [runRemoteAdminOp],
   );
 
-  const reboot = useCallback(async (delay: number) => {
-    const dest = configureTargetNodeNumRef.current;
-    const client = remoteAdminClientRef.current;
-    if (dest != null && client) {
-      await client.remoteReboot(dest, delay);
-      return;
-    }
-    if (!deviceRef.current) return;
-    await deviceRef.current.reboot(delay);
-  }, []);
+  const reboot = useCallback(
+    async (delay: number) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.remoteReboot(dest, delay));
+        return;
+      }
+      if (!deviceRef.current) return;
+      await deviceRef.current.reboot(delay);
+    },
+    [runRemoteAdminOp],
+  );
 
-  const shutdown = useCallback(async (delay: number) => {
-    const dest = configureTargetNodeNumRef.current;
-    const client = remoteAdminClientRef.current;
-    if (dest != null && client) {
-      await client.remoteShutdown(dest, delay);
-      return;
-    }
-    if (!deviceRef.current) return;
-    await deviceRef.current.shutdown(delay);
-  }, []);
+  const shutdown = useCallback(
+    async (delay: number) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.remoteShutdown(dest, delay));
+        return;
+      }
+      if (!deviceRef.current) return;
+      await deviceRef.current.shutdown(delay);
+    },
+    [runRemoteAdminOp],
+  );
 
   const factoryReset = useCallback(async () => {
     const dest = configureTargetNodeNumRef.current;
     const client = remoteAdminClientRef.current;
     if (dest != null && client) {
-      await client.remoteFactoryResetDevice(dest);
+      await runRemoteAdminOp(() => client.remoteFactoryResetDevice(dest));
       return;
     }
     if (!deviceRef.current) return;
     await deviceRef.current.factoryResetDevice();
-  }, []);
+  }, [runRemoteAdminOp]);
 
   const resetNodeDb = useCallback(async () => {
     const dest = configureTargetNodeNumRef.current;
     const client = remoteAdminClientRef.current;
     if (dest != null && client) {
-      await client.remoteResetNodeDb(dest);
+      await runRemoteAdminOp(() => client.remoteResetNodeDb(dest));
       return;
     }
     if (!deviceRef.current) return;
     await deviceRef.current.resetNodes();
-  }, []);
+  }, [runRemoteAdminOp]);
 
   const rebootOta = useCallback(async (delay = 2) => {
     if (!deviceRef.current) return;
@@ -3756,12 +3780,12 @@ export function useDevice() {
     const dest = configureTargetNodeNumRef.current;
     const client = remoteAdminClientRef.current;
     if (dest != null && client) {
-      await client.remoteFactoryResetConfig(dest);
+      await runRemoteAdminOp(() => client.remoteFactoryResetConfig(dest));
       return;
     }
     if (!deviceRef.current) return;
     await deviceRef.current.factoryResetConfig();
-  }, []);
+  }, [runRemoteAdminOp]);
 
   const sendWaypoint = useCallback(
     async (wp: Omit<MeshWaypoint, 'from' | 'timestamp'>, dest = 0xffffffff, channel = 0) => {
@@ -3845,19 +3869,22 @@ export function useDevice() {
     }
   }, []);
 
-  const setModuleConfig = useCallback(async (config: unknown) => {
-    const dest = configureTargetNodeNumRef.current;
-    const client = remoteAdminClientRef.current;
-    if (dest != null && client) {
-      await client.setRemoteModuleConfig(dest, config);
-      return;
-    }
-    if (!deviceRef.current) return;
-    // setModuleConfig/setCannedMessages/sendPacket exist at runtime but are not in @meshtastic/js
-    // SDK types; `as any` is required because `as unknown as T` breaks the React Compiler's
-    // memoization analysis inside useCallback.
-    await (deviceRef.current as any).setModuleConfig(config);
-  }, []);
+  const setModuleConfig = useCallback(
+    async (config: unknown) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.setRemoteModuleConfig(dest, config));
+        return;
+      }
+      if (!deviceRef.current) return;
+      // setModuleConfig/setCannedMessages/sendPacket exist at runtime but are not in @meshtastic/js
+      // SDK types; `as any` is required because `as unknown as T` breaks the React Compiler's
+      // memoization analysis inside useCallback.
+      await (deviceRef.current as any).setModuleConfig(config);
+    },
+    [runRemoteAdminOp],
+  );
 
   const setCannedMessages = useCallback(async (messages: string[]) => {
     if (!deviceRef.current) return;

@@ -2,6 +2,8 @@ import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Mesh, Portnums } from '@meshtastic/protobufs';
 
+import { errLikeToLogString } from './errLikeToLogString';
+
 interface AdminMessagePayloadVariant {
   case: string;
   value?: unknown;
@@ -341,6 +343,7 @@ export class MeshtasticRemoteAdminClient {
     try {
       return await device.sendRaw(toRadio, id);
     } catch (e) {
+      console.warn('[MeshtasticRemoteAdmin] sendRaw failed ' + errLikeToLogString(e));
       throw new Error(normalizeRemoteAdminError(e));
     }
   }
