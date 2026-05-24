@@ -836,7 +836,8 @@
     "compactMessages": "Affichage compact des messages",
     "notificationsSection": "Notifications",
     "soundNotifications": "Notifications sonores",
-    "storeForwardAutoFetchHistory": "Récupérer automatiquement l'historique du chat Store & Forward lors de la connexion"
+    "storeForwardAutoFetchHistory": "Récupérer automatiquement l'historique du chat Store & Forward lors de la connexion",
+    "storeForwardAutoFetchHistoryHint": "Sur RF Connect, demandez jusqu'à 50 messages (temps de recharge de 15 minutes entre les extractions). Éteignez si votre passerelle MQTT Bridge est surchargée."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacts actualisés.",
@@ -1012,7 +1013,6 @@
     "receivedViaRf": "Reçu par RF",
     "receivedViaMqtt": "Reçu via MQTT",
     "receivedViaRfAndMqtt": "Reçu via RF + MQTT",
-    "searchButton": "Rechercher des messages (Cmd+F)",
     "closeDm": "Fermer DM",
     "resendMessage": "Renvoyer le message",
     "replyButton": "Répondre",
@@ -1050,7 +1050,14 @@
     "goToMessage": "Aller au message",
     "receivedViaStoreForward": "Rejoué à partir de Store & Forward",
     "fetchStoreForwardHistory": "Rattraper depuis Store & Forward",
-    "fetchStoreForwardHistoryHint": "Demander l'historique des discussions récentes au routeur maillé (jusqu'à 100 messages)"
+    "fetchStoreForwardHistoryHint": "Demander l'historique des discussions récentes au routeur maillé (jusqu'à 100 messages)",
+    "fetchStoreForwardHistorySent": "Demande d'historique de stockage et de transfert envoyée",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Aucun routeur Store & Forward vu pour le moment. Attendez un battement de cœur du routeur ou vérifiez l'onglet Modules.",
+      "not_configured": "La radio est toujours en cours de configuration. Réessayez dans quelques secondes.",
+      "local_is_server": "Cet appareil est un serveur Store & Forward ; l'historique est récupéré par d'autres nœuds.",
+      "send_failed": "Impossible d'envoyer la demande d'historique à la radio. Reconnectez-vous ou réessayez."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Nombre maximal de tentatives de reconnexion MQTT",

@@ -851,7 +851,8 @@
     "compactMessages": "Компактний перегляд повідомлень",
     "notificationsSection": "Сповіщення",
     "soundNotifications": "Звукові сповіщення",
-    "storeForwardAutoFetchHistory": "Автоматично отримувати історію чату магазину та пересилати її при підключенні"
+    "storeForwardAutoFetchHistory": "Автоматично отримувати історію чату магазину та пересилати її при підключенні",
+    "storeForwardAutoFetchHistoryHint": "Під час радіочастотного з 'єднання надішліть запит на отримання до 50 повідомлень (15 хвилин на перезарядження між завантаженнями). Вимкніть, якщо міст шлюзу MQTT перевантажений."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакти оновлено.",
@@ -1027,7 +1028,6 @@
     "receivedViaRf": "Отримано через РФ",
     "receivedViaMqtt": "Отримано через MQTT",
     "receivedViaRfAndMqtt": "Отримано через RF + MQTT",
-    "searchButton": "Пошук повідомлень (Cmd+F)",
     "closeDm": "Закрити DM",
     "resendMessage": "Повторно надіслати повідомлення",
     "replyButton": "Відповісти",
@@ -1065,7 +1065,14 @@
     "goToMessage": "Перейти до повідомлення",
     "receivedViaStoreForward": "Повторне відтворення з магазину та переадресація",
     "fetchStoreForwardHistory": "Догнати з магазину та переслати",
-    "fetchStoreForwardHistoryHint": "Запит нещодавньої історії чату від мережевого маршрутизатора (до 100 повідомлень)"
+    "fetchStoreForwardHistoryHint": "Запит нещодавньої історії чату від мережевого маршрутизатора (до 100 повідомлень)",
+    "fetchStoreForwardHistorySent": "Запит на збереження та переадресацію історії надіслано",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Маршрутизатор Store & Forward ще не зафіксовано. Дочекайтеся серцебиття маршрутизатора або перевірте вкладку Modules (Модулі).",
+      "not_configured": "Радіо все ще налаштовується. Повторіть спробу через кілька секунд.",
+      "local_is_server": "Цей пристрій є сервером Store & Forward; історію отримують інші вузли.",
+      "send_failed": "Не вдалося надіслати запит історії на радіо. Повторно підключіться або повторіть спробу."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Максимальна кількість спроб повторного підключення MQTT",

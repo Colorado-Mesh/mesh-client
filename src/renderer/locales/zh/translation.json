@@ -835,7 +835,8 @@
     "compactMessages": "紧凑的消息视图",
     "notificationsSection": "消息",
     "soundNotifications": "声音通知",
-    "storeForwardAutoFetchHistory": "连接时自动获取商店和转发聊天历史记录"
+    "storeForwardAutoFetchHistory": "连接时自动获取商店和转发聊天历史记录",
+    "storeForwardAutoFetchHistoryHint": "在射频连接时，最多可请求50条消息（两次提取之间的冷却时间为15分钟）。如果您的网关MQTT网桥超载，请关闭。"
   },
   "nodeListPanel": {
     "contactsRefreshed": "联系人已刷新。",
@@ -1011,7 +1012,6 @@
     "receivedViaRf": "通过射频接收",
     "receivedViaMqtt": "通过 MQTT 接收",
     "receivedViaRfAndMqtt": "通过 RF + MQTT 接收",
-    "searchButton": "搜索消息 (Cmd+F)",
     "closeDm": "关闭DM",
     "resendMessage": "重新发送消息",
     "replyButton": "回复",
@@ -1049,7 +1049,14 @@
     "goToMessage": "转到邮件",
     "receivedViaStoreForward": "已从商店和转发中重播",
     "fetchStoreForwardHistory": "从商店赶上并转发",
-    "fetchStoreForwardHistoryHint": "从网状路由器请求最近的聊天记录（最多100条消息）"
+    "fetchStoreForwardHistoryHint": "从网状路由器请求最近的聊天记录（最多100条消息）",
+    "fetchStoreForwardHistorySent": "已发送存储和转发历史记录请求",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "尚未看到Store & Forward路由器。等待路由器心跳或检查模块选项卡。",
+      "not_configured": "收音机仍在配置中。请在几秒钟后重试。",
+      "local_is_server": "此设备是Store & Forward服务器；历史记录由其他节点获取。",
+      "send_failed": "无法向收音机发送历史记录请求。请重新连接或重试。"
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "最大MQTT重新连接尝试次数",

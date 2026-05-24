@@ -851,7 +851,8 @@
     "compactMessages": "Компактный просмотр сообщений",
     "notificationsSection": "Уведомления",
     "soundNotifications": "Звуковые уведомления",
-    "storeForwardAutoFetchHistory": "Автоматически получать историю чата магазина и переадресации при подключении"
+    "storeForwardAutoFetchHistory": "Автоматически получать историю чата магазина и переадресации при подключении",
+    "storeForwardAutoFetchHistoryHint": "При радиочастотном подключении запросите до 50 сообщений (15 минут перезарядки между выборками). Выключите, если мост шлюза MQTT перегружен."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакты обновлены.",
@@ -1026,7 +1027,6 @@
     "receivedViaRf": "Получено через РФ",
     "receivedViaMqtt": "Получено через MQTT",
     "receivedViaRfAndMqtt": "Получено через RF + MQTT",
-    "searchButton": "Поиск сообщений (Cmd+F)",
     "closeDm": "Закрыть DM",
     "resendMessage": "Отправить сообщение повторно",
     "replyButton": "Отвечать",
@@ -1064,7 +1064,14 @@
     "goToMessage": "1. Выберите в меню Письмо",
     "receivedViaStoreForward": "Воспроизводится из магазина и вперед",
     "fetchStoreForwardHistory": "Догнать из магазина и вперед",
-    "fetchStoreForwardHistoryHint": "Запрос недавней истории чата от сетевого маршрутизатора (до 100 сообщений)"
+    "fetchStoreForwardHistoryHint": "Запрос недавней истории чата от сетевого маршрутизатора (до 100 сообщений)",
+    "fetchStoreForwardHistorySent": "Запрос на сохранение и переадресацию истории отправлен",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Маршрутизатор Store & Forward пока не обнаружен. Дождитесь сердцебиения маршрутизатора или проверьте вкладку Modules (Модули).",
+      "not_configured": "Радио все еще настраивается. Повторите попытку через несколько секунд.",
+      "local_is_server": "Это устройство является сервером Store & Forward; история загружается другими узлами.",
+      "send_failed": "Не удалось отправить запрос журнала на радио. Подключитесь заново или повторите попытку."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Максимальное количество попыток переподключения MQTT",

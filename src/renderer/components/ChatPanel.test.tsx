@@ -1671,7 +1671,7 @@ describe('ChatPanel — export chat', () => {
         <ChatPanel {...baseProps} messages={[makeMsg({ payload: 'exported message' })]} />
       </ToastProvider>,
     );
-    const exportBtn = screen.getByTitle('Export chat');
+    const exportBtn = screen.getByRole('button', { name: 'Export chat' });
     await user.click(exportBtn);
     expect(exportFn).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ payload: 'exported message' })]),

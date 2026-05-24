@@ -249,6 +249,62 @@ export function getLastSfHistoryFetchMs(
   return ts != null && ts > 0 ? ts : null;
 }
 
+export interface ObservedStoreForwardPacket {
+  data: Uint8Array;
+  timestamp: number;
+}
+
+/** Pick primary S&F server from cached packets (latest ROUTER_HEARTBEAT) or preferred id. */
+export function resolveStoreForwardServerFromObservedPackets(
+  packetsByNode: ReadonlyMap<number, readonly ObservedStoreForwardPacket[]>,
+  preferredServerId: number | null,
+): { serverNodeId: number; heartbeatPeriod: number } | null {
+  const latestPrimaryHeartbeat = (
+    packets: readonly ObservedStoreForwardPacket[],
+  ): { heartbeatPeriod: number } | null => {
+    let latest: { ts: number; heartbeatPeriod: number } | null = null;
+    for (const p of packets) {
+      const hb = parseStoreForwardHeartbeat(p.data);
+      if (hb?.secondary !== 0) continue;
+      if (!latest || p.timestamp > latest.ts) {
+        latest = { ts: p.timestamp, heartbeatPeriod: hb.period };
+      }
+    }
+    if (!latest) return null;
+    return { heartbeatPeriod: latest.heartbeatPeriod };
+  };
+
+  if (preferredServerId != null) {
+    const preferredPackets = packetsByNode.get(preferredServerId);
+    if (preferredPackets) {
+      const hb = latestPrimaryHeartbeat(preferredPackets);
+      return {
+        serverNodeId: preferredServerId,
+        heartbeatPeriod: hb?.heartbeatPeriod ?? 0,
+      };
+    }
+  }
+
+  let best: { serverNodeId: number; ts: number; heartbeatPeriod: number } | null = null;
+  for (const [nodeId, packets] of packetsByNode) {
+    for (const p of packets) {
+      const hb = parseStoreForwardHeartbeat(p.data);
+      if (hb?.secondary !== 0) continue;
+      if (!best || p.timestamp > best.ts) {
+        best = { serverNodeId: nodeId, ts: p.timestamp, heartbeatPeriod: hb.period };
+      }
+    }
+  }
+  if (best) {
+    return { serverNodeId: best.serverNodeId, heartbeatPeriod: best.heartbeatPeriod };
+  }
+  const firstKey = packetsByNode.keys().next();
+  if (!firstKey.done) {
+    return { serverNodeId: firstKey.value, heartbeatPeriod: 0 };
+  }
+  return null;
+}
+
 export function recordSfHistoryFetch(
   serverNodeId: number,
   now: number = Date.now(),

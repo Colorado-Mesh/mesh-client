@@ -851,7 +851,8 @@
     "compactMessages": "コンパクトなメッセージビュー",
     "notificationsSection": "通知",
     "soundNotifications": "サウンド通知",
-    "storeForwardAutoFetchHistory": "接続時にストアと転送のチャット履歴を自動的に取得する"
+    "storeForwardAutoFetchHistory": "接続時にストアと転送のチャット履歴を自動的に取得する",
+    "storeForwardAutoFetchHistoryHint": "RF接続では、最大50件のメッセージをリクエストします（フェッチ間のクールダウンは15分）。ゲートウェイMQTTブリッジが過負荷の場合はオフにします。"
   },
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",
@@ -1027,7 +1028,6 @@
     "receivedViaRf": "RF経由で受信",
     "receivedViaMqtt": "MQTT経由で受信",
     "receivedViaRfAndMqtt": "RF + MQTT 経由で受信",
-    "searchButton": "メッセージの検索 (Cmd+F)",
     "closeDm": "DMを閉じる",
     "resendMessage": "メッセージを再送信する",
     "replyButton": "返事",
@@ -1065,7 +1065,14 @@
     "goToMessage": "メッセージに移動",
     "receivedViaStoreForward": "ストア&フォワードからリプレイ",
     "fetchStoreForwardHistory": "店舗から追いついて進む",
-    "fetchStoreForwardHistoryHint": "メッシュルーターに最近のチャット履歴をリクエストする（最大100件のメッセージ）"
+    "fetchStoreForwardHistoryHint": "メッシュルーターに最近のチャット履歴をリクエストする（最大100件のメッセージ）",
+    "fetchStoreForwardHistorySent": "ストア&転送履歴リクエストが送信されました",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Store & Forwardルーターはまだ表示されていません。ルーターのハートビートを待つか、[モジュール]タブを確認します。",
+      "not_configured": "ラジオはまだ設定中です。数秒後にもう一度お試しください。",
+      "local_is_server": "このデバイスはStore & Forwardサーバーです。履歴は他のノードによって取得されます。",
+      "send_failed": "ラジオに履歴リクエストを送信できませんでした。再接続するか、もう一度お試しください。"
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "MQTT 再接続の最大試行回数",

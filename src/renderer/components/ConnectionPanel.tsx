@@ -1642,7 +1642,7 @@ export default function ConnectionPanel({
               <span id="ble-device-picker-heading" className="text-sm font-medium text-gray-200">
                 {t('connectionPanel.selectBluetoothDevice')}
               </span>
-              <span className="text-muted text-xs" aria-live="polite">
+              <span className="text-xs text-gray-300" aria-live="polite">
                 {t('connectionPanel.devicesFound', { count: bleDevices.length })}
               </span>
             </div>
@@ -1718,7 +1718,7 @@ export default function ConnectionPanel({
               <span id="serial-port-picker-heading" className="text-sm font-medium text-gray-200">
                 {t('connectionPanel.selectSerialPort')}
               </span>
-              <span className="text-muted text-xs" aria-live="polite">
+              <span className="text-xs text-gray-300" aria-live="polite">
                 {t('connectionPanel.devicesFound', { count: serialPorts.length })}
               </span>
             </div>

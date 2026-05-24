@@ -851,7 +851,8 @@
     "compactMessages": "Kompaktowy widok wiadomości",
     "notificationsSection": "Zawiadomienia",
     "soundNotifications": "Powiadomienia dźwiękowe",
-    "storeForwardAutoFetchHistory": "Automatycznie pobierz historię Sklepu i Przekaż dalej historię czatu podczas połączenia"
+    "storeForwardAutoFetchHistory": "Automatycznie pobierz historię Sklepu i Przekaż dalej historię czatu podczas połączenia",
+    "storeForwardAutoFetchHistoryHint": "W przypadku połączenia radiowego zażądaj do 50 wiadomości (15-minutowe schładzanie między pobieraniem). Wyłącz, jeśli mostek bramki MQTT jest przeciążony."
   },
   "nodeListPanel": {
     "refreshFailed": "Odświeżanie nie powiodło się: {{message}}",
@@ -1027,7 +1028,6 @@
     "receivedViaRf": "Otrzymano za pośrednictwem RF",
     "receivedViaMqtt": "Odebrane poprzez MQTT",
     "receivedViaRfAndMqtt": "Odebrane przez RF + MQTT",
-    "searchButton": "Wyszukaj wiadomości (Cmd+F)",
     "closeDm": "Zamknij DM",
     "resendMessage": "Wyślij wiadomość ponownie",
     "replyButton": "Odpowiedź",
@@ -1065,7 +1065,14 @@
     "goToMessage": "Przejdź do wiadomości",
     "receivedViaStoreForward": "Odtworzono ze sklepu i przekazano dalej",
     "fetchStoreForwardHistory": "Nadrobić zaległości ze sklepu i przekazać dalej",
-    "fetchStoreForwardHistoryHint": "Poproś o historię ostatnich czatów z routera mesh (do 100 wiadomości)"
+    "fetchStoreForwardHistoryHint": "Poproś o historię ostatnich czatów z routera mesh (do 100 wiadomości)",
+    "fetchStoreForwardHistorySent": "Wysłano żądanie historii sklepu i przekazywania",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Nie widać jeszcze routera Store & Forward. Poczekaj na bicie serca routera lub sprawdź kartę Moduły.",
+      "not_configured": "Radio jest nadal konfigurowane. Spróbuj ponownie za kilka sekund.",
+      "local_is_server": "To urządzenie jest serwerem Store & Forward; historia jest pobierana przez inne węzły.",
+      "send_failed": "Nie można wysłać żądania historii do radia. Połącz ponownie lub spróbuj ponownie."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksymalna liczba prób ponownego połączenia MQTT",

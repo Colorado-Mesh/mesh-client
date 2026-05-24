@@ -851,7 +851,8 @@
     "compactMessages": "Kompakt mesaj görünümü",
     "notificationsSection": "Bildirimler",
     "soundNotifications": "Sesli Bildirimler",
-    "storeForwardAutoFetchHistory": "Bağlanıldığında Mağaza ve İlet sohbet geçmişini otomatik olarak getir"
+    "storeForwardAutoFetchHistory": "Bağlanıldığında Mağaza ve İlet sohbet geçmişini otomatik olarak getir",
+    "storeForwardAutoFetchHistoryHint": "RF bağlantısında, 50 'ye kadar mesaj isteyin (getirmeler arasında 15 dakika bekleme süresi). Ağ geçidi MQTT köprünüz aşırı yüklüyse kapatın."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",
@@ -1027,7 +1028,6 @@
     "receivedViaRf": "RF aracılığıyla alındı",
     "receivedViaMqtt": "MQTT aracılığıyla alındı",
     "receivedViaRfAndMqtt": "RF + MQTT aracılığıyla alındı",
-    "searchButton": "Mesajlarda arama yapın (Cmd+F)",
     "closeDm": "DM'yi kapat",
     "resendMessage": "Mesajı yeniden gönder",
     "replyButton": "Cevap vermek",
@@ -1065,7 +1065,14 @@
     "goToMessage": "Mesaja git",
     "receivedViaStoreForward": "Store & Forward'dan yeniden oynatıldı",
     "fetchStoreForwardHistory": "Store & Forward'dan bilgi alın",
-    "fetchStoreForwardHistoryHint": "Ağ yönlendiriciden en son sohbet geçmişini isteyin (100 mesaja kadar)"
+    "fetchStoreForwardHistoryHint": "Ağ yönlendiriciden en son sohbet geçmişini isteyin (100 mesaja kadar)",
+    "fetchStoreForwardHistorySent": "Saklama ve İletme geçmişi isteği gönderildi",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Henüz Store & Forward yönlendirici görülmedi. Yönlendiricinin kalp atışını bekleyin veya Modüller sekmesini kontrol edin.",
+      "not_configured": "Radyo hala yapılandırılıyor. Birkaç saniye sonra tekrar deneyin.",
+      "local_is_server": "Bu cihaz bir Store & Forward sunucusudur; geçmiş diğer düğümler tarafından getirilir.",
+      "send_failed": "Radyoya geçmiş isteği gönderilemedi. Yeniden bağlanın veya tekrar deneyin."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksimum MQTT yeniden bağlanma denemesi",

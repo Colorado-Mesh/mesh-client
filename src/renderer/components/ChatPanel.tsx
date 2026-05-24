@@ -3,7 +3,9 @@ import 'emoji-picker-element';
 
 import type { TFunction } from 'i18next';
 import {
+  type ComponentProps,
   memo,
+  type ReactNode,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -22,6 +24,7 @@ import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/n
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { useChatOutbox } from '../hooks/useChatOutbox';
+import type { RequestStoreForwardHistoryResult } from '../hooks/useDevice';
 import { useNowMs } from '../hooks/useNowMs';
 import {
   countMessageChars,
@@ -54,6 +57,33 @@ import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
+import { useToast } from './Toast';
+
+/** Toolbar icon button with Electron-friendly HelpTooltip (native `title` does not show). */
+function ChatToolbarTooltipButton({
+  tooltip,
+  children,
+  className,
+  ...buttonProps
+}: {
+  tooltip: string;
+  children: ReactNode;
+  className?: string;
+} & Omit<ComponentProps<'button'>, 'children'>) {
+  return (
+    <HelpTooltip text={tooltip} className="shrink-0">
+      <button
+        type="button"
+        className={
+          className ?? 'text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-300'
+        }
+        {...buttonProps}
+      >
+        {children}
+      </button>
+    </HelpTooltip>
+  );
+}
 
 declare module 'react' {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -410,7 +440,7 @@ export interface ChatPanelProps {
   outerScrollMetricsRootRef?: React.RefObject<HTMLElement | null>;
   compactMode?: boolean;
   /** Meshtastic RF: request Store & Forward chat history from the router. */
-  onFetchStoreForwardHistory?: () => void | Promise<void>;
+  onFetchStoreForwardHistory?: () => Promise<RequestStoreForwardHistoryResult>;
 }
 
 function ChatPanel({
@@ -436,6 +466,7 @@ function ChatPanel({
   onFetchStoreForwardHistory,
 }: ChatPanelProps) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const ownNodeIdSet = useMemo(() => {
     const base = ownNodeIds != null && ownNodeIds.length > 0 ? ownNodeIds : [myNodeNum];
     return new Set(base.filter((id) => id > 0));
@@ -1392,11 +1423,8 @@ function ChatPanel({
           })}
         </div>
 
-        {/* Jump-to-date toggle */}
-        <button
-          onClick={() => {
-            setShowDatePicker((v) => !v);
-          }}
+        <ChatToolbarTooltipButton
+          tooltip={t('chatPanel.jumpToDate')}
           aria-pressed={showDatePicker}
           aria-label={t('chatPanel.jumpToDate')}
           className={`shrink-0 rounded-lg p-1.5 transition-colors ${
@@ -1404,7 +1432,9 @@ function ChatPanel({
               ? 'bg-brand-green/20 text-bright-green'
               : 'text-muted hover:text-gray-300'
           }`}
-          title={t('chatPanel.jumpToDate')}
+          onClick={() => {
+            setShowDatePicker((v) => !v);
+          }}
         >
           <svg
             className="h-4 w-4"
@@ -1420,17 +1450,26 @@ function ChatPanel({
               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
             />
           </svg>
-        </button>
+        </ChatToolbarTooltipButton>
 
         {protocol === 'meshtastic' && isConnected && !isMqttOnly && onFetchStoreForwardHistory && (
-          <button
-            type="button"
-            onClick={() => {
-              void onFetchStoreForwardHistory();
-            }}
+          <ChatToolbarTooltipButton
+            tooltip={t('chatPanel.fetchStoreForwardHistoryHint')}
             aria-label={t('chatPanel.fetchStoreForwardHistory')}
-            className="text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-300"
-            title={t('chatPanel.fetchStoreForwardHistoryHint')}
+            onClick={() => {
+              void (async () => {
+                setChatActionError(null);
+                const result = await onFetchStoreForwardHistory();
+                if (!result.ok) {
+                  setChatActionError({
+                    message: t(`chatPanel.fetchStoreForwardHistoryError.${result.code}`),
+                    viewKey,
+                  });
+                  return;
+                }
+                addToast(t('chatPanel.fetchStoreForwardHistorySent'), 'success');
+              })();
+            }}
           >
             <svg
               className="h-4 w-4"
@@ -1446,26 +1485,27 @@ function ChatPanel({
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-          </button>
+          </ChatToolbarTooltipButton>
         )}
 
-        {/* Export chat */}
-        <button
-          onClick={async () => {
-            const msgs: ChatExportMessage[] = filteredMessages.map((m) => ({
-              timestamp: m.timestamp,
-              sender_name: m.sender_name,
-              payload: m.payload,
-              channel: m.channel,
-              to: m.to,
-            }));
-            const result = await window.electronAPI.chat.export(msgs);
-            if (!result.success)
-              setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
-          }}
+        <ChatToolbarTooltipButton
+          tooltip={t('chatPanel.exportChat')}
           aria-label={t('chatPanel.exportChat')}
-          className="text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-300"
-          title={t('chatPanel.exportChat')}
+          onClick={() => {
+            void (async () => {
+              const msgs: ChatExportMessage[] = filteredMessages.map((m) => ({
+                timestamp: m.timestamp,
+                sender_name: m.sender_name,
+                payload: m.payload,
+                channel: m.channel,
+                to: m.to,
+              }));
+              const result = await window.electronAPI.chat.export(msgs);
+              if (!result.success) {
+                setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
+              }
+            })();
+          }}
         >
           <svg
             className="h-4 w-4"
@@ -1481,19 +1521,18 @@ function ChatPanel({
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
             />
           </svg>
-        </button>
+        </ChatToolbarTooltipButton>
 
-        {/* Search toggle */}
-        <button
-          onClick={() => {
-            setShowSearch(!showSearch);
-          }}
+        <ChatToolbarTooltipButton
+          tooltip={t('chatPanel.searchMessages')}
           aria-pressed={showSearch}
           aria-label={t('chatPanel.searchMessages')}
           className={`shrink-0 rounded-lg p-1.5 transition-colors ${
             showSearch ? 'bg-brand-green/20 text-bright-green' : 'text-muted hover:text-gray-300'
           }`}
-          title={t('chatPanel.searchButton')}
+          onClick={() => {
+            setShowSearch(!showSearch);
+          }}
         >
           <svg
             className="h-4 w-4"
@@ -1509,14 +1548,15 @@ function ChatPanel({
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
-        </button>
+        </ChatToolbarTooltipButton>
 
-        {/* Per-conversation mute toggle — mutes the currently viewed channel or DM */}
         {viewMode !== 'starred' && (
-          <button
-            onClick={() => {
-              toggleMuteView(viewKey);
-            }}
+          <ChatToolbarTooltipButton
+            tooltip={
+              mutedViews.has(viewKey)
+                ? t('chatPanel.unmuteConversation')
+                : t('chatPanel.muteConversation')
+            }
             aria-pressed={mutedViews.has(viewKey)}
             aria-label={
               mutedViews.has(viewKey)
@@ -1528,11 +1568,9 @@ function ChatPanel({
                 ? 'text-amber-500 hover:text-amber-300'
                 : 'text-muted hover:text-gray-300'
             }`}
-            title={
-              mutedViews.has(viewKey)
-                ? t('chatPanel.unmuteConversation')
-                : t('chatPanel.muteConversation')
-            }
+            onClick={() => {
+              toggleMuteView(viewKey);
+            }}
           >
             <svg
               className="h-4 w-4"
@@ -1556,14 +1594,11 @@ function ChatPanel({
                 />
               )}
             </svg>
-          </button>
+          </ChatToolbarTooltipButton>
         )}
 
-        {/* Starred messages toggle */}
-        <button
-          onClick={() => {
-            setViewMode((v) => (v === 'starred' ? 'channels' : 'starred'));
-          }}
+        <ChatToolbarTooltipButton
+          tooltip={t('chatPanel.starredMessages')}
           aria-pressed={viewMode === 'starred'}
           aria-label={t('chatPanel.starredMessages')}
           className={`shrink-0 rounded-lg p-1.5 transition-colors ${
@@ -1571,7 +1606,9 @@ function ChatPanel({
               ? 'bg-brand-green/20 text-amber-400'
               : 'text-muted hover:text-gray-300'
           }`}
-          title={t('chatPanel.starredMessages')}
+          onClick={() => {
+            setViewMode((v) => (v === 'starred' ? 'channels' : 'starred'));
+          }}
         >
           <svg
             className="h-4 w-4"
@@ -1587,7 +1624,7 @@ function ChatPanel({
               d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
             />
           </svg>
-        </button>
+        </ChatToolbarTooltipButton>
       </div>
 
       {/* Row 2 — DM tabs */}
@@ -2534,30 +2571,31 @@ function ChatPanel({
           />
         </div>
         {/* end relative wrapper */}
-        {/* Compose emoji picker toggle */}
-        <button
-          onMouseDown={(e) => {
-            e.preventDefault(); // keep textarea focused; also pre-focus it so OS settles before showEmojiPanel()
-            if (!isLinux) inputRef.current?.focus();
-          }}
-          onClick={() => {
-            if (isLinux) {
-              setShowComposePicker((prev) => !prev);
-            } else {
-              void window.electronAPI.showEmojiPanel();
-            }
-          }}
-          disabled={!isConnected || sending}
-          aria-label={t('chatPanel.emojiButton')}
-          className={`rounded-xl px-2.5 py-2.5 transition-colors disabled:opacity-50 ${
-            showComposePicker
-              ? 'bg-brand-green/20 text-bright-green'
-              : 'bg-secondary-dark/80 text-muted border border-gray-600/50 hover:text-gray-300'
-          }`}
-          title={t('chatPanel.insertEmoji')}
-        >
-          😊
-        </button>
+        <HelpTooltip text={t('chatPanel.insertEmoji')}>
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault(); // keep textarea focused; also pre-focus it so OS settles before showEmojiPanel()
+              if (!isLinux) inputRef.current?.focus();
+            }}
+            onClick={() => {
+              if (isLinux) {
+                setShowComposePicker((prev) => !prev);
+              } else {
+                void window.electronAPI.showEmojiPanel();
+              }
+            }}
+            disabled={!isConnected || sending}
+            aria-label={t('chatPanel.emojiButton')}
+            className={`rounded-xl px-2.5 py-2.5 transition-colors disabled:opacity-50 ${
+              showComposePicker
+                ? 'bg-brand-green/20 text-bright-green'
+                : 'bg-secondary-dark/80 text-muted border border-gray-600/50 hover:text-gray-300'
+            }`}
+          >
+            😊
+          </button>
+        </HelpTooltip>
         <button
           onClick={handleSend}
           disabled={!input.trim() || sending || inputChunks === null}

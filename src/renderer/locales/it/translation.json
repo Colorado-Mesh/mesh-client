@@ -851,7 +851,8 @@
     "compactMessages": "Visualizzazione compatta dei messaggi",
     "notificationsSection": "Notifiche",
     "soundNotifications": "Notifiche sonore",
-    "storeForwardAutoFetchHistory": "Recupera automaticamente la cronologia della chat Store & Forward su Connect"
+    "storeForwardAutoFetchHistory": "Recupera automaticamente la cronologia della chat Store & Forward su Connect",
+    "storeForwardAutoFetchHistoryHint": "Su RF Connect, richiedi fino a 50 messaggi (15 minuti di ricarica tra un recupero e l'altro). Spegnere se il ponte MQTT del gateway è sovraccarico."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contatti aggiornati.",
@@ -1027,7 +1028,6 @@
     "receivedViaRf": "Ricevuto tramite RF",
     "receivedViaMqtt": "Ricevuto tramite MQTT",
     "receivedViaRfAndMqtt": "Ricevuto tramite RF + MQTT",
-    "searchButton": "Cerca messaggi (Cmd+F)",
     "closeDm": "Chiudi DM",
     "resendMessage": "Invia nuovamente il messaggio",
     "replyButton": "Rispondere",
@@ -1065,7 +1065,14 @@
     "goToMessage": "Vai al messaggio",
     "receivedViaStoreForward": "Riprodotto da Store & Forward",
     "fetchStoreForwardHistory": "Recupera da Store & Forward",
-    "fetchStoreForwardHistoryHint": "Richiedi la cronologia chat recente dal router mesh (fino a 100 messaggi)"
+    "fetchStoreForwardHistoryHint": "Richiedi la cronologia chat recente dal router mesh (fino a 100 messaggi)",
+    "fetchStoreForwardHistorySent": "Richiesta di cronologia Store & Forward inviata",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Nessun router Store & Forward ancora visto. Attendi un heartbeat del router o controlla la scheda Moduli.",
+      "not_configured": "La radio è ancora in fase di configurazione. Riprova tra qualche secondo.",
+      "local_is_server": "Questo dispositivo è un server Store & Forward; la cronologia viene recuperata da altri nodi.",
+      "send_failed": "Impossibile inviare la richiesta di cronologia alla radio. Riconnettiti o riprova."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Numero massimo di tentativi di riconnessione MQTT",

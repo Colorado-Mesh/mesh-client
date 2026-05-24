@@ -20,6 +20,7 @@ import {
   reserveStoreForwardHistoryRequest,
   resolveAutoStoreForwardHistoryWindowMinutes,
   resolveMeshtasticTextMessagePayload,
+  resolveStoreForwardServerFromObservedPackets,
   SF_AUTO_HISTORY_COOLDOWN_MS,
   SF_AUTO_HISTORY_MESSAGE_CAP,
   SF_AUTO_HISTORY_OFFLINE_MIN_MS,
@@ -179,6 +180,31 @@ describe('meshtasticBacklogUtils', () => {
         lastDisconnectMs: now - SF_AUTO_HISTORY_OFFLINE_MIN_MS - 1000,
       }),
     ).toBe(true);
+  });
+
+  it('resolves S&F server from latest primary heartbeat in observed packets', () => {
+    const serverA = 0xaaaa;
+    const serverB = 0xbbbb;
+    const hbA = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
+      case: 'heartbeat',
+      value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 60, secondary: 0 }),
+    });
+    const hbB = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
+      case: 'heartbeat',
+      value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 120, secondary: 0 }),
+    });
+    const map = new Map([
+      [serverA, [{ data: hbA, timestamp: 1000 }]],
+      [serverB, [{ data: hbB, timestamp: 2000 }]],
+    ]);
+    expect(resolveStoreForwardServerFromObservedPackets(map, null)).toEqual({
+      serverNodeId: serverB,
+      heartbeatPeriod: 120,
+    });
+    expect(resolveStoreForwardServerFromObservedPackets(map, serverA)).toEqual({
+      serverNodeId: serverA,
+      heartbeatPeriod: 60,
+    });
   });
 
   it('persists per-server fetch timestamps in localStorage', () => {

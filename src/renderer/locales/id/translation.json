@@ -851,7 +851,8 @@
     "compactMessages": "Tampilan pesan ringkas",
     "notificationsSection": "Notifikasi",
     "soundNotifications": "Pemberitahuan suara",
-    "storeForwardAutoFetchHistory": "Ambil riwayat obrolan Toko & Teruskan secara otomatis saat terhubung"
+    "storeForwardAutoFetchHistory": "Ambil riwayat obrolan Toko & Teruskan secara otomatis saat terhubung",
+    "storeForwardAutoFetchHistoryHint": "Pada koneksi RF, minta hingga 50 pesan (mode tenang 15 menit di antara pengambilan). Matikan jika jembatan gerbang MQTT Anda kelebihan beban."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontak disegarkan.",
@@ -1027,7 +1028,6 @@
     "receivedViaRf": "Diterima melalui RF",
     "receivedViaMqtt": "Diterima melalui MQTT",
     "receivedViaRfAndMqtt": "Diterima melalui RF + MQTT",
-    "searchButton": "Pesan pencarian (Cmd+F)",
     "closeDm": "Tutup DM",
     "resendMessage": "Kirim ulang pesan",
     "replyButton": "Membalas",
@@ -1065,7 +1065,14 @@
     "goToMessage": "“Pergi ke pesan”",
     "receivedViaStoreForward": "Diputar Ulang dari Store & Forward",
     "fetchStoreForwardHistory": "Kejar dari Toko & Teruskan",
-    "fetchStoreForwardHistoryHint": "Minta riwayat obrolan terbaru dari router mesh (hingga 100 pesan)"
+    "fetchStoreForwardHistoryHint": "Minta riwayat obrolan terbaru dari router mesh (hingga 100 pesan)",
+    "fetchStoreForwardHistorySent": "Permintaan riwayat Simpan & Teruskan terkirim",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Belum ada router Store & Forward yang terlihat. Tunggu detak jantung router atau periksa tab Modul.",
+      "not_configured": "Radio masih dikonfigurasi. Coba lagi dalam beberapa detik.",
+      "local_is_server": "Perangkat ini adalah server Store & Forward; riwayat diambil oleh node lain.",
+      "send_failed": "Tidak dapat mengirim permintaan riwayat ke radio. Sambungkan kembali atau coba lagi."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Upaya penyambungan kembali MQTT maks",

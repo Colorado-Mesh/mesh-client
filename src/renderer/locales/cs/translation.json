@@ -837,7 +837,8 @@
     "compactMessages": "Kompaktní zobrazení zpráv",
     "notificationsSection": "Oznámení",
     "soundNotifications": "Zvuková upozornění",
-    "storeForwardAutoFetchHistory": "Automaticky načíst historii chatu v obchodě a přeposlat při připojení"
+    "storeForwardAutoFetchHistory": "Automaticky načíst historii chatu v obchodě a přeposlat při připojení",
+    "storeForwardAutoFetchHistoryHint": "Při RF připojení si vyžádejte až 50 zpráv (15minutový cooldown mezi načteními). Vypněte, pokud je váš most brány MQTT přetížen."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakty byly obnoveny.",
@@ -1013,7 +1014,6 @@
     "receivedViaRf": "Přijato přes RF",
     "receivedViaMqtt": "Přijato přes MQTT",
     "receivedViaRfAndMqtt": "Přijato přes RF + MQTT",
-    "searchButton": "Hledat zprávy (Cmd+F)",
     "closeDm": "Zavřít DM",
     "resendMessage": "Znovu odeslat zprávu",
     "replyButton": "Odpověď",
@@ -1051,7 +1051,14 @@
     "goToMessage": "Přejít na zprávu",
     "receivedViaStoreForward": "Přehráno z obchodu & Vpřed",
     "fetchStoreForwardHistory": "Dohnat od Store & Forward",
-    "fetchStoreForwardHistoryHint": "Vyžádejte si nedávnou historii chatu ze síťového směrovače (až 100 zpráv)"
+    "fetchStoreForwardHistoryHint": "Vyžádejte si nedávnou historii chatu ze síťového směrovače (až 100 zpráv)",
+    "fetchStoreForwardHistorySent": "Žádost o historii ukládání a přeposílání byla odeslána",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Zatím nebyl zobrazen žádný směrovač Store & Forward. Počkejte na srdeční tep routeru nebo zkontrolujte kartu Moduly.",
+      "not_configured": "Rádio se stále konfiguruje. Zkuste to znovu za několik sekund.",
+      "local_is_server": "Toto zařízení je server Store & Forward; historie je načtena jinými uzly.",
+      "send_failed": "Nelze odeslat požadavek na historii do rádia. Připojte se znovu nebo to zkuste znovu."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maximální počet pokusů o opětovné připojení MQTT",

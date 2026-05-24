@@ -18,6 +18,7 @@ import {
   reserveStoreForwardHistoryRequest,
   resolveAutoStoreForwardHistoryWindowMinutes,
   resolveMeshtasticTextMessagePayload,
+  resolveStoreForwardServerFromObservedPackets,
   SF_AUTO_HISTORY_MESSAGE_CAP,
   SF_MANUAL_HISTORY_MESSAGE_CAP,
   shouldAutoRequestStoreForwardHistoryOnHeartbeat,
@@ -178,6 +179,10 @@ function getOrCreateVirtualNodeId(): number {
 function clearVirtualNodeId(): void {
   localStorage.removeItem('mesh-client:mqttVirtualNodeId');
 }
+
+export type RequestStoreForwardHistoryResult =
+  | { ok: true }
+  | { ok: false; code: 'no_server' | 'not_configured' | 'local_is_server' | 'send_failed' };
 
 function meshtasticRawPacketPortLabel(packet: unknown): string {
   const p = packet as {
@@ -362,6 +367,7 @@ export function useDevice() {
   const [storeForwardMessages, setStoreForwardMessages] = useState<
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
+  const storeForwardMessagesRef = useRef(storeForwardMessages);
   const [rangeTestPackets, setRangeTestPackets] = useState<
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
@@ -690,6 +696,10 @@ export function useDevice() {
   useEffect(() => {
     moduleConfigsRef.current = moduleConfigs;
   }, [moduleConfigs]);
+
+  useEffect(() => {
+    storeForwardMessagesRef.current = storeForwardMessages;
+  }, [storeForwardMessages]);
 
   // ─── MQTT event subscriptions (independent of RF device) ──────
   useEffect(() => {
@@ -1121,35 +1131,57 @@ export function useDevice() {
   }, []);
 
   const requestStoreForwardHistoryRef = useRef<
-    (options?: { serverNodeId?: number; manual?: boolean }) => Promise<void>
-  >(() => Promise.resolve());
+    (options?: {
+      serverNodeId?: number;
+      manual?: boolean;
+    }) => Promise<RequestStoreForwardHistoryResult>
+  >(() => Promise.resolve({ ok: false, code: 'no_server' }));
 
   const requestStoreForwardHistory = useCallback(
-    async (options?: { serverNodeId?: number; manual?: boolean }) => {
+    async (options?: {
+      serverNodeId?: number;
+      manual?: boolean;
+    }): Promise<RequestStoreForwardHistoryResult> => {
       const manual = options?.manual === true;
-      const serverNodeId = options?.serverNodeId ?? lastSfHeartbeatServerRef.current;
-      if (serverNodeId == null) {
-        console.warn(
-          '[useDevice] Store & Forward history: no server node (wait for a router heartbeat)',
+      let serverNodeId = options?.serverNodeId ?? lastSfHeartbeatServerRef.current;
+      let heartbeatPeriod = lastSfHeartbeatPeriodRef.current;
+
+      if (serverNodeId == null || manual) {
+        const resolved = resolveStoreForwardServerFromObservedPackets(
+          storeForwardMessagesRef.current,
+          serverNodeId ?? lastSfHeartbeatServerRef.current,
         );
-        return;
+        if (resolved) {
+          serverNodeId = resolved.serverNodeId;
+          if (resolved.heartbeatPeriod > 0) {
+            heartbeatPeriod = resolved.heartbeatPeriod;
+          }
+        }
+      }
+
+      if (serverNodeId == null) {
+        if (!manual) {
+          console.debug('[useDevice] Store & Forward history skipped: no server node yet');
+        }
+        return { ok: false, code: 'no_server' };
       }
 
       const myNode = myNodeNumRef.current;
       const activeDevice = deviceRef.current;
       if (!myNode || !activeDevice || !deviceConfiguredRef.current) {
-        if (manual) {
-          console.warn('[useDevice] Store & Forward history: radio not configured');
+        if (!manual) {
+          console.debug('[useDevice] Store & Forward history skipped: radio not configured');
         }
-        return;
+        return { ok: false, code: 'not_configured' };
       }
 
       const sfCfg = moduleConfigsRef.current.storeForward as { isServer?: boolean } | undefined;
-      if (sfCfg?.isServer === true) return;
+      if (sfCfg?.isServer === true) {
+        return { ok: false, code: 'local_is_server' };
+      }
 
       const now = Date.now();
       const channel = lastSfHeartbeatChannelRef.current;
-      const heartbeatPeriod = lastSfHeartbeatPeriodRef.current;
 
       if (!manual) {
         const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
@@ -1171,12 +1203,12 @@ export function useDevice() {
             lastDisconnectMs: lastRfDisconnectAtRef.current,
           })
         ) {
-          return;
+          return { ok: false, code: 'no_server' };
         }
         if (
           !reserveStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId)
         ) {
-          return;
+          return { ok: false, code: 'no_server' };
         }
       }
 
@@ -1196,6 +1228,7 @@ export function useDevice() {
         console.debug(
           `[useDevice] Store & Forward CLIENT_HISTORY sent to 0x${serverNodeId.toString(16)} ch=${channel} manual=${manual}`,
         );
+        return { ok: true };
       } catch (e: unknown) {
         if (!manual) {
           releaseStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId);
@@ -1203,6 +1236,7 @@ export function useDevice() {
         console.error(
           '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
         );
+        return { ok: false, code: 'send_failed' };
       }
     },
     [],

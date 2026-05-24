@@ -851,7 +851,8 @@
     "compactMessages": "Vista compacta de mensajes",
     "notificationsSection": "Notificaciones",
     "soundNotifications": "Notificaciones con Sonido",
-    "storeForwardAutoFetchHistory": "Obtener automáticamente el historial de chat de almacenamiento y reenvío en Connect"
+    "storeForwardAutoFetchHistory": "Obtener automáticamente el historial de chat de almacenamiento y reenvío en Connect",
+    "storeForwardAutoFetchHistoryHint": "En la conexión de RF, solicite hasta 50 mensajes (15 minutos de tiempo de reutilización entre tomas). Apague si el puente MQTT de su puerta de enlace está sobrecargado."
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contactos actualizados.",
@@ -1027,7 +1028,6 @@
     "receivedViaRf": "Recibido vía RF",
     "receivedViaMqtt": "Recibido vía MQTT",
     "receivedViaRfAndMqtt": "Recibido vía RF + MQTT",
-    "searchButton": "Buscar mensajes (Cmd+F)",
     "closeDm": "Cerrar DM",
     "resendMessage": "Reenviar mensaje",
     "replyButton": "Responder",
@@ -1065,7 +1065,14 @@
     "goToMessage": "Ir al mensaje",
     "receivedViaStoreForward": "Reproducido desde Store & Forward",
     "fetchStoreForwardHistory": "Póngase al día con Store & Forward",
-    "fetchStoreForwardHistoryHint": "Solicite el historial de chat reciente desde el router de malla (hasta 100 mensajes)"
+    "fetchStoreForwardHistoryHint": "Solicite el historial de chat reciente desde el router de malla (hasta 100 mensajes)",
+    "fetchStoreForwardHistorySent": "Solicitud de historial de almacenamiento y reenvío enviada",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "Aún no se ha visto el router de almacenamiento y reenvío. Espere un latido del router o consulte la pestaña Módulos.",
+      "not_configured": "La radio aún se está configurando. Inténtalo de nuevo en unos segundos.",
+      "local_is_server": "Este dispositivo es un servidor de almacenamiento y reenvío; el historial es recuperado por otros nodos.",
+      "send_failed": "No se ha podido enviar la solicitud de historial a la radio. Vuelve a conectarte o inténtalo de nuevo."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Intentos de reconexión MQTT máximos",

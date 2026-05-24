@@ -856,6 +856,7 @@
     "logPanelHelp": "When enabled, a live log stream appears on the right. Debug lines require the checkbox inside the log panel.",
     "compactMessages": "Compact message view",
     "storeForwardAutoFetchHistory": "Automatically fetch Store & Forward chat history on connect",
+    "storeForwardAutoFetchHistoryHint": "On RF connect, request up to 50 messages (15 min cooldown between fetches). Turn off if your gateway MQTT bridge is overloaded.",
     "notificationsSection": "Notifications",
     "soundNotifications": "Sound notifications"
   },
@@ -1033,7 +1034,6 @@
     "receivedViaMqtt": "Received via MQTT",
     "receivedViaRfAndMqtt": "Received via RF + MQTT",
     "receivedViaStoreForward": "Replayed from Store & Forward",
-    "searchButton": "Search messages (Cmd+F)",
     "closeDm": "Close DM",
     "resendMessage": "Resend message",
     "replyButton": "Reply",
@@ -1056,6 +1056,13 @@
     "exportChat": "Export chat",
     "fetchStoreForwardHistory": "Catch up from Store & Forward",
     "fetchStoreForwardHistoryHint": "Request recent chat history from the mesh router (up to 100 messages)",
+    "fetchStoreForwardHistorySent": "Store & Forward history request sent",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "No Store & Forward router seen yet. Wait for a router heartbeat or check the Modules tab.",
+      "not_configured": "Radio is still configuring. Try again in a few seconds.",
+      "local_is_server": "This device is a Store & Forward server; history is fetched by other nodes.",
+      "send_failed": "Could not send history request to the radio. Reconnect or try again."
+    },
     "exportChatSuccess": "Chat exported",
     "exportChatFailed": "Export failed",
     "dmNodeLastHeard": "Last heard {{time}}",

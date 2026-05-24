@@ -851,7 +851,8 @@
     "compactMessages": "간결한 메시지 보기",
     "notificationsSection": "토",
     "soundNotifications": "소리 알림",
-    "storeForwardAutoFetchHistory": "연결 시 스토어 및 전달 채팅 내역 자동 가져오기"
+    "storeForwardAutoFetchHistory": "연결 시 스토어 및 전달 채팅 내역 자동 가져오기",
+    "storeForwardAutoFetchHistoryHint": "RF 연결 시 최대 50개의 메시지를 요청합니다 (가져오기 사이의 재사용 대기 시간 15분). 게이트웨이 MQTT 브리지에 과부하가 걸리면 끄십시오."
   },
   "nodeListPanel": {
     "contactsRefreshed": "연락처가 새로 고쳐졌습니다.",
@@ -1027,7 +1028,6 @@
     "receivedViaRf": "RF를 통해 수신됨",
     "receivedViaMqtt": "MQTT를 통해 수신됨",
     "receivedViaRfAndMqtt": "RF + MQTT를 통해 수신됨",
-    "searchButton": "메시지 검색(Cmd+F)",
     "closeDm": "DM 닫기",
     "resendMessage": "메시지 다시 보내기",
     "replyButton": "회신하다",
@@ -1065,7 +1065,14 @@
     "goToMessage": "메시지",
     "receivedViaStoreForward": "스토어 & 포워드에서 재생됨",
     "fetchStoreForwardHistory": "스토어 & 포워드에서 따라잡기",
-    "fetchStoreForwardHistoryHint": "메시 라우터에서 최근 채팅 기록 요청 (최대 100개 메시지)"
+    "fetchStoreForwardHistoryHint": "메시 라우터에서 최근 채팅 기록 요청 (최대 100개 메시지)",
+    "fetchStoreForwardHistorySent": "스토어 및 전달 내역 요청 전송됨",
+    "fetchStoreForwardHistoryError": {
+      "no_server": "아직 스토어 및 포워드 라우터가 없습니다. 라우터 하트비트를 기다리거나 모듈 탭을 확인하십시오.",
+      "not_configured": "라디오는 여전히 구성 중입니다. 몇 초 후에 다시 시도하세요.",
+      "local_is_server": "이 장치는 스토어 및 포워드 서버입니다. 히스토리는 다른 노드에서 가져옵니다.",
+      "send_failed": "라디오에 기록 요청을 보낼 수 없습니다. 다시 연결하거나 다시 시도하세요."
+    }
   },
   "connectionPanel": {
     "maxReconnectAttempts": "최대 MQTT 재연결 시도",

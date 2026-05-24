@@ -38,6 +38,7 @@ import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
+import { HelpTooltip } from './HelpTooltip';
 import { useToast } from './Toast';
 
 const GPS_REFRESH_INTERVAL_LABELS: Record<number, string> = {
@@ -1270,6 +1271,7 @@ export default function AppPanel({
               >
                 {t('appPanel.storeForwardAutoFetchHistory')}
               </label>
+              <HelpTooltip text={t('appPanel.storeForwardAutoFetchHistoryHint')} />
             </div>
           )}
         </div>
