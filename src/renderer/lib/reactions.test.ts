@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '../../shared/reactionEmoji';
-import { normalizeReactionEmoji } from './reactions';
+import {
+  firstGraphemeCluster,
+  normalizeReactionEmoji,
+  reactionDisplayGlyph,
+  reactionGlyphFromPicker,
+} from './reactions';
+
+const US_FLAG = '\u{1F1FA}\u{1F1F8}';
 
 describe('normalizeReactionEmoji', () => {
   it('treats wire 1 as Meshtastic tapback boolean and takes first scalar from payload even when <= 0x1000', () => {
@@ -24,5 +31,37 @@ describe('normalizeReactionEmoji', () => {
 
   it('prefers payload high-plane codepoint when wire is not boolean 1', () => {
     expect(normalizeReactionEmoji(3, '👍')).toBe(0x1f44d);
+  });
+
+  it('stores first scalar of US flag from wire boolean 1 + payload', () => {
+    expect(normalizeReactionEmoji(MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG, US_FLAG)).toBe(0x1f1fa);
+  });
+});
+
+describe('firstGraphemeCluster', () => {
+  it('returns one grapheme for US flag', () => {
+    expect(firstGraphemeCluster(US_FLAG)).toBe(US_FLAG);
+  });
+
+  it('returns undefined for multi-grapheme text', () => {
+    expect(firstGraphemeCluster('👍 hi')).toBeUndefined();
+  });
+});
+
+describe('reactionDisplayGlyph', () => {
+  it('renders US flag from payload when stored scalar is first regional indicator only', () => {
+    expect(reactionDisplayGlyph(0x1f1fa, US_FLAG)).toBe(US_FLAG);
+    expect(reactionDisplayGlyph(0x1f1fa, US_FLAG)).not.toBe('\u{1F1FA}');
+  });
+
+  it('falls back to scalar when payload is empty', () => {
+    expect(reactionDisplayGlyph(0x1f44d, '')).toBe('👍');
+  });
+});
+
+describe('reactionGlyphFromPicker', () => {
+  it('returns full flag glyph and first scalar for storage', () => {
+    const parsed = reactionGlyphFromPicker(US_FLAG);
+    expect(parsed).toEqual({ glyph: US_FLAG, scalar: 0x1f1fa });
   });
 });

@@ -922,6 +922,43 @@ describe('ChatPanel StatusBadge', () => {
     expect(screen.getByLabelText(/Your reaction: Love/i)).toBeInTheDocument();
   });
 
+  it('renders US flag tapback from full payload when stored scalar is first regional indicator only', () => {
+    const US_FLAG = '\u{1F1FA}\u{1F1F8}';
+    const t0 = Date.now() - 10_000;
+    const t1 = t0 + 1000;
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'hello',
+              channel: 0,
+              timestamp: t0,
+              packetId: 200,
+              status: 'acked',
+            },
+            {
+              sender_id: 3,
+              sender_name: 'Bob',
+              payload: US_FLAG,
+              channel: 0,
+              timestamp: t1,
+              emoji: 0x1f1fa,
+              replyId: 200,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    const badge = screen.getByLabelText(`Bob reacted with ${US_FLAG}`);
+    expect(badge).toBeInTheDocument();
+    expect(badge.textContent).toContain(US_FLAG);
+  });
+
   it('renders quoted reply control with jump label for Meshtastic-style replyId', () => {
     const t0 = Date.now() - 5000;
     const t1 = t0 + 1000;

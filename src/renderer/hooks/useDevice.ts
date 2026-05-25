@@ -140,7 +140,7 @@ import {
   MAX_RAW_PACKET_LOG_ENTRIES,
   type MeshtasticRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
-import { normalizeReactionEmoji } from '../lib/reactions';
+import { normalizeReactionEmoji, reactionGlyphFromPicker } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews } from '../lib/replyPreview';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
@@ -4523,7 +4523,7 @@ export function useDevice() {
   }, []);
 
   const sendReaction = useCallback(
-    (emoji: number, replyId: number, channel: number): Promise<void> => {
+    (glyph: string, replyId: number, channel: number): Promise<void> => {
       const hasMqtt = mqttStatusRef.current === 'connected';
       if (!deviceRef.current && !hasMqtt) return Promise.reject(new Error('Not connected'));
       const from =
@@ -4546,11 +4546,15 @@ export function useDevice() {
           ),
         );
       }
-      const safeScalar = sanitizeUnicodeReactionScalar(emoji);
+      const parsed = reactionGlyphFromPicker(glyph);
+      if (!parsed) {
+        return Promise.reject(new Error('Invalid reaction emoji'));
+      }
+      const tapPayload = parsed.glyph;
+      const safeScalar = sanitizeUnicodeReactionScalar(parsed.scalar);
       if (safeScalar === undefined) {
         return Promise.reject(new Error('Invalid reaction emoji'));
       }
-      const tapPayload = String.fromCodePoint(safeScalar);
 
       const msg: ChatMessage = {
         sender_id: from,

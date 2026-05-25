@@ -5,6 +5,26 @@ export const REACTION_EMOJI_CODES = [
   128077, 10084, 128514, 128078, 127881, 128558, 128546, 128075, 128591, 128293, 9989, 129300,
 ] as const;
 
+/** First grapheme cluster in `text`, or undefined when empty / not a single grapheme. */
+export function firstGraphemeCluster(text: string): string | undefined {
+  const trimmed = text.trim();
+  if (!trimmed) return undefined;
+  if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
+    const segments = [
+      ...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(trimmed),
+    ];
+    if (segments.length !== 1) return undefined;
+    return segments[0].segment;
+  }
+  if (trimmed.length > 8) return undefined;
+  return trimmed;
+}
+
+/** True when `text` trims to exactly one grapheme cluster. */
+export function isSingleGraphemeCluster(text: string): boolean {
+  return firstGraphemeCluster(text) !== undefined;
+}
+
 /**
  * Normalize a reaction emoji from the wire into a Unicode codepoint.
  * - Protocol may send emoji=1 as a flag and put the character in the payload: use payload's first codepoint.
@@ -17,7 +37,8 @@ export function normalizeReactionEmoji(
 ): number | undefined {
   const trimmed = payloadUtf8.trim();
   if (trimmed.length > 0) {
-    const cp = trimmed.codePointAt(0);
+    const glyph = firstGraphemeCluster(trimmed) ?? trimmed;
+    const cp = glyph.codePointAt(0);
     if (cp !== undefined) {
       // mesh.proto: `emoji` value 1 is the standard tapback boolean; payload UTF-8 is the glyph (any scalar).
       if (wireEmoji === 1) {
@@ -76,12 +97,43 @@ export function emojiDisplayChar(code: number | null | undefined): string {
 }
 
 /** Return label for tooltip (name for known reactions, character otherwise). */
-export function emojiDisplayLabel(code: number | null | undefined): string {
+export function emojiDisplayLabel(
+  code: number | null | undefined,
+  payload?: string | null,
+): string {
   if (code == null) return '';
   if (code >= 1 && code <= REACTION_EMOJI_CODES.length) {
     return REACTION_NAMES[code - 1];
   }
   const idx = (REACTION_EMOJI_CODES as readonly number[]).indexOf(code);
   if (idx >= 0) return REACTION_NAMES[idx];
-  return emojiDisplayChar(code);
+  return reactionDisplayGlyph(code, payload);
+}
+
+/**
+ * Display glyph for a tapback: prefer single-grapheme `payload` (flags, ZWJ sequences);
+ * fall back to stored scalar / legacy index via `emojiDisplayChar`.
+ */
+export function reactionDisplayGlyph(
+  emoji: number | null | undefined,
+  payload?: string | null,
+): string {
+  const glyph = payload != null ? firstGraphemeCluster(payload) : undefined;
+  if (glyph) return glyph;
+  return emojiDisplayChar(emoji);
+}
+
+export interface ReactionGlyphFromPicker {
+  glyph: string;
+  /** First scalar of `glyph` for DB dedup / legacy INTEGER `emoji` column. */
+  scalar: number;
+}
+
+/** Parse emoji-picker / native panel output into wire payload + storage scalar. */
+export function reactionGlyphFromPicker(unicode: string): ReactionGlyphFromPicker | undefined {
+  const glyph = firstGraphemeCluster(unicode);
+  if (!glyph) return undefined;
+  const scalar = glyph.codePointAt(0);
+  if (scalar === undefined) return undefined;
+  return { glyph, scalar };
 }

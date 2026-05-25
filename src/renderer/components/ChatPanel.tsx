@@ -50,7 +50,7 @@ import {
 } from '../lib/chatPanelProtocolStorage';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
-import { emojiDisplayChar, emojiDisplayLabel } from '../lib/reactions';
+import { emojiDisplayLabel, reactionDisplayGlyph, reactionGlyphFromPicker } from '../lib/reactions';
 import { truncateReplyPreviewText } from '../lib/replyPreview';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '../lib/timeConstants';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
@@ -418,7 +418,7 @@ export interface ChatPanelProps {
     destination?: number,
     replyId?: number,
   ) => void | Promise<void>;
-  onReact: (emoji: number, replyId: number, channel: number) => Promise<void>;
+  onReact: (glyph: string, replyId: number, channel: number) => Promise<void>;
   onResend: (msg: ChatMessage) => void;
   onNodeClick: (nodeNum: number) => void;
   isConnected: boolean;
@@ -650,7 +650,7 @@ function ChatPanel({
     const regular: ChatMessage[] = [];
     const reactions = new Map<
       number,
-      { emoji: number; sender_id: number; sender_name: string; id?: number }[]
+      { emoji: number; payload: string; sender_id: number; sender_name: string; id?: number }[]
     >();
 
     for (const msg of messages) {
@@ -658,6 +658,7 @@ function ChatPanel({
         const existing = reactions.get(msg.replyId) ?? [];
         existing.push({
           emoji: msg.emoji,
+          payload: msg.payload,
           sender_id: msg.sender_id,
           sender_name: msg.sender_name,
           id: msg.id,
@@ -1104,14 +1105,14 @@ function ChatPanel({
     }
   };
 
-  const handleReact = async (emojiCode: number, packetId: number, msgChannel: number) => {
+  const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
     // Match handleSend: UI uses channel -1 as "primary"; MeshCore/Meshtastic send expects 0.
     const sendChannel = msgChannel === -1 ? 0 : msgChannel;
     setPickerOpenFor(null);
     setChatActionError(null);
     try {
-      console.debug('[ChatPanel] handleReact', emojiCode, packetId, sendChannel);
-      await onReact(emojiCode, packetId, sendChannel);
+      console.debug('[ChatPanel] handleReact', glyph, packetId, sendChannel);
+      await onReact(glyph, packetId, sendChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed: ' + errLikeToLogString(err));
       setChatActionError({
@@ -1293,9 +1294,9 @@ function ChatPanel({
     if (!target) return;
     const handler = (e: Event) => {
       const unicode = (e as CustomEvent).detail.emoji.unicode as string;
-      const code = unicode.codePointAt(0);
-      if (code !== undefined) {
-        void handleReactRef.current(code, target.id, target.channel);
+      const parsed = reactionGlyphFromPicker(unicode);
+      if (parsed) {
+        void handleReactRef.current(parsed.glyph, target.id, target.channel);
       }
     };
     el.addEventListener('emoji-click', handler);
@@ -1312,10 +1313,10 @@ function ChatPanel({
       const unicode = el.value;
       el.value = '';
       if (!unicode) return;
-      const code = unicode.codePointAt(0);
+      const parsed = reactionGlyphFromPicker(unicode);
       const target = reactionPickerTarget.current;
-      if (code !== undefined && target) {
-        void handleReactRef.current(code, target.id, target.channel);
+      if (parsed && target) {
+        void handleReactRef.current(parsed.glyph, target.id, target.channel);
       }
     };
     el.addEventListener('input', handler);
@@ -2395,8 +2396,8 @@ function ChatPanel({
                           const hideReactorLabel = !isOwn && isOwnNode(r.sender_id);
                           const reactorLabel =
                             nodeDisplayName(nodes.get(r.sender_id), protocol) || r.sender_name;
-                          const emojiChar = emojiDisplayChar(r.emoji);
-                          const reactionName = emojiDisplayLabel(r.emoji);
+                          const emojiChar = reactionDisplayGlyph(r.emoji, r.payload);
+                          const reactionName = emojiDisplayLabel(r.emoji, r.payload);
                           const titleText = hideReactorLabel
                             ? `${reactionName} (you)`
                             : `${reactorLabel}: ${reactionName}`;
