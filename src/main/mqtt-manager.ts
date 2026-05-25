@@ -684,7 +684,7 @@ export class MQTTManager extends EventEmitter {
 
     const nonce = Buffer.alloc(16, 0);
     nonce.writeUInt32LE(packetId >>> 0, 0);
-    nonce.writeUInt32LE(fromId >>> 0, 4);
+    nonce.writeUInt32LE(fromId >>> 0, 8); // firmware: fromNode at byte offset 8 (after 64-bit packetId)
     const psk = this.resolvePskForChannel(channelName, explicitPsk);
     const cipher = createCipheriv(cipherForKey(psk), psk, nonce);
     const encrypted = Buffer.concat([cipher.update(Buffer.from(dataBytes)), cipher.final()]);
@@ -1855,7 +1855,7 @@ export class MQTTManager extends EventEmitter {
     try {
       const nonce = Buffer.alloc(16, 0);
       nonce.writeUInt32LE(packetId >>> 0, 0);
-      nonce.writeUInt32LE(from >>> 0, 4);
+      nonce.writeUInt32LE(from >>> 0, 8); // firmware: fromNode at byte offset 8 (after 64-bit packetId)
       const decipher = createDecipheriv(cipherForKey(key), key, nonce);
       return Buffer.concat([decipher.update(Buffer.from(encrypted)), decipher.final()]);
     } catch {
