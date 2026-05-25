@@ -1,4 +1,5 @@
 // @vitest-environment node
+/* eslint-disable no-secrets/no-secrets -- regression fixtures use reporter-shaped base64, not live credentials */
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import { Mesh, Mqtt as MqttProto, Portnums } from '@meshtastic/protobufs';
 import { createCipheriv } from 'crypto';
@@ -195,6 +196,14 @@ describe('parseChannelPskLine', () => {
     expect(parsed?.name).toBe('HamNet');
     expect(parsed?.index).toBe(2);
     expect(parsed?.psk).toEqual(CUSTOM_PSK);
+  });
+
+  it('parses LongFast@0 reporter key with trailing base64 padding (32-byte AES-256)', () => {
+    const line = 'LongFast@0=ZUdhbGNWeThMN2FjcTNwb2wxcnFPRFc0UmJLSFRlY3E=';
+    const parsed = parseChannelPskLine(line);
+    expect(parsed?.name).toBe('LongFast');
+    expect(parsed?.index).toBe(0);
+    expect(parsed?.psk?.length).toBe(32);
   });
 });
 
@@ -1044,6 +1053,27 @@ describe('connect — channelPsks parsing', () => {
 
     const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
     expect(nameToIndex.get('HamNet')).toBe(2);
+  });
+
+  it('loads reporter LongFast@0 padded key into channelKeysByName as 32 bytes', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    const line = 'LongFast@0=ZUdhbGNWeThMN2FjcTNwb2wxcnFPRFc0UmJLSFRlY3E=';
+
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: [line],
+    });
+
+    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
+    expect(byName.get('LongFast')?.length).toBe(32);
+    const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
+    expect(nameToIndex.get('LongFast')).toBe(0);
   });
 
   it('filters out empty PSK strings', () => {

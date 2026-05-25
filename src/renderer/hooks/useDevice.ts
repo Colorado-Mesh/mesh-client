@@ -26,6 +26,10 @@ import {
   writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
 import {
+  mqttOnlyIdentitySource,
+  resolveMqttOnlyFromNodeId,
+} from '@/renderer/lib/meshtasticMqttIdentity';
+import {
   loadMeshtasticMqttManualChannelPsks,
   meshtasticMqttChannelKeyEntries,
   resolveMeshtasticMqttPublishFieldsForChannel,
@@ -783,10 +787,29 @@ export function useDevice() {
         rfHeardNodeIds.current.clear();
         startGpsInterval();
         const virtualId = ensureNonConflictingVirtualNodeId();
-        myNodeNumRef.current = virtualId;
-        setState((prev) => ({ ...prev, myNodeNum: virtualId }));
+        const mqttOnlyId = resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualId);
+        myNodeNumRef.current = mqttOnlyId;
+        setState((prev) => ({ ...prev, myNodeNum: mqttOnlyId }));
+        console.debug(
+          `[useDevice] MQTT-only identity: from=!${mqttOnlyId.toString(16).padStart(8, '0')} source=${mqttOnlyIdentitySource(lastRfSelfNodeIdRef.current)}`,
+        );
         updateNodes((prev) => {
           const updated = new Map(prev);
+          if (lastRfSelfNodeIdRef.current > 0 && mqttOnlyId === lastRfSelfNodeIdRef.current) {
+            const existing = updated.get(mqttOnlyId) ?? emptyNode(mqttOnlyId);
+            const rfNode: MeshNode = {
+              ...existing,
+              node_id: mqttOnlyId,
+              role: existing.role ?? ROLE_CLIENT,
+              hops_away: 0,
+              via_mqtt: true,
+              heard_via_mqtt: true,
+              heard_via_mqtt_only: true,
+            };
+            updated.set(mqttOnlyId, rfNode);
+            void window.electronAPI.db.saveNode(rfNode);
+            return updated;
+          }
           const existing = updated.get(virtualId) ?? emptyNode(virtualId);
           const virtualNode: MeshNode = {
             ...existing,
@@ -813,6 +836,13 @@ export function useDevice() {
             }
             return;
           }
+          const presenceFrom = resolveMqttOnlyFromNodeId(
+            lastRfSelfNodeIdRef.current,
+            virtualNodeIdRef.current,
+          );
+          const selfNode = nodesRef.current.get(presenceFrom);
+          const useRealIdentity =
+            lastRfSelfNodeIdRef.current > 0 && presenceFrom === lastRfSelfNodeIdRef.current;
           const presenceMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
             0,
             channelConfigsRef.current,
@@ -821,9 +851,12 @@ export function useDevice() {
           if (!presenceMqtt.channelName) return;
           window.electronAPI.mqtt
             .publishNodeInfo({
-              from: virtualNodeIdRef.current,
-              longName: MQTT_ONLY_VIRTUAL_LONG_NAME,
-              shortName: 'MQTT',
+              from: presenceFrom,
+              longName:
+                useRealIdentity && selfNode?.long_name
+                  ? selfNode.long_name
+                  : MQTT_ONLY_VIRTUAL_LONG_NAME,
+              shortName: useRealIdentity && selfNode?.short_name ? selfNode.short_name : 'MQTT',
               channelName: presenceMqtt.channelName,
               pskBase64: presenceMqtt.pskBase64,
               publishJsonMirror: presenceMqtt.publishJsonMirror,
@@ -3402,7 +3435,7 @@ export function useDevice() {
       const from =
         deviceRef.current && myNodeNumRef.current > 0
           ? myNodeNumRef.current
-          : virtualNodeIdRef.current;
+          : resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualNodeIdRef.current);
       if (!deviceRef.current && myNodeNumRef.current !== from) {
         myNodeNumRef.current = from;
         setState((prev) => ({ ...prev, myNodeNum: from }));
@@ -4194,7 +4227,7 @@ export function useDevice() {
       const from =
         deviceRef.current && myNodeNumRef.current > 0
           ? myNodeNumRef.current
-          : virtualNodeIdRef.current;
+          : resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualNodeIdRef.current);
       if (!deviceRef.current && myNodeNumRef.current !== from) {
         myNodeNumRef.current = from;
         setState((prev) => ({ ...prev, myNodeNum: from }));
@@ -4287,7 +4320,7 @@ export function useDevice() {
     state.myNodeNum > 0
       ? state.myNodeNum
       : mqttStatus === 'connected'
-        ? virtualNodeIdRef.current
+        ? resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualNodeIdRef.current)
         : 0;
   const virtualNodeId = virtualNodeIdRef.current;
 

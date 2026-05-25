@@ -1,3 +1,4 @@
+/* eslint-disable no-secrets/no-secrets -- regression fixture from reporter (not a live credential) */
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -12,6 +13,7 @@ const KEY_A = '1PG7OiApB1nwvP+rz05pAQ==';
 const KEY_B = 'AAAAAAAAAAAAAAAAAAAAAA==';
 /** 32-byte AES-256 test key. */
 const KEY_AES256 = 'AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=';
+const REPORTER_LONGFAST_LINE = 'LongFast@0=ZUdhbGNWeThMN2FjcTNwb2wxcnFPRFc0UmJLSFRlY3E=';
 
 describe('parseChannelPskInput', () => {
   it('parses a single bare base64 key', () => {
@@ -62,6 +64,10 @@ describe('validateChannelPskEntries', () => {
     expect(validateChannelPskEntries([`HamNet@2=${KEY_B}`])).toBe('ok');
   });
 
+  it('accepts reporter LongFast@0 key with trailing base64 padding', () => {
+    expect(validateChannelPskEntries([REPORTER_LONGFAST_LINE])).toBe('ok');
+  });
+
   it('rejects invalid base64', () => {
     expect(validateChannelPskEntries(['not!!!base64'])).toBe('invalidBase64');
   });
@@ -104,6 +110,13 @@ describe('parseManualChannelPublishEntry', () => {
   it('returns null for invalid AES key length', () => {
     const twentyBytes = btoa(String.fromCharCode(...Array.from({ length: 20 }, () => 0xab)));
     expect(parseManualChannelPublishEntry(`HamNet=${twentyBytes}`)).toBeNull();
+  });
+
+  it('parses reporter LongFast@0 key as 32-byte AES-256', () => {
+    const entry = parseManualChannelPublishEntry(REPORTER_LONGFAST_LINE);
+    expect(entry?.name).toBe('LongFast');
+    expect(entry?.index).toBe(0);
+    expect(entry?.psk.length).toBe(32);
   });
 });
 
