@@ -520,7 +520,9 @@ function ChatPanel({
   const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleReactRef = useRef<any>(null);
+  const handleReactRef = useRef<
+    ((glyph: string, packetId: number, msgChannel: number) => Promise<void>) | null
+  >(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Feature: draft persistence — always reflect latest input/viewKey in refs used by effects
@@ -1296,7 +1298,7 @@ function ChatPanel({
       const unicode = (e as CustomEvent).detail.emoji.unicode as string;
       const parsed = reactionGlyphFromPicker(unicode);
       if (parsed) {
-        void handleReactRef.current(parsed.glyph, target.id, target.channel);
+        void handleReactRef.current?.(parsed.glyph, target.id, target.channel);
       }
     };
     el.addEventListener('emoji-click', handler);
@@ -1316,7 +1318,7 @@ function ChatPanel({
       const parsed = reactionGlyphFromPicker(unicode);
       const target = reactionPickerTarget.current;
       if (parsed && target) {
-        void handleReactRef.current(parsed.glyph, target.id, target.channel);
+        void handleReactRef.current?.(parsed.glyph, target.id, target.channel);
       }
     };
     el.addEventListener('input', handler);

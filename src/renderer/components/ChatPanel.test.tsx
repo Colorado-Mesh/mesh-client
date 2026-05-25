@@ -1333,6 +1333,33 @@ describe('ChatPanel tapback reaction picker', () => {
     expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
   });
 
+  it('calls onReact with full grapheme when Linux emoji-picker fires emoji-click', async () => {
+    const US_FLAG = '\u{1F1FA}\u{1F1F8}';
+    const onReact = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          onReact={onReact}
+          messages={[{ ...baseMessage, packetId: 42 }]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByTitle('React'));
+    await waitFor(() => {
+      expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+    });
+    const picker = document.querySelector('emoji-picker');
+    expect(picker).not.toBeNull();
+    picker!.dispatchEvent(
+      new CustomEvent('emoji-click', { detail: { emoji: { unicode: US_FLAG } }, bubbles: true }),
+    );
+    await waitFor(() => {
+      expect(onReact).toHaveBeenCalledWith(US_FLAG, 42, 0);
+    });
+  });
+
   it.each(['darwin', 'win32'] as const)(
     'calls showEmojiPanel and does not render emoji-picker on %s when React button is clicked',
     async (platform) => {

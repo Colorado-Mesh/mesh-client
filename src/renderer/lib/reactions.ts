@@ -20,11 +20,6 @@ export function firstGraphemeCluster(text: string): string | undefined {
   return trimmed;
 }
 
-/** True when `text` trims to exactly one grapheme cluster. */
-export function isSingleGraphemeCluster(text: string): boolean {
-  return firstGraphemeCluster(text) !== undefined;
-}
-
 /**
  * Normalize a reaction emoji from the wire into a Unicode codepoint.
  * - Protocol may send emoji=1 as a flag and put the character in the payload: use payload's first codepoint.
@@ -44,6 +39,7 @@ export function normalizeReactionEmoji(
       if (wireEmoji === 1) {
         return cp;
       }
+      // Non-boolean wire values: prefer payload glyph when clearly Unicode (not legacy index noise).
       if (cp > 0x1000) return cp;
     }
   }
@@ -74,7 +70,7 @@ const REACTION_NAMES = [
 ] as const;
 
 /** Return display character for a stored emoji code (handles legacy index 1..12 and Unicode). */
-export function emojiDisplayChar(code: number | null | undefined): string {
+function emojiDisplayChar(code: number | null | undefined): string {
   if (code == null) return '';
   if (code >= 1 && code <= REACTION_EMOJI_CODES.length) {
     return String.fromCodePoint(REACTION_EMOJI_CODES[code - 1]);

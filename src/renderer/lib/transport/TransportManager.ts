@@ -79,7 +79,7 @@ export class TransportManager {
           channelName: mqttFields.channelName,
           pskBase64: mqttFields.pskBase64,
           publishJsonMirror: mqttFields.publishJsonMirror,
-          ...(emoji != null ? { emoji } : {}),
+          ...(emoji != null ? { emoji: MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } : {}),
           ...(replyId != null ? { replyId } : {}),
         })
         .then((mqttPacketId: number) => {

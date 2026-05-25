@@ -125,7 +125,6 @@ import {
   fetchMeshtasticRemoteConfigOwner,
   fetchMeshtasticRemoteConfigSecurity,
   fetchMeshtasticRemoteConfigSnapshotEssential,
-  fetchMeshtasticRemoteConfigTarget,
   mergeMeshtasticRemoteConfigSnapshots,
 } from '../lib/meshtasticRemoteAdminSnapshot';
 import { meshtasticComputedRfHopsAway } from '../lib/meshtasticRfHops';
@@ -168,7 +167,7 @@ type ChannelType = Parameters<MeshDevice['setChannel']>[0];
 type PositionType = Parameters<MeshDevice['setPosition']>[0];
 type UserType = Parameters<MeshDevice['setOwner']>[0];
 type WaypointType = Parameters<MeshDevice['sendWaypoint']>[0];
-type RemoteConfigRoute = 'target' | 'radio' | 'channelsTail' | 'owner' | 'security' | 'modules';
+type RemoteConfigRoute = 'radio' | 'channelsTail' | 'owner' | 'security' | 'modules';
 
 function getMessageLoadLimit(): number {
   const s = parseStoredJson<{
@@ -3714,9 +3713,7 @@ export function useDevice() {
         };
 
         let routeResult: Partial<MeshtasticRemoteConfigSnapshot>;
-        if (route === 'target') {
-          routeResult = await fetchMeshtasticRemoteConfigTarget(client, destNodeNum);
-        } else if (route === 'radio') {
+        if (route === 'radio') {
           routeResult = await fetchMeshtasticRemoteConfigSnapshotEssential(client, destNodeNum);
         } else if (route === 'channelsTail') {
           routeResult = await fetchMeshtasticRemoteConfigChannelsTail(client, destNodeNum);
@@ -4569,7 +4566,11 @@ export function useDevice() {
       // Optimistic update — dedup guard in echo handler prevents duplicate when echo arrives
       setMessages((prev) => {
         const isDup = prev.some(
-          (m) => m.emoji === safeScalar && m.replyId === replyId && m.sender_id === from,
+          (m) =>
+            m.emoji === safeScalar &&
+            m.replyId === replyId &&
+            m.sender_id === from &&
+            m.payload === tapPayload,
         );
         if (isDup) return prev;
         return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
@@ -4611,7 +4612,7 @@ export function useDevice() {
             destination: BROADCAST_ADDR,
             channelName: reactionMqtt.channelName,
             pskBase64: reactionMqtt.pskBase64,
-            emoji: safeScalar,
+            emoji: MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
             replyId,
             publishJsonMirror: reactionMqtt.publishJsonMirror,
           })

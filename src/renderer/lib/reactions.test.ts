@@ -64,4 +64,8 @@ describe('reactionGlyphFromPicker', () => {
     const parsed = reactionGlyphFromPicker(US_FLAG);
     expect(parsed).toEqual({ glyph: US_FLAG, scalar: 0x1f1fa });
   });
+
+  it('rejects multi-grapheme picker input', () => {
+    expect(reactionGlyphFromPicker('👍 hi')).toBeUndefined();
+  });
 });
