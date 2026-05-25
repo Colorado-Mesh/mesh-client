@@ -176,6 +176,17 @@ describe('loadMeshtasticMqttManualChannelPsks', () => {
     expect(loadMeshtasticMqttManualChannelPsks()).toEqual([`HamNet=${KEY_B}`]);
   });
 
+  it('recovers channelPsks from mesh-client:mqttSettings:meshcore after legacy migration', () => {
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        topicPrefix: 'meshcore/DEN',
+        channelPsks: [`LongFast@0=${KEY_B}`],
+      }),
+    );
+    expect(loadMeshtasticMqttManualChannelPsks()).toEqual([`LongFast@0=${KEY_B}`]);
+  });
+
   it('returns empty array when unset', () => {
     expect(loadMeshtasticMqttManualChannelPsks()).toEqual([]);
   });
@@ -197,5 +208,14 @@ describe('meshtasticMqttChannelKeyEntries', () => {
       { index: 2, name: 'HamNet', role: 2, psk: new Uint8Array(32).fill(3) },
     ]);
     expect(entries).toEqual([expect.objectContaining({ name: 'HamNet', index: 2 })]);
+  });
+
+  it('skips default public single-byte PSK (AQ==)', () => {
+    const entries = meshtasticMqttChannelKeyEntries([
+      { index: 0, name: 'LongFast', role: 1, psk: new Uint8Array([1]) },
+      { index: 1, name: 'Private', role: 2, psk: new Uint8Array(16).fill(9) },
+    ]);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.name).toBe('Private');
   });
 });

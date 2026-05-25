@@ -1221,6 +1221,25 @@ describe('updateChannelKeys', () => {
     const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
     expect(nameToIndex.get('HamPrivate')).toBe(2);
   });
+
+  it('preserves custom LongFast from connect when radio sync pushes default public PSK', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: [`LongFast=${CUSTOM_PSK.toString('base64')}`],
+    });
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 0 }]);
+
+    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
+    expect(byName.get('LongFast')?.equals(CUSTOM_PSK)).toBe(true);
+  });
 });
 
 describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
