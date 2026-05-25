@@ -1691,7 +1691,17 @@
     "watchNode": "Osserva",
     "unwatchNode": "Guardando",
     "showOnMap": "Mostrare sulla mappa",
-    "configureRemotely": "Configura il nodo da remoto"
+    "configureRemotely": "Configura il nodo da remoto",
+    "remoteAdminNoPkiKey": "Nessuna chiave pubblica PKI registrata per questo nodo ancora — l'amministratore remoto potrebbe non funzionare fino a quando non viene ricevuto NodeInfo.",
+    "remoteAdminKeyTitle": "Chiave di amministrazione remota",
+    "remoteAdminKeyHint": "Incolla la chiave pubblica di amministrazione base64 configurata su questo nodo (una delle tre chiavi di amministrazione nelle sue impostazioni di sicurezza). Deve corrispondere a una chiave utilizzata dalla radio locale per firmare i pacchetti di amministrazione.",
+    "remoteAdminKeyLabel": "Chiave amministratore",
+    "remoteAdminKeyPlaceholder": "Chiave pubblica a 32 byte con codifica Base64",
+    "remoteAdminKeyInvalid": "Immettere una chiave pubblica di amministrazione valida a 32 byte con codifica base64.",
+    "saveRemoteAdminKey": "Salva chiave di amministrazione",
+    "clearRemoteAdminKey": "Pulisci",
+    "remoteAdminKeySaved": "Chiave di amministrazione salvata per questo nodo.",
+    "remoteAdminKeyCleared": "Chiave di amministrazione cancellata."
   },
   "firmwareStatus": {
     "checking": "Controllo della versione del firmware",
@@ -2093,7 +2103,10 @@
       "generic": "Richiesta di amministratore remoto non riuscita.",
       "configResponseUnexpected": "L'amministratore remoto ha restituito una risposta di configurazione imprevista.",
       "channelConfigPartial": "Impossibile caricare una o più impostazioni di canale dal nodo remoto.",
-      "channelResponseUnexpected": "L'amministratore remoto ha restituito una risposta del canale inaspettata."
+      "channelResponseUnexpected": "L'amministratore remoto ha restituito una risposta del canale inaspettata.",
+      "noRemotePublicKey": "Questo nodo non ha ancora una chiave pubblica PKI. Attendi un pacchetto NodeInfo sulla mesh o utilizza l'app del dispositivo una volta per scambiare le chiavi.",
+      "noAdminKeyConfigured": "Incollare e salvare una chiave di amministrazione per questo nodo nella finestra di dialogo dei dettagli del nodo prima di utilizzare l'amministrazione remota.",
+      "invalidAdminKey": "La chiave di amministrazione deve essere una chiave pubblica a 32 byte con codifica base64."
     }
   }
 }

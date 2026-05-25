@@ -1691,7 +1691,17 @@
     "watchNode": "Acompanhar",
     "unwatchNode": "Acompanhando",
     "showOnMap": "Mostrar no mapa",
-    "configureRemotely": "Configurar nó remotamente"
+    "configureRemotely": "Configurar nó remotamente",
+    "remoteAdminNoPkiKey": "Nenhuma chave pública PKI registrada para este nó ainda — o administrador remoto pode não funcionar até que o NodeInfo seja recebido.",
+    "remoteAdminKeyTitle": "Chave de administração remota",
+    "remoteAdminKeyHint": "Cole a chave pública de administração base64 configurada neste nó (uma de até três chaves de administração em suas configurações de segurança). Ele deve corresponder a uma chave que seu rádio local usa para assinar pacotes de administração.",
+    "remoteAdminKeyLabel": "Chave do fechamento do admin",
+    "remoteAdminKeyPlaceholder": "Chave pública de 32 bytes codificada em base64",
+    "remoteAdminKeyInvalid": "Insira uma chave pública de administrador de 32 bytes codificada em base64 válida.",
+    "saveRemoteAdminKey": "Guardar chave de administrador",
+    "clearRemoteAdminKey": "Limpar",
+    "remoteAdminKeySaved": "Chave de administrador salva para este nó.",
+    "remoteAdminKeyCleared": "Chave de administrador apagada."
   },
   "firmwareStatus": {
     "checking": "Verificando a versão do firmware",
@@ -2093,7 +2103,10 @@
       "generic": "Falha na solicitação de administração remota.",
       "configResponseUnexpected": "O administrador remoto retornou uma resposta de configuração inesperada.",
       "channelConfigPartial": "Não foi possível carregar uma ou mais configurações de canal a partir do nó remoto.",
-      "channelResponseUnexpected": "O administrador remoto retornou uma resposta inesperada do canal."
+      "channelResponseUnexpected": "O administrador remoto retornou uma resposta inesperada do canal.",
+      "noRemotePublicKey": "Este nó ainda não tem chave pública PKI. Aguarde um pacote NodeInfo sobre a malha ou use o aplicativo do dispositivo uma vez para trocar chaves.",
+      "noAdminKeyConfigured": "Cole e salve uma chave de administrador para este nó na caixa de diálogo de detalhes do nó antes de usar o administrador remoto.",
+      "invalidAdminKey": "A chave de administrador deve ser uma chave pública de 32 bytes codificada em base64."
     }
   }
 }

@@ -1691,7 +1691,17 @@
     "watchNode": "Bekijken",
     "unwatchNode": "Bekijken",
     "showOnMap": "Weergeven op kaart",
-    "configureRemotely": "Knooppunt op afstand configureren"
+    "configureRemotely": "Knooppunt op afstand configureren",
+    "remoteAdminNoPkiKey": "Er is nog geen openbare PKI-sleutel geregistreerd voor dit knooppunt — externe beheerder werkt mogelijk niet totdat NodeInfo is ontvangen.",
+    "remoteAdminKeyTitle": "Externe beheerderssleutel",
+    "remoteAdminKeyHint": "Plak de openbare basissleutel64-beheerderssleutel die op dit knooppunt is geconfigureerd (een van maximaal drie beheerderssleutels in de beveiligingsinstellingen). Het moet overeenkomen met een sleutel die uw lokale radio gebruikt om beheerderspakketten te ondertekenen.",
+    "remoteAdminKeyLabel": "Admin-toets",
+    "remoteAdminKeyPlaceholder": "Base64-gecodeerde openbare sleutel van 32 bytes",
+    "remoteAdminKeyInvalid": "Voer een geldige base64-gecodeerde openbare 32-byte admin-sleutel in.",
+    "saveRemoteAdminKey": "Beheerderssleutel opslaan",
+    "clearRemoteAdminKey": "Wissen",
+    "remoteAdminKeySaved": "Beheersleutel opgeslagen voor dit knooppunt.",
+    "remoteAdminKeyCleared": "Admin-sleutel gewist."
   },
   "firmwareStatus": {
     "checking": "Firmwareversie controleren",
@@ -2093,7 +2103,10 @@
       "generic": "Verzoek voor externe beheerder mislukt.",
       "configResponseUnexpected": "Externe beheerder heeft een onverwachte configuratie-antwoord geretourneerd.",
       "channelConfigPartial": "Een of meer kanaalinstellingen konden niet worden geladen vanaf het externe knooppunt.",
-      "channelResponseUnexpected": "De externe beheerder heeft een onverwacht kanaalantwoord geretourneerd."
+      "channelResponseUnexpected": "De externe beheerder heeft een onverwacht kanaalantwoord geretourneerd.",
+      "noRemotePublicKey": "Dit knooppunt heeft nog geen openbare PKI-sleutel. Wacht op een NodeInfo pakket over het gaas, of gebruik de apparaat-app één keer om sleutels uit te wisselen.",
+      "noAdminKeyConfigured": "Plak en bewaar een beheerderssleutel voor dit knooppunt in het dialoogvenster met knooppuntdetails voordat u een externe beheerder gebruikt.",
+      "invalidAdminKey": "De beheerderssleutel moet een base64-gecodeerde openbare sleutel van 32 bytes zijn."
     }
   }
 }

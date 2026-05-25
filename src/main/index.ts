@@ -2951,8 +2951,17 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticConfigureTargetNodeNum',
   'meshtasticLastRfSelfNodeId',
   'storeForwardAutoFetchHistory',
+  /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
+  'meshtasticRemoteAdminKeyByNode',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
+const MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX = 'meshtasticRemoteAdminKey:';
+
+function isAppSettingsKeyAllowed(key: string): boolean {
+  return (
+    APP_SETTINGS_ALLOWED_KEYS.has(key) || key.startsWith(MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX)
+  );
+}
 
 ipcMain.handle('appSettings:get', () => {
   try {
@@ -2980,7 +2989,7 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
-  if (typeof key !== 'string' || !APP_SETTINGS_ALLOWED_KEYS.has(key)) {
+  if (typeof key !== 'string' || !isAppSettingsKeyAllowed(key)) {
     throw new Error('appSettings:set: key not allowed');
   }
   if (typeof value !== 'string' || value.length > APP_SETTINGS_MAX_VALUE_LENGTH) {

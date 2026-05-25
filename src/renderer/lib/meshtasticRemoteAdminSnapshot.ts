@@ -13,8 +13,11 @@ import {
   REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
   REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS,
   REMOTE_ADMIN_ESSENTIAL_FETCH_DELAY_MS,
+  REMOTE_ADMIN_ESSENTIAL_MAX_ATTEMPTS,
+  REMOTE_ADMIN_ESSENTIAL_RESPONSE_TIMEOUT_MS,
   REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS,
   REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS,
+  REMOTE_ADMIN_READ_SEND_OPTIONS,
 } from './meshtasticRemoteAdmin';
 import type { MeshtasticRemoteConfigSnapshot } from './types';
 
@@ -172,8 +175,8 @@ async function ensureRemoteSessionKey(
     console.warn(
       '[fetchMeshtasticRemoteConfigSnapshot] ensureSessionKey failed ' + errLikeToLogString(e),
     );
-    // Failure point: session key exchange over BLE. Fallback: continue — getRemoteConfig may
-    // still succeed with an existing passkey or trigger a fresh session on the next request.
+    // Failure point: session key exchange over BLE. Fallback: continue — channel/LoRa reads may
+    // still succeed with an existing passkey or establish a session on the next response.
   }
 }
 
@@ -182,7 +185,14 @@ async function fetchConfigTypes(
   destNodeNum: number,
   configTypes: readonly (typeof Admin.AdminMessage_ConfigType)[keyof typeof Admin.AdminMessage_ConfigType][],
   interFetchDelayMs: number,
-  options?: { continueOnNonLoraFailure?: boolean },
+  options?: {
+    continueOnNonLoraFailure?: boolean;
+    loraRetryOptions?: {
+      maxAttempts?: number;
+      backoffMs?: number;
+      sendOptions?: Parameters<MeshtasticRemoteAdminClient['getRemoteConfig']>[2];
+    };
+  },
 ): Promise<{
   configResults: { type: (typeof configTypes)[number]; value: unknown }[];
   loraConfigFetchFailed: boolean;
@@ -200,9 +210,11 @@ async function fetchConfigTypes(
 
     if (type === Admin.AdminMessage_ConfigType.LORA_CONFIG) {
       try {
+        const loraRetry = options?.loraRetryOptions;
         const value = await client.getRemoteConfigWithRetry(destNodeNum, type, {
-          maxAttempts: REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS,
-          backoffMs: REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS,
+          maxAttempts: loraRetry?.maxAttempts ?? REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS,
+          backoffMs: loraRetry?.backoffMs ?? REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS,
+          sendOptions: loraRetry?.sendOptions,
         });
         configResults.push({ type, value });
       } catch (e) {
@@ -242,12 +254,29 @@ async function fetchRemoteChannelIndex(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
   index: number,
+  options?: {
+    maxAttempts?: number;
+    backoffMs?: number;
+    sendOptions?: Parameters<MeshtasticRemoteAdminClient['getRemoteChannel']>[2];
+  },
 ): Promise<unknown> {
   return client.getRemoteChannelWithRetry(destNodeNum, index, {
-    maxAttempts: REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
-    backoffMs: REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
+    maxAttempts: options?.maxAttempts ?? REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
+    backoffMs: options?.backoffMs ?? REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
+    sendOptions: options?.sendOptions,
   });
 }
+
+const ESSENTIAL_READ_OPTIONS = {
+  ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+  timeoutMs: REMOTE_ADMIN_ESSENTIAL_RESPONSE_TIMEOUT_MS,
+};
+
+const ESSENTIAL_RETRY_OPTIONS = {
+  maxAttempts: REMOTE_ADMIN_ESSENTIAL_MAX_ATTEMPTS,
+  backoffMs: REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS,
+  sendOptions: ESSENTIAL_READ_OPTIONS,
+};
 
 async function fetchRemoteChannels(
   client: MeshtasticRemoteAdminClient,
@@ -330,11 +359,12 @@ export async function fetchMeshtasticRemoteConfigSnapshotEssential(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
 ): Promise<MeshtasticRemoteConfigSnapshot> {
+  // Session passkeys arrive on any admin response; do not block on SESSIONKEY_CONFIG (Android does not).
   const snapshot: MeshtasticRemoteConfigSnapshot = { moduleConfigs: {} };
   const primaryChannelResults: { index: number; value: unknown }[] = [];
   const failedChannelIndices: number[] = [];
   try {
-    const value = await fetchRemoteChannelIndex(client, destNodeNum, 0);
+    const value = await fetchRemoteChannelIndex(client, destNodeNum, 0, ESSENTIAL_RETRY_OPTIONS);
     primaryChannelResults.push({ index: 0, value });
   } catch (e) {
     failedChannelIndices.push(0);
@@ -349,6 +379,7 @@ export async function fetchMeshtasticRemoteConfigSnapshotEssential(
     destNodeNum,
     [Admin.AdminMessage_ConfigType.LORA_CONFIG],
     REMOTE_ADMIN_ESSENTIAL_FETCH_DELAY_MS,
+    { loraRetryOptions: ESSENTIAL_RETRY_OPTIONS },
   );
   const channelFlags = channelFetchFlags(failedChannelIndices);
 

@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import {
+  isValidMeshtasticAdminKeyBase64,
+  normalizeMeshtasticAdminKeyInput,
+} from '@/renderer/lib/meshtasticRemoteAdminKeyStorage';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import type {
@@ -76,8 +80,10 @@ interface NodeDetailModalProps {
   /** GPS position history (tracking path) for mobile nodes */
   positionHistory?: Map<number, { t: number; lat: number; lon: number }[]>;
   onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
-  /** Meshtastic: switch Configure Node target to this node (requires local radio). */
-  onConfigureRemotely?: () => void;
+  /** Meshtastic PKC: base64 admin public key saved for this node (one per node). */
+  remoteAdminKey?: string;
+  /** Persist admin key for remote admin (base64, 32-byte public key). */
+  onSaveRemoteAdminKey?: (nodeNum: number, adminKeyBase64: string | null) => Promise<void>;
 }
 
 function WatchToggleButton({ nodeId }: { nodeId: number }) {
@@ -131,12 +137,16 @@ export default function NodeDetailModal({
   meshcoreManufacturerModel,
   positionHistory,
   onShowOnMap,
-  onConfigureRemotely,
+  remoteAdminKey,
+  onSaveRemoteAdminKey,
 }: NodeDetailModalProps) {
   const { t } = useTranslation();
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [adminKeyStatus, setAdminKeyStatus] = useState<string | null>(null);
+  const [adminKeyDraft, setAdminKeyDraft] = useState('');
+  const [adminKeyError, setAdminKeyError] = useState<string | null>(null);
   const [repeaterStatusPending, setRepeaterStatusPending] = useState(false);
   const [showRepeaterStats, setShowRepeaterStats] = useState(false);
   const [positionRequestedAt, setPositionRequestedAt] = useState<number | null>(null);
@@ -175,6 +185,11 @@ export default function NodeDetailModal({
   }, [node?.node_id]);
 
   useEffect(() => {
+    setAdminKeyDraft(remoteAdminKey ?? '');
+    setAdminKeyError(null);
+  }, [node?.node_id, remoteAdminKey]);
+
+  useEffect(() => {
     if (!node) return;
     const nodeId = node.node_id;
     let cancelled = false;
@@ -208,6 +223,7 @@ export default function NodeDetailModal({
   // Reset all state when node changes
   useEffect(() => {
     setActionStatus(null);
+    setAdminKeyStatus(null);
     setPositionRequestedAt(null);
     setTraceRoutePending(false);
     setShowDeleteConfirm(false);
@@ -554,1051 +570,1158 @@ export default function NodeDetailModal({
             </div>
           </div>
 
-          {/* Body — scrollable so long RF/diagnostics content fits on screen */}
-          <div className="min-h-0 flex-1 overflow-auto overscroll-contain px-5 py-3">
-            <NodeInfoBody
-              node={node}
-              homeNode={homeNode}
-              traceRouteHops={isOurNode ? undefined : traceRouteHops}
-              nodes={nodes}
-              useFahrenheit={useFahrenheit}
-              protocol={protocol}
-              meshcoreManufacturerModel={meshcoreManufacturerModel}
-              positionHistory={positionHistory}
-              onShowOnMap={onShowOnMap}
-            />
+          {/* Body + footer actions — single scroll region so remote admin and controls stay reachable */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div className="px-5 py-3">
+              <NodeInfoBody
+                node={node}
+                homeNode={homeNode}
+                traceRouteHops={isOurNode ? undefined : traceRouteHops}
+                nodes={nodes}
+                useFahrenheit={useFahrenheit}
+                protocol={protocol}
+                meshcoreManufacturerModel={meshcoreManufacturerModel}
+                positionHistory={positionHistory}
+                onShowOnMap={onShowOnMap}
+              />
 
-            {protocol === 'meshcore' &&
-              !isOurNode &&
-              node.hw_model === 'Repeater' &&
-              meshcoreNeighborError &&
-              !showMeshcoreNeighbors && (
+              {protocol === 'meshcore' &&
+                !isOurNode &&
+                node.hw_model === 'Repeater' &&
+                meshcoreNeighborError &&
+                !showMeshcoreNeighbors && (
+                  <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
+                    {meshcoreNeighborError}
+                  </div>
+                )}
+
+              {/* MeshCore: trace error */}
+              {protocol === 'meshcore' && !isOurNode && meshcorePingError && (
                 <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
-                  {meshcoreNeighborError}
+                  {meshcorePingError}
                 </div>
               )}
 
-            {/* MeshCore: trace error */}
-            {protocol === 'meshcore' && !isOurNode && meshcorePingError && (
-              <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
-                {meshcorePingError}
-              </div>
-            )}
-
-            {/* MeshCore: trace path result */}
-            {protocol === 'meshcore' && !isOurNode && meshcoreTraceResult && (
-              <div className="mt-3 space-y-1">
-                <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                  {t('nodeDetailModal.pathTraceHeading')}
-                </h4>
-                <div className="text-xs text-gray-400">
-                  {t('nodeDetailModal.hopsLabel')}{' '}
-                  <span className="font-mono text-gray-200">
-                    {meshcoreTracePathLenToHops(meshcoreTraceResult.pathLen)}
-                  </span>
-                </div>
-                <div className="bg-secondary-dark space-y-1 rounded p-2">
-                  {(Array.isArray(meshcoreTraceResult.pathSnrs)
-                    ? meshcoreTraceResult.pathSnrs
-                    : []
-                  ).map((hop, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs">
-                      <span className="text-muted w-10">
-                        {t('nodeDetailModal.hopNLabel', { n: i + 1 })}
-                      </span>
-                      <SnrIndicator snr={hop} />
-                    </div>
-                  ))}
-                  <div className="flex items-center gap-2 border-t border-gray-700 pt-1 text-xs">
-                    <span className="text-muted w-10">{t('nodeDetailModal.destLabel')}</span>
-                    <SnrIndicator snr={meshcoreTraceResult.lastSnr} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* MeshCore: telemetry */}
-            {protocol === 'meshcore' && !isOurNode && meshcoreNodeTelemetry && showTelemetry && (
-              <div className="mt-3 space-y-1">
-                <div className="flex items-center justify-between">
+              {/* MeshCore: trace path result */}
+              {protocol === 'meshcore' && !isOurNode && meshcoreTraceResult && (
+                <div className="mt-3 space-y-1">
                   <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                    {t('nodeDetailModal.sensorTelemetryHeading')}
+                    {t('nodeDetailModal.pathTraceHeading')}
                   </h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted text-xs">
-                      {new Date(meshcoreNodeTelemetry.fetchedAt).toLocaleTimeString()}
+                  <div className="text-xs text-gray-400">
+                    {t('nodeDetailModal.hopsLabel')}{' '}
+                    <span className="font-mono text-gray-200">
+                      {meshcoreTracePathLenToHops(meshcoreTraceResult.pathLen)}
                     </span>
-                    <button
-                      onClick={() => {
-                        setShowTelemetry(false);
-                      }}
-                      className="text-muted text-xs hover:text-gray-300"
-                    >
-                      {t('common.hide')}
-                    </button>
+                  </div>
+                  <div className="bg-secondary-dark space-y-1 rounded p-2">
+                    {(Array.isArray(meshcoreTraceResult.pathSnrs)
+                      ? meshcoreTraceResult.pathSnrs
+                      : []
+                    ).map((hop, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span className="text-muted w-10">
+                          {t('nodeDetailModal.hopNLabel', { n: i + 1 })}
+                        </span>
+                        <SnrIndicator snr={hop} />
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 border-t border-gray-700 pt-1 text-xs">
+                      <span className="text-muted w-10">{t('nodeDetailModal.destLabel')}</span>
+                      <SnrIndicator snr={meshcoreTraceResult.lastSnr} />
+                    </div>
                   </div>
                 </div>
-                <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                  {meshcoreNodeTelemetry.temperature !== undefined && (
-                    <>
-                      <div className="text-muted">{t('nodeDetailModal.temperatureLabel')}</div>
-                      <div className="font-mono text-gray-200">
-                        {meshcoreNodeTelemetry.temperature.toFixed(1)} °C
-                      </div>
-                    </>
-                  )}
-                  {meshcoreNodeTelemetry.relativeHumidity !== undefined && (
-                    <>
-                      <div className="text-muted">{t('nodeDetailModal.humidityLabel')}</div>
-                      <div className="font-mono text-gray-200">
-                        {meshcoreNodeTelemetry.relativeHumidity.toFixed(1)} %
-                      </div>
-                    </>
-                  )}
-                  {meshcoreNodeTelemetry.barometricPressure !== undefined && (
-                    <>
-                      <div className="text-muted">{t('nodeDetailModal.pressureLabel')}</div>
-                      <div className="font-mono text-gray-200">
-                        {meshcoreNodeTelemetry.barometricPressure.toFixed(1)} hPa
-                      </div>
-                    </>
-                  )}
-                  {meshcoreNodeTelemetry.voltage !== undefined && (
-                    <>
-                      <div className="text-muted">{t('nodeDetailModal.voltageLabel')}</div>
-                      <div className="font-mono text-gray-200">
-                        {meshcoreNodeTelemetry.voltage.toFixed(2)} V
-                      </div>
-                    </>
-                  )}
-                  {meshcoreNodeTelemetry.gps && (
-                    <>
-                      <div className="text-muted">{t('nodeDetailModal.gpsLabel')}</div>
-                      <div className="font-mono text-gray-200">
-                        {formatCoordPair(
-                          meshcoreNodeTelemetry.gps.latitude,
-                          meshcoreNodeTelemetry.gps.longitude,
-                          coordinateFormat,
-                        )}
-                      </div>
-                    </>
-                  )}
-                  {meshcoreNodeTelemetry.entries.length === 0 && (
-                    <>
-                      <div className="text-muted col-span-2 italic">
-                        {t('nodeDetailModal.noLppSensorData')}
-                      </div>
-                      {node.latitude != null && node.longitude != null ? (
-                        <div className="text-muted col-span-2 text-xs">
-                          {t('nodeDetailModal.mapPositionFromAdvertNotRequest')}
-                        </div>
-                      ) : null}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
+              )}
 
-            {/* MeshCore: neighbors (from Repeater) */}
-            {protocol === 'meshcore' &&
-              !isOurNode &&
-              meshcoreNeighbors &&
-              showMeshcoreNeighbors && (
+              {/* MeshCore: telemetry */}
+              {protocol === 'meshcore' && !isOurNode && meshcoreNodeTelemetry && showTelemetry && (
                 <div className="mt-3 space-y-1">
                   <div className="flex items-center justify-between">
                     <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                      {t('nodeDetailModal.neighborsHeading', {
-                        count: meshcoreNeighbors.totalNeighboursCount,
-                      })}
+                      {t('nodeDetailModal.sensorTelemetryHeading')}
                     </h4>
-                    <button
-                      onClick={() => {
-                        setShowMeshcoreNeighbors(false);
-                      }}
-                      className="text-muted text-xs hover:text-gray-300"
-                    >
-                      {t('common.hide')}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted text-xs">
+                        {new Date(meshcoreNodeTelemetry.fetchedAt).toLocaleTimeString()}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setShowTelemetry(false);
+                        }}
+                        className="text-muted text-xs hover:text-gray-300"
+                      >
+                        {t('common.hide')}
+                      </button>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    {meshcoreNeighbors.neighbours.map((nb, i) => {
-                      const label =
-                        nb.resolvedNodeId !== 0
-                          ? (nodes?.get(nb.resolvedNodeId)?.long_name ??
-                            formatMeshtasticNodeId(nb.resolvedNodeId))
-                          : nb.prefixHex;
-                      return (
-                        <div
-                          key={i}
-                          className="bg-secondary-dark flex items-center justify-between rounded px-2 py-1 text-xs"
-                        >
-                          <div>
-                            <span className="text-gray-300">{label}</span>
-                            <span className="text-muted ml-2">
-                              {formatSecondsAgo(nb.heardSecondsAgo, t)}
-                            </span>
-                          </div>
-                          <SnrIndicator snr={nb.snr} />
+                  <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                    {meshcoreNodeTelemetry.temperature !== undefined && (
+                      <>
+                        <div className="text-muted">{t('nodeDetailModal.temperatureLabel')}</div>
+                        <div className="font-mono text-gray-200">
+                          {meshcoreNodeTelemetry.temperature.toFixed(1)} °C
                         </div>
-                      );
-                    })}
-                    {meshcoreNeighbors.neighbours.length === 0 && (
-                      <div className="text-muted px-2 text-xs italic">
-                        {t('nodeDetailModal.noNeighborsReported')}
-                      </div>
+                      </>
+                    )}
+                    {meshcoreNodeTelemetry.relativeHumidity !== undefined && (
+                      <>
+                        <div className="text-muted">{t('nodeDetailModal.humidityLabel')}</div>
+                        <div className="font-mono text-gray-200">
+                          {meshcoreNodeTelemetry.relativeHumidity.toFixed(1)} %
+                        </div>
+                      </>
+                    )}
+                    {meshcoreNodeTelemetry.barometricPressure !== undefined && (
+                      <>
+                        <div className="text-muted">{t('nodeDetailModal.pressureLabel')}</div>
+                        <div className="font-mono text-gray-200">
+                          {meshcoreNodeTelemetry.barometricPressure.toFixed(1)} hPa
+                        </div>
+                      </>
+                    )}
+                    {meshcoreNodeTelemetry.voltage !== undefined && (
+                      <>
+                        <div className="text-muted">{t('nodeDetailModal.voltageLabel')}</div>
+                        <div className="font-mono text-gray-200">
+                          {meshcoreNodeTelemetry.voltage.toFixed(2)} V
+                        </div>
+                      </>
+                    )}
+                    {meshcoreNodeTelemetry.gps && (
+                      <>
+                        <div className="text-muted">{t('nodeDetailModal.gpsLabel')}</div>
+                        <div className="font-mono text-gray-200">
+                          {formatCoordPair(
+                            meshcoreNodeTelemetry.gps.latitude,
+                            meshcoreNodeTelemetry.gps.longitude,
+                            coordinateFormat,
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {meshcoreNodeTelemetry.entries.length === 0 && (
+                      <>
+                        <div className="text-muted col-span-2 italic">
+                          {t('nodeDetailModal.noLppSensorData')}
+                        </div>
+                        {node.latitude != null && node.longitude != null ? (
+                          <div className="text-muted col-span-2 text-xs">
+                            {t('nodeDetailModal.mapPositionFromAdvertNotRequest')}
+                          </div>
+                        ) : null}
+                      </>
                     )}
                   </div>
                 </div>
               )}
 
-            {/* Foreign LoRa activity — shown for connected device only; all senders in last 90 min */}
-            {isOurNode &&
-              (() => {
-                const list = getForeignLoraDetectionsList(node.node_id);
-                if (list.length === 0) return null;
-                return (
-                  <div className="mt-3 space-y-2">
-                    <h4 className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-orange-400 uppercase">
-                      <span aria-hidden="true">⚠</span>
-                      {t('diagnosticsPanel.foreignLoraHeading')}
-                    </h4>
-                    {list.map((detection, i) => {
-                      const minutesAgo = Math.floor((Date.now() - detection.detectedAt) / 60_000);
-                      const senderName =
-                        detection.longName ??
-                        (detection.lastSenderId
-                          ? nodes?.get(detection.lastSenderId)?.long_name ||
-                            nodes?.get(detection.lastSenderId)?.short_name
-                          : undefined);
-                      return (
-                        <div
-                          key={`${detection.packetClass}-${detection.lastSenderId ?? 'na'}-${detection.detectedAt}-${i}`}
-                          className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs"
-                        >
-                          <div className="text-muted">
-                            {t('diagnosticsPanel.foreignClassColumn')}
-                          </div>
-                          <div className="text-gray-200">
-                            {detection.packetClass === 'meshcore'
-                              ? t('diagnosticsPanel.foreignClassMeshcore')
-                              : detection.packetClass === 'meshtastic'
-                                ? t('diagnosticsPanel.foreignClassMeshtastic')
-                                : detection.packetClass === 'unknown-lora'
-                                  ? t('diagnosticsPanel.foreignClassUnknownLora')
-                                  : detection.packetClass}
-                          </div>
-                          <div className="text-muted">
-                            {t('diagnosticsPanel.foreignProximityColumn')}
-                          </div>
-                          <div className="text-gray-200">
-                            {detection.proximity === 'very-close'
-                              ? t('diagnosticsPanel.proximityVeryClose')
-                              : detection.proximity === 'nearby'
-                                ? t('diagnosticsPanel.proximityNearby')
-                                : detection.proximity === 'distant'
-                                  ? t('diagnosticsPanel.proximityDistant')
-                                  : detection.proximity === 'unknown'
-                                    ? t('diagnosticsPanel.proximityUnknown')
-                                    : detection.proximity}
-                          </div>
-                          <div className="text-muted">
-                            {t('diagnosticsPanel.foreignLastSeenColumn')}
-                          </div>
-                          <div className="text-gray-200">
-                            {minutesAgo < 1
-                              ? t('common.justNow')
-                              : t('common.minutesAgo', { count: minutesAgo })}
-                          </div>
-                          <div className="text-muted">
-                            {t('diagnosticsPanel.foreignCountColumn')}
-                          </div>
-                          <div className="text-gray-200">{detection.count}×</div>
-                          {(detection.rssi !== undefined || detection.snr !== undefined) && (
-                            <>
-                              <div className="text-muted">{t('nodeDetailModal.signalLabel')}</div>
-                              <div className="font-mono text-gray-200">
-                                {detection.rssi !== undefined ? `RSSI ${detection.rssi} dBm` : ''}
-                                {detection.rssi !== undefined && detection.snr !== undefined
-                                  ? ', '
-                                  : ''}
-                                {detection.snr !== undefined
-                                  ? `SNR ${detection.snr.toFixed(1)} dB`
-                                  : ''}
-                              </div>
-                            </>
-                          )}
-                          {detection.lastSenderId != null && (
-                            <>
-                              <div className="text-muted">{t('nodeDetailModal.senderLabel')}</div>
-                              <div className="font-mono text-gray-200">
-                                !{detection.lastSenderId.toString(16).padStart(8, '0')}
-                                {senderName ? ` (${senderName})` : ''}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-
-            {/* MeshCore: repeater status */}
-            {protocol === 'meshcore' &&
-              !isOurNode &&
-              meshcoreRepeaterStatus &&
-              showRepeaterStats && (
-                <div className="mt-3 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                      {t('nodeDetailModal.repeaterStatusHeading')}
-                    </h4>
-                    <button
-                      onClick={() => {
-                        setShowRepeaterStats(false);
-                      }}
-                      className="text-muted text-xs hover:text-gray-300"
-                    >
-                      {t('common.hide')}
-                    </button>
-                  </div>
-                  <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                    <div className="text-muted">{t('nodeDetailModal.batteryLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {(meshcoreRepeaterStatus.battMilliVolts / 1000).toFixed(2)} V
+              {/* MeshCore: neighbors (from Repeater) */}
+              {protocol === 'meshcore' &&
+                !isOurNode &&
+                meshcoreNeighbors &&
+                showMeshcoreNeighbors && (
+                  <div className="mt-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                        {t('nodeDetailModal.neighborsHeading', {
+                          count: meshcoreNeighbors.totalNeighboursCount,
+                        })}
+                      </h4>
+                      <button
+                        onClick={() => {
+                          setShowMeshcoreNeighbors(false);
+                        }}
+                        className="text-muted text-xs hover:text-gray-300"
+                      >
+                        {t('common.hide')}
+                      </button>
                     </div>
-                    <div className="text-muted">{t('nodeDetailModal.noiseFloorLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {meshcoreRepeaterStatus.noiseFloor} dBm
-                    </div>
-                    <div className="text-muted">{t('nodeDetailModal.lastRssiLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {meshcoreRepeaterStatus.lastRssi} dBm
-                    </div>
-                    <div className="text-muted">{t('nodeDetailModal.lastSnrLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {meshcoreRepeaterStatus.lastSnr.toFixed(2)} dB
-                    </div>
-                    <div className="text-muted">{t('nodeDetailModal.pktsRecvSentLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {meshcoreRepeaterStatus.nPacketsRecv} / {meshcoreRepeaterStatus.nPacketsSent}
-                    </div>
-                    <div className="text-muted">{t('nodeDetailModal.airTimeLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {meshcoreRepeaterStatus.totalAirTimeSecs}s
-                    </div>
-                    <div className="text-muted">{t('nodeDetailModal.uptimeLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {Math.floor(meshcoreRepeaterStatus.totalUpTimeSecs / 60)}m
-                    </div>
-                    <div className="text-muted">{t('nodeDetailModal.txQueueLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {meshcoreRepeaterStatus.currTxQueueLen}
-                    </div>
-                    <div className="text-muted">{t('nodeDetailModal.floodDirectSentLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {meshcoreRepeaterStatus.nSentFlood} / {meshcoreRepeaterStatus.nSentDirect}
-                    </div>
-                    <div className="text-muted">{t('nodeDetailModal.floodDirectRecvLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {meshcoreRepeaterStatus.nRecvFlood} / {meshcoreRepeaterStatus.nRecvDirect}
-                    </div>
-                    <div className="text-muted">{t('nodeDetailModal.errorsLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {meshcoreRepeaterStatus.errEvents}
-                    </div>
-                    <div className="text-muted">{t('nodeDetailModal.dupsDirectFloodLabel')}</div>
-                    <div className="font-mono text-gray-200">
-                      {meshcoreRepeaterStatus.nDirectDups} / {meshcoreRepeaterStatus.nFloodDups}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            {/* Neighbors section */}
-            {neighborInfo &&
-              (() => {
-                const record = neighborInfo.get(node.node_id);
-                if (!record || record.neighbors.length === 0) return null;
-                return (
-                  <div className="space-y-2 pb-2">
-                    <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                      {t('nodeDetailModal.neighborsHeading', { count: record.neighbors.length })}
-                    </h4>
                     <div className="space-y-1">
-                      {record.neighbors.map((nb) => {
-                        const nbNode = nodes?.get(nb.nodeId);
-                        const label = nbNode?.short_name || formatMeshtasticNodeId(nb.nodeId);
+                      {meshcoreNeighbors.neighbours.map((nb, i) => {
+                        const label =
+                          nb.resolvedNodeId !== 0
+                            ? (nodes?.get(nb.resolvedNodeId)?.long_name ??
+                              formatMeshtasticNodeId(nb.resolvedNodeId))
+                            : nb.prefixHex;
                         return (
                           <div
-                            key={nb.nodeId}
+                            key={i}
                             className="bg-secondary-dark flex items-center justify-between rounded px-2 py-1 text-xs"
                           >
-                            <span className="text-gray-300">{label}</span>
-                            <span className="text-xs text-gray-500">
-                              {formatSecondsAgo(
-                                Math.max(0, Math.floor(Date.now() / 1000 - nb.lastRxTime)),
-                                t,
-                              )}
-                            </span>
+                            <div>
+                              <span className="text-gray-300">{label}</span>
+                              <span className="text-muted ml-2">
+                                {formatSecondsAgo(nb.heardSecondsAgo, t)}
+                              </span>
+                            </div>
                             <SnrIndicator snr={nb.snr} />
                           </div>
                         );
                       })}
+                      {meshcoreNeighbors.neighbours.length === 0 && (
+                        <div className="text-muted px-2 text-xs italic">
+                          {t('nodeDetailModal.noNeighborsReported')}
+                        </div>
+                      )}
                     </div>
                   </div>
-                );
-              })()}
+                )}
 
-            {/* MeshCore Local Stats section (for connected node only) */}
-            {protocol === 'meshcore' && meshcoreLocalStats && (
-              <div className="space-y-2 pb-2">
-                <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                  {t('nodeDetailModal.radioStatsLocalHeading')}
-                </h4>
-                <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                  <div className="text-muted">{t('nodeDetailModal.noiseFloorLabel')}</div>
-                  <div className="font-mono text-gray-200">{meshcoreLocalStats.noiseFloor} dBm</div>
-                  <div className="text-muted">{t('nodeDetailModal.lastRssiLabel')}</div>
-                  <div className="font-mono text-gray-200">{meshcoreLocalStats.lastRssi} dBm</div>
-                  <div className="text-muted">{t('nodeDetailModal.lastSnrLabel')}</div>
-                  <div className="font-mono text-gray-200">
-                    {meshcoreLocalStats.lastSnr.toFixed(2)} dB
+              {/* Foreign LoRa activity — shown for connected device only; all senders in last 90 min */}
+              {isOurNode &&
+                (() => {
+                  const list = getForeignLoraDetectionsList(node.node_id);
+                  if (list.length === 0) return null;
+                  return (
+                    <div className="mt-3 space-y-2">
+                      <h4 className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-orange-400 uppercase">
+                        <span aria-hidden="true">⚠</span>
+                        {t('diagnosticsPanel.foreignLoraHeading')}
+                      </h4>
+                      {list.map((detection, i) => {
+                        const minutesAgo = Math.floor((Date.now() - detection.detectedAt) / 60_000);
+                        const senderName =
+                          detection.longName ??
+                          (detection.lastSenderId
+                            ? nodes?.get(detection.lastSenderId)?.long_name ||
+                              nodes?.get(detection.lastSenderId)?.short_name
+                            : undefined);
+                        return (
+                          <div
+                            key={`${detection.packetClass}-${detection.lastSenderId ?? 'na'}-${detection.detectedAt}-${i}`}
+                            className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs"
+                          >
+                            <div className="text-muted">
+                              {t('diagnosticsPanel.foreignClassColumn')}
+                            </div>
+                            <div className="text-gray-200">
+                              {detection.packetClass === 'meshcore'
+                                ? t('diagnosticsPanel.foreignClassMeshcore')
+                                : detection.packetClass === 'meshtastic'
+                                  ? t('diagnosticsPanel.foreignClassMeshtastic')
+                                  : detection.packetClass === 'unknown-lora'
+                                    ? t('diagnosticsPanel.foreignClassUnknownLora')
+                                    : detection.packetClass}
+                            </div>
+                            <div className="text-muted">
+                              {t('diagnosticsPanel.foreignProximityColumn')}
+                            </div>
+                            <div className="text-gray-200">
+                              {detection.proximity === 'very-close'
+                                ? t('diagnosticsPanel.proximityVeryClose')
+                                : detection.proximity === 'nearby'
+                                  ? t('diagnosticsPanel.proximityNearby')
+                                  : detection.proximity === 'distant'
+                                    ? t('diagnosticsPanel.proximityDistant')
+                                    : detection.proximity === 'unknown'
+                                      ? t('diagnosticsPanel.proximityUnknown')
+                                      : detection.proximity}
+                            </div>
+                            <div className="text-muted">
+                              {t('diagnosticsPanel.foreignLastSeenColumn')}
+                            </div>
+                            <div className="text-gray-200">
+                              {minutesAgo < 1
+                                ? t('common.justNow')
+                                : t('common.minutesAgo', { count: minutesAgo })}
+                            </div>
+                            <div className="text-muted">
+                              {t('diagnosticsPanel.foreignCountColumn')}
+                            </div>
+                            <div className="text-gray-200">{detection.count}×</div>
+                            {(detection.rssi !== undefined || detection.snr !== undefined) && (
+                              <>
+                                <div className="text-muted">{t('nodeDetailModal.signalLabel')}</div>
+                                <div className="font-mono text-gray-200">
+                                  {detection.rssi !== undefined ? `RSSI ${detection.rssi} dBm` : ''}
+                                  {detection.rssi !== undefined && detection.snr !== undefined
+                                    ? ', '
+                                    : ''}
+                                  {detection.snr !== undefined
+                                    ? `SNR ${detection.snr.toFixed(1)} dB`
+                                    : ''}
+                                </div>
+                              </>
+                            )}
+                            {detection.lastSenderId != null && (
+                              <>
+                                <div className="text-muted">{t('nodeDetailModal.senderLabel')}</div>
+                                <div className="font-mono text-gray-200">
+                                  !{detection.lastSenderId.toString(16).padStart(8, '0')}
+                                  {senderName ? ` (${senderName})` : ''}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+              {/* MeshCore: repeater status */}
+              {protocol === 'meshcore' &&
+                !isOurNode &&
+                meshcoreRepeaterStatus &&
+                showRepeaterStats && (
+                  <div className="mt-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                        {t('nodeDetailModal.repeaterStatusHeading')}
+                      </h4>
+                      <button
+                        onClick={() => {
+                          setShowRepeaterStats(false);
+                        }}
+                        className="text-muted text-xs hover:text-gray-300"
+                      >
+                        {t('common.hide')}
+                      </button>
+                    </div>
+                    <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                      <div className="text-muted">{t('nodeDetailModal.batteryLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {(meshcoreRepeaterStatus.battMilliVolts / 1000).toFixed(2)} V
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.noiseFloorLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreRepeaterStatus.noiseFloor} dBm
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.lastRssiLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreRepeaterStatus.lastRssi} dBm
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.lastSnrLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreRepeaterStatus.lastSnr.toFixed(2)} dB
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.pktsRecvSentLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreRepeaterStatus.nPacketsRecv} /{' '}
+                        {meshcoreRepeaterStatus.nPacketsSent}
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.airTimeLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreRepeaterStatus.totalAirTimeSecs}s
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.uptimeLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {Math.floor(meshcoreRepeaterStatus.totalUpTimeSecs / 60)}m
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.txQueueLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreRepeaterStatus.currTxQueueLen}
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.floodDirectSentLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreRepeaterStatus.nSentFlood} / {meshcoreRepeaterStatus.nSentDirect}
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.floodDirectRecvLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreRepeaterStatus.nRecvFlood} / {meshcoreRepeaterStatus.nRecvDirect}
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.errorsLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreRepeaterStatus.errEvents}
+                      </div>
+                      <div className="text-muted">{t('nodeDetailModal.dupsDirectFloodLabel')}</div>
+                      <div className="font-mono text-gray-200">
+                        {meshcoreRepeaterStatus.nDirectDups} / {meshcoreRepeaterStatus.nFloodDups}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-muted">{t('nodeDetailModal.txAirTimeLabel')}</div>
-                  <div className="font-mono text-gray-200">{meshcoreLocalStats.txAirSecs}s</div>
-                  <div className="text-muted">{t('nodeDetailModal.rxAirTimeLabel')}</div>
-                  <div className="font-mono text-gray-200">{meshcoreLocalStats.rxAirSecs}s</div>
-                  <div className="text-muted">{t('nodeDetailModal.uptimeLabel')}</div>
-                  <div className="font-mono text-gray-200">
-                    {Math.floor(meshcoreLocalStats.uptimeSecs / 3600)}h{' '}
-                    {Math.floor((meshcoreLocalStats.uptimeSecs % 3600) / 60)}m
+                )}
+
+              {/* Neighbors section */}
+              {neighborInfo &&
+                (() => {
+                  const record = neighborInfo.get(node.node_id);
+                  if (!record || record.neighbors.length === 0) return null;
+                  return (
+                    <div className="space-y-2 pb-2">
+                      <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                        {t('nodeDetailModal.neighborsHeading', { count: record.neighbors.length })}
+                      </h4>
+                      <div className="space-y-1">
+                        {record.neighbors.map((nb) => {
+                          const nbNode = nodes?.get(nb.nodeId);
+                          const label = nbNode?.short_name || formatMeshtasticNodeId(nb.nodeId);
+                          return (
+                            <div
+                              key={nb.nodeId}
+                              className="bg-secondary-dark flex items-center justify-between rounded px-2 py-1 text-xs"
+                            >
+                              <span className="text-gray-300">{label}</span>
+                              <span className="text-xs text-gray-500">
+                                {formatSecondsAgo(
+                                  Math.max(0, Math.floor(Date.now() / 1000 - nb.lastRxTime)),
+                                  t,
+                                )}
+                              </span>
+                              <SnrIndicator snr={nb.snr} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+              {/* MeshCore Local Stats section (for connected node only) */}
+              {protocol === 'meshcore' && meshcoreLocalStats && (
+                <div className="space-y-2 pb-2">
+                  <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                    {t('nodeDetailModal.radioStatsLocalHeading')}
+                  </h4>
+                  <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                    <div className="text-muted">{t('nodeDetailModal.noiseFloorLabel')}</div>
+                    <div className="font-mono text-gray-200">
+                      {meshcoreLocalStats.noiseFloor} dBm
+                    </div>
+                    <div className="text-muted">{t('nodeDetailModal.lastRssiLabel')}</div>
+                    <div className="font-mono text-gray-200">{meshcoreLocalStats.lastRssi} dBm</div>
+                    <div className="text-muted">{t('nodeDetailModal.lastSnrLabel')}</div>
+                    <div className="font-mono text-gray-200">
+                      {meshcoreLocalStats.lastSnr.toFixed(2)} dB
+                    </div>
+                    <div className="text-muted">{t('nodeDetailModal.txAirTimeLabel')}</div>
+                    <div className="font-mono text-gray-200">{meshcoreLocalStats.txAirSecs}s</div>
+                    <div className="text-muted">{t('nodeDetailModal.rxAirTimeLabel')}</div>
+                    <div className="font-mono text-gray-200">{meshcoreLocalStats.rxAirSecs}s</div>
+                    <div className="text-muted">{t('nodeDetailModal.uptimeLabel')}</div>
+                    <div className="font-mono text-gray-200">
+                      {Math.floor(meshcoreLocalStats.uptimeSecs / 3600)}h{' '}
+                      {Math.floor((meshcoreLocalStats.uptimeSecs % 3600) / 60)}m
+                    </div>
+                  </div>
+
+                  <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                    {t('nodeDetailModal.packetsLocalHeading')}
+                  </h4>
+                  <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                    <div className="text-muted">{t('nodeDetailModal.sentFloodDirectLabel')}</div>
+                    <div className="font-mono text-gray-200">
+                      {meshcoreLocalStats.nSentFlood} / {meshcoreLocalStats.nSentDirect}
+                    </div>
+                    <div className="text-muted">{t('nodeDetailModal.recvFloodDirectLabel')}</div>
+                    <div className="font-mono text-gray-200">
+                      {meshcoreLocalStats.nRecvFlood} / {meshcoreLocalStats.nRecvDirect}
+                    </div>
+                    <div className="text-muted">{t('nodeDetailModal.totalSentLabel')}</div>
+                    <div className="font-mono text-gray-200">{meshcoreLocalStats.sent}</div>
+                    <div className="text-muted">{t('nodeDetailModal.totalRecvLabel')}</div>
+                    <div className="font-mono text-gray-200">{meshcoreLocalStats.recv}</div>
+                    {meshcoreLocalStats.nRecvErrors !== undefined &&
+                      meshcoreLocalStats.nRecvErrors !== null && (
+                        <>
+                          <div className="text-muted">{t('nodeDetailModal.rxErrorsLabel')}</div>
+                          <div className="font-mono text-gray-200">
+                            {meshcoreLocalStats.nRecvErrors}
+                          </div>
+                        </>
+                      )}
                   </div>
                 </div>
+              )}
 
-                <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                  {t('nodeDetailModal.packetsLocalHeading')}
-                </h4>
-                <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                  <div className="text-muted">{t('nodeDetailModal.sentFloodDirectLabel')}</div>
-                  <div className="font-mono text-gray-200">
-                    {meshcoreLocalStats.nSentFlood} / {meshcoreLocalStats.nSentDirect}
-                  </div>
-                  <div className="text-muted">{t('nodeDetailModal.recvFloodDirectLabel')}</div>
-                  <div className="font-mono text-gray-200">
-                    {meshcoreLocalStats.nRecvFlood} / {meshcoreLocalStats.nRecvDirect}
-                  </div>
-                  <div className="text-muted">{t('nodeDetailModal.totalSentLabel')}</div>
-                  <div className="font-mono text-gray-200">{meshcoreLocalStats.sent}</div>
-                  <div className="text-muted">{t('nodeDetailModal.totalRecvLabel')}</div>
-                  <div className="font-mono text-gray-200">{meshcoreLocalStats.recv}</div>
-                  {meshcoreLocalStats.nRecvErrors !== undefined &&
-                    meshcoreLocalStats.nRecvErrors !== null && (
-                      <>
-                        <div className="text-muted">{t('nodeDetailModal.rxErrorsLabel')}</div>
+              {/* PaxCounter section (Meshtastic only) */}
+              {protocol === 'meshtastic' &&
+                paxCounterData &&
+                (() => {
+                  const paxData = paxCounterData.get(node.node_id);
+                  if (!paxData) return null;
+                  return (
+                    <div className="space-y-2 px-5 pb-2">
+                      <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                        Pax Counter
+                      </h4>
+                      <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                        <div className="text-muted">Detected Count</div>
+                        <div className="font-mono text-gray-200">{paxData.count}</div>
+                        <div className="text-muted">Last Seen</div>
                         <div className="font-mono text-gray-200">
-                          {meshcoreLocalStats.nRecvErrors}
+                          {formatSecondsAgo(
+                            Math.max(0, Math.floor((Date.now() - paxData.timestamp) / 1000)),
+                            t,
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+              {/* Detection Sensor section (Meshtastic only) */}
+              {protocol === 'meshtastic' &&
+                detectionSensorEvents &&
+                (() => {
+                  const sensorEvents = detectionSensorEvents.get(node.node_id);
+                  if (!sensorEvents || sensorEvents.length === 0) return null;
+                  const latestEvent = sensorEvents[sensorEvents.length - 1];
+                  return (
+                    <div className="space-y-2 px-5 pb-2">
+                      <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                        Detection Sensor ({sensorEvents.length})
+                      </h4>
+                      <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                        <div className="text-muted">Last Detection</div>
+                        <div className="font-mono text-gray-200">
+                          {formatSecondsAgo(
+                            Math.max(0, Math.floor((Date.now() - latestEvent.timestamp) / 1000)),
+                            t,
+                          )}
+                        </div>
+                        <div className="text-muted">Data Size</div>
+                        <div className="font-mono text-gray-200">
+                          {latestEvent.data.length} bytes
+                        </div>
+                        <div className="text-muted col-span-2">Raw Data (hex)</div>
+                        <div className="col-span-2 font-mono text-[10px] break-all text-gray-200">
+                          {Array.from(latestEvent.data)
+                            .map((b) => b.toString(16).padStart(2, '0'))
+                            .join(' ')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+              {/* Map Report section (Meshtastic only) */}
+              {protocol === 'meshtastic' && mapReports && (
+                <div className="space-y-2 pb-2">
+                  <h4 className="text-muted text-sm font-medium">
+                    {t('nodeDetailModal.mapReportHeading')}
+                  </h4>
+                  {(() => {
+                    const mapReport = mapReports.get(node.node_id);
+                    if (!mapReport) {
+                      return (
+                        <p className="text-xs text-gray-500">
+                          {t('nodeDetailModal.noMapReportReceived')}
+                        </p>
+                      );
+                    }
+                    return (
+                      <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded py-2 text-xs">
+                        <div className="text-muted">{t('nodeDetailModal.mapReportLastReport')}</div>
+                        <div className="font-mono text-gray-200">
+                          {formatSecondsAgo(
+                            Math.max(0, Math.floor((Date.now() - mapReport.timestamp) / 1000)),
+                            t,
+                          )}
+                        </div>
+                        <div className="text-muted">{t('nodeDetailModal.mapReportDataLabel')}</div>
+                        <div className="font-mono text-gray-200">
+                          {mapReport.data
+                            ? JSON.stringify(mapReport.data).slice(0, 50)
+                            : t('nodeDetailModal.mapReportDataNa')}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Position History (GPS tracking path) */}
+              {positionHistory && (
+                <div className="space-y-2 pb-2">
+                  <h4 className="text-muted text-sm font-medium">
+                    {t('nodeDetailModal.positionHistoryHeading')}
+                  </h4>
+                  {(() => {
+                    const points = positionHistory.get(node.node_id);
+                    if (!points || points.length === 0) {
+                      return (
+                        <p className="text-xs text-gray-500">
+                          {t('nodeDetailModal.noPositionHistoryRecorded')}
+                        </p>
+                      );
+                    }
+                    const sorted = [...points].sort((a, b) => a.t - b.t);
+                    const first = sorted[0];
+                    const last = sorted[sorted.length - 1];
+                    const durationHours = ((last.t - first.t) / (1000 * 60 * 60)).toFixed(1);
+                    const recentPoints = [...sorted].reverse().slice(0, POSITION_HISTORY_MAX_ROWS);
+                    return (
+                      <>
+                        <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded py-2 text-xs">
+                          <div className="text-muted">
+                            {t('nodeDetailModal.positionHistoryRecordedPoints')}
+                          </div>
+                          <div className="font-mono text-gray-200">{points.length}</div>
+                          <div className="text-muted">
+                            {t('nodeDetailModal.positionHistoryTimeSpan')}
+                          </div>
+                          <div className="font-mono text-gray-200">
+                            {t('nodeDetailModal.positionHistoryDurationHours', {
+                              hours: durationHours,
+                            })}
+                          </div>
+                          <div className="text-muted">
+                            {t('nodeDetailModal.positionHistoryFirstPosition')}
+                          </div>
+                          <div className="font-mono text-gray-200">
+                            {new Date(first.t).toLocaleString()}
+                          </div>
+                          <div className="text-muted">
+                            {t('nodeDetailModal.positionHistoryLastPosition')}
+                          </div>
+                          <div className="font-mono text-gray-200">
+                            {new Date(last.t).toLocaleString()}
+                          </div>
+                        </div>
+                        {sorted.length > 1 && (
+                          <div className="text-[10px] text-gray-500">
+                            {t('nodeDetailModal.positionHistoryMostRecent', {
+                              lat: last.lat.toFixed(5),
+                              lon: last.lon.toFixed(5),
+                            })}
+                          </div>
+                        )}
+                        {sorted.length > POSITION_HISTORY_MAX_ROWS && (
+                          <div className="text-[10px] text-gray-500">
+                            {t('nodeDetailModal.positionHistoryTruncated', {
+                              shown: POSITION_HISTORY_MAX_ROWS,
+                              total: sorted.length,
+                            })}
+                          </div>
+                        )}
+                        <div className="bg-secondary-dark space-y-1 rounded py-2">
+                          {recentPoints.map((point, idx) => (
+                            <div
+                              key={`${point.t}-${point.lat}-${point.lon}-${idx}`}
+                              className="grid grid-cols-[auto_1fr] gap-x-2 text-[10px]"
+                            >
+                              <span className="text-gray-500">
+                                {new Date(point.t).toLocaleString()}
+                              </span>
+                              <span className="font-mono whitespace-nowrap text-gray-200">
+                                {formatCoordPair(point.lat, point.lon, coordinateFormat)}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </>
-                    )}
+                    );
+                  })()}
                 </div>
-              </div>
-            )}
-
-            {/* PaxCounter section (Meshtastic only) */}
-            {protocol === 'meshtastic' &&
-              paxCounterData &&
-              (() => {
-                const paxData = paxCounterData.get(node.node_id);
-                if (!paxData) return null;
-                return (
-                  <div className="space-y-2 px-5 pb-2">
-                    <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                      Pax Counter
-                    </h4>
-                    <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                      <div className="text-muted">Detected Count</div>
-                      <div className="font-mono text-gray-200">{paxData.count}</div>
-                      <div className="text-muted">Last Seen</div>
-                      <div className="font-mono text-gray-200">
-                        {formatSecondsAgo(
-                          Math.max(0, Math.floor((Date.now() - paxData.timestamp) / 1000)),
-                          t,
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-            {/* Detection Sensor section (Meshtastic only) */}
-            {protocol === 'meshtastic' &&
-              detectionSensorEvents &&
-              (() => {
-                const sensorEvents = detectionSensorEvents.get(node.node_id);
-                if (!sensorEvents || sensorEvents.length === 0) return null;
-                const latestEvent = sensorEvents[sensorEvents.length - 1];
-                return (
-                  <div className="space-y-2 px-5 pb-2">
-                    <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                      Detection Sensor ({sensorEvents.length})
-                    </h4>
-                    <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                      <div className="text-muted">Last Detection</div>
-                      <div className="font-mono text-gray-200">
-                        {formatSecondsAgo(
-                          Math.max(0, Math.floor((Date.now() - latestEvent.timestamp) / 1000)),
-                          t,
-                        )}
-                      </div>
-                      <div className="text-muted">Data Size</div>
-                      <div className="font-mono text-gray-200">{latestEvent.data.length} bytes</div>
-                      <div className="text-muted col-span-2">Raw Data (hex)</div>
-                      <div className="col-span-2 font-mono text-[10px] break-all text-gray-200">
-                        {Array.from(latestEvent.data)
-                          .map((b) => b.toString(16).padStart(2, '0'))
-                          .join(' ')}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-            {/* Map Report section (Meshtastic only) */}
-            {protocol === 'meshtastic' && mapReports && (
-              <div className="space-y-2 pb-2">
-                <h4 className="text-muted text-sm font-medium">
-                  {t('nodeDetailModal.mapReportHeading')}
-                </h4>
-                {(() => {
-                  const mapReport = mapReports.get(node.node_id);
-                  if (!mapReport) {
-                    return (
-                      <p className="text-xs text-gray-500">
-                        {t('nodeDetailModal.noMapReportReceived')}
-                      </p>
-                    );
-                  }
-                  return (
-                    <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded py-2 text-xs">
-                      <div className="text-muted">{t('nodeDetailModal.mapReportLastReport')}</div>
-                      <div className="font-mono text-gray-200">
-                        {formatSecondsAgo(
-                          Math.max(0, Math.floor((Date.now() - mapReport.timestamp) / 1000)),
-                          t,
-                        )}
-                      </div>
-                      <div className="text-muted">{t('nodeDetailModal.mapReportDataLabel')}</div>
-                      <div className="font-mono text-gray-200">
-                        {mapReport.data
-                          ? JSON.stringify(mapReport.data).slice(0, 50)
-                          : t('nodeDetailModal.mapReportDataNa')}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-
-            {/* Position History (GPS tracking path) */}
-            {positionHistory && (
-              <div className="space-y-2 pb-2">
-                <h4 className="text-muted text-sm font-medium">
-                  {t('nodeDetailModal.positionHistoryHeading')}
-                </h4>
-                {(() => {
-                  const points = positionHistory.get(node.node_id);
-                  if (!points || points.length === 0) {
-                    return (
-                      <p className="text-xs text-gray-500">
-                        {t('nodeDetailModal.noPositionHistoryRecorded')}
-                      </p>
-                    );
-                  }
-                  const sorted = [...points].sort((a, b) => a.t - b.t);
-                  const first = sorted[0];
-                  const last = sorted[sorted.length - 1];
-                  const durationHours = ((last.t - first.t) / (1000 * 60 * 60)).toFixed(1);
-                  const recentPoints = [...sorted].reverse().slice(0, POSITION_HISTORY_MAX_ROWS);
-                  return (
-                    <>
-                      <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded py-2 text-xs">
-                        <div className="text-muted">
-                          {t('nodeDetailModal.positionHistoryRecordedPoints')}
-                        </div>
-                        <div className="font-mono text-gray-200">{points.length}</div>
-                        <div className="text-muted">
-                          {t('nodeDetailModal.positionHistoryTimeSpan')}
-                        </div>
-                        <div className="font-mono text-gray-200">
-                          {t('nodeDetailModal.positionHistoryDurationHours', {
-                            hours: durationHours,
-                          })}
-                        </div>
-                        <div className="text-muted">
-                          {t('nodeDetailModal.positionHistoryFirstPosition')}
-                        </div>
-                        <div className="font-mono text-gray-200">
-                          {new Date(first.t).toLocaleString()}
-                        </div>
-                        <div className="text-muted">
-                          {t('nodeDetailModal.positionHistoryLastPosition')}
-                        </div>
-                        <div className="font-mono text-gray-200">
-                          {new Date(last.t).toLocaleString()}
-                        </div>
-                      </div>
-                      {sorted.length > 1 && (
-                        <div className="text-[10px] text-gray-500">
-                          {t('nodeDetailModal.positionHistoryMostRecent', {
-                            lat: last.lat.toFixed(5),
-                            lon: last.lon.toFixed(5),
-                          })}
-                        </div>
-                      )}
-                      {sorted.length > POSITION_HISTORY_MAX_ROWS && (
-                        <div className="text-[10px] text-gray-500">
-                          {t('nodeDetailModal.positionHistoryTruncated', {
-                            shown: POSITION_HISTORY_MAX_ROWS,
-                            total: sorted.length,
-                          })}
-                        </div>
-                      )}
-                      <div className="bg-secondary-dark space-y-1 rounded py-2">
-                        {recentPoints.map((point, idx) => (
-                          <div
-                            key={`${point.t}-${point.lat}-${point.lon}-${idx}`}
-                            className="grid grid-cols-[auto_1fr] gap-x-2 text-[10px]"
-                          >
-                            <span className="text-gray-500">
-                              {new Date(point.t).toLocaleString()}
-                            </span>
-                            <span className="font-mono whitespace-nowrap text-gray-200">
-                              {formatCoordPair(point.lat, point.lon, coordinateFormat)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-          </div>
-
-          {/* Footer actions — omitted for directly connected node (no position/trace/message to self) */}
-          {!isOurNode && (
-            <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-gray-700 px-5 py-3">
-              {protocol !== 'meshcore' && (
-                <button
-                  onClick={handleRequestPosition}
-                  disabled={!isConnected || positionRequestedAt !== null}
-                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {t('nodeDetailModal.requestPosition')}
-                </button>
               )}
-              {protocol === 'meshtastic' && onConfigureRemotely && (
-                <button
-                  type="button"
-                  onClick={onConfigureRemotely}
-                  disabled={!isConnected}
-                  aria-label={t('nodeDetailModal.configureRemotely')}
-                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-blue-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {t('nodeDetailModal.configureRemotely')}
-                </button>
-              )}
-              {traceHardDisabled && traceBlockReason ? (
-                <HelpTooltip text={traceBlockReason}>
-                  <span className="inline-flex min-w-[8rem] flex-1">
+
+              {protocol === 'meshtastic' && onSaveRemoteAdminKey && !isOurNode && (
+                <div className="mt-4 space-y-2 rounded-lg border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-sm text-blue-100">
+                  <p className="text-xs font-medium tracking-wide text-blue-300 uppercase">
+                    {t('nodeDetailModal.remoteAdminKeyTitle')}
+                  </p>
+                  <p className="text-muted text-xs">{t('nodeDetailModal.remoteAdminKeyHint')}</p>
+                  {node.public_key_hex?.length !== 64 && (
+                    <p className="text-xs text-amber-300">
+                      {t('nodeDetailModal.remoteAdminNoPkiKey')}
+                    </p>
+                  )}
+                  <label htmlFor="node-detail-admin-key" className="text-muted text-xs">
+                    {t('nodeDetailModal.remoteAdminKeyLabel')}
+                  </label>
+                  <input
+                    id="node-detail-admin-key"
+                    type="text"
+                    value={adminKeyDraft}
+                    onChange={(e) => {
+                      setAdminKeyDraft(e.target.value);
+                      setAdminKeyError(null);
+                      setAdminKeyStatus(null);
+                    }}
+                    placeholder={t('nodeDetailModal.remoteAdminKeyPlaceholder')}
+                    aria-label={t('nodeDetailModal.remoteAdminKeyLabel')}
+                    className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200"
+                  />
+                  {adminKeyError && <p className="text-xs text-red-400">{adminKeyError}</p>}
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={handleTraceRoute}
-                      disabled
-                      className="bg-secondary-dark min-w-[8rem] flex-1 cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-gray-200 opacity-40"
+                      disabled={!isConnected}
+                      aria-label={t('nodeDetailModal.saveRemoteAdminKey')}
+                      className="bg-secondary-dark rounded-lg px-3 py-1.5 text-xs font-medium text-blue-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      onClick={() => {
+                        void (async () => {
+                          const trimmed = adminKeyDraft.trim();
+                          if (!isValidMeshtasticAdminKeyBase64(trimmed)) {
+                            setAdminKeyError(t('nodeDetailModal.remoteAdminKeyInvalid'));
+                            return;
+                          }
+                          try {
+                            const normalized = normalizeMeshtasticAdminKeyInput(trimmed);
+                            if (!normalized) {
+                              setAdminKeyError(t('nodeDetailModal.remoteAdminKeyInvalid'));
+                              return;
+                            }
+                            await onSaveRemoteAdminKey(node.node_id, normalized);
+                            setAdminKeyDraft(normalized);
+                            setAdminKeyStatus(t('nodeDetailModal.remoteAdminKeySaved'));
+                            setAdminKeyError(null);
+                          } catch (e: unknown) {
+                            const msg = e instanceof Error ? e.message : String(e);
+                            console.warn('[NodeDetailModal] save remote admin key failed ' + msg);
+                            setAdminKeyError(
+                              msg.startsWith('remoteAdmin.errors.')
+                                ? t(msg)
+                                : t('nodeDetailModal.remoteAdminKeyInvalid'),
+                            );
+                          }
+                        })();
+                      }}
                     >
-                      {traceRoutePending
-                        ? t('nodeDetailModal.tracingEllipsis')
-                        : t('nodeDetailModal.traceRoute')}
+                      {t('nodeDetailModal.saveRemoteAdminKey')}
                     </button>
-                  </span>
-                </HelpTooltip>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleTraceRoute}
-                  disabled={false}
-                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600"
-                >
-                  {traceRoutePending
-                    ? t('nodeDetailModal.tracingEllipsis')
-                    : t('nodeDetailModal.traceRoute')}
-                </button>
+                    {remoteAdminKey && (
+                      <button
+                        type="button"
+                        aria-label={t('nodeDetailModal.clearRemoteAdminKey')}
+                        className="bg-secondary-dark rounded-lg px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600"
+                        onClick={() => {
+                          void (async () => {
+                            try {
+                              await onSaveRemoteAdminKey(node.node_id, null);
+                              setAdminKeyDraft('');
+                              setAdminKeyStatus(t('nodeDetailModal.remoteAdminKeyCleared'));
+                              setAdminKeyError(null);
+                            } catch (e: unknown) {
+                              const msg = e instanceof Error ? e.message : String(e);
+                              console.warn(
+                                '[NodeDetailModal] clear remote admin key failed ' + msg,
+                              );
+                              setAdminKeyError(
+                                msg.startsWith('remoteAdmin.errors.')
+                                  ? t(msg)
+                                  : t('nodeDetailModal.remoteAdminKeyInvalid'),
+                              );
+                            }
+                          })();
+                        }}
+                      >
+                        {t('nodeDetailModal.clearRemoteAdminKey')}
+                      </button>
+                    )}
+                  </div>
+                  {adminKeyStatus && (
+                    <p className="text-xs text-green-400" role="status">
+                      {adminKeyStatus}
+                    </p>
+                  )}
+                </div>
               )}
-              {protocol === 'meshcore' && onRequestRepeaterStatus && (
-                <button
-                  onClick={async () => {
-                    if (!(await ensureConfigured())) return;
-                    setRepeaterStatusPending(true);
-                    setActionStatus(t('nodeDetailModal.requestingStatus'));
-                    try {
-                      await onRequestRepeaterStatus(node.node_id);
-                      setActionStatus(null);
-                    } catch (e) {
-                      console.warn(
-                        '[NodeDetailModal] requestRepeaterStatus failed ' + errLikeToLogString(e),
-                      );
-                      setActionStatus(
-                        e instanceof Error ? e.message : t('nodeDetailModal.statusRequestFailed'),
-                      );
-                    } finally {
-                      setRepeaterStatusPending(false);
-                    }
-                  }}
-                  disabled={!isConnected || repeaterStatusPending}
-                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {repeaterStatusPending
-                    ? t('nodeDetailModal.requestingEllipsis')
-                    : t('nodeDetailModal.requestStatus')}
-                </button>
-              )}
-              {protocol === 'meshcore' && onRequestTelemetry && (
-                <button
-                  type="button"
-                  title={t('nodeDetailModal.cayenneLppTitle')}
-                  aria-label={t('nodeDetailModal.sensorTelemetryLpp')}
-                  onClick={async () => {
-                    if (!(await ensureConfigured())) return;
-                    setTelemetryPending(true);
-                    setActionStatus(t('nodeDetailModal.requestingSensorTelemetry'));
-                    try {
-                      await onRequestTelemetry(node.node_id);
-                      setActionStatus(null);
-                    } catch (e) {
-                      console.warn(
-                        '[NodeDetailModal] requestTelemetry failed ' + errLikeToLogString(e),
-                      );
-                      setActionStatus(
-                        e instanceof Error
-                          ? e.message
-                          : t('nodeDetailModal.telemetryFailed', { message: String(e) }),
-                      );
-                    } finally {
-                      setTelemetryPending(false);
-                    }
-                  }}
-                  disabled={!isConnected || telemetryPending}
-                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {telemetryPending
-                    ? t('nodeDetailModal.requestingEllipsis')
-                    : t('nodeDetailModal.sensorTelemetryButton')}
-                </button>
-              )}
-              {protocol === 'meshcore' && onRequestNeighbors && node.hw_model === 'Repeater' && (
-                <button
-                  onClick={async () => {
-                    if (!(await ensureConfigured())) return;
-                    setNeighborsPending(true);
-                    setActionStatus(t('nodeDetailModal.requestingNeighbors'));
-                    try {
-                      await onRequestNeighbors(node.node_id);
-                      setActionStatus(null);
-                    } catch (e) {
-                      console.warn(
-                        '[NodeDetailModal] requestNeighbors failed ' + errLikeToLogString(e),
-                      );
-                      setActionStatus(
-                        e instanceof Error
-                          ? e.message
-                          : t('nodeDetailModal.neighborsFailed', { message: String(e) }),
-                      );
-                    } finally {
-                      setNeighborsPending(false);
-                    }
-                  }}
-                  disabled={!isConnected || neighborsPending}
-                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {neighborsPending
-                    ? t('nodeDetailModal.requestingEllipsis')
-                    : t('nodeDetailModal.getNeighbors')}
-                </button>
-              )}
-              {onMessageNode && (
-                <button
-                  onClick={() => {
-                    onMessageNode(node.node_id);
-                    onClose();
-                  }}
-                  disabled={!isConnected || (protocol === 'meshcore' && !contactPubkey)}
-                  title={
-                    protocol === 'meshcore' && !contactPubkey
-                      ? t('nodeDetailModal.messageNoKeyTitle')
-                      : undefined
-                  }
-                  className="min-w-[8rem] flex-1 rounded-lg bg-purple-700/50 px-3 py-2 text-sm font-medium text-purple-300 transition-colors hover:bg-purple-600/50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {t('nodeDetailModal.messageButton')}
-                </button>
-              )}
-              {protocol === 'meshcore' && onExportContact && (
-                <button
-                  onClick={async () => {
-                    if (!(await ensureConfigured())) return;
-                    setExportContactPending(true);
-                    setActionStatus(t('nodeDetailModal.exportingContact'));
-                    try {
-                      const advert = await onExportContact(node.node_id);
-                      if (advert) {
-                        const blob = new Blob([advert.buffer as ArrayBuffer], {
-                          type: 'application/octet-stream',
-                        });
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `contact-${node.node_id.toString(16)}.bin`;
-                        link.click();
-                        URL.revokeObjectURL(url);
+            </div>
+
+            {/* Footer actions — omitted for directly connected node (no position/trace/message to self) */}
+            {!isOurNode && (
+              <div className="flex flex-wrap items-center gap-2 border-t border-gray-700 px-5 py-3">
+                {protocol !== 'meshcore' && (
+                  <button
+                    onClick={handleRequestPosition}
+                    disabled={!isConnected || positionRequestedAt !== null}
+                    className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {t('nodeDetailModal.requestPosition')}
+                  </button>
+                )}
+                {traceHardDisabled && traceBlockReason ? (
+                  <HelpTooltip text={traceBlockReason}>
+                    <span className="inline-flex min-w-[8rem] flex-1">
+                      <button
+                        type="button"
+                        onClick={handleTraceRoute}
+                        disabled
+                        className="bg-secondary-dark min-w-[8rem] flex-1 cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-gray-200 opacity-40"
+                      >
+                        {traceRoutePending
+                          ? t('nodeDetailModal.tracingEllipsis')
+                          : t('nodeDetailModal.traceRoute')}
+                      </button>
+                    </span>
+                  </HelpTooltip>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleTraceRoute}
+                    disabled={false}
+                    className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600"
+                  >
+                    {traceRoutePending
+                      ? t('nodeDetailModal.tracingEllipsis')
+                      : t('nodeDetailModal.traceRoute')}
+                  </button>
+                )}
+                {protocol === 'meshcore' && onRequestRepeaterStatus && (
+                  <button
+                    onClick={async () => {
+                      if (!(await ensureConfigured())) return;
+                      setRepeaterStatusPending(true);
+                      setActionStatus(t('nodeDetailModal.requestingStatus'));
+                      try {
+                        await onRequestRepeaterStatus(node.node_id);
                         setActionStatus(null);
-                      } else {
-                        setActionStatus(t('nodeDetailModal.noPublicKeyAvailable'));
+                      } catch (e) {
+                        console.warn(
+                          '[NodeDetailModal] requestRepeaterStatus failed ' + errLikeToLogString(e),
+                        );
+                        setActionStatus(
+                          e instanceof Error ? e.message : t('nodeDetailModal.statusRequestFailed'),
+                        );
+                      } finally {
+                        setRepeaterStatusPending(false);
                       }
-                    } catch (e) {
-                      console.warn(
-                        '[NodeDetailModal] exportContact failed ' + errLikeToLogString(e),
-                      );
-                      setActionStatus(
-                        e instanceof Error ? e.message : t('nodeDetailModal.exportFailed'),
-                      );
-                    } finally {
-                      setExportContactPending(false);
+                    }}
+                    disabled={!isConnected || repeaterStatusPending}
+                    className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {repeaterStatusPending
+                      ? t('nodeDetailModal.requestingEllipsis')
+                      : t('nodeDetailModal.requestStatus')}
+                  </button>
+                )}
+                {protocol === 'meshcore' && onRequestTelemetry && (
+                  <button
+                    type="button"
+                    title={t('nodeDetailModal.cayenneLppTitle')}
+                    aria-label={t('nodeDetailModal.sensorTelemetryLpp')}
+                    onClick={async () => {
+                      if (!(await ensureConfigured())) return;
+                      setTelemetryPending(true);
+                      setActionStatus(t('nodeDetailModal.requestingSensorTelemetry'));
+                      try {
+                        await onRequestTelemetry(node.node_id);
+                        setActionStatus(null);
+                      } catch (e) {
+                        console.warn(
+                          '[NodeDetailModal] requestTelemetry failed ' + errLikeToLogString(e),
+                        );
+                        setActionStatus(
+                          e instanceof Error
+                            ? e.message
+                            : t('nodeDetailModal.telemetryFailed', { message: String(e) }),
+                        );
+                      } finally {
+                        setTelemetryPending(false);
+                      }
+                    }}
+                    disabled={!isConnected || telemetryPending}
+                    className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {telemetryPending
+                      ? t('nodeDetailModal.requestingEllipsis')
+                      : t('nodeDetailModal.sensorTelemetryButton')}
+                  </button>
+                )}
+                {protocol === 'meshcore' && onRequestNeighbors && node.hw_model === 'Repeater' && (
+                  <button
+                    onClick={async () => {
+                      if (!(await ensureConfigured())) return;
+                      setNeighborsPending(true);
+                      setActionStatus(t('nodeDetailModal.requestingNeighbors'));
+                      try {
+                        await onRequestNeighbors(node.node_id);
+                        setActionStatus(null);
+                      } catch (e) {
+                        console.warn(
+                          '[NodeDetailModal] requestNeighbors failed ' + errLikeToLogString(e),
+                        );
+                        setActionStatus(
+                          e instanceof Error
+                            ? e.message
+                            : t('nodeDetailModal.neighborsFailed', { message: String(e) }),
+                        );
+                      } finally {
+                        setNeighborsPending(false);
+                      }
+                    }}
+                    disabled={!isConnected || neighborsPending}
+                    className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {neighborsPending
+                      ? t('nodeDetailModal.requestingEllipsis')
+                      : t('nodeDetailModal.getNeighbors')}
+                  </button>
+                )}
+                {onMessageNode && (
+                  <button
+                    onClick={() => {
+                      onMessageNode(node.node_id);
+                      onClose();
+                    }}
+                    disabled={!isConnected || (protocol === 'meshcore' && !contactPubkey)}
+                    title={
+                      protocol === 'meshcore' && !contactPubkey
+                        ? t('nodeDetailModal.messageNoKeyTitle')
+                        : undefined
                     }
-                  }}
-                  disabled={!isConnected || exportContactPending}
-                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {exportContactPending
-                    ? t('nodeDetailModal.exportingEllipsis')
-                    : t('nodeDetailModal.exportContact')}
-                </button>
-              )}
-              {protocol === 'meshcore' && onShareContact && (
-                <button
-                  onClick={async () => {
-                    if (!(await ensureConfigured())) return;
-                    setShareContactPending(true);
-                    setActionStatus(t('nodeDetailModal.sharingContact'));
-                    try {
-                      const success = await onShareContact(node.node_id);
-                      setActionStatus(success ? null : t('nodeDetailModal.shareFailed'));
-                    } catch (e) {
-                      console.warn(
-                        '[NodeDetailModal] shareContact failed ' + errLikeToLogString(e),
-                      );
-                      setActionStatus(
-                        e instanceof Error ? e.message : t('nodeDetailModal.shareFailed'),
-                      );
-                    } finally {
-                      setShareContactPending(false);
-                    }
-                  }}
-                  disabled={!isConnected || shareContactPending}
-                  className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {shareContactPending
-                    ? t('nodeDetailModal.sharingEllipsis')
-                    : t('nodeDetailModal.shareContact')}
-                </button>
-              )}
-              {protocol === 'meshcore' && contactPubkey && contactOnRadio === false && (
-                <button
-                  onClick={async () => {
-                    setAddRemoveLoading(true);
-                    setActionStatus(t('nodeDetailModal.addingToRadio'));
-                    try {
-                      await window.electronAPI.db.saveMeshcoreContact({
-                        node_id: node.node_id,
-                        public_key: contactPubkey,
-                        on_radio: 1,
-                        last_synced_from_radio: new Date().toISOString(),
-                      });
-                      setContactOnRadio(true);
-                      // Refresh count
-                      const count = await window.electronAPI.db.getMeshcoreContactCount();
-                      setRadioContactCount(count);
-                      setActionStatus(null);
-                    } catch (e) {
-                      console.warn('[NodeDetailModal] addToRadio failed ' + errLikeToLogString(e));
-                      setActionStatus(
-                        e instanceof Error ? e.message : t('nodeDetailModal.addToRadioFailed'),
-                      );
-                    } finally {
-                      setAddRemoveLoading(false);
-                    }
-                  }}
-                  disabled={!isConnected || addRemoveLoading}
-                  className="min-w-[8rem] flex-1 rounded-lg bg-green-900/50 px-3 py-2 text-sm font-medium text-green-300 transition-colors hover:bg-green-800/50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {addRemoveLoading
-                    ? t('nodeDetailModal.addingEllipsis')
-                    : t('nodeDetailModal.addToRadio')}
-                </button>
-              )}
-              {protocol === 'meshcore' && contactPubkey && contactOnRadio === true && (
-                <button
-                  onClick={async () => {
-                    setAddRemoveLoading(true);
-                    setActionStatus(t('nodeDetailModal.removingFromRadio'));
-                    try {
-                      await window.electronAPI.db.saveMeshcoreContact({
-                        node_id: node.node_id,
-                        public_key: contactPubkey,
-                        on_radio: 0,
-                      });
-                      setContactOnRadio(false);
-                      // Refresh count
-                      const count = await window.electronAPI.db.getMeshcoreContactCount();
-                      setRadioContactCount(count);
-                      setActionStatus(null);
-                    } catch (e) {
-                      console.warn(
-                        '[NodeDetailModal] removeFromRadio failed ' + errLikeToLogString(e),
-                      );
-                      setActionStatus(
-                        e instanceof Error ? e.message : t('nodeDetailModal.removeFromRadioFailed'),
-                      );
-                    } finally {
-                      setAddRemoveLoading(false);
-                    }
-                  }}
-                  disabled={!isConnected || addRemoveLoading}
-                  className="min-w-[8rem] flex-1 rounded-lg bg-orange-900/50 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-800/50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {addRemoveLoading
-                    ? t('nodeDetailModal.removingEllipsis')
-                    : t('nodeDetailModal.removeFromRadio')}
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* MQTT Ignore toggle */}
-          <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-700/50 px-5 py-2">
-            <div>
-              <div className="text-xs font-medium text-gray-300">
-                {t('nodeDetailModal.mqttIgnoreHeading')}
+                    className="min-w-[8rem] flex-1 rounded-lg bg-purple-700/50 px-3 py-2 text-sm font-medium text-purple-300 transition-colors hover:bg-purple-600/50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {t('nodeDetailModal.messageButton')}
+                  </button>
+                )}
+                {protocol === 'meshcore' && onExportContact && (
+                  <button
+                    onClick={async () => {
+                      if (!(await ensureConfigured())) return;
+                      setExportContactPending(true);
+                      setActionStatus(t('nodeDetailModal.exportingContact'));
+                      try {
+                        const advert = await onExportContact(node.node_id);
+                        if (advert) {
+                          const blob = new Blob([advert.buffer as ArrayBuffer], {
+                            type: 'application/octet-stream',
+                          });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = `contact-${node.node_id.toString(16)}.bin`;
+                          link.click();
+                          URL.revokeObjectURL(url);
+                          setActionStatus(null);
+                        } else {
+                          setActionStatus(t('nodeDetailModal.noPublicKeyAvailable'));
+                        }
+                      } catch (e) {
+                        console.warn(
+                          '[NodeDetailModal] exportContact failed ' + errLikeToLogString(e),
+                        );
+                        setActionStatus(
+                          e instanceof Error ? e.message : t('nodeDetailModal.exportFailed'),
+                        );
+                      } finally {
+                        setExportContactPending(false);
+                      }
+                    }}
+                    disabled={!isConnected || exportContactPending}
+                    className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {exportContactPending
+                      ? t('nodeDetailModal.exportingEllipsis')
+                      : t('nodeDetailModal.exportContact')}
+                  </button>
+                )}
+                {protocol === 'meshcore' && onShareContact && (
+                  <button
+                    onClick={async () => {
+                      if (!(await ensureConfigured())) return;
+                      setShareContactPending(true);
+                      setActionStatus(t('nodeDetailModal.sharingContact'));
+                      try {
+                        const success = await onShareContact(node.node_id);
+                        setActionStatus(success ? null : t('nodeDetailModal.shareFailed'));
+                      } catch (e) {
+                        console.warn(
+                          '[NodeDetailModal] shareContact failed ' + errLikeToLogString(e),
+                        );
+                        setActionStatus(
+                          e instanceof Error ? e.message : t('nodeDetailModal.shareFailed'),
+                        );
+                      } finally {
+                        setShareContactPending(false);
+                      }
+                    }}
+                    disabled={!isConnected || shareContactPending}
+                    className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {shareContactPending
+                      ? t('nodeDetailModal.sharingEllipsis')
+                      : t('nodeDetailModal.shareContact')}
+                  </button>
+                )}
+                {protocol === 'meshcore' && contactPubkey && contactOnRadio === false && (
+                  <button
+                    onClick={async () => {
+                      setAddRemoveLoading(true);
+                      setActionStatus(t('nodeDetailModal.addingToRadio'));
+                      try {
+                        await window.electronAPI.db.saveMeshcoreContact({
+                          node_id: node.node_id,
+                          public_key: contactPubkey,
+                          on_radio: 1,
+                          last_synced_from_radio: new Date().toISOString(),
+                        });
+                        setContactOnRadio(true);
+                        // Refresh count
+                        const count = await window.electronAPI.db.getMeshcoreContactCount();
+                        setRadioContactCount(count);
+                        setActionStatus(null);
+                      } catch (e) {
+                        console.warn(
+                          '[NodeDetailModal] addToRadio failed ' + errLikeToLogString(e),
+                        );
+                        setActionStatus(
+                          e instanceof Error ? e.message : t('nodeDetailModal.addToRadioFailed'),
+                        );
+                      } finally {
+                        setAddRemoveLoading(false);
+                      }
+                    }}
+                    disabled={!isConnected || addRemoveLoading}
+                    className="min-w-[8rem] flex-1 rounded-lg bg-green-900/50 px-3 py-2 text-sm font-medium text-green-300 transition-colors hover:bg-green-800/50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {addRemoveLoading
+                      ? t('nodeDetailModal.addingEllipsis')
+                      : t('nodeDetailModal.addToRadio')}
+                  </button>
+                )}
+                {protocol === 'meshcore' && contactPubkey && contactOnRadio === true && (
+                  <button
+                    onClick={async () => {
+                      setAddRemoveLoading(true);
+                      setActionStatus(t('nodeDetailModal.removingFromRadio'));
+                      try {
+                        await window.electronAPI.db.saveMeshcoreContact({
+                          node_id: node.node_id,
+                          public_key: contactPubkey,
+                          on_radio: 0,
+                        });
+                        setContactOnRadio(false);
+                        // Refresh count
+                        const count = await window.electronAPI.db.getMeshcoreContactCount();
+                        setRadioContactCount(count);
+                        setActionStatus(null);
+                      } catch (e) {
+                        console.warn(
+                          '[NodeDetailModal] removeFromRadio failed ' + errLikeToLogString(e),
+                        );
+                        setActionStatus(
+                          e instanceof Error
+                            ? e.message
+                            : t('nodeDetailModal.removeFromRadioFailed'),
+                        );
+                      } finally {
+                        setAddRemoveLoading(false);
+                      }
+                    }}
+                    disabled={!isConnected || addRemoveLoading}
+                    className="min-w-[8rem] flex-1 rounded-lg bg-orange-900/50 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-800/50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {addRemoveLoading
+                      ? t('nodeDetailModal.removingEllipsis')
+                      : t('nodeDetailModal.removeFromRadio')}
+                  </button>
+                )}
               </div>
-              <div className="text-muted text-xs">{t('nodeDetailModal.mqttIgnoreDescription')}</div>
-            </div>
-            <button
-              onClick={() => {
-                setNodeMqttIgnored(node.node_id, !mqttIgnoredNodes.has(node.node_id));
-              }}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-                mqttIgnoredNodes.has(node.node_id) ? 'bg-yellow-500' : 'bg-gray-600'
-              }`}
-              role="switch"
-              aria-checked={mqttIgnoredNodes.has(node.node_id)}
-              title={
-                mqttIgnoredNodes.has(node.node_id)
-                  ? t('nodeDetailModal.stopIgnoringMqttTitle')
-                  : t('nodeDetailModal.ignoreMqttTitle')
-              }
-            >
-              <span
-                className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                  mqttIgnoredNodes.has(node.node_id) ? 'translate-x-4' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
+            )}
 
-          {/* Action status */}
-          {actionStatus && (
-            <div className="shrink-0 px-5 pb-3">
-              <div
-                className={`text-center text-xs ${
-                  actionStatus.includes('Cannot delete active MQTT identity')
-                    ? 'text-red-300'
-                    : 'text-muted'
-                }`}
-              >
-                {actionStatus}
+            {/* MQTT Ignore toggle */}
+            <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-700/50 px-5 py-2">
+              <div>
+                <div className="text-xs font-medium text-gray-300">
+                  {t('nodeDetailModal.mqttIgnoreHeading')}
+                </div>
+                <div className="text-muted text-xs">
+                  {t('nodeDetailModal.mqttIgnoreDescription')}
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Node notes */}
-          <div className="shrink-0 px-5 pb-2">
-            <label className="mb-1 block text-xs font-medium text-gray-400">
-              {t('nodeDetailModal.notesLabel')}
-            </label>
-            <textarea
-              aria-label={t('nodeDetailModal.notesLabel')}
-              className="w-full resize-y rounded border border-gray-700 bg-gray-800/60 px-2 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:border-gray-500 focus:outline-none"
-              maxLength={4000}
-              placeholder={t('nodeDetailModal.notesPlaceholder')}
-              rows={3}
-              value={nodeNote}
-              onChange={(e) => {
-                const val = e.target.value;
-                setNodeNote(val);
-                pendingNoteRef.current = val;
-                if (noteSaveTimerRef.current) clearTimeout(noteSaveTimerRef.current);
-                noteSaveTimerRef.current = setTimeout(() => {
-                  pendingNoteRef.current = null;
-                  void window.electronAPI.db.setNodeNote(node.node_id, val);
-                }, 600);
-              }}
-            />
-          </div>
-
-          {/* Delete node */}
-          <div className="shrink-0 px-5 pb-4">
-            {!showDeleteConfirm ? (
               <button
                 onClick={() => {
-                  setShowDeleteConfirm(true);
+                  setNodeMqttIgnored(node.node_id, !mqttIgnoredNodes.has(node.node_id));
                 }}
-                className="mt-2 w-full rounded-lg border border-red-900/50 bg-red-900/30 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/50 hover:text-red-300"
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+                  mqttIgnoredNodes.has(node.node_id) ? 'bg-yellow-500' : 'bg-gray-600'
+                }`}
+                role="switch"
+                aria-checked={mqttIgnoredNodes.has(node.node_id)}
+                title={
+                  mqttIgnoredNodes.has(node.node_id)
+                    ? t('nodeDetailModal.stopIgnoringMqttTitle')
+                    : t('nodeDetailModal.ignoreMqttTitle')
+                }
               >
-                {t('nodeDetailModal.deleteNode')}
+                <span
+                  className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                    mqttIgnoredNodes.has(node.node_id) ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
               </button>
-            ) : (
-              <div className="mt-2 rounded-lg border border-red-900/50 bg-red-900/20 p-3">
-                <p className="mb-2 text-xs text-red-300">
-                  {t('nodeDetailModal.deleteNodeConfirm')}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setShowDeleteConfirm(false);
-                    }}
-                    className="bg-secondary-dark flex-1 rounded px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-600"
-                  >
-                    {t('nodeDetailModal.cancel')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDeleteNode(node.node_id)
-                        .then(onClose)
-                        .catch((e: unknown) => {
-                          setActionStatus(
-                            e instanceof Error ? e.message : t('nodeDetailModal.deleteFailedMqtt'),
-                          );
-                          setShowDeleteConfirm(false);
-                        });
-                    }}
-                    className="flex-1 rounded bg-red-800 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-700"
-                  >
-                    {t('nodeDetailModal.confirmDelete')}
-                  </button>
+            </div>
+
+            {/* Action status */}
+            {actionStatus && (
+              <div className="shrink-0 px-5 pb-3">
+                <div
+                  className={`text-center text-xs ${
+                    actionStatus.includes('Cannot delete active MQTT identity')
+                      ? 'text-red-300'
+                      : 'text-muted'
+                  }`}
+                >
+                  {actionStatus}
                 </div>
               </div>
             )}
+
+            {/* Node notes */}
+            <div className="shrink-0 px-5 pb-2">
+              <label className="mb-1 block text-xs font-medium text-gray-400">
+                {t('nodeDetailModal.notesLabel')}
+              </label>
+              <textarea
+                aria-label={t('nodeDetailModal.notesLabel')}
+                className="w-full resize-y rounded border border-gray-700 bg-gray-800/60 px-2 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:border-gray-500 focus:outline-none"
+                maxLength={4000}
+                placeholder={t('nodeDetailModal.notesPlaceholder')}
+                rows={3}
+                value={nodeNote}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setNodeNote(val);
+                  pendingNoteRef.current = val;
+                  if (noteSaveTimerRef.current) clearTimeout(noteSaveTimerRef.current);
+                  noteSaveTimerRef.current = setTimeout(() => {
+                    pendingNoteRef.current = null;
+                    void window.electronAPI.db.setNodeNote(node.node_id, val);
+                  }, 600);
+                }}
+              />
+            </div>
+
+            {/* Delete node */}
+            <div className="shrink-0 px-5 pb-4">
+              {!showDeleteConfirm ? (
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(true);
+                  }}
+                  className="mt-2 w-full rounded-lg border border-red-900/50 bg-red-900/30 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/50 hover:text-red-300"
+                >
+                  {t('nodeDetailModal.deleteNode')}
+                </button>
+              ) : (
+                <div className="mt-2 rounded-lg border border-red-900/50 bg-red-900/20 p-3">
+                  <p className="mb-2 text-xs text-red-300">
+                    {t('nodeDetailModal.deleteNodeConfirm')}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                      }}
+                      className="bg-secondary-dark flex-1 rounded px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-600"
+                    >
+                      {t('nodeDetailModal.cancel')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        onDeleteNode(node.node_id)
+                          .then(onClose)
+                          .catch((e: unknown) => {
+                            setActionStatus(
+                              e instanceof Error
+                                ? e.message
+                                : t('nodeDetailModal.deleteFailedMqtt'),
+                            );
+                            setShowDeleteConfirm(false);
+                          });
+                      }}
+                      className="flex-1 rounded bg-red-800 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-700"
+                    >
+                      {t('nodeDetailModal.confirmDelete')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

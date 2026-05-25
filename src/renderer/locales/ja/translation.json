@@ -1691,7 +1691,17 @@
     "watchNode": "Watch",
     "unwatchNode": "見張っているんだ",
     "showOnMap": "周辺地図を見る",
-    "configureRemotely": "ノードをリモートで構成する"
+    "configureRemotely": "ノードをリモートで構成する",
+    "remoteAdminNoPkiKey": "このノードのPKI公開鍵はまだ記録されていません。NodeInfoを受信するまで、リモート管理者は機能しない可能性があります。",
+    "remoteAdminKeyTitle": "リモート管理者キー",
+    "remoteAdminKeyHint": "このノードに構成されたbase 64管理者公開鍵を貼り付けます（セキュリティ設定で最大3つの管理者キーのいずれか）。ローカル無線が管理パケットに署名するために使用するキーと一致する必要があります。",
+    "remoteAdminKeyLabel": "管理者キー",
+    "remoteAdminKeyPlaceholder": "Base 64エンコードされた32バイトの公開鍵",
+    "remoteAdminKeyInvalid": "有効なbase 64エンコードされた32バイトの管理者公開鍵を入力します。",
+    "saveRemoteAdminKey": "管理者キー",
+    "clearRemoteAdminKey": "消去",
+    "remoteAdminKeySaved": "このノードの管理者キーが保存されました。",
+    "remoteAdminKeyCleared": "管理者キーがクリアされました。"
   },
   "firmwareStatus": {
     "checking": "ファームウェアのバージョンを確認する",
@@ -2093,7 +2103,10 @@
       "generic": "リモート管理者リクエストに失敗しました。",
       "configResponseUnexpected": "リモート管理者が予期しない構成応答を返しました。",
       "channelConfigPartial": "1つ以上のチャンネル設定をリモートノードから読み込めませんでした。",
-      "channelResponseUnexpected": "リモート管理者が予期しないチャネル応答を返しました。"
+      "channelResponseUnexpected": "リモート管理者が予期しないチャネル応答を返しました。",
+      "noRemotePublicKey": "このノードにはまだPKI公開鍵がありません。メッシュ上でNodeInfoパケットを待つか、デバイスアプリを使用してキーを交換します。",
+      "noAdminKeyConfigured": "リモート管理を使用する前に、ノードの詳細ダイアログにこのノードの管理キーを貼り付けて保存します。",
+      "invalidAdminKey": "管理キーは、base 64でエンコードされた32バイトの公開キーである必要があります。"
     }
   }
 }

@@ -1692,7 +1692,17 @@
     "watchNode": "Sledovat",
     "unwatchNode": "Sleduje",
     "showOnMap": "Zobrazit na mapě",
-    "configureRemotely": "Konfigurovat uzel vzdáleně"
+    "configureRemotely": "Konfigurovat uzel vzdáleně",
+    "remoteAdminNoPkiKey": "Pro tento uzel zatím není v záznamu žádný veřejný klíč PKI — vzdálený správce nemusí fungovat, dokud není přijato NodeInfo.",
+    "remoteAdminKeyTitle": "Klíč vzdáleného správce",
+    "remoteAdminKeyHint": "Vložte veřejný klíč správce base64 nakonfigurovaný v tomto uzlu (jeden z až tří klíčů správce v nastavení zabezpečení). Musí odpovídat klíči, který vaše místní rádio používá k podepisování správcovských paketů.",
+    "remoteAdminKeyLabel": "API klíč Admina",
+    "remoteAdminKeyPlaceholder": "Base64-kódovaný 32bajtový veřejný klíč",
+    "remoteAdminKeyInvalid": "Zadejte platný veřejný 32bajtový klíč správce kódovaný base64.",
+    "saveRemoteAdminKey": "Uložit klíč správce",
+    "clearRemoteAdminKey": "Vymazat",
+    "remoteAdminKeySaved": "Admin klíč uložen pro tento uzel.",
+    "remoteAdminKeyCleared": "Klíč správce byl vymazán."
   },
   "firmwareStatus": {
     "checking": "Kontrola verze firmwaru",
@@ -2094,7 +2104,10 @@
       "generic": "Požadavek vzdáleného správce se nezdařil.",
       "configResponseUnexpected": "Vzdálený správce vrátil neočekávanou konfigurační odpověď.",
       "channelConfigPartial": "Ze vzdáleného uzlu nelze načíst jedno nebo více nastavení kanálu.",
-      "channelResponseUnexpected": "Vzdálený správce vrátil neočekávanou odpověď kanálu."
+      "channelResponseUnexpected": "Vzdálený správce vrátil neočekávanou odpověď kanálu.",
+      "noRemotePublicKey": "Tento uzel zatím nemá veřejný klíč PKI. Počkejte na paket NodeInfo přes síť nebo jednou použijte aplikaci zařízení k výměně klíčů.",
+      "noAdminKeyConfigured": "Před použitím vzdáleného správce vložte a uložte klíč správce pro tento uzel v dialogovém okně podrobností uzlu.",
+      "invalidAdminKey": "Správcovský klíč musí být 32bajtový veřejný klíč zakódovaný v base64."
     }
   }
 }

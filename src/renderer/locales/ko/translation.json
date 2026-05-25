@@ -1691,7 +1691,17 @@
     "watchNode": "보기",
     "unwatchNode": "보는중..",
     "showOnMap": "(지도에서 표시)",
-    "configureRemotely": "원격으로 노드 구성"
+    "configureRemotely": "원격으로 노드 구성",
+    "remoteAdminNoPkiKey": "이 노드에 대한 PKI 공개 키가 아직 기록되지 않았습니다. NodeInfo를 수신할 때까지 원격 관리자가 작동하지 않을 수 있습니다.",
+    "remoteAdminKeyTitle": "원격 관리자 키",
+    "remoteAdminKeyHint": "이 노드에 구성된 base64 관리자 공개 키 (보안 설정에서 최대 3개의 관리자 키 중 하나) 를 붙여넣습니다. 로컬 라디오가 관리자 패킷에 서명하는 데 사용하는 키와 일치해야 합니다.",
+    "remoteAdminKeyLabel": "어드민 키",
+    "remoteAdminKeyPlaceholder": "Base64로 인코딩된 32바이트 공개 키",
+    "remoteAdminKeyInvalid": "유효한 base64로 인코딩된 32바이트 관리자 공개 키를 입력하십시오.",
+    "saveRemoteAdminKey": "어드민 키",
+    "clearRemoteAdminKey": "책임",
+    "remoteAdminKeySaved": "이 노드에 대한 관리자 키가 저장되었습니다.",
+    "remoteAdminKeyCleared": "관리자 키가 지워졌습니다."
   },
   "firmwareStatus": {
     "checking": "펌웨어 버전 확인 중",
@@ -2093,7 +2103,10 @@
       "generic": "원격 관리자 요청에 실패했습니다.",
       "configResponseUnexpected": "원격 관리자가 예기치 않은 구성 응답을 반환했습니다.",
       "channelConfigPartial": "원격 노드에서 하나 이상의 채널 설정을 로드할 수 없습니다.",
-      "channelResponseUnexpected": "원격 관리자가 예상치 못한 채널 응답을 반환했습니다."
+      "channelResponseUnexpected": "원격 관리자가 예상치 못한 채널 응답을 반환했습니다.",
+      "noRemotePublicKey": "이 노드에는 아직 PKI 공개 키가 없습니다. 메시를 통해 NodeInfo 패킷을 기다리거나 장치 앱을 한 번 사용하여 키를 교환하십시오.",
+      "noAdminKeyConfigured": "원격 관리자를 사용하기 전에 이 노드의 관리자 키를 노드 세부 정보 대화 상자에 붙여넣고 저장하십시오.",
+      "invalidAdminKey": "관리자 키는 base64로 인코딩된 32바이트 공개 키여야 합니다."
     }
   }
 }

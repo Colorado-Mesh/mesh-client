@@ -365,6 +365,7 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
     } as unknown as MeshtasticRemoteAdminClient;
 
     await fetchMeshtasticRemoteConfigSnapshotEssential(clientWithChannelRetry(client), 0x200);
+    expect(order.indexOf('ensureSessionKey')).toBe(-1);
     expect(order.indexOf('channel:0')).toBeGreaterThan(-1);
     expect(order.indexOf('channel:0')).toBeLessThan(
       order.findIndex((e) => e.startsWith('configRetry:')),

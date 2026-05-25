@@ -86,6 +86,28 @@ describe('parseIncomingRemoteAdminPacket', () => {
     }
   });
 
+  it('prefers Data.replyId over mesh packet id for multi-hop responses', () => {
+    const adminMsg = create(Admin.AdminMessageSchema, {
+      payloadVariant: { case: 'getChannelResponse', value: { index: 0 } as never },
+    });
+    const meshPacket = create(Mesh.MeshPacketSchema, {
+      id: 9999,
+      from: 0x200,
+      payloadVariant: {
+        case: 'decoded',
+        value: {
+          portnum: Portnums.PortNum.ADMIN_APP,
+          payload: toBinary(Admin.AdminMessageSchema, adminMsg),
+          requestId: 0,
+          replyId: 4242,
+        },
+      },
+    });
+
+    const parsed = parseIncomingRemoteAdminPacket(meshPacket as never);
+    expect(parsed).toMatchObject({ kind: 'admin', requestId: 4242, from: 0x200 });
+  });
+
   it('falls back to mesh packet id when Data.requestId is zero', () => {
     const adminMsg = create(Admin.AdminMessageSchema, {
       payloadVariant: { case: 'getDeviceMetadataResponse', value: {} as never },
@@ -154,7 +176,13 @@ describe('buildRemoteAdminToRadio', () => {
     const toRadio = fromBinary(Mesh.ToRadioSchema, bytes) as {
       payloadVariant?: {
         case?: string;
-        value?: { pkiEncrypted?: boolean; publicKey?: Uint8Array; channel?: number };
+        value?: {
+          pkiEncrypted?: boolean;
+          publicKey?: Uint8Array;
+          channel?: number;
+          hopLimit?: number;
+          hopStart?: number;
+        };
       };
     };
     expect(toRadio.payloadVariant?.case).toBe('packet');
@@ -162,6 +190,8 @@ describe('buildRemoteAdminToRadio', () => {
     expect(packet?.pkiEncrypted).toBe(true);
     expect(packet?.publicKey).toEqual(TEST_DEST_PUBKEY);
     expect(packet?.channel).toBe(0);
+    expect(packet?.hopLimit).toBe(7);
+    expect(packet?.hopStart).toBe(7);
   });
 });
 
@@ -383,6 +413,41 @@ describe('MeshtasticRemoteAdminClient', () => {
     expect((deviceResult as { payloadVariant?: { case?: string } }).payloadVariant?.case).toBe(
       'device',
     );
+  });
+
+  it('resolves admin responses correlated by Data.replyId when mesh packet id differs', async () => {
+    const promise = client.getRemoteMetadata(0x200);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const requestPacketId = 555;
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        id: 8888,
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getDeviceMetadataResponse',
+                  value: { firmwareVersion: '2.7.0' } as never,
+                },
+              }),
+            ),
+            requestId: 0,
+            replyId: requestPacketId,
+          },
+        },
+      }) as never,
+    );
+
+    const result = await promise;
+    expect((result as { firmwareVersion?: string }).firmwareVersion).toBe('2.7.0');
   });
 
   it('resolves admin responses correlated by mesh packet id when requestId is zero', async () => {
@@ -789,7 +854,7 @@ describe('MeshtasticRemoteAdminClient', () => {
                 create(Mesh.RoutingSchema, {
                   variant: {
                     case: 'errorReason',
-                    value: Mesh.Routing_Error.NOT_AUTHORIZED,
+                    value: Mesh.Routing_Error.ADMIN_BAD_SESSION_KEY,
                   },
                 }),
               ),
@@ -958,7 +1023,7 @@ describe('MeshtasticRemoteAdminClient', () => {
                 create(Mesh.RoutingSchema, {
                   variant: {
                     case: 'errorReason',
-                    value: Mesh.Routing_Error.NOT_AUTHORIZED,
+                    value: Mesh.Routing_Error.ADMIN_BAD_SESSION_KEY,
                   },
                 }),
               ),

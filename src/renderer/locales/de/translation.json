@@ -1691,7 +1691,17 @@
     "watchNode": "Ansehen",
     "unwatchNode": "schaue gerade",
     "showOnMap": "Auf Karte anzeigen",
-    "configureRemotely": "Knoten aus der Ferne konfigurieren"
+    "configureRemotely": "Knoten aus der Ferne konfigurieren",
+    "remoteAdminNoPkiKey": "Für diesen Knoten ist noch kein öffentlicher PKI-Schlüssel vorhanden — Remote-Admin funktioniert möglicherweise nicht, bis NodeInfo empfangen wird.",
+    "remoteAdminKeyTitle": "Remote-Admin-Schlüssel",
+    "remoteAdminKeyHint": "Fügen Sie den auf diesem Knoten konfigurierten öffentlichen base64 Admin-Schlüssel ein (einer von bis zu drei Admin-Schlüsseln in den Sicherheitseinstellungen). Es muss mit einem Schlüssel übereinstimmen, den Ihr lokales Radio zum Signieren von Admin-Paketen verwendet.",
+    "remoteAdminKeyLabel": "Administrator API Schlüssel",
+    "remoteAdminKeyPlaceholder": "Base64-kodierter öffentlicher 32-Byte-Schlüssel",
+    "remoteAdminKeyInvalid": "Geben Sie einen gültigen base64-kodierten öffentlichen 32-Byte-Admin-Schlüssel ein.",
+    "saveRemoteAdminKey": "Admin-Schlüssel speichern",
+    "clearRemoteAdminKey": "Zurücksetzen",
+    "remoteAdminKeySaved": "Admin-Schlüssel für diesen Knoten gespeichert.",
+    "remoteAdminKeyCleared": "Admin-Schlüssel gelöscht."
   },
   "firmwareStatus": {
     "checking": "Überprüfung der Firmwareversion",
@@ -2093,7 +2103,10 @@
       "generic": "Remote-Admin-Anfrage fehlgeschlagen.",
       "configResponseUnexpected": "Der Remote-Administrator hat eine unerwartete Konfigurationsantwort zurückgegeben.",
       "channelConfigPartial": "Eine oder mehrere Kanaleinstellungen konnten nicht vom Remote-Knoten geladen werden.",
-      "channelResponseUnexpected": "Der Remote-Administrator hat eine unerwartete Kanalantwort zurückgegeben."
+      "channelResponseUnexpected": "Der Remote-Administrator hat eine unerwartete Kanalantwort zurückgegeben.",
+      "noRemotePublicKey": "Dieser Knoten hat noch keinen öffentlichen PKI-Schlüssel. Warten Sie auf ein NodeInfo-Paket über dem Netz oder verwenden Sie die Geräte-App einmal, um Schlüssel auszutauschen.",
+      "noAdminKeyConfigured": "Fügen Sie einen Admin-Schlüssel für diesen Knoten im Knotendetaildialog ein und speichern Sie ihn, bevor Sie Remote-Admin verwenden.",
+      "invalidAdminKey": "Der Admin-Schlüssel muss ein mit base64 kodierter öffentlicher 32-Byte-Schlüssel sein."
     }
   }
 }

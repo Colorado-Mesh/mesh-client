@@ -1691,7 +1691,17 @@
     "watchNode": "Watvh",
     "unwatchNode": "Menonton",
     "showOnMap": "Tampilkan di peta",
-    "configureRemotely": "Konfigurasikan node dari jarak jauh"
+    "configureRemotely": "Konfigurasikan node dari jarak jauh",
+    "remoteAdminNoPkiKey": "Belum ada kunci publik PKI yang tercatat untuk node ini — admin jarak jauh mungkin tidak berfungsi sampai NodeInfo diterima.",
+    "remoteAdminKeyTitle": "Kunci admin jarak jauh",
+    "remoteAdminKeyHint": "Tempelkan kunci publik admin base64 yang dikonfigurasi pada simpul ini (satu dari hingga tiga kunci Admin dalam pengaturan Keamanannya). Ini harus cocok dengan kunci yang digunakan radio lokal Anda untuk menandatangani paket admin.",
+    "remoteAdminKeyLabel": "Kunci admin",
+    "remoteAdminKeyPlaceholder": "Kunci publik 32 - byte berkode Base64",
+    "remoteAdminKeyInvalid": "Masukkan kunci publik admin 32 - byte berkode base64 yang valid.",
+    "saveRemoteAdminKey": "Simpan kunci admin",
+    "clearRemoteAdminKey": "Kosongkan",
+    "remoteAdminKeySaved": "Kunci admin disimpan untuk simpul ini.",
+    "remoteAdminKeyCleared": "Kunci admin dihapus."
   },
   "firmwareStatus": {
     "checking": "Memeriksa versi firmware",
@@ -2093,7 +2103,10 @@
       "generic": "Permintaan admin jarak jauh gagal.",
       "configResponseUnexpected": "Admin jarak jauh memberikan respons konfigurasi yang tidak terduga.",
       "channelConfigPartial": "Satu atau beberapa pengaturan saluran tidak dapat dimuat dari simpul jarak jauh.",
-      "channelResponseUnexpected": "Admin jarak jauh mengembalikan respons saluran yang tidak terduga."
+      "channelResponseUnexpected": "Admin jarak jauh mengembalikan respons saluran yang tidak terduga.",
+      "noRemotePublicKey": "Node ini belum memiliki kunci publik PKI. Tunggu paket NodeInfo melewati mesh, atau gunakan aplikasi perangkat satu kali untuk bertukar kunci.",
+      "noAdminKeyConfigured": "Tempel dan simpan kunci admin untuk simpul ini dalam dialog detail simpul sebelum menggunakan admin jarak jauh.",
+      "invalidAdminKey": "Kunci admin harus berupa kunci publik 32 - byte berkode base64."
     }
   }
 }

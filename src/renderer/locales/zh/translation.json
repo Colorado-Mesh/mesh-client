@@ -1691,7 +1691,17 @@
     "watchNode": "观看",
     "unwatchNode": "正在查看",
     "showOnMap": "显示在地图上",
-    "configureRemotely": "远程配置节点"
+    "configureRemotely": "远程配置节点",
+    "remoteAdminNoPkiKey": "此节点尚未记录PKI公钥—在收到NodeInfo之前，远程管理员可能无法工作。",
+    "remoteAdminKeyTitle": "远程管理密钥",
+    "remoteAdminKeyHint": "粘贴在此节点上配置的base64管理公钥（其安全设置中最多三个管理密钥之一）。它必须与本地无线电用于签名管理数据包的密钥匹配。",
+    "remoteAdminKeyLabel": "管理员 API Key",
+    "remoteAdminKeyPlaceholder": "Base64编码的32字节公钥",
+    "remoteAdminKeyInvalid": "输入有效的base64编码的32字节管理公钥。",
+    "saveRemoteAdminKey": "保存管理密钥",
+    "clearRemoteAdminKey": "清楚",
+    "remoteAdminKeySaved": "已为此节点保存管理密钥。",
+    "remoteAdminKeyCleared": "管理密钥已清除。"
   },
   "firmwareStatus": {
     "checking": "正在检查固件版本",
@@ -2093,7 +2103,10 @@
       "generic": "远程管理员请求失败。",
       "configResponseUnexpected": "远程管理员返回了意外的配置响应。",
       "channelConfigPartial": "无法从远程节点加载一个或多个频道设置。",
-      "channelResponseUnexpected": "远程管理员返回了意外的通道响应。"
+      "channelResponseUnexpected": "远程管理员返回了意外的通道响应。",
+      "noRemotePublicKey": "此节点还没有PKI公钥。在网格上等待NodeInfo数据包，或使用设备应用程序一次交换密钥。",
+      "noAdminKeyConfigured": "在使用远程管理之前，在节点详细信息对话框中粘贴并保存此节点的管理密钥。",
+      "invalidAdminKey": "管理密钥必须是base64编码的32字节公钥。"
     }
   }
 }

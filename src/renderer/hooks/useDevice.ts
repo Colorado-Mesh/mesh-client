@@ -65,7 +65,11 @@ import {
   meshtasticWireUint32NonZero,
   sanitizeUnicodeReactionScalar,
 } from '../../shared/reactionEmoji';
-import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
+import {
+  getAppSettingsRaw,
+  mergeAppSetting,
+  mergeAppSettingsPartial,
+} from '../lib/appSettingsStorage';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import {
   createBleConnection,
@@ -89,7 +93,6 @@ import {
   shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
-import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
   computeNodeInfoLastHeardMs,
@@ -108,7 +111,14 @@ import {
   meshtasticNodePublicKeyBytesFromHex,
   MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
+  REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS,
 } from '../lib/meshtasticRemoteAdmin';
+import {
+  getMeshtasticRemoteAdminKeyForNode,
+  MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX,
+  readMeshtasticRemoteAdminKeyMap,
+  setMeshtasticRemoteAdminKeyForNode,
+} from '../lib/meshtasticRemoteAdminKeyStorage';
 import {
   fetchMeshtasticRemoteConfigChannelsTail,
   fetchMeshtasticRemoteConfigModules,
@@ -407,6 +417,8 @@ export function useDevice() {
   const remoteConfigFetchGenerationRef = useRef(0);
   const remoteConfigLoadedRoutesRef = useRef<Set<RemoteConfigRoute>>(new Set());
   const remoteConfigInflightRoutesRef = useRef<Set<RemoteConfigRoute>>(new Set());
+  const [remoteAdminKeysByNode, setRemoteAdminKeysByNode] = useState<Record<string, string>>({});
+  const remoteAdminKeysByNodeRef = useRef<Record<string, string>>({});
   const [loraConfig, setLoraConfig] = useState<MeshtasticLoraConfig | null>(null);
 
   // ─── Additional packet type state ─────────────────────────────────
@@ -780,6 +792,43 @@ export function useDevice() {
   useEffect(() => {
     remoteAdminStatusRef.current = remoteAdminStatus;
   }, [remoteAdminStatus]);
+
+  useEffect(() => {
+    remoteAdminKeysByNodeRef.current = remoteAdminKeysByNode;
+  }, [remoteAdminKeysByNode]);
+
+  useEffect(() => {
+    if (state.status !== 'configured') return;
+    const map = readMeshtasticRemoteAdminKeyMap();
+    setRemoteAdminKeysByNode(map);
+    remoteAdminKeysByNodeRef.current = map;
+  }, [state.status]);
+
+  useEffect(() => {
+    if (state.status !== 'configured') return;
+    void window.electronAPI.appSettings
+      .getAll()
+      .then((all) => {
+        const partial: Record<string, string> = {};
+        for (const [key, value] of Object.entries(all)) {
+          if (
+            key.startsWith(MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX) &&
+            typeof value === 'string' &&
+            value.trim() !== ''
+          ) {
+            partial[key] = value;
+          }
+        }
+        if (Object.keys(partial).length === 0) return;
+        mergeAppSettingsPartial(partial, 'useDevice hydrate remote admin keys');
+        const map = readMeshtasticRemoteAdminKeyMap();
+        setRemoteAdminKeysByNode(map);
+        remoteAdminKeysByNodeRef.current = map;
+      })
+      .catch((e: unknown) => {
+        console.warn('[useDevice] hydrate remote admin keys failed ' + errLikeToLogString(e));
+      });
+  }, [state.status]);
 
   useEffect(() => {
     remoteAdminClientRef.current = new MeshtasticRemoteAdminClient(
@@ -3567,6 +3616,37 @@ export function useDevice() {
     [getNodeName, isDuplicate],
   );
 
+  const clearRemoteAdminLoadingIfNoForegroundInflight = (): void => {
+    const hasForegroundInflight = [...remoteConfigInflightRoutesRef.current].some(
+      (r) => r !== 'channelsTail' && r !== 'owner',
+    );
+    if (!hasForegroundInflight && remoteAdminStatusRef.current === 'loading') {
+      setRemoteAdminStatus('idle');
+    }
+  };
+
+  const setRemoteAdminKeyForNode = useCallback(
+    async (nodeNum: number, adminKeyBase64: string | null) => {
+      try {
+        const map = await setMeshtasticRemoteAdminKeyForNode(nodeNum, adminKeyBase64);
+        setRemoteAdminKeysByNode(map);
+        remoteAdminKeysByNodeRef.current = map;
+      } catch (e) {
+        const msg = normalizeRemoteAdminError(e);
+        console.warn('[useDevice] setRemoteAdminKeyForNode failed ' + errLikeToLogString(e));
+        throw new Error(msg);
+      }
+    },
+    [],
+  );
+
+  const getRemoteAdminKeyForNode = useCallback((nodeNum: number): string | undefined => {
+    return (
+      remoteAdminKeysByNodeRef.current[String(nodeNum >>> 0)] ??
+      getMeshtasticRemoteAdminKeyForNode(nodeNum)
+    );
+  }, []);
+
   const refreshRemoteConfigSnapshot = useCallback(
     async (
       destNodeNum: number,
@@ -3577,6 +3657,19 @@ export function useDevice() {
       if (!client || !deviceRef.current) {
         setRemoteAdminStatus('error');
         setRemoteAdminError('remoteAdmin.errors.noLocalRadio');
+        return;
+      }
+      const destNode = nodesRef.current.get(destNodeNum);
+      const destPubHex = destNode?.public_key_hex;
+      if ((destPubHex?.length ?? 0) !== 64) {
+        setRemoteAdminStatus('error');
+        setRemoteAdminError('remoteAdmin.errors.noRemotePublicKey');
+        return;
+      }
+      const configuredAdminKey = getRemoteAdminKeyForNode(destNodeNum);
+      if (!configuredAdminKey) {
+        setRemoteAdminStatus('error');
+        setRemoteAdminError('remoteAdmin.errors.noAdminKeyConfigured');
         return;
       }
       if (state.status !== 'configured') return;
@@ -3595,7 +3688,22 @@ export function useDevice() {
         generation === remoteConfigFetchGenerationRef.current &&
         configureTargetNodeNumRef.current === destNodeNum;
 
+      let loadingWatchdogFired = false;
+      let loadingWatchdogId: ReturnType<typeof setTimeout> | undefined;
+      if (!isBackgroundRoute) {
+        loadingWatchdogId = setTimeout(() => {
+          if (!applyIfCurrent()) return;
+          if (remoteAdminStatusRef.current !== 'loading') return;
+          loadingWatchdogFired = true;
+          remoteConfigInflightRoutesRef.current.delete(route);
+          remoteAdminClientRef.current?.resetEditState();
+          setRemoteAdminStatus('error');
+          setRemoteAdminError('remoteAdmin.errors.timeout');
+        }, REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS);
+      }
+
       try {
+        if (loadingWatchdogFired) return;
         const applyPartial = (partial: Partial<MeshtasticRemoteConfigSnapshot>): void => {
           if (!applyIfCurrent()) return;
           setRemoteConfigSnapshot((prev) =>
@@ -3620,7 +3728,11 @@ export function useDevice() {
           routeResult = await fetchMeshtasticRemoteConfigModules(client, destNodeNum);
         }
 
-        if (!applyIfCurrent()) return;
+        if (loadingWatchdogFired) return;
+        if (!applyIfCurrent()) {
+          clearRemoteAdminLoadingIfNoForegroundInflight();
+          return;
+        }
         applyPartial(routeResult);
         remoteConfigLoadedRoutesRef.current.add(route);
         setRemoteAdminStatus('ready');
@@ -3667,7 +3779,11 @@ export function useDevice() {
           })();
         }
       } catch (e) {
-        if (!applyIfCurrent()) return;
+        if (loadingWatchdogFired) return;
+        if (!applyIfCurrent()) {
+          clearRemoteAdminLoadingIfNoForegroundInflight();
+          return;
+        }
         if (isBackgroundRoute) {
           console.warn(
             '[useDevice] remote config background fetch failed ' + errLikeToLogString(e),
@@ -3680,11 +3796,18 @@ export function useDevice() {
         setRemoteAdminError(msg);
         console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
       } finally {
+        if (loadingWatchdogId != null) clearTimeout(loadingWatchdogId);
         remoteConfigInflightRoutesRef.current.delete(route);
       }
     },
-    [state.status],
+    [getRemoteAdminKeyForNode, state.status],
   );
+
+  useEffect(() => {
+    if (configureTargetNodeNum == null) return;
+    if (state.status !== 'configured') return;
+    void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'radio');
+  }, [configureTargetNodeNum, state.status, refreshRemoteConfigSnapshot]);
 
   const runRemoteAdminOp = useCallback(async <T>(operation: () => Promise<T>): Promise<T> => {
     try {
@@ -3743,6 +3866,8 @@ export function useDevice() {
       remoteConfigInflightRoutesRef.current.clear();
       remoteAdminClientRef.current?.resetEditState();
       remoteAdminClientRef.current?.sessionStore.clear();
+      setRemoteAdminStatus('loading');
+      setRemoteAdminError(undefined);
     }
   }, []);
 
@@ -3751,34 +3876,40 @@ export function useDevice() {
     if (state.status !== 'configured') return;
     configureTargetPersistRestoredRef.current = true;
 
+    // Radio / Security / Modules configure dropdown always starts on local radio after startup.
     const settings = parseStoredJson<Record<string, unknown>>(
       getAppSettingsRaw(),
-      'useDevice meshtasticConfigureTargetNodeNum restore',
+      'useDevice meshtasticConfigureTargetNodeNum startup',
     );
     const raw = settings?.meshtasticConfigureTargetNodeNum;
-    if (raw == null || raw === '' || raw === 'null') return;
-    const nodeNum = typeof raw === 'number' ? raw : Number(raw);
-    if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum === myNodeNumRef.current) return;
-    const restoredNode = nodesRef.current.get(nodeNum);
-    if (!restoredNode || meshcoreHwModelIsContactTypeLabel(restoredNode.hw_model)) {
-      mergeAppSetting(
-        'meshtasticConfigureTargetNodeNum',
-        '',
-        restoredNode
-          ? 'useDevice restore meshcore configure target node'
-          : 'useDevice restore missing configure target node',
-      );
-      void window.electronAPI.appSettings.set('meshtasticConfigureTargetNodeNum', '').catch(() => {
-        // catch-no-log-ok best-effort clear stale persisted target
-      });
-      return;
+    if (
+      configureTargetNodeNumRef.current != null ||
+      (raw != null && raw !== '' && raw !== 'null')
+    ) {
+      setConfigureTargetNodeNumState(null);
+      configureTargetNodeNumRef.current = null;
+      remoteConfigLoadedRoutesRef.current.clear();
+      remoteConfigInflightRoutesRef.current.clear();
+      remoteConfigFetchGenerationRef.current += 1;
+      setRemoteConfigSnapshot(null);
+      setRemoteAdminStatus('idle');
+      setRemoteAdminError(undefined);
+      remoteAdminClientRef.current?.resetEditState();
+      remoteAdminClientRef.current?.sessionStore.clear();
+      if (raw != null && raw !== '' && raw !== 'null') {
+        mergeAppSetting(
+          'meshtasticConfigureTargetNodeNum',
+          '',
+          'useDevice startup default local configure target',
+        );
+        void window.electronAPI.appSettings
+          .set('meshtasticConfigureTargetNodeNum', '')
+          .catch(() => {
+            // catch-no-log-ok best-effort clear persisted remote target on startup
+          });
+      }
+      console.debug('[useDevice] configure target defaulted to local radio on startup');
     }
-
-    setConfigureTargetNodeNumState(nodeNum);
-    configureTargetNodeNumRef.current = nodeNum;
-    remoteConfigFetchGenerationRef.current += 1;
-    remoteConfigLoadedRoutesRef.current.clear();
-    remoteConfigInflightRoutesRef.current.clear();
   }, [state.status]);
 
   const setConfig = useCallback(
@@ -4595,6 +4726,9 @@ export function useDevice() {
     ringtone,
     setRingtone,
     securityConfig,
+    remoteAdminKeysByNode,
+    getRemoteAdminKeyForNode,
+    setRemoteAdminKeyForNode,
     configureTargetNodeNum,
     setConfigureTargetNodeNum,
     remoteAdminStatus,

@@ -1691,7 +1691,17 @@
     "watchNode": "İzle",
     "unwatchNode": "İzliyorum",
     "showOnMap": "Haritada göster",
-    "configureRemotely": "Düğümü uzaktan yapılandır"
+    "configureRemotely": "Düğümü uzaktan yapılandır",
+    "remoteAdminNoPkiKey": "Bu düğüm için henüz kayıtlı PKI genel anahtarı yok — NodeInfo alınana kadar uzak yönetici çalışmayabilir.",
+    "remoteAdminKeyTitle": "Uzaktan yönetici anahtarı",
+    "remoteAdminKeyHint": "Bu düğümde yapılandırılan base64 yönetici genel anahtarını yapıştırın (Güvenlik ayarlarında en fazla üç Yönetici anahtarından biri). Yönetici paketlerini imzalamak için yerel radyonuzun kullandığı bir anahtarla eşleşmelidir.",
+    "remoteAdminKeyLabel": "Yönetici anahtarı",
+    "remoteAdminKeyPlaceholder": "Base64 kodlu 32 bayt genel anahtar",
+    "remoteAdminKeyInvalid": "Geçerli bir base64 kodlu 32 baytlık yönetici genel anahtarı girin.",
+    "saveRemoteAdminKey": "Yönetici anahtarını kaydet",
+    "clearRemoteAdminKey": "Temizle",
+    "remoteAdminKeySaved": "Bu düğüm için yönetici anahtarı kaydedildi.",
+    "remoteAdminKeyCleared": "Yönetici anahtarı temizlendi."
   },
   "firmwareStatus": {
     "checking": "Ürün yazılımı sürümünün kontrol edilmesi",
@@ -2093,7 +2103,10 @@
       "generic": "Uzaktan yönetici isteği başarısız oldu.",
       "configResponseUnexpected": "Uzak yönetici beklenmedik bir yapılandırma yanıtı döndürdü.",
       "channelConfigPartial": "Uzak düğümden bir veya daha fazla kanal ayarı yüklenemedi.",
-      "channelResponseUnexpected": "Uzak yönetici beklenmeyen bir kanal yanıtı döndürdü."
+      "channelResponseUnexpected": "Uzak yönetici beklenmeyen bir kanal yanıtı döndürdü.",
+      "noRemotePublicKey": "Bu düğümün henüz PKI genel anahtarı yok. Ağ üzerinde bir NodeInfo paketi bekleyin veya anahtarları değiştirmek için cihaz uygulamasını bir kez kullanın.",
+      "noAdminKeyConfigured": "Uzaktan yöneticiyi kullanmadan önce düğüm ayrıntı iletişim kutusuna bu düğüm için bir yönetici anahtarı yapıştırın ve kaydedin.",
+      "invalidAdminKey": "Admin key base64 - encoded 32 - byte public key olmalıdır."
     }
   }
 }

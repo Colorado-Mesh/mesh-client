@@ -927,17 +927,24 @@ export default function App() {
       </div>
     ) : null;
 
+  const configureTargetNodeNum = device.configureTargetNodeNum;
+  const refreshRemoteConfigSnapshot = device.refreshRemoteConfigSnapshot;
+
   useEffect(() => {
-    if (!isRemoteConfigureTarget || device.configureTargetNodeNum == null) return;
+    if (!isRemoteConfigureTarget || configureTargetNodeNum == null) return;
     if (!hasLocalMeshtasticRadio) return;
-    if (activePanelIndex === 4) {
-      void device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum, 'radio');
-    } else if (activePanelIndex === 5) {
-      void device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum, 'modules');
+    if (activePanelIndex === 5) {
+      void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'modules');
     } else if (activePanelIndex === 7) {
-      void device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum, 'security');
+      void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'security');
     }
-  }, [activePanelIndex, device, hasLocalMeshtasticRadio, isRemoteConfigureTarget]);
+  }, [
+    activePanelIndex,
+    configureTargetNodeNum,
+    refreshRemoteConfigSnapshot,
+    hasLocalMeshtasticRadio,
+    isRemoteConfigureTarget,
+  ]);
 
   const detailModalProtocol = useMemo((): MeshProtocol => {
     if (selectedNodeId == null) return protocol;
@@ -2674,15 +2681,14 @@ export default function App() {
               selectedNode?.node_id !== detailMyNodeNum ? handleMessageNode : undefined
             }
             onToggleFavorite={device.setNodeFavorited}
-            onConfigureRemotely={
-              detailModalProtocol === 'meshtastic' &&
-              hasLocalMeshtasticRadio &&
-              selectedNode != null &&
-              selectedNode.node_id !== device.state.myNodeNum
-                ? () => {
-                    device.setConfigureTargetNodeNum(selectedNode.node_id);
-                    setSelectedNodeId(null);
-                  }
+            remoteAdminKey={
+              selectedNode != null
+                ? device.getRemoteAdminKeyForNode(selectedNode.node_id)
+                : undefined
+            }
+            onSaveRemoteAdminKey={
+              detailModalProtocol === 'meshtastic' && hasLocalMeshtasticRadio
+                ? device.setRemoteAdminKeyForNode
                 : undefined
             }
             isConnected={isOperational}

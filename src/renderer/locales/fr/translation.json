@@ -1691,7 +1691,17 @@
     "watchNode": "Regarder",
     "unwatchNode": "Marseille",
     "showOnMap": "Voir sur la carte",
-    "configureRemotely": "Configurer le nœud à distance"
+    "configureRemotely": "Configurer le nœud à distance",
+    "remoteAdminNoPkiKey": "Aucune clé publique PKI enregistrée pour ce nœud pour le moment — l'administrateur distant peut ne pas fonctionner tant que NodeInfo n'est pas reçu.",
+    "remoteAdminKeyTitle": "Touche d'administration à distance",
+    "remoteAdminKeyHint": "Collez la clé publique d'administration base64 configurée sur ce nœud (l'une des trois clés d'administration maximum dans ses paramètres de sécurité). Elle doit correspondre à une clé utilisée par votre radio locale pour signer les paquets d'administration.",
+    "remoteAdminKeyLabel": "Touche Admin",
+    "remoteAdminKeyPlaceholder": "Clé publique de 32 octets codée en Base64",
+    "remoteAdminKeyInvalid": "Saisissez une clé publique d'administration valide de 32 octets codée en base64.",
+    "saveRemoteAdminKey": "Touche Admin",
+    "clearRemoteAdminKey": "Vide",
+    "remoteAdminKeySaved": "Clé d'administration enregistrée pour ce nœud.",
+    "remoteAdminKeyCleared": "Clé d'administrateur effacée."
   },
   "firmwareStatus": {
     "checking": "Vérification de la version du firmware...",
@@ -2093,7 +2103,10 @@
       "generic": "Échec de la demande d'administration à distance.",
       "configResponseUnexpected": "L'administrateur distant a renvoyé une réponse de configuration inattendue.",
       "channelConfigPartial": "Un ou plusieurs paramètres de canal n'ont pas pu être chargés à partir du nœud distant.",
-      "channelResponseUnexpected": "L'administrateur distant a renvoyé une réponse de canal inattendue."
+      "channelResponseUnexpected": "L'administrateur distant a renvoyé une réponse de canal inattendue.",
+      "noRemotePublicKey": "Ce nœud n'a pas encore de clé publique PKI. Attendez un paquet NodeInfo sur le maillage ou utilisez l'application de l'appareil une fois pour échanger des clés.",
+      "noAdminKeyConfigured": "Collez et enregistrez une clé d'administration pour ce nœud dans la boîte de dialogue de détail du nœud avant d'utiliser l'administration à distance.",
+      "invalidAdminKey": "La clé d'administration doit être une clé publique de 32 octets codée en base64."
     }
   }
 }
