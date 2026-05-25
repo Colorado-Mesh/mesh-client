@@ -30,6 +30,7 @@ import {
   loadPersistedLastRfSelfNodeId,
   mqttOnlyIdentitySource,
   persistLastRfSelfNodeId,
+  resolveMeshtasticOutboundFromNodeId,
   resolveMqttOnlyFromNodeId,
 } from '@/renderer/lib/meshtasticMqttIdentity';
 import {
@@ -3567,10 +3568,12 @@ export function useDevice() {
       const hasMqtt = mqttStatusRef.current === 'connected';
       if (!deviceRef.current && !hasMqtt) throw new Error('Not connected');
 
-      const from =
-        deviceRef.current && myNodeNumRef.current > 0
-          ? myNodeNumRef.current
-          : resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualNodeIdRef.current);
+      const from = resolveMeshtasticOutboundFromNodeId({
+        hasDevice: !!deviceRef.current,
+        myNodeNum: myNodeNumRef.current,
+        lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
+        virtualNodeId: virtualNodeIdRef.current,
+      });
       if (!deviceRef.current && myNodeNumRef.current !== from) {
         myNodeNumRef.current = from;
         setState((prev) => ({ ...prev, myNodeNum: from }));
@@ -4580,10 +4583,12 @@ export function useDevice() {
     (glyph: string, replyId: number, channel: number): Promise<void> => {
       const hasMqtt = mqttStatusRef.current === 'connected';
       if (!deviceRef.current && !hasMqtt) return Promise.reject(new Error('Not connected'));
-      const from =
-        deviceRef.current && myNodeNumRef.current > 0
-          ? myNodeNumRef.current
-          : resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualNodeIdRef.current);
+      const from = resolveMeshtasticOutboundFromNodeId({
+        hasDevice: !!deviceRef.current,
+        myNodeNum: myNodeNumRef.current,
+        lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
+        virtualNodeId: virtualNodeIdRef.current,
+      });
       if (!deviceRef.current && myNodeNumRef.current !== from) {
         myNodeNumRef.current = from;
         setState((prev) => ({ ...prev, myNodeNum: from }));

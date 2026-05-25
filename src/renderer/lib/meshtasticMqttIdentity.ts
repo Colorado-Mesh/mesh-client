@@ -17,6 +17,34 @@ export function resolveMqttOnlyFromNodeId(lastRfSelfNodeId: number, virtualNodeI
   return lastRfSelfNodeId > 0 ? lastRfSelfNodeId : virtualNodeId;
 }
 
+export interface ResolveMeshtasticOutboundFromParams {
+  hasDevice: boolean;
+  myNodeNum: number;
+  lastRfSelfNodeId: number;
+  virtualNodeId: number;
+}
+
+/**
+ * Outbound Meshtastic sender id for chat/MQTT publishes.
+ * When a local radio is connected, never use the MQTT-only virtual id (avoids a brief
+ * virtual `from` between deviceRef assignment and onMyNodeInfo).
+ */
+export function resolveMeshtasticOutboundFromNodeId(
+  params: ResolveMeshtasticOutboundFromParams,
+): number {
+  const { hasDevice, myNodeNum, lastRfSelfNodeId, virtualNodeId } = params;
+  if (!hasDevice) {
+    return resolveMqttOnlyFromNodeId(lastRfSelfNodeId, virtualNodeId);
+  }
+  if (myNodeNum > 0 && myNodeNum !== virtualNodeId) {
+    return myNodeNum;
+  }
+  if (lastRfSelfNodeId > 0) {
+    return lastRfSelfNodeId;
+  }
+  return 0;
+}
+
 export function mqttOnlyIdentitySource(lastRfSelfNodeId: number): MqttOnlyIdentitySource {
   return lastRfSelfNodeId > 0 ? 'lastRf' : 'virtual';
 }
