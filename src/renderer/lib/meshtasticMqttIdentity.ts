@@ -3,7 +3,7 @@ import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 
 export type MqttOnlyIdentitySource = 'lastRf' | 'virtual';
 
-const LAST_RF_APP_SETTING_KEY = 'meshtasticLastRfSelfNodeId';
+export const MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY = 'meshtasticLastRfSelfNodeId';
 
 /** MQTT-only sender: prefer last BLE node id when available, else persisted virtual id. */
 export function resolveMqttOnlyFromNodeId(lastRfSelfNodeId: number, virtualNodeId: number): number {
@@ -20,7 +20,7 @@ export function loadPersistedLastRfSelfNodeId(): number {
     getAppSettingsRaw(),
     'meshtasticMqttIdentity loadPersistedLastRfSelfNodeId',
   );
-  const raw = settings?.[LAST_RF_APP_SETTING_KEY];
+  const raw = settings?.[MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY];
   const nodeNum = typeof raw === 'number' ? raw : Number(raw);
   if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum >= 0xffffffff) return 0;
   return nodeNum >>> 0;
@@ -30,10 +30,16 @@ export function loadPersistedLastRfSelfNodeId(): number {
 export function persistLastRfSelfNodeId(nodeNum: number): void {
   if (!Number.isFinite(nodeNum) || nodeNum <= 0) return;
   const normalized = nodeNum >>> 0;
-  mergeAppSetting(LAST_RF_APP_SETTING_KEY, String(normalized), 'meshtasticMqttIdentity persist');
-  void window.electronAPI.appSettings.set(LAST_RF_APP_SETTING_KEY, String(normalized)).catch(() => {
-    // catch-no-log-ok SQLite persist is best-effort; localStorage already updated
-  });
+  mergeAppSetting(
+    MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY,
+    String(normalized),
+    'meshtasticMqttIdentity persist',
+  );
+  void window.electronAPI.appSettings
+    .set(MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY, String(normalized))
+    .catch(() => {
+      // catch-no-log-ok SQLite persist is best-effort; localStorage already updated
+    });
 }
 
 /**
@@ -50,4 +56,25 @@ export function meshtasticMqttOwnNodeIds(
   if (lastRfSelfNodeId > 0) ids.add(lastRfSelfNodeId);
   if (virtualNodeId > 0 && lastRfSelfNodeId === 0) ids.add(virtualNodeId);
   return [...ids];
+}
+
+/**
+ * Merge SQLite-backed last RF node id into localStorage on startup so MQTT-only
+ * can use the real radio id after app restart.
+ */
+export async function hydrateLastRfSelfNodeIdFromAppSettings(): Promise<number> {
+  try {
+    const all = await window.electronAPI.appSettings.getAll();
+    const raw = all[MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY];
+    if (raw != null && raw !== '') {
+      mergeAppSetting(
+        MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY,
+        raw,
+        'meshtasticMqttIdentity hydrate from SQLite',
+      );
+    }
+  } catch {
+    // catch-no-log-ok IPC unavailable during tests or early boot — localStorage may still have value
+  }
+  return loadPersistedLastRfSelfNodeId();
 }

@@ -96,6 +96,7 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('appSettings:set'");
     expect(INDEX_SOURCE).toContain('APP_SETTINGS_ALLOWED_KEYS');
     expect(INDEX_SOURCE).toMatch(/key not allowed/);
+    expect(INDEX_SOURCE).toContain("'meshtasticLastRfSelfNodeId'");
   });
 
   it('registers DB-level message prune IPC for both protocols (issue #387)', () => {

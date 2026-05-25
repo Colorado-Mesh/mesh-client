@@ -202,6 +202,26 @@ describe('routingErrorToRemoteAdminKey', () => {
   });
 });
 
+describe('buildRemoteAdminToRadio', () => {
+  it('encodes wantAck false when requested for read-only admin', () => {
+    const bytes = buildRemoteAdminToRadio({
+      myNodeNum: 0x100,
+      destNodeNum: 0x200,
+      adminPayload: new Uint8Array([1, 2, 3]),
+      packetId: 42,
+      publicKey: TEST_DEST_PUBKEY,
+      wantAck: false,
+    });
+    const toRadio = fromBinary(Mesh.ToRadioSchema, bytes) as {
+      payloadVariant?: { case?: string; value?: { wantAck?: boolean } };
+    };
+    expect(toRadio.payloadVariant?.case).toBe('packet');
+    if (toRadio.payloadVariant?.case === 'packet') {
+      expect(toRadio.payloadVariant.value?.wantAck).toBe(false);
+    }
+  });
+});
+
 describe('MeshtasticRemoteAdminClient', () => {
   let packetIdSeq: number;
   let device: { generateRandId: () => number };
@@ -667,6 +687,105 @@ describe('MeshtasticRemoteAdminClient', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('sends wantAck false on read-only getRemoteMetadata', async () => {
+    const promise = client.getRemoteMetadata(0x200);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    expect(writeToRadioWithoutQueue).toHaveBeenCalledTimes(1);
+    const toRadioBytes = vi.mocked(writeToRadioWithoutQueue).mock.calls[0][1];
+    const toRadio = fromBinary(Mesh.ToRadioSchema, toRadioBytes) as {
+      payloadVariant?: { case?: string; value?: { wantAck?: boolean } };
+    };
+    expect(toRadio.payloadVariant?.case).toBe('packet');
+    if (toRadio.payloadVariant?.case === 'packet') {
+      expect(toRadio.payloadVariant.value?.wantAck).toBe(false);
+    }
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getDeviceMetadataResponse',
+                  value: { firmwareVersion: '2.5.0' } as never,
+                },
+              }),
+            ),
+            requestId: 555,
+          },
+        },
+      }) as never,
+    );
+    await promise;
+  });
+
+  it('ignores benign ROUTING_APP errors while waiting for getChannelResponse', async () => {
+    const promise = client.getRemoteChannel(0x200, 0);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const packetId = 555;
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        id: packetId,
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ROUTING_APP,
+            payload: toBinary(
+              Mesh.RoutingSchema,
+              create(Mesh.RoutingSchema, {
+                variant: {
+                  case: 'errorReason',
+                  value: Mesh.Routing_Error.NO_CHANNEL,
+                },
+              }),
+            ),
+            requestId: packetId,
+          },
+        },
+      }) as never,
+    );
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getChannelResponse',
+                  value: {
+                    index: 0,
+                    role: 1,
+                    settings: { name: 'Primary', psk: new Uint8Array([1]) },
+                  } as never,
+                },
+              }),
+            ),
+            requestId: packetId,
+          },
+        },
+      }) as never,
+    );
+
+    const result = await promise;
+    expect((result as { settings?: { name?: string } }).settings?.name).toBe('Primary');
   });
 
   it('rejects getRemoteConfig when admin response case does not match', async () => {

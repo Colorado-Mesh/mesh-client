@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { APP_SETTINGS_STORAGE_KEY } from '@/renderer/lib/appSettingsStorage';
 
 import {
+  hydrateLastRfSelfNodeIdFromAppSettings,
   loadPersistedLastRfSelfNodeId,
   meshtasticMqttOwnNodeIds,
   mqttOnlyIdentitySource,
@@ -69,5 +70,17 @@ describe('last RF persistence', () => {
       'meshtasticLastRfSelfNodeId',
       '2295031088',
     );
+  });
+
+  it('hydrates last RF from SQLite app settings into localStorage', async () => {
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
+      meshtasticLastRfSelfNodeId: '2295031088',
+    });
+    await expect(hydrateLastRfSelfNodeIdFromAppSettings()).resolves.toBe(0x88cb6530);
+    const saved = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      string
+    >;
+    expect(saved.meshtasticLastRfSelfNodeId).toBe('2295031088');
   });
 });

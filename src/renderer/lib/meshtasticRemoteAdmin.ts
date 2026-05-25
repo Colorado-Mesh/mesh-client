@@ -41,8 +41,14 @@ export const REMOTE_ADMIN_SESSION_TTL_MS = 300_000;
 /** Default wait for multi-hop admin responses. */
 export const REMOTE_ADMIN_RESPONSE_TIMEOUT_MS = 120_000;
 
-/** Pause between sequential remote config fetches (BLE write pacing). */
+/** Pause between sequential remote config fetches (BLE write pacing on mutating ops). */
 export const REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS = 200;
+
+/** No pause between read-only essential snapshot fetches (multi-hop RTT dominates). */
+export const REMOTE_ADMIN_ESSENTIAL_FETCH_DELAY_MS = 0;
+
+/** Read-only admin gets: skip mesh wantAck to avoid ROUTING_APP races on multi-hop PKI. */
+export const REMOTE_ADMIN_READ_SEND_OPTIONS: RemoteAdminSendOptions = { wantAck: false };
 
 /** Backoff before retrying a failed config fetch (LoRa is most sensitive). */
 export const REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS = 500;
@@ -314,9 +320,18 @@ export class MeshtasticRemoteAdminClient {
     if (parsed.kind === 'routing_error') {
       const pending = this.pending.get(parsed.requestId);
       if (!pending) return;
+      const key = routingErrorToRemoteAdminKey(parsed.error);
+      // Failure point: wantAck routing ack can arrive before PKI admin response. Fallback: keep
+      // waiting for the real ADMIN_APP response unless the routing error is a known admin/PKI fault.
+      if (pending.expectedResponseCases?.length && key === 'remoteAdmin.errors.generic') {
+        console.debug(
+          '[MeshtasticRemoteAdmin] ignoring benign ROUTING_APP for pending read requestId=' +
+            String(parsed.requestId),
+        );
+        return;
+      }
       clearTimeout(pending.timeoutId);
       this.pending.delete(parsed.requestId);
-      const key = routingErrorToRemoteAdminKey(parsed.error);
       pending.reject(new Error(key));
       return;
     }
@@ -537,7 +552,10 @@ export class MeshtasticRemoteAdminClient {
         adminMessage({
           payloadVariant: { case: 'getDeviceMetadataRequest', value: true },
         }),
-      { expectedResponseCases: ['getDeviceMetadataResponse'] },
+      {
+        ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+        expectedResponseCases: ['getDeviceMetadataResponse'],
+      },
     );
     if (response.payloadVariant.case !== 'getDeviceMetadataResponse') {
       throw new Error('remoteAdmin.errors.generic');
@@ -555,7 +573,10 @@ export class MeshtasticRemoteAdminClient {
         adminMessage({
           payloadVariant: { case: 'getConfigRequest', value: configType },
         }),
-      { expectedResponseCases: ['getConfigResponse'] },
+      {
+        ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+        expectedResponseCases: ['getConfigResponse'],
+      },
     );
     const responseCase = response.payloadVariant.case;
     if (responseCase !== 'getConfigResponse') {
@@ -605,7 +626,10 @@ export class MeshtasticRemoteAdminClient {
         adminMessage({
           payloadVariant: { case: 'getModuleConfigRequest', value: moduleType },
         }),
-      { expectedResponseCases: ['getModuleConfigResponse'] },
+      {
+        ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+        expectedResponseCases: ['getModuleConfigResponse'],
+      },
     );
     if (response.payloadVariant.case !== 'getModuleConfigResponse') {
       throw new Error('remoteAdmin.errors.generic');
@@ -620,7 +644,10 @@ export class MeshtasticRemoteAdminClient {
         adminMessage({
           payloadVariant: { case: 'getChannelRequest', value: index },
         }),
-      { expectedResponseCases: ['getChannelResponse'] },
+      {
+        ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+        expectedResponseCases: ['getChannelResponse'],
+      },
     );
     if (response.payloadVariant.case !== 'getChannelResponse') {
       throw new Error('remoteAdmin.errors.generic');
@@ -635,7 +662,10 @@ export class MeshtasticRemoteAdminClient {
         adminMessage({
           payloadVariant: { case: 'getOwnerRequest', value: true },
         }),
-      { expectedResponseCases: ['getOwnerResponse'] },
+      {
+        ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+        expectedResponseCases: ['getOwnerResponse'],
+      },
     );
     if (response.payloadVariant.case !== 'getOwnerResponse') {
       throw new Error('remoteAdmin.errors.generic');
