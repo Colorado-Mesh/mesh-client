@@ -1239,7 +1239,8 @@
     "channelPsksInvalidLength": "Setiap kunci harus diterjemahkan menjadi 16 byte (AES -128) atau 32 byte (AES -256).",
     "channelPsksInvalidBase64": "Base64 tidak valid pada saluran PSK.",
     "mqttTlsEnabled": "Aktifkan TLS (mqtts / wss)",
-    "mqttTlsInsecure": "Izinkan TLS yang tidak aman (sertifikat yang ditandatangani sendiri). Tidak aktif secara default — hanya aktifkan jika broker Anda menggunakan CA non - publik."
+    "mqttTlsInsecure": "Izinkan TLS yang tidak aman (sertifikat yang ditandatangani sendiri). Tidak aktif secara default — hanya aktifkan jika broker Anda menggunakan CA non - publik.",
+    "channelPsksPrivateUplinkNote": "Saluran uplink dienkripsi AES - PSK pada /2/e/ (tidak ada cermin JSON untuk kunci pribadi). Monitor broker mungkin masih mencatat kegagalan dekripsi untuk lalu lintas PKI/DM di antara node lain — yang normal dan tidak terkait dengan saluran PSK di sini."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Hapus baris perutean yang lebih lama dari {{hours}} jam (1–168)",

@@ -1239,7 +1239,8 @@
     "channelPsksInvalidLength": "各キーは、16バイト（ AES -128 ）または32バイト（ AES -256 ）にデコードする必要があります。",
     "channelPsksInvalidBase64": "チャネルPSK回線上のbase 64が無効です。",
     "mqttTlsEnabled": "TLSを有効にする(mqtts/wss)",
-    "mqttTlsInsecure": "安全でないTLS （自己署名証明書）を許可します。デフォルトでオフ—ブローカーが非公開CAを使用している場合にのみ有効にします。"
+    "mqttTlsInsecure": "安全でないTLS （自己署名証明書）を許可します。デフォルトでオフ—ブローカーが非公開CAを使用している場合にのみ有効にします。",
+    "channelPsksPrivateUplinkNote": "チャネルアップリンクは/2/e/でAES - PSK暗号化されています（秘密鍵のJSONミラーはありません）。ブローカーモニターは、他のノード間のPKI/DMトラフィックの復号化失敗を記録することがあります。これは正常であり、ここではチャネルPSKとは無関係です。"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} 時間より古いルーティング行を削除 (1 ～ 168)",

@@ -1239,7 +1239,8 @@
     "channelPsksInvalidLength": "每个密钥必须解码为16字节（ AES-128 ）或32字节（ AES-256 ）。",
     "channelPsksInvalidBase64": "通道PSK线上的base64无效。",
     "mqttTlsEnabled": "启用TLS (mqtts/wss)",
-    "mqttTlsInsecure": "允许不安全的TLS （自签名证书）。默认情况下关闭—仅当您的经纪人使用非公开CA时才启用。"
+    "mqttTlsInsecure": "允许不安全的TLS （自签名证书）。默认情况下关闭—仅当您的经纪人使用非公开CA时才启用。",
+    "channelPsksPrivateUplinkNote": "频道上行链路是在/2/e/上加密的AES-PSK （私钥没有JSON镜像）。Broker监视器仍可能记录其他节点之间PKI/DM流量的解密失败—这是正常的，与此处的通道PSK无关。"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "删除早于{{hours}}小时的路由行(1–168)",

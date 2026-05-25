@@ -1240,7 +1240,8 @@
     "channelPsksInvalidLength": "Každý klíč musí dekódovat na 16 bajtů (AES-128) nebo 32 bajtů (AES-256).",
     "channelPsksInvalidBase64": "Neplatná base64 na kanálu PSK linky.",
     "mqttTlsEnabled": "Povolit TLS (mqtts / wss)",
-    "mqttTlsInsecure": "Povolit nezabezpečený TLS (self-signed certifikát). Vypnuto ve výchozím nastavení — povolte pouze v případě, že váš makléř používá neveřejnou CA."
+    "mqttTlsInsecure": "Povolit nezabezpečený TLS (self-signed certifikát). Vypnuto ve výchozím nastavení — povolte pouze v případě, že váš makléř používá neveřejnou CA.",
+    "channelPsksPrivateUplinkNote": "Kanálový uplink je šifrován AES-PSK na /2/e/ (žádné zrcadlo JSON pro soukromé klíče). Monitory zprostředkovatelů mohou stále zaznamenávat chyby dešifrování pro provoz PKI/DM mezi jinými uzly — to je normální a nesouvisí s kanály PSK."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Vypustit řádky směrování starší než {{hours}} hodin (1–168)",

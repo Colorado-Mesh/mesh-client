@@ -10,6 +10,7 @@ import {
   cipherForKey,
   MQTTManager,
   parseChannelPskLine,
+  parseMeshtasticMqttEncryptedTopicChannelName,
   parsePsk,
   prepareMqttProtobufBytes,
 } from './mqtt-manager';
@@ -187,6 +188,34 @@ describe('parseChannelPskLine', () => {
     expect(parsed?.name).toBeUndefined();
     expect(parsed?.psk).toEqual(CUSTOM_PSK);
   });
+
+  it('parses ChannelName@index=base64', () => {
+    const b64 = CUSTOM_PSK.toString('base64');
+    const parsed = parseChannelPskLine(`HamNet@2=${b64}`);
+    expect(parsed?.name).toBe('HamNet');
+    expect(parsed?.index).toBe(2);
+    expect(parsed?.psk).toEqual(CUSTOM_PSK);
+  });
+});
+
+describe('parseMeshtasticMqttEncryptedTopicChannelName', () => {
+  it('extracts channel name from encrypted MQTT topic', () => {
+    expect(parseMeshtasticMqttEncryptedTopicChannelName('msh/US/2/e/HamNet/!abcd1234')).toBe(
+      'HamNet',
+    );
+  });
+
+  it('handles variable topic prefix depth', () => {
+    expect(parseMeshtasticMqttEncryptedTopicChannelName('msh/US/CO/2/e/LongFast/!835bb187')).toBe(
+      'LongFast',
+    );
+  });
+
+  it('returns undefined for JSON topics', () => {
+    expect(
+      parseMeshtasticMqttEncryptedTopicChannelName('msh/US/CO/2/json/LongFast/!698524e8'),
+    ).toBeUndefined();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -218,6 +247,7 @@ describe('publish — MQTT uplink JSON mirror', () => {
   it('publishes only protobuf when publishJsonMirror is false', () => {
     const manager = new MQTTManager();
     const publish = wireConnected(manager);
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     manager.publish({
       text: 'hello',
       from: 0x11223344,
@@ -226,6 +256,12 @@ describe('publish — MQTT uplink JSON mirror', () => {
     });
     expect(publish).toHaveBeenCalledTimes(1);
     expect((publish.mock.calls[0][0] as string).includes('2/e/')).toBe(true);
+    expect(
+      debugSpy.mock.calls.some((args) =>
+        String(args[0]).includes('[Meshtastic MQTT] Publish channel="LongFast"'),
+      ),
+    ).toBe(true);
+    debugSpy.mockRestore();
   });
 
   it('publishes protobuf and JSON when publishJsonMirror is true', () => {
@@ -494,6 +530,31 @@ describe('tryDecryptAllKeys', () => {
     expect(result).not.toBeNull();
     expect(result!.portnum).toBe(PortNum.POSITION_APP);
   });
+
+  it('logs sampled debug when all keys fail and topic is provided', () => {
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('secret'),
+      }),
+    );
+    const encrypted = encrypt(dataBytes, 5, 0x44444444, CUSTOM_PSK);
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const result = (manager as any).tryDecryptAllKeys(
+      encrypted,
+      5,
+      0x44444444,
+      'msh/US/2/e/CustomChan/!44444444',
+    );
+    expect(result).toBeNull();
+    expect(
+      debugSpy.mock.calls.some((args: unknown[]) =>
+        String(args[0]).includes('Decrypt failed for topic channel "CustomChan"'),
+      ),
+    ).toBe(true);
+    debugSpy.mockRestore();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -720,11 +781,6 @@ describe('onMessage — unknown PSK falls back to minimal update', () => {
 
     // No updates should be emitted when decryption fails - we don't add unknown nodes
     expect(updates).toHaveLength(0);
-    expect(
-      debugSpy.mock.calls.some((args: unknown[]) =>
-        String(args[0]).includes('Could not decrypt packet'),
-      ),
-    ).toBe(false);
   });
 
   it('does not emit update for brand-new unknown-PSK node', () => {
@@ -971,6 +1027,25 @@ describe('connect — channelPsks parsing', () => {
     expect(byName.get('Private')?.equals(CUSTOM_PSK)).toBe(true);
   });
 
+  it('maps ChannelName@index=base64 lines to channelNameToIndex', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    const customB64 = CUSTOM_PSK.toString('base64');
+
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: [`HamNet@2=${customB64}`],
+    });
+
+    const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
+    expect(nameToIndex.get('HamNet')).toBe(2);
+  });
+
   it('filters out empty PSK strings', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};
@@ -1028,6 +1103,130 @@ describe('updateChannelKeys', () => {
     expect(byName.get('HamPrivate')?.equals(aes256)).toBe(true);
     const allDecryptKeys: Buffer[] = (manager as any).allDecryptKeys;
     expect(allDecryptKeys.some((k) => k.equals(aes256))).toBe(true);
+  });
+
+  it('stores channel index mapping for topic attribution', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    const aes256 = Buffer.alloc(32, 0xcd);
+    manager.updateChannelKeys([
+      { name: 'HamPrivate', pskBase64: aes256.toString('base64'), index: 2 },
+    ]);
+
+    const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
+    expect(nameToIndex.get('HamPrivate')).toBe(2);
+  });
+});
+
+describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
+  it('attributes encrypted text to mapped channel index from topic name', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([
+      { name: 'HamPrivate', pskBase64: CUSTOM_PSK.toString('base64'), index: 2 },
+    ]);
+
+    const nodeId = 0x11223344;
+    const packetId = 0x00000031;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('hello on channel 2'),
+      }),
+    );
+    const payload = buildEnvelope({
+      nodeId,
+      packetId,
+      dataBytes,
+      psk: CUSTOM_PSK,
+      channelName: 'HamPrivate',
+    });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/HamPrivate/!11223344', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(2);
+  });
+
+  it('attributes LongFast topic to channel 0 when no index map entry', () => {
+    const manager = new MQTTManager();
+    const nodeId = 0x11223355;
+    const packetId = 0x00000032;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('hello primary'),
+      }),
+    );
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!11223355', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(0);
+  });
+
+  it('attributes unknown topic channel names to channel 0', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([{ name: 'CustomChan', pskBase64: CUSTOM_PSK.toString('base64') }]);
+
+    const nodeId = 0x11223366;
+    const packetId = 0x00000033;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('hello unknown map'),
+      }),
+    );
+    const payload = buildEnvelope({
+      nodeId,
+      packetId,
+      dataBytes,
+      psk: CUSTOM_PSK,
+      channelName: 'CustomChan',
+    });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/CustomChan/!11223366', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(0);
   });
 });
 

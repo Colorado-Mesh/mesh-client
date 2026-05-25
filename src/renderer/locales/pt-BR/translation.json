@@ -1239,7 +1239,8 @@
     "channelPsksInvalidLength": "Cada chave deve decodificar para 16 bytes (AES-128) ou 32 bytes (AES-256).",
     "channelPsksInvalidBase64": "Base64 inválida em uma linha PSK do canal.",
     "mqttTlsEnabled": "Ativar TLS (mqtts / wss)",
-    "mqttTlsInsecure": "Permitir TLS (certificado autoassinado) inseguro. Desativado por padrão — ative apenas se a sua corretora usar uma autoridade de certificação não pública."
+    "mqttTlsInsecure": "Permitir TLS (certificado autoassinado) inseguro. Desativado por padrão — ative apenas se a sua corretora usar uma autoridade de certificação não pública.",
+    "channelPsksPrivateUplinkNote": "O uplink do canal é AES-PSK criptografado em /2/e/ (sem espelho JSON para chaves privadas). Os monitores do corretor ainda podem registrar falhas de descriptografia para tráfego PKI/DM entre outros nós — isso é normal e não está relacionado aos PSKs do canal aqui."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Remova as linhas de roteamento com mais de {{hours}} horas (1–168)",

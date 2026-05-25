@@ -26,8 +26,9 @@ import {
   writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
 import {
+  loadMeshtasticMqttManualChannelPsks,
   meshtasticMqttChannelKeyEntries,
-  meshtasticMqttPublishFields,
+  resolveMeshtasticMqttPublishFieldsForChannel,
 } from '@/renderer/lib/meshtasticMqttPublish';
 import {
   type ApplyChannelSetResult,
@@ -374,6 +375,7 @@ export function useDevice() {
   const [remoteConfigSnapshot, setRemoteConfigSnapshot] =
     useState<MeshtasticRemoteConfigSnapshot | null>(null);
   const remoteAdminClientRef = useRef<MeshtasticRemoteAdminClient | null>(null);
+  const remoteConfigFetchGenerationRef = useRef(0);
   const [loraConfig, setLoraConfig] = useState<MeshtasticLoraConfig | null>(null);
 
   // ─── Additional packet type state ─────────────────────────────────
@@ -811,8 +813,12 @@ export function useDevice() {
             }
             return;
           }
-          const primaryCh = channelConfigsRef.current.find((c) => c.index === 0);
-          const presenceMqtt = meshtasticMqttPublishFields(primaryCh);
+          const presenceMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
+            0,
+            channelConfigsRef.current,
+            loadMeshtasticMqttManualChannelPsks(),
+          );
+          if (!presenceMqtt.channelName) return;
           window.electronAPI.mqtt
             .publishNodeInfo({
               from: virtualNodeIdRef.current,
@@ -1664,7 +1670,11 @@ export function useDevice() {
         if (!isEcho && !emoji && !msg.to && mqttStatusRef.current === 'connected') {
           const chCfg = channelConfigsRef.current.find((c) => c.index === msg.channel);
           if (chCfg?.uplinkEnabled) {
-            const uplinkMqtt = meshtasticMqttPublishFields(chCfg);
+            const uplinkMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
+              msg.channel,
+              channelConfigsRef.current,
+              loadMeshtasticMqttManualChannelPsks(),
+            );
             if (uplinkMqtt.channelName) {
               window.electronAPI.mqtt
                 .publish({
@@ -2671,29 +2681,35 @@ export function useDevice() {
         ) {
           const chCfg = channelConfigsRef.current.find((c) => c.index === chanIdx);
           if (chCfg?.uplinkEnabled) {
-            const wpMqtt = meshtasticMqttPublishFields(chCfg);
-            void window.electronAPI.mqtt
-              .publishWaypoint({
-                from: fromNode,
-                to: toNode,
-                channel: chanIdx,
-                channelName: wpMqtt.channelName,
-                pskBase64: wpMqtt.pskBase64,
-                publishJsonMirror: wpMqtt.publishJsonMirror,
-                waypoint: {
-                  id: data.id,
-                  latitudeI: data.latitudeI ?? 0,
-                  longitudeI: data.longitudeI ?? 0,
-                  name: data.name ?? '',
-                  description: data.description ?? '',
-                  icon: data.icon ?? 0,
-                  lockedTo: data.lockedTo ?? 0,
-                  expire: data.expire ?? 0,
-                },
-              })
-              .catch((e: unknown) => {
-                console.debug('[useDevice] MQTT waypoint relay failed ' + errLikeToLogString(e));
-              });
+            const wpMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
+              chanIdx,
+              channelConfigsRef.current,
+              loadMeshtasticMqttManualChannelPsks(),
+            );
+            if (wpMqtt.channelName) {
+              void window.electronAPI.mqtt
+                .publishWaypoint({
+                  from: fromNode,
+                  to: toNode,
+                  channel: chanIdx,
+                  channelName: wpMqtt.channelName,
+                  pskBase64: wpMqtt.pskBase64,
+                  publishJsonMirror: wpMqtt.publishJsonMirror,
+                  waypoint: {
+                    id: data.id,
+                    latitudeI: data.latitudeI ?? 0,
+                    longitudeI: data.longitudeI ?? 0,
+                    name: data.name ?? '',
+                    description: data.description ?? '',
+                    icon: data.icon ?? 0,
+                    lockedTo: data.lockedTo ?? 0,
+                    expire: data.expire ?? 0,
+                  },
+                })
+                .catch((e: unknown) => {
+                  console.debug('[useDevice] MQTT waypoint relay failed ' + errLikeToLogString(e));
+                });
+            }
           }
         }
       });
@@ -3435,27 +3451,45 @@ export function useDevice() {
     [getNodeName, isDuplicate],
   );
 
-  const refreshRemoteConfigSnapshot = useCallback(async (destNodeNum: number) => {
-    const client = remoteAdminClientRef.current;
-    if (!client || !deviceRef.current) {
-      setRemoteAdminStatus('error');
-      setRemoteAdminError('remoteAdmin.errors.noLocalRadio');
-      return;
-    }
-    setRemoteAdminStatus('loading');
-    setRemoteAdminError(undefined);
-    try {
-      const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, destNodeNum);
-      setRemoteConfigSnapshot(snapshot);
-      setRemoteAdminStatus('ready');
-    } catch (e) {
-      remoteAdminClientRef.current?.resetEditState();
-      const msg = normalizeRemoteAdminError(e);
-      setRemoteAdminStatus('error');
-      setRemoteAdminError(msg);
-      console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
-    }
-  }, []);
+  const refreshRemoteConfigSnapshot = useCallback(
+    async (destNodeNum: number) => {
+      const client = remoteAdminClientRef.current;
+      if (!client || !deviceRef.current) {
+        setRemoteAdminStatus('error');
+        setRemoteAdminError('remoteAdmin.errors.noLocalRadio');
+        return;
+      }
+      if (state.status !== 'configured') return;
+
+      const generation = ++remoteConfigFetchGenerationRef.current;
+      setRemoteAdminStatus('loading');
+      setRemoteAdminError(undefined);
+
+      const applyIfCurrent = (): boolean =>
+        generation === remoteConfigFetchGenerationRef.current &&
+        configureTargetNodeNumRef.current === destNodeNum;
+
+      try {
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 500);
+        });
+        if (!applyIfCurrent()) return;
+
+        const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, destNodeNum);
+        if (!applyIfCurrent()) return;
+        setRemoteConfigSnapshot(snapshot);
+        setRemoteAdminStatus('ready');
+      } catch (e) {
+        if (!applyIfCurrent()) return;
+        remoteAdminClientRef.current?.resetEditState();
+        const msg = normalizeRemoteAdminError(e);
+        setRemoteAdminStatus('error');
+        setRemoteAdminError(msg);
+        console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
+      }
+    },
+    [state.status],
+  );
 
   const runRemoteAdminOp = useCallback(async <T>(operation: () => Promise<T>): Promise<T> => {
     try {
@@ -3471,6 +3505,7 @@ export function useDevice() {
 
   const setConfigureTargetNodeNum = useCallback(
     (nodeNum: number | null) => {
+      const prevTarget = configureTargetNodeNumRef.current;
       const normalized =
         nodeNum != null && nodeNum > 0 && nodeNum !== myNodeNumRef.current ? nodeNum : null;
       setConfigureTargetNodeNumState(normalized);
@@ -3488,15 +3523,20 @@ export function useDevice() {
             '[useDevice] meshtasticConfigureTargetNodeNum persist failed ' + errLikeToLogString(e),
           );
         });
-      remoteAdminClientRef.current?.resetEditState();
       if (normalized == null) {
+        remoteConfigFetchGenerationRef.current += 1;
+        remoteAdminClientRef.current?.resetEditState();
         setRemoteConfigSnapshot(null);
         setRemoteAdminStatus('idle');
         setRemoteAdminError(undefined);
         remoteAdminClientRef.current?.sessionStore.clear();
         return;
       }
-      remoteAdminClientRef.current?.sessionStore.clear();
+      if (prevTarget !== normalized) {
+        remoteConfigFetchGenerationRef.current += 1;
+        remoteAdminClientRef.current?.resetEditState();
+        remoteAdminClientRef.current?.sessionStore.clear();
+      }
       void refreshRemoteConfigSnapshot(normalized);
     },
     [refreshRemoteConfigSnapshot],
@@ -3809,29 +3849,35 @@ export function useDevice() {
       const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
       const fromNum = myNodeNumRef.current ?? 0;
       if (mqttStatusRef.current === 'connected' && fromNum && chCfg?.uplinkEnabled) {
-        const sendWpMqtt = meshtasticMqttPublishFields(chCfg);
-        void window.electronAPI.mqtt
-          .publishWaypoint({
-            from: fromNum,
-            to: dest >>> 0,
-            channel,
-            channelName: sendWpMqtt.channelName,
-            pskBase64: sendWpMqtt.pskBase64,
-            publishJsonMirror: sendWpMqtt.publishJsonMirror,
-            waypoint: {
-              id: wp.id,
-              latitudeI: Math.round(wp.latitude * 1e7),
-              longitudeI: Math.round(wp.longitude * 1e7),
-              name: wp.name,
-              description: wp.description ?? '',
-              icon: wp.icon ?? 0,
-              lockedTo: wp.lockedTo ?? 0,
-              expire: wp.expire ?? 0,
-            },
-          })
-          .catch((e: unknown) => {
-            console.debug('[useDevice] MQTT publishWaypoint failed ' + errLikeToLogString(e));
-          });
+        const sendWpMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
+          channel,
+          channelConfigsRef.current,
+          loadMeshtasticMqttManualChannelPsks(),
+        );
+        if (sendWpMqtt.channelName) {
+          void window.electronAPI.mqtt
+            .publishWaypoint({
+              from: fromNum,
+              to: dest >>> 0,
+              channel,
+              channelName: sendWpMqtt.channelName,
+              pskBase64: sendWpMqtt.pskBase64,
+              publishJsonMirror: sendWpMqtt.publishJsonMirror,
+              waypoint: {
+                id: wp.id,
+                latitudeI: Math.round(wp.latitude * 1e7),
+                longitudeI: Math.round(wp.longitude * 1e7),
+                name: wp.name,
+                description: wp.description ?? '',
+                icon: wp.icon ?? 0,
+                lockedTo: wp.lockedTo ?? 0,
+                expire: wp.expire ?? 0,
+              },
+            })
+            .catch((e: unknown) => {
+              console.debug('[useDevice] MQTT publishWaypoint failed ' + errLikeToLogString(e));
+            });
+        }
       }
     },
     [],
@@ -3845,31 +3891,37 @@ export function useDevice() {
     const chCfg = channelConfigsRef.current.find((c) => c.index === 0);
     const fromNum = myNodeNumRef.current ?? 0;
     if (mqttStatusRef.current === 'connected' && fromNum && chCfg?.uplinkEnabled) {
-      const delWpMqtt = meshtasticMqttPublishFields(chCfg);
-      void window.electronAPI.mqtt
-        .publishWaypoint({
-          from: fromNum,
-          to: BROADCAST_ADDR,
-          channel: 0,
-          channelName: delWpMqtt.channelName,
-          pskBase64: delWpMqtt.pskBase64,
-          publishJsonMirror: delWpMqtt.publishJsonMirror,
-          waypoint: {
-            id,
-            latitudeI: 0,
-            longitudeI: 0,
-            name: '',
-            description: '',
-            icon: 0,
-            lockedTo: 0,
-            expire: 1,
-          },
-        })
-        .catch((e: unknown) => {
-          console.debug(
-            '[useDevice] MQTT publishWaypoint (delete) failed ' + errLikeToLogString(e),
-          );
-        });
+      const delWpMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
+        0,
+        channelConfigsRef.current,
+        loadMeshtasticMqttManualChannelPsks(),
+      );
+      if (delWpMqtt.channelName) {
+        void window.electronAPI.mqtt
+          .publishWaypoint({
+            from: fromNum,
+            to: BROADCAST_ADDR,
+            channel: 0,
+            channelName: delWpMqtt.channelName,
+            pskBase64: delWpMqtt.pskBase64,
+            publishJsonMirror: delWpMqtt.publishJsonMirror,
+            waypoint: {
+              id,
+              latitudeI: 0,
+              longitudeI: 0,
+              name: '',
+              description: '',
+              icon: 0,
+              lockedTo: 0,
+              expire: 1,
+            },
+          })
+          .catch((e: unknown) => {
+            console.debug(
+              '[useDevice] MQTT publishWaypoint (delete) failed ' + errLikeToLogString(e),
+            );
+          });
+      }
     }
   }, []);
 

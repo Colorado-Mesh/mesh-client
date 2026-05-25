@@ -1239,7 +1239,8 @@
     "channelPsksInvalidLength": "Chaque clé doit décoder à 16 octets (AES-128) ou 32 octets (AES-256).",
     "channelPsksInvalidBase64": "Base64 non valide sur une ligne PSK de canal.",
     "mqttTlsEnabled": "Activer TLS (mqtts / wss)",
-    "mqttTlsInsecure": "Autoriser les TLS non sécurisés (certificat auto-signé). Désactivé par défaut — activer uniquement si votre courtier utilise une autorité de certification non publique."
+    "mqttTlsInsecure": "Autoriser les TLS non sécurisés (certificat auto-signé). Désactivé par défaut — activer uniquement si votre courtier utilise une autorité de certification non publique.",
+    "channelPsksPrivateUplinkNote": "La liaison montante du canal est chiffrée AES-PSK sur /2/e/ (pas de miroir JSON pour les clés privées). Les moniteurs de courtier peuvent toujours enregistrer les échecs de décryptage du trafic PKI/DM entre d'autres nœuds — c'est normal et sans rapport avec les PSK de canal ici."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Collectez lignes de routage de plus de {{hours}} heures (1–168)",

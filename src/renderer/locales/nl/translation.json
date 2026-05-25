@@ -1239,7 +1239,8 @@
     "channelPsksInvalidLength": "Elke sleutel moet worden gedecodeerd tot 16 bytes (AES-128) of 32 bytes (AES-256).",
     "channelPsksInvalidBase64": "Ongeldige base64 op een PSK-kanaalregel.",
     "mqttTlsEnabled": "TLS (mqtts/ wss) inschakelen",
-    "mqttTlsInsecure": "Sta onveilige TLS (zelfondertekend certificaat) toe. Standaard uitgeschakeld — alleen inschakelen als uw makelaar een niet-openbare CA gebruikt."
+    "mqttTlsInsecure": "Sta onveilige TLS (zelfondertekend certificaat) toe. Standaard uitgeschakeld — alleen inschakelen als uw makelaar een niet-openbare CA gebruikt.",
+    "channelPsksPrivateUplinkNote": "Kanaaluplink is AES-PSK-gecodeerd op /2/e/ (geen JSON-spiegel voor privésleutels). Broker-monitoren kunnen nog steeds ontsleutelingsfouten registreren voor PKI/DM-verkeer tussen andere knooppunten — dat is normaal en niet gerelateerd aan PSK's hier."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Rijen voor droprouting die ouder zijn dan {{hours}} uur (1–168)",

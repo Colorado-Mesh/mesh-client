@@ -1239,7 +1239,8 @@
     "channelPsksInvalidLength": "Ogni tasto deve decodificare a 16 byte (AES-128) o 32 byte (AES-256).",
     "channelPsksInvalidBase64": "Base64 non valida su una linea PSK del canale.",
     "mqttTlsEnabled": "Abilita TLS (mqtts / wss)",
-    "mqttTlsInsecure": "Consenti TLS non sicuro (certificato autofirmato). Disattivato per impostazione predefinita: abilita solo se il tuo broker utilizza una CA non pubblica."
+    "mqttTlsInsecure": "Consenti TLS non sicuro (certificato autofirmato). Disattivato per impostazione predefinita: abilita solo se il tuo broker utilizza una CA non pubblica.",
+    "channelPsksPrivateUplinkNote": "L'uplink del canale è crittografato AES-PSK su /2/e/ (nessun mirror JSON per le chiavi private). I monitor dei broker possono ancora registrare errori di decrittografia per il traffico PKI/DM tra altri nodi, il che è normale e non correlato ai PSK del canale qui."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Elimina le righe di routing più vecchie di {{hours}} ore (1–168)",

@@ -1239,7 +1239,8 @@
     "channelPsksInvalidLength": "Her anahtarın kodu 16 bayta (AES -128) veya 32 bayta (AES -256) kadar çözülmelidir.",
     "channelPsksInvalidBase64": "Bir kanal PSK hattında geçersiz base64.",
     "mqttTlsEnabled": "TLS'yi etkinleştir (mqtts / wss)",
-    "mqttTlsInsecure": "Güvensiz TLS'ye (kendinden imzalı sertifika) izin verin. Varsayılan olarak kapalı — yalnızca brokeriniz halka açık olmayan bir CA kullanıyorsa etkinleştirin."
+    "mqttTlsInsecure": "Güvensiz TLS'ye (kendinden imzalı sertifika) izin verin. Varsayılan olarak kapalı — yalnızca brokeriniz halka açık olmayan bir CA kullanıyorsa etkinleştirin.",
+    "channelPsksPrivateUplinkNote": "Kanal uplink/2/e/üzerinde şifrelenmiş AES - PSK'dır (özel anahtarlar için JSON aynası yoktur). Broker monitörleri, diğer düğümler arasındaki PKI/DM trafiği için hala şifre çözme hatalarını günlüğe kaydedebilir — bu normaldir ve buradaki kanal PSK'larıyla ilgisi yoktur."
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} saatten (1-168) daha eski olan yönlendirme satırlarını bırak",

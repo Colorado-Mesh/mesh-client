@@ -3,6 +3,7 @@ import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Mesh, Portnums } from '@meshtastic/protobufs';
 
 import { errLikeToLogString } from './errLikeToLogString';
+import { writeToRadioWithoutQueue } from './meshtasticBacklogUtils';
 
 interface AdminMessagePayloadVariant {
   case: string;
@@ -299,7 +300,13 @@ export class MeshtasticRemoteAdminClient {
 
     const passkey = extractAdminSessionPasskey(parsed.message);
     if (passkey) {
-      this.sessionStore.set(parsed.from, passkey);
+      const pendingForPasskey =
+        parsed.requestId !== 0 ? this.pending.get(parsed.requestId) : undefined;
+      const sessionNode =
+        parsed.from === 0 && pendingForPasskey != null
+          ? pendingForPasskey.destNodeNum
+          : parsed.from;
+      this.sessionStore.set(sessionNode, passkey);
     }
 
     if (parsed.requestId === 0) return;
@@ -308,15 +315,24 @@ export class MeshtasticRemoteAdminClient {
     if (!pending) return;
 
     if (pending.destNodeNum !== parsed.from) {
-      console.debug(
-        '[MeshtasticRemoteAdmin] admin response sender mismatch expected=0x' +
-          pending.destNodeNum.toString(16) +
-          ' got=0x' +
-          parsed.from.toString(16) +
-          ' requestId=' +
-          String(parsed.requestId),
-      );
-      return;
+      if (parsed.from === 0) {
+        console.debug(
+          '[MeshtasticRemoteAdmin] admin response from=0 correlated by requestId=' +
+            String(parsed.requestId) +
+            ' dest=0x' +
+            pending.destNodeNum.toString(16),
+        );
+      } else {
+        console.debug(
+          '[MeshtasticRemoteAdmin] admin response sender mismatch expected=0x' +
+            pending.destNodeNum.toString(16) +
+            ' got=0x' +
+            parsed.from.toString(16) +
+            ' requestId=' +
+            String(parsed.requestId),
+        );
+        return;
+      }
     }
 
     const responseCase = parsed.message.payloadVariant.case;
@@ -401,10 +417,13 @@ export class MeshtasticRemoteAdminClient {
 
     const run = async (): Promise<number> => {
       try {
-        return await device.sendRaw(toRadio, id);
+        await writeToRadioWithoutQueue(device, toRadio);
+        return id;
       } catch (e) {
-        console.warn('[MeshtasticRemoteAdmin] sendRaw failed ' + errLikeToLogString(e));
-        throw new Error(normalizeRemoteAdminError(e));
+        console.warn(
+          '[MeshtasticRemoteAdmin] writeToRadioWithoutQueue failed ' + errLikeToLogString(e),
+        );
+        throw e instanceof Error ? e : new Error(normalizeRemoteAdminError(e));
       }
     };
 
@@ -462,8 +481,10 @@ export class MeshtasticRemoteAdminClient {
       if (pending) {
         clearTimeout(pending.timeoutId);
         this.pending.delete(packetId);
+        const err = e instanceof Error ? e : new Error(normalizeRemoteAdminError(e));
+        pending.reject(err);
       }
-      throw e;
+      // catch-no-log-ok write failure forwarded to responsePromise rejection for caller
     }
     return responsePromise;
   }
