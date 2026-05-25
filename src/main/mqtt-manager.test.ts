@@ -885,6 +885,32 @@ describe('_doConnect — WebSocket scheme', () => {
     expect(
       (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
     ).toBe('wss');
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { rejectUnauthorized: boolean })
+        .rejectUnauthorized,
+    ).toBe(true);
+  });
+
+  it('honors insecure TLS only when explicitly enabled for wss:// port 443', () => {
+    new MQTTManager().connect({
+      server: 'mqtt.example.com',
+      port: 443,
+      username: '',
+      password: '',
+      topicPrefix: 'msh',
+      autoLaunch: false,
+      useWebSocket: true,
+      tlsInsecure: true,
+    });
+
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
+    ).toBe('wss');
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { rejectUnauthorized: boolean })
+        .rejectUnauthorized,
+    ).toBe(false);
   });
 
   it('uses ws:// when tlsInsecure is true on port 8883', () => {

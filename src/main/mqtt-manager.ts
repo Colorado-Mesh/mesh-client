@@ -368,11 +368,16 @@ export class MQTTManager extends EventEmitter {
 
     const useTls =
       settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 8883);
-    const rejectUnauthorized = useTls ? !settings.tlsInsecure : false;
-
     const wsEnabled = settings.useWebSocket === true;
     const wsTlsEnabled =
       settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 443);
+    const rejectUnauthorized = wsEnabled
+      ? wsTlsEnabled
+        ? !settings.tlsInsecure
+        : false
+      : useTls
+        ? !settings.tlsInsecure
+        : false;
     const wsPath = settings.wsPath ?? '/mqtt';
     const wsScheme = wsTlsEnabled ? 'wss' : 'ws';
 

@@ -256,8 +256,11 @@ describe('Native Electron call guards (source contract)', () => {
     );
   });
 
-  it('registers chat:fetchLinkPreview handler', () => {
+  it('registers chat:fetchLinkPreview handler with sender validation', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:fetchLinkPreview'");
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('chat:fetchLinkPreview'[\s\S]*?validateIpcSender\(event\)/,
+    );
   });
 
   it('registers chat:outbox handlers with protocol, status, and payload validation', () => {

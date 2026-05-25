@@ -332,6 +332,7 @@ export default function ModulePanel({
   const { addToast } = useToast();
   const { t } = useTranslation();
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
+  const remoteTarget = configTarget?.mode === 'remote';
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
 
   // ─── Telemetry module ──────────────────────────────────────────
@@ -615,7 +616,7 @@ export default function ModulePanel({
           }
         }}
         applying={applyingSection === 'Canned Messages'}
-        disabled={disabled}
+        disabled={disabled || remoteTarget}
       >
         <ConfigToggle
           label={t('modulePanel.fields.cannedMessagesEnabled')}
@@ -1021,7 +1022,7 @@ export default function ModulePanel({
             }
           }}
           applying={applyingSection === 'RTTTL Ringtone'}
-          disabled={disabled}
+          disabled={disabled || remoteTarget}
         >
           <div className="space-y-1">
             <label htmlFor="module-rtttl-preset" className="text-muted text-sm">

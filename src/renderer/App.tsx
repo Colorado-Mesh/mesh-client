@@ -883,7 +883,7 @@ export default function App() {
     ? (device.remoteConfigSnapshot?.channelConfigs ?? device.channelConfigs)
     : device.channelConfigs;
   const effectiveLoraConfig = isRemoteConfigureTarget
-    ? (device.remoteConfigSnapshot?.loraConfig ?? device.loraConfig)
+    ? (device.remoteConfigSnapshot?.loraConfig ?? null)
     : device.loraConfig;
   const effectiveModuleConfigs = isRemoteConfigureTarget
     ? (device.remoteConfigSnapshot?.moduleConfigs ?? device.moduleConfigs)

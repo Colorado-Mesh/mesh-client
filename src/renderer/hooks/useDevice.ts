@@ -4385,11 +4385,36 @@ export function useDevice() {
               '[useDevice] sendReaction device sendText failed ' + errLikeToLogString(e),
             );
           });
+      } else if (hasMqtt) {
+        const reactionMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
+          channel,
+          channelConfigsRef.current,
+          loadMeshtasticMqttManualChannelPsks(),
+          meshtasticMqttPublishOpts(true),
+        );
+        if (!reactionMqtt.channelName) {
+          return Promise.reject(new Error('No MQTT channel configured for reaction'));
+        }
+        return window.electronAPI.mqtt
+          .publish({
+            text: tapPayload,
+            from,
+            channel,
+            destination: BROADCAST_ADDR,
+            channelName: reactionMqtt.channelName,
+            pskBase64: reactionMqtt.pskBase64,
+            emoji: safeScalar,
+            replyId,
+            publishJsonMirror: reactionMqtt.publishJsonMirror,
+          })
+          .then((packetId) => {
+            isDuplicate(packetId);
+          });
       }
 
       return Promise.resolve();
     },
-    [getNodeName],
+    [getNodeName, isDuplicate],
   );
 
   const sendStatusEvents = useCallback(() => {

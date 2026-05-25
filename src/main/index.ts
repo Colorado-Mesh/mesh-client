@@ -79,12 +79,7 @@ import {
   setMainWindow,
 } from './log-service';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
-import {
-  decodePathPayload,
-  decodeTracePayload,
-  isPathPacket,
-  isTracePacket,
-} from './meshcore-path-decoder';
+import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
@@ -3277,23 +3272,6 @@ ipcMain.handle('db:saveNodePath', (_event, nodeId: number, lastHeard: number, bu
   }
 });
 
-ipcMain.handle('db:saveNodeTrace', (_event, nodeId: number, lastHeard: number, buffer: Buffer) => {
-  try {
-    if (!isTracePacket(buffer)) {
-      throw new Error('Not a TRACE packet');
-    }
-    const { hops, path } = decodeTracePayload(buffer);
-    console.debug('[IPC] db:saveNodeTrace: nodeId=', nodeId.toString(16), 'hops=', hops);
-    return { success: true, hops, path };
-  } catch (err) {
-    console.error(
-      '[IPC] db:saveNodeTrace failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-
 ipcMain.handle('db:setNodeFavorited', (_event, nodeId: number, favorited: boolean) => {
   try {
     const id = safeNonNegativeInt(nodeId);
@@ -3990,7 +3968,8 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
 });
 
 // ─── IPC: Chat link preview ──────────────────────────────────────────
-ipcMain.handle('chat:fetchLinkPreview', async (_event, url: unknown) => {
+ipcMain.handle('chat:fetchLinkPreview', async (event, url: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('chat:fetchLinkPreview: unauthorized sender');
   if (typeof url !== 'string' || url.length === 0 || url.length > 2048) return null;
   return await fetchLinkPreview(url);
 });
