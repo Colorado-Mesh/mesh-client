@@ -486,7 +486,10 @@
       "applying": "Aplicando",
       "unnamedChannel": "(Sem Nome)",
       "applySuccessWithSkipped": "Canal(is) {{applied}} aplicado (s); ignorado (s) {{skipped}} duplicado (s) ou sem nome."
-    }
+    },
+    "channelLoading": "Carregando…",
+    "channelLoadFailed": "Carregamento falhou",
+    "retryRemoteChannels": "Tentar carregar novamente os canais"
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneração de chave solicitada. O dispositivo gerará novas chaves.",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "Este nó ainda não tem chave pública PKI. Aguarde um pacote NodeInfo sobre a malha ou use o aplicativo do dispositivo uma vez para trocar chaves.",
       "noAdminKeyConfigured": "Cole e salve uma chave de administrador para este nó na caixa de diálogo de detalhes do nó antes de usar o administrador remoto.",
       "invalidAdminKey": "A chave administrativa deve ter 32 bytes (base64, base64:… ou hexadecimal de 64 caracteres).",
-      "publicKeyUnauthorized": "Não autorizado: esta chave de administrador não está autorizada no nó remoto. Verifique se a chave está listada em Chaves de administrador no dispositivo remoto."
+      "publicKeyUnauthorized": "Não autorizado: esta chave de administrador não está autorizada no nó remoto. Verifique se a chave está listada em Chaves de administrador no dispositivo remoto.",
+      "moduleConfigPartial": "Algumas configurações do módulo não puderam ser carregadas a partir do nó remoto."
     }
   }
 }

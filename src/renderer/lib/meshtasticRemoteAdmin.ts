@@ -63,7 +63,50 @@ export const REMOTE_ADMIN_ESSENTIAL_RESPONSE_TIMEOUT_MS = 25_000;
 export const REMOTE_ADMIN_ESSENTIAL_MAX_ATTEMPTS = 1;
 
 /** Wall-clock cap while UI shows loading for foreground radio snapshot fetch. */
-export const REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS = 35_000;
+export const REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS = 60_000;
+
+/** Wall-clock cap for security config snapshot fetch. */
+export const REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS = 45_000;
+
+/** Must match MODULE_CONFIG_FETCHES length in meshtasticRemoteAdminSnapshot.ts. */
+export const REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT = 13;
+
+/** Wall-clock cap for modules snapshot fetch (13 sequential multi-hop reads). */
+export const REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS =
+  REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT * 8_000 + 30_000;
+
+/** @deprecated Use {@link remoteConfigLoadingWatchdogMsForRoute} */
+export const REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS = REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS;
+
+export type RemoteConfigLoadingRoute = 'radio' | 'security' | 'modules';
+
+export function remoteConfigLoadingWatchdogMsForRoute(route: RemoteConfigLoadingRoute): number {
+  switch (route) {
+    case 'radio':
+      return REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS;
+    case 'security':
+      return REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS;
+    case 'modules':
+      return REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS;
+  }
+}
+
+/** Serializes remote config snapshot fetches so admin reads do not overlap on one client. */
+export function createSerialTaskQueue(): {
+  enqueue: (task: () => Promise<void>) => Promise<void>;
+} {
+  let chain: Promise<void> = Promise.resolve();
+  return {
+    enqueue(task: () => Promise<void>): Promise<void> {
+      const next = chain.then(task, task);
+      chain = next.then(
+        () => undefined,
+        () => undefined,
+      );
+      return next;
+    },
+  };
+}
 
 /** Pause between sequential remote config fetches (BLE write pacing on mutating ops). */
 export const REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS = 200;

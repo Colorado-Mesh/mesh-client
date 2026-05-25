@@ -486,7 +486,10 @@
       "applying": "Application…",
       "unnamedChannel": "(anonyme)",
       "applySuccessWithSkipped": "Canal(x) {{applied}} appliqué (s) ; {{skipped}} en double ou sans nom ignoré."
-    }
+    },
+    "channelLoading": "Chargement....",
+    "channelLoadFailed": "Échec du chargement...",
+    "retryRemoteChannels": "Réessayer les canaux de chargement"
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "Ce nœud n'a pas encore de clé publique PKI. Attendez un paquet NodeInfo sur le maillage ou utilisez l'application de l'appareil une fois pour échanger des clés.",
       "noAdminKeyConfigured": "Collez et enregistrez une clé d'administration pour ce nœud dans la boîte de dialogue de détail du nœud avant d'utiliser l'administration à distance.",
       "invalidAdminKey": "La clé d'administration doit être de 32 octets (base64, base64 :…, ou 64 caractères hexadécimaux).",
-      "publicKeyUnauthorized": "Non autorisé : cette clé d'administration n'est pas autorisée sur le nœud distant. Vérifiez que la clé est répertoriée sous Clés d'administration sur l'appareil distant."
+      "publicKeyUnauthorized": "Non autorisé : cette clé d'administration n'est pas autorisée sur le nœud distant. Vérifiez que la clé est répertoriée sous Clés d'administration sur l'appareil distant.",
+      "moduleConfigPartial": "Certains paramètres du module n'ont pas pu être chargés à partir du nœud distant."
     }
   }
 }

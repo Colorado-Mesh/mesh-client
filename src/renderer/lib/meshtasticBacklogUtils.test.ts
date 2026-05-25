@@ -21,6 +21,7 @@ import {
   resolveAutoStoreForwardHistoryWindowMinutes,
   resolveMeshtasticTextMessagePayload,
   resolveStoreForwardServerFromObservedPackets,
+  setRemoteAdminReadsActive,
   SF_AUTO_HISTORY_COOLDOWN_MS,
   SF_AUTO_HISTORY_MESSAGE_CAP,
   SF_AUTO_HISTORY_OFFLINE_MIN_MS,
@@ -438,6 +439,39 @@ describe('meshtasticBacklogUtils', () => {
     await vi.runAllTimersAsync();
     await rejection;
     vi.useRealTimers();
+  });
+
+  it('uses extended WritableStream lock retries while remote admin reads are active', async () => {
+    let getWriterAttempts = 0;
+    const write = vi.fn().mockResolvedValue(undefined);
+    const releaseLock = vi.fn();
+    const lockedError = new Error(
+      "Failed to execute 'getWriter' on 'WritableStream': Cannot create writer when WritableStream is locked",
+    );
+    const device = {
+      transport: {
+        toDevice: {
+          getWriter: () => {
+            getWriterAttempts++;
+            if (getWriterAttempts < 8) throw lockedError;
+            return { write, releaseLock };
+          },
+        },
+      },
+    } as unknown as MeshDevice;
+
+    setRemoteAdminReadsActive(true);
+    vi.useFakeTimers();
+    try {
+      const promise = writeToRadioWithoutQueue(device, new Uint8Array([4]));
+      await vi.runAllTimersAsync();
+      await promise;
+      expect(getWriterAttempts).toBe(8);
+      expect(write).toHaveBeenCalledWith(new Uint8Array([4]));
+    } finally {
+      setRemoteAdminReadsActive(false);
+      vi.useRealTimers();
+    }
   });
 
   describe('resolveMeshtasticTextMessagePayload', () => {

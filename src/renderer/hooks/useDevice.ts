@@ -93,6 +93,7 @@ import {
   shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
+import { setRemoteAdminReadsActive } from '../lib/meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
   computeNodeInfoLastHeardMs,
@@ -108,10 +109,11 @@ import {
   normalizeMeshtasticPacketId,
 } from '../lib/meshtasticMessageDedup';
 import {
+  createSerialTaskQueue,
   meshtasticNodePublicKeyBytesFromHex,
   MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
-  REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS,
+  remoteConfigLoadingWatchdogMsForRoute,
 } from '../lib/meshtasticRemoteAdmin';
 import {
   getMeshtasticRemoteAdminKeyForNode,
@@ -158,6 +160,7 @@ import type {
   MQTTStatus,
   NeighborInfoRecord,
   RemoteAdminStatus,
+  RemoteConfigChannelsTailStatus,
   TelemetryPoint,
 } from '../lib/types';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -416,6 +419,9 @@ export function useDevice() {
   const remoteConfigFetchGenerationRef = useRef(0);
   const remoteConfigLoadedRoutesRef = useRef<Set<RemoteConfigRoute>>(new Set());
   const remoteConfigInflightRoutesRef = useRef<Set<RemoteConfigRoute>>(new Set());
+  const remoteConfigFetchChainRef = useRef(createSerialTaskQueue());
+  const [remoteConfigChannelsTailStatus, setRemoteConfigChannelsTailStatus] =
+    useState<RemoteConfigChannelsTailStatus>('idle');
   const [remoteAdminKeysByNode, setRemoteAdminKeysByNode] = useState<Record<string, string>>({});
   const remoteAdminKeysByNodeRef = useRef<Record<string, string>>({});
   const [loraConfig, setLoraConfig] = useState<MeshtasticLoraConfig | null>(null);
@@ -3646,6 +3652,10 @@ export function useDevice() {
     );
   }, []);
 
+  const enqueueRemoteConfigFetch = useCallback((task: () => Promise<void>): Promise<void> => {
+    return remoteConfigFetchChainRef.current.enqueue(task);
+  }, []);
+
   const refreshRemoteConfigSnapshot = useCallback(
     async (
       destNodeNum: number,
@@ -3675,129 +3685,173 @@ export function useDevice() {
       if (!options?.force && remoteConfigLoadedRoutesRef.current.has(route)) return;
       if (remoteConfigInflightRoutesRef.current.has(route)) return;
 
-      const generation = remoteConfigFetchGenerationRef.current;
-      const isBackgroundRoute = route === 'channelsTail' || route === 'owner';
-      remoteConfigInflightRoutesRef.current.add(route);
-      if (!isBackgroundRoute) {
-        setRemoteAdminStatus('loading');
-        setRemoteAdminError(undefined);
-      }
+      await enqueueRemoteConfigFetch(async () => {
+        if (!options?.force && remoteConfigLoadedRoutesRef.current.has(route)) return;
+        if (remoteConfigInflightRoutesRef.current.has(route)) return;
 
-      const applyIfCurrent = (): boolean =>
-        generation === remoteConfigFetchGenerationRef.current &&
-        configureTargetNodeNumRef.current === destNodeNum;
-
-      let loadingWatchdogFired = false;
-      let loadingWatchdogId: ReturnType<typeof setTimeout> | undefined;
-      if (!isBackgroundRoute) {
-        loadingWatchdogId = setTimeout(() => {
-          if (!applyIfCurrent()) return;
-          if (remoteAdminStatusRef.current !== 'loading') return;
-          loadingWatchdogFired = true;
-          remoteConfigInflightRoutesRef.current.delete(route);
-          remoteAdminClientRef.current?.resetEditState();
-          setRemoteAdminStatus('error');
-          setRemoteAdminError('remoteAdmin.errors.timeout');
-        }, REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS);
-      }
-
-      try {
-        if (loadingWatchdogFired) return;
-        const applyPartial = (partial: Partial<MeshtasticRemoteConfigSnapshot>): void => {
-          if (!applyIfCurrent()) return;
-          setRemoteConfigSnapshot((prev) =>
-            prev == null
-              ? { moduleConfigs: {}, ...partial }
-              : mergeMeshtasticRemoteConfigSnapshots(prev, partial),
-          );
-        };
-
-        let routeResult: Partial<MeshtasticRemoteConfigSnapshot>;
-        if (route === 'radio') {
-          routeResult = await fetchMeshtasticRemoteConfigSnapshotEssential(client, destNodeNum);
-        } else if (route === 'channelsTail') {
-          routeResult = await fetchMeshtasticRemoteConfigChannelsTail(client, destNodeNum);
-        } else if (route === 'owner') {
-          routeResult = await fetchMeshtasticRemoteConfigOwner(client, destNodeNum);
-        } else if (route === 'security') {
-          routeResult = await fetchMeshtasticRemoteConfigSecurity(client, destNodeNum);
-        } else {
-          routeResult = await fetchMeshtasticRemoteConfigModules(client, destNodeNum);
+        const generation = remoteConfigFetchGenerationRef.current;
+        const isBackgroundRoute = route === 'channelsTail' || route === 'owner';
+        remoteConfigInflightRoutesRef.current.add(route);
+        if (route === 'channelsTail') {
+          setRemoteConfigChannelsTailStatus('loading');
+        }
+        if (!isBackgroundRoute) {
+          setRemoteAdminStatus('loading');
+          setRemoteAdminError(undefined);
         }
 
-        if (loadingWatchdogFired) return;
-        if (!applyIfCurrent()) {
-          clearRemoteAdminLoadingIfNoForegroundInflight();
-          return;
-        }
-        applyPartial(routeResult);
-        remoteConfigLoadedRoutesRef.current.add(route);
-        setRemoteAdminStatus('ready');
-        setRemoteAdminError(
-          routeResult.loraConfigFetchError ??
-            (routeResult.primaryChannelConfigFetchFailed || routeResult.channelConfigFetchFailed
-              ? 'remoteAdmin.errors.channelConfigPartial'
-              : undefined),
-        );
+        const applyIfCurrent = (): boolean =>
+          generation === remoteConfigFetchGenerationRef.current &&
+          configureTargetNodeNumRef.current === destNodeNum;
 
-        if (route === 'radio') {
-          void (async () => {
-            const backgroundRoutes: {
-              route: Extract<RemoteConfigRoute, 'channelsTail' | 'owner'>;
-              fetch: () => Promise<Partial<MeshtasticRemoteConfigSnapshot>>;
-            }[] = [
-              {
-                route: 'channelsTail',
-                fetch: () => fetchMeshtasticRemoteConfigChannelsTail(client, destNodeNum),
-              },
-              {
-                route: 'owner',
-                fetch: () => fetchMeshtasticRemoteConfigOwner(client, destNodeNum),
-              },
-            ];
-            for (const background of backgroundRoutes) {
-              if (remoteConfigLoadedRoutesRef.current.has(background.route)) continue;
-              if (remoteConfigInflightRoutesRef.current.has(background.route)) continue;
-              remoteConfigInflightRoutesRef.current.add(background.route);
-              try {
-                const partial = await background.fetch();
-                if (!applyIfCurrent()) return;
-                applyPartial(partial);
-                remoteConfigLoadedRoutesRef.current.add(background.route);
-              } catch (e) {
-                if (!applyIfCurrent()) return;
-                console.warn(
-                  '[useDevice] remote config background fetch failed ' + errLikeToLogString(e),
-                );
-              } finally {
-                remoteConfigInflightRoutesRef.current.delete(background.route);
-              }
+        let loadingWatchdogFired = false;
+        let modulesPartialApplied = false;
+        let loadingWatchdogId: ReturnType<typeof setTimeout> | undefined;
+        const foregroundRoute = !isBackgroundRoute ? route : null;
+        if (foregroundRoute != null) {
+          loadingWatchdogId = setTimeout(() => {
+            if (!applyIfCurrent()) return;
+            if (remoteAdminStatusRef.current !== 'loading') return;
+            loadingWatchdogFired = true;
+            remoteConfigInflightRoutesRef.current.delete(route);
+            if (foregroundRoute === 'modules' && modulesPartialApplied) {
+              remoteConfigLoadedRoutesRef.current.add(route);
+              setRemoteAdminStatus('ready');
+              setRemoteAdminError('remoteAdmin.errors.moduleConfigPartial');
+            } else {
+              setRemoteAdminStatus('error');
+              setRemoteAdminError('remoteAdmin.errors.timeout');
             }
-          })();
+          }, remoteConfigLoadingWatchdogMsForRoute(foregroundRoute));
         }
-      } catch (e) {
-        if (loadingWatchdogFired) return;
-        if (!applyIfCurrent()) {
-          clearRemoteAdminLoadingIfNoForegroundInflight();
-          return;
-        }
-        if (isBackgroundRoute) {
-          console.warn(
-            '[useDevice] remote config background fetch failed ' + errLikeToLogString(e),
+
+        setRemoteAdminReadsActive(true);
+        try {
+          if (loadingWatchdogFired) return;
+          const applyPartial = (partial: Partial<MeshtasticRemoteConfigSnapshot>): void => {
+            if (!applyIfCurrent()) return;
+            setRemoteConfigSnapshot((prev) =>
+              prev == null
+                ? { moduleConfigs: {}, ...partial }
+                : mergeMeshtasticRemoteConfigSnapshots(prev, partial),
+            );
+          };
+
+          let routeResult: Partial<MeshtasticRemoteConfigSnapshot>;
+          if (route === 'radio') {
+            routeResult = await fetchMeshtasticRemoteConfigSnapshotEssential(client, destNodeNum);
+          } else if (route === 'channelsTail') {
+            routeResult = await fetchMeshtasticRemoteConfigChannelsTail(client, destNodeNum);
+          } else if (route === 'owner') {
+            routeResult = await fetchMeshtasticRemoteConfigOwner(client, destNodeNum);
+          } else if (route === 'security') {
+            routeResult = await fetchMeshtasticRemoteConfigSecurity(client, destNodeNum);
+          } else {
+            routeResult = await fetchMeshtasticRemoteConfigModules(client, destNodeNum, {
+              onPartial: (partial) => {
+                modulesPartialApplied = Object.keys(partial.moduleConfigs ?? {}).length > 0;
+                applyPartial(partial);
+              },
+            });
+          }
+
+          if (loadingWatchdogFired) return;
+          if (!applyIfCurrent()) {
+            clearRemoteAdminLoadingIfNoForegroundInflight();
+            return;
+          }
+          applyPartial(routeResult);
+          remoteConfigLoadedRoutesRef.current.add(route);
+          if (route === 'channelsTail') {
+            const tailFailed = (routeResult.failedChannelIndices?.length ?? 0) > 0;
+            setRemoteConfigChannelsTailStatus(tailFailed ? 'partial' : 'ready');
+          }
+          setRemoteAdminStatus('ready');
+          setRemoteAdminError(
+            routeResult.loraConfigFetchError ??
+              (route === 'modules' && modulesPartialApplied
+                ? undefined
+                : routeResult.primaryChannelConfigFetchFailed ||
+                    routeResult.channelConfigFetchFailed
+                  ? 'remoteAdmin.errors.channelConfigPartial'
+                  : undefined),
           );
-          return;
+
+          if (route === 'radio') {
+            void enqueueRemoteConfigFetch(async () => {
+              const backgroundRoutes: {
+                route: Extract<RemoteConfigRoute, 'channelsTail' | 'owner'>;
+                fetch: () => Promise<Partial<MeshtasticRemoteConfigSnapshot>>;
+              }[] = [
+                {
+                  route: 'channelsTail',
+                  fetch: () => fetchMeshtasticRemoteConfigChannelsTail(client, destNodeNum),
+                },
+                {
+                  route: 'owner',
+                  fetch: () => fetchMeshtasticRemoteConfigOwner(client, destNodeNum),
+                },
+              ];
+              for (const background of backgroundRoutes) {
+                if (!applyIfCurrent()) return;
+                if (remoteConfigLoadedRoutesRef.current.has(background.route)) continue;
+                if (remoteConfigInflightRoutesRef.current.has(background.route)) continue;
+                remoteConfigInflightRoutesRef.current.add(background.route);
+                if (background.route === 'channelsTail') {
+                  setRemoteConfigChannelsTailStatus('loading');
+                }
+                setRemoteAdminReadsActive(true);
+                try {
+                  const partial = await background.fetch();
+                  if (!applyIfCurrent()) return;
+                  applyPartial(partial);
+                  remoteConfigLoadedRoutesRef.current.add(background.route);
+                  if (background.route === 'channelsTail') {
+                    const tailFailed = (partial.failedChannelIndices?.length ?? 0) > 0;
+                    setRemoteConfigChannelsTailStatus(tailFailed ? 'partial' : 'ready');
+                  }
+                } catch (e) {
+                  if (!applyIfCurrent()) return;
+                  if (background.route === 'channelsTail') {
+                    setRemoteConfigChannelsTailStatus('partial');
+                  }
+                  console.warn(
+                    '[useDevice] remote config background fetch failed ' + errLikeToLogString(e),
+                  );
+                } finally {
+                  setRemoteAdminReadsActive(false);
+                  remoteConfigInflightRoutesRef.current.delete(background.route);
+                }
+              }
+            });
+          }
+        } catch (e) {
+          if (loadingWatchdogFired) return;
+          if (!applyIfCurrent()) {
+            clearRemoteAdminLoadingIfNoForegroundInflight();
+            return;
+          }
+          if (isBackgroundRoute) {
+            if (route === 'channelsTail') {
+              setRemoteConfigChannelsTailStatus('partial');
+            }
+            console.warn(
+              '[useDevice] remote config background fetch failed ' + errLikeToLogString(e),
+            );
+            return;
+          }
+          const msg = normalizeRemoteAdminError(e);
+          setRemoteAdminStatus('error');
+          setRemoteAdminError(msg);
+          console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
+        } finally {
+          setRemoteAdminReadsActive(false);
+          if (loadingWatchdogId != null) clearTimeout(loadingWatchdogId);
+          remoteConfigInflightRoutesRef.current.delete(route);
         }
-        remoteAdminClientRef.current?.resetEditState();
-        const msg = normalizeRemoteAdminError(e);
-        setRemoteAdminStatus('error');
-        setRemoteAdminError(msg);
-        console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
-      } finally {
-        if (loadingWatchdogId != null) clearTimeout(loadingWatchdogId);
-        remoteConfigInflightRoutesRef.current.delete(route);
-      }
+      });
     },
-    [getRemoteAdminKeyForNode, state.status],
+    [enqueueRemoteConfigFetch, getRemoteAdminKeyForNode, state.status],
   );
 
   useEffect(() => {
@@ -3852,6 +3906,7 @@ export function useDevice() {
       remoteConfigInflightRoutesRef.current.clear();
       remoteAdminClientRef.current?.resetEditState();
       setRemoteConfigSnapshot(null);
+      setRemoteConfigChannelsTailStatus('idle');
       setRemoteAdminStatus('idle');
       setRemoteAdminError(undefined);
       remoteAdminClientRef.current?.sessionStore.clear();
@@ -3863,6 +3918,7 @@ export function useDevice() {
       remoteConfigInflightRoutesRef.current.clear();
       remoteAdminClientRef.current?.resetEditState();
       remoteAdminClientRef.current?.sessionStore.clear();
+      setRemoteConfigChannelsTailStatus('idle');
       setRemoteAdminStatus('loading');
       setRemoteAdminError(undefined);
     }
@@ -3889,6 +3945,7 @@ export function useDevice() {
       remoteConfigInflightRoutesRef.current.clear();
       remoteConfigFetchGenerationRef.current += 1;
       setRemoteConfigSnapshot(null);
+      setRemoteConfigChannelsTailStatus('idle');
       setRemoteAdminStatus('idle');
       setRemoteAdminError(undefined);
       remoteAdminClientRef.current?.resetEditState();
@@ -4739,6 +4796,7 @@ export function useDevice() {
     remoteAdminStatus,
     remoteAdminError,
     remoteConfigSnapshot,
+    remoteConfigChannelsTailStatus,
     refreshRemoteConfigSnapshot,
     // ─── Additional packet type state ───────────────────────────────
     remoteHardwareMessages,

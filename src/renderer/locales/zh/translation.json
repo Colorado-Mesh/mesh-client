@@ -486,7 +486,10 @@
       "applying": "正在应用…",
       "unnamedChannel": "（未命名）",
       "applySuccessWithSkipped": "已应用 {{applied}} 个频道；已跳过 {{skipped}} 个重复或未命名频道。"
-    }
+    },
+    "channelLoading": "加载中…",
+    "channelLoadFailed": "加载失败",
+    "retryRemoteChannels": "重试加载频道"
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "此节点还没有PKI公钥。在网格上等待NodeInfo数据包，或使用设备应用程序一次交换密钥。",
       "noAdminKeyConfigured": "在使用远程管理之前，在节点详细信息对话框中粘贴并保存此节点的管理密钥。",
       "invalidAdminKey": "管理密钥必须为32个字节（ base64、base64: …或64个字符的十六进制）。",
-      "publicKeyUnauthorized": "未授权：此管理密钥未在远程节点上授权。验证密钥是否列在远程设备上的管理密钥下。"
+      "publicKeyUnauthorized": "未授权：此管理密钥未在远程节点上授权。验证密钥是否列在远程设备上的管理密钥下。",
+      "moduleConfigPartial": "无法从远程节点加载某些模块设置。"
     }
   }
 }

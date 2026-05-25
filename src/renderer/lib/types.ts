@@ -182,6 +182,8 @@ export interface MeshNode {
 
 export type RemoteAdminStatus = 'idle' | 'loading' | 'ready' | 'error';
 
+export type RemoteConfigChannelsTailStatus = 'idle' | 'loading' | 'ready' | 'partial';
+
 export interface ConfigTargetContext {
   mode: 'local' | 'remote';
   nodeNum: number | null;

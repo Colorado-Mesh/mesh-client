@@ -486,7 +486,10 @@
       "applying": "Toepassen…",
       "unnamedChannel": "(naamloos)",
       "applySuccessWithSkipped": "Toegepast {{applied}} kanaal/kanalen; {{skipped}} duplicaat of naamloos overgeslagen."
-    }
+    },
+    "channelLoading": "Laden…",
+    "channelLoadFailed": "Laden mislukte",
+    "retryRemoteChannels": "Probeer laadkanalen opnieuw"
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "Dit knooppunt heeft nog geen openbare PKI-sleutel. Wacht op een NodeInfo pakket over het gaas, of gebruik de apparaat-app één keer om sleutels uit te wisselen.",
       "noAdminKeyConfigured": "Plak en bewaar een beheerderssleutel voor dit knooppunt in het dialoogvenster met knooppuntdetails voordat u een externe beheerder gebruikt.",
       "invalidAdminKey": "Admin-sleutel moet 32 bytes zijn (base64, base64:… of 64 tekens hex).",
-      "publicKeyUnauthorized": "Niet geautoriseerd: deze beheerderssleutel is niet geautoriseerd op het externe knooppunt. Controleer of de sleutel wordt vermeld onder Beheertoetsen op het externe apparaat."
+      "publicKeyUnauthorized": "Niet geautoriseerd: deze beheerderssleutel is niet geautoriseerd op het externe knooppunt. Controleer of de sleutel wordt vermeld onder Beheertoetsen op het externe apparaat.",
+      "moduleConfigPartial": "Sommige module-instellingen konden niet worden geladen vanaf het externe knooppunt."
     }
   }
 }

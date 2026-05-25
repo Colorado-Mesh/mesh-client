@@ -486,7 +486,10 @@
       "applying": "적용 중…",
       "unnamedChannel": "(이름 없음)",
       "applySuccessWithSkipped": "{{applied}}개 채널을 적용했습니다. {{skipped}}개의 중복 또는 이름 없는 채널을 건너뛰었습니다."
-    }
+    },
+    "channelLoading": "로드 중…",
+    "channelLoadFailed": "불러오기 실패",
+    "retryRemoteChannels": "로딩 채널 다시 시도"
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "이 노드에는 아직 PKI 공개 키가 없습니다. 메시를 통해 NodeInfo 패킷을 기다리거나 장치 앱을 한 번 사용하여 키를 교환하십시오.",
       "noAdminKeyConfigured": "원격 관리자를 사용하기 전에 이 노드의 관리자 키를 노드 세부 정보 대화 상자에 붙여넣고 저장하십시오.",
       "invalidAdminKey": "관리자 키는 32바이트 (base64, base64: … 또는 64자 16진수) 여야 합니다.",
-      "publicKeyUnauthorized": "승인되지 않음: 이 관리 키는 원격 노드에서 승인되지 않았습니다. 원격 장치의 관리 키 아래에 키가 나열되어 있는지 확인합니다."
+      "publicKeyUnauthorized": "승인되지 않음: 이 관리 키는 원격 노드에서 승인되지 않았습니다. 원격 장치의 관리 키 아래에 키가 나열되어 있는지 확인합니다.",
+      "moduleConfigPartial": "일부 모듈 설정을 원격 노드에서 로드할 수 없습니다."
     }
   }
 }

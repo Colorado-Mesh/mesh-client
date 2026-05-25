@@ -486,7 +486,10 @@
       "applying": "Menerapkan",
       "unnamedChannel": "Tanpa nama",
       "applySuccessWithSkipped": "Terapan {{applied}} saluran; dilewati {{skipped}} duplikat atau tanpa nama."
-    }
+    },
+    "channelLoading": "Memuat…",
+    "channelLoadFailed": "Pemuatan gagal",
+    "retryRemoteChannels": "Coba lagi saluran pemuatan"
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "Node ini belum memiliki kunci publik PKI. Tunggu paket NodeInfo melewati mesh, atau gunakan aplikasi perangkat satu kali untuk bertukar kunci.",
       "noAdminKeyConfigured": "Tempel dan simpan kunci admin untuk simpul ini dalam dialog detail simpul sebelum menggunakan admin jarak jauh.",
       "invalidAdminKey": "Kunci admin harus 32 byte (base64, base64 :…, atau hex 64 karakter).",
-      "publicKeyUnauthorized": "Tidak sah: kunci admin ini tidak diotorisasi pada simpul jarak jauh. Pastikan kunci tercantum di bawah Tombol admin pada perangkat jarak jauh."
+      "publicKeyUnauthorized": "Tidak sah: kunci admin ini tidak diotorisasi pada simpul jarak jauh. Pastikan kunci tercantum di bawah Tombol admin pada perangkat jarak jauh.",
+      "moduleConfigPartial": "Beberapa pengaturan modul tidak dapat dimuat dari simpul jarak jauh."
     }
   }
 }

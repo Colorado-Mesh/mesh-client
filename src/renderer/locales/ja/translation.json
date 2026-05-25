@@ -486,7 +486,10 @@
       "applying": "適用中…",
       "unnamedChannel": "(名称なし)",
       "applySuccessWithSkipped": "{{applied}}件のチャンネルを適用しました。{{skipped}}件の重複または無名をスキップしました。"
-    }
+    },
+    "channelLoading": "読み込み中...",
+    "channelLoadFailed": "読み込み失敗",
+    "retryRemoteChannels": "チャネルの読み込みを再試行"
   },
   "securityPanel": {
     "keyRegenRequested": "キーの再生成が要求されました。デバイスは新しいキーを生成します。",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "このノードにはまだPKI公開鍵がありません。メッシュ上でNodeInfoパケットを待つか、デバイスアプリを使用してキーを交換します。",
       "noAdminKeyConfigured": "リモート管理を使用する前に、ノードの詳細ダイアログにこのノードの管理キーを貼り付けて保存します。",
       "invalidAdminKey": "管理キーは32バイト（ base 64、base 64 :…、または64文字の16進数）でなければなりません。",
-      "publicKeyUnauthorized": "許可されていません：この管理者キーはリモートノードで許可されていません。キーがリモートデバイスの管理キーの下に表示されていることを確認します。"
+      "publicKeyUnauthorized": "許可されていません：この管理者キーはリモートノードで許可されていません。キーがリモートデバイスの管理キーの下に表示されていることを確認します。",
+      "moduleConfigPartial": "一部のモジュール設定をリモートノードから読み込めませんでした。"
     }
   }
 }
