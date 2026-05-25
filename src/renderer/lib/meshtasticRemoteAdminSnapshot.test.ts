@@ -1,7 +1,15 @@
 import { Admin } from '@meshtastic/protobufs';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { MeshtasticRemoteAdminClient } from './meshtasticRemoteAdmin';
+import type { MeshtasticRemoteAdminClient, RemoteAdminSendOptions } from './meshtasticRemoteAdmin';
+import {
+  REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
+  REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
+  REMOTE_ADMIN_ESSENTIAL_MAX_ATTEMPTS,
+  REMOTE_ADMIN_ESSENTIAL_RESPONSE_TIMEOUT_MS,
+  REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS,
+  REMOTE_ADMIN_READ_SEND_OPTIONS,
+} from './meshtasticRemoteAdmin';
 import {
   fetchMeshtasticRemoteConfigChannelsTail,
   fetchMeshtasticRemoteConfigModules,
@@ -11,6 +19,7 @@ import {
   fetchMeshtasticRemoteConfigSnapshotDeferred,
   fetchMeshtasticRemoteConfigSnapshotEssential,
   mergeMeshtasticRemoteConfigSnapshots,
+  remoteConfigChannelRetryRoute,
 } from './meshtasticRemoteAdminSnapshot';
 import type { MeshtasticRemoteConfigSnapshot } from './types';
 
@@ -19,9 +28,28 @@ function clientWithChannelRetry<
 >(client: T): T & Pick<MeshtasticRemoteAdminClient, 'getRemoteChannelWithRetry'> {
   return {
     ...client,
-    getRemoteChannelWithRetry: (dest, index) => client.getRemoteChannel(dest, index),
+    getRemoteChannelWithRetry: (dest, index, options) =>
+      client.getRemoteChannel(dest, index, options?.sendOptions),
   };
 }
+
+describe('remoteConfigChannelRetryRoute', () => {
+  it('returns radio when primary channel failed', () => {
+    expect(
+      remoteConfigChannelRetryRoute({
+        failedChannelIndices: [0],
+        primaryChannelConfigFetchFailed: true,
+      }),
+    ).toBe('radio');
+    expect(remoteConfigChannelRetryRoute({ failedChannelIndices: [0] })).toBe('radio');
+    expect(remoteConfigChannelRetryRoute({ primaryChannelConfigFetchFailed: true })).toBe('radio');
+  });
+
+  it('returns channelsTail when only secondary channels failed', () => {
+    expect(remoteConfigChannelRetryRoute({ failedChannelIndices: [2, 3] })).toBe('channelsTail');
+    expect(remoteConfigChannelRetryRoute({})).toBe('channelsTail');
+  });
+});
 
 describe('fetchMeshtasticRemoteConfigSnapshot', () => {
   it('maps distinct config types into snapshot fields', async () => {
@@ -328,10 +356,70 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
       expect.any(Object),
     );
     expect(client.getRemoteChannel).toHaveBeenCalledTimes(1);
-    expect(client.getRemoteChannel).toHaveBeenCalledWith(0x200, 0);
+    expect(client.getRemoteChannel).toHaveBeenCalledWith(0x200, 0, REMOTE_ADMIN_READ_SEND_OPTIONS);
     expect(getRemoteConfig).not.toHaveBeenCalledWith(
       0x200,
       Admin.AdminMessage_ConfigType.POSITION_CONFIG,
+    );
+  });
+
+  it('uses tail-channel retry options for primary channel and essential options for LoRa', async () => {
+    const getRemoteChannelWithRetry = vi.fn(
+      (
+        _dest: number,
+        index: number,
+        options?: {
+          maxAttempts?: number;
+          backoffMs?: number;
+          sendOptions?: RemoteAdminSendOptions;
+        },
+      ) => {
+        if (index !== 0) {
+          return Promise.reject(new Error('unexpected channel index'));
+        }
+        expect(options?.maxAttempts).toBe(REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS);
+        expect(options?.backoffMs).toBe(REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS);
+        expect(options?.sendOptions).toEqual(REMOTE_ADMIN_READ_SEND_OPTIONS);
+        return Promise.resolve({
+          index: 0,
+          role: 1,
+          settings: { name: 'Primary', psk: new Uint8Array([1]) },
+        });
+      },
+    );
+    const getRemoteConfigWithRetry = vi.fn(
+      (
+        _dest: number,
+        type: number,
+        options?: {
+          maxAttempts?: number;
+          backoffMs?: number;
+          sendOptions?: RemoteAdminSendOptions;
+        },
+      ) => {
+        expect(type).toBe(Admin.AdminMessage_ConfigType.LORA_CONFIG);
+        expect(options?.maxAttempts).toBe(REMOTE_ADMIN_ESSENTIAL_MAX_ATTEMPTS);
+        expect(options?.backoffMs).toBe(REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS);
+        expect(options?.sendOptions?.timeoutMs).toBe(REMOTE_ADMIN_ESSENTIAL_RESPONSE_TIMEOUT_MS);
+        return Promise.resolve({ payloadVariant: { case: 'lora', value: { region: 1 } } });
+      },
+    );
+    const client = {
+      getRemoteMetadata: vi.fn(),
+      ensureSessionKey: vi.fn(),
+      getRemoteConfigWithRetry,
+      getRemoteConfig: vi.fn(),
+      getRemoteChannel: vi.fn(),
+      getRemoteChannelWithRetry,
+    } as unknown as MeshtasticRemoteAdminClient;
+
+    await fetchMeshtasticRemoteConfigSnapshotEssential(client, 0x200);
+
+    expect(getRemoteChannelWithRetry).toHaveBeenCalledWith(0x200, 0, expect.any(Object));
+    expect(getRemoteConfigWithRetry).toHaveBeenCalledWith(
+      0x200,
+      Admin.AdminMessage_ConfigType.LORA_CONFIG,
+      expect.any(Object),
     );
   });
 
@@ -436,9 +524,9 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
       0x200,
     );
     expect(getRemoteChannel).toHaveBeenCalledTimes(3);
-    expect(getRemoteChannel).toHaveBeenNthCalledWith(1, 0x200, 1);
-    expect(getRemoteChannel).toHaveBeenNthCalledWith(2, 0x200, 2);
-    expect(getRemoteChannel).toHaveBeenNthCalledWith(3, 0x200, 2);
+    expect(getRemoteChannel).toHaveBeenNthCalledWith(1, 0x200, 1, undefined);
+    expect(getRemoteChannel).toHaveBeenNthCalledWith(2, 0x200, 2, undefined);
+    expect(getRemoteChannel).toHaveBeenNthCalledWith(3, 0x200, 2, undefined);
     expect(partial.channelConfigs).toHaveLength(1);
     expect(partial.channelConfigs?.[0]?.name).toBe('Secondary');
   });

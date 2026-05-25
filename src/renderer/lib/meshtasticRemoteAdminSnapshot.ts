@@ -280,6 +280,13 @@ const ESSENTIAL_RETRY_OPTIONS = {
   sendOptions: ESSENTIAL_READ_OPTIONS,
 };
 
+/** Primary channel uses tail-channel timeout/retry; essential 25s cap applies to LoRa only. */
+const PRIMARY_CHANNEL_FETCH_OPTIONS = {
+  maxAttempts: REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
+  backoffMs: REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
+  sendOptions: REMOTE_ADMIN_READ_SEND_OPTIONS,
+};
+
 async function fetchRemoteChannels(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
@@ -365,6 +372,18 @@ export async function fetchMeshtasticRemoteConfigTarget(
   };
 }
 
+/** Which snapshot route to refetch when the user retries failed remote channels. */
+export function remoteConfigChannelRetryRoute(snapshot: {
+  failedChannelIndices?: number[];
+  primaryChannelConfigFetchFailed?: boolean;
+}): 'radio' | 'channelsTail' {
+  const failed = snapshot.failedChannelIndices ?? [];
+  if (snapshot.primaryChannelConfigFetchFailed === true || failed.includes(0)) {
+    return 'radio';
+  }
+  return 'channelsTail';
+}
+
 /** Channels route: fetch channel 0 + LoRa only, matching Android's initial Channels load. */
 export async function fetchMeshtasticRemoteConfigSnapshotEssential(
   client: MeshtasticRemoteAdminClient,
@@ -375,7 +394,12 @@ export async function fetchMeshtasticRemoteConfigSnapshotEssential(
   const primaryChannelResults: { index: number; value: unknown }[] = [];
   const failedChannelIndices: number[] = [];
   try {
-    const value = await fetchRemoteChannelIndex(client, destNodeNum, 0, ESSENTIAL_RETRY_OPTIONS);
+    const value = await fetchRemoteChannelIndex(
+      client,
+      destNodeNum,
+      0,
+      PRIMARY_CHANNEL_FETCH_OPTIONS,
+    );
     primaryChannelResults.push({ index: 0, value });
   } catch (e) {
     failedChannelIndices.push(0);

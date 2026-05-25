@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
+import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 
@@ -908,7 +909,8 @@ export default function App() {
     : undefined;
   const handleRetryRemoteChannelsTail = useCallback(() => {
     if (device.configureTargetNodeNum == null) return;
-    void device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum, 'channelsTail', {
+    const route = remoteConfigChannelRetryRoute(device.remoteConfigSnapshot ?? {});
+    void device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum, route, {
       force: true,
     });
   }, [device]);
