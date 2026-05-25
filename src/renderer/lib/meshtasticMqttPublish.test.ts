@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES } from '@/shared/meshtasticDefaultPublicPsk';
+
 import {
+  buildMeshtasticMqttOnlyChannelState,
   isNonTrivialMeshtasticChannelPsk,
   loadMeshtasticMqttManualChannelPsks,
   meshtasticMqttChannelKeyEntries,
+  meshtasticMqttChannelKeyEntriesFromManual,
   meshtasticMqttPublishFields,
   resolveMeshtasticMqttChannelName,
   resolveMeshtasticMqttPublishFieldsForChannel,
@@ -82,6 +86,18 @@ describe('resolveMeshtasticMqttPublishFieldsForChannel', () => {
     expect(fields.pskBase64).toBe(btoa(String.fromCharCode(...radioPsk)));
   });
 
+  it('prefers manual over stale radio config when preferManualOverRadio', () => {
+    const stalePsk = new Uint8Array(32).fill(0xcd);
+    const fields = resolveMeshtasticMqttPublishFieldsForChannel(
+      0,
+      [{ index: 0, name: 'LongFast', role: 1, psk: stalePsk }],
+      [`LongFast@0=${KEY_AES256}`],
+      { preferManualOverRadio: true },
+    );
+    expect(fields.pskBase64).toBe(KEY_AES256);
+    expect(fields.pskBase64).not.toBe(btoa(String.fromCharCode(...stalePsk)));
+  });
+
   it('falls back to manual entry when radio has default PSK only', () => {
     const fields = resolveMeshtasticMqttPublishFieldsForChannel(
       0,
@@ -107,6 +123,43 @@ describe('resolveMeshtasticMqttPublishFieldsForChannel', () => {
   it('returns empty channel name for unnamed secondary channel without manual entry', () => {
     const fields = resolveMeshtasticMqttPublishFieldsForChannel(2, [], []);
     expect(fields.channelName).toBe('');
+  });
+
+  it('uses bare manual PSK for LongFast when no named channel 0 entry', () => {
+    const fields = resolveMeshtasticMqttPublishFieldsForChannel(0, [], [KEY_AES256]);
+    expect(fields.channelName).toBe('LongFast');
+    expect(fields.pskBase64).toBe(KEY_AES256);
+  });
+
+  it('falls back to default public PSK instead of single-byte key when unresolved', () => {
+    const fields = resolveMeshtasticMqttPublishFieldsForChannel(2, [], []);
+    expect(fields.channelName).toBe('');
+    const emptyCfg = resolveMeshtasticMqttPublishFieldsForChannel(0, [], []);
+    expect(emptyCfg.pskBase64).toBe(
+      btoa(String.fromCharCode(...MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES)),
+    );
+  });
+});
+
+describe('buildMeshtasticMqttOnlyChannelState', () => {
+  it('builds two channel tabs from @index manual lines', () => {
+    const state = buildMeshtasticMqttOnlyChannelState([
+      `LongFast@0=${KEY_AES256}`,
+      `TGIFMESH@1=${KEY_B}`,
+    ]);
+    expect(state.channels).toHaveLength(2);
+    expect(state.channels.map((c) => c.index)).toEqual([0, 1]);
+    expect(state.channelConfigs[0]?.psk.length).toBe(32);
+    expect(state.channelConfigs[1]?.name).toBe('TGIFMESH');
+  });
+});
+
+describe('meshtasticMqttChannelKeyEntriesFromManual', () => {
+  it('returns entries when radio channelConfigs are empty', () => {
+    const entries = meshtasticMqttChannelKeyEntriesFromManual([`LongFast@0=${KEY_AES256}`]);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.name).toBe('LongFast');
+    expect(entries[0]?.index).toBe(0);
   });
 });
 

@@ -2092,7 +2092,8 @@
       "timeout": "원격 관리자 요청 시간이 초과되었습니다.",
       "generic": "원격 관리자 요청에 실패했습니다.",
       "configResponseUnexpected": "원격 관리자가 예기치 않은 구성 응답을 반환했습니다.",
-      "channelConfigPartial": "원격 노드에서 하나 이상의 채널 설정을 로드할 수 없습니다."
+      "channelConfigPartial": "원격 노드에서 하나 이상의 채널 설정을 로드할 수 없습니다.",
+      "channelResponseUnexpected": "원격 관리자가 예상치 못한 채널 응답을 반환했습니다."
     }
   }
 }

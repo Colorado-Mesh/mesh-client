@@ -2092,7 +2092,8 @@
       "timeout": "远程管理员请求超时。",
       "generic": "远程管理员请求失败。",
       "configResponseUnexpected": "远程管理员返回了意外的配置响应。",
-      "channelConfigPartial": "无法从远程节点加载一个或多个频道设置。"
+      "channelConfigPartial": "无法从远程节点加载一个或多个频道设置。",
+      "channelResponseUnexpected": "远程管理员返回了意外的通道响应。"
     }
   }
 }

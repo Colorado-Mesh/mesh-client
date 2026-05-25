@@ -2092,7 +2092,8 @@
       "timeout": "Se ha agotado el tiempo de espera de la solicitud de administrador remoto.",
       "generic": "Error en la solicitud de administrador remoto.",
       "configResponseUnexpected": "El administrador remoto devolvió una respuesta de configuración inesperada.",
-      "channelConfigPartial": "No se ha podido cargar una o más configuraciones de canal desde el nodo remoto."
+      "channelConfigPartial": "No se ha podido cargar una o más configuraciones de canal desde el nodo remoto.",
+      "channelResponseUnexpected": "El administrador remoto devolvió una respuesta de canal inesperada."
     }
   }
 }

@@ -2092,7 +2092,8 @@
       "timeout": "Waktu permintaan admin jarak jauh habis.",
       "generic": "Permintaan admin jarak jauh gagal.",
       "configResponseUnexpected": "Admin jarak jauh memberikan respons konfigurasi yang tidak terduga.",
-      "channelConfigPartial": "Satu atau beberapa pengaturan saluran tidak dapat dimuat dari simpul jarak jauh."
+      "channelConfigPartial": "Satu atau beberapa pengaturan saluran tidak dapat dimuat dari simpul jarak jauh.",
+      "channelResponseUnexpected": "Admin jarak jauh mengembalikan respons saluran yang tidak terduga."
     }
   }
 }

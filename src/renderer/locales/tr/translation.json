@@ -2092,7 +2092,8 @@
       "timeout": "Uzaktan yönetici isteği zaman aşımına uğradı.",
       "generic": "Uzaktan yönetici isteği başarısız oldu.",
       "configResponseUnexpected": "Uzak yönetici beklenmedik bir yapılandırma yanıtı döndürdü.",
-      "channelConfigPartial": "Uzak düğümden bir veya daha fazla kanal ayarı yüklenemedi."
+      "channelConfigPartial": "Uzak düğümden bir veya daha fazla kanal ayarı yüklenemedi.",
+      "channelResponseUnexpected": "Uzak yönetici beklenmeyen bir kanal yanıtı döndürdü."
     }
   }
 }

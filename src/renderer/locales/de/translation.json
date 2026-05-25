@@ -2092,7 +2092,8 @@
       "timeout": "Zeitüberschreitung der Remote-Administrationsanforderung.",
       "generic": "Remote-Admin-Anfrage fehlgeschlagen.",
       "configResponseUnexpected": "Der Remote-Administrator hat eine unerwartete Konfigurationsantwort zurückgegeben.",
-      "channelConfigPartial": "Eine oder mehrere Kanaleinstellungen konnten nicht vom Remote-Knoten geladen werden."
+      "channelConfigPartial": "Eine oder mehrere Kanaleinstellungen konnten nicht vom Remote-Knoten geladen werden.",
+      "channelResponseUnexpected": "Der Remote-Administrator hat eine unerwartete Kanalantwort zurückgegeben."
     }
   }
 }

@@ -7,7 +7,12 @@ import {
   delayMs,
   type MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
+  REMOTE_ADMIN_CHANNEL_FETCH_DELAY_MS,
+  REMOTE_ADMIN_CHANNEL_LOOP_START_DELAY_MS,
+  REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
+  REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
   REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS,
+  REMOTE_ADMIN_ESSENTIAL_FETCH_DELAY_MS,
   REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS,
   REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS,
 } from './meshtasticRemoteAdmin';
@@ -31,6 +36,21 @@ const MODULE_CONFIG_FETCHES: {
   { type: Admin.AdminMessage_ModuleConfigType.DETECTIONSENSOR_CONFIG, key: 'detectionSensor' },
   { type: Admin.AdminMessage_ModuleConfigType.PAXCOUNTER_CONFIG, key: 'paxcounter' },
 ];
+
+const ESSENTIAL_CONFIG_TYPES = [
+  Admin.AdminMessage_ConfigType.DEVICE_CONFIG,
+  Admin.AdminMessage_ConfigType.LORA_CONFIG,
+  Admin.AdminMessage_ConfigType.SECURITY_CONFIG,
+] as const;
+
+const DEFERRED_CONFIG_TYPES = [
+  Admin.AdminMessage_ConfigType.POSITION_CONFIG,
+  Admin.AdminMessage_ConfigType.POWER_CONFIG,
+  Admin.AdminMessage_ConfigType.NETWORK_CONFIG,
+  Admin.AdminMessage_ConfigType.DISPLAY_CONFIG,
+  Admin.AdminMessage_ConfigType.BLUETOOTH_CONFIG,
+  Admin.AdminMessage_ConfigType.TELEMETRY_CONFIG,
+] as const;
 
 function configPayloadCase(value: unknown): string | undefined {
   const cfg = value as { payloadVariant?: { case?: string; value?: unknown } };
@@ -81,6 +101,10 @@ function parseChannelEntry(channel: unknown, index: number) {
   };
 }
 
+function isChannelEntryEmpty(entry: ReturnType<typeof parseChannelEntry>): boolean {
+  return entry.role === 0 && entry.name.length === 0 && entry.psk.length === 0;
+}
+
 function parseSecurityConfig(value: unknown): MeshtasticRemoteConfigSnapshot['securityConfig'] {
   const sec = configPayloadValue(value) as {
     publicKey?: Uint8Array;
@@ -113,110 +137,10 @@ function parseOwner(value: unknown): MeshtasticRemoteConfigSnapshot['deviceOwner
   };
 }
 
-export async function fetchMeshtasticRemoteConfigSnapshot(
-  client: MeshtasticRemoteAdminClient,
-  destNodeNum: number,
-): Promise<MeshtasticRemoteConfigSnapshot> {
-  const metadata = await client.getRemoteMetadata(destNodeNum);
-  try {
-    await client.ensureSessionKey(destNodeNum);
-  } catch (e) {
-    console.warn(
-      '[fetchMeshtasticRemoteConfigSnapshot] ensureSessionKey failed ' + errLikeToLogString(e),
-    );
-    // Failure point: session key exchange over BLE. Fallback: continue — getRemoteConfig may
-    // still succeed with an existing passkey or trigger a fresh session on the next request.
-  }
-
-  const configTypes = [
-    Admin.AdminMessage_ConfigType.DEVICE_CONFIG,
-    Admin.AdminMessage_ConfigType.LORA_CONFIG,
-    Admin.AdminMessage_ConfigType.POSITION_CONFIG,
-    Admin.AdminMessage_ConfigType.POWER_CONFIG,
-    Admin.AdminMessage_ConfigType.NETWORK_CONFIG,
-    Admin.AdminMessage_ConfigType.DISPLAY_CONFIG,
-    Admin.AdminMessage_ConfigType.BLUETOOTH_CONFIG,
-    Admin.AdminMessage_ConfigType.SECURITY_CONFIG,
-    Admin.AdminMessage_ConfigType.TELEMETRY_CONFIG,
-  ] as const;
-
-  const configResults: { type: (typeof configTypes)[number]; value: unknown }[] = [];
-  let loraConfigFetchFailed = false;
-  let loraConfigFetchError: string | undefined;
-
-  for (let i = 0; i < configTypes.length; i++) {
-    const type = configTypes[i]!;
-    if (i > 0) {
-      await delayMs(REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS);
-    }
-
-    if (type === Admin.AdminMessage_ConfigType.LORA_CONFIG) {
-      try {
-        const value = await client.getRemoteConfigWithRetry(destNodeNum, type, {
-          maxAttempts: REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS,
-          backoffMs: REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS,
-        });
-        configResults.push({ type, value });
-      } catch (e) {
-        loraConfigFetchFailed = true;
-        loraConfigFetchError = normalizeRemoteAdminError(e);
-        console.warn(
-          '[fetchMeshtasticRemoteConfigSnapshot] LoRa config fetch failed ' + errLikeToLogString(e),
-        );
-        configResults.push({ type, value: null });
-      }
-      continue;
-    }
-
-    configResults.push({ type, value: await client.getRemoteConfig(destNodeNum, type) });
-  }
-
-  const channelResults: { index: number; value: unknown }[] = [];
-  let channelConfigFetchFailed = false;
-  for (let index = 0; index < 8; index++) {
-    if (index > 0) {
-      await delayMs(REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS);
-    }
-    try {
-      channelResults.push({ index, value: await client.getRemoteChannel(destNodeNum, index) });
-    } catch (e) {
-      channelConfigFetchFailed = true;
-      console.warn(
-        '[fetchMeshtasticRemoteConfigSnapshot] channel fetch failed index=' +
-          String(index) +
-          ' ' +
-          errLikeToLogString(e),
-      );
-      channelResults.push({ index, value: null });
-    }
-  }
-
-  const moduleResults: { key: string; value: unknown }[] = [];
-  for (const { type, key } of MODULE_CONFIG_FETCHES) {
-    try {
-      const value = await client.getRemoteModuleConfig(destNodeNum, type);
-      moduleResults.push({ key, value });
-    } catch {
-      // catch-no-log-ok optional module config may be unsupported on target firmware
-      moduleResults.push({ key, value: null });
-    }
-  }
-
-  let deviceOwner: MeshtasticRemoteConfigSnapshot['deviceOwner'];
-  try {
-    deviceOwner = parseOwner(await client.getRemoteOwner(destNodeNum));
-  } catch {
-    // catch-no-log-ok owner fetch is optional for remote admin snapshot
-    deviceOwner = null;
-  }
-
-  const snapshot: MeshtasticRemoteConfigSnapshot = {
-    metadata,
-    loraConfigFetchFailed,
-    loraConfigFetchError,
-    channelConfigFetchFailed,
-  };
-
+function applyConfigResultsToSnapshot(
+  snapshot: Partial<MeshtasticRemoteConfigSnapshot>,
+  configResults: { value: unknown }[],
+): void {
   for (const { value } of configResults) {
     if (value == null) continue;
     const caseName = configPayloadCase(value);
@@ -242,11 +166,237 @@ export async function fetchMeshtasticRemoteConfigSnapshot(
       }
     }
   }
+}
 
-  snapshot.channelConfigs = channelResults
+async function ensureRemoteSessionKey(
+  client: MeshtasticRemoteAdminClient,
+  destNodeNum: number,
+): Promise<void> {
+  try {
+    await client.ensureSessionKey(destNodeNum);
+  } catch (e) {
+    console.warn(
+      '[fetchMeshtasticRemoteConfigSnapshot] ensureSessionKey failed ' + errLikeToLogString(e),
+    );
+    // Failure point: session key exchange over BLE. Fallback: continue — getRemoteConfig may
+    // still succeed with an existing passkey or trigger a fresh session on the next request.
+  }
+}
+
+async function fetchConfigTypes(
+  client: MeshtasticRemoteAdminClient,
+  destNodeNum: number,
+  configTypes: readonly (typeof Admin.AdminMessage_ConfigType)[keyof typeof Admin.AdminMessage_ConfigType][],
+  interFetchDelayMs: number,
+  options?: { continueOnNonLoraFailure?: boolean },
+): Promise<{
+  configResults: { type: (typeof configTypes)[number]; value: unknown }[];
+  loraConfigFetchFailed: boolean;
+  loraConfigFetchError: string | undefined;
+}> {
+  const configResults: { type: (typeof configTypes)[number]; value: unknown }[] = [];
+  let loraConfigFetchFailed = false;
+  let loraConfigFetchError: string | undefined;
+
+  for (let i = 0; i < configTypes.length; i++) {
+    const type = configTypes[i]!;
+    if (i > 0 && interFetchDelayMs > 0) {
+      await delayMs(interFetchDelayMs);
+    }
+
+    if (type === Admin.AdminMessage_ConfigType.LORA_CONFIG) {
+      try {
+        const value = await client.getRemoteConfigWithRetry(destNodeNum, type, {
+          maxAttempts: REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS,
+          backoffMs: REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS,
+        });
+        configResults.push({ type, value });
+      } catch (e) {
+        loraConfigFetchFailed = true;
+        loraConfigFetchError = normalizeRemoteAdminError(e);
+        console.warn(
+          '[fetchMeshtasticRemoteConfigSnapshot] LoRa config fetch failed ' + errLikeToLogString(e),
+        );
+        configResults.push({ type, value: null });
+      }
+      continue;
+    }
+
+    if (options?.continueOnNonLoraFailure) {
+      try {
+        const value = await client.getRemoteConfig(destNodeNum, type);
+        configResults.push({ type, value });
+      } catch (e) {
+        console.warn(
+          '[fetchMeshtasticRemoteConfigSnapshot] config fetch failed type=' +
+            String(type) +
+            ' ' +
+            errLikeToLogString(e),
+        );
+        configResults.push({ type, value: null });
+      }
+      continue;
+    }
+
+    configResults.push({ type, value: await client.getRemoteConfig(destNodeNum, type) });
+  }
+
+  return { configResults, loraConfigFetchFailed, loraConfigFetchError };
+}
+
+async function fetchRemoteChannelIndex(
+  client: MeshtasticRemoteAdminClient,
+  destNodeNum: number,
+  index: number,
+): Promise<unknown> {
+  return client.getRemoteChannelWithRetry(destNodeNum, index, {
+    maxAttempts: REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
+    backoffMs: REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
+  });
+}
+
+async function fetchRemoteChannels(
+  client: MeshtasticRemoteAdminClient,
+  destNodeNum: number,
+  interFetchDelayMs: number,
+  options?: { startIndex?: number; loopStartDelayMs?: number },
+): Promise<{
+  channelResults: { index: number; value: unknown }[];
+  failedChannelIndices: number[];
+}> {
+  const channelResults: { index: number; value: unknown }[] = [];
+  const failedChannelIndices: number[] = [];
+  const startIndex = options?.startIndex ?? 0;
+  const loopStartDelayMs = options?.loopStartDelayMs ?? 0;
+
+  if (startIndex > 0 && loopStartDelayMs > 0) {
+    await delayMs(loopStartDelayMs);
+  }
+
+  for (let index = startIndex; index < 8; index++) {
+    if (index > startIndex && interFetchDelayMs > 0) {
+      await delayMs(interFetchDelayMs);
+    }
+    try {
+      const value = await fetchRemoteChannelIndex(client, destNodeNum, index);
+      channelResults.push({ index, value });
+      const parsed = parseChannelEntry(value, index);
+      if (index >= 1 && isChannelEntryEmpty(parsed)) {
+        break;
+      }
+    } catch (e) {
+      failedChannelIndices.push(index);
+      console.warn(
+        '[fetchMeshtasticRemoteConfigSnapshot] channel fetch failed index=' +
+          String(index) +
+          ' ' +
+          errLikeToLogString(e),
+      );
+      channelResults.push({ index, value: null });
+    }
+  }
+
+  return { channelResults, failedChannelIndices };
+}
+
+function channelFetchFlags(failedChannelIndices: number[]): {
+  channelConfigFetchFailed: boolean;
+  primaryChannelConfigFetchFailed: boolean;
+} {
+  return {
+    channelConfigFetchFailed: failedChannelIndices.length > 0,
+    primaryChannelConfigFetchFailed: failedChannelIndices.includes(0),
+  };
+}
+
+function channelConfigsFromResults(
+  channelResults: { index: number; value: unknown }[],
+): MeshtasticRemoteConfigSnapshot['channelConfigs'] {
+  return channelResults
     .filter(({ value }) => value != null)
     .map(({ index, value }) => parseChannelEntry(value, index))
     .filter((ch) => ch.role !== 0 || ch.name.length > 0 || ch.psk.length > 0);
+}
+
+/** Fast path: metadata, session, device/LoRa/security, channels — unlocks Configure UI. */
+export async function fetchMeshtasticRemoteConfigSnapshotEssential(
+  client: MeshtasticRemoteAdminClient,
+  destNodeNum: number,
+): Promise<MeshtasticRemoteConfigSnapshot> {
+  const metadata = await client.getRemoteMetadata(destNodeNum);
+  await ensureRemoteSessionKey(client, destNodeNum);
+
+  const primaryChannelResults: { index: number; value: unknown }[] = [];
+  const failedChannelIndices: number[] = [];
+  try {
+    const value = await fetchRemoteChannelIndex(client, destNodeNum, 0);
+    primaryChannelResults.push({ index: 0, value });
+  } catch (e) {
+    failedChannelIndices.push(0);
+    console.warn(
+      '[fetchMeshtasticRemoteConfigSnapshot] channel fetch failed index=0 ' + errLikeToLogString(e),
+    );
+    primaryChannelResults.push({ index: 0, value: null });
+  }
+
+  const { configResults, loraConfigFetchFailed, loraConfigFetchError } = await fetchConfigTypes(
+    client,
+    destNodeNum,
+    ESSENTIAL_CONFIG_TYPES,
+    REMOTE_ADMIN_ESSENTIAL_FETCH_DELAY_MS,
+  );
+
+  const { channelResults: trailingChannelResults, failedChannelIndices: trailingFailed } =
+    await fetchRemoteChannels(client, destNodeNum, REMOTE_ADMIN_CHANNEL_FETCH_DELAY_MS, {
+      startIndex: 1,
+      loopStartDelayMs: REMOTE_ADMIN_CHANNEL_LOOP_START_DELAY_MS,
+    });
+  failedChannelIndices.push(...trailingFailed);
+
+  const channelResults = [...primaryChannelResults, ...trailingChannelResults];
+  const channelFlags = channelFetchFlags(failedChannelIndices);
+
+  const snapshot: MeshtasticRemoteConfigSnapshot = {
+    metadata,
+    loraConfigFetchFailed,
+    loraConfigFetchError,
+    ...channelFlags,
+    failedChannelIndices,
+    moduleConfigs: {},
+  };
+
+  applyConfigResultsToSnapshot(snapshot, configResults);
+  snapshot.channelConfigs = channelConfigsFromResults(channelResults);
+
+  return snapshot;
+}
+
+/** Background phase: deferred core configs, module configs, owner. */
+export async function fetchMeshtasticRemoteConfigSnapshotDeferred(
+  client: MeshtasticRemoteAdminClient,
+  destNodeNum: number,
+): Promise<Partial<MeshtasticRemoteConfigSnapshot>> {
+  const { configResults } = await fetchConfigTypes(
+    client,
+    destNodeNum,
+    DEFERRED_CONFIG_TYPES,
+    REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS,
+    { continueOnNonLoraFailure: true },
+  );
+
+  const partial: Partial<MeshtasticRemoteConfigSnapshot> = {};
+  applyConfigResultsToSnapshot(partial, configResults);
+
+  const moduleResults: { key: string; value: unknown }[] = [];
+  for (const { type, key } of MODULE_CONFIG_FETCHES) {
+    try {
+      const value = await client.getRemoteModuleConfig(destNodeNum, type);
+      moduleResults.push({ key, value });
+    } catch {
+      // catch-no-log-ok optional module config may be unsupported on target firmware
+      moduleResults.push({ key, value: null });
+    }
+  }
 
   const moduleConfigs: Record<string, unknown> = {};
   for (const { key, value } of moduleResults) {
@@ -257,8 +407,39 @@ export async function fetchMeshtasticRemoteConfigSnapshot(
       moduleConfigs[modKey] = modVal;
     }
   }
-  snapshot.moduleConfigs = moduleConfigs;
-  snapshot.deviceOwner = deviceOwner;
+  partial.moduleConfigs = moduleConfigs;
 
-  return snapshot;
+  try {
+    partial.deviceOwner = parseOwner(await client.getRemoteOwner(destNodeNum));
+  } catch {
+    // catch-no-log-ok owner fetch is optional for remote admin snapshot
+    partial.deviceOwner = null;
+  }
+
+  return partial;
+}
+
+export function mergeMeshtasticRemoteConfigSnapshots(
+  base: MeshtasticRemoteConfigSnapshot,
+  deferred: Partial<MeshtasticRemoteConfigSnapshot>,
+): MeshtasticRemoteConfigSnapshot {
+  return {
+    ...base,
+    ...deferred,
+    moduleConfigs: {
+      ...base.moduleConfigs,
+      ...deferred.moduleConfigs,
+    },
+    channelConfigs: deferred.channelConfigs ?? base.channelConfigs,
+  };
+}
+
+/** Full snapshot (essential + deferred) for manual refresh. */
+export async function fetchMeshtasticRemoteConfigSnapshot(
+  client: MeshtasticRemoteAdminClient,
+  destNodeNum: number,
+): Promise<MeshtasticRemoteConfigSnapshot> {
+  const essential = await fetchMeshtasticRemoteConfigSnapshotEssential(client, destNodeNum);
+  const deferred = await fetchMeshtasticRemoteConfigSnapshotDeferred(client, destNodeNum);
+  return mergeMeshtasticRemoteConfigSnapshots(essential, deferred);
 }

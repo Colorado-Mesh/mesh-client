@@ -24,3 +24,6 @@ export const MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS = 45_000;
  * FLOOD ADVERT within seconds; coalesce so the sniffer shows one row (newest wins).
  */
 export const MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS = 8_000;
+
+/** Delay before local SDK LoRa getConfig after configure (avoids BLE contention with remote admin). */
+export const MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS = 2_500;

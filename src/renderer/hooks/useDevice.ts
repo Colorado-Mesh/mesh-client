@@ -26,15 +26,19 @@ import {
   writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
 import {
+  hydrateLastRfSelfNodeIdFromAppSettings,
   loadPersistedLastRfSelfNodeId,
   mqttOnlyIdentitySource,
   persistLastRfSelfNodeId,
   resolveMqttOnlyFromNodeId,
 } from '@/renderer/lib/meshtasticMqttIdentity';
 import {
+  buildMeshtasticMqttOnlyChannelState,
   loadMeshtasticMqttManualChannelPsks,
   meshtasticMqttChannelKeyEntries,
+  meshtasticMqttChannelKeyEntriesFromManual,
   resolveMeshtasticMqttPublishFieldsForChannel,
+  type ResolveMeshtasticMqttPublishOptions,
 } from '@/renderer/lib/meshtasticMqttPublish';
 import {
   type ApplyChannelSetResult,
@@ -105,7 +109,11 @@ import {
   MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
 } from '../lib/meshtasticRemoteAdmin';
-import { fetchMeshtasticRemoteConfigSnapshot } from '../lib/meshtasticRemoteAdminSnapshot';
+import {
+  fetchMeshtasticRemoteConfigSnapshotDeferred,
+  fetchMeshtasticRemoteConfigSnapshotEssential,
+  mergeMeshtasticRemoteConfigSnapshots,
+} from '../lib/meshtasticRemoteAdminSnapshot';
 import { meshtasticComputedRfHopsAway } from '../lib/meshtasticRfHops';
 import {
   mergeMeshtasticTraceRouteIntoResultsMap,
@@ -122,6 +130,7 @@ import { normalizeReactionEmoji } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews } from '../lib/replyPreview';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
+import { MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS } from '../lib/timeConstants';
 import { TransportManager } from '../lib/transport/TransportManager';
 import type { StatusUpdateEvent } from '../lib/transport/types';
 import type {
@@ -237,6 +246,12 @@ function meshtasticRawPacketPortLabel(packet: unknown): string {
 const MQTT_ONLY_VIRTUAL_LONG_NAME = 'MQTT-only Virtual Address';
 const ROLE_CLIENT = 0;
 const ROLE_CLIENT_MUTE = 1;
+
+function meshtasticMqttPublishOpts(
+  mqttOnly: boolean,
+): ResolveMeshtasticMqttPublishOptions | undefined {
+  return mqttOnly ? { preferManualOverRadio: true } : undefined;
+}
 
 export function useDevice() {
   const deviceRef = useRef<MeshDevice | null>(null);
@@ -376,7 +391,10 @@ export function useDevice() {
   const [configureTargetNodeNum, setConfigureTargetNodeNumState] = useState<number | null>(null);
   const configureTargetNodeNumRef = useRef<number | null>(null);
   const configureTargetPersistRestoredRef = useRef(false);
+  const skipLocalLoraConfigRef = useRef(false);
+  const localLoraConfigTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [remoteAdminStatus, setRemoteAdminStatus] = useState<RemoteAdminStatus>('idle');
+  const remoteAdminStatusRef = useRef<RemoteAdminStatus>('idle');
   const [remoteAdminError, setRemoteAdminError] = useState<string | undefined>();
   const [remoteConfigSnapshot, setRemoteConfigSnapshot] =
     useState<MeshtasticRemoteConfigSnapshot | null>(null);
@@ -479,10 +497,19 @@ export function useDevice() {
 
   const pushMqttChannelKeys = useCallback(() => {
     if (mqttStatusRef.current !== 'connected') return;
-    const entries = meshtasticMqttChannelKeyEntries(channelConfigsRef.current);
+    let entries = meshtasticMqttChannelKeyEntries(channelConfigsRef.current);
+    if (entries.length === 0) {
+      entries = meshtasticMqttChannelKeyEntriesFromManual();
+    }
     if (entries.length === 0) return;
     void window.electronAPI.mqtt.updateChannelKeys({ entries }).catch((e: unknown) => {
       console.warn('[useDevice] mqtt.updateChannelKeys failed ' + errLikeToLogString(e));
+    });
+  }, []);
+
+  useEffect(() => {
+    void hydrateLastRfSelfNodeIdFromAppSettings().then((nodeNum) => {
+      if (nodeNum > 0) lastRfSelfNodeIdRef.current = nodeNum;
     });
   }, []);
 
@@ -744,6 +771,10 @@ export function useDevice() {
   }, [configureTargetNodeNum]);
 
   useEffect(() => {
+    remoteAdminStatusRef.current = remoteAdminStatus;
+  }, [remoteAdminStatus]);
+
+  useEffect(() => {
     remoteAdminClientRef.current = new MeshtasticRemoteAdminClient(
       () => deviceRef.current,
       () => myNodeNumRef.current,
@@ -788,6 +819,24 @@ export function useDevice() {
       if (s === 'connected' && !deviceRef.current) {
         rfHeardNodeIds.current.clear();
         startGpsInterval();
+        const mqttOnlyState = buildMeshtasticMqttOnlyChannelState();
+        if (mqttOnlyState.channelConfigs.length > 0) {
+          const mqttOnlyConfigs = mqttOnlyState.channelConfigs.map((c) => ({
+            index: c.index,
+            name: c.name,
+            role: c.role,
+            psk: c.psk,
+            uplinkEnabled: c.uplinkEnabled ?? true,
+            downlinkEnabled: c.downlinkEnabled ?? true,
+            positionPrecision: c.positionPrecision ?? 0,
+          }));
+          setChannels(mqttOnlyState.channels);
+          setChannelConfigs(mqttOnlyConfigs);
+          channelConfigsRef.current = mqttOnlyConfigs;
+          pushMqttChannelKeys();
+        }
+        const persistedLastRf = loadPersistedLastRfSelfNodeId();
+        if (persistedLastRf > 0) lastRfSelfNodeIdRef.current = persistedLastRf;
         const virtualId = ensureNonConflictingVirtualNodeId();
         const mqttOnlyId = resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualId);
         myNodeNumRef.current = mqttOnlyId;
@@ -856,6 +905,7 @@ export function useDevice() {
             0,
             channelConfigsRef.current,
             loadMeshtasticMqttManualChannelPsks(),
+            meshtasticMqttPublishOpts(true),
           );
           if (!presenceMqtt.channelName) return;
           window.electronAPI.mqtt
@@ -1422,17 +1472,29 @@ export function useDevice() {
           startGpsInterval();
           setQueueStatus({ free: 16, maxlen: 16, res: 0 });
           deviceConfiguredRef.current = true;
-          if (configureTargetNodeNumRef.current == null) {
+          if (localLoraConfigTimerRef.current != null) {
+            clearTimeout(localLoraConfigTimerRef.current);
+          }
+          localLoraConfigTimerRef.current = setTimeout(() => {
+            localLoraConfigTimerRef.current = undefined;
+            if (skipLocalLoraConfigRef.current) return;
+            if (configureTargetNodeNumRef.current != null) return;
+            if (remoteAdminStatusRef.current === 'loading') return;
             void deviceRef.current
               ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
               .catch((e: unknown) => {
                 console.debug('[useDevice] LoRa config request failed ' + errLikeToLogString(e));
               });
-          }
+          }, MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS);
         }
 
         // Always clean up on disconnect, even if we never reached configured
         if (status === 2) {
+          if (localLoraConfigTimerRef.current != null) {
+            clearTimeout(localLoraConfigTimerRef.current);
+            localLoraConfigTimerRef.current = undefined;
+          }
+          skipLocalLoraConfigRef.current = false;
           lastRfDisconnectAtRef.current = Date.now();
           rfHeardNodeIds.current.clear();
           lastNodeInfoRequestAtRef.current.clear();
@@ -1719,6 +1781,7 @@ export function useDevice() {
               msg.channel,
               channelConfigsRef.current,
               loadMeshtasticMqttManualChannelPsks(),
+              meshtasticMqttPublishOpts(!deviceRef.current),
             );
             if (uplinkMqtt.channelName) {
               window.electronAPI.mqtt
@@ -2730,6 +2793,7 @@ export function useDevice() {
               chanIdx,
               channelConfigsRef.current,
               loadMeshtasticMqttManualChannelPsks(),
+              meshtasticMqttPublishOpts(!deviceRef.current),
             );
             if (wpMqtt.channelName) {
               void window.electronAPI.mqtt
@@ -3515,21 +3579,30 @@ export function useDevice() {
         configureTargetNodeNumRef.current === destNodeNum;
 
       try {
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 500);
-        });
+        const essential = await fetchMeshtasticRemoteConfigSnapshotEssential(client, destNodeNum);
         if (!applyIfCurrent()) return;
-
-        const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, destNodeNum);
-        if (!applyIfCurrent()) return;
-        setRemoteConfigSnapshot(snapshot);
+        setRemoteConfigSnapshot(essential);
         setRemoteAdminStatus('ready');
         setRemoteAdminError(
-          snapshot.loraConfigFetchError ??
-            (snapshot.channelConfigFetchFailed
+          essential.loraConfigFetchError ??
+            (essential.primaryChannelConfigFetchFailed || essential.channelConfigFetchFailed
               ? 'remoteAdmin.errors.channelConfigPartial'
               : undefined),
         );
+
+        void (async () => {
+          try {
+            const deferred = await fetchMeshtasticRemoteConfigSnapshotDeferred(client, destNodeNum);
+            if (!applyIfCurrent()) return;
+            setRemoteConfigSnapshot((prev) =>
+              prev != null ? mergeMeshtasticRemoteConfigSnapshots(prev, deferred) : prev,
+            );
+          } catch (e) {
+            console.warn(
+              '[useDevice] remote config deferred fetch failed ' + errLikeToLogString(e),
+            );
+          }
+        })();
       } catch (e) {
         if (!applyIfCurrent()) return;
         remoteAdminClientRef.current?.resetEditState();
@@ -3561,6 +3634,15 @@ export function useDevice() {
         nodeNum != null && nodeNum > 0 && nodeNum !== myNodeNumRef.current ? nodeNum : null;
       setConfigureTargetNodeNumState(normalized);
       configureTargetNodeNumRef.current = normalized;
+      if (normalized != null) {
+        skipLocalLoraConfigRef.current = true;
+        if (localLoraConfigTimerRef.current != null) {
+          clearTimeout(localLoraConfigTimerRef.current);
+          localLoraConfigTimerRef.current = undefined;
+        }
+      } else {
+        skipLocalLoraConfigRef.current = false;
+      }
       const persistValue = normalized == null ? '' : String(normalized);
       mergeAppSetting(
         'meshtasticConfigureTargetNodeNum',
@@ -3904,6 +3986,7 @@ export function useDevice() {
           channel,
           channelConfigsRef.current,
           loadMeshtasticMqttManualChannelPsks(),
+          meshtasticMqttPublishOpts(!deviceRef.current),
         );
         if (sendWpMqtt.channelName) {
           void window.electronAPI.mqtt
@@ -3946,6 +4029,7 @@ export function useDevice() {
         0,
         channelConfigsRef.current,
         loadMeshtasticMqttManualChannelPsks(),
+        meshtasticMqttPublishOpts(!deviceRef.current),
       );
       if (delWpMqtt.channelName) {
         void window.electronAPI.mqtt

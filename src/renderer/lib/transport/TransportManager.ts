@@ -57,6 +57,7 @@ export class TransportManager {
       channel,
       channelConfigsRef.current,
       loadMeshtasticMqttManualChannelPsks(),
+      deviceRef.current ? undefined : { preferManualOverRadio: true },
     );
     const shouldUplink =
       chCfg?.uplinkEnabled &&

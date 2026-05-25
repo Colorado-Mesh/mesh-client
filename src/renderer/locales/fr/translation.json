@@ -2092,7 +2092,8 @@
       "timeout": "La demande d'administration à distance a expiré.",
       "generic": "Échec de la demande d'administration à distance.",
       "configResponseUnexpected": "L'administrateur distant a renvoyé une réponse de configuration inattendue.",
-      "channelConfigPartial": "Un ou plusieurs paramètres de canal n'ont pas pu être chargés à partir du nœud distant."
+      "channelConfigPartial": "Un ou plusieurs paramètres de canal n'ont pas pu être chargés à partir du nœud distant.",
+      "channelResponseUnexpected": "L'administrateur distant a renvoyé une réponse de canal inattendue."
     }
   }
 }

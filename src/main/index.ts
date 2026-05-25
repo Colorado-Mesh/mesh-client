@@ -2954,6 +2954,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticMqttClientId',
   'meshcoreMqttClientId',
   'meshtasticConfigureTargetNodeNum',
+  'meshtasticLastRfSelfNodeId',
   'storeForwardAutoFetchHistory',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
