@@ -40,6 +40,8 @@ const MODULE_CONFIG_FETCHES: {
   { type: Admin.AdminMessage_ModuleConfigType.PAXCOUNTER_CONFIG, key: 'paxcounter' },
 ];
 
+export const REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT = MODULE_CONFIG_FETCHES.length;
+
 const DEFERRED_CONFIG_TYPES = [
   Admin.AdminMessage_ConfigType.POSITION_CONFIG,
   Admin.AdminMessage_ConfigType.POWER_CONFIG,
@@ -301,9 +303,18 @@ async function fetchRemoteChannels(
       await delayMs(interFetchDelayMs);
     }
     try {
-      const value = await fetchRemoteChannelIndex(client, destNodeNum, index);
+      let value = await fetchRemoteChannelIndex(client, destNodeNum, index);
+      let parsed = parseChannelEntry(value, index);
+      if (index >= 1 && isChannelEntryEmpty(parsed)) {
+        await delayMs(REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS);
+        try {
+          value = await fetchRemoteChannelIndex(client, destNodeNum, index);
+          parsed = parseChannelEntry(value, index);
+        } catch {
+          // catch-no-log-ok retry failed; outer loop treats empty response as end-of-channel-list
+        }
+      }
       channelResults.push({ index, value });
-      const parsed = parseChannelEntry(value, index);
       if (index >= 1 && isChannelEntryEmpty(parsed)) {
         break;
       }
@@ -439,25 +450,23 @@ export async function fetchMeshtasticRemoteConfigOwner(
 export async function fetchMeshtasticRemoteConfigModules(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
+  options?: {
+    onPartial?: (partial: Partial<MeshtasticRemoteConfigSnapshot>) => void;
+  },
 ): Promise<Partial<MeshtasticRemoteConfigSnapshot>> {
-  const moduleResults: { key: string; value: unknown }[] = [];
+  const moduleConfigs: Record<string, unknown> = {};
   for (const { type, key } of MODULE_CONFIG_FETCHES) {
     try {
       const value = await client.getRemoteModuleConfig(destNodeNum, type);
-      moduleResults.push({ key, value });
+      if (value == null) continue;
+      const modKey = moduleConfigKeyFromResponse(value) ?? key;
+      const modVal = configPayloadValue(value);
+      if (modVal != null) {
+        moduleConfigs[modKey] = modVal;
+        options?.onPartial?.({ moduleConfigs: { ...moduleConfigs } });
+      }
     } catch {
       // catch-no-log-ok optional module config may be unsupported on target firmware
-      moduleResults.push({ key, value: null });
-    }
-  }
-
-  const moduleConfigs: Record<string, unknown> = {};
-  for (const { key, value } of moduleResults) {
-    if (value == null) continue;
-    const modKey = moduleConfigKeyFromResponse(value) ?? key;
-    const modVal = configPayloadValue(value);
-    if (modVal != null) {
-      moduleConfigs[modKey] = modVal;
     }
   }
   return { moduleConfigs };

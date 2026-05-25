@@ -30,7 +30,7 @@ import {
   meshcoreSelfInfoFreqToDisplayHz,
 } from '../lib/meshcoreUtils';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
-import type { ConfigTargetContext } from '../lib/types';
+import type { ConfigTargetContext, RemoteConfigChannelsTailStatus } from '../lib/types';
 import { HelpTooltip } from './HelpTooltip';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
 import MeshcoreTelemetryPrivacySection from './MeshcoreTelemetryPrivacySection';
@@ -123,6 +123,11 @@ interface Props {
   onClearAllMeshcoreContacts?: () => Promise<void>;
   onSendAdvert?: () => Promise<void>;
   onSyncClock?: () => Promise<void>;
+  /** Remote admin: channel indices that failed to load from the target node. */
+  remoteChannelFailedIndices?: number[];
+  /** Remote admin: background fetch status for channels 1–7. */
+  remoteChannelsTailStatus?: RemoteConfigChannelsTailStatus;
+  onRetryRemoteChannelsTail?: () => void;
 }
 
 const REGIONS = [
@@ -607,6 +612,9 @@ export default function RadioPanel({
   onClearAllMeshcoreContacts,
   onSendAdvert,
   onSyncClock,
+  remoteChannelFailedIndices,
+  remoteChannelsTailStatus,
+  onRetryRemoteChannelsTail,
 }: Props) {
   // ─── User / Identity settings ─────────────────────────────────
   const [longName, setLongName] = useState('');
@@ -1067,6 +1075,9 @@ export default function RadioPanel({
           setStatus={setStatus}
           meshtasticLoraConfig={meshtasticLoraConfig}
           onApplyChannelSet={onApplyChannelSet}
+          remoteChannelFailedIndices={remoteChannelFailedIndices}
+          remoteChannelsTailStatus={remoteChannelsTailStatus}
+          onRetryRemoteChannelsTail={onRetryRemoteChannelsTail}
         />
       )}
 
@@ -2524,6 +2535,9 @@ function ChannelSection({
   setStatus,
   meshtasticLoraConfig,
   onApplyChannelSet,
+  remoteChannelFailedIndices,
+  remoteChannelsTailStatus,
+  onRetryRemoteChannelsTail,
 }: {
   channelConfigs: ChannelConfig[];
   onSetChannel: Props['onSetChannel'];
@@ -2536,6 +2550,9 @@ function ChannelSection({
     parsed: ParsedChannelSet,
     options?: { applyLora?: boolean },
   ) => Promise<ApplyChannelSetResult>;
+  remoteChannelFailedIndices?: number[];
+  remoteChannelsTailStatus?: RemoteConfigChannelsTailStatus;
+  onRetryRemoteChannelsTail?: () => void;
 }) {
   const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -2674,6 +2691,20 @@ function ChannelSection({
             const isSelected = selectedIndex === i;
             const role = cfg?.role ?? 0;
             const secLevel = cfg && role !== 0 ? getSecurityLevel(cfg) : null;
+            const isFailed = remoteChannelFailedIndices?.includes(i) ?? false;
+            const isPendingTail =
+              i >= 1 && !cfg && !isFailed && remoteChannelsTailStatus === 'loading';
+            const slotLabel = cfg?.name
+              ? cfg.name
+              : isFailed
+                ? t('radioPanel.channelLoadFailed')
+                : isPendingTail
+                  ? t('radioPanel.channelLoading')
+                  : i === 0
+                    ? t('radioPanel.channelRolePrimary')
+                    : role !== 0
+                      ? t('radioPanel.channelN', { num: i })
+                      : t('radioPanel.channelRoleDisabled');
             return (
               <button
                 key={i}
@@ -2696,30 +2727,41 @@ function ChannelSection({
                 </span>
                 {/* Name */}
                 <span
-                  className={`flex-1 text-sm ${role !== 0 ? 'text-gray-200' : 'text-muted italic'}`}
+                  className={`flex-1 text-sm ${
+                    isFailed
+                      ? 'text-amber-400 italic'
+                      : isPendingTail
+                        ? 'text-muted italic'
+                        : role !== 0
+                          ? 'text-gray-200'
+                          : 'text-muted italic'
+                  }`}
                 >
-                  {cfg?.name ||
-                    (i === 0
-                      ? t('radioPanel.channelRolePrimary')
-                      : role !== 0
-                        ? t('radioPanel.channelN', { num: i })
-                        : t('radioPanel.channelRoleDisabled'))}
+                  {slotLabel}
                 </span>
                 {/* Role badge */}
                 <span
                   className={`rounded px-1.5 py-0.5 text-xs ${
-                    role === 1
-                      ? 'bg-brand-green/10 text-bright-green'
-                      : role === 2
-                        ? 'bg-blue-900/50 text-blue-400'
-                        : 'text-muted bg-gray-800'
+                    isFailed
+                      ? 'bg-amber-900/40 text-amber-300'
+                      : isPendingTail
+                        ? 'text-muted bg-gray-800'
+                        : role === 1
+                          ? 'bg-brand-green/10 text-bright-green'
+                          : role === 2
+                            ? 'bg-blue-900/50 text-blue-400'
+                            : 'text-muted bg-gray-800'
                   }`}
                 >
-                  {role === 1
-                    ? t('radioPanel.channelRolePrimary')
-                    : role === 2
-                      ? t('radioPanel.channelRoleSecondary')
-                      : t('radioPanel.channelRoleDisabled')}
+                  {isFailed
+                    ? t('radioPanel.channelLoadFailed')
+                    : isPendingTail
+                      ? t('radioPanel.channelLoading')
+                      : role === 1
+                        ? t('radioPanel.channelRolePrimary')
+                        : role === 2
+                          ? t('radioPanel.channelRoleSecondary')
+                          : t('radioPanel.channelRoleDisabled')}
                 </span>
                 {/* Security indicator */}
                 {secLevel && <SecurityIcon level={secLevel} />}
@@ -2727,6 +2769,22 @@ function ChannelSection({
             );
           })}
         </div>
+
+        {(remoteChannelsTailStatus === 'partial' ||
+          (remoteChannelFailedIndices?.length ?? 0) > 0) &&
+          onRetryRemoteChannelsTail && (
+            <button
+              type="button"
+              onClick={() => {
+                onRetryRemoteChannelsTail();
+              }}
+              disabled={disabled || remoteChannelsTailStatus === 'loading'}
+              className="text-readable-green hover:text-bright-green text-xs underline disabled:opacity-50"
+              aria-label={t('radioPanel.retryRemoteChannels')}
+            >
+              {t('radioPanel.retryRemoteChannels')}
+            </button>
+          )}
 
         {/* ── Edit Form ── */}
         {selectedIndex !== null && (

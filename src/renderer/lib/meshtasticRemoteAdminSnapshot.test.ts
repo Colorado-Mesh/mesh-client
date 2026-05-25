@@ -435,9 +435,48 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
       clientWithChannelRetry(client),
       0x200,
     );
-    expect(getRemoteChannel).toHaveBeenCalledTimes(2);
+    expect(getRemoteChannel).toHaveBeenCalledTimes(3);
     expect(getRemoteChannel).toHaveBeenNthCalledWith(1, 0x200, 1);
     expect(getRemoteChannel).toHaveBeenNthCalledWith(2, 0x200, 2);
+    expect(getRemoteChannel).toHaveBeenNthCalledWith(3, 0x200, 2);
+    expect(partial.channelConfigs).toHaveLength(1);
+    expect(partial.channelConfigs?.[0]?.name).toBe('Secondary');
+  });
+
+  it('retries a transient empty secondary channel before stopping the tail loop', async () => {
+    let channelOneCalls = 0;
+    const getRemoteChannel = vi.fn((_dest: number, index: number) => {
+      if (index === 1) {
+        channelOneCalls += 1;
+        if (channelOneCalls === 1) {
+          return Promise.resolve({
+            index: 1,
+            role: 0,
+            settings: { name: '', psk: new Uint8Array() },
+          });
+        }
+        return Promise.resolve({
+          index: 1,
+          role: 2,
+          settings: { name: 'Secondary', psk: new Uint8Array([2]) },
+        });
+      }
+      if (index >= 2) {
+        return Promise.resolve({
+          index,
+          role: 0,
+          settings: { name: '', psk: new Uint8Array() },
+        });
+      }
+      return Promise.reject(new Error('should not fetch channel index ' + String(index)));
+    });
+    const client = {
+      getRemoteChannel,
+      getRemoteChannelWithRetry: (dest: number, idx: number) => getRemoteChannel(dest, idx),
+    } as unknown as MeshtasticRemoteAdminClient;
+
+    const partial = await fetchMeshtasticRemoteConfigChannelsTail(client, 0x200);
+    expect(getRemoteChannel).toHaveBeenCalledTimes(4);
     expect(partial.channelConfigs).toHaveLength(1);
     expect(partial.channelConfigs?.[0]?.name).toBe('Secondary');
   });
@@ -514,6 +553,34 @@ describe('fetchMeshtasticRemoteConfigSnapshotDeferred', () => {
     expect(getRemoteMetadata).not.toHaveBeenCalled();
     expect(getRemoteChannel).not.toHaveBeenCalled();
     expect(getRemoteModuleConfig).toHaveBeenCalled();
+    expect(partial.moduleConfigs?.mqtt).toEqual({ enabled: true });
+  });
+
+  it('emits partial module configs as each module returns', async () => {
+    const getRemoteModuleConfig = vi
+      .fn()
+      .mockResolvedValueOnce({
+        payloadVariant: { case: 'mqtt', value: { enabled: true } },
+      })
+      .mockResolvedValueOnce({
+        payloadVariant: { case: 'serial', value: { enabled: false } },
+      })
+      .mockResolvedValue({
+        payloadVariant: { case: 'telemetry', value: { deviceUpdateInterval: 900 } },
+      });
+    const client = {
+      getRemoteModuleConfig,
+    } as unknown as MeshtasticRemoteAdminClient;
+    const partialSnapshots: Partial<MeshtasticRemoteConfigSnapshot>[] = [];
+
+    const partial = await fetchMeshtasticRemoteConfigModules(client, 0x200, {
+      onPartial: (chunk) => {
+        partialSnapshots.push(chunk);
+      },
+    });
+
+    expect(partialSnapshots.length).toBeGreaterThan(0);
+    expect(partialSnapshots[0]?.moduleConfigs?.mqtt).toEqual({ enabled: true });
     expect(partial.moduleConfigs?.mqtt).toEqual({ enabled: true });
   });
 

@@ -486,7 +486,10 @@
       "applying": "Uygulayan",
       "unnamedChannel": "(isimsiz)",
       "applySuccessWithSkipped": "Uygulanan {{applied}} kanal(lar); {{skipped}} çift veya isimsiz olarak atlandı."
-    }
+    },
+    "channelLoading": "Yükleniyor…",
+    "channelLoadFailed": "Yükleme başarısız",
+    "retryRemoteChannels": "Kanalları yeniden yüklemeyi deneyin"
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "Bu düğümün henüz PKI genel anahtarı yok. Ağ üzerinde bir NodeInfo paketi bekleyin veya anahtarları değiştirmek için cihaz uygulamasını bir kez kullanın.",
       "noAdminKeyConfigured": "Uzaktan yöneticiyi kullanmadan önce düğüm ayrıntı iletişim kutusuna bu düğüm için bir yönetici anahtarı yapıştırın ve kaydedin.",
       "invalidAdminKey": "Yönetici anahtarı 32 bayt olmalıdır (base64, base64 :… veya 64 karakter hex).",
-      "publicKeyUnauthorized": "Yetkisiz: Bu yönetici anahtarı uzak düğümde yetkilendirilmemiş. Anahtarın uzak cihazdaki Yönetici anahtarları altında listelendiğini doğrulayın."
+      "publicKeyUnauthorized": "Yetkisiz: Bu yönetici anahtarı uzak düğümde yetkilendirilmemiş. Anahtarın uzak cihazdaki Yönetici anahtarları altında listelendiğini doğrulayın.",
+      "moduleConfigPartial": "Bazı modül ayarları uzak düğümden yüklenemedi."
     }
   }
 }

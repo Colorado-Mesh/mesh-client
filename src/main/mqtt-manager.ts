@@ -233,8 +233,14 @@ export class MQTTManager extends EventEmitter {
   private channelNameToIndex = new Map<string, number>();
   /** Names registered by the last updateChannelKeys (radio); cleared on next sync. */
   private radioChannelKeyNames = new Set<string>();
+  /** Connection panel channel PSK lines from last connect (re-applied after radio sync). */
+  private manualChannelPskLines: string[] = [];
+  /** Channel names from named manual lines; radio sync must not overwrite these. */
+  private manualChannelKeyNames = new Set<string>();
   /** Unnamed manual PSKs (decrypt-only brute force). */
   private decryptOnlyPsks: Buffer[] = [];
+  /** PSKs registered at publish time via explicit pskBase64 (echo decrypt). */
+  private extraDecryptPsks: Buffer[] = [];
   /** Deduped keys for tryDecryptAllKeys (DEFAULT_PSK + map values + decrypt-only). */
   private allDecryptKeys: Buffer[] = [DEFAULT_PSK];
   private wssPingTimer: ReturnType<typeof setInterval> | null = null;
@@ -263,8 +269,11 @@ export class MQTTManager extends EventEmitter {
     this.channelKeysByName.clear();
     this.channelNameToIndex.clear();
     this.radioChannelKeyNames.clear();
+    this.manualChannelPskLines = settings.channelPsks ?? [];
+    this.manualChannelKeyNames.clear();
     this.decryptOnlyPsks = [];
-    this.applyManualChannelPskLines(settings.channelPsks ?? []);
+    this.extraDecryptPsks = [];
+    this.applyManualChannelPskLines(this.manualChannelPskLines);
     this.rebuildAllDecryptKeys();
     this.retryCount = 0;
     this._doConnect(settings);
@@ -281,6 +290,7 @@ export class MQTTManager extends EventEmitter {
       const name = entry.name.trim();
       const psk = parsePsk(entry.pskBase64);
       if (!name || !psk) continue;
+      if (this.manualChannelKeyNames.has(name)) continue;
       const existing = this.channelKeysByName.get(name);
       if (
         existing &&
@@ -296,15 +306,25 @@ export class MQTTManager extends EventEmitter {
         if (idx <= 7) this.channelNameToIndex.set(name, idx);
       }
     }
+    this.applyManualChannelPskLines(this.manualChannelPskLines);
     this.rebuildAllDecryptKeys();
   }
 
+  /** Idempotent: Connection panel manual lines win over prior radio entries for the same name. */
   private applyManualChannelPskLines(lines: string[]): void {
+    for (const name of this.manualChannelKeyNames) {
+      this.channelKeysByName.delete(name);
+      this.channelNameToIndex.delete(name);
+    }
+    this.manualChannelKeyNames.clear();
+    this.decryptOnlyPsks = [];
+
     for (const line of lines) {
       const parsed = parseChannelPskLine(line);
       if (!parsed) continue;
       if (parsed.name) {
         this.channelKeysByName.set(parsed.name, parsed.psk);
+        this.manualChannelKeyNames.add(parsed.name);
         if (parsed.index !== undefined) {
           const idx = parsed.index >>> 0;
           if (idx <= 7) this.channelNameToIndex.set(parsed.name, idx);
@@ -315,6 +335,16 @@ export class MQTTManager extends EventEmitter {
         this.decryptOnlyPsks.push(parsed.psk);
       }
     }
+  }
+
+  /** Register a publish-time PSK so broker echo decrypt uses the same key as encrypt. */
+  private ensureDecryptKey(psk: Buffer): void {
+    const sig = psk.toString('base64');
+    for (const k of this.allDecryptKeys) {
+      if (k.toString('base64') === sig) return;
+    }
+    this.extraDecryptPsks.push(psk);
+    this.rebuildAllDecryptKeys();
   }
 
   private rebuildAllDecryptKeys(): void {
@@ -329,6 +359,7 @@ export class MQTTManager extends EventEmitter {
     add(DEFAULT_PSK);
     for (const k of this.channelKeysByName.values()) add(k);
     for (const k of this.decryptOnlyPsks) add(k);
+    for (const k of this.extraDecryptPsks) add(k);
     this.allDecryptKeys = keys;
   }
 
@@ -642,6 +673,8 @@ export class MQTTManager extends EventEmitter {
     if (!this.client?.connected || !this.currentSettings) {
       throw new Error('MQTT not connected');
     }
+    if (explicitPsk) this.ensureDecryptKey(explicitPsk);
+
     const packetId = randomInt(0, 0x100000000);
     this.seenPacketIds.set(packetId, Date.now() + DEDUP_TTL_MS);
 

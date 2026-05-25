@@ -5,13 +5,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { writeToRadioWithoutQueue } from './meshtasticBacklogUtils';
 import {
   buildRemoteAdminToRadio,
+  createSerialTaskQueue,
   extractAdminSessionPasskey,
   meshtasticNodePublicKeyBytesFromHex,
   MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
   parseIncomingRemoteAdminPacket,
+  REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS,
+  REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS,
+  REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS,
   REMOTE_ADMIN_SESSION_TTL_MS,
   RemoteAdminSessionStore,
+  remoteConfigLoadingWatchdogMsForRoute,
   routingErrorToRemoteAdminKey,
 } from './meshtasticRemoteAdmin';
 
@@ -1135,5 +1140,50 @@ describe('MeshtasticRemoteAdminClient', () => {
     );
 
     await expect(promise).rejects.toThrow('remoteAdmin.errors.configResponseUnexpected');
+  });
+});
+
+describe('remoteConfigLoadingWatchdogMsForRoute', () => {
+  it('uses longer watchdogs for radio, security, and modules routes', () => {
+    expect(remoteConfigLoadingWatchdogMsForRoute('radio')).toBe(
+      REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS,
+    );
+    expect(remoteConfigLoadingWatchdogMsForRoute('radio')).toBeGreaterThanOrEqual(60_000);
+    expect(remoteConfigLoadingWatchdogMsForRoute('security')).toBe(
+      REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS,
+    );
+    expect(remoteConfigLoadingWatchdogMsForRoute('modules')).toBe(
+      REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS,
+    );
+    expect(remoteConfigLoadingWatchdogMsForRoute('modules')).toBeGreaterThanOrEqual(120_000);
+  });
+});
+
+describe('createSerialTaskQueue', () => {
+  it('runs tasks one at a time in order', async () => {
+    const queue = createSerialTaskQueue();
+    const order: string[] = [];
+    let releaseFirst: (() => void) | undefined;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+
+    const first = queue.enqueue(async () => {
+      order.push('first-start');
+      await firstGate;
+      order.push('first-end');
+    });
+    const second = queue.enqueue(() => {
+      order.push('second');
+      return Promise.resolve();
+    });
+
+    await Promise.resolve();
+    expect(order).toEqual(['first-start']);
+
+    releaseFirst?.();
+    await first;
+    await second;
+    expect(order).toEqual(['first-start', 'first-end', 'second']);
   });
 });

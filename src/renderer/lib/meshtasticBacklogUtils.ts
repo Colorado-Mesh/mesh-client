@@ -345,8 +345,25 @@ export {
 
 let toRadioDirectWriteChain: Promise<void> = Promise.resolve();
 
+let remoteAdminReadsActiveCount = 0;
+
+/** Tracks in-flight remote admin snapshot reads so BLE lock retries can run longer. */
+export function setRemoteAdminReadsActive(active: boolean): void {
+  if (active) {
+    remoteAdminReadsActiveCount += 1;
+  } else {
+    remoteAdminReadsActiveCount = Math.max(0, remoteAdminReadsActiveCount - 1);
+  }
+}
+
+export function isRemoteAdminReadsActive(): boolean {
+  return remoteAdminReadsActiveCount > 0;
+}
+
 const TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS = 5;
+const TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS_ADMIN = 20;
 const TO_RADIO_WRITER_LOCK_RETRY_MS = 25;
+const TO_RADIO_WRITER_LOCK_RETRY_MS_ADMIN = 50;
 
 const WRITABLE_STREAM_LOCKED_PATTERN = /WritableStream is locked/i;
 
@@ -379,15 +396,21 @@ async function writeToRadioDirectWithLockRetry(
   device: MeshDevice,
   toRadioBytes: Uint8Array,
 ): Promise<void> {
-  for (let attempt = 1; attempt <= TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS; attempt++) {
+  const maxAttempts = isRemoteAdminReadsActive()
+    ? TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS_ADMIN
+    : TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS;
+  const retryMs = isRemoteAdminReadsActive()
+    ? TO_RADIO_WRITER_LOCK_RETRY_MS_ADMIN
+    : TO_RADIO_WRITER_LOCK_RETRY_MS;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       await writeToRadioDirectOnce(device, toRadioBytes);
       return;
     } catch (e: unknown) {
-      if (!isWritableStreamLockedError(e) || attempt >= TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS) {
+      if (!isWritableStreamLockedError(e) || attempt >= maxAttempts) {
         throw e;
       }
-      await sleepMs(TO_RADIO_WRITER_LOCK_RETRY_MS * attempt);
+      await sleepMs(retryMs * attempt);
     }
   }
 }

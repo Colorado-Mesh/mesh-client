@@ -217,6 +217,57 @@ describe('localeStringQualityIssues', () => {
       }),
     ).toEqual([]);
   });
+
+  it('flags untranslated channelLoading identical to English', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'radioPanel.channelLoading',
+      val: 'Loading…',
+      enVal: 'Loading…',
+    });
+    expectIssue(issues, 'channelLoading" is still identical to English');
+  });
+
+  it('flags ASCII ellipsis when English uses Unicode …', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'radioPanel.channelLoading',
+      val: 'Chargement....',
+      enVal: 'Loading…',
+    });
+    expectIssue(issues, 'use Unicode ellipsis (…) instead of ASCII dots');
+  });
+
+  it('flags retryRemoteChannels loading-channel false friend in Spanish', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'radioPanel.retryRemoteChannels',
+      val: 'Reintentar canales de carga',
+      enVal: 'Retry loading channels',
+    });
+    expectIssue(issues, 'retryRemoteChannels false friend');
+  });
+
+  it('passes valid retryRemoteChannels in Spanish', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'es',
+        flatKey: 'radioPanel.retryRemoteChannels',
+        val: 'Reintentar cargar los canales',
+        enVal: 'Retry loading channels',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags Dutch mislukte on channelLoadFailed', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'radioPanel.channelLoadFailed',
+      val: 'Laden mislukte',
+      enVal: 'Load failed',
+    });
+    expectIssue(issues, 'use past participle "mislukt"');
+  });
 });
 
 describe('protectedBrandIssues', () => {

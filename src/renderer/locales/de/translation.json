@@ -486,7 +486,10 @@
       "applying": "Anwenden",
       "unnamedChannel": "(unbenannt)",
       "applySuccessWithSkipped": "{{applied}} Kanal(e) angewendet; {{skipped}} doppelt oder unbenannt übersprungen."
-    }
+    },
+    "channelLoading": "Lädt…",
+    "channelLoadFailed": "Laden fehlgeschlagen",
+    "retryRemoteChannels": "Kanäle erneut laden"
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "Dieser Knoten hat noch keinen öffentlichen PKI-Schlüssel. Warten Sie auf ein NodeInfo-Paket über dem Netz oder verwenden Sie die Geräte-App einmal, um Schlüssel auszutauschen.",
       "noAdminKeyConfigured": "Fügen Sie einen Admin-Schlüssel für diesen Knoten im Knotendetaildialog ein und speichern Sie ihn, bevor Sie Remote-Admin verwenden.",
       "invalidAdminKey": "Der Admin-Schlüssel muss 32 Byte groß sein (base64, base64:… oder 64-stelliges Hexadezimalzeichen).",
-      "publicKeyUnauthorized": "Nicht autorisiert: Dieser Admin-Schlüssel ist auf dem Remote-Knoten nicht autorisiert. Stellen Sie sicher, dass der Schlüssel unter Admin-Schlüssel auf dem Remote-Gerät aufgeführt ist."
+      "publicKeyUnauthorized": "Nicht autorisiert: Dieser Admin-Schlüssel ist auf dem Remote-Knoten nicht autorisiert. Stellen Sie sicher, dass der Schlüssel unter Admin-Schlüssel auf dem Remote-Gerät aufgeführt ist.",
+      "moduleConfigPartial": "Einige Moduleinstellungen konnten nicht vom Remote-Knoten geladen werden."
     }
   }
 }

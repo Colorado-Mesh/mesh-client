@@ -486,7 +486,10 @@
       "applying": "Stosowanie…",
       "unnamedChannel": "(bez nazwy)",
       "applySuccessWithSkipped": "Zastosowano kanał(y) {{applied}}; pominięto duplikat lub nienazwany kanał (y) {{skipped}}."
-    }
+    },
+    "channelLoading": "Wczytywanie…",
+    "channelLoadFailed": "Wczytywanie nieudane",
+    "retryRemoteChannels": "Ponów próbę załadowania kanałów"
   },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "Ten węzeł nie ma jeszcze klucza publicznego PKI. Poczekaj na pakiet NodeInfo nad siatką lub użyj aplikacji urządzenia raz, aby wymienić klucze.",
       "noAdminKeyConfigured": "Wklej i zapisz klucz administratora dla tego węzła w oknie dialogowym szczegółów węzła przed użyciem zdalnego administratora.",
       "invalidAdminKey": "Klucz administratora musi mieć 32 bajty (base64, base64:… lub 64 znaki szesnastkowe).",
-      "publicKeyUnauthorized": "Nieautoryzowany: ten klucz administratora nie jest autoryzowany w węźle zdalnym. Sprawdź, czy klucz jest wymieniony w sekcji Klucze administracyjne na urządzeniu zdalnym."
+      "publicKeyUnauthorized": "Nieautoryzowany: ten klucz administratora nie jest autoryzowany w węźle zdalnym. Sprawdź, czy klucz jest wymieniony w sekcji Klucze administracyjne na urządzeniu zdalnym.",
+      "moduleConfigPartial": "Nie można załadować niektórych ustawień modułu ze zdalnego węzła."
     }
   }
 }

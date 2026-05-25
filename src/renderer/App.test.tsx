@@ -47,6 +47,7 @@ const {
     remoteAdminStatus: 'idle' as const,
     remoteAdminError: undefined,
     remoteConfigSnapshot: null,
+    remoteConfigChannelsTailStatus: 'idle' as const,
     refreshRemoteConfigSnapshot: vi.fn().mockResolvedValue(undefined),
     getNodeName: vi.fn((num: number) => `Node ${num}`),
     channelConfigs: [],

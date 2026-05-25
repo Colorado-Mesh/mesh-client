@@ -903,6 +903,15 @@ export default function App() {
   const effectiveDeviceFixedPosition = isRemoteConfigureTarget
     ? (device.remoteConfigSnapshot?.deviceFixedPosition ?? null)
     : device.deviceFixedPosition;
+  const effectiveRemoteChannelFailedIndices = isRemoteConfigureTarget
+    ? (device.remoteConfigSnapshot?.failedChannelIndices ?? [])
+    : undefined;
+  const handleRetryRemoteChannelsTail = useCallback(() => {
+    if (device.configureTargetNodeNum == null) return;
+    void device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum, 'channelsTail', {
+      force: true,
+    });
+  }, [device]);
   const configureNodeSelector =
     capabilities.hasRemoteAdmin && hasLocalMeshtasticRadio ? (
       <div className="mb-4">
@@ -2077,6 +2086,15 @@ export default function App() {
                               onSetChannel={device.setDeviceChannel}
                               onClearChannel={device.clearChannel}
                               channelConfigs={effectiveChannelConfigs}
+                              remoteChannelFailedIndices={effectiveRemoteChannelFailedIndices}
+                              remoteChannelsTailStatus={
+                                isRemoteConfigureTarget
+                                  ? device.remoteConfigChannelsTailStatus
+                                  : undefined
+                              }
+                              onRetryRemoteChannelsTail={
+                                isRemoteConfigureTarget ? handleRetryRemoteChannelsTail : undefined
+                              }
                               meshtasticLoraConfig={
                                 protocol === 'meshtastic' ? effectiveLoraConfig : undefined
                               }

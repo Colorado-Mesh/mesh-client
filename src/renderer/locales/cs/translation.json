@@ -486,7 +486,10 @@
       "applying": "Uplatňuje se...",
       "unnamedChannel": "(nepojmenované)",
       "applySuccessWithSkipped": "Aplikováno {{applied}} kanálů; přeskočeno {{skipped}} duplikát nebo nepojmenováno."
-    }
+    },
+    "channelLoading": "Načítání…",
+    "channelLoadFailed": "Načítání selhalo",
+    "retryRemoteChannels": "Zkusit načítání kanálů znovu"
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",
@@ -2105,7 +2108,8 @@
       "noRemotePublicKey": "Tento uzel zatím nemá veřejný klíč PKI. Počkejte na paket NodeInfo přes síť nebo jednou použijte aplikaci zařízení k výměně klíčů.",
       "noAdminKeyConfigured": "Před použitím vzdáleného správce vložte a uložte klíč správce pro tento uzel v dialogovém okně podrobností uzlu.",
       "invalidAdminKey": "Správcovský klíč musí mít 32 bajtů (base64, base64:…, nebo 64znakový hexadecimál).",
-      "publicKeyUnauthorized": "Neautorizované: tento administrátorský klíč není autorizován na vzdáleném uzlu. Ověřte, zda je klíč uveden v části Správcovské klíče na vzdáleném zařízení."
+      "publicKeyUnauthorized": "Neautorizované: tento administrátorský klíč není autorizován na vzdáleném uzlu. Ověřte, zda je klíč uveden v části Správcovské klíče na vzdáleném zařízení.",
+      "moduleConfigPartial": "Některá nastavení modulu nelze načíst ze vzdáleného uzlu."
     }
   }
 }
