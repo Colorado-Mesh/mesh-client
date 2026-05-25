@@ -121,6 +121,11 @@ for (const dir of localeDirs) {
     );
     warnings++;
   }
+  const extra = [...existing].filter((k) => !enKeys.has(k));
+  if (extra.length > 0) {
+    console.error(`Orphan key(s) in "${dir}": ${extra.join(', ')}`);
+    errors++;
+  }
 }
 
 /** i18next interpolation names in appearance order (for duplicate names, set dedupes). */

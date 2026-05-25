@@ -1015,7 +1015,6 @@
   },
   "chatPanel": {
     "channels": "Kanały",
-    "allChannels": "Wszystko",
     "searchMessages": "Wyszukaj wiadomości",
     "searchAllChannels": "Przeszukaj wszystkie kanały",
     "closeDmTab": "Zamknij zakładkę DM",
@@ -1694,14 +1693,14 @@
     "configureRemotely": "Skonfiguruj węzeł zdalnie",
     "remoteAdminNoPkiKey": "Nie ma jeszcze klucza publicznego PKI dla tego węzła — zdalny administrator może nie działać, dopóki nie otrzyma NodeInfo.",
     "remoteAdminKeyTitle": "Klucz zdalnego administratora",
-    "remoteAdminKeyHint": "Wklej klucz publiczny administratora base64 skonfigurowany w tym węźle (jeden z maksymalnie trzech kluczy administratora w jego ustawieniach bezpieczeństwa). Musi pasować do klucza używanego przez lokalne radio do podpisywania pakietów administracyjnych.",
     "remoteAdminKeyLabel": "Klucz administracyjny",
     "remoteAdminKeyPlaceholder": "32-bajtowy klucz publiczny z kodowaniem Base64",
-    "remoteAdminKeyInvalid": "Wprowadź prawidłowy 32-bajtowy klucz publiczny administratora w kodowaniu Base64.",
     "saveRemoteAdminKey": "Zapisz klucz administratora",
     "clearRemoteAdminKey": "Clear",
     "remoteAdminKeySaved": "Klucz administracyjny zapisany dla tego węzła.",
-    "remoteAdminKeyCleared": "Klucz administratora został wyczyszczony."
+    "remoteAdminKeyCleared": "Klucz administratora został wyczyszczony.",
+    "remoteAdminKeyHint": "Wklej klucz publiczny administratora z ustawień bezpieczeństwa tego węzła (base64, base64:… lub 64-znakowy hex). Zapisz go tutaj, a następnie wybierz węzeł z listy rozwijanej Konfiguruj w Radio/Bezpieczeństwo/Moduły.",
+    "remoteAdminKeyInvalid": "Wprowadź prawidłowy klucz publiczny administratora (base64, base64:… lub 64-znakowy hex)."
   },
   "firmwareStatus": {
     "checking": "Sprawdzanie wersji oprogramowania sprzętowego",
@@ -2095,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "Podłącz lokalne radio, aby administrować zdalnymi węzłami.",
-      "publicKeyUnauthorized": "Nieautoryzowany: dodaj klucz publiczny tego radia do kluczy administratora zdalnego węzła.",
       "badSessionKey": "Sesja administratora wygasła. Odśwież i spróbuj ponownie.",
       "pkiFailed": "Szyfrowanie PKI nie powiodło się. Zweryfikuj klucze węzłów i usuń starsze konflikty kanałów administracyjnych.",
       "notAuthorized": "Administrator zdalny nie jest autoryzowany w węźle docelowym.",
@@ -2106,7 +2104,8 @@
       "channelResponseUnexpected": "Administrator zdalny zwrócił nieoczekiwaną odpowiedź kanału.",
       "noRemotePublicKey": "Ten węzeł nie ma jeszcze klucza publicznego PKI. Poczekaj na pakiet NodeInfo nad siatką lub użyj aplikacji urządzenia raz, aby wymienić klucze.",
       "noAdminKeyConfigured": "Wklej i zapisz klucz administratora dla tego węzła w oknie dialogowym szczegółów węzła przed użyciem zdalnego administratora.",
-      "invalidAdminKey": "Klucz administratora musi być 32-bajtowym kluczem publicznym zakodowanym w systemie Base64."
+      "invalidAdminKey": "Klucz administratora musi mieć 32 bajty (base64, base64:… lub 64 znaki szesnastkowe).",
+      "publicKeyUnauthorized": "Nieautoryzowany: ten klucz administratora nie jest autoryzowany w węźle zdalnym. Sprawdź, czy klucz jest wymieniony w sekcji Klucze administracyjne na urządzeniu zdalnym."
     }
   }
 }

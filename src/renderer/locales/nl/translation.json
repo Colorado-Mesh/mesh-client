@@ -1015,7 +1015,6 @@
   },
   "chatPanel": {
     "channels": "Kanalen",
-    "allChannels": "Alle",
     "searchMessages": "Berichten zoeken",
     "searchAllChannels": "Zoek alle kanalen",
     "closeDmTab": "Sluit het DM-tabblad",
@@ -1694,14 +1693,14 @@
     "configureRemotely": "Knooppunt op afstand configureren",
     "remoteAdminNoPkiKey": "Er is nog geen openbare PKI-sleutel geregistreerd voor dit knooppunt — externe beheerder werkt mogelijk niet totdat NodeInfo is ontvangen.",
     "remoteAdminKeyTitle": "Externe beheerderssleutel",
-    "remoteAdminKeyHint": "Plak de openbare basissleutel64-beheerderssleutel die op dit knooppunt is geconfigureerd (een van maximaal drie beheerderssleutels in de beveiligingsinstellingen). Het moet overeenkomen met een sleutel die uw lokale radio gebruikt om beheerderspakketten te ondertekenen.",
     "remoteAdminKeyLabel": "Admin-toets",
     "remoteAdminKeyPlaceholder": "Base64-gecodeerde openbare sleutel van 32 bytes",
-    "remoteAdminKeyInvalid": "Voer een geldige base64-gecodeerde openbare 32-byte admin-sleutel in.",
     "saveRemoteAdminKey": "Beheerderssleutel opslaan",
     "clearRemoteAdminKey": "Wissen",
     "remoteAdminKeySaved": "Beheersleutel opgeslagen voor dit knooppunt.",
-    "remoteAdminKeyCleared": "Admin-sleutel gewist."
+    "remoteAdminKeyCleared": "Admin-sleutel gewist.",
+    "remoteAdminKeyHint": "Plak een openbare admin-sleutel vanuit de beveiligingsinstellingen van dit knooppunt (base64, base64:… of hex van 64 tekens). Sla het hier op en selecteer vervolgens het knooppunt in de vervolgkeuzelijst Configureren op Radio/Beveiliging/Modules.",
+    "remoteAdminKeyInvalid": "Voer een geldige openbare admin-sleutel in (base64, base64:… of hex van 64 tekens)."
   },
   "firmwareStatus": {
     "checking": "Firmwareversie controleren",
@@ -2095,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "Sluit een lokale radio aan om externe knooppunten te beheren.",
-      "publicKeyUnauthorized": "Onbevoegd: voeg de openbare sleutel van deze radio toe aan de beheerderssleutels van het externe knooppunt.",
       "badSessionKey": "Beheerderssessie verlopen. Vernieuw en probeer het opnieuw.",
       "pkiFailed": "PKI-codering mislukt. Verifieer knooppuntsleutels en verwijder verouderde admin-kanaalconflicten.",
       "notAuthorized": "Externe beheerder niet geautoriseerd op het doelknooppunt.",
@@ -2106,7 +2104,8 @@
       "channelResponseUnexpected": "De externe beheerder heeft een onverwacht kanaalantwoord geretourneerd.",
       "noRemotePublicKey": "Dit knooppunt heeft nog geen openbare PKI-sleutel. Wacht op een NodeInfo pakket over het gaas, of gebruik de apparaat-app één keer om sleutels uit te wisselen.",
       "noAdminKeyConfigured": "Plak en bewaar een beheerderssleutel voor dit knooppunt in het dialoogvenster met knooppuntdetails voordat u een externe beheerder gebruikt.",
-      "invalidAdminKey": "De beheerderssleutel moet een base64-gecodeerde openbare sleutel van 32 bytes zijn."
+      "invalidAdminKey": "Admin-sleutel moet 32 bytes zijn (base64, base64:… of 64 tekens hex).",
+      "publicKeyUnauthorized": "Niet geautoriseerd: deze beheerderssleutel is niet geautoriseerd op het externe knooppunt. Controleer of de sleutel wordt vermeld onder Beheertoetsen op het externe apparaat."
     }
   }
 }

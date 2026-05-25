@@ -1028,7 +1028,6 @@
     "sendButton": "Mengirim",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
-    "allChannels": "Semua",
     "receivedViaRf": "Diterima melalui RF",
     "receivedViaMqtt": "Diterima melalui MQTT",
     "receivedViaRfAndMqtt": "Diterima melalui RF + MQTT",
@@ -1694,14 +1693,14 @@
     "configureRemotely": "Konfigurasikan node dari jarak jauh",
     "remoteAdminNoPkiKey": "Belum ada kunci publik PKI yang tercatat untuk node ini — admin jarak jauh mungkin tidak berfungsi sampai NodeInfo diterima.",
     "remoteAdminKeyTitle": "Kunci admin jarak jauh",
-    "remoteAdminKeyHint": "Tempelkan kunci publik admin base64 yang dikonfigurasi pada simpul ini (satu dari hingga tiga kunci Admin dalam pengaturan Keamanannya). Ini harus cocok dengan kunci yang digunakan radio lokal Anda untuk menandatangani paket admin.",
     "remoteAdminKeyLabel": "Kunci admin",
     "remoteAdminKeyPlaceholder": "Kunci publik 32 - byte berkode Base64",
-    "remoteAdminKeyInvalid": "Masukkan kunci publik admin 32 - byte berkode base64 yang valid.",
     "saveRemoteAdminKey": "Simpan kunci admin",
     "clearRemoteAdminKey": "Kosongkan",
     "remoteAdminKeySaved": "Kunci admin disimpan untuk simpul ini.",
-    "remoteAdminKeyCleared": "Kunci admin dihapus."
+    "remoteAdminKeyCleared": "Kunci admin dihapus.",
+    "remoteAdminKeyHint": "Tempelkan kunci publik admin dari pengaturan Keamanan simpul ini (base64, base64 :…, atau hex 64 karakter). Simpan di sini, lalu pilih simpul di menu tarik - turun Konfigurasi di Radio/Keamanan/Modul.",
+    "remoteAdminKeyInvalid": "Masukkan kunci publik admin yang valid (base64, base64 :…, atau hex 64 karakter)."
   },
   "firmwareStatus": {
     "checking": "Memeriksa versi firmware",
@@ -2095,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "Hubungkan radio lokal untuk mengelola node jarak jauh.",
-      "publicKeyUnauthorized": "Tidak sah: tambahkan kunci publik radio ini ke Tombol Admin simpul jauh.",
       "badSessionKey": "Sesi admin kedaluwarsa. Segarkan dan coba lagi.",
       "pkiFailed": "Enkripsi PKI gagal. Verifikasi kunci simpul dan hapus konflik saluran admin lama.",
       "notAuthorized": "Admin jarak jauh tidak diotorisasi pada node target.",
@@ -2106,7 +2104,8 @@
       "channelResponseUnexpected": "Admin jarak jauh mengembalikan respons saluran yang tidak terduga.",
       "noRemotePublicKey": "Node ini belum memiliki kunci publik PKI. Tunggu paket NodeInfo melewati mesh, atau gunakan aplikasi perangkat satu kali untuk bertukar kunci.",
       "noAdminKeyConfigured": "Tempel dan simpan kunci admin untuk simpul ini dalam dialog detail simpul sebelum menggunakan admin jarak jauh.",
-      "invalidAdminKey": "Kunci admin harus berupa kunci publik 32 - byte berkode base64."
+      "invalidAdminKey": "Kunci admin harus 32 byte (base64, base64 :…, atau hex 64 karakter).",
+      "publicKeyUnauthorized": "Tidak sah: kunci admin ini tidak diotorisasi pada simpul jarak jauh. Pastikan kunci tercantum di bawah Tombol admin pada perangkat jarak jauh."
     }
   }
 }

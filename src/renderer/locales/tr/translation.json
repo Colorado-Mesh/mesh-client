@@ -1028,7 +1028,6 @@
     "sendButton": "Göndermek",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
-    "allChannels": "Tüm",
     "receivedViaRf": "RF aracılığıyla alındı",
     "receivedViaMqtt": "MQTT aracılığıyla alındı",
     "receivedViaRfAndMqtt": "RF + MQTT aracılığıyla alındı",
@@ -1694,14 +1693,14 @@
     "configureRemotely": "Düğümü uzaktan yapılandır",
     "remoteAdminNoPkiKey": "Bu düğüm için henüz kayıtlı PKI genel anahtarı yok — NodeInfo alınana kadar uzak yönetici çalışmayabilir.",
     "remoteAdminKeyTitle": "Uzaktan yönetici anahtarı",
-    "remoteAdminKeyHint": "Bu düğümde yapılandırılan base64 yönetici genel anahtarını yapıştırın (Güvenlik ayarlarında en fazla üç Yönetici anahtarından biri). Yönetici paketlerini imzalamak için yerel radyonuzun kullandığı bir anahtarla eşleşmelidir.",
     "remoteAdminKeyLabel": "Yönetici anahtarı",
     "remoteAdminKeyPlaceholder": "Base64 kodlu 32 bayt genel anahtar",
-    "remoteAdminKeyInvalid": "Geçerli bir base64 kodlu 32 baytlık yönetici genel anahtarı girin.",
     "saveRemoteAdminKey": "Yönetici anahtarını kaydet",
     "clearRemoteAdminKey": "Temizle",
     "remoteAdminKeySaved": "Bu düğüm için yönetici anahtarı kaydedildi.",
-    "remoteAdminKeyCleared": "Yönetici anahtarı temizlendi."
+    "remoteAdminKeyCleared": "Yönetici anahtarı temizlendi.",
+    "remoteAdminKeyHint": "Bu düğümün Güvenlik ayarlarından (base64, base64 :… veya 64 karakterli Hex) bir genel yönetici anahtarı yapıştırın. Buraya kaydedin, ardından Radyo/Güvenlik/Modüller'deki Yapılandır açılır menüsünden düğümü seçin.",
+    "remoteAdminKeyInvalid": "Geçerli bir yönetici ortak anahtarı girin (base64, base64 :… veya 64 karakterli hex)."
   },
   "firmwareStatus": {
     "checking": "Ürün yazılımı sürümünün kontrol edilmesi",
@@ -2095,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "Uzak düğümleri yönetmek için yerel bir radyo bağlayın.",
-      "publicKeyUnauthorized": "Yetkisiz: Bu radyonun genel anahtarını uzak düğümün Yönetici Anahtarlarına ekleyin.",
       "badSessionKey": "Yönetici oturumu sona erdi. Yenile ve tekrar dene.",
       "pkiFailed": "PKI şifrelemesi başarısız oldu. Düğüm anahtarlarını doğrulayın ve eski yönetici kanalı çakışmalarını kaldırın.",
       "notAuthorized": "Hedef düğümde uzaktan yönetici yetkilendirilmemiş.",
@@ -2106,7 +2104,8 @@
       "channelResponseUnexpected": "Uzak yönetici beklenmeyen bir kanal yanıtı döndürdü.",
       "noRemotePublicKey": "Bu düğümün henüz PKI genel anahtarı yok. Ağ üzerinde bir NodeInfo paketi bekleyin veya anahtarları değiştirmek için cihaz uygulamasını bir kez kullanın.",
       "noAdminKeyConfigured": "Uzaktan yöneticiyi kullanmadan önce düğüm ayrıntı iletişim kutusuna bu düğüm için bir yönetici anahtarı yapıştırın ve kaydedin.",
-      "invalidAdminKey": "Admin key base64 - encoded 32 - byte public key olmalıdır."
+      "invalidAdminKey": "Yönetici anahtarı 32 bayt olmalıdır (base64, base64 :… veya 64 karakter hex).",
+      "publicKeyUnauthorized": "Yetkisiz: Bu yönetici anahtarı uzak düğümde yetkilendirilmemiş. Anahtarın uzak cihazdaki Yönetici anahtarları altında listelendiğini doğrulayın."
     }
   }
 }

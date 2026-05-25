@@ -1015,7 +1015,6 @@
   },
   "chatPanel": {
     "channels": "Scanalature",
-    "allChannels": "Tutto",
     "searchMessages": "Cerca nei messaggi",
     "searchAllChannels": "Cerca tutti i canali",
     "closeDmTab": "Chiudi scheda DM",
@@ -1694,14 +1693,14 @@
     "configureRemotely": "Configura il nodo da remoto",
     "remoteAdminNoPkiKey": "Nessuna chiave pubblica PKI registrata per questo nodo ancora — l'amministratore remoto potrebbe non funzionare fino a quando non viene ricevuto NodeInfo.",
     "remoteAdminKeyTitle": "Chiave di amministrazione remota",
-    "remoteAdminKeyHint": "Incolla la chiave pubblica di amministrazione base64 configurata su questo nodo (una delle tre chiavi di amministrazione nelle sue impostazioni di sicurezza). Deve corrispondere a una chiave utilizzata dalla radio locale per firmare i pacchetti di amministrazione.",
     "remoteAdminKeyLabel": "Chiave amministratore",
     "remoteAdminKeyPlaceholder": "Chiave pubblica a 32 byte con codifica Base64",
-    "remoteAdminKeyInvalid": "Immettere una chiave pubblica di amministrazione valida a 32 byte con codifica base64.",
     "saveRemoteAdminKey": "Salva chiave di amministrazione",
     "clearRemoteAdminKey": "Pulisci",
     "remoteAdminKeySaved": "Chiave di amministrazione salvata per questo nodo.",
-    "remoteAdminKeyCleared": "Chiave di amministrazione cancellata."
+    "remoteAdminKeyCleared": "Chiave di amministrazione cancellata.",
+    "remoteAdminKeyHint": "Incolla una chiave pubblica di amministrazione dalle impostazioni di sicurezza di questo nodo (base64, base64:… o esadecimale di 64 caratteri). Salvalo qui, quindi seleziona il nodo nel menu a discesa Configura su Radio/Sicurezza/Moduli.",
+    "remoteAdminKeyInvalid": "Immettere una chiave pubblica di amministrazione valida (base64, base64:… o esadecimale di 64 caratteri)."
   },
   "firmwareStatus": {
     "checking": "Controllo della versione del firmware",
@@ -2095,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "Collegare una radio locale per amministrare i nodi remoti.",
-      "publicKeyUnauthorized": "Non autorizzato: aggiungi la chiave pubblica di questa radio alle chiavi di amministrazione del nodo remoto.",
       "badSessionKey": "Sessione di amministrazione scaduta. Aggiorna e riprova.",
       "pkiFailed": "Crittografia PKI non riuscita. Verificare le chiavi del nodo e rimuovere i conflitti del canale di amministrazione legacy.",
       "notAuthorized": "Amministratore remoto non autorizzato sul nodo di destinazione.",
@@ -2106,7 +2104,8 @@
       "channelResponseUnexpected": "L'amministratore remoto ha restituito una risposta del canale inaspettata.",
       "noRemotePublicKey": "Questo nodo non ha ancora una chiave pubblica PKI. Attendi un pacchetto NodeInfo sulla mesh o utilizza l'app del dispositivo una volta per scambiare le chiavi.",
       "noAdminKeyConfigured": "Incollare e salvare una chiave di amministrazione per questo nodo nella finestra di dialogo dei dettagli del nodo prima di utilizzare l'amministrazione remota.",
-      "invalidAdminKey": "La chiave di amministrazione deve essere una chiave pubblica a 32 byte con codifica base64."
+      "invalidAdminKey": "La chiave di amministrazione deve essere di 32 byte (base64, base64:… o esadecimale di 64 caratteri).",
+      "publicKeyUnauthorized": "Non autorizzato: questa chiave di amministrazione non è autorizzata sul nodo remoto. Verificare che la chiave sia elencata in Tasti di amministrazione sul dispositivo remoto."
     }
   }
 }

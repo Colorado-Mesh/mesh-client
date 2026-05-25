@@ -1015,7 +1015,6 @@
   },
   "chatPanel": {
     "channels": "Rinnen",
-    "allChannels": "Alle",
     "searchMessages": "Nachrichten durchsuchen",
     "searchAllChannels": "Alle Kanäle durchsuchen",
     "closeDmTab": "DM-Tab schließen",
@@ -1694,14 +1693,14 @@
     "configureRemotely": "Knoten aus der Ferne konfigurieren",
     "remoteAdminNoPkiKey": "Für diesen Knoten ist noch kein öffentlicher PKI-Schlüssel vorhanden — Remote-Admin funktioniert möglicherweise nicht, bis NodeInfo empfangen wird.",
     "remoteAdminKeyTitle": "Remote-Admin-Schlüssel",
-    "remoteAdminKeyHint": "Fügen Sie den auf diesem Knoten konfigurierten öffentlichen base64 Admin-Schlüssel ein (einer von bis zu drei Admin-Schlüsseln in den Sicherheitseinstellungen). Es muss mit einem Schlüssel übereinstimmen, den Ihr lokales Radio zum Signieren von Admin-Paketen verwendet.",
     "remoteAdminKeyLabel": "Administrator API Schlüssel",
     "remoteAdminKeyPlaceholder": "Base64-kodierter öffentlicher 32-Byte-Schlüssel",
-    "remoteAdminKeyInvalid": "Geben Sie einen gültigen base64-kodierten öffentlichen 32-Byte-Admin-Schlüssel ein.",
     "saveRemoteAdminKey": "Admin-Schlüssel speichern",
     "clearRemoteAdminKey": "Zurücksetzen",
     "remoteAdminKeySaved": "Admin-Schlüssel für diesen Knoten gespeichert.",
-    "remoteAdminKeyCleared": "Admin-Schlüssel gelöscht."
+    "remoteAdminKeyCleared": "Admin-Schlüssel gelöscht.",
+    "remoteAdminKeyHint": "Fügen Sie einen öffentlichen Admin-Schlüssel aus den Sicherheitseinstellungen dieses Knotens ein (base64, base64:… oder 64-stelliges Hexadezimalzeichen). Speichern Sie es hier und wählen Sie dann den Knoten im Dropdown-Menü Konfigurieren auf Radio/Sicherheit/Module aus.",
+    "remoteAdminKeyInvalid": "Geben Sie einen gültigen öffentlichen Admin-Schlüssel ein (base64, base64:… oder 64-stelliges Hexadezimalzeichen)."
   },
   "firmwareStatus": {
     "checking": "Überprüfung der Firmwareversion",
@@ -2095,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "Schließen Sie ein lokales Funkgerät an, um Remote-Knoten zu verwalten.",
-      "publicKeyUnauthorized": "Nicht autorisiert: Fügen Sie den öffentlichen Schlüssel dieses Radios zu den Admin-Schlüsseln des Remote-Knotens hinzu.",
       "badSessionKey": "Admin-Sitzung abgelaufen. Aktualisieren und erneut versuchen.",
       "pkiFailed": "PKI-Verschlüsselung fehlgeschlagen. Überprüfen Sie die Knotenschlüssel und entfernen Sie ältere Admin-Kanal-Konflikte.",
       "notAuthorized": "Remote-Administrator auf dem Zielknoten nicht autorisiert.",
@@ -2106,7 +2104,8 @@
       "channelResponseUnexpected": "Der Remote-Administrator hat eine unerwartete Kanalantwort zurückgegeben.",
       "noRemotePublicKey": "Dieser Knoten hat noch keinen öffentlichen PKI-Schlüssel. Warten Sie auf ein NodeInfo-Paket über dem Netz oder verwenden Sie die Geräte-App einmal, um Schlüssel auszutauschen.",
       "noAdminKeyConfigured": "Fügen Sie einen Admin-Schlüssel für diesen Knoten im Knotendetaildialog ein und speichern Sie ihn, bevor Sie Remote-Admin verwenden.",
-      "invalidAdminKey": "Der Admin-Schlüssel muss ein mit base64 kodierter öffentlicher 32-Byte-Schlüssel sein."
+      "invalidAdminKey": "Der Admin-Schlüssel muss 32 Byte groß sein (base64, base64:… oder 64-stelliges Hexadezimalzeichen).",
+      "publicKeyUnauthorized": "Nicht autorisiert: Dieser Admin-Schlüssel ist auf dem Remote-Knoten nicht autorisiert. Stellen Sie sicher, dass der Schlüssel unter Admin-Schlüssel auf dem Remote-Gerät aufgeführt ist."
     }
   }
 }
