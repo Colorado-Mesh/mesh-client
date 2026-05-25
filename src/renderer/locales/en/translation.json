@@ -513,6 +513,7 @@
       "timeout": "Remote admin request timed out.",
       "channelConfigPartial": "One or more channel settings could not be loaded from the remote node.",
       "configResponseUnexpected": "Remote admin returned an unexpected config response.",
+      "channelResponseUnexpected": "Remote admin returned an unexpected channel response.",
       "generic": "Remote admin request failed."
     }
   },

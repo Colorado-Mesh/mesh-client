@@ -55,6 +55,16 @@ export const REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS = 500;
 
 export const REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS = 3;
 
+/** Pause before channel fetches 1–7 after configs (BLE settle). */
+export const REMOTE_ADMIN_CHANNEL_LOOP_START_DELAY_MS = 500;
+
+/** Pause between sequential remote channel fetches. */
+export const REMOTE_ADMIN_CHANNEL_FETCH_DELAY_MS = 300;
+
+export const REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS = 3;
+
+export const REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS = 500;
+
 export function delayMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -67,6 +77,17 @@ export function isRemoteAdminRetryableError(message: string): boolean {
     message === 'remoteAdmin.errors.timeout' ||
     message === 'remoteAdmin.errors.badSessionKey' ||
     message === 'remoteAdmin.errors.notAuthorized'
+  );
+}
+
+/** ROUTING_APP codes that often precede a successful admin response on multi-hop reads. */
+export function isBenignRoutingErrorForRead(error: RemoteAdminRoutingErrorCode): boolean {
+  const RoutingError = Mesh.Routing_Error as Record<string, number>;
+  return (
+    error === RoutingError.NO_CHANNEL ||
+    error === RoutingError.MAX_RETRANSMIT ||
+    error === RoutingError.NO_RESPONSE ||
+    error === RoutingError.TIMEOUT
   );
 }
 
@@ -169,10 +190,36 @@ export function routingErrorToRemoteAdminKey(error: RemoteAdminRoutingErrorCode)
       return 'remoteAdmin.errors.notAuthorized';
     case RoutingError.TIMEOUT:
     case RoutingError.NO_RESPONSE:
+    case RoutingError.MAX_RETRANSMIT:
+    case RoutingError.NO_CHANNEL:
       return 'remoteAdmin.errors.timeout';
     default:
       return 'remoteAdmin.errors.generic';
   }
+}
+
+export async function retryRemoteAdminOp<T>(
+  operation: () => Promise<T>,
+  options?: { maxAttempts?: number; backoffMs?: number },
+): Promise<T> {
+  const maxAttempts = options?.maxAttempts ?? REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS;
+  const backoffMs = options?.backoffMs ?? REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS;
+  let lastError: Error | undefined;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await operation();
+    } catch (e) {
+      const msg =
+        e instanceof Error && e.message.startsWith('remoteAdmin.errors.')
+          ? e.message
+          : normalizeRemoteAdminError(e);
+      lastError = new Error(msg);
+      const canRetry = attempt + 1 < maxAttempts && isRemoteAdminRetryableError(msg);
+      if (!canRetry) throw lastError;
+      await delayMs(backoffMs);
+    }
+  }
+  throw lastError ?? new Error('remoteAdmin.errors.generic');
 }
 
 function resolveAdminRequestId(meshPacket: MeshPacket, dataRequestId: number): number {
@@ -318,20 +365,57 @@ export class MeshtasticRemoteAdminClient {
     if (!parsed) return;
 
     if (parsed.kind === 'routing_error') {
-      const pending = this.pending.get(parsed.requestId);
-      if (!pending) return;
-      const key = routingErrorToRemoteAdminKey(parsed.error);
-      // Failure point: wantAck routing ack can arrive before PKI admin response. Fallback: keep
-      // waiting for the real ADMIN_APP response unless the routing error is a known admin/PKI fault.
-      if (pending.expectedResponseCases?.length && key === 'remoteAdmin.errors.generic') {
+      let requestId = parsed.requestId;
+      if (requestId === 0 && this.pending.size === 1) {
+        requestId = this.pending.keys().next().value!;
         console.debug(
-          '[MeshtasticRemoteAdmin] ignoring benign ROUTING_APP for pending read requestId=' +
-            String(parsed.requestId),
+          '[MeshtasticRemoteAdmin] ROUTING correlated to sole pending requestId=' +
+            String(requestId),
+        );
+      } else if (requestId === 0) {
+        console.debug(
+          '[MeshtasticRemoteAdmin] ROUTING uncorrelated meshPacket.id=' +
+            String(meshPacket.id ?? 0) +
+            ' pendingCount=' +
+            String(this.pending.size),
         );
         return;
       }
+
+      const pending = this.pending.get(requestId);
+      if (!pending) return;
+      const key = routingErrorToRemoteAdminKey(parsed.error);
+      // Failure point: wantAck routing ack can arrive before PKI admin response. Fallback: keep
+      // waiting for the real ADMIN_APP response unless the routing error is fatal for admin/PKI.
+      const isRead = (pending.expectedResponseCases?.length ?? 0) > 0;
+      if (
+        isRead &&
+        (isBenignRoutingErrorForRead(parsed.error) || key === 'remoteAdmin.errors.generic')
+      ) {
+        console.debug(
+          '[MeshtasticRemoteAdmin] ignoring benign ROUTING_APP requestId=' +
+            String(requestId) +
+            ' error=' +
+            String(parsed.error) +
+            ' mapped=' +
+            key +
+            ' dest=0x' +
+            pending.destNodeNum.toString(16),
+        );
+        return;
+      }
+      console.debug(
+        '[MeshtasticRemoteAdmin] ROUTING reject requestId=' +
+          String(requestId) +
+          ' error=' +
+          String(parsed.error) +
+          ' mapped=' +
+          key +
+          ' dest=0x' +
+          pending.destNodeNum.toString(16),
+      );
       clearTimeout(pending.timeoutId);
-      this.pending.delete(parsed.requestId);
+      this.pending.delete(requestId);
       pending.reject(new Error(key));
       return;
     }
@@ -386,9 +470,12 @@ export class MeshtasticRemoteAdminClient {
           ' expected=' +
           pending.expectedResponseCases.join(','),
       );
+      const mismatchKey = pending.expectedResponseCases?.includes('getChannelResponse')
+        ? 'remoteAdmin.errors.channelResponseUnexpected'
+        : 'remoteAdmin.errors.configResponseUnexpected';
       clearTimeout(pending.timeoutId);
       this.pending.delete(parsed.requestId);
-      pending.reject(new Error('remoteAdmin.errors.configResponseUnexpected'));
+      pending.reject(new Error(mismatchKey));
       return;
     }
     clearTimeout(pending.timeoutId);
@@ -596,24 +683,10 @@ export class MeshtasticRemoteAdminClient {
     configType: (typeof Admin.AdminMessage_ConfigType)[keyof typeof Admin.AdminMessage_ConfigType],
     options?: { maxAttempts?: number; backoffMs?: number },
   ): Promise<unknown> {
-    const maxAttempts = options?.maxAttempts ?? REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS;
-    const backoffMs = options?.backoffMs ?? REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS;
-    let lastError: Error | undefined;
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        return await this.getRemoteConfig(destNodeNum, configType);
-      } catch (e) {
-        const msg =
-          e instanceof Error && e.message.startsWith('remoteAdmin.errors.')
-            ? e.message
-            : normalizeRemoteAdminError(e);
-        lastError = new Error(msg);
-        const canRetry = attempt + 1 < maxAttempts && isRemoteAdminRetryableError(msg);
-        if (!canRetry) throw lastError;
-        await delayMs(backoffMs);
-      }
-    }
-    throw lastError ?? new Error('remoteAdmin.errors.generic');
+    return retryRemoteAdminOp(() => this.getRemoteConfig(destNodeNum, configType), {
+      maxAttempts: options?.maxAttempts ?? REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS,
+      backoffMs: options?.backoffMs ?? REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS,
+    });
   }
 
   async getRemoteModuleConfig(
@@ -649,10 +722,28 @@ export class MeshtasticRemoteAdminClient {
         expectedResponseCases: ['getChannelResponse'],
       },
     );
-    if (response.payloadVariant.case !== 'getChannelResponse') {
-      throw new Error('remoteAdmin.errors.generic');
+    const responseCase = response.payloadVariant.case;
+    if (responseCase !== 'getChannelResponse') {
+      console.warn(
+        '[MeshtasticRemoteAdmin] unexpected getChannelResponse variant index=' +
+          String(index) +
+          ' case=' +
+          (responseCase ?? 'unknown'),
+      );
+      throw new Error('remoteAdmin.errors.channelResponseUnexpected');
     }
     return response.payloadVariant.value;
+  }
+
+  async getRemoteChannelWithRetry(
+    destNodeNum: number,
+    index: number,
+    options?: { maxAttempts?: number; backoffMs?: number },
+  ): Promise<unknown> {
+    return retryRemoteAdminOp(() => this.getRemoteChannel(destNodeNum, index), {
+      maxAttempts: options?.maxAttempts ?? REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
+      backoffMs: options?.backoffMs ?? REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
+    });
   }
 
   async getRemoteOwner(destNodeNum: number): Promise<unknown> {

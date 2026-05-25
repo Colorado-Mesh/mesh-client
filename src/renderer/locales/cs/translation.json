@@ -2093,7 +2093,8 @@
       "timeout": "Časový limit požadavku vzdáleného správce vypršel.",
       "generic": "Požadavek vzdáleného správce se nezdařil.",
       "configResponseUnexpected": "Vzdálený správce vrátil neočekávanou konfigurační odpověď.",
-      "channelConfigPartial": "Ze vzdáleného uzlu nelze načíst jedno nebo více nastavení kanálu."
+      "channelConfigPartial": "Ze vzdáleného uzlu nelze načíst jedno nebo více nastavení kanálu.",
+      "channelResponseUnexpected": "Vzdálený správce vrátil neočekávanou odpověď kanálu."
     }
   }
 }

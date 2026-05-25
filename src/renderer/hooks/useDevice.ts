@@ -390,7 +390,10 @@ export function useDevice() {
   const [configureTargetNodeNum, setConfigureTargetNodeNumState] = useState<number | null>(null);
   const configureTargetNodeNumRef = useRef<number | null>(null);
   const configureTargetPersistRestoredRef = useRef(false);
+  const skipLocalLoraConfigRef = useRef(false);
+  const localLoraConfigTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [remoteAdminStatus, setRemoteAdminStatus] = useState<RemoteAdminStatus>('idle');
+  const remoteAdminStatusRef = useRef<RemoteAdminStatus>('idle');
   const [remoteAdminError, setRemoteAdminError] = useState<string | undefined>();
   const [remoteConfigSnapshot, setRemoteConfigSnapshot] =
     useState<MeshtasticRemoteConfigSnapshot | null>(null);
@@ -765,6 +768,10 @@ export function useDevice() {
   useEffect(() => {
     configureTargetNodeNumRef.current = configureTargetNodeNum;
   }, [configureTargetNodeNum]);
+
+  useEffect(() => {
+    remoteAdminStatusRef.current = remoteAdminStatus;
+  }, [remoteAdminStatus]);
 
   useEffect(() => {
     remoteAdminClientRef.current = new MeshtasticRemoteAdminClient(
@@ -1464,17 +1471,29 @@ export function useDevice() {
           startGpsInterval();
           setQueueStatus({ free: 16, maxlen: 16, res: 0 });
           deviceConfiguredRef.current = true;
-          if (configureTargetNodeNumRef.current == null) {
+          if (localLoraConfigTimerRef.current != null) {
+            clearTimeout(localLoraConfigTimerRef.current);
+          }
+          localLoraConfigTimerRef.current = setTimeout(() => {
+            localLoraConfigTimerRef.current = undefined;
+            if (skipLocalLoraConfigRef.current) return;
+            if (configureTargetNodeNumRef.current != null) return;
+            if (remoteAdminStatusRef.current === 'loading') return;
             void deviceRef.current
               ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
               .catch((e: unknown) => {
                 console.debug('[useDevice] LoRa config request failed ' + errLikeToLogString(e));
               });
-          }
+          }, 2500);
         }
 
         // Always clean up on disconnect, even if we never reached configured
         if (status === 2) {
+          if (localLoraConfigTimerRef.current != null) {
+            clearTimeout(localLoraConfigTimerRef.current);
+            localLoraConfigTimerRef.current = undefined;
+          }
+          skipLocalLoraConfigRef.current = false;
           lastRfDisconnectAtRef.current = Date.now();
           rfHeardNodeIds.current.clear();
           lastNodeInfoRequestAtRef.current.clear();
@@ -3565,7 +3584,7 @@ export function useDevice() {
         setRemoteAdminStatus('ready');
         setRemoteAdminError(
           essential.loraConfigFetchError ??
-            (essential.channelConfigFetchFailed
+            (essential.primaryChannelConfigFetchFailed
               ? 'remoteAdmin.errors.channelConfigPartial'
               : undefined),
         );
@@ -3585,7 +3604,6 @@ export function useDevice() {
         })();
       } catch (e) {
         if (!applyIfCurrent()) return;
-        remoteAdminClientRef.current?.resetEditState();
         const msg = normalizeRemoteAdminError(e);
         setRemoteAdminStatus('error');
         setRemoteAdminError(msg);
@@ -3614,6 +3632,15 @@ export function useDevice() {
         nodeNum != null && nodeNum > 0 && nodeNum !== myNodeNumRef.current ? nodeNum : null;
       setConfigureTargetNodeNumState(normalized);
       configureTargetNodeNumRef.current = normalized;
+      if (normalized != null) {
+        skipLocalLoraConfigRef.current = true;
+        if (localLoraConfigTimerRef.current != null) {
+          clearTimeout(localLoraConfigTimerRef.current);
+          localLoraConfigTimerRef.current = undefined;
+        }
+      } else {
+        skipLocalLoraConfigRef.current = false;
+      }
       const persistValue = normalized == null ? '' : String(normalized);
       mergeAppSetting(
         'meshtasticConfigureTargetNodeNum',

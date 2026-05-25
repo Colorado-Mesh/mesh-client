@@ -199,6 +199,10 @@ export interface MeshtasticRemoteConfigSnapshot {
   loraConfigFetchError?: string;
   /** Set when one or more channel getChannel requests failed during snapshot fetch. */
   channelConfigFetchFailed?: boolean;
+  /** Channel indices that failed during snapshot fetch (0 = primary). */
+  failedChannelIndices?: number[];
+  /** True when primary channel (index 0) could not be loaded. */
+  primaryChannelConfigFetchFailed?: boolean;
   loraConfig?: MeshtasticLoraConfig | null;
   deviceOwner?: { longName: string; shortName: string; isLicensed: boolean } | null;
   securityConfig?: {

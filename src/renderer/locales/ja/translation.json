@@ -2092,7 +2092,8 @@
       "timeout": "リモート管理者リクエストがタイムアウトしました。",
       "generic": "リモート管理者リクエストに失敗しました。",
       "configResponseUnexpected": "リモート管理者が予期しない構成応答を返しました。",
-      "channelConfigPartial": "1つ以上のチャンネル設定をリモートノードから読み込めませんでした。"
+      "channelConfigPartial": "1つ以上のチャンネル設定をリモートノードから読み込めませんでした。",
+      "channelResponseUnexpected": "リモート管理者が予期しないチャネル応答を返しました。"
     }
   }
 }

@@ -7,6 +7,10 @@ import {
   delayMs,
   type MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
+  REMOTE_ADMIN_CHANNEL_FETCH_DELAY_MS,
+  REMOTE_ADMIN_CHANNEL_LOOP_START_DELAY_MS,
+  REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
+  REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
   REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS,
   REMOTE_ADMIN_ESSENTIAL_FETCH_DELAY_MS,
   REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS,
@@ -223,30 +227,48 @@ async function fetchConfigTypes(
   return { configResults, loraConfigFetchFailed, loraConfigFetchError };
 }
 
+async function fetchRemoteChannelIndex(
+  client: MeshtasticRemoteAdminClient,
+  destNodeNum: number,
+  index: number,
+): Promise<unknown> {
+  return client.getRemoteChannelWithRetry(destNodeNum, index, {
+    maxAttempts: REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
+    backoffMs: REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
+  });
+}
+
 async function fetchRemoteChannels(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
   interFetchDelayMs: number,
+  options?: { startIndex?: number; loopStartDelayMs?: number },
 ): Promise<{
   channelResults: { index: number; value: unknown }[];
-  channelConfigFetchFailed: boolean;
+  failedChannelIndices: number[];
 }> {
   const channelResults: { index: number; value: unknown }[] = [];
-  let channelConfigFetchFailed = false;
+  const failedChannelIndices: number[] = [];
+  const startIndex = options?.startIndex ?? 0;
+  const loopStartDelayMs = options?.loopStartDelayMs ?? 0;
 
-  for (let index = 0; index < 8; index++) {
-    if (index > 0 && interFetchDelayMs > 0) {
+  if (startIndex > 0 && loopStartDelayMs > 0) {
+    await delayMs(loopStartDelayMs);
+  }
+
+  for (let index = startIndex; index < 8; index++) {
+    if (index > startIndex && interFetchDelayMs > 0) {
       await delayMs(interFetchDelayMs);
     }
     try {
-      const value = await client.getRemoteChannel(destNodeNum, index);
+      const value = await fetchRemoteChannelIndex(client, destNodeNum, index);
       channelResults.push({ index, value });
       const parsed = parseChannelEntry(value, index);
       if (index >= 1 && isChannelEntryEmpty(parsed)) {
         break;
       }
     } catch (e) {
-      channelConfigFetchFailed = true;
+      failedChannelIndices.push(index);
       console.warn(
         '[fetchMeshtasticRemoteConfigSnapshot] channel fetch failed index=' +
           String(index) +
@@ -257,7 +279,17 @@ async function fetchRemoteChannels(
     }
   }
 
-  return { channelResults, channelConfigFetchFailed };
+  return { channelResults, failedChannelIndices };
+}
+
+function channelFetchFlags(failedChannelIndices: number[]): {
+  channelConfigFetchFailed: boolean;
+  primaryChannelConfigFetchFailed: boolean;
+} {
+  return {
+    channelConfigFetchFailed: failedChannelIndices.length > 0,
+    primaryChannelConfigFetchFailed: failedChannelIndices.includes(0),
+  };
 }
 
 function channelConfigsFromResults(
@@ -277,6 +309,19 @@ export async function fetchMeshtasticRemoteConfigSnapshotEssential(
   const metadata = await client.getRemoteMetadata(destNodeNum);
   await ensureRemoteSessionKey(client, destNodeNum);
 
+  const primaryChannelResults: { index: number; value: unknown }[] = [];
+  const failedChannelIndices: number[] = [];
+  try {
+    const value = await fetchRemoteChannelIndex(client, destNodeNum, 0);
+    primaryChannelResults.push({ index: 0, value });
+  } catch (e) {
+    failedChannelIndices.push(0);
+    console.warn(
+      '[fetchMeshtasticRemoteConfigSnapshot] channel fetch failed index=0 ' + errLikeToLogString(e),
+    );
+    primaryChannelResults.push({ index: 0, value: null });
+  }
+
   const { configResults, loraConfigFetchFailed, loraConfigFetchError } = await fetchConfigTypes(
     client,
     destNodeNum,
@@ -284,17 +329,22 @@ export async function fetchMeshtasticRemoteConfigSnapshotEssential(
     REMOTE_ADMIN_ESSENTIAL_FETCH_DELAY_MS,
   );
 
-  const { channelResults, channelConfigFetchFailed } = await fetchRemoteChannels(
-    client,
-    destNodeNum,
-    REMOTE_ADMIN_ESSENTIAL_FETCH_DELAY_MS,
-  );
+  const { channelResults: trailingChannelResults, failedChannelIndices: trailingFailed } =
+    await fetchRemoteChannels(client, destNodeNum, REMOTE_ADMIN_CHANNEL_FETCH_DELAY_MS, {
+      startIndex: 1,
+      loopStartDelayMs: REMOTE_ADMIN_CHANNEL_LOOP_START_DELAY_MS,
+    });
+  failedChannelIndices.push(...trailingFailed);
+
+  const channelResults = [...primaryChannelResults, ...trailingChannelResults];
+  const channelFlags = channelFetchFlags(failedChannelIndices);
 
   const snapshot: MeshtasticRemoteConfigSnapshot = {
     metadata,
     loraConfigFetchFailed,
     loraConfigFetchError,
-    channelConfigFetchFailed,
+    ...channelFlags,
+    failedChannelIndices,
     moduleConfigs: {},
   };
 

@@ -199,6 +199,9 @@ describe('routingErrorToRemoteAdminKey', () => {
     expect(routingErrorToRemoteAdminKey(Mesh.Routing_Error.ADMIN_BAD_SESSION_KEY)).toBe(
       'remoteAdmin.errors.badSessionKey',
     );
+    expect(routingErrorToRemoteAdminKey(Mesh.Routing_Error.NO_CHANNEL)).toBe(
+      'remoteAdmin.errors.timeout',
+    );
   });
 });
 
@@ -587,7 +590,66 @@ describe('MeshtasticRemoteAdminClient', () => {
     await expect(promise).rejects.toThrow('remoteAdmin.errors.pkiFailed');
   });
 
-  it('rejects on ROUTING NO_RESPONSE when requestId is zero but mesh packet id matches', async () => {
+  it('correlates ROUTING to sole pending when requestId is zero', async () => {
+    vi.useFakeTimers();
+    try {
+      const promise = client.getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.LORA_CONFIG);
+      await Promise.resolve();
+      const packetId = 555;
+
+      client.handleMeshPacket(
+        create(Mesh.MeshPacketSchema, {
+          id: packetId,
+          from: 0x200,
+          payloadVariant: {
+            case: 'decoded',
+            value: {
+              portnum: Portnums.PortNum.ROUTING_APP,
+              payload: toBinary(
+                Mesh.RoutingSchema,
+                create(Mesh.RoutingSchema, {
+                  variant: {
+                    case: 'errorReason',
+                    value: Mesh.Routing_Error.NO_RESPONSE,
+                  },
+                }),
+              ),
+              requestId: 0,
+            },
+          },
+        }) as never,
+      );
+
+      client.handleMeshPacket(
+        create(Mesh.MeshPacketSchema, {
+          from: 0x200,
+          payloadVariant: {
+            case: 'decoded',
+            value: {
+              portnum: Portnums.PortNum.ADMIN_APP,
+              payload: toBinary(
+                Admin.AdminMessageSchema,
+                create(Admin.AdminMessageSchema, {
+                  payloadVariant: {
+                    case: 'getConfigResponse',
+                    value: { payloadVariant: { case: 'lora', value: { region: 1 } } } as never,
+                  },
+                }),
+              ),
+              requestId: packetId,
+            },
+          },
+        }) as never,
+      );
+
+      const result = await promise;
+      expect((result as { payloadVariant?: { case?: string } }).payloadVariant?.case).toBe('lora');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rejects on fatal ROUTING when mesh packet id matches', async () => {
     const promise = client.getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.LORA_CONFIG);
     await new Promise<void>((resolve) => {
       setImmediate(resolve);
@@ -606,7 +668,7 @@ describe('MeshtasticRemoteAdminClient', () => {
               create(Mesh.RoutingSchema, {
                 variant: {
                   case: 'errorReason',
-                  value: Mesh.Routing_Error.NO_RESPONSE,
+                  value: Mesh.Routing_Error.PKI_FAILED,
                 },
               }),
             ),
@@ -615,7 +677,7 @@ describe('MeshtasticRemoteAdminClient', () => {
         },
       }) as never,
     );
-    await expect(promise).rejects.toThrow('remoteAdmin.errors.timeout');
+    await expect(promise).rejects.toThrow('remoteAdmin.errors.pkiFailed');
   });
 
   it('retries getRemoteConfig after retryable routing errors', async () => {
@@ -643,7 +705,7 @@ describe('MeshtasticRemoteAdminClient', () => {
                 create(Mesh.RoutingSchema, {
                   variant: {
                     case: 'errorReason',
-                    value: Mesh.Routing_Error.NO_RESPONSE,
+                    value: Mesh.Routing_Error.NOT_AUTHORIZED,
                   },
                 }),
               ),
@@ -786,6 +848,111 @@ describe('MeshtasticRemoteAdminClient', () => {
 
     const result = await promise;
     expect((result as { settings?: { name?: string } }).settings?.name).toBe('Primary');
+  });
+
+  it('retries getRemoteChannel after retryable errors', async () => {
+    vi.useFakeTimers();
+    try {
+      packetIdSeq = 900;
+      const promise = client.getRemoteChannelWithRetry(0x200, 0, {
+        maxAttempts: 2,
+        backoffMs: 500,
+      });
+      await Promise.resolve();
+      const firstPacketId = 900;
+
+      client.handleMeshPacket(
+        create(Mesh.MeshPacketSchema, {
+          id: firstPacketId,
+          from: 0x200,
+          payloadVariant: {
+            case: 'decoded',
+            value: {
+              portnum: Portnums.PortNum.ROUTING_APP,
+              payload: toBinary(
+                Mesh.RoutingSchema,
+                create(Mesh.RoutingSchema, {
+                  variant: {
+                    case: 'errorReason',
+                    value: Mesh.Routing_Error.NOT_AUTHORIZED,
+                  },
+                }),
+              ),
+              requestId: 0,
+            },
+          },
+        }) as never,
+      );
+
+      await vi.advanceTimersByTimeAsync(500);
+      await Promise.resolve();
+      const secondPacketId = 901;
+
+      client.handleMeshPacket(
+        create(Mesh.MeshPacketSchema, {
+          from: 0x200,
+          payloadVariant: {
+            case: 'decoded',
+            value: {
+              portnum: Portnums.PortNum.ADMIN_APP,
+              payload: toBinary(
+                Admin.AdminMessageSchema,
+                create(Admin.AdminMessageSchema, {
+                  payloadVariant: {
+                    case: 'getChannelResponse',
+                    value: {
+                      index: 0,
+                      role: 1,
+                      settings: { name: 'Primary', psk: new Uint8Array([1]) },
+                    } as never,
+                  },
+                }),
+              ),
+              requestId: secondPacketId,
+            },
+          },
+        }) as never,
+      );
+
+      const result = await promise;
+      expect((result as { settings?: { name?: string } }).settings?.name).toBe('Primary');
+      expect(writeToRadioWithoutQueue).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rejects getRemoteChannel when admin response case does not match', async () => {
+    client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
+    const promise = client.getRemoteChannel(0x200, 0);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const packetId = 555;
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getConfigResponse',
+                  value: { payloadVariant: { case: 'lora', value: {} } } as never,
+                },
+              }),
+            ),
+            requestId: packetId,
+          },
+        },
+      }) as never,
+    );
+
+    await expect(promise).rejects.toThrow('remoteAdmin.errors.channelResponseUnexpected');
   });
 
   it('rejects getRemoteConfig when admin response case does not match', async () => {

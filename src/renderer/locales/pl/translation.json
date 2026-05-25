@@ -2092,7 +2092,8 @@
       "timeout": "Upłynął limit czasu żądania zdalnego administratora.",
       "generic": "Żądanie zdalnego administratora nie powiodło się.",
       "configResponseUnexpected": "Zdalny administrator zwrócił nieoczekiwaną odpowiedź konfiguracji.",
-      "channelConfigPartial": "Nie można załadować jednego lub więcej ustawień kanału ze zdalnego węzła."
+      "channelConfigPartial": "Nie można załadować jednego lub więcej ustawień kanału ze zdalnego węzła.",
+      "channelResponseUnexpected": "Administrator zdalny zwrócił nieoczekiwaną odpowiedź kanału."
     }
   }
 }
