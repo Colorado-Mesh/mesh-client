@@ -167,7 +167,7 @@ describe('parseIncomingRemoteAdminPacket', () => {
 });
 
 describe('buildRemoteAdminToRadio', () => {
-  it('sets pkiEncrypted, publicKey, and omits channel for PKC admin', () => {
+  it('sets pkiEncrypted and publicKey; omits channel (protobuf default 0) for PKI admin', () => {
     const adminPayload = new Uint8Array([1, 2, 3]);
     const bytes = buildRemoteAdminToRadio({
       myNodeNum: 0x100,
@@ -194,7 +194,7 @@ describe('buildRemoteAdminToRadio', () => {
     const packet = toRadio.payloadVariant?.value;
     expect(packet?.pkiEncrypted).toBe(true);
     expect(packet?.publicKey).toEqual(TEST_DEST_PUBKEY);
-    expect(packet?.channel).toBe(0);
+    expect(packet?.channel ?? 0).toBe(0);
     expect(packet?.hopLimit).toBe(7);
     expect(packet?.hopStart).toBe(7);
   });
