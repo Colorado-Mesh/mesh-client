@@ -1240,6 +1240,164 @@ describe('updateChannelKeys', () => {
     const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
     expect(byName.get('LongFast')?.equals(CUSTOM_PSK)).toBe(true);
   });
+
+  it('preserves manual Garber PSK when radio sync pushes a different key', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    const customGarber = Buffer.alloc(32, 0x11);
+    const radioGarber = Buffer.alloc(32, 0x22);
+
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: [`Garber@2=${customGarber.toString('base64')}`],
+    });
+
+    manager.updateChannelKeys([
+      { name: 'Garber', pskBase64: radioGarber.toString('base64'), index: 2 },
+    ]);
+
+    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
+    expect(byName.get('Garber')?.equals(customGarber)).toBe(true);
+    expect(byName.get('Garber')?.equals(radioGarber)).toBe(false);
+
+    const nodeId = 0x11223344;
+    const packetId = 0x00000041;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('manual garber key'),
+      }),
+    );
+    const payload = buildEnvelope({
+      nodeId,
+      packetId,
+      dataBytes,
+      psk: customGarber,
+      channelName: 'Garber',
+    });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/Garber/!11223344', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { payload: string }).payload).toBe('manual garber key');
+  });
+
+  it('decrypts LongFast traffic with manual key after radio pushes default public PSK', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: [`LongFast=${CUSTOM_PSK.toString('base64')}`],
+    });
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 0 }]);
+
+    const nodeId = 0x11223355;
+    const packetId = 0x00000042;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('longfast manual'),
+      }),
+    );
+    const payload = buildEnvelope({
+      nodeId,
+      packetId,
+      dataBytes,
+      psk: CUSTOM_PSK,
+      channelName: 'LongFast',
+    });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!11223355', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { payload: string }).payload).toBe('longfast manual');
+  });
+});
+
+describe('publish — decrypt round-trip (explicit PSK)', () => {
+  function wireConnected(manager: MQTTManager): ReturnType<typeof vi.fn> {
+    const publish = vi.fn();
+    (manager as unknown as { client: unknown }).client = {
+      on: vi.fn(),
+      end: vi.fn(),
+      removeAllListeners: vi.fn(),
+      connected: true,
+      publish,
+      subscribe: vi.fn(),
+    };
+    (manager as unknown as { currentSettings: MQTTSettings }).currentSettings = {
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/',
+      autoLaunch: false,
+    };
+    return publish;
+  }
+
+  it('decrypts broker echo of publish when pskBase64 is only passed on publish IPC', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/',
+      autoLaunch: false,
+    });
+
+    const wrongRadioKey = Buffer.alloc(32, 0x22);
+    manager.updateChannelKeys([
+      { name: 'Garber', pskBase64: wrongRadioKey.toString('base64'), index: 2 },
+    ]);
+
+    const publish = wireConnected(manager);
+    const custom32 = Buffer.alloc(32, 0xab);
+    const from = 0x88d3b8b0;
+    const gatewayId = `!${from.toString(16).padStart(8, '0')}`;
+
+    manager.publish({
+      text: 'echo test',
+      from,
+      channel: 2,
+      channelName: 'Garber',
+      pskBase64: custom32.toString('base64'),
+      publishJsonMirror: false,
+    });
+
+    expect(publish).toHaveBeenCalledTimes(1);
+    const protoPayload = publish.mock.calls[0][1] as Buffer;
+    const envelope = fromBinary(ServiceEnvelopeSchema, protoPayload);
+    const packetId = envelope.packet?.id ?? 0;
+    if (packetId) (manager as any).seenPacketIds.delete(packetId);
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage(`msh/US/2/e/Garber/${gatewayId}`, protoPayload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { payload: string }).payload).toBe('echo test');
+    expect((messages[0] as { channel: number }).channel).toBe(2);
+  });
 });
 
 describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
