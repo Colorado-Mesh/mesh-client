@@ -2090,7 +2090,8 @@
       "pkiFailed": "Falha na criptografia PKI. Verifique as chaves do nó e remova os conflitos de canal de administração herdados.",
       "notAuthorized": "Administrador remoto não autorizado no nó de destino.",
       "timeout": "A solicitação de administrador remoto expirou.",
-      "generic": "Falha na solicitação de administração remota."
+      "generic": "Falha na solicitação de administração remota.",
+      "configResponseUnexpected": "O administrador remoto retornou uma resposta de configuração inesperada."
     }
   }
 }

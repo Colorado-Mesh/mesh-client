@@ -8,10 +8,14 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
   it('maps distinct config types into snapshot fields', async () => {
     const client = {
       getRemoteMetadata: vi.fn().mockResolvedValue({ firmwareVersion: '2.5.0' }),
-      getRemoteConfig: vi.fn((_dest: number, type: number) => {
+      ensureSessionKey: vi.fn().mockResolvedValue(undefined),
+      getRemoteConfigWithRetry: vi.fn((_dest: number, type: number) => {
         if (type === Admin.AdminMessage_ConfigType.LORA_CONFIG) {
           return Promise.resolve({ payloadVariant: { case: 'lora', value: { region: 1 } } });
         }
+        return Promise.reject(new Error('unexpected retry'));
+      }),
+      getRemoteConfig: vi.fn((_dest: number, type: number) => {
         if (type === Admin.AdminMessage_ConfigType.SECURITY_CONFIG) {
           return Promise.resolve({
             payloadVariant: {
@@ -62,6 +66,17 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
         done();
         return { firmwareVersion: '2.5.0' };
       }),
+      ensureSessionKey: vi.fn(async () => {
+        const done = track('ensureSessionKey');
+        await Promise.resolve();
+        done();
+      }),
+      getRemoteConfigWithRetry: vi.fn(async (_dest: number, type: number) => {
+        const done = track(`configRetry:${type}`);
+        await Promise.resolve();
+        done();
+        return { payloadVariant: { case: 'lora', value: { region: 1 } } };
+      }),
       getRemoteConfig: vi.fn(async (_dest: number, type: number) => {
         const done = track(`config:${type}`);
         await Promise.resolve();
@@ -93,6 +108,69 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
     expect(maxInFlight).toBe(1);
     expect(order[0]).toBe('metadata');
     expect(order.at(-1)).toBe('owner');
-    expect(order.indexOf('metadata')).toBeLessThan(order.findIndex((e) => e.startsWith('config:')));
+    expect(order.indexOf('metadata')).toBeLessThan(order.indexOf('ensureSessionKey'));
+    expect(order.indexOf('ensureSessionKey')).toBeLessThan(
+      order.findIndex((e) => e.startsWith('config:')),
+    );
+  });
+
+  it('calls ensureSessionKey after metadata and before config fetches', async () => {
+    const ensureSessionKey = vi.fn().mockResolvedValue(undefined);
+    const client = {
+      getRemoteMetadata: vi.fn().mockResolvedValue({ firmwareVersion: '2.5.0' }),
+      ensureSessionKey,
+      getRemoteConfigWithRetry: vi
+        .fn()
+        .mockResolvedValue({ payloadVariant: { case: 'lora', value: { region: 1 } } }),
+      getRemoteConfig: vi.fn().mockResolvedValue({ payloadVariant: { case: 'device', value: {} } }),
+      getRemoteChannel: vi.fn().mockResolvedValue({
+        index: 0,
+        role: 0,
+        settings: { name: '', psk: new Uint8Array() },
+      }),
+      getRemoteModuleConfig: vi.fn().mockRejectedValue(new Error('unsupported')),
+      getRemoteOwner: vi.fn().mockRejectedValue(new Error('unsupported')),
+    } as unknown as MeshtasticRemoteAdminClient;
+
+    await fetchMeshtasticRemoteConfigSnapshot(client, 0x200);
+    expect(ensureSessionKey).toHaveBeenCalledWith(0x200);
+    const getRemoteConfig = vi.mocked(client.getRemoteConfig);
+    expect(ensureSessionKey.mock.invocationCallOrder[0]).toBeLessThan(
+      getRemoteConfig.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('continues snapshot when LoRa config fetch fails', async () => {
+    const client = {
+      getRemoteMetadata: vi.fn().mockResolvedValue({ firmwareVersion: '2.5.0' }),
+      ensureSessionKey: vi.fn().mockResolvedValue(undefined),
+      getRemoteConfigWithRetry: vi.fn().mockRejectedValue(new Error('remoteAdmin.errors.timeout')),
+      getRemoteConfig: vi.fn((_dest: number, type: number) => {
+        if (type === Admin.AdminMessage_ConfigType.SECURITY_CONFIG) {
+          return Promise.resolve({
+            payloadVariant: {
+              case: 'security',
+              value: { publicKey: new Uint8Array(32), adminKey: [] },
+            },
+          });
+        }
+        return Promise.resolve({ payloadVariant: { case: 'device', value: {} } });
+      }),
+      getRemoteChannel: vi.fn((_dest: number, index: number) =>
+        Promise.resolve({
+          index,
+          role: index === 0 ? 1 : 0,
+          settings: { name: index === 0 ? 'Primary' : '', psk: new Uint8Array([1]) },
+        }),
+      ),
+      getRemoteModuleConfig: vi.fn().mockRejectedValue(new Error('unsupported')),
+      getRemoteOwner: vi.fn().mockRejectedValue(new Error('unsupported')),
+    } as unknown as MeshtasticRemoteAdminClient;
+
+    const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, 0x200);
+    expect(snapshot.loraConfig).toBeUndefined();
+    expect(snapshot.loraConfigFetchFailed).toBe(true);
+    expect(snapshot.securityConfig?.publicKey).toHaveLength(32);
+    expect(snapshot.channelConfigs?.[0]?.name).toBe('Primary');
   });
 });

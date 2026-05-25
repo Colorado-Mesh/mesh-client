@@ -41,6 +41,29 @@ export const REMOTE_ADMIN_SESSION_TTL_MS = 300_000;
 /** Default wait for multi-hop admin responses. */
 export const REMOTE_ADMIN_RESPONSE_TIMEOUT_MS = 120_000;
 
+/** Pause between sequential remote config fetches (BLE write pacing). */
+export const REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS = 200;
+
+/** Backoff before retrying a failed config fetch (LoRa is most sensitive). */
+export const REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS = 500;
+
+export const REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS = 3;
+
+export function delayMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/** Errors that may clear after session key exchange or a short BLE pause. */
+export function isRemoteAdminRetryableError(message: string): boolean {
+  return (
+    message === 'remoteAdmin.errors.timeout' ||
+    message === 'remoteAdmin.errors.badSessionKey' ||
+    message === 'remoteAdmin.errors.notAuthorized'
+  );
+}
+
 export type RemoteAdminRoutingErrorCode = number;
 
 export interface RemoteAdminSessionEntry {
@@ -338,6 +361,16 @@ export class MeshtasticRemoteAdminClient {
     const responseCase = parsed.message.payloadVariant.case;
     if (!responseCase) return;
     if (pending.expectedResponseCases && !pending.expectedResponseCases.includes(responseCase)) {
+      console.debug(
+        '[MeshtasticRemoteAdmin] admin response case mismatch requestId=' +
+          String(parsed.requestId) +
+          ' dest=0x' +
+          pending.destNodeNum.toString(16) +
+          ' got=' +
+          responseCase +
+          ' expected=' +
+          pending.expectedResponseCases.join(','),
+      );
       return;
     }
     clearTimeout(pending.timeoutId);
@@ -521,10 +554,42 @@ export class MeshtasticRemoteAdminClient {
         }),
       { expectedResponseCases: ['getConfigResponse'] },
     );
-    if (response.payloadVariant.case !== 'getConfigResponse') {
-      throw new Error('remoteAdmin.errors.generic');
+    const responseCase = response.payloadVariant.case;
+    if (responseCase !== 'getConfigResponse') {
+      console.warn(
+        '[MeshtasticRemoteAdmin] unexpected getConfigResponse variant configType=' +
+          String(configType) +
+          ' case=' +
+          (responseCase ?? 'unknown'),
+      );
+      throw new Error('remoteAdmin.errors.configResponseUnexpected');
     }
     return response.payloadVariant.value;
+  }
+
+  async getRemoteConfigWithRetry(
+    destNodeNum: number,
+    configType: (typeof Admin.AdminMessage_ConfigType)[keyof typeof Admin.AdminMessage_ConfigType],
+    options?: { maxAttempts?: number; backoffMs?: number },
+  ): Promise<unknown> {
+    const maxAttempts = options?.maxAttempts ?? REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS;
+    const backoffMs = options?.backoffMs ?? REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS;
+    let lastError: Error | undefined;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        return await this.getRemoteConfig(destNodeNum, configType);
+      } catch (e) {
+        const msg =
+          e instanceof Error && e.message.startsWith('remoteAdmin.errors.')
+            ? e.message
+            : normalizeRemoteAdminError(e);
+        lastError = new Error(msg);
+        const canRetry = attempt + 1 < maxAttempts && isRemoteAdminRetryableError(msg);
+        if (!canRetry) throw lastError;
+        await delayMs(backoffMs);
+      }
+    }
+    throw lastError ?? new Error('remoteAdmin.errors.generic');
   }
 
   async getRemoteModuleConfig(

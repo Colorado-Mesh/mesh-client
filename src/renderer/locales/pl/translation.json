@@ -2090,7 +2090,8 @@
       "pkiFailed": "Szyfrowanie PKI nie powiodło się. Zweryfikuj klucze węzłów i usuń starsze konflikty kanałów administracyjnych.",
       "notAuthorized": "Administrator zdalny nie jest autoryzowany w węźle docelowym.",
       "timeout": "Upłynął limit czasu żądania zdalnego administratora.",
-      "generic": "Żądanie zdalnego administratora nie powiodło się."
+      "generic": "Żądanie zdalnego administratora nie powiodło się.",
+      "configResponseUnexpected": "Zdalny administrator zwrócił nieoczekiwaną odpowiedź konfiguracji."
     }
   }
 }

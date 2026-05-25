@@ -566,4 +566,106 @@ describe('MeshtasticRemoteAdminClient', () => {
     );
     await expect(promise).rejects.toThrow('remoteAdmin.errors.pkiFailed');
   });
+
+  it('rejects on ROUTING NO_RESPONSE when requestId is zero but mesh packet id matches', async () => {
+    const promise = client.getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.LORA_CONFIG);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const packetId = 555;
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        id: packetId,
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ROUTING_APP,
+            payload: toBinary(
+              Mesh.RoutingSchema,
+              create(Mesh.RoutingSchema, {
+                variant: {
+                  case: 'errorReason',
+                  value: Mesh.Routing_Error.NO_RESPONSE,
+                },
+              }),
+            ),
+            requestId: 0,
+          },
+        },
+      }) as never,
+    );
+    await expect(promise).rejects.toThrow('remoteAdmin.errors.timeout');
+  });
+
+  it('retries getRemoteConfig after retryable routing errors', async () => {
+    vi.useFakeTimers();
+    try {
+      packetIdSeq = 800;
+      const promise = client.getRemoteConfigWithRetry(
+        0x200,
+        Admin.AdminMessage_ConfigType.LORA_CONFIG,
+        { maxAttempts: 2, backoffMs: 500 },
+      );
+      await Promise.resolve();
+      const firstPacketId = 800;
+
+      client.handleMeshPacket(
+        create(Mesh.MeshPacketSchema, {
+          id: firstPacketId,
+          from: 0x200,
+          payloadVariant: {
+            case: 'decoded',
+            value: {
+              portnum: Portnums.PortNum.ROUTING_APP,
+              payload: toBinary(
+                Mesh.RoutingSchema,
+                create(Mesh.RoutingSchema, {
+                  variant: {
+                    case: 'errorReason',
+                    value: Mesh.Routing_Error.NO_RESPONSE,
+                  },
+                }),
+              ),
+              requestId: 0,
+            },
+          },
+        }) as never,
+      );
+
+      await vi.advanceTimersByTimeAsync(500);
+      await Promise.resolve();
+      const secondPacketId = 801;
+
+      client.handleMeshPacket(
+        create(Mesh.MeshPacketSchema, {
+          from: 0x200,
+          payloadVariant: {
+            case: 'decoded',
+            value: {
+              portnum: Portnums.PortNum.ADMIN_APP,
+              payload: toBinary(
+                Admin.AdminMessageSchema,
+                create(Admin.AdminMessageSchema, {
+                  payloadVariant: {
+                    case: 'getConfigResponse',
+                    value: {
+                      payloadVariant: { case: 'lora', value: { region: 2 } },
+                    } as never,
+                  },
+                }),
+              ),
+              requestId: secondPacketId,
+            },
+          },
+        }) as never,
+      );
+
+      const result = await promise;
+      expect((result as { payloadVariant?: { case?: string } }).payloadVariant?.case).toBe('lora');
+      expect(writeToRadioWithoutQueue).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

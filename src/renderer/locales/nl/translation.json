@@ -2090,7 +2090,8 @@
       "pkiFailed": "PKI-codering mislukt. Verifieer knooppuntsleutels en verwijder verouderde admin-kanaalconflicten.",
       "notAuthorized": "Externe beheerder niet geautoriseerd op het doelknooppunt.",
       "timeout": "Verzoek voor externe beheerder is verlopen.",
-      "generic": "Verzoek voor externe beheerder mislukt."
+      "generic": "Verzoek voor externe beheerder mislukt.",
+      "configResponseUnexpected": "Externe beheerder heeft een onverwachte configuratie-antwoord geretourneerd."
     }
   }
 }

@@ -2090,7 +2090,8 @@
       "pkiFailed": "Crittografia PKI non riuscita. Verificare le chiavi del nodo e rimuovere i conflitti del canale di amministrazione legacy.",
       "notAuthorized": "Amministratore remoto non autorizzato sul nodo di destinazione.",
       "timeout": "Richiesta di amministratore remoto scaduta.",
-      "generic": "Richiesta di amministratore remoto non riuscita."
+      "generic": "Richiesta di amministratore remoto non riuscita.",
+      "configResponseUnexpected": "L'amministratore remoto ha restituito una risposta di configurazione imprevista."
     }
   }
 }

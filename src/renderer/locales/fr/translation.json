@@ -2090,7 +2090,8 @@
       "pkiFailed": "Le chiffrement PKI a échoué. Vérifiez les clés de nœud et supprimez les conflits de canaux d'administration hérités.",
       "notAuthorized": "Administrateur distant non autorisé sur le nœud cible.",
       "timeout": "La demande d'administration à distance a expiré.",
-      "generic": "Échec de la demande d'administration à distance."
+      "generic": "Échec de la demande d'administration à distance.",
+      "configResponseUnexpected": "L'administrateur distant a renvoyé une réponse de configuration inattendue."
     }
   }
 }

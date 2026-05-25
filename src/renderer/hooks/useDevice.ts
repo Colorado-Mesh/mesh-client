@@ -1380,11 +1380,13 @@ export function useDevice() {
           startGpsInterval();
           setQueueStatus({ free: 16, maxlen: 16, res: 0 });
           deviceConfiguredRef.current = true;
-          void deviceRef.current
-            ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
-            .catch((e: unknown) => {
-              console.debug('[useDevice] LoRa config request failed ' + errLikeToLogString(e));
-            });
+          if (configureTargetNodeNumRef.current == null) {
+            void deviceRef.current
+              ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
+              .catch((e: unknown) => {
+                console.debug('[useDevice] LoRa config request failed ' + errLikeToLogString(e));
+              });
+          }
         }
 
         // Always clean up on disconnect, even if we never reached configured
@@ -3479,9 +3481,11 @@ export function useDevice() {
         if (!applyIfCurrent()) return;
         setRemoteConfigSnapshot(snapshot);
         setRemoteAdminStatus('ready');
+        setRemoteAdminError(
+          snapshot.loraConfigFetchFailed ? 'remoteAdmin.errors.timeout' : undefined,
+        );
       } catch (e) {
         if (!applyIfCurrent()) return;
-        remoteAdminClientRef.current?.resetEditState();
         const msg = normalizeRemoteAdminError(e);
         setRemoteAdminStatus('error');
         setRemoteAdminError(msg);
