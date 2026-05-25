@@ -371,6 +371,9 @@ export class MeshtasticRemoteAdminClient {
           ' expected=' +
           pending.expectedResponseCases.join(','),
       );
+      clearTimeout(pending.timeoutId);
+      this.pending.delete(parsed.requestId);
+      pending.reject(new Error('remoteAdmin.errors.configResponseUnexpected'));
       return;
     }
     clearTimeout(pending.timeoutId);

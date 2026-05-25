@@ -297,7 +297,10 @@ export class MQTTManager extends EventEmitter {
       if (parsed.name) {
         this.channelKeysByName.set(parsed.name, parsed.psk);
         if (parsed.index !== undefined) {
-          this.channelNameToIndex.set(parsed.name, parsed.index);
+          const idx = parsed.index >>> 0;
+          if (idx <= 7) this.channelNameToIndex.set(parsed.name, idx);
+        } else if (parsed.name === 'LongFast') {
+          this.channelNameToIndex.set(parsed.name, 0);
         }
       } else {
         this.decryptOnlyPsks.push(parsed.psk);

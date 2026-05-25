@@ -1055,6 +1055,46 @@ describe('connect — channelPsks parsing', () => {
     expect(nameToIndex.get('HamNet')).toBe(2);
   });
 
+  it('maps LongFast=base64 without @index to channel 0', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    const customB64 = CUSTOM_PSK.toString('base64');
+
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: [`LongFast=${customB64}`],
+    });
+
+    const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
+    expect(nameToIndex.get('LongFast')).toBe(0);
+  });
+
+  it('skips manual lines with invalid @index (not parsed as named)', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    const customB64 = CUSTOM_PSK.toString('base64');
+
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: [`HamNet@9=${customB64}`],
+    });
+
+    const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
+    expect(nameToIndex.has('HamNet')).toBe(false);
+    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
+    expect(byName.has('HamNet')).toBe(false);
+  });
+
   it('loads reporter LongFast@0 padded key into channelKeysByName as 32 bytes', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};

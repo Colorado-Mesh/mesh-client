@@ -2091,7 +2091,8 @@
       "notAuthorized": "ターゲットノードでリモート管理者が承認されていません。",
       "timeout": "リモート管理者リクエストがタイムアウトしました。",
       "generic": "リモート管理者リクエストに失敗しました。",
-      "configResponseUnexpected": "リモート管理者が予期しない構成応答を返しました。"
+      "configResponseUnexpected": "リモート管理者が予期しない構成応答を返しました。",
+      "channelConfigPartial": "1つ以上のチャンネル設定をリモートノードから読み込めませんでした。"
     }
   }
 }

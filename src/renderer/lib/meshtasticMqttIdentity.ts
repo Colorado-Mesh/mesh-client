@@ -1,4 +1,9 @@
+import { getAppSettingsRaw, mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
+import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
+
 export type MqttOnlyIdentitySource = 'lastRf' | 'virtual';
+
+const LAST_RF_APP_SETTING_KEY = 'meshtasticLastRfSelfNodeId';
 
 /** MQTT-only sender: prefer last BLE node id when available, else persisted virtual id. */
 export function resolveMqttOnlyFromNodeId(lastRfSelfNodeId: number, virtualNodeId: number): number {
@@ -7,4 +12,42 @@ export function resolveMqttOnlyFromNodeId(lastRfSelfNodeId: number, virtualNodeI
 
 export function mqttOnlyIdentitySource(lastRfSelfNodeId: number): MqttOnlyIdentitySource {
   return lastRfSelfNodeId > 0 ? 'lastRf' : 'virtual';
+}
+
+/** Restore last RF node id from app settings (survives app restart for MQTT-only). */
+export function loadPersistedLastRfSelfNodeId(): number {
+  const settings = parseStoredJson<Record<string, unknown>>(
+    getAppSettingsRaw(),
+    'meshtasticMqttIdentity loadPersistedLastRfSelfNodeId',
+  );
+  const raw = settings?.[LAST_RF_APP_SETTING_KEY];
+  const nodeNum = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum >= 0xffffffff) return 0;
+  return nodeNum >>> 0;
+}
+
+/** Persist last RF node id when a local radio reports myNodeNum. */
+export function persistLastRfSelfNodeId(nodeNum: number): void {
+  if (!Number.isFinite(nodeNum) || nodeNum <= 0) return;
+  const normalized = nodeNum >>> 0;
+  mergeAppSetting(LAST_RF_APP_SETTING_KEY, String(normalized), 'meshtasticMqttIdentity persist');
+  void window.electronAPI.appSettings.set(LAST_RF_APP_SETTING_KEY, String(normalized)).catch(() => {
+    // catch-no-log-ok SQLite persist is best-effort; localStorage already updated
+  });
+}
+
+/**
+ * Chat "own message" ids for Meshtastic MQTT-only: active self id plus transition ids.
+ * Excludes stale virtual id when last RF identity is in use.
+ */
+export function meshtasticMqttOwnNodeIds(
+  selfNodeId: number,
+  virtualNodeId: number,
+  lastRfSelfNodeId: number,
+): number[] {
+  const ids = new Set<number>();
+  if (selfNodeId > 0) ids.add(selfNodeId);
+  if (lastRfSelfNodeId > 0) ids.add(lastRfSelfNodeId);
+  if (virtualNodeId > 0 && lastRfSelfNodeId === 0) ids.add(virtualNodeId);
+  return [...ids];
 }

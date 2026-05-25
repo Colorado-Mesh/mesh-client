@@ -668,4 +668,37 @@ describe('MeshtasticRemoteAdminClient', () => {
       vi.useRealTimers();
     }
   });
+
+  it('rejects getRemoteConfig when admin response case does not match', async () => {
+    client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
+    const promise = client.getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.LORA_CONFIG);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const packetId = 555;
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getDeviceMetadataResponse',
+                  value: { firmwareVersion: '2.5.0' } as never,
+                },
+              }),
+            ),
+            requestId: packetId,
+          },
+        },
+      }) as never,
+    );
+
+    await expect(promise).rejects.toThrow('remoteAdmin.errors.configResponseUnexpected');
+  });
 });

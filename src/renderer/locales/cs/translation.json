@@ -2092,7 +2092,8 @@
       "notAuthorized": "Vzdálený správce není autorizován v cílovém uzlu.",
       "timeout": "Časový limit požadavku vzdáleného správce vypršel.",
       "generic": "Požadavek vzdáleného správce se nezdařil.",
-      "configResponseUnexpected": "Vzdálený správce vrátil neočekávanou konfigurační odpověď."
+      "configResponseUnexpected": "Vzdálený správce vrátil neočekávanou konfigurační odpověď.",
+      "channelConfigPartial": "Ze vzdáleného uzlu nelze načíst jedno nebo více nastavení kanálu."
     }
   }
 }

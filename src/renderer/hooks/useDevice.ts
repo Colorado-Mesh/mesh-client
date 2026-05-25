@@ -26,7 +26,9 @@ import {
   writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
 import {
+  loadPersistedLastRfSelfNodeId,
   mqttOnlyIdentitySource,
+  persistLastRfSelfNodeId,
   resolveMqttOnlyFromNodeId,
 } from '@/renderer/lib/meshtasticMqttIdentity';
 import {
@@ -285,7 +287,7 @@ export function useDevice() {
   const channelConfigsRef = useRef<typeof channelConfigs>([]);
   // Nodes heard via RF this session — prevents MQTT-only flag from being set
   const rfHeardNodeIds = useRef<Set<number>>(new Set());
-  const lastRfSelfNodeIdRef = useRef<number>(0);
+  const lastRfSelfNodeIdRef = useRef<number>(loadPersistedLastRfSelfNodeId());
   const virtualNodeIdRef = useRef<number>(getOrCreateVirtualNodeId());
   // Dedup map shared between RF and MQTT handlers
   const seenPacketIds = useRef<Map<number, number>>(new Map());
@@ -796,6 +798,13 @@ export function useDevice() {
         updateNodes((prev) => {
           const updated = new Map(prev);
           if (lastRfSelfNodeIdRef.current > 0 && mqttOnlyId === lastRfSelfNodeIdRef.current) {
+            const staleVirtualId = virtualNodeIdRef.current;
+            if (staleVirtualId !== mqttOnlyId) {
+              updated.delete(staleVirtualId);
+              void window.electronAPI.db.deleteNode(staleVirtualId).catch((e: unknown) => {
+                console.debug('[useDevice] deleteNode stale virtual ' + errLikeToLogString(e));
+              });
+            }
             const existing = updated.get(mqttOnlyId) ?? emptyNode(mqttOnlyId);
             const rfNode: MeshNode = {
               ...existing,
@@ -1477,6 +1486,7 @@ export function useDevice() {
         myNodeNumRef.current = info.myNodeNum;
         setMeshtasticConnectedMyNodeNum(info.myNodeNum);
         lastRfSelfNodeIdRef.current = info.myNodeNum;
+        persistLastRfSelfNodeId(info.myNodeNum);
         if (getStoredMeshProtocol() === 'meshtastic') {
           useDiagnosticsStore.getState().migrateForeignLoraFromZero(info.myNodeNum);
         }
@@ -3515,10 +3525,14 @@ export function useDevice() {
         setRemoteConfigSnapshot(snapshot);
         setRemoteAdminStatus('ready');
         setRemoteAdminError(
-          snapshot.loraConfigFetchFailed ? 'remoteAdmin.errors.timeout' : undefined,
+          snapshot.loraConfigFetchError ??
+            (snapshot.channelConfigFetchFailed
+              ? 'remoteAdmin.errors.channelConfigPartial'
+              : undefined),
         );
       } catch (e) {
         if (!applyIfCurrent()) return;
+        remoteAdminClientRef.current?.resetEditState();
         const msg = normalizeRemoteAdminError(e);
         setRemoteAdminStatus('error');
         setRemoteAdminError(msg);

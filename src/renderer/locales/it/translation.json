@@ -2091,7 +2091,8 @@
       "notAuthorized": "Amministratore remoto non autorizzato sul nodo di destinazione.",
       "timeout": "Richiesta di amministratore remoto scaduta.",
       "generic": "Richiesta di amministratore remoto non riuscita.",
-      "configResponseUnexpected": "L'amministratore remoto ha restituito una risposta di configurazione imprevista."
+      "configResponseUnexpected": "L'amministratore remoto ha restituito una risposta di configurazione imprevista.",
+      "channelConfigPartial": "Impossibile caricare una o più impostazioni di canale dal nodo remoto."
     }
   }
 }

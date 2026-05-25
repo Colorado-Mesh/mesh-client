@@ -2091,7 +2091,8 @@
       "notAuthorized": "Administrador remoto não autorizado no nó de destino.",
       "timeout": "A solicitação de administrador remoto expirou.",
       "generic": "Falha na solicitação de administração remota.",
-      "configResponseUnexpected": "O administrador remoto retornou uma resposta de configuração inesperada."
+      "configResponseUnexpected": "O administrador remoto retornou uma resposta de configuração inesperada.",
+      "channelConfigPartial": "Não foi possível carregar uma ou mais configurações de canal a partir do nó remoto."
     }
   }
 }

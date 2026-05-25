@@ -2091,7 +2091,8 @@
       "notAuthorized": "Admin jarak jauh tidak diotorisasi pada node target.",
       "timeout": "Waktu permintaan admin jarak jauh habis.",
       "generic": "Permintaan admin jarak jauh gagal.",
-      "configResponseUnexpected": "Admin jarak jauh memberikan respons konfigurasi yang tidak terduga."
+      "configResponseUnexpected": "Admin jarak jauh memberikan respons konfigurasi yang tidak terduga.",
+      "channelConfigPartial": "Satu atau beberapa pengaturan saluran tidak dapat dimuat dari simpul jarak jauh."
     }
   }
 }

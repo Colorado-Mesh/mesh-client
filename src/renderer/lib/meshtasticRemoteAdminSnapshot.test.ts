@@ -170,7 +170,56 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
     const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, 0x200);
     expect(snapshot.loraConfig).toBeUndefined();
     expect(snapshot.loraConfigFetchFailed).toBe(true);
+    expect(snapshot.loraConfigFetchError).toBe('remoteAdmin.errors.timeout');
     expect(snapshot.securityConfig?.publicKey).toHaveLength(32);
+    expect(snapshot.channelConfigs?.[0]?.name).toBe('Primary');
+  });
+
+  it('continues snapshot when ensureSessionKey fails', async () => {
+    const client = {
+      getRemoteMetadata: vi.fn().mockResolvedValue({ firmwareVersion: '2.5.0' }),
+      ensureSessionKey: vi.fn().mockRejectedValue(new Error('remoteAdmin.errors.timeout')),
+      getRemoteConfigWithRetry: vi
+        .fn()
+        .mockResolvedValue({ payloadVariant: { case: 'lora', value: { region: 1 } } }),
+      getRemoteConfig: vi.fn().mockResolvedValue({ payloadVariant: { case: 'device', value: {} } }),
+      getRemoteChannel: vi.fn().mockResolvedValue({
+        index: 0,
+        role: 1,
+        settings: { name: 'Primary', psk: new Uint8Array([1]) },
+      }),
+      getRemoteModuleConfig: vi.fn().mockRejectedValue(new Error('unsupported')),
+      getRemoteOwner: vi.fn().mockRejectedValue(new Error('unsupported')),
+    } as unknown as MeshtasticRemoteAdminClient;
+
+    const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, 0x200);
+    expect(snapshot.loraConfig).toEqual({ region: 1 });
+    expect(snapshot.channelConfigs?.[0]?.name).toBe('Primary');
+  });
+
+  it('continues snapshot when a channel fetch fails', async () => {
+    const client = {
+      getRemoteMetadata: vi.fn().mockResolvedValue({ firmwareVersion: '2.5.0' }),
+      ensureSessionKey: vi.fn().mockResolvedValue(undefined),
+      getRemoteConfigWithRetry: vi
+        .fn()
+        .mockResolvedValue({ payloadVariant: { case: 'lora', value: { region: 1 } } }),
+      getRemoteConfig: vi.fn().mockResolvedValue({ payloadVariant: { case: 'device', value: {} } }),
+      getRemoteChannel: vi.fn((_dest: number, index: number) => {
+        if (index === 2) return Promise.reject(new Error('remoteAdmin.errors.timeout'));
+        return Promise.resolve({
+          index,
+          role: index === 0 ? 1 : 0,
+          settings: { name: index === 0 ? 'Primary' : '', psk: new Uint8Array([1]) },
+        });
+      }),
+      getRemoteModuleConfig: vi.fn().mockRejectedValue(new Error('unsupported')),
+      getRemoteOwner: vi.fn().mockRejectedValue(new Error('unsupported')),
+    } as unknown as MeshtasticRemoteAdminClient;
+
+    const snapshot = await fetchMeshtasticRemoteConfigSnapshot(client, 0x200);
+    expect(snapshot.channelConfigFetchFailed).toBe(true);
+    expect(snapshot.channelConfigs?.some((ch) => ch.index === 2)).toBe(false);
     expect(snapshot.channelConfigs?.[0]?.name).toBe('Primary');
   });
 });
