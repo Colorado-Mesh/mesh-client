@@ -44,7 +44,7 @@ const CUSTOM_PSK = Buffer.from([
 function makeNonce(packetId: number, fromId: number): Buffer {
   const nonce = Buffer.alloc(16, 0);
   nonce.writeUInt32LE(packetId >>> 0, 0);
-  nonce.writeUInt32LE(fromId >>> 0, 4);
+  nonce.writeUInt32LE(fromId >>> 0, 8);
   return nonce;
 }
 
