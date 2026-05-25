@@ -84,6 +84,7 @@ export function parseManualChannelPublishEntry(line: string): ManualChannelPubli
   if (name.length === 0 || b64.length === 0 || /[+/=@]/.test(name)) return null;
   try {
     const psk = decodeChannelPskBase64(`${name}=${b64}`);
+    // Match validateChannelPskEntries: 16/32-byte AES keys or short default-public keys only.
     if (psk.length !== 16 && psk.length !== 32 && psk.length >= 16) return null;
     return { name, index, psk };
   } catch {

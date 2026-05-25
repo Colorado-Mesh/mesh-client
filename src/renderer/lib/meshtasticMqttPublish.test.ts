@@ -103,6 +103,11 @@ describe('resolveMeshtasticMqttPublishFieldsForChannel', () => {
     expect(fields.channelName).toBe('Garber');
     expect(fields.pskBase64).toBe(KEY_B);
   });
+
+  it('returns empty channel name for unnamed secondary channel without manual entry', () => {
+    const fields = resolveMeshtasticMqttPublishFieldsForChannel(2, [], []);
+    expect(fields.channelName).toBe('');
+  });
 });
 
 describe('loadMeshtasticMqttManualChannelPsks', () => {

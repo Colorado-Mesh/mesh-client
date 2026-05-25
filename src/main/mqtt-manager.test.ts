@@ -1189,6 +1189,45 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     expect(messages).toHaveLength(1);
     expect((messages[0] as { channel: number }).channel).toBe(0);
   });
+
+  it('attributes unknown topic channel names to channel 0', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([{ name: 'CustomChan', pskBase64: CUSTOM_PSK.toString('base64') }]);
+
+    const nodeId = 0x11223366;
+    const packetId = 0x00000033;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('hello unknown map'),
+      }),
+    );
+    const payload = buildEnvelope({
+      nodeId,
+      packetId,
+      dataBytes,
+      psk: CUSTOM_PSK,
+      channelName: 'CustomChan',
+    });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/CustomChan/!11223366', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(0);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

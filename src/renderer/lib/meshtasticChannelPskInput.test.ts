@@ -100,6 +100,11 @@ describe('parseManualChannelPublishEntry', () => {
   it('returns null for invalid named lines', () => {
     expect(parseManualChannelPublishEntry('BadName=not!!!base64')).toBeNull();
   });
+
+  it('returns null for invalid AES key length', () => {
+    const twentyBytes = btoa(String.fromCharCode(...Array.from({ length: 20 }, () => 0xab)));
+    expect(parseManualChannelPublishEntry(`HamNet=${twentyBytes}`)).toBeNull();
+  });
 });
 
 describe('parseManualChannelPublishEntries', () => {

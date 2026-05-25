@@ -433,6 +433,7 @@ describe('MeshtasticRemoteAdminClient', () => {
             payload: toBinary(
               Admin.AdminMessageSchema,
               create(Admin.AdminMessageSchema, {
+                sessionPasskey: new Uint8Array(8).fill(9),
                 payloadVariant: {
                   case: 'getDeviceMetadataResponse',
                   value: { firmwareVersion: '2.5.1' } as never,
@@ -447,6 +448,52 @@ describe('MeshtasticRemoteAdminClient', () => {
 
     const result = await promise;
     expect((result as { firmwareVersion?: string }).firmwareVersion).toBe('2.5.1');
+    expect(client.sessionStore.get(0x200)).toEqual(new Uint8Array(8).fill(9));
+    expect(client.sessionStore.get(0)).toBeUndefined();
+  });
+
+  it('ignores admin responses from an unexpected non-zero node', async () => {
+    vi.useFakeTimers();
+    try {
+      const promise = client.sendAdminRequest(
+        0x200,
+        () =>
+          create(Admin.AdminMessageSchema, {
+            payloadVariant: { case: 'getDeviceMetadataRequest', value: true },
+          }) as never,
+        { expectedResponseCases: ['getDeviceMetadataResponse'], timeoutMs: 50 },
+      );
+      await Promise.resolve();
+      const packetId = 555;
+
+      client.handleMeshPacket(
+        create(Mesh.MeshPacketSchema, {
+          from: 0x300,
+          payloadVariant: {
+            case: 'decoded',
+            value: {
+              portnum: Portnums.PortNum.ADMIN_APP,
+              payload: toBinary(
+                Admin.AdminMessageSchema,
+                create(Admin.AdminMessageSchema, {
+                  payloadVariant: {
+                    case: 'getDeviceMetadataResponse',
+                    value: { firmwareVersion: '9.9.9' } as never,
+                  },
+                }),
+              ),
+              requestId: packetId,
+            },
+          },
+        }) as never,
+      );
+
+      const rejection = expect(promise).rejects.toThrow('remoteAdmin.errors.timeout');
+      await vi.advanceTimersByTimeAsync(50);
+      await rejection;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('rejects and clears pending when write fails with SDK-shaped error object', async () => {

@@ -3481,6 +3481,7 @@ export function useDevice() {
         setRemoteAdminStatus('ready');
       } catch (e) {
         if (!applyIfCurrent()) return;
+        remoteAdminClientRef.current?.resetEditState();
         const msg = normalizeRemoteAdminError(e);
         setRemoteAdminStatus('error');
         setRemoteAdminError(msg);

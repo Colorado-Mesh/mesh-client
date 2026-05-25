@@ -379,7 +379,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getClientId: (protocol?: 'meshtastic' | 'meshcore'): Promise<string> =>
       ipcRenderer.invoke('mqtt:getClientId', protocol),
     getCachedNodes: () => ipcRenderer.invoke('mqtt:getCachedNodes'),
-    updateChannelKeys: (args: { entries: { name: string; pskBase64: string }[] }) =>
+    updateChannelKeys: (args: { entries: { name: string; pskBase64: string; index?: number }[] }) =>
       ipcRenderer.invoke('mqtt:updateChannelKeys', args),
     publish: (args: {
       text: string;
