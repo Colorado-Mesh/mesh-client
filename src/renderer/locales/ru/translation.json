@@ -488,7 +488,7 @@
       "applySuccessWithSkipped": "Применены каналы {{applied}}; дубликат {{skipped}} пропущен или не назван."
     },
     "channelLoading": "Загрузка…",
-    "channelLoadFailed": "Загрузка не удалась...",
+    "channelLoadFailed": "Загрузка не удалась",
     "retryRemoteChannels": "Повторите попытку загрузки каналов"
   },
   "securityPanel": {

@@ -487,7 +487,7 @@
       "unnamedChannel": "(bez nazwy)",
       "applySuccessWithSkipped": "Zastosowano kanał(y) {{applied}}; pominięto duplikat lub nienazwany kanał (y) {{skipped}}."
     },
-    "channelLoading": "Wczytywanie...",
+    "channelLoading": "Wczytywanie…",
     "channelLoadFailed": "Wczytywanie nieudane",
     "retryRemoteChannels": "Ponów próbę załadowania kanałów"
   },

@@ -488,8 +488,8 @@
       "applySuccessWithSkipped": "Toegepast {{applied}} kanaal/kanalen; {{skipped}} duplicaat of naamloos overgeslagen."
     },
     "channelLoading": "Laden…",
-    "channelLoadFailed": "Laden mislukte",
-    "retryRemoteChannels": "Probeer laadkanalen opnieuw"
+    "channelLoadFailed": "Laden mislukt",
+    "retryRemoteChannels": "Opnieuw proberen kanalen te laden"
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",

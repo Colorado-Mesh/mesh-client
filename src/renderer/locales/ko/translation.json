@@ -489,7 +489,7 @@
     },
     "channelLoading": "로드 중…",
     "channelLoadFailed": "불러오기 실패",
-    "retryRemoteChannels": "로딩 채널 다시 시도"
+    "retryRemoteChannels": "채널 불러오기 재시도"
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",

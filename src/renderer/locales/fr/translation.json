@@ -487,9 +487,9 @@
       "unnamedChannel": "(anonyme)",
       "applySuccessWithSkipped": "Canal(x) {{applied}} appliqué (s) ; {{skipped}} en double ou sans nom ignoré."
     },
-    "channelLoading": "Chargement....",
-    "channelLoadFailed": "Échec du chargement...",
-    "retryRemoteChannels": "Réessayer les canaux de chargement"
+    "channelLoading": "Chargement…",
+    "channelLoadFailed": "Échec du chargement",
+    "retryRemoteChannels": "Réessayer le chargement des canaux"
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",

@@ -13,6 +13,9 @@ export const MUST_TRANSLATE_LEAF_KEYS = new Set([
   'copyPublicKey',
   'generateLink',
   'copyFailed',
+  'channelLoading',
+  'channelLoadFailed',
+  'retryRemoteChannels',
 ]);
 
 /** appPanel filter where French "chaînes" is a known false friend. */
@@ -23,6 +26,36 @@ export const FR_MESH_CHANNEL_KEYS = new Set([
   `${CHANNEL_URL_PREFIX}confirmAddMessage`,
   'appPanel.allChannelsOption',
 ]);
+
+/** MT often mis-parses "Retry loading channels" as freight/TV "loading channels". */
+export const RETRY_REMOTE_CHANNELS_FORBIDDEN = {
+  es: [
+    {
+      re: /canales de carga/i,
+      hint: 'retry fetching mesh channels, not freight "loading channels"',
+    },
+  ],
+  fr: [
+    {
+      re: /canaux de chargement/i,
+      hint: 'use "chargement des canaux", not "canaux de chargement"',
+    },
+  ],
+  de: [{ re: /Ladekan[äa]le/i, hint: 'use "Kanäle laden", not TV "Ladekanäle"' }],
+  id: [
+    {
+      re: /saluran pemuatan/i,
+      hint: 'use "memuat saluran", not "saluran pemuatan"',
+    },
+  ],
+  nl: [{ re: /laadkanalen/i, hint: 'use "kanalen laden", not "laadkanalen"' }],
+  ko: [{ re: /로딩\s*채널/i, hint: 'use "채널 불러오기", not English loanword "로딩 채널"' }],
+};
+
+export const RETRY_REMOTE_CHANNELS_KEY = 'radioPanel.retryRemoteChannels';
+
+/** Leaf keys where English ends with … and locale must not use ASCII dot runs. */
+export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChannel']);
 
 /** CAT / Memsource placeholder tokens (e.g. __ PH0 __) that must be {{name}} instead. */
 export const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
@@ -176,6 +209,27 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
 
   if (enVal.includes('{{usePreset}}') && !val.includes('{{usePreset}}')) {
     issues.push('missing {{usePreset}} interpolation from English source');
+  }
+
+  if (
+    locale !== 'en' &&
+    ELLIPSIS_HYGIENE_LEAF_KEYS.has(leafKey) &&
+    enVal.endsWith('…') &&
+    (/\.{4,}/.test(val) || /\.{3,}$/.test(val))
+  ) {
+    issues.push('use Unicode ellipsis (…) instead of ASCII dots when English uses …');
+  }
+
+  if (flatKey === RETRY_REMOTE_CHANNELS_KEY) {
+    for (const { re, hint } of RETRY_REMOTE_CHANNELS_FORBIDDEN[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`retryRemoteChannels false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (locale === 'nl' && leafKey === 'channelLoadFailed' && /\bmislukte\b/i.test(val)) {
+    issues.push('use past participle "mislukt" for failed-state labels, not "mislukte"');
   }
 
   return issues;

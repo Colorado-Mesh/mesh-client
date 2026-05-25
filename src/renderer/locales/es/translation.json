@@ -489,7 +489,7 @@
     },
     "channelLoading": "Cargando…",
     "channelLoadFailed": "Fallo al cargar",
-    "retryRemoteChannels": "Reintentar canales de carga"
+    "retryRemoteChannels": "Reintentar cargar los canales"
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneración de claves solicitada. El dispositivo generará nuevas claves.",

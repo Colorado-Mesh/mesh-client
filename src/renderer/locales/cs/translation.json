@@ -487,7 +487,7 @@
       "unnamedChannel": "(nepojmenované)",
       "applySuccessWithSkipped": "Aplikováno {{applied}} kanálů; přeskočeno {{skipped}} duplikát nebo nepojmenováno."
     },
-    "channelLoading": "Loading…",
+    "channelLoading": "Načítání…",
     "channelLoadFailed": "Načítání selhalo",
     "retryRemoteChannels": "Zkusit načítání kanálů znovu"
   },

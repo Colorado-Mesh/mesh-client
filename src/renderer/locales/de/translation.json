@@ -489,7 +489,7 @@
     },
     "channelLoading": "Lädt…",
     "channelLoadFailed": "Laden fehlgeschlagen",
-    "retryRemoteChannels": "Ladekanäle erneut versuchen"
+    "retryRemoteChannels": "Kanäle erneut laden"
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",

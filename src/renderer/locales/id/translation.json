@@ -489,7 +489,7 @@
     },
     "channelLoading": "Memuat…",
     "channelLoadFailed": "Pemuatan gagal",
-    "retryRemoteChannels": "Coba lagi saluran pemuatan"
+    "retryRemoteChannels": "Coba lagi memuat saluran"
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
