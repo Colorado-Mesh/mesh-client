@@ -1015,7 +1015,6 @@
   },
   "chatPanel": {
     "channels": "チャンネル",
-    "allChannels": "全て",
     "searchMessages": "メッセージを検索する",
     "searchAllChannels": "すべてのチャンネルを検索",
     "closeDmTab": "DMタブを閉じる",
@@ -1691,7 +1690,17 @@
     "watchNode": "Watch",
     "unwatchNode": "見張っているんだ",
     "showOnMap": "周辺地図を見る",
-    "configureRemotely": "ノードをリモートで構成する"
+    "configureRemotely": "ノードをリモートで構成する",
+    "remoteAdminNoPkiKey": "このノードのPKI公開鍵はまだ記録されていません。NodeInfoを受信するまで、リモート管理者は機能しない可能性があります。",
+    "remoteAdminKeyTitle": "リモート管理者キー",
+    "remoteAdminKeyLabel": "管理者キー",
+    "remoteAdminKeyPlaceholder": "Base 64エンコードされた32バイトの公開鍵",
+    "saveRemoteAdminKey": "管理者キー",
+    "clearRemoteAdminKey": "消去",
+    "remoteAdminKeySaved": "このノードの管理者キーが保存されました。",
+    "remoteAdminKeyCleared": "管理者キーがクリアされました。",
+    "remoteAdminKeyHint": "このノードのセキュリティ設定（ base 64、base 64 :…、または64文字の16進数）から管理者公開鍵を貼り付けます。ここに保存し、Radio/Security/ModulesのConfigureドロップダウンでノードを選択します。",
+    "remoteAdminKeyInvalid": "有効な管理者公開鍵(base 64、base 64 :…、または64文字の16進数)を入力します。"
   },
   "firmwareStatus": {
     "checking": "ファームウェアのバージョンを確認する",
@@ -2085,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "ローカル無線を接続して、リモートノードを管理します。",
-      "publicKeyUnauthorized": "無許可：このラジオの公開鍵をリモートノードの管理鍵に追加します。",
       "badSessionKey": "管理セッションの有効期限が切れました。更新してもう一度お試しください。",
       "pkiFailed": "PKI暗号化に失敗しました。ノードキーを確認し、レガシー管理チャネルの競合を削除します。",
       "notAuthorized": "ターゲットノードでリモート管理者が承認されていません。",
@@ -2093,7 +2101,11 @@
       "generic": "リモート管理者リクエストに失敗しました。",
       "configResponseUnexpected": "リモート管理者が予期しない構成応答を返しました。",
       "channelConfigPartial": "1つ以上のチャンネル設定をリモートノードから読み込めませんでした。",
-      "channelResponseUnexpected": "リモート管理者が予期しないチャネル応答を返しました。"
+      "channelResponseUnexpected": "リモート管理者が予期しないチャネル応答を返しました。",
+      "noRemotePublicKey": "このノードにはまだPKI公開鍵がありません。メッシュ上でNodeInfoパケットを待つか、デバイスアプリを使用してキーを交換します。",
+      "noAdminKeyConfigured": "リモート管理を使用する前に、ノードの詳細ダイアログにこのノードの管理キーを貼り付けて保存します。",
+      "invalidAdminKey": "管理キーは32バイト（ base 64、base 64 :…、または64文字の16進数）でなければなりません。",
+      "publicKeyUnauthorized": "許可されていません：この管理者キーはリモートノードで許可されていません。キーがリモートデバイスの管理キーの下に表示されていることを確認します。"
     }
   }
 }

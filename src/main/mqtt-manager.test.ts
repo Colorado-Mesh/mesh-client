@@ -885,6 +885,32 @@ describe('_doConnect — WebSocket scheme', () => {
     expect(
       (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
     ).toBe('wss');
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { rejectUnauthorized: boolean })
+        .rejectUnauthorized,
+    ).toBe(true);
+  });
+
+  it('honors insecure TLS only when explicitly enabled for wss:// port 443', () => {
+    new MQTTManager().connect({
+      server: 'mqtt.example.com',
+      port: 443,
+      username: '',
+      password: '',
+      topicPrefix: 'msh',
+      autoLaunch: false,
+      useWebSocket: true,
+      tlsInsecure: true,
+    });
+
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { protocol: string }).protocol,
+    ).toBe('wss');
+    expect(
+      (vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { rejectUnauthorized: boolean })
+        .rejectUnauthorized,
+    ).toBe(false);
   });
 
   it('uses ws:// when tlsInsecure is true on port 8883', () => {
@@ -1194,6 +1220,25 @@ describe('updateChannelKeys', () => {
 
     const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
     expect(nameToIndex.get('HamPrivate')).toBe(2);
+  });
+
+  it('preserves custom LongFast from connect when radio sync pushes default public PSK', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: [`LongFast=${CUSTOM_PSK.toString('base64')}`],
+    });
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 0 }]);
+
+    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
+    expect(byName.get('LongFast')?.equals(CUSTOM_PSK)).toBe(true);
   });
 });
 

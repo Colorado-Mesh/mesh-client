@@ -445,7 +445,6 @@
     "rebootOtaConfirm": "Restartujte do OTA",
     "rebootOtaButton": "Restartujte do OTA",
     "directMessages": "Přímé zprávy",
-    "debugLogApi": "Debug Log API",
     "channelUrl": {
       "sectionTitle": "Sdílet / importovat adresu URL kanálu",
       "exportTitle": "Exportovat",
@@ -1016,7 +1015,6 @@
   },
   "chatPanel": {
     "channels": "Kanály",
-    "allChannels": "Vše",
     "searchMessages": "Hledat zprávy",
     "searchAllChannels": "Prohledejte všechny kanály",
     "closeDmTab": "Zavřít kartu DM",
@@ -1692,7 +1690,17 @@
     "watchNode": "Sledovat",
     "unwatchNode": "Sleduje",
     "showOnMap": "Zobrazit na mapě",
-    "configureRemotely": "Konfigurovat uzel vzdáleně"
+    "configureRemotely": "Konfigurovat uzel vzdáleně",
+    "remoteAdminNoPkiKey": "Pro tento uzel zatím není v záznamu žádný veřejný klíč PKI — vzdálený správce nemusí fungovat, dokud není přijato NodeInfo.",
+    "remoteAdminKeyTitle": "Klíč vzdáleného správce",
+    "remoteAdminKeyLabel": "API klíč Admina",
+    "remoteAdminKeyPlaceholder": "Base64-kódovaný 32bajtový veřejný klíč",
+    "saveRemoteAdminKey": "Uložit klíč správce",
+    "clearRemoteAdminKey": "Vymazat",
+    "remoteAdminKeySaved": "Admin klíč uložen pro tento uzel.",
+    "remoteAdminKeyCleared": "Klíč správce byl vymazán.",
+    "remoteAdminKeyHint": "Vložte veřejný klíč správce z nastavení zabezpečení tohoto uzlu (base64, base64:… nebo 64znakový hexadecimál). Uložte jej sem a poté vyberte uzel v rozevíracím seznamu Konfigurovat v části Rádio/Zabezpečení/Moduly.",
+    "remoteAdminKeyInvalid": "Zadejte platný veřejný klíč správce (base64, base64:… nebo 64místný hexadecimální)."
   },
   "firmwareStatus": {
     "checking": "Kontrola verze firmwaru",
@@ -2086,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "Připojte místní rádio pro správu vzdálených uzlů.",
-      "publicKeyUnauthorized": "Neoprávněné: přidejte veřejný klíč tohoto rádia do správcovských klíčů vzdáleného uzlu.",
       "badSessionKey": "Platnost relace správce vypršela. Obnovte ji a zkuste to znovu.",
       "pkiFailed": "Šifrování PKI se nezdařilo. Ověřte klíče uzlů a odstraňte starší konflikty kanálů správce.",
       "notAuthorized": "Vzdálený správce není autorizován v cílovém uzlu.",
@@ -2094,7 +2101,11 @@
       "generic": "Požadavek vzdáleného správce se nezdařil.",
       "configResponseUnexpected": "Vzdálený správce vrátil neočekávanou konfigurační odpověď.",
       "channelConfigPartial": "Ze vzdáleného uzlu nelze načíst jedno nebo více nastavení kanálu.",
-      "channelResponseUnexpected": "Vzdálený správce vrátil neočekávanou odpověď kanálu."
+      "channelResponseUnexpected": "Vzdálený správce vrátil neočekávanou odpověď kanálu.",
+      "noRemotePublicKey": "Tento uzel zatím nemá veřejný klíč PKI. Počkejte na paket NodeInfo přes síť nebo jednou použijte aplikaci zařízení k výměně klíčů.",
+      "noAdminKeyConfigured": "Před použitím vzdáleného správce vložte a uložte klíč správce pro tento uzel v dialogovém okně podrobností uzlu.",
+      "invalidAdminKey": "Správcovský klíč musí mít 32 bajtů (base64, base64:…, nebo 64znakový hexadecimál).",
+      "publicKeyUnauthorized": "Neautorizované: tento administrátorský klíč není autorizován na vzdáleném uzlu. Ověřte, zda je klíč uveden v části Správcovské klíče na vzdáleném zařízení."
     }
   }
 }

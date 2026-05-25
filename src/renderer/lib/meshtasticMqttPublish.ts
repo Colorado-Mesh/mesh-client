@@ -2,7 +2,7 @@ import {
   type ManualChannelPublishEntry,
   parseManualChannelPublishEntries,
 } from '@/renderer/lib/meshtasticChannelPskInput';
-import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
+import { loadMeshtasticMqttManualChannelPsksFromStorage } from '@/renderer/lib/meshtasticMqttSettingsStorage';
 import { splitChannelPskLine } from '@/shared/meshtasticChannelPskLine';
 import {
   isMeshtasticDefaultPublicPsk,
@@ -112,12 +112,7 @@ export function isNonTrivialMeshtasticChannelPsk(psk: Uint8Array): boolean {
 
 /** Manual Connection panel channel PSK lines for MQTT-only publish fallback. */
 export function loadMeshtasticMqttManualChannelPsks(): string[] {
-  const raw = localStorage.getItem('mesh-client:mqttSettings');
-  const parsed = parseStoredJson<{ channelPsks?: string[] }>(
-    raw,
-    'loadMeshtasticMqttManualChannelPsks',
-  );
-  return parsed?.channelPsks ?? [];
+  return loadMeshtasticMqttManualChannelPsksFromStorage();
 }
 
 /** Build chat channel tabs and configs from Connection panel manual PSK lines (MQTT-only). */
@@ -243,8 +238,7 @@ export function meshtasticMqttChannelKeyEntries(
     if (ch.role === MESHTASTIC_CHANNEL_ROLE.DISABLED) continue;
     const name = resolveMeshtasticMqttChannelName(ch);
     if (!name) continue;
-    const isTrivial = ch.psk.length === 0 || (ch.psk.length === 1 && ch.psk[0] === 0);
-    if (isTrivial) continue;
+    if (!isNonTrivialMeshtasticChannelPsk(ch.psk)) continue;
     entries.push({ name, pskBase64: pskToBase64(ch.psk), index: ch.index });
   }
   return entries;

@@ -79,12 +79,7 @@ import {
   setMainWindow,
 } from './log-service';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
-import {
-  decodePathPayload,
-  decodeTracePayload,
-  isPathPacket,
-  isTracePacket,
-} from './meshcore-path-decoder';
+import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
@@ -2956,8 +2951,17 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticConfigureTargetNodeNum',
   'meshtasticLastRfSelfNodeId',
   'storeForwardAutoFetchHistory',
+  /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
+  'meshtasticRemoteAdminKeyByNode',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
+const MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX = 'meshtasticRemoteAdminKey:';
+
+function isAppSettingsKeyAllowed(key: string): boolean {
+  return (
+    APP_SETTINGS_ALLOWED_KEYS.has(key) || key.startsWith(MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX)
+  );
+}
 
 ipcMain.handle('appSettings:get', () => {
   try {
@@ -2985,7 +2989,7 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
-  if (typeof key !== 'string' || !APP_SETTINGS_ALLOWED_KEYS.has(key)) {
+  if (typeof key !== 'string' || !isAppSettingsKeyAllowed(key)) {
     throw new Error('appSettings:set: key not allowed');
   }
   if (typeof value !== 'string' || value.length > APP_SETTINGS_MAX_VALUE_LENGTH) {
@@ -3271,23 +3275,6 @@ ipcMain.handle('db:saveNodePath', (_event, nodeId: number, lastHeard: number, bu
   } catch (err) {
     console.error(
       '[IPC] db:saveNodePath failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-
-ipcMain.handle('db:saveNodeTrace', (_event, nodeId: number, lastHeard: number, buffer: Buffer) => {
-  try {
-    if (!isTracePacket(buffer)) {
-      throw new Error('Not a TRACE packet');
-    }
-    const { hops, path } = decodeTracePayload(buffer);
-    console.debug('[IPC] db:saveNodeTrace: nodeId=', nodeId.toString(16), 'hops=', hops);
-    return { success: true, hops, path };
-  } catch (err) {
-    console.error(
-      '[IPC] db:saveNodeTrace failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3990,7 +3977,8 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
 });
 
 // ─── IPC: Chat link preview ──────────────────────────────────────────
-ipcMain.handle('chat:fetchLinkPreview', async (_event, url: unknown) => {
+ipcMain.handle('chat:fetchLinkPreview', async (event, url: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('chat:fetchLinkPreview: unauthorized sender');
   if (typeof url !== 'string' || url.length === 0 || url.length > 2048) return null;
   return await fetchLinkPreview(url);
 });

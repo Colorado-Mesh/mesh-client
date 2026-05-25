@@ -118,7 +118,7 @@ import {
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { parseTcpAddress } from '../lib/parseTcpAddress';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../lib/rawPacketLogConstants';
-import { emojiDisplayChar } from '../lib/reactions';
+import { reactionGlyphFromPicker } from '../lib/reactions';
 import {
   type CliHistoryEntry,
   createRepeaterCommandService,
@@ -5701,14 +5701,17 @@ export function useMeshCore() {
   }, []);
 
   const sendReaction = useCallback(
-    async (emoji: number, replyId: number, channel: number) => {
+    async (glyph: string, replyId: number, channel: number) => {
       if (!connRef.current) return;
+      const parsed = reactionGlyphFromPicker(glyph);
+      if (!parsed) {
+        throw new Error('Invalid reaction emoji');
+      }
       const reactedTo = messagesRef.current.find(
         (m) => m.packetId === replyId || m.timestamp === replyId,
       );
       const targetName = reactedTo?.sender_name || 'Unknown';
-      const emojiChar = emojiDisplayChar(emoji);
-      const tapbackText = `@[${targetName}] ${emojiChar}`;
+      const tapbackText = `@[${targetName}] ${parsed.glyph}`;
       const conn = connRef.current;
       const me = myNodeNumRef.current;
       if (reactedTo?.to != null) {
@@ -5725,11 +5728,11 @@ export function useMeshCore() {
         addMessage({
           sender_id: me,
           sender_name: selfInfo?.name ?? 'Me',
-          payload: emojiChar,
+          payload: parsed.glyph,
           channel: -1,
           timestamp: Date.now(),
           status: 'acked',
-          emoji,
+          emoji: parsed.scalar,
           replyId,
           to: peerNodeId,
         });
@@ -5745,11 +5748,11 @@ export function useMeshCore() {
         addMessage({
           sender_id: me,
           sender_name: selfInfo?.name ?? 'Me',
-          payload: emojiChar,
+          payload: parsed.glyph,
           channel: outboundChannel,
           timestamp: Date.now(),
           status: 'acked',
-          emoji,
+          emoji: parsed.scalar,
           replyId,
         });
       }

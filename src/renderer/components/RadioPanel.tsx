@@ -742,6 +742,8 @@ export default function RadioPanel({
   const [syncClockLoading, setSyncClockLoading] = useState(false);
 
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
+  const loraDisabled =
+    disabled || (configTarget?.mode === 'remote' && meshtasticLoraConfig == null);
 
   const applyConfig = async (
     section: string,
@@ -1275,7 +1277,7 @@ export default function RadioPanel({
             }
           }}
           applying={applyingSection === 'LoRa'}
-          disabled={disabled}
+          disabled={loraDisabled}
         >
           <div className="space-y-1">
             <label htmlFor="radio-freq-mhz" className="text-muted text-sm">
@@ -1371,20 +1373,20 @@ export default function RadioPanel({
             })
           }
           applying={applyingSection === 'LoRa'}
-          disabled={disabled}
+          disabled={loraDisabled}
         >
           <ConfigSelect
             label={t('radioPanel.regionLabel')}
             value={region}
             options={REGIONS}
             onChange={setRegion}
-            disabled={disabled || applyingSection !== null}
+            disabled={loraDisabled || applyingSection !== null}
           />
           <ConfigToggle
             label={t('radioPanel.useModemPresetLabel')}
             checked={usePreset}
             onChange={setUsePreset}
-            disabled={disabled || applyingSection !== null}
+            disabled={loraDisabled || applyingSection !== null}
             description={t('radioPanel.useModemPresetDesc')}
           />
           {usePreset ? (
@@ -1393,7 +1395,7 @@ export default function RadioPanel({
               value={modemPreset}
               options={MODEM_PRESETS}
               onChange={setModemPreset}
-              disabled={disabled || applyingSection !== null}
+              disabled={loraDisabled || applyingSection !== null}
             />
           ) : (
             <div className="space-y-4 border-l border-gray-700 pl-3">
@@ -1408,7 +1410,7 @@ export default function RadioPanel({
                   { value: 500, label: '500 kHz' },
                 ]}
                 onChange={setBandwidth}
-                disabled={disabled || applyingSection !== null}
+                disabled={loraDisabled || applyingSection !== null}
                 tooltip={t('radioPanel.bandwidthTooltip')}
               />
               <ConfigSelect
@@ -1419,7 +1421,7 @@ export default function RadioPanel({
                   label: `SF${i + 7}`,
                 }))}
                 onChange={setSpreadFactor}
-                disabled={disabled || applyingSection !== null}
+                disabled={loraDisabled || applyingSection !== null}
                 description={t('radioPanel.spreadFactorDesc')}
               />
               <ConfigSelect
@@ -1432,14 +1434,14 @@ export default function RadioPanel({
                   { value: 8, label: '4/8' },
                 ]}
                 onChange={setCodingRate}
-                disabled={disabled || applyingSection !== null}
+                disabled={loraDisabled || applyingSection !== null}
                 tooltip={t('radioPanel.codingRateTooltip')}
               />
               <ConfigNumber
                 label={t('radioPanel.txPowerLabel')}
                 value={txPower}
                 onChange={setTxPower}
-                disabled={disabled || applyingSection !== null}
+                disabled={loraDisabled || applyingSection !== null}
                 min={1}
                 max={30}
                 unit="dBm"
@@ -1450,7 +1452,7 @@ export default function RadioPanel({
                 label={t('radioPanel.sx126xRxBoostedLabel')}
                 checked={rxBoostedGain}
                 onChange={setRxBoostedGain}
-                disabled={disabled || applyingSection !== null}
+                disabled={loraDisabled || applyingSection !== null}
                 description={t('radioPanel.sx126xRxBoostedDesc')}
               />
             </div>
@@ -1469,7 +1471,7 @@ export default function RadioPanel({
                 onChange={(e) => {
                   setHopLimit(Number(e.target.value));
                 }}
-                disabled={disabled || applyingSection !== null}
+                disabled={loraDisabled || applyingSection !== null}
                 className="flex-1 accent-green-500 disabled:opacity-50"
               />
               <span className="w-6 text-center font-mono text-lg text-gray-200">{hopLimit}</span>

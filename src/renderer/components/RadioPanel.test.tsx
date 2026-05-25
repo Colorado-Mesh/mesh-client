@@ -79,6 +79,36 @@ describe('RadioPanel HelpTooltip coverage — LoRa params', () => {
   });
 });
 
+describe('RadioPanel remote target safeguards', () => {
+  it('disables LoRa apply when a remote target is ready but LoRa config was not fetched', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          configTarget={{
+            mode: 'remote',
+            nodeNum: 0x12345678,
+            isReady: true,
+            isLoading: false,
+          }}
+          meshtasticLoraConfig={null}
+        />
+      </ToastProvider>,
+    );
+
+    const loraDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'LoRa / Radio';
+    });
+    expect(loraDetails).toBeTruthy();
+    await user.click(loraDetails!.querySelector('summary')!);
+
+    expect(screen.getByRole('button', { name: 'Apply LoRa / Radio' })).toBeDisabled();
+  });
+});
+
 describe('RadioPanel HelpTooltip coverage — Telemetry', () => {
   it('Device metrics update interval has a help tooltip and mesh vs client copy', async () => {
     const user = userEvent.setup();

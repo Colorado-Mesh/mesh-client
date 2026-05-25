@@ -97,6 +97,8 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain('APP_SETTINGS_ALLOWED_KEYS');
     expect(INDEX_SOURCE).toMatch(/key not allowed/);
     expect(INDEX_SOURCE).toContain("'meshtasticLastRfSelfNodeId'");
+    expect(INDEX_SOURCE).toContain('meshtasticRemoteAdminKey:');
+    expect(INDEX_SOURCE).toContain('isAppSettingsKeyAllowed');
   });
 
   it('registers DB-level message prune IPC for both protocols (issue #387)', () => {
@@ -256,8 +258,11 @@ describe('Native Electron call guards (source contract)', () => {
     );
   });
 
-  it('registers chat:fetchLinkPreview handler', () => {
+  it('registers chat:fetchLinkPreview handler with sender validation', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:fetchLinkPreview'");
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('chat:fetchLinkPreview'[\s\S]*?validateIpcSender\(event\)/,
+    );
   });
 
   it('registers chat:outbox handlers with protocol, status, and payload validation', () => {

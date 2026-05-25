@@ -65,7 +65,11 @@ import {
   meshtasticWireUint32NonZero,
   sanitizeUnicodeReactionScalar,
 } from '../../shared/reactionEmoji';
-import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
+import {
+  getAppSettingsRaw,
+  mergeAppSetting,
+  mergeAppSettingsPartial,
+} from '../lib/appSettingsStorage';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import {
   createBleConnection,
@@ -89,7 +93,6 @@ import {
   shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
-import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
   computeNodeInfoLastHeardMs,
@@ -108,9 +111,19 @@ import {
   meshtasticNodePublicKeyBytesFromHex,
   MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
+  REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS,
 } from '../lib/meshtasticRemoteAdmin';
 import {
-  fetchMeshtasticRemoteConfigSnapshotDeferred,
+  getMeshtasticRemoteAdminKeyForNode,
+  MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX,
+  readMeshtasticRemoteAdminKeyMap,
+  setMeshtasticRemoteAdminKeyForNode,
+} from '../lib/meshtasticRemoteAdminKeyStorage';
+import {
+  fetchMeshtasticRemoteConfigChannelsTail,
+  fetchMeshtasticRemoteConfigModules,
+  fetchMeshtasticRemoteConfigOwner,
+  fetchMeshtasticRemoteConfigSecurity,
   fetchMeshtasticRemoteConfigSnapshotEssential,
   mergeMeshtasticRemoteConfigSnapshots,
 } from '../lib/meshtasticRemoteAdminSnapshot';
@@ -126,7 +139,7 @@ import {
   MAX_RAW_PACKET_LOG_ENTRIES,
   type MeshtasticRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
-import { normalizeReactionEmoji } from '../lib/reactions';
+import { normalizeReactionEmoji, reactionGlyphFromPicker } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews } from '../lib/replyPreview';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
@@ -154,6 +167,7 @@ type ChannelType = Parameters<MeshDevice['setChannel']>[0];
 type PositionType = Parameters<MeshDevice['setPosition']>[0];
 type UserType = Parameters<MeshDevice['setOwner']>[0];
 type WaypointType = Parameters<MeshDevice['sendWaypoint']>[0];
+type RemoteConfigRoute = 'radio' | 'channelsTail' | 'owner' | 'security' | 'modules';
 
 function getMessageLoadLimit(): number {
   const s = parseStoredJson<{
@@ -400,6 +414,10 @@ export function useDevice() {
     useState<MeshtasticRemoteConfigSnapshot | null>(null);
   const remoteAdminClientRef = useRef<MeshtasticRemoteAdminClient | null>(null);
   const remoteConfigFetchGenerationRef = useRef(0);
+  const remoteConfigLoadedRoutesRef = useRef<Set<RemoteConfigRoute>>(new Set());
+  const remoteConfigInflightRoutesRef = useRef<Set<RemoteConfigRoute>>(new Set());
+  const [remoteAdminKeysByNode, setRemoteAdminKeysByNode] = useState<Record<string, string>>({});
+  const remoteAdminKeysByNodeRef = useRef<Record<string, string>>({});
   const [loraConfig, setLoraConfig] = useState<MeshtasticLoraConfig | null>(null);
 
   // ─── Additional packet type state ─────────────────────────────────
@@ -773,6 +791,43 @@ export function useDevice() {
   useEffect(() => {
     remoteAdminStatusRef.current = remoteAdminStatus;
   }, [remoteAdminStatus]);
+
+  useEffect(() => {
+    remoteAdminKeysByNodeRef.current = remoteAdminKeysByNode;
+  }, [remoteAdminKeysByNode]);
+
+  useEffect(() => {
+    if (state.status !== 'configured') return;
+    const map = readMeshtasticRemoteAdminKeyMap();
+    setRemoteAdminKeysByNode(map);
+    remoteAdminKeysByNodeRef.current = map;
+  }, [state.status]);
+
+  useEffect(() => {
+    if (state.status !== 'configured') return;
+    void window.electronAPI.appSettings
+      .getAll()
+      .then((all) => {
+        const partial: Record<string, string> = {};
+        for (const [key, value] of Object.entries(all)) {
+          if (
+            key.startsWith(MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX) &&
+            typeof value === 'string' &&
+            value.trim() !== ''
+          ) {
+            partial[key] = value;
+          }
+        }
+        if (Object.keys(partial).length === 0) return;
+        mergeAppSettingsPartial(partial, 'useDevice hydrate remote admin keys');
+        const map = readMeshtasticRemoteAdminKeyMap();
+        setRemoteAdminKeysByNode(map);
+        remoteAdminKeysByNodeRef.current = map;
+      })
+      .catch((e: unknown) => {
+        console.warn('[useDevice] hydrate remote admin keys failed ' + errLikeToLogString(e));
+      });
+  }, [state.status]);
 
   useEffect(() => {
     remoteAdminClientRef.current = new MeshtasticRemoteAdminClient(
@@ -3560,60 +3615,196 @@ export function useDevice() {
     [getNodeName, isDuplicate],
   );
 
+  const clearRemoteAdminLoadingIfNoForegroundInflight = (): void => {
+    const hasForegroundInflight = [...remoteConfigInflightRoutesRef.current].some(
+      (r) => r !== 'channelsTail' && r !== 'owner',
+    );
+    if (!hasForegroundInflight && remoteAdminStatusRef.current === 'loading') {
+      setRemoteAdminStatus('idle');
+    }
+  };
+
+  const setRemoteAdminKeyForNode = useCallback(
+    async (nodeNum: number, adminKeyBase64: string | null) => {
+      try {
+        const map = await setMeshtasticRemoteAdminKeyForNode(nodeNum, adminKeyBase64);
+        setRemoteAdminKeysByNode(map);
+        remoteAdminKeysByNodeRef.current = map;
+      } catch (e) {
+        const msg = normalizeRemoteAdminError(e);
+        console.warn('[useDevice] setRemoteAdminKeyForNode failed ' + errLikeToLogString(e));
+        throw new Error(msg);
+      }
+    },
+    [],
+  );
+
+  const getRemoteAdminKeyForNode = useCallback((nodeNum: number): string | undefined => {
+    return (
+      remoteAdminKeysByNodeRef.current[String(nodeNum >>> 0)] ??
+      getMeshtasticRemoteAdminKeyForNode(nodeNum)
+    );
+  }, []);
+
   const refreshRemoteConfigSnapshot = useCallback(
-    async (destNodeNum: number) => {
+    async (
+      destNodeNum: number,
+      route: RemoteConfigRoute = 'radio',
+      options?: { force?: boolean },
+    ) => {
       const client = remoteAdminClientRef.current;
       if (!client || !deviceRef.current) {
         setRemoteAdminStatus('error');
         setRemoteAdminError('remoteAdmin.errors.noLocalRadio');
         return;
       }
+      const destNode = nodesRef.current.get(destNodeNum);
+      const destPubHex = destNode?.public_key_hex;
+      if ((destPubHex?.length ?? 0) !== 64) {
+        setRemoteAdminStatus('error');
+        setRemoteAdminError('remoteAdmin.errors.noRemotePublicKey');
+        return;
+      }
+      const configuredAdminKey = getRemoteAdminKeyForNode(destNodeNum);
+      if (!configuredAdminKey) {
+        setRemoteAdminStatus('error');
+        setRemoteAdminError('remoteAdmin.errors.noAdminKeyConfigured');
+        return;
+      }
       if (state.status !== 'configured') return;
+      if (!options?.force && remoteConfigLoadedRoutesRef.current.has(route)) return;
+      if (remoteConfigInflightRoutesRef.current.has(route)) return;
 
-      const generation = ++remoteConfigFetchGenerationRef.current;
-      setRemoteAdminStatus('loading');
-      setRemoteAdminError(undefined);
+      const generation = remoteConfigFetchGenerationRef.current;
+      const isBackgroundRoute = route === 'channelsTail' || route === 'owner';
+      remoteConfigInflightRoutesRef.current.add(route);
+      if (!isBackgroundRoute) {
+        setRemoteAdminStatus('loading');
+        setRemoteAdminError(undefined);
+      }
 
       const applyIfCurrent = (): boolean =>
         generation === remoteConfigFetchGenerationRef.current &&
         configureTargetNodeNumRef.current === destNodeNum;
 
+      let loadingWatchdogFired = false;
+      let loadingWatchdogId: ReturnType<typeof setTimeout> | undefined;
+      if (!isBackgroundRoute) {
+        loadingWatchdogId = setTimeout(() => {
+          if (!applyIfCurrent()) return;
+          if (remoteAdminStatusRef.current !== 'loading') return;
+          loadingWatchdogFired = true;
+          remoteConfigInflightRoutesRef.current.delete(route);
+          remoteAdminClientRef.current?.resetEditState();
+          setRemoteAdminStatus('error');
+          setRemoteAdminError('remoteAdmin.errors.timeout');
+        }, REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS);
+      }
+
       try {
-        const essential = await fetchMeshtasticRemoteConfigSnapshotEssential(client, destNodeNum);
-        if (!applyIfCurrent()) return;
-        setRemoteConfigSnapshot(essential);
+        if (loadingWatchdogFired) return;
+        const applyPartial = (partial: Partial<MeshtasticRemoteConfigSnapshot>): void => {
+          if (!applyIfCurrent()) return;
+          setRemoteConfigSnapshot((prev) =>
+            prev == null
+              ? { moduleConfigs: {}, ...partial }
+              : mergeMeshtasticRemoteConfigSnapshots(prev, partial),
+          );
+        };
+
+        let routeResult: Partial<MeshtasticRemoteConfigSnapshot>;
+        if (route === 'radio') {
+          routeResult = await fetchMeshtasticRemoteConfigSnapshotEssential(client, destNodeNum);
+        } else if (route === 'channelsTail') {
+          routeResult = await fetchMeshtasticRemoteConfigChannelsTail(client, destNodeNum);
+        } else if (route === 'owner') {
+          routeResult = await fetchMeshtasticRemoteConfigOwner(client, destNodeNum);
+        } else if (route === 'security') {
+          routeResult = await fetchMeshtasticRemoteConfigSecurity(client, destNodeNum);
+        } else {
+          routeResult = await fetchMeshtasticRemoteConfigModules(client, destNodeNum);
+        }
+
+        if (loadingWatchdogFired) return;
+        if (!applyIfCurrent()) {
+          clearRemoteAdminLoadingIfNoForegroundInflight();
+          return;
+        }
+        applyPartial(routeResult);
+        remoteConfigLoadedRoutesRef.current.add(route);
         setRemoteAdminStatus('ready');
         setRemoteAdminError(
-          essential.loraConfigFetchError ??
-            (essential.primaryChannelConfigFetchFailed || essential.channelConfigFetchFailed
+          routeResult.loraConfigFetchError ??
+            (routeResult.primaryChannelConfigFetchFailed || routeResult.channelConfigFetchFailed
               ? 'remoteAdmin.errors.channelConfigPartial'
               : undefined),
         );
 
-        void (async () => {
-          try {
-            const deferred = await fetchMeshtasticRemoteConfigSnapshotDeferred(client, destNodeNum);
-            if (!applyIfCurrent()) return;
-            setRemoteConfigSnapshot((prev) =>
-              prev != null ? mergeMeshtasticRemoteConfigSnapshots(prev, deferred) : prev,
-            );
-          } catch (e) {
-            console.warn(
-              '[useDevice] remote config deferred fetch failed ' + errLikeToLogString(e),
-            );
-          }
-        })();
+        if (route === 'radio') {
+          void (async () => {
+            const backgroundRoutes: {
+              route: Extract<RemoteConfigRoute, 'channelsTail' | 'owner'>;
+              fetch: () => Promise<Partial<MeshtasticRemoteConfigSnapshot>>;
+            }[] = [
+              {
+                route: 'channelsTail',
+                fetch: () => fetchMeshtasticRemoteConfigChannelsTail(client, destNodeNum),
+              },
+              {
+                route: 'owner',
+                fetch: () => fetchMeshtasticRemoteConfigOwner(client, destNodeNum),
+              },
+            ];
+            for (const background of backgroundRoutes) {
+              if (remoteConfigLoadedRoutesRef.current.has(background.route)) continue;
+              if (remoteConfigInflightRoutesRef.current.has(background.route)) continue;
+              remoteConfigInflightRoutesRef.current.add(background.route);
+              try {
+                const partial = await background.fetch();
+                if (!applyIfCurrent()) return;
+                applyPartial(partial);
+                remoteConfigLoadedRoutesRef.current.add(background.route);
+              } catch (e) {
+                if (!applyIfCurrent()) return;
+                console.warn(
+                  '[useDevice] remote config background fetch failed ' + errLikeToLogString(e),
+                );
+              } finally {
+                remoteConfigInflightRoutesRef.current.delete(background.route);
+              }
+            }
+          })();
+        }
       } catch (e) {
-        if (!applyIfCurrent()) return;
+        if (loadingWatchdogFired) return;
+        if (!applyIfCurrent()) {
+          clearRemoteAdminLoadingIfNoForegroundInflight();
+          return;
+        }
+        if (isBackgroundRoute) {
+          console.warn(
+            '[useDevice] remote config background fetch failed ' + errLikeToLogString(e),
+          );
+          return;
+        }
         remoteAdminClientRef.current?.resetEditState();
         const msg = normalizeRemoteAdminError(e);
         setRemoteAdminStatus('error');
         setRemoteAdminError(msg);
         console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
+      } finally {
+        if (loadingWatchdogId != null) clearTimeout(loadingWatchdogId);
+        remoteConfigInflightRoutesRef.current.delete(route);
       }
     },
-    [state.status],
+    [getRemoteAdminKeyForNode, state.status],
   );
+
+  useEffect(() => {
+    if (configureTargetNodeNum == null) return;
+    if (state.status !== 'configured') return;
+    void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'radio');
+  }, [configureTargetNodeNum, state.status, refreshRemoteConfigSnapshot]);
 
   const runRemoteAdminOp = useCallback(async <T>(operation: () => Promise<T>): Promise<T> => {
     try {
@@ -3627,86 +3818,96 @@ export function useDevice() {
     }
   }, []);
 
-  const setConfigureTargetNodeNum = useCallback(
-    (nodeNum: number | null) => {
-      const prevTarget = configureTargetNodeNumRef.current;
-      const normalized =
-        nodeNum != null && nodeNum > 0 && nodeNum !== myNodeNumRef.current ? nodeNum : null;
-      setConfigureTargetNodeNumState(normalized);
-      configureTargetNodeNumRef.current = normalized;
-      if (normalized != null) {
-        skipLocalLoraConfigRef.current = true;
-        if (localLoraConfigTimerRef.current != null) {
-          clearTimeout(localLoraConfigTimerRef.current);
-          localLoraConfigTimerRef.current = undefined;
-        }
-      } else {
-        skipLocalLoraConfigRef.current = false;
+  const setConfigureTargetNodeNum = useCallback((nodeNum: number | null) => {
+    const prevTarget = configureTargetNodeNumRef.current;
+    const normalized =
+      nodeNum != null && nodeNum > 0 && nodeNum !== myNodeNumRef.current ? nodeNum : null;
+    setConfigureTargetNodeNumState(normalized);
+    configureTargetNodeNumRef.current = normalized;
+    if (normalized != null) {
+      skipLocalLoraConfigRef.current = true;
+      if (localLoraConfigTimerRef.current != null) {
+        clearTimeout(localLoraConfigTimerRef.current);
+        localLoraConfigTimerRef.current = undefined;
       }
-      const persistValue = normalized == null ? '' : String(normalized);
-      mergeAppSetting(
-        'meshtasticConfigureTargetNodeNum',
-        persistValue,
-        'useDevice setConfigureTargetNodeNum',
-      );
-      void window.electronAPI.appSettings
-        .set('meshtasticConfigureTargetNodeNum', persistValue)
-        .catch((e: unknown) => {
-          console.warn(
-            '[useDevice] meshtasticConfigureTargetNodeNum persist failed ' + errLikeToLogString(e),
-          );
-        });
-      if (normalized == null) {
-        remoteConfigFetchGenerationRef.current += 1;
-        remoteAdminClientRef.current?.resetEditState();
-        setRemoteConfigSnapshot(null);
-        setRemoteAdminStatus('idle');
-        setRemoteAdminError(undefined);
-        remoteAdminClientRef.current?.sessionStore.clear();
-        return;
-      }
-      if (prevTarget !== normalized) {
-        remoteConfigFetchGenerationRef.current += 1;
-        remoteAdminClientRef.current?.resetEditState();
-        remoteAdminClientRef.current?.sessionStore.clear();
-      }
-      void refreshRemoteConfigSnapshot(normalized);
-    },
-    [refreshRemoteConfigSnapshot],
-  );
+    } else {
+      skipLocalLoraConfigRef.current = false;
+    }
+    const persistValue = normalized == null ? '' : String(normalized);
+    mergeAppSetting(
+      'meshtasticConfigureTargetNodeNum',
+      persistValue,
+      'useDevice setConfigureTargetNodeNum',
+    );
+    void window.electronAPI.appSettings
+      .set('meshtasticConfigureTargetNodeNum', persistValue)
+      .catch((e: unknown) => {
+        console.warn(
+          '[useDevice] meshtasticConfigureTargetNodeNum persist failed ' + errLikeToLogString(e),
+        );
+      });
+    if (normalized == null) {
+      remoteConfigFetchGenerationRef.current += 1;
+      remoteConfigLoadedRoutesRef.current.clear();
+      remoteConfigInflightRoutesRef.current.clear();
+      remoteAdminClientRef.current?.resetEditState();
+      setRemoteConfigSnapshot(null);
+      setRemoteAdminStatus('idle');
+      setRemoteAdminError(undefined);
+      remoteAdminClientRef.current?.sessionStore.clear();
+      return;
+    }
+    if (prevTarget !== normalized) {
+      remoteConfigFetchGenerationRef.current += 1;
+      remoteConfigLoadedRoutesRef.current.clear();
+      remoteConfigInflightRoutesRef.current.clear();
+      remoteAdminClientRef.current?.resetEditState();
+      remoteAdminClientRef.current?.sessionStore.clear();
+      setRemoteAdminStatus('loading');
+      setRemoteAdminError(undefined);
+    }
+  }, []);
 
   useEffect(() => {
     if (configureTargetPersistRestoredRef.current) return;
     if (state.status !== 'configured') return;
     configureTargetPersistRestoredRef.current = true;
 
+    // Radio / Security / Modules configure dropdown always starts on local radio after startup.
     const settings = parseStoredJson<Record<string, unknown>>(
       getAppSettingsRaw(),
-      'useDevice meshtasticConfigureTargetNodeNum restore',
+      'useDevice meshtasticConfigureTargetNodeNum startup',
     );
     const raw = settings?.meshtasticConfigureTargetNodeNum;
-    if (raw == null || raw === '' || raw === 'null') return;
-    const nodeNum = typeof raw === 'number' ? raw : Number(raw);
-    if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum === myNodeNumRef.current) return;
-    const restoredNode = nodesRef.current.get(nodeNum);
-    if (!restoredNode || meshcoreHwModelIsContactTypeLabel(restoredNode.hw_model)) {
-      mergeAppSetting(
-        'meshtasticConfigureTargetNodeNum',
-        '',
-        restoredNode
-          ? 'useDevice restore meshcore configure target node'
-          : 'useDevice restore missing configure target node',
-      );
-      void window.electronAPI.appSettings.set('meshtasticConfigureTargetNodeNum', '').catch(() => {
-        // catch-no-log-ok best-effort clear stale persisted target
-      });
-      return;
+    if (
+      configureTargetNodeNumRef.current != null ||
+      (raw != null && raw !== '' && raw !== 'null')
+    ) {
+      setConfigureTargetNodeNumState(null);
+      configureTargetNodeNumRef.current = null;
+      remoteConfigLoadedRoutesRef.current.clear();
+      remoteConfigInflightRoutesRef.current.clear();
+      remoteConfigFetchGenerationRef.current += 1;
+      setRemoteConfigSnapshot(null);
+      setRemoteAdminStatus('idle');
+      setRemoteAdminError(undefined);
+      remoteAdminClientRef.current?.resetEditState();
+      remoteAdminClientRef.current?.sessionStore.clear();
+      if (raw != null && raw !== '' && raw !== 'null') {
+        mergeAppSetting(
+          'meshtasticConfigureTargetNodeNum',
+          '',
+          'useDevice startup default local configure target',
+        );
+        void window.electronAPI.appSettings
+          .set('meshtasticConfigureTargetNodeNum', '')
+          .catch(() => {
+            // catch-no-log-ok best-effort clear persisted remote target on startup
+          });
+      }
+      console.debug('[useDevice] configure target defaulted to local radio on startup');
     }
-
-    setConfigureTargetNodeNumState(nodeNum);
-    configureTargetNodeNumRef.current = nodeNum;
-    void refreshRemoteConfigSnapshot(nodeNum);
-  }, [state.status, refreshRemoteConfigSnapshot]);
+  }, [state.status]);
 
   const setConfig = useCallback(
     async (config: unknown) => {
@@ -3729,7 +3930,7 @@ export function useDevice() {
     const client = remoteAdminClientRef.current;
     if (dest != null && client) {
       await runRemoteAdminOp(() => client.commitRemoteEdit(dest));
-      await refreshRemoteConfigSnapshot(dest);
+      await refreshRemoteConfigSnapshot(dest, 'radio', { force: true });
       return;
     }
     if (!deviceRef.current) return;
@@ -4319,7 +4520,7 @@ export function useDevice() {
   }, []);
 
   const sendReaction = useCallback(
-    (emoji: number, replyId: number, channel: number): Promise<void> => {
+    (glyph: string, replyId: number, channel: number): Promise<void> => {
       const hasMqtt = mqttStatusRef.current === 'connected';
       if (!deviceRef.current && !hasMqtt) return Promise.reject(new Error('Not connected'));
       const from =
@@ -4342,11 +4543,15 @@ export function useDevice() {
           ),
         );
       }
-      const safeScalar = sanitizeUnicodeReactionScalar(emoji);
+      const parsed = reactionGlyphFromPicker(glyph);
+      if (!parsed) {
+        return Promise.reject(new Error('Invalid reaction emoji'));
+      }
+      const tapPayload = parsed.glyph;
+      const safeScalar = sanitizeUnicodeReactionScalar(parsed.scalar);
       if (safeScalar === undefined) {
         return Promise.reject(new Error('Invalid reaction emoji'));
       }
-      const tapPayload = String.fromCodePoint(safeScalar);
 
       const msg: ChatMessage = {
         sender_id: from,
@@ -4361,7 +4566,11 @@ export function useDevice() {
       // Optimistic update — dedup guard in echo handler prevents duplicate when echo arrives
       setMessages((prev) => {
         const isDup = prev.some(
-          (m) => m.emoji === safeScalar && m.replyId === replyId && m.sender_id === from,
+          (m) =>
+            m.emoji === safeScalar &&
+            m.replyId === replyId &&
+            m.sender_id === from &&
+            m.payload === tapPayload,
         );
         if (isDup) return prev;
         return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
@@ -4385,11 +4594,36 @@ export function useDevice() {
               '[useDevice] sendReaction device sendText failed ' + errLikeToLogString(e),
             );
           });
+      } else if (hasMqtt) {
+        const reactionMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
+          channel,
+          channelConfigsRef.current,
+          loadMeshtasticMqttManualChannelPsks(),
+          meshtasticMqttPublishOpts(true),
+        );
+        if (!reactionMqtt.channelName) {
+          return Promise.reject(new Error('No MQTT channel configured for reaction'));
+        }
+        return window.electronAPI.mqtt
+          .publish({
+            text: tapPayload,
+            from,
+            channel,
+            destination: BROADCAST_ADDR,
+            channelName: reactionMqtt.channelName,
+            pskBase64: reactionMqtt.pskBase64,
+            emoji: MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
+            replyId,
+            publishJsonMirror: reactionMqtt.publishJsonMirror,
+          })
+          .then((packetId) => {
+            isDuplicate(packetId);
+          });
       }
 
       return Promise.resolve();
     },
-    [getNodeName],
+    [getNodeName, isDuplicate],
   );
 
   const sendStatusEvents = useCallback(() => {
@@ -4497,6 +4731,9 @@ export function useDevice() {
     ringtone,
     setRingtone,
     securityConfig,
+    remoteAdminKeysByNode,
+    getRemoteAdminKeyForNode,
+    setRemoteAdminKeyForNode,
     configureTargetNodeNum,
     setConfigureTargetNodeNum,
     remoteAdminStatus,

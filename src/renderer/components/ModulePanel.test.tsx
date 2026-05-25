@@ -86,4 +86,37 @@ describe('ModulePanel', () => {
       expect(onCommit).toHaveBeenCalled();
     });
   });
+
+  it('disables local-only canned message and ringtone actions for a remote target', async () => {
+    const user = userEvent.setup();
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        onSetRingtone={vi.fn().mockResolvedValue(undefined)}
+        configTarget={{
+          mode: 'remote',
+          nodeNum: 0x12345678,
+          isReady: true,
+          isLoading: false,
+        }}
+      />,
+    );
+
+    const cannedDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Canned Messages';
+    });
+    expect(cannedDetails).toBeDefined();
+    await user.click(cannedDetails!.querySelector('summary')!);
+    expect(screen.getByRole('button', { name: 'Apply Canned Messages' })).toBeDisabled();
+
+    const ringtoneDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'RTTTL Ringtone';
+    });
+    expect(ringtoneDetails).toBeDefined();
+    await user.click(ringtoneDetails!.querySelector('summary')!);
+    expect(screen.getByRole('button', { name: 'Apply RTTTL Ringtone' })).toBeDisabled();
+  });
 });

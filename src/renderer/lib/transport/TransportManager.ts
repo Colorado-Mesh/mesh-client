@@ -5,6 +5,7 @@ import {
   loadMeshtasticMqttManualChannelPsks,
   resolveMeshtasticMqttPublishFieldsForChannel,
 } from '@/renderer/lib/meshtasticMqttPublish';
+import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '@/shared/reactionEmoji';
 
 import type { StatusUpdateEvent } from './types';
 
@@ -78,7 +79,8 @@ export class TransportManager {
           channelName: mqttFields.channelName,
           pskBase64: mqttFields.pskBase64,
           publishJsonMirror: mqttFields.publishJsonMirror,
-          ...(emoji != null ? { emoji, replyId } : {}),
+          ...(emoji != null ? { emoji: MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } : {}),
+          ...(replyId != null ? { replyId } : {}),
         })
         .then((mqttPacketId: number) => {
           isDuplicate(mqttPacketId); // register so echo is deduped
@@ -102,7 +104,14 @@ export class TransportManager {
       const dest: number | 'broadcast' = destination ?? 'broadcast';
 
       deviceRef.current
-        .sendText(text, dest, true, channel)
+        .sendText(
+          text,
+          dest,
+          true,
+          channel,
+          replyId,
+          emoji != null ? MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG : undefined,
+        )
         .then((packetId: number) => {
           onStatusUpdateRef.current({
             tempId,

@@ -1015,7 +1015,6 @@
   },
   "chatPanel": {
     "channels": "槽钢",
-    "allChannels": "所有食谱",
     "searchMessages": "搜索消息",
     "searchAllChannels": "搜索所有频道",
     "closeDmTab": "关闭DM选项卡",
@@ -1691,7 +1690,17 @@
     "watchNode": "观看",
     "unwatchNode": "正在查看",
     "showOnMap": "显示在地图上",
-    "configureRemotely": "远程配置节点"
+    "configureRemotely": "远程配置节点",
+    "remoteAdminNoPkiKey": "此节点尚未记录PKI公钥—在收到NodeInfo之前，远程管理员可能无法工作。",
+    "remoteAdminKeyTitle": "远程管理密钥",
+    "remoteAdminKeyLabel": "管理员 API Key",
+    "remoteAdminKeyPlaceholder": "Base64编码的32字节公钥",
+    "saveRemoteAdminKey": "保存管理密钥",
+    "clearRemoteAdminKey": "清楚",
+    "remoteAdminKeySaved": "已为此节点保存管理密钥。",
+    "remoteAdminKeyCleared": "管理密钥已清除。",
+    "remoteAdminKeyHint": "从此节点的安全设置（ base64、base64: …或64个字符的十六进制）粘贴管理公钥。将其保存在此处，然后在Radio/Security/Modules的Configure下拉列表中选择节点。",
+    "remoteAdminKeyInvalid": "输入有效的管理员公钥（ base64、base64: …或64个字符的十六进制）。"
   },
   "firmwareStatus": {
     "checking": "正在检查固件版本",
@@ -2085,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "连接本地无线电以管理远程节点。",
-      "publicKeyUnauthorized": "未经授权：将此收音机的公钥添加到远程节点的管理密钥。",
       "badSessionKey": "管理会话已过期。请刷新并重试。",
       "pkiFailed": "PKI加密失败。请验证节点密钥并删除旧版管理通道冲突。",
       "notAuthorized": "远程管理员未在目标节点上获得授权。",
@@ -2093,7 +2101,11 @@
       "generic": "远程管理员请求失败。",
       "configResponseUnexpected": "远程管理员返回了意外的配置响应。",
       "channelConfigPartial": "无法从远程节点加载一个或多个频道设置。",
-      "channelResponseUnexpected": "远程管理员返回了意外的通道响应。"
+      "channelResponseUnexpected": "远程管理员返回了意外的通道响应。",
+      "noRemotePublicKey": "此节点还没有PKI公钥。在网格上等待NodeInfo数据包，或使用设备应用程序一次交换密钥。",
+      "noAdminKeyConfigured": "在使用远程管理之前，在节点详细信息对话框中粘贴并保存此节点的管理密钥。",
+      "invalidAdminKey": "管理密钥必须为32个字节（ base64、base64: …或64个字符的十六进制）。",
+      "publicKeyUnauthorized": "未授权：此管理密钥未在远程节点上授权。验证密钥是否列在远程设备上的管理密钥下。"
     }
   }
 }

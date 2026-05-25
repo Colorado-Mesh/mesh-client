@@ -1015,7 +1015,6 @@
   },
   "chatPanel": {
     "channels": "Canaux",
-    "allChannels": "Tous",
     "searchMessages": "Rechercher des messages",
     "searchAllChannels": "Recherchez tous les canaux.",
     "closeDmTab": "Fermer l'onglet DM",
@@ -1691,7 +1690,17 @@
     "watchNode": "Regarder",
     "unwatchNode": "Marseille",
     "showOnMap": "Voir sur la carte",
-    "configureRemotely": "Configurer le nœud à distance"
+    "configureRemotely": "Configurer le nœud à distance",
+    "remoteAdminNoPkiKey": "Aucune clé publique PKI enregistrée pour ce nœud pour le moment — l'administrateur distant peut ne pas fonctionner tant que NodeInfo n'est pas reçu.",
+    "remoteAdminKeyTitle": "Touche d'administration à distance",
+    "remoteAdminKeyLabel": "Touche Admin",
+    "remoteAdminKeyPlaceholder": "Clé publique de 32 octets codée en Base64",
+    "saveRemoteAdminKey": "Touche Admin",
+    "clearRemoteAdminKey": "Vide",
+    "remoteAdminKeySaved": "Clé d'administration enregistrée pour ce nœud.",
+    "remoteAdminKeyCleared": "Clé d'administrateur effacée.",
+    "remoteAdminKeyHint": "Collez une clé publique d'administrateur à partir des paramètres de sécurité de ce nœud (base64, base64 :… ou hexadécimal de 64 caractères). Enregistrez-le ici, puis sélectionnez le nœud dans la liste déroulante Configurer sur Radio/Sécurité/Modules.",
+    "remoteAdminKeyInvalid": "Saisissez une clé publique admin valide (base64, base64 :… ou hexadécimale de 64 caractères)."
   },
   "firmwareStatus": {
     "checking": "Vérification de la version du firmware...",
@@ -2085,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "Connectez une radio locale pour administrer les nœuds distants.",
-      "publicKeyUnauthorized": "Non autorisé : ajoutez la clé publique de cette radio aux clés d'administration du nœud distant.",
       "badSessionKey": "La session d'administration a expiré. Actualisez et réessayez.",
       "pkiFailed": "Le chiffrement PKI a échoué. Vérifiez les clés de nœud et supprimez les conflits de canaux d'administration hérités.",
       "notAuthorized": "Administrateur distant non autorisé sur le nœud cible.",
@@ -2093,7 +2101,11 @@
       "generic": "Échec de la demande d'administration à distance.",
       "configResponseUnexpected": "L'administrateur distant a renvoyé une réponse de configuration inattendue.",
       "channelConfigPartial": "Un ou plusieurs paramètres de canal n'ont pas pu être chargés à partir du nœud distant.",
-      "channelResponseUnexpected": "L'administrateur distant a renvoyé une réponse de canal inattendue."
+      "channelResponseUnexpected": "L'administrateur distant a renvoyé une réponse de canal inattendue.",
+      "noRemotePublicKey": "Ce nœud n'a pas encore de clé publique PKI. Attendez un paquet NodeInfo sur le maillage ou utilisez l'application de l'appareil une fois pour échanger des clés.",
+      "noAdminKeyConfigured": "Collez et enregistrez une clé d'administration pour ce nœud dans la boîte de dialogue de détail du nœud avant d'utiliser l'administration à distance.",
+      "invalidAdminKey": "La clé d'administration doit être de 32 octets (base64, base64 :…, ou 64 caractères hexadécimaux).",
+      "publicKeyUnauthorized": "Non autorisé : cette clé d'administration n'est pas autorisée sur le nœud distant. Vérifiez que la clé est répertoriée sous Clés d'administration sur l'appareil distant."
     }
   }
 }

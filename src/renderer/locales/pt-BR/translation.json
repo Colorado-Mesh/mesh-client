@@ -1015,7 +1015,6 @@
   },
   "chatPanel": {
     "channels": "Canais",
-    "allChannels": "Todos",
     "searchMessages": "Buscar mensagens",
     "searchAllChannels": "Pesquisar todos os canais",
     "closeDmTab": "Fechar guia DM",
@@ -1691,7 +1690,17 @@
     "watchNode": "Acompanhar",
     "unwatchNode": "Acompanhando",
     "showOnMap": "Mostrar no mapa",
-    "configureRemotely": "Configurar nó remotamente"
+    "configureRemotely": "Configurar nó remotamente",
+    "remoteAdminNoPkiKey": "Nenhuma chave pública PKI registrada para este nó ainda — o administrador remoto pode não funcionar até que o NodeInfo seja recebido.",
+    "remoteAdminKeyTitle": "Chave de administração remota",
+    "remoteAdminKeyLabel": "Chave do fechamento do admin",
+    "remoteAdminKeyPlaceholder": "Chave pública de 32 bytes codificada em base64",
+    "saveRemoteAdminKey": "Guardar chave de administrador",
+    "clearRemoteAdminKey": "Limpar",
+    "remoteAdminKeySaved": "Chave de administrador salva para este nó.",
+    "remoteAdminKeyCleared": "Chave de administrador apagada.",
+    "remoteAdminKeyHint": "Cole uma chave pública de administrador nas configurações de segurança deste nó (base64, base64:… ou hexadecimal de 64 caracteres). Salve-o aqui e selecione o nó no menu suspenso Configurar em Rádio/Segurança/Módulos.",
+    "remoteAdminKeyInvalid": "Insira uma chave pública de administrador válida (base64, base64:… ou hexadecimal de 64 caracteres)."
   },
   "firmwareStatus": {
     "checking": "Verificando a versão do firmware",
@@ -2085,7 +2094,6 @@
   "remoteAdmin": {
     "errors": {
       "noLocalRadio": "Conecte um rádio local para administrar nós remotos.",
-      "publicKeyUnauthorized": "Não autorizado: adicione a chave pública deste rádio às chaves de administrador do nó remoto.",
       "badSessionKey": "A sessão de administrador expirou. Atualize e tente novamente.",
       "pkiFailed": "Falha na criptografia PKI. Verifique as chaves do nó e remova os conflitos de canal de administração herdados.",
       "notAuthorized": "Administrador remoto não autorizado no nó de destino.",
@@ -2093,7 +2101,11 @@
       "generic": "Falha na solicitação de administração remota.",
       "configResponseUnexpected": "O administrador remoto retornou uma resposta de configuração inesperada.",
       "channelConfigPartial": "Não foi possível carregar uma ou mais configurações de canal a partir do nó remoto.",
-      "channelResponseUnexpected": "O administrador remoto retornou uma resposta inesperada do canal."
+      "channelResponseUnexpected": "O administrador remoto retornou uma resposta inesperada do canal.",
+      "noRemotePublicKey": "Este nó ainda não tem chave pública PKI. Aguarde um pacote NodeInfo sobre a malha ou use o aplicativo do dispositivo uma vez para trocar chaves.",
+      "noAdminKeyConfigured": "Cole e salve uma chave de administrador para este nó na caixa de diálogo de detalhes do nó antes de usar o administrador remoto.",
+      "invalidAdminKey": "A chave administrativa deve ter 32 bytes (base64, base64:… ou hexadecimal de 64 caracteres).",
+      "publicKeyUnauthorized": "Não autorizado: esta chave de administrador não está autorizada no nó remoto. Verifique se a chave está listada em Chaves de administrador no dispositivo remoto."
     }
   }
 }

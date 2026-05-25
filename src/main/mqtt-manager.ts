@@ -13,6 +13,7 @@ import * as mqtt from 'mqtt';
 
 import type { ChatMessage, MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import { splitChannelPskLine } from '../shared/meshtasticChannelPskLine';
+import { isMeshtasticDefaultPublicPsk } from '../shared/meshtasticDefaultPublicPsk';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
@@ -280,6 +281,14 @@ export class MQTTManager extends EventEmitter {
       const name = entry.name.trim();
       const psk = parsePsk(entry.pskBase64);
       if (!name || !psk) continue;
+      const existing = this.channelKeysByName.get(name);
+      if (
+        existing &&
+        isMeshtasticDefaultPublicPsk(psk) &&
+        !isMeshtasticDefaultPublicPsk(existing)
+      ) {
+        continue;
+      }
       this.channelKeysByName.set(name, psk);
       this.radioChannelKeyNames.add(name);
       if (entry.index !== undefined && Number.isInteger(entry.index)) {
@@ -368,11 +377,16 @@ export class MQTTManager extends EventEmitter {
 
     const useTls =
       settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 8883);
-    const rejectUnauthorized = useTls ? !settings.tlsInsecure : false;
-
     const wsEnabled = settings.useWebSocket === true;
     const wsTlsEnabled =
       settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 443);
+    const rejectUnauthorized = wsEnabled
+      ? wsTlsEnabled
+        ? !settings.tlsInsecure
+        : false
+      : useTls
+        ? !settings.tlsInsecure
+        : false;
     const wsPath = settings.wsPath ?? '/mqtt';
     const wsScheme = wsTlsEnabled ? 'wss' : 'ws';
 

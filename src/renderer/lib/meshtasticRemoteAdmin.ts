@@ -29,7 +29,19 @@ interface MeshPacketDecoded {
 interface MeshPacket {
   id?: number;
   from?: number;
+  to?: number;
+  hopLimit?: number;
+  hopStart?: number;
+  pkiEncrypted?: boolean;
+  channel?: number;
   payloadVariant?: { case?: string; value?: MeshPacketDecoded };
+}
+
+/** Default hop budget for multi-hop PKI admin (protobuf otherwise defaults hopLimit to 0). */
+export const REMOTE_ADMIN_PACKET_HOP_LIMIT = 7;
+
+function adminPayloadCase(message: AdminMessage): string | undefined {
+  return message.payloadVariant?.case;
 }
 
 /** Meshtastic Android PKC sentinel; channel field is omitted on wire for PKI admin. */
@@ -40,6 +52,18 @@ export const REMOTE_ADMIN_SESSION_TTL_MS = 300_000;
 
 /** Default wait for multi-hop admin responses. */
 export const REMOTE_ADMIN_RESPONSE_TIMEOUT_MS = 120_000;
+
+/** Session-key exchange; fail faster so essential snapshot does not stall on one hop. */
+export const REMOTE_ADMIN_SESSION_KEY_TIMEOUT_MS = 45_000;
+
+/** Per-read timeout for essential snapshot when a response is not correlated promptly. */
+export const REMOTE_ADMIN_ESSENTIAL_RESPONSE_TIMEOUT_MS = 25_000;
+
+/** Single attempt on essential reads once request/response ids are wired correctly. */
+export const REMOTE_ADMIN_ESSENTIAL_MAX_ATTEMPTS = 1;
+
+/** Wall-clock cap while UI shows loading for foreground radio snapshot fetch. */
+export const REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS = 35_000;
 
 /** Pause between sequential remote config fetches (BLE write pacing on mutating ops). */
 export const REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS = 200;
@@ -73,11 +97,7 @@ export function delayMs(ms: number): Promise<void> {
 
 /** Errors that may clear after session key exchange or a short BLE pause. */
 export function isRemoteAdminRetryableError(message: string): boolean {
-  return (
-    message === 'remoteAdmin.errors.timeout' ||
-    message === 'remoteAdmin.errors.badSessionKey' ||
-    message === 'remoteAdmin.errors.notAuthorized'
-  );
+  return message === 'remoteAdmin.errors.timeout' || message === 'remoteAdmin.errors.badSessionKey';
 }
 
 /** ROUTING_APP codes that often precede a successful admin response on multi-hop reads. */
@@ -224,14 +244,15 @@ export async function retryRemoteAdminOp<T>(
 
 function resolveAdminRequestId(meshPacket: MeshPacket, dataRequestId: number): number {
   if (dataRequestId !== 0) return dataRequestId >>> 0;
+  const data = meshPacket.payloadVariant?.value;
+  const replyId = data?.replyId;
+  // Multi-hop admin responses use a new mesh packet id; replyId matches our pending request.
+  if (typeof replyId === 'number' && Number.isFinite(replyId) && replyId !== 0) {
+    return replyId >>> 0;
+  }
   const packetId = meshPacket.id;
   if (typeof packetId === 'number' && Number.isFinite(packetId) && packetId !== 0) {
     return packetId >>> 0;
-  }
-  const data = meshPacket.payloadVariant?.value;
-  const replyId = data?.replyId;
-  if (typeof replyId === 'number' && Number.isFinite(replyId) && replyId !== 0) {
-    return replyId >>> 0;
   }
   return 0;
 }
@@ -298,6 +319,8 @@ export function buildRemoteAdminToRadio(params: {
     from: params.myNodeNum >>> 0,
     to: params.destNodeNum >>> 0,
     id: params.packetId >>> 0,
+    hopLimit: REMOTE_ADMIN_PACKET_HOP_LIMIT,
+    hopStart: REMOTE_ADMIN_PACKET_HOP_LIMIT,
     wantAck: params.wantAck ?? true,
     pkiEncrypted: true,
     publicKey: params.publicKey,
@@ -307,6 +330,7 @@ export function buildRemoteAdminToRadio(params: {
         portnum: Portnums.PortNum.ADMIN_APP,
         payload: params.adminPayload,
         wantResponse: params.wantResponse ?? true,
+        requestId: params.packetId >>> 0,
       },
     },
   });
@@ -327,6 +351,7 @@ export interface RemoteAdminSendOptions {
 interface PendingRemoteAdmin {
   destNodeNum: number;
   packetId: number;
+  adminCase?: string;
   expectedResponseCases?: readonly string[];
   resolve: (value: AdminMessage) => void;
   reject: (error: Error) => void;
@@ -361,6 +386,10 @@ export class MeshtasticRemoteAdminClient {
   }
 
   handleMeshPacket(meshPacket: MeshPacket): void {
+    const variant = meshPacket.payloadVariant?.case;
+    if (variant === 'encrypted') return;
+    if (variant != null && variant !== 'decoded') return;
+
     const parsed = parseIncomingRemoteAdminPacket(meshPacket);
     if (!parsed) return;
 
@@ -445,14 +474,6 @@ export class MeshtasticRemoteAdminClient {
             pending.destNodeNum.toString(16),
         );
       } else {
-        console.debug(
-          '[MeshtasticRemoteAdmin] admin response sender mismatch expected=0x' +
-            pending.destNodeNum.toString(16) +
-            ' got=0x' +
-            parsed.from.toString(16) +
-            ' requestId=' +
-            String(parsed.requestId),
-        );
         return;
       }
     }
@@ -577,6 +598,7 @@ export class MeshtasticRemoteAdminClient {
     destNodeNum: number,
     packetId: number,
     options: RemoteAdminSendOptions,
+    adminCase?: string,
   ): Promise<AdminMessage> {
     const timeoutMs = options.timeoutMs ?? REMOTE_ADMIN_RESPONSE_TIMEOUT_MS;
     return new Promise<AdminMessage>((resolve, reject) => {
@@ -588,6 +610,7 @@ export class MeshtasticRemoteAdminClient {
       this.pending.set(packetId, {
         destNodeNum: destNodeNum >>> 0,
         packetId,
+        adminCase,
         expectedResponseCases: options.expectedResponseCases,
         resolve,
         reject,
@@ -607,11 +630,12 @@ export class MeshtasticRemoteAdminClient {
       options.requireSession ?? false,
     );
     const packetId = this.generatePacketId();
+    const adminCase = adminPayloadCase(message);
     if (options.wantResponse === false) {
       await this.sendRawAdmin(destNodeNum, message, options, packetId);
       return adminMessage({});
     }
-    const responsePromise = this.waitForAdminResponse(destNodeNum, packetId, options);
+    const responsePromise = this.waitForAdminResponse(destNodeNum, packetId, options, adminCase);
     try {
       await this.sendRawAdmin(destNodeNum, message, options, packetId);
     } catch (e) {
@@ -629,7 +653,10 @@ export class MeshtasticRemoteAdminClient {
 
   async ensureSessionKey(destNodeNum: number): Promise<void> {
     if (this.sessionStore.get(destNodeNum)) return;
-    await this.getRemoteConfig(destNodeNum, Admin.AdminMessage_ConfigType.SESSIONKEY_CONFIG);
+    await this.getRemoteConfig(destNodeNum, Admin.AdminMessage_ConfigType.SESSIONKEY_CONFIG, {
+      ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+      timeoutMs: REMOTE_ADMIN_SESSION_KEY_TIMEOUT_MS,
+    });
   }
 
   async getRemoteMetadata(destNodeNum: number): Promise<unknown> {
@@ -653,6 +680,7 @@ export class MeshtasticRemoteAdminClient {
   async getRemoteConfig(
     destNodeNum: number,
     configType: (typeof Admin.AdminMessage_ConfigType)[keyof typeof Admin.AdminMessage_ConfigType],
+    sendOptions?: RemoteAdminSendOptions,
   ): Promise<unknown> {
     const response = await this.sendAdminRequest(
       destNodeNum,
@@ -662,6 +690,7 @@ export class MeshtasticRemoteAdminClient {
         }),
       {
         ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+        ...sendOptions,
         expectedResponseCases: ['getConfigResponse'],
       },
     );
@@ -681,9 +710,14 @@ export class MeshtasticRemoteAdminClient {
   async getRemoteConfigWithRetry(
     destNodeNum: number,
     configType: (typeof Admin.AdminMessage_ConfigType)[keyof typeof Admin.AdminMessage_ConfigType],
-    options?: { maxAttempts?: number; backoffMs?: number },
+    options?: {
+      maxAttempts?: number;
+      backoffMs?: number;
+      sendOptions?: RemoteAdminSendOptions;
+    },
   ): Promise<unknown> {
-    return retryRemoteAdminOp(() => this.getRemoteConfig(destNodeNum, configType), {
+    const sendOptions = options?.sendOptions;
+    return retryRemoteAdminOp(() => this.getRemoteConfig(destNodeNum, configType, sendOptions), {
       maxAttempts: options?.maxAttempts ?? REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS,
       backoffMs: options?.backoffMs ?? REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS,
     });
@@ -710,7 +744,11 @@ export class MeshtasticRemoteAdminClient {
     return response.payloadVariant.value;
   }
 
-  async getRemoteChannel(destNodeNum: number, index: number): Promise<unknown> {
+  async getRemoteChannel(
+    destNodeNum: number,
+    index: number,
+    sendOptions?: RemoteAdminSendOptions,
+  ): Promise<unknown> {
     const response = await this.sendAdminRequest(
       destNodeNum,
       () =>
@@ -719,6 +757,7 @@ export class MeshtasticRemoteAdminClient {
         }),
       {
         ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+        ...sendOptions,
         expectedResponseCases: ['getChannelResponse'],
       },
     );
@@ -738,9 +777,14 @@ export class MeshtasticRemoteAdminClient {
   async getRemoteChannelWithRetry(
     destNodeNum: number,
     index: number,
-    options?: { maxAttempts?: number; backoffMs?: number },
+    options?: {
+      maxAttempts?: number;
+      backoffMs?: number;
+      sendOptions?: RemoteAdminSendOptions;
+    },
   ): Promise<unknown> {
-    return retryRemoteAdminOp(() => this.getRemoteChannel(destNodeNum, index), {
+    const sendOptions = options?.sendOptions;
+    return retryRemoteAdminOp(() => this.getRemoteChannel(destNodeNum, index, sendOptions), {
       maxAttempts: options?.maxAttempts ?? REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
       backoffMs: options?.backoffMs ?? REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
     });

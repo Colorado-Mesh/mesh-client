@@ -875,31 +875,33 @@ export default function App() {
       error: device.remoteAdminError,
       onRefresh:
         remote && device.configureTargetNodeNum != null
-          ? () => device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum!)
+          ? () =>
+              device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum!, 'radio', {
+                force: true,
+              })
           : undefined,
     };
   }, [isRemoteConfigureTarget, device]);
   const effectiveChannelConfigs = isRemoteConfigureTarget
-    ? (device.remoteConfigSnapshot?.channelConfigs ?? device.channelConfigs)
+    ? (device.remoteConfigSnapshot?.channelConfigs ?? [])
     : device.channelConfigs;
   const effectiveLoraConfig = isRemoteConfigureTarget
-    ? (device.remoteConfigSnapshot?.loraConfig ?? device.loraConfig)
+    ? (device.remoteConfigSnapshot?.loraConfig ?? null)
     : device.loraConfig;
   const effectiveModuleConfigs = isRemoteConfigureTarget
-    ? (device.remoteConfigSnapshot?.moduleConfigs ?? device.moduleConfigs)
+    ? (device.remoteConfigSnapshot?.moduleConfigs ?? {})
     : device.moduleConfigs;
   const effectiveSecurityConfig = isRemoteConfigureTarget
-    ? (device.remoteConfigSnapshot?.securityConfig ?? device.securityConfig)
+    ? (device.remoteConfigSnapshot?.securityConfig ?? null)
     : device.securityConfig;
   const effectiveDeviceOwner = isRemoteConfigureTarget
-    ? (device.remoteConfigSnapshot?.deviceOwner ?? device.deviceOwner)
+    ? (device.remoteConfigSnapshot?.deviceOwner ?? null)
     : device.deviceOwner;
   const effectiveTelemetryInterval = isRemoteConfigureTarget
-    ? (device.remoteConfigSnapshot?.telemetryDeviceUpdateInterval ??
-      device.telemetryDeviceUpdateInterval)
+    ? (device.remoteConfigSnapshot?.telemetryDeviceUpdateInterval ?? null)
     : device.telemetryDeviceUpdateInterval;
   const effectiveDeviceFixedPosition = isRemoteConfigureTarget
-    ? (device.remoteConfigSnapshot?.deviceFixedPosition ?? device.deviceFixedPosition)
+    ? (device.remoteConfigSnapshot?.deviceFixedPosition ?? null)
     : device.deviceFixedPosition;
   const configureNodeSelector =
     capabilities.hasRemoteAdmin && hasLocalMeshtasticRadio ? (
@@ -915,12 +917,35 @@ export default function App() {
           getNodeName={device.getNodeName}
           onRefresh={
             device.configureTargetNodeNum != null
-              ? () => device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum!)
+              ? () =>
+                  device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum!, 'radio', {
+                    force: true,
+                  })
               : undefined
           }
         />
       </div>
     ) : null;
+
+  const configureTargetNodeNum = device.configureTargetNodeNum;
+  const refreshRemoteConfigSnapshot = device.refreshRemoteConfigSnapshot;
+
+  useEffect(() => {
+    if (!isRemoteConfigureTarget || configureTargetNodeNum == null) return;
+    if (!hasLocalMeshtasticRadio) return;
+    if (activePanelIndex === 5) {
+      void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'modules');
+    } else if (activePanelIndex === 7) {
+      void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'security');
+    }
+  }, [
+    activePanelIndex,
+    configureTargetNodeNum,
+    refreshRemoteConfigSnapshot,
+    hasLocalMeshtasticRadio,
+    isRemoteConfigureTarget,
+  ]);
+
   const detailModalProtocol = useMemo((): MeshProtocol => {
     if (selectedNodeId == null) return protocol;
     if (meshcoreDevice.nodes.has(selectedNodeId)) return 'meshcore';
@@ -2656,15 +2681,14 @@ export default function App() {
               selectedNode?.node_id !== detailMyNodeNum ? handleMessageNode : undefined
             }
             onToggleFavorite={device.setNodeFavorited}
-            onConfigureRemotely={
-              detailModalProtocol === 'meshtastic' &&
-              hasLocalMeshtasticRadio &&
-              selectedNode != null &&
-              selectedNode.node_id !== device.state.myNodeNum
-                ? () => {
-                    device.setConfigureTargetNodeNum(selectedNode.node_id);
-                    setSelectedNodeId(null);
-                  }
+            remoteAdminKey={
+              selectedNode != null
+                ? device.getRemoteAdminKeyForNode(selectedNode.node_id)
+                : undefined
+            }
+            onSaveRemoteAdminKey={
+              detailModalProtocol === 'meshtastic' && hasLocalMeshtasticRadio
+                ? device.setRemoteAdminKeyForNode
                 : undefined
             }
             isConnected={isOperational}
