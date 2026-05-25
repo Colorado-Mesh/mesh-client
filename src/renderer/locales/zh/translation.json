@@ -2090,7 +2090,9 @@
       "pkiFailed": "PKI加密失败。请验证节点密钥并删除旧版管理通道冲突。",
       "notAuthorized": "远程管理员未在目标节点上获得授权。",
       "timeout": "远程管理员请求超时。",
-      "generic": "远程管理员请求失败。"
+      "generic": "远程管理员请求失败。",
+      "configResponseUnexpected": "远程管理员返回了意外的配置响应。",
+      "channelConfigPartial": "无法从远程节点加载一个或多个频道设置。"
     }
   }
 }

@@ -511,6 +511,8 @@
       "pkiFailed": "PKI encryption failed. Verify node keys and remove legacy admin channel conflicts.",
       "notAuthorized": "Remote admin not authorized on the target node.",
       "timeout": "Remote admin request timed out.",
+      "channelConfigPartial": "One or more channel settings could not be loaded from the remote node.",
+      "configResponseUnexpected": "Remote admin returned an unexpected config response.",
       "generic": "Remote admin request failed."
     }
   },

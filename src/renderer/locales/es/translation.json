@@ -2090,7 +2090,9 @@
       "pkiFailed": "El cifrado PKI falló. Verifique las claves de nodo y elimine los conflictos de canal de administración heredados.",
       "notAuthorized": "Administrador remoto no autorizado en el nodo de destino.",
       "timeout": "Se ha agotado el tiempo de espera de la solicitud de administrador remoto.",
-      "generic": "Error en la solicitud de administrador remoto."
+      "generic": "Error en la solicitud de administrador remoto.",
+      "configResponseUnexpected": "El administrador remoto devolvió una respuesta de configuración inesperada.",
+      "channelConfigPartial": "No se ha podido cargar una o más configuraciones de canal desde el nodo remoto."
     }
   }
 }

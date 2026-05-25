@@ -26,6 +26,12 @@ import {
   writeToRadioWithoutQueue,
 } from '@/renderer/lib/meshtasticBacklogUtils';
 import {
+  loadPersistedLastRfSelfNodeId,
+  mqttOnlyIdentitySource,
+  persistLastRfSelfNodeId,
+  resolveMqttOnlyFromNodeId,
+} from '@/renderer/lib/meshtasticMqttIdentity';
+import {
   loadMeshtasticMqttManualChannelPsks,
   meshtasticMqttChannelKeyEntries,
   resolveMeshtasticMqttPublishFieldsForChannel,
@@ -281,7 +287,7 @@ export function useDevice() {
   const channelConfigsRef = useRef<typeof channelConfigs>([]);
   // Nodes heard via RF this session — prevents MQTT-only flag from being set
   const rfHeardNodeIds = useRef<Set<number>>(new Set());
-  const lastRfSelfNodeIdRef = useRef<number>(0);
+  const lastRfSelfNodeIdRef = useRef<number>(loadPersistedLastRfSelfNodeId());
   const virtualNodeIdRef = useRef<number>(getOrCreateVirtualNodeId());
   // Dedup map shared between RF and MQTT handlers
   const seenPacketIds = useRef<Map<number, number>>(new Map());
@@ -783,10 +789,36 @@ export function useDevice() {
         rfHeardNodeIds.current.clear();
         startGpsInterval();
         const virtualId = ensureNonConflictingVirtualNodeId();
-        myNodeNumRef.current = virtualId;
-        setState((prev) => ({ ...prev, myNodeNum: virtualId }));
+        const mqttOnlyId = resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualId);
+        myNodeNumRef.current = mqttOnlyId;
+        setState((prev) => ({ ...prev, myNodeNum: mqttOnlyId }));
+        console.debug(
+          `[useDevice] MQTT-only identity: from=!${mqttOnlyId.toString(16).padStart(8, '0')} source=${mqttOnlyIdentitySource(lastRfSelfNodeIdRef.current)}`,
+        );
         updateNodes((prev) => {
           const updated = new Map(prev);
+          if (lastRfSelfNodeIdRef.current > 0 && mqttOnlyId === lastRfSelfNodeIdRef.current) {
+            const staleVirtualId = virtualNodeIdRef.current;
+            if (staleVirtualId !== mqttOnlyId) {
+              updated.delete(staleVirtualId);
+              void window.electronAPI.db.deleteNode(staleVirtualId).catch((e: unknown) => {
+                console.debug('[useDevice] deleteNode stale virtual ' + errLikeToLogString(e));
+              });
+            }
+            const existing = updated.get(mqttOnlyId) ?? emptyNode(mqttOnlyId);
+            const rfNode: MeshNode = {
+              ...existing,
+              node_id: mqttOnlyId,
+              role: existing.role ?? ROLE_CLIENT,
+              hops_away: 0,
+              via_mqtt: true,
+              heard_via_mqtt: true,
+              heard_via_mqtt_only: true,
+            };
+            updated.set(mqttOnlyId, rfNode);
+            void window.electronAPI.db.saveNode(rfNode);
+            return updated;
+          }
           const existing = updated.get(virtualId) ?? emptyNode(virtualId);
           const virtualNode: MeshNode = {
             ...existing,
@@ -813,6 +845,13 @@ export function useDevice() {
             }
             return;
           }
+          const presenceFrom = resolveMqttOnlyFromNodeId(
+            lastRfSelfNodeIdRef.current,
+            virtualNodeIdRef.current,
+          );
+          const selfNode = nodesRef.current.get(presenceFrom);
+          const useRealIdentity =
+            lastRfSelfNodeIdRef.current > 0 && presenceFrom === lastRfSelfNodeIdRef.current;
           const presenceMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
             0,
             channelConfigsRef.current,
@@ -821,9 +860,12 @@ export function useDevice() {
           if (!presenceMqtt.channelName) return;
           window.electronAPI.mqtt
             .publishNodeInfo({
-              from: virtualNodeIdRef.current,
-              longName: MQTT_ONLY_VIRTUAL_LONG_NAME,
-              shortName: 'MQTT',
+              from: presenceFrom,
+              longName:
+                useRealIdentity && selfNode?.long_name
+                  ? selfNode.long_name
+                  : MQTT_ONLY_VIRTUAL_LONG_NAME,
+              shortName: useRealIdentity && selfNode?.short_name ? selfNode.short_name : 'MQTT',
               channelName: presenceMqtt.channelName,
               pskBase64: presenceMqtt.pskBase64,
               publishJsonMirror: presenceMqtt.publishJsonMirror,
@@ -1380,11 +1422,13 @@ export function useDevice() {
           startGpsInterval();
           setQueueStatus({ free: 16, maxlen: 16, res: 0 });
           deviceConfiguredRef.current = true;
-          void deviceRef.current
-            ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
-            .catch((e: unknown) => {
-              console.debug('[useDevice] LoRa config request failed ' + errLikeToLogString(e));
-            });
+          if (configureTargetNodeNumRef.current == null) {
+            void deviceRef.current
+              ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
+              .catch((e: unknown) => {
+                console.debug('[useDevice] LoRa config request failed ' + errLikeToLogString(e));
+              });
+          }
         }
 
         // Always clean up on disconnect, even if we never reached configured
@@ -1442,6 +1486,7 @@ export function useDevice() {
         myNodeNumRef.current = info.myNodeNum;
         setMeshtasticConnectedMyNodeNum(info.myNodeNum);
         lastRfSelfNodeIdRef.current = info.myNodeNum;
+        persistLastRfSelfNodeId(info.myNodeNum);
         if (getStoredMeshProtocol() === 'meshtastic') {
           useDiagnosticsStore.getState().migrateForeignLoraFromZero(info.myNodeNum);
         }
@@ -3400,7 +3445,7 @@ export function useDevice() {
       const from =
         deviceRef.current && myNodeNumRef.current > 0
           ? myNodeNumRef.current
-          : virtualNodeIdRef.current;
+          : resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualNodeIdRef.current);
       if (!deviceRef.current && myNodeNumRef.current !== from) {
         myNodeNumRef.current = from;
         setState((prev) => ({ ...prev, myNodeNum: from }));
@@ -3479,6 +3524,12 @@ export function useDevice() {
         if (!applyIfCurrent()) return;
         setRemoteConfigSnapshot(snapshot);
         setRemoteAdminStatus('ready');
+        setRemoteAdminError(
+          snapshot.loraConfigFetchError ??
+            (snapshot.channelConfigFetchFailed
+              ? 'remoteAdmin.errors.channelConfigPartial'
+              : undefined),
+        );
       } catch (e) {
         if (!applyIfCurrent()) return;
         remoteAdminClientRef.current?.resetEditState();
@@ -4190,7 +4241,7 @@ export function useDevice() {
       const from =
         deviceRef.current && myNodeNumRef.current > 0
           ? myNodeNumRef.current
-          : virtualNodeIdRef.current;
+          : resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualNodeIdRef.current);
       if (!deviceRef.current && myNodeNumRef.current !== from) {
         myNodeNumRef.current = from;
         setState((prev) => ({ ...prev, myNodeNum: from }));
@@ -4283,7 +4334,7 @@ export function useDevice() {
     state.myNodeNum > 0
       ? state.myNodeNum
       : mqttStatus === 'connected'
-        ? virtualNodeIdRef.current
+        ? resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualNodeIdRef.current)
         : 0;
   const virtualNodeId = virtualNodeIdRef.current;
 

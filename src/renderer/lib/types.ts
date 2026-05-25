@@ -193,6 +193,12 @@ export interface ConfigTargetContext {
 
 export interface MeshtasticRemoteConfigSnapshot {
   metadata?: unknown;
+  /** Set when LoRa getConfig failed but the rest of the snapshot was fetched. */
+  loraConfigFetchFailed?: boolean;
+  /** i18n key under remoteAdmin.errors.* when LoRa fetch failed partially. */
+  loraConfigFetchError?: string;
+  /** Set when one or more channel getChannel requests failed during snapshot fetch. */
+  channelConfigFetchFailed?: boolean;
   loraConfig?: MeshtasticLoraConfig | null;
   deviceOwner?: { longName: string; shortName: string; isLicensed: boolean } | null;
   securityConfig?: {

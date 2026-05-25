@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 
@@ -1916,14 +1917,10 @@ export default function App() {
                             myNodeNum={device.selfNodeId}
                             ownNodeIds={
                               protocol === 'meshtastic'
-                                ? Array.from(
-                                    new Set(
-                                      [
-                                        device.selfNodeId,
-                                        meshtasticDevice.virtualNodeId,
-                                        meshtasticDevice.lastRfSelfNodeId,
-                                      ].filter((id) => id > 0),
-                                    ),
+                                ? meshtasticMqttOwnNodeIds(
+                                    device.selfNodeId,
+                                    meshtasticDevice.virtualNodeId,
+                                    meshtasticDevice.lastRfSelfNodeId,
                                   )
                                 : [device.selfNodeId].filter((id) => id > 0)
                             }

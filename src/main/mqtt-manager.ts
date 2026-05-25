@@ -12,6 +12,7 @@ import { EventEmitter } from 'events';
 import * as mqtt from 'mqtt';
 
 import type { ChatMessage, MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
+import { splitChannelPskLine } from '../shared/meshtasticChannelPskLine';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
@@ -86,30 +87,14 @@ export function cipherForKey(key: Buffer): 'aes-128-ctr' | 'aes-256-ctr' {
 export function parseChannelPskLine(
   line: string,
 ): { name?: string; index?: number; psk: Buffer } | null {
-  const trimmed = line.trim();
-  if (!trimmed) return null;
-  const eq = trimmed.indexOf('=');
-  if (eq > 0) {
-    let namePart = trimmed.slice(0, eq).trim();
-    const b64 = trimmed.slice(eq + 1).trim();
-    let index: number | undefined;
-    const atIdx = namePart.lastIndexOf('@');
-    if (atIdx > 0) {
-      const indexStr = namePart.slice(atIdx + 1);
-      const parsedIndex = parseInt(indexStr, 10);
-      if (Number.isInteger(parsedIndex) && parsedIndex >= 0 && parsedIndex <= 7) {
-        index = parsedIndex;
-        namePart = namePart.slice(0, atIdx).trim();
-      }
-    }
-    const name = namePart;
-    // Avoid treating padding "=" in bare base64 as ChannelName=psk (names lack +/=).
-    if (name.length > 0 && b64.length > 0 && !/[+/=@]/.test(name)) {
-      const psk = parsePsk(b64);
-      if (psk) return { name, index, psk };
-    }
+  const split = splitChannelPskLine(line);
+  if (!split) return null;
+  if (split.kind === 'named') {
+    const psk = parsePsk(split.b64);
+    if (!psk) return null;
+    return { name: split.name, index: split.index, psk };
   }
-  const psk = parsePsk(trimmed);
+  const psk = parsePsk(split.b64);
   return psk ? { psk } : null;
 }
 
@@ -312,7 +297,10 @@ export class MQTTManager extends EventEmitter {
       if (parsed.name) {
         this.channelKeysByName.set(parsed.name, parsed.psk);
         if (parsed.index !== undefined) {
-          this.channelNameToIndex.set(parsed.name, parsed.index);
+          const idx = parsed.index >>> 0;
+          if (idx <= 7) this.channelNameToIndex.set(parsed.name, idx);
+        } else if (parsed.name === 'LongFast') {
+          this.channelNameToIndex.set(parsed.name, 0);
         }
       } else {
         this.decryptOnlyPsks.push(parsed.psk);

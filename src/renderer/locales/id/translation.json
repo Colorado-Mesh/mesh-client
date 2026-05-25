@@ -2090,7 +2090,9 @@
       "pkiFailed": "Enkripsi PKI gagal. Verifikasi kunci simpul dan hapus konflik saluran admin lama.",
       "notAuthorized": "Admin jarak jauh tidak diotorisasi pada node target.",
       "timeout": "Waktu permintaan admin jarak jauh habis.",
-      "generic": "Permintaan admin jarak jauh gagal."
+      "generic": "Permintaan admin jarak jauh gagal.",
+      "configResponseUnexpected": "Admin jarak jauh memberikan respons konfigurasi yang tidak terduga.",
+      "channelConfigPartial": "Satu atau beberapa pengaturan saluran tidak dapat dimuat dari simpul jarak jauh."
     }
   }
 }
