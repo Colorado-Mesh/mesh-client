@@ -6,7 +6,9 @@ import {
   fetchMeshtasticRemoteConfigSnapshot,
   fetchMeshtasticRemoteConfigSnapshotDeferred,
   fetchMeshtasticRemoteConfigSnapshotEssential,
+  mergeMeshtasticRemoteConfigSnapshots,
 } from './meshtasticRemoteAdminSnapshot';
+import type { MeshtasticRemoteConfigSnapshot } from './types';
 
 function clientWithChannelRetry<
   T extends { getRemoteChannel: MeshtasticRemoteAdminClient['getRemoteChannel'] },
@@ -394,7 +396,61 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
   });
 });
 
+describe('mergeMeshtasticRemoteConfigSnapshots', () => {
+  it('merges module configs and keeps essential channel configs when deferred omits them', () => {
+    const essential: MeshtasticRemoteConfigSnapshot = {
+      metadata: { firmwareVersion: '2.5.0' },
+      moduleConfigs: { mqtt: { enabled: false } },
+      channelConfigs: [
+        {
+          index: 0,
+          name: 'LongFast',
+          role: 1,
+          psk: new Uint8Array([1]),
+          uplinkEnabled: true,
+          downlinkEnabled: true,
+          positionPrecision: 0,
+        },
+      ],
+    };
+    const deferred = {
+      moduleConfigs: { serial: { enabled: true } },
+      deviceOwner: { longName: 'Remote', shortName: 'RM', isLicensed: false },
+    };
+    const merged = mergeMeshtasticRemoteConfigSnapshots(essential, deferred);
+    expect(merged.moduleConfigs).toEqual({
+      mqtt: { enabled: false },
+      serial: { enabled: true },
+    });
+    expect(merged.channelConfigs).toEqual(essential.channelConfigs);
+    expect(merged.deviceOwner?.shortName).toBe('RM');
+  });
+});
+
 describe('fetchMeshtasticRemoteConfigSnapshotDeferred', () => {
+  it('continues deferred snapshot when a core config fetch fails', async () => {
+    const getRemoteConfig = vi.fn((_dest: number, type: number) => {
+      if (type === Admin.AdminMessage_ConfigType.POSITION_CONFIG) {
+        return Promise.reject(new Error('remoteAdmin.errors.timeout'));
+      }
+      return Promise.resolve({
+        payloadVariant: { case: 'power', value: { isPowerSaving: false } },
+      });
+    });
+    const client = {
+      getRemoteConfig,
+      getRemoteModuleConfig: vi.fn().mockResolvedValue({
+        payloadVariant: { case: 'mqtt', value: { enabled: true } },
+      }),
+      getRemoteOwner: vi.fn().mockResolvedValue({ longName: 'Remote', shortName: 'RM' }),
+    } as unknown as MeshtasticRemoteAdminClient;
+
+    const partial = await fetchMeshtasticRemoteConfigSnapshotDeferred(client, 0x200);
+    expect(getRemoteConfig).toHaveBeenCalled();
+    expect(partial.moduleConfigs?.mqtt).toEqual({ enabled: true });
+    expect(partial.deviceOwner?.shortName).toBe('RM');
+  });
+
   it('fetches module configs without repeating essential fetches', async () => {
     const getRemoteMetadata = vi.fn();
     const getRemoteChannel = vi.fn();

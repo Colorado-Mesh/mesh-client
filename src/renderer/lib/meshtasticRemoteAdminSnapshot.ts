@@ -188,6 +188,7 @@ async function fetchConfigTypes(
   destNodeNum: number,
   configTypes: readonly (typeof Admin.AdminMessage_ConfigType)[keyof typeof Admin.AdminMessage_ConfigType][],
   interFetchDelayMs: number,
+  options?: { continueOnNonLoraFailure?: boolean },
 ): Promise<{
   configResults: { type: (typeof configTypes)[number]; value: unknown }[];
   loraConfigFetchFailed: boolean;
@@ -215,6 +216,22 @@ async function fetchConfigTypes(
         loraConfigFetchError = normalizeRemoteAdminError(e);
         console.warn(
           '[fetchMeshtasticRemoteConfigSnapshot] LoRa config fetch failed ' + errLikeToLogString(e),
+        );
+        configResults.push({ type, value: null });
+      }
+      continue;
+    }
+
+    if (options?.continueOnNonLoraFailure) {
+      try {
+        const value = await client.getRemoteConfig(destNodeNum, type);
+        configResults.push({ type, value });
+      } catch (e) {
+        console.warn(
+          '[fetchMeshtasticRemoteConfigSnapshot] config fetch failed type=' +
+            String(type) +
+            ' ' +
+            errLikeToLogString(e),
         );
         configResults.push({ type, value: null });
       }
@@ -364,6 +381,7 @@ export async function fetchMeshtasticRemoteConfigSnapshotDeferred(
     destNodeNum,
     DEFERRED_CONFIG_TYPES,
     REMOTE_ADMIN_CONFIG_FETCH_DELAY_MS,
+    { continueOnNonLoraFailure: true },
   );
 
   const partial: Partial<MeshtasticRemoteConfigSnapshot> = {};

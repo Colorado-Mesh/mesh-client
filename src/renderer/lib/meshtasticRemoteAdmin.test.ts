@@ -590,6 +590,90 @@ describe('MeshtasticRemoteAdminClient', () => {
     await expect(promise).rejects.toThrow('remoteAdmin.errors.pkiFailed');
   });
 
+  it('ignores ROUTING with requestId zero when multiple admin requests are pending', async () => {
+    const rejections: unknown[] = [];
+    const promiseLora = client
+      .getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.LORA_CONFIG)
+      .catch((e: unknown) => {
+        rejections.push(e);
+        throw e;
+      });
+    const promiseDevice = client
+      .getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.DEVICE_CONFIG)
+      .catch((e: unknown) => {
+        rejections.push(e);
+        throw e;
+      });
+    await vi.waitFor(() => {
+      expect(writeToRadioWithoutQueue).toHaveBeenCalledTimes(2);
+    });
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ROUTING_APP,
+            payload: toBinary(
+              Mesh.RoutingSchema,
+              create(Mesh.RoutingSchema, {
+                variant: {
+                  case: 'errorReason',
+                  value: Mesh.Routing_Error.PKI_FAILED,
+                },
+              }),
+            ),
+            requestId: 0,
+          },
+        },
+      }) as never,
+    );
+
+    expect(rejections).toHaveLength(0);
+
+    const loraResponse = create(Admin.AdminMessageSchema, {
+      payloadVariant: {
+        case: 'getConfigResponse',
+        value: { payloadVariant: { case: 'lora', value: { region: 1 } } } as never,
+      },
+    });
+    const deviceResponse = create(Admin.AdminMessageSchema, {
+      payloadVariant: {
+        case: 'getConfigResponse',
+        value: { payloadVariant: { case: 'device', value: {} } } as never,
+      },
+    });
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(Admin.AdminMessageSchema, loraResponse),
+            requestId: 555,
+          },
+        },
+      }) as never,
+    );
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(Admin.AdminMessageSchema, deviceResponse),
+            requestId: 556,
+          },
+        },
+      }) as never,
+    );
+
+    await Promise.all([promiseLora, promiseDevice]);
+  });
+
   it('correlates ROUTING to sole pending when requestId is zero', async () => {
     vi.useFakeTimers();
     try {

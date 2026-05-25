@@ -130,6 +130,7 @@ import { normalizeReactionEmoji } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews } from '../lib/replyPreview';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
+import { MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS } from '../lib/timeConstants';
 import { TransportManager } from '../lib/transport/TransportManager';
 import type { StatusUpdateEvent } from '../lib/transport/types';
 import type {
@@ -1484,7 +1485,7 @@ export function useDevice() {
               .catch((e: unknown) => {
                 console.debug('[useDevice] LoRa config request failed ' + errLikeToLogString(e));
               });
-          }, 2500);
+          }, MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS);
         }
 
         // Always clean up on disconnect, even if we never reached configured
@@ -3584,7 +3585,7 @@ export function useDevice() {
         setRemoteAdminStatus('ready');
         setRemoteAdminError(
           essential.loraConfigFetchError ??
-            (essential.primaryChannelConfigFetchFailed
+            (essential.primaryChannelConfigFetchFailed || essential.channelConfigFetchFailed
               ? 'remoteAdmin.errors.channelConfigPartial'
               : undefined),
         );
@@ -3604,6 +3605,7 @@ export function useDevice() {
         })();
       } catch (e) {
         if (!applyIfCurrent()) return;
+        remoteAdminClientRef.current?.resetEditState();
         const msg = normalizeRemoteAdminError(e);
         setRemoteAdminStatus('error');
         setRemoteAdminError(msg);

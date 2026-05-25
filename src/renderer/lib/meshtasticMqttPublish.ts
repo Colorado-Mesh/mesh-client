@@ -157,13 +157,14 @@ export function buildMeshtasticMqttOnlyChannelState(
     });
   }
 
-  if (channels.length === 0 && firstBareManualPsk(lines)) {
+  const barePsk = channels.length === 0 ? firstBareManualPsk(lines) : undefined;
+  if (barePsk) {
     channels.push({ index: 0, name: 'LongFast' });
     channelConfigs.push({
       index: 0,
       name: 'LongFast',
       role: MESHTASTIC_CHANNEL_ROLE.PRIMARY,
-      psk: firstBareManualPsk(lines)!,
+      psk: barePsk,
       uplinkEnabled: true,
       downlinkEnabled: true,
       positionPrecision: 0,

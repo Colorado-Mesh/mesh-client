@@ -83,4 +83,20 @@ describe('last RF persistence', () => {
     >;
     expect(saved.meshtasticLastRfSelfNodeId).toBe('2295031088');
   });
+
+  it('does not hydrate invalid SQLite last RF values into localStorage', async () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ meshtasticLastRfSelfNodeId: '111' }),
+    );
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
+      meshtasticLastRfSelfNodeId: 'not-a-node-id',
+    });
+    await expect(hydrateLastRfSelfNodeIdFromAppSettings()).resolves.toBe(0x6f);
+    const saved = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      string
+    >;
+    expect(saved.meshtasticLastRfSelfNodeId).toBe('111');
+  });
 });

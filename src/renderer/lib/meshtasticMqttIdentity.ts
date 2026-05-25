@@ -5,6 +5,13 @@ export type MqttOnlyIdentitySource = 'lastRf' | 'virtual';
 
 export const MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY = 'meshtasticLastRfSelfNodeId';
 
+/** Parse a stored last-RF node id; returns 0 when missing or out of range. */
+export function parseLastRfSelfNodeIdRaw(raw: unknown): number {
+  const nodeNum = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum >= 0xffffffff) return 0;
+  return nodeNum >>> 0;
+}
+
 /** MQTT-only sender: prefer last BLE node id when available, else persisted virtual id. */
 export function resolveMqttOnlyFromNodeId(lastRfSelfNodeId: number, virtualNodeId: number): number {
   return lastRfSelfNodeId > 0 ? lastRfSelfNodeId : virtualNodeId;
@@ -20,10 +27,7 @@ export function loadPersistedLastRfSelfNodeId(): number {
     getAppSettingsRaw(),
     'meshtasticMqttIdentity loadPersistedLastRfSelfNodeId',
   );
-  const raw = settings?.[MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY];
-  const nodeNum = typeof raw === 'number' ? raw : Number(raw);
-  if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum >= 0xffffffff) return 0;
-  return nodeNum >>> 0;
+  return parseLastRfSelfNodeIdRaw(settings?.[MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY]);
 }
 
 /** Persist last RF node id when a local radio reports myNodeNum. */
@@ -65,11 +69,11 @@ export function meshtasticMqttOwnNodeIds(
 export async function hydrateLastRfSelfNodeIdFromAppSettings(): Promise<number> {
   try {
     const all = await window.electronAPI.appSettings.getAll();
-    const raw = all[MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY];
-    if (raw != null && raw !== '') {
+    const nodeNum = parseLastRfSelfNodeIdRaw(all[MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY]);
+    if (nodeNum > 0) {
       mergeAppSetting(
         MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY,
-        raw,
+        String(nodeNum),
         'meshtasticMqttIdentity hydrate from SQLite',
       );
     }
