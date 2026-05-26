@@ -1,6 +1,6 @@
 {
   "name": "mesh-client",
-  "version": "5.17.0",
+  "version": "5.18.0",
   "description": "Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows — BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, routing diagnostics, and keyboard-first workflows.",
   "keywords": [
     "meshtastic",
@@ -108,7 +108,7 @@
     "@meshtastic/transport-web-serial": "npm:@jsr/meshtastic__transport-web-serial@^0.2.5",
     "@michaelhart/meshcore-decoder": "^0.3.0",
     "@tailwindcss/postcss": "^4.3.0",
-    "@tanstack/react-virtual": "^3.13.25",
+    "@tanstack/react-virtual": "^3.13.26",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
