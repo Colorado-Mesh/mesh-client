@@ -81,8 +81,8 @@ Adding a cross-boundary feature:
 4. `pnpm run i18n:auto-translate`: fills missing translation keys; re-stages `src/renderer/locales/`
 5. `pnpm run lint`
 6. `pnpm run typecheck`
-7. `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:i18n`, `check:licenses`, `check:url-hostname-sanitization`, `check:flatpak`
-8. `pnpm audit`
+7. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:log-panel-filter`, `check:i18n`, `check:licenses`
+8. `pnpm audit --audit-level=high`
 9. `actionlint`, `yamllint`
 10. `pnpm run test:run`
 
@@ -129,12 +129,13 @@ Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-m
 - **Channel URLs:** `src/shared/meshtasticUrlEncoder.ts` (parse/generate), `src/shared/meshtasticChannelApply.ts` (replace vs add-only apply); Radio panel UI; Meshtastic-only.
 - **S&F chat history:** `src/renderer/lib/meshtasticBacklogUtils.ts` — `CLIENT_HISTORY` on primary router heartbeat after RF configure (auto: 50-msg cap, 120 min window cap, 15 min per-server cooldown, 5 min offline gate; `storeForwardAutoFetchHistory` opt-out; manual catch-up in Chat). Protobuf decode for replayed text, `via_store_forward` on messages; do not await SDK queue for history (async replay).
 - **MQTT broker clientId:** `src/main/mqtt-broker-client-id.ts` — stable per-install IDs in `app_settings` (`meshtasticMqttClientId`, `meshcoreMqttClientId`); MeshCore LetsMesh `v1_` username unchanged as clientId.
-- **PKC remote admin (firmware 2.5+):** `src/renderer/lib/meshtasticRemoteAdmin.ts` — PKI-wrapped `AdminMessage` via `MeshDevice.sendRaw()` (`pkiEncrypted: true`); session passkeys (~300s) in `RemoteAdminSessionStore`; snapshot fetch in `meshtasticRemoteAdminSnapshot.ts`. `useDevice.ts` exposes `configureTargetNodeNum`, `remoteConfigSnapshot`, and routes panel set/commit to remote when a target is selected. **Requires connected local radio** (MQTT-only cannot admin). UI: `ConfigureNodeSelector.tsx` on Radio/Module/Security tabs; NodeDetailModal **Configure node remotely**; SecurityPanel **Copy** public key for one-time trust setup. Persist last target in `meshtasticConfigureTargetNodeNum` (`app_settings` + localStorage). Gate with `ProtocolCapabilities.hasRemoteAdmin`. Legacy admin channel (PSK + channel named `"admin"`) is out of scope.
+- **PKC remote admin (firmware 2.5+):** `meshtasticRemoteAdmin.ts` — PKI-wrapped `AdminMessage` via `MeshDevice.sendRaw()` (`pkiEncrypted: true`, channel omitted on wire); session passkeys (~300s); tab-scoped snapshot routes in `meshtasticRemoteAdminSnapshot.ts` (Channels-first LoRa load). Per-node keys: `meshtasticRemoteAdminKeyStorage.ts` (`meshtasticRemoteAdminKey:<nodeNum>` in `app_settings`; base64 / `base64:` / 64-char hex paste). Dest public key: NodeDB hex first, stored admin-key base64 fallback. `useDevice.ts`: `configureTargetNodeNum`, `remoteConfigSnapshot`, `runRemoteAdminOp` (errors → UI + toast); serialize admin reads with S&F (`remoteAdminReadsActiveCount` in `meshtasticBacklogUtils.ts`). **Requires connected local radio** (MQTT-only cannot admin). UI: `ConfigureNodeSelector.tsx`; NodeDetailModal admin key + **Configure node remotely**; SecurityPanel **Copy** public key. Persist last target in `meshtasticConfigureTargetNodeNum`. Gate with `hasRemoteAdmin`. Legacy admin channel (PSK + `"admin"`) out of scope.
+- **Meshtastic last heard:** `meshtasticLastHeard.ts` — bump `last_heard` on live RF packets (not only text); `computeNodeInfoLastHeardMs` prevents configure replay from regressing fresher client timestamps.
 - **Static GPS:** `src/renderer/lib/gpsSource.ts` — App tab static coordinates sync to self-node, map, and radio `setPosition`.
 
 ### MQTT
 
-Meshtastic: `mqtt-manager.ts` (AES, protobuf, dedup). MeshCore: `meshcore-mqtt-adapter.ts` (JSON v1 envelope).
+Meshtastic: `mqtt-manager.ts` (AES-128/256-CTR, Meshtastic nonce layout, channel keys, protobuf, dedup); `meshtasticMqttPublish.ts`; `meshtasticChannelPskInput.ts` + `src/shared/meshtasticChannelPskLine.ts`; `meshtasticMqttSettingsStorage.ts`; `meshtasticMqttIdentity.ts` (MQTT-only `from`); `mqtt-broker-client-id.ts`. MeshCore: `meshcore-mqtt-adapter.ts` (JSON v1); LetsMesh JWT `letsMeshJwt.ts`.
 
 ### UI
 
@@ -156,7 +157,8 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 - **Payload / links:** `ChatPayloadText.tsx` — mention highlighting, search marks, URL linkification; link previews via `chat:fetchLinkPreview` (`src/main/fetchLinkPreview.ts`, blocks localhost/private IPs, 10s timeout, 64 KiB HTML cap).
 - **Storage helpers:** `src/renderer/lib/chatPanelProtocolStorage.ts` — drafts (`mesh-client:drafts:<protocol>`), open DM tabs, last-read, per-view mute (`mesh-client:mutedViews:<protocol>`), starred (`mesh-client:starred:<protocol>`, cap 200).
 - **Notifications:** `src/renderer/lib/chatNotifications.ts` — `playMessageNotification()` (AudioContext beep); global mute `mesh-client:notifMuted`; per-view mute in `mutedViews`.
-- **Meshtastic dedup:** `src/renderer/lib/meshtasticMessageDedup.ts` — merges delayed RF/MQTT duplicates (10-minute content window) in `useDevice.ts`.
+- **Meshtastic dedup:** `meshtasticMessageDedup.ts` — merges delayed RF/MQTT duplicates (10-minute content window) in `useDevice.ts`.
+- **Reactions / tapbacks:** `reactions.ts` — normalize Meshtastic `emoji` + payload UTF-8; `ChatPanel.tsx` attaches tapbacks via `replyId` + `sendReaction` in `useDevice.ts`.
 - **Mention segments:** `src/renderer/lib/chatMentionSegments.ts` — parse/build `@[Name]` tokens; `MentionAutocomplete.tsx` renders the dropdown.
 - **Export IPC:** `chat:export` — renderer calls `window.electronAPI.chat.export(messages)`; main opens a Save dialog and writes a `.txt` file.
 
@@ -177,7 +179,10 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 | Mention picker missing | `MentionAutocomplete.tsx`, `buildMentionCandidates`    |
 | Link preview missing   | `fetchLinkPreview.ts`, `chat:fetchLinkPreview` IPC     |
 | Duplicate RF+MQTT msg  | `meshtasticMessageDedup.ts`, `useDevice.ts` ingest     |
+| MQTT decrypt / sender  | `mqtt-manager.ts`, `meshtasticMqttIdentity.ts`         |
+| Remote admin fails     | `meshtasticRemoteAdmin.ts`, key storage                |
 | S&F history garbled    | `meshtasticBacklogUtils.ts` decode, heartbeat trigger  |
+| Garbled TEXT_MESSAGE   | `meshtasticBacklogUtils.ts` readable-text filter       |
 | Channel URL apply      | `meshtasticChannelApply.ts`, `meshtasticUrlEncoder.ts` |
 | Header red on loss     | `connectionHeaderStatus.ts`, `mqttDisconnectIntent.ts` |
 

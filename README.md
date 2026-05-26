@@ -80,7 +80,8 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 **MQTT**
 
 - Subscribe to a broker to receive mesh traffic over the internet; **AES-128/256-CTR** decryption (16- or 32-byte channel PSKs), automatic RF deduplication, **cross-transport chat dedup** (when the same message arrives on MQTT and RF within ~10 minutes, one bubble is kept and the transport badge upgrades to **both**), **10-minute reconnect delay after failed attempts** (recovers faster on connack timeout), and an **active node cache** that periodically refreshes presence information so MQTT-only and RF+MQTT nodes stay visible even when your radio is offline
-- **Channel PSKs** on the Connection tab: base64 keys per line (optional `ChannelName=base64` for MQTT-only channels); LongFast default is always tried; keys from the Radio tab sync automatically when the radio is connected
+- **Channel PSKs** on the Connection tab: base64 keys per line (optional `ChannelName=base64` for MQTT-only channels); multiple keys per channel name are supported; LongFast default is always tried; keys from the Radio tab sync automatically when the radio is connected (custom named keys are not overwritten by the default public PSK on sync)
+- **MQTT-only chat identity**: when sending without a connected radio, outbound `from` uses your last known RF node id when available, otherwise a stable per-install virtual id (persisted in app settings)
 - **Enable TLS (mqtts / wss)** toggle for private brokers (not only port 8883/443); optional **Allow insecure TLS** for self-signed or non–public CA chains
 - **Per-channel MQTT uplink** (RF → MQTT) uses each channel’s real name and PSK when publishing
 - Transport indicator (RF / MQTT / both) on received messages; MQTT messages are shown in chat but not rebroadcast over RF
@@ -95,7 +96,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 **Security (PKI)** (Meshtastic only)
 
 - **Security** tab (between Telemetry and App): admin / PKI key management; backup, restore, regenerate, and apply keys and related toggles from the device. Not available in MeshCore mode (no matching firmware surface; the tab is hidden).
-- **PKC remote node administration** (firmware 2.5+): **Configure node** selector on Radio, Modules, and Security tabs to edit another node’s settings through your connected local radio; **Configure node remotely** from node detail; **Copy** public key in Security for one-time trust setup. Requires a **connected local Meshtastic radio** — MQTT-only sessions cannot administer remote nodes.
+- **PKC remote node administration** (firmware 2.5+): **Configure node** selector on Radio, Modules, and Security tabs to edit another node’s settings through your connected local radio; **Configure node remotely** from node detail when a per-node admin key is saved; **Copy** public key in Security for one-time trust setup. Paste a remote node’s admin public key in node detail (base64, `base64:…`, or 64-char hex). PKI uses the mesh NodeDB key when present, with stored admin-key fallback. Requires a **connected local Meshtastic radio** — MQTT-only sessions cannot administer remote nodes.
 
 **Network Diagnostics**
 
@@ -144,7 +145,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - **Durable outbox**: outgoing messages are queued in SQLite and retried until delivered; survive app restarts and connection drops
 - **Long message chunking**: messages over the payload limit are auto-split into sequential `[N/T]`-prefixed chunks (word-boundary split, max 9 chunks); MeshCore MQTT-only connections are guarded from sending when no RF path is available
 - **Spellcheck**: the message composer uses a textarea with inline misspelling marks; right‑click for replacements (Electron main process configures the spellchecker for **Meshtastic** and **MeshCore**)
-- Emoji reactions (11 emojis with compose picker) and reply-to-message (quoted preview in bubble)
+- **Emoji reactions / tapbacks**: 12 quick-pick reactions plus compose emoji (native panel on macOS/Windows; `emoji-picker-element` on Linux); Meshtastic wire tapbacks decode payload UTF-8 glyphs (flags, ZWJ sequences, and legacy index 1–12); reply-to-message with quoted preview in bubble
 - **`@[Display Name]` tokens** (Meshtastic / MeshCore reply, tapback, path, and inline-reference syntax) render as compact inline labels in the bubble instead of raw brackets; see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#chat-mention-tokens)
 - Unread message divider that persists across restarts; auto-scrolls on tab switch
 - Direct messages (DMs) to individual nodes; **DM info header** shows battery, last heard, and SNR for the peer
@@ -161,7 +162,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 **Node Management**
 
-- Node list with SNR, battery, GPS, last heard; **signal bars** appear only for direct (0-hop) RF neighbors; multi-hop and MQTT-only paths omit bars; SNR in traces and neighbor views uses **color-coded quality** (good / marginal / poor)
+- Node list with SNR, battery, GPS, **last heard** (any live RF packet—position, telemetry, traceroute, text—not only chat); **signal bars** appear only for direct (0-hop) RF neighbors; multi-hop and MQTT-only paths omit bars; SNR in traces and neighbor views uses **color-coded quality** (good / marginal / poor)
 - **Cross-Protocol Signal Analyzer**: foreign LoRa traffic detection (non-mesh packets); shown in Node Detail when present
 - Distance filter, favorite/pin nodes, device role icons
 - Node Detail Modal: DM, trace route with per-hop display, delete node, neighbor info, **Map Report** (Meshtastic), PaxCounter, Detection Sensor, **channel utilization** (Meshtastic), **export/share contact** (MeshCore), **node notes** (free-text, SQLite-persisted), **watch / notify** (OS desktop notification on online/offline transition)

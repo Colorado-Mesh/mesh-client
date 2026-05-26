@@ -38,8 +38,8 @@ Before each commit, the hook runs (order matters):
 3. Re-stage staged files
 4. `pnpm run lint`
 5. `pnpm run typecheck`
-6. `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:licenses`, `check:url-hostname-sanitization`
-7. `pnpm audit`
+6. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:log-panel-filter`, `check:i18n` (includes `scripts/check-i18n-quality.mjs` locale rules), `check:licenses`
+7. `pnpm audit --audit-level=high`
 8. `actionlint`, `yamllint`
 9. `pnpm run test:run`
 
