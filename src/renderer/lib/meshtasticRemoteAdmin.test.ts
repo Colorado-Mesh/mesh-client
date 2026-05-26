@@ -5,21 +5,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { writeToRadioWithoutQueue } from './meshtasticBacklogUtils';
 import {
   buildRemoteAdminToRadio,
+  computeRemoteAdminRadioLoadingWatchdogMs,
   createSerialTaskQueue,
   extractAdminSessionPasskey,
   meshtasticNodePublicKeyBytesFromHex,
   MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
   parseIncomingRemoteAdminPacket,
+  REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
+  REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
   REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS,
   REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS,
+  REMOTE_ADMIN_RESPONSE_TIMEOUT_MS,
   REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS,
   REMOTE_ADMIN_SESSION_ACTIVE_MS,
   REMOTE_ADMIN_SESSION_TTL_MS,
   RemoteAdminSessionStore,
   remoteConfigLoadingWatchdogMsForRoute,
+  resolveMeshtasticDestPublicKeyBytes,
   routingErrorToRemoteAdminKey,
 } from './meshtasticRemoteAdmin';
+import { parseMeshtasticAdminKeyBase64 } from './meshtasticRemoteAdminKeyStorage';
 
 vi.mock('./meshtasticBacklogUtils', () => ({
   writeToRadioWithoutQueue: vi.fn(),
@@ -27,6 +33,36 @@ vi.mock('./meshtasticBacklogUtils', () => ({
 
 const TEST_DEST_PUBKEY_HEX = '4852b69364572b52efa1b6bb3e6d0abed4f389a1cbfbb60a9bba2cce649caf0e';
 const TEST_DEST_PUBKEY = meshtasticNodePublicKeyBytesFromHex(TEST_DEST_PUBKEY_HEX)!;
+
+describe('resolveMeshtasticDestPublicKeyBytes', () => {
+  const adminKeyB64 = btoa(String.fromCharCode(...TEST_DEST_PUBKEY));
+
+  it('prefers mesh NodeDB hex over stored admin key', () => {
+    const wrong = new Uint8Array(32).fill(9);
+    const wrongHex = [...wrong].map((b) => b.toString(16).padStart(2, '0')).join('');
+    expect(
+      resolveMeshtasticDestPublicKeyBytes({
+        publicKeyHex: TEST_DEST_PUBKEY_HEX,
+        adminKeyBase64: btoa(String.fromCharCode(...wrong)),
+      }),
+    ).toEqual(TEST_DEST_PUBKEY);
+    expect(
+      resolveMeshtasticDestPublicKeyBytes({
+        publicKeyHex: wrongHex,
+        adminKeyBase64: adminKeyB64,
+      }),
+    ).toEqual(wrong);
+  });
+
+  it('falls back to stored admin key when mesh hex is missing', () => {
+    expect(
+      resolveMeshtasticDestPublicKeyBytes({
+        adminKeyBase64: adminKeyB64,
+      }),
+    ).toEqual(TEST_DEST_PUBKEY);
+    expect(parseMeshtasticAdminKeyBase64(adminKeyB64)).toEqual(TEST_DEST_PUBKEY);
+  });
+});
 
 describe('meshtasticNodePublicKeyBytesFromHex', () => {
   it('parses a 32-byte hex public key', () => {
@@ -180,8 +216,47 @@ describe('parseIncomingRemoteAdminPacket', () => {
   });
 });
 
+/** Returns true when `fieldNumber` appears as a top-level field on the protobuf wire. */
+function wireHasProtoField(wire: Uint8Array, fieldNumber: number): boolean {
+  let offset = 0;
+  while (offset < wire.length) {
+    let tag = 0;
+    let shift = 0;
+    let byte: number;
+    do {
+      byte = wire[offset++];
+      tag |= (byte & 0x7f) << shift;
+      shift += 7;
+    } while (byte & 0x80);
+    const field = tag >>> 3;
+    const wireType = tag & 0x7;
+    if (field === fieldNumber) return true;
+    if (wireType === 0) {
+      do {
+        byte = wire[offset++];
+      } while (byte & 0x80);
+    } else if (wireType === 2) {
+      let len = 0;
+      shift = 0;
+      do {
+        byte = wire[offset++];
+        len |= (byte & 0x7f) << shift;
+        shift += 7;
+      } while (byte & 0x80);
+      offset += len;
+    } else if (wireType === 1) {
+      offset += 8;
+    } else if (wireType === 5) {
+      offset += 4;
+    } else {
+      break;
+    }
+  }
+  return false;
+}
+
 describe('buildRemoteAdminToRadio', () => {
-  it('sets pkiEncrypted and publicKey; omits channel (protobuf default 0) for PKI admin', () => {
+  it('sets pkiEncrypted and publicKey; omits channel field on wire for PKI admin', () => {
     const adminPayload = new Uint8Array([1, 2, 3]);
     const bytes = buildRemoteAdminToRadio({
       myNodeNum: 0x100,
@@ -208,6 +283,9 @@ describe('buildRemoteAdminToRadio', () => {
     const packet = toRadio.payloadVariant?.value;
     expect(packet?.pkiEncrypted).toBe(true);
     expect(packet?.publicKey).toEqual(TEST_DEST_PUBKEY);
+    expect(packet).toBeDefined();
+    const packetWire = toBinary(Mesh.MeshPacketSchema, packet as never);
+    expect(wireHasProtoField(packetWire, 5)).toBe(false);
     expect(packet?.channel ?? 0).toBe(0);
     expect(packet?.hopLimit).toBe(7);
     expect(packet?.hopStart).toBe(7);
@@ -1206,6 +1284,14 @@ describe('MeshtasticRemoteAdminClient', () => {
 });
 
 describe('remoteConfigLoadingWatchdogMsForRoute', () => {
+  it('radio watchdog covers channel 0 worst-case retries', () => {
+    const channel0WorstMs =
+      REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS * REMOTE_ADMIN_RESPONSE_TIMEOUT_MS +
+      (REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS - 1) * REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS;
+    expect(computeRemoteAdminRadioLoadingWatchdogMs()).toBe(REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS);
+    expect(remoteConfigLoadingWatchdogMsForRoute('radio')).toBeGreaterThanOrEqual(channel0WorstMs);
+  });
+
   it('uses longer watchdogs for radio, security, and modules routes', () => {
     expect(remoteConfigLoadingWatchdogMsForRoute('radio')).toBe(
       REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS,

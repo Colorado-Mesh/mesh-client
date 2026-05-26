@@ -111,14 +111,15 @@ import {
 } from '../lib/meshtasticMessageDedup';
 import {
   createSerialTaskQueue,
-  meshtasticNodePublicKeyBytesFromHex,
   MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
   type RemoteAdminSessionStatus,
   remoteConfigLoadingWatchdogMsForRoute,
+  resolveMeshtasticDestPublicKeyBytes,
 } from '../lib/meshtasticRemoteAdmin';
 import {
   getMeshtasticRemoteAdminKeyForNode,
+  isValidMeshtasticAdminKeyBase64,
   MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX,
   readMeshtasticRemoteAdminKeyMap,
   setMeshtasticRemoteAdminKeyForNode,
@@ -842,7 +843,10 @@ export function useDevice() {
       () => deviceRef.current,
       () => myNodeNumRef.current,
       (nodeNum) =>
-        meshtasticNodePublicKeyBytesFromHex(nodesRef.current.get(nodeNum)?.public_key_hex),
+        resolveMeshtasticDestPublicKeyBytes({
+          publicKeyHex: nodesRef.current.get(nodeNum)?.public_key_hex,
+          adminKeyBase64: remoteAdminKeysByNodeRef.current[String(nodeNum)],
+        }),
     );
     return () => {
       remoteAdminClientRef.current?.dispose();
@@ -3584,8 +3588,8 @@ export function useDevice() {
       // Determine initial MQTT display state (TransportManager will confirm/update asynchronously)
       const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
       const shouldUplink = !deviceRef.current
-        ? hasMqtt // MQTT-only: always uplink when connected
-        : !!(chCfg?.uplinkEnabled && hasMqtt && myNodeNumRef.current);
+        ? hasMqtt && from > 0 // MQTT-only: uplink when connected with a valid sender id
+        : !!(from > 0 && chCfg?.uplinkEnabled && hasMqtt);
 
       const msg: ChatMessage = enrichMeshtasticReplyPreviews(
         {
@@ -3673,16 +3677,19 @@ export function useDevice() {
         return;
       }
       const destNode = nodesRef.current.get(destNodeNum);
-      const destPubHex = destNode?.public_key_hex;
-      if ((destPubHex?.length ?? 0) !== 64) {
-        setRemoteAdminStatus('error');
-        setRemoteAdminError('remoteAdmin.errors.noRemotePublicKey');
-        return;
-      }
       const configuredAdminKey = getRemoteAdminKeyForNode(destNodeNum);
-      if (!configuredAdminKey) {
+      if (!configuredAdminKey || !isValidMeshtasticAdminKeyBase64(configuredAdminKey)) {
         setRemoteAdminStatus('error');
         setRemoteAdminError('remoteAdmin.errors.noAdminKeyConfigured');
+        return;
+      }
+      const destPublicKey = resolveMeshtasticDestPublicKeyBytes({
+        publicKeyHex: destNode?.public_key_hex,
+        adminKeyBase64: configuredAdminKey,
+      });
+      if (!destPublicKey) {
+        setRemoteAdminStatus('error');
+        setRemoteAdminError('remoteAdmin.errors.noRemotePublicKey');
         return;
       }
       if (state.status !== 'configured') return;
@@ -3718,6 +3725,7 @@ export function useDevice() {
             if (remoteAdminStatusRef.current !== 'loading') return;
             loadingWatchdogFired = true;
             remoteConfigInflightRoutesRef.current.delete(route);
+            remoteAdminClientRef.current?.resetEditState(new Error('remoteAdmin.errors.timeout'));
             if (foregroundRoute === 'modules' && modulesPartialApplied) {
               remoteConfigLoadedRoutesRef.current.add(route);
               setRemoteAdminStatus('ready');
@@ -3864,17 +3872,35 @@ export function useDevice() {
     void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'radio');
   }, [configureTargetNodeNum, state.status, refreshRemoteConfigSnapshot]);
 
-  const runRemoteAdminOp = useCallback(async <T>(operation: () => Promise<T>): Promise<T> => {
-    try {
-      return await operation();
-    } catch (e) {
-      const msg = normalizeRemoteAdminError(e);
-      setRemoteAdminStatus('error');
-      setRemoteAdminError(msg);
-      console.warn('[useDevice] remote admin operation failed ' + errLikeToLogString(e));
-      throw e;
-    }
-  }, []);
+  const runRemoteAdminOp = useCallback(
+    async <T>(operation: () => Promise<T>): Promise<T> => {
+      const run = async (): Promise<T> => {
+        try {
+          return await operation();
+        } catch (e) {
+          const msg = normalizeRemoteAdminError(e);
+          setRemoteAdminStatus('error');
+          setRemoteAdminError(msg);
+          console.warn('[useDevice] remote admin operation failed ' + errLikeToLogString(e));
+          throw e;
+        }
+      };
+      if (configureTargetNodeNumRef.current != null) {
+        return new Promise<T>((resolve, reject) => {
+          void enqueueRemoteConfigFetch(async () => {
+            try {
+              resolve(await run());
+            } catch (e) {
+              // catch-no-log-ok reject propagates to caller; run() already logged the failure
+              reject(e instanceof Error ? e : new Error(String(e)));
+            }
+          });
+        });
+      }
+      return run();
+    },
+    [enqueueRemoteConfigFetch],
+  );
 
   const setConfigureTargetNodeNum = useCallback((nodeNum: number | null) => {
     const prevTarget = configureTargetNodeNumRef.current;
@@ -4245,8 +4271,13 @@ export function useDevice() {
       await deviceRef.current.sendWaypoint(waypoint, dest, channel);
 
       const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
-      const fromNum = myNodeNumRef.current ?? 0;
-      if (mqttStatusRef.current === 'connected' && fromNum && chCfg?.uplinkEnabled) {
+      const fromNum = resolveMeshtasticOutboundFromNodeId({
+        hasDevice: !!deviceRef.current,
+        myNodeNum: myNodeNumRef.current,
+        lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
+        virtualNodeId: virtualNodeIdRef.current,
+      });
+      if (mqttStatusRef.current === 'connected' && fromNum > 0 && chCfg?.uplinkEnabled) {
         const sendWpMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
           channel,
           channelConfigsRef.current,
@@ -4288,8 +4319,13 @@ export function useDevice() {
     await deviceRef.current.sendWaypoint(waypoint, 0xffffffff, 0);
 
     const chCfg = channelConfigsRef.current.find((c) => c.index === 0);
-    const fromNum = myNodeNumRef.current ?? 0;
-    if (mqttStatusRef.current === 'connected' && fromNum && chCfg?.uplinkEnabled) {
+    const fromNum = resolveMeshtasticOutboundFromNodeId({
+      hasDevice: !!deviceRef.current,
+      myNodeNum: myNodeNumRef.current,
+      lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
+      virtualNodeId: virtualNodeIdRef.current,
+    });
+    if (mqttStatusRef.current === 'connected' && fromNum > 0 && chCfg?.uplinkEnabled) {
       const delWpMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
         0,
         channelConfigsRef.current,

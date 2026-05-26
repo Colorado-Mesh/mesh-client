@@ -44,14 +44,8 @@ export class TransportManager {
     from: number,
     emoji?: number,
   ): void {
-    const {
-      deviceRef,
-      myNodeNumRef,
-      mqttStatusRef,
-      channelConfigsRef,
-      isDuplicate,
-      onStatusUpdateRef,
-    } = this.deps;
+    const { deviceRef, mqttStatusRef, channelConfigsRef, isDuplicate, onStatusUpdateRef } =
+      this.deps;
 
     const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
     const mqttFields = resolveMeshtasticMqttPublishFieldsForChannel(
@@ -61,14 +55,17 @@ export class TransportManager {
       deviceRef.current ? undefined : { preferManualOverRadio: true },
     );
     const shouldUplink =
+      from > 0 &&
       chCfg?.uplinkEnabled &&
       mqttStatusRef.current === 'connected' &&
-      myNodeNumRef.current &&
       mqttFields.channelName;
     // ── MQTT transport (path 1) ──────────────────────────────────────────────
     if (
       shouldUplink ||
-      (!deviceRef.current && mqttStatusRef.current === 'connected' && mqttFields.channelName)
+      (!deviceRef.current &&
+        from > 0 &&
+        mqttStatusRef.current === 'connected' &&
+        mqttFields.channelName)
     ) {
       window.electronAPI.mqtt
         .publish({

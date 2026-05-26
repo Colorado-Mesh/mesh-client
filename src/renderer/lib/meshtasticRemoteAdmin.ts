@@ -4,6 +4,7 @@ import { Admin, Mesh, Portnums } from '@meshtastic/protobufs';
 
 import { errLikeToLogString } from './errLikeToLogString';
 import { writeToRadioWithoutQueue } from './meshtasticBacklogUtils';
+import { parseMeshtasticAdminKeyBase64 } from './meshtasticRemoteAdminKeyStorage';
 
 interface AdminMessagePayloadVariant {
   case: string;
@@ -68,9 +69,6 @@ export const REMOTE_ADMIN_ESSENTIAL_RESPONSE_TIMEOUT_MS = 25_000;
 /** Single attempt on essential reads once request/response ids are wired correctly. */
 export const REMOTE_ADMIN_ESSENTIAL_MAX_ATTEMPTS = 1;
 
-/** Wall-clock cap while UI shows loading for foreground radio snapshot fetch. */
-export const REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS = 60_000;
-
 /** Wall-clock cap for security config snapshot fetch. */
 export const REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS = 45_000;
 
@@ -80,9 +78,6 @@ export const REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT = 13;
 /** Wall-clock cap for modules snapshot fetch (13 sequential multi-hop reads). */
 export const REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS =
   REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT * 8_000 + 30_000;
-
-/** @deprecated Use {@link remoteConfigLoadingWatchdogMsForRoute} */
-export const REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS = REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS;
 
 export type RemoteConfigLoadingRoute = 'radio' | 'security' | 'modules';
 
@@ -138,6 +133,26 @@ export const REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS = 3;
 
 export const REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS = 500;
 
+/**
+ * Worst-case wall time for the radio-route foreground snapshot (session bootstrap + channel 0
+ * retries + LoRa read). Keeps UI watchdog aligned with PRIMARY_CHANNEL_FETCH_OPTIONS (3×120s).
+ */
+export function computeRemoteAdminRadioLoadingWatchdogMs(): number {
+  const sessionBootstrapMs = REMOTE_ADMIN_SESSION_KEY_TIMEOUT_MS + REMOTE_ADMIN_RESPONSE_TIMEOUT_MS;
+  const channel0Ms =
+    REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS * REMOTE_ADMIN_RESPONSE_TIMEOUT_MS +
+    (REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS - 1) * REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS;
+  const loraMs = REMOTE_ADMIN_ESSENTIAL_MAX_ATTEMPTS * REMOTE_ADMIN_ESSENTIAL_RESPONSE_TIMEOUT_MS;
+  const marginMs = 30_000;
+  return sessionBootstrapMs + channel0Ms + loraMs + marginMs;
+}
+
+/** Wall-clock cap while UI shows loading for foreground radio snapshot fetch. */
+export const REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS = computeRemoteAdminRadioLoadingWatchdogMs();
+
+/** @deprecated Use {@link remoteConfigLoadingWatchdogMsForRoute} */
+export const REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS = REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS;
+
 export function delayMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -165,6 +180,19 @@ export type RemoteAdminRoutingErrorCode = number;
 export interface RemoteAdminSessionEntry {
   passkey: Uint8Array;
   expiresAt: number;
+}
+
+/** Dest PKI key: prefer mesh NodeDB hex; fall back to stored admin key (base64). */
+export function resolveMeshtasticDestPublicKeyBytes(params: {
+  publicKeyHex?: string;
+  adminKeyBase64?: string;
+}): Uint8Array | undefined {
+  const fromMesh = meshtasticNodePublicKeyBytesFromHex(params.publicKeyHex);
+  if (fromMesh) return fromMesh;
+  if (params.adminKeyBase64) {
+    return parseMeshtasticAdminKeyBase64(params.adminKeyBase64);
+  }
+  return undefined;
 }
 
 export function meshtasticNodePublicKeyBytesFromHex(

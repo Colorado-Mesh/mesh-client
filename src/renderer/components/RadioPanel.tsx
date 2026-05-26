@@ -2054,7 +2054,7 @@ export default function RadioPanel({
                     title: t('radioPanel.resetNodeDbTitle'),
                     message: t('radioPanel.resetNodeDbMessage'),
                     confirmLabel: t('radioPanel.resetNodeDbConfirm'),
-                    showPreserveFavorites: true,
+                    showPreserveFavorites: configTarget?.mode === 'remote',
                     action: () => onResetNodeDb(nodeDbPreserveFavorites),
                   });
                 }}

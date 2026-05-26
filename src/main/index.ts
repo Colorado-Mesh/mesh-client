@@ -712,8 +712,8 @@ function validateMqttPublishArgs(args: unknown): void {
   if (typeof a.text !== 'string') throw new Error('mqtt:publish: text must be a string');
   if (a.text.length > MAX_PAYLOAD_LENGTH) throw new Error('mqtt:publish: text too long');
   const from = Number(a.from);
-  if (!Number.isFinite(from) || from < 0)
-    throw new Error('mqtt:publish: from must be a non-negative integer');
+  if (!Number.isFinite(from) || from <= 0)
+    throw new Error('mqtt:publish: from must be a positive node id');
   const channel = Number(a.channel);
   if (!Number.isFinite(channel) || channel < 0)
     throw new Error('mqtt:publish: channel must be a non-negative integer');
@@ -749,8 +749,8 @@ function validateMqttPublishWaypointArgs(args: unknown): void {
     throw new Error('mqtt:publishWaypoint: publishJsonMirror must be a boolean');
   }
   const from = Number(a.from);
-  if (!Number.isFinite(from) || from < 0) {
-    throw new Error('mqtt:publishWaypoint: from must be a non-negative integer');
+  if (!Number.isFinite(from) || from <= 0) {
+    throw new Error('mqtt:publishWaypoint: from must be a positive node id');
   }
   const to = Number(a.to);
   if (!Number.isFinite(to) || to < 0) {
