@@ -489,7 +489,8 @@
     },
     "channelLoading": "Wczytywanie…",
     "channelLoadFailed": "Wczytywanie nieudane",
-    "retryRemoteChannels": "Ponów próbę załadowania kanałów"
+    "retryRemoteChannels": "Ponów próbę załadowania kanałów",
+    "resetNodeDbPreserveFavorites": "Zachowaj ulubione węzły na urządzeniu"
   },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "Klucz administracyjny zapisany dla tego węzła.",
     "remoteAdminKeyCleared": "Klucz administratora został wyczyszczony.",
     "remoteAdminKeyHint": "Wklej klucz publiczny administratora z ustawień bezpieczeństwa tego węzła (base64, base64:… lub 64-znakowy hex). Zapisz go tutaj, a następnie wybierz węzeł z listy rozwijanej Konfiguruj w Radio/Bezpieczeństwo/Moduły.",
-    "remoteAdminKeyInvalid": "Wprowadź prawidłowy klucz publiczny administratora (base64, base64:… lub 64-znakowy hex)."
+    "remoteAdminKeyInvalid": "Wprowadź prawidłowy klucz publiczny administratora (base64, base64:… lub 64-znakowy hex).",
+    "configureRemotelyHint": "Otwiera ustawienia radia dla tego węzła nad siatką (wymaga lokalnego radia i zapisanego klucza administratora)."
   },
   "firmwareStatus": {
     "checking": "Sprawdzanie wersji oprogramowania sprzętowego",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Przełącz na lokalny",
     "refresh": "Odśwież",
     "loading": "Ładowanie zdalnej konfiguracji…",
-    "requiresLocalRadio": "Podłącz lokalne radio Meshtastic, aby korzystać ze zdalnej administracji."
+    "requiresLocalRadio": "Podłącz lokalne radio Meshtastic, aby korzystać ze zdalnej administracji.",
+    "sessionActive": "Aktywna sesja administratora",
+    "sessionStale": "Sesja administratora nieaktualna — odśwież przed zmianą ustawień",
+    "sessionNone": "Nie ustanowiono sesji administratora — ładowanie lub podłączanie lokalnego radia",
+    "establishingSession": "Ustanawianie sesji administratora…"
   },
   "remoteAdmin": {
     "errors": {

@@ -489,7 +489,8 @@
     },
     "channelLoading": "Lädt…",
     "channelLoadFailed": "Laden fehlgeschlagen",
-    "retryRemoteChannels": "Kanäle erneut laden"
+    "retryRemoteChannels": "Kanäle erneut laden",
+    "resetNodeDbPreserveFavorites": "Bevorzugte Knoten auf dem Gerät beibehalten"
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "Admin-Schlüssel für diesen Knoten gespeichert.",
     "remoteAdminKeyCleared": "Admin-Schlüssel gelöscht.",
     "remoteAdminKeyHint": "Fügen Sie einen öffentlichen Admin-Schlüssel aus den Sicherheitseinstellungen dieses Knotens ein (base64, base64:… oder 64-stelliges Hexadezimalzeichen). Speichern Sie es hier und wählen Sie dann den Knoten im Dropdown-Menü Konfigurieren auf Radio/Sicherheit/Module aus.",
-    "remoteAdminKeyInvalid": "Geben Sie einen gültigen öffentlichen Admin-Schlüssel ein (base64, base64:… oder 64-stelliges Hexadezimalzeichen)."
+    "remoteAdminKeyInvalid": "Geben Sie einen gültigen öffentlichen Admin-Schlüssel ein (base64, base64:… oder 64-stelliges Hexadezimalzeichen).",
+    "configureRemotelyHint": "Öffnet die Radioeinstellungen für diesen Knoten über das Netz (erfordert lokales Radio und gespeicherten Admin-Schlüssel)."
   },
   "firmwareStatus": {
     "checking": "Überprüfung der Firmwareversion",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Zu lokal wechseln",
     "refresh": "Aktualisieren",
     "loading": "Remote-Konfiguration wird geladen...",
-    "requiresLocalRadio": "Schließen Sie ein lokales Meshtastic-Funkgerät an, um die Remote-Verwaltung zu nutzen."
+    "requiresLocalRadio": "Schließen Sie ein lokales Meshtastic-Funkgerät an, um die Remote-Verwaltung zu nutzen.",
+    "sessionActive": "Admin-Sitzung aktiv",
+    "sessionStale": "Admin-Sitzung veraltet — vor dem Ändern der Einstellungen aktualisieren",
+    "sessionNone": "Admin-Sitzung nicht eingerichtet — Lokales Radio laden oder verbinden",
+    "establishingSession": "Admin-Sitzung wird eingerichtet..."
   },
   "remoteAdmin": {
     "errors": {

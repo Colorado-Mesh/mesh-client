@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
+import type { RemoteAdminSessionStatus } from '../lib/meshtasticRemoteAdmin';
 import type { ConfigTargetContext, MeshNode, RemoteAdminStatus } from '../lib/types';
 
 interface ConfigureNodeSelectorProps {
@@ -13,6 +14,7 @@ interface ConfigureNodeSelectorProps {
   onConfigureTargetChange: (nodeNum: number | null) => void;
   remoteAdminStatus: RemoteAdminStatus;
   remoteAdminError?: string;
+  remoteAdminSessionStatus?: RemoteAdminSessionStatus;
   isLocalRadioConnected: boolean;
   getNodeName: (nodeNum: number) => string;
   onRefresh?: () => Promise<void>;
@@ -32,6 +34,7 @@ export default function ConfigureNodeSelector({
   onConfigureTargetChange,
   remoteAdminStatus,
   remoteAdminError,
+  remoteAdminSessionStatus = 'none',
   isLocalRadioConnected,
   getNodeName,
   onRefresh,
@@ -229,6 +232,27 @@ export default function ConfigureNodeSelector({
           </div>
           {configTarget.isLoading && (
             <p className="text-muted mt-1 text-xs">{t('configureNode.loading')}</p>
+          )}
+          {!configTarget.isLoading && remoteAdminSessionStatus !== 'none' && (
+            <p
+              className={`mt-1 text-xs ${
+                remoteAdminSessionStatus === 'active'
+                  ? 'text-green-300'
+                  : remoteAdminSessionStatus === 'stale'
+                    ? 'text-amber-300'
+                    : 'text-blue-200'
+              }`}
+              role="status"
+            >
+              {remoteAdminSessionStatus === 'active'
+                ? t('configureNode.sessionActive')
+                : t('configureNode.sessionStale')}
+            </p>
+          )}
+          {configTarget.isLoading && remoteAdminSessionStatus === 'none' && (
+            <p className="text-muted mt-1 text-xs" role="status">
+              {t('configureNode.establishingSession')}
+            </p>
           )}
         </div>
       )}

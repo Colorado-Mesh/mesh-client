@@ -489,7 +489,8 @@
     },
     "channelLoading": "Memuat…",
     "channelLoadFailed": "Pemuatan gagal",
-    "retryRemoteChannels": "Coba lagi memuat saluran"
+    "retryRemoteChannels": "Coba lagi memuat saluran",
+    "resetNodeDbPreserveFavorites": "Pertahankan node favorit di perangkat"
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "Kunci admin disimpan untuk simpul ini.",
     "remoteAdminKeyCleared": "Kunci admin dihapus.",
     "remoteAdminKeyHint": "Tempelkan kunci publik admin dari pengaturan Keamanan simpul ini (base64, base64 :…, atau hex 64 karakter). Simpan di sini, lalu pilih simpul di menu tarik - turun Konfigurasi di Radio/Keamanan/Modul.",
-    "remoteAdminKeyInvalid": "Masukkan kunci publik admin yang valid (base64, base64 :…, atau hex 64 karakter)."
+    "remoteAdminKeyInvalid": "Masukkan kunci publik admin yang valid (base64, base64 :…, atau hex 64 karakter).",
+    "configureRemotelyHint": "Membuka pengaturan Radio untuk simpul ini melalui mesh (memerlukan radio lokal dan kunci admin yang disimpan)."
   },
   "firmwareStatus": {
     "checking": "Memeriksa versi firmware",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Beralih ke lokal",
     "refresh": "Perbarui",
     "loading": "Memuat konfigurasi jarak jauh…",
-    "requiresLocalRadio": "Sambungkan radio Meshtastic lokal untuk menggunakan administrasi jarak jauh."
+    "requiresLocalRadio": "Sambungkan radio Meshtastic lokal untuk menggunakan administrasi jarak jauh.",
+    "sessionActive": "Sesi admin aktif",
+    "sessionStale": "Sesi admin basi — segarkan sebelum mengubah pengaturan",
+    "sessionNone": "Sesi admin belum ditetapkan — memuat atau menghubungkan radio lokal",
+    "establishingSession": "Menetapkan sesi admin…"
   },
   "remoteAdmin": {
     "errors": {

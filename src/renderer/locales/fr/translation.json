@@ -489,7 +489,8 @@
     },
     "channelLoading": "Chargement…",
     "channelLoadFailed": "Échec du chargement",
-    "retryRemoteChannels": "Réessayer le chargement des canaux"
+    "retryRemoteChannels": "Réessayer le chargement des canaux",
+    "resetNodeDbPreserveFavorites": "Préserver les nœuds favoris sur l'appareil"
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "Clé d'administration enregistrée pour ce nœud.",
     "remoteAdminKeyCleared": "Clé d'administrateur effacée.",
     "remoteAdminKeyHint": "Collez une clé publique d'administrateur à partir des paramètres de sécurité de ce nœud (base64, base64 :… ou hexadécimal de 64 caractères). Enregistrez-le ici, puis sélectionnez le nœud dans la liste déroulante Configurer sur Radio/Sécurité/Modules.",
-    "remoteAdminKeyInvalid": "Saisissez une clé publique admin valide (base64, base64 :… ou hexadécimale de 64 caractères)."
+    "remoteAdminKeyInvalid": "Saisissez une clé publique admin valide (base64, base64 :… ou hexadécimale de 64 caractères).",
+    "configureRemotelyHint": "Ouvre les paramètres radio pour ce nœud sur le maillage (nécessite une radio locale et une clé d'administration enregistrée)."
   },
   "firmwareStatus": {
     "checking": "Vérification de la version du firmware...",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Passer en local",
     "refresh": "Renouvellement",
     "loading": "Chargement de la configuration à distance…",
-    "requiresLocalRadio": "Connectez une radio Meshtastic locale pour utiliser l'administration à distance."
+    "requiresLocalRadio": "Connectez une radio Meshtastic locale pour utiliser l'administration à distance.",
+    "sessionActive": "Session d'administration active",
+    "sessionStale": "Session d'administration obsolète — actualiser avant de modifier les paramètres",
+    "sessionNone": "Session d'administration non établie — chargement ou connexion de la radio locale",
+    "establishingSession": "Établissement de la session d'administration…"
   },
   "remoteAdmin": {
     "errors": {

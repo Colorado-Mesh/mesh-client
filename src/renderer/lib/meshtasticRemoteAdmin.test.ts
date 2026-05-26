@@ -14,6 +14,7 @@ import {
   REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS,
   REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS,
   REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS,
+  REMOTE_ADMIN_SESSION_ACTIVE_MS,
   REMOTE_ADMIN_SESSION_TTL_MS,
   RemoteAdminSessionStore,
   remoteConfigLoadingWatchdogMsForRoute,
@@ -59,6 +60,19 @@ describe('RemoteAdminSessionStore', () => {
     const store = new RemoteAdminSessionStore();
     store.set(1, new Uint8Array(4));
     expect(store.get(1)).toBeUndefined();
+  });
+
+  it('reports active vs stale session status', () => {
+    vi.useFakeTimers();
+    const store = new RemoteAdminSessionStore();
+    const now = Date.now();
+    store.set(1, new Uint8Array(8).fill(1));
+    expect(store.getStatus(1, now)).toBe('active');
+    vi.advanceTimersByTime(REMOTE_ADMIN_SESSION_ACTIVE_MS + 1);
+    expect(store.getStatus(1)).toBe('stale');
+    vi.advanceTimersByTime(REMOTE_ADMIN_SESSION_TTL_MS);
+    expect(store.getStatus(1)).toBe('none');
+    vi.useRealTimers();
   });
 });
 
@@ -1140,6 +1154,54 @@ describe('MeshtasticRemoteAdminClient', () => {
     );
 
     await expect(promise).rejects.toThrow('remoteAdmin.errors.configResponseUnexpected');
+  });
+
+  it('ensureSessionKey bootstraps via getDeviceMetadata when no passkey is cached', async () => {
+    const dest = 0x200;
+    const promise = client.ensureSessionKey(dest);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(writeToRadioWithoutQueue).toHaveBeenCalledTimes(1);
+    const written = vi.mocked(writeToRadioWithoutQueue).mock.calls[0][1];
+    const decoded = fromBinary(Mesh.ToRadioSchema, written) as {
+      payloadVariant?: {
+        case?: string;
+        value?: {
+          payloadVariant?: { case?: string; value?: { payload?: Uint8Array } };
+        };
+      };
+    };
+    const adminPayload = decoded.payloadVariant?.value?.payloadVariant?.value?.payload;
+    const adminMsg = fromBinary(Admin.AdminMessageSchema, adminPayload!) as {
+      payloadVariant?: { case?: string };
+    };
+    expect(adminMsg.payloadVariant?.case).toBe('getDeviceMetadataRequest');
+
+    const packetId = 555;
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        id: packetId,
+        from: dest,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                sessionPasskey: new Uint8Array(8).fill(3),
+                payloadVariant: { case: 'getDeviceMetadataResponse', value: {} as never },
+              }),
+            ),
+            requestId: 0,
+          },
+        },
+      }) as never,
+    );
+
+    await promise;
+    expect(client.sessionStore.get(dest)).toHaveLength(8);
+    await client.ensureSessionKey(dest);
+    expect(writeToRadioWithoutQueue).toHaveBeenCalledTimes(1);
   });
 });
 

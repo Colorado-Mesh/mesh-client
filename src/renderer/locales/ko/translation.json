@@ -489,7 +489,8 @@
     },
     "channelLoading": "로드 중…",
     "channelLoadFailed": "불러오기 실패",
-    "retryRemoteChannels": "채널 불러오기 재시도"
+    "retryRemoteChannels": "채널 불러오기 재시도",
+    "resetNodeDbPreserveFavorites": "장치에 즐겨찾는 노드 유지"
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "이 노드에 대한 관리자 키가 저장되었습니다.",
     "remoteAdminKeyCleared": "관리자 키가 지워졌습니다.",
     "remoteAdminKeyHint": "이 노드의 보안 설정 (base64, base64: … 또는 64자 16진수) 에서 관리자 공개 키를 붙여넣습니다. 여기에 저장한 다음 라디오/보안/모듈의 구성 드롭다운에서 노드를 선택합니다.",
-    "remoteAdminKeyInvalid": "유효한 관리자 공개 키 (base64, base64: … 또는 64자 16진수) 를 입력합니다."
+    "remoteAdminKeyInvalid": "유효한 관리자 공개 키 (base64, base64: … 또는 64자 16진수) 를 입력합니다.",
+    "configureRemotelyHint": "메시를 통해 이 노드에 대한 라디오 설정을 엽니다 (로컬 라디오 및 저장된 관리자 키 필요)."
   },
   "firmwareStatus": {
     "checking": "펌웨어 버전 확인 중",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "로컬로 전환",
     "refresh": "새로 고침",
     "loading": "원격 구성 로드 중...",
-    "requiresLocalRadio": "원격 관리를 사용하려면 로컬 Meshtastic 라디오를 연결하십시오."
+    "requiresLocalRadio": "원격 관리를 사용하려면 로컬 Meshtastic 라디오를 연결하십시오.",
+    "sessionActive": "관리자 세션 활성",
+    "sessionStale": "관리자 세션이 오래됨 — 설정을 변경하기 전에 새로 고침",
+    "sessionNone": "관리자 세션이 설정되지 않음 — 로컬 라디오 로드 또는 연결",
+    "establishingSession": "관리자 세션 설정 중..."
   },
   "remoteAdmin": {
     "errors": {

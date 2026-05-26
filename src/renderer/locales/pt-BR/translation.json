@@ -489,7 +489,8 @@
     },
     "channelLoading": "Carregando…",
     "channelLoadFailed": "Carregamento falhou",
-    "retryRemoteChannels": "Tentar carregar novamente os canais"
+    "retryRemoteChannels": "Tentar carregar novamente os canais",
+    "resetNodeDbPreserveFavorites": "Preservar os nós favoritos no dispositivo"
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneração de chave solicitada. O dispositivo gerará novas chaves.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "Chave de administrador salva para este nó.",
     "remoteAdminKeyCleared": "Chave de administrador apagada.",
     "remoteAdminKeyHint": "Cole uma chave pública de administrador nas configurações de segurança deste nó (base64, base64:… ou hexadecimal de 64 caracteres). Salve-o aqui e selecione o nó no menu suspenso Configurar em Rádio/Segurança/Módulos.",
-    "remoteAdminKeyInvalid": "Insira uma chave pública de administrador válida (base64, base64:… ou hexadecimal de 64 caracteres)."
+    "remoteAdminKeyInvalid": "Insira uma chave pública de administrador válida (base64, base64:… ou hexadecimal de 64 caracteres).",
+    "configureRemotelyHint": "Abre as configurações de rádio para este nó sobre a malha (requer rádio local e chave de administração salva)."
   },
   "firmwareStatus": {
     "checking": "Verificando a versão do firmware",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Mudar para Local",
     "refresh": "Atualizar",
     "loading": "Carregando configuração remota…",
-    "requiresLocalRadio": "Conecte um rádio Meshtastic local para usar a administração remota."
+    "requiresLocalRadio": "Conecte um rádio Meshtastic local para usar a administração remota.",
+    "sessionActive": "Sessão de administrador ativa",
+    "sessionStale": "Sessão de administração obsoleta — atualizar antes de alterar as configurações",
+    "sessionNone": "Sessão administrativa não estabelecida — carregando ou conectando o rádio local",
+    "establishingSession": "Estabelecendo sessão de administrador..."
   },
   "remoteAdmin": {
     "errors": {

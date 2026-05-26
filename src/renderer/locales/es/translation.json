@@ -489,7 +489,8 @@
     },
     "channelLoading": "Cargando…",
     "channelLoadFailed": "Fallo al cargar",
-    "retryRemoteChannels": "Reintentar cargar los canales"
+    "retryRemoteChannels": "Reintentar cargar los canales",
+    "resetNodeDbPreserveFavorites": "Conservar los nodos favoritos en el dispositivo"
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneración de claves solicitada. El dispositivo generará nuevas claves.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "Clave de administrador guardada para este nodo.",
     "remoteAdminKeyCleared": "Clave de administrador borrada.",
     "remoteAdminKeyHint": "Pegue una clave pública de administración desde la configuración de seguridad de este nodo (base64, base64:… o hexadecimal de 64 caracteres). Guárdelo aquí, luego seleccione el nodo en el menú desplegable Configurar en Radio/Seguridad/Módulos.",
-    "remoteAdminKeyInvalid": "Introduzca una clave pública de administrador válida (base64, base64:… o hexadecimal de 64 caracteres)."
+    "remoteAdminKeyInvalid": "Introduzca una clave pública de administrador válida (base64, base64:… o hexadecimal de 64 caracteres).",
+    "configureRemotelyHint": "Abre la configuración de radio para este nodo a través de la malla (requiere radio local y la clave de administrador guardada)."
   },
   "firmwareStatus": {
     "checking": "Comprobación de la versión del firmware...",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Cambiar a local",
     "refresh": "Actualizar",
     "loading": "Cargando configuración remota...",
-    "requiresLocalRadio": "Conecte una radio Meshtastic local para utilizar la administración remota."
+    "requiresLocalRadio": "Conecte una radio Meshtastic local para utilizar la administración remota.",
+    "sessionActive": "Sesión de administrador activa",
+    "sessionStale": "Sesión de administrador obsoleta: actualice antes de cambiar la configuración",
+    "sessionNone": "Sesión de administrador no establecida — cargando o conectando la radio local",
+    "establishingSession": "Estableciendo sesión de administrador..."
   },
   "remoteAdmin": {
     "errors": {

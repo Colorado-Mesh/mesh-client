@@ -18,6 +18,7 @@ import {
   fetchMeshtasticRemoteConfigSnapshot,
   fetchMeshtasticRemoteConfigSnapshotDeferred,
   fetchMeshtasticRemoteConfigSnapshotEssential,
+  fetchMeshtasticRemoteConfigSnapshotRadio,
   mergeMeshtasticRemoteConfigSnapshots,
   remoteConfigChannelRetryRoute,
 } from './meshtasticRemoteAdminSnapshot';
@@ -156,9 +157,9 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
     await fetchMeshtasticRemoteConfigSnapshot(clientWithChannelRetry(client), 0x200);
 
     expect(maxInFlight).toBe(1);
-    expect(order[0]).toBe('metadata');
-    expect(order.indexOf('metadata')).toBeLessThan(order.indexOf('ensureSessionKey'));
-    expect(order.indexOf('ensureSessionKey')).toBeLessThan(
+    expect(order[0]).toBe('ensureSessionKey');
+    expect(order.indexOf('ensureSessionKey')).toBeLessThan(order.indexOf('metadata'));
+    expect(order.indexOf('metadata')).toBeLessThan(
       order.findIndex((e) => e.startsWith('configRetry:')),
     );
   });
@@ -423,6 +424,38 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
     );
   });
 
+  it('fetchMeshtasticRemoteConfigSnapshotRadio bootstraps session before channel 0', async () => {
+    const order: string[] = [];
+    const client = {
+      getRemoteMetadata: vi.fn(() => {
+        order.push('metadata');
+        return Promise.resolve({ firmwareVersion: '2.5.0' });
+      }),
+      ensureSessionKey: vi.fn(() => {
+        order.push('ensureSessionKey');
+        return Promise.resolve();
+      }),
+      getRemoteConfigWithRetry: vi
+        .fn()
+        .mockResolvedValue({ payloadVariant: { case: 'lora', value: { region: 1 } } }),
+      getRemoteChannel: vi.fn((_dest: number, index: number) => {
+        order.push(`channel:${index}`);
+        return Promise.resolve({
+          index,
+          role: index === 0 ? 1 : 0,
+          settings: { name: 'Primary', psk: new Uint8Array([1]) },
+        });
+      }),
+    } as unknown as MeshtasticRemoteAdminClient;
+
+    await fetchMeshtasticRemoteConfigSnapshotRadio(clientWithChannelRetry(client), 0x200);
+
+    expect(order.indexOf('ensureSessionKey')).toBeGreaterThan(-1);
+    expect(order.indexOf('channel:0')).toBeGreaterThan(-1);
+    expect(order.indexOf('ensureSessionKey')).toBeLessThan(order.indexOf('channel:0'));
+    expect(client.getRemoteMetadata).toHaveBeenCalled();
+  });
+
   it('fetches channel 0 before essential config types', async () => {
     const order: string[] = [];
     const client = {
@@ -516,6 +549,7 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
       return Promise.reject(new Error('should not fetch channel index ' + String(index)));
     });
     const client = {
+      ensureSessionKey: vi.fn().mockResolvedValue(undefined),
       getRemoteChannel,
     } as unknown as MeshtasticRemoteAdminClient;
 
@@ -523,6 +557,7 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
       clientWithChannelRetry(client),
       0x200,
     );
+    expect(client.ensureSessionKey).toHaveBeenCalledWith(0x200);
     expect(getRemoteChannel).toHaveBeenCalledTimes(3);
     expect(getRemoteChannel).toHaveBeenNthCalledWith(1, 0x200, 1, undefined);
     expect(getRemoteChannel).toHaveBeenNthCalledWith(2, 0x200, 2, undefined);
@@ -559,6 +594,7 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
       return Promise.reject(new Error('should not fetch channel index ' + String(index)));
     });
     const client = {
+      ensureSessionKey: vi.fn().mockResolvedValue(undefined),
       getRemoteChannel,
       getRemoteChannelWithRetry: (dest: number, idx: number) => getRemoteChannel(dest, idx),
     } as unknown as MeshtasticRemoteAdminClient;
@@ -684,6 +720,7 @@ describe('fetchMeshtasticRemoteConfigSnapshotDeferred', () => {
 
   it('fetches security separately from the initial Channels route', async () => {
     const client = {
+      ensureSessionKey: vi.fn().mockResolvedValue(undefined),
       getRemoteConfig: vi.fn().mockResolvedValue({
         payloadVariant: {
           case: 'security',
@@ -693,6 +730,7 @@ describe('fetchMeshtasticRemoteConfigSnapshotDeferred', () => {
     } as unknown as MeshtasticRemoteAdminClient;
 
     const partial = await fetchMeshtasticRemoteConfigSecurity(client, 0x200);
+    expect(client.ensureSessionKey).toHaveBeenCalledWith(0x200);
     expect(client.getRemoteConfig).toHaveBeenCalledWith(
       0x200,
       Admin.AdminMessage_ConfigType.SECURITY_CONFIG,

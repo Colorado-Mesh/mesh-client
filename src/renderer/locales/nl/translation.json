@@ -489,7 +489,8 @@
     },
     "channelLoading": "Laden…",
     "channelLoadFailed": "Laden mislukt",
-    "retryRemoteChannels": "Opnieuw proberen kanalen te laden"
+    "retryRemoteChannels": "Opnieuw proberen kanalen te laden",
+    "resetNodeDbPreserveFavorites": "Favoriete knooppunten op het apparaat behouden"
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "Beheersleutel opgeslagen voor dit knooppunt.",
     "remoteAdminKeyCleared": "Admin-sleutel gewist.",
     "remoteAdminKeyHint": "Plak een openbare admin-sleutel vanuit de beveiligingsinstellingen van dit knooppunt (base64, base64:… of hex van 64 tekens). Sla het hier op en selecteer vervolgens het knooppunt in de vervolgkeuzelijst Configureren op Radio/Beveiliging/Modules.",
-    "remoteAdminKeyInvalid": "Voer een geldige openbare admin-sleutel in (base64, base64:… of hex van 64 tekens)."
+    "remoteAdminKeyInvalid": "Voer een geldige openbare admin-sleutel in (base64, base64:… of hex van 64 tekens).",
+    "configureRemotelyHint": "Opent radio-instellingen voor dit knooppunt via de mesh (vereist lokale radio en opgeslagen admin-sleutel)."
   },
   "firmwareStatus": {
     "checking": "Firmwareversie controleren",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Overschakelen naar lokaal",
     "refresh": "Vernieuwen",
     "loading": "Configuratie op afstand laden...",
-    "requiresLocalRadio": "Sluit een lokale Meshtastic-radio aan om extern beheer te gebruiken."
+    "requiresLocalRadio": "Sluit een lokale Meshtastic-radio aan om extern beheer te gebruiken.",
+    "sessionActive": "Beheersessie actief",
+    "sessionStale": "Beheerderssessie verouderd — vernieuwen voordat u instellingen wijzigt",
+    "sessionNone": "Beheersessie niet ingesteld — lokale radio laden of verbinden",
+    "establishingSession": "Beheerderssessie wordt opgezet..."
   },
   "remoteAdmin": {
     "errors": {

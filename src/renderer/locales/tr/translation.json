@@ -489,7 +489,8 @@
     },
     "channelLoading": "Yükleniyor…",
     "channelLoadFailed": "Yükleme başarısız",
-    "retryRemoteChannels": "Kanalları yeniden yüklemeyi deneyin"
+    "retryRemoteChannels": "Kanalları yeniden yüklemeyi deneyin",
+    "resetNodeDbPreserveFavorites": "Cihazdaki favori düğümleri koru"
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "Bu düğüm için yönetici anahtarı kaydedildi.",
     "remoteAdminKeyCleared": "Yönetici anahtarı temizlendi.",
     "remoteAdminKeyHint": "Bu düğümün Güvenlik ayarlarından (base64, base64 :… veya 64 karakterli Hex) bir genel yönetici anahtarı yapıştırın. Buraya kaydedin, ardından Radyo/Güvenlik/Modüller'deki Yapılandır açılır menüsünden düğümü seçin.",
-    "remoteAdminKeyInvalid": "Geçerli bir yönetici ortak anahtarı girin (base64, base64 :… veya 64 karakterli hex)."
+    "remoteAdminKeyInvalid": "Geçerli bir yönetici ortak anahtarı girin (base64, base64 :… veya 64 karakterli hex).",
+    "configureRemotelyHint": "Bu düğüm için Radyo ayarlarını mesh üzerinden açar (yerel radyo ve kayıtlı yönetici anahtarı gerektirir)."
   },
   "firmwareStatus": {
     "checking": "Ürün yazılımı sürümünün kontrol edilmesi",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Yerel ağa geç",
     "refresh": "Yenile",
     "loading": "Uzaktan yapılandırma yükleniyor…",
-    "requiresLocalRadio": "Uzaktan yönetimi kullanmak için yerel bir Meshtastic telsiz bağlayın."
+    "requiresLocalRadio": "Uzaktan yönetimi kullanmak için yerel bir Meshtastic telsiz bağlayın.",
+    "sessionActive": "Yönetici oturumu etkin",
+    "sessionStale": "Yönetici oturumu eski — ayarları değiştirmeden önce yenileyin",
+    "sessionNone": "Yönetici oturumu kurulmadı — yerel radyo yükleniyor veya bağlanıyor",
+    "establishingSession": "Yönetici oturumu oluşturuluyor…"
   },
   "remoteAdmin": {
     "errors": {

@@ -489,7 +489,8 @@
     },
     "channelLoading": "Načítání…",
     "channelLoadFailed": "Načítání selhalo",
-    "retryRemoteChannels": "Zkusit načítání kanálů znovu"
+    "retryRemoteChannels": "Zkusit načítání kanálů znovu",
+    "resetNodeDbPreserveFavorites": "Zachovat oblíbené uzly v zařízení"
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "Admin klíč uložen pro tento uzel.",
     "remoteAdminKeyCleared": "Klíč správce byl vymazán.",
     "remoteAdminKeyHint": "Vložte veřejný klíč správce z nastavení zabezpečení tohoto uzlu (base64, base64:… nebo 64znakový hexadecimál). Uložte jej sem a poté vyberte uzel v rozevíracím seznamu Konfigurovat v části Rádio/Zabezpečení/Moduly.",
-    "remoteAdminKeyInvalid": "Zadejte platný veřejný klíč správce (base64, base64:… nebo 64místný hexadecimální)."
+    "remoteAdminKeyInvalid": "Zadejte platný veřejný klíč správce (base64, base64:… nebo 64místný hexadecimální).",
+    "configureRemotelyHint": "Otevře nastavení rádia pro tento uzel přes síť (vyžaduje místní rádio a uložený klíč správce)."
   },
   "firmwareStatus": {
     "checking": "Kontrola verze firmwaru",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Přepnout na místní",
     "refresh": "Obnovit",
     "loading": "Načítání vzdálené konfigurace...",
-    "requiresLocalRadio": "Připojte místní rádio Meshtastic a použijte vzdálenou správu."
+    "requiresLocalRadio": "Připojte místní rádio Meshtastic a použijte vzdálenou správu.",
+    "sessionActive": "Administrátorská relace aktivní",
+    "sessionStale": "Zastaralá relace správce — obnovte před změnou nastavení",
+    "sessionNone": "Administrativní relace nebyla vytvořena — načítání nebo připojení místního rádia",
+    "establishingSession": "Vytváření relace administrátora..."
   },
   "remoteAdmin": {
     "errors": {

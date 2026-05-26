@@ -489,7 +489,8 @@
     },
     "channelLoading": "Caricamento in corso…",
     "channelLoadFailed": "Caricamento fallito",
-    "retryRemoteChannels": "Riprova a caricare i canali"
+    "retryRemoteChannels": "Riprova a caricare i canali",
+    "resetNodeDbPreserveFavorites": "Mantieni i nodi preferiti sul dispositivo"
   },
   "securityPanel": {
     "keyRegenRequested": "Rigenerazione chiave richiesta. Il dispositivo genererà nuove chiavi.",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "Chiave di amministrazione salvata per questo nodo.",
     "remoteAdminKeyCleared": "Chiave di amministrazione cancellata.",
     "remoteAdminKeyHint": "Incolla una chiave pubblica di amministrazione dalle impostazioni di sicurezza di questo nodo (base64, base64:… o esadecimale di 64 caratteri). Salvalo qui, quindi seleziona il nodo nel menu a discesa Configura su Radio/Sicurezza/Moduli.",
-    "remoteAdminKeyInvalid": "Immettere una chiave pubblica di amministrazione valida (base64, base64:… o esadecimale di 64 caratteri)."
+    "remoteAdminKeyInvalid": "Immettere una chiave pubblica di amministrazione valida (base64, base64:… o esadecimale di 64 caratteri).",
+    "configureRemotelyHint": "Apre le impostazioni radio per questo nodo sulla mesh (richiede la radio locale e la chiave di amministrazione salvata)."
   },
   "firmwareStatus": {
     "checking": "Controllo della versione del firmware",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Passa a locale",
     "refresh": "Aggiorna",
     "loading": "Caricamento della configurazione remota in corso...",
-    "requiresLocalRadio": "Collegare una radio Meshtastic locale per utilizzare l'amministrazione remota."
+    "requiresLocalRadio": "Collegare una radio Meshtastic locale per utilizzare l'amministrazione remota.",
+    "sessionActive": "Sessione amministratore attiva",
+    "sessionStale": "Sessione di amministrazione obsoleta — aggiorna prima di modificare le impostazioni",
+    "sessionNone": "Sessione di amministrazione non stabilita — caricamento o connessione della radio locale",
+    "establishingSession": "Creazione della sessione di amministrazione in corso..."
   },
   "remoteAdmin": {
     "errors": {

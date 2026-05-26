@@ -84,6 +84,10 @@ interface NodeDetailModalProps {
   remoteAdminKey?: string;
   /** Persist admin key for remote admin (base64, 32-byte public key). */
   onSaveRemoteAdminKey?: (nodeNum: number, adminKeyBase64: string | null) => Promise<void>;
+  /** Open Radio tab with this node as remote configure target. */
+  onConfigureRemotely?: (nodeNum: number) => void;
+  /** Saved admin key for this node (enables configure remotely). */
+  hasRemoteAdminKey?: boolean;
 }
 
 function WatchToggleButton({ nodeId }: { nodeId: number }) {
@@ -139,6 +143,8 @@ export default function NodeDetailModal({
   onShowOnMap,
   remoteAdminKey,
   onSaveRemoteAdminKey,
+  onConfigureRemotely,
+  hasRemoteAdminKey,
 }: NodeDetailModalProps) {
   const { t } = useTranslation();
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
@@ -1307,6 +1313,26 @@ export default function NodeDetailModal({
                       {adminKeyStatus}
                     </p>
                   )}
+                  {onConfigureRemotely &&
+                    isConnected &&
+                    node.public_key_hex?.length === 64 &&
+                    hasRemoteAdminKey && (
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          aria-label={t('nodeDetailModal.configureRemotely')}
+                          className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                          onClick={() => {
+                            onConfigureRemotely(node.node_id);
+                          }}
+                        >
+                          {t('nodeDetailModal.configureRemotely')}
+                        </button>
+                        <p className="text-muted mt-1 text-xs">
+                          {t('nodeDetailModal.configureRemotelyHint')}
+                        </p>
+                      </div>
+                    )}
                 </div>
               )}
             </div>

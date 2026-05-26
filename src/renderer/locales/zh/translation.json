@@ -489,7 +489,8 @@
     },
     "channelLoading": "加载中…",
     "channelLoadFailed": "加载失败",
-    "retryRemoteChannels": "重试加载频道"
+    "retryRemoteChannels": "重试加载频道",
+    "resetNodeDbPreserveFavorites": "保留设备上的常用节点"
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",
@@ -1703,7 +1704,8 @@
     "remoteAdminKeySaved": "已为此节点保存管理密钥。",
     "remoteAdminKeyCleared": "管理密钥已清除。",
     "remoteAdminKeyHint": "从此节点的安全设置（ base64、base64: …或64个字符的十六进制）粘贴管理公钥。将其保存在此处，然后在Radio/Security/Modules的Configure下拉列表中选择节点。",
-    "remoteAdminKeyInvalid": "输入有效的管理员公钥（ base64、base64: …或64个字符的十六进制）。"
+    "remoteAdminKeyInvalid": "输入有效的管理员公钥（ base64、base64: …或64个字符的十六进制）。",
+    "configureRemotelyHint": "在网格上打开此节点的无线电设置（需要本地无线电和已保存的管理密钥）。"
   },
   "firmwareStatus": {
     "checking": "正在检查固件版本",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "切换到本地",
     "refresh": "重新整理",
     "loading": "正在加载远程配置…",
-    "requiresLocalRadio": "连接本地Meshtastic收音机以使用远程管理。"
+    "requiresLocalRadio": "连接本地Meshtastic收音机以使用远程管理。",
+    "sessionActive": "管理会话处于活动状态",
+    "sessionStale": "管理会话已过期—在更改设置之前刷新",
+    "sessionNone": "未建立管理会话—正在加载或连接本地无线电",
+    "establishingSession": "正在建立管理会话…"
   },
   "remoteAdmin": {
     "errors": {
