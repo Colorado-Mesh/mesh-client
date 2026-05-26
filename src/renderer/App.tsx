@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
+import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 
@@ -908,7 +909,8 @@ export default function App() {
     : undefined;
   const handleRetryRemoteChannelsTail = useCallback(() => {
     if (device.configureTargetNodeNum == null) return;
-    void device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum, 'channelsTail', {
+    const route = remoteConfigChannelRetryRoute(device.remoteConfigSnapshot ?? {});
+    void device.refreshRemoteConfigSnapshot(device.configureTargetNodeNum, route, {
       force: true,
     });
   }, [device]);
@@ -922,6 +924,11 @@ export default function App() {
           onConfigureTargetChange={device.setConfigureTargetNodeNum}
           remoteAdminStatus={device.remoteAdminStatus}
           remoteAdminError={device.remoteAdminError}
+          remoteAdminSessionStatus={
+            device.configureTargetNodeNum != null
+              ? device.getRemoteAdminSessionStatus(device.configureTargetNodeNum)
+              : 'none'
+          }
           isLocalRadioConnected={hasLocalMeshtasticRadio}
           getNodeName={device.getNodeName}
           onRefresh={
@@ -2707,6 +2714,25 @@ export default function App() {
             onSaveRemoteAdminKey={
               detailModalProtocol === 'meshtastic' && hasLocalMeshtasticRadio
                 ? device.setRemoteAdminKeyForNode
+                : undefined
+            }
+            hasRemoteAdminKey={
+              selectedNode != null
+                ? Boolean(device.getRemoteAdminKeyForNode(selectedNode.node_id))
+                : false
+            }
+            onConfigureRemotely={
+              detailModalProtocol === 'meshtastic' && hasLocalMeshtasticRadio
+                ? (nodeNum) => {
+                    device.setConfigureTargetNodeNum(nodeNum);
+                    setSelectedNodeId(null);
+                    const radioTabIndex = meshtasticTabs.tabIndexToPanelIndex.findIndex(
+                      (panelIndex) => panelIndex === TAB_SLOT_IDS.indexOf('Radio'),
+                    );
+                    if (radioTabIndex >= 0) {
+                      setActiveTab(radioTabIndex);
+                    }
+                  }
                 : undefined
             }
             isConnected={isOperational}

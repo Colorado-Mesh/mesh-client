@@ -394,6 +394,7 @@
     "resetNodeDbName": "Reset NodeDB",
     "resetNodeDbTitle": "Reset Node Database",
     "resetNodeDbMessage": "This will clear the device's internal node database. The device will re-discover nodes over time.",
+    "resetNodeDbPreserveFavorites": "Preserve favorite nodes on the device",
     "resetNodeDbConfirm": "Reset NodeDB",
     "resetNodeDbButton": "Reset NodeDB",
     "shutdownName": "Shutdown",
@@ -504,7 +505,11 @@
     "switchToLocal": "Switch to local",
     "refresh": "Refresh",
     "loading": "Loading remote configuration…",
-    "requiresLocalRadio": "Connect a local Meshtastic radio to use remote administration."
+    "requiresLocalRadio": "Connect a local Meshtastic radio to use remote administration.",
+    "sessionActive": "Admin session active",
+    "sessionStale": "Admin session stale — refresh before changing settings",
+    "sessionNone": "Admin session not established — loading or connect local radio",
+    "establishingSession": "Establishing admin session…"
   },
   "remoteAdmin": {
     "errors": {
@@ -1677,7 +1682,8 @@
     "requestPosition": "📍 Request Position",
     "configureRemotely": "Configure node remotely",
     "remoteAdminKeyTitle": "Remote admin key",
-    "remoteAdminKeyHint": "Paste an admin public key from this node's Security settings (base64, base64:…, or 64-character hex). Save it here, then select the node in the Configure dropdown on Radio/Security/Modules.",
+    "remoteAdminKeyHint": "After you add your local radio's public key (Radio → Security → Copy) to this remote node's Admin keys, paste that same key here as confirmation. Then use Configure on the Radio tab.",
+    "configureRemotelyHint": "Opens Radio settings for this node over the mesh (requires local radio and saved admin key).",
     "remoteAdminKeyLabel": "Admin key",
     "remoteAdminKeyPlaceholder": "Base64-encoded 32-byte public key",
     "remoteAdminKeyInvalid": "Enter a valid admin public key (base64, base64:…, or 64-character hex).",

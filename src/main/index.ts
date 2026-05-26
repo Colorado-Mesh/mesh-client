@@ -5059,7 +5059,8 @@ ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
       }
     });
     socket.on('data', (data) => {
-      mainWindow?.webContents.send('meshcore:tcp-data', new Uint8Array(data));
+      const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      mainWindow?.webContents.send('meshcore:tcp-data', new Uint8Array(chunk));
     });
     socket.on('close', (hadError) => {
       console.debug('[IPC] meshcore:tcp socket closed', hadError ? '(hadError)' : '(clean)');

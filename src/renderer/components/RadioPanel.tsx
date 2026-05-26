@@ -69,7 +69,7 @@ interface Props {
   onReboot: (seconds: number) => Promise<void>;
   onShutdown: (seconds: number) => Promise<void>;
   onFactoryReset: () => Promise<void>;
-  onResetNodeDb: () => Promise<void>;
+  onResetNodeDb: (preserveFavorites?: boolean) => Promise<void>;
   ourPosition?: OurPosition | null;
   onSendPositionToDevice?: (lat: number, lon: number, alt?: number) => Promise<void>;
   deviceOwner?: { longName: string; shortName: string; isLicensed: boolean } | null;
@@ -474,6 +474,8 @@ function ConfirmModal({
   danger,
   onConfirm,
   onCancel,
+  preserveFavorites,
+  onPreserveFavoritesChange,
 }: {
   title: string;
   message: string;
@@ -481,6 +483,8 @@ function ConfirmModal({
   danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  preserveFavorites?: boolean;
+  onPreserveFavoritesChange?: (value: boolean) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -494,6 +498,20 @@ function ConfirmModal({
       <div className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl">
         <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
         <p className="text-muted text-sm leading-relaxed">{message}</p>
+        {onPreserveFavoritesChange != null && (
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={preserveFavorites ?? false}
+              onChange={(e) => {
+                onPreserveFavoritesChange(e.target.checked);
+              }}
+              className="accent-brand-green"
+              aria-label={t('radioPanel.resetNodeDbPreserveFavorites')}
+            />
+            {t('radioPanel.resetNodeDbPreserveFavorites')}
+          </label>
+        )}
         <div className="flex gap-3 pt-2">
           <button
             onClick={onCancel}
@@ -567,6 +585,7 @@ interface PendingAction {
   message: string;
   confirmLabel: string;
   danger?: boolean;
+  showPreserveFavorites?: boolean;
   action: () => Promise<void>;
 }
 
@@ -725,6 +744,7 @@ export default function RadioPanel({
 
   // ─── Device command confirmation ──────────────────────────────
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [nodeDbPreserveFavorites, setNodeDbPreserveFavorites] = useState(false);
   const { addToast } = useToast();
   const { t } = useTranslation();
   const deviceRoleOptions = useMemo(
@@ -2028,12 +2048,14 @@ export default function RadioPanel({
               <button
                 type="button"
                 onClick={() => {
+                  setNodeDbPreserveFavorites(false);
                   executeWithConfirmation({
                     name: t('radioPanel.resetNodeDbName'),
                     title: t('radioPanel.resetNodeDbTitle'),
                     message: t('radioPanel.resetNodeDbMessage'),
                     confirmLabel: t('radioPanel.resetNodeDbConfirm'),
-                    action: () => onResetNodeDb(),
+                    showPreserveFavorites: true,
+                    action: () => onResetNodeDb(nodeDbPreserveFavorites),
                   });
                 }}
                 disabled={!isConnected}
@@ -2116,9 +2138,16 @@ export default function RadioPanel({
           message={pendingAction.message}
           confirmLabel={pendingAction.confirmLabel}
           danger={pendingAction.danger}
+          preserveFavorites={
+            pendingAction.showPreserveFavorites ? nodeDbPreserveFavorites : undefined
+          }
+          onPreserveFavoritesChange={
+            pendingAction.showPreserveFavorites ? setNodeDbPreserveFavorites : undefined
+          }
           onConfirm={handleConfirm}
           onCancel={() => {
             setPendingAction(null);
+            setNodeDbPreserveFavorites(false);
           }}
         />
       )}

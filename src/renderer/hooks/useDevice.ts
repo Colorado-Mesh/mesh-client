@@ -30,6 +30,7 @@ import {
   loadPersistedLastRfSelfNodeId,
   mqttOnlyIdentitySource,
   persistLastRfSelfNodeId,
+  resolveMeshtasticOutboundFromNodeId,
   resolveMqttOnlyFromNodeId,
 } from '@/renderer/lib/meshtasticMqttIdentity';
 import {
@@ -113,6 +114,7 @@ import {
   meshtasticNodePublicKeyBytesFromHex,
   MeshtasticRemoteAdminClient,
   normalizeRemoteAdminError,
+  type RemoteAdminSessionStatus,
   remoteConfigLoadingWatchdogMsForRoute,
 } from '../lib/meshtasticRemoteAdmin';
 import {
@@ -126,7 +128,7 @@ import {
   fetchMeshtasticRemoteConfigModules,
   fetchMeshtasticRemoteConfigOwner,
   fetchMeshtasticRemoteConfigSecurity,
-  fetchMeshtasticRemoteConfigSnapshotEssential,
+  fetchMeshtasticRemoteConfigSnapshotRadio,
   mergeMeshtasticRemoteConfigSnapshots,
 } from '../lib/meshtasticRemoteAdminSnapshot';
 import { meshtasticComputedRfHopsAway } from '../lib/meshtasticRfHops';
@@ -3567,10 +3569,12 @@ export function useDevice() {
       const hasMqtt = mqttStatusRef.current === 'connected';
       if (!deviceRef.current && !hasMqtt) throw new Error('Not connected');
 
-      const from =
-        deviceRef.current && myNodeNumRef.current > 0
-          ? myNodeNumRef.current
-          : resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualNodeIdRef.current);
+      const from = resolveMeshtasticOutboundFromNodeId({
+        hasDevice: !!deviceRef.current,
+        myNodeNum: myNodeNumRef.current,
+        lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
+        virtualNodeId: virtualNodeIdRef.current,
+      });
       if (!deviceRef.current && myNodeNumRef.current !== from) {
         myNodeNumRef.current = from;
         setState((prev) => ({ ...prev, myNodeNum: from }));
@@ -3739,7 +3743,7 @@ export function useDevice() {
 
           let routeResult: Partial<MeshtasticRemoteConfigSnapshot>;
           if (route === 'radio') {
-            routeResult = await fetchMeshtasticRemoteConfigSnapshotEssential(client, destNodeNum);
+            routeResult = await fetchMeshtasticRemoteConfigSnapshotRadio(client, destNodeNum);
           } else if (route === 'channelsTail') {
             routeResult = await fetchMeshtasticRemoteConfigChannelsTail(client, destNodeNum);
           } else if (route === 'owner') {
@@ -4190,16 +4194,19 @@ export function useDevice() {
     await deviceRef.current.factoryResetDevice();
   }, [runRemoteAdminOp]);
 
-  const resetNodeDb = useCallback(async () => {
-    const dest = configureTargetNodeNumRef.current;
-    const client = remoteAdminClientRef.current;
-    if (dest != null && client) {
-      await runRemoteAdminOp(() => client.remoteResetNodeDb(dest));
-      return;
-    }
-    if (!deviceRef.current) return;
-    await deviceRef.current.resetNodes();
-  }, [runRemoteAdminOp]);
+  const resetNodeDb = useCallback(
+    async (preserveFavorites = false) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.remoteResetNodeDb(dest, preserveFavorites));
+        return;
+      }
+      if (!deviceRef.current) return;
+      await deviceRef.current.resetNodes();
+    },
+    [runRemoteAdminOp],
+  );
 
   const rebootOta = useCallback(async (delay = 2) => {
     if (!deviceRef.current) return;
@@ -4335,24 +4342,47 @@ export function useDevice() {
     [runRemoteAdminOp],
   );
 
-  const setCannedMessages = useCallback(async (messages: string[]) => {
-    if (!deviceRef.current) return;
-    await (deviceRef.current as any).setCannedMessages({ messages: messages.join('\n') });
-  }, []);
+  const setCannedMessages = useCallback(
+    async (messages: string[]) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.setRemoteCannedMessages(dest, messages.join('\n')));
+        return;
+      }
+      if (!deviceRef.current) return;
+      await (deviceRef.current as any).setCannedMessages({ messages: messages.join('\n') });
+    },
+    [runRemoteAdminOp],
+  );
 
   const [ringtone, setRingtoneState] = useState<string>('');
 
-  const setRingtone = useCallback(async (ringtoneStr: string) => {
-    if (!deviceRef.current) return;
-    const msg = create(Admin.AdminMessageSchema, {
-      payloadVariant: { case: 'setRingtoneMessage', value: ringtoneStr },
-    });
-    await (deviceRef.current as any).sendPacket(
-      toBinary(Admin.AdminMessageSchema, msg),
-      Portnums.PortNum.ADMIN_APP,
-      'self',
-    );
-    setRingtoneState(ringtoneStr);
+  const setRingtone = useCallback(
+    async (ringtoneStr: string) => {
+      const dest = configureTargetNodeNumRef.current;
+      const client = remoteAdminClientRef.current;
+      if (dest != null && client) {
+        await runRemoteAdminOp(() => client.setRemoteRingtone(dest, ringtoneStr));
+        setRingtoneState(ringtoneStr);
+        return;
+      }
+      if (!deviceRef.current) return;
+      const msg = create(Admin.AdminMessageSchema, {
+        payloadVariant: { case: 'setRingtoneMessage', value: ringtoneStr },
+      });
+      await (deviceRef.current as any).sendPacket(
+        toBinary(Admin.AdminMessageSchema, msg),
+        Portnums.PortNum.ADMIN_APP,
+        'self',
+      );
+      setRingtoneState(ringtoneStr);
+    },
+    [runRemoteAdminOp],
+  );
+
+  const getRemoteAdminSessionStatus = useCallback((nodeNum: number): RemoteAdminSessionStatus => {
+    return remoteAdminClientRef.current?.sessionStore.getStatus(nodeNum) ?? 'none';
   }, []);
 
   const requestPosition = useCallback(async (nodeNum: number) => {
@@ -4580,10 +4610,12 @@ export function useDevice() {
     (glyph: string, replyId: number, channel: number): Promise<void> => {
       const hasMqtt = mqttStatusRef.current === 'connected';
       if (!deviceRef.current && !hasMqtt) return Promise.reject(new Error('Not connected'));
-      const from =
-        deviceRef.current && myNodeNumRef.current > 0
-          ? myNodeNumRef.current
-          : resolveMqttOnlyFromNodeId(lastRfSelfNodeIdRef.current, virtualNodeIdRef.current);
+      const from = resolveMeshtasticOutboundFromNodeId({
+        hasDevice: !!deviceRef.current,
+        myNodeNum: myNodeNumRef.current,
+        lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
+        virtualNodeId: virtualNodeIdRef.current,
+      });
       if (!deviceRef.current && myNodeNumRef.current !== from) {
         myNodeNumRef.current = from;
         setState((prev) => ({ ...prev, myNodeNum: from }));
@@ -4791,6 +4823,7 @@ export function useDevice() {
     remoteAdminKeysByNode,
     getRemoteAdminKeyForNode,
     setRemoteAdminKeyForNode,
+    getRemoteAdminSessionStatus,
     configureTargetNodeNum,
     setConfigureTargetNodeNum,
     remoteAdminStatus,

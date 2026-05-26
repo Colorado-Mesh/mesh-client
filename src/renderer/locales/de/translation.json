@@ -489,7 +489,8 @@
     },
     "channelLoading": "Lädt…",
     "channelLoadFailed": "Laden fehlgeschlagen",
-    "retryRemoteChannels": "Kanäle erneut laden"
+    "retryRemoteChannels": "Kanäle erneut laden",
+    "resetNodeDbPreserveFavorites": "Bevorzugte Knoten auf dem Gerät beibehalten"
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",
@@ -1272,7 +1273,7 @@
     "errorCount_other": "{{count}} Fehler",
     "warningCount_one": "{{count}} Warnung",
     "warningCount_other": "{{count}} Warnhinweise",
-    "noIssues": "KEINE Probleme",
+    "noIssues": "keine Probleme",
     "thisNodePrefix": "Dieser Knoten",
     "severityErrors_one": "Fehler ({{count}})",
     "severityErrors_other": "Fehler ({{count}})",
@@ -1696,14 +1697,15 @@
     "configureRemotely": "Knoten aus der Ferne konfigurieren",
     "remoteAdminNoPkiKey": "Für diesen Knoten ist noch kein öffentlicher PKI-Schlüssel vorhanden — Remote-Admin funktioniert möglicherweise nicht, bis NodeInfo empfangen wird.",
     "remoteAdminKeyTitle": "Remote-Admin-Schlüssel",
-    "remoteAdminKeyLabel": "Administrator API Schlüssel",
+    "remoteAdminKeyLabel": "Admin-Schlüssel",
     "remoteAdminKeyPlaceholder": "Base64-kodierter öffentlicher 32-Byte-Schlüssel",
     "saveRemoteAdminKey": "Admin-Schlüssel speichern",
     "clearRemoteAdminKey": "Zurücksetzen",
     "remoteAdminKeySaved": "Admin-Schlüssel für diesen Knoten gespeichert.",
     "remoteAdminKeyCleared": "Admin-Schlüssel gelöscht.",
-    "remoteAdminKeyHint": "Fügen Sie einen öffentlichen Admin-Schlüssel aus den Sicherheitseinstellungen dieses Knotens ein (base64, base64:… oder 64-stelliges Hexadezimalzeichen). Speichern Sie es hier und wählen Sie dann den Knoten im Dropdown-Menü Konfigurieren auf Radio/Sicherheit/Module aus.",
-    "remoteAdminKeyInvalid": "Geben Sie einen gültigen öffentlichen Admin-Schlüssel ein (base64, base64:… oder 64-stelliges Hexadezimalzeichen)."
+    "remoteAdminKeyHint": "Nachdem Sie den öffentlichen Schlüssel Ihres lokalen Funkgeräts (Radio → Sicherheit → Kopieren) zu den Admin-Schlüsseln dieses Remote-Knotens hinzugefügt haben, fügen Sie denselben Schlüssel hier zur Bestätigung ein. Verwenden Sie dann „Knoten konfigurieren“ auf der Registerkarte Radio.",
+    "remoteAdminKeyInvalid": "Geben Sie einen gültigen öffentlichen Admin-Schlüssel ein (base64, base64:… oder 64-stelliges Hexadezimalzeichen).",
+    "configureRemotelyHint": "Öffnet die Radioeinstellungen für diesen Knoten über das Netz (erfordert lokales Radio und gespeicherten Admin-Schlüssel)."
   },
   "firmwareStatus": {
     "checking": "Überprüfung der Firmwareversion",
@@ -1724,7 +1726,7 @@
     "placeholder": "Alle Nachrichten durchsuchen… (Benutzer:Name, Kanal:Name)"
   },
   "logAnalyzeModal": {
-    "closeDialog": "Schließen Dialog",
+    "closeDialog": "Dialog schließen",
     "title": "Protokollanalyse",
     "totalEntries": "{{count}} Einträge",
     "errorsShort": "{{count}} Fehler",
@@ -1924,7 +1926,7 @@
     "categories": {
       "ble-connection": {
         "recommendation": "BLE-Verbindung instabil. Überprüfen Sie die Entfernung zum Gerät und den Status des Bluetooth-Adapters.",
-        "label": "Verbindungsprobleme"
+        "label": "BLE-Verbindungsprobleme"
       },
       "mqtt": {
         "recommendation": "Probleme mit der MQTT-Verbindung. Überprüfen Sie die Broker-URL, Anmeldeinformationen und Netzwerkkonnektivität.",
@@ -1944,7 +1946,7 @@
       },
       "ble-connect-race": {
         "recommendation": "Zeitüberschreitung beim BLE-Handshake oder Unterbrechung der Verbindung. Überprüfen Sie die Stabilität der BLE-Verbindung und den Abstand zum Gerät.",
-        "label": "BLE Connect Race/Timeout"
+        "label": "BLE-Verbindungsrennen/Timeout"
       },
       "auth-decrypt": {
         "recommendation": "Authentifizierungs- oder Entschlüsselungsfehler. Überprüfen Sie, ob die Kanalschlüssel zwischen den Geräten übereinstimmen.",
@@ -1964,7 +1966,7 @@
       },
       "database-chmod": {
         "recommendation": "Die Optimierung der Datenbankdateiberechtigungen ist fehlgeschlagen (häufig harmlos unter Windows). Wenn Sie an anderer Stelle echte DB-Fehler sehen, überprüfen Sie die Antiviren- und Ordnerberechtigungen für das Mesh-Client-Benutzerdatenverzeichnis.",
-        "label": "Datenbank chmod (nicht tödlich)"
+        "label": "Datenbank chmod (nicht kritisch)"
       },
       "database-writable": {
         "recommendation": "Die App kann ihren Datenbankordner nicht schreiben. Korrigieren Sie die Berechtigungen für das Mesh-Client-Benutzerdatenverzeichnis (siehe Fehlerbehebung: Datenbankverzeichnis ist nicht beschreibbar).",
@@ -1984,7 +1986,7 @@
       },
       "ble-meshcore-notify-watchdog": {
         "recommendation": "Keine GATT-Benachrichtigungsdaten innerhalb des Watchdog-Fensters (üblich unter Windows). Versuchen Sie erneut, eine Verbindung herzustellen. Stellen Sie sicher, dass das Radio in den Bluetooth-Einstellungen des Betriebssystems gekoppelt ist, bevor Sie eine Verbindung herstellen.",
-        "label": "BLE Notify Watchdog (MeshCore)"
+        "label": "BLE-Benachrichtigungs-Watchdog (MeshCore)"
       },
       "bluetooth-pairing": {
         "recommendation": "Die Bluetooth-Kopplung oder -Entkopplung ist fehlgeschlagen oder die PIN-Eingabeaufforderung ist abgelaufen. Öffnen Sie beim Koppeln die App, geben Sie sofort die PIN ein, überprüfen Sie die MAC-Adresse und Bluetooth-Berechtigungen oder entfernen Sie die Bluetooth-Einstellungen des Betriebssystems und koppeln Sie sie erneut.",
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Zu lokal wechseln",
     "refresh": "Aktualisieren",
     "loading": "Remote-Konfiguration wird geladen...",
-    "requiresLocalRadio": "Schließen Sie ein lokales Meshtastic-Funkgerät an, um die Remote-Verwaltung zu nutzen."
+    "requiresLocalRadio": "Schließen Sie ein lokales Meshtastic-Funkgerät an, um die Remote-Verwaltung zu nutzen.",
+    "sessionActive": "Admin-Sitzung aktiv",
+    "sessionStale": "Admin-Sitzung veraltet — vor dem Ändern der Einstellungen aktualisieren",
+    "sessionNone": "Admin-Sitzung nicht eingerichtet — Lokales Radio laden oder verbinden",
+    "establishingSession": "Admin-Sitzung wird eingerichtet..."
   },
   "remoteAdmin": {
     "errors": {

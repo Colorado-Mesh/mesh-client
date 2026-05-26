@@ -489,7 +489,8 @@
     },
     "channelLoading": "Wczytywanie…",
     "channelLoadFailed": "Wczytywanie nieudane",
-    "retryRemoteChannels": "Ponów próbę załadowania kanałów"
+    "retryRemoteChannels": "Ponów próbę załadowania kanałów",
+    "resetNodeDbPreserveFavorites": "Zachowaj ulubione węzły na urządzeniu"
   },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",
@@ -1702,8 +1703,9 @@
     "clearRemoteAdminKey": "Clear",
     "remoteAdminKeySaved": "Klucz administracyjny zapisany dla tego węzła.",
     "remoteAdminKeyCleared": "Klucz administratora został wyczyszczony.",
-    "remoteAdminKeyHint": "Wklej klucz publiczny administratora z ustawień bezpieczeństwa tego węzła (base64, base64:… lub 64-znakowy hex). Zapisz go tutaj, a następnie wybierz węzeł z listy rozwijanej Konfiguruj w Radio/Bezpieczeństwo/Moduły.",
-    "remoteAdminKeyInvalid": "Wprowadź prawidłowy klucz publiczny administratora (base64, base64:… lub 64-znakowy hex)."
+    "remoteAdminKeyHint": "Po dodaniu klucza publicznego lokalnego radia (Radio → Bezpieczeństwo → Kopiuj) do kluczy Admin tego zdalnego węzła wklej ten sam klucz tutaj jako potwierdzenie. Następnie użyj Konfiguruj na karcie Radio.",
+    "remoteAdminKeyInvalid": "Wprowadź prawidłowy klucz publiczny administratora (base64, base64:… lub 64-znakowy hex).",
+    "configureRemotelyHint": "Otwiera ustawienia radia dla tego węzła nad siatką (wymaga lokalnego radia i zapisanego klucza administratora)."
   },
   "firmwareStatus": {
     "checking": "Sprawdzanie wersji oprogramowania sprzętowego",
@@ -1935,11 +1937,11 @@
         "recommendation": "MQTT poddał się po maksymalnym ponownym połączeniu. Upewnij się, że broker jest osiągalny, poświadczenia i port są prawidłowe, a zapory sieciowe zezwalają na ruch wychodzący."
       },
       "watchdog": {
-        "label": "Wyzwalacze Watchdoga",
+        "label": "Wyzwalacze watchdog",
         "recommendation": "Watchdog wyzwolił ponowne połączenie. Komunikacja urządzenia może być niestabilna."
       },
       "handshake": {
-        "label": "Błędy uścisku dłoni",
+        "label": "Błędy handshake",
         "recommendation": "Uzgadnianie połączenia nie powiodło się. Spróbuj ponownie połączyć się ręcznie."
       },
       "ble-connect-race": {
@@ -1983,7 +1985,7 @@
         "recommendation": "Błąd mostka MeshCore TCP. Sprawdź, czy zdalny host i port są osiągalne."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "BLE Powiadom Watchdog (MeshCore)",
+        "label": "Watchdog powiadomień BLE (MeshCore)",
         "recommendation": "Brak danych powiadamiających GATT w oknie watchdog (typowe w systemie Windows). Spróbuj połączyć się ponownie; przed podłączeniem upewnij się, że radio jest sparowane w ustawieniach Bluetooth systemu operacyjnego."
       },
       "bluetooth-pairing": {
@@ -1999,7 +2001,7 @@
         "recommendation": "Stos MeshCore zgłosił ostrzeżenie lub błąd. Jeśli problem się powtórzy, sprawdź parowanie BLE, ustawienia MQTT i połącz się ponownie."
       },
       "store-forward": {
-        "label": "Problemy z historią przechowywania i przekazywania",
+        "label": "Problemy historii Store & Forward",
         "recommendation": "Nie można zażądać historii czatu Store & Forward od routera (często krótki wyścig z innym ruchem radiowym). Jeśli backlog czatu pozostaje pusty, podłącz ponownie lub poczekaj na kolejne tętno routera."
       }
     },
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Przełącz na lokalny",
     "refresh": "Odśwież",
     "loading": "Ładowanie zdalnej konfiguracji…",
-    "requiresLocalRadio": "Podłącz lokalne radio Meshtastic, aby korzystać ze zdalnej administracji."
+    "requiresLocalRadio": "Podłącz lokalne radio Meshtastic, aby korzystać ze zdalnej administracji.",
+    "sessionActive": "Aktywna sesja administratora",
+    "sessionStale": "Sesja administratora nieaktualna — odśwież przed zmianą ustawień",
+    "sessionNone": "Nie ustanowiono sesji administratora — ładowanie lub podłączanie lokalnego radia",
+    "establishingSession": "Ustanawianie sesji administratora…"
   },
   "remoteAdmin": {
     "errors": {

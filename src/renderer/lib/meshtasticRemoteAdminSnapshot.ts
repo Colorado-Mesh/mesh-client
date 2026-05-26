@@ -280,6 +280,13 @@ const ESSENTIAL_RETRY_OPTIONS = {
   sendOptions: ESSENTIAL_READ_OPTIONS,
 };
 
+/** Primary channel uses tail-channel timeout/retry; essential 25s cap applies to LoRa only. */
+const PRIMARY_CHANNEL_FETCH_OPTIONS = {
+  maxAttempts: REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
+  backoffMs: REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
+  sendOptions: REMOTE_ADMIN_READ_SEND_OPTIONS,
+};
+
 async function fetchRemoteChannels(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
@@ -356,8 +363,8 @@ export async function fetchMeshtasticRemoteConfigTarget(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
 ): Promise<MeshtasticRemoteConfigSnapshot> {
-  const metadata = await client.getRemoteMetadata(destNodeNum);
   await ensureRemoteSessionKey(client, destNodeNum);
+  const metadata = await client.getRemoteMetadata(destNodeNum);
 
   return {
     metadata,
@@ -365,17 +372,36 @@ export async function fetchMeshtasticRemoteConfigTarget(
   };
 }
 
-/** Channels route: fetch channel 0 + LoRa only, matching Android's initial Channels load. */
+/** Which snapshot route to refetch when the user retries failed remote channels. */
+export function remoteConfigChannelRetryRoute(snapshot: {
+  failedChannelIndices?: number[];
+  primaryChannelConfigFetchFailed?: boolean;
+}): 'radio' | 'channelsTail' {
+  const failed = snapshot.failedChannelIndices ?? [];
+  if (snapshot.primaryChannelConfigFetchFailed === true || failed.includes(0)) {
+    return 'radio';
+  }
+  return 'channelsTail';
+}
+
+/**
+ * Channels route: channel 0 + LoRa only (Android ConfigRoute.CHANNELS). Caller must establish session
+ * first (see fetchMeshtasticRemoteConfigSnapshotRadio).
+ */
 export async function fetchMeshtasticRemoteConfigSnapshotEssential(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
 ): Promise<MeshtasticRemoteConfigSnapshot> {
-  // Session passkeys arrive on any admin response; do not block on SESSIONKEY_CONFIG (Android does not).
   const snapshot: MeshtasticRemoteConfigSnapshot = { moduleConfigs: {} };
   const primaryChannelResults: { index: number; value: unknown }[] = [];
   const failedChannelIndices: number[] = [];
   try {
-    const value = await fetchRemoteChannelIndex(client, destNodeNum, 0, ESSENTIAL_RETRY_OPTIONS);
+    const value = await fetchRemoteChannelIndex(
+      client,
+      destNodeNum,
+      0,
+      PRIMARY_CHANNEL_FETCH_OPTIONS,
+    );
     primaryChannelResults.push({ index: 0, value });
   } catch (e) {
     failedChannelIndices.push(0);
@@ -405,10 +431,23 @@ export async function fetchMeshtasticRemoteConfigSnapshotEssential(
   return snapshot;
 }
 
+/** Radio tab load: session bootstrap (metadata) then channel 0 + LoRa (Android ensure-then-CHANNELS). */
+export async function fetchMeshtasticRemoteConfigSnapshotRadio(
+  client: MeshtasticRemoteAdminClient,
+  destNodeNum: number,
+): Promise<MeshtasticRemoteConfigSnapshot> {
+  const target = await fetchMeshtasticRemoteConfigTarget(client, destNodeNum);
+  return mergeMeshtasticRemoteConfigSnapshots(
+    { moduleConfigs: {}, ...target },
+    await fetchMeshtasticRemoteConfigSnapshotEssential(client, destNodeNum),
+  );
+}
+
 export async function fetchMeshtasticRemoteConfigChannelsTail(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
 ): Promise<Partial<MeshtasticRemoteConfigSnapshot>> {
+  await ensureRemoteSessionKey(client, destNodeNum);
   const { channelResults, failedChannelIndices } = await fetchRemoteChannels(
     client,
     destNodeNum,
@@ -429,6 +468,7 @@ export async function fetchMeshtasticRemoteConfigSecurity(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
 ): Promise<Partial<MeshtasticRemoteConfigSnapshot>> {
+  await ensureRemoteSessionKey(client, destNodeNum);
   const value = await client.getRemoteConfig(
     destNodeNum,
     Admin.AdminMessage_ConfigType.SECURITY_CONFIG,
@@ -533,11 +573,7 @@ export async function fetchMeshtasticRemoteConfigSnapshot(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
 ): Promise<MeshtasticRemoteConfigSnapshot> {
-  const target = await fetchMeshtasticRemoteConfigTarget(client, destNodeNum);
-  const essential = mergeMeshtasticRemoteConfigSnapshots(
-    target,
-    await fetchMeshtasticRemoteConfigSnapshotEssential(client, destNodeNum),
-  );
+  const essential = await fetchMeshtasticRemoteConfigSnapshotRadio(client, destNodeNum);
   const channels = await fetchMeshtasticRemoteConfigChannelsTail(client, destNodeNum);
   const security = await fetchMeshtasticRemoteConfigSecurity(client, destNodeNum);
   const owner = await fetchMeshtasticRemoteConfigOwner(client, destNodeNum);

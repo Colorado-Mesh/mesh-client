@@ -10,6 +10,7 @@
 
 - megabear - KD5IHC created the icon
 - [Soord](https://github.com/soord)
+- [Joe (WB3IHY)](https://github.com/WB3IHY) - corrected MQTT AES-CTR nonce construction
 
 ## Colorado Mesh
 

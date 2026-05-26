@@ -8,6 +8,7 @@ import {
   meshtasticMqttOwnNodeIds,
   mqttOnlyIdentitySource,
   persistLastRfSelfNodeId,
+  resolveMeshtasticOutboundFromNodeId,
   resolveMqttOnlyFromNodeId,
 } from './meshtasticMqttIdentity';
 
@@ -28,6 +29,66 @@ describe('mqttOnlyIdentitySource', () => {
 
   it('reports virtual when RF node id is zero', () => {
     expect(mqttOnlyIdentitySource(0)).toBe('virtual');
+  });
+});
+
+const VIRTUAL_ID = 0x0b2f75f3;
+const REAL_ID = 0x88cb6530;
+
+describe('resolveMeshtasticOutboundFromNodeId', () => {
+  it('uses MQTT-only resolver when no device', () => {
+    expect(
+      resolveMeshtasticOutboundFromNodeId({
+        hasDevice: false,
+        myNodeNum: VIRTUAL_ID,
+        lastRfSelfNodeId: 0,
+        virtualNodeId: VIRTUAL_ID,
+      }),
+    ).toBe(VIRTUAL_ID);
+  });
+
+  it('prefers last RF over virtual when MQTT-only', () => {
+    expect(
+      resolveMeshtasticOutboundFromNodeId({
+        hasDevice: false,
+        myNodeNum: REAL_ID,
+        lastRfSelfNodeId: REAL_ID,
+        virtualNodeId: VIRTUAL_ID,
+      }),
+    ).toBe(REAL_ID);
+  });
+
+  it('uses real myNodeNum when device connected and not virtual', () => {
+    expect(
+      resolveMeshtasticOutboundFromNodeId({
+        hasDevice: true,
+        myNodeNum: REAL_ID,
+        lastRfSelfNodeId: REAL_ID,
+        virtualNodeId: VIRTUAL_ID,
+      }),
+    ).toBe(REAL_ID);
+  });
+
+  it('does not publish virtual from during device connect race (myNodeNum still virtual)', () => {
+    expect(
+      resolveMeshtasticOutboundFromNodeId({
+        hasDevice: true,
+        myNodeNum: VIRTUAL_ID,
+        lastRfSelfNodeId: 0,
+        virtualNodeId: VIRTUAL_ID,
+      }),
+    ).toBe(0);
+  });
+
+  it('falls back to last RF when device connected but myNodeNum still virtual', () => {
+    expect(
+      resolveMeshtasticOutboundFromNodeId({
+        hasDevice: true,
+        myNodeNum: VIRTUAL_ID,
+        lastRfSelfNodeId: REAL_ID,
+        virtualNodeId: VIRTUAL_ID,
+      }),
+    ).toBe(REAL_ID);
   });
 });
 

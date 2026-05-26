@@ -489,7 +489,8 @@
     },
     "channelLoading": "Laden…",
     "channelLoadFailed": "Laden mislukt",
-    "retryRemoteChannels": "Opnieuw proberen kanalen te laden"
+    "retryRemoteChannels": "Opnieuw proberen kanalen te laden",
+    "resetNodeDbPreserveFavorites": "Favoriete knooppunten op het apparaat behouden"
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",
@@ -1702,8 +1703,9 @@
     "clearRemoteAdminKey": "Wissen",
     "remoteAdminKeySaved": "Beheersleutel opgeslagen voor dit knooppunt.",
     "remoteAdminKeyCleared": "Admin-sleutel gewist.",
-    "remoteAdminKeyHint": "Plak een openbare admin-sleutel vanuit de beveiligingsinstellingen van dit knooppunt (base64, base64:… of hex van 64 tekens). Sla het hier op en selecteer vervolgens het knooppunt in de vervolgkeuzelijst Configureren op Radio/Beveiliging/Modules.",
-    "remoteAdminKeyInvalid": "Voer een geldige openbare admin-sleutel in (base64, base64:… of hex van 64 tekens)."
+    "remoteAdminKeyHint": "Nadat u de openbare sleutel van uw lokale radio (Radio → Security → Copy) aan de Admin keys van dit externe knooppunt hebt toegevoegd, plakt u dezelfde sleutel hier ter bevestiging. Gebruik daarna Configureren op het tabblad Radio.",
+    "remoteAdminKeyInvalid": "Voer een geldige openbare admin-sleutel in (base64, base64:… of hex van 64 tekens).",
+    "configureRemotelyHint": "Opent radio-instellingen voor dit knooppunt via de mesh (vereist lokale radio en opgeslagen admin-sleutel)."
   },
   "firmwareStatus": {
     "checking": "Firmwareversie controleren",
@@ -1734,7 +1736,7 @@
     "recommendationsHeading": "Aanbevelingen",
     "lastMessagePrefix": "Laatst:",
     "appliesToCategories": "Geldt voor: {{labels}}",
-    "severityInfo": "Info"
+    "severityInfo": "Informatie"
   },
   "telemetryPanel": {
     "title": "Telemetrie",
@@ -1939,7 +1941,7 @@
         "recommendation": "Watchdog heeft een nieuwe verbinding geactiveerd. De apparaatcommunicatie is mogelijk instabiel."
       },
       "handshake": {
-        "label": "Handdrukfouten",
+        "label": "Handshakefouten",
         "recommendation": "Verbindingshandshake mislukt. Probeer handmatig opnieuw verbinding te maken."
       },
       "ble-connect-race": {
@@ -1983,7 +1985,7 @@
         "recommendation": "MeshCore TCP-bridgefout. Controleer of de externe host en poort bereikbaar zijn."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "BLE Waarschuw Watchdog (MeshCore)",
+        "label": "BLE-meldingswatchdog (MeshCore)",
         "recommendation": "Geen GATT-meldingsgegevens binnen het watchdog-venster (gebruikelijk op Windows). Probeer opnieuw verbinding te maken; Zorg ervoor dat de radio is gekoppeld in de Bluetooth-instellingen van het besturingssysteem voordat u verbinding maakt."
       },
       "bluetooth-pairing": {
@@ -1999,7 +2001,7 @@
         "recommendation": "MeshCore-stack meldde een waarschuwing of fout. Als het probleem zich herhaalt, controleer dan de BLE-koppeling en de MQTT-instellingen en maak opnieuw verbinding."
       },
       "store-forward": {
-        "label": "Problemen met winkel- en doorstuurgeschiedenis",
+        "label": "Problemen met Store & Forward-geschiedenis",
         "recommendation": "Chatgeschiedenis opslaan en doorsturen kon niet worden aangevraagd bij een router (vaak een korte race met ander radioverkeer). Als de chatachterstand leeg blijft, maak dan opnieuw verbinding of wacht op de volgende hartslag van de router."
       }
     },
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Overschakelen naar lokaal",
     "refresh": "Vernieuwen",
     "loading": "Configuratie op afstand laden...",
-    "requiresLocalRadio": "Sluit een lokale Meshtastic-radio aan om extern beheer te gebruiken."
+    "requiresLocalRadio": "Sluit een lokale Meshtastic-radio aan om extern beheer te gebruiken.",
+    "sessionActive": "Beheersessie actief",
+    "sessionStale": "Beheerderssessie verouderd — vernieuwen voordat u instellingen wijzigt",
+    "sessionNone": "Beheersessie niet ingesteld — lokale radio laden of verbinden",
+    "establishingSession": "Beheerderssessie wordt opgezet..."
   },
   "remoteAdmin": {
     "errors": {

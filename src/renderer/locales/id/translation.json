@@ -489,7 +489,8 @@
     },
     "channelLoading": "Memuat…",
     "channelLoadFailed": "Pemuatan gagal",
-    "retryRemoteChannels": "Coba lagi memuat saluran"
+    "retryRemoteChannels": "Coba lagi memuat saluran",
+    "resetNodeDbPreserveFavorites": "Pertahankan node favorit di perangkat"
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
@@ -1702,8 +1703,9 @@
     "clearRemoteAdminKey": "Kosongkan",
     "remoteAdminKeySaved": "Kunci admin disimpan untuk simpul ini.",
     "remoteAdminKeyCleared": "Kunci admin dihapus.",
-    "remoteAdminKeyHint": "Tempelkan kunci publik admin dari pengaturan Keamanan simpul ini (base64, base64 :…, atau hex 64 karakter). Simpan di sini, lalu pilih simpul di menu tarik - turun Konfigurasi di Radio/Keamanan/Modul.",
-    "remoteAdminKeyInvalid": "Masukkan kunci publik admin yang valid (base64, base64 :…, atau hex 64 karakter)."
+    "remoteAdminKeyHint": "Setelah menambahkan kunci publik radio lokal Anda (Radio → Security → Copy) ke Admin keys node jarak jauh ini, tempel kunci yang sama di sini sebagai konfirmasi. Lalu gunakan Konfigurasi di tab Radio.",
+    "remoteAdminKeyInvalid": "Masukkan kunci publik admin yang valid (base64, base64 :…, atau hex 64 karakter).",
+    "configureRemotelyHint": "Membuka pengaturan Radio untuk simpul ini melalui mesh (memerlukan radio lokal dan kunci admin yang disimpan)."
   },
   "firmwareStatus": {
     "checking": "Memeriksa versi firmware",
@@ -1935,16 +1937,16 @@
         "recommendation": "MQTT menyerah setelah max terhubung kembali. Konfirmasikan bahwa broker dapat dijangkau, kredensial dan port sudah benar, dan firewall mengizinkan lalu lintas keluar."
       },
       "watchdog": {
-        "label": "Pemicu Pengawas",
+        "label": "Pemicu watchdog",
         "recommendation": "Watchdog memicu koneksi ulang. Komunikasi perangkat mungkin tidak stabil."
       },
       "handshake": {
-        "label": "Kegagalan Jabat Tangan",
-        "recommendation": "Jabat tangan koneksi gagal. Coba sambungkan kembali secara manual."
+        "label": "Kegagalan handshake",
+        "recommendation": "Handshake koneksi gagal. Coba sambungkan kembali secara manual."
       },
       "ble-connect-race": {
         "label": "BLE Connect Balapan/Batas Waktu",
-        "recommendation": "Waktu jabat tangan BLE habis atau terputus. Periksa stabilitas koneksi BLE dan jarak ke perangkat."
+        "recommendation": "Handshake BLE habis waktu atau bentrok dengan pemutusan. Periksa stabilitas koneksi BLE dan jarak ke perangkat."
       },
       "auth-decrypt": {
         "label": "Kegagalan Otentikasi/Dekripsi",
@@ -1983,7 +1985,7 @@
         "recommendation": "Kesalahan jembatan TCP MeshCore. Pastikan host dan port jarak jauh dapat dijangkau."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "BLE Beritahu Pengawas (MeshCore)",
+        "label": "Watchdog notifikasi BLE (MeshCore)",
         "recommendation": "Tidak ada data pemberitahuan GATT dalam jendela pengawas (umum di Windows). Coba sambungkan lagi; pastikan radio dipasangkan dalam pengaturan OS Bluetooth sebelum menghubungkan."
       },
       "bluetooth-pairing": {
@@ -1999,7 +2001,7 @@
         "recommendation": "Tumpukan MeshCore melaporkan peringatan atau kesalahan. Jika berulang, periksa pemasangan BLE, pengaturan MQTT, dan sambungkan kembali."
       },
       "store-forward": {
-        "label": "Simpan & Teruskan Masalah Riwayat",
+        "label": "Masalah riwayat Store & Forward",
         "recommendation": "Riwayat obrolan Simpan & Teruskan tidak dapat diminta dari router (sering kali perlombaan singkat dengan lalu lintas radio lainnya). Jika backlog obrolan tetap kosong, sambungkan kembali atau tunggu detak jantung router berikutnya."
       }
     },
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Beralih ke lokal",
     "refresh": "Perbarui",
     "loading": "Memuat konfigurasi jarak jauh…",
-    "requiresLocalRadio": "Sambungkan radio Meshtastic lokal untuk menggunakan administrasi jarak jauh."
+    "requiresLocalRadio": "Sambungkan radio Meshtastic lokal untuk menggunakan administrasi jarak jauh.",
+    "sessionActive": "Sesi admin aktif",
+    "sessionStale": "Sesi admin basi — segarkan sebelum mengubah pengaturan",
+    "sessionNone": "Sesi admin belum ditetapkan — memuat atau menghubungkan radio lokal",
+    "establishingSession": "Menetapkan sesi admin…"
   },
   "remoteAdmin": {
     "errors": {

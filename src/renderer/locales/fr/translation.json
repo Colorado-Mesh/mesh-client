@@ -489,7 +489,8 @@
     },
     "channelLoading": "Chargement…",
     "channelLoadFailed": "Échec du chargement",
-    "retryRemoteChannels": "Réessayer le chargement des canaux"
+    "retryRemoteChannels": "Réessayer le chargement des canaux",
+    "resetNodeDbPreserveFavorites": "Préserver les nœuds favoris sur l'appareil"
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",
@@ -1272,7 +1273,7 @@
     "errorCount_other": "{{count}} erreurs",
     "warningCount_one": "{{count}} avertissement",
     "warningCount_other": "{{count}} avertissements",
-    "noIssues": "Aucun problème",
+    "noIssues": "aucun problème",
     "thisNodePrefix": "Ce nœud :",
     "severityErrors_one": "Erreurs ({{count}})",
     "severityErrors_other": "Erreurs ({{count}})",
@@ -1695,15 +1696,16 @@
     "showOnMap": "Voir sur la carte",
     "configureRemotely": "Configurer le nœud à distance",
     "remoteAdminNoPkiKey": "Aucune clé publique PKI enregistrée pour ce nœud pour le moment — l'administrateur distant peut ne pas fonctionner tant que NodeInfo n'est pas reçu.",
-    "remoteAdminKeyTitle": "Touche d'administration à distance",
-    "remoteAdminKeyLabel": "Touche Admin",
+    "remoteAdminKeyTitle": "Clé d’administration à distance",
+    "remoteAdminKeyLabel": "Clé Admin",
     "remoteAdminKeyPlaceholder": "Clé publique de 32 octets codée en Base64",
     "saveRemoteAdminKey": "Touche Admin",
     "clearRemoteAdminKey": "Vide",
     "remoteAdminKeySaved": "Clé d'administration enregistrée pour ce nœud.",
     "remoteAdminKeyCleared": "Clé d'administrateur effacée.",
-    "remoteAdminKeyHint": "Collez une clé publique d'administrateur à partir des paramètres de sécurité de ce nœud (base64, base64 :… ou hexadécimal de 64 caractères). Enregistrez-le ici, puis sélectionnez le nœud dans la liste déroulante Configurer sur Radio/Sécurité/Modules.",
-    "remoteAdminKeyInvalid": "Saisissez une clé publique admin valide (base64, base64 :… ou hexadécimale de 64 caractères)."
+    "remoteAdminKeyHint": "Après avoir ajouté la clé publique de votre radio locale (Radio → Sécurité → Copier) aux clés Admin de ce nœud distant, collez la même clé ici pour confirmation. Utilisez ensuite Configurer dans l’onglet Radio.",
+    "remoteAdminKeyInvalid": "Saisissez une clé publique admin valide (base64, base64 :… ou hexadécimale de 64 caractères).",
+    "configureRemotelyHint": "Ouvre les paramètres radio pour ce nœud sur le maillage (nécessite une radio locale et une clé d'administration enregistrée)."
   },
   "firmwareStatus": {
     "checking": "Vérification de la version du firmware...",
@@ -1924,26 +1926,26 @@
     "categories": {
       "ble-connection": {
         "recommendation": "Connexion BLE instable. Vérifiez la distance par rapport à l'appareil et l'état de l'adaptateur Bluetooth.",
-        "label": "Problèmes de connexion"
+        "label": "Problèmes de connexion BLE"
       },
       "mqtt": {
-        "recommendation": "Problèmes de connexion MQTT. Vérifiez l'URL du courtier, les informations d'identification et la connectivité réseau.",
+        "recommendation": "Problèmes de connexion MQTT. Vérifiez l’URL du broker, les identifiants et la connectivité réseau.",
         "label": "Problèmes MQTT"
       },
       "mqtt-retries-exhausted": {
-        "recommendation": "MQTT a abandonné après un maximum de reconnexions. Vérifiez que le courtier est accessible, que les informations d'identification et le port sont corrects et que les pare-feu autorisent le trafic sortant.",
+        "recommendation": "MQTT a abandonné après le nombre maximal de reconnexions. Vérifiez que le broker est joignable, que les identifiants et le port sont corrects et que les pare-feu autorisent le trafic sortant.",
         "label": "Limite de reconnexion MQTT"
       },
       "watchdog": {
-        "recommendation": "Le chien de garde a déclenché la reconnexion. La communication de l'appareil peut être instable.",
-        "label": "Déclencheurs de chien de garde"
+        "recommendation": "Le watchdog a déclenché la reconnexion. La communication de l'appareil peut être instable.",
+        "label": "Déclenchements watchdog"
       },
       "handshake": {
         "recommendation": "La négociation de connexion a échoué. Essayez de vous reconnecter manuellement.",
-        "label": "Échecs de poignée de main"
+        "label": "Échecs de handshake"
       },
       "ble-connect-race": {
-        "recommendation": "La poignée de main BLE a expiré ou a couru avec déconnexion. Vérifiez la stabilité de la connexion BLE et la distance par rapport à l'appareil.",
+        "recommendation": "Le handshake BLE a expiré ou a été interrompu par une déconnexion. Vérifiez la stabilité de la connexion BLE et la distance par rapport à l'appareil.",
         "label": "Ble Connect Race/Timeout"
       },
       "auth-decrypt": {
@@ -1963,11 +1965,11 @@
         "label": "Défaillances de la base de données"
       },
       "database-chmod": {
-        "recommendation": "L’ajustement des autorisations du fichier de base de données a échoué (souvent inoffensif sous Windows). Si vous voyez de vraies erreurs de base de données ailleurs, vérifiez les autorisations de l'antivirus et des dossiers pour le répertoire userData du client maillé.",
+        "recommendation": "L’ajustement des autorisations du fichier de base de données a échoué (souvent inoffensif sous Windows). Si vous voyez de vraies erreurs de base de données ailleurs, vérifiez les autorisations de l'antivirus et des dossiers pour le répertoire userData de mesh-client.",
         "label": "Base de données chmod (non fatale)"
       },
       "database-writable": {
-        "recommendation": "L'application ne peut pas écrire son dossier de base de données. Corrigez les autorisations sur le répertoire userData du client maillé (voir dépannage : le répertoire de la base de données n'est pas accessible en écriture).",
+        "recommendation": "L'application ne peut pas écrire son dossier de base de données. Corrigez les autorisations sur le répertoire userData de mesh-client (voir dépannage : le répertoire de la base de données n'est pas accessible en écriture).",
         "label": "Base de données non inscriptible"
       },
       "tak-server": {
@@ -1984,7 +1986,7 @@
       },
       "ble-meshcore-notify-watchdog": {
         "recommendation": "Aucune donnée de notification du GATT dans la fenêtre de surveillance (courante sous Windows). Réessayez de vous connecter ; assurez-vous que la radio est couplée dans les paramètres Bluetooth du système d'exploitation avant de vous connecter.",
-        "label": "Chien de garde ble Notify (MeshCore)"
+        "label": "Watchdog de notifications BLE (MeshCore)"
       },
       "bluetooth-pairing": {
         "recommendation": "Le couplage ou le dissociation Bluetooth a échoué, ou l'invite du code PIN a expiré. Ouvrez l'application lors du couplage, entrez le code PIN rapidement, vérifiez l'adresse MAC et les autorisations Bluetooth, ou supprimez et ré-appairez les paramètres Bluetooth du système d'exploitation.",
@@ -1999,7 +2001,7 @@
         "label": "Avertissements/erreurs du SDK MeshCore"
       },
       "store-forward": {
-        "label": "Problèmes d'historique de stockage et de transfert",
+        "label": "Problèmes d’historique Store & Forward",
         "recommendation": "L'historique du chat Store & Forward n'a pas pu être demandé à un routeur (souvent une brève course avec d'autres trafics radio). Si le backlog de discussion reste vide, reconnectez-vous ou attendez le prochain battement de cœur du routeur."
       }
     },
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Passer en local",
     "refresh": "Renouvellement",
     "loading": "Chargement de la configuration à distance…",
-    "requiresLocalRadio": "Connectez une radio Meshtastic locale pour utiliser l'administration à distance."
+    "requiresLocalRadio": "Connectez une radio Meshtastic locale pour utiliser l'administration à distance.",
+    "sessionActive": "Session d'administration active",
+    "sessionStale": "Session d'administration obsolète — actualiser avant de modifier les paramètres",
+    "sessionNone": "Session d'administration non établie — chargement ou connexion de la radio locale",
+    "establishingSession": "Établissement de la session d'administration…"
   },
   "remoteAdmin": {
     "errors": {

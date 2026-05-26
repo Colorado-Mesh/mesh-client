@@ -50,6 +50,12 @@ export const REMOTE_ADMIN_PKC_CHANNEL_INDEX = 8;
 /** Firmware session_passkey TTL (AdminModule.cpp). */
 export const REMOTE_ADMIN_SESSION_TTL_MS = 300_000;
 
+/**
+ * "Active enough to navigate" window (Android SessionManagerImpl). Below firmware TTL to leave
+ * headroom for multi-hop latency before the next admin read.
+ */
+export const REMOTE_ADMIN_SESSION_ACTIVE_MS = 240_000;
+
 /** Default wait for multi-hop admin responses. */
 export const REMOTE_ADMIN_RESPONSE_TIMEOUT_MS = 120_000;
 
@@ -174,6 +180,8 @@ export function meshtasticNodePublicKeyBytesFromHex(
   return bytes;
 }
 
+export type RemoteAdminSessionStatus = 'none' | 'active' | 'stale';
+
 export class RemoteAdminSessionStore {
   private readonly sessions = new Map<number, RemoteAdminSessionEntry>();
 
@@ -185,6 +193,17 @@ export class RemoteAdminSessionStore {
       return undefined;
     }
     return entry.passkey;
+  }
+
+  getStatus(nodeNum: number, nowMs: number = Date.now()): RemoteAdminSessionStatus {
+    const entry = this.sessions.get(nodeNum >>> 0);
+    if (!entry) return 'none';
+    if (nowMs >= entry.expiresAt) {
+      this.sessions.delete(nodeNum >>> 0);
+      return 'none';
+    }
+    const ageMs = nowMs - (entry.expiresAt - REMOTE_ADMIN_SESSION_TTL_MS);
+    return ageMs < REMOTE_ADMIN_SESSION_ACTIVE_MS ? 'active' : 'stale';
   }
 
   set(nodeNum: number, passkey: Uint8Array): void {
@@ -694,15 +713,21 @@ export class MeshtasticRemoteAdminClient {
     return responsePromise;
   }
 
+  /**
+   * Establish a remote-admin session passkey when missing. Uses getDeviceMetadata (Android maps
+   * SESSIONKEY bootstrap to metadata in MeshActionHandlerImpl); passkey is captured from the response.
+   */
   async ensureSessionKey(destNodeNum: number): Promise<void> {
     if (this.sessionStore.get(destNodeNum)) return;
-    await this.getRemoteConfig(destNodeNum, Admin.AdminMessage_ConfigType.SESSIONKEY_CONFIG, {
-      ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+    await this.getRemoteMetadata(destNodeNum, {
       timeoutMs: REMOTE_ADMIN_SESSION_KEY_TIMEOUT_MS,
     });
   }
 
-  async getRemoteMetadata(destNodeNum: number): Promise<unknown> {
+  async getRemoteMetadata(
+    destNodeNum: number,
+    sendOptions?: RemoteAdminSendOptions,
+  ): Promise<unknown> {
     const response = await this.sendAdminRequest(
       destNodeNum,
       () =>
@@ -711,6 +736,7 @@ export class MeshtasticRemoteAdminClient {
         }),
       {
         ...REMOTE_ADMIN_READ_SEND_OPTIONS,
+        ...sendOptions,
         expectedResponseCases: ['getDeviceMetadataResponse'],
       },
     );
@@ -978,13 +1004,37 @@ export class MeshtasticRemoteAdminClient {
     );
   }
 
-  async remoteResetNodeDb(destNodeNum: number): Promise<void> {
+  async remoteResetNodeDb(destNodeNum: number, preserveFavorites: boolean): Promise<void> {
     await this.ensureSessionKey(destNodeNum);
     await this.sendAdminRequest(
       destNodeNum,
       () =>
         adminMessage({
-          payloadVariant: { case: 'nodedbReset', value: 1 },
+          payloadVariant: { case: 'nodedbReset', value: preserveFavorites },
+        }),
+      { wantResponse: false, requireSession: true },
+    );
+  }
+
+  async setRemoteRingtone(destNodeNum: number, ringtone: string): Promise<void> {
+    await this.ensureSessionKey(destNodeNum);
+    await this.sendAdminRequest(
+      destNodeNum,
+      () =>
+        adminMessage({
+          payloadVariant: { case: 'setRingtoneMessage', value: ringtone },
+        }),
+      { wantResponse: false, requireSession: true },
+    );
+  }
+
+  async setRemoteCannedMessages(destNodeNum: number, messages: string): Promise<void> {
+    await this.ensureSessionKey(destNodeNum);
+    await this.sendAdminRequest(
+      destNodeNum,
+      () =>
+        adminMessage({
+          payloadVariant: { case: 'setCannedMessageModuleMessages', value: messages },
         }),
       { wantResponse: false, requireSession: true },
     );

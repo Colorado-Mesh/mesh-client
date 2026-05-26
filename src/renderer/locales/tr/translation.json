@@ -489,7 +489,8 @@
     },
     "channelLoading": "Yükleniyor…",
     "channelLoadFailed": "Yükleme başarısız",
-    "retryRemoteChannels": "Kanalları yeniden yüklemeyi deneyin"
+    "retryRemoteChannels": "Kanalları yeniden yüklemeyi deneyin",
+    "resetNodeDbPreserveFavorites": "Cihazdaki favori düğümleri koru"
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",
@@ -1702,8 +1703,9 @@
     "clearRemoteAdminKey": "Temizle",
     "remoteAdminKeySaved": "Bu düğüm için yönetici anahtarı kaydedildi.",
     "remoteAdminKeyCleared": "Yönetici anahtarı temizlendi.",
-    "remoteAdminKeyHint": "Bu düğümün Güvenlik ayarlarından (base64, base64 :… veya 64 karakterli Hex) bir genel yönetici anahtarı yapıştırın. Buraya kaydedin, ardından Radyo/Güvenlik/Modüller'deki Yapılandır açılır menüsünden düğümü seçin.",
-    "remoteAdminKeyInvalid": "Geçerli bir yönetici ortak anahtarı girin (base64, base64 :… veya 64 karakterli hex)."
+    "remoteAdminKeyHint": "Yerel radyonuzun genel anahtarını (Radio → Security → Copy) bu uzak düğümün Admin keys listesine ekledikten sonra aynı anahtarı onay için buraya yapıştırın. Ardından Radio sekmesinde Yapılandır’ı kullanın.",
+    "remoteAdminKeyInvalid": "Geçerli bir yönetici ortak anahtarı girin (base64, base64 :… veya 64 karakterli hex).",
+    "configureRemotelyHint": "Bu düğüm için Radyo ayarlarını mesh üzerinden açar (yerel radyo ve kayıtlı yönetici anahtarı gerektirir)."
   },
   "firmwareStatus": {
     "checking": "Ürün yazılımı sürümünün kontrol edilmesi",
@@ -1935,16 +1937,16 @@
         "recommendation": "Maksimum yeniden bağlantıdan sonra MQTT pes etti. Aracının erişilebilir olduğunu, kimlik bilgilerinin ve bağlantı noktasının doğru olduğunu ve güvenlik duvarlarının giden trafiğe izin verdiğini doğrulayın."
       },
       "watchdog": {
-        "label": "Bekçi Tetikleyicileri",
+        "label": "Watchdog tetikleyicileri",
         "recommendation": "Watchdog yeniden bağlanmayı tetikledi. Cihaz iletişimi kararsız olabilir."
       },
       "handshake": {
-        "label": "El Sıkışma Başarısızlıkları",
+        "label": "Handshake hataları",
         "recommendation": "Bağlantı anlaşması başarısız oldu. Manuel olarak yeniden bağlanmayı deneyin."
       },
       "ble-connect-race": {
         "label": "BLE Connect Yarışı/Zaman Aşımı",
-        "recommendation": "BLE el sıkışması zaman aşımına uğradı veya bağlantının kesilmesiyle yarıştı. BLE bağlantı stabilitesini ve cihaza olan mesafeyi kontrol edin."
+        "recommendation": "BLE handshake zaman aşımına uğradı veya bağlantı kesilmesiyle çakıştı. BLE bağlantı kararlılığını ve cihaza olan mesafeyi kontrol edin."
       },
       "auth-decrypt": {
         "label": "Kimlik Doğrulama/Şifre Çözme Hataları",
@@ -1983,7 +1985,7 @@
         "recommendation": "MeshCore TCP köprüsü hatası. Uzak ana bilgisayarın ve bağlantı noktasının erişilebilir olduğunu doğrulayın."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "BLE Watchdog'a Bildir (MeshCore)",
+        "label": "BLE bildirim watchdog (MeshCore)",
         "recommendation": "Gözlemci penceresinde GATT bildirim verisi yok (Windows'ta yaygındır). Bağlanmayı yeniden deneyin; Bağlanmadan önce radyonun OS Bluetooth ayarlarında eşleştirildiğinden emin olun."
       },
       "bluetooth-pairing": {
@@ -1999,7 +2001,7 @@
         "recommendation": "MeshCore yığını bir uyarı veya hata bildirdi. Tekrarlanırsa BLE eşleştirmesini, MQTT ayarlarını kontrol edin ve yeniden bağlanın."
       },
       "store-forward": {
-        "label": "Saklama ve İletme Geçmişi Sorunları",
+        "label": "Store & Forward geçmiş sorunları",
         "recommendation": "Sohbet geçmişini sakla ve ilet bir yönlendiriciden talep edilemez (genellikle diğer radyo trafiğiyle kısa bir yarış). Sohbet iş yığını boş kalırsa, yeniden bağlanın veya bir sonraki yönlendiricinin kalp atışını bekleyin."
       }
     },
@@ -2092,7 +2094,11 @@
     "switchToLocal": "Yerel ağa geç",
     "refresh": "Yenile",
     "loading": "Uzaktan yapılandırma yükleniyor…",
-    "requiresLocalRadio": "Uzaktan yönetimi kullanmak için yerel bir Meshtastic telsiz bağlayın."
+    "requiresLocalRadio": "Uzaktan yönetimi kullanmak için yerel bir Meshtastic telsiz bağlayın.",
+    "sessionActive": "Yönetici oturumu etkin",
+    "sessionStale": "Yönetici oturumu eski — ayarları değiştirmeden önce yenileyin",
+    "sessionNone": "Yönetici oturumu kurulmadı — yerel radyo yükleniyor veya bağlanıyor",
+    "establishingSession": "Yönetici oturumu oluşturuluyor…"
   },
   "remoteAdmin": {
     "errors": {
