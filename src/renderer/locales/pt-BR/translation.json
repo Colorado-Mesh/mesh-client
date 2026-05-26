@@ -1697,13 +1697,13 @@
     "configureRemotely": "Configurar nó remotamente",
     "remoteAdminNoPkiKey": "Nenhuma chave pública PKI registrada para este nó ainda — o administrador remoto pode não funcionar até que o NodeInfo seja recebido.",
     "remoteAdminKeyTitle": "Chave de administração remota",
-    "remoteAdminKeyLabel": "Chave do fechamento do admin",
+    "remoteAdminKeyLabel": "Chave de administrador",
     "remoteAdminKeyPlaceholder": "Chave pública de 32 bytes codificada em base64",
     "saveRemoteAdminKey": "Guardar chave de administrador",
     "clearRemoteAdminKey": "Limpar",
     "remoteAdminKeySaved": "Chave de administrador salva para este nó.",
     "remoteAdminKeyCleared": "Chave de administrador apagada.",
-    "remoteAdminKeyHint": "Cole uma chave pública de administrador nas configurações de segurança deste nó (base64, base64:… ou hexadecimal de 64 caracteres). Salve-o aqui e selecione o nó no menu suspenso Configurar em Rádio/Segurança/Módulos.",
+    "remoteAdminKeyHint": "Depois de adicionar a chave pública do seu rádio local (Radio → Security → Copy) às Admin keys deste nó remoto, cole a mesma chave aqui para confirmar. Em seguida, use Configurar na aba Radio.",
     "remoteAdminKeyInvalid": "Insira uma chave pública de administrador válida (base64, base64:… ou hexadecimal de 64 caracteres).",
     "configureRemotelyHint": "Abre as configurações de rádio para este nó sobre a malha (requer rádio local e chave de administração salva)."
   },
@@ -1937,11 +1937,11 @@
         "recommendation": "O MQTT desistiu após max reconectar. Confirme se o corretor está acessível, se as credenciais e a porta estão corretas e se os firewalls permitem o tráfego de saída."
       },
       "watchdog": {
-        "label": "Gatilhos de vigilância",
+        "label": "Gatilhos de watchdog",
         "recommendation": "O Watchdog acionou a reconexão. A comunicação do dispositivo pode ser instável."
       },
       "handshake": {
-        "label": "Falhas no aperto de mão",
+        "label": "Falhas de handshake",
         "recommendation": "Falha no handshake de conexão. Tente reconectar manualmente."
       },
       "ble-connect-race": {
@@ -1985,7 +1985,7 @@
         "recommendation": "Erro de ponte TCP MeshCore. Verifique se o host remoto e a porta estão acessíveis."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "Watchdog de notificação BLE (MeshCore)",
+        "label": "Watchdog de notificações BLE (MeshCore)",
         "recommendation": "Nenhum dado de notificação do GATT na janela watchdog (comum no Windows). Tente conectar novamente; certifique-se de que o rádio esteja emparelhado nas configurações de Bluetooth do sistema operacional antes de conectar."
       },
       "bluetooth-pairing": {
@@ -2001,7 +2001,7 @@
         "recommendation": "A pilha MeshCore relatou um aviso ou erro. Se isso se repetir, verifique o emparelhamento BLE, as configurações MQTT e reconecte."
       },
       "store-forward": {
-        "label": "Armazenar e encaminhar problemas de histórico",
+        "label": "Problemas no histórico Store & Forward",
         "recommendation": "O histórico de bate-papo de armazenamento e encaminhamento não pôde ser solicitado a um roteador (geralmente uma breve corrida com outro tráfego de rádio). Se o backlog do chat permanecer vazio, reconecte-se ou aguarde o próximo batimento cardíaco do roteador."
       }
     },

@@ -1703,7 +1703,7 @@
     "clearRemoteAdminKey": "消去",
     "remoteAdminKeySaved": "このノードの管理者キーが保存されました。",
     "remoteAdminKeyCleared": "管理者キーがクリアされました。",
-    "remoteAdminKeyHint": "このノードのセキュリティ設定（ base 64、base 64 :…、または64文字の16進数）から管理者公開鍵を貼り付けます。ここに保存し、Radio/Security/ModulesのConfigureドロップダウンでノードを選択します。",
+    "remoteAdminKeyHint": "ローカル無線の公開鍵（Radio → Security → Copy）をこのリモートノードのAdminキーに追加したら、同じキーをここに貼り付けて確認してください。その後、Radioタブの「ノードを構成する」を使います。",
     "remoteAdminKeyInvalid": "有効な管理者公開鍵(base 64、base 64 :…、または64文字の16進数)を入力します。",
     "configureRemotelyHint": "メッシュを介してこのノードのラジオ設定を開きます（ローカルラジオと保存された管理者キーが必要です）。"
   },
@@ -2001,7 +2001,7 @@
         "recommendation": "MeshCore スタックが警告またはエラーを報告しました。繰り返し発生する場合は、BLE ペアリング、MQTT 設定を確認し、再接続してください。"
       },
       "store-forward": {
-        "label": "ストアと転送履歴の問題",
+        "label": "Store & Forward 履歴の問題",
         "recommendation": "Store & Forwardチャット履歴をルーターから要求できませんでした（多くの場合、他の無線トラフィックとの短いレース）。チャットバックログが空のままの場合は、再接続するか、次のルーターのハートビートを待ちます。"
       }
     },

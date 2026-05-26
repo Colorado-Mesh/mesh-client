@@ -1703,7 +1703,7 @@
     "clearRemoteAdminKey": "책임",
     "remoteAdminKeySaved": "이 노드에 대한 관리자 키가 저장되었습니다.",
     "remoteAdminKeyCleared": "관리자 키가 지워졌습니다.",
-    "remoteAdminKeyHint": "이 노드의 보안 설정 (base64, base64: … 또는 64자 16진수) 에서 관리자 공개 키를 붙여넣습니다. 여기에 저장한 다음 라디오/보안/모듈의 구성 드롭다운에서 노드를 선택합니다.",
+    "remoteAdminKeyHint": "로컬 라디오의 공개 키(Radio → Security → Copy)를 이 원격 노드의 Admin keys에 추가한 뒤, 같은 키를 여기에 붙여넣어 확인하세요. 그런 다음 Radio 탭에서 구성을 사용하세요.",
     "remoteAdminKeyInvalid": "유효한 관리자 공개 키 (base64, base64: … 또는 64자 16진수) 를 입력합니다.",
     "configureRemotelyHint": "메시를 통해 이 노드에 대한 라디오 설정을 엽니다 (로컬 라디오 및 저장된 관리자 키 필요)."
   },
@@ -2001,7 +2001,7 @@
         "recommendation": "MeshCore 스택이 경고 또는 오류를 보고했습니다. 반복되면 BLE 페어링, MQTT 설정을 확인하고 다시 연결하세요."
       },
       "store-forward": {
-        "label": "스토어 및 전달 내역 문제",
+        "label": "Store & Forward 기록 문제",
         "recommendation": "라우터에서 스토어 및 포워드 채팅 기록을 요청할 수 없습니다 (종종 다른 무선 트래픽과의 짧은 레이스). 채팅 백로그가 비어 있는 경우 다시 연결하거나 다음 라우터 하트비트를 기다립니다."
       }
     },

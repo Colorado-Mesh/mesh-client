@@ -1273,7 +1273,7 @@
     "errorCount_other": "{{count}} errori",
     "warningCount_one": "{{count}} attenzione",
     "warningCount_other": "{{count}} avvertenze",
-    "noIssues": "Installed Ubuntu 14.04 dual boot with no issues.",
+    "noIssues": "nessun problema",
     "thisNodePrefix": "Questo nodo:",
     "severityErrors_one": "Errori ({{count}})",
     "severityErrors_other": "Errori ({{count}})",
@@ -1703,7 +1703,7 @@
     "clearRemoteAdminKey": "Pulisci",
     "remoteAdminKeySaved": "Chiave di amministrazione salvata per questo nodo.",
     "remoteAdminKeyCleared": "Chiave di amministrazione cancellata.",
-    "remoteAdminKeyHint": "Incolla una chiave pubblica di amministrazione dalle impostazioni di sicurezza di questo nodo (base64, base64:… o esadecimale di 64 caratteri). Salvalo qui, quindi seleziona il nodo nel menu a discesa Configura su Radio/Sicurezza/Moduli.",
+    "remoteAdminKeyHint": "Dopo aver aggiunto la chiave pubblica della radio locale (Radio → Sicurezza → Copia) alle chiavi Admin di questo nodo remoto, incollate la stessa chiave qui per conferma. Poi usate Configura nella scheda Radio.",
     "remoteAdminKeyInvalid": "Immettere una chiave pubblica di amministrazione valida (base64, base64:… o esadecimale di 64 caratteri).",
     "configureRemotelyHint": "Apre le impostazioni radio per questo nodo sulla mesh (richiede la radio locale e la chiave di amministrazione salvata)."
   },
@@ -1937,11 +1937,11 @@
         "recommendation": "MQTT si è arreso dopo il numero massimo di riconnessioni. Verificare che il broker sia raggiungibile, che le credenziali e la porta siano corrette e che i firewall consentano il traffico in uscita."
       },
       "watchdog": {
-        "label": "Trigger del watchdog",
+        "label": "Attivazioni watchdog",
         "recommendation": "Il watchdog ha attivato la riconnessione. La comunicazione del dispositivo potrebbe essere instabile."
       },
       "handshake": {
-        "label": "Fallimenti nella stretta di mano",
+        "label": "Errori di handshake",
         "recommendation": "L'handshake della connessione non è riuscito. Prova a riconnetterti manualmente."
       },
       "ble-connect-race": {
@@ -1985,7 +1985,7 @@
         "recommendation": "Errore del bridge TCP MeshCore. Verificare che l'host remoto e la porta siano raggiungibili."
       },
       "ble-meshcore-notify-watchdog": {
-        "label": "Watchdog notifica BLE (MeshCore)",
+        "label": "Watchdog notifiche BLE (MeshCore)",
         "recommendation": "Nessuna notifica GATT dei dati all'interno della finestra del watchdog (comune su Windows). Riprovare a connettersi; assicurarsi che la radio sia accoppiata nelle impostazioni Bluetooth del sistema operativo prima della connessione."
       },
       "bluetooth-pairing": {
@@ -2001,7 +2001,7 @@
         "recommendation": "Lo stack MeshCore ha segnalato un avviso o un errore. Se si ripete, controlla l'associazione BLE, le impostazioni MQTT e riconnettiti."
       },
       "store-forward": {
-        "label": "Problemi relativi alla cronologia di archiviazione e inoltro",
+        "label": "Problemi cronologia Store & Forward",
         "recommendation": "Non è stato possibile richiedere la cronologia chat Store & Forward da un router (spesso una breve corsa con altro traffico radio). Se il backlog della chat rimane vuoto, riconnettiti o attendi il prossimo heartbeat del router."
       }
     },

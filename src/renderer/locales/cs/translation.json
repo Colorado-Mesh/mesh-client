@@ -1697,13 +1697,13 @@
     "configureRemotely": "Konfigurovat uzel vzdáleně",
     "remoteAdminNoPkiKey": "Pro tento uzel zatím není v záznamu žádný veřejný klíč PKI — vzdálený správce nemusí fungovat, dokud není přijato NodeInfo.",
     "remoteAdminKeyTitle": "Klíč vzdáleného správce",
-    "remoteAdminKeyLabel": "API klíč Admina",
+    "remoteAdminKeyLabel": "Admin klíč",
     "remoteAdminKeyPlaceholder": "Base64-kódovaný 32bajtový veřejný klíč",
     "saveRemoteAdminKey": "Uložit klíč správce",
     "clearRemoteAdminKey": "Vymazat",
     "remoteAdminKeySaved": "Admin klíč uložen pro tento uzel.",
     "remoteAdminKeyCleared": "Klíč správce byl vymazán.",
-    "remoteAdminKeyHint": "Vložte veřejný klíč správce z nastavení zabezpečení tohoto uzlu (base64, base64:… nebo 64znakový hexadecimál). Uložte jej sem a poté vyberte uzel v rozevíracím seznamu Konfigurovat v části Rádio/Zabezpečení/Moduly.",
+    "remoteAdminKeyHint": "Po přidání veřejného klíče místního rádia (Rádio → Zabezpečení → Kopírovat) do Admin klíčů tohoto vzdáleného uzlu vložte stejný klíč sem jako potvrzení. Poté použijte Konfigurovat na kartě Rádio.",
     "remoteAdminKeyInvalid": "Zadejte platný veřejný klíč správce (base64, base64:… nebo 64místný hexadecimální).",
     "configureRemotelyHint": "Otevře nastavení rádia pro tento uzel přes síť (vyžaduje místní rádio a uložený klíč správce)."
   },
@@ -1926,7 +1926,7 @@
     "categories": {
       "ble-connection": {
         "recommendation": "Nestabilní připojení BLE. Zkontrolujte vzdálenost k zařízení a stav adaptéru Bluetooth.",
-        "label": "Problémy s připojením"
+        "label": "Problémy s BLE připojením"
       },
       "mqtt": {
         "recommendation": "Problémy s připojením MQTT. Ověřte adresu URL zprostředkovatele, přihlašovací údaje a síťové připojení.",
@@ -1938,11 +1938,11 @@
       },
       "watchdog": {
         "recommendation": "Watchdog spustil opětovné připojení. Komunikace zařízení může být nestabilní.",
-        "label": "Spouštěče hlídacího psa"
+        "label": "Spouštěče watchdog"
       },
       "handshake": {
         "recommendation": "Navázání spojení se nezdařilo. Zkuste se znovu připojit ručně.",
-        "label": "Selhání potřesení rukou"
+        "label": "Chyby handshake"
       },
       "ble-connect-race": {
         "recommendation": "Vypršel časový limit BLE handshake nebo došlo k odpojení. Zkontrolujte stabilitu připojení BLE a vzdálenost k zařízení.",
@@ -1986,7 +1986,7 @@
       },
       "ble-meshcore-notify-watchdog": {
         "recommendation": "Žádná oznamovací data GATT v okně Watchdog (běžné ve Windows). Retry connect; před připojením se ujistěte, že je rádio spárováno v nastavení Bluetooth OS.",
-        "label": "Ble Upozornit hlídacího psa (MeshCore)"
+        "label": "Watchdog BLE notifikací (MeshCore)"
       },
       "bluetooth-pairing": {
         "recommendation": "Párování Bluetooth nebo zrušení párování se nezdařilo nebo vypršel časový limit výzvy k zadání kódu PIN. Otevřete aplikaci při párování, okamžitě zadejte PIN, zkontrolujte MAC adresu a oprávnění Bluetooth nebo odeberte a znovu spárujte z nastavení Bluetooth OS.",
@@ -2001,7 +2001,7 @@
         "label": "Varování/chyby sady MeshCore SDK"
       },
       "store-forward": {
-        "label": "Problémy s historií ukládání a přeposílání",
+        "label": "Problémy historie Store & Forward",
         "recommendation": "Z routeru nebylo možné vyžádat historii chatu Store & Forward (často se jedná o krátký závod s jiným rádiovým provozem). Pokud nevyřízený chat zůstane prázdný, znovu se připojte nebo počkejte na další srdeční tep směrovače."
       }
     },
