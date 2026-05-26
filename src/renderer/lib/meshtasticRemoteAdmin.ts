@@ -360,8 +360,16 @@ export function shouldIgnoreStaleAdminResponse(params: {
   if (!isCrossTypeAdminReadResponse(params.responseCase, params.expectedResponseCases)) {
     return false;
   }
-  void params.tombstoneResponseCase;
-  return true;
+  if (params.responseCase === 'getDeviceMetadataResponse') {
+    return true;
+  }
+  // Only ignore when the same request id was already resolved to a different response case.
+  // Otherwise, treat cross-type mismatches as active-request errors so callers fail fast.
+  return (
+    typeof params.tombstoneResponseCase === 'string' &&
+    params.tombstoneResponseCase.length > 0 &&
+    params.tombstoneResponseCase !== params.responseCase
+  );
 }
 
 export function resolveAdminRequestId(
