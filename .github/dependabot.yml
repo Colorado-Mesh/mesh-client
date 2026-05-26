@@ -1,33 +1,33 @@
 version: 2
 updates:
-  - package-ecosystem: "pnpm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "saturday"
+      interval: 'weekly'
+      day: 'saturday'
     open-pull-requests-limit: 10
     versioning-strategy: lockfile-only
     groups:
       electron-framework:
         patterns:
-          - "electron"
+          - 'electron'
       all-other-deps:
         patterns:
-          - "*"
+          - '*'
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     open-pull-requests-limit: 10
     labels:
-      - "dependencies"
-      - "github-actions"
+      - 'dependencies'
+      - 'github-actions'
     commit-message:
-      prefix: "chore"
-      include: "scope"
+      prefix: 'chore'
+      include: 'scope'
     groups:
       # Group all GitHub Actions updates into one PR to reduce noise
       all-actions:
         patterns:
-          - "*"
+          - '*'
