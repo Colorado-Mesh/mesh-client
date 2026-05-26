@@ -440,7 +440,7 @@ export interface ElectronAPI {
       emoji?: number;
       replyId?: number;
       publishJsonMirror: boolean;
-    }) => Promise<void>;
+    }) => Promise<number>;
     publishNodeInfo: (args: {
       from: number;
       longName: string;
@@ -449,7 +449,7 @@ export interface ElectronAPI {
       hwModel?: number;
       pskBase64?: string;
       publishJsonMirror: boolean;
-    }) => Promise<void>;
+    }) => Promise<number>;
     publishPosition: (args: {
       from: number;
       channel: number;
@@ -459,7 +459,7 @@ export interface ElectronAPI {
       altitude?: number;
       pskBase64?: string;
       publishJsonMirror: boolean;
-    }) => Promise<void>;
+    }) => Promise<number>;
     publishWaypoint: (args: {
       from: number;
       to: number;
@@ -477,7 +477,7 @@ export interface ElectronAPI {
         lockedTo?: number;
         expire?: number;
       };
-    }) => Promise<void>;
+    }) => Promise<number>;
     publishMeshcore: (args: {
       text: string;
       channelIdx: number;

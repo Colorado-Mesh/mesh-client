@@ -73,6 +73,10 @@ describe('meshtasticNodePublicKeyBytesFromHex', () => {
     expect(meshtasticNodePublicKeyBytesFromHex('abcd')).toBeUndefined();
     expect(meshtasticNodePublicKeyBytesFromHex(undefined)).toBeUndefined();
   });
+
+  it('rejects non-hex characters in a 64-character string', () => {
+    expect(meshtasticNodePublicKeyBytesFromHex('gg'.repeat(32))).toBeUndefined();
+  });
 });
 
 describe('RemoteAdminSessionStore', () => {

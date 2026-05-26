@@ -8,11 +8,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MQTTSettings } from '../renderer/lib/types';
 import {
+  BAD_ENVELOPE_SIGNATURE_MAX,
+  bufferListIncludesKey,
   cipherForKey,
+  enforceBadEnvelopeSignatureCap,
   MQTTManager,
   parseChannelPskLine,
   parseMeshtasticMqttEncryptedTopicChannelName,
   parsePsk,
+  portNumEnumToProtoName,
   prepareMqttProtobufBytes,
 } from './mqtt-manager';
 
@@ -2498,5 +2502,52 @@ describe('handleJsonText — packetId coercion and dedup', () => {
     );
 
     expect(messages).toHaveLength(2);
+  });
+});
+
+describe('portNumEnumToProtoName', () => {
+  it('maps known PortNum values without scanning Object.entries each call', () => {
+    expect(portNumEnumToProtoName(PortNum.TEXT_MESSAGE_APP)).toBe('TEXT_MESSAGE_APP');
+    expect(portNumEnumToProtoName(PortNum.NODEINFO_APP)).toBe('NODEINFO_APP');
+  });
+
+  it('returns UNKNOWN_APP for unmapped port numbers', () => {
+    expect(portNumEnumToProtoName(999_999)).toBe('UNKNOWN_APP');
+  });
+});
+
+describe('bufferListIncludesKey', () => {
+  it('matches buffers by contents, not base64 string identity', () => {
+    const a = Buffer.from([1, 2, 3]);
+    const b = Buffer.from([1, 2, 3]);
+    const c = Buffer.from([9, 9, 9]);
+    expect(bufferListIncludesKey([c], a)).toBe(false);
+    expect(bufferListIncludesKey([c, b], a)).toBe(true);
+  });
+});
+
+describe('enforceBadEnvelopeSignatureCap', () => {
+  it('evicts expired signatures first', () => {
+    const now = 1_000_000;
+    const map = new Map<string, number>([
+      ['a', now - 1],
+      ['b', now + 60_000],
+      ['c', now + 120_000],
+    ]);
+    enforceBadEnvelopeSignatureCap(map, now, 2);
+    expect(map.has('a')).toBe(false);
+    expect(map.size).toBeLessThanOrEqual(2);
+  });
+
+  it('evicts soonest-expiry entries when none are expired', () => {
+    const now = 1_000_000;
+    const map = new Map<string, number>();
+    for (let i = 0; i < BAD_ENVELOPE_SIGNATURE_MAX + 5; i++) {
+      map.set(`sig-${i}`, now + 60_000 + i);
+    }
+    enforceBadEnvelopeSignatureCap(map, now);
+    expect(map.size).toBe(BAD_ENVELOPE_SIGNATURE_MAX);
+    expect(map.has('sig-0')).toBe(false);
+    expect(map.has(`sig-${BAD_ENVELOPE_SIGNATURE_MAX + 4}`)).toBe(true);
   });
 });

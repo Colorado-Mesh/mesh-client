@@ -79,7 +79,7 @@ describe('TransportManager', () => {
       onStatusUpdateRef: { current: vi.fn() },
     });
 
-    manager.sendMessage('👍', 0, undefined, 99, 1, 0x11111111, 0x1f44d);
+    manager.sendMessage('👍', 0, undefined, 99, 1, 0x11111111, true);
     await Promise.resolve();
 
     expect(publish).toHaveBeenCalledWith(
@@ -130,5 +130,41 @@ describe('TransportManager', () => {
     await Promise.resolve();
 
     expect(publish).not.toHaveBeenCalled();
+  });
+
+  it('MQTT-only publish when connected without radio uplink enabled', async () => {
+    const publish = vi.fn().mockResolvedValue(1234);
+    window.electronAPI = {
+      mqtt: { publish },
+    } as unknown as typeof window.electronAPI;
+
+    const manager = new TransportManager({
+      deviceRef: { current: null },
+      myNodeNumRef: { current: 0x11111111 },
+      mqttStatusRef: { current: 'connected' },
+      channelConfigsRef: {
+        current: [
+          {
+            index: 0,
+            name: 'LongFast',
+            role: MESHTASTIC_CHANNEL_ROLE.PRIMARY,
+            uplinkEnabled: false,
+            psk: new Uint8Array([1]),
+          },
+        ],
+      },
+      isDuplicate: vi.fn(),
+      onStatusUpdateRef: { current: vi.fn() },
+    });
+
+    manager.sendMessage('mqtt only', 0, undefined, undefined, 7, 0x11111111);
+    await Promise.resolve();
+
+    expect(publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: 'mqtt only',
+        from: 0x11111111,
+      }),
+    );
   });
 });

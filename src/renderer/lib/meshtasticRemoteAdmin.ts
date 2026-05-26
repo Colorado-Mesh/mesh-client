@@ -79,19 +79,6 @@ export const REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT = 13;
 export const REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS =
   REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT * 8_000 + 30_000;
 
-export type RemoteConfigLoadingRoute = 'radio' | 'security' | 'modules';
-
-export function remoteConfigLoadingWatchdogMsForRoute(route: RemoteConfigLoadingRoute): number {
-  switch (route) {
-    case 'radio':
-      return REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS;
-    case 'security':
-      return REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS;
-    case 'modules':
-      return REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS;
-  }
-}
-
 /** Serializes remote config snapshot fetches so admin reads do not overlap on one client. */
 export function createSerialTaskQueue(): {
   enqueue: (task: () => Promise<void>) => Promise<void>;
@@ -150,6 +137,19 @@ export function computeRemoteAdminRadioLoadingWatchdogMs(): number {
 /** Wall-clock cap while UI shows loading for foreground radio snapshot fetch. */
 export const REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS = computeRemoteAdminRadioLoadingWatchdogMs();
 
+export type RemoteConfigLoadingRoute = 'radio' | 'security' | 'modules';
+
+export function remoteConfigLoadingWatchdogMsForRoute(route: RemoteConfigLoadingRoute): number {
+  switch (route) {
+    case 'radio':
+      return REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS;
+    case 'security':
+      return REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS;
+    case 'modules':
+      return REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS;
+  }
+}
+
 /** @deprecated Use {@link remoteConfigLoadingWatchdogMsForRoute} */
 export const REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS = REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS;
 
@@ -202,7 +202,7 @@ export function meshtasticNodePublicKeyBytesFromHex(
   const bytes = new Uint8Array(32);
   for (let i = 0; i < 32; i++) {
     const byte = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-    if (!Number.isFinite(byte)) return undefined;
+    if (!Number.isFinite(byte) || byte < 0 || byte > 255) return undefined;
     bytes[i] = byte;
   }
   return bytes;
