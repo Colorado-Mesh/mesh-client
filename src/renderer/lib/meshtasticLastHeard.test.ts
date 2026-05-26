@@ -120,7 +120,12 @@ describe('meshtasticTracerouteLastHeardNodeIds', () => {
     expect(meshtasticTracerouteLastHeardNodeIds(0x1111, undefined)).toEqual([0x1111]);
   });
 
-  it('returns empty when sender is invalid', () => {
+  it('includes correlated target when sender is invalid (0)', () => {
     expect(meshtasticTracerouteLastHeardNodeIds(0, 0x2222)).toEqual([0x2222]);
+  });
+
+  it('returns empty when sender and correlated target are both invalid', () => {
+    expect(meshtasticTracerouteLastHeardNodeIds(0, 0)).toEqual([]);
+    expect(meshtasticTracerouteLastHeardNodeIds(0, undefined)).toEqual([]);
   });
 });

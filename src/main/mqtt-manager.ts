@@ -42,6 +42,13 @@ const {
 } = Mesh;
 const { PortNum } = Portnums;
 
+/** Static PortNum enum name lookup (built once; used for JSON mirror publishes). */
+const PORT_NUM_TO_PROTO_NAME = new Map<number, string>(
+  (Object.entries(PortNum).filter(([, v]) => typeof v === 'number') as [string, number][]).map(
+    ([name, value]) => [value, name],
+  ),
+);
+
 // Extended schema constants for additional portnum decoding
 const TelemetrySchema =
   (Telemetry as unknown as { TelemetrySchema?: unknown }).TelemetrySchema ?? null;
@@ -111,15 +118,42 @@ export function parseMeshtasticMqttEncryptedTopicChannelName(topic: string): str
 }
 
 /** Map numeric PortNum to protobuf enum name string (e.g. TEXT_MESSAGE_APP). */
-function portNumEnumToProtoName(portnum: number): string {
-  const entries = Object.entries(PortNum).filter(([, v]) => typeof v === 'number') as [
-    string,
-    number,
-  ][];
-  for (const [name, value] of entries) {
-    if (value === portnum) return name;
+export function portNumEnumToProtoName(portnum: number): string {
+  return PORT_NUM_TO_PROTO_NAME.get(portnum) ?? 'UNKNOWN_APP';
+}
+
+/** True when `keys` already contains `key` (constant-time Buffer compare). */
+export function bufferListIncludesKey(keys: readonly Buffer[], key: Buffer): boolean {
+  return keys.some((k) => k.equals(key));
+}
+
+export const BAD_ENVELOPE_SIGNATURE_MAX = 1000;
+
+/**
+ * Enforce {@link BAD_ENVELOPE_SIGNATURE_MAX}: drop expired entries, then evict soonest-expiry
+ * entries until the map is within the cap (handles bursts of distinct bad envelopes).
+ */
+export function enforceBadEnvelopeSignatureCap(
+  signatures: Map<string, number>,
+  now: number,
+  maxSize: number = BAD_ENVELOPE_SIGNATURE_MAX,
+): void {
+  if (signatures.size <= maxSize) return;
+  for (const [sig, expiry] of signatures) {
+    if (expiry <= now) signatures.delete(sig);
   }
-  return 'UNKNOWN_APP';
+  while (signatures.size > maxSize) {
+    let evictKey: string | undefined;
+    let evictExpiry = Infinity;
+    for (const [sig, expiry] of signatures) {
+      if (expiry < evictExpiry) {
+        evictExpiry = expiry;
+        evictKey = sig;
+      }
+    }
+    if (evictKey === undefined) break;
+    signatures.delete(evictKey);
+  }
 }
 
 /**
@@ -339,10 +373,7 @@ export class MQTTManager extends EventEmitter {
 
   /** Register a publish-time PSK so broker echo decrypt uses the same key as encrypt. */
   private ensureDecryptKey(psk: Buffer): void {
-    const sig = psk.toString('base64');
-    for (const k of this.allDecryptKeys) {
-      if (k.toString('base64') === sig) return;
-    }
+    if (bufferListIncludesKey(this.allDecryptKeys, psk)) return;
     this.extraDecryptPsks.push(psk);
     this.rebuildAllDecryptKeys();
   }
@@ -1111,11 +1142,7 @@ export class MQTTManager extends EventEmitter {
     const now = Date.now();
     const key = this.signatureFromPayload(topic, bytes);
     this.badEnvelopeSignatures.set(key, now + BAD_ENVELOPE_SIGNATURE_TTL_MS);
-    if (this.badEnvelopeSignatures.size > 1000) {
-      for (const [sig, expiry] of this.badEnvelopeSignatures) {
-        if (expiry <= now) this.badEnvelopeSignatures.delete(sig);
-      }
-    }
+    enforceBadEnvelopeSignatureCap(this.badEnvelopeSignatures, now);
   }
 
   private upsertNodeCache(update: Partial<CachedNode> & { node_id: number }): void {

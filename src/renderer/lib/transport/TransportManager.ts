@@ -42,7 +42,8 @@ export class TransportManager {
     replyId: number | undefined,
     tempId: number,
     from: number,
-    emoji?: number,
+    /** When true, sets Meshtastic tapback flag on wire (glyph is UTF-8 in `text`). */
+    tapback?: boolean,
   ): void {
     const { deviceRef, mqttStatusRef, channelConfigsRef, isDuplicate, onStatusUpdateRef } =
       this.deps;
@@ -54,19 +55,11 @@ export class TransportManager {
       loadMeshtasticMqttManualChannelPsks(),
       deviceRef.current ? undefined : { preferManualOverRadio: true },
     );
-    const shouldUplink =
-      from > 0 &&
-      chCfg?.uplinkEnabled &&
-      mqttStatusRef.current === 'connected' &&
-      mqttFields.channelName;
+    const mqttReady =
+      from > 0 && mqttStatusRef.current === 'connected' && Boolean(mqttFields.channelName);
+    const shouldMqtt = mqttReady && (Boolean(chCfg?.uplinkEnabled) || !deviceRef.current);
     // ── MQTT transport (path 1) ──────────────────────────────────────────────
-    if (
-      shouldUplink ||
-      (!deviceRef.current &&
-        from > 0 &&
-        mqttStatusRef.current === 'connected' &&
-        mqttFields.channelName)
-    ) {
+    if (shouldMqtt) {
       window.electronAPI.mqtt
         .publish({
           text,
@@ -76,7 +69,7 @@ export class TransportManager {
           channelName: mqttFields.channelName,
           pskBase64: mqttFields.pskBase64,
           publishJsonMirror: mqttFields.publishJsonMirror,
-          ...(emoji != null ? { emoji: MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } : {}),
+          ...(tapback ? { emoji: MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } : {}),
           ...(replyId != null ? { replyId } : {}),
         })
         .then((mqttPacketId: number) => {
@@ -107,7 +100,7 @@ export class TransportManager {
           true,
           channel,
           replyId,
-          emoji != null ? MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG : undefined,
+          tapback ? MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG : undefined,
         )
         .then((packetId: number) => {
           onStatusUpdateRef.current({
