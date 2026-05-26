@@ -68,13 +68,15 @@ jobs:
           shopt -s nullglob
           for dir in flatpak-dist/*/; do
             name=$(basename "$dir")
-            flatpak=$(find "$dir" -maxdepth 1 -name '*.flatpak' -print -quit)
+            flatpak=$(find "$dir" -maxdepth 1 -type f -name '*.flatpak' -print -quit)
             if [ -z "${flatpak:-}" ]; then
-              echo "no .flatpak in ${dir}" >&2
+              echo "no .flatpak file in ${dir}" >&2
               exit 1
             fi
-            mv "$flatpak" "flatpak-dist/${name}"
-            rmdir "$dir"
+            staging="flatpak-dist/.${name}.staging"
+            mv "$flatpak" "$staging"
+            rm -rf "$dir"
+            mv "$staging" "flatpak-dist/${name}"
           done
 
       - name: Attach Flatpak to release
