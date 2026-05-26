@@ -117,7 +117,6 @@ function parseSecurityConfig(value: unknown): MeshtasticRemoteConfigSnapshot['se
   if (!sec) return null;
   return {
     publicKey: sec.publicKey ?? new Uint8Array(),
-    ...(sec.privateKey && sec.privateKey.length > 0 ? { privateKey: sec.privateKey } : {}),
     adminKey: sec.adminKey ?? [],
     isManaged: sec.isManaged ?? false,
     serialEnabled: sec.serialEnabled ?? false,
@@ -171,15 +170,7 @@ async function ensureRemoteSessionKey(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
 ): Promise<void> {
-  try {
-    await client.ensureSessionKey(destNodeNum);
-  } catch (e) {
-    console.warn(
-      '[fetchMeshtasticRemoteConfigSnapshot] ensureSessionKey failed ' + errLikeToLogString(e),
-    );
-    // Failure point: session key exchange over BLE. Fallback: continue — channel/LoRa reads may
-    // still succeed with an existing passkey or establish a session on the next response.
-  }
+  await client.ensureSessionKey(destNodeNum);
 }
 
 async function fetchConfigTypes(
@@ -363,7 +354,7 @@ export async function fetchMeshtasticRemoteConfigTarget(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
 ): Promise<MeshtasticRemoteConfigSnapshot> {
-  await ensureRemoteSessionKey(client, destNodeNum);
+  // Single metadata read bootstraps session passkey and returns device metadata (no duplicate hop).
   const metadata = await client.getRemoteMetadata(destNodeNum);
 
   return {

@@ -157,14 +157,14 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
     await fetchMeshtasticRemoteConfigSnapshot(clientWithChannelRetry(client), 0x200);
 
     expect(maxInFlight).toBe(1);
-    expect(order[0]).toBe('ensureSessionKey');
-    expect(order.indexOf('ensureSessionKey')).toBeLessThan(order.indexOf('metadata'));
+    expect(order[0]).toBe('metadata');
+    expect(order.indexOf('metadata')).toBeLessThan(order.indexOf('channel:0'));
     expect(order.indexOf('metadata')).toBeLessThan(
       order.findIndex((e) => e.startsWith('configRetry:')),
     );
   });
 
-  it('calls ensureSessionKey after metadata and before config fetches', async () => {
+  it('calls ensureSessionKey before channels tail and deferred security fetch', async () => {
     const ensureSessionKey = vi.fn().mockResolvedValue(undefined);
     const client = {
       getRemoteMetadata: vi.fn().mockResolvedValue({ firmwareVersion: '2.5.0' }),
@@ -228,7 +228,7 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
     expect(snapshot.channelConfigs?.[0]?.name).toBe('Primary');
   });
 
-  it('continues snapshot when ensureSessionKey fails', async () => {
+  it('propagates when ensureSessionKey fails before channels tail', async () => {
     const client = {
       getRemoteMetadata: vi.fn().mockResolvedValue({ firmwareVersion: '2.5.0' }),
       ensureSessionKey: vi.fn().mockRejectedValue(new Error('remoteAdmin.errors.timeout')),
@@ -245,12 +245,9 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
       getRemoteOwner: vi.fn().mockResolvedValue({ longName: 'Remote', shortName: 'RM' }),
     } as unknown as MeshtasticRemoteAdminClient;
 
-    const snapshot = await fetchMeshtasticRemoteConfigSnapshot(
-      clientWithChannelRetry(client),
-      0x200,
-    );
-    expect(snapshot.loraConfig).toEqual({ region: 1 });
-    expect(snapshot.channelConfigs?.[0]?.name).toBe('Primary');
+    await expect(
+      fetchMeshtasticRemoteConfigSnapshot(clientWithChannelRetry(client), 0x200),
+    ).rejects.toThrow('remoteAdmin.errors.timeout');
   });
 
   it('continues snapshot when a channel fetch fails', async () => {
@@ -450,10 +447,10 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
 
     await fetchMeshtasticRemoteConfigSnapshotRadio(clientWithChannelRetry(client), 0x200);
 
-    expect(order.indexOf('ensureSessionKey')).toBeGreaterThan(-1);
+    expect(order.indexOf('metadata')).toBeGreaterThan(-1);
     expect(order.indexOf('channel:0')).toBeGreaterThan(-1);
-    expect(order.indexOf('ensureSessionKey')).toBeLessThan(order.indexOf('channel:0'));
-    expect(client.getRemoteMetadata).toHaveBeenCalled();
+    expect(order.indexOf('metadata')).toBeLessThan(order.indexOf('channel:0'));
+    expect(client.getRemoteMetadata).toHaveBeenCalledTimes(1);
   });
 
   it('fetches channel 0 before essential config types', async () => {
@@ -735,6 +732,26 @@ describe('fetchMeshtasticRemoteConfigSnapshotDeferred', () => {
       0x200,
       Admin.AdminMessage_ConfigType.SECURITY_CONFIG,
     );
+    expect(partial.securityConfig?.publicKey).toHaveLength(32);
+  });
+
+  it('strips privateKey from remote security config snapshot', async () => {
+    const client = {
+      ensureSessionKey: vi.fn().mockResolvedValue(undefined),
+      getRemoteConfig: vi.fn().mockResolvedValue({
+        payloadVariant: {
+          case: 'security',
+          value: {
+            publicKey: new Uint8Array(32),
+            privateKey: new Uint8Array(32).fill(7),
+            adminKey: [],
+          },
+        },
+      }),
+    } as unknown as MeshtasticRemoteAdminClient;
+
+    const partial = await fetchMeshtasticRemoteConfigSecurity(client, 0x200);
+    expect(partial.securityConfig?.privateKey).toBeUndefined();
     expect(partial.securityConfig?.publicKey).toHaveLength(32);
   });
 });

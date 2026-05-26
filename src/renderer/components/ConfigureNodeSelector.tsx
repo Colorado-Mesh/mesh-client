@@ -231,27 +231,22 @@ export default function ConfigureNodeSelector({
             </div>
           </div>
           {configTarget.isLoading && (
-            <p className="text-muted mt-1 text-xs">{t('configureNode.loading')}</p>
+            <p className="text-muted mt-1 text-xs" role="status">
+              {remoteAdminSessionStatus === 'none'
+                ? t('configureNode.establishingSession')
+                : t('configureNode.loading')}
+            </p>
           )}
           {!configTarget.isLoading && remoteAdminSessionStatus !== 'none' && (
             <p
               className={`mt-1 text-xs ${
-                remoteAdminSessionStatus === 'active'
-                  ? 'text-green-300'
-                  : remoteAdminSessionStatus === 'stale'
-                    ? 'text-amber-300'
-                    : 'text-blue-200'
+                remoteAdminSessionStatus === 'active' ? 'text-green-300' : 'text-amber-300'
               }`}
               role="status"
             >
               {remoteAdminSessionStatus === 'active'
                 ? t('configureNode.sessionActive')
                 : t('configureNode.sessionStale')}
-            </p>
-          )}
-          {configTarget.isLoading && remoteAdminSessionStatus === 'none' && (
-            <p className="text-muted mt-1 text-xs" role="status">
-              {t('configureNode.establishingSession')}
             </p>
           )}
         </div>
