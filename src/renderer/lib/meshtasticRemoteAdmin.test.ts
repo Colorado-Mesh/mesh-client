@@ -163,7 +163,48 @@ describe('parseIncomingRemoteAdminPacket', () => {
     expect(parsed).toMatchObject({ kind: 'admin', requestId: 4242, from: 0x200 });
   });
 
-  it('falls back to mesh packet id when Data.requestId is zero', () => {
+  it('falls back to mesh packet id when Data.requestId is zero and sole pending matches from', () => {
+    const adminMsg = create(Admin.AdminMessageSchema, {
+      payloadVariant: { case: 'getDeviceMetadataResponse', value: {} as never },
+    });
+    const meshPacket = create(Mesh.MeshPacketSchema, {
+      id: 7777,
+      from: 0x200,
+      payloadVariant: {
+        case: 'decoded',
+        value: {
+          portnum: Portnums.PortNum.ADMIN_APP,
+          payload: toBinary(Admin.AdminMessageSchema, adminMsg),
+          requestId: 0,
+        },
+      },
+    });
+    const pending = new Map([
+      [
+        555,
+        {
+          destNodeNum: 0x200,
+          packetId: 555,
+          timeoutMs: 120_000,
+          createdAt: Date.now(),
+          resolve: () => {},
+          reject: () => {},
+          timeoutId: setTimeout(() => {}, 0),
+        },
+      ],
+    ]);
+    const firstPending = pending.values().next().value;
+    if (firstPending?.timeoutId) {
+      clearTimeout(firstPending.timeoutId);
+    }
+
+    const parsed = parseIncomingRemoteAdminPacket(meshPacket as never, {
+      pending,
+    });
+    expect(parsed).toMatchObject({ kind: 'admin', requestId: 7777, from: 0x200 });
+  });
+
+  it('does not fall back to mesh packet id without sole pending context', () => {
     const adminMsg = create(Admin.AdminMessageSchema, {
       payloadVariant: { case: 'getDeviceMetadataResponse', value: {} as never },
     });
@@ -181,7 +222,7 @@ describe('parseIncomingRemoteAdminPacket', () => {
     });
 
     const parsed = parseIncomingRemoteAdminPacket(meshPacket as never);
-    expect(parsed).toMatchObject({ kind: 'admin', requestId: 7777, from: 0x200 });
+    expect(parsed).toMatchObject({ kind: 'admin', requestId: 0, from: 0x200 });
   });
 
   it('parses ROUTING_APP errors by request id', () => {
@@ -1168,13 +1209,31 @@ describe('MeshtasticRemoteAdminClient', () => {
     }
   });
 
-  it('rejects getRemoteChannel when admin response case does not match', async () => {
+  it('rejects getRemoteChannel when admin response case mismatches channel response', async () => {
     client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
     const promise = client.getRemoteChannel(0x200, 0);
     await new Promise<void>((resolve) => {
       setImmediate(resolve);
     });
     const packetId = 555;
+    const written = vi.mocked(writeToRadioWithoutQueue).mock.calls.at(-1)?.[1];
+    const decoded = fromBinary(Mesh.ToRadioSchema, written!) as {
+      payloadVariant?: {
+        case?: string;
+        value?: {
+          payloadVariant?: {
+            case?: string;
+            value?: { payload?: Uint8Array };
+          };
+        };
+      };
+    };
+    const adminPayload = decoded.payloadVariant?.value?.payloadVariant?.value?.payload;
+    const adminMsg = fromBinary(Admin.AdminMessageSchema, adminPayload!) as {
+      payloadVariant?: { case?: string; value?: number };
+    };
+    expect(adminMsg.payloadVariant?.case).toBe('getChannelRequest');
+    expect(adminMsg.payloadVariant?.value).toBe(1);
 
     client.handleMeshPacket(
       create(Mesh.MeshPacketSchema, {
@@ -1201,7 +1260,240 @@ describe('MeshtasticRemoteAdminClient', () => {
     await expect(promise).rejects.toThrow('remoteAdmin.errors.channelResponseUnexpected');
   });
 
-  it('rejects getRemoteConfig when admin response case does not match', async () => {
+  it('ignores stale metadata ADMIN_APP while waiting for getChannelResponse', async () => {
+    client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
+    const promise = client.getRemoteChannel(0x200, 0);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const channelPacketId = 555;
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getDeviceMetadataResponse',
+                  value: { firmwareVersion: '2.5.0' } as never,
+                },
+              }),
+            ),
+            requestId: channelPacketId,
+          },
+        },
+      }) as never,
+    );
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getChannelResponse',
+                  value: {
+                    index: 0,
+                    role: 1,
+                    settings: { name: 'LongFast', psk: new Uint8Array([1]) },
+                  } as never,
+                },
+              }),
+            ),
+            requestId: channelPacketId,
+          },
+        },
+      }) as never,
+    );
+
+    const result = await promise;
+    expect((result as { settings?: { name?: string } }).settings?.name).toBe('LongFast');
+  });
+
+  it('ignores tombstoned duplicate ADMIN_APP for a resolved request id', async () => {
+    client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
+    const metadataPromise = client.getRemoteMetadata(0x200);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const metadataPacketId = 555;
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getDeviceMetadataResponse',
+                  value: { firmwareVersion: '2.5.0' } as never,
+                },
+              }),
+            ),
+            requestId: metadataPacketId,
+          },
+        },
+      }) as never,
+    );
+    await metadataPromise;
+
+    const channelPromise = client.getRemoteChannel(0x200, 0);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const channelPacketId = 556;
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getDeviceMetadataResponse',
+                  value: { firmwareVersion: '2.5.0' } as never,
+                },
+              }),
+            ),
+            requestId: metadataPacketId,
+          },
+        },
+      }) as never,
+    );
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getChannelResponse',
+                  value: {
+                    index: 0,
+                    role: 1,
+                    settings: { name: 'LongFast', psk: new Uint8Array([1]) },
+                  } as never,
+                },
+              }),
+            ),
+            requestId: channelPacketId,
+          },
+        },
+      }) as never,
+    );
+
+    const result = await channelPromise;
+    expect((result as { settings?: { name?: string } }).settings?.name).toBe('LongFast');
+  });
+
+  it('ignores mesh packet id fallback from wrong pending count', async () => {
+    client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
+    const promiseLora = client.getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.LORA_CONFIG);
+    const promiseDevice = client.getRemoteConfig(
+      0x200,
+      Admin.AdminMessage_ConfigType.DEVICE_CONFIG,
+    );
+    await vi.waitFor(() => {
+      expect(writeToRadioWithoutQueue).toHaveBeenCalledTimes(2);
+    });
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        id: 9999,
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getDeviceMetadataResponse',
+                  value: { firmwareVersion: '2.5.0' } as never,
+                },
+              }),
+            ),
+            requestId: 0,
+          },
+        },
+      }) as never,
+    );
+
+    expect(client.sessionStore.get(0x200)).toEqual(new Uint8Array(8).fill(1));
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getConfigResponse',
+                  value: {
+                    payloadVariant: { case: 'lora', value: { region: 1 } },
+                  } as never,
+                },
+              }),
+            ),
+            requestId: 555,
+          },
+        },
+      }) as never,
+    );
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getConfigResponse',
+                  value: {
+                    payloadVariant: { case: 'device', value: {} },
+                  } as never,
+                },
+              }),
+            ),
+            requestId: 556,
+          },
+        },
+      }) as never,
+    );
+    await Promise.all([promiseLora, promiseDevice]);
+  });
+
+  it('ignores stale metadata ADMIN_APP while waiting for getConfigResponse', async () => {
     client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
     const promise = client.getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.LORA_CONFIG);
     await new Promise<void>((resolve) => {
@@ -1222,6 +1514,66 @@ describe('MeshtasticRemoteAdminClient', () => {
                 payloadVariant: {
                   case: 'getDeviceMetadataResponse',
                   value: { firmwareVersion: '2.5.0' } as never,
+                },
+              }),
+            ),
+            requestId: packetId,
+          },
+        },
+      }) as never,
+    );
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getConfigResponse',
+                  value: { payloadVariant: { case: 'lora', value: {} } } as never,
+                },
+              }),
+            ),
+            requestId: packetId,
+          },
+        },
+      }) as never,
+    );
+
+    const result = await promise;
+    expect((result as { payloadVariant?: { case?: string } }).payloadVariant?.case).toBe('lora');
+  });
+
+  it('rejects getRemoteConfig on non-stale cross-type ADMIN_APP mismatch', async () => {
+    client.sessionStore.set(0x200, new Uint8Array(8).fill(1));
+    const promise = client.getRemoteConfig(0x200, Admin.AdminMessage_ConfigType.LORA_CONFIG);
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
+    const packetId = 555;
+
+    client.handleMeshPacket(
+      create(Mesh.MeshPacketSchema, {
+        from: 0x200,
+        payloadVariant: {
+          case: 'decoded',
+          value: {
+            portnum: Portnums.PortNum.ADMIN_APP,
+            payload: toBinary(
+              Admin.AdminMessageSchema,
+              create(Admin.AdminMessageSchema, {
+                payloadVariant: {
+                  case: 'getChannelResponse',
+                  value: {
+                    index: 0,
+                    role: 1,
+                    settings: { name: 'LongFast', psk: new Uint8Array([1]) },
+                  } as never,
                 },
               }),
             ),

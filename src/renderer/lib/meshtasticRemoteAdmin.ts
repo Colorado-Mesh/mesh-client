@@ -310,10 +310,15 @@ export function routingErrorToRemoteAdminKey(error: RemoteAdminRoutingErrorCode)
 
 export async function retryRemoteAdminOp<T>(
   operation: () => Promise<T>,
-  options?: { maxAttempts?: number; backoffMs?: number },
+  options?: {
+    maxAttempts?: number;
+    backoffMs?: number;
+    isRetryable?: (message: string) => boolean;
+  },
 ): Promise<T> {
   const maxAttempts = options?.maxAttempts ?? REMOTE_ADMIN_LORA_CONFIG_MAX_ATTEMPTS;
   const backoffMs = options?.backoffMs ?? REMOTE_ADMIN_LORA_CONFIG_RETRY_BACKOFF_MS;
+  const isRetryable = options?.isRetryable ?? isRemoteAdminRetryableError;
   let lastError: Error | undefined;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -324,7 +329,7 @@ export async function retryRemoteAdminOp<T>(
           ? e.message
           : normalizeRemoteAdminError(e);
       lastError = new Error(msg);
-      const canRetry = attempt + 1 < maxAttempts && isRemoteAdminRetryableError(msg);
+      const canRetry = attempt + 1 < maxAttempts && isRetryable(msg);
       if (!canRetry) throw lastError;
       await delayMs(backoffMs);
     }
@@ -332,7 +337,46 @@ export async function retryRemoteAdminOp<T>(
   throw lastError ?? new Error('remoteAdmin.errors.generic');
 }
 
-function resolveAdminRequestId(meshPacket: MeshPacket, dataRequestId: number): number {
+interface ResolveAdminRequestIdContext {
+  pending?: Map<number, PendingRemoteAdmin>;
+  from?: number;
+}
+
+/** Returns true when an ADMIN_APP response case cannot satisfy the pending read's expected cases. */
+export function isCrossTypeAdminReadResponse(
+  responseCase: string,
+  expectedResponseCases: readonly string[] | undefined,
+): boolean {
+  if (!expectedResponseCases?.length) return false;
+  return !expectedResponseCases.includes(responseCase);
+}
+
+/** Ignore stale cross-read ADMIN_APP instead of failing the active pending read. */
+export function shouldIgnoreStaleAdminResponse(params: {
+  responseCase: string;
+  expectedResponseCases?: readonly string[];
+  tombstoneResponseCase?: string;
+}): boolean {
+  if (!isCrossTypeAdminReadResponse(params.responseCase, params.expectedResponseCases)) {
+    return false;
+  }
+  if (params.responseCase === 'getDeviceMetadataResponse') {
+    return true;
+  }
+  // Only ignore when the same request id was already resolved to a different response case.
+  // Otherwise, treat cross-type mismatches as active-request errors so callers fail fast.
+  return (
+    typeof params.tombstoneResponseCase === 'string' &&
+    params.tombstoneResponseCase.length > 0 &&
+    params.tombstoneResponseCase !== params.responseCase
+  );
+}
+
+export function resolveAdminRequestId(
+  meshPacket: MeshPacket,
+  dataRequestId: number,
+  context?: ResolveAdminRequestIdContext,
+): number {
   if (dataRequestId !== 0) return dataRequestId >>> 0;
   const data = meshPacket.payloadVariant?.value;
   const replyId = data?.replyId;
@@ -340,18 +384,30 @@ function resolveAdminRequestId(meshPacket: MeshPacket, dataRequestId: number): n
   if (typeof replyId === 'number' && Number.isFinite(replyId) && replyId !== 0) {
     return replyId >>> 0;
   }
-  const packetId = meshPacket.id;
-  if (typeof packetId === 'number' && Number.isFinite(packetId) && packetId !== 0) {
-    return packetId >>> 0;
+  const pending = context?.pending;
+  const from = context?.from;
+  if (pending?.size === 1 && from != null) {
+    const solePending = pending.values().next().value!;
+    const fromNum = from >>> 0;
+    if (fromNum === solePending.destNodeNum || fromNum === 0) {
+      const packetId = meshPacket.id;
+      if (typeof packetId === 'number' && Number.isFinite(packetId) && packetId !== 0) {
+        return packetId >>> 0;
+      }
+    }
   }
   return 0;
 }
 
-export function parseIncomingRemoteAdminPacket(meshPacket: MeshPacket): ParsedAdminResponse | null {
+export function parseIncomingRemoteAdminPacket(
+  meshPacket: MeshPacket,
+  context?: ResolveAdminRequestIdContext,
+): ParsedAdminResponse | null {
   if (meshPacket.payloadVariant?.case !== 'decoded') return null;
   const data = meshPacket.payloadVariant.value;
   if (data == null || meshPacket.from == null) return null;
   const from = meshPacket.from >>> 0;
+  const resolveContext: ResolveAdminRequestIdContext = { ...context, from };
 
   if (data.portnum === Portnums.PortNum.ADMIN_APP && (data.payload?.length ?? 0) > 0) {
     try {
@@ -363,7 +419,7 @@ export function parseIncomingRemoteAdminPacket(meshPacket: MeshPacket): ParsedAd
         kind: 'admin',
         message,
         from,
-        requestId: resolveAdminRequestId(meshPacket, (data.requestId ?? 0) >>> 0),
+        requestId: resolveAdminRequestId(meshPacket, (data.requestId ?? 0) >>> 0, resolveContext),
       };
     } catch {
       // catch-no-log-ok malformed ADMIN_APP payload on unrelated mesh traffic
@@ -377,7 +433,11 @@ export function parseIncomingRemoteAdminPacket(meshPacket: MeshPacket): ParsedAd
         variant?: { case?: string; value?: number };
       };
       if (routing.variant?.case === 'errorReason') {
-        const requestId = resolveAdminRequestId(meshPacket, (data.requestId ?? 0) >>> 0);
+        const requestId = resolveAdminRequestId(
+          meshPacket,
+          (data.requestId ?? 0) >>> 0,
+          resolveContext,
+        );
         if (requestId !== 0 && routing.variant.value != null) {
           return {
             kind: 'routing_error',
@@ -443,14 +503,24 @@ interface PendingRemoteAdmin {
   packetId: number;
   adminCase?: string;
   expectedResponseCases?: readonly string[];
+  timeoutMs: number;
+  createdAt: number;
   resolve: (value: AdminMessage) => void;
   reject: (error: Error) => void;
   timeoutId: ReturnType<typeof setTimeout>;
 }
 
+interface RecentlyResolvedAdminEntry {
+  responseCase: string;
+  resolvedAt: number;
+}
+
+type PendingClearReason = 'resolve' | 'reject' | 'timeout' | 'reset';
+
 export class MeshtasticRemoteAdminClient {
   readonly sessionStore = new RemoteAdminSessionStore();
   private readonly pending = new Map<number, PendingRemoteAdmin>();
+  private readonly recentlyResolved = new Map<number, RecentlyResolvedAdminEntry>();
   private pendingEdit = false;
   private sendRawChain: Promise<unknown> = Promise.resolve();
 
@@ -467,12 +537,115 @@ export class MeshtasticRemoteAdminClient {
 
   /** Clears in-flight requests and edit state (target switch, disconnect). */
   resetEditState(reason: Error = new Error('remoteAdmin.errors.generic')): void {
-    for (const entry of this.pending.values()) {
-      clearTimeout(entry.timeoutId);
-      entry.reject(reason);
+    for (const entry of [...this.pending.values()]) {
+      this.rejectPending(entry.packetId, entry, reason, 'reset');
     }
     this.pending.clear();
     this.pendingEdit = false;
+  }
+
+  private pruneRecentlyResolved(nowMs: number = Date.now()): void {
+    const cutoff = nowMs - REMOTE_ADMIN_RESPONSE_TIMEOUT_MS;
+    for (const [id, entry] of this.recentlyResolved) {
+      if (entry.resolvedAt < cutoff) {
+        this.recentlyResolved.delete(id);
+      }
+    }
+  }
+
+  private recordResolvedRequestId(requestId: number, responseCase: string): void {
+    this.recentlyResolved.set(requestId >>> 0, {
+      responseCase,
+      resolvedAt: Date.now(),
+    });
+    this.pruneRecentlyResolved();
+  }
+
+  private getRecentlyResolved(requestId: number): RecentlyResolvedAdminEntry | undefined {
+    this.pruneRecentlyResolved();
+    return this.recentlyResolved.get(requestId >>> 0);
+  }
+
+  private adminCorrelationFields(
+    meshPacket: MeshPacket,
+    parsed: Extract<ParsedAdminResponse, { kind: 'admin' }>,
+  ): Record<string, string | number> {
+    const data = meshPacket.payloadVariant?.value;
+    return {
+      requestId: parsed.requestId,
+      dataRequestId: (data?.requestId ?? 0) >>> 0,
+      replyId: (data?.replyId ?? 0) >>> 0,
+      meshPacketId: (meshPacket.id ?? 0) >>> 0,
+      from: parsed.from,
+      responseCase: parsed.message.payloadVariant.case ?? '',
+      pendingCount: this.pending.size,
+    };
+  }
+
+  private logAdminCorrelation(
+    action: string,
+    fields: Record<string, string | number>,
+    extra?: Record<string, string | number>,
+  ): void {
+    const parts = Object.entries({ ...fields, ...extra }).map(
+      ([key, value]) => `${key}=${String(value)}`,
+    );
+    console.debug(`[MeshtasticRemoteAdmin] ${action} ${parts.join(' ')}`);
+  }
+
+  private rejectPending(
+    requestId: number,
+    pending: PendingRemoteAdmin,
+    error: Error,
+    reason: PendingClearReason,
+    logFields?: Record<string, string | number>,
+  ): void {
+    clearTimeout(pending.timeoutId);
+    this.pending.delete(requestId);
+    const elapsedMs = Date.now() - pending.createdAt;
+    if (reason === 'reject' || reason === 'timeout' || reason === 'reset') {
+      this.recordResolvedRequestId(
+        requestId,
+        pending.expectedResponseCases?.[0] ?? pending.adminCase ?? 'unknown',
+      );
+    }
+    this.logAdminCorrelation(`pending-${reason}`, {
+      requestId,
+      dest: pending.destNodeNum,
+      timeoutMs: pending.timeoutMs,
+      elapsedMs,
+      expected: pending.expectedResponseCases?.join(',') ?? '',
+      error: error.message,
+      ...logFields,
+    });
+    pending.reject(error);
+  }
+
+  private finishPendingResolve(
+    requestId: number,
+    pending: PendingRemoteAdmin,
+    message: AdminMessage,
+    meshPacket: MeshPacket,
+    parsed: Extract<ParsedAdminResponse, { kind: 'admin' }>,
+  ): void {
+    const responseCase = message.payloadVariant.case ?? '';
+    this.logAdminCorrelation('resolve', this.adminCorrelationFields(meshPacket, parsed), {
+      dest: pending.destNodeNum,
+      elapsedMs: Date.now() - pending.createdAt,
+    });
+    clearTimeout(pending.timeoutId);
+    this.pending.delete(requestId);
+    this.recordResolvedRequestId(requestId, responseCase);
+    pending.resolve(message);
+  }
+
+  private finishPendingReject(
+    requestId: number,
+    pending: PendingRemoteAdmin,
+    error: Error,
+    logFields?: Record<string, string | number>,
+  ): void {
+    this.rejectPending(requestId, pending, error, 'reject', logFields);
   }
 
   handleMeshPacket(meshPacket: MeshPacket): void {
@@ -480,7 +653,7 @@ export class MeshtasticRemoteAdminClient {
     if (variant === 'encrypted') return;
     if (variant != null && variant !== 'decoded') return;
 
-    const parsed = parseIncomingRemoteAdminPacket(meshPacket);
+    const parsed = parseIncomingRemoteAdminPacket(meshPacket, { pending: this.pending });
     if (!parsed) return;
 
     if (parsed.kind === 'routing_error') {
@@ -533,9 +706,9 @@ export class MeshtasticRemoteAdminClient {
           ' dest=0x' +
           pending.destNodeNum.toString(16),
       );
-      clearTimeout(pending.timeoutId);
-      this.pending.delete(requestId);
-      pending.reject(new Error(key));
+      this.finishPendingReject(requestId, pending, new Error(key), {
+        routingError: parsed.error,
+      });
       return;
     }
 
@@ -550,10 +723,28 @@ export class MeshtasticRemoteAdminClient {
       this.sessionStore.set(sessionNode, passkey);
     }
 
-    if (parsed.requestId === 0) return;
+    if (parsed.requestId === 0) {
+      if (this.pending.size > 0) {
+        this.logAdminCorrelation(
+          'ignore-uncorrelated',
+          this.adminCorrelationFields(meshPacket, parsed),
+        );
+      }
+      return;
+    }
 
     const pending = this.pending.get(parsed.requestId);
-    if (!pending) return;
+    if (!pending) {
+      const tombstone = this.getRecentlyResolved(parsed.requestId);
+      if (this.pending.size > 0) {
+        this.logAdminCorrelation(
+          tombstone ? 'ignore-stale-tombstone' : 'ignore-uncorrelated',
+          this.adminCorrelationFields(meshPacket, parsed),
+          tombstone ? { tombstoneCase: tombstone.responseCase } : undefined,
+        );
+      }
+      return;
+    }
 
     if (pending.destNodeNum !== parsed.from) {
       if (parsed.from === 0) {
@@ -564,6 +755,15 @@ export class MeshtasticRemoteAdminClient {
             pending.destNodeNum.toString(16),
         );
       } else {
+        if (this.pending.size > 0) {
+          this.logAdminCorrelation(
+            'ignore-wrong-from',
+            this.adminCorrelationFields(meshPacket, parsed),
+            {
+              dest: pending.destNodeNum,
+            },
+          );
+        }
         return;
       }
     }
@@ -571,27 +771,33 @@ export class MeshtasticRemoteAdminClient {
     const responseCase = parsed.message.payloadVariant.case;
     if (!responseCase) return;
     if (pending.expectedResponseCases && !pending.expectedResponseCases.includes(responseCase)) {
-      console.debug(
-        '[MeshtasticRemoteAdmin] admin response case mismatch requestId=' +
-          String(parsed.requestId) +
-          ' dest=0x' +
-          pending.destNodeNum.toString(16) +
-          ' got=' +
-          responseCase +
-          ' expected=' +
-          pending.expectedResponseCases.join(','),
-      );
-      const mismatchKey = pending.expectedResponseCases?.includes('getChannelResponse')
+      const tombstone = this.getRecentlyResolved(parsed.requestId);
+      if (
+        shouldIgnoreStaleAdminResponse({
+          responseCase,
+          expectedResponseCases: pending.expectedResponseCases,
+          tombstoneResponseCase: tombstone?.responseCase,
+        })
+      ) {
+        this.logAdminCorrelation('ignore-stale', this.adminCorrelationFields(meshPacket, parsed), {
+          dest: pending.destNodeNum,
+          expected: pending.expectedResponseCases.join(','),
+          elapsedMs: Date.now() - pending.createdAt,
+          tombstoneCase: tombstone?.responseCase ?? '',
+        });
+        return;
+      }
+      const mismatchKey = pending.expectedResponseCases.includes('getChannelResponse')
         ? 'remoteAdmin.errors.channelResponseUnexpected'
         : 'remoteAdmin.errors.configResponseUnexpected';
-      clearTimeout(pending.timeoutId);
-      this.pending.delete(parsed.requestId);
-      pending.reject(new Error(mismatchKey));
+      this.finishPendingReject(parsed.requestId, pending, new Error(mismatchKey), {
+        ...this.adminCorrelationFields(meshPacket, parsed),
+        responseCase,
+        expected: pending.expectedResponseCases.join(','),
+      });
       return;
     }
-    clearTimeout(pending.timeoutId);
-    this.pending.delete(parsed.requestId);
-    pending.resolve(parsed.message);
+    this.finishPendingResolve(parsed.requestId, pending, parsed.message, meshPacket, parsed);
   }
 
   private generatePacketId(): number {
@@ -691,10 +897,12 @@ export class MeshtasticRemoteAdminClient {
     adminCase?: string,
   ): Promise<AdminMessage> {
     const timeoutMs = options.timeoutMs ?? REMOTE_ADMIN_RESPONSE_TIMEOUT_MS;
+    const createdAt = Date.now();
     return new Promise<AdminMessage>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        this.pending.delete(packetId);
-        reject(new Error('remoteAdmin.errors.timeout'));
+        const pending = this.pending.get(packetId);
+        if (!pending) return;
+        this.rejectPending(packetId, pending, new Error('remoteAdmin.errors.timeout'), 'timeout');
       }, timeoutMs);
 
       this.pending.set(packetId, {
@@ -702,6 +910,8 @@ export class MeshtasticRemoteAdminClient {
         packetId,
         adminCase,
         expectedResponseCases: options.expectedResponseCases,
+        timeoutMs,
+        createdAt,
         resolve,
         reject,
         timeoutId,
@@ -731,10 +941,10 @@ export class MeshtasticRemoteAdminClient {
     } catch (e) {
       const pending = this.pending.get(packetId);
       if (pending) {
-        clearTimeout(pending.timeoutId);
-        this.pending.delete(packetId);
         const err = e instanceof Error ? e : new Error(normalizeRemoteAdminError(e));
-        pending.reject(err);
+        this.rejectPending(packetId, pending, err, 'reject', {
+          stage: 'sendRawAdmin',
+        });
       }
       // catch-no-log-ok write failure forwarded to responsePromise rejection for caller
     }
@@ -850,7 +1060,8 @@ export class MeshtasticRemoteAdminClient {
       destNodeNum,
       () =>
         adminMessage({
-          payloadVariant: { case: 'getChannelRequest', value: index },
+          // Meshtastic firmware/admin protobuf expects get_channel_request to be 1-based.
+          payloadVariant: { case: 'getChannelRequest', value: index + 1 },
         }),
       {
         ...REMOTE_ADMIN_READ_SEND_OPTIONS,
@@ -884,6 +1095,9 @@ export class MeshtasticRemoteAdminClient {
     return retryRemoteAdminOp(() => this.getRemoteChannel(destNodeNum, index, sendOptions), {
       maxAttempts: options?.maxAttempts ?? REMOTE_ADMIN_CHANNEL_MAX_ATTEMPTS,
       backoffMs: options?.backoffMs ?? REMOTE_ADMIN_CHANNEL_RETRY_BACKOFF_MS,
+      isRetryable: (message) =>
+        isRemoteAdminRetryableError(message) ||
+        message === 'remoteAdmin.errors.channelResponseUnexpected',
     });
   }
 

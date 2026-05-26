@@ -363,6 +363,17 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 - For first-time trust, use **Copy** public key on the Security tab and complete setup on the remote node per Meshtastic PKC docs.
 - See [README — Security (PKI)](../README.md#key-features) for the full feature list.
 
+### Meshtastic remote admin: "One or more channel settings could not be loaded" / "LongFast load failed"
+
+**Cause**: Multi-hop PKI admin reads for channel 0 can be delayed, reordered, or interleaved with stale `ADMIN_APP` traffic. A fast `ADMIN_APP` shortly after `getChannelRequest` is not always the channel response. Firmware expects `get_channel_request` as a 1-based value on wire (channel 0 is sent as `1`). Channel 0 reads use the long-tail policy (up to 3 attempts, 120s each), while LoRa reads use a shorter essential timeout.
+
+**Fix**:
+
+- Keep a local Meshtastic radio connected (BLE/Serial/HTTP). Remote admin does not run over MQTT-only paths.
+- Open **Log** and reproduce the load. Filter for `MeshtasticRemoteAdmin` debug lines to inspect correlation decisions (`resolve`, `ignore-stale`, `ignore-uncorrelated`, `pending-timeout`, `pending-reset`).
+- If channel 0 still fails, capture the log and verify whether the pending request was cleared by timeout/reset or by an unexpected routing/admin response.
+- Retry from the Radio tab once path quality improves (multi-hop latency and retries can be significant on congested links).
+
 ### Meshtastic MQTT: decrypt works on other clients but not mesh-client
 
 **Cause**: Older builds used an incorrect AES-CTR nonce layout for Meshtastic MQTT channel crypto. Private brokers with AES-128 or AES-256 channel PSKs need the Meshtastic packet-id nonce (fixed in recent releases).
