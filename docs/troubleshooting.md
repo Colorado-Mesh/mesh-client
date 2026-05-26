@@ -353,14 +353,25 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 ### Meshtastic: Configure node remotely does nothing or is disabled
 
-**Cause**: PKC remote administration (firmware 2.5+) requires a **connected local Meshtastic radio** as the admin path. MQTT-only connections cannot administer remote nodes. The target node must be reachable through your radio, and trust may require a one-time public-key exchange.
+**Cause**: PKC remote administration (firmware 2.5+) requires a **connected local Meshtastic radio** as the admin path. MQTT-only connections cannot administer remote nodes. The target node must be reachable through your radio, and trust may require a one-time public-key exchange. `ADMIN_PUBLIC_KEY_UNAUTHORIZED` means the client has no trusted public key for that node (NodeDB and saved admin key both missing or wrong).
 
 **Fix**:
 
 - Connect via BLE, Serial, or HTTP/WiFi (not MQTT-only).
-- Use **Configure node** on Radio, Modules, or Security, or **Configure node remotely** from node detail.
+- Use **Configure node** on Radio, Modules, or Security, or **Configure node remotely** from node detail after saving the node's admin public key.
+- In **node detail**, paste the remote admin public key (base64, `base64:…`, or 64-character hex) and save; the client uses NodeDB keys when present and falls back to this stored key for PKI admin packets.
 - For first-time trust, use **Copy** public key on the Security tab and complete setup on the remote node per Meshtastic PKC docs.
 - See [README — Security (PKI)](../README.md#key-features) for the full feature list.
+
+### Meshtastic MQTT: decrypt works on other clients but not mesh-client
+
+**Cause**: Older builds used an incorrect AES-CTR nonce layout for Meshtastic MQTT channel crypto. Private brokers with AES-128 or AES-256 channel PSKs need the Meshtastic packet-id nonce (fixed in recent releases).
+
+**Fix**:
+
+- Update to the latest mesh-client release.
+- Confirm **Channel PSKs** on the Connection tab match the channel (16- or 32-byte base64 per line; `ChannelName=base64` for MQTT-only names).
+- Enable **Enable TLS (mqtts / wss)** when the broker requires TLS on a non-standard port.
 
 ### BLE auto-reconnect: "No previously connected BLE device found"
 

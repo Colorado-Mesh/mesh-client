@@ -89,7 +89,9 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 ### MQTT
 
-- Meshtastic: `mqtt-manager.ts` (AES-128/256-CTR, channel key map, protobuf, dedup; per-channel publish in `meshtasticMqttPublish.ts`). PKC remote admin: `meshtasticRemoteAdmin.ts` (requires local radio). MeshCore: `meshcore-mqtt-adapter.ts` (JSON v1 envelope).
+- **Meshtastic:** `mqtt-manager.ts` (AES-128/256-CTR with Meshtastic nonce layout, channel key map, protobuf ingest, dedup); `meshtasticMqttPublish.ts` (per-channel uplink name/PSK); `meshtasticChannelPskInput.ts` + `src/shared/meshtasticChannelPskLine.ts` (Connection tab PSK lines); `meshtasticMqttSettingsStorage.ts` (manual key persistence/recovery); `meshtasticMqttIdentity.ts` (MQTT-only outbound `from`: last RF node id vs virtual id); `mqtt-broker-client-id.ts` (stable broker clientId in `app_settings`). Renderer TLS: `mqttTls.ts`.
+- **PKC remote admin (Meshtastic, local radio required):** `meshtasticRemoteAdmin.ts`, `meshtasticRemoteAdminSnapshot.ts` (tab-scoped partial fetch), `meshtasticRemoteAdminKeyStorage.ts` (per-node keys in `app_settings`), `ConfigureNodeSelector.tsx`; serialized with S&F via `meshtasticBacklogUtils.ts` (`remoteAdminReadsActiveCount`).
+- **MeshCore:** `meshcore-mqtt-adapter.ts` (JSON v1 envelope); LetsMesh JWT in `letsMeshJwt.ts`.
 
 ### UI
 
@@ -97,13 +99,17 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 ### Common issues
 
-| Symptom          | Where to check                                 |
-| ---------------- | ---------------------------------------------- |
-| Connection fails | `useDevice.ts`, `useMeshCore.ts`               |
-| Send fails       | `useDevice.sendText`, `useMeshCore` send paths |
-| UI stale         | Zustand store, effect deps                     |
-| BLE timeout      | `noble-ble-manager.ts`, `bleConnectErrors`     |
-| Serial missing   | `serialPortSignature.ts`                       |
-| MQTT loop        | `mqtt-manager.ts`                              |
-| DB errors        | `database.ts` migrations                       |
-| Log gaps         | `log-service.ts`, log tags                     |
+| Symptom             | Where to check                                                   |
+| ------------------- | ---------------------------------------------------------------- |
+| Connection fails    | `useDevice.ts`, `useMeshCore.ts`                                 |
+| Send fails          | `useDevice.sendText`, `useMeshCore` send paths                   |
+| UI stale            | Zustand store, effect deps                                       |
+| BLE timeout         | `noble-ble-manager.ts`, `bleConnectErrors`                       |
+| Serial missing      | `serialPortSignature.ts`                                         |
+| MQTT loop           | `mqtt-manager.ts`                                                |
+| MQTT decrypt fail   | `mqtt-manager.ts`, `meshtasticChannelPskInput.ts`                |
+| MQTT-only sender    | `meshtasticMqttIdentity.ts`, `useDevice.ts`                      |
+| Remote admin fail   | `meshtasticRemoteAdmin.ts`, `meshtasticRemoteAdminKeyStorage.ts` |
+| Garbled chat insert | `meshtasticBacklogUtils.ts` readable-text filter                 |
+| DB errors           | `database.ts` migrations                                         |
+| Log gaps            | `log-service.ts`, log tags                                       |

@@ -51,6 +51,8 @@ If you find a mistranslation or an awkward phrasing:
 2. Open a new [Translation Error](https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) issue.
 3. Provide the current text and your suggested correction.
 
+CI also runs `scripts/check-i18n-quality.mjs` (mojibake, protected brand names, false friends, and feature-specific rules such as untranslated remote-admin or Store & Forward strings). See [AGENTS.md](../AGENTS.md) (i18n / Localization) for maintainer commands (`pnpm run check:i18n`, `pnpm run i18n:auto-translate`).
+
 ### Adding a New Language
 
 If you would like to help us add support for a new language:
