@@ -1216,6 +1216,24 @@ describe('MeshtasticRemoteAdminClient', () => {
       setImmediate(resolve);
     });
     const packetId = 555;
+    const written = vi.mocked(writeToRadioWithoutQueue).mock.calls.at(-1)?.[1];
+    const decoded = fromBinary(Mesh.ToRadioSchema, written!) as {
+      payloadVariant?: {
+        case?: string;
+        value?: {
+          payloadVariant?: {
+            case?: string;
+            value?: { payload?: Uint8Array };
+          };
+        };
+      };
+    };
+    const adminPayload = decoded.payloadVariant?.value?.payloadVariant?.value?.payload;
+    const adminMsg = fromBinary(Admin.AdminMessageSchema, adminPayload!) as {
+      payloadVariant?: { case?: string; value?: number };
+    };
+    expect(adminMsg.payloadVariant?.case).toBe('getChannelRequest');
+    expect(adminMsg.payloadVariant?.value).toBe(1);
 
     client.handleMeshPacket(
       create(Mesh.MeshPacketSchema, {

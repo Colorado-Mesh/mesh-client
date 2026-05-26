@@ -365,7 +365,7 @@ Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in
 
 ### Meshtastic remote admin: "One or more channel settings could not be loaded" / "LongFast load failed"
 
-**Cause**: Multi-hop PKI admin reads for channel 0 can be delayed, reordered, or interleaved with stale `ADMIN_APP` traffic. A fast `ADMIN_APP` shortly after `getChannelRequest` is not always the channel response. Channel 0 reads use the long-tail policy (up to 3 attempts, 120s each), while LoRa reads use a shorter essential timeout.
+**Cause**: Multi-hop PKI admin reads for channel 0 can be delayed, reordered, or interleaved with stale `ADMIN_APP` traffic. A fast `ADMIN_APP` shortly after `getChannelRequest` is not always the channel response. Firmware expects `get_channel_request` as a 1-based value on wire (channel 0 is sent as `1`). Channel 0 reads use the long-tail policy (up to 3 attempts, 120s each), while LoRa reads use a shorter essential timeout.
 
 **Fix**:
 

@@ -1052,7 +1052,8 @@ export class MeshtasticRemoteAdminClient {
       destNodeNum,
       () =>
         adminMessage({
-          payloadVariant: { case: 'getChannelRequest', value: index },
+          // Meshtastic firmware/admin protobuf expects get_channel_request to be 1-based.
+          payloadVariant: { case: 'getChannelRequest', value: index + 1 },
         }),
       {
         ...REMOTE_ADMIN_READ_SEND_OPTIONS,
