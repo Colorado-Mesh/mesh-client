@@ -1388,7 +1388,7 @@ describe('publish — decrypt round-trip (explicit PSK)', () => {
     const protoPayload = publish.mock.calls[0][1] as Buffer;
     const envelope = fromBinary(ServiceEnvelopeSchema, protoPayload);
     const packetId = envelope.packet?.id ?? 0;
-    if (packetId) (manager as any).seenPacketIds.delete(packetId);
+    (manager as any).seenPacketIds.delete(packetId);
 
     const messages: unknown[] = [];
     manager.on('message', (m) => messages.push(m));
@@ -1397,6 +1397,39 @@ describe('publish — decrypt round-trip (explicit PSK)', () => {
     expect(messages).toHaveLength(1);
     expect((messages[0] as { payload: string }).payload).toBe('echo test');
     expect((messages[0] as { channel: number }).channel).toBe(2);
+  });
+
+  it('tries publish-time PSKs before radio channel keys in allDecryptKeys', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/',
+      autoLaunch: false,
+    });
+    const radioKey = Buffer.alloc(32, 0x22);
+    const publishKey = Buffer.alloc(32, 0xab);
+    manager.updateChannelKeys([
+      { name: 'Garber', pskBase64: radioKey.toString('base64'), index: 2 },
+    ]);
+    wireConnected(manager);
+    manager.publish({
+      text: 'order probe',
+      from: 0x11223344,
+      channel: 2,
+      channelName: 'Garber',
+      pskBase64: publishKey.toString('base64'),
+      publishJsonMirror: false,
+    });
+    const keys: Buffer[] = (manager as any).allDecryptKeys;
+    const publishIdx = keys.findIndex((k) => k.equals(publishKey));
+    const radioIdx = keys.findIndex((k) => k.equals(radioKey));
+    expect(publishIdx).toBeGreaterThan(-1);
+    expect(radioIdx).toBeGreaterThan(-1);
+    expect(publishIdx).toBeLessThan(radioIdx);
   });
 });
 

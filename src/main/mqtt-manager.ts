@@ -357,9 +357,11 @@ export class MQTTManager extends EventEmitter {
       keys.push(k);
     };
     add(DEFAULT_PSK);
+    // Publish-time PSKs before radio/manual channel map so broker echo decrypts with the
+    // same key used to encrypt when pskBase64 was passed only on publish IPC.
+    for (const k of this.extraDecryptPsks) add(k);
     for (const k of this.channelKeysByName.values()) add(k);
     for (const k of this.decryptOnlyPsks) add(k);
-    for (const k of this.extraDecryptPsks) add(k);
     this.allDecryptKeys = keys;
   }
 
