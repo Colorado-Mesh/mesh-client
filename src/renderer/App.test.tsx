@@ -77,6 +77,43 @@ const {
     telemetryDeviceUpdateInterval: null,
     setConfig: vi.fn().mockResolvedValue(undefined),
     commitConfig: vi.fn().mockResolvedValue(undefined),
+    setDeviceChannel: vi.fn().mockResolvedValue(undefined),
+    clearChannel: vi.fn().mockResolvedValue(undefined),
+    applyChannelSet: vi.fn().mockResolvedValue(undefined),
+    reboot: vi.fn().mockResolvedValue(undefined),
+    shutdown: vi.fn().mockResolvedValue(undefined),
+    factoryReset: vi.fn().mockResolvedValue(undefined),
+    resetNodeDb: vi.fn().mockResolvedValue(undefined),
+    sendPositionToDevice: vi.fn().mockResolvedValue(undefined),
+    setOwner: vi.fn().mockResolvedValue(undefined),
+    rebootOta: vi.fn().mockResolvedValue(undefined),
+    enterDfuMode: vi.fn().mockResolvedValue(undefined),
+    factoryResetConfig: vi.fn().mockResolvedValue(undefined),
+    refreshOurPosition: vi.fn().mockResolvedValue(undefined),
+    sendWaypoint: vi.fn().mockResolvedValue(undefined),
+    deleteWaypoint: vi.fn().mockResolvedValue(undefined),
+    requestPosition: vi.fn().mockResolvedValue(undefined),
+    setModuleConfig: vi.fn().mockResolvedValue(undefined),
+    setCannedMessages: vi.fn().mockResolvedValue(undefined),
+    setRingtone: vi.fn().mockResolvedValue(undefined),
+    requestStoreForwardHistory: vi.fn().mockResolvedValue(undefined),
+    requestRefresh: vi.fn().mockResolvedValue(undefined),
+    setNodeFavorited: vi.fn().mockResolvedValue(undefined),
+    deleteNode: vi.fn().mockResolvedValue(undefined),
+    getRemoteAdminSessionStatus: vi.fn(),
+    waypoints: [],
+    ringtone: '',
+    storeForwardMessages: [],
+    rangeTestPackets: [],
+    serialMessages: [],
+    remoteHardwareMessages: [],
+    ipTunnelMessages: [],
+    telemetry: [],
+    signalTelemetry: [],
+    environmentTelemetry: [],
+    neighborInfo: new Map(),
+    getRemoteAdminKeyForNode: vi.fn(),
+    setRemoteAdminKeyForNode: vi.fn(),
   }),
   createMeshCoreMock: () => ({
     state: { status: 'disconnected', myNodeNum: 0, connectionType: null },
@@ -142,7 +179,20 @@ const {
     importPrivateKey: vi.fn().mockResolvedValue(undefined),
     exportContact: vi.fn().mockResolvedValue(undefined),
     shareContact: vi.fn().mockResolvedValue(undefined),
-    sendReaction: vi.fn().mockResolvedValue(undefined),
+    setConfig: vi.fn().mockResolvedValue(undefined),
+    commitConfig: vi.fn().mockResolvedValue(undefined),
+    setDeviceChannel: vi.fn().mockResolvedValue(undefined),
+    clearChannel: vi.fn().mockResolvedValue(undefined),
+    reboot: vi.fn().mockResolvedValue(undefined),
+    shutdown: vi.fn().mockResolvedValue(undefined),
+    factoryReset: vi.fn().mockResolvedValue(undefined),
+    resetNodeDb: vi.fn().mockResolvedValue(undefined),
+    sendPositionToDevice: vi.fn().mockResolvedValue(undefined),
+    refreshOurPosition: vi.fn().mockResolvedValue(undefined),
+    sendWaypoint: vi.fn().mockResolvedValue(undefined),
+    deleteWaypoint: vi.fn().mockResolvedValue(undefined),
+    requestPosition: vi.fn().mockResolvedValue(undefined),
+    deleteNode: vi.fn().mockResolvedValue(undefined),
     setNodeFavorited: vi.fn().mockResolvedValue(undefined),
   }),
   getStoredMeshProtocolMock: vi.fn(() => 'meshtastic'),
@@ -353,6 +403,15 @@ vi.mock('../preload', () => ({
     },
   },
 }));
+
+describe('legacy hook mount invariant', () => {
+  it('does not multiply legacy hook mounts via connection/panel wrappers', () => {
+    render(<App />);
+    // Pre-dedupe App mounted useDevice 3× (App + two connection wrappers). Allow one re-render.
+    expect(useDeviceMock.mock.calls.length).toBeLessThan(3);
+    expect(useMeshCoreMock.mock.calls.length).toBeLessThan(3);
+  });
+});
 
 describe('App accessibility', () => {
   it('does not log mount-time act warnings during render', async () => {

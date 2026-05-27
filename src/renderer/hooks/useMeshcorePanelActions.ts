@@ -1,31 +1,49 @@
-import { useMeshCore } from './useMeshCore';
+import { useMemo } from 'react';
 
-/** MeshCore panel callbacks backed by the legacy hook (companion RF + MQTT side effects). */
-export function useMeshcorePanelActions() {
-  const device = useMeshCore();
-  return {
-    setConfig: device.setConfig,
-    commitConfig: device.commitConfig,
-    setDeviceChannel: device.setDeviceChannel,
-    clearChannel: device.clearChannel,
-    reboot: device.reboot,
-    shutdown: device.shutdown,
-    factoryReset: device.factoryReset,
-    resetNodeDb: device.resetNodeDb,
-    sendPositionToDevice: device.sendPositionToDevice,
-    setOwner: device.setOwner,
-    traceRoute: device.traceRoute,
-    refreshOurPosition: device.refreshOurPosition,
-    sendWaypoint: device.sendWaypoint,
-    deleteWaypoint: device.deleteWaypoint,
-    importContacts: device.importContacts,
-    refreshContacts: device.refreshContacts,
-    sendAdvert: device.sendAdvert,
-    syncClock: device.syncClock,
-    meshcoreSetChannel: device.setMeshcoreChannel,
-    meshcoreDeleteChannel: device.deleteMeshcoreChannel,
-    applyMeshcoreContactAutoAdd: device.applyMeshcoreContactAutoAdd,
-    applyMeshcoreTelemetryPrivacy: device.applyMeshcoreTelemetryPrivacyPolicy,
-    getPickerStyleNodeLabel: device.getPickerStyleNodeLabel,
-  };
+import type { UseMeshCoreReturn } from './legacyHookTypes';
+
+/** MeshCore panel callbacks backed by a single App-mounted legacy instance. */
+export function useMeshcorePanelActions(device: UseMeshCoreReturn) {
+  return useMemo(
+    () => ({
+      setConfig: device.setConfig,
+      commitConfig: device.commitConfig,
+      setDeviceChannel: device.setDeviceChannel,
+      clearChannel: device.clearChannel,
+      reboot: device.reboot,
+      shutdown: device.shutdown,
+      factoryReset: device.factoryReset,
+      resetNodeDb: device.resetNodeDb,
+      sendPositionToDevice: device.sendPositionToDevice,
+      setOwner: device.setOwner,
+      traceRoute: device.traceRoute,
+      refreshOurPosition: device.refreshOurPosition,
+      sendWaypoint: device.sendWaypoint,
+      deleteWaypoint: device.deleteWaypoint,
+      requestPosition: device.requestPosition,
+      importContacts: device.importContacts,
+      refreshContacts: device.refreshContacts,
+      sendAdvert: device.sendAdvert,
+      syncClock: device.syncClock,
+      meshcoreSetChannel: device.setMeshcoreChannel,
+      meshcoreDeleteChannel: device.deleteMeshcoreChannel,
+      applyMeshcoreContactAutoAdd: device.applyMeshcoreContactAutoAdd,
+      applyMeshcoreTelemetryPrivacy: device.applyMeshcoreTelemetryPrivacyPolicy,
+      getPickerStyleNodeLabel: device.getPickerStyleNodeLabel,
+      setRadioParams: device.setRadioParams,
+      refreshMeshcoreAutoaddFromDevice: device.refreshMeshcoreAutoaddFromDevice,
+      clearAllMeshcoreContacts: device.clearAllMeshcoreContacts,
+      clearAllRepeaters: device.clearAllRepeaters,
+      requestRepeaterStatus: device.requestRepeaterStatus,
+      requestNeighbors: device.requestNeighbors,
+      requestTelemetry: device.requestTelemetry,
+      sendRepeaterCliCommand: device.sendRepeaterCliCommand,
+      clearCliHistory: device.clearCliHistory,
+      deleteNode: device.deleteNode,
+      setNodeFavorited: device.setNodeFavorited,
+      clearRawPackets: device.clearRawPackets,
+      requestRefresh: device.requestRefresh,
+    }),
+    [device],
+  );
 }

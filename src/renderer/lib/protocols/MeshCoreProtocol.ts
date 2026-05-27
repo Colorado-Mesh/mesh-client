@@ -281,11 +281,15 @@ export class MeshCoreProtocol implements Protocol {
   // --- Config (impls land in step 2d) ---
 
   async setConfig(_handle: unknown, _config: unknown): Promise<void> {
-    throw new UnsupportedOperation('meshcore setConfig');
+    throw new UnsupportedOperation(
+      'meshcore setConfig: use legacy companion paths until MeshCore JSON config lands in Protocol',
+    );
   }
 
   async commitConfig(_handle: unknown): Promise<void> {
-    throw new UnsupportedOperation('meshcore commitConfig');
+    throw new UnsupportedOperation(
+      'meshcore commitConfig: use legacy companion commitConfig via panel actions',
+    );
   }
 
   async setChannel(_handle: unknown, _opts: SetChannelOptions): Promise<void> {
