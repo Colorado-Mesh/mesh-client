@@ -40,6 +40,9 @@ export function useMeshtasticPanelActions(device: UseDeviceReturn) {
       setNodeFavorited: device.setNodeFavorited,
       deleteNode: device.deleteNode,
       clearRawPackets: device.clearRawPackets,
+      refreshNodesFromDb: device.refreshNodesFromDb,
+      refreshMessagesFromDb: device.refreshMessagesFromDb,
+      getFullNodeLabel: device.getFullNodeLabel,
     }),
     [device],
   );

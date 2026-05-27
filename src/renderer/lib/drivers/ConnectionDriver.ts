@@ -61,6 +61,10 @@ function transportTypeToConnectionType(type: TransportType): ConnectionType | nu
  *
  * Watchdog and reconnect-with-backoff are intentionally not yet implemented;
  * they layer on top of the slot registry's `lastDataAt`.
+ *
+ * MQTT status mirroring into `connectionStore` is updated from legacy hook
+ * MQTT IPC handlers until MQTT moves fully into drivers (see
+ * docs/renderer-side-effect-migration.md).
  */
 export class ConnectionDriver {
   private slots = new Map<string, TransportSlot>();

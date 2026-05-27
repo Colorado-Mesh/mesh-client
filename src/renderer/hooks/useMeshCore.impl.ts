@@ -546,6 +546,10 @@ export function useMeshCoreImpl() {
       const st = s;
       mqttStatusRef.current = st;
       setMqttStatus(st);
+      const identityId = meshcoreIdentityIdRef.current;
+      if (identityId) {
+        setConnection(identityId, { mqttStatus: st });
+      }
       if (st === 'connected') {
         setMqttConnectionLoss(false);
       } else if (consumeMqttUserDisconnect()) {

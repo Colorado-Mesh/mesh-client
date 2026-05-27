@@ -43,6 +43,12 @@ export function useMeshcorePanelActions(device: UseMeshCoreReturn) {
       setNodeFavorited: device.setNodeFavorited,
       clearRawPackets: device.clearRawPackets,
       requestRefresh: device.requestRefresh,
+      refreshNodesFromDb: device.refreshNodesFromDb,
+      refreshMessagesFromDb: device.refreshMessagesFromDb,
+      getFullNodeLabel: device.getFullNodeLabel,
+      signData: device.signData,
+      exportPrivateKey: device.exportPrivateKey,
+      importPrivateKey: device.importPrivateKey,
     }),
     [device],
   );

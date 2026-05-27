@@ -101,16 +101,33 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 - **Extend:** adjust `DiagnosticRow` in `src/renderer/lib/types.ts`, add detector, wire `replaceRoutingRowsFromMap` / `replaceRfRowsForNode`; TTL defaults in `diagnosticRows.ts` (routing 24h, RF 1h).
 - **Full reference:** [docs/diagnostics.md](docs/diagnostics.md).
 
+### Renderer hook architecture (dual protocol)
+
+**Default rules for new UI and refactors:**
+
+| Concern                                                       | Use                                                                                                                    |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Reads (nodes, messages, channels, connection fields in store) | Zustand stores + `useNodes` / `useMessages` / `useConnectionStatus` / `useLegacyConnectionView`                        |
+| Writes (configure, send, admin, panel callbacks)              | `useMeshtasticPanelActions` / `useMeshcorePanelActions` or protocol action hooks (`useSendMessage`, `useSetConfig`, …) |
+| Connect / disconnect / auto-connect                           | `useProtocolConnectionActions(protocol, meshtastic, meshcore)` with instances from App                                 |
+| Wire subscriptions, MQTT IPC, reconnect, DB hydration         | `useDevice` / `useMeshCore` only — mount **once** from `App.tsx`                                                       |
+
+Do **not** call `useDevice()` or `useMeshCore()` in child components or panel wrappers. Do **not** compare `protocol === 'meshcore'` for feature gates; use `ProtocolCapabilities` / `useRadioProvider(protocol)`.
+
+Protocol SDK adapters: `src/renderer/lib/protocols/` (`Protocol`, `MeshtasticProtocol`, `MeshCoreProtocol`, `protocolRegistry.ts`). Connection lifecycle: `ConnectionDriver`; inbound domain events: `PacketRouter` → stores.
+
+**Transitional (until side effects move fully into drivers/stores):** legacy hooks still own Meshtastic wire subscriptions, MeshCore companion conn events, and MQTT bridges. See [docs/renderer-side-effect-migration.md](docs/renderer-side-effect-migration.md) for the removal checklist.
+
 ### First places to look
 
-- Connection issues: `useDevice.ts` / `useMeshCore.ts`
-- UI state: `stores/*`
+- Connection issues: `ConnectionDriver`, `useProtocolConnection.ts`, legacy side-effect hooks `useDevice.ts` / `useMeshCore.ts`
+- UI state: `stores/*`, `useLegacyConnectionView.ts`
 - IPC: `src/main/index.ts`
 
 ### Protocol entry points
 
-- **Meshtastic:** `useDevice.ts`, `connection.ts` (`createConnection`)
-- **MeshCore:** `useMeshCore.ts`, `@liamcottle/meshcore.js`
+- **Meshtastic:** `MeshtasticProtocol.ts`, `useDevice` (side effects), `connection.ts` (`createConnection`)
+- **MeshCore:** `MeshCoreProtocol.ts`, `useMeshCore` (side effects), `@liamcottle/meshcore.js`
 
 ### Database
 

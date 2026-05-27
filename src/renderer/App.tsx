@@ -28,6 +28,7 @@ import SignalPropagation from './components/SignalPropagation';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
+import { useConnectionQueue } from './hooks/useConnectionStatus';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useDbRefresh } from './hooks/useDbRefresh';
 import { useDevice } from './hooks/useDevice';
@@ -670,6 +671,7 @@ export default function App() {
   const meshcoreConnectionView = useLegacyConnectionView(meshcoreIdentityId, meshcoreDevice);
   const activeConnectionView =
     protocol === 'meshcore' ? meshcoreConnectionView : meshtasticConnectionView;
+  const activeQueueFromStore = useConnectionQueue(focusedIdentityId);
   const handleSend = useCallback(
     (text: string, channel: number, destination?: number, replyId?: number) => {
       sendMessage(text, channel, destination, replyId != null ? String(replyId) : undefined);
@@ -905,11 +907,10 @@ export default function App() {
   const envMode = useDiagnosticsStore((s) => s.envMode);
 
   useEffect(() => {
-    runReanalysis(activeLegacyDevice.getNodes, activeLegacyDevice.selfNodeId, capabilities);
+    runReanalysis(() => nodesForUi, activeConnectionView.state.myNodeNum, capabilities);
   }, [
-    activeLegacyDevice.nodes,
-    activeLegacyDevice.selfNodeId,
-    activeLegacyDevice.getNodes,
+    nodesForUi,
+    activeConnectionView.state.myNodeNum,
     runReanalysis,
     ignoreMqttEnabled,
     envMode,
@@ -936,24 +937,24 @@ export default function App() {
     isOperational || activeConnectionView.state.status === 'connected';
   const hasLocalMeshtasticRadio =
     protocol === 'meshtastic' &&
-    activeLegacyDevice.state.myNodeNum > 0 &&
-    activeLegacyDevice.state.connectionType != null &&
-    activeLegacyDevice.state.status !== 'disconnected';
+    meshtasticConnectionView.state.myNodeNum > 0 &&
+    meshtasticConnectionView.state.connectionType != null &&
+    meshtasticConnectionView.state.status !== 'disconnected';
   const isRemoteConfigureTarget =
-    protocol === 'meshtastic' && activeLegacyDevice.configureTargetNodeNum != null;
+    protocol === 'meshtastic' && meshtasticDevice.configureTargetNodeNum != null;
   const configTarget = useMemo((): ConfigTargetContext => {
     const remote = isRemoteConfigureTarget;
     return {
       mode: remote ? 'remote' : 'local',
-      nodeNum: activeLegacyDevice.configureTargetNodeNum,
-      isReady: !remote || activeLegacyDevice.remoteAdminStatus === 'ready',
-      isLoading: activeLegacyDevice.remoteAdminStatus === 'loading',
-      error: activeLegacyDevice.remoteAdminError,
+      nodeNum: meshtasticDevice.configureTargetNodeNum,
+      isReady: !remote || meshtasticDevice.remoteAdminStatus === 'ready',
+      isLoading: meshtasticDevice.remoteAdminStatus === 'loading',
+      error: meshtasticDevice.remoteAdminError,
       onRefresh:
-        remote && activeLegacyDevice.configureTargetNodeNum != null
+        remote && meshtasticDevice.configureTargetNodeNum != null
           ? () =>
-              activeLegacyDevice.refreshRemoteConfigSnapshot(
-                activeLegacyDevice.configureTargetNodeNum!,
+              meshtasticPanelActions.refreshRemoteConfigSnapshot(
+                meshtasticDevice.configureTargetNodeNum!,
                 'radio',
                 {
                   force: true,
@@ -961,7 +962,7 @@ export default function App() {
               )
           : undefined,
     };
-  }, [isRemoteConfigureTarget, activeLegacyDevice]);
+  }, [isRemoteConfigureTarget, meshtasticDevice, meshtasticPanelActions]);
   const effectiveChannelConfigs = isRemoteConfigureTarget
     ? (activeLegacyDevice.remoteConfigSnapshot?.channelConfigs ?? [])
     : activeLegacyDevice.channelConfigs;
@@ -987,40 +988,40 @@ export default function App() {
     ? (activeLegacyDevice.remoteConfigSnapshot?.failedChannelIndices ?? [])
     : undefined;
   const handleRetryRemoteChannelsTail = useCallback(() => {
-    if (activeLegacyDevice.configureTargetNodeNum == null) return;
-    const route = remoteConfigChannelRetryRoute(activeLegacyDevice.remoteConfigSnapshot ?? {});
-    void activeLegacyDevice.refreshRemoteConfigSnapshot(
-      activeLegacyDevice.configureTargetNodeNum,
+    if (meshtasticDevice.configureTargetNodeNum == null) return;
+    const route = remoteConfigChannelRetryRoute(meshtasticDevice.remoteConfigSnapshot ?? {});
+    void meshtasticPanelActions.refreshRemoteConfigSnapshot(
+      meshtasticDevice.configureTargetNodeNum,
       route,
       {
         force: true,
       },
     );
-  }, [activeLegacyDevice]);
+  }, [meshtasticDevice, meshtasticPanelActions]);
   const configureNodeSelector =
     capabilities.hasRemoteAdmin && hasLocalMeshtasticRadio ? (
       <div className="mb-4">
         <ConfigureNodeSelector
           nodes={nodesForUi}
-          myNodeNum={activeLegacyDevice.state.myNodeNum}
-          configureTargetNodeNum={activeLegacyDevice.configureTargetNodeNum}
+          myNodeNum={meshtasticConnectionView.state.myNodeNum}
+          configureTargetNodeNum={meshtasticDevice.configureTargetNodeNum}
           onConfigureTargetChange={meshtasticPanelActions.setConfigureTargetNodeNum}
-          remoteAdminStatus={activeLegacyDevice.remoteAdminStatus}
-          remoteAdminError={activeLegacyDevice.remoteAdminError}
+          remoteAdminStatus={meshtasticDevice.remoteAdminStatus}
+          remoteAdminError={meshtasticDevice.remoteAdminError}
           remoteAdminSessionStatus={
-            activeLegacyDevice.configureTargetNodeNum != null
-              ? activeLegacyDevice.getRemoteAdminSessionStatus(
-                  activeLegacyDevice.configureTargetNodeNum,
+            meshtasticDevice.configureTargetNodeNum != null
+              ? meshtasticPanelActions.getRemoteAdminSessionStatus(
+                  meshtasticDevice.configureTargetNodeNum,
                 )
               : 'none'
           }
           isLocalRadioConnected={hasLocalMeshtasticRadio}
-          getNodeName={activeLegacyDevice.getNodeName}
+          getNodeName={meshtasticPanelActions.getNodeName}
           onRefresh={
-            activeLegacyDevice.configureTargetNodeNum != null
+            meshtasticDevice.configureTargetNodeNum != null
               ? () =>
-                  activeLegacyDevice.refreshRemoteConfigSnapshot(
-                    activeLegacyDevice.configureTargetNodeNum!,
+                  meshtasticPanelActions.refreshRemoteConfigSnapshot(
+                    meshtasticDevice.configureTargetNodeNum!,
                     'radio',
                     {
                       force: true,
@@ -1032,8 +1033,8 @@ export default function App() {
       </div>
     ) : null;
 
-  const configureTargetNodeNum = activeLegacyDevice.configureTargetNodeNum;
-  const refreshRemoteConfigSnapshot = activeLegacyDevice.refreshRemoteConfigSnapshot;
+  const configureTargetNodeNum = meshtasticDevice.configureTargetNodeNum;
+  const refreshRemoteConfigSnapshot = meshtasticPanelActions.refreshRemoteConfigSnapshot;
 
   useEffect(() => {
     if (!isRemoteConfigureTarget || configureTargetNodeNum == null) return;
@@ -1064,11 +1065,11 @@ export default function App() {
   const detailHomeNode =
     detailModalProtocol === 'meshcore'
       ? (meshcoreUiNodes.get(meshcoreDevice.selfNodeId) ?? null)
-      : (nodesForUi.get(activeLegacyDevice.state.myNodeNum) ?? null);
+      : (nodesForUi.get(meshtasticConnectionView.state.myNodeNum) ?? null);
   const detailMyNodeNum =
     detailModalProtocol === 'meshcore'
       ? meshcoreDevice.selfNodeId
-      : activeLegacyDevice.state.myNodeNum;
+      : meshtasticConnectionView.state.myNodeNum;
 
   const selectedNode = useMemo(() => {
     if (selectedNodeId == null) return null;
@@ -1114,11 +1115,17 @@ export default function App() {
     const result = activeLegacyDevice.traceRouteResults.get(selectedNode.node_id);
     if (!result) return undefined;
     return [
-      activeLegacyDevice.getFullNodeLabel(activeLegacyDevice.state.myNodeNum) || 'Me',
-      ...result.route.map((id) => activeLegacyDevice.getFullNodeLabel(id)),
-      activeLegacyDevice.getFullNodeLabel(result.from),
+      panelActions.getFullNodeLabel(activeConnectionView.state.myNodeNum) || 'Me',
+      ...result.route.map((id) => panelActions.getFullNodeLabel(id)),
+      panelActions.getFullNodeLabel(result.from),
     ];
-  }, [selectedNode, activeLegacyDevice, protocol]);
+  }, [
+    selectedNode,
+    panelActions,
+    activeConnectionView.state.myNodeNum,
+    protocol,
+    activeLegacyDevice.traceRouteResults,
+  ]);
 
   /** In meshcore mode, only show configured channels (key !== all zeros) in chat. */
   const chatChannels = useMemo(() => {
@@ -1185,21 +1192,14 @@ export default function App() {
   }, []);
 
   // ─── Startup pruning based on persisted app settings (protocol-aware) ─────
-  const refreshMeshtasticNodesLegacy = meshtasticDevice.refreshNodesFromDb;
-  const refreshMeshcoreNodesLegacy = meshcoreDevice.refreshNodesFromDb;
   const refreshNodesFromDb = useCallback(() => {
     if (protocol === 'meshtastic') {
-      refreshMeshtasticNodesLegacy();
+      meshtasticPanelActions.refreshNodesFromDb();
       void refreshMeshtasticNodesInStore();
     } else {
-      void refreshMeshcoreNodesLegacy();
+      void meshcorePanelActions.refreshNodesFromDb();
     }
-  }, [
-    protocol,
-    refreshMeshtasticNodesLegacy,
-    refreshMeshcoreNodesLegacy,
-    refreshMeshtasticNodesInStore,
-  ]);
+  }, [protocol, meshtasticPanelActions, meshcorePanelActions, refreshMeshtasticNodesInStore]);
   useEffect(() => {
     const startupProtocol = getStoredMeshProtocol();
     const raw =
@@ -1688,10 +1688,12 @@ export default function App() {
   const deviceVariant = deviceHeaderVariant(activeConnectionView.state.status, deviceLoss);
   const takServerError = !takStatus.running && !!(takStatus.error || takError);
   const takVariant = takHeaderVariant(takStatus.running, takServerError, takClientLoss);
-  const queueUsed = activeLegacyDevice.queueStatus
-    ? activeLegacyDevice.queueStatus.maxlen - activeLegacyDevice.queueStatus.free
-    : 0;
-  const queueShowBadge = activeLegacyDevice.queueStatus != null;
+  const legacyQueue = activeLegacyDevice.queueStatus;
+  const activeQueue =
+    activeQueueFromStore ??
+    (legacyQueue != null ? { free: legacyQueue.free, maxlen: legacyQueue.maxlen } : null);
+  const queueUsed = activeQueue ? activeQueue.maxlen - activeQueue.free : 0;
+  const queueShowBadge = activeQueue != null;
   const queueColorClass =
     queueUsed <= 10
       ? 'bg-green-900/60 text-green-300 border border-green-700'
@@ -1864,21 +1866,21 @@ export default function App() {
               <MqttGlobeIcon variant={mqttVariant} />
               <span
                 aria-label={
-                  activeLegacyDevice.mqttStatus === 'connected'
+                  activeConnectionView.mqttStatus === 'connected'
                     ? t('app.mqttConnected')
-                    : activeLegacyDevice.mqttStatus === 'connecting'
+                    : activeConnectionView.mqttStatus === 'connecting'
                       ? t('app.mqttConnecting')
-                      : activeLegacyDevice.mqttStatus === 'error' || mqttLoss
+                      : activeConnectionView.mqttStatus === 'error' || mqttLoss
                         ? t('app.mqttError')
                         : t('app.mqttDisconnected')
                 }
                 className={`text-xs ${headerTextClass(mqttVariant)}`}
               >
-                {activeLegacyDevice.mqttStatus === 'connected'
+                {activeConnectionView.mqttStatus === 'connected'
                   ? t('app.mqttConnected')
-                  : activeLegacyDevice.mqttStatus === 'connecting'
+                  : activeConnectionView.mqttStatus === 'connecting'
                     ? t('app.mqttConnecting')
-                    : activeLegacyDevice.mqttStatus === 'error' || mqttLoss
+                    : activeConnectionView.mqttStatus === 'error' || mqttLoss
                       ? t('app.mqttError')
                       : t('app.mqttDisconnected')}
               </span>
@@ -1887,37 +1889,33 @@ export default function App() {
             <div
               className={`h-2.5 w-2.5 rounded-full ${headerDotClass(deviceVariant)}`}
               aria-hidden="true"
-              title={deviceConnectionStatusLabel(t, activeLegacyDevice.state.status)}
+              title={deviceConnectionStatusLabel(t, activeConnectionView.state.status)}
             />
             <div role="status" aria-live="polite" aria-atomic="true">
               <span
-                aria-label={`${deviceConnectionStatusLabel(t, activeLegacyDevice.state.status)}${activeLegacyDevice.state.connectionType ? ` (${activeLegacyDevice.state.connectionType.toUpperCase()})` : ''}`}
+                aria-label={`${deviceConnectionStatusLabel(t, activeConnectionView.state.status)}${activeConnectionView.state.connectionType ? ` (${activeConnectionView.state.connectionType.toUpperCase()})` : ''}`}
                 className={`text-xs ${headerTextClass(deviceVariant)}`}
               >
-                {deviceConnectionStatusLabel(t, activeLegacyDevice.state.status)}
-                {activeLegacyDevice.state.connectionType
-                  ? ` (${activeLegacyDevice.state.connectionType.toUpperCase()})`
+                {deviceConnectionStatusLabel(t, activeConnectionView.state.status)}
+                {activeConnectionView.state.connectionType
+                  ? ` (${activeConnectionView.state.connectionType.toUpperCase()})`
                   : ''}
               </span>
             </div>
-            {activeLegacyDevice.state.myNodeNum > 0 && (
+            {activeConnectionView.state.myNodeNum > 0 && (
               <span
                 aria-label={t('app.nodeLabel', {
-                  name: activeLegacyDevice.getPickerStyleNodeLabel(
-                    activeLegacyDevice.state.myNodeNum,
-                  ),
+                  name: panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum),
                 })}
                 className="text-muted ml-2 text-xs whitespace-nowrap"
               >
                 {t('app.nodeLabel', {
-                  name: activeLegacyDevice.getPickerStyleNodeLabel(
-                    activeLegacyDevice.state.myNodeNum,
-                  ),
+                  name: panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum),
                 })}
               </span>
             )}
             {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
-            {queueShowBadge && activeLegacyDevice.queueStatus && (
+            {queueShowBadge && activeQueue && (
               <HelpTooltip
                 text={
                   protocol === 'meshcore'
@@ -1926,10 +1924,10 @@ export default function App() {
                 }
               >
                 <div
-                  aria-label={`Q: ${queueUsed}/${activeLegacyDevice.queueStatus.maxlen}`}
+                  aria-label={`Q: ${queueUsed}/${activeQueue.maxlen}`}
                   className={`flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${queueColorClass}`}
                 >
-                  Q: {queueUsed}/{activeLegacyDevice.queueStatus.maxlen}
+                  Q: {queueUsed}/{activeQueue.maxlen}
                 </div>
               </HelpTooltip>
             )}
@@ -1939,8 +1937,8 @@ export default function App() {
 
         {/* Connection Status Banner */}
         <ConnectionBanner
-          status={activeLegacyDevice.state.status}
-          reconnectAttempt={activeLegacyDevice.state.reconnectAttempt}
+          status={activeConnectionView.state.status}
+          reconnectAttempt={activeConnectionView.state.reconnectAttempt}
           onReconnect={handleReconnect}
         />
 
@@ -2485,16 +2483,16 @@ export default function App() {
                               securityConfig={effectiveSecurityConfig}
                               protocol={protocol}
                               onSignData={
-                                protocol === 'meshcore' ? meshcoreDevice.signData : undefined
+                                protocol === 'meshcore' ? meshcorePanelActions.signData : undefined
                               }
                               onExportPrivateKey={
                                 protocol === 'meshcore'
-                                  ? meshcoreDevice.exportPrivateKey
+                                  ? meshcorePanelActions.exportPrivateKey
                                   : undefined
                               }
                               onImportPrivateKey={
                                 protocol === 'meshcore'
-                                  ? meshcoreDevice.importPrivateKey
+                                  ? meshcorePanelActions.importPrivateKey
                                   : undefined
                               }
                             />
@@ -2556,7 +2554,11 @@ export default function App() {
                               gpsLoading={activeLegacyDevice.gpsLoading}
                               onGpsIntervalChange={activeLegacyDevice.updateGpsInterval}
                               onNodesPruned={refreshNodesFromDb}
-                              onMessagesPruned={activeLegacyDevice.refreshMessagesFromDb}
+                              onMessagesPruned={
+                                protocol === 'meshcore'
+                                  ? meshcorePanelActions.refreshMessagesFromDb
+                                  : meshtasticPanelActions.refreshMessagesFromDb
+                              }
                               onClearMeshcoreRepeaters={
                                 protocol === 'meshcore'
                                   ? meshcorePanelActions.clearAllRepeaters
@@ -2591,7 +2593,7 @@ export default function App() {
                               onTraceRoute={panelActions.traceRoute}
                               isConnected={isOperational}
                               traceRouteResults={activeLegacyDevice.traceRouteResults}
-                              getFullNodeLabel={activeLegacyDevice.getFullNodeLabel}
+                              getFullNodeLabel={panelActions.getFullNodeLabel}
                               ourPosition={activeLegacyDevice.ourPosition}
                               onNodeClick={(node) => {
                                 setSelectedNodeId(node.node_id);

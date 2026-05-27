@@ -42,11 +42,16 @@ describe('useMeshtasticPanelActions', () => {
       setNodeFavorited: vi.fn(),
       deleteNode: vi.fn(),
       clearRawPackets: vi.fn(),
+      refreshNodesFromDb: vi.fn(),
+      refreshMessagesFromDb: vi.fn(),
+      getFullNodeLabel: vi.fn(),
     };
 
     const { result } = renderHook(() => useMeshtasticPanelActions(device as never));
 
     expect(result.current.setConfig).toBe(setConfig);
     expect(result.current.sendReaction).toBe(sendReaction);
+    expect(result.current.refreshNodesFromDb).toBe(device.refreshNodesFromDb);
+    expect(result.current.getFullNodeLabel).toBe(device.getFullNodeLabel);
   });
 });

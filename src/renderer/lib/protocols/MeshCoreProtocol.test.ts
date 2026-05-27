@@ -66,3 +66,13 @@ describe('MeshCoreProtocol.subscribe', () => {
     teardown();
   });
 });
+
+describe('MeshCoreProtocol capability-gated operations', () => {
+  it('setConfig remains on legacy companion until Protocol JSON config lands', async () => {
+    await expect(meshcoreProtocol.setConfig({}, {})).rejects.toThrow(/setConfig/);
+  });
+
+  it('commitConfig remains on legacy companion panel actions', async () => {
+    await expect(meshcoreProtocol.commitConfig({})).rejects.toThrow(/commitConfig/);
+  });
+});

@@ -121,6 +121,10 @@ interface MeshCoreEventBus {
  * MeshCore codec + SDK adapter. Stateless: the SDK handle is passed in to
  * every method that needs it. Per-subscription state (pubkey-prefix lookup
  * map) lives in a closure inside `subscribe`.
+ *
+ * Config/channel/companion operations that still require the legacy companion
+ * path throw `UnsupportedOperation` — UI must gate with `ProtocolCapabilities`
+ * and call `useMeshcorePanelActions` instead until step 2d lands in Protocol.
  */
 export class MeshCoreProtocol implements Protocol {
   readonly type = 'meshcore';

@@ -145,7 +145,7 @@ import type {
   RemoteConfigChannelsTailStatus,
   TelemetryPoint,
 } from '../lib/types';
-import { useConnectionStore } from '../stores/connectionStore';
+import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useMessageStore } from '../stores/messageStore';
@@ -844,6 +844,10 @@ export function useDeviceImpl() {
       const prev = mqttStatusRef.current;
       mqttStatusRef.current = s;
       setMqttStatus(s);
+      const identityId = meshtasticIdentityIdRef.current;
+      if (identityId) {
+        setConnection(identityId, { mqttStatus: s });
+      }
       if (s === 'connected') {
         setMqttConnectionLoss(false);
         if (prev !== 'connected') {
