@@ -39,6 +39,7 @@ import { isForeignLoraLogCandidate } from '../foreignLoraDetection';
 import type { OurPosition } from '../gpsSource';
 import { shouldPreserveStaticGpsForSelfNode } from '../gpsSource';
 import { meshtasticHwModelName } from '../hardwareModels';
+import { hydrateIdentityStoresFromDb } from '../hydrateIdentityStoresFromDb';
 import { attachMeshtasticIngest, type MeshtasticIngestSession } from '../ingest/meshtasticIngest';
 import { bindMeshtasticIngress, meshtasticTransportParams } from '../meshIdentityBridge';
 import { setMeshtasticConnectedMyNodeNum } from '../meshtasticConnectedNodeRef';
@@ -439,6 +440,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
       getIsConfiguring: () => isConfiguringRef.current,
       getMyNodeNum: () => myNodeNumRef.current,
     });
+    void hydrateIdentityStoresFromDb('meshtastic', identityId);
   }
 
   // ─── Device status ─────────────────────────────────────────

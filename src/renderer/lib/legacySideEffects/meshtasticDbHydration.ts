@@ -7,7 +7,8 @@ import { meshtasticHwModelName } from '../hardwareModels';
 import { parseStoredJson } from '../parseStoredJson';
 import type { ChatMessage, MeshNode } from '../types';
 
-function getMessageLoadLimit(): number {
+/** Message cap for Meshtastic SQLite load (shared with identity store hydration). */
+export function getMeshtasticMessageLoadLimit(): number {
   const s = parseStoredJson<{
     messageLimitEnabled?: boolean;
     messageLimitCount?: number;
@@ -55,7 +56,7 @@ export interface MeshtasticDbHydrationCallbacks {
  */
 export function runMeshtasticDbHydration(callbacks: MeshtasticDbHydrationCallbacks): void {
   window.electronAPI.db
-    .getMessages(undefined, getMessageLoadLimit())
+    .getMessages(undefined, getMeshtasticMessageLoadLimit())
     .then((msgs) => {
       const sanitized = msgs.map((m) => ({
         ...m,

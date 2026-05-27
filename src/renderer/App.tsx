@@ -30,7 +30,7 @@ import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
-import { useDbRefresh } from './hooks/useDbRefresh';
+import { useProtocolDbRefresh } from './hooks/useDbRefresh';
 import { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
 import { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelActions';
 import { useMessages } from './hooks/useMessages';
@@ -676,7 +676,20 @@ function AppContent({
     if (!meshcoreNodesById) return new Map<number, MeshNode>();
     return nodeRecordsToMeshNodeMap(Object.values(meshcoreNodesById));
   }, [meshcoreNodesById]);
-  const { refreshNodesFromDb: refreshMeshtasticNodesInStore } = useDbRefresh(meshtasticIdentityId);
+  const meshtasticDbRefresh = useProtocolDbRefresh('meshtastic', meshtasticIdentityId);
+  const meshcoreDbRefresh = useProtocolDbRefresh('meshcore', meshcoreIdentityId);
+  const { refreshAllFromDb: refreshMeshtasticAllFromDb } = meshtasticDbRefresh;
+  const { refreshAllFromDb: refreshMeshcoreAllFromDb } = meshcoreDbRefresh;
+
+  useEffect(() => {
+    if (!meshtasticIdentityId) return;
+    void refreshMeshtasticAllFromDb();
+  }, [meshtasticIdentityId, refreshMeshtasticAllFromDb]);
+
+  useEffect(() => {
+    if (!meshcoreIdentityId) return;
+    void refreshMeshcoreAllFromDb();
+  }, [meshcoreIdentityId, refreshMeshcoreAllFromDb]);
   const sendMessage = useSendMessage(focusedIdentityId);
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const activeConnectionView = activeFacade.connectionView;
@@ -1205,11 +1218,34 @@ function AppContent({
   const refreshNodesFromDb = useCallback(() => {
     if (protocol === 'meshtastic') {
       meshtasticPanelActions.refreshNodesFromDb();
-      void refreshMeshtasticNodesInStore();
+      void meshtasticDbRefresh.refreshNodesFromDb();
     } else {
       void meshcorePanelActions.refreshNodesFromDb();
+      void meshcoreDbRefresh.refreshNodesFromDb();
     }
-  }, [protocol, meshtasticPanelActions, meshcorePanelActions, refreshMeshtasticNodesInStore]);
+  }, [
+    protocol,
+    meshtasticPanelActions,
+    meshcorePanelActions,
+    meshtasticDbRefresh,
+    meshcoreDbRefresh,
+  ]);
+
+  const refreshMessagesFromDb = useCallback(() => {
+    if (protocol === 'meshtastic') {
+      meshtasticPanelActions.refreshMessagesFromDb();
+      void meshtasticDbRefresh.refreshMessagesFromDb();
+    } else {
+      void meshcorePanelActions.refreshMessagesFromDb();
+      void meshcoreDbRefresh.refreshMessagesFromDb();
+    }
+  }, [
+    protocol,
+    meshtasticPanelActions,
+    meshcorePanelActions,
+    meshtasticDbRefresh,
+    meshcoreDbRefresh,
+  ]);
   useEffect(() => {
     const startupProtocol = getStoredMeshProtocol();
     const raw =
@@ -1341,9 +1377,10 @@ function AppContent({
     if (ops.length > 0) {
       void Promise.all(ops).then(() => {
         refreshNodesFromDb();
+        refreshMessagesFromDb();
       });
     }
-  }, [refreshNodesFromDb]);
+  }, [refreshNodesFromDb, refreshMessagesFromDb]);
 
   // Dual-mode: each protocol manages its own MQTT connection independently.
   // No automatic MQTT disconnect on context switch.
@@ -2564,11 +2601,7 @@ function AppContent({
                               gpsLoading={activeRuntime.gpsLoading}
                               onGpsIntervalChange={activeRuntime.updateGpsInterval}
                               onNodesPruned={refreshNodesFromDb}
-                              onMessagesPruned={
-                                protocol === 'meshcore'
-                                  ? meshcorePanelActions.refreshMessagesFromDb
-                                  : meshtasticPanelActions.refreshMessagesFromDb
-                              }
+                              onMessagesPruned={refreshMessagesFromDb}
                               onClearMeshcoreRepeaters={
                                 protocol === 'meshcore'
                                   ? meshcorePanelActions.clearAllRepeaters

@@ -1,52 +1,35 @@
 import { useCallback, useMemo } from 'react';
 
-import { errLikeToLogString } from '../lib/errLikeToLogString';
-import { chatMessageToMessageRecord, meshNodeToNodeRecord } from '../lib/storeRecordAdapters';
-import type { IdentityId } from '../lib/types';
-import { upsertMessage } from '../stores/messageStore';
-import { upsertNode } from '../stores/nodeStore';
+import { hydrateIdentityStoresFromDb } from '../lib/hydrateIdentityStoresFromDb';
+import type { IdentityId, MeshProtocol } from '../lib/types';
 
 /**
- * Re-pulls Meshtastic nodes from SQLite into the identity-scoped node store.
- * Requires `identityId` from the Meshtastic runtime after connect.
+ * Re-pulls nodes and messages from SQLite into identity-scoped Zustand stores.
+ * Requires `identityId` after connect (or from `identityStore` via `useActiveMeshIdentity`).
  */
-export function useRefreshNodesFromDb(identityId: IdentityId | null) {
-  return useCallback(async (): Promise<void> => {
+export function useProtocolDbRefresh(protocol: MeshProtocol, identityId: IdentityId | null) {
+  const refreshNodesFromDb = useCallback(async (): Promise<void> => {
     if (!identityId) return;
-    try {
-      const rows = await window.electronAPI.db.getNodes();
-      for (const row of rows) {
-        upsertNode(identityId, meshNodeToNodeRecord(row));
-      }
-    } catch (e) {
-      console.warn('[useRefreshNodesFromDb] failed ' + errLikeToLogString(e));
-    }
-  }, [identityId]);
-}
+    await hydrateIdentityStoresFromDb(protocol, identityId, { nodes: true, messages: false });
+  }, [protocol, identityId]);
 
-/**
- * Re-pulls Meshtastic messages from SQLite into the identity-scoped message store.
- */
-export function useRefreshMessagesFromDb(identityId: IdentityId | null) {
-  return useCallback(async (): Promise<void> => {
+  const refreshMessagesFromDb = useCallback(async (): Promise<void> => {
     if (!identityId) return;
-    try {
-      const rows = await window.electronAPI.db.getMessages(undefined, 10_000);
-      for (const row of rows) {
-        upsertMessage(identityId, chatMessageToMessageRecord(row));
-      }
-    } catch (e) {
-      console.warn('[useRefreshMessagesFromDb] failed ' + errLikeToLogString(e));
-    }
-  }, [identityId]);
-}
+    await hydrateIdentityStoresFromDb(protocol, identityId, { nodes: false, messages: true });
+  }, [protocol, identityId]);
 
-/** Combined DB → store refresh helpers for App startup and prune callbacks. */
-export function useDbRefresh(identityId: IdentityId | null) {
-  const refreshNodesFromDb = useRefreshNodesFromDb(identityId);
-  const refreshMessagesFromDb = useRefreshMessagesFromDb(identityId);
+  const refreshAllFromDb = useCallback(async (): Promise<void> => {
+    if (!identityId) return;
+    await hydrateIdentityStoresFromDb(protocol, identityId, { nodes: true, messages: true });
+  }, [protocol, identityId]);
+
   return useMemo(
-    () => ({ refreshNodesFromDb, refreshMessagesFromDb }),
-    [refreshNodesFromDb, refreshMessagesFromDb],
+    () => ({ refreshNodesFromDb, refreshMessagesFromDb, refreshAllFromDb }),
+    [refreshNodesFromDb, refreshMessagesFromDb, refreshAllFromDb],
   );
+}
+
+/** @deprecated Prefer {@link useProtocolDbRefresh} with explicit protocol. */
+export function useDbRefresh(identityId: IdentityId | null) {
+  return useProtocolDbRefresh('meshtastic', identityId);
 }

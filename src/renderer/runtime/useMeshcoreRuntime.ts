@@ -35,6 +35,7 @@ import {
   meshcoreMessageDedupeKey,
   meshcorePendingDmAckMapKeys,
   meshcorePingNoRouteErrorExpiryUpdate,
+  type MeshcoreSavedNodeHopRow,
   meshcoreTraceRouteRejectReason,
   messageToDbRow,
   normalizeMeshCoreError,
@@ -573,20 +574,7 @@ export function useMeshcoreRuntime() {
       ]);
       if (opts?.beforeCommit && !opts.beforeCommit()) return;
 
-      const dbContacts = rows as {
-        node_id: number;
-        public_key: string;
-        adv_name: string | null;
-        contact_type: number;
-        last_advert: number | null;
-        adv_lat: number | null;
-        adv_lon: number | null;
-        last_snr: number | null;
-        last_rssi: number | null;
-        favorited: number;
-        nickname: string | null;
-        hops_away: number | null;
-      }[];
+      const dbContacts = rows as MeshcoreContactDbRow[];
       const initial = new Map<number, MeshNode>();
       for (const row of dbContacts) {
         const node: MeshNode = {
@@ -616,11 +604,7 @@ export function useMeshcoreRuntime() {
           pubKeyPrefixMapRef.current.set(prefix, row.node_id);
         }
       }
-      for (const n of savedNodes as {
-        node_id: number;
-        hops_away: number | null;
-        hops: number | null;
-      }[]) {
+      for (const n of savedNodes as MeshcoreSavedNodeHopRow[]) {
         const hopCount = n.hops ?? n.hops_away;
         if (hopCount != null) {
           const existing = initial.get(n.node_id);
@@ -631,13 +615,7 @@ export function useMeshcoreRuntime() {
       }
       const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
       const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
-      // Stub nodes from message hydration are added after the first savedNodes merge; apply
-      // persisted hop counts from `nodes` for them too (meshcore_contacts.hops_away is often null).
-      for (const n of savedNodes as {
-        node_id: number;
-        hops_away: number | null;
-        hops: number | null;
-      }[]) {
+      for (const n of savedNodes as MeshcoreSavedNodeHopRow[]) {
         const hopCount = n.hops ?? n.hops_away;
         if (hopCount == null) continue;
         const existing = mergedInitial.get(n.node_id);

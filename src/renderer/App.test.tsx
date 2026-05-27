@@ -55,6 +55,7 @@ const {
     telemetryEnabled: true,
     queueStatus: null,
     refreshNodesFromDb: vi.fn(),
+    refreshMessagesFromDb: vi.fn(),
     getNodes: vi.fn(),
     selfNodeId: 0,
     virtualNodeId: 0,

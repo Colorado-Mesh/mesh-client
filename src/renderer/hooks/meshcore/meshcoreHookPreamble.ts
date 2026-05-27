@@ -1,9 +1,14 @@
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../../lib/chatInMemoryBuffer';
-import type { MeshCoreConnection, MeshCoreContactRaw } from '../../lib/meshcore/meshcoreHookTypes';
+import type {
+  MeshCoreConnection,
+  MeshcoreContactDbRow,
+  MeshCoreContactRaw,
+} from '../../lib/meshcore/meshcoreHookTypes';
 import { normalizeMeshcoreIncomingText } from '../../lib/meshcoreChannelText';
 import {
+  CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
   MESHCORE_COORD_SCALE,
   meshcoreChatStubNodeIdFromDisplayName,
@@ -282,8 +287,63 @@ export function mergeMeshcoreDbHydrationWithLive(
   return trimChatMessagesToMax(merged, MAX_IN_MEMORY_CHAT_MESSAGES);
 }
 
+/** Hop metadata row from shared `nodes` table. */
+export interface MeshcoreSavedNodeHopRow {
+  node_id: number;
+  hops_away: number | null;
+  hops: number | null;
+}
+
+/**
+ * Build a MeshNode map from persisted MeshCore contacts + hop counts (+ optional message stubs).
+ * Mirrors mount hydration in `useMeshcoreRuntime.reloadMeshcoreNodesFromDb`.
+ */
+export function buildMeshcoreNodeMapFromDb(
+  dbContacts: MeshcoreContactDbRow[],
+  savedNodes: MeshcoreSavedNodeHopRow[],
+  messages: ChatMessage[] = [],
+): Map<number, MeshNode> {
+  const initial = new Map<number, MeshNode>();
+  for (const row of dbContacts) {
+    const node: MeshNode = {
+      node_id: row.node_id,
+      long_name: row.nickname ?? row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
+      short_name: '',
+      hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
+      battery: 0,
+      snr: row.last_snr ?? 0,
+      rssi: row.last_rssi ?? 0,
+      last_heard: row.last_advert ?? 0,
+      latitude: row.adv_lat ?? null,
+      longitude: row.adv_lon ?? null,
+      favorited: row.favorited === 1,
+      hops_away: row.hops_away ?? undefined,
+    };
+    initial.set(row.node_id, node);
+  }
+  for (const n of savedNodes) {
+    const hopCount = n.hops ?? n.hops_away;
+    if (hopCount != null) {
+      const existing = initial.get(n.node_id);
+      if (existing && existing.hops_away === undefined) {
+        initial.set(n.node_id, { ...existing, hops_away: hopCount });
+      }
+    }
+  }
+  const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, messages);
+  for (const n of savedNodes) {
+    const hopCount = n.hops ?? n.hops_away;
+    if (hopCount == null) continue;
+    const existing = mergedInitial.get(n.node_id);
+    if (existing && existing.hops_away === undefined) {
+      mergedInitial.set(n.node_id, { ...existing, hops_away: hopCount });
+    }
+  }
+  return mergedInitial;
+}
+
 /** Row shape from `db:getMeshcoreMessages` — shared by initConn, mount load, refreshMessagesFromDb. */
-interface MeshcoreMessageDbRow {
+export interface MeshcoreMessageDbRow {
   id: number;
   sender_id: number | null;
   sender_name: string | null;
