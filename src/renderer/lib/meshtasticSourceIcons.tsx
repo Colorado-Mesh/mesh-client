@@ -1,11 +1,11 @@
-import type { MeshNode } from './types';
+import type { NodeRecord } from '../stores/nodeStore';
 
 /** True when the node is not MQTT-only and either session MQTT or packet via_mqtt applies. */
 export function meshtasticNodeShowsHybridMqttPath(
-  node: Pick<MeshNode, 'heard_via_mqtt' | 'heard_via_mqtt_only' | 'via_mqtt'>,
+  node: Pick<NodeRecord, 'heardViaMqtt' | 'heardViaMqttOnly' | 'viaMqtt'>,
 ): boolean {
-  if (node.heard_via_mqtt_only) return false;
-  return Boolean(node.heard_via_mqtt) || Boolean(node.via_mqtt);
+  if (node.heardViaMqttOnly) return false;
+  return Boolean(node.heardViaMqtt) || Boolean(node.viaMqtt);
 }
 
 /** Tooltip for hybrid RF + MQTT path (list column + node detail). */

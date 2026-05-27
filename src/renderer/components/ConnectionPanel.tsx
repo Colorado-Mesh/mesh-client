@@ -33,12 +33,11 @@ import {
 } from '../lib/meshtasticMqttTlsMigration';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
+import { useConnectionByProtocol } from '../hooks/useConnectionByProtocol';
 import type {
   ConnectionType,
-  DeviceState,
   MeshProtocol,
   MQTTSettings,
-  MQTTStatus,
   NobleBleDevice,
   SerialPortInfo,
 } from '../lib/types';
@@ -504,7 +503,6 @@ function MqttGlobeIcon({ status }: { status: MQTTStatus }) {
 }
 
 interface Props {
-  state: DeviceState;
   onConnect: (
     type: ConnectionType,
     httpAddress?: string,
@@ -517,7 +515,6 @@ interface Props {
     blePeripheralId?: string,
   ) => Promise<void>;
   onDisconnect: () => Promise<void>;
-  mqttStatus: MQTTStatus;
   myNodeLabel?: string;
   protocol: MeshProtocol;
   manualAddContacts?: boolean;
@@ -527,11 +524,9 @@ interface Props {
 }
 
 export default function ConnectionPanel({
-  state,
   onConnect,
   onAutoConnect,
   onDisconnect,
-  mqttStatus,
   myNodeLabel,
   protocol,
   manualAddContacts,
@@ -539,6 +534,19 @@ export default function ConnectionPanel({
   firmwareCheckState,
   onOpenFirmwareReleases,
 }: Props) {
+  const conn = useConnectionByProtocol(protocol);
+  const state = {
+    status: conn?.status ?? 'disconnected',
+    myNodeNum: conn?.myNodeNum ?? 0,
+    connectionType: conn?.connectionType ?? null,
+    reconnectAttempt: conn?.reconnectAttempt,
+    lastDataReceived: conn?.lastDataReceivedAt?.getTime(),
+    firmwareVersion: conn?.firmwareVersion,
+    manufacturerModel: conn?.manufacturerModel,
+    batteryPercent: conn?.batteryPercent,
+    batteryCharging: conn?.batteryCharging,
+  } as const;
+  const mqttStatus = conn?.mqttStatus ?? 'disconnected';
   const [connectionType, setConnectionType] = useState<ConnectionType>('ble');
   const [httpAddress, setHttpAddress] = useState(() => {
     const last = loadLastConnection(protocol);

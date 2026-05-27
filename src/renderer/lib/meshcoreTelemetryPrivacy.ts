@@ -95,6 +95,8 @@ export type MeshCoreSelfInfoEnriched = Omit<
 > &
   MeshcoreSelfInfoTelemetryFields & { manualAddContacts: boolean };
 
+export type MeshCoreSelfInfo = MeshCoreSelfInfoEnriched;
+
 export function enrichMeshCoreSelfInfo(wire: MeshCoreSelfInfoWire): MeshCoreSelfInfoEnriched {
   const telem = parseMeshcoreSelfInfoTelemetry(wire.reserved);
   const m = wire.manualAddContacts;

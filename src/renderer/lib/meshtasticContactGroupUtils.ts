@@ -1,5 +1,5 @@
 import { validateCoords } from './coordUtils';
-import type { MeshNode } from './types';
+import type { NodeRecord } from '../stores/nodeStore';
 
 /** Built-in Meshtastic node-list group: nodes with a valid reported GPS position (excludes self). */
 export const MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS = -10;
@@ -21,10 +21,10 @@ export const MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS = [
  * Self node is excluded so the list matches “other nodes with GPS.”
  */
 export function meshtasticContactGroupMatchesBuiltinGps(
-  node: Pick<MeshNode, 'node_id' | 'latitude' | 'longitude'>,
+  node: Pick<NodeRecord, 'nodeId' | 'latitude' | 'longitude'>,
   myNodeNum: number,
 ): boolean {
-  if (myNodeNum > 0 && node.node_id === myNodeNum) return false;
+  if (myNodeNum > 0 && node.nodeId === myNodeNum) return false;
   const lat = node.latitude;
   const lon = node.longitude;
   if (lat == null || lon == null) return false;
@@ -36,20 +36,20 @@ export function meshtasticContactGroupMatchesBuiltinGps(
  * (not MQTT-only). Self excluded.
  */
 export function meshtasticContactGroupMatchesBuiltinRfMqtt(
-  node: Pick<MeshNode, 'node_id' | 'heard_via_mqtt' | 'heard_via_mqtt_only'>,
+  node: Pick<NodeRecord, 'nodeId' | 'heardViaMqtt' | 'heardViaMqttOnly'>,
   myNodeNum: number,
 ): boolean {
-  if (myNodeNum > 0 && node.node_id === myNodeNum) return false;
-  return node.heard_via_mqtt === true && node.heard_via_mqtt_only === false;
+  if (myNodeNum > 0 && node.nodeId === myNodeNum) return false;
+  return node.heardViaMqtt === true && node.heardViaMqttOnly === false;
 }
 
 /** Meshtastic has no MeshCore contact-type roles; any node except self may join user groups. */
 export function isMeshtasticContactEligibleForUserGroup(
-  node: Pick<MeshNode, 'node_id'>,
+  node: Pick<NodeRecord, 'nodeId'>,
   selfNodeId: number | null,
 ): boolean {
   if (selfNodeId == null || selfNodeId <= 0) return false;
-  return node.node_id !== selfNodeId;
+  return node.nodeId !== selfNodeId;
 }
 
 /**
@@ -57,9 +57,9 @@ export function isMeshtasticContactEligibleForUserGroup(
  * Self excluded.
  */
 export function meshtasticContactGroupMatchesBuiltinRouter(
-  node: Pick<MeshNode, 'node_id' | 'role'>,
+  node: Pick<NodeRecord, 'nodeId' | 'role'>,
   myNodeNum: number,
 ): boolean {
-  if (myNodeNum > 0 && node.node_id === myNodeNum) return false;
+  if (myNodeNum > 0 && node.nodeId === myNodeNum) return false;
   return node.role === 2 || node.role === 11;
 }

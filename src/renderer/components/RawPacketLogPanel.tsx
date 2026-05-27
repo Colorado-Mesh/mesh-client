@@ -14,7 +14,7 @@ import {
   MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE,
   MESHCORE_PAYLOAD_TYPE_RESPONSE_NIBBLE,
 } from '../../shared/meshcoreRfPath';
-import type { RxPacketEntry } from '../hooks/useMeshCore';
+import type { RxPacketEntry } from '../lib/protocols/MeshCoreProtocol';
 import { meshcoreRawPacketSenderColumnText } from '../lib/nodeLongNameOrHex';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 

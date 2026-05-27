@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useId, useState } from 'react';
 
-import type { MeshCoreSelfInfo } from '../hooks/useMeshCore';
+import type { MeshCoreSelfInfo } from '../lib/meshcoreTelemetryPrivacy';
 import {
   MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX,
   type MeshcoreAutoaddWireState,

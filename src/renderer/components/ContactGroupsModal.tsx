@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-
 import type { ContactGroup } from '../../shared/electron-api.types';
 import { isMeshcoreContactEligibleForUserGroup } from '../lib/meshcoreUtils';
 import { isMeshtasticContactEligibleForUserGroup } from '../lib/meshtasticContactGroupUtils';
-import type { MeshNode, MeshProtocol } from '../lib/types';
+import type { MeshProtocol } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import { useToast } from './Toast';
 
 interface ContactGroupsModalProps {
   groups: ContactGroup[];
-  contacts: Map<number, MeshNode>;
+  contacts: Record<number, NodeRecord>;
   selfNodeId: number | null;
   protocol: MeshProtocol;
   onClose: () => void;
@@ -156,13 +156,13 @@ export default function ContactGroupsModal({
     }
   }
 
-  const sortedContacts = Array.from(contacts.values())
+  const sortedContacts = Object.values(contacts)
     .filter((c) =>
       protocol === 'meshtastic'
         ? isMeshtasticContactEligibleForUserGroup(c, selfNodeId)
-        : c.node_id !== selfNodeId && isMeshcoreContactEligibleForUserGroup(c),
+        : c.nodeId !== selfNodeId && isMeshcoreContactEligibleForUserGroup(c),
     )
-    .sort((a, b) => (a.long_name || '').localeCompare(b.long_name || ''));
+    .sort((a, b) => (a.longName || '').localeCompare(b.longName || ''));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -240,16 +240,16 @@ export default function ContactGroupsModal({
               ) : (
                 <ul className="flex flex-col gap-1">
                   {sortedContacts.map((contact) => (
-                    <li key={contact.node_id}>
+                    <li key={contact.nodeId}>
                       <label className="hover:bg-secondary-dark/50 flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2">
                         <input
                           type="checkbox"
-                          checked={memberIds.has(contact.node_id)}
-                          onChange={() => void handleToggleMember(contact.node_id)}
+                          checked={memberIds.has(contact.nodeId)}
+                          onChange={() => void handleToggleMember(contact.nodeId)}
                           disabled={busy}
                           className="accent-brand-green"
                         />
-                        <span className="truncate text-sm text-gray-200">{contact.long_name}</span>
+                        <span className="truncate text-sm text-gray-200">{contact.longName}</span>
                       </label>
                     </li>
                   ))}

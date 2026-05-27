@@ -1,11 +1,12 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import type { NodeRecord } from '../stores/nodeStore';
 
+import type { CliHistoryEntry } from '../lib/repeaterCommandService';
 import type {
-  CliHistoryEntry,
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
-} from '../hooks/useMeshCore';
+} from '../lib/protocols/MeshCoreProtocol';
 import {
   MeshcoreRepeaterRemoteAuthBanner,
   useMeshcoreRepeaterRemoteAuth,
@@ -19,7 +20,6 @@ import {
 import { getNodeStatus, normalizeLastHeardMs } from '../lib/nodeStatus';
 import type { PathRecord } from '../lib/pathHistoryTypes';
 import { useRadioProvider } from '../lib/radio/providerFactory';
-import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
@@ -29,7 +29,7 @@ import SnrIndicator from './SnrIndicator';
 import { useToast } from './Toast';
 
 interface Props {
-  nodes: Map<number, MeshNode>;
+  nodes: Record<number, NodeRecord>;
   meshcoreNodeStatus: Map<number, MeshCoreRepeaterStatus>;
   meshcoreStatusErrors?: Map<number, string>;
   meshcoreTraceResults: Map<
@@ -47,7 +47,7 @@ interface Props {
   onRequestTelemetry?: (nodeId: number) => Promise<void>;
   meshcoreTelemetry?: Map<number, MeshCoreNodeTelemetry>;
   meshcoreTelemetryErrors?: Map<number, string>;
-  onSelectRepeater?: (node: MeshNode) => void;
+  onSelectRepeater?: (node: NodeRecord) => void;
   onSendCliCommand?: (nodeId: number, command: string, useSavedPath: boolean) => Promise<string>;
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
   meshcoreCliErrors?: Map<number, string>;
@@ -109,13 +109,13 @@ interface SignalPoint {
 
 /** Prefer on-demand repeater status (remote query); contact list SNR/RSSI are often stale for MeshCore. */
 function displayRepeaterSnr(
-  node: MeshNode,
+  node: NodeRecord,
   status: MeshCoreRepeaterStatus | undefined,
   history?: SignalPoint[],
   contacts?: Map<
     number,
     {
-      node_id: number;
+      nodeId: number;
       last_snr: number | null;
       last_rssi: number | null;
       last_advert: number | null;
@@ -129,7 +129,7 @@ function displayRepeaterSnr(
   if (latestSignal != null && Number.isFinite(latestSignal.snr)) {
     return latestSignal.snr.toFixed(1);
   }
-  const contactSignal = contacts?.get(node.node_id);
+  const contactSignal = contacts?.get(node.nodeId);
   if (
     contactSignal?.last_snr != null &&
     contactSignal.last_snr !== 0 &&
@@ -142,12 +142,12 @@ function displayRepeaterSnr(
 }
 
 function displayRepeaterRssi(
-  node: MeshNode,
+  node: NodeRecord,
   status: MeshCoreRepeaterStatus | undefined,
   contacts?: Map<
     number,
     {
-      node_id: number;
+      nodeId: number;
       last_snr: number | null;
       last_rssi: number | null;
       last_advert: number | null;
@@ -157,7 +157,7 @@ function displayRepeaterRssi(
   if (status !== undefined && Number.isFinite(status.lastRssi)) {
     return String(status.lastRssi);
   }
-  const contactSignal = contacts?.get(node.node_id);
+  const contactSignal = contacts?.get(node.nodeId);
   if (
     contactSignal?.last_rssi != null &&
     contactSignal.last_rssi !== 0 &&
@@ -228,7 +228,7 @@ export default function RepeatersPanel({
     Map<
       number,
       {
-        node_id: number;
+        nodeId: number;
         last_snr: number | null;
         last_rssi: number | null;
         last_advert: number | null;
@@ -243,64 +243,64 @@ export default function RepeatersPanel({
         const m = new Map<
           number,
           {
-            node_id: number;
+            nodeId: number;
             last_snr: number | null;
             last_rssi: number | null;
             last_advert: number | null;
           }
         >();
         for (const row of rows as {
-          node_id: number;
+          nodeId: number;
           last_snr: number | null;
           last_rssi: number | null;
           last_advert: number | null;
         }[]) {
-          m.set(row.node_id, row);
+          m.set(row.nodeId, row);
         }
         setMeshcoreContactsDb(m);
       })
       .catch(() => {
         // catch-no-log-ok database error - contacts will show as unavailable
       });
-  }, [isConnected, nodes.size]);
+  }, [isConnected, Object.keys(nodes).length]);
 
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider('meshcore');
 
-  const repeaters = Array.from(nodes.values())
-    .filter((n) => n.hw_model === 'Repeater')
+  const repeaters = Object.values(nodes)
+    .filter((n) => n.hwModel === 'Repeater')
     .sort((a, b) => {
       // Favorites pinned above non-favorites
       const aFav = a.favorited ? 1 : 0;
       const bFav = b.favorited ? 1 : 0;
       if (aFav !== bFav) return bFav - aFav;
       // Then by last heard
-      return normalizeLastHeardMs(b.last_heard ?? 0) - normalizeLastHeardMs(a.last_heard ?? 0);
+      return normalizeLastHeardMs(b.lastHeardAt ?? 0) - normalizeLastHeardMs(a.lastHeardAt ?? 0);
     });
 
   useEffect(() => {
-    if (nodes.size === 0) return;
-    console.debug('[RepeatersPanel] nodes=', nodes.size, 'repeatersCount=', repeaters.length);
-  }, [nodes.size, repeaters.length]);
+    if (Object.keys(nodes).length === 0) return;
+    console.debug('[RepeatersPanel] nodes=', Object.keys(nodes).length, 'repeatersCount=', repeaters.length);
+  }, [Object.keys(nodes).length, repeaters.length]);
 
   const repeatersFiltered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return repeaters;
     return repeaters.filter(
       (n) =>
-        n.long_name.toLowerCase().includes(q) || n.node_id.toString(16).toLowerCase().includes(q),
+        (n.longName?.toLowerCase() ?? '').includes(q) || n.nodeId.toString(16).toLowerCase().includes(q),
     );
   }, [repeaters, searchQuery]);
 
   useEffect(() => {
     for (const n of repeatersFiltered) {
-      void usePathHistoryStore.getState().ensureBestPathLoaded(n.node_id);
+      void usePathHistoryStore.getState().ensureBestPathLoaded(n.nodeId);
     }
   }, [pathHistory, repeatersFiltered]);
 
   useEffect(() => {
     if (!isConnected || meshcoreCanPingTrace == null) return;
     for (const n of repeatersFiltered) {
-      void usePathHistoryStore.getState().ensureBestPathLoaded(n.node_id);
+      void usePathHistoryStore.getState().ensureBestPathLoaded(n.nodeId);
     }
   }, [isConnected, repeatersFiltered, meshcoreCanPingTrace]);
 
@@ -568,37 +568,37 @@ export default function RepeatersPanel({
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {repeatersFiltered.map((node) => {
-                  const status = meshcoreNodeStatus.get(node.node_id);
-                  const traceResult = meshcoreTraceResults.get(node.node_id);
+                  const status = meshcoreNodeStatus.get(node.nodeId);
+                  const traceResult = meshcoreTraceResults.get(node.nodeId);
                   const repeaterStatus = getNodeStatus(
-                    node.last_heard,
+                    node.lastHeardAt ?? 0,
                     nodeStaleThresholdMs,
                     nodeOfflineThresholdMs,
                   );
-                  const history = signalHistory.get(node.node_id) ?? [];
-                  const paths = pathHistory.get(node.node_id) ?? [];
+                  const history = signalHistory.get(node.nodeId) ?? [];
+                  const paths = pathHistory.get(node.nodeId) ?? [];
                   const reliabilityText = displayReliability(paths);
                   const airPct =
                     status?.totalAirTimeSecs && status?.totalUpTimeSecs
                       ? ((status.totalAirTimeSecs / status.totalUpTimeSecs) * 100).toFixed(1)
                       : null;
-                  const isStatusLoading = statusLoadingSet.has(node.node_id);
-                  const isPingLoading = pingLoadingSet.has(node.node_id);
-                  const statusError = meshcoreStatusErrors?.get(node.node_id);
-                  const pingError = meshcorePingErrors?.get(node.node_id);
-                  const isDeleteLoading = deleteLoadingSet.has(node.node_id);
-                  const isDeleteConfirm = deleteConfirmId === node.node_id;
-                  const isNeighborsLoading = neighborsLoadingSet.has(node.node_id);
-                  const isTelemetryLoading = telemetryLoadingSet.has(node.node_id);
-                  const isNeighborsExpanded = expandedNeighbors.has(node.node_id);
-                  const isTelemetryExpanded = expandedTelemetry.has(node.node_id);
-                  const isPathExpanded = expandedPath.has(node.node_id);
-                  const isCliExpanded = expandedCli.has(node.node_id);
-                  const isCliLoading = cliLoadingSet.has(node.node_id);
-                  const cliHistory = meshcoreCliHistories?.get(node.node_id) ?? [];
-                  const cliError = meshcoreCliErrors?.get(node.node_id);
-                  const cliUseAutoPath = cliUseSavedPath.get(node.node_id) ?? false;
-                  const neighborError = meshcoreNeighborErrors?.get(node.node_id);
+                  const isStatusLoading = statusLoadingSet.has(node.nodeId);
+                  const isPingLoading = pingLoadingSet.has(node.nodeId);
+                  const statusError = meshcoreStatusErrors?.get(node.nodeId);
+                  const pingError = meshcorePingErrors?.get(node.nodeId);
+                  const isDeleteLoading = deleteLoadingSet.has(node.nodeId);
+                  const isDeleteConfirm = deleteConfirmId === node.nodeId;
+                  const isNeighborsLoading = neighborsLoadingSet.has(node.nodeId);
+                  const isTelemetryLoading = telemetryLoadingSet.has(node.nodeId);
+                  const isNeighborsExpanded = expandedNeighbors.has(node.nodeId);
+                  const isTelemetryExpanded = expandedTelemetry.has(node.nodeId);
+                  const isPathExpanded = expandedPath.has(node.nodeId);
+                  const isCliExpanded = expandedCli.has(node.nodeId);
+                  const isCliLoading = cliLoadingSet.has(node.nodeId);
+                  const cliHistory = meshcoreCliHistories?.get(node.nodeId) ?? [];
+                  const cliError = meshcoreCliErrors?.get(node.nodeId);
+                  const cliUseAutoPath = cliUseSavedPath.get(node.nodeId) ?? false;
+                  const neighborError = meshcoreNeighborErrors?.get(node.nodeId);
                   const actionErrorSummary = [
                     statusError && `Status: ${statusError}`,
                     pingError && `Ping: ${pingError}`,
@@ -607,9 +607,9 @@ export default function RepeatersPanel({
                   ]
                     .filter(Boolean)
                     .join(' · ');
-                  const neighborData = meshcoreNeighbors?.get(node.node_id);
-                  const telemetryData = meshcoreTelemetry?.get(node.node_id);
-                  const telemetryError = meshcoreTelemetryErrors?.get(node.node_id);
+                  const neighborData = meshcoreNeighbors?.get(node.nodeId);
+                  const telemetryData = meshcoreTelemetry?.get(node.nodeId);
+                  const telemetryError = meshcoreTelemetryErrors?.get(node.nodeId);
                   const pingHardDisabled = !isConnected || isPingLoading;
                   const pingBlockReason = !isConnected
                     ? 'Connect to the radio first.'
@@ -617,7 +617,7 @@ export default function RepeatersPanel({
                       ? 'Ping in progress…'
                       : null;
                   return (
-                    <Fragment key={node.node_id}>
+                    <Fragment key={node.nodeId}>
                       <tr className="text-gray-300 hover:bg-gray-800/30">
                         <td className="py-2 pr-4">
                           <span className="flex items-center gap-1.5">
@@ -653,7 +653,7 @@ export default function RepeatersPanel({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  onToggleFavorite(node.node_id, !node.favorited);
+                                  onToggleFavorite(node.nodeId, !node.favorited);
                                 }}
                                 className="text-brand-yellow/70 hover:text-brand-yellow text-base leading-none"
                                 aria-label={node.favorited ? 'Unfavorite' : 'Favorite'}
@@ -664,15 +664,15 @@ export default function RepeatersPanel({
                             <button
                               type="button"
                               onClick={() => onSelectRepeater?.(node)}
-                              aria-label={node.long_name}
+                              aria-label={node.longName}
                               className="hover:text-brand-green hover:decoration-brand-green/70 text-white underline decoration-transparent transition-colors disabled:no-underline"
                             >
-                              {node.long_name}
+                              {node.longName}
                             </button>
                           </span>
                         </td>
                         <td className="py-2 pr-4 text-xs text-gray-400">
-                          {formatRelativeTime(node.last_heard, node.node_id, node.long_name)}
+                          {formatRelativeTime(node.lastHeardAt, node.nodeId, node.longName)}
                         </td>
                         <td
                           className="py-2 pr-4"
@@ -699,15 +699,15 @@ export default function RepeatersPanel({
                             <button
                               type="button"
                               onClick={() => {
-                                togglePath(node.node_id);
+                                togglePath(node.nodeId);
                               }}
                               className="text-left text-blue-400 underline decoration-dotted hover:text-blue-300"
                               title="Hops from last Ping trace (repeaters between you and this node)"
                             >
                               {meshcoreTracePathLenToHops(traceResult.pathLen)}
                             </button>
-                          ) : node.hops_away != null ? (
-                            <span className="text-gray-300">{node.hops_away}</span>
+                          ) : node.hopsAway != null ? (
+                            <span className="text-gray-300">{node.hopsAway}</span>
                           ) : (
                             <span className="text-gray-500">—</span>
                           )}
@@ -722,7 +722,7 @@ export default function RepeatersPanel({
                                 <span className="inline-flex">
                                   <button
                                     type="button"
-                                    onClick={() => void handlePing(node.node_id)}
+                                    onClick={() => void handlePing(node.nodeId)}
                                     disabled
                                     aria-label={
                                       pingError ? `Ping error: ${pingError}` : 'Ping trace'
@@ -748,7 +748,7 @@ export default function RepeatersPanel({
                                 <span className="inline-flex">
                                   <button
                                     type="button"
-                                    onClick={() => void handlePing(node.node_id)}
+                                    onClick={() => void handlePing(node.nodeId)}
                                     aria-label={`Ping error: ${pingError}`}
                                     className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60"
                                   >
@@ -759,7 +759,7 @@ export default function RepeatersPanel({
                             ) : (
                               <button
                                 type="button"
-                                onClick={() => void handlePing(node.node_id)}
+                                onClick={() => void handlePing(node.nodeId)}
                                 aria-label="Ping trace"
                                 className="rounded border border-blue-700 bg-blue-900/60 px-2 py-0.5 text-xs font-medium text-blue-300 transition-colors hover:bg-blue-800/60"
                               >
@@ -772,7 +772,7 @@ export default function RepeatersPanel({
                             )}
                             <button
                               type="button"
-                              onClick={() => void handleStatus(node.node_id)}
+                              onClick={() => void handleStatus(node.nodeId)}
                               disabled={!isConnected || isStatusLoading}
                               title={statusError ?? undefined}
                               aria-label={
@@ -795,7 +795,7 @@ export default function RepeatersPanel({
                             {onRequestNeighbors && (
                               <button
                                 type="button"
-                                onClick={() => void handleNeighbors(node.node_id)}
+                                onClick={() => void handleNeighbors(node.nodeId)}
                                 disabled={!isConnected || isNeighborsLoading}
                                 title={neighborError ?? undefined}
                                 aria-label={
@@ -823,7 +823,7 @@ export default function RepeatersPanel({
                             {onRequestTelemetry && (
                               <button
                                 type="button"
-                                onClick={() => void handleTelemetry(node.node_id)}
+                                onClick={() => void handleTelemetry(node.nodeId)}
                                 disabled={!isConnected || isTelemetryLoading}
                                 title="Cayenne LPP sensor payload (not advert GPS on the map)"
                                 aria-label="Sensor telemetry LPP"
@@ -844,7 +844,7 @@ export default function RepeatersPanel({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  toggleCli(node.node_id);
+                                  toggleCli(node.nodeId);
                                 }}
                                 disabled={!isConnected}
                                 title="Open CLI interface"
@@ -859,7 +859,7 @@ export default function RepeatersPanel({
                               </button>
                             )}
                             <button
-                              onClick={() => void handleDelete(node.node_id)}
+                              onClick={() => void handleDelete(node.nodeId)}
                               disabled={isDeleteLoading}
                               onBlur={() => {
                                 if (isDeleteConfirm) setDeleteConfirmId(null);
@@ -908,7 +908,7 @@ export default function RepeatersPanel({
                                 {traceResult.lastSnr > 0 ? '+' : ''}
                                 {traceResult.lastSnr.toFixed(2)} dB
                               </span>
-                              <span className="text-white">▣ {node.long_name}</span>
+                              <span className="text-white">▣ {node.longName}</span>
                             </div>
                           </td>
                         </tr>
@@ -927,7 +927,7 @@ export default function RepeatersPanel({
                               <div className="flex flex-col gap-1">
                                 {neighborData.neighbours.map((nb, i) => {
                                   const name = nb.resolvedNodeId
-                                    ? (nodes.get(nb.resolvedNodeId)?.long_name ?? nb.prefixHex)
+                                    ? (nodes[nb.resolvedNodeId]?.longName ?? nb.prefixHex)
                                     : nb.prefixHex;
                                   return (
                                     <div key={i} className="flex items-center gap-3 text-xs">
@@ -1034,16 +1034,16 @@ export default function RepeatersPanel({
                               <div className="flex items-center gap-2">
                                 <input
                                   type="text"
-                                  value={cliInputValues.get(node.node_id) ?? ''}
+                                  value={cliInputValues.get(node.nodeId) ?? ''}
                                   onChange={(e) => {
                                     setCliInputValues((prev) => {
                                       const n = new Map(prev);
-                                      n.set(node.node_id, e.target.value);
+                                      n.set(node.nodeId, e.target.value);
                                       return n;
                                     });
                                   }}
                                   onKeyDown={(e) => {
-                                    handleCliKeyDown(e, node.node_id);
+                                    handleCliKeyDown(e, node.nodeId);
                                   }}
                                   placeholder="Enter command..."
                                   disabled={!isConnected || isCliLoading}
@@ -1053,12 +1053,12 @@ export default function RepeatersPanel({
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const cmd = cliInputValues.get(node.node_id) ?? '';
+                                    const cmd = cliInputValues.get(node.nodeId) ?? '';
                                     if (cmd.trim()) {
-                                      void handleCliCommand(node.node_id, cmd);
+                                      void handleCliCommand(node.nodeId, cmd);
                                       setCliInputValues((prev) => {
                                         const n = new Map(prev);
-                                        n.delete(node.node_id);
+                                        n.delete(node.nodeId);
                                         return n;
                                       });
                                     }
@@ -1066,7 +1066,7 @@ export default function RepeatersPanel({
                                   disabled={
                                     !isConnected ||
                                     isCliLoading ||
-                                    !cliInputValues.get(node.node_id)?.trim()
+                                    !cliInputValues.get(node.nodeId)?.trim()
                                   }
                                   className="rounded border border-cyan-700 bg-cyan-900/60 px-3 py-1 text-xs font-medium text-cyan-300 transition-colors hover:bg-cyan-800/60 disabled:opacity-40"
                                 >
@@ -1091,7 +1091,7 @@ export default function RepeatersPanel({
                                   <button
                                     key={cmd}
                                     type="button"
-                                    onClick={() => void handleCliQuickCommand(node.node_id, cmd)}
+                                    onClick={() => void handleCliQuickCommand(node.nodeId, cmd)}
                                     disabled={!isConnected || isCliLoading}
                                     className="rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-300 hover:bg-gray-600 disabled:opacity-40"
                                   >
@@ -1105,7 +1105,7 @@ export default function RepeatersPanel({
                                     type="checkbox"
                                     checked={cliUseAutoPath}
                                     onChange={() => {
-                                      toggleCliRoutingMode(node.node_id);
+                                      toggleCliRoutingMode(node.nodeId);
                                     }}
                                     className="h-3 w-3"
                                   />
@@ -1114,7 +1114,7 @@ export default function RepeatersPanel({
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    handleCliClear(node.node_id);
+                                    handleCliClear(node.nodeId);
                                   }}
                                   className="text-xs text-gray-500 underline hover:text-gray-300"
                                 >

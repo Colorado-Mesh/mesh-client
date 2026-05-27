@@ -2,30 +2,30 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import type { MeshNode } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import NodeDetailModal from './NodeDetailModal';
 
-const mockNode: MeshNode = {
-  node_id: 0xdeadbeef,
-  short_name: 'TEST',
-  long_name: 'Test Node',
-  hw_model: 'TBEAM',
+const mockNode: NodeRecord = {
+  nodeId: 0xdeadbeef,
+  shortName: 'TEST',
+  longName: 'Test Node',
+  hwModel: 'TBEAM',
   role: 0,
-  last_heard: Date.now() / 1000 - 60,
-  hops_away: 2,
-  via_mqtt: false,
+  lastHeardAt: Date.now() / 1000 - 60,
+  hopsAway: 2,
+  viaMqtt: false,
   snr: 5.5,
   rssi: -90,
-  battery: 80,
+  batteryLevel: 80,
   voltage: 3.9,
   latitude: 40.0,
   longitude: -105.0,
   altitude: 1600,
-  channel_utilization: 5,
-  air_util_tx: 2,
+  channelUtilization: 5,
+  airUtilTx: 2,
   favorited: false,
-  heard_via_mqtt: false,
-  heard_via_mqtt_only: false,
+  heardViaMqtt: false,
+  heardViaMqttOnly: false,
   source: 'rf',
 };
 
@@ -87,7 +87,7 @@ describe('NodeDetailModal accessibility', () => {
     const now = Date.now();
     const points = new Map<number, { t: number; lat: number; lon: number }[]>([
       [
-        mockNode.node_id,
+        mockNode.nodeId,
         [
           { t: now - 60 * 60 * 1000, lat: 40.1, lon: -105.1 },
           { t: now, lat: 40.2, lon: -105.2 },
@@ -137,7 +137,7 @@ describe('NodeDetailModal accessibility', () => {
   });
 
   it('caps rendered position rows to newest 100 entries', () => {
-    const nodeId = mockNode.node_id;
+    const nodeId = mockNode.nodeId;
     const base = Date.now() - 200_000;
     const points = Array.from({ length: 101 }, (_, i) => ({
       t: base + i * 1000,

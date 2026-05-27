@@ -9,7 +9,7 @@ import { ToastProvider } from './Toast';
 describe('AppPanel accessibility', () => {
   const defaultProps = {
     protocol: 'meshtastic' as const,
-    nodes: new Map(),
+    nodes: {} as Record<number, import('../stores/nodeStore').NodeRecord>,
     messageCount: 0,
     channels: [] as { index: number; name: string }[],
     myNodeNum: null as number | null,
@@ -30,7 +30,7 @@ describe('AppPanel accessibility', () => {
 
 describe('AppPanel: DB-backed message retention card (issue #387)', () => {
   const defaultProps = {
-    nodes: new Map(),
+    nodes: {} as Record<number, import('../stores/nodeStore').NodeRecord>,
     messageCount: 0,
     channels: [] as { index: number; name: string }[],
     myNodeNum: null as number | null,

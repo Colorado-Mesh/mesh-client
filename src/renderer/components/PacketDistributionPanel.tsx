@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
-import type { RxPacketEntry } from '../hooks/useMeshCore';
+import type { RxPacketEntry } from '../lib/protocols/MeshCoreProtocol';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 
 // ── Types ─────────────────────────────────────────────────────────────────────

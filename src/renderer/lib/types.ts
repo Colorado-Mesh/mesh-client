@@ -1,24 +1,42 @@
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
-import type { Protocol } from './protocols/Protocol';
+import type { NodeRecord } from '../stores/nodeStore';
 
 export type { TAKClientInfo, TAKServerStatus, TAKSettings };
 
+export type MqttNodeUpdate = Partial<NodeRecord> & { nodeId: number; protocol?: 'meshtastic' | 'meshcore' };
+
 export type ConnectionType = 'ble' | 'serial' | 'http';
 
-export type IdentityId = string;
+/** All transports the new ConnectionDriver can manage. Superset of `ConnectionType`. */
+export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'mqtt';
 
-export interface Identity {
-  id: IdentityId;
-  selfAddress: string;
-  protocol: Protocol;
-  activeTransports: ConnectionType[];
-  displayName?: string;
-  shortName?: string;
-  hardwareModel?: string;
-  createdAt: number;
-  lastSeenAt: number;
+export type TransportStatus =
+  | 'connecting'
+  | 'connected'
+  | 'disconnected'
+  | 'reconnecting'
+  | 'stale';
+
+/** Transport-specific connect parameters. Open union — additional protocols add their own variants. */
+export type TransportParams =
+  | { type: 'ble'; peripheralId?: string }
+  | { type: 'serial'; portSignature?: string }
+  | { type: 'http'; host: string }
+  | { type: 'tcp'; host: string }
+  | { type: 'mqtt'; broker: string; topic?: string; pubkey?: string };
+
+export interface TransportRef {
+  /** Opaque id assigned by ConnectionDriver for this transport instance. */
+  transportId: string;
+  type: TransportType;
+  status: TransportStatus;
+  params: TransportParams;
+  /** Last raw event timestamp; watchdog reads this. */
+  lastDataReceivedAt?: number;
 }
+
+export type IdentityId = string;
 
 export type MeshProtocol = 'meshtastic' | 'meshcore';
 
@@ -118,57 +136,6 @@ export interface PositionPoint {
   t: number; // Unix ms timestamp
   lat: number;
   lon: number;
-}
-
-export interface MeshNode {
-  node_id: number;
-  long_name: string;
-  short_name: string;
-  hw_model: string;
-  snr: number;
-  rssi?: number;
-  battery: number;
-  last_heard: number;
-  latitude: number | null;
-  longitude: number | null;
-  role?: number;
-  hops_away?: number;
-  via_mqtt?: boolean | number;
-  voltage?: number;
-  channel_utilization?: number;
-  air_util_tx?: number;
-  altitude?: number;
-  favorited?: boolean;
-  on_radio?: boolean;
-  // MeshCore routing info
-  hops?: number;
-  path?: number[];
-  // MQTT source tracking
-  heard_via_mqtt_only?: boolean; // session-only: true if never heard via RF this session
-  heard_via_mqtt?: boolean; // session-only: true if any MQTT update was received this session
-  source?: 'rf' | 'mqtt'; // persistent: written to DB
-  lastPositionWarning?: string; // set when bad GPS data received; cleared on valid update
-  // LocalStats telemetry (connected node only, from localStats variant)
-  num_packets_rx_bad?: number;
-  num_rx_dupe?: number;
-  num_packets_rx?: number;
-  num_packets_tx?: number;
-  // MeshCore local stats (connected node only, from getStats*())
-  meshcore_local_stats?: MeshCoreLocalStats;
-  // Environmental sensor data (session-only, last received reading)
-  env_temperature?: number;
-  env_humidity?: number;
-  env_pressure?: number;
-  env_iaq?: number;
-  env_lux?: number;
-  env_wind_speed?: number;
-  env_wind_direction?: number;
-  // Neighbor info from MQTT (session-only)
-  neighbors?: MeshNeighbor[];
-  // PaxCounter from MQTT (combined wifi + ble count)
-  pax_count?: number;
-  // Detection sensor text alert from MQTT
-  detection_text?: string;
 }
 
 export interface MeshCoreLocalStats {
@@ -381,8 +348,8 @@ declare global {
       db: {
         saveMessage: (msg: ChatMessage) => Promise<unknown>;
         getMessages: (channel?: number, limit?: number) => Promise<ChatMessage[]>;
-        saveNode: (node: MeshNode) => Promise<unknown>;
-        getNodes: () => Promise<MeshNode[]>;
+        saveNode: (node: Record<string, unknown>) => Promise<unknown>;
+        getNodes: () => Promise<Record<string, unknown>[]>;
         clearMessages: () => Promise<unknown>;
         clearNodes: () => Promise<unknown>;
         deleteNode: (nodeId: number) => Promise<unknown>;
@@ -622,7 +589,7 @@ declare global {
         ) => () => void;
         onNodeUpdate: (
           cb: (
-            node: Partial<MeshNode> & { node_id: number; protocol?: 'meshtastic' | 'meshcore' },
+            node: MqttNodeUpdate,
           ) => void,
         ) => () => void;
         onMessage: (cb: (msg: Omit<ChatMessage, 'id'>) => void) => () => void;

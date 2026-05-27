@@ -194,6 +194,7 @@ describe('store shape contracts', () => {
       const { data } = stateKeys(useNodeStore.getState());
       expect(data).toMatchInlineSnapshot(`
         [
+          "neighborInfo",
           "nodes",
           "traceRoutes",
           "waypoints",

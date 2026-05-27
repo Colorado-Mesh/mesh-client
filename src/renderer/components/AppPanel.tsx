@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useRef, useState } from 'react';
-
 import type { LocationFilter } from '../App';
 import { getAppSettingsRaw, mergeAppSetting, setAppSettingsRaw } from '../lib/appSettingsStorage';
 import { formatCoordPair } from '../lib/coordUtils';
@@ -27,7 +26,8 @@ import {
   THEME_TOKEN_META,
   type ThemeColorKey,
 } from '../lib/themeColors';
-import type { MeshNode, MeshProtocol } from '../lib/types';
+import type { MeshProtocol } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
@@ -147,7 +147,7 @@ interface Props {
   protocol: MeshProtocol;
   logPanelVisible?: boolean;
   onLogPanelVisibleChange?: (visible: boolean) => void;
-  nodes: Map<number, MeshNode>;
+  nodes: Record<number, NodeRecord>;
   messageCount: number;
   channels: { index: number; name: string }[];
   myNodeNum: number | null;
@@ -770,7 +770,7 @@ export default function AppPanel({
           </div>
           {settings.distanceFilterEnabled &&
             (() => {
-              const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
+              const homeNode = myNodeNum != null ? nodes[myNodeNum] : undefined;
               const homeHasLocation =
                 homeNode?.latitude != null &&
                 homeNode.latitude !== 0 &&
@@ -1562,7 +1562,7 @@ export default function AppPanel({
                 type="button"
                 aria-label="Prune No-Fix / Zero Island Nodes Removes nodes with null or near-zero coordinates (no GPS fix or at 0 deg N, 0 deg E)."
                 onClick={() => {
-                  const zeroIslandNodes = Array.from(nodes.values()).filter(
+                  const zeroIslandNodes = (Object.values(nodes) as NodeRecord[]).filter(
                     (n) => Math.abs(n.latitude ?? 0) < 0.5 && Math.abs(n.longitude ?? 0) < 0.5,
                   );
                   if (zeroIslandNodes.length === 0) {
@@ -1577,7 +1577,7 @@ export default function AppPanel({
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.deleteNodesBatch(
-                        zeroIslandNodes.map((n) => n.node_id),
+                        zeroIslandNodes.map((n) => n.nodeId),
                       );
                     },
                   });
@@ -1593,7 +1593,7 @@ export default function AppPanel({
                 type="button"
                 aria-label="Prune Distant Nodes Beyond the distance threshold in Map & Node Filtering. Requires a valid GPS location."
                 onClick={() => {
-                  const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
+                  const homeNode = myNodeNum != null ? nodes[myNodeNum] : undefined;
                   const homeLat = homeNode?.latitude ?? ourPosition?.lat;
                   const homeLon = homeNode?.longitude ?? ourPosition?.lon;
                   const hasHome =
@@ -1609,8 +1609,8 @@ export default function AppPanel({
                     settings.distanceUnit === 'miles'
                       ? settings.distanceFilterMax * 1.60934
                       : settings.distanceFilterMax;
-                  const distantNodes = Array.from(nodes.values()).filter((n) => {
-                    if (n.node_id === myNodeNum) return false;
+                  const distantNodes = (Object.values(nodes) as NodeRecord[]).filter((n) => {
+                    if (n.nodeId === myNodeNum) return false;
                     if (n.latitude == null || n.longitude == null) return false;
                     const d = haversineDistanceKm(homeLat, homeLon, n.latitude, n.longitude);
                     return d > maxKm;
@@ -1627,7 +1627,7 @@ export default function AppPanel({
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.deleteNodesBatch(
-                        distantNodes.map((n) => n.node_id),
+                        distantNodes.map((n) => n.nodeId),
                       );
                     },
                   });
@@ -1644,11 +1644,11 @@ export default function AppPanel({
                 type="button"
                 aria-label="Prune Offline Nodes that have not been heard within the offline threshold"
                 onClick={() => {
-                  const offlineNodes = Array.from(nodes.values()).filter(
+                  const offlineNodes = (Object.values(nodes) as NodeRecord[]).filter(
                     (n) =>
-                      n.node_id !== myNodeNum &&
+                      n.nodeId !== myNodeNum &&
                       !n.favorited &&
-                      getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                      getNodeStatus(n.lastHeardAt ?? 0, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
                         'offline',
                   );
                   if (offlineNodes.length === 0) {
@@ -1664,7 +1664,7 @@ export default function AppPanel({
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.deleteNodesBatch(
-                        offlineNodes.map((n) => n.node_id),
+                        offlineNodes.map((n) => n.nodeId),
                       );
                     },
                   });
@@ -1679,13 +1679,13 @@ export default function AppPanel({
               </button>
               <button
                 type="button"
-                aria-label={`Clear All Nodes (${nodes.size})`}
+                aria-label={`Clear All Nodes (${Object.keys(nodes).length})`}
                 onClick={() => {
                   executeWithConfirmation({
                     name: 'Clear Nodes',
                     title: 'Clear Nodes',
-                    message: `This will permanently delete all ${nodes.size} locally stored nodes. They will be re-discovered when connected.`,
-                    confirmLabel: `Clear ${nodes.size} Nodes`,
+                    message: `This will permanently delete all ${Object.keys(nodes).length} locally stored nodes. They will be re-discovered when connected.`,
+                    confirmLabel: `Clear ${Object.keys(nodes).length} Nodes`,
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.clearNodes();
@@ -1694,7 +1694,7 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Clear All Nodes ({nodes.size})
+                Clear All Nodes ({Object.keys(nodes).length})
               </button>
 
               {/* MeshCore contacts cleanup */}

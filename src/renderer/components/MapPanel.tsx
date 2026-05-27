@@ -36,7 +36,8 @@ import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { routeWeightToColor, routeWeightToStroke } from '../lib/routeWeightUtils';
-import type { MeshNode, MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/types';
+import type { MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -244,7 +245,7 @@ function DiagnosticPanes() {
 
 /** Offset [lat, lng] in degrees for anomaly halo when multiple nodes share the same position */
 interface MapMarkerProps {
-  node: MeshNode;
+  node: NodeRecord;
   anomaly: NodeAnomaly | null;
   nodeRenderSignature: string;
   homeNodeRenderSignature: string;
@@ -256,7 +257,7 @@ interface MapMarkerProps {
 }
 
 interface HaloMarkerProps {
-  node: MeshNode;
+  node: NodeRecord;
   anomaly: NodeAnomaly | null;
   anomalyHalosEnabled: boolean;
   congestionHalosEnabled: boolean;
@@ -272,8 +273,8 @@ const NodeHalo = memo(
     haloCenterOffset = [0, 0],
   }: HaloMarkerProps) {
     const shouldShowHalo = useMemo(
-      () => anomalyHalosEnabled && anomaly !== null && anomaly.nodeId === node.node_id,
-      [anomalyHalosEnabled, anomaly, node.node_id],
+      () => anomalyHalosEnabled && anomaly !== null && anomaly.nodeId === node.nodeId,
+      [anomalyHalosEnabled, anomaly, node.nodeId],
     );
 
     const severity = anomaly?.severity;
@@ -284,7 +285,7 @@ const NodeHalo = memo(
       <Fragment>
         {shouldShowHalo && !isInfo && (
           <Circle
-            key={`anomaly-${node.node_id}`}
+            key={`anomaly-${node.nodeId}`}
             center={[node.latitude! + haloCenterOffset[0], node.longitude! + haloCenterOffset[1]]}
             radius={500}
             pane="diagnosticPane"
@@ -302,7 +303,7 @@ const NodeHalo = memo(
         )}
         {shouldShowHalo && isInfo && (
           <Circle
-            key={`anomaly-info-${node.node_id}`}
+            key={`anomaly-info-${node.nodeId}`}
             center={[node.latitude! + haloCenterOffset[0], node.longitude! + haloCenterOffset[1]]}
             radius={350}
             pane="diagnosticPane"
@@ -318,15 +319,15 @@ const NodeHalo = memo(
             }}
           />
         )}
-        {congestionHalosEnabled && node.channel_utilization != null && (
+        {congestionHalosEnabled && node.channelUtilization != null && (
           <Circle
             center={[node.latitude!, node.longitude!]}
             radius={shouldShowHalo ? 520 : 300}
             pane="diagnosticPane"
             interactive={false}
             pathOptions={{
-              color: getCUColor(node.channel_utilization),
-              fillColor: getCUColor(node.channel_utilization),
+              color: getCUColor(node.channelUtilization),
+              fillColor: getCUColor(node.channelUtilization),
               fillOpacity: shouldShowHalo ? 0 : 0.25,
               weight: shouldShowHalo ? 3 : 1,
               opacity: shouldShowHalo ? 0.9 : 0.6,
@@ -355,22 +356,22 @@ const MapMarker = memo(
     protocol,
   }: MapMarkerProps) {
     const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
-    const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
+    const status = getNodeStatus(node.lastHeardAt ?? 0, nodeStaleThresholdMs, nodeOfflineThresholdMs);
 
     const nodeBadge: 'repeater' | 'room' | 'sensor' | 'home' | 'clock' | null = (() => {
-      if (node.hw_model === 'Repeater') return 'repeater';
-      if (node.hw_model === 'Room') return 'room';
-      if (node.hw_model === 'Sensor') return 'sensor';
+      if (node.hwModel === 'Repeater') return 'repeater';
+      if (node.hwModel === 'Room') return 'room';
+      if (node.hwModel === 'Sensor') return 'sensor';
       if (protocol === 'meshtastic' && node.role === 2) return 'repeater';
       if (protocol === 'meshtastic' && node.role === 11) return 'clock';
       if (protocol === 'meshtastic' && node.role === 12) return 'home';
       return null;
     })();
 
-    const cuForIcon = congestionHalosEnabled ? (node.channel_utilization ?? 0) : 0;
+    const cuForIcon = congestionHalosEnabled ? (node.channelUtilization ?? 0) : 0;
     const icon = useMemo(
-      () => getMarkerIcon(status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge),
-      [status, isSelf, cuForIcon, node.heard_via_mqtt_only, nodeBadge],
+      () => getMarkerIcon(status, isSelf, cuForIcon, node.heardViaMqttOnly, nodeBadge),
+      [status, isSelf, cuForIcon, node.heardViaMqttOnly, nodeBadge],
     );
 
     return (
@@ -380,7 +381,7 @@ const MapMarker = memo(
         zIndexOffset={isSelf ? 1000 : 0}
         eventHandlers={{
           click: () => {
-            onNodeClick?.(node.node_id);
+            onNodeClick?.(node.nodeId);
           },
         }}
       >
@@ -603,7 +604,7 @@ function PathPolyline({
 // ─── MapPanel ─────────────────────────────────────────────────────────────────
 
 interface Props {
-  nodes: Map<number, MeshNode>;
+  nodes: Record<number, NodeRecord>;
   myNodeNum: number;
   locationFilter: LocationFilter;
   ourPosition?: OurPosition | null;
@@ -630,25 +631,25 @@ export default function MapPanel({
   onNodeClick,
   protocol = 'meshtastic',
 }: Props) {
-  const toNodeRenderSignature = useCallback((node: MeshNode): string => {
+  const toNodeRenderSignature = useCallback((node: NodeRecord): string => {
     return [
-      node.node_id,
+      node.nodeId,
       node.latitude ?? 'null',
       node.longitude ?? 'null',
-      node.long_name ?? '',
-      node.short_name ?? '',
-      node.hw_model ?? '',
+      node.longName ?? '',
+      node.shortName ?? '',
+      node.hwModel ?? '',
       node.role ?? 'null',
-      node.battery ?? 'null',
+      node.batteryLevel ?? 'null',
       node.voltage ?? 'null',
       node.snr ?? 'null',
       node.rssi ?? 'null',
-      node.last_heard ?? 'null',
-      node.hops_away ?? 'null',
-      node.channel_utilization ?? 'null',
-      node.air_util_tx ?? 'null',
-      node.heard_via_mqtt_only ? 1 : 0,
-      node.heard_via_mqtt ? 1 : 0,
+      node.lastHeardAt ?? 'null',
+      node.hopsAway ?? 'null',
+      node.channelUtilization ?? 'null',
+      node.airUtilTx ?? 'null',
+      node.heardViaMqttOnly ? 1 : 0,
+      node.heardViaMqtt ? 1 : 0,
       node.lastPositionWarning ?? '',
       node.favorited ? 1 : 0,
     ].join('|');
@@ -664,7 +665,7 @@ export default function MapPanel({
       anomaly.confidence ?? 'none',
     ].join('|');
   }, []);
-  const homeNode = nodes.get(myNodeNum) ?? null;
+  const homeNode = myNodeNum != null ? (nodes[myNodeNum] ?? null) : null;
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
   const excludeMeshcoreContactTypesInMeshtastic = protocol === 'meshtastic';
 
@@ -688,7 +689,7 @@ export default function MapPanel({
     if (!routeWeightsSupported || !showRouteWeights) return null;
     const paths = getWeightedPaths(pathRecords);
 
-    const homeNodeForRoute = myNodeNum ? nodes.get(myNodeNum) : undefined;
+    const homeNodeForRoute = myNodeNum ? nodes[myNodeNum] : undefined;
     const hasHomeGps =
       homeNodeForRoute?.latitude != null &&
       homeNodeForRoute?.longitude != null &&
@@ -705,7 +706,7 @@ export default function MapPanel({
     }
 
     const validPaths = paths.flatMap((p) => {
-      const toNode = nodes.get(p.nodeId);
+      const toNode = nodes[p.nodeId];
       if (!toNode?.latitude || !toNode?.longitude) return [];
       return [{ ...p, fromPos, toPos: [toNode.latitude, toNode.longitude] as [number, number] }];
     });
@@ -731,18 +732,18 @@ export default function MapPanel({
 
     // No path-history rows: MeshCore often reports outPathLen=0 on contacts, so store stays empty.
     // Fallback: thickness from hops_away (fewer hops → thicker line), same color scale.
-    const fallbackPeers = Array.from(nodes.values()).filter((n) => {
-      if (myNodeNum && n.node_id === myNodeNum) return false;
+    const fallbackPeers = Object.values(nodes).filter((n) => {
+      if (myNodeNum && n.nodeId === myNodeNum) return false;
       if (n.latitude == null || n.longitude == null) return false;
       if (!(Math.abs(n.latitude) > 0.0001 || Math.abs(n.longitude) > 0.0001)) return false;
-      return n.hops_away != null && Number.isFinite(n.hops_away) && n.hops_away >= 0;
+      return n.hopsAway != null && Number.isFinite(n.hopsAway) && n.hopsAway >= 0;
     });
     if (fallbackPeers.length === 0) {
       return null;
     }
 
     const weights = fallbackPeers.map((n) => {
-      const h = Math.min(7, Math.max(0, n.hops_away ?? 0));
+      const h = Math.min(7, Math.max(0, n.hopsAway ?? 0));
       return 8 - h;
     });
     const maxWeight = Math.max(...weights, 1);
@@ -752,7 +753,7 @@ export default function MapPanel({
       const toPos: [number, number] = [n.latitude!, n.longitude!];
       return (
         <Polyline
-          key={`rw-hops-${n.node_id}`}
+          key={`rw-hops-${n.nodeId}`}
           positions={[fromPos, toPos] as [[number, number], [number, number]]}
           pathOptions={{
             color: routeWeightToColor(w, maxWeight),
@@ -773,7 +774,7 @@ export default function MapPanel({
 
   useEffect(() => {
     if (!routeWeightsSupported || !showRouteWeights) return;
-    const nodeIdsToLoad = Array.from(nodes.keys()).filter(
+    const nodeIdsToLoad = Object.keys(nodes).map(Number).filter(
       (nodeId) => !routeWeightLoadedNodeIdsRef.current.has(nodeId),
     );
     if (nodeIdsToLoad.length === 0) return;
@@ -787,7 +788,7 @@ export default function MapPanel({
   }, [routeWeightsSupported, showRouteWeights, nodes, loadPathHistoryForNode, pathRecords.size]);
 
   const nodesWithPosition = useMemo(() => {
-    const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
+    const homeNode = myNodeNum ? nodes[myNodeNum] : undefined;
     const homeHasLocation =
       homeNode?.latitude != null &&
       homeNode.latitude !== 0 &&
@@ -798,13 +799,13 @@ export default function MapPanel({
         ? locationFilter.maxDistance * 1.60934
         : locationFilter.maxDistance;
 
-    return Array.from(nodes.values())
+    return (Object.values(nodes) as NodeRecord[])
       .filter((n) => {
         let rejectReason: string | null = null;
         if (
           rejectReason === null &&
           excludeMeshcoreContactTypesInMeshtastic &&
-          meshcoreHwModelIsContactTypeLabel(n.hw_model)
+          meshcoreHwModelIsContactTypeLabel(n.hwModel)
         ) {
           rejectReason = 'meshcore_contact_type_filtered_for_meshtastic';
         }
@@ -815,7 +816,7 @@ export default function MapPanel({
         ) {
           rejectReason = 'invalid_or_zero_coords';
         }
-        if (rejectReason === null && locationFilter.hideMqttOnly && n.heard_via_mqtt_only) {
+        if (rejectReason === null && locationFilter.hideMqttOnly && n.heardViaMqttOnly) {
           rejectReason = 'mqtt_only_filtered';
         }
         if (rejectReason === null && locationFilter.enabled && homeHasLocation) {
@@ -829,17 +830,17 @@ export default function MapPanel({
         }
         return rejectReason === null;
       })
-      .sort((a, b) => a.node_id - b.node_id);
+      .sort((a, b) => a.nodeId - b.nodeId);
   }, [nodes, myNodeNum, locationFilter, excludeMeshcoreContactTypesInMeshtastic]);
   const nodesToRender = useMemo(() => {
-    const idSet = new Set(nodesWithPosition.map((n) => n.node_id));
-    const out: MeshNode[] = [...nodesWithPosition];
+    const idSet = new Set(nodesWithPosition.map((n) => n.nodeId));
+    const out: NodeRecord[] = [...nodesWithPosition];
     for (const nodeId of routingNodeIds) {
       if (idSet.has(nodeId)) continue;
-      const node = nodes.get(nodeId);
+      const node = nodes[nodeId];
       if (
         (excludeMeshcoreContactTypesInMeshtastic &&
-          meshcoreHwModelIsContactTypeLabel(node?.hw_model)) ||
+          meshcoreHwModelIsContactTypeLabel(node?.hwModel)) ||
         node?.latitude == null ||
         node.longitude == null ||
         !(Math.abs(node.latitude) > 0.0001 || Math.abs(node.longitude) > 0.0001)
@@ -848,13 +849,13 @@ export default function MapPanel({
       idSet.add(nodeId);
       out.push(node);
     }
-    return out.sort((a, b) => a.node_id - b.node_id);
+    return out.sort((a, b) => a.nodeId - b.nodeId);
   }, [nodesWithPosition, routingNodeIds, nodes, excludeMeshcoreContactTypesInMeshtastic]);
 
   const nodesWithStatus = useMemo(
     () =>
       nodesToRender.map((node) => {
-        const routingRow = getRoutingRowForNode(diagnosticRows, node.node_id);
+        const routingRow = getRoutingRowForNode(diagnosticRows, node.nodeId);
         const anomaly: NodeAnomaly | null = routingRow ? routingRowToNodeAnomaly(routingRow) : null;
         return { node, anomaly };
       }),
@@ -874,42 +875,42 @@ export default function MapPanel({
       group.forEach((item, i) => {
         const row = Math.floor(i / 2),
           col = i % 2;
-        offsetByNodeId.set(item.node.node_id, [col * 0.0002, row * 0.0002]);
+        offsetByNodeId.set(item.node.nodeId, [col * 0.0002, row * 0.0002]);
       });
     }
     return nodesWithStatus.map(({ node, anomaly }) => ({
       node,
       anomaly,
-      haloCenterOffset: anomaly != null ? (offsetByNodeId.get(node.node_id) ?? [0, 0]) : undefined,
+      haloCenterOffset: anomaly != null ? (offsetByNodeId.get(node.nodeId) ?? [0, 0]) : undefined,
     }));
   }, [nodesWithStatus]);
 
   const selfInNodesToRender = useMemo(
-    () => nodesToRender.some((n) => n.node_id === myNodeNum),
+    () => nodesToRender.some((n) => n.nodeId === myNodeNum),
     [nodesToRender, myNodeNum],
   );
 
-  const selfFallbackNode = useMemo<MeshNode | null>(() => {
+  const selfFallbackNode = useMemo<NodeRecord | null>(() => {
     if (selfInNodesToRender || !ourPosition) return null;
     const nowSec = Math.floor(Date.now() / 1000);
-    const longName = homeNode?.long_name || `Node-${myNodeNum.toString(16).toUpperCase()}`;
+    const longName = homeNode?.longName || `Node-${myNodeNum.toString(16).toUpperCase()}`;
     return {
-      node_id: myNodeNum,
-      long_name: longName,
-      short_name:
+      nodeId: myNodeNum,
+      longName: longName,
+      shortName:
         protocol === 'meshcore'
-          ? (homeNode?.short_name ?? '')
-          : homeNode?.short_name || longName.slice(0, 4),
-      hw_model: homeNode?.hw_model ?? 'Unknown',
-      battery: homeNode?.battery ?? 0,
+          ? (homeNode?.shortName ?? '')
+          : homeNode?.shortName || longName.slice(0, 4),
+      hwModel: homeNode?.hwModel ?? 'Unknown',
+      batteryLevel: homeNode?.batteryLevel ?? 0,
       snr: homeNode?.snr ?? 0,
       rssi: homeNode?.rssi ?? 0,
-      last_heard: homeNode?.last_heard ?? nowSec,
+      lastHeardAt: homeNode?.lastHeardAt ?? nowSec,
       latitude: ourPosition.lat,
       longitude: ourPosition.lon,
       favorited: homeNode?.favorited ?? false,
-      heard_via_mqtt_only: homeNode?.heard_via_mqtt_only,
-      channel_utilization: homeNode?.channel_utilization,
+      heardViaMqttOnly: homeNode?.heardViaMqttOnly,
+      channelUtilization: homeNode?.channelUtilization,
     };
   }, [selfInNodesToRender, ourPosition, homeNode, myNodeNum, protocol]);
 
@@ -940,9 +941,9 @@ export default function MapPanel({
     }[] = [];
     for (const [nodeId, points] of positionHistory) {
       if (points.length < 2) continue;
-      const node = nodes.get(nodeId);
+      const node = nodes[nodeId];
       if (!node) continue;
-      const status = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
+      const status = getNodeStatus(node.lastHeardAt ?? 0, nodeStaleThresholdMs, nodeOfflineThresholdMs);
       result.push({
         nodeId,
         positions: downsamplePathPoints(
@@ -973,7 +974,7 @@ export default function MapPanel({
   const statusCounts = useMemo(() => {
     const counts = { online: 0, stale: 0, offline: 0 };
     for (const n of nodesToRender) {
-      counts[getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs)]++;
+      counts[getNodeStatus(n.lastHeardAt ?? 0, nodeStaleThresholdMs, nodeOfflineThresholdMs)]++;
     }
     return counts;
   }, [nodesToRender, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
@@ -1063,7 +1064,7 @@ export default function MapPanel({
         {anomalyHalosEnabled || congestionHalosEnabled
           ? nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
               <NodeHalo
-                key={`halo-${node.node_id}`}
+                key={`halo-${node.nodeId}`}
                 node={node}
                 anomaly={anomaly}
                 anomalyHalosEnabled={anomalyHalosEnabled}
@@ -1081,13 +1082,13 @@ export default function MapPanel({
         >
           {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly }) => (
             <MapMarker
-              key={node.node_id}
+              key={node.nodeId}
               node={node}
               anomaly={anomaly}
               nodeRenderSignature={toNodeRenderSignature(node)}
               homeNodeRenderSignature={homeNode ? toNodeRenderSignature(homeNode) : 'none'}
               anomalyRenderSignature={toAnomalyRenderSignature(anomaly)}
-              isSelf={node.node_id === myNodeNum}
+              isSelf={node.nodeId === myNodeNum}
               protocol={protocol}
               onNodeClick={onNodeClick}
               congestionHalosEnabled={congestionHalosEnabled}

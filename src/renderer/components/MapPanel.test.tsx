@@ -102,36 +102,30 @@ describe('MapPanel accessibility', () => {
   it('adds wifi icon badge to repeater map markers', () => {
     leafletIconMock.mockClear();
     const nowSec = Math.floor(Date.now() / 1000);
-    const nodes = new Map([
-      [
-        1,
-        {
-          node_id: 1,
-          long_name: 'Repeater Alpha',
-          short_name: 'RPTA',
-          hw_model: 'Repeater',
-          snr: 0,
-          battery: 0,
-          last_heard: nowSec,
-          latitude: 40.185,
-          longitude: -105.073,
-        },
-      ],
-      [
-        2,
-        {
-          node_id: 2,
-          long_name: 'User Node',
-          short_name: 'USER',
-          hw_model: 'T-Echo',
-          snr: 0,
-          battery: 0,
-          last_heard: nowSec,
-          latitude: 40.186,
-          longitude: -105.074,
-        },
-      ],
-    ]);
+    const nodes = {
+      1: {
+        nodeId: 1,
+        longName: 'Repeater Alpha',
+        shortName: 'RPTA',
+        hwModel: 'Repeater',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: nowSec,
+        latitude: 40.185,
+        longitude: -105.073,
+      },
+      2: {
+        nodeId: 2,
+        longName: 'User Node',
+        shortName: 'USER',
+        hwModel: 'T-Echo',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: nowSec,
+        latitude: 40.186,
+        longitude: -105.074,
+      },
+    };
 
     render(
       <MapPanel
@@ -160,36 +154,30 @@ describe('MapPanel accessibility', () => {
   it('filters meshcore repeater contacts from meshtastic map view', () => {
     leafletIconMock.mockClear();
     const nowSec = Math.floor(Date.now() / 1000);
-    const nodes = new Map([
-      [
-        101,
-        {
-          node_id: 101,
-          long_name: 'MeshCore Repeater',
-          short_name: 'MCRP',
-          hw_model: 'Repeater',
-          snr: 0,
-          battery: 0,
-          last_heard: nowSec,
-          latitude: 40.2,
-          longitude: -105.1,
-        },
-      ],
-      [
-        202,
-        {
-          node_id: 202,
-          long_name: 'Meshtastic Node',
-          short_name: 'MTST',
-          hw_model: 'T-Echo',
-          snr: 0,
-          battery: 0,
-          last_heard: nowSec,
-          latitude: 40.21,
-          longitude: -105.11,
-        },
-      ],
-    ]);
+    const nodes = {
+      101: {
+        nodeId: 101,
+        longName: 'MeshCore Repeater',
+        shortName: 'MCRP',
+        hwModel: 'Repeater',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: nowSec,
+        latitude: 40.2,
+        longitude: -105.1,
+      },
+      202: {
+        nodeId: 202,
+        longName: 'Meshtastic Node',
+        shortName: 'MTST',
+        hwModel: 'T-Echo',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: nowSec,
+        latitude: 40.21,
+        longitude: -105.11,
+      },
+    };
 
     render(
       <MapPanel
@@ -211,36 +199,30 @@ describe('MapPanel accessibility', () => {
   it('filters meshcore room contacts from meshtastic map view', () => {
     leafletIconMock.mockClear();
     const nowSec = Math.floor(Date.now() / 1000);
-    const nodes = new Map([
-      [
-        301,
-        {
-          node_id: 301,
-          long_name: 'MeshCore Room',
-          short_name: 'ROOM',
-          hw_model: 'Room',
-          snr: 0,
-          battery: 0,
-          last_heard: nowSec,
-          latitude: 40.22,
-          longitude: -105.12,
-        },
-      ],
-      [
-        404,
-        {
-          node_id: 404,
-          long_name: 'Meshtastic Node',
-          short_name: 'MTST',
-          hw_model: 'T-Echo',
-          snr: 0,
-          battery: 0,
-          last_heard: nowSec,
-          latitude: 40.23,
-          longitude: -105.13,
-        },
-      ],
-    ]);
+    const nodes = {
+      301: {
+        nodeId: 301,
+        longName: 'MeshCore Room',
+        shortName: 'ROOM',
+        hwModel: 'Room',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: nowSec,
+        latitude: 40.22,
+        longitude: -105.12,
+      },
+      404: {
+        nodeId: 404,
+        longName: 'Meshtastic Node',
+        shortName: 'MTST',
+        hwModel: 'T-Echo',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: nowSec,
+        latitude: 40.23,
+        longitude: -105.13,
+      },
+    };
 
     render(
       <MapPanel
@@ -263,20 +245,20 @@ describe('MapPanel accessibility', () => {
   it('renders circle overlays when enabled regardless of node count', () => {
     diagnosticsStoreState.congestionHalosEnabled = true;
     const nowSec = Math.floor(Date.now() / 1000);
-    const nodes = new Map(
+    const nodes = Object.fromEntries(
       Array.from({ length: 1000 }, (_, i) => [
         i + 1,
         {
-          node_id: i + 1,
-          long_name: `Node-${i + 1}`,
-          short_name: `N${i + 1}`,
-          hw_model: 'T-Echo',
+          nodeId: i + 1,
+          longName: `Node-${i + 1}`,
+          shortName: `N${i + 1}`,
+          hwModel: 'T-Echo',
           snr: 0,
-          battery: 0,
-          last_heard: nowSec,
+          batteryLevel: 0,
+          lastHeardAt: nowSec,
           latitude: 40 + i * 0.0001,
           longitude: -105 - i * 0.0001,
-          channel_utilization: 18,
+          channelUtilization: 18,
         },
       ]),
     );
@@ -299,7 +281,7 @@ describe('MapPanel accessibility', () => {
     // If the root div loses h-full, MapContainer collapses to 0px and the map goes blank.
     const { container } = render(
       <MapPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         locationFilter={defaultFilter}
         ourPosition={null}
@@ -313,7 +295,7 @@ describe('MapPanel accessibility', () => {
   it('has no axe violations with empty nodes', async () => {
     const { container } = render(
       <MapPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         locationFilter={defaultFilter}
         ourPosition={null}
@@ -331,36 +313,30 @@ describe('MapPanel accessibility', () => {
     usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
 
     const nowSec = Math.floor(Date.now() / 1000);
-    const nodes = new Map([
-      [
-        2,
-        {
-          node_id: 2,
-          long_name: 'User Node',
-          short_name: 'USER',
-          hw_model: 'T-Echo',
-          snr: 0,
-          battery: 0,
-          last_heard: nowSec,
-          latitude: 40.186,
-          longitude: -105.074,
-        },
-      ],
-      [
-        3,
-        {
-          node_id: 3,
-          long_name: 'Peer Node',
-          short_name: 'PEER',
-          hw_model: 'T-Echo',
-          snr: 0,
-          battery: 0,
-          last_heard: nowSec,
-          latitude: 40.19,
-          longitude: -105.08,
-        },
-      ],
-    ]);
+    const nodes = {
+      2: {
+        nodeId: 2,
+        longName: 'User Node',
+        shortName: 'USER',
+        hwModel: 'T-Echo',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: nowSec,
+        latitude: 40.186,
+        longitude: -105.074,
+      },
+      3: {
+        nodeId: 3,
+        longName: 'Peer Node',
+        shortName: 'PEER',
+        hwModel: 'T-Echo',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: nowSec,
+        latitude: 40.19,
+        longitude: -105.08,
+      },
+    };
 
     render(
       <MapPanel
@@ -400,22 +376,19 @@ describe('MapPanel accessibility', () => {
   it('routes marker click to node detail modal via onNodeClick', () => {
     const onNodeClick = vi.fn();
     const nowSec = Math.floor(Date.now() / 1000);
-    const nodes = new Map([
-      [
-        2,
-        {
-          node_id: 2,
-          long_name: 'User Node',
-          short_name: 'USER',
-          hw_model: 'T-Echo',
-          snr: 0,
-          battery: 0,
-          last_heard: nowSec,
-          latitude: 40.186,
-          longitude: -105.074,
-        },
-      ],
-    ]);
+    const nodes = {
+      2: {
+        nodeId: 2,
+        longName: 'User Node',
+        shortName: 'USER',
+        hwModel: 'T-Echo',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: nowSec,
+        latitude: 40.186,
+        longitude: -105.074,
+      },
+    };
 
     render(
       <MapPanel
@@ -440,22 +413,19 @@ describe('MapPanel accessibility', () => {
   it('routes path click to node detail modal via onNodeClick', () => {
     const onNodeClick = vi.fn();
     const nowSec = Math.floor(Date.now() / 1000);
-    const nodes = new Map([
-      [
-        7,
-        {
-          node_id: 7,
-          long_name: 'Moving Node',
-          short_name: 'MOVE',
-          hw_model: 'T-Echo',
-          snr: 0,
-          battery: 0,
-          last_heard: nowSec,
-          latitude: 40.1,
-          longitude: -105.1,
-        },
-      ],
-    ]);
+    const nodes = {
+      7: {
+        nodeId: 7,
+        longName: 'Moving Node',
+        shortName: 'MOVE',
+        hwModel: 'T-Echo',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: nowSec,
+        latitude: 40.1,
+        longitude: -105.1,
+      },
+    };
     usePositionHistoryStore.setState({
       history: new Map([
         [

@@ -1,194 +1,219 @@
-import type { Connection } from '@liamcottle/meshcore.js';
-import type { MeshDevice } from '@meshtastic/core';
-import { Portnums } from '@meshtastic/protobufs';
-
 import { removeConnection, setConnection } from '../../stores/connectionStore';
+import { clearDeviceIdentity } from '../../stores/deviceStore';
 import {
   addIdentity,
+  addTransport,
+  findIdentityBySignature,
   getIdentity,
-  removeIdentity,
+  removeIdentity as removeIdentityFromStore,
+  removeTransport,
   setActiveIdentity,
+  updateIdentity,
 } from '../../stores/identityStore';
-import { pubkeyToNodeId } from '../meshcoreUtils';
-import { MeshCoreProtocol } from '../protocols/MeshCoreProtocol';
-import { MeshtasticProtocol } from '../protocols/MeshtasticProtocol';
-import type { Protocol } from '../protocols/Protocol';
-import type { ConnectionType, Identity, IdentityId } from '../types';
+import type { IdentityRecord } from '../../stores/identityStore';
+import { clearMessageIdentity } from '../../stores/messageStore';
+import { clearNodeIdentity } from '../../stores/nodeStore';
+import { meshcoreProtocol } from '../protocols/MeshCoreProtocol';
+import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
+import type { DiscoveryInfo, DomainEvent, Protocol } from '../protocols/Protocol';
+import type {
+  ConnectionType,
+  IdentityId,
+  TransportParams,
+  TransportRef,
+  TransportType,
+} from '../types';
 import { packetRouter } from './PacketRouter';
 
-export type ConnectParams =
-  | { protocol: 'meshtastic'; transport: ConnectionType; device: MeshDevice }
-  | { protocol: 'meshcore'; transport: ConnectionType; conn: Connection };
+const PROTOCOLS: Record<string, Protocol> = {
+  meshtastic: meshtasticProtocol,
+  meshcore: meshcoreProtocol,
+};
 
-interface MeshCoreEventBus {
-  on(event: string | number, cb: (...args: unknown[]) => void): void;
-  off(event: string | number, cb: (...args: unknown[]) => void): void;
-  getSelfInfo(timeout?: number): Promise<{ publicKey?: Uint8Array }>;
+export function getProtocol(type: string): Protocol | null {
+  return PROTOCOLS[type] ?? null;
 }
 
+interface TransportSlot {
+  transportId: string;
+  identityId: IdentityId;
+  protocol: Protocol;
+  handle: unknown;
+  type: TransportType;
+  params: TransportParams;
+  teardown: () => void;
+  lastDataAt: number;
+}
+
+function randomId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function transportTypeToConnectionType(type: TransportType): ConnectionType | null {
+  switch (type) {
+    case 'ble':
+    case 'serial':
+    case 'http':
+      return type;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Generic connection lifecycle owner. Holds the SDK handle registry, wires
+ * protocol events into PacketRouter, and resolves identity signatures so that
+ * reconnecting a previously-seen device reuses its existing store slices.
+ *
+ * Watchdog and reconnect-with-backoff are intentionally not yet implemented;
+ * they layer on top of the slot registry's `lastDataAt`.
+ */
 export class ConnectionDriver {
-  private identityId: IdentityId | null = null;
+  private slots = new Map<string, TransportSlot>();
+  /** transport-key → identityId; persists identity across reconnects of the same physical device. */
+  private transportKeyMap = new Map<string, IdentityId>();
 
-  async connect(params: ConnectParams): Promise<() => void> {
-    if (params.protocol === 'meshtastic') {
-      return this.connectMeshtastic(params);
+  async connect(protocolType: string, params: TransportParams): Promise<IdentityId> {
+    const protocol = PROTOCOLS[protocolType];
+    if (!protocol) throw new Error(`Unknown protocol: ${protocolType}`);
+
+    const provisionalKey = protocol.identitySignature(params);
+    let identityId = this.transportKeyMap.get(provisionalKey) ?? '';
+    let identity: IdentityRecord | null = identityId ? getIdentity(identityId) : null;
+    let createdProvisional = false;
+
+    if (!identity) {
+      identityId = randomId('id');
+      const record: IdentityRecord = {
+        id: identityId,
+        protocol,
+        signature: provisionalKey,
+        transports: [],
+        createdAt: Date.now(),
+        lastSeenAt: Date.now(),
+      };
+      addIdentity(record);
+      identity = record;
+      createdProvisional = true;
     }
-    return this.connectMeshCore(params);
-  }
 
-  private connectMeshtastic(
-    params: Extract<ConnectParams, { protocol: 'meshtastic' }>,
-  ): Promise<() => void> {
-    const { device, transport } = params;
-    const protocol = new MeshtasticProtocol(device);
-    const unsubs: (() => void)[] = [];
+    let handle: unknown;
+    try {
+      handle = await protocol.createDevice(params);
+    } catch (err) {
+      if (createdProvisional) removeIdentityFromStore(identityId);
+      throw err;
+    }
 
-    unsubs.push(
-      device.events.onMyNodeInfo.subscribe((info) => {
-        this.registerIdentity({
-          selfAddress: String(info.myNodeNum),
-          protocol,
-          activeTransports: [transport],
-        });
-      }),
-    );
+    let info: DiscoveryInfo | undefined;
+    if (protocol.discoverSelf) {
+      try {
+        info = await protocol.discoverSelf(handle);
+      } catch (err) {
+        await protocol.destroyDevice(handle).catch(() => {});
+        if (createdProvisional) removeIdentityFromStore(identityId);
+        throw err;
+      }
+    }
 
-    unsubs.push(
-      device.events.onMeshPacket.subscribe((packet) => {
-        if (packet.payloadVariant.case !== 'decoded') return;
-        const portnum = Number((packet.payloadVariant.value as { portnum?: unknown }).portnum);
-        if (portnum === Number(Portnums.PortNum.TEXT_MESSAGE_APP)) {
-          this.onRawPacket({ kind: 'text_message', raw: packet });
-        } else if (portnum === Number(Portnums.PortNum.TRACEROUTE_APP)) {
-          this.onRawPacket({ kind: 'trace_route', raw: packet });
+    if (info) {
+      const resolvedKey = protocol.identitySignature(params, info);
+      if (resolvedKey !== provisionalKey) {
+        const matched = findIdentityBySignature(resolvedKey);
+        if (matched && matched.id !== identityId) {
+          if (createdProvisional) removeIdentityFromStore(identityId);
+          identityId = matched.id;
+          createdProvisional = false;
         }
-      }),
-    );
-
-    unsubs.push(
-      device.events.onNodeInfoPacket.subscribe((packet) => {
-        this.onRawPacket({ kind: 'node_info', raw: packet });
-      }),
-    );
-
-    unsubs.push(
-      device.events.onPositionPacket.subscribe((packet) => {
-        this.onRawPacket({ kind: 'position', raw: packet });
-      }),
-    );
-
-    unsubs.push(
-      device.events.onTelemetryPacket.subscribe((packet) => {
-        this.onRawPacket({ kind: 'telemetry', raw: packet });
-      }),
-    );
-
-    unsubs.push(
-      device.events.onWaypointPacket.subscribe((packet) => {
-        this.onRawPacket({ kind: 'waypoint', raw: packet });
-      }),
-    );
-
-    unsubs.push(
-      device.events.onTraceRoutePacket.subscribe((packet) => {
-        this.onRawPacket({ kind: 'trace_route', raw: packet });
-      }),
-    );
-
-    return Promise.resolve(() => {
-      unsubs.forEach((fn) => {
-        fn();
+      }
+      updateIdentity(identityId, {
+        signature: resolvedKey,
+        publicKey: info.publicKey,
+        selfNodeNum: info.myNodeNum,
       });
-      this.unregisterIdentity();
+      this.transportKeyMap.set(resolvedKey, identityId);
+    }
+    this.transportKeyMap.set(provisionalKey, identityId);
+
+    const transportId = randomId('t');
+    const resolvedIdentityId = identityId;
+    const teardown = protocol.subscribe(handle, (event: DomainEvent) => {
+      const slot = this.slots.get(transportId);
+      if (slot) slot.lastDataAt = Date.now();
+      packetRouter.dispatch(event, resolvedIdentityId);
     });
-  }
 
-  private async connectMeshCore(
-    params: Extract<ConnectParams, { protocol: 'meshcore' }>,
-  ): Promise<() => void> {
-    const { conn, transport } = params;
-    const bus = conn as unknown as MeshCoreEventBus;
-    const info = await bus.getSelfInfo(5000);
-    const nodeId = info.publicKey ? pubkeyToNodeId(info.publicKey) : 0;
-    const protocol = new MeshCoreProtocol(conn);
+    const transportRef: TransportRef = {
+      transportId,
+      type: params.type,
+      status: 'connected',
+      params,
+      lastDataReceivedAt: Date.now(),
+    };
+    addTransport(identityId, transportRef);
 
-    this.registerIdentity({
-      selfAddress: String(nodeId),
+    this.slots.set(transportId, {
+      transportId,
+      identityId,
       protocol,
-      activeTransports: [transport],
+      handle,
+      type: params.type,
+      params,
+      teardown,
+      lastDataAt: Date.now(),
     });
 
-    const onAdvert = (data: unknown) => {
-      this.onRawPacket({ kind: 'advert', raw: data });
-    };
-    const onDm = (data: unknown) => {
-      this.onRawPacket({ kind: 'direct_message', raw: data });
-    };
-    const onChannel = (data: unknown) => {
-      this.onRawPacket({ kind: 'channel_message', raw: data });
-    };
-
-    bus.on(128, onAdvert);
-    bus.on(7, onDm);
-    bus.on(8, onChannel);
-
-    return () => {
-      bus.off(128, onAdvert);
-      bus.off(7, onDm);
-      bus.off(8, onChannel);
-      this.unregisterIdentity();
-    };
-  }
-
-  registerIdentity(opts: {
-    selfAddress: string;
-    protocol: Protocol;
-    activeTransports: ConnectionType[];
-    displayName?: string;
-    shortName?: string;
-    hardwareModel?: string;
-  }): IdentityId {
-    const id: IdentityId = opts.selfAddress;
-    const existing = getIdentity(id);
-    const identity: Identity = {
-      ...existing,
-      id,
-      selfAddress: opts.selfAddress,
-      protocol: opts.protocol,
-      activeTransports: opts.activeTransports,
-      displayName: opts.displayName ?? existing?.displayName,
-      shortName: opts.shortName ?? existing?.shortName,
-      hardwareModel: opts.hardwareModel ?? existing?.hardwareModel,
-      createdAt: existing?.createdAt ?? Date.now(),
-      lastSeenAt: Date.now(),
-    };
-    addIdentity(identity);
-    setActiveIdentity(id);
-    setConnection(id, {
-      status: 'configured',
-      connectionType: opts.activeTransports[0] ?? null,
-      myNodeNum: parseInt(opts.selfAddress) || 0,
+    setConnection(identityId, {
+      status: 'connecting',
+      connectionType: transportTypeToConnectionType(params.type),
     });
-    this.identityId = id;
-    return id;
+    setActiveIdentity(identityId);
+
+    return identityId;
   }
 
-  onRawPacket(raw: unknown): void {
-    const id = this.identityId;
-    if (!id) return;
-    const identity = getIdentity(id);
-    if (!identity) return;
-    packetRouter.route(raw, identity.protocol, id);
+  async disconnect(identityId: IdentityId): Promise<void> {
+    const slotsToRemove = [...this.slots.values()].filter((s) => s.identityId === identityId);
+    for (const slot of slotsToRemove) {
+      try {
+        slot.teardown();
+      } catch (e) {
+        console.debug('[ConnectionDriver] teardown error', e);
+      }
+      await slot.protocol.destroyDevice(slot.handle).catch((e: unknown) => {
+        console.debug('[ConnectionDriver] destroy error', e);
+      });
+      this.slots.delete(slot.transportId);
+      removeTransport(identityId, slot.transportId);
+    }
+    setConnection(identityId, { status: 'disconnected' });
   }
 
-  unregisterIdentity(): void {
-    if (!this.identityId) return;
-    removeConnection(this.identityId);
-    removeIdentity(this.identityId);
-    this.identityId = null;
+  /** "Forget this device": disconnects + clears every per-identity store slice. */
+  async removeIdentity(identityId: IdentityId): Promise<void> {
+    await this.disconnect(identityId);
+    removeIdentityFromStore(identityId);
+    removeConnection(identityId);
+    clearMessageIdentity(identityId);
+    clearNodeIdentity(identityId);
+    clearDeviceIdentity(identityId);
+    for (const [key, id] of this.transportKeyMap.entries()) {
+      if (id === identityId) this.transportKeyMap.delete(key);
+    }
   }
 
-  getIdentityId(): IdentityId | null {
-    return this.identityId;
+  /** Returns any live handle for the identity (first non-MQTT transport). Action hooks call this. */
+  getHandle(identityId: IdentityId): unknown {
+    const slot = [...this.slots.values()].find(
+      (s) => s.identityId === identityId && s.type !== 'mqtt',
+    );
+    return slot?.handle ?? null;
+  }
+
+  /** Lookup a slot by transportId (for tests / debugging). */
+  getSlot(transportId: string): TransportSlot | undefined {
+    return this.slots.get(transportId);
   }
 }
+
+export const connectionDriver = new ConnectionDriver();

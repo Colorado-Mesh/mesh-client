@@ -1,11 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
-import {
-  type MeshCoreContactRaw,
-  type MeshCoreSelfInfo,
-  serializeErrorLike,
-} from '../hooks/useMeshCore';
+import type { MeshCoreContactRaw } from '../lib/protocols/MeshCoreProtocol';
+import type { MeshCoreSelfInfo } from '../lib/meshcoreTelemetryPrivacy';
+import { toErrorMessage } from '../lib/error';
 import type { OurPosition } from '../lib/gpsSource';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
 import {
@@ -2564,7 +2562,7 @@ function MeshcoreChannelSection({
       setEditingIdx(null);
       setAddingNew(false);
     } catch (e) {
-      const errorMsg = serializeErrorLike(e) || 'Unknown error';
+      const errorMsg = toErrorMessage(e) || 'Unknown error';
       console.warn('[MeshcoreChannelSection] save failed', { error: e, errorMessage: errorMsg });
       // Show error to user - could add toast notification here
       alert(`Failed to save channel: ${errorMsg}`);

@@ -8,19 +8,17 @@ import {
   MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT,
 } from '../lib/meshtasticContactGroupUtils';
 import { MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL } from '../lib/meshtasticSourceIcons';
-import type { MeshNode } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import NodeListPanel from './NodeListPanel';
 
-function makeNode(partial: Partial<MeshNode> & Pick<MeshNode, 'node_id'>): MeshNode {
+function makeNode(partial: Partial<NodeRecord> & Pick<NodeRecord, 'nodeId'>): NodeRecord {
   return {
-    long_name: 'N',
-    short_name: '',
-    hw_model: '',
+    longName: 'N',
+    shortName: '',
+    hwModel: '',
     snr: 0,
-    battery: 0,
-    last_heard: Date.now(),
-    latitude: null,
-    longitude: null,
+    batteryLevel: 0,
+    lastHeardAt: Date.now(),
     ...partial,
   };
 }
@@ -57,7 +55,7 @@ describe('NodeListPanel accessibility', () => {
   it('has no axe violations with empty nodes', async () => {
     const { container } = render(
       <NodeListPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}
@@ -71,7 +69,7 @@ describe('NodeListPanel accessibility', () => {
   it('shows contacts title in meshcore mode', () => {
     render(
       <NodeListPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}
@@ -87,7 +85,7 @@ describe('NodeListPanel import contacts', () => {
   it('shows Import Contacts button in meshcore mode when onImportContacts provided', () => {
     render(
       <NodeListPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}
@@ -102,7 +100,7 @@ describe('NodeListPanel import contacts', () => {
   it('does not show Import Contacts button in meshtastic mode', () => {
     render(
       <NodeListPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}
@@ -115,11 +113,11 @@ describe('NodeListPanel import contacts', () => {
   });
 
   it('filters Meshtastic nodes by GPS built-in group', () => {
-    const nodes = new Map<number, MeshNode>([
-      [1, makeNode({ node_id: 1, long_name: 'Me', latitude: 40, longitude: -74 })],
-      [2, makeNode({ node_id: 2, long_name: 'HasGps', latitude: 37.5, longitude: -122.4 })],
-      [3, makeNode({ node_id: 3, long_name: 'NoGps', latitude: null, longitude: null })],
-    ]);
+    const nodes: Record<number, NodeRecord> = {
+      1: makeNode({ nodeId: 1, longName: 'Me', latitude: 40, longitude: -74 }),
+      2: makeNode({ nodeId: 2, longName: 'HasGps', latitude: 37.5, longitude: -122.4 }),
+      3: makeNode({ nodeId: 3, longName: 'NoGps' }),
+    };
     render(
       <NodeListPanel
         nodes={nodes}
@@ -141,30 +139,11 @@ describe('NodeListPanel import contacts', () => {
   });
 
   it('filters Meshtastic nodes by RF+MQTT built-in group', () => {
-    const nodes = new Map<number, MeshNode>([
-      [
-        1,
-        makeNode({ node_id: 1, long_name: 'Me', heard_via_mqtt: true, heard_via_mqtt_only: false }),
-      ],
-      [
-        2,
-        makeNode({
-          node_id: 2,
-          long_name: 'Hybrid',
-          heard_via_mqtt: true,
-          heard_via_mqtt_only: false,
-        }),
-      ],
-      [
-        3,
-        makeNode({
-          node_id: 3,
-          long_name: 'MqttOnly',
-          heard_via_mqtt: true,
-          heard_via_mqtt_only: true,
-        }),
-      ],
-    ]);
+    const nodes: Record<number, NodeRecord> = {
+      1: makeNode({ nodeId: 1, longName: 'Me', heardViaMqtt: true, heardViaMqttOnly: false }),
+      2: makeNode({ nodeId: 2, longName: 'Hybrid', heardViaMqtt: true, heardViaMqttOnly: false }),
+      3: makeNode({ nodeId: 3, longName: 'MqttOnly', heardViaMqtt: true, heardViaMqttOnly: true }),
+    };
     render(
       <NodeListPanel
         nodes={nodes}
@@ -186,18 +165,15 @@ describe('NodeListPanel import contacts', () => {
   });
 
   it('shows hybrid MQTT path icons (not relay text) when via_mqtt and not MQTT-only', async () => {
-    const nodes = new Map<number, MeshNode>([
-      [
-        2,
-        makeNode({
-          node_id: 2,
-          long_name: 'RelayPeer',
-          heard_via_mqtt_only: false,
-          heard_via_mqtt: false,
-          via_mqtt: true,
-        }),
-      ],
-    ]);
+    const nodes: Record<number, NodeRecord> = {
+      2: makeNode({
+        nodeId: 2,
+        longName: 'RelayPeer',
+        heardViaMqttOnly: false,
+        heardViaMqtt: false,
+        viaMqtt: true,
+      }),
+    };
     const { container } = render(
       <NodeListPanel
         nodes={nodes}
@@ -215,18 +191,15 @@ describe('NodeListPanel import contacts', () => {
   });
 
   it('shows hybrid MQTT path icons when heard_via_mqtt without via_mqtt', () => {
-    const nodes = new Map<number, MeshNode>([
-      [
-        3,
-        makeNode({
-          node_id: 3,
-          long_name: 'SessionHybrid',
-          heard_via_mqtt_only: false,
-          heard_via_mqtt: true,
-          via_mqtt: false,
-        }),
-      ],
-    ]);
+    const nodes: Record<number, NodeRecord> = {
+      3: makeNode({
+        nodeId: 3,
+        longName: 'SessionHybrid',
+        heardViaMqttOnly: false,
+        heardViaMqtt: true,
+        viaMqtt: false,
+      }),
+    };
     render(
       <NodeListPanel
         nodes={nodes}
@@ -244,7 +217,7 @@ describe('NodeListPanel import contacts', () => {
   it('does not show Import Contacts button when onImportContacts not provided in meshcore mode', () => {
     render(
       <NodeListPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}
@@ -260,7 +233,7 @@ describe('NodeListPanel import contacts', () => {
     const onRefreshContacts = vi.fn().mockResolvedValue(undefined);
     render(
       <NodeListPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}
@@ -278,9 +251,9 @@ describe('NodeListPanel import contacts', () => {
   it('renders full public key under name when meshcoreShowPublicKeys and map entry exist', () => {
     const nodeId = 0xdeadbeef;
     const hex = 'aa'.repeat(32);
-    const nodes = new Map<number, MeshNode>([
-      [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer' })],
-    ]);
+    const nodes: Record<number, NodeRecord> = {
+      [nodeId]: makeNode({ nodeId, longName: 'Peer' }),
+    };
     const pubkeyMap = new Map<number, string>([[nodeId, hex]]);
     render(
       <NodeListPanel
@@ -308,7 +281,7 @@ describe('NodeListPanel flood advert (MeshCore)', () => {
     const onSendAdvert = vi.fn().mockResolvedValue(undefined);
     render(
       <NodeListPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}
@@ -327,7 +300,7 @@ describe('NodeListPanel flood advert (MeshCore)', () => {
   it('does not show flood advert in meshtastic mode even if onSendAdvert provided', () => {
     render(
       <NodeListPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}
@@ -342,7 +315,7 @@ describe('NodeListPanel flood advert (MeshCore)', () => {
   it('does not show flood advert when onSendAdvert omitted in meshcore mode', () => {
     render(
       <NodeListPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}
@@ -356,7 +329,7 @@ describe('NodeListPanel flood advert (MeshCore)', () => {
   it('disables flood advert when meshcoreRadioOperational is false', () => {
     render(
       <NodeListPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}

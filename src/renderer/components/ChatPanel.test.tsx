@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import type { MeshNode } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import ChatPanel, { getDistFromChatBottom } from './ChatPanel';
 import { ToastProvider } from './Toast';
 
@@ -21,7 +21,7 @@ describe('ChatPanel accessibility', () => {
     onResend: vi.fn(),
     onNodeClick: vi.fn(),
     isConnected: false,
-    nodes: new Map(),
+    nodes: {},
     isActive: true,
   };
 
@@ -49,18 +49,22 @@ describe('ChatPanel accessibility', () => {
           myNodeNum={999}
           messages={[
             {
-              sender_id: 1,
-              sender_name: 'A',
+              id: '1',
+              from: 1,
+              senderName: 'A',
               payload: 'first',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: now - 2000,
               status: 'acked',
             },
             {
-              sender_id: 1,
-              sender_name: 'A',
+              id: '2',
+              from: 1,
+              senderName: 'A',
               payload: 'second',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: now - 1000,
               status: 'acked',
             },
@@ -82,29 +86,29 @@ describe('ChatPanel accessibility', () => {
     // "!be1f4697". This happened because short_name was set to hex.slice(-4)
     // and ChatPanel preferred short_name over long_name.
     const stubId = 0xbe1f4697;
-    const stubNode: MeshNode = {
-      node_id: stubId,
-      long_name: '!be1f4697',
-      short_name: '',
-      hw_model: '',
+    const stubNode: import('../stores/nodeStore').NodeRecord = {
+      nodeId: stubId,
+      longName: '!be1f4697',
+      shortName: '',
+      hwModel: '',
       snr: 0,
-      battery: 0,
-      last_heard: Date.now(),
-      latitude: null,
-      longitude: null,
+      batteryLevel: 0,
+      lastHeardAt: Date.now(),
     };
     render(
       <ToastProvider>
         <ChatPanel
           {...defaultProps}
           myNodeNum={1}
-          nodes={new Map([[stubId, stubNode]])}
+          nodes={{ [stubId]: stubNode }}
           messages={[
             {
-              sender_id: stubId,
-              sender_name: '!be1f4697',
+              id: '1',
+              from: stubId,
+              senderName: '!be1f4697',
               payload: 'Hello',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: Date.now(),
               status: 'acked',
             },
@@ -125,10 +129,12 @@ describe('ChatPanel accessibility', () => {
           myNodeNum={1}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Other',
+              id: '1',
+              from: 2,
+              senderName: 'Other',
               payload: 'Hello',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: Date.now(),
               status: 'acked',
               receivedVia: 'rf',
@@ -149,10 +155,12 @@ describe('ChatPanel accessibility', () => {
           myNodeNum={1}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Other',
+              id: '1',
+              from: 2,
+              senderName: 'Other',
               payload: 'Hello',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: Date.now(),
               status: 'acked',
               receivedVia: 'rf',
@@ -173,10 +181,12 @@ describe('ChatPanel accessibility', () => {
           myNodeNum={1}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Other',
+              id: '1',
+              from: 2,
+              senderName: 'Other',
               payload: 'Hello',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: Date.now(),
               status: 'acked',
               receivedVia: 'mqtt',
@@ -199,33 +209,27 @@ describe('ChatPanel accessibility', () => {
           myNodeNum={1}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '1',
+              from: 2,
+              senderName: 'Alice',
               payload: 'Private hello',
-              channel: -1,
+              channelIndex: -1,
+              to: 1,
               timestamp: Date.now(),
               status: 'acked',
-              to: 1,
             },
           ]}
-          nodes={
-            new Map([
-              [
-                2,
-                {
-                  node_id: 2,
-                  long_name: 'Alice',
-                  short_name: '',
-                  hw_model: '',
-                  snr: 0,
-                  battery: 0,
-                  last_heard: Date.now(),
-                  latitude: null,
-                  longitude: null,
-                },
-              ],
-            ])
-          }
+          nodes={{
+            2: {
+              nodeId: 2,
+              longName: 'Alice',
+              shortName: '',
+              hwModel: '',
+              snr: 0,
+              batteryLevel: 0,
+              lastHeardAt: Date.now(),
+            },
+          }}
         />
       </ToastProvider>,
     );
@@ -245,33 +249,27 @@ describe('ChatPanel accessibility', () => {
           protocol="meshtastic"
           isConnected
           myNodeNum={1}
-          nodes={
-            new Map([
-              [
-                2,
-                {
-                  node_id: 2,
-                  long_name: 'Alice',
-                  short_name: 'Alice',
-                  hw_model: '',
-                  snr: 0,
-                  battery: 0,
-                  last_heard: Date.now(),
-                  latitude: null,
-                  longitude: null,
-                },
-              ],
-            ])
-          }
+          nodes={{
+            2: {
+              nodeId: 2,
+              longName: 'Alice',
+              shortName: 'Alice',
+              hwModel: '',
+              snr: 0,
+              batteryLevel: 0,
+              lastHeardAt: Date.now(),
+            },
+          }}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '1',
+              from: 2,
+              senderName: 'Alice',
               payload: 'Private hello',
-              channel: -1,
+              channelIndex: -1,
+              to: 1,
               timestamp: Date.now(),
               status: 'acked',
-              to: 1,
             },
           ]}
         />
@@ -291,33 +289,27 @@ describe('ChatPanel accessibility', () => {
           protocol="meshtastic"
           isConnected
           myNodeNum={1}
-          nodes={
-            new Map([
-              [
-                2,
-                {
-                  node_id: 2,
-                  long_name: 'Alice',
-                  short_name: 'Alice',
-                  hw_model: '',
-                  snr: 0,
-                  battery: 0,
-                  last_heard: Date.now(),
-                  latitude: null,
-                  longitude: null,
-                },
-              ],
-            ])
-          }
+          nodes={{
+            2: {
+              nodeId: 2,
+              longName: 'Alice',
+              shortName: 'Alice',
+              hwModel: '',
+              snr: 0,
+              batteryLevel: 0,
+              lastHeardAt: Date.now(),
+            },
+          }}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '1',
+              from: 2,
+              senderName: 'Alice',
               payload: 'First DM',
-              channel: -1,
+              channelIndex: -1,
+              to: 1,
               timestamp: firstTs,
               status: 'acked',
-              to: 1,
             },
           ]}
         />
@@ -336,44 +328,39 @@ describe('ChatPanel accessibility', () => {
           {...defaultProps}
           isConnected
           myNodeNum={1}
-          nodes={
-            new Map([
-              [
-                2,
-                {
-                  node_id: 2,
-                  long_name: 'Alice',
-                  short_name: 'Alice',
-                  hw_model: '',
-                  snr: 0,
-                  battery: 0,
-                  last_heard: Date.now(),
-                  latitude: null,
-                  longitude: null,
-                },
-              ],
-            ])
-          }
+          nodes={{
+            2: {
+              nodeId: 2,
+              longName: 'Alice',
+              shortName: 'Alice',
+              hwModel: '',
+              snr: 0,
+              batteryLevel: 0,
+              lastHeardAt: Date.now(),
+            },
+          }}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '1',
+              from: 2,
+              senderName: 'Alice',
               payload: 'First DM',
-              channel: -1,
+              channelIndex: -1,
+              to: 1,
               timestamp: firstTs,
               status: 'acked',
-              to: 1,
             },
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '2',
+              from: 2,
+              senderName: 'Alice',
               payload: 'Second DM',
-              channel: -1,
+              channelIndex: -1,
+              to: 1,
               // Must resurface even if timestamp is not newer (regression: older/stale timestamps
               // can happen across transports/hydration).
               timestamp: firstTs,
               status: 'acked',
-              to: 1,
             },
           ]}
         />
@@ -391,33 +378,27 @@ describe('ChatPanel accessibility', () => {
           protocol="meshcore"
           isConnected
           myNodeNum={1}
-          nodes={
-            new Map([
-              [
-                2,
-                {
-                  node_id: 2,
-                  long_name: 'Alice',
-                  short_name: 'Alice',
-                  hw_model: '',
-                  snr: 0,
-                  battery: 0,
-                  last_heard: Date.now(),
-                  latitude: null,
-                  longitude: null,
-                },
-              ],
-            ])
-          }
+          nodes={{
+            2: {
+              nodeId: 2,
+              longName: 'Alice',
+              shortName: 'Alice',
+              hwModel: '',
+              snr: 0,
+              batteryLevel: 0,
+              lastHeardAt: Date.now(),
+            },
+          }}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '1',
+              from: 2,
+              senderName: 'Alice',
               payload: 'Private hello',
-              channel: -1,
+              channelIndex: -1,
+              to: 1,
               timestamp: Date.now(),
               status: 'acked',
-              to: 1,
             },
           ]}
         />
@@ -432,31 +413,27 @@ describe('ChatPanel accessibility', () => {
     const ts = Date.now();
     const messages = [
       {
-        sender_id: 2,
-        sender_name: 'Alice',
+        id: '1',
+        from: 2,
+        senderName: 'Alice',
         payload: 'Private hello',
-        channel: -1,
+        channelIndex: -1,
+        to: 1,
         timestamp: ts,
         status: 'acked' as const,
-        to: 1,
       },
     ];
-    const nodes = new Map([
-      [
-        2,
-        {
-          node_id: 2,
-          long_name: 'Alice',
-          short_name: 'Alice',
-          hw_model: '',
-          snr: 0,
-          battery: 0,
-          last_heard: Date.now(),
-          latitude: null,
-          longitude: null,
-        },
-      ],
-    ]);
+    const nodes = {
+      2: {
+        nodeId: 2,
+        longName: 'Alice',
+        shortName: 'Alice',
+        hwModel: '',
+        snr: 0,
+        batteryLevel: 0,
+        lastHeardAt: Date.now(),
+      },
+    };
     const { rerender } = render(
       <ToastProvider>
         <ChatPanel
@@ -496,10 +473,12 @@ describe('ChatPanel accessibility', () => {
   it('shows Jump to Latest when content overflows without manual scroll event', async () => {
     const baseTs = Date.now() - 50_000;
     const longMessages = Array.from({ length: 30 }, (_, idx) => ({
-      sender_id: idx % 2 === 0 ? 2 : 1,
-      sender_name: idx % 2 === 0 ? 'Alice' : 'Me',
+      id: String(idx),
+      from: idx % 2 === 0 ? 2 : 1,
+      senderName: idx % 2 === 0 ? 'Alice' : 'Me',
       payload: `message ${idx} `.repeat(20),
-      channel: 0,
+      channelIndex: 0,
+      to: 0,
       timestamp: baseTs + idx * 1000,
       status: 'acked' as const,
     }));
@@ -527,10 +506,12 @@ describe('ChatPanel accessibility', () => {
   it('shows Jump to Latest when slightly scrolled from bottom', async () => {
     const baseTs = Date.now() - 50_000;
     const longMessages = Array.from({ length: 30 }, (_, idx) => ({
-      sender_id: idx % 2 === 0 ? 2 : 1,
-      sender_name: idx % 2 === 0 ? 'Alice' : 'Me',
+      id: String(idx),
+      from: idx % 2 === 0 ? 2 : 1,
+      senderName: idx % 2 === 0 ? 'Alice' : 'Me',
       payload: `message ${idx} `.repeat(20),
-      channel: 0,
+      channelIndex: 0,
+      to: 0,
       timestamp: baseTs + idx * 1000,
       status: 'acked' as const,
     }));
@@ -666,15 +647,17 @@ describe('ChatPanel StatusBadge', () => {
     onResend: vi.fn(),
     onNodeClick: vi.fn(),
     isConnected: true,
-    nodes: new Map(),
+    nodes: {},
     isActive: true,
   };
 
   const failedMsg = {
-    sender_id: 1,
-    sender_name: 'Me',
+    id: '1',
+    from: 1,
+    senderName: 'Me',
     payload: 'Hello',
-    channel: 0,
+    channelIndex: 0,
+    to: 0,
     timestamp: Date.now(),
     status: 'failed' as const,
   };
@@ -694,8 +677,8 @@ describe('ChatPanel StatusBadge', () => {
     const onResend = vi.fn();
     const failedWithReply = {
       ...failedMsg,
-      replyId: 4242,
-      packetId: 99,
+      replyTo: '4242',
+      id: '99',
     };
     render(
       <ToastProvider>
@@ -706,8 +689,8 @@ describe('ChatPanel StatusBadge', () => {
     expect(onResend).toHaveBeenCalledTimes(1);
     expect(onResend.mock.calls[0][0]).toMatchObject({
       payload: 'Hello',
-      replyId: 4242,
-      channel: 0,
+      replyTo: '4242',
+      channelIndex: 0,
     });
   });
 
@@ -724,7 +707,7 @@ describe('ChatPanel StatusBadge', () => {
     expect(screen.getByText('BT ✓')).toBeInTheDocument();
   });
 
-  it('shows per-reactor tap-back labels; hides own name on others’ messages', () => {
+  it("shows per-reactor tap-back labels; hides own name on others' messages", () => {
     const t0 = Date.now() - 10_000;
     const t1 = t0 + 1000;
     const t2 = t0 + 2000;
@@ -735,32 +718,37 @@ describe('ChatPanel StatusBadge', () => {
           myNodeNum={99}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '100',
+              from: 2,
+              senderName: 'Alice',
               payload: 'hi',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: t0,
-              packetId: 100,
               status: 'acked',
             },
             {
-              sender_id: 3,
-              sender_name: 'Bob',
+              id: '101',
+              from: 3,
+              senderName: 'Bob',
               payload: '👍',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: t1,
-              emoji: 0x1f44d,
-              replyId: 100,
+              tapback: true,
+              replyTo: '100',
               status: 'acked',
             },
             {
-              sender_id: 99,
-              sender_name: 'Me',
+              id: '102',
+              from: 99,
+              senderName: 'Me',
               payload: '❤️',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: t2,
-              emoji: 0x2764,
-              replyId: 100,
+              tapback: true,
+              replyTo: '100',
               status: 'acked',
             },
           ]}
@@ -780,21 +768,24 @@ describe('ChatPanel StatusBadge', () => {
           {...baseProps}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '77',
+              from: 2,
+              senderName: 'Alice',
               payload: 'original',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: t0,
-              packetId: 77,
               status: 'acked',
             },
             {
-              sender_id: 3,
-              sender_name: 'Bob',
+              id: '78',
+              from: 3,
+              senderName: 'Bob',
               payload: 'reply text',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: t1,
-              replyId: 77,
+              replyTo: '77',
               status: 'acked',
             },
           ]}
@@ -813,12 +804,14 @@ describe('ChatPanel StatusBadge', () => {
           {...baseProps}
           messages={[
             {
-              sender_id: 3,
-              sender_name: 'Bob',
+              id: '1',
+              from: 3,
+              senderName: 'Bob',
               payload: 'reply text',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: Date.now(),
-              replyId: 424242,
+              replyTo: '424242',
               replyPreviewText: 'Saved parent snippet',
               replyPreviewSender: 'Alice',
               status: 'acked',
@@ -863,7 +856,7 @@ describe('ChatPanel unread watermarks', () => {
     onResend: vi.fn(),
     onNodeClick: vi.fn(),
     isConnected: true,
-    nodes: new Map(),
+    nodes: {},
     isActive: true,
   };
 
@@ -876,10 +869,12 @@ describe('ChatPanel unread watermarks', () => {
           {...baseProps}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '1',
+              from: 2,
+              senderName: 'Alice',
               payload: 'Ops ping',
-              channel: 1,
+              channelIndex: 1,
+              to: 0,
               timestamp: ts,
               status: 'acked',
             },
@@ -908,10 +903,12 @@ describe('ChatPanel unread watermarks', () => {
           {...baseProps}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '1',
+              from: 2,
+              senderName: 'Alice',
               payload: 'Ops ping',
-              channel: 1,
+              channelIndex: 1,
+              to: 0,
               timestamp: ts,
               status: 'acked',
             },
@@ -932,18 +929,22 @@ describe('ChatPanel unread watermarks', () => {
           {...baseProps}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '1',
+              from: 2,
+              senderName: 'Alice',
               payload: 'Ops ping',
-              channel: 1,
+              channelIndex: 1,
+              to: 0,
               timestamp: ts,
               status: 'acked',
             },
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '2',
+              from: 2,
+              senderName: 'Alice',
               payload: 'Delayed history replay',
-              channel: 1,
+              channelIndex: 1,
+              to: 0,
               timestamp: ts + 60_000,
               status: 'acked',
               isHistory: true,
@@ -968,10 +969,12 @@ describe('ChatPanel unread watermarks', () => {
           {...baseProps}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '1',
+              from: 2,
+              senderName: 'Alice',
               payload: 'Clock skewed future message',
-              channel: 1,
+              channelIndex: 1,
+              to: 0,
               timestamp: futureTs,
               status: 'acked',
             },
@@ -1005,18 +1008,22 @@ describe('ChatPanel unread watermarks', () => {
           ]}
           messages={[
             {
-              sender_id: 2,
-              sender_name: 'Alice',
+              id: '1',
+              from: 2,
+              senderName: 'Alice',
               payload: 'General unread',
-              channel: 0,
+              channelIndex: 0,
+              to: 0,
               timestamp: ts,
               status: 'acked',
             },
             {
-              sender_id: 3,
-              sender_name: 'Bob',
+              id: '2',
+              from: 3,
+              senderName: 'Bob',
               payload: 'Ops unread',
-              channel: 1,
+              channelIndex: 1,
+              to: 0,
               timestamp: ts + 1_000,
               status: 'acked',
             },
@@ -1050,7 +1057,7 @@ describe('ChatPanel compose emoji picker', () => {
     onResend: vi.fn(),
     onNodeClick: vi.fn(),
     isConnected: true,
-    nodes: new Map(),
+    nodes: {},
     isActive: true,
   };
 
@@ -1104,10 +1111,12 @@ describe('ChatPanel compose emoji picker', () => {
 
 describe('ChatPanel tapback reaction picker', () => {
   const baseMessage = {
-    sender_id: 2,
-    sender_name: 'Alice',
+    id: '1',
+    from: 2,
+    senderName: 'Alice',
     payload: 'hello',
-    channel: 0,
+    channelIndex: 0,
+    to: 0,
     timestamp: Date.now() - 1000,
     status: 'acked' as const,
   };
@@ -1121,7 +1130,7 @@ describe('ChatPanel tapback reaction picker', () => {
     onResend: vi.fn(),
     onNodeClick: vi.fn(),
     isConnected: true,
-    nodes: new Map(),
+    nodes: {},
     isActive: true,
   };
 

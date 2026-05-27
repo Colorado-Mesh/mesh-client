@@ -1,11 +1,11 @@
 import type { RfDuplicateOriginator } from '../lib/diagnostics/meshCongestionAttribution';
 import { getRoleInfo } from '../lib/roleInfo';
-import type { MeshNode } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 
 interface Props {
   lines: string[];
   originators: RfDuplicateOriginator[];
-  nodes?: Map<number, MeshNode>;
+  nodes?: Record<number, NodeRecord>;
   /** Shown under the main title when set (e.g. "Observed at this client"). */
   scopeSubtitle?: string;
   /** Outer wrapper margin; default mt-3 for node detail context. */
@@ -43,8 +43,8 @@ export default function MeshCongestionAttributionBlock({
           </div>
           <ul className="space-y-1">
             {originators.map((o) => {
-              const n = nodes?.get(o.nodeId);
-              const name = n?.short_name || n?.long_name || `!${o.nodeId.toString(16)}`;
+              const n = nodes?.[o.nodeId];
+              const name = n?.shortName || n?.longName || `!${o.nodeId.toString(16)}`;
               const roleLabel = getRoleInfo(n?.role).label;
               return (
                 <li key={o.nodeId} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">

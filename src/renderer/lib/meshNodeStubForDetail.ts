@@ -1,17 +1,15 @@
-import type { MeshNode } from './types';
+import type { NodeRecord } from '../stores/nodeStore';
 
 /** Minimal node when opening Node Detail from an id not yet in `nodes` (e.g. raw packet click). */
-export function meshNodeStubForDetailModal(nodeId: number): MeshNode {
+export function meshNodeStubForDetailModal(nodeId: number): NodeRecord {
   const hex = nodeId.toString(16).toUpperCase();
   return {
-    node_id: nodeId,
-    long_name: `Node-${hex}`,
-    short_name: '',
-    hw_model: 'Unknown',
-    battery: 0,
+    nodeId,
+    longName: `Node-${hex}`,
+    shortName: '',
+    hwModel: 'Unknown',
+    batteryLevel: 0,
     snr: 0,
-    last_heard: 0,
-    latitude: null,
-    longitude: null,
+    lastHeardAt: 0,
   };
 }

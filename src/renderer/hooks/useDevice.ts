@@ -50,12 +50,13 @@ import type {
   DeviceState,
   EnvironmentTelemetryPoint,
   MeshNeighbor,
-  MeshNode,
   MeshWaypoint,
   MQTTStatus,
+  MqttNodeUpdate,
   NeighborInfoRecord,
   TelemetryPoint,
 } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
@@ -148,7 +149,7 @@ export function useDevice() {
   // without relying on the private device.myNodeInfo property
   const myNodeNumRef = useRef<number>(0);
   // Use a ref for nodes so event callbacks always see the latest value
-  const nodesRef = useRef<Map<number, MeshNode>>(new Map());
+  const nodesRef = useRef<Map<number, NodeRecord>>(new Map());
   // Track event unsubscribe functions for cleanup
   const unsubscribesRef = useRef<(() => void)[]>([]);
 
@@ -223,7 +224,7 @@ export function useDevice() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
-  const [nodes, setNodes] = useState<Map<number, MeshNode>>(new Map());
+  const [nodes, setNodes] = useState<Map<number, NodeRecord>>(new Map());
   const [telemetry, setTelemetry] = useState<TelemetryPoint[]>([]);
   const [signalTelemetry, setSignalTelemetry] = useState<TelemetryPoint[]>([]);
   const [environmentTelemetry, setEnvironmentTelemetry] = useState<EnvironmentTelemetryPoint[]>([]);
@@ -332,7 +333,7 @@ export function useDevice() {
 
   // Keep nodesRef in sync with state
   const updateNodes = useCallback(
-    (updater: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => {
+    (updater: (prev: Map<number, NodeRecord>) => Map<number, NodeRecord>) => {
       setNodes((prev) => {
         const next = updater(prev);
         nodesRef.current = next;
@@ -377,41 +378,41 @@ export function useDevice() {
     return false;
   }, []);
 
-  // Compact display name: short_name, truncated long_name, or hex ID
+  // Compact display name: shortName, truncated longName, or hex ID
   const getNodeName = useCallback((nodeNum: number): string => {
     const node = nodesRef.current.get(nodeNum);
-    if (node?.short_name) return node.short_name;
-    if (node?.long_name)
-      return node.long_name.length > 7 ? node.long_name.slice(0, 7) : node.long_name;
+    if (node?.shortName) return node.shortName;
+    if (node?.longName)
+      return node.longName.length > 7 ? node.longName.slice(0, 7) : node.longName;
     return `!${nodeNum.toString(16).padStart(8, '0')}`;
   }, []);
 
-  // Picker-style label: "icon_XXXX" (same format as BLE picker). If short_name
+  // Picker-style label: "icon_XXXX" (same format as BLE picker). If shortName
   // already ends with _ + 4 hex digits, use it; else append _ + last 4 hex of node ID.
   const getPickerStyleNodeLabel = useCallback((nodeNum: number): string => {
     const node = nodesRef.current.get(nodeNum);
     const fourHex = nodeNum.toString(16).slice(-4);
-    if (node?.short_name) {
-      if (/_[0-9a-fA-F]{4}$/.test(node.short_name)) return node.short_name;
-      return `${node.short_name}_${fourHex}`;
+    if (node?.shortName) {
+      if (/_[0-9a-fA-F]{4}$/.test(node.shortName)) return node.shortName;
+      return `${node.shortName}_${fourHex}`;
     }
-    if (node?.long_name)
-      return node.long_name.length > 7
-        ? `${node.long_name.slice(0, 7)}_${fourHex}`
-        : `${node.long_name}_${fourHex}`;
+    if (node?.longName)
+      return node.longName.length > 7
+        ? `${node.longName.slice(0, 7)}_${fourHex}`
+        : `${node.longName}_${fourHex}`;
     return `!${nodeNum.toString(16)}`;
   }, []);
 
-  // Extended label: short_name + hex suffix, long_name, or hex fallback.
+  // Extended label: shortName + hex suffix, longName, or hex fallback.
   // Used in the header for the connected node display.
   const getFullNodeLabel = useCallback((nodeNum: number): string => {
     const node = nodesRef.current.get(nodeNum);
     const hexId = `!${nodeNum.toString(16)}`;
-    if (node?.short_name) {
-      // Avoid double-appending hex if short_name already contains it
-      return node.short_name.includes(hexId) ? node.short_name : `${node.short_name} ${hexId}`;
+    if (node?.shortName) {
+      // Avoid double-appending hex if shortName already contains it
+      return node.shortName.includes(hexId) ? node.shortName : `${node.shortName} ${hexId}`;
     }
-    if (node?.long_name) return node.long_name;
+    if (node?.longName) return node.longName;
     return hexId;
   }, []);
 

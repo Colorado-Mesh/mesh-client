@@ -1,9 +1,15 @@
 import { create } from 'zustand';
 
 import type {
+  CliEntry,
+  NeighborInfoEvent,
+  NeighborResult,
   NodeInfoEvent,
+  PingResult,
   PositionEvent,
+  StatusResult,
   TelemetryEvent,
+  TelemetryResult,
   TraceRouteEvent,
   WaypointEvent,
 } from '../lib/protocols/Protocol';
@@ -37,18 +43,74 @@ export interface NodeRecord {
   barometricPressure?: number;
   iaq?: number;
   telemetryTimestamp?: number;
+  snr?: number;
+  rssi?: number;
+  hopsAway?: number;
+  viaMqtt?: boolean | number;
+  hops?: number;
+  path?: number[];
+  heardViaMqttOnly?: boolean;
+  heardViaMqtt?: boolean;
+  source?: 'rf' | 'mqtt';
+  onRadio?: boolean;
+  favorited?: boolean;
+  lastPositionWarning?: string;
+  numPacketsRxBad?: number;
+  numRxDupe?: number;
+  numPacketsRx?: number;
+  numPacketsTx?: number;
+  lux?: number;
+  windSpeed?: number;
+  windDirection?: number;
+  paxCount?: number;
+  detectionText?: string;
+  neighbors?: import('../lib/types').MeshNeighbor[];
+  meshcoreLocalStats?: import('../lib/types').MeshCoreLocalStats;
+  publicKey?: Uint8Array;
+  // MeshCore per-node op state (results of on-demand requests for repeaters /
+  // remote nodes). Optional fields; non-MeshCore nodes leave them undefined.
+  meshcoreNodeStatus?: StatusResult;
+  meshcoreStatusError?: string;
+  meshcoreTraceResult?: PingResult;
+  meshcorePingError?: string;
+  meshcoreCanPingTrace?: boolean;
+  meshcorePingRouteReadyEpoch?: number;
+  meshcoreNeighbors?: NeighborResult;
+  meshcoreNeighborError?: string;
+  meshcoreNodeTelemetry?: TelemetryResult;
+  meshcoreTelemetryError?: string;
+  meshcoreCliHistory?: CliEntry[];
+  meshcoreCliError?: string;
 }
+
+export type MeshcoreOpFields = Pick<
+  NodeRecord,
+  | 'meshcoreNodeStatus'
+  | 'meshcoreStatusError'
+  | 'meshcoreTraceResult'
+  | 'meshcorePingError'
+  | 'meshcoreCanPingTrace'
+  | 'meshcorePingRouteReadyEpoch'
+  | 'meshcoreNeighbors'
+  | 'meshcoreNeighborError'
+  | 'meshcoreNodeTelemetry'
+  | 'meshcoreTelemetryError'
+  | 'meshcoreCliHistory'
+  | 'meshcoreCliError'
+>;
 
 interface NodeStoreState {
   nodes: Record<IdentityId, Record<number, NodeRecord>>;
   traceRoutes: Record<IdentityId, TraceRouteEvent[]>;
   waypoints: Record<IdentityId, Record<number, WaypointEvent>>;
+  neighborInfo: Record<IdentityId, Record<number, NeighborInfoEvent>>;
 }
 
 const defaultState: NodeStoreState = {
   nodes: {},
   traceRoutes: {},
   waypoints: {},
+  neighborInfo: {},
 };
 
 export const useNodeStore = create<NodeStoreState>()(() => defaultState);
@@ -64,7 +126,7 @@ function mergeNode(
 export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
   useNodeStore.setState((s) => {
     const byId = s.nodes[identityId] ?? {};
-    const { nodeId, longName, shortName, macAddr, hwModel, isLicensed, role, lastHeardAt } = event;
+    const { nodeId, longName, shortName, macAddr, hwModel, isLicensed, role, lastHeardAt, publicKey } = event;
     return {
       nodes: {
         ...s.nodes,
@@ -78,6 +140,7 @@ export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
             isLicensed,
             role,
             lastHeardAt,
+            ...(publicKey ? { publicKey } : {}),
           }),
         },
       },
@@ -165,11 +228,81 @@ export function upsertWaypoint(identityId: IdentityId, event: WaypointEvent): vo
   }));
 }
 
+export function upsertNeighborInfo(identityId: IdentityId, event: NeighborInfoEvent): void {
+  useNodeStore.setState((s) => ({
+    neighborInfo: {
+      ...s.neighborInfo,
+      [identityId]: {
+        ...(s.neighborInfo[identityId] ?? {}),
+        [event.nodeId]: event,
+      },
+    },
+  }));
+}
+
+export function updateMeshcoreOp(
+  identityId: IdentityId,
+  nodeId: number,
+  patch: Partial<MeshcoreOpFields>,
+): void {
+  useNodeStore.setState((s) => {
+    const byId = s.nodes[identityId] ?? {};
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: {
+          ...byId,
+          [nodeId]: mergeNode(byId[nodeId], nodeId, patch),
+        },
+      },
+    };
+  });
+}
+
+export function appendMeshcoreCliEntry(
+  identityId: IdentityId,
+  nodeId: number,
+  entry: CliEntry,
+): void {
+  useNodeStore.setState((s) => {
+    const byId = s.nodes[identityId] ?? {};
+    const existing = byId[nodeId];
+    const next = [...(existing?.meshcoreCliHistory ?? []), entry];
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: {
+          ...byId,
+          [nodeId]: mergeNode(existing, nodeId, { meshcoreCliHistory: next }),
+        },
+      },
+    };
+  });
+}
+
+export function clearMeshcoreCliHistory(identityId: IdentityId, nodeId: number): void {
+  useNodeStore.setState((s) => {
+    const byId = s.nodes[identityId] ?? {};
+    const existing = byId[nodeId];
+    if (!existing) return s;
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: {
+          ...byId,
+          [nodeId]: mergeNode(existing, nodeId, { meshcoreCliHistory: [] }),
+        },
+      },
+    };
+  });
+}
+
 export function clearNodeIdentity(identityId: IdentityId): void {
   useNodeStore.setState((s) => {
     const { [identityId]: _n, ...nodes } = s.nodes;
     const { [identityId]: _t, ...traceRoutes } = s.traceRoutes;
     const { [identityId]: _w, ...waypoints } = s.waypoints;
-    return { nodes, traceRoutes, waypoints };
+    const { [identityId]: _ni, ...neighborInfo } = s.neighborInfo;
+    return { nodes, traceRoutes, waypoints, neighborInfo };
   });
 }

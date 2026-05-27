@@ -24,7 +24,7 @@ import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
 import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
-import type { MeshNode } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import SignalBars from './SignalBars';
@@ -57,9 +57,9 @@ type SortField =
   | 'redundancy';
 
 const BUILTIN_TYPE_FILTERS = [
-  { group_id: -1, label: 'Chat', hw_model: 'Chat' },
-  { group_id: -2, label: 'Repeater', hw_model: 'Repeater' },
-  { group_id: -3, label: 'Room', hw_model: 'Room' },
+  { group_id: -1, label: 'Chat', hwModel: 'Chat' },
+  { group_id: -2, label: 'Repeater', hwModel: 'Repeater' },
+  { group_id: -3, label: 'Room', hwModel: 'Room' },
 ] as const;
 
 /** Sort fields that do not apply when the Nodes table is in MeshCore (contacts) layout. */
@@ -120,9 +120,9 @@ function SortIcon({
 }
 
 interface Props {
-  nodes: Map<number, MeshNode>;
+  nodes: Record<number, NodeRecord>;
   myNodeNum: number;
-  onNodeClick: (node: MeshNode) => void;
+  onNodeClick: (node: NodeRecord) => void;
   mqttConnected?: boolean;
   locationFilter: LocationFilter;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
@@ -244,17 +244,17 @@ export default function NodeListPanel({
   };
 
   const nodeList = useMemo(() => {
-    let list = Array.from(nodes.values());
+    let list = (Object.values(nodes) as NodeRecord[]);
 
     // Filter by search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
         (n) =>
-          n.long_name.toLowerCase().includes(q) ||
-          n.short_name.toLowerCase().includes(q) ||
-          n.hw_model?.toLowerCase().includes(q) ||
-          n.node_id.toString(16).includes(q),
+          (n.longName?.toLowerCase() ?? '').includes(q) ||
+          (n.shortName?.toLowerCase() ?? '').includes(q) ||
+          n.hwModel?.toLowerCase().includes(q) ||
+          n.nodeId.toString(16).includes(q),
       );
     }
 
@@ -263,9 +263,9 @@ export default function NodeListPanel({
       if (mode === 'meshcore') {
         if (selectedGroupId < 0) {
           const typeFilter = BUILTIN_TYPE_FILTERS.find((f) => f.group_id === selectedGroupId);
-          if (typeFilter) list = list.filter((n) => n.hw_model === typeFilter.hw_model);
+          if (typeFilter) list = list.filter((n) => n.hwModel === typeFilter.hwModel);
         } else if (groupMemberIds) {
-          list = list.filter((n) => groupMemberIds.has(n.node_id));
+          list = list.filter((n) => groupMemberIds.has(n.nodeId));
         }
       } else if (mode === 'meshtastic') {
         if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS) {
@@ -275,19 +275,19 @@ export default function NodeListPanel({
         } else if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_ROUTER) {
           list = list.filter((n) => meshtasticContactGroupMatchesBuiltinRouter(n, myNodeNum));
         } else if (selectedGroupId > 0 && groupMemberIds) {
-          list = list.filter((n) => groupMemberIds.has(n.node_id));
+          list = list.filter((n) => groupMemberIds.has(n.nodeId));
         }
       }
     }
 
     // Filter MQTT-only nodes
     if (locationFilter.hideMqttOnly) {
-      list = list.filter((n) => !n.heard_via_mqtt_only);
+      list = list.filter((n) => !n.heardViaMqttOnly);
     }
 
     // Filter by distance
     if (locationFilter.enabled) {
-      const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
+      const homeNode = myNodeNum ? nodes[myNodeNum] : undefined;
       const homeHasLocation =
         homeNode?.latitude != null &&
         homeNode.latitude !== 0 &&
@@ -299,7 +299,7 @@ export default function NodeListPanel({
             ? locationFilter.maxDistance * 1.60934
             : locationFilter.maxDistance;
         list = list.filter((n) => {
-          if (n.node_id === myNodeNum) return true;
+          if (n.nodeId === myNodeNum) return true;
           // Nodes without GPS can't be distance-filtered — keep them visible
           if (n.latitude == null || n.longitude == null) return true;
           const d = haversineDistanceKm(
@@ -316,8 +316,8 @@ export default function NodeListPanel({
     // Sort
     list.sort((a, b) => {
       // Self-node always first
-      if (a.node_id === myNodeNum) return -1;
-      if (b.node_id === myNodeNum) return 1;
+      if (a.nodeId === myNodeNum) return -1;
+      if (b.nodeId === myNodeNum) return 1;
       // Favorites pinned above non-favorites
       const aFav = a.favorited ? 1 : 0;
       const bFav = b.favorited ? 1 : 0;
@@ -326,13 +326,13 @@ export default function NodeListPanel({
       let cmp = 0;
       switch (sortField) {
         case 'node_id':
-          cmp = a.node_id - b.node_id;
+          cmp = a.nodeId - b.nodeId;
           break;
         case 'long_name':
-          cmp = (a.long_name || '').localeCompare(b.long_name || '');
+          cmp = (a.longName || '').localeCompare(b.longName || '');
           break;
         case 'short_name':
-          cmp = (a.short_name || '').localeCompare(b.short_name || '');
+          cmp = (a.shortName || '').localeCompare(b.shortName || '');
           break;
         case 'rssi':
           cmp = (a.rssi ?? -999) - (b.rssi ?? -999);
@@ -341,10 +341,10 @@ export default function NodeListPanel({
           cmp = (a.snr ?? -999) - (b.snr ?? -999);
           break;
         case 'battery':
-          cmp = (a.battery || 0) - (b.battery || 0);
+          cmp = (a.batteryLevel || 0) - (b.batteryLevel || 0);
           break;
         case 'last_heard':
-          cmp = (a.last_heard || 0) - (b.last_heard || 0);
+          cmp = (a.lastHeardAt || 0) - (b.lastHeardAt || 0);
           break;
         case 'latitude':
           cmp = (a.latitude || 0) - (b.latitude || 0);
@@ -356,14 +356,14 @@ export default function NodeListPanel({
           cmp = (a.role ?? 999) - (b.role ?? 999);
           break;
         case 'hw_model':
-          cmp = (a.hw_model || '').localeCompare(b.hw_model || '');
+          cmp = (a.hwModel || '').localeCompare(b.hwModel || '');
           break;
         case 'hops_away':
-          cmp = (a.hops_away ?? 999) - (b.hops_away ?? 999);
+          cmp = (a.hopsAway ?? 999) - (b.hopsAway ?? 999);
           break;
         case 'via_mqtt': {
-          const aVal = a.heard_via_mqtt_only ? 2 : a.via_mqtt ? 1 : 0;
-          const bVal = b.heard_via_mqtt_only ? 2 : b.via_mqtt ? 1 : 0;
+          const aVal = a.heardViaMqttOnly ? 2 : a.viaMqtt ? 1 : 0;
+          const bVal = b.heardViaMqttOnly ? 2 : b.viaMqtt ? 1 : 0;
           cmp = aVal - bVal;
           break;
         }
@@ -371,17 +371,17 @@ export default function NodeListPanel({
           cmp = (a.voltage ?? 0) - (b.voltage ?? 0);
           break;
         case 'channel_utilization':
-          cmp = (a.channel_utilization ?? 0) - (b.channel_utilization ?? 0);
+          cmp = (a.channelUtilization ?? 0) - (b.channelUtilization ?? 0);
           break;
         case 'air_util_tx':
-          cmp = (a.air_util_tx ?? 0) - (b.air_util_tx ?? 0);
+          cmp = (a.airUtilTx ?? 0) - (b.airUtilTx ?? 0);
           break;
         case 'altitude':
           cmp = (a.altitude ?? 0) - (b.altitude ?? 0);
           break;
         case 'redundancy': {
-          const aRed = nodeRedundancy.get(a.node_id)?.maxPaths ?? 1;
-          const bRed = nodeRedundancy.get(b.node_id)?.maxPaths ?? 1;
+          const aRed = nodeRedundancy.get(a.nodeId)?.maxPaths ?? 1;
+          const bRed = nodeRedundancy.get(b.nodeId)?.maxPaths ?? 1;
           cmp = aRed - bRed;
           break;
         }
@@ -405,22 +405,22 @@ export default function NodeListPanel({
 
   const filterStatus = useMemo(() => {
     if (!locationFilter.enabled) return null;
-    const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
+    const homeNode = myNodeNum ? nodes[myNodeNum] : undefined;
     const homeHasLocation =
       homeNode?.latitude != null &&
       homeNode.latitude !== 0 &&
       homeNode.longitude != null &&
       homeNode.longitude !== 0;
     if (!homeHasLocation) return 'no-gps';
-    const totalWithGps = Array.from(nodes.values()).filter(
-      (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude),
+    const totalWithGps = (Object.values(nodes) as NodeRecord[]).filter(
+      (n) => n.nodeId !== myNodeNum && (n.latitude || n.longitude),
     ).length;
     const visibleWithGps = nodeList.filter(
-      (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude),
+      (n) => n.nodeId !== myNodeNum && (n.latitude || n.longitude),
     ).length;
     return { hidden: totalWithGps - visibleWithGps };
   }, [locationFilter, myNodeNum, nodes, nodeList]);
-  const totalNodeCount = nodes.size;
+  const totalNodeCount = Object.keys(nodes).length;
   const visibleNodeCount = nodeList.length;
   const headerCountLabel =
     visibleNodeCount === totalNodeCount
@@ -589,7 +589,7 @@ export default function NodeListPanel({
           {
             nodeList.filter(
               (n) =>
-                getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                getNodeStatus(n.lastHeardAt ?? 0, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
                 'online',
             ).length
           }{' '}
@@ -600,7 +600,7 @@ export default function NodeListPanel({
           {
             nodeList.filter(
               (n) =>
-                getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                getNodeStatus(n.lastHeardAt ?? 0, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
                 'stale',
             ).length
           }{' '}
@@ -611,7 +611,7 @@ export default function NodeListPanel({
           {
             nodeList.filter(
               (n) =>
-                getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                getNodeStatus(n.lastHeardAt ?? 0, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
                 'offline',
             ).length
           }{' '}
@@ -889,13 +889,13 @@ export default function NodeListPanel({
               </tr>
             ) : (
               nodeList.map((node) => {
-                const isSelf = node.node_id === myNodeNum;
+                const isSelf = node.nodeId === myNodeNum;
                 const status = getNodeStatus(
-                  node.last_heard,
+                  node.lastHeardAt ?? 0,
                   nodeStaleThresholdMs,
                   nodeOfflineThresholdMs,
                 );
-                const isMqttOnlyDimmed = ignoreMqttEnabled && !!node.heard_via_mqtt_only;
+                const isMqttOnlyDimmed = ignoreMqttEnabled && !!node.heardViaMqttOnly;
                 const rowOpacity = isMqttOnlyDimmed
                   ? 'opacity-50'
                   : status === 'offline'
@@ -906,7 +906,7 @@ export default function NodeListPanel({
 
                 return (
                   <tr
-                    key={node.node_id}
+                    key={node.nodeId}
                     onClick={() => {
                       onNodeClick(node);
                     }}
@@ -955,7 +955,7 @@ export default function NodeListPanel({
                       {!isSelf && (
                         <button
                           onClick={() => {
-                            onToggleFavorite(node.node_id, !node.favorited);
+                            onToggleFavorite(node.nodeId, !node.favorited);
                           }}
                           aria-label={node.favorited ? 'Remove from favorites' : 'Add to favorites'}
                           aria-pressed={node.favorited}
@@ -975,8 +975,8 @@ export default function NodeListPanel({
                       )}
                     </td>
                     <td className="text-muted px-3 py-2 font-mono text-xs">
-                      !{node.node_id.toString(16)}
-                      {mode === 'meshcore' && meshcorePublicKeyHexByNodeId?.has(node.node_id) && (
+                      !{node.nodeId.toString(16)}
+                      {mode === 'meshcore' && meshcorePublicKeyHexByNodeId?.has(node.nodeId) && (
                         <span className="ml-1">🔑</span>
                       )}
                     </td>
@@ -986,14 +986,14 @@ export default function NodeListPanel({
                       <div className="flex min-w-0 flex-col gap-0.5">
                         <span className="inline-flex min-w-0 items-center gap-1">
                           <span className="truncate">
-                            {node.long_name || '-'}
+                            {node.longName || '-'}
                             {isSelf && (
                               <span className="text-bright-green/60 ml-1.5 text-[10px]">(you)</span>
                             )}
                           </span>
                           {!isSelf &&
                             (() => {
-                              const routingRow = getRoutingRowForNode(diagnosticRows, node.node_id);
+                              const routingRow = getRoutingRowForNode(diagnosticRows, node.nodeId);
                               if (!routingRow) return null;
                               return (
                                 <svg
@@ -1021,9 +1021,9 @@ export default function NodeListPanel({
                         </span>
                         {mode === 'meshcore' &&
                           meshcoreShowPublicKeys &&
-                          meshcorePublicKeyHexByNodeId?.get(node.node_id) && (
+                          meshcorePublicKeyHexByNodeId?.get(node.nodeId) && (
                             <span className="text-muted font-mono text-[10px] break-all whitespace-normal">
-                              {meshcorePublicKeyHexByNodeId.get(node.node_id)}
+                              {meshcorePublicKeyHexByNodeId.get(node.nodeId)}
                             </span>
                           )}
                       </div>
@@ -1032,20 +1032,20 @@ export default function NodeListPanel({
                       <td
                         className={`px-3 py-2 text-gray-300 ${isMqttOnlyDimmed ? 'line-through' : ''}`}
                       >
-                        {node.short_name || '-'}
+                        {node.shortName || '-'}
                       </td>
                     )}
-                    <td className="text-muted px-3 py-2">{formatTime(node.last_heard)}</td>
+                    <td className="text-muted px-3 py-2">{formatTime(node.lastHeardAt ?? 0)}</td>
                     <td className="px-3 py-2 text-xs">
                       {mode === 'meshcore' ? (
-                        node.hw_model === 'Repeater' || node.hw_model === 'Room' ? (
+                        node.hwModel === 'Repeater' || node.hwModel === 'Room' ? (
                           <span className="inline-flex items-center gap-1 text-gray-300">
                             <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-                              <path d={getNodeTypeIcon(node.hw_model) ?? ''} />
+                              <path d={getNodeTypeIcon(node.hwModel) ?? ''} />
                             </svg>
-                            {node.hw_model}
+                            {node.hwModel}
                           </span>
-                        ) : node.hw_model === 'Chat' ? (
+                        ) : node.hwModel === 'Chat' ? (
                           <span className="inline-flex items-center gap-1 text-gray-300">
                             <svg
                               className="h-3.5 w-3.5"
@@ -1060,9 +1060,9 @@ export default function NodeListPanel({
                             Chat
                           </span>
                         ) : (
-                          <span className="text-gray-300">{node.hw_model || '—'}</span>
+                          <span className="text-gray-300">{node.hwModel || '—'}</span>
                         )
-                      ) : node.hw_model === 'Chat' ? (
+                      ) : node.hwModel === 'Chat' ? (
                         <span className="inline-flex items-center gap-1 text-xs text-gray-400">
                           <svg
                             className="h-3.5 w-3.5"
@@ -1081,17 +1081,17 @@ export default function NodeListPanel({
                       )}
                     </td>
                     <td
-                      className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away ?? 0)) === 0 ? 'text-bright-green' : 'text-gray-300'}`}
+                      className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hopsAway ?? 0)) === 0 ? 'text-bright-green' : 'text-gray-300'}`}
                     >
-                      {node.heard_via_mqtt_only ? (
+                      {node.heardViaMqttOnly ? (
                         <span className="text-muted">—</span>
                       ) : (
-                        (node.hops_away ?? (isSelf ? 0 : '-'))
+                        (node.hopsAway ?? (isSelf ? 0 : '-'))
                       )}
                     </td>
                     {mode !== 'meshcore' && (
                       <td className="px-3 py-2 text-center text-xs text-gray-300">
-                        {node.heard_via_mqtt_only ? (
+                        {node.heardViaMqttOnly ? (
                           <span title="Heard only via MQTT" className="text-blue-400">
                             🌐
                           </span>
@@ -1129,7 +1129,7 @@ export default function NodeListPanel({
                       <>
                         <td className="px-3 py-2 text-right">
                           <div className="flex justify-end">
-                            {node.heard_via_mqtt_only ? (
+                            {node.heardViaMqttOnly ? (
                               <span className="text-muted text-xs">—</span>
                             ) : isSelf || snrMeaningfulForNodeDiagnostics(node) ? (
                               <SignalBars rssi={node.rssi} isSelf={isSelf} />
@@ -1144,7 +1144,7 @@ export default function NodeListPanel({
                           </div>
                         </td>
                         <td className="text-muted px-3 py-2 text-right font-mono text-xs">
-                          {node.heard_via_mqtt_only
+                          {node.heardViaMqttOnly
                             ? '—'
                             : isSelf || snrMeaningfulForNodeDiagnostics(node)
                               ? node.snr != null && node.snr !== 0
@@ -1156,34 +1156,34 @@ export default function NodeListPanel({
                     )}
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {node.battery > 0 && (
+                        {(node.batteryLevel ?? 0) > 0 && (
                           <div className="bg-secondary-dark h-1.5 w-10 overflow-hidden rounded-full">
                             <div
                               className={`h-full rounded-full ${
-                                node.battery > 50
+                                (node.batteryLevel ?? 0) > 50
                                   ? 'bg-brand-green'
-                                  : node.battery > 20
+                                  : (node.batteryLevel ?? 0) > 20
                                     ? 'bg-yellow-500'
                                     : 'bg-red-500'
                               }`}
                               style={{
-                                width: `${Math.min(node.battery, 100)}%`,
+                                width: `${Math.min(node.batteryLevel ?? 0, 100)}%`,
                               }}
                             />
                           </div>
                         )}
                         <span
                           className={
-                            node.battery > 50
+                            (node.batteryLevel ?? 0) > 50
                               ? 'text-bright-green'
-                              : node.battery > 20
+                              : (node.batteryLevel ?? 0) > 20
                                 ? 'text-yellow-400'
-                                : node.battery > 0
+                                : (node.batteryLevel ?? 0) > 0
                                   ? 'text-red-400'
                                   : 'text-muted'
                           }
                         >
-                          {node.battery > 0 ? `${node.battery}%` : '-'}
+                          {(node.batteryLevel ?? 0) > 0 ? `${node.batteryLevel}%` : '-'}
                         </span>
                       </div>
                     </td>
@@ -1193,12 +1193,12 @@ export default function NodeListPanel({
                           {node.voltage != null ? `${node.voltage.toFixed(2)} V` : '-'}
                         </td>
                         <td className="px-3 py-2 text-right text-xs text-gray-300">
-                          {node.channel_utilization != null
-                            ? `${node.channel_utilization.toFixed(1)}%`
+                          {node.channelUtilization != null
+                            ? `${node.channelUtilization.toFixed(1)}%`
                             : '-'}
                         </td>
                         <td className="px-3 py-2 text-right text-xs text-gray-300">
-                          {node.air_util_tx != null ? `${node.air_util_tx.toFixed(1)}%` : '-'}
+                          {node.airUtilTx != null ? `${node.airUtilTx.toFixed(1)}%` : '-'}
                         </td>
                         <td className="px-3 py-2 text-right text-xs text-gray-300">
                           {node.altitude != null && node.altitude !== 0
@@ -1206,7 +1206,7 @@ export default function NodeListPanel({
                             : '-'}
                         </td>
                         {(() => {
-                          const red = nodeRedundancy.get(node.node_id);
+                          const red = nodeRedundancy.get(node.nodeId);
                           const echoes = red ? red.maxPaths - 1 : 0;
                           return (
                             <td

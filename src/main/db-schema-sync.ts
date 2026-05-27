@@ -9,7 +9,7 @@ import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 29;
+export const CURRENT_SCHEMA_VERSION = 30;
 
 /**
  * Tables only — used during upgrades so we do not CREATE UNIQUE indexes before
@@ -161,6 +161,13 @@ export const CANONICAL_TABLES_DDL = `
       CREATE TABLE IF NOT EXISTS app_settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS transport_identity_map (
+        transport_key TEXT PRIMARY KEY,
+        identity_id   TEXT NOT NULL,
+        first_seen_at INTEGER NOT NULL,
+        last_used_at  INTEGER NOT NULL
       );
     `;
 

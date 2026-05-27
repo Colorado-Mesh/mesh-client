@@ -1,6 +1,7 @@
 import { haversineDistanceKm } from '../nodeStatus';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
-import type { HopHistoryPoint, MeshNode, NodeAnomaly } from '../types';
+import type { HopHistoryPoint, NodeAnomaly } from '../types';
+import type { NodeRecord } from '../../stores/nodeStore';
 
 export const NOISY_PORTNUMS = {
   POSITION_APP: 3,
@@ -21,14 +22,14 @@ export interface NoiseStats {
 }
 
 export function detectHopGoblin(
-  node: MeshNode,
-  homeNode: MeshNode | null,
+  node: NodeRecord,
+  homeNode: NodeRecord | null,
   ignoreMqtt = false,
   distanceMultiplier = 1,
   distanceOffsetKm = 0,
   hopsThreshold = 2,
 ): NodeAnomaly | null {
-  if (ignoreMqtt && node.heard_via_mqtt_only) return null;
+  if (ignoreMqtt && node.heardViaMqttOnly) return null;
 
   // Only distance-proven over-hopping. SNR+hops heuristics removed: rxSnr is
   // last-hop only and meaningless for multi-hop originators and MQTT-only nodes.
@@ -41,17 +42,17 @@ export function detectHopGoblin(
     );
     if (
       distKm < 3 * distanceMultiplier + distanceOffsetKm &&
-      (node.hops_away ?? 0) > hopsThreshold
+      (node.hopsAway ?? 0) > hopsThreshold
     ) {
       return {
-        nodeId: node.node_id,
+        nodeId: node.nodeId,
         type: 'hop_goblin',
         severity: 'error',
         confidence: 'proven',
-        description: `Only ${distKm.toFixed(2)} km away but taking ${node.hops_away ?? '?'} hops — critical over-hopping`,
+        description: `Only ${distKm.toFixed(2)} km away but taking ${node.hopsAway ?? '?'} hops — critical over-hopping`,
         detectedAt: Date.now(),
         snr: node.snr,
-        hopsAway: node.hops_away,
+        hopsAway: node.hopsAway,
       };
     }
   }
@@ -59,9 +60,9 @@ export function detectHopGoblin(
 }
 
 export function detectBadRoute(
-  node: MeshNode,
+  node: NodeRecord,
   stats: { total: number; duplicates: number } | undefined,
-  homeNode: MeshNode | null,
+  homeNode: NodeRecord | null,
   ignoreMqtt = false,
   distanceMultiplier = 1,
   distanceOffsetKm = 0,
@@ -70,23 +71,23 @@ export function detectBadRoute(
 ): NodeAnomaly | null {
   // High duplication rate → routing loop suspected (SNR not used: not meaningful
   // for multi-hop / MQTT; duplication is still a local observation).
-  if (stats && stats.total > 0 && (!ignoreMqtt || !node.heard_via_mqtt_only)) {
+  if (stats && stats.total > 0 && (!ignoreMqtt || !node.heardViaMqttOnly)) {
     const lossRate = stats.duplicates / stats.total;
     if (lossRate > 0.55) {
       return {
-        nodeId: node.node_id,
+        nodeId: node.nodeId,
         type: 'bad_route',
         severity: 'error',
         description: `${Math.round(lossRate * 100)}% packet duplication — routing loop suspected`,
         detectedAt: Date.now(),
         snr: node.snr,
-        hopsAway: node.hops_away,
+        hopsAway: node.hopsAway,
       };
     }
   }
   // Very close node taking many hops
   if (
-    (!ignoreMqtt || !node.heard_via_mqtt_only) &&
+    (!ignoreMqtt || !node.heardViaMqttOnly) &&
     homeNode?.latitude != null &&
     homeNode?.longitude != null &&
     node.latitude != null &&
@@ -103,16 +104,16 @@ export function detectBadRoute(
     const maxHopsCloseIn = hopsThreshold + 2; // standard 4, city 5, canyon 6
     if (
       distMiles < 5 * distanceMultiplier + distanceOffsetMiles &&
-      (node.hops_away ?? 0) > maxHopsCloseIn
+      (node.hopsAway ?? 0) > maxHopsCloseIn
     ) {
       return {
-        nodeId: node.node_id,
+        nodeId: node.nodeId,
         type: 'bad_route',
         severity: 'warning',
-        description: `Only ${distMiles.toFixed(1)} mi away but taking ${node.hops_away ?? '?'} hops — possible suboptimal route`,
+        description: `Only ${distMiles.toFixed(1)} mi away but taking ${node.hopsAway ?? '?'} hops — possible suboptimal route`,
         detectedAt: Date.now(),
         snr: node.snr,
-        hopsAway: node.hops_away,
+        hopsAway: node.hopsAway,
       };
     }
   }
@@ -120,12 +121,12 @@ export function detectBadRoute(
 }
 
 export function detectImpossibleHop(
-  node: MeshNode,
-  homeNode: MeshNode | null,
+  node: NodeRecord,
+  homeNode: NodeRecord | null,
   ignoreMqtt = false,
 ): NodeAnomaly | null {
-  if (ignoreMqtt && node.heard_via_mqtt_only) return null;
-  if (node.hops_away !== 0) return null;
+  if (ignoreMqtt && node.heardViaMqttOnly) return null;
+  if (node.hopsAway !== 0) return null;
   if (!homeNode?.latitude || !homeNode?.longitude) return null;
   if (!node.latitude || !node.longitude) return null;
   const distKm = haversineDistanceKm(
@@ -137,7 +138,7 @@ export function detectImpossibleHop(
   const distMiles = distKm * 0.621371;
   if (distMiles > 100) {
     return {
-      nodeId: node.node_id,
+      nodeId: node.nodeId,
       type: 'impossible_hop',
       severity: 'error',
       description: `Reported as 0 hops away but ${Math.round(distMiles)} miles distant — GPS or routing data suspect`,
@@ -173,9 +174,9 @@ export function detectRouteFlapping(
 }
 
 export function analyzeNode(
-  node: MeshNode,
+  node: NodeRecord,
   stats: { total: number; duplicates: number } | undefined,
-  homeNode: MeshNode | null,
+  homeNode: NodeRecord | null,
   hopHistory: HopHistoryPoint[],
   ignoreMqtt = false,
   distanceMultiplier = 1,
@@ -185,7 +186,7 @@ export function analyzeNode(
   noiseStats?: NoiseStats | null,
 ): NodeAnomaly | null {
   // Priority: errors first, then warnings
-  // impossible_hop requires hops_away === 0 — skip for protocols without hop count
+  // impossible_hop requires hopsAway === 0 — skip for protocols without hop count
   const impossibleHop =
     capabilities?.hasHopCount === false ? null : detectImpossibleHop(node, homeNode, ignoreMqtt);
   if (impossibleHop) return impossibleHop;
@@ -204,7 +205,7 @@ export function analyzeNode(
   );
   if (badRoute?.severity === 'error') return badRoute;
 
-  const flapping = detectRouteFlapping(node.node_id, hopHistory);
+  const flapping = detectRouteFlapping(node.nodeId, hopHistory);
   if (flapping) return flapping;
 
   const hopGoblin = detectHopGoblin(

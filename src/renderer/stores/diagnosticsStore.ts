@@ -30,11 +30,11 @@ import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type {
   DiagnosticRow,
   HopHistoryPoint,
-  MeshNode,
   MeshProtocol,
   NodeAnomaly,
   RfDiagnosticRow,
 } from '../lib/types';
+import type { NodeRecord } from './nodeStore';
 import { rfRowId } from '../lib/types';
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -321,8 +321,8 @@ interface DiagnosticsState {
     }[]
   >;
   processNodeUpdate(
-    node: MeshNode,
-    homeNode: MeshNode | null,
+    node: NodeRecord,
+    homeNode: NodeRecord | null,
     myNodeNum?: number,
     capabilities?: ProtocolCapabilities,
   ): void;
@@ -333,12 +333,12 @@ interface DiagnosticsState {
     rssi?: number,
     snr?: number,
     senderId?: number,
-    getNodes?: () => Map<number, MeshNode>,
+    getNodes?: () => Map<number, NodeRecord>,
   ): void;
   recordPacketPath(packetId: number, fromNodeId: number, path: PacketPath): void;
   recordNoisePort(fromNodeId: number, portnum: number): void;
   runReanalysis(
-    getNodes: () => Map<number, MeshNode>,
+    getNodes: () => Map<number, NodeRecord>,
     myNodeNum: number,
     capabilities?: ProtocolCapabilities,
   ): void;
@@ -383,7 +383,7 @@ interface DiagnosticsState {
 
 // Module-level debounce timer and pending analysis buffer
 let analysisTimer: ReturnType<typeof setTimeout> | null = null;
-const pendingAnalyses = new Map<number, { node: MeshNode; homeNode: MeshNode | null }>();
+const pendingAnalyses = new Map<number, { node: NodeRecord; homeNode: NodeRecord | null }>();
 
 const NOISE_WINDOW_MS = 60 * 60 * 1000; // 1 hour rolling window
 
@@ -638,41 +638,41 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   },
 
   processNodeUpdate(
-    node: MeshNode,
-    homeNode: MeshNode | null,
+    node: NodeRecord,
+    homeNode: NodeRecord | null,
     myNodeNum?: number,
     capabilities?: ProtocolCapabilities,
   ) {
     const now = Date.now();
     set((state) => {
       // Record hop history (keep last 24h)
-      const existing = state.hopHistory.get(node.node_id) ?? [];
+      const existing = state.hopHistory.get(node.nodeId) ?? [];
       const pruned = existing.filter((p) => p.t > now - TWENTY_FOUR_HOURS);
-      if (node.hops_away !== undefined) {
-        pruned.push({ t: now, h: node.hops_away });
+      if (node.hopsAway !== undefined) {
+        pruned.push({ t: now, h: node.hopsAway });
       }
       const newHopHistory = new Map(state.hopHistory);
-      newHopHistory.set(node.node_id, pruned);
+      newHopHistory.set(node.nodeId, pruned);
 
       // CU history for spike detection (24h rolling)
       const newCuHistory = new Map(state.cuHistory);
-      if (node.channel_utilization != null) {
-        const cuExisting = state.cuHistory.get(node.node_id) ?? [];
+      if (node.channelUtilization != null) {
+        const cuExisting = state.cuHistory.get(node.nodeId) ?? [];
         const cuPruned = cuExisting.filter((s) => s.t > now - TWENTY_FOUR_HOURS);
-        cuPruned.push({ t: now, cu: node.channel_utilization });
-        newCuHistory.set(node.node_id, cuPruned);
+        cuPruned.push({ t: now, cu: node.channelUtilization });
+        newCuHistory.set(node.nodeId, cuPruned);
       }
 
       // Increment total packet count
-      const stats = state.packetStats.get(node.node_id) ?? { total: 0, duplicates: 0 };
+      const stats = state.packetStats.get(node.nodeId) ?? { total: 0, duplicates: 0 };
       const newPacketStats = new Map(state.packetStats);
-      newPacketStats.set(node.node_id, { ...stats, total: stats.total + 1 });
+      newPacketStats.set(node.nodeId, { ...stats, total: stats.total + 1 });
 
       return { hopHistory: newHopHistory, cuHistory: newCuHistory, packetStats: newPacketStats };
     });
 
     // Buffer this node for debounced analysis
-    pendingAnalyses.set(node.node_id, { node, homeNode });
+    pendingAnalyses.set(node.nodeId, { node, homeNode });
 
     if (analysisTimer) clearTimeout(analysisTimer);
     analysisTimer = setTimeout(() => {
@@ -711,16 +711,16 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           const homeFromPending = pendingAnalyses.get(myNodeNum)?.node;
           if (
             homeFromPending &&
-            (hasLocalStatsData(homeFromPending) || homeFromPending.channel_utilization != null)
+            (hasLocalStatsData(homeFromPending) || homeFromPending.channelUtilization != null)
           ) {
             const baseline =
               s.localStatsBaselines.get(myNodeNum) ??
               (() => {
                 const next = new Map(s.localStatsBaselines);
                 next.set(myNodeNum, {
-                  rxTotal: homeFromPending.num_packets_rx ?? 0,
-                  rxDupe: homeFromPending.num_rx_dupe ?? 0,
-                  rxBad: homeFromPending.num_packets_rx_bad ?? 0,
+                  rxTotal: homeFromPending.numPacketsRx ?? 0,
+                  rxDupe: homeFromPending.numRxDupe ?? 0,
+                  rxBad: homeFromPending.numPacketsRxBad ?? 0,
                   capturedAt: now,
                 });
                 return {
@@ -733,24 +733,24 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
             if (now - baselineValue.capturedAt > LOCAL_STATS_BASELINE_RESET_MS) {
               baselinesNext = new Map(baselinesNext);
               baselineValue = {
-                rxTotal: homeFromPending.num_packets_rx ?? 0,
-                rxDupe: homeFromPending.num_rx_dupe ?? 0,
-                rxBad: homeFromPending.num_packets_rx_bad ?? 0,
+                rxTotal: homeFromPending.numPacketsRx ?? 0,
+                rxDupe: homeFromPending.numRxDupe ?? 0,
+                rxBad: homeFromPending.numPacketsRxBad ?? 0,
                 capturedAt: now,
               };
               baselinesNext.set(myNodeNum, baselineValue);
             }
             localStatsBaselines = baselinesNext;
-            const adjustedHomeNode: MeshNode = {
+            const adjustedHomeNode: NodeRecord = {
               ...homeFromPending,
-              num_packets_rx: Math.max(
+              numPacketsRx: Math.max(
                 0,
-                (homeFromPending.num_packets_rx ?? 0) - baselineValue.rxTotal,
+                (homeFromPending.numPacketsRx ?? 0) - baselineValue.rxTotal,
               ),
-              num_rx_dupe: Math.max(0, (homeFromPending.num_rx_dupe ?? 0) - baselineValue.rxDupe),
-              num_packets_rx_bad: Math.max(
+              numRxDupe: Math.max(0, (homeFromPending.numRxDupe ?? 0) - baselineValue.rxDupe),
+              numPacketsRxBad: Math.max(
                 0,
-                (homeFromPending.num_packets_rx_bad ?? 0) - baselineValue.rxBad,
+                (homeFromPending.numPacketsRxBad ?? 0) - baselineValue.rxBad,
               ),
             };
             const cuStats24h = get().getCuStats24h(myNodeNum);
@@ -818,14 +818,14 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     rssi?: number,
     snr?: number,
     senderId?: number,
-    getNodes?: () => Map<number, MeshNode>,
+    getNodes?: () => Map<number, NodeRecord>,
   ) {
     const now = Date.now();
     const proximity = classifyProximity(rssi, snr);
     const senderKey = foreignLoraSenderKey(packetClass, senderId);
     const longName =
       senderId != null
-        ? (getNodes?.()?.get(senderId)?.long_name ?? getNodes?.()?.get(senderId)?.short_name)
+        ? (getNodes?.()?.get(senderId)?.longName ?? getNodes?.()?.get(senderId)?.shortName)
         : undefined;
 
     set((state) => {
@@ -883,7 +883,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       condition = 'Meshtastic Traffic Detected';
       const senderHex = senderId ? `!${senderId.toString(16).padStart(8, '0')}` : 'unknown';
       const senderNode = senderId ? nodes?.get(senderId) : undefined;
-      const senderName = senderNode?.long_name || senderNode?.short_name;
+      const senderName = senderNode?.longName || senderNode?.shortName;
       const senderLabel = senderName ? `${senderHex} (${senderName})` : senderHex;
       const proxLabel =
         proximity === 'very-close'
@@ -977,7 +977,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   },
 
   runReanalysis(
-    getNodes: () => Map<number, MeshNode>,
+    getNodes: () => Map<number, NodeRecord>,
     myNodeNum: number,
     capabilities?: ProtocolCapabilities,
   ) {
@@ -1013,15 +1013,15 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       }
       let diagnosticRows = replaceRoutingRowsFromMap(state.diagnosticRows, newAnomalies);
       const selfNode = nodes.get(myNodeNum);
-      if (selfNode && (hasLocalStatsData(selfNode) || selfNode.channel_utilization != null)) {
+      if (selfNode && (hasLocalStatsData(selfNode) || selfNode.channelUtilization != null)) {
         const baseline =
           state.localStatsBaselines.get(myNodeNum) ??
           (() => {
             const next = new Map(state.localStatsBaselines);
             next.set(myNodeNum, {
-              rxTotal: selfNode.num_packets_rx ?? 0,
-              rxDupe: selfNode.num_rx_dupe ?? 0,
-              rxBad: selfNode.num_packets_rx_bad ?? 0,
+              rxTotal: selfNode.numPacketsRx ?? 0,
+              rxDupe: selfNode.numRxDupe ?? 0,
+              rxBad: selfNode.numPacketsRxBad ?? 0,
               capturedAt: Date.now(),
             });
             set({ localStatsBaselines: next });
@@ -1030,9 +1030,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         let baselineValue = baseline;
         if (Date.now() - baselineValue.capturedAt > LOCAL_STATS_BASELINE_RESET_MS) {
           const refreshed = {
-            rxTotal: selfNode.num_packets_rx ?? 0,
-            rxDupe: selfNode.num_rx_dupe ?? 0,
-            rxBad: selfNode.num_packets_rx_bad ?? 0,
+            rxTotal: selfNode.numPacketsRx ?? 0,
+            rxDupe: selfNode.numRxDupe ?? 0,
+            rxBad: selfNode.numPacketsRxBad ?? 0,
             capturedAt: Date.now(),
           };
           baselineValue = refreshed;
@@ -1040,11 +1040,11 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           nextBaselines.set(myNodeNum, refreshed);
           set({ localStatsBaselines: nextBaselines });
         }
-        const adjustedSelfNode: MeshNode = {
+        const adjustedSelfNode: NodeRecord = {
           ...selfNode,
-          num_packets_rx: Math.max(0, (selfNode.num_packets_rx ?? 0) - baselineValue.rxTotal),
-          num_rx_dupe: Math.max(0, (selfNode.num_rx_dupe ?? 0) - baselineValue.rxDupe),
-          num_packets_rx_bad: Math.max(0, (selfNode.num_packets_rx_bad ?? 0) - baselineValue.rxBad),
+          numPacketsRx: Math.max(0, (selfNode.numPacketsRx ?? 0) - baselineValue.rxTotal),
+          numRxDupe: Math.max(0, (selfNode.numRxDupe ?? 0) - baselineValue.rxDupe),
+          numPacketsRxBad: Math.max(0, (selfNode.numPacketsRxBad ?? 0) - baselineValue.rxBad),
         };
         const cuStats24h = get().getCuStats24h(myNodeNum);
         const findings = diagnoseConnectedNode(adjustedSelfNode, {

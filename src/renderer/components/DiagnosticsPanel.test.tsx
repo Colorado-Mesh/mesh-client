@@ -2,7 +2,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import type { MeshNode, RoutingDiagnosticRow } from '../lib/types';
+import type { RoutingDiagnosticRow } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import DiagnosticsPanel from './DiagnosticsPanel';
 
 const diagnosticsStoreState: {
@@ -48,17 +49,15 @@ vi.mock('../stores/diagnosticsStore', () => ({
   },
 }));
 
-function minimalNode(nodeId: number): MeshNode {
+function minimalNode(nodeId: number): NodeRecord {
   return {
-    node_id: nodeId,
-    long_name: 'Test Node',
-    short_name: 'TN',
-    hw_model: '',
+    nodeId,
+    longName: 'Test Node',
+    shortName: 'TN',
+    hwModel: '',
     snr: 0,
-    battery: 0,
-    last_heard: Date.now(),
-    latitude: null,
-    longitude: null,
+    batteryLevel: 0,
+    lastHeardAt: Date.now(),
   };
 }
 
@@ -68,7 +67,7 @@ describe('DiagnosticsPanel accessibility', () => {
     diagnosticsStoreState.packetStats = new Map();
     const { container } = render(
       <DiagnosticsPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onTraceRoute={vi.fn().mockResolvedValue(undefined)}
         isConnected={false}
@@ -99,7 +98,7 @@ describe('DiagnosticsPanel node click', () => {
     diagnosticsStoreState.packetStats = new Map();
 
     const onNodeClick = vi.fn();
-    const nodes = new Map<number, MeshNode>([[nodeId, node]]);
+    const nodes: Record<number, NodeRecord> = { [nodeId]: node };
 
     render(
       <DiagnosticsPanel
@@ -136,7 +135,7 @@ describe('DiagnosticsPanel node click', () => {
     diagnosticsStoreState.packetStats = new Map();
 
     const onNodeClick = vi.fn();
-    const nodes = new Map<number, MeshNode>([[nodeId, node]]);
+    const nodes: Record<number, NodeRecord> = { [nodeId]: node };
 
     render(
       <DiagnosticsPanel
@@ -173,7 +172,7 @@ describe('DiagnosticsPanel node click', () => {
 
     render(
       <DiagnosticsPanel
-        nodes={new Map()}
+        nodes={{}}
         myNodeNum={0}
         onTraceRoute={vi.fn().mockResolvedValue(undefined)}
         isConnected={false}

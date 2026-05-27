@@ -1,4 +1,5 @@
-import type { ConnectionType, MeshNode } from './types';
+import type { ConnectionType } from './types';
+import type { NodeRecord } from '../stores/nodeStore';
 
 /** MeshCore companion scaled coordinates: integer × degrees (same as firmware advert fields). */
 export const MESHCORE_COORD_SCALE = 1e6;
@@ -58,14 +59,14 @@ export function isMeshcoreTransportStatusChatLine(text: string): boolean {
  * stubs so they are not dropped. Skips stub ids that now exist on the device (real contact wins).
  */
 export function mergeMeshcoreChatStubNodes(
-  prev: Map<number, MeshNode>,
-  deviceNodes: Map<number, MeshNode>,
-): Map<number, MeshNode> {
+  prev: Map<number, NodeRecord>,
+  deviceNodes: Map<number, NodeRecord>,
+): Map<number, NodeRecord> {
   const next = new Map(deviceNodes);
   for (const [id, node] of prev) {
     if (meshcoreIsChatStubNodeId(id)) {
       const deviceNode = deviceNodes.get(id);
-      if (deviceNode && deviceNode.hw_model !== 'Chat') continue;
+      if (deviceNode && deviceNode.hwModel !== 'Chat') continue;
     }
     if (!deviceNodes.has(id)) {
       next.set(id, node);
@@ -98,20 +99,18 @@ export function minimalMeshcoreChatNode(
   displayName: string,
   lastHeardSec: number,
   via: 'rf' | 'mqtt',
-): MeshNode {
+): NodeRecord {
   const name = displayName.trim() || `Node-${nodeId.toString(16).toUpperCase()}`;
   return {
-    node_id: nodeId,
-    long_name: name,
-    short_name: '',
-    hw_model: 'Chat',
+    nodeId,
+    longName: name,
+    shortName: '',
+    hwModel: 'Chat',
     snr: 0,
-    battery: 0,
-    last_heard: lastHeardSec,
-    latitude: null,
-    longitude: null,
+    batteryLevel: 0,
+    lastHeardAt: lastHeardSec,
     source: via,
-    heard_via_mqtt_only: via === 'mqtt',
+    heardViaMqttOnly: via === 'mqtt',
   };
 }
 
@@ -238,8 +237,8 @@ export const MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS: ReadonlySet<string
   CONTACT_TYPE_LABELS[3],
 ]);
 
-export function isMeshcoreContactEligibleForUserGroup(node: Pick<MeshNode, 'hw_model'>): boolean {
-  const hw = node.hw_model ?? '';
+export function isMeshcoreContactEligibleForUserGroup(node: Pick<NodeRecord, 'hwModel'>): boolean {
+  const hw = node.hwModel ?? '';
   return !MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS.has(hw);
 }
 
@@ -257,7 +256,7 @@ interface MeshCoreContact {
 
 /**
  * Maps MeshCore `advLat` / `advLon` integers (degrees × {@link MESHCORE_COORD_SCALE}) to decimal degrees.
- * Non-finite values or zero on an axis yield null for that axis (same rules as {@link meshcoreContactToMeshNode}).
+ * Non-finite values or zero on an axis yield null for that axis.
  */
 export function meshcoreScaledAdvLatLonToDeg(
   advLat: number,
@@ -275,7 +274,7 @@ export function meshcoreScaledAdvLatLonToDeg(
 }
 
 /**
- * Cayenne LPP GPS payloads may include `altitude` in meters for {@link MeshNode.altitude}.
+ * Cayenne LPP GPS payloads may include `altitude` in meters for the altitude field.
  * Returns `undefined` when missing or non-finite so callers do not overwrite a prior good value.
  */
 export function meshcoreTelemetryGpsAltitudeMeters(
@@ -285,23 +284,6 @@ export function meshcoreTelemetryGpsAltitudeMeters(
   const a = gps.altitude;
   if (typeof a !== 'number' || !Number.isFinite(a)) return undefined;
   return a;
-}
-
-export function meshcoreContactToMeshNode(contact: MeshCoreContact): MeshNode {
-  const nodeId = pubkeyToNodeId(contact.publicKey);
-  const { lat, lon } = meshcoreScaledAdvLatLonToDeg(contact.advLat, contact.advLon);
-  return {
-    node_id: nodeId,
-    long_name: contact.advName || `Node-${nodeId.toString(16).toUpperCase()}`,
-    short_name: '',
-    hw_model: CONTACT_TYPE_LABELS[contact.type] ?? 'Unknown',
-    snr: 0,
-    battery: 0,
-    last_heard: contact.lastAdvert,
-    latitude: lat,
-    longitude: lon,
-    hops_away: meshcoreInferHopsFromOutPath(contact),
-  };
 }
 
 /** Max hop index in MeshCore outbound path (inclusive of destination). */
@@ -402,66 +384,6 @@ export function meshcoreMergeContactHopsAwayFromPrevious(
     return prev;
   }
   return inferred;
-}
-
-/** Result of mapping a heard RF advert (push 0x80) into UI + DB when the node is not yet a contact. */
-export interface MeshcoreMinimalAdvertNodeResult {
-  node: MeshNode;
-  lastHeardSec: number;
-  persistAdvLatDeg: number | null;
-  persistAdvLonDeg: number | null;
-  contactType: number;
-}
-
-/**
- * Build a minimal {@link MeshNode} from an advert public key and optional companion fields.
- * Returns null if the key is not a valid 32-byte MeshCore pubkey or folds to node id 0.
- */
-export function meshcoreMinimalNodeFromAdvertEvent(
-  publicKey: Uint8Array,
-  opts: {
-    nowSec: number;
-    advLat?: number;
-    advLon?: number;
-    lastAdvert?: number;
-    contactType?: number;
-    advName?: string;
-  },
-): MeshcoreMinimalAdvertNodeResult | null {
-  if (publicKey.length !== 32) return null;
-  const nodeId = pubkeyToNodeId(publicKey);
-  if (nodeId === 0) return null;
-  const contactType =
-    typeof opts.contactType === 'number' && Number.isFinite(opts.contactType)
-      ? Math.max(0, Math.floor(opts.contactType))
-      : 0;
-  const lastHeardSec =
-    typeof opts.lastAdvert === 'number' && Number.isFinite(opts.lastAdvert) && opts.lastAdvert > 0
-      ? opts.lastAdvert
-      : opts.nowSec;
-  const advLat = typeof opts.advLat === 'number' ? opts.advLat : 0;
-  const advLon = typeof opts.advLon === 'number' ? opts.advLon : 0;
-  const { lat: latDeg, lon: lonDeg } = meshcoreScaledAdvLatLonToDeg(advLat, advLon);
-  const advNameTrim =
-    typeof opts.advName === 'string' && opts.advName.trim() ? opts.advName.trim() : '';
-  const node: MeshNode = {
-    node_id: nodeId,
-    long_name: advNameTrim || `Node-${nodeId.toString(16).toUpperCase()}`,
-    short_name: '',
-    hw_model: CONTACT_TYPE_LABELS[contactType] ?? 'Unknown',
-    snr: 0,
-    battery: 0,
-    last_heard: lastHeardSec,
-    latitude: latDeg,
-    longitude: lonDeg,
-  };
-  return {
-    node,
-    lastHeardSec,
-    persistAdvLatDeg: latDeg,
-    persistAdvLonDeg: lonDeg,
-    contactType,
-  };
 }
 
 /** MeshCore supports channel indices 0..39 (40 channels). */

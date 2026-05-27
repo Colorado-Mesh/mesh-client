@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-
 import {
   diagnosticRowsToRoutingMap,
   meshHasRoutingAnomaliesFromRows,
@@ -20,8 +19,9 @@ import type { OurPosition } from '../lib/gpsSource';
 import { startNetworkDiscovery } from '../lib/networkDiscovery';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
-import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
+import type { DiagnosticRow, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 
@@ -35,7 +35,7 @@ const CATEGORY_STYLES: Record<string, string> = {
 const TRACE_TIMEOUT_MS = 30_000;
 
 interface Props {
-  nodes: Map<number, MeshNode>;
+  nodes: Record<number, NodeRecord>;
   myNodeNum: number;
   onTraceRoute: (nodeNum: number) => Promise<void>;
   isConnected: boolean;
@@ -43,7 +43,7 @@ interface Props {
   getFullNodeLabel: (nodeNum: number) => string;
   ourPosition?: OurPosition | null;
   /** When set, clicking an anomaly row opens the node detail modal (same as NodeListPanel). */
-  onNodeClick?: (node: MeshNode) => void;
+  onNodeClick?: (node: NodeRecord) => void;
   /** Protocol capabilities — controls which sections are shown (MQTT controls hidden for MeshCore). */
   capabilities?: ProtocolCapabilities;
   /** Active radio protocol — auto-traceroute preference is stored per protocol. */
@@ -117,7 +117,7 @@ export default function DiagnosticsPanel({
   );
   const packetStats = useDiagnosticsStore((s) => s.packetStats);
   const packetCache = useDiagnosticsStore((s) => s.packetCache);
-  const homeNode = nodes.get(myNodeNum) ?? null;
+  const homeNode = nodes[myNodeNum] ?? null;
   const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
   const setCongestionHalosEnabled = useDiagnosticsStore((s) => s.setCongestionHalosEnabled);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
@@ -209,7 +209,7 @@ export default function DiagnosticsPanel({
         await trace(nodeId);
         setLastDiscoveryTs(Date.now());
       },
-      () => [...nodesRef.current.keys()].filter((id) => id !== myNodeNumRef.current),
+      () => Object.keys(nodesRef.current).map(Number).filter((id) => id !== myNodeNumRef.current),
     );
     stopDiscoveryRef.current = stop;
     return () => {
@@ -225,9 +225,9 @@ export default function DiagnosticsPanel({
    */
   const nodesWithTelemetryCount = useMemo(() => {
     let n = 0;
-    for (const node of nodes.values()) {
-      const hasCuOrAir = node.channel_utilization != null || node.air_util_tx != null;
-      const isConnectedWithLocalStats = node.node_id === myNodeNum && hasLocalStatsData(node);
+    for (const node of (Object.values(nodes) as NodeRecord[])) {
+      const hasCuOrAir = node.channelUtilization != null || node.airUtilTx != null;
+      const isConnectedWithLocalStats = node.nodeId === myNodeNum && hasLocalStatsData(node);
       if (hasCuOrAir || isConnectedWithLocalStats) n++;
     }
     return n;
@@ -311,10 +311,10 @@ export default function DiagnosticsPanel({
   const matchesSearchRow = (row: DiagnosticRow) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
-    const node = nodes.get(row.nodeId);
+    const node = nodes[row.nodeId];
     const hexMatch = row.nodeId.toString(16).includes(q);
     const nameMatch =
-      node?.long_name?.toLowerCase().includes(q) || node?.short_name?.toLowerCase().includes(q);
+      node?.longName?.toLowerCase().includes(q) || node?.shortName?.toLowerCase().includes(q);
     if (row.kind === 'routing') {
       return (
         nameMatch || hexMatch || row.type.includes(q) || row.description.toLowerCase().includes(q)
@@ -333,7 +333,7 @@ export default function DiagnosticsPanel({
   const meshCongestionBlock = useMemo(() => {
     if (!homeNode) return null;
     const hasMeshCongestionRow = diagnosticRows.some(
-      (r) => r.kind === 'rf' && r.nodeId === homeNode.node_id && r.condition === 'Mesh Congestion',
+      (r) => r.kind === 'rf' && r.nodeId === homeNode.nodeId && r.condition === 'Mesh Congestion',
     );
     if (!hasMeshCongestionRow) return null;
     const attr = summarizeMeshCongestionAttribution(packetCache, routingAnomaliesMap);
@@ -434,11 +434,11 @@ export default function DiagnosticsPanel({
       }
       if (row.kind === 'rf') {
         const rf = row;
-        const node = nodes.get(rf.nodeId);
+        const node = nodes[rf.nodeId];
         const isInfo = rf.severity === 'info';
         const colorClass = isInfo ? 'text-blue-400' : 'text-orange-400';
         const hexId = `!${rf.nodeId.toString(16)}`;
-        const displayName = node?.long_name || node?.short_name || hexId;
+        const displayName = node?.longName || node?.shortName || hexId;
         const remedy = getRecommendedActionForRfCondition(rf.condition);
         rows.push(
           <tr
@@ -494,12 +494,12 @@ export default function DiagnosticsPanel({
         return rows;
       }
       const anomaly = routingRowToNodeAnomaly(row);
-      const node = nodes.get(anomaly.nodeId);
+      const node = nodes[anomaly.nodeId];
       const isError = anomaly.severity === 'error';
       const isInfo = anomaly.severity === 'info';
       const colorClass = isError ? 'text-red-400' : isInfo ? 'text-blue-400' : 'text-orange-400';
       const hexId = `!${anomaly.nodeId.toString(16)}`;
-      const displayName = node?.long_name || node?.short_name || hexId;
+      const displayName = node?.longName || node?.shortName || hexId;
       const isPending = tracePendingNodes.has(anomaly.nodeId);
       const isFailed = traceFailed.has(anomaly.nodeId);
       const traceResult = traceRouteResults.get(anomaly.nodeId);
@@ -543,8 +543,8 @@ export default function DiagnosticsPanel({
             <div className="max-w-xs text-xs text-gray-400">{anomaly.description}</div>
             {showMqttControls &&
               anomaly.type === 'hop_goblin' &&
-              node?.heard_via_mqtt === true &&
-              !node?.heard_via_mqtt_only && (
+              node?.heardViaMqtt === true &&
+              !node?.heardViaMqttOnly && (
                 <div className="mt-1 text-xs text-yellow-400/70">
                   Warning: Hybrid Node. MQTT latency may be skewing hop data. Suggest: Filter MQTT.
                 </div>
@@ -791,8 +791,8 @@ export default function DiagnosticsPanel({
                   const senderName =
                     d.longName ??
                     (d.lastSenderId
-                      ? nodes.get(d.lastSenderId)?.long_name ||
-                        nodes.get(d.lastSenderId)?.short_name
+                      ? nodes[d.lastSenderId]?.longName ||
+                        nodes[d.lastSenderId]?.shortName
                       : undefined);
                   return (
                     <div
@@ -975,8 +975,8 @@ export default function DiagnosticsPanel({
           <h3 className="text-muted mb-2 text-xs font-medium">Per-Node MQTT Filters</h3>
           <div className="flex flex-wrap gap-1.5">
             {[...mqttIgnoredNodes].map((nodeId) => {
-              const n = nodes.get(nodeId);
-              const label = n?.short_name || n?.long_name || `!${nodeId.toString(16)}`;
+              const n = nodes[nodeId];
+              const label = n?.shortName || n?.longName || `!${nodeId.toString(16)}`;
               return (
                 <span
                   key={nodeId}

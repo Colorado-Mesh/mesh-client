@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import type { MeshNode } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import RepeatersPanel from './RepeatersPanel';
 
@@ -23,40 +23,36 @@ vi.mock('../hooks/useMeshcoreRepeaterRemoteAuth', () => ({
   }),
 }));
 
-function mockRepeaterNode(id: number): MeshNode {
+function mockRepeaterNode(id: number): NodeRecord {
   return {
-    node_id: id,
-    long_name: 'Test Repeater',
-    short_name: 'TR',
-    hw_model: 'Repeater',
+    nodeId: id,
+    longName: 'Test Repeater',
+    shortName: 'TR',
+    hwModel: 'Repeater',
     snr: 2,
-    battery: 100,
-    last_heard: Math.floor(Date.now() / 1000),
-    latitude: null,
-    longitude: null,
+    batteryLevel: 100,
+    lastHeardAt: Math.floor(Date.now() / 1000),
   };
 }
 
 const repeater = mockRepeaterNode(0xabc);
 
-function mockRepeaterNodeWithFavorited(id: number, favorited: boolean): MeshNode {
+function mockRepeaterNodeWithFavorited(id: number, favorited: boolean): NodeRecord {
   return {
-    node_id: id,
-    long_name: `Repeater ${id.toString(16)}`,
-    short_name: 'TR',
-    hw_model: 'Repeater',
+    nodeId: id,
+    longName: `Repeater ${id.toString(16)}`,
+    shortName: 'TR',
+    hwModel: 'Repeater',
     snr: 2,
-    battery: 100,
-    last_heard: Math.floor(Date.now() / 1000),
-    latitude: null,
-    longitude: null,
+    batteryLevel: 100,
+    lastHeardAt: Math.floor(Date.now() / 1000),
     favorited,
   };
 }
 
 function makeBaseProps() {
   return {
-    nodes: new Map([[repeater.node_id, repeater]]),
+    nodes: { [repeater.nodeId]: repeater },
     meshcoreNodeStatus: new Map(),
     meshcoreTraceResults: new Map(),
     onRequestRepeaterStatus: vi.fn().mockResolvedValue(undefined),
@@ -127,7 +123,7 @@ describe('RepeatersPanel', () => {
 
     // Second click executes the delete
     await userEvent.click(screen.getByText('Confirm?'));
-    expect(props.onDeleteRepeater).toHaveBeenCalledWith(repeater.node_id);
+    expect(props.onDeleteRepeater).toHaveBeenCalledWith(repeater.nodeId);
   });
 
   it('does not expand telemetry section when request fails', async () => {
@@ -150,7 +146,7 @@ describe('RepeatersPanel', () => {
     render(<RepeatersPanel {...props} onRequestTelemetry={onRequestTelemetry} />);
     await userEvent.click(screen.getByRole('button', { name: 'Sensor telemetry LPP' }));
 
-    expect(onRequestTelemetry).toHaveBeenCalledWith(repeater.node_id);
+    expect(onRequestTelemetry).toHaveBeenCalledWith(repeater.nodeId);
   });
 
   it('calls onSendCliCommand with trimmed input when Send is clicked', async () => {
@@ -163,7 +159,7 @@ describe('RepeatersPanel', () => {
     await userEvent.type(input, '  name  ');
     await userEvent.click(screen.getByRole('button', { name: /Send/i }));
 
-    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', false);
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.nodeId, 'name', false);
   });
 
   it('calls onSendCliCommand when a quick command button is clicked', async () => {
@@ -174,23 +170,23 @@ describe('RepeatersPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
-    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', false);
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.nodeId, 'name', false);
   });
 
   it('pins favorited repeaters above non-favorites', () => {
     const now = Math.floor(Date.now() / 1000);
     const older = mockRepeaterNodeWithFavorited(0x100, false);
-    older.last_heard = now - 1000;
+    older.lastHeardAt = now - 1000;
     const newer = mockRepeaterNodeWithFavorited(0x200, false);
-    newer.last_heard = now;
+    newer.lastHeardAt = now;
     const favOlder = mockRepeaterNodeWithFavorited(0x300, true);
-    favOlder.last_heard = now - 100;
+    favOlder.lastHeardAt = now - 100;
 
-    const nodes = new Map([
-      [older.node_id, older],
-      [newer.node_id, newer],
-      [favOlder.node_id, favOlder],
-    ]);
+    const nodes = {
+      [older.nodeId]: older,
+      [newer.nodeId]: newer,
+      [favOlder.nodeId]: favOlder,
+    };
 
     render(<RepeatersPanel {...makeBaseProps()} nodes={nodes} />);
 
@@ -210,10 +206,10 @@ describe('RepeatersPanel', () => {
     usePathHistoryStore.setState({
       records: new Map([
         [
-          repeater.node_id,
+          repeater.nodeId,
           [
             {
-              nodeId: repeater.node_id,
+              nodeId: repeater.nodeId,
               pathHash: 'aa',
               hopCount: 1,
               pathBytes: [0xaa],
@@ -229,7 +225,7 @@ describe('RepeatersPanel', () => {
           ],
         ],
       ]),
-      lruOrder: [repeater.node_id],
+      lruOrder: [repeater.nodeId],
     });
 
     render(<RepeatersPanel {...makeBaseProps()} />);
@@ -241,24 +237,24 @@ describe('RepeatersPanel', () => {
     const dbOutcomeSpy = vi.spyOn(window.electronAPI.db, 'recordMeshcorePathOutcome');
     const pathBytes = [0x33, 0x44];
     const pathHash = computePathHash(pathBytes);
-    usePathHistoryStore.getState().recordPathUpdated(repeater.node_id, pathBytes, 1, false);
+    usePathHistoryStore.getState().recordPathUpdated(repeater.nodeId, pathBytes, 1, false);
 
     render(<RepeatersPanel {...makeBaseProps()} />);
 
     await act(async () => {
-      usePathHistoryStore.getState().recordOutcome(repeater.node_id, pathHash, true);
+      usePathHistoryStore.getState().recordOutcome(repeater.nodeId, pathHash, true);
       await Promise.resolve();
     });
 
     expect(screen.getByText('100%')).toBeInTheDocument();
-    expect(dbOutcomeSpy).toHaveBeenCalledWith(repeater.node_id, pathHash, true, undefined);
+    expect(dbOutcomeSpy).toHaveBeenCalledWith(repeater.nodeId, pathHash, true, undefined);
   });
 
   it('loads reliability from DB via ensureBestPathLoaded fallback on mount', async () => {
     vi.spyOn(window.electronAPI.db, 'getMeshcorePathHistory').mockResolvedValue([
       {
         id: 1,
-        node_id: repeater.node_id,
+        node_id: repeater.nodeId,
         path_hash: 'bb',
         hop_count: 1,
         path_bytes: '[187]',

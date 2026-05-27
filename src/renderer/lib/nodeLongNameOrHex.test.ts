@@ -1,3 +1,4 @@
+import type { NodeRecord } from '../stores/nodeStore';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -6,46 +7,44 @@ import {
   nodeLabelForRawPacket,
   nodeLongNameOrHexLabel,
 } from './nodeLongNameOrHex';
-import type { MeshNode } from './types';
-
 describe('nodeDisplayName', () => {
-  it('MeshCore prefers long_name then short_name', () => {
-    const a = { long_name: 'L', short_name: 'S' } as MeshNode;
+  it('MeshCore prefers longName then shortName', () => {
+    const a = { nodeId: 1, longName: 'L', shortName: 'S' } as NodeRecord;
     expect(nodeDisplayName(a, 'meshcore')).toBe('L');
-    const b = { short_name: 'OnlyShort' } as MeshNode;
+    const b = { nodeId: 1, shortName: 'OnlyShort' } as NodeRecord;
     expect(nodeDisplayName(b, 'meshcore')).toBe('OnlyShort');
   });
 
-  it('Meshtastic prefers short_name then long_name', () => {
-    const a = { long_name: 'L', short_name: 'S' } as MeshNode;
+  it('Meshtastic prefers shortName then longName', () => {
+    const a = { nodeId: 1, longName: 'L', shortName: 'S' } as NodeRecord;
     expect(nodeDisplayName(a, 'meshtastic')).toBe('S');
-    const b = { long_name: 'LongOnly' } as MeshNode;
+    const b = { nodeId: 1, longName: 'LongOnly' } as NodeRecord;
     expect(nodeDisplayName(b, 'meshtastic')).toBe('LongOnly');
   });
 });
 
 describe('nodeLabelForRawPacket', () => {
   it('returns display name when set', () => {
-    const node = { long_name: 'Alice', short_name: 'A' } as MeshNode;
+    const node = { nodeId: 1, longName: 'Alice', shortName: 'A' } as NodeRecord;
     expect(nodeLabelForRawPacket(node, 0x10, 'meshcore')).toBe('Alice');
   });
 
   it('returns uppercase hex when no name (matches legacy bare id)', () => {
     expect(nodeLabelForRawPacket(undefined, 0xdeadbeef, 'meshcore')).toBe('DEADBEEF');
-    expect(nodeLabelForRawPacket({ short_name: 'Bob' } as MeshNode, 0x1, 'meshtastic')).toBe('Bob');
+    expect(nodeLabelForRawPacket({ nodeId: 1, shortName: 'Bob' } as NodeRecord, 0x1, 'meshtastic')).toBe('Bob');
   });
 });
 
 describe('nodeLongNameOrHexLabel', () => {
-  it('returns trimmed long_name when set', () => {
-    const node = { long_name: '  Alice  ' } as MeshNode;
+  it('returns trimmed longName when set', () => {
+    const node = { nodeId: 1, longName: '  Alice  ' } as NodeRecord;
     expect(nodeLongNameOrHexLabel(node, 0x1234)).toBe('Alice');
   });
 
-  it('returns uppercase hex when long_name missing or empty', () => {
+  it('returns uppercase hex when longName missing or empty', () => {
     expect(nodeLongNameOrHexLabel(undefined, 0xdeadbeef)).toBe('DEADBEEF');
-    expect(nodeLongNameOrHexLabel({ long_name: '' } as MeshNode, 0x1a)).toBe('1A');
-    expect(nodeLongNameOrHexLabel({ long_name: '   ' } as MeshNode, 0xff)).toBe('FF');
+    expect(nodeLongNameOrHexLabel({ nodeId: 1, longName: '' } as NodeRecord, 0x1a)).toBe('1A');
+    expect(nodeLongNameOrHexLabel({ nodeId: 1, longName: '   ' } as NodeRecord, 0xff)).toBe('FF');
   });
 });
 

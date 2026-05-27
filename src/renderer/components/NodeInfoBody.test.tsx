@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { MeshNode } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import NodeInfoBody from './NodeInfoBody';
 
 const diagnosticsStoreState = {
@@ -48,16 +48,14 @@ describe('NodeInfoBody', () => {
       ],
     ]);
 
-    const node: MeshNode = {
-      node_id: 42,
-      long_name: 'Tracked Node',
-      short_name: 'TRKD',
-      hw_model: 'T-Echo',
+    const node: NodeRecord = {
+      nodeId: 42,
+      longName: 'Tracked Node',
+      shortName: 'TRKD',
+      hwModel: 'T-Echo',
       snr: 0,
-      battery: 0,
-      last_heard: Math.floor(Date.now() / 1000),
-      latitude: null,
-      longitude: null,
+      batteryLevel: 0,
+      lastHeardAt: Math.floor(Date.now() / 1000),
     };
 
     render(<NodeInfoBody node={node} protocol="meshtastic" />);

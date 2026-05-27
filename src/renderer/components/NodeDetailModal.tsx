@@ -1,11 +1,10 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import { useEffect, useRef, useState } from 'react';
-
 import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
-} from '../hooks/useMeshCore';
+} from '../lib/protocols/MeshCoreProtocol';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { formatCoordPair } from '../lib/coordUtils';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
@@ -19,7 +18,8 @@ import {
 import { getNodeStatus } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
-import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
+import type { MeshCoreLocalStats, MeshProtocol, NeighborInfoRecord } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { HelpTooltip } from './HelpTooltip';
@@ -31,8 +31,8 @@ const POSITION_HISTORY_MAX_ROWS = 100;
 
 interface NodeDetailModalProps {
   /** Optional: enables originator list for Mesh Congestion (RF duplicate-prone by node). */
-  nodes?: Map<number, MeshNode>;
-  node: MeshNode | null;
+  nodes?: Record<number, NodeRecord>;
+  node: NodeRecord | null;
   onClose: () => void;
   onRequestPosition: (nodeNum: number) => Promise<void>;
   onTraceRoute: (nodeNum: number) => Promise<void>;
@@ -41,7 +41,7 @@ interface NodeDetailModalProps {
   onMessageNode?: (nodeNum: number) => void;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
   isConnected: boolean;
-  homeNode?: MeshNode | null;
+  homeNode?: NodeRecord | null;
   neighborInfo?: Map<number, NeighborInfoRecord>;
   useFahrenheit?: boolean;
   protocol?: MeshProtocol;
@@ -140,7 +140,7 @@ export default function NodeDetailModal({
     return () => {
       previousFocusRef.current?.focus();
     };
-  }, [node?.node_id]);
+  }, [node?.nodeId]);
 
   // Close on Escape
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function NodeDetailModal({
     setShowMeshcoreNeighbors(false);
     setExportContactPending(false);
     setShareContactPending(false);
-  }, [node?.node_id]);
+  }, [node?.nodeId]);
 
   // Detect position update after a request was sent
   useEffect(() => {
@@ -225,7 +225,7 @@ export default function NodeDetailModal({
     let cancelled = false;
     const fetchStatus = async () => {
       try {
-        const contact = await window.electronAPI.db.getMeshcoreContactById(node.node_id);
+        const contact = await window.electronAPI.db.getMeshcoreContactById(node.nodeId);
         if (!cancelled) {
           if (contact && 'on_radio' in contact) {
             // on_radio: 1 = on radio, 0 = only in DB, null = treat as on radio (legacy data)
@@ -280,12 +280,12 @@ export default function NodeDetailModal({
 
   if (!node) return null;
 
-  const hexId = `!${node.node_id.toString(16)}`;
+  const hexId = `!${node.nodeId.toString(16)}`;
   // Check if this appears to be a node with incomplete data (empty names and no role)
-  const isIncomplete = !node.short_name && !node.long_name && node.role === undefined;
-  const displayName = node.short_name || node.long_name || hexId;
-  const isOurNode = node.node_id === homeNode?.node_id;
-  const nodeStatus = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
+  const isIncomplete = !node.shortName && !node.longName && node.role === undefined;
+  const displayName = node.shortName || node.longName || hexId;
+  const isOurNode = node.nodeId === homeNode?.nodeId;
+  const nodeStatus = getNodeStatus(node.lastHeardAt ?? 0, nodeStaleThresholdMs, nodeOfflineThresholdMs);
   const nodeStatusUi =
     nodeStatus === 'online'
       ? {
@@ -307,21 +307,21 @@ export default function NodeDetailModal({
 
   const headerHardwareSubtitle =
     protocol === 'meshtastic'
-      ? meshtasticHwModelDisplay(node.hw_model)
+      ? meshtasticHwModelDisplay(node.hwModel)
       : protocol === 'meshcore' && isOurNode && meshcoreManufacturerModel
         ? meshcoreManufacturerModel
-        : node.hw_model?.trim() || null;
+        : node.hwModel?.trim() || null;
 
   const headerHopsDisplay =
     protocol === 'meshcore' && meshcoreTraceResult != null
       ? meshcoreTracePathLenToHops(meshcoreTraceResult.pathLen)
-      : node.hops_away;
+      : node.hopsAway;
 
   const handleRequestPosition = async () => {
     setPositionRequestedAt(Date.now());
     setActionStatus('Requesting position...');
     try {
-      await onRequestPosition(node.node_id);
+      await onRequestPosition(node.nodeId);
     } catch (e) {
       console.warn('[NodeDetailModal] request position failed', e);
       setPositionRequestedAt(null);
@@ -333,7 +333,7 @@ export default function NodeDetailModal({
     setTraceRoutePending(true);
     setActionStatus('Trace route requested...');
     try {
-      await onTraceRoute(node.node_id);
+      await onTraceRoute(node.nodeId);
     } finally {
       setTraceRoutePending(false);
     }
@@ -364,7 +364,7 @@ export default function NodeDetailModal({
                 <h3 id="node-modal-title" className="truncate text-lg font-semibold text-gray-100">
                   {displayName}
                 </h3>
-                {mqttIgnoredNodes.has(node.node_id) && (
+                {mqttIgnoredNodes.has(node.nodeId) && (
                   <span className="shrink-0 rounded border border-yellow-500/30 bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-medium text-yellow-300">
                     MQTT Ignored
                   </span>
@@ -405,8 +405,8 @@ export default function NodeDetailModal({
                   </span>
                 )}
                 {protocol === 'meshcore' &&
-                  node.node_id >= MESHCORE_CHAT_STUB_ID_MIN &&
-                  node.node_id <= MESHCORE_CHAT_STUB_ID_MAX && (
+                  node.nodeId >= MESHCORE_CHAT_STUB_ID_MIN &&
+                  node.nodeId <= MESHCORE_CHAT_STUB_ID_MAX && (
                     <span
                       className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
                       title="Chat-only node (no public key)"
@@ -455,7 +455,7 @@ export default function NodeDetailModal({
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => {
-                    onToggleFavorite(node.node_id, !node.favorited);
+                    onToggleFavorite(node.nodeId, !node.favorited);
                   }}
                   className="hover:bg-secondary-dark shrink-0 rounded-lg p-1.5 transition-colors"
                   aria-label={node.favorited ? 'Remove from favorites' : 'Add to favorites'}
@@ -510,7 +510,7 @@ export default function NodeDetailModal({
 
             {protocol === 'meshcore' &&
               !isOurNode &&
-              node.hw_model === 'Repeater' &&
+              node.hwModel === 'Repeater' &&
               meshcoreNeighborError &&
               !showMeshcoreNeighbors && (
                 <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
@@ -658,7 +658,7 @@ export default function NodeDetailModal({
                     {meshcoreNeighbors.neighbours.map((nb, i) => {
                       const label =
                         nb.resolvedNodeId !== 0
-                          ? (nodes?.get(nb.resolvedNodeId)?.long_name ??
+                          ? (nodes?.[nb.resolvedNodeId]?.longName ??
                             `!${nb.resolvedNodeId.toString(16)}`)
                           : nb.prefixHex;
                       return (
@@ -686,7 +686,7 @@ export default function NodeDetailModal({
             {/* Foreign LoRa activity — shown for connected device only; all senders in last 90 min */}
             {isOurNode &&
               (() => {
-                const list = getForeignLoraDetectionsList(node.node_id);
+                const list = getForeignLoraDetectionsList(node.nodeId);
                 if (list.length === 0) return null;
                 const classLabels: Record<string, string> = {
                   meshcore: 'MeshCore Activity',
@@ -710,8 +710,8 @@ export default function NodeDetailModal({
                       const senderName =
                         detection.longName ??
                         (detection.lastSenderId
-                          ? nodes?.get(detection.lastSenderId)?.long_name ||
-                            nodes?.get(detection.lastSenderId)?.short_name
+                          ? nodes?.[detection.lastSenderId]?.longName ||
+                            nodes?.[detection.lastSenderId]?.shortName
                           : undefined);
                       return (
                         <div
@@ -837,7 +837,7 @@ export default function NodeDetailModal({
             {/* Neighbors section */}
             {neighborInfo &&
               (() => {
-                const record = neighborInfo.get(node.node_id);
+                const record = neighborInfo.get(node.nodeId);
                 if (!record || record.neighbors.length === 0) return null;
                 return (
                   <div className="space-y-2 pb-2">
@@ -846,8 +846,8 @@ export default function NodeDetailModal({
                     </h4>
                     <div className="space-y-1">
                       {record.neighbors.map((nb) => {
-                        const nbNode = nodes?.get(nb.nodeId);
-                        const label = nbNode?.short_name || `!${nb.nodeId.toString(16)}`;
+                        const nbNode = nodes?.[nb.nodeId];
+                        const label = nbNode?.shortName || `!${nb.nodeId.toString(16)}`;
                         return (
                           <div
                             key={nb.nodeId}
@@ -927,7 +927,7 @@ export default function NodeDetailModal({
             {protocol === 'meshtastic' &&
               paxCounterData &&
               (() => {
-                const paxData = paxCounterData.get(node.node_id);
+                const paxData = paxCounterData.get(node.nodeId);
                 if (!paxData) return null;
                 return (
                   <div className="space-y-2 px-5 pb-2">
@@ -952,7 +952,7 @@ export default function NodeDetailModal({
             {protocol === 'meshtastic' &&
               detectionSensorEvents &&
               (() => {
-                const sensorEvents = detectionSensorEvents.get(node.node_id);
+                const sensorEvents = detectionSensorEvents.get(node.nodeId);
                 if (!sensorEvents || sensorEvents.length === 0) return null;
                 const latestEvent = sensorEvents[sensorEvents.length - 1];
                 return (
@@ -985,7 +985,7 @@ export default function NodeDetailModal({
               <div className="space-y-2 pb-2">
                 <h4 className="text-muted text-sm font-medium">Map Report</h4>
                 {(() => {
-                  const mapReport = mapReports.get(node.node_id);
+                  const mapReport = mapReports.get(node.nodeId);
                   if (!mapReport) {
                     return <p className="text-xs text-gray-500">No map report received</p>;
                   }
@@ -1012,7 +1012,7 @@ export default function NodeDetailModal({
               <div className="space-y-2 pb-2">
                 <h4 className="text-muted text-sm font-medium">Position History</h4>
                 {(() => {
-                  const points = positionHistory.get(node.node_id);
+                  const points = positionHistory.get(node.nodeId);
                   if (!points || points.length === 0) {
                     return <p className="text-xs text-gray-500">No position history recorded</p>;
                   }
@@ -1111,7 +1111,7 @@ export default function NodeDetailModal({
                     setRepeaterStatusPending(true);
                     setActionStatus('Requesting status...');
                     try {
-                      await onRequestRepeaterStatus(node.node_id);
+                      await onRequestRepeaterStatus(node.nodeId);
                       setActionStatus(null);
                     } catch (e) {
                       console.warn('[NodeDetailModal] requestRepeaterStatus failed', e);
@@ -1136,7 +1136,7 @@ export default function NodeDetailModal({
                     setTelemetryPending(true);
                     setActionStatus('Requesting sensor telemetry (LPP)...');
                     try {
-                      await onRequestTelemetry(node.node_id);
+                      await onRequestTelemetry(node.nodeId);
                       setActionStatus(null);
                     } catch (e) {
                       console.warn('[NodeDetailModal] requestTelemetry failed', e);
@@ -1153,14 +1153,14 @@ export default function NodeDetailModal({
                   🌡 {telemetryPending ? 'Requesting...' : 'Sensor telemetry'}
                 </button>
               )}
-              {protocol === 'meshcore' && onRequestNeighbors && node.hw_model === 'Repeater' && (
+              {protocol === 'meshcore' && onRequestNeighbors && node.hwModel === 'Repeater' && (
                 <button
                   onClick={async () => {
                     if (!(await ensureConfigured())) return;
                     setNeighborsPending(true);
                     setActionStatus('Requesting neighbors...');
                     try {
-                      await onRequestNeighbors(node.node_id);
+                      await onRequestNeighbors(node.nodeId);
                       setActionStatus(null);
                     } catch (e) {
                       console.warn('[NodeDetailModal] requestNeighbors failed', e);
@@ -1180,7 +1180,7 @@ export default function NodeDetailModal({
               {onMessageNode && (
                 <button
                   onClick={() => {
-                    onMessageNode(node.node_id);
+                    onMessageNode(node.nodeId);
                     onClose();
                   }}
                   disabled={!isConnected || (protocol === 'meshcore' && !contactPubkey)}
@@ -1201,7 +1201,7 @@ export default function NodeDetailModal({
                     setExportContactPending(true);
                     setActionStatus('Exporting contact...');
                     try {
-                      const advert = await onExportContact(node.node_id);
+                      const advert = await onExportContact(node.nodeId);
                       if (advert) {
                         const blob = new Blob([advert.buffer as ArrayBuffer], {
                           type: 'application/octet-stream',
@@ -1209,7 +1209,7 @@ export default function NodeDetailModal({
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.href = url;
-                        link.download = `contact-${node.node_id.toString(16)}.bin`;
+                        link.download = `contact-${node.nodeId.toString(16)}.bin`;
                         link.click();
                         URL.revokeObjectURL(url);
                         setActionStatus(null);
@@ -1236,7 +1236,7 @@ export default function NodeDetailModal({
                     setShareContactPending(true);
                     setActionStatus('Sharing contact...');
                     try {
-                      const success = await onShareContact(node.node_id);
+                      const success = await onShareContact(node.nodeId);
                       setActionStatus(success ? null : 'Share failed');
                     } catch (e) {
                       console.warn('[NodeDetailModal] shareContact failed', e);
@@ -1258,7 +1258,7 @@ export default function NodeDetailModal({
                     setActionStatus('Adding to radio...');
                     try {
                       await window.electronAPI.db.saveMeshcoreContact({
-                        node_id: node.node_id,
+                        node_id: node.nodeId,
                         public_key: contactPubkey,
                         on_radio: 1,
                         last_synced_from_radio: new Date().toISOString(),
@@ -1288,7 +1288,7 @@ export default function NodeDetailModal({
                     setActionStatus('Removing from radio...');
                     try {
                       await window.electronAPI.db.saveMeshcoreContact({
-                        node_id: node.node_id,
+                        node_id: node.nodeId,
                         public_key: contactPubkey,
                         on_radio: 0,
                       });
@@ -1323,22 +1323,22 @@ export default function NodeDetailModal({
             </div>
             <button
               onClick={() => {
-                setNodeMqttIgnored(node.node_id, !mqttIgnoredNodes.has(node.node_id));
+                setNodeMqttIgnored(node.nodeId, !mqttIgnoredNodes.has(node.nodeId));
               }}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-                mqttIgnoredNodes.has(node.node_id) ? 'bg-yellow-500' : 'bg-gray-600'
+                mqttIgnoredNodes.has(node.nodeId) ? 'bg-yellow-500' : 'bg-gray-600'
               }`}
               role="switch"
-              aria-checked={mqttIgnoredNodes.has(node.node_id)}
+              aria-checked={mqttIgnoredNodes.has(node.nodeId)}
               title={
-                mqttIgnoredNodes.has(node.node_id)
+                mqttIgnoredNodes.has(node.nodeId)
                   ? 'Stop ignoring MQTT for this node'
                   : 'Ignore MQTT for this node'
               }
             >
               <span
                 className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                  mqttIgnoredNodes.has(node.node_id) ? 'translate-x-4' : 'translate-x-0'
+                  mqttIgnoredNodes.has(node.nodeId) ? 'translate-x-4' : 'translate-x-0'
                 }`}
               />
             </button>
@@ -1386,7 +1386,7 @@ export default function NodeDetailModal({
                   </button>
                   <button
                     onClick={() => {
-                      onDeleteNode(node.node_id)
+                      onDeleteNode(node.nodeId)
                         .then(onClose)
                         .catch((e: unknown) => {
                           setActionStatus(

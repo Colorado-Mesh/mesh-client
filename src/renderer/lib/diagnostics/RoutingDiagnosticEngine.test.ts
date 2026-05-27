@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { MeshNode } from '../types';
+import type { NodeRecord } from '../../stores/nodeStore';
 import {
   detectBadRoute,
   detectHopGoblin,
@@ -9,38 +9,36 @@ import {
   NOISY_PORTNUMS,
 } from './RoutingDiagnosticEngine';
 
-function baseNode(overrides: Partial<MeshNode> = {}): MeshNode {
+function baseNode(overrides: Partial<NodeRecord> = {}): NodeRecord {
   return {
-    node_id: 0xabc,
-    long_name: 'N',
-    short_name: 'N',
-    hw_model: '',
+    nodeId: 0xabc,
+    longName: 'N',
+    shortName: 'N',
+    hwModel: '',
     snr: 6,
-    battery: 0,
-    last_heard: Date.now(),
-    latitude: null,
-    longitude: null,
-    hops_away: 5,
+    batteryLevel: 0,
+    lastHeardAt: Date.now(),
+    hopsAway: 5,
     ...overrides,
   };
 }
 
 describe('detectHopGoblin', () => {
   it('returns null when no GPS — SNR-only heuristic removed', () => {
-    const node = baseNode({ snr: 6, hops_away: 5, latitude: null, longitude: null });
-    const home = baseNode({ node_id: 1, latitude: null, longitude: null });
+    const node = baseNode({ snr: 6, hopsAway: 5 });
+    const home = baseNode({ nodeId: 1 });
     expect(detectHopGoblin(node, home, false, 1, 0, 2)).toBeNull();
   });
 
   it('returns null when coords exist but node not critically close — no SNR branch', () => {
     const node = baseNode({
       snr: 6,
-      hops_away: 5,
+      hopsAway: 5,
       latitude: 37.5,
       longitude: -122.5,
     });
     const home = baseNode({
-      node_id: 1,
+      nodeId: 1,
       latitude: 37.0,
       longitude: -122.0,
     });
@@ -50,12 +48,12 @@ describe('detectHopGoblin', () => {
   it('returns error + proven when very close with many hops', () => {
     const node = baseNode({
       snr: 6,
-      hops_away: 5,
+      hopsAway: 5,
       latitude: 37.0,
       longitude: -122.0,
     });
     const home = baseNode({
-      node_id: 1,
+      nodeId: 1,
       latitude: 37.001,
       longitude: -122.001,
     });
@@ -68,7 +66,7 @@ describe('detectHopGoblin', () => {
 
 describe('detectBadRoute', () => {
   it('flags high duplication without requiring SNR', () => {
-    const node = baseNode({ node_id: 0x1, hops_away: 2, snr: 0 });
+    const node = baseNode({ nodeId: 0x1, hopsAway: 2, snr: 0 });
     const a = detectBadRoute(node, { total: 100, duplicates: 60 }, null, false, 1, 0, 2);
     expect(a).not.toBeNull();
     expect(a!.type).toBe('bad_route');
@@ -79,13 +77,13 @@ describe('detectBadRoute', () => {
 
   it('close-in many-hops warning uses hopsThreshold+2 not fixed 4', () => {
     const node = baseNode({
-      node_id: 0x2,
-      hops_away: 5,
+      nodeId: 0x2,
+      hopsAway: 5,
       latitude: 37.0,
       longitude: -122.0,
     });
     const home = baseNode({
-      node_id: 1,
+      nodeId: 1,
       latitude: 37.001,
       longitude: -122.001,
     });

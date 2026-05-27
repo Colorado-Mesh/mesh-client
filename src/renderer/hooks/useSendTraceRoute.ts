@@ -1,17 +1,14 @@
 import { useCallback } from 'react';
 
 import type { IdentityId } from '../lib/types';
-import { useIdentityStore } from '../stores/identityStore';
+import { resolveCall } from './_protocolCall';
 
 export function useSendTraceRoute(identityId: IdentityId) {
   return useCallback(
-    (nodeId: number) => {
-      const identity = useIdentityStore.getState().identities[identityId];
-      if (!identity) {
-        console.warn('[useSendTraceRoute] no identity for', identityId);
-        return;
-      }
-      identity.protocol.sendTraceRoute(nodeId);
+    (nodeId: number): Promise<void> => {
+      const ctx = resolveCall(identityId, 'useSendTraceRoute');
+      if (!ctx) return Promise.resolve();
+      return ctx.identity.protocol.sendTraceRoute(ctx.handle, nodeId);
     },
     [identityId],
   );

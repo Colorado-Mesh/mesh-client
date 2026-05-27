@@ -1,5 +1,5 @@
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
-import type { MeshNode } from '../types';
+import type { NodeRecord } from '../../stores/nodeStore';
 import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnostics';
 
 export interface RFDiagnosis {
@@ -89,17 +89,17 @@ export function detectCuSpike(
  * Returns [] immediately when the protocol does not provide RF stats (e.g. MeshCore).
  */
 export function diagnoseConnectedNode(
-  node: MeshNode,
+  node: NodeRecord,
   context?: ConnectedNodeDiagnosticContext,
 ): RFDiagnosis[] {
   if (context?.capabilities?.hasRfStats === false) return [];
   const findings: RFDiagnosis[] = [];
 
-  const cu = node.channel_utilization ?? 0;
-  const tx = node.air_util_tx ?? 0;
-  const rxBad = node.num_packets_rx_bad ?? 0;
-  const rxDupe = node.num_rx_dupe ?? 0;
-  const rxTotal = node.num_packets_rx ?? 0;
+  const cu = node.channelUtilization ?? 0;
+  const tx = node.airUtilTx ?? 0;
+  const rxBad = node.numPacketsRxBad ?? 0;
+  const rxDupe = node.numRxDupe ?? 0;
+  const rxTotal = node.numPacketsRx ?? 0;
 
   const badRate = rxTotal > MIN_SAMPLE ? rxBad / rxTotal : 0;
   const dupeRate = rxTotal > MIN_SAMPLE ? rxDupe / rxTotal : 0;
@@ -132,7 +132,7 @@ export function diagnoseConnectedNode(
   }
 
   // CU spike vs 24h average (after baseline checks; uses same cu)
-  const cuSpike = detectCuSpike(cu, context?.cuStats24h ?? null, node.node_id);
+  const cuSpike = detectCuSpike(cu, context?.cuStats24h ?? null, node.nodeId);
   if (cuSpike) findings.push(cuSpike);
 
   // 6. High rx_duplicate → mesh congestion (detail shown once in node detail UI, not duplicated as hints here)
@@ -175,27 +175,27 @@ export function diagnoseConnectedNode(
 }
 
 /** True if the connected node has enough LocalStats data to run full RF diagnostics. */
-export function hasLocalStatsData(node: MeshNode): boolean {
-  return node.num_packets_rx !== undefined || node.num_packets_rx_bad !== undefined;
+export function hasLocalStatsData(node: NodeRecord): boolean {
+  return node.numPacketsRx !== undefined || node.numPacketsRxBad !== undefined;
 }
 
 /**
- * Diagnose another node using observed telemetry (channel_utilization, air_util_tx, snr).
+ * Diagnose another node using observed telemetry (channelUtilization, airUtilTx, snr).
  * Returns null if no telemetry is available for the node.
  * SNR-based findings set isLastHop when interpretation is last-hop only.
- * Optional context: CU spike when cuHistory exists for this node_id.
+ * Optional context: CU spike when cuHistory exists for this nodeId.
  * Returns null immediately when the protocol does not provide RF stats (e.g. MeshCore).
  */
 export function diagnoseOtherNode(
-  node: MeshNode,
+  node: NodeRecord,
   context?: OtherNodeDiagnosticContext,
 ): RFDiagnosis[] | null {
   if (context?.capabilities?.hasRfStats === false) return null;
-  if (node.channel_utilization == null && node.air_util_tx == null) return null;
+  if (node.channelUtilization == null && node.airUtilTx == null) return null;
 
   const findings: RFDiagnosis[] = [];
-  const cu = node.channel_utilization ?? 0;
-  const tx = node.air_util_tx ?? 0;
+  const cu = node.channelUtilization ?? 0;
+  const tx = node.airUtilTx ?? 0;
   const snrMeaningful = snrMeaningfulForNodeDiagnostics(node, context?.capabilities);
   const snr = node.snr ?? 0;
 
@@ -207,7 +207,7 @@ export function diagnoseOtherNode(
     });
   }
 
-  const cuSpike = detectCuSpike(cu, context?.cuStats24h ?? null, node.node_id);
+  const cuSpike = detectCuSpike(cu, context?.cuStats24h ?? null, node.nodeId);
   if (cuSpike) findings.push(cuSpike);
 
   // SNR only when meaningful (0-hop RF) — still last-hop into client; label for clarity

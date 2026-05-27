@@ -1,10 +1,11 @@
 import { haversineDistanceKm } from '../nodeStatus';
-import type { DiagnosticRemedy, MeshNode } from '../types';
+import type { DiagnosticRemedy } from '../types';
+import type { NodeRecord } from '../../stores/nodeStore';
 import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnostics';
 
 type ScenarioChecker = (
-  node: MeshNode,
-  homeNode: MeshNode | null,
+  node: NodeRecord,
+  homeNode: NodeRecord | null,
   distMiles: number | null,
   duplicateRate: number | null,
 ) => DiagnosticRemedy | null;
@@ -14,18 +15,18 @@ const SCENARIOS: ScenarioChecker[] = [
   (node, _home, distMiles) => {
     if (!snrMeaningfulForNodeDiagnostics(node)) return null;
     if (distMiles === null || distMiles >= 1) return null;
-    if ((node.hops_away ?? 0) <= 2) return null;
-    if (node.snr >= -5) return null;
+    if ((node.hopsAway ?? 0) <= 2) return null;
+    if ((node.snr ?? 0) >= -5) return null;
     return {
       title: 'Check Antenna: Verify LOS and Polarization',
-      description: `Node is <1 mi away but SNR ${node.snr.toFixed(1)} dB — likely antenna null or polarization mismatch.`,
+      description: `Node is <1 mi away but SNR ${(node.snr ?? 0).toFixed(1)} dB — likely antenna null or polarization mismatch.`,
       category: 'Hardware',
       severity: 'warning',
     };
   },
   // Scenario D: MQTT Ghost (0 hops but far away)
   (node, _home, distMiles) => {
-    if ((node.hops_away ?? -1) !== 0) return null;
+    if ((node.hopsAway ?? -1) !== 0) return null;
     if (distMiles === null || distMiles <= 20) return null;
     return {
       title: "MQTT Detected: Toggle 'Ignore MQTT' for this ID",
@@ -37,12 +38,12 @@ const SCENARIOS: ScenarioChecker[] = [
   // Scenario A: High-Ground Config (chatty node)
   (node, _home, distMiles) => {
     if (!snrMeaningfulForNodeDiagnostics(node)) return null;
-    if (node.snr <= 8) return null;
-    if ((node.hops_away ?? 0) < 3) return null;
+    if ((node.snr ?? 0) <= 8) return null;
+    if ((node.hopsAway ?? 0) < 3) return null;
     if (distMiles === null || distMiles >= 10) return null;
     return {
       title: 'Notify Op: Reduce Hop Limit to 3',
-      description: `SNR ${node.snr.toFixed(1)} dB + ${node.hops_away ?? '?'} hops within 10 mi — node likely has hop limit set too high.`,
+      description: `SNR ${(node.snr ?? 0).toFixed(1)} dB + ${node.hopsAway ?? '?'} hops within 10 mi — node likely has hop limit set too high.`,
       category: 'Configuration',
       severity: 'info',
     };
@@ -72,8 +73,8 @@ const SCENARIOS: ScenarioChecker[] = [
 ];
 
 export function getRecommendedAction(
-  node: MeshNode,
-  homeNode: MeshNode | null,
+  node: NodeRecord,
+  homeNode: NodeRecord | null,
   packetStats: { total: number; duplicates: number } | undefined,
 ): DiagnosticRemedy | null {
   const distMiles =

@@ -1,7 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 
-import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../hooks/useMeshCore';
+import type { MeshCoreContactRaw } from '../lib/protocols/MeshCoreProtocol';
+import type { MeshCoreSelfInfo } from '../lib/meshcoreTelemetryPrivacy';
 import {
   countMeshcoreContactsWithFlagMask,
   MESHCORE_CONTACT_FLAG_TELEM_BASE,

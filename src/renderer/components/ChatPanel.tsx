@@ -21,9 +21,11 @@ import {
 } from '../lib/chatPanelProtocolStorage';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
-import { emojiDisplayChar, emojiDisplayLabel } from '../lib/reactions';
+import { emojiDisplayLabel } from '../lib/reactions';
 import { truncateReplyPreviewText } from '../lib/replyPreview';
-import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
+import type { MeshProtocol } from '../lib/types';
+import type { MessageRecord, MessageTransport } from '../stores/messageStore';
+import type { NodeRecord } from '../stores/nodeStore';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 
@@ -87,7 +89,7 @@ function StatusBadge({
   );
 }
 
-function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
+function TransportBadge({ via }: { via: MessageTransport }) {
   const rfIcon = (
     <svg
       className="h-3 w-3 text-blue-400"
@@ -171,7 +173,7 @@ function withoutDmNode(source: Record<number, number>, nodeNum: number): Record<
   return Object.fromEntries(Object.entries(source).filter(([key]) => Number(key) !== nodeNum));
 }
 
-function latestMessageTimestamp(messages: readonly ChatMessage[]): number {
+function latestMessageTimestamp(messages: readonly MessageRecord[]): number {
   let latest = 0;
   for (const msg of messages) {
     if (msg.timestamp > latest) latest = msg.timestamp;
@@ -179,13 +181,13 @@ function latestMessageTimestamp(messages: readonly ChatMessage[]): number {
   return latest;
 }
 
-function latestChannelWatermarks(messages: readonly ChatMessage[]): Map<number, number> {
+function latestChannelWatermarks(messages: readonly MessageRecord[]): Map<number, number> {
   const watermarks = new Map<number, number>();
   for (const msg of messages) {
     if (msg.to != null) continue;
-    const prev = watermarks.get(msg.channel) ?? 0;
+    const prev = watermarks.get(msg.channelIndex) ?? 0;
     if (msg.timestamp > prev) {
-      watermarks.set(msg.channel, msg.timestamp);
+      watermarks.set(msg.channelIndex, msg.timestamp);
     }
   }
   return watermarks;
@@ -235,7 +237,7 @@ export function getDistFromChatBottom(
 }
 
 export interface ChatPanelProps {
-  messages: ChatMessage[];
+  messages: MessageRecord[];
   channels: { index: number; name: string }[];
   myNodeNum: number;
   ownNodeIds?: number[];
@@ -243,15 +245,15 @@ export interface ChatPanelProps {
     text: string,
     channel: number,
     destination?: number,
-    replyId?: number,
+    replyId?: string,
   ) => void | Promise<void>;
-  onReact: (emoji: number, replyId: number, channel: number) => Promise<void>;
-  onResend: (msg: ChatMessage) => void;
+  onReact: (emoji: number, messageId: string, channel: number) => Promise<void>;
+  onResend: (msg: MessageRecord) => void;
   onNodeClick: (nodeNum: number) => void;
   isConnected: boolean;
   isMqttOnly?: boolean;
   connectionType?: 'ble' | 'serial' | 'http' | null;
-  nodes: Map<number, MeshNode>;
+  nodes: Record<number, NodeRecord>;
   initialDmTarget?: number | null;
   onDmTargetConsumed?: () => void;
   isActive?: boolean;
@@ -313,8 +315,8 @@ function ChatPanel({
     message: string;
     viewKey: string;
   } | null>(null);
-  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
-  const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
+  const [replyTo, setReplyTo] = useState<MessageRecord | null>(null);
+  const [pickerOpenFor, setPickerOpenFor] = useState<string | null>(null);
   const [showComposePicker, setShowComposePicker] = useState(false);
   const isLinux = useMemo(() => window.electronAPI.getPlatform() === 'linux', []);
   const [searchQuery, setSearchQuery] = useState('');
@@ -325,7 +327,7 @@ function ChatPanel({
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const emojiPickerRef = useRef<HTMLElement | null>(null);
   const reactionPickerRef = useRef<HTMLElement | null>(null);
-  const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
+  const reactionPickerTarget = useRef<{ id: string; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleReactRef = useRef<any>(null);
@@ -399,7 +401,7 @@ function ChatPanel({
 
   const getDmLabel = useCallback(
     (nodeNum: number) => {
-      const node = nodes.get(nodeNum);
+      const node = nodes[nodeNum];
       const label = nodeDisplayName(node, protocol);
       return label || `!${nodeNum.toString(16)}`;
     },
@@ -428,22 +430,22 @@ function ChatPanel({
 
   // Separate regular messages from reaction messages
   const { regularMessages, reactionsByReplyId } = useMemo(() => {
-    const regular: ChatMessage[] = [];
+    const regular: MessageRecord[] = [];
     const reactions = new Map<
-      number,
-      { emoji: number; sender_id: number; sender_name: string; id?: number }[]
+      string,
+      { emoji: string; from: number; senderName?: string; id: string }[]
     >();
 
     for (const msg of messages) {
-      if (msg.emoji && msg.replyId) {
-        const existing = reactions.get(msg.replyId) ?? [];
+      if (msg.tapback && msg.replyTo) {
+        const existing = reactions.get(msg.replyTo) ?? [];
         existing.push({
-          emoji: msg.emoji,
-          sender_id: msg.sender_id,
-          sender_name: msg.sender_name,
+          emoji: msg.payload,
+          from: msg.from,
+          senderName: msg.senderName,
           id: msg.id,
         });
-        reactions.set(msg.replyId, existing);
+        reactions.set(msg.replyTo, existing);
       } else {
         regular.push(msg);
       }
@@ -456,11 +458,11 @@ function ChatPanel({
     for (const msg of regularMessages) {
       if (msg.to == null) continue;
       // Mirror the DM thread filter in `filteredMessages`:
-      // - outgoing: sender_id == me, to == peer
-      // - incoming: sender_id == peer, to == me
+      // - outgoing: from == me, to == peer
+      // - incoming: from == peer, to == me
       let peer: number | undefined;
-      if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
-      if (isOwnNode(msg.to) && !isOwnNode(msg.sender_id)) peer = msg.sender_id;
+      if (isOwnNode(msg.from) && !isOwnNode(msg.to)) peer = msg.to;
+      if (isOwnNode(msg.to) && !isOwnNode(msg.from)) peer = msg.from;
       if (peer == null) continue;
       peers.set(peer, (peers.get(peer) ?? 0) + 1);
     }
@@ -487,10 +489,10 @@ function ChatPanel({
       if (msg.to == null) continue;
       if (msg.isHistory) continue;
       let peer: number | undefined;
-      if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
-      if (isOwnNode(msg.to) && !isOwnNode(msg.sender_id)) peer = msg.sender_id;
+      if (isOwnNode(msg.from) && !isOwnNode(msg.to)) peer = msg.to;
+      if (isOwnNode(msg.to) && !isOwnNode(msg.from)) peer = msg.from;
       if (peer == null) continue;
-      if (isOwnNode(msg.sender_id)) continue;
+      if (isOwnNode(msg.from)) continue;
       const lr = persistedLastRead[`dm:${peer}`] ?? 0;
       if (msg.timestamp > lr) {
         counts.set(peer, (counts.get(peer) ?? 0) + 1);
@@ -499,12 +501,11 @@ function ChatPanel({
     return counts;
   }, [isOwnNode, persistedLastRead, regularMessages]);
 
-  // Lookup map for rendering quoted replies (packetId in Meshtastic, timestamp fallback in MeshCore)
+  // Lookup map for rendering quoted replies (keyed by message id)
   const messageByReplyKey = useMemo(() => {
-    const map = new Map<number, ChatMessage>();
+    const map = new Map<string, MessageRecord>();
     for (const msg of regularMessages) {
-      if (msg.packetId != null) map.set(msg.packetId, msg);
-      map.set(msg.timestamp, msg);
+      map.set(msg.id, msg);
     }
     return map;
   }, [regularMessages]);
@@ -512,12 +513,12 @@ function ChatPanel({
   const unreadCounts = useMemo(() => {
     const counts = new Map<number, number>();
     for (const msg of regularMessages) {
-      if (isOwnNode(msg.sender_id)) continue; // own messages don't count
+      if (isOwnNode(msg.from)) continue; // own messages don't count
       if (msg.to) continue; // DMs don't contribute to channel unread counts
       if (msg.isHistory) continue; // history rehydration must not create fresh unread badges
-      const lastRead = persistedLastRead[`ch:${msg.channel}`] ?? 0;
+      const lastRead = persistedLastRead[`ch:${msg.channelIndex}`] ?? 0;
       if (msg.timestamp > lastRead) {
-        counts.set(msg.channel, (counts.get(msg.channel) ?? 0) + 1);
+        counts.set(msg.channelIndex, (counts.get(msg.channelIndex) ?? 0) + 1);
       }
     }
     return counts;
@@ -527,12 +528,12 @@ function ChatPanel({
     if (viewMode === 'dm' && activeDmNode != null) {
       return regularMessages.filter(
         (m) =>
-          (m.to === activeDmNode && isOwnNode(m.sender_id)) ||
-          (m.sender_id === activeDmNode && m.to != null && isOwnNode(m.to)),
+          (m.to === activeDmNode && isOwnNode(m.from)) ||
+          (m.from === activeDmNode && m.to != null && isOwnNode(m.to)),
       );
     }
 
-    return regularMessages.filter((m) => !m.to && (channel === -1 || m.channel === channel));
+    return regularMessages.filter((m) => !m.to && (channel === -1 || m.channelIndex === channel));
   }, [activeDmNode, channel, isOwnNode, regularMessages, viewMode]);
 
   const filteredMessages = useMemo(() => {
@@ -540,7 +541,7 @@ function ChatPanel({
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       msgs = msgs.filter(
-        (m) => m.payload.toLowerCase().includes(q) || m.sender_name.toLowerCase().includes(q),
+        (m) => m.payload.toLowerCase().includes(q) || (m.senderName ?? '').toLowerCase().includes(q),
       );
     }
     return msgs;
@@ -704,7 +705,7 @@ function ChatPanel({
     }
   }, []);
 
-  const scrollToQuotedParent = useCallback((replyKey: number) => {
+  const scrollToQuotedParent = useCallback((replyKey: string) => {
     const root = scrollContainerRef.current;
     if (!root) return;
     const el = root.querySelector(`[data-chat-message-key="${replyKey}"]`);
@@ -760,7 +761,7 @@ function ChatPanel({
       console.debug('[ChatPanel] handleSend');
       const sendChannel = channel === -1 ? 0 : channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
-      const replyKey = replyTo ? (replyTo.packetId ?? replyTo.timestamp) : undefined;
+      const replyKey = replyTo ? replyTo.id : undefined;
       const sendOutcome = onSend(input.trim(), sendChannel, destination, replyKey);
       await Promise.resolve(sendOutcome);
       setInput('');
@@ -779,14 +780,14 @@ function ChatPanel({
     }
   };
 
-  const handleReact = async (emojiCode: number, packetId: number, msgChannel: number) => {
+  const handleReact = async (emojiCode: number, messageId: string, msgChannel: number) => {
     // Match handleSend: UI uses channel -1 as "primary"; MeshCore/Meshtastic send expects 0.
     const sendChannel = msgChannel === -1 ? 0 : msgChannel;
     setPickerOpenFor(null);
     setChatActionError(null);
     try {
-      console.debug('[ChatPanel] handleReact', emojiCode, packetId, sendChannel);
-      await onReact(emojiCode, packetId, sendChannel);
+      console.debug('[ChatPanel] handleReact', emojiCode, messageId, sendChannel);
+      await onReact(emojiCode, messageId, sendChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed:', err);
       setChatActionError({
@@ -845,8 +846,7 @@ function ChatPanel({
   }
 
   /** Flat reaction rows for a message key (chronological as stored). */
-  function getReactionRows(messageKey: number | undefined) {
-    if (!messageKey) return [];
+  function getReactionRows(messageKey: string) {
     return reactionsByReplyId.get(messageKey) ?? [];
   }
 
@@ -870,7 +870,7 @@ function ChatPanel({
     if (channel === -1 || searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
     for (let i = 0; i < filteredMessages.length; i++) {
       const msg = filteredMessages[i];
-      if (!isOwnNode(msg.sender_id) && msg.timestamp > unreadDividerTimestamp) return i;
+      if (!isOwnNode(msg.from) && msg.timestamp > unreadDividerTimestamp) return i;
     }
     return -1;
   }, [channel, filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
@@ -1170,15 +1170,15 @@ function ChatPanel({
             </div>
           ) : (
             filteredMessages.map((msg, i) => {
-              const isOwn = isOwnNode(msg.sender_id);
+              const isOwn = isOwnNode(msg.from);
               const isDm = !!msg.to;
-              const reactionRows = getReactionRows(msg.packetId ?? msg.timestamp);
-              const messageRowKey = msg.packetId ?? msg.timestamp;
-              const showPicker = pickerOpenFor === (msg.packetId ?? msg.timestamp);
+              const reactionRows = getReactionRows(msg.id);
+              const messageRowKey = msg.id;
+              const showPicker = pickerOpenFor === msg.id;
               const pickerOpensAbove = i >= filteredMessages.length - 3;
 
-              const senderNode = nodes.get(msg.sender_id);
-              const displaySenderName = nodeDisplayName(senderNode, protocol) || msg.sender_name;
+              const senderNode = nodes[msg.from];
+              const displaySenderName = nodeDisplayName(senderNode, protocol) || (msg.senderName ?? '');
 
               // Day separator
               const daySeparator = daySeparatorIndices.has(i) ? (
@@ -1196,7 +1196,7 @@ function ChatPanel({
               return (
                 <div
                   key={
-                    msg.id != null ? `db-${msg.id}` : `${msg.timestamp}-${msg.packetId ?? 'x'}-${i}`
+                    msg.id
                   }
                 >
                   {daySeparator}
@@ -1231,7 +1231,7 @@ function ChatPanel({
                         <div className="mb-0.5 flex items-center gap-2">
                           <button
                             onClick={() => {
-                              onNodeClick(msg.sender_id);
+                              onNodeClick(msg.from);
                             }}
                             className={`cursor-pointer text-xs font-semibold hover:underline ${
                               isDm
@@ -1250,28 +1250,28 @@ function ChatPanel({
                             {formatTime(msg.timestamp)}
                           </span>
                           {channels.length > 1 && !isDm && (
-                            <span className="text-[10px] text-gray-600">ch{msg.channel}</span>
+                            <span className="text-[10px] text-gray-600">ch{msg.channelIndex}</span>
                           )}
                         </div>
 
                         {/* Quoted reply preview */}
-                        {msg.replyId &&
-                          !msg.emoji &&
+                        {msg.replyTo &&
+                          !msg.tapback &&
                           (() => {
-                            const orig = messageByReplyKey.get(msg.replyId);
+                            const orig = messageByReplyKey.get(msg.replyTo);
                             const quoteSnippet = orig
                               ? truncateReplyPreviewText(orig.payload)
                               : msg.replyPreviewText;
                             const quotedLabel = orig
-                              ? nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
-                                orig.sender_name
+                              ? nodeDisplayName(nodes[orig.from], protocol) ||
+                                (orig.senderName ?? '')
                               : msg.replyPreviewSender;
                             if (!quoteSnippet && !quotedLabel) return null;
                             return (
                               <button
                                 type="button"
                                 onClick={() => {
-                                  scrollToQuotedParent(msg.replyId!);
+                                  scrollToQuotedParent(msg.replyTo!);
                                 }}
                                 className="bg-secondary-dark/50 hover:bg-secondary-dark/80 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left transition-colors"
                                 aria-label={`Jump to quoted message from ${quotedLabel ?? ''}`}
@@ -1389,10 +1389,9 @@ function ChatPanel({
                               if (!isLinux) reactionHiddenInputRef.current?.focus();
                             }}
                             onClick={() => {
-                              const id = msg.packetId ?? msg.timestamp;
-                              reactionPickerTarget.current = { id, channel: msg.channel };
+                              reactionPickerTarget.current = { id: msg.id, channel: msg.channelIndex };
                               if (isLinux) {
-                                setPickerOpenFor(showPicker ? null : id);
+                                setPickerOpenFor(showPicker ? null : msg.id);
                               } else {
                                 void window.electronAPI.showEmojiPanel();
                               }
@@ -1419,10 +1418,10 @@ function ChatPanel({
                           {!isOwn && (
                             <button
                               onClick={() => {
-                                openDmTo(msg.sender_id);
+                                openDmTo(msg.from);
                               }}
                               className="rounded p-1 text-xs text-gray-600 hover:text-purple-400"
-                              title={`Direct message ${msg.sender_name}`}
+                              title={`Direct message ${msg.senderName ?? ''}`}
                             >
                               <svg
                                 className="h-3.5 w-3.5"
@@ -1460,11 +1459,11 @@ function ChatPanel({
                         }`}
                       >
                         {reactionRows.map((r, rIdx) => {
-                          const hideReactorLabel = !isOwn && isOwnNode(r.sender_id);
+                          const hideReactorLabel = !isOwn && isOwnNode(r.from);
                           const reactorLabel =
-                            nodeDisplayName(nodes.get(r.sender_id), protocol) || r.sender_name;
-                          const emojiChar = emojiDisplayChar(r.emoji);
-                          const reactionName = emojiDisplayLabel(r.emoji);
+                            nodeDisplayName(nodes[r.from], protocol) || (r.senderName ?? '');
+                          const emojiChar = r.emoji;
+                          const reactionName = emojiDisplayLabel(r.emoji.codePointAt(0) ?? 0);
                           const titleText = hideReactorLabel
                             ? `${reactionName} (you)`
                             : `${reactorLabel}: ${reactionName}`;
@@ -1473,9 +1472,7 @@ function ChatPanel({
                             : `${reactorLabel} reacted with ${reactionName}`;
                           return (
                             <span
-                              key={
-                                r.id != null ? `r-${r.id}` : `r-${r.sender_id}-${r.emoji}-${rIdx}`
-                              }
+                              key={`r-${r.id}-${rIdx}`}
                               className="bg-secondary-dark/80 inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border border-gray-600/50 px-1.5 py-0.5 text-xs"
                               title={titleText}
                               aria-label={ariaLabel}
@@ -1561,7 +1558,7 @@ function ChatPanel({
           <span className="text-gray-400">
             Replying to{' '}
             <span className="font-medium text-gray-200">
-              {nodeDisplayName(nodes.get(replyTo.sender_id), protocol) || replyTo.sender_name}
+              {nodeDisplayName(nodes[replyTo.from], protocol) || (replyTo.senderName ?? '')}
             </span>
             :
           </span>

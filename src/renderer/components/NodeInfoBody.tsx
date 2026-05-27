@@ -32,7 +32,8 @@ import {
 import { normalizeLastHeardMs } from '../lib/nodeStatus';
 import { RoleDisplay } from '../lib/roleInfo';
 import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
-import type { HopHistoryPoint, MeshNode, MeshProtocol, NodeAnomaly } from '../lib/types';
+import type { HopHistoryPoint, MeshProtocol, NodeAnomaly } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -83,12 +84,12 @@ export function InfoRow({
   );
 }
 
-function NodeSourceBadge({ node, protocol }: { node: MeshNode; protocol?: MeshProtocol }) {
+function NodeSourceBadge({ node, protocol }: { node: NodeRecord; protocol?: MeshProtocol }) {
   // MeshCore nodes are always RF
   const via: 'rf' | 'mqtt' | 'both' =
     protocol === 'meshcore'
       ? 'rf'
-      : node.heard_via_mqtt_only
+      : node.heardViaMqttOnly
         ? 'mqtt'
         : meshtasticNodeShowsHybridMqttPath(node)
           ? 'both'
@@ -123,11 +124,11 @@ function iaqLabel(iaq: number): string {
 }
 
 export interface NodeInfoBodyProps {
-  node: MeshNode;
-  homeNode?: MeshNode | null;
+  node: NodeRecord;
+  homeNode?: NodeRecord | null;
   traceRouteHops?: string[];
   /** When set, Mesh Congestion can list originators by name/role (RF duplicate-prone traffic). */
-  nodes?: Map<number, MeshNode>;
+  nodes?: Record<number, NodeRecord>;
   useFahrenheit?: boolean;
   /** MeshCore uses contact/advert type (`hw_model`) instead of Meshtastic role; omit short name row. */
   protocol?: MeshProtocol;
@@ -159,19 +160,19 @@ export default function NodeInfoBody({
 }: NodeInfoBodyProps) {
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
-  const routingRow = getRoutingRowForNode(diagnosticRows, node.node_id);
+  const routingRow = getRoutingRowForNode(diagnosticRows, node.nodeId);
   const anomaly: NodeAnomaly | null = routingRow ? routingRowToNodeAnomaly(routingRow) : null;
-  const nodePacketStats = useDiagnosticsStore((s) => s.packetStats.get(node.node_id));
+  const nodePacketStats = useDiagnosticsStore((s) => s.packetStats.get(node.nodeId));
   const hopHistory = useDiagnosticsStore(
-    (s) => s.hopHistory.get(node.node_id) ?? EMPTY_HOP_HISTORY,
+    (s) => s.hopHistory.get(node.nodeId) ?? EMPTY_HOP_HISTORY,
   );
-  const nodeRedundancy = useDiagnosticsStore((s) => s.nodeRedundancy.get(node.node_id));
-  const meshcoreHopHistory = useDiagnosticsStore((s) => s.meshcoreHopHistory.get(node.node_id));
-  const meshcoreTraceHistory = useDiagnosticsStore((s) => s.meshcoreTraceHistory.get(node.node_id));
+  const nodeRedundancy = useDiagnosticsStore((s) => s.nodeRedundancy.get(node.nodeId));
+  const meshcoreHopHistory = useDiagnosticsStore((s) => s.meshcoreHopHistory.get(node.nodeId));
+  const meshcoreTraceHistory = useDiagnosticsStore((s) => s.meshcoreTraceHistory.get(node.nodeId));
   const loadMeshcorePathHistory = useDiagnosticsStore((s) => s.loadMeshcorePathHistory);
   const [pathHistoryOpen, setPathHistoryOpen] = useState(false);
   const latestTrackedPositionFromStore = usePositionHistoryStore((s) => {
-    const points = s.history.get(node.node_id);
+    const points = s.history.get(node.nodeId);
     if (!points || points.length === 0) return null;
     let latest = points[0];
     for (let i = 1; i < points.length; i++) {
@@ -180,7 +181,7 @@ export default function NodeInfoBody({
     return latest;
   });
   const latestTrackedPositionFromProps = (() => {
-    const points = positionHistory?.get(node.node_id);
+    const points = positionHistory?.get(node.nodeId);
     if (!points || points.length === 0) return null;
     let latest = points[0];
     for (let i = 1; i < points.length; i++) {
@@ -200,35 +201,37 @@ export default function NodeInfoBody({
     (meshcoreTraceFirst.pathLen != null || meshcoreTracePathSnrsSafe.length > 0);
 
   useEffect(() => {
-    if (protocol === 'meshcore' && node.node_id) {
-      loadMeshcorePathHistory(node.node_id);
+    if (protocol === 'meshcore' && node.nodeId) {
+      loadMeshcorePathHistory(node.nodeId);
     }
-  }, [protocol, node.node_id, loadMeshcorePathHistory]);
+  }, [protocol, node.nodeId, loadMeshcorePathHistory]);
 
+  const batteryLevel = node.batteryLevel ?? 0;
   const batteryColor =
-    node.battery > 50
+    batteryLevel > 50
       ? 'text-bright-green'
-      : node.battery > 20
+      : batteryLevel > 20
         ? 'text-yellow-400'
-        : node.battery > 0
+        : batteryLevel > 0
           ? 'text-red-400'
           : 'text-muted';
 
-  const isOurNode = node.node_id === homeNode?.node_id;
+  const isOurNode = node.nodeId === homeNode?.nodeId;
   const showSnr = snrMeaningfulForNodeDiagnostics(node) || isOurNode;
   const showLastHopSnr =
     !isOurNode &&
-    !node.heard_via_mqtt_only &&
-    node.hops_away != null &&
-    node.hops_away > 0 &&
+    !node.heardViaMqttOnly &&
+    node.hopsAway != null &&
+    node.hopsAway > 0 &&
     node.snr != null &&
     node.snr !== 0;
+  const snr = node.snr ?? 0;
   const snrColor =
-    node.snr > 5
+    snr > 5
       ? 'text-bright-green'
-      : node.snr > 0
+      : snr > 0
         ? 'text-yellow-400'
-        : node.snr !== 0
+        : snr !== 0
           ? 'text-red-400'
           : 'text-muted';
 
@@ -275,14 +278,14 @@ export default function NodeInfoBody({
   return (
     <>
       {/* Names */}
-      {node.long_name && <InfoRow label="Long Name" value={node.long_name} />}
-      {protocol !== 'meshcore' && node.short_name && (
-        <InfoRow label="Short Name" value={node.short_name} />
+      {node.longName && <InfoRow label="Long Name" value={node.longName} />}
+      {protocol !== 'meshcore' && node.shortName && (
+        <InfoRow label="Short Name" value={node.shortName} />
       )}
 
       {protocol === 'meshcore' ? (
         <>
-          <InfoRow label="Type" value={node.hw_model || '---'} />
+          <InfoRow label="Type" value={node.hwModel || '---'} />
           <InfoRow
             label="Hardware"
             value={isOurNode ? (meshcoreManufacturerModel ?? '—') : 'Not available remotely'}
@@ -294,7 +297,7 @@ export default function NodeInfoBody({
             <span className="text-muted text-sm">Role</span>
             <div className="flex items-center gap-2">
               <RoleDisplay role={node.role} />
-              {!node.short_name && !node.long_name && node.role === undefined && (
+              {!node.shortName && !node.longName && node.role === undefined && (
                 <span
                   className="text-[10px] text-gray-500"
                   title="Waiting for complete NodeInfo packet"
@@ -304,7 +307,7 @@ export default function NodeInfoBody({
               )}
             </div>
           </div>
-          <InfoRow label="Hardware" value={meshtasticHwModelDisplay(node.hw_model) ?? '—'} />
+          <InfoRow label="Hardware" value={meshtasticHwModelDisplay(node.hwModel) ?? '—'} />
         </>
       )}
 
@@ -330,42 +333,42 @@ export default function NodeInfoBody({
           <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
             <span className="text-muted text-sm">Battery</span>
             <div className="flex items-center gap-2">
-              {node.battery > 0 && (
+              {batteryLevel > 0 && (
                 <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
                   <div
                     className={`h-full rounded-full transition-all ${
-                      node.battery > 50
+                      batteryLevel > 50
                         ? 'bg-brand-green'
-                        : node.battery > 20
+                        : batteryLevel > 20
                           ? 'bg-yellow-500'
                           : 'bg-red-500'
                     }`}
-                    style={{ width: `${Math.min(node.battery, 100)}%` }}
+                    style={{ width: `${Math.min(batteryLevel, 100)}%` }}
                   />
                 </div>
               )}
               <span className={`text-sm font-medium ${batteryColor}`}>
-                {node.voltage.toFixed(2)} V{node.battery > 0 ? ` (${node.battery}%)` : ''}
+                {node.voltage.toFixed(2)} V{batteryLevel > 0 ? ` (${batteryLevel}%)` : ''}
               </span>
             </div>
           </div>
-        ) : node.battery > 0 ? (
+        ) : batteryLevel > 0 ? (
           <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
             <span className="text-muted text-sm">Battery</span>
             <div className="flex items-center gap-2">
               <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
                 <div
                   className={`h-full rounded-full transition-all ${
-                    node.battery > 50
+                    batteryLevel > 50
                       ? 'bg-brand-green'
-                      : node.battery > 20
+                      : batteryLevel > 20
                         ? 'bg-yellow-500'
                         : 'bg-red-500'
                   }`}
-                  style={{ width: `${Math.min(node.battery, 100)}%` }}
+                  style={{ width: `${Math.min(batteryLevel, 100)}%` }}
                 />
               </div>
-              <span className={`text-sm font-medium ${batteryColor}`}>{node.battery}%</span>
+              <span className={`text-sm font-medium ${batteryColor}`}>{batteryLevel}%</span>
             </div>
           </div>
         ) : (
@@ -375,61 +378,61 @@ export default function NodeInfoBody({
         <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
           <span className="text-muted text-sm">Battery</span>
           <div className="flex items-center gap-2">
-            {node.battery > 0 && (
+            {batteryLevel > 0 && (
               <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
                 <div
                   className={`h-full rounded-full transition-all ${
-                    node.battery > 50
+                    batteryLevel > 50
                       ? 'bg-brand-green'
-                      : node.battery > 20
+                      : batteryLevel > 20
                         ? 'bg-yellow-500'
                         : 'bg-red-500'
                   }`}
-                  style={{ width: `${Math.min(node.battery, 100)}%` }}
+                  style={{ width: `${Math.min(batteryLevel, 100)}%` }}
                 />
               </div>
             )}
             <span className={`text-sm font-medium ${batteryColor}`}>
-              {node.battery > 0 ? `${node.battery}%` : '—'}
+              {batteryLevel > 0 ? `${batteryLevel}%` : '—'}
             </span>
           </div>
         </div>
       )}
 
       {/* Timing */}
-      <InfoRow label="Last Heard" value={formatTime(node.last_heard)} />
+      <InfoRow label="Last Heard" value={formatTime(node.lastHeardAt ?? 0)} />
 
       {/* Hop count */}
       <InfoRow
         label="Hops"
-        value={isOurNode ? 0 : (node.hops_away ?? '—')}
-        className={(isOurNode ? 0 : node.hops_away) === 0 ? 'text-bright-green' : 'text-gray-300'}
+        value={isOurNode ? 0 : (node.hopsAway ?? '—')}
+        className={(isOurNode ? 0 : node.hopsAway) === 0 ? 'text-bright-green' : 'text-gray-300'}
       />
 
       {/* Channel Utilization — Meshtastic only */}
       {protocol === 'meshtastic' &&
-        (node.channel_utilization != null || node.air_util_tx != null) && (
+        (node.channelUtilization != null || node.airUtilTx != null) && (
           <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
             <span className="text-muted text-sm">Channel Util</span>
             <div className="flex items-center gap-2 font-mono text-sm text-gray-200">
-              {node.channel_utilization != null && (
+              {node.channelUtilization != null && (
                 <span>
                   RX:{' '}
                   <span
-                    className={node.channel_utilization > 50 ? 'text-yellow-400' : 'text-gray-200'}
+                    className={node.channelUtilization > 50 ? 'text-yellow-400' : 'text-gray-200'}
                   >
-                    {node.channel_utilization.toFixed(1)}%
+                    {node.channelUtilization.toFixed(1)}%
                   </span>
                 </span>
               )}
-              {node.channel_utilization != null && node.air_util_tx != null && (
+              {node.channelUtilization != null && node.airUtilTx != null && (
                 <span className="text-gray-600">|</span>
               )}
-              {node.air_util_tx != null && (
+              {node.airUtilTx != null && (
                 <span>
                   TX:{' '}
-                  <span className={node.air_util_tx > 50 ? 'text-yellow-400' : 'text-gray-200'}>
-                    {node.air_util_tx.toFixed(1)}%
+                  <span className={node.airUtilTx > 50 ? 'text-yellow-400' : 'text-gray-200'}>
+                    {node.airUtilTx.toFixed(1)}%
                   </span>
                 </span>
               )}
@@ -762,43 +765,43 @@ export default function NodeInfoBody({
       )}
 
       {/* Environment */}
-      {(node.env_temperature !== undefined ||
-        node.env_humidity !== undefined ||
-        node.env_pressure !== undefined ||
-        node.env_iaq !== undefined ||
-        node.env_lux !== undefined ||
-        node.env_wind_speed !== undefined) && (
+      {(node.temperature !== undefined ||
+        node.relativeHumidity !== undefined ||
+        node.barometricPressure !== undefined ||
+        node.iaq !== undefined ||
+        node.lux !== undefined ||
+        node.windSpeed !== undefined) && (
         <div className="mt-3 border-t border-gray-700 pt-3">
           <div className="mb-1 text-xs font-semibold text-gray-400 uppercase">Environment</div>
-          {node.env_temperature !== undefined && (
+          {node.temperature !== undefined && (
             <InfoRow
               label="Temperature"
               value={
                 useFahrenheit
-                  ? `${((node.env_temperature * 9) / 5 + 32).toFixed(1)}°F`
-                  : `${node.env_temperature.toFixed(1)}°C`
+                  ? `${((node.temperature * 9) / 5 + 32).toFixed(1)}°F`
+                  : `${node.temperature.toFixed(1)}°C`
               }
             />
           )}
-          {node.env_humidity !== undefined && (
-            <InfoRow label="Humidity" value={`${node.env_humidity.toFixed(1)}%`} />
+          {node.relativeHumidity !== undefined && (
+            <InfoRow label="Humidity" value={`${node.relativeHumidity.toFixed(1)}%`} />
           )}
-          {node.env_pressure !== undefined && (
-            <InfoRow label="Pressure" value={`${node.env_pressure.toFixed(1)} hPa`} />
+          {node.barometricPressure !== undefined && (
+            <InfoRow label="Pressure" value={`${node.barometricPressure.toFixed(1)} hPa`} />
           )}
-          {node.env_iaq !== undefined && (
-            <InfoRow label="Air Quality" value={`${node.env_iaq} – ${iaqLabel(node.env_iaq)}`} />
+          {node.iaq !== undefined && (
+            <InfoRow label="Air Quality" value={`${node.iaq} – ${iaqLabel(node.iaq)}`} />
           )}
-          {node.env_lux !== undefined && (
-            <InfoRow label="Light" value={`${node.env_lux.toFixed(0)} lux`} />
+          {node.lux !== undefined && (
+            <InfoRow label="Light" value={`${node.lux.toFixed(0)} lux`} />
           )}
-          {node.env_wind_speed !== undefined && (
+          {node.windSpeed !== undefined && (
             <InfoRow
               label="Wind"
               value={
-                node.env_wind_direction !== undefined
-                  ? `${node.env_wind_speed.toFixed(1)} m/s @ ${node.env_wind_direction}°`
-                  : `${node.env_wind_speed.toFixed(1)} m/s`
+                node.windDirection !== undefined
+                  ? `${node.windSpeed.toFixed(1)} m/s @ ${node.windDirection}°`
+                  : `${node.windSpeed.toFixed(1)} m/s`
               }
             />
           )}
@@ -808,7 +811,7 @@ export default function NodeInfoBody({
       {/* RF Diagnostics */}
       <RFDiagnosticsSection
         node={node}
-        isOurNode={node.node_id === homeNode?.node_id}
+        isOurNode={node.nodeId === homeNode?.nodeId}
         nodes={nodes}
       />
     </>
@@ -820,9 +823,9 @@ function RFDiagnosticsSection({
   isOurNode,
   nodes,
 }: {
-  node: MeshNode;
+  node: NodeRecord;
   isOurNode: boolean;
-  nodes?: Map<number, MeshNode>;
+  nodes?: Record<number, NodeRecord>;
 }) {
   const getCuStats24h = useDiagnosticsStore((s) => s.getCuStats24h);
   const packetCache = useDiagnosticsStore((s) => s.packetCache);
@@ -835,17 +838,17 @@ function RFDiagnosticsSection({
   let noTelemetry = false;
 
   if (isOurNode) {
-    const cuStats24h = getCuStats24h(node.node_id);
+    const cuStats24h = getCuStats24h(node.nodeId);
     findings = diagnoseConnectedNode(node, {
       cuStats24h: cuStats24h ?? undefined,
     });
     totalChecks = 10;
     // If no LocalStats and no channel_utilization, we have no data at all
-    if (!hasLocalStatsData(node) && node.channel_utilization == null) {
+    if (!hasLocalStatsData(node) && node.channelUtilization == null) {
       noTelemetry = true;
     }
   } else {
-    const cuStatsOther = getCuStats24h(node.node_id);
+    const cuStatsOther = getCuStats24h(node.nodeId);
     findings = diagnoseOtherNode(node, {
       cuStats24h: cuStatsOther ?? undefined,
     });
@@ -853,7 +856,7 @@ function RFDiagnosticsSection({
   }
 
   // When we have a specific foreign LoRa detection (MeshCore/Meshtastic), don't show the generic "LoRa Collision or Corruption" in the RF list
-  const hasForeignLora = getForeignLoraDetectionsList(node.node_id).length > 0;
+  const hasForeignLora = getForeignLoraDetectionsList(node.nodeId).length > 0;
   const findingsToShow =
     findings != null && hasForeignLora
       ? findings.filter((f) => f.condition !== 'LoRa Collision or Corruption')

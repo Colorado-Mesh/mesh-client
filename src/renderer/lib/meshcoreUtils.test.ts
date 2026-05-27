@@ -9,7 +9,6 @@ import {
   meshcoreApplyRepeaterSessionAuthSkip,
   meshcoreClearRepeaterRemoteSessionAuth,
   meshcoreConnectionImpliesUsbPower,
-  meshcoreContactToMeshNode,
   meshcoreContactTypeFromHwModel,
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreGetRepeaterSessionPassword,
@@ -19,7 +18,6 @@ import {
   meshcoreManufacturerModelFromDeviceQuery,
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
-  meshcoreMinimalNodeFromAdvertEvent,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
@@ -71,56 +69,6 @@ describe('meshcoreTelemetryGpsAltitudeMeters', () => {
     expect(
       meshcoreTelemetryGpsAltitudeMeters({ altitude: Number.POSITIVE_INFINITY }),
     ).toBeUndefined();
-  });
-});
-
-describe('meshcoreMinimalNodeFromAdvertEvent', () => {
-  const key32 = new Uint8Array(32);
-  for (let i = 0; i < 32; i++) key32[i] = (i * 7 + 1) & 0xff;
-
-  it('returns null for wrong-length pubkey', () => {
-    expect(meshcoreMinimalNodeFromAdvertEvent(new Uint8Array(31), { nowSec: 1_700_000_000 })).toBe(
-      null,
-    );
-  });
-
-  it('returns null when node id folds to 0', () => {
-    const k = new Uint8Array(32);
-    expect(pubkeyToNodeId(k)).toBe(0);
-    expect(meshcoreMinimalNodeFromAdvertEvent(k, { nowSec: 1_700_000_000 })).toBe(null);
-  });
-
-  it('builds node with last_heard from lastAdvert when positive', () => {
-    const r = meshcoreMinimalNodeFromAdvertEvent(key32, {
-      nowSec: 1_700_000_100,
-      lastAdvert: 1_700_000_050,
-    });
-    expect(r).not.toBeNull();
-    expect(r!.lastHeardSec).toBe(1_700_000_050);
-    expect(r!.node.last_heard).toBe(1_700_000_050);
-    expect(r!.node.hw_model).toBe('None');
-    expect(r!.contactType).toBe(0);
-  });
-
-  it('uses nowSec when lastAdvert is missing or zero', () => {
-    const r = meshcoreMinimalNodeFromAdvertEvent(key32, { nowSec: 1_700_000_200, lastAdvert: 0 });
-    expect(r!.lastHeardSec).toBe(1_700_000_200);
-  });
-
-  it('maps scaled lat/lon to degrees and contact type', () => {
-    const r = meshcoreMinimalNodeFromAdvertEvent(key32, {
-      nowSec: 1,
-      advLat: 45_123456 * 1,
-      advLon: -93_654321 * 1,
-      contactType: 2,
-      advName: '  RP1 ',
-    });
-    expect(r!.node.latitude).toBeCloseTo(45.123456, 5);
-    expect(r!.node.longitude).toBeCloseTo(-93.654321, 5);
-    expect(r!.node.long_name).toBe('RP1');
-    expect(r!.node.hw_model).toBe('Repeater');
-    expect(r!.contactType).toBe(2);
-    expect(r!.persistAdvLatDeg).toBeCloseTo(45.123456, 5);
   });
 });
 
@@ -227,18 +175,18 @@ describe('meshcoreHwModelIsContactTypeLabel', () => {
 
 describe('isMeshcoreContactEligibleForUserGroup', () => {
   it('allows Chat and None-like types', () => {
-    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: 'Chat' })).toBe(true);
-    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: 'None' })).toBe(true);
-    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: 'Unknown' })).toBe(true);
+    expect(isMeshcoreContactEligibleForUserGroup({ hwModel: 'Chat' })).toBe(true);
+    expect(isMeshcoreContactEligibleForUserGroup({ hwModel: 'None' })).toBe(true);
+    expect(isMeshcoreContactEligibleForUserGroup({ hwModel: 'Unknown' })).toBe(true);
   });
 
   it('excludes Repeater and Room', () => {
-    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: 'Repeater' })).toBe(false);
-    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: 'Room' })).toBe(false);
+    expect(isMeshcoreContactEligibleForUserGroup({ hwModel: 'Repeater' })).toBe(false);
+    expect(isMeshcoreContactEligibleForUserGroup({ hwModel: 'Room' })).toBe(false);
   });
 
   it('treats empty hw_model as eligible', () => {
-    expect(isMeshcoreContactEligibleForUserGroup({ hw_model: '' })).toBe(true);
+    expect(isMeshcoreContactEligibleForUserGroup({ hwModel: '' })).toBe(true);
   });
 });
 
@@ -382,38 +330,6 @@ describe('meshcoreMergeContactHopsAwayFromPrevious', () => {
 
   it('fills from previous when inferred is undefined and prev is direct', () => {
     expect(meshcoreMergeContactHopsAwayFromPrevious(undefined, 0, 1)).toBe(0);
-  });
-});
-
-describe('meshcoreContactToMeshNode', () => {
-  const key32 = new Uint8Array(32);
-  for (let i = 0; i < 32; i++) key32[i] = (i * 11 + 3) & 0xff;
-
-  it('sets hops_away from inferred path length', () => {
-    const node = meshcoreContactToMeshNode({
-      publicKey: key32,
-      type: 1,
-      advName: 'A',
-      lastAdvert: 100,
-      advLat: 0,
-      advLon: 0,
-      outPathLen: 2,
-    });
-    expect(node.hops_away).toBe(1);
-  });
-
-  it('infers hops from outPath when outPathLen is unset', () => {
-    const node = meshcoreContactToMeshNode({
-      publicKey: key32,
-      type: 1,
-      advName: 'A',
-      lastAdvert: 100,
-      advLat: 0,
-      advLon: 0,
-      outPathLen: -1,
-      outPath: new Uint8Array([1, 2, 3]),
-    });
-    expect(node.hops_away).toBe(2);
   });
 });
 

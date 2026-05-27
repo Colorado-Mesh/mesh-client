@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useRef, useState } from 'react';
-
-import type { MeshNode } from '../lib/types';
+import type { NodeRecord } from '../stores/nodeStore';
 
 interface SearchResult {
   id: number;
@@ -18,7 +17,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   protocol: 'meshtastic' | 'meshcore';
-  nodes: Map<number, MeshNode>;
+  nodes: Record<number, NodeRecord>;
   channels: { index: number; name: string }[];
   onNavigateToChannel: (channelIdx: number) => void;
 }
@@ -135,8 +134,8 @@ export default function SearchModal({
 
   const getSenderName = (r: SearchResult) => {
     if (r.sender_id) {
-      const node = nodes.get(r.sender_id);
-      if (node) return node.long_name;
+      const node = nodes[r.sender_id];
+      if (node) return node.longName;
     }
     return r.sender_name ?? 'Unknown';
   };

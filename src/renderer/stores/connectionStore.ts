@@ -24,6 +24,14 @@ export interface ConnectionRecord {
   batteryCharging?: boolean;
   queueFree?: number;
   queueMax?: number;
+  // Telemetry/GPS/identity-related state previously held inside useDevice.
+  telemetryEnabled?: boolean;
+  gpsLoading?: boolean;
+  gpsIntervalMs?: number;
+  /** Locally-generated identity address used by Meshtastic before the radio reports its real node num. */
+  virtualNodeId?: number;
+  /** Last node num seen on the RF side (distinct from MQTT-only sightings). */
+  lastRfSelfNodeNum?: number;
 }
 
 interface ConnectionStoreState {
