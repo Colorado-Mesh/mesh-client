@@ -28,7 +28,6 @@ import SignalPropagation from './components/SignalPropagation';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
-import { useConnectionQueue } from './hooks/useConnectionStatus';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useDbRefresh } from './hooks/useDbRefresh';
 import { useDevice } from './hooks/useDevice';
@@ -43,6 +42,7 @@ import {
   useProtocolConnectionActions,
   useProtocolDisconnect,
 } from './hooks/useProtocolConnection';
+import { useProtocolFacade } from './hooks/useProtocolFacade';
 import { useSendMessage } from './hooks/useSendMessage';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
@@ -634,7 +634,8 @@ export default function App() {
   );
   const meshtasticPanelActions = useMeshtasticPanelActions(meshtasticDevice);
   const meshcorePanelActions = useMeshcorePanelActions(meshcoreDevice);
-  const panelActions = protocol === 'meshcore' ? meshcorePanelActions : meshtasticPanelActions;
+  const activeFacade = useProtocolFacade(protocol, meshtasticDevice, meshcoreDevice);
+  const panelActions = activeFacade.panel.actions;
   const {
     meshtasticIdentityId,
     meshcoreIdentityId,
@@ -668,10 +669,8 @@ export default function App() {
   const { refreshNodesFromDb: refreshMeshtasticNodesInStore } = useDbRefresh(meshtasticIdentityId);
   const sendMessage = useSendMessage(focusedIdentityId);
   const meshtasticConnectionView = useLegacyConnectionView(meshtasticIdentityId, meshtasticDevice);
-  const meshcoreConnectionView = useLegacyConnectionView(meshcoreIdentityId, meshcoreDevice);
-  const activeConnectionView =
-    protocol === 'meshcore' ? meshcoreConnectionView : meshtasticConnectionView;
-  const activeQueueFromStore = useConnectionQueue(focusedIdentityId);
+  const activeConnectionView = activeFacade.connectionView;
+  const activeQueueFromStore = activeFacade.queue;
   const handleSend = useCallback(
     (text: string, channel: number, destination?: number, replyId?: number) => {
       sendMessage(text, channel, destination, replyId != null ? String(replyId) : undefined);

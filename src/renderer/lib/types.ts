@@ -42,7 +42,14 @@ export interface TransportRef {
 
 export type IdentityId = string;
 
-export type MeshProtocol = 'meshtastic' | 'meshcore';
+/** Built-in protocols; extend {@link REGISTERED_MESH_PROTOCOLS} when adding adapters. */
+export const REGISTERED_MESH_PROTOCOLS = ['meshtastic', 'meshcore'] as const;
+
+export type MeshProtocol = (typeof REGISTERED_MESH_PROTOCOLS)[number];
+
+export function isMeshProtocol(value: string): value is MeshProtocol {
+  return (REGISTERED_MESH_PROTOCOLS as readonly string[]).includes(value);
+}
 
 export type AnomalyType =
   | 'hop_goblin'

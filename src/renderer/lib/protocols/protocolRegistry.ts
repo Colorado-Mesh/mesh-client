@@ -4,6 +4,7 @@ import {
   type ProtocolCapabilities,
 } from '../radio/BaseRadioProvider';
 import type { MeshProtocol } from '../types';
+import { isMeshProtocol } from '../types';
 import { meshcoreProtocol } from './MeshCoreProtocol';
 import { meshtasticProtocol } from './MeshtasticProtocol';
 import type { Protocol } from './Protocol';
@@ -14,30 +15,41 @@ export interface ProtocolRegistration {
   capabilities: ProtocolCapabilities;
 }
 
-const REGISTRY: Record<MeshProtocol, ProtocolRegistration> = {
-  meshtastic: {
-    type: 'meshtastic',
-    protocol: meshtasticProtocol,
-    capabilities: MESHTASTIC_CAPABILITIES,
-  },
-  meshcore: {
-    type: 'meshcore',
-    protocol: meshcoreProtocol,
-    capabilities: MESHCORE_CAPABILITIES,
-  },
-};
+const registrations = new Map<string, ProtocolRegistration>();
+
+function registerProtocol(entry: ProtocolRegistration): void {
+  registrations.set(entry.type, entry);
+}
+
+registerProtocol({
+  type: 'meshtastic',
+  protocol: meshtasticProtocol,
+  capabilities: MESHTASTIC_CAPABILITIES,
+});
+
+registerProtocol({
+  type: 'meshcore',
+  protocol: meshcoreProtocol,
+  capabilities: MESHCORE_CAPABILITIES,
+});
 
 export function getProtocolRegistration(type: string): ProtocolRegistration | null {
-  if (type === 'meshtastic' || type === 'meshcore') {
-    return REGISTRY[type];
-  }
-  return null;
+  if (!isMeshProtocol(type)) return null;
+  return registrations.get(type) ?? null;
 }
 
 export function listRegisteredProtocols(): ProtocolRegistration[] {
-  return Object.values(REGISTRY);
+  return [...registrations.values()];
 }
 
 export function getProtocolForType(type: string): Protocol | null {
   return getProtocolRegistration(type)?.protocol ?? null;
+}
+
+/** Register an additional protocol at runtime (tests / future stacks). */
+export function registerRuntimeProtocol(entry: ProtocolRegistration): void {
+  if (!isMeshProtocol(entry.type)) {
+    throw new Error(`registerRuntimeProtocol: unsupported type ${entry.type}`);
+  }
+  registerProtocol(entry);
 }

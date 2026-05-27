@@ -16,6 +16,8 @@ import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import type { OurPosition } from '../lib/gpsSource';
 import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
+import { runMeshcoreMountHydration } from '../lib/legacySideEffects/meshcoreDbHydration';
+import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
 import {
   buildMeshcoreChannelIncomingMessage,
@@ -546,10 +548,7 @@ export function useMeshCoreImpl() {
       const st = s;
       mqttStatusRef.current = st;
       setMqttStatus(st);
-      const identityId = meshcoreIdentityIdRef.current;
-      if (identityId) {
-        setConnection(identityId, { mqttStatus: st });
-      }
+      mirrorMqttStatusToConnection(meshcoreIdentityIdRef.current, st);
       if (st === 'connected') {
         setMqttConnectionLoss(false);
       } else if (consumeMqttUserDisconnect()) {
@@ -654,23 +653,9 @@ export function useMeshCoreImpl() {
     [],
   );
 
-  // Load persisted MeshCore contacts + messages from DB on mount (no device required — matches Meshtastic).
+  // Load persisted MeshCore contacts + messages from DB on mount (side-effect module).
   useEffect(() => {
-    let cancelled = false;
-    /* eslint-disable react-hooks/set-state-in-effect -- async reload resolves before setState; deferring with queueMicrotask races importContacts (hydration would wipe in-memory nodes). */
-    meshcoreMountHydrationPromiseRef.current = reloadMeshcoreNodesFromDb({
-      hydrateMessages: true,
-      beforeCommit: () => !cancelled,
-    }).catch((e: unknown) => {
-      if (!cancelled)
-        console.warn(
-          '[useMeshCore] load contacts/messages from DB on mount ' + errLikeToLogString(e),
-        );
-    });
-    /* eslint-enable react-hooks/set-state-in-effect */
-    return () => {
-      cancelled = true;
-    };
+    return runMeshcoreMountHydration(reloadMeshcoreNodesFromDb);
   }, [reloadMeshcoreNodesFromDb]);
 
   // Mirror self radio battery into the home MeshNode (node list + node detail); refreshContacts rebuilds from selfInfo
@@ -1458,25 +1443,21 @@ export function useMeshCoreImpl() {
     ],
   );
 
-  const connect = useCallback(
-    async (type: 'ble' | 'serial' | 'tcp', tcpHost?: string, blePeripheralId?: string) => {
+  const prepareRfConnect = useCallback(
+    (type: 'ble' | 'serial' | 'tcp'): Promise<void> => {
       if (type === 'ble' && bleConnectInProgressRef.current) {
-        throw new Error(
-          'Bluetooth connection already in progress. Wait for it to finish or cancel, then try again.',
+        return Promise.reject(
+          new Error(
+            'Bluetooth connection already in progress. Wait for it to finish or cancel, then try again.',
+          ),
         );
       }
-
-      // Close any existing connection before starting a new one.
-      // Without this, a spurious connect() call (e.g. BLE auto-connect racing with an
-      // already-established serial session) leaves the old serial port open, causing
-      // the next serialPort.open() to throw "The port is already open."
       const staleConn = connRef.current;
       connRef.current = null;
       if (staleConn) {
         teardownMeshcoreConnEventListeners();
         void staleConn.close().catch(() => {});
       }
-
       meshcoreConnectTypeRef.current = type;
       setState({
         status: 'connecting',
@@ -1484,14 +1465,133 @@ export function useMeshCoreImpl() {
         connectionType: type === 'tcp' ? 'http' : type,
         connectionLoss: false,
       });
-
       if (type === 'ble') bleConnectInProgressRef.current = true;
+      return Promise.resolve();
+    },
+    [teardownMeshcoreConnEventListeners],
+  );
+
+  const attachRfSession = useCallback(
+    async (driverIdentityId: string, type: 'ble' | 'serial' | 'tcp'): Promise<void> => {
+      const setupGen = meshcoreSetupGenerationRef.current;
+      meshcoreDriverConnectedRef.current = true;
+      const conn = connectionDriver.getHandle(driverIdentityId) as MeshCoreConnection | null;
+      if (!conn) {
+        throw new Error('[useMeshCore] attachRfSession: ConnectionDriver returned no handle');
+      }
+      if (meshcoreSetupGenerationRef.current !== setupGen) {
+        meshcoreDriverConnectedRef.current = false;
+        await connectionDriver.disconnect(driverIdentityId).catch(() => {});
+        throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+      }
+      connRef.current = conn;
+      meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
+      await initConn(conn, setupGen, { driverIdentityId });
+      if (type === 'serial') {
+        const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
+        const nodeName = selfInfoRef.current?.name?.trim() || null;
+        if (portId && nodeName) {
+          try {
+            const key = 'mesh-client:serialPortNodeNames';
+            const cache =
+              parseStoredJson<Record<string, string>>(
+                localStorage.getItem(key),
+                'useMeshCore serialPortNodeNames cache',
+              ) ?? {};
+            cache[portId] = nodeName;
+            localStorage.setItem(key, JSON.stringify(cache));
+          } catch {
+            // catch-no-log-ok localStorage write for serial port node name cache — non-critical
+          }
+        }
+      }
+    },
+    [initConn, setupEventListeners],
+  );
+
+  const handleRfConnectFailure = useCallback(
+    (type: 'ble' | 'serial' | 'tcp'): Promise<void> => {
+      setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
+      teardownMeshcoreConnEventListeners({ driverDisconnect: true });
+      connRef.current = null;
+      if (type === 'ble') bleConnectInProgressRef.current = false;
+      return Promise.resolve();
+    },
+    [teardownMeshcoreConnEventListeners],
+  );
+
+  const finalizeDriverDisconnect = useCallback(
+    async (opts?: { disconnectDriver?: boolean }) => {
+      const disconnectDriver = opts?.disconnectDriver !== false;
+      meshcoreSetupGenerationRef.current += 1;
+      const ackEntries = new Set(pendingAcksRef.current.values());
+      for (const e of ackEntries) {
+        clearTimeout(e.timeoutId);
+      }
+      pendingAcksRef.current.clear();
+      repeaterCommandServiceRef.current?.clear();
+
+      const usedDriverConnect = meshcoreDriverConnectedRef.current;
+      teardownMeshcoreConnEventListeners({ driverDisconnect: disconnectDriver });
+      if (!usedDriverConnect) {
+        try {
+          await connRef.current?.close();
+        } catch (e) {
+          console.warn('[useMeshCore] finalizeDriverDisconnect close ' + errLikeToLogString(e));
+        }
+      }
+      connRef.current = null;
+      meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();
+      setMeshcorePingRouteReadyEpoch((e) => e + 1);
+      pubKeyMapRef.current.clear();
+      pubKeyPrefixMapRef.current.clear();
+      outPathMapRef.current.clear();
+      nicknameMapRef.current.clear();
+      setMessages([]);
+      try {
+        await reloadMeshcoreNodesFromDb({ hydrateMessages: false });
+      } catch (e: unknown) {
+        console.warn(
+          '[useMeshCore] finalizeDriverDisconnect rehydrate failed ' + errLikeToLogString(e),
+        );
+        setNodes(new Map());
+      }
+      setChannels([]);
+      setSelfInfo(null);
+      setMeshcoreContactsForTelemetry([]);
+      setMeshcoreAutoadd(null);
+      setDeviceLogs([]);
+      setTelemetry([]);
+      setSignalTelemetry([]);
+      setMeshcoreTraceResults(new Map());
+      setMeshcoreNodeStatus(new Map());
+      setMeshcoreNodeTelemetry(new Map());
+      setMeshcoreTelemetryErrors(new Map());
+      setMeshcoreNeighbors(new Map());
+      setMeshcoreCliHistories(new Map());
+      setMeshcoreCliErrors(new Map());
+      setEnvironmentTelemetry([]);
+      setState(INITIAL_STATE);
+      if (meshcoreStatsPollRef.current) {
+        clearInterval(meshcoreStatsPollRef.current);
+        meshcoreStatsPollRef.current = null;
+      }
+      prevTxAirSecsRef.current = null;
+      prevStatsTimestampRef.current = null;
+      bleConnectInProgressRef.current = false;
+    },
+    [teardownMeshcoreConnEventListeners, reloadMeshcoreNodesFromDb],
+  );
+
+  const connect = useCallback(
+    async (type: 'ble' | 'serial' | 'tcp', tcpHost?: string, blePeripheralId?: string) => {
+      await prepareRfConnect(type);
+
       /** Linux MeshCore uses renderer Web Bluetooth (not Noble IPC) — timeout copy must match. */
       const meshcoreBleLinuxWebBluetooth =
         type === 'ble' && navigator.userAgent.toLowerCase().includes('linux');
 
       try {
-        const setupGen = meshcoreSetupGenerationRef.current;
         if (type === 'ble' && !meshcoreBleLinuxWebBluetooth && !blePeripheralId) {
           throw new Error('BLE peripheral ID required');
         }
@@ -1499,34 +1599,7 @@ export function useMeshCoreImpl() {
           blePeripheralId,
           host: type === 'tcp' ? (tcpHost ?? 'localhost') : undefined,
         });
-        meshcoreDriverConnectedRef.current = true;
-        const conn = opened.conn as unknown as MeshCoreConnection;
-        if (meshcoreSetupGenerationRef.current !== setupGen) {
-          meshcoreDriverConnectedRef.current = false;
-          await connectionDriver.disconnect(opened.driverIdentityId).catch(() => {});
-          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
-        }
-        connRef.current = conn;
-        meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
-        await initConn(conn, setupGen, { driverIdentityId: opened.driverIdentityId });
-        if (type === 'serial') {
-          const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
-          const nodeName = selfInfoRef.current?.name?.trim() || null;
-          if (portId && nodeName) {
-            try {
-              const key = 'mesh-client:serialPortNodeNames';
-              const cache =
-                parseStoredJson<Record<string, string>>(
-                  localStorage.getItem(key),
-                  'useMeshCore serialPortNodeNames cache',
-                ) ?? {};
-              cache[portId] = nodeName;
-              localStorage.setItem(key, JSON.stringify(cache));
-            } catch {
-              // catch-no-log-ok localStorage write for serial port node name cache — non-critical
-            }
-          }
-        }
+        await attachRfSession(opened.driverIdentityId, type);
       } catch (err) {
         const isSetupAbort =
           err instanceof DOMException &&
@@ -1599,7 +1672,7 @@ export function useMeshCoreImpl() {
         if (type === 'ble') bleConnectInProgressRef.current = false;
       }
     },
-    [initConn, setupEventListeners, teardownMeshcoreConnEventListeners],
+    [prepareRfConnect, attachRfSession, teardownMeshcoreConnEventListeners],
   );
 
   /**
@@ -1680,66 +1753,8 @@ export function useMeshCoreImpl() {
   );
 
   const disconnect = useCallback(async () => {
-    // Transport teardown only: GATT disconnect / noble IPC / TCP close. Never OS-unpair or
-    // BluetoothDevice.forget() here — pairing must survive disconnect so users can reconnect.
-    meshcoreSetupGenerationRef.current += 1;
-    // Cancel all pending ACK timers (each entry may be registered under multiple keys)
-    const ackEntries = new Set(pendingAcksRef.current.values());
-    for (const e of ackEntries) {
-      clearTimeout(e.timeoutId);
-    }
-    pendingAcksRef.current.clear();
-    // Clear pending CLI commands
-    repeaterCommandServiceRef.current?.clear();
-
-    const usedDriverConnect = meshcoreDriverConnectedRef.current;
-    teardownMeshcoreConnEventListeners({ driverDisconnect: true });
-    if (!usedDriverConnect) {
-      try {
-        await connRef.current?.close();
-      } catch (e) {
-        console.warn('[useMeshCore] disconnect: close error ' + errLikeToLogString(e));
-      }
-    }
-    connRef.current = null;
-    meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();
-    setMeshcorePingRouteReadyEpoch((e) => e + 1);
-    pubKeyMapRef.current.clear();
-    pubKeyPrefixMapRef.current.clear();
-    outPathMapRef.current.clear();
-    nicknameMapRef.current.clear();
-    setMessages([]);
-    try {
-      await reloadMeshcoreNodesFromDb({ hydrateMessages: false });
-    } catch (e: unknown) {
-      console.warn(
-        '[useMeshCore] disconnect: rehydrate nodes from DB failed ' + errLikeToLogString(e),
-      );
-      setNodes(new Map());
-    }
-    setChannels([]);
-    setSelfInfo(null);
-    setMeshcoreContactsForTelemetry([]);
-    setMeshcoreAutoadd(null);
-    setDeviceLogs([]);
-    setTelemetry([]);
-    setSignalTelemetry([]);
-    setMeshcoreTraceResults(new Map());
-    setMeshcoreNodeStatus(new Map());
-    setMeshcoreNodeTelemetry(new Map());
-    setMeshcoreTelemetryErrors(new Map());
-    setMeshcoreNeighbors(new Map());
-    setMeshcoreCliHistories(new Map());
-    setMeshcoreCliErrors(new Map());
-    setEnvironmentTelemetry([]);
-    setState(INITIAL_STATE);
-    if (meshcoreStatsPollRef.current) {
-      clearInterval(meshcoreStatsPollRef.current);
-      meshcoreStatsPollRef.current = null;
-    }
-    prevTxAirSecsRef.current = null;
-    prevStatsTimestampRef.current = null;
-  }, [teardownMeshcoreConnEventListeners, reloadMeshcoreNodesFromDb]);
+    await finalizeDriverDisconnect({ disconnectDriver: true });
+  }, [finalizeDriverDisconnect]);
 
   const sendMessage = useCallback(
     async (text: string, channelIdx: number, destNodeId?: number, replyId?: number) => {
@@ -3902,6 +3917,10 @@ export function useMeshCoreImpl() {
       meshcoreLocalStats: nodesRef.current.get(myNodeNumRef.current)?.meshcore_local_stats ?? null,
       connect,
       disconnect,
+      prepareRfConnect,
+      attachRfSession,
+      handleRfConnectFailure,
+      finalizeDriverDisconnect,
       sendMessage,
       sendAdvert,
       syncClock,
@@ -4020,6 +4039,10 @@ export function useMeshCoreImpl() {
       meshcoreIdentityId,
       connect,
       disconnect,
+      prepareRfConnect,
+      attachRfSession,
+      handleRfConnectFailure,
+      finalizeDriverDisconnect,
       sendMessage,
       getNodes,
       getFullNodeLabel,

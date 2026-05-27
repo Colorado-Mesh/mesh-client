@@ -13,16 +13,18 @@ Target architecture for dual-protocol UI ([#375](https://github.com/Colorado-Mes
 
 ## Migration status
 
-| Area                                | Status      | Notes                                                                     |
-| ----------------------------------- | ----------- | ------------------------------------------------------------------------- |
-| `ConnectionDriver` + `PacketRouter` | In progress | RF connect and domain events route to stores                              |
-| Meshtastic ingest                   | Partial     | `meshtasticIngest.ts` post-router DB + dedup                              |
-| MeshCore ingest                     | Partial     | `meshcoreIngest.ts`                                                       |
-| MQTT status in `connectionStore`    | Partial     | Legacy hooks mirror `mqttStatus` into store on IPC updates                |
-| Queue status in `connectionStore`   | Partial     | `queue_status` domain events via PacketRouter                             |
-| Meshtastic wire subscriptions       | Legacy      | `meshtasticLegacyWireSubscriptions.ts` via `useDevice`                    |
-| MeshCore conn events                | Legacy      | `meshcoreLegacyConnEvents.ts` via `useMeshCore`                           |
-| MeshCore Protocol config surface    | Deferred    | Companion JSON paths stay on panel actions until Protocol implements them |
+| Area                                | Status      | Notes                                                                       |
+| ----------------------------------- | ----------- | --------------------------------------------------------------------------- |
+| `ConnectionDriver` + `PacketRouter` | In progress | RF connect via `useProtocolConnect` + `useConnect`; legacy attaches session |
+| Meshtastic ingest                   | Partial     | `meshtasticIngest.ts` post-router DB + dedup                                |
+| MeshCore ingest                     | Partial     | `meshcoreIngest.ts`                                                         |
+| DB hydration on mount               | Partial     | `meshtasticDbHydration.ts`, `meshcoreDbHydration.ts`                        |
+| MQTT status in `connectionStore`    | Partial     | `mqttStatusBridge.ts` mirrors IPC into store from legacy hooks              |
+| Queue status in `connectionStore`   | Partial     | `queue_status` domain events via PacketRouter                               |
+| Meshtastic wire subscriptions       | Legacy      | `meshtasticLegacyWireSubscriptions.ts` via `useDevice.attachRfSession`      |
+| MeshCore conn events                | Legacy      | `meshcoreLegacyConnEvents.ts` via `useMeshCore.attachRfSession`             |
+| MeshCore Protocol config surface    | Deferred    | `ProtocolCompanion` extension; panel actions for companion JSON             |
+| App orchestration                   | Partial     | `useProtocolFacade` + `usePanelActions` reduce `protocol ===` in App        |
 
 ## Removal condition for legacy hooks
 

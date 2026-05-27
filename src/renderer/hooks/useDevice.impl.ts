@@ -77,6 +77,8 @@ import type { OurPosition } from '../lib/gpsSource';
 import { readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
+import { runMeshtasticDbHydration } from '../lib/legacySideEffects/meshtasticDbHydration';
+import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import {
   attachMeshtasticLegacyWireSubscriptions,
@@ -145,7 +147,7 @@ import type {
   RemoteConfigChannelsTailStatus,
   TelemetryPoint,
 } from '../lib/types';
-import { setConnection, useConnectionStore } from '../stores/connectionStore';
+import { useConnectionStore } from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useMessageStore } from '../stores/messageStore';
@@ -698,74 +700,18 @@ export function useDeviceImpl() {
     }, WATCHDOG_INTERVAL_MS);
   }, [getThresholds]);
 
-  // Load saved data from DB on mount
+  // Load saved data from DB on mount (side-effect module; moves to driver connect later)
   useEffect(() => {
-    window.electronAPI.db
-      .getMessages(undefined, getMessageLoadLimit())
-      .then((msgs) => {
-        const sanitized = msgs.map((m) => ({
-          ...m,
-          emoji: m.emoji != null ? sanitizeUnicodeReactionScalar(m.emoji) : undefined,
-        }));
-        const reversed = sanitized.reverse();
-        setMessages(trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES));
-        // Seed dedup map so device config-sync replays are caught immediately
-        for (const m of reversed) {
-          if (m.packetId) {
-            seenPacketIds.current.set(m.packetId, Date.now() + 10 * 60 * 1000);
-          }
-        }
-      })
-      .catch((err: unknown) => {
-        console.error('[useDevice] Failed to load messages: ' + errLikeToLogString(err));
-        setMessages([]);
-      });
-    Promise.all([window.electronAPI.db.getNodes(), window.electronAPI.db.getMeshcoreContacts()])
-      .then(([savedNodes, meshcoreContacts]) => {
-        const nodeMap = new Map<number, MeshNode>();
-        for (const n of savedNodes) {
-          const long_name = n.long_name ?? '';
-          const rawHw = n.hw_model;
-          const hw_model =
-            typeof rawHw === 'string' && /^\d+$/.test(rawHw.trim())
-              ? meshtasticHwModelName(parseInt(rawHw, 10))
-              : (rawHw ?? '');
-          nodeMap.set(n.node_id, {
-            ...n,
-            long_name,
-            hw_model,
-            short_name: meshtasticShortNameAfterClearingDefault(
-              long_name,
-              n.short_name ?? '',
-              n.node_id,
-            ),
-            role: parseNodeRole(n.role),
-            favorited: Boolean(n.favorited),
-            // Restore MQTT-only status from persisted source so these nodes show
-            // the globe indicator and suppressed hop count until heard via RF.
-            heard_via_mqtt_only: n.source === 'mqtt',
-            // MeshCore path/hop data
-            hops: n.hops ?? undefined,
-            path: typeof n.path === 'string' ? JSON.parse(n.path) : undefined,
-            // If hops (MeshCore) is present, use it for hops_away display, fallback to meshtastic hops_away
-            hops_away: n.hops ?? n.hops_away ?? undefined,
-          });
-        }
-        // Merge hops_away from meshcore_contacts for nodes that don't have it yet
-        for (const mc of meshcoreContacts as { node_id: number; hops_away: number | null }[]) {
-          if (mc.hops_away != null) {
-            const existing = nodeMap.get(mc.node_id);
-            if (existing && existing.hops_away === undefined) {
-              nodeMap.set(mc.node_id, { ...existing, hops_away: mc.hops_away });
-            }
-          }
-        }
+    runMeshtasticDbHydration({
+      setMessages,
+      setNodes,
+      onNodesLoaded: (nodeMap) => {
         nodesRef.current = nodeMap;
-        setNodes(nodeMap);
-      })
-      .catch((err: unknown) => {
-        console.error('[useDevice] Failed to load nodes: ' + errLikeToLogString(err));
-      });
+      },
+      seedSeenPacketId: (packetId, expiresAt) => {
+        seenPacketIds.current.set(packetId, expiresAt);
+      },
+    });
   }, []);
 
   useEffect(() => {
@@ -844,10 +790,7 @@ export function useDeviceImpl() {
       const prev = mqttStatusRef.current;
       mqttStatusRef.current = s;
       setMqttStatus(s);
-      const identityId = meshtasticIdentityIdRef.current;
-      if (identityId) {
-        setConnection(identityId, { mqttStatus: s });
-      }
+      mirrorMqttStatusToConnection(meshtasticIdentityIdRef.current, s);
       if (s === 'connected') {
         setMqttConnectionLoss(false);
         if (prev !== 'connected') {
@@ -1716,10 +1659,8 @@ export function useDeviceImpl() {
   // Keep the ref in sync
   attemptReconnectRef.current = attemptReconnect;
 
-  // ─── Connect ──────────────────────────────────────────────────
-  const connect = useCallback(
-    async (type: ConnectionType, httpAddress?: string, blePeripheralId?: string) => {
-      // Force-disconnect stale device before creating a new connection
+  const prepareRfConnect = useCallback(
+    (type: ConnectionType, httpAddress?: string, blePeripheralId?: string): Promise<void> => {
       clearConfigureTimeout();
       if (deviceRef.current) {
         cleanupSubscriptions();
@@ -1730,13 +1671,10 @@ export function useDeviceImpl() {
           console.debug('[useDevice] connect safeDisconnect prior ' + errLikeToLogString(e));
         });
       }
-
-      // Store connection params for reconnection
       connectionParamsRef.current = { type, httpAddress, blePeripheralId };
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
       reconnectGenerationRef.current++;
-
       setState((s) => ({
         ...s,
         status: 'connecting',
@@ -1745,42 +1683,108 @@ export function useDeviceImpl() {
         batteryPercent: undefined,
         batteryCharging: undefined,
       }));
+      return Promise.resolve();
+    },
+    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog],
+  );
 
+  const attachRfSession = useCallback(
+    async (driverIdentityId: string, type: ConnectionType, device?: MeshDevice): Promise<void> => {
+      meshtasticDriverConnectedRef.current = true;
+      const activeDevice =
+        device ?? (connectionDriver.getHandle(driverIdentityId) as MeshDevice | null);
+      if (!activeDevice) {
+        throw new Error('[useDevice] attachRfSession: ConnectionDriver returned no handle');
+      }
+      deviceRef.current = activeDevice;
+      wireSubscriptions(activeDevice, type, { driverIdentityId });
+      await activeDevice.configure();
+    },
+    [wireSubscriptions],
+  );
+
+  const handleRfConnectFailure = useCallback((): Promise<void> => {
+    clearConfigureTimeout();
+    console.error('[Meshtastic] Connection failed');
+    cleanupSubscriptions();
+    stopWatchdog();
+    deviceRef.current = null;
+    meshtasticDriverConnectedRef.current = false;
+    setState({
+      status: 'disconnected',
+      myNodeNum: 0,
+      connectionType: null,
+      batteryPercent: undefined,
+      batteryCharging: undefined,
+    });
+    return Promise.resolve();
+  }, [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog]);
+
+  const finalizeDriverDisconnect = useCallback(
+    async (opts?: { disconnectDriver?: boolean }) => {
+      const disconnectDriver = opts?.disconnectDriver !== false;
+      clearConfigureTimeout();
+      const driverIdentity =
+        meshtasticDriverConnectedRef.current && meshtasticIdentityIdRef.current
+          ? meshtasticIdentityIdRef.current
+          : null;
+      cleanupSubscriptions();
+      stopWatchdog();
+      stopGpsInterval();
+      isReconnectingRef.current = false;
+      reconnectAttemptRef.current = 0;
+      reconnectGenerationRef.current++;
+      connectionParamsRef.current = null;
+
+      const device = deviceRef.current;
+      deviceRef.current = null;
+      if (disconnectDriver && driverIdentity) {
+        await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
+          console.debug('[useDevice] driver disconnect ' + errLikeToLogString(e));
+        });
+      } else if (!disconnectDriver && device) {
+        await safeDisconnect(device).catch((e: unknown) => {
+          console.debug('[useDevice] finalize safeDisconnect ' + errLikeToLogString(e));
+        });
+      } else if (disconnectDriver && device && !driverIdentity) {
+        await safeDisconnect(device);
+      }
+      meshtasticDriverConnectedRef.current = false;
+      setState({
+        status: 'disconnected',
+        myNodeNum: 0,
+        connectionType: null,
+        connectionLoss: false,
+        batteryPercent: undefined,
+        batteryCharging: undefined,
+      });
+      setConfigureTargetNodeNumState(null);
+      configureTargetNodeNumRef.current = null;
+      configureTargetPersistRestoredRef.current = false;
+      setRemoteConfigSnapshot(null);
+      setRemoteAdminStatus('idle');
+      setRemoteAdminError(undefined);
+      remoteAdminClientRef.current?.resetEditState();
+      remoteAdminClientRef.current?.sessionStore.clear();
+    },
+    [cleanupSubscriptions, stopWatchdog, stopGpsInterval, clearConfigureTimeout],
+  );
+
+  // ─── Connect ──────────────────────────────────────────────────
+  const connect = useCallback(
+    async (type: ConnectionType, httpAddress?: string, blePeripheralId?: string) => {
+      await prepareRfConnect(type, httpAddress, blePeripheralId);
       try {
         console.debug('[useDevice] connect', type, httpAddress ?? blePeripheralId);
         const opened = await openMeshtasticTransport(type, { httpAddress, blePeripheralId });
-        deviceRef.current = opened.device;
-
-        // Wire all event subscriptions
-        wireSubscriptions(opened.device, type, {
-          driverIdentityId: opened.driverIdentityId,
-        });
-
-        // Start configuration AFTER all listeners are wired
-        await opened.device.configure();
+        await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
-        clearConfigureTimeout();
         console.error('[Meshtastic] Connection failed: ' + errLikeToLogString(err));
-        cleanupSubscriptions();
-        stopWatchdog();
-        deviceRef.current = null;
-        setState({
-          status: 'disconnected',
-          myNodeNum: 0,
-          connectionType: null,
-          batteryPercent: undefined,
-          batteryCharging: undefined,
-        });
+        await handleRfConnectFailure();
         throw err;
       }
     },
-    [
-      wireSubscriptions,
-      cleanupSubscriptions,
-      stopWatchdog,
-      clearConfigureTimeout,
-      openMeshtasticTransport,
-    ],
+    [prepareRfConnect, attachRfSession, handleRfConnectFailure, openMeshtasticTransport],
   );
 
   /**
@@ -1795,33 +1799,7 @@ export function useDeviceImpl() {
       lastSerialPortId?: string | null,
       blePeripheralId?: string,
     ) => {
-      clearConfigureTimeout();
-      if (deviceRef.current) {
-        cleanupSubscriptions();
-        stopWatchdog();
-        const oldDevice = deviceRef.current;
-        deviceRef.current = null;
-        safeDisconnect(oldDevice).catch((e: unknown) => {
-          console.debug(
-            '[useDevice] connectAutomatic safeDisconnect prior ' + errLikeToLogString(e),
-          );
-        });
-      }
-
-      connectionParamsRef.current = { type, httpAddress, blePeripheralId };
-      reconnectAttemptRef.current = 0;
-      isReconnectingRef.current = false;
-      reconnectGenerationRef.current++;
-
-      setState((s) => ({
-        ...s,
-        status: 'connecting',
-        connectionType: type,
-        connectionLoss: false,
-        batteryPercent: undefined,
-        batteryCharging: undefined,
-      }));
-
+      await prepareRfConnect(type, httpAddress, blePeripheralId);
       try {
         console.debug('[useDevice] connectAutomatic', type, httpAddress ?? blePeripheralId);
         const opened = await openMeshtasticTransport(type, {
@@ -1829,77 +1807,19 @@ export function useDeviceImpl() {
           blePeripheralId,
           lastSerialPortId,
         });
-        deviceRef.current = opened.device;
-        wireSubscriptions(opened.device, type, {
-          driverIdentityId: opened.driverIdentityId,
-        });
-        await opened.device.configure();
+        await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
-        clearConfigureTimeout();
         console.error('[Meshtastic] Auto-connect failed: ' + errLikeToLogString(err));
-        cleanupSubscriptions();
-        stopWatchdog();
-        deviceRef.current = null;
-        setState({
-          status: 'disconnected',
-          myNodeNum: 0,
-          connectionType: null,
-          batteryPercent: undefined,
-          batteryCharging: undefined,
-        });
+        await handleRfConnectFailure();
         throw err;
       }
     },
-    [
-      wireSubscriptions,
-      cleanupSubscriptions,
-      stopWatchdog,
-      clearConfigureTimeout,
-      openMeshtasticTransport,
-    ],
+    [prepareRfConnect, attachRfSession, handleRfConnectFailure, openMeshtasticTransport],
   );
 
   const disconnect = useCallback(async () => {
-    // Stop all monitoring and reconnection
-    clearConfigureTimeout();
-    const driverIdentity =
-      meshtasticDriverConnectedRef.current && meshtasticIdentityIdRef.current
-        ? meshtasticIdentityIdRef.current
-        : null;
-    cleanupSubscriptions();
-    stopWatchdog();
-    stopGpsInterval();
-    isReconnectingRef.current = false;
-    reconnectAttemptRef.current = 0;
-    reconnectGenerationRef.current++;
-    connectionParamsRef.current = null;
-
-    const device = deviceRef.current;
-    deviceRef.current = null;
-    if (driverIdentity) {
-      await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
-        console.debug('[useDevice] driver disconnect ' + errLikeToLogString(e));
-      });
-    } else if (device) {
-      await safeDisconnect(device);
-    }
-    setState({
-      status: 'disconnected',
-      myNodeNum: 0,
-      connectionType: null,
-      connectionLoss: false,
-      batteryPercent: undefined,
-      batteryCharging: undefined,
-    });
-    setConfigureTargetNodeNumState(null);
-    configureTargetNodeNumRef.current = null;
-    configureTargetPersistRestoredRef.current = false;
-    setRemoteConfigSnapshot(null);
-    setRemoteAdminStatus('idle');
-    setRemoteAdminError(undefined);
-    remoteAdminClientRef.current?.resetEditState();
-    remoteAdminClientRef.current?.sessionStore.clear();
-  }, [cleanupSubscriptions, stopWatchdog, stopGpsInterval, clearConfigureTimeout]);
+    await finalizeDriverDisconnect({ disconnectDriver: true });
+  }, [finalizeDriverDisconnect]);
 
   // ─── TransportManager status handler ─────────────────────────────────────
   // Defined as useCallback so it's stable; stored in a ref so TransportManager
@@ -3302,6 +3222,10 @@ export function useDeviceImpl() {
     connect,
     connectAutomatic,
     disconnect,
+    prepareRfConnect,
+    attachRfSession,
+    handleRfConnectFailure,
+    finalizeDriverDisconnect,
     sendMessage,
     sendReaction,
     setConfig,

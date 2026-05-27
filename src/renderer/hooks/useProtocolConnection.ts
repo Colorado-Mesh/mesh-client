@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
+import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
+import { meshcoreConnectionType, protocolTransportParams } from '../lib/protocolTransportParams';
 import type { ConnectionType, DeviceState, MeshProtocol, MQTTStatus } from '../lib/types';
 import type { UseDeviceReturn, UseMeshCoreReturn } from './legacyHookTypes';
 import { useConnect } from './useConnect';
@@ -18,43 +20,68 @@ export interface ProtocolConnectionActions {
   disconnect: () => Promise<void>;
 }
 
-function meshcoreConnectType(type: ConnectionType): 'ble' | 'serial' | 'tcp' {
-  return type === 'http' ? 'tcp' : type;
-}
-
 /**
- * RF connect entry points. Delegates to legacy hooks (wire subscriptions + configure)
- * until ingest is fully driver-owned ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375)).
- * `useConnect` is retained for future driver-only paths.
+ * RF connect: `ConnectionDriver` opens the transport; legacy hooks attach wire listeners,
+ * configure/initConn, and reconnect state ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375)).
  */
 export function useProtocolConnect(meshtastic: UseDeviceReturn, meshcore: UseMeshCoreReturn) {
   const driverConnect = useConnect();
-  void driverConnect;
+
   return useCallback(
-    (
+    async (
       protocol: MeshProtocol,
       type: ConnectionType,
       httpAddress?: string,
       blePeripheralId?: string,
     ) => {
+      const params = protocolTransportParams(protocol, type, {
+        httpAddress,
+        blePeripheralId,
+      });
+
       if (protocol === 'meshcore') {
-        return meshcore.connect(meshcoreConnectType(type), httpAddress, blePeripheralId);
+        const mcType = meshcoreConnectionType(type);
+        await meshcore.prepareRfConnect(mcType);
+        try {
+          const identityId = await driverConnect('meshcore', params);
+          await meshcore.attachRfSession(identityId, mcType);
+        } catch (err) {
+          await meshcore.handleRfConnectFailure(mcType);
+          throw err;
+        }
+        return;
       }
-      return meshtastic.connect(type, httpAddress, blePeripheralId);
+
+      await meshtastic.prepareRfConnect(type, httpAddress, blePeripheralId);
+      try {
+        const identityId = await driverConnect('meshtastic', params);
+        await meshtastic.attachRfSession(identityId, type);
+      } catch (err) {
+        await meshtastic.handleRfConnectFailure();
+        throw err;
+      }
     },
-    [meshtastic, meshcore],
+    [meshtastic, meshcore, driverConnect],
   );
 }
 
-/** RF disconnect; legacy hooks also call {@link useDisconnect} via ConnectionDriver. */
+/** RF disconnect: legacy session cleanup, then driver transport teardown. */
 export function useProtocolDisconnect(meshtastic: UseDeviceReturn, meshcore: UseMeshCoreReturn) {
   const driverDisconnect = useDisconnect();
-  void driverDisconnect;
+
   return useCallback(
-    (protocol: MeshProtocol) => {
-      return protocol === 'meshcore' ? meshcore.disconnect() : meshtastic.disconnect();
+    async (protocol: MeshProtocol) => {
+      const identityId = getIdentityIdForProtocol(protocol);
+      if (protocol === 'meshcore') {
+        await meshcore.finalizeDriverDisconnect();
+      } else {
+        await meshtastic.finalizeDriverDisconnect();
+      }
+      if (identityId) {
+        await driverDisconnect(identityId);
+      }
     },
-    [meshtastic, meshcore],
+    [meshtastic, meshcore, driverDisconnect],
   );
 }
 

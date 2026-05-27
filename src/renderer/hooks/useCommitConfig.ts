@@ -1,18 +1,17 @@
 import { useCallback } from 'react';
 
-import { MeshCoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import type { IdentityId } from '../lib/types';
 import { resolveCall } from './_protocolCall';
 
-/** Meshtastic-only until {@link MeshCoreProtocol.commitConfig} is implemented. */
+/** Meshtastic via Protocol; MeshCore still uses panel actions until companion config lands on Protocol. */
 export function useCommitConfig(identityId: IdentityId | null) {
   return useCallback((): Promise<void> => {
     const ctx = resolveCall(identityId, 'useCommitConfig');
     if (!ctx) return Promise.resolve();
-    if (ctx.identity.protocol instanceof MeshCoreProtocol) {
+    if (ctx.identity.protocol.type === 'meshcore') {
       return Promise.reject(
         new Error(
-          'MeshCore commitConfig: use meshcorePanelActions.commitConfig (legacy companion)',
+          'MeshCore commitConfig: use panel actions (companion JSON paths; see ProtocolCompanion)',
         ),
       );
     }

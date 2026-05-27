@@ -7,6 +7,10 @@ function createMeshtasticStub() {
   return {
     state: { status: 'disconnected' as const, myNodeNum: 0, connectionType: null },
     mqttStatus: 'disconnected' as const,
+    prepareRfConnect: vi.fn().mockResolvedValue(undefined),
+    attachRfSession: vi.fn().mockResolvedValue(undefined),
+    handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
+    finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
     connect: vi.fn().mockResolvedValue(undefined),
     connectAutomatic: vi.fn().mockResolvedValue(undefined),
     disconnect: vi.fn().mockResolvedValue(undefined),
@@ -17,14 +21,26 @@ function createMeshcoreStub() {
   return {
     state: { status: 'configured' as const, myNodeNum: 42, connectionType: 'ble' as const },
     mqttStatus: 'disconnected' as const,
+    prepareRfConnect: vi.fn().mockResolvedValue(undefined),
+    attachRfSession: vi.fn().mockResolvedValue(undefined),
+    handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
+    finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
     connect: vi.fn().mockResolvedValue(undefined),
     connectAutomatic: vi.fn().mockResolvedValue(undefined),
     disconnect: vi.fn().mockResolvedValue(undefined),
   };
 }
 
+vi.mock('./useConnect', () => ({
+  useConnect: () => vi.fn().mockResolvedValue('id-test-driver'),
+}));
+
+vi.mock('./useDisconnect', () => ({
+  useDisconnect: () => vi.fn().mockResolvedValue(undefined),
+}));
+
 describe('useProtocolConnectionActions', () => {
-  it('routes connect to the protocol instance without mounting legacy hooks', () => {
+  it('driver-first connect prepares and attaches Meshtastic legacy session', async () => {
     const meshtastic = createMeshtasticStub();
     const meshcore = createMeshcoreStub();
 
@@ -32,13 +48,14 @@ describe('useProtocolConnectionActions', () => {
       useProtocolConnectionActions('meshtastic', meshtastic as never, meshcore as never),
     );
 
-    void result.current.connect('serial', undefined, undefined);
+    await result.current.connect('serial', undefined, undefined);
 
-    expect(meshtastic.connect).toHaveBeenCalledWith('serial', undefined, undefined);
-    expect(meshcore.connect).not.toHaveBeenCalled();
+    expect(meshtastic.prepareRfConnect).toHaveBeenCalledWith('serial', undefined, undefined);
+    expect(meshtastic.attachRfSession).toHaveBeenCalledWith('id-test-driver', 'serial');
+    expect(meshtastic.connect).not.toHaveBeenCalled();
   });
 
-  it('maps http to tcp for meshcore manual connect', () => {
+  it('maps http to tcp for meshcore driver-first connect', async () => {
     const meshtastic = createMeshtasticStub();
     const meshcore = createMeshcoreStub();
 
@@ -46,9 +63,11 @@ describe('useProtocolConnectionActions', () => {
       useProtocolConnectionActions('meshcore', meshtastic as never, meshcore as never),
     );
 
-    void result.current.connect('http', '192.168.1.1', undefined);
+    await result.current.connect('http', '192.168.1.1', undefined);
 
-    expect(meshcore.connect).toHaveBeenCalledWith('tcp', '192.168.1.1', undefined);
+    expect(meshcore.prepareRfConnect).toHaveBeenCalledWith('tcp');
+    expect(meshcore.attachRfSession).toHaveBeenCalledWith('id-test-driver', 'tcp');
+    expect(meshcore.connect).not.toHaveBeenCalled();
   });
 
   it('exposes state from the selected protocol instance', () => {

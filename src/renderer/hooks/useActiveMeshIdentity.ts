@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { IdentityId, MeshProtocol } from '../lib/types';
@@ -25,7 +26,7 @@ export function useActiveMeshIdentity(protocol: MeshProtocol): ActiveMeshIdentit
     (s) => Object.values(s.identities).find((i) => i.protocol.type === 'meshcore')?.id ?? null,
   );
   const capabilities = useRadioProvider(protocol);
-  const focusedIdentityId = protocol === 'meshcore' ? meshcoreIdentityId : meshtasticIdentityId;
+  const focusedIdentityId = getIdentityIdForProtocol(protocol);
 
   return useMemo(
     () => ({
