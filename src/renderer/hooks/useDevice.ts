@@ -83,6 +83,7 @@ import {
   getMergedNodesForForeignLoraDiagnostics,
   getMeshcoreDiagnosticsSelfNodeId,
 } from '../lib/diagnosticsNodesRef';
+import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import {
   isForeignLoraLogCandidate,
   matchForeignLoraFromMeshtasticLog,
@@ -94,7 +95,7 @@ import {
   shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
-import { bindMeshtasticIngress } from '../lib/meshIdentityBridge';
+import { bindMeshtasticIngress, meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { setRemoteAdminReadsActive } from '../lib/meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
@@ -1499,6 +1500,9 @@ export function useDevice() {
     (device: MeshDevice, type: ConnectionType) => {
       // Protocol ingress → identity-scoped stores (before legacy handlers so both
       // receive SDK events when the transport supports multiple subscribers).
+      // Legacy handlers below are still required for DB, MQTT dedup, watchdog, etc.
+      // See docs/hook-deconstruction-ingress.md — do not delete event blocks until
+      // those concerns move behind PacketRouter or a shared ingest layer.
       if (meshtasticIngressDetachRef.current) {
         meshtasticIngressDetachRef.current();
       }
@@ -1646,10 +1650,23 @@ export function useDevice() {
         myNodeNumRef.current = info.myNodeNum;
         const identityId = meshtasticIdentityIdRef.current;
         if (identityId) {
-          updateIdentity(identityId, {
-            selfNodeNum: info.myNodeNum,
-            signature: `meshtastic:node:${info.myNodeNum}`,
-          });
+          const cp = connectionParamsRef.current;
+          if (cp) {
+            const transportParams = meshtasticTransportParams(cp.type, {
+              peripheralId: cp.blePeripheralId,
+              host: cp.httpAddress,
+            });
+            connectionDriver.remapMeshtasticNodeSignature(
+              identityId,
+              transportParams,
+              info.myNodeNum,
+            );
+          } else {
+            updateIdentity(identityId, {
+              selfNodeNum: info.myNodeNum,
+              signature: `meshtastic:node:${info.myNodeNum}`,
+            });
+          }
           setConnection(identityId, { myNodeNum: info.myNodeNum, status: 'configured' });
         }
         setMeshtasticConnectedMyNodeNum(info.myNodeNum);

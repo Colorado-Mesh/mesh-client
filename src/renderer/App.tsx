@@ -27,9 +27,12 @@ import { LinkIcon } from './components/SignalBars';
 import SignalPropagation from './components/SignalPropagation';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
+import { useConnectionByProtocol } from './hooks/useConnectionByProtocol';
 import { useContactGroups } from './hooks/useContactGroups';
+import { useDbRefresh } from './hooks/useDbRefresh';
 import { useDevice } from './hooks/useDevice';
 import { useMeshCore } from './hooks/useMeshCore';
+import { useMergedMessages, useMergedNodesMap } from './hooks/useMeshStoreUi';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
@@ -604,6 +607,18 @@ export default function App() {
 
   const meshtasticDevice = useDevice();
   const meshcoreDevice = useMeshCore();
+  useConnectionByProtocol('meshtastic');
+  useConnectionByProtocol('meshcore');
+  const meshtasticUiMessages = useMergedMessages(
+    meshtasticDevice.identityId,
+    meshtasticDevice.messages,
+  );
+  const meshcoreUiMessages = useMergedMessages(meshcoreDevice.identityId, meshcoreDevice.messages);
+  const meshtasticUiNodes = useMergedNodesMap(meshtasticDevice.identityId, meshtasticDevice.nodes);
+  const meshcoreUiNodes = useMergedNodesMap(meshcoreDevice.identityId, meshcoreDevice.nodes);
+  const { refreshNodesFromDb: refreshMeshtasticNodesInStore } = useDbRefresh(
+    meshtasticDevice.identityId,
+  );
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
   const contactGroupsSelfId =
     protocol === 'meshcore'
@@ -624,19 +639,20 @@ export default function App() {
   const lastMeshcoreTab = useRef(0);
   const lastMeshtasticPanel = useRef<number | null>(null);
   const lastMeshcorePanel = useRef<number | null>(null);
-  const meshtasticMsgsRef = useRef(meshtasticDevice.messages);
-  const meshcoreMsgsRef = useRef(meshcoreDevice.messages);
+  const meshtasticMsgsRef = useRef(meshtasticUiMessages);
+  const meshcoreMsgsRef = useRef(meshcoreUiMessages);
   const meshtasticMyNodeNumRef = useRef(meshtasticDevice.state.myNodeNum);
   const meshcoreSelfIdRef = useRef(meshcoreDevice.selfNodeId);
-  const nodesForUi = protocol === 'meshcore' ? meshcoreDevice.nodes : meshtasticDevice.nodes;
+  const nodesForUi = protocol === 'meshcore' ? meshcoreUiNodes : meshtasticUiNodes;
+  const activeUiMessages = protocol === 'meshcore' ? meshcoreUiMessages : meshtasticUiMessages;
   /** Meshtastic + MeshCore nodes for Diagnostics (foreign MeshCore sender labels/links). */
   const nodesForDiagnostics = useMemo(() => {
-    const merged = new Map(meshtasticDevice.nodes);
-    for (const [id, node] of meshcoreDevice.nodes) {
+    const merged = new Map(meshtasticUiNodes);
+    for (const [id, node] of meshcoreUiNodes) {
       merged.set(id, node);
     }
     return merged;
-  }, [meshtasticDevice.nodes, meshcoreDevice.nodes]);
+  }, [meshtasticUiNodes, meshcoreUiNodes]);
   const rawPacketGetNodeLabel = useCallback(
     (id: number) => nodeLabelForRawPacket(nodesForUi.get(id), id, protocol),
     [nodesForUi, protocol],
@@ -695,8 +711,8 @@ export default function App() {
   useEffect(() => {
     activeTabRef.current = activeTab;
     protocolRef.current = protocol;
-    meshtasticMsgsRef.current = meshtasticDevice.messages;
-    meshcoreMsgsRef.current = meshcoreDevice.messages;
+    meshtasticMsgsRef.current = meshtasticUiMessages;
+    meshcoreMsgsRef.current = meshcoreUiMessages;
     meshtasticMyNodeNumRef.current = meshtasticDevice.state.myNodeNum;
     meshcoreSelfIdRef.current = meshcoreDevice.selfNodeId;
     lastMeshtasticTab.current = protocol === 'meshtastic' ? activeTab : lastMeshtasticTab.current;
@@ -710,9 +726,9 @@ export default function App() {
     activeTab,
     activePanelIndex,
     protocol,
-    meshtasticDevice.messages,
+    meshtasticUiMessages,
     meshtasticDevice.state.myNodeNum,
-    meshcoreDevice.messages,
+    meshcoreUiMessages,
     meshcoreDevice.selfNodeId,
   ]);
 
@@ -964,21 +980,21 @@ export default function App() {
 
   const detailModalProtocol = useMemo((): MeshProtocol => {
     if (selectedNodeId == null) return protocol;
-    if (meshcoreDevice.nodes.has(selectedNodeId)) return 'meshcore';
+    if (meshcoreUiNodes.has(selectedNodeId)) return 'meshcore';
     return protocol;
-  }, [selectedNodeId, protocol, meshcoreDevice.nodes]);
+  }, [selectedNodeId, protocol, meshcoreUiNodes]);
 
-  const detailModalNodes = detailModalProtocol === 'meshcore' ? meshcoreDevice.nodes : nodesForUi;
+  const detailModalNodes = detailModalProtocol === 'meshcore' ? meshcoreUiNodes : nodesForUi;
   const detailHomeNode =
     detailModalProtocol === 'meshcore'
-      ? (meshcoreDevice.nodes.get(meshcoreDevice.selfNodeId) ?? null)
+      ? (meshcoreUiNodes.get(meshcoreDevice.selfNodeId) ?? null)
       : (nodesForUi.get(device.state.myNodeNum) ?? null);
   const detailMyNodeNum =
     detailModalProtocol === 'meshcore' ? meshcoreDevice.selfNodeId : device.state.myNodeNum;
 
   const selectedNode = useMemo(() => {
     if (selectedNodeId == null) return null;
-    const liveNode = meshcoreDevice.nodes.get(selectedNodeId) ?? nodesForUi.get(selectedNodeId);
+    const liveNode = meshcoreUiNodes.get(selectedNodeId) ?? nodesForUi.get(selectedNodeId);
     if (liveNode) return liveNode;
 
     const fallback = meshNodeStubForDetailModal(selectedNodeId);
@@ -996,7 +1012,7 @@ export default function App() {
       longitude: latest.lon,
       last_heard: Math.max(fallback.last_heard, Math.floor(latest.t / 1000)),
     };
-  }, [selectedNodeId, nodesForUi, meshcoreDevice.nodes, selectedNodeHistoryPoints]);
+  }, [selectedNodeId, nodesForUi, meshcoreUiNodes, selectedNodeHistoryPoints]);
   const selectedNodeHistory = useMemo(() => {
     if (selectedNodeId == null || !selectedNodeHistoryPoints) return undefined;
     return new Map([[selectedNodeId, selectedNodeHistoryPoints]]);
@@ -1054,7 +1070,7 @@ export default function App() {
 
     if (was === 1 && now !== 1) {
       setChatPanelFreeze({
-        messages: device.messages,
+        messages: activeUiMessages,
         channels: chatChannels,
         nodes: nodesForUi,
       });
@@ -1073,7 +1089,7 @@ export default function App() {
 
   const isChatPanelFrozen = chatTabVisited && activePanelIndex !== 1;
   const freeze = chatPanelFreeze;
-  const chatMessagesForPanel = isChatPanelFrozen && freeze ? freeze.messages : device.messages;
+  const chatMessagesForPanel = isChatPanelFrozen && freeze ? freeze.messages : activeUiMessages;
   const chatNodesForPanel = isChatPanelFrozen && freeze ? freeze.nodes : nodesForUi;
   const chatChannelsForPanel = isChatPanelFrozen && freeze ? freeze.channels : chatChannels;
 
@@ -1082,7 +1098,21 @@ export default function App() {
   }, []);
 
   // ─── Startup pruning based on persisted app settings (protocol-aware) ─────
-  const { refreshNodesFromDb } = device;
+  const refreshMeshtasticNodesLegacy = meshtasticDevice.refreshNodesFromDb;
+  const refreshMeshcoreNodesLegacy = meshcoreDevice.refreshNodesFromDb;
+  const refreshNodesFromDb = useCallback(() => {
+    if (protocol === 'meshtastic') {
+      refreshMeshtasticNodesLegacy();
+      void refreshMeshtasticNodesInStore();
+    } else {
+      void refreshMeshcoreNodesLegacy();
+    }
+  }, [
+    protocol,
+    refreshMeshtasticNodesLegacy,
+    refreshMeshcoreNodesLegacy,
+    refreshMeshtasticNodesInStore,
+  ]);
   useEffect(() => {
     const startupProtocol = getStoredMeshProtocol();
     const raw =
@@ -1378,7 +1408,7 @@ export default function App() {
 
   // ─── Track Meshtastic messages arriving while inactive ──────────
   useEffect(() => {
-    const count = meshtasticDevice.messages.length;
+    const count = meshtasticUiMessages.length;
     if (isMeshtasticInitialRef.current) {
       prevMeshtasticMsgCountRef.current = count;
       if (count > 0) isMeshtasticInitialRef.current = false;
@@ -1411,11 +1441,11 @@ export default function App() {
       }
     }
     prevMeshtasticMsgCountRef.current = count;
-  }, [meshtasticDevice.messages.length]);
+  }, [meshtasticUiMessages.length]);
 
   // ─── Track MeshCore messages arriving while inactive ─────────────
   useEffect(() => {
-    const count = meshcoreDevice.messages.length;
+    const count = meshcoreUiMessages.length;
     if (isMeshcoreInitialRef.current) {
       prevMeshcoreMsgCountRef.current = count;
       if (count > 0) isMeshcoreInitialRef.current = false;
@@ -1435,7 +1465,7 @@ export default function App() {
       }
     }
     prevMeshcoreMsgCountRef.current = count;
-  }, [meshcoreDevice.messages.length]);
+  }, [meshcoreUiMessages.length]);
 
   const clearChatUnreadForProtocol = useCallback((targetProtocol: MeshProtocol) => {
     if (targetProtocol === 'meshtastic') {
@@ -1579,8 +1609,8 @@ export default function App() {
       {/* Passive notifications for inactive protocol activity */}
       <InactiveProtocolNotifier
         protocol={protocol}
-        meshtasticDevice={meshtasticDevice}
-        meshcoreDevice={meshcoreDevice}
+        meshtasticMessages={meshtasticUiMessages}
+        meshcoreMessages={meshcoreUiMessages}
       />
       {protocol === 'meshtastic' && (
         <RemoteAdminErrorNotifier
@@ -2232,7 +2262,7 @@ export default function App() {
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <RepeatersPanel
-                              nodes={meshcoreDevice.nodes}
+                              nodes={meshcoreUiNodes}
                               meshcoreNodeStatus={meshcoreDevice.meshcoreNodeStatus}
                               meshcoreStatusErrors={meshcoreDevice.meshcoreStatusErrors}
                               meshcoreTraceResults={meshcoreDevice.meshcoreTraceResults}
@@ -2391,7 +2421,7 @@ export default function App() {
                                 }
                               }}
                               nodes={nodesForUi}
-                              messageCount={device.messages.length}
+                              messageCount={activeUiMessages.length}
                               channels={device.channels}
                               myNodeNum={device.state.myNodeNum}
                               onLocationFilterChange={handleLocationFilterChange}
@@ -2399,7 +2429,7 @@ export default function App() {
                               onRefreshGps={device.refreshOurPosition}
                               gpsLoading={device.gpsLoading}
                               onGpsIntervalChange={device.updateGpsInterval}
-                              onNodesPruned={device.refreshNodesFromDb}
+                              onNodesPruned={refreshNodesFromDb}
                               onMessagesPruned={device.refreshMessagesFromDb}
                               onClearMeshcoreRepeaters={
                                 protocol === 'meshcore'
@@ -2425,7 +2455,7 @@ export default function App() {
                           <Suspense fallback={<PanelSkeleton />}>
                             <DiagnosticsPanel
                               nodes={nodesForDiagnostics}
-                              meshcoreNodes={meshcoreDevice.nodes}
+                              meshcoreNodes={meshcoreUiNodes}
                               myNodeNum={device.selfNodeId}
                               meshtasticListenerNodeId={
                                 meshtasticDevice.state.myNodeNum > 0
@@ -2601,7 +2631,7 @@ export default function App() {
                   {t('app.footerStats', {
                     nodeCount: nodesForUi.size,
                     nodeLabel: nodeCountLabel,
-                    messageCount: device.messages.length,
+                    messageCount: activeUiMessages.length,
                   })}
                 </span>
                 <UpdateStatusIndicator
@@ -2665,7 +2695,7 @@ export default function App() {
         <Suspense fallback={<DialogLazyFallback />}>
           <ContactGroupsModal
             groups={contactGroups.groups}
-            contacts={protocol === 'meshcore' ? meshcoreDevice.nodes : meshtasticDevice.nodes}
+            contacts={protocol === 'meshcore' ? meshcoreUiNodes : meshtasticUiNodes}
             selfNodeId={
               protocol === 'meshcore' ? meshcoreDevice.selfNodeId : meshtasticDevice.selfNodeId
             }
@@ -2815,12 +2845,12 @@ export default function App() {
 // ─── Passive notification monitor for the inactive protocol ──────
 function InactiveProtocolNotifier({
   protocol,
-  meshtasticDevice,
-  meshcoreDevice,
+  meshtasticMessages,
+  meshcoreMessages,
 }: {
   protocol: MeshProtocol;
-  meshtasticDevice: ReturnType<typeof useDevice>;
-  meshcoreDevice: ReturnType<typeof useMeshCore>;
+  meshtasticMessages: ChatMessage[];
+  meshcoreMessages: ChatMessage[];
 }) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -2834,17 +2864,17 @@ function InactiveProtocolNotifier({
     if (protocol === 'meshtastic') {
       // Now active — reset tracking so we don't toast on switch-back
       isInitMeshtasticRef.current = true;
-      prevMeshtasticRef.current = meshtasticDevice.messages.length;
+      prevMeshtasticRef.current = meshtasticMessages.length;
       return;
     }
-    const count = meshtasticDevice.messages.length;
+    const count = meshtasticMessages.length;
     if (isInitMeshtasticRef.current) {
       prevMeshtasticRef.current = count;
       if (count > 0) isInitMeshtasticRef.current = false;
       return;
     }
     if (count > prevMeshtasticRef.current) {
-      const newMsgs = meshtasticDevice.messages.slice(prevMeshtasticRef.current);
+      const newMsgs = meshtasticMessages.slice(prevMeshtasticRef.current);
       const realNew = newMsgs.filter((m) => !m.emoji && !m.isHistory);
       if (realNew.length > 0) {
         addToast(
@@ -2855,24 +2885,24 @@ function InactiveProtocolNotifier({
       }
     }
     prevMeshtasticRef.current = count;
-  }, [meshtasticDevice.messages, protocol, addToast, t]);
+  }, [meshtasticMessages, protocol, addToast, t]);
 
   // Notify when MeshCore (inactive) gets new messages
   useEffect(() => {
     if (protocol === 'meshcore') {
       // Now active — reset tracking
       isInitMeshcoreRef.current = true;
-      prevMeshcoreRef.current = meshcoreDevice.messages.length;
+      prevMeshcoreRef.current = meshcoreMessages.length;
       return;
     }
-    const count = meshcoreDevice.messages.length;
+    const count = meshcoreMessages.length;
     if (isInitMeshcoreRef.current) {
       prevMeshcoreRef.current = count;
       if (count > 0) isInitMeshcoreRef.current = false;
       return;
     }
     if (count > prevMeshcoreRef.current) {
-      const newMsgs = meshcoreDevice.messages.slice(prevMeshcoreRef.current);
+      const newMsgs = meshcoreMessages.slice(prevMeshcoreRef.current);
       const realNew = newMsgs.filter((m) => !m.emoji && !m.isHistory);
       if (realNew.length > 0) {
         addToast(
@@ -2883,7 +2913,7 @@ function InactiveProtocolNotifier({
       }
     }
     prevMeshcoreRef.current = count;
-  }, [meshcoreDevice.messages, protocol, addToast, t]);
+  }, [meshcoreMessages, protocol, addToast, t]);
 
   return null;
 }

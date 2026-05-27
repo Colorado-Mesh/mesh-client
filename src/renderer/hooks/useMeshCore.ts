@@ -3391,6 +3391,8 @@ export function useMeshCore() {
         meshcoreIngressDetachRef.current();
       }
       const transportType = meshcoreConnectTypeRef.current;
+      // MeshCore protocol ingress covers advert/DM/channel only; waiting messages,
+      // stats, MQTT, and repeater RPCs stay in this hook — see docs/hook-deconstruction-ingress.md.
       const ingress = bindMeshcoreIngress(
         conn as unknown as Connection,
         transportType,

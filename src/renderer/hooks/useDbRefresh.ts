@@ -1,66 +1,9 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
-import type { ChatMessage, IdentityId, MeshNode } from '../lib/types';
-import type { MessageRecord } from '../stores/messageStore';
+import { chatMessageToMessageRecord, meshNodeToNodeRecord } from '../lib/storeRecordAdapters';
+import type { IdentityId } from '../lib/types';
 import { upsertMessage } from '../stores/messageStore';
-import type { NodeRecord } from '../stores/nodeStore';
 import { upsertNode } from '../stores/nodeStore';
-
-function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
-  const role =
-    typeof node.role === 'number'
-      ? node.role
-      : typeof node.role === 'string'
-        ? Number(node.role)
-        : undefined;
-  return {
-    nodeId: node.node_id,
-    longName: node.long_name || undefined,
-    shortName: node.short_name || undefined,
-    hwModel: node.hw_model || undefined,
-    snr: node.snr,
-    rssi: node.rssi,
-    batteryLevel: node.battery,
-    lastHeardAt: node.last_heard,
-    latitude: node.latitude ?? undefined,
-    longitude: node.longitude ?? undefined,
-    role: role != null && Number.isFinite(role) ? role : undefined,
-    hopsAway: node.hops_away,
-    viaMqtt: node.via_mqtt,
-    hops: node.hops,
-    path: node.path,
-    heardViaMqttOnly: node.heard_via_mqtt_only,
-    heardViaMqtt: node.heard_via_mqtt,
-    source: node.source,
-    onRadio: node.on_radio,
-    favorited: node.favorited,
-    meshcoreLocalStats: node.meshcore_local_stats,
-  };
-}
-
-function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
-  const id =
-    msg.packetId != null
-      ? String(msg.packetId)
-      : `${msg.sender_id}-${msg.timestamp}-${msg.channel}`;
-  return {
-    id,
-    from: msg.sender_id,
-    senderName: msg.sender_name,
-    to: msg.to ?? 0xffffffff,
-    payload: msg.payload,
-    channelIndex: msg.channel,
-    timestamp: msg.timestamp,
-    status: msg.status === 'queued' || msg.status === 'blocked' ? undefined : msg.status,
-    mqttStatus: msg.mqttStatus,
-    receivedVia: msg.receivedVia,
-    isHistory: msg.isHistory,
-    error: msg.error,
-    replyTo: msg.replyId != null ? String(msg.replyId) : undefined,
-    replyPreviewText: msg.replyPreviewText,
-    replyPreviewSender: msg.replyPreviewSender,
-  };
-}
 
 /**
  * Re-pulls Meshtastic nodes from SQLite into the identity-scoped node store.
@@ -95,4 +38,14 @@ export function useRefreshMessagesFromDb(identityId: IdentityId | null) {
       console.warn('[useRefreshMessagesFromDb] failed', e);
     }
   }, [identityId]);
+}
+
+/** Combined DB → store refresh helpers for App startup and prune callbacks. */
+export function useDbRefresh(identityId: IdentityId | null) {
+  const refreshNodesFromDb = useRefreshNodesFromDb(identityId);
+  const refreshMessagesFromDb = useRefreshMessagesFromDb(identityId);
+  return useMemo(
+    () => ({ refreshNodesFromDb, refreshMessagesFromDb }),
+    [refreshNodesFromDb, refreshMessagesFromDb],
+  );
 }

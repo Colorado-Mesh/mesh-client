@@ -72,12 +72,49 @@ export class ConnectionDriver {
   /** transport-key → identityId; persists identity across reconnects of the same physical device. */
   private transportKeyMap = new Map<string, IdentityId>();
 
+  /** Resolve identity from transport and/or device-intrinsic signature keys. */
+  lookupIdentityId(...keys: string[]): IdentityId | null {
+    for (const key of keys) {
+      if (!key) continue;
+      const fromMap = this.transportKeyMap.get(key);
+      if (fromMap && getIdentity(fromMap)) return fromMap;
+      const fromStore = findIdentityBySignature(key);
+      if (fromStore) {
+        this.transportKeyMap.set(key, fromStore.id);
+        return fromStore.id;
+      }
+    }
+    return null;
+  }
+
+  /** Register all signature aliases for one identity (provisional transport + resolved node). */
+  registerTransportKeys(identityId: IdentityId, ...keys: string[]): void {
+    for (const key of keys) {
+      if (key) this.transportKeyMap.set(key, identityId);
+    }
+  }
+
+  /**
+   * After Meshtastic `onMyNodeInfo`, map the node-intrinsic signature so reconnect
+   * via transport key still resolves the same identity slice.
+   */
+  remapMeshtasticNodeSignature(
+    identityId: IdentityId,
+    params: TransportParams,
+    myNodeNum: number,
+  ): void {
+    const provisionalKey = meshtasticProtocol.identitySignature(params);
+    const resolvedKey = meshtasticProtocol.identitySignature(params, { myNodeNum });
+    updateIdentity(identityId, { signature: resolvedKey, selfNodeNum: myNodeNum });
+    this.registerTransportKeys(identityId, provisionalKey, resolvedKey);
+  }
+
   async connect(protocolType: string, params: TransportParams): Promise<IdentityId> {
     const protocol = PROTOCOLS[protocolType];
     if (!protocol) throw new Error(`Unknown protocol: ${protocolType}`);
 
     const provisionalKey = protocol.identitySignature(params);
-    let identityId = this.transportKeyMap.get(provisionalKey) ?? '';
+    let identityId = this.lookupIdentityId(provisionalKey) ?? '';
     let createdProvisional = false;
 
     if (!identityId || !getIdentity(identityId)) {
@@ -126,9 +163,10 @@ export class ConnectionDriver {
         publicKey: info.publicKey,
         selfNodeNum: info.myNodeNum,
       });
-      this.transportKeyMap.set(resolvedKey, identityId);
+      this.registerTransportKeys(identityId, provisionalKey, resolvedKey);
+    } else {
+      this.registerTransportKeys(identityId, provisionalKey);
     }
-    this.transportKeyMap.set(provisionalKey, identityId);
 
     const transportId = randomId('t');
     const resolvedIdentityId = identityId;
@@ -229,8 +267,7 @@ export class ConnectionDriver {
       teardown,
       lastDataAt: Date.now(),
     });
-    const provisionalKey = protocol.identitySignature(params);
-    this.transportKeyMap.set(provisionalKey, identityId);
+    this.registerTransportKeys(identityId, protocol.identitySignature(params));
     return () => {
       try {
         teardown();

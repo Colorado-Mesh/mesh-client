@@ -21,19 +21,30 @@ function randomIdentityId(prefix: string): IdentityId {
 
 function resolveOrCreateIdentity(
   protocol: typeof meshtasticProtocol | typeof meshcoreProtocol,
-  signature: string,
+  params: TransportParams,
+  discovery?: DiscoveryInfo,
 ): IdentityId {
-  const matched = findIdentityBySignature(signature);
-  if (matched) return matched.id;
+  const provisionalKey = protocol.identitySignature(params);
+  const resolvedKey = discovery ? protocol.identitySignature(params, discovery) : provisionalKey;
+  const existing =
+    connectionDriver.lookupIdentityId(resolvedKey, provisionalKey) ??
+    findIdentityBySignature(resolvedKey)?.id ??
+    findIdentityBySignature(provisionalKey)?.id ??
+    null;
+  if (existing) {
+    connectionDriver.registerTransportKeys(existing, provisionalKey, resolvedKey);
+    return existing;
+  }
   const identityId = randomIdentityId(protocol.type);
   addIdentity({
     id: identityId,
     protocol,
-    signature,
+    signature: resolvedKey,
     transports: [],
     createdAt: Date.now(),
     lastSeenAt: Date.now(),
   });
+  connectionDriver.registerTransportKeys(identityId, provisionalKey, resolvedKey);
   return identityId;
 }
 
@@ -69,14 +80,12 @@ export function bindMeshtasticIngress(
   discovery?: DiscoveryInfo,
 ): MeshtasticIngressBind {
   const params = meshtasticTransportParams(type, opts);
-  const signature = meshtasticProtocol.identitySignature(params, discovery);
-  const identityId = resolveOrCreateIdentity(meshtasticProtocol, signature);
-  if (discovery) {
-    updateIdentity(identityId, {
-      signature,
-      selfNodeNum: discovery.myNodeNum,
-      publicKey: discovery.publicKey,
-    });
+  const identityId = resolveOrCreateIdentity(meshtasticProtocol, params, discovery);
+  if (discovery?.myNodeNum != null && discovery.myNodeNum > 0) {
+    connectionDriver.remapMeshtasticNodeSignature(identityId, params, discovery.myNodeNum);
+    if (discovery.publicKey) {
+      updateIdentity(identityId, { publicKey: discovery.publicKey });
+    }
   }
   setConnection(identityId, { status: 'connecting', connectionType: type });
   setActiveIdentity(identityId);
@@ -124,11 +133,10 @@ export function bindMeshcoreIngress(
   discovery?: DiscoveryInfo,
 ): MeshcoreIngressBind {
   const params = meshcoreTransportParams(type, opts);
-  const signature = meshcoreProtocol.identitySignature(params, discovery);
-  const identityId = resolveOrCreateIdentity(meshcoreProtocol, signature);
+  const identityId = resolveOrCreateIdentity(meshcoreProtocol, params, discovery);
   if (discovery) {
     updateIdentity(identityId, {
-      signature,
+      signature: meshcoreProtocol.identitySignature(params, discovery),
       selfNodeNum: discovery.myNodeNum,
       publicKey: discovery.publicKey,
     });
