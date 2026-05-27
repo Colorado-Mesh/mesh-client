@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 
+import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { chatMessageToMessageRecord, meshNodeToNodeRecord } from '../lib/storeRecordAdapters';
 import type { IdentityId } from '../lib/types';
 import { upsertMessage } from '../stores/messageStore';
@@ -18,7 +19,7 @@ export function useRefreshNodesFromDb(identityId: IdentityId | null) {
         upsertNode(identityId, meshNodeToNodeRecord(row));
       }
     } catch (e) {
-      console.warn('[useRefreshNodesFromDb] failed', e);
+      console.warn('[useRefreshNodesFromDb] failed ' + errLikeToLogString(e));
     }
   }, [identityId]);
 }
@@ -35,7 +36,7 @@ export function useRefreshMessagesFromDb(identityId: IdentityId | null) {
         upsertMessage(identityId, chatMessageToMessageRecord(row));
       }
     } catch (e) {
-      console.warn('[useRefreshMessagesFromDb] failed', e);
+      console.warn('[useRefreshMessagesFromDb] failed ' + errLikeToLogString(e));
     }
   }, [identityId]);
 }

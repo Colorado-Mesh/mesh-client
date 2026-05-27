@@ -1426,6 +1426,10 @@ export function useMeshtasticRuntime() {
       meshtasticDriverConnectedRef.current = true;
       const device = connectionDriver.getHandle(identityId) as MeshDevice | null;
       if (!device) {
+        meshtasticDriverConnectedRef.current = false;
+        await connectionDriver.disconnect(identityId).catch((e: unknown) => {
+          console.debug('[useDevice] openMeshtasticTransport rollback ' + errLikeToLogString(e));
+        });
         throw new Error('[useDevice] ConnectionDriver.connect returned no handle');
       }
       return { device, driverIdentityId: identityId };
@@ -1637,8 +1641,9 @@ export function useMeshtasticRuntime() {
     // Check if user manually disconnected or started a new connection during the wait
     if (!isReconnectingRef.current || reconnectGenerationRef.current !== generation) return;
 
+    let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
     try {
-      const opened = await openMeshtasticTransport(params.type, {
+      opened = await openMeshtasticTransport(params.type, {
         httpAddress: params.httpAddress,
         blePeripheralId: params.blePeripheralId,
       });
@@ -1654,7 +1659,9 @@ export function useMeshtasticRuntime() {
       isReconnectingRef.current = false;
     } catch (err) {
       const failedDriverIdentity =
-        meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+        opened?.driverIdentityId ??
+        meshtasticIdentityIdRef.current ??
+        meshtasticPendingDriverIdentityRef.current;
       deviceRef.current = null;
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
@@ -1677,7 +1684,7 @@ export function useMeshtasticRuntime() {
   attemptReconnectRef.current = attemptReconnect;
 
   const prepareRfConnect = useCallback(
-    (type: ConnectionType, httpAddress?: string, blePeripheralId?: string): Promise<void> => {
+    async (type: ConnectionType, httpAddress?: string, blePeripheralId?: string): Promise<void> => {
       clearConfigureTimeout();
       if (deviceRef.current || meshtasticDriverConnectedRef.current) {
         cleanupSubscriptions();
@@ -1688,7 +1695,7 @@ export function useMeshtasticRuntime() {
         meshtasticDriverConnectedRef.current = false;
         meshtasticPendingDriverIdentityRef.current = null;
         if (driverIdentity) {
-          void connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
+          await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
             console.debug(
               '[useDevice] prepareRfConnect driver disconnect ' + errLikeToLogString(e),
             );
@@ -1707,7 +1714,6 @@ export function useMeshtasticRuntime() {
         batteryPercent: undefined,
         batteryCharging: undefined,
       }));
-      return Promise.resolve();
     },
     [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog],
   );

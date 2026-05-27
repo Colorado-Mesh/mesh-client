@@ -18,14 +18,9 @@ import {
 const IDENTITY_ACTIONS = 'id-conn-actions-mt';
 
 const mockDriverConnect = vi.fn().mockResolvedValue('id-meshtastic-driver');
-const mockDriverDisconnect = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('./useConnect', () => ({
   useConnect: () => mockDriverConnect,
-}));
-
-vi.mock('./useDisconnect', () => ({
-  useDisconnect: () => mockDriverDisconnect,
 }));
 
 function createMeshtasticSessionStub(): MeshtasticSessionApi {
@@ -95,6 +90,19 @@ describe('useProtocolConnect (driver-first)', () => {
     expect(meshtastic.attachRfSession).not.toHaveBeenCalled();
   });
 
+  it('calls MeshCore handleRfConnectFailure when attach fails', async () => {
+    const meshcore = createMeshcoreSessionStub();
+    meshcore.attachRfSession = vi.fn().mockRejectedValue(new Error('init failed'));
+    registerMeshcoreSession(meshcore);
+    const { result } = renderHook(() => useProtocolConnect());
+
+    await expect(result.current('meshcore', 'serial', undefined, undefined)).rejects.toThrow(
+      'init failed',
+    );
+
+    expect(meshcore.handleRfConnectFailure).toHaveBeenCalledWith('serial', 'id-meshtastic-driver');
+  });
+
   it('maps http to tcp and attaches MeshCore session', async () => {
     const meshcore = createMeshcoreSessionStub();
     registerMeshcoreSession(meshcore);
@@ -130,7 +138,6 @@ describe('useProtocolDisconnect (driver-first)', () => {
     await result.current('meshtastic');
 
     expect(meshtastic.finalizeDriverDisconnect).toHaveBeenCalledWith({ disconnectDriver: true });
-    expect(mockDriverDisconnect).not.toHaveBeenCalled();
   });
 });
 

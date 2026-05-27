@@ -8,10 +8,6 @@ export function useConnectionStatus(identityId: IdentityId): ConnectionRecord | 
   return useConnectionStore((s) => s.connections[identityId] ?? null);
 }
 
-export function useAllConnections(): ConnectionRecord[] {
-  return useConnectionStore((s) => Object.values(s.connections));
-}
-
 /** Queue depth from identity-scoped connection store (PacketRouter `queue_status`). */
 export function useConnectionQueue(
   identityId: IdentityId | null,

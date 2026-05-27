@@ -24,6 +24,7 @@ import {
   upsertNode,
   upsertWaypoint,
 } from '../../stores/nodeStore';
+import { errLikeToLogString } from '../errLikeToLogString';
 import type { DomainEvent } from '../protocols/Protocol';
 import type { IdentityId } from '../types';
 
@@ -159,7 +160,7 @@ class PacketRouter {
       try {
         listener(event, identityId);
       } catch (e) {
-        console.warn('[PacketRouter] listener error', e);
+        console.warn('[PacketRouter] listener error ' + errLikeToLogString(e));
       }
     }
   }

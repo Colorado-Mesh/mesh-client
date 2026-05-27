@@ -12,6 +12,7 @@ import {
 } from '../../stores/identityStore';
 import { clearMessageIdentity } from '../../stores/messageStore';
 import { clearNodeIdentity } from '../../stores/nodeStore';
+import { errLikeToLogString } from '../errLikeToLogString';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import type { DiscoveryInfo, DomainEvent, Protocol } from '../protocols/Protocol';
 import { getProtocolForType } from '../protocols/protocolRegistry';
@@ -23,10 +24,6 @@ import type {
   TransportType,
 } from '../types';
 import { packetRouter } from './PacketRouter';
-
-export function getProtocol(type: string): Protocol | null {
-  return getProtocolForType(type);
-}
 
 interface TransportSlot {
   transportId: string;
@@ -210,10 +207,10 @@ export class ConnectionDriver {
       try {
         slot.teardown();
       } catch (e) {
-        console.debug('[ConnectionDriver] teardown error', e);
+        console.debug('[ConnectionDriver] teardown error ' + errLikeToLogString(e));
       }
       await slot.protocol.destroyDevice(slot.handle).catch((e: unknown) => {
-        console.debug('[ConnectionDriver] destroy error', e);
+        console.debug('[ConnectionDriver] destroy error ' + errLikeToLogString(e));
       });
       this.slots.delete(slot.transportId);
       removeTransport(identityId, slot.transportId);
@@ -271,7 +268,7 @@ export class ConnectionDriver {
       try {
         teardown();
       } catch (e) {
-        console.debug('[ConnectionDriver] legacy teardown error', e);
+        console.debug('[ConnectionDriver] legacy teardown error ' + errLikeToLogString(e));
       }
       this.slots.delete(transportId);
       removeTransport(identityId, transportId);

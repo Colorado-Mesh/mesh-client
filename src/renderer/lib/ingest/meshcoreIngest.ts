@@ -5,6 +5,7 @@
  */
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
+import { errLikeToLogString } from '../errLikeToLogString';
 import { nodeRecordToMeshNode } from '../storeRecordAdapters';
 import type { IdentityId } from '../types';
 
@@ -13,7 +14,7 @@ function persistContactNodes(identityId: IdentityId): void {
   for (const record of Object.values(byId)) {
     const meshNode = nodeRecordToMeshNode(record);
     void window.electronAPI.db.saveNode(meshNode).catch((e: unknown) => {
-      console.debug('[meshcoreIngest] saveNode failed', e);
+      console.debug('[meshcoreIngest] saveNode failed ' + errLikeToLogString(e));
     });
   }
 }

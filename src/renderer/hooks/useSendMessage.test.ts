@@ -10,6 +10,9 @@ import {
 } from '../lib/sessions/meshtasticSession';
 import { setConnection } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
+import { useMessageStore } from '../stores/messageStore';
+
+const ID_MC_FAIL = 'id-send-mc-fail';
 import { useSendMessage } from './useSendMessage';
 
 const ID_MT = 'id-send-mt';
@@ -37,6 +40,7 @@ describe('useSendMessage', () => {
     vi.clearAllMocks();
     registerMeshtasticSession(null);
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
+    useMessageStore.setState({ messages: {} });
     vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
   });
 
@@ -103,6 +107,34 @@ describe('useSendMessage', () => {
         handle,
         expect.objectContaining({ text: 'hi meshcore', channelIndex: 1 }),
       );
+    });
+    sendSpy.mockRestore();
+  });
+
+  it('marks optimistic message failed when protocol send rejects', async () => {
+    const sendSpy = vi
+      .spyOn(meshcoreProtocol, 'sendMessage')
+      .mockRejectedValue(new Error('rf down'));
+    const handle = { kind: 'rf' };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    addIdentity({
+      id: ID_MC_FAIL,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc-fail',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC_FAIL, { status: 'configured', myNodeNum: 7 });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC_FAIL));
+    result.current('fail payload', 0);
+
+    await vi.waitFor(() => {
+      const rows = Object.values(useMessageStore.getState().messages[ID_MC_FAIL] ?? {});
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.status).toBe('failed');
+      expect(rows[0]?.error).toContain('rf down');
     });
     sendSpy.mockRestore();
   });

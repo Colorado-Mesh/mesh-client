@@ -10,10 +10,6 @@ vi.mock('./useConnect', () => ({
   useConnect: () => vi.fn().mockResolvedValue('id-driver'),
 }));
 
-vi.mock('./useDisconnect', () => ({
-  useDisconnect: () => vi.fn().mockResolvedValue(undefined),
-}));
-
 const IDENTITY = 'id-facade-mt';
 
 function runtimeStub() {

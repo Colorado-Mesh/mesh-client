@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
-import type { ChatMessage, MeshNode } from '../lib/types';
 import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
+import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from './storeRecordAdapters';
+import type { ChatMessage, MeshNode } from './types';
 
 describe('store record adapters (merge precedence)', () => {
   it('messageRecordsToChatMessages preserves packet id keys', () => {

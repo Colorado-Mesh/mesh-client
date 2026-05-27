@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { addIdentity, setActiveIdentity, useIdentityStore } from '../stores/identityStore';
-import { getIdentityIdForProtocol } from './identityByProtocol';
+import { getIdentityIdForProtocol, resolveIdentityIdForProtocol } from './identityByProtocol';
 import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from './protocols/MeshtasticProtocol';
 
@@ -50,5 +50,20 @@ describe('getIdentityIdForProtocol', () => {
     });
     setActiveIdentity('id-mc');
     expect(getIdentityIdForProtocol('meshtastic')).toBe('id-mt');
+  });
+
+  it('resolveIdentityIdForProtocol matches getIdentityIdForProtocol', () => {
+    addIdentity({
+      id: 'id-mt-resolve',
+      protocol: meshtasticProtocol,
+      signature: 'c',
+      transports: [],
+      createdAt: 3,
+      lastSeenAt: 1,
+    });
+    const state = useIdentityStore.getState();
+    expect(
+      resolveIdentityIdForProtocol(state.identities, state.activeIdentityId, 'meshtastic'),
+    ).toBe(getIdentityIdForProtocol('meshtastic'));
   });
 });

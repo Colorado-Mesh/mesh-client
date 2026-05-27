@@ -29,6 +29,7 @@ export async function openMeshCoreTransport(
   const identityId = await connectionDriver.connect('meshcore', params);
   const conn = connectionDriver.getHandle(identityId);
   if (!conn) {
+    await connectionDriver.disconnect(identityId).catch(() => {});
     throw new Error('[openMeshCoreTransport] ConnectionDriver.connect returned no handle');
   }
   return { conn: conn as Connection, driverIdentityId: identityId };

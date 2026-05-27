@@ -1451,19 +1451,29 @@ export function useMeshcoreRuntime() {
   );
 
   const prepareRfConnect = useCallback(
-    (type: 'ble' | 'serial' | 'tcp'): Promise<void> => {
+    async (type: 'ble' | 'serial' | 'tcp'): Promise<void> => {
       if (type === 'ble' && bleConnectInProgressRef.current) {
-        return Promise.reject(
-          new Error(
-            'Bluetooth connection already in progress. Wait for it to finish or cancel, then try again.',
-          ),
+        throw new Error(
+          'Bluetooth connection already in progress. Wait for it to finish or cancel, then try again.',
         );
       }
+      const driverIdentity = meshcoreDriverConnectedRef.current
+        ? (meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current)
+        : null;
       const staleConn = connRef.current;
       connRef.current = null;
-      if (staleConn) {
-        teardownMeshcoreConnEventListeners();
-        void staleConn.close().catch(() => {});
+      if (driverIdentity) {
+        meshcoreDriverConnectedRef.current = false;
+        meshcorePendingDriverIdentityRef.current = null;
+        teardownMeshcoreConnEventListeners({
+          driverDisconnect: true,
+          driverIdentityId: driverIdentity,
+        });
+      } else if (staleConn) {
+        teardownMeshcoreConnEventListeners({ driverDisconnect: false });
+        await staleConn.close().catch((e: unknown) => {
+          console.debug('[useMeshCore] prepareRfConnect close ' + errLikeToLogString(e));
+        });
       }
       meshcoreConnectTypeRef.current = type;
       setState({
@@ -1473,7 +1483,6 @@ export function useMeshcoreRuntime() {
         connectionLoss: false,
       });
       if (type === 'ble') bleConnectInProgressRef.current = true;
-      return Promise.resolve();
     },
     [teardownMeshcoreConnEventListeners],
   );
@@ -1489,7 +1498,9 @@ export function useMeshcoreRuntime() {
       }
       if (meshcoreSetupGenerationRef.current !== setupGen) {
         meshcoreDriverConnectedRef.current = false;
-        await connectionDriver.disconnect(driverIdentityId).catch(() => {});
+        await connectionDriver.disconnect(driverIdentityId).catch((e: unknown) => {
+          console.debug('[useMeshCore] attachRfSession abort disconnect ' + errLikeToLogString(e));
+        });
         throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
       }
       connRef.current = conn;
@@ -1602,11 +1613,12 @@ export function useMeshcoreRuntime() {
       const meshcoreBleLinuxWebBluetooth =
         type === 'ble' && navigator.userAgent.toLowerCase().includes('linux');
 
+      let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
       try {
         if (type === 'ble' && !meshcoreBleLinuxWebBluetooth && !blePeripheralId) {
           throw new Error('BLE peripheral ID required');
         }
-        const opened = await openMeshCoreTransport(type, {
+        opened = await openMeshCoreTransport(type, {
           blePeripheralId,
           host: type === 'tcp' ? (tcpHost ?? 'localhost') : undefined,
         });
@@ -1617,9 +1629,7 @@ export function useMeshcoreRuntime() {
           err.name === 'AbortError' &&
           err.message === MESHCORE_SETUP_ABORT_MESSAGE;
         if (isSetupAbort) {
-          setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
-          teardownMeshcoreConnEventListeners();
-          connRef.current = null;
+          await handleRfConnectFailure(type, opened?.driverIdentityId);
           throw err;
         }
         const rawMessage = serializeErrorLike(err) || 'Connection failed';
@@ -1675,15 +1685,13 @@ export function useMeshcoreRuntime() {
             bleTimeoutStage: isBleConnectTimeout ? bleTimeoutStage : null,
           })}`,
         );
-        setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
-        teardownMeshcoreConnEventListeners();
-        connRef.current = null;
+        await handleRfConnectFailure(type, opened?.driverIdentityId);
         throw normalizedErr;
       } finally {
         if (type === 'ble') bleConnectInProgressRef.current = false;
       }
     },
-    [prepareRfConnect, attachRfSession, teardownMeshcoreConnEventListeners],
+    [prepareRfConnect, attachRfSession, handleRfConnectFailure],
   );
 
   /**
@@ -1699,28 +1707,13 @@ export function useMeshcoreRuntime() {
       lastSerialPortId?: string | null,
     ) => {
       if (type === 'serial') {
-        meshcoreConnectTypeRef.current = 'serial';
-        setState({
-          status: 'connecting',
-          myNodeNum: 0,
-          connectionType: 'serial',
-          connectionLoss: false,
-        });
+        await prepareRfConnect('serial');
+        let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
         try {
-          const setupGen = meshcoreSetupGenerationRef.current;
-          const opened = await openMeshCoreTransport('serial', {
+          opened = await openMeshCoreTransport('serial', {
             portSignature: lastSerialPortId,
           });
-          meshcoreDriverConnectedRef.current = true;
-          const conn = opened.conn as unknown as MeshCoreConnection;
-          if (meshcoreSetupGenerationRef.current !== setupGen) {
-            meshcoreDriverConnectedRef.current = false;
-            await connectionDriver.disconnect(opened.driverIdentityId).catch(() => {});
-            throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
-          }
-          connRef.current = conn;
-          meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
-          await initConn(conn, setupGen, { driverIdentityId: opened.driverIdentityId });
+          await attachRfSession(opened.driverIdentityId, 'serial');
         } catch (err) {
           const isSetupAbort =
             err instanceof DOMException &&
@@ -1732,9 +1725,7 @@ export function useMeshcoreRuntime() {
               serializeErrorLike(err) || err,
             );
           }
-          setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
-          connRef.current = null;
-          teardownMeshcoreConnEventListeners();
+          await handleRfConnectFailure('serial', opened?.driverIdentityId);
           throw err;
         }
       } else if (type === 'http') {
@@ -1760,7 +1751,7 @@ export function useMeshcoreRuntime() {
       }
       // BLE: requires user gesture — not supported for auto-connect
     },
-    [initConn, connect, setupEventListeners, teardownMeshcoreConnEventListeners],
+    [prepareRfConnect, attachRfSession, handleRfConnectFailure, connect],
   );
 
   const disconnect = useCallback(async () => {

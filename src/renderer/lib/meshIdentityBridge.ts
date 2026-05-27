@@ -64,8 +64,12 @@ export function meshtasticTransportParams(
       return { type: 'serial', portSignature: opts.portSignature };
     case 'http':
       return { type: 'http', host: opts.host ?? '' };
-    default:
-      return { type: 'http', host: '' };
+    default: {
+      const _exhaustive: never = type;
+      throw new Error(
+        `meshtasticTransportParams: unsupported connection type ${String(_exhaustive)}`,
+      );
+    }
   }
 }
 
@@ -137,8 +141,10 @@ export function meshcoreTransportParams(
       return { type: 'serial', portSignature: opts.portSignature };
     case 'tcp':
       return { type: 'tcp', host: opts.host ?? '' };
-    default:
-      return { type: 'tcp', host: '' };
+    default: {
+      const _exhaustive: never = type;
+      throw new Error(`meshcoreTransportParams: unsupported transport type ${String(_exhaustive)}`);
+    }
   }
 }
 

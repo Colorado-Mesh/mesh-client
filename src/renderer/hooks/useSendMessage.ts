@@ -1,11 +1,12 @@
 import { useCallback } from 'react';
 
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
+import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import type { IdentityId } from '../lib/types';
 import { getConnection } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
-import { addMessage, renameMessageId } from '../stores/messageStore';
+import { addMessage, renameMessageId, updateMessageStatus } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 
 export function useSendMessage(
@@ -76,7 +77,9 @@ export function useSendMessage(
           }
         })
         .catch((e: unknown) => {
-          console.warn('[useSendMessage] send failed', e);
+          const errMsg = errLikeToLogString(e);
+          console.warn('[useSendMessage] send failed ' + errMsg);
+          updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
         });
     },
     [identityId],
