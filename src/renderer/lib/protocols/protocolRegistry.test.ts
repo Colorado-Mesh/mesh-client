@@ -18,4 +18,14 @@ describe('protocolRegistry', () => {
     expect(reg?.protocol.type).toBe('meshtastic');
     expect(reg?.capabilities.hasRemoteAdmin).toBe(true);
   });
+
+  it('sets MeshCore-specific UI capability flags', () => {
+    const meshcore = getProtocolRegistration('meshcore');
+    expect(meshcore?.capabilities.nodeListTabUsesContactsLabel).toBe(true);
+    expect(meshcore?.capabilities.modulesTabUsesRepeatersLabel).toBe(true);
+    expect(meshcore?.capabilities.hasJsonRadioConfigImport).toBe(true);
+    const meshtastic = getProtocolRegistration('meshtastic');
+    expect(meshtastic?.capabilities.nodeListTabUsesContactsLabel).toBe(false);
+    expect(meshtastic?.capabilities.modulesTabUsesRepeatersLabel).toBe(false);
+  });
 });

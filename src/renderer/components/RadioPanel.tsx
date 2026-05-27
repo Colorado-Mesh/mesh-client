@@ -1026,7 +1026,7 @@ export default function RadioPanel({
     <div className="w-full space-y-4">
       <h2 className="text-xl font-semibold text-gray-200">{t('radioPanel.title')}</h2>
 
-      {capabilities?.protocol === 'meshcore' && (
+      {capabilities?.hasJsonRadioConfigImport && (
         <div className="flex justify-end">
           <button
             type="button"
@@ -1101,7 +1101,7 @@ export default function RadioPanel({
         />
       )}
 
-      {capabilities?.protocol === 'meshcore' && meshcoreChannels !== undefined && (
+      {!capabilities?.hasChannelConfig && meshcoreChannels !== undefined && (
         <MeshcoreChannelSection
           channels={meshcoreChannels}
           onSetChannel={onMeshcoreSetChannel ?? (async () => {})}
@@ -1189,7 +1189,7 @@ export default function RadioPanel({
       >
         <div className="space-y-1">
           <label htmlFor="radio-long-name" className="text-muted text-sm">
-            {capabilities?.protocol === 'meshcore'
+            {capabilities?.hasCompanionContactManagementConfig
               ? t('radioPanel.meshcoreNameFieldLabel')
               : t('radioPanel.longNameFieldLabel')}
           </label>
@@ -1199,18 +1199,18 @@ export default function RadioPanel({
             value={longName}
             onChange={(e) => {
               setLongName(
-                capabilities?.protocol === 'meshcore'
+                capabilities?.hasCompanionContactManagementConfig
                   ? e.target.value
                   : e.target.value.slice(0, 39),
               );
             }}
-            maxLength={capabilities?.protocol === 'meshcore' ? undefined : 39}
+            maxLength={capabilities?.hasCompanionContactManagementConfig ? undefined : 39}
             disabled={disabled}
             placeholder={t('radioPanel.yourNamePlaceholder')}
             className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
           />
           <p className="text-muted text-xs">
-            {capabilities?.protocol === 'meshcore'
+            {capabilities?.hasCompanionContactManagementConfig
               ? t('radioPanel.longNameHintMeshcore')
               : t('radioPanel.longNameHintMeshtastic')}
           </p>
@@ -1704,7 +1704,7 @@ export default function RadioPanel({
                     '[RadioPanel] send position to device failed ' + errLikeToLogString(err),
                   );
                   addToast(
-                    capabilities?.protocol === 'meshcore'
+                    capabilities?.hasCompanionContactManagementConfig
                       ? t('radioPanel.meshcoreGpsFailed', {
                           message: err instanceof Error ? err.message : 'unknown',
                         })
@@ -1945,7 +1945,7 @@ export default function RadioPanel({
       </div>
 
       {/* Device Actions (MeshCore) — non-destructive commands */}
-      {(onSendAdvert || onSyncClock || capabilities?.protocol === 'meshcore') && (
+      {(onSendAdvert || onSyncClock || capabilities?.hasCompanionContactManagementConfig) && (
         <div className="space-y-3">
           <h3 className="text-muted text-sm font-medium">{t('radioPanel.deviceActions')}</h3>
           <div className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2">
@@ -1977,7 +1977,7 @@ export default function RadioPanel({
                 )}
               </button>
             )}
-            {capabilities?.protocol === 'meshcore' && <ContactCountBadge />}
+            {capabilities?.hasCompanionContactManagementConfig && <ContactCountBadge />}
           </div>
         </div>
       )}
@@ -2013,10 +2013,9 @@ export default function RadioPanel({
                 executeWithConfirmation({
                   name: t('radioPanel.rebootName'),
                   title: t('radioPanel.rebootTitle'),
-                  message:
-                    capabilities?.protocol === 'meshcore'
-                      ? t('radioPanel.rebootMessageMeshcore')
-                      : t('radioPanel.rebootMessageMeshtastic'),
+                  message: capabilities?.hasCompanionContactManagementConfig
+                    ? t('radioPanel.rebootMessageMeshcore')
+                    : t('radioPanel.rebootMessageMeshtastic'),
                   confirmLabel: t('radioPanel.rebootConfirm'),
                   action: () => onReboot(2),
                 });
