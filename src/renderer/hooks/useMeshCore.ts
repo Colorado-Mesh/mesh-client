@@ -108,6 +108,7 @@ import {
   pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
 import { MeshcoreWebBluetoothConnection } from '../lib/meshcoreWebBluetoothConnection';
+import { bindMeshcoreIngress } from '../lib/meshIdentityBridge';
 import { getMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
 import {
@@ -147,6 +148,7 @@ import type {
   NobleBleSessionId,
   TelemetryPoint,
 } from '../lib/types';
+import { setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
@@ -1182,6 +1184,10 @@ export function useMeshCore() {
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
 
   const connRef = useRef<MeshCoreConnection | null>(null);
+  const meshcoreConnectTypeRef = useRef<'ble' | 'serial' | 'tcp'>('ble');
+  const meshcoreIngressDetachRef = useRef<(() => void) | null>(null);
+  const meshcoreIdentityIdRef = useRef<string | null>(null);
+  const [meshcoreIdentityId, setMeshcoreIdentityId] = useState<string | null>(null);
   const ipcTcpRef = useRef<IpcTcpConnection | null>(null);
   const ipcNobleRef = useRef<IpcNobleConnection | null>(null);
   const webBluetoothTransportRef = useRef<TransportWebBluetoothIpc | null>(null);
@@ -2008,6 +2014,16 @@ export function useMeshCore() {
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */
   const meshcoreConnEventListenersTeardownRef = useRef<(() => void) | null>(null);
   const teardownMeshcoreConnEventListeners = useCallback(() => {
+    if (meshcoreIngressDetachRef.current) {
+      try {
+        meshcoreIngressDetachRef.current();
+      } catch (e) {
+        console.debug('[useMeshCore] ingress detach error ' + errLikeToLogString(e));
+      }
+      meshcoreIngressDetachRef.current = null;
+    }
+    meshcoreIdentityIdRef.current = null;
+    setMeshcoreIdentityId(null);
     meshcoreConnEventListenersTeardownRef.current?.();
     meshcoreConnEventListenersTeardownRef.current = null;
   }, []);
@@ -3371,6 +3387,28 @@ export function useMeshCore() {
         useDiagnosticsStore.getState().migrateForeignLoraFromZero(myNodeId);
       }
 
+      if (meshcoreIngressDetachRef.current) {
+        meshcoreIngressDetachRef.current();
+      }
+      const transportType = meshcoreConnectTypeRef.current;
+      const ingress = bindMeshcoreIngress(
+        conn as unknown as Connection,
+        transportType,
+        {},
+        {
+          myNodeNum: myNodeId,
+          publicKey: info.publicKey,
+        },
+      );
+      meshcoreIngressDetachRef.current = ingress.detach;
+      meshcoreIdentityIdRef.current = ingress.identityId;
+      setMeshcoreIdentityId(ingress.identityId);
+      setConnection(ingress.identityId, {
+        status: 'configured',
+        connectionType: transportType === 'tcp' ? 'http' : transportType,
+        myNodeNum: myNodeId,
+      });
+
       try {
         const rawExport = await awaitUnlessMeshcoreSetupCancelled(
           setupGen,
@@ -3532,6 +3570,7 @@ export function useMeshCore() {
         void staleConn.close().catch(() => {});
       }
 
+      meshcoreConnectTypeRef.current = type;
       setState({
         status: 'connecting',
         myNodeNum: 0,
@@ -6219,6 +6258,7 @@ export function useMeshCore() {
       mqttStatus,
       mqttConnectionLoss,
       selfNodeId: state.myNodeNum,
+      identityId: meshcoreIdentityId,
       getNodes,
       getFullNodeLabel,
       getPickerStyleNodeLabel,
@@ -6295,6 +6335,7 @@ export function useMeshCore() {
       messages,
       channels,
       selfInfo,
+      meshcoreIdentityId,
       connect,
       disconnect,
       sendMessage,

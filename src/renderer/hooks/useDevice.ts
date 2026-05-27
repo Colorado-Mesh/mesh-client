@@ -94,6 +94,7 @@ import {
   shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
+import { bindMeshtasticIngress } from '../lib/meshIdentityBridge';
 import { setRemoteAdminReadsActive } from '../lib/meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
@@ -166,7 +167,9 @@ import type {
   RemoteConfigChannelsTailStatus,
   TelemetryPoint,
 } from '../lib/types';
+import { setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { updateIdentity } from '../stores/identityStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
 type ChannelType = Parameters<MeshDevice['setChannel']>[0];
@@ -282,6 +285,10 @@ export function useDevice() {
   const nodesRef = useRef<Map<number, MeshNode>>(new Map());
   // Track event unsubscribe functions for cleanup
   const unsubscribesRef = useRef<(() => void)[]>([]);
+  /** Protocol ingress + ConnectionDriver handle registration (issues #375 / #377). */
+  const meshtasticIngressDetachRef = useRef<(() => void) | null>(null);
+  const meshtasticIdentityIdRef = useRef<string | null>(null);
+  const [meshtasticIdentityId, setMeshtasticIdentityId] = useState<string | null>(null);
 
   // ─── Connection watchdog refs ─────────────────────────────────
   const lastDataReceivedRef = useRef<number>(Date.now());
@@ -619,6 +626,16 @@ export function useDevice() {
 
   // ─── Helper: clean up all event subscriptions ───────────────────
   const cleanupSubscriptions = useCallback(() => {
+    if (meshtasticIngressDetachRef.current) {
+      try {
+        meshtasticIngressDetachRef.current();
+      } catch (e) {
+        console.debug('[useDevice] ingress detach error (ignored) ' + errLikeToLogString(e));
+      }
+      meshtasticIngressDetachRef.current = null;
+    }
+    meshtasticIdentityIdRef.current = null;
+    setMeshtasticIdentityId(null);
     for (const unsub of unsubscribesRef.current) {
       try {
         unsub();
@@ -1480,6 +1497,20 @@ export function useDevice() {
   // ─── Wire up all event subscriptions for a device ─────────────
   const wireSubscriptions = useCallback(
     (device: MeshDevice, type: ConnectionType) => {
+      // Protocol ingress → identity-scoped stores (before legacy handlers so both
+      // receive SDK events when the transport supports multiple subscribers).
+      if (meshtasticIngressDetachRef.current) {
+        meshtasticIngressDetachRef.current();
+      }
+      const cp = connectionParamsRef.current;
+      const ingress = bindMeshtasticIngress(device, type, {
+        peripheralId: cp?.blePeripheralId,
+        host: cp?.httpAddress,
+      });
+      meshtasticIngressDetachRef.current = ingress.detach;
+      meshtasticIdentityIdRef.current = ingress.identityId;
+      setMeshtasticIdentityId(ingress.identityId);
+
       // ─── Device status ─────────────────────────────────────────
       const unsub1 = device.events.onDeviceStatus.subscribe((status) => {
         touchLastData();
@@ -1613,6 +1644,14 @@ export function useDevice() {
           });
         }
         myNodeNumRef.current = info.myNodeNum;
+        const identityId = meshtasticIdentityIdRef.current;
+        if (identityId) {
+          updateIdentity(identityId, {
+            selfNodeNum: info.myNodeNum,
+            signature: `meshtastic:node:${info.myNodeNum}`,
+          });
+          setConnection(identityId, { myNodeNum: info.myNodeNum, status: 'configured' });
+        }
         setMeshtasticConnectedMyNodeNum(info.myNodeNum);
         lastRfSelfNodeIdRef.current = info.myNodeNum;
         persistLastRfSelfNodeId(info.myNodeNum);
@@ -4883,6 +4922,8 @@ export function useDevice() {
     atakMessages,
     mapReports,
     privateMessages,
+    /** Identity id for protocol-scoped stores; null when disconnected. */
+    identityId: meshtasticIdentityId,
   };
 }
 

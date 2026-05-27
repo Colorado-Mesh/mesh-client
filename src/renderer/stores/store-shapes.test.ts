@@ -10,9 +10,14 @@
  */
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { useConnectionStore } from './connectionStore';
+import { useDeviceStore } from './deviceStore';
 import { useDiagnosticsStore } from './diagnosticsStore';
+import { useIdentityStore } from './identityStore';
 import { useMapLayerStore } from './mapLayerStore';
 import { useMapViewportStore } from './mapViewportStore';
+import { useMessageStore } from './messageStore';
+import { useNodeStore } from './nodeStore';
 import { usePositionHistoryStore } from './positionHistoryStore';
 import { useRepeaterSignalStore } from './repeaterSignalStore';
 
@@ -172,6 +177,65 @@ describe('store shape contracts', () => {
           "clearPendingFocus",
           "requestFocus",
           "setViewport",
+        ]
+      `);
+    });
+  });
+
+  describe('useIdentityStore', () => {
+    it('data property names are stable', () => {
+      const { data } = stateKeys(useIdentityStore.getState());
+      expect(data).toMatchInlineSnapshot(`
+        [
+          "activeIdentityId",
+          "identities",
+        ]
+      `);
+    });
+  });
+
+  describe('useConnectionStore', () => {
+    it('data property names are stable', () => {
+      const { data } = stateKeys(useConnectionStore.getState());
+      expect(data).toMatchInlineSnapshot(`
+        [
+          "connections",
+        ]
+      `);
+    });
+  });
+
+  describe('useNodeStore', () => {
+    it('data property names are stable', () => {
+      const { data } = stateKeys(useNodeStore.getState());
+      expect(data).toMatchInlineSnapshot(`
+        [
+          "neighborInfo",
+          "nodes",
+          "traceRoutes",
+          "waypoints",
+        ]
+      `);
+    });
+  });
+
+  describe('useMessageStore', () => {
+    it('data property names are stable', () => {
+      const { data } = stateKeys(useMessageStore.getState());
+      expect(data).toMatchInlineSnapshot(`
+        [
+          "messages",
+        ]
+      `);
+    });
+  });
+
+  describe('useDeviceStore', () => {
+    it('data property names are stable', () => {
+      const { data } = stateKeys(useDeviceStore.getState());
+      expect(data).toMatchInlineSnapshot(`
+        [
+          "devices",
         ]
       `);
     });

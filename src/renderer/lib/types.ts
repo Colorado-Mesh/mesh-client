@@ -12,6 +12,36 @@ export type { TAKClientInfo, TAKServerStatus, TAKSettings };
 
 export type ConnectionType = 'ble' | 'serial' | 'http';
 
+/** All transports the ConnectionDriver can manage. Superset of `ConnectionType`. */
+export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'mqtt';
+
+export type TransportStatus =
+  | 'connecting'
+  | 'connected'
+  | 'disconnected'
+  | 'reconnecting'
+  | 'stale';
+
+/** Transport-specific connect parameters. Open union — additional protocols add their own variants. */
+export type TransportParams =
+  | { type: 'ble'; peripheralId?: string }
+  | { type: 'serial'; portSignature?: string }
+  | { type: 'http'; host: string }
+  | { type: 'tcp'; host: string }
+  | { type: 'mqtt'; broker: string; topic?: string; pubkey?: string };
+
+export interface TransportRef {
+  /** Opaque id assigned by ConnectionDriver for this transport instance. */
+  transportId: string;
+  type: TransportType;
+  status: TransportStatus;
+  params: TransportParams;
+  /** Last raw event timestamp; watchdog reads this. */
+  lastDataReceivedAt?: number;
+}
+
+export type IdentityId = string;
+
 export type MeshProtocol = 'meshtastic' | 'meshcore';
 
 export type AnomalyType =
