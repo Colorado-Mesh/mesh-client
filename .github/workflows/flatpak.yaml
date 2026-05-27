@@ -57,7 +57,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: 'org.coloradomesh.MeshClient-*'
           path: flatpak-dist
@@ -80,7 +80,7 @@ jobs:
           done
 
       - name: Attach Flatpak to release
-        # softprops/action-gh-release v2
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
+        # softprops/action-gh-release v3 (Node 24)
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
         with:
           files: flatpak-dist/*.flatpak

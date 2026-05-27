@@ -88,7 +88,7 @@
     "@stoprocent/noble": "^2.5.3",
     "electron-updater": "^6.8.3",
     "emoji-picker-element": "^1.29.1",
-    "i18next": "^26.2.0",
+    "i18next": "^26.3.0",
     "jszip": "^3.10.1",
     "leaflet.markercluster": "^1.5.3",
     "mgrs": "^2.1.0",
@@ -121,7 +121,7 @@
     "@typescript-eslint/parser": "^8.60.0",
     "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^9.2.1",
-    "electron": "^41.7.0",
+    "electron": "^41.7.1",
     "electron-builder": "^26.11.1",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
@@ -182,6 +182,7 @@
       "@electron/asar": "^4.0.1",
       "@meshtastic/core": "npm:@jsr/meshtastic__core@^2.6.6",
       "cacheable-request": "^10.0.0",
+      "tmp": "^0.2.6",
       "yauzl": "^3.2.1"
     },
     "patchedDependencies": {
