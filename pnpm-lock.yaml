@@ -139,7 +139,7 @@ importers:
         version: 9.2.1
       electron:
         specifier: ^41.7.0
-        version: 41.7.0
+        version: 41.7.1
       electron-builder:
         specifier: ^26.11.1
         version: 26.11.1(electron-builder-squirrel-windows@26.11.1)
@@ -2039,8 +2039,8 @@ packages:
     resolution: {integrity: sha512-bO3y10YikuUwUuDUQRM4KfwNkKhnpVO7IPdbsrejwN9/AABJzzTQ4GeHwyzNSrVO+tEH3/Np255a3sVZpZDjvg==}
     engines: {node: '>=8.0.0'}
 
-  electron@41.7.0:
-    resolution: {integrity: sha512-U6KAKivjk6YQ0Z5+eloJBjwhbHRE206gvy1UBMw2bSluWtMh5waeXMvX6AT/Ujm5ymYXVJOp7g9N7vOFw16wBQ==}
+  electron@41.7.1:
+    resolution: {integrity: sha512-pdRvNNP99Qfvs1lyIxo/sfIGAwJP0CrJFNCE3goFKc7/fV+kjK3EPxx5Nt6sLTkzqTyeRYylpwPUfpeGojiyyw==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
 
@@ -4865,7 +4865,7 @@ snapshots:
       node-gyp: 11.5.0
       ora: 5.4.1
       read-binary-file-arch: 1.0.6
-      semver: 7.8.1
+      semver: 7.7.4
       tar: 7.5.15
       yargs: 17.7.2
     transitivePeerDependencies:
@@ -5174,7 +5174,7 @@ snapshots:
 
   '@npmcli/fs@4.0.0':
     dependencies:
-      semver: 7.8.1
+      semver: 7.7.4
 
   '@oxc-project/types@0.132.0': {}
 
@@ -5259,7 +5259,7 @@ snapshots:
   '@serialport/binding-mock@10.2.2':
     dependencies:
       '@serialport/bindings-interface': 1.2.2
-      debug: 4.4.3(patch_hash=cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37)
+      debug: 4.4.0
     transitivePeerDependencies:
       - supports-color
 
@@ -6519,7 +6519,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@41.7.0:
+  electron@41.7.1:
     dependencies:
       '@electron/get': 2.0.3
       '@types/node': 24.12.4
@@ -8056,7 +8056,7 @@ snapshots:
 
   node-abi@4.31.0:
     dependencies:
-      semver: 7.8.1
+      semver: 7.7.4
 
   node-addon-api@1.7.2:
     optional: true
@@ -8070,7 +8070,7 @@ snapshots:
 
   node-api-version@0.2.1:
     dependencies:
-      semver: 7.8.1
+      semver: 7.7.4
 
   node-exports-info@1.6.0:
     dependencies:
@@ -8094,7 +8094,7 @@ snapshots:
       make-fetch-happen: 14.0.3
       nopt: 8.1.0
       proc-log: 5.0.0
-      semver: 7.8.1
+      semver: 7.7.4
       tar: 7.5.15
       tinyglobby: 0.2.16
       which: 5.0.0
