@@ -35,6 +35,7 @@ function createMeshtasticSessionStub(): MeshtasticSessionApi {
     handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
     finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
     connectAutomatic: vi.fn(),
+    sendChatMessage: vi.fn(),
   };
 }
 
@@ -66,6 +67,34 @@ describe('useProtocolConnect (driver-first)', () => {
     expect(meshtastic.attachRfSession).toHaveBeenCalledWith('id-meshtastic-driver', 'serial');
   });
 
+  it('calls handleRfConnectFailure with driver id when attach fails', async () => {
+    const meshtastic = createMeshtasticSessionStub();
+    meshtastic.attachRfSession = vi.fn().mockRejectedValue(new Error('configure failed'));
+    registerMeshtasticSession(meshtastic);
+    const { result } = renderHook(() => useProtocolConnect());
+
+    await expect(result.current('meshtastic', 'serial', undefined, undefined)).rejects.toThrow(
+      'configure failed',
+    );
+
+    expect(meshtastic.handleRfConnectFailure).toHaveBeenCalledWith('id-meshtastic-driver');
+    expect(meshtastic.attachRfSession).toHaveBeenCalled();
+  });
+
+  it('calls handleRfConnectFailure without driver id when driver connect fails', async () => {
+    mockDriverConnect.mockRejectedValueOnce(new Error('driver connect failed'));
+    const meshtastic = createMeshtasticSessionStub();
+    registerMeshtasticSession(meshtastic);
+    const { result } = renderHook(() => useProtocolConnect());
+
+    await expect(result.current('meshtastic', 'serial', undefined, undefined)).rejects.toThrow(
+      'driver connect failed',
+    );
+
+    expect(meshtastic.handleRfConnectFailure).toHaveBeenCalledWith(undefined);
+    expect(meshtastic.attachRfSession).not.toHaveBeenCalled();
+  });
+
   it('maps http to tcp and attaches MeshCore session', async () => {
     const meshcore = createMeshcoreSessionStub();
     registerMeshcoreSession(meshcore);
@@ -93,15 +122,15 @@ describe('useProtocolDisconnect (driver-first)', () => {
     });
   });
 
-  it('finalizes session then disconnects driver for the protocol identity', async () => {
+  it('finalizes session with driver disconnect (single teardown owner)', async () => {
     const meshtastic = createMeshtasticSessionStub();
     registerMeshtasticSession(meshtastic);
     const { result } = renderHook(() => useProtocolDisconnect());
 
     await result.current('meshtastic');
 
-    expect(meshtastic.finalizeDriverDisconnect).toHaveBeenCalled();
-    expect(mockDriverDisconnect).toHaveBeenCalledWith('id-meshtastic-test');
+    expect(meshtastic.finalizeDriverDisconnect).toHaveBeenCalledWith({ disconnectDriver: true });
+    expect(mockDriverDisconnect).not.toHaveBeenCalled();
   });
 });
 

@@ -250,6 +250,8 @@ export function useMeshcoreRuntime() {
   const meshcoreIngressDetachRef = useRef<(() => void) | null>(null);
   const meshcoreIngestDetachRef = useRef<(() => void) | null>(null);
   const meshcoreIdentityIdRef = useRef<string | null>(null);
+  /** Driver identity from connect until initConn binds the store identity. */
+  const meshcorePendingDriverIdentityRef = useRef<string | null>(null);
   const meshcoreDriverConnectedRef = useRef(false);
   const [meshcoreIdentityId, setMeshcoreIdentityId] = useState<string | null>(null);
   const bleConnectInProgressRef = useRef(false);
@@ -1062,18 +1064,20 @@ export function useMeshcoreRuntime() {
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */
   const meshcoreConnEventListenersTeardownRef = useRef<(() => void) | null>(null);
   const teardownMeshcoreConnEventListeners = useCallback(
-    (opts?: { driverDisconnect?: boolean }) => {
+    (opts?: { driverDisconnect?: boolean; driverIdentityId?: string }) => {
       if (meshcoreIngestDetachRef.current) {
         meshcoreIngestDetachRef.current();
         meshcoreIngestDetachRef.current = null;
       }
       const driverIdentity =
-        meshcoreDriverConnectedRef.current && meshcoreIdentityIdRef.current
-          ? meshcoreIdentityIdRef.current
-          : null;
+        opts?.driverIdentityId ??
+        (meshcoreDriverConnectedRef.current
+          ? (meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current)
+          : null);
       const shouldDriverDisconnect = opts?.driverDisconnect !== false;
       if (driverIdentity && shouldDriverDisconnect) {
         meshcoreDriverConnectedRef.current = false;
+        meshcorePendingDriverIdentityRef.current = null;
         void connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
           console.debug('[useMeshCore] driver disconnect ' + errLikeToLogString(e));
         });
@@ -1086,6 +1090,7 @@ export function useMeshcoreRuntime() {
         meshcoreIngressDetachRef.current = null;
       }
       meshcoreIdentityIdRef.current = null;
+      meshcorePendingDriverIdentityRef.current = null;
       setMeshcoreIdentityId(null);
       meshcoreConnEventListenersTeardownRef.current?.();
       meshcoreConnEventListenersTeardownRef.current = null;
@@ -1477,6 +1482,7 @@ export function useMeshcoreRuntime() {
     async (driverIdentityId: string, type: 'ble' | 'serial' | 'tcp'): Promise<void> => {
       const setupGen = meshcoreSetupGenerationRef.current;
       meshcoreDriverConnectedRef.current = true;
+      meshcorePendingDriverIdentityRef.current = driverIdentityId;
       const conn = connectionDriver.getHandle(driverIdentityId) as MeshCoreConnection | null;
       if (!conn) {
         throw new Error('[useMeshCore] attachRfSession: ConnectionDriver returned no handle');
@@ -1512,9 +1518,12 @@ export function useMeshcoreRuntime() {
   );
 
   const handleRfConnectFailure = useCallback(
-    (type: 'ble' | 'serial' | 'tcp'): Promise<void> => {
+    (type: 'ble' | 'serial' | 'tcp', driverIdentityId?: string): Promise<void> => {
       setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
-      teardownMeshcoreConnEventListeners({ driverDisconnect: true });
+      teardownMeshcoreConnEventListeners({
+        driverDisconnect: true,
+        driverIdentityId,
+      });
       connRef.current = null;
       if (type === 'ble') bleConnectInProgressRef.current = false;
       return Promise.resolve();

@@ -32,12 +32,15 @@ export function usePanelActions(
   const meshcoreActions = useMeshcorePanelActions(meshcore);
   const capabilities = useRadioProvider(protocol);
 
-  const actions = useMemo((): PanelActions => {
-    if (protocol === 'meshcore') {
-      return meshcoreActions;
-    }
-    return meshtasticActions;
-  }, [protocol, meshtasticActions, meshcoreActions]);
+  const actionsByProtocol = useMemo(
+    (): Record<MeshProtocol, PanelActions> => ({
+      meshtastic: meshtasticActions,
+      meshcore: meshcoreActions,
+    }),
+    [meshtasticActions, meshcoreActions],
+  );
+
+  const actions = actionsByProtocol[protocol];
 
   return useMemo(
     () => ({ actions, capabilities, protocol, identityId }),

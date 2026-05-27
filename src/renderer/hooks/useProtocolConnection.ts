@@ -1,13 +1,11 @@
 import { useCallback, useMemo } from 'react';
 
-import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { meshcoreConnectionType, protocolTransportParams } from '../lib/protocolTransportParams';
 import { getMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import type { ConnectionType, DeviceState, MeshProtocol, MQTTStatus } from '../lib/types';
 import { useConnect } from './useConnect';
 import { useConnectionByProtocol } from './useConnectionByProtocol';
-import { useDisconnect } from './useDisconnect';
 
 const INITIAL_DEVICE_STATE: DeviceState = {
   status: 'disconnected',
@@ -67,11 +65,12 @@ export function useProtocolConnect() {
         const mcType = meshcoreConnectionType(type);
         const meshcore = getMeshcoreSession();
         await meshcore.prepareRfConnect(mcType);
+        let driverIdentityId: string | undefined;
         try {
-          const identityId = await driverConnect('meshcore', params);
-          await meshcore.attachRfSession(identityId, mcType);
+          driverIdentityId = await driverConnect('meshcore', params);
+          await meshcore.attachRfSession(driverIdentityId, mcType);
         } catch (err) {
-          await meshcore.handleRfConnectFailure(mcType);
+          await meshcore.handleRfConnectFailure(mcType, driverIdentityId);
           throw err;
         }
         return;
@@ -79,11 +78,12 @@ export function useProtocolConnect() {
 
       const meshtastic = getMeshtasticSession();
       await meshtastic.prepareRfConnect(type, httpAddress, blePeripheralId);
+      let driverIdentityId: string | undefined;
       try {
-        const identityId = await driverConnect('meshtastic', params);
-        await meshtastic.attachRfSession(identityId, type);
+        driverIdentityId = await driverConnect('meshtastic', params);
+        await meshtastic.attachRfSession(driverIdentityId, type);
       } catch (err) {
-        await meshtastic.handleRfConnectFailure();
+        await meshtastic.handleRfConnectFailure(driverIdentityId);
         throw err;
       }
     },
@@ -93,22 +93,13 @@ export function useProtocolConnect() {
 
 /** RF disconnect: runtime session cleanup, then driver transport teardown. */
 export function useProtocolDisconnect() {
-  const driverDisconnect = useDisconnect();
-
-  return useCallback(
-    async (protocol: MeshProtocol) => {
-      const identityId = getIdentityIdForProtocol(protocol);
-      if (protocol === 'meshcore') {
-        await getMeshcoreSession().finalizeDriverDisconnect();
-      } else {
-        await getMeshtasticSession().finalizeDriverDisconnect();
-      }
-      if (identityId) {
-        await driverDisconnect(identityId);
-      }
-    },
-    [driverDisconnect],
-  );
+  return useCallback(async (protocol: MeshProtocol) => {
+    if (protocol === 'meshcore') {
+      await getMeshcoreSession().finalizeDriverDisconnect({ disconnectDriver: true });
+    } else {
+      await getMeshtasticSession().finalizeDriverDisconnect({ disconnectDriver: true });
+    }
+  }, []);
 }
 
 /** ConnectionPanel + header state for one protocol tab. */

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
+import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import type { IdentityId } from '../lib/types';
 import { getConnection } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
@@ -19,6 +20,30 @@ export function useSendMessage(
         return;
       }
       const handle = connectionDriver.getHandle(identityId);
+
+      // Meshtastic MQTT-only: no RF handle; runtime TransportManager owns publish + echo suppression.
+      if (!handle && identity.protocol.type === 'meshtastic') {
+        const mqttStatus = getConnection(identityId)?.mqttStatus ?? 'disconnected';
+        if (mqttStatus !== 'connected') {
+          console.warn('[useSendMessage] no handle and MQTT disconnected for', identityId);
+          return;
+        }
+        const session = tryGetMeshtasticSession();
+        if (!session) {
+          console.warn('[useSendMessage] Meshtastic runtime not mounted');
+          return;
+        }
+        const replyIdNum =
+          replyTo != null && replyTo !== '' ? Number.parseInt(replyTo, 10) : undefined;
+        session.sendChatMessage(
+          text,
+          channelIndex,
+          destination,
+          replyIdNum != null && !Number.isNaN(replyIdNum) ? replyIdNum : undefined,
+        );
+        return;
+      }
+
       if (!handle) {
         console.warn('[useSendMessage] no handle for', identityId);
         return;
@@ -37,7 +62,7 @@ export function useSendMessage(
         replyTo,
       });
 
-      // MeshCore DMs need the destination pubkey; look it up on nodeStore.
+      // MeshCore DMs need the destination pubkey; look up on nodeStore.
       let destinationPubKey: Uint8Array | undefined;
       if (identity.protocol.type === 'meshcore' && destination != null) {
         destinationPubKey = useNodeStore.getState().nodes[identityId]?.[destination]?.publicKey;

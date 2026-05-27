@@ -230,6 +230,7 @@ beforeEach(() => {
     handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
     finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
     connectAutomatic: vi.fn().mockResolvedValue(undefined),
+    sendChatMessage: vi.fn(),
   });
   useDeviceMock.mockReset();
   useDeviceMock.mockImplementation(() => createDeviceMock());

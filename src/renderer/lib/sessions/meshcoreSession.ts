@@ -5,7 +5,10 @@ export type MeshcoreRfTransportType = 'ble' | 'serial' | 'tcp';
 export interface MeshcoreSessionApi {
   prepareRfConnect: (type: MeshcoreRfTransportType) => Promise<void>;
   attachRfSession: (driverIdentityId: string, type: MeshcoreRfTransportType) => Promise<void>;
-  handleRfConnectFailure: (type: MeshcoreRfTransportType) => Promise<void>;
+  handleRfConnectFailure: (
+    type: MeshcoreRfTransportType,
+    driverIdentityId?: string,
+  ) => Promise<void>;
   finalizeDriverDisconnect: (opts?: { disconnectDriver?: boolean }) => Promise<void>;
   connectAutomatic: (
     type: 'ble' | 'serial' | 'http',

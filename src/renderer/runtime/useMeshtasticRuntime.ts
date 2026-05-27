@@ -248,6 +248,8 @@ export function useMeshtasticRuntime() {
   const meshtasticIngestSessionRef = useRef<MeshtasticIngestSession | null>(null);
   /** True when `connectionDriver.connect` opened the transport (serial/http). */
   const meshtasticDriverConnectedRef = useRef(false);
+  /** Driver identity from connect until wire subscriptions bind the store identity. */
+  const meshtasticPendingDriverIdentityRef = useRef<string | null>(null);
   const meshtasticIdentityIdRef = useRef<string | null>(null);
   const [meshtasticIdentityId, setMeshtasticIdentityId] = useState<string | null>(null);
 
@@ -1566,14 +1568,17 @@ export function useMeshtasticRuntime() {
       cleanupSubscriptions();
       stopWatchdog();
       stopGpsInterval();
-      const oldDevice = deviceRef.current;
+      const driverIdentity =
+        meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
       deviceRef.current = null;
-      if (oldDevice) {
-        try {
-          await safeDisconnect(oldDevice);
-        } catch (e: unknown) {
-          console.debug('[useDevice] handleConnectionLost safeDisconnect ' + errLikeToLogString(e));
-        }
+      meshtasticDriverConnectedRef.current = false;
+      meshtasticPendingDriverIdentityRef.current = null;
+      if (driverIdentity) {
+        await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
+          console.debug(
+            '[useDevice] handleConnectionLost driver disconnect ' + errLikeToLogString(e),
+          );
+        });
       }
       void attemptReconnectRef.current();
     })();
@@ -1648,6 +1653,16 @@ export function useMeshtasticRuntime() {
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
     } catch (err) {
+      const failedDriverIdentity =
+        meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+      deviceRef.current = null;
+      meshtasticDriverConnectedRef.current = false;
+      meshtasticPendingDriverIdentityRef.current = null;
+      if (failedDriverIdentity) {
+        await connectionDriver.disconnect(failedDriverIdentity).catch((e: unknown) => {
+          console.debug('[useDevice] reconnect failure driver disconnect ' + errLikeToLogString(e));
+        });
+      }
       console.warn(
         `[Meshtastic] Reconnect attempt ${reconnectAttemptRef.current} failed:` +
           ' ' +
@@ -1664,14 +1679,21 @@ export function useMeshtasticRuntime() {
   const prepareRfConnect = useCallback(
     (type: ConnectionType, httpAddress?: string, blePeripheralId?: string): Promise<void> => {
       clearConfigureTimeout();
-      if (deviceRef.current) {
+      if (deviceRef.current || meshtasticDriverConnectedRef.current) {
         cleanupSubscriptions();
         stopWatchdog();
-        const oldDevice = deviceRef.current;
+        const driverIdentity =
+          meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
         deviceRef.current = null;
-        safeDisconnect(oldDevice).catch((e: unknown) => {
-          console.debug('[useDevice] connect safeDisconnect prior ' + errLikeToLogString(e));
-        });
+        meshtasticDriverConnectedRef.current = false;
+        meshtasticPendingDriverIdentityRef.current = null;
+        if (driverIdentity) {
+          void connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
+            console.debug(
+              '[useDevice] prepareRfConnect driver disconnect ' + errLikeToLogString(e),
+            );
+          });
+        }
       }
       connectionParamsRef.current = { type, httpAddress, blePeripheralId };
       reconnectAttemptRef.current = 0;
@@ -1693,6 +1715,7 @@ export function useMeshtasticRuntime() {
   const attachRfSession = useCallback(
     async (driverIdentityId: string, type: ConnectionType, device?: MeshDevice): Promise<void> => {
       meshtasticDriverConnectedRef.current = true;
+      meshtasticPendingDriverIdentityRef.current = driverIdentityId;
       const activeDevice =
         device ?? (connectionDriver.getHandle(driverIdentityId) as MeshDevice | null);
       if (!activeDevice) {
@@ -1705,30 +1728,45 @@ export function useMeshtasticRuntime() {
     [wireSubscriptions],
   );
 
-  const handleRfConnectFailure = useCallback((): Promise<void> => {
-    clearConfigureTimeout();
-    console.error('[Meshtastic] Connection failed');
-    cleanupSubscriptions();
-    stopWatchdog();
-    deviceRef.current = null;
-    meshtasticDriverConnectedRef.current = false;
-    setState({
-      status: 'disconnected',
-      myNodeNum: 0,
-      connectionType: null,
-      batteryPercent: undefined,
-      batteryCharging: undefined,
-    });
-    return Promise.resolve();
-  }, [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog]);
+  const handleRfConnectFailure = useCallback(
+    async (driverIdentityId?: string): Promise<void> => {
+      clearConfigureTimeout();
+      console.error('[Meshtastic] Connection failed');
+      cleanupSubscriptions();
+      stopWatchdog();
+      deviceRef.current = null;
+      const identityToDisconnect =
+        driverIdentityId ??
+        meshtasticIdentityIdRef.current ??
+        meshtasticPendingDriverIdentityRef.current;
+      if (meshtasticDriverConnectedRef.current && identityToDisconnect) {
+        await connectionDriver.disconnect(identityToDisconnect).catch((e: unknown) => {
+          console.debug(
+            '[useDevice] handleRfConnectFailure driver disconnect ' + errLikeToLogString(e),
+          );
+        });
+      }
+      meshtasticPendingDriverIdentityRef.current = null;
+      meshtasticDriverConnectedRef.current = false;
+      setState({
+        status: 'disconnected',
+        myNodeNum: 0,
+        connectionType: null,
+        batteryPercent: undefined,
+        batteryCharging: undefined,
+      });
+    },
+    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog],
+  );
 
   const finalizeDriverDisconnect = useCallback(
     async (opts?: { disconnectDriver?: boolean }) => {
       const disconnectDriver = opts?.disconnectDriver !== false;
       clearConfigureTimeout();
       const driverIdentity =
-        meshtasticDriverConnectedRef.current && meshtasticIdentityIdRef.current
-          ? meshtasticIdentityIdRef.current
+        meshtasticDriverConnectedRef.current &&
+        (meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current)
+          ? (meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current)
           : null;
       cleanupSubscriptions();
       stopWatchdog();
@@ -1752,6 +1790,7 @@ export function useMeshtasticRuntime() {
         await safeDisconnect(device);
       }
       meshtasticDriverConnectedRef.current = false;
+      meshtasticPendingDriverIdentityRef.current = null;
       setState({
         status: 'disconnected',
         myNodeNum: 0,
@@ -1776,13 +1815,14 @@ export function useMeshtasticRuntime() {
   const connect = useCallback(
     async (type: ConnectionType, httpAddress?: string, blePeripheralId?: string) => {
       await prepareRfConnect(type, httpAddress, blePeripheralId);
+      let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       try {
         console.debug('[useDevice] connect', type, httpAddress ?? blePeripheralId);
-        const opened = await openMeshtasticTransport(type, { httpAddress, blePeripheralId });
+        opened = await openMeshtasticTransport(type, { httpAddress, blePeripheralId });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
         console.error('[Meshtastic] Connection failed: ' + errLikeToLogString(err));
-        await handleRfConnectFailure();
+        await handleRfConnectFailure(opened?.driverIdentityId);
         throw err;
       }
     },
@@ -1802,9 +1842,10 @@ export function useMeshtasticRuntime() {
       blePeripheralId?: string,
     ) => {
       await prepareRfConnect(type, httpAddress, blePeripheralId);
+      let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       try {
         console.debug('[useDevice] connectAutomatic', type, httpAddress ?? blePeripheralId);
-        const opened = await openMeshtasticTransport(type, {
+        opened = await openMeshtasticTransport(type, {
           httpAddress,
           blePeripheralId,
           lastSerialPortId,
@@ -1812,7 +1853,7 @@ export function useMeshtasticRuntime() {
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
         console.error('[Meshtastic] Auto-connect failed: ' + errLikeToLogString(err));
-        await handleRfConnectFailure();
+        await handleRfConnectFailure(opened?.driverIdentityId);
         throw err;
       }
     },
@@ -3224,6 +3265,7 @@ export function useMeshtasticRuntime() {
       handleRfConnectFailure,
       finalizeDriverDisconnect,
       connectAutomatic,
+      sendChatMessage: sendMessage,
     });
     return () => registerMeshtasticSession(null);
   }, [
@@ -3232,6 +3274,7 @@ export function useMeshtasticRuntime() {
     handleRfConnectFailure,
     finalizeDriverDisconnect,
     connectAutomatic,
+    sendMessage,
   ]);
 
   return {
