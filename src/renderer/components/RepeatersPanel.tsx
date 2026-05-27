@@ -4,17 +4,17 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
-import type {
-  CliHistoryEntry,
-  MeshCoreNeighborResult,
-  MeshCoreNodeTelemetry,
-  MeshCoreRepeaterStatus,
-} from '../hooks/meshcore/meshcoreHookTypes';
 import {
   MeshcoreRepeaterRemoteAuthBanner,
   useMeshcoreRepeaterRemoteAuth,
 } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { formatCoordPair } from '../lib/coordUtils';
+import type {
+  CliHistoryEntry,
+  MeshCoreNeighborResult,
+  MeshCoreNodeTelemetry,
+  MeshCoreRepeaterStatus,
+} from '../lib/meshcore/meshcoreHookTypes';
 import {
   meshcoreClearRepeaterRemoteSessionAuth,
   meshcoreIsRepeaterRemoteAuthTouched,

@@ -5,7 +5,7 @@ import { useMeshcoreRuntimeContext } from '../runtime/MeshcoreRuntimeContext';
 import { useMeshtasticRuntimeContext } from '../runtime/MeshtasticRuntimeContext';
 import { useActiveMeshIdentity } from './useActiveMeshIdentity';
 import { useConnectionQueue } from './useConnectionStatus';
-import { useLegacyConnectionView } from './useLegacyConnectionView';
+import { useConnectionView } from './useConnectionView';
 import { useMessages } from './useMessages';
 import { useNodes } from './useNodes';
 import { type PanelActionsBundle, usePanelActions } from './usePanelActions';
@@ -17,7 +17,7 @@ export interface ProtocolFacade {
   meshtasticIdentityId: string | null;
   meshcoreIdentityId: string | null;
   connection: ReturnType<typeof useProtocolConnectionActions>;
-  connectionView: ReturnType<typeof useLegacyConnectionView>;
+  connectionView: ReturnType<typeof useConnectionView>;
   queue: ReturnType<typeof useConnectionQueue>;
   panel: PanelActionsBundle;
   nodes: ReturnType<typeof useNodes>;
@@ -34,7 +34,7 @@ export function useProtocolFacade(protocol: MeshProtocol): ProtocolFacade {
   const { meshtasticIdentityId, meshcoreIdentityId, focusedIdentityId } =
     useActiveMeshIdentity(protocol);
   const connection = useProtocolConnectionActions(protocol);
-  const connectionView = useLegacyConnectionView(focusedIdentityId);
+  const connectionView = useConnectionView(focusedIdentityId);
   const queue = useConnectionQueue(focusedIdentityId);
   const panel = usePanelActions(protocol, focusedIdentityId, meshtastic, meshcore);
   const nodes = useNodes(focusedIdentityId);

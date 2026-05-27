@@ -9,14 +9,14 @@ import {
 } from '@/renderer/lib/meshtasticRemoteAdminKeyStorage';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
+import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
+import { formatCoordPair } from '../lib/coordUtils';
+import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
 import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
-} from '../hooks/meshcore/meshcoreHookTypes';
-import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
-import { formatCoordPair } from '../lib/coordUtils';
-import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
+} from '../lib/meshcore/meshcoreHookTypes';
 import {
   MESHCORE_CHAT_STUB_ID_MAX,
   MESHCORE_CHAT_STUB_ID_MIN,

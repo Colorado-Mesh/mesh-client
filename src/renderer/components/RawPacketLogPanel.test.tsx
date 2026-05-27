@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { RxPacketEntry } from '../hooks/meshcore/meshcoreHookTypes';
+import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import RawPacketLogPanel from './RawPacketLogPanel';
 
 vi.mock('@tanstack/react-virtual', () => ({

@@ -42,6 +42,22 @@ import {
   serializeErrorLike,
   waitForMeshcorePath129ForNode,
 } from '../hooks/meshcore/meshcoreHookPreamble';
+import { attachMeshcoreLegacyConnEvents } from '../hooks/meshcore/meshcoreLegacyConnEvents';
+import type { MeshcoreLegacyConnEventsCtx } from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
+import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
+import {
+  classifyMeshcoreBleTimeoutStage,
+  MESHCORE_SETUP_ABORT_MESSAGE,
+} from '../lib/bleConnectErrors';
+import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
+import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
+import { connectionDriver } from '../lib/drivers/ConnectionDriver';
+import type { OurPosition } from '../lib/gpsSource';
+import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
+import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
+import { runMeshcoreMountHydration } from '../lib/legacySideEffects/meshcoreDbHydration';
+import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
+import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
 import type {
   CayenneLppEntry,
   DeviceLogEntry,
@@ -59,23 +75,7 @@ import type {
   MeshCoreStatsResponse,
   MeshcoreTraceResultEntry,
   RxPacketEntry,
-} from '../hooks/meshcore/meshcoreHookTypes';
-import { attachMeshcoreLegacyConnEvents } from '../hooks/meshcore/meshcoreLegacyConnEvents';
-import type { MeshcoreLegacyConnEventsCtx } from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
-import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
-import {
-  classifyMeshcoreBleTimeoutStage,
-  MESHCORE_SETUP_ABORT_MESSAGE,
-} from '../lib/bleConnectErrors';
-import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
-import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
-import { connectionDriver } from '../lib/drivers/ConnectionDriver';
-import type { OurPosition } from '../lib/gpsSource';
-import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
-import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
-import { runMeshcoreMountHydration } from '../lib/legacySideEffects/meshcoreDbHydration';
-import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
-import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
+} from '../lib/meshcore/meshcoreHookTypes';
 import {
   buildMeshcoreChannelIncomingMessage,
   findMeshcoreDmReplyParent,
@@ -182,7 +182,7 @@ export type {
   MeshCoreRepeaterStatus,
   MeshCoreSelfInfo,
   RxPacketEntry,
-} from '../hooks/meshcore/meshcoreHookTypes';
+} from '../lib/meshcore/meshcoreHookTypes';
 export type { CliHistoryEntry } from '../lib/repeaterCommandService';
 
 export function useMeshcoreRuntime() {

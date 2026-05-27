@@ -6,7 +6,7 @@ Target architecture for dual-protocol UI ([#375](https://github.com/Colorado-Mes
 
 | Concern                                                        | Owner                                                                           |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| UI reads (nodes, messages, connection status)                  | Zustand stores + `useLegacyConnectionView`                                      |
+| UI reads (nodes, messages, connection status)                  | Zustand stores + `useConnectionView`                                            |
 | UI writes (configure, send, admin)                             | `useMeshtasticPanelActions` / `useMeshcorePanelActions` + protocol action hooks |
 | Connect / disconnect                                           | `useProtocolConnectionActions` + `lib/sessions/*Session.ts`                     |
 | Wire subscriptions, MQTT IPC, reconnect watchdog, DB hydration | `useMeshtasticRuntime` / `useMeshcoreRuntime` (mount once from `App.tsx`)       |

@@ -1,6 +1,7 @@
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../../lib/chatInMemoryBuffer';
+import type { MeshCoreConnection, MeshCoreContactRaw } from '../../lib/meshcore/meshcoreHookTypes';
 import { normalizeMeshcoreIncomingText } from '../../lib/meshcoreChannelText';
 import {
   isMeshcoreTransportStatusChatLine,
@@ -12,7 +13,6 @@ import {
   pubkeyToNodeId,
 } from '../../lib/meshcoreUtils';
 import type { ChatMessage, DeviceState, MeshNode } from '../../lib/types';
-import type { MeshCoreConnection, MeshCoreContactRaw } from './meshcoreHookTypes';
 
 /** MeshCore expected ACK CRCs are uint32; meshcore.js / BLE may surface them as signed. Normalize for Map keys, React state, and SQLite packet_id. */
 export function meshcoreDmAckKeyU32(crc: number): number {

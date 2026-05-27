@@ -28,7 +28,7 @@ const DISCONNECTED_STATE: DeviceState = {
 /**
  * Identity-scoped connection reads from the connection store ([#377]).
  */
-export function useLegacyConnectionView(identityId: IdentityId | null): {
+export function useConnectionView(identityId: IdentityId | null): {
   state: DeviceState;
   mqttStatus: MQTTStatus;
 } {

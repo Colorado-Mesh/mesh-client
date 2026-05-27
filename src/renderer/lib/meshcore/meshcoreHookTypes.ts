@@ -1,7 +1,4 @@
-import type {
-  MeshCoreSelfInfoEnriched,
-  MeshCoreSelfInfoWire,
-} from '../../lib/meshcoreTelemetryPrivacy';
+import type { MeshCoreSelfInfoEnriched, MeshCoreSelfInfoWire } from '../meshcoreTelemetryPrivacy';
 
 /** Self info from the radio (normalized after `enrichMeshCoreSelfInfo`). */
 export type MeshCoreSelfInfo = MeshCoreSelfInfoEnriched;
@@ -55,7 +52,7 @@ export interface MeshCoreNeighborResult {
   fetchedAt: number;
 }
 
-export type { CliHistoryEntry } from '../../lib/repeaterCommandService';
+export type { CliHistoryEntry } from '../repeaterCommandService';
 
 export interface MeshCoreConnection {
   on(event: string | number, cb: (...args: unknown[]) => void): void;

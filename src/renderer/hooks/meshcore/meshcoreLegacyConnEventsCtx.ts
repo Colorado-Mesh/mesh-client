@@ -1,5 +1,12 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
+import type {
+  DeviceLogEntry,
+  MeshCoreConnection,
+  MeshCoreContactRaw,
+  MeshCoreSelfInfo,
+  RxPacketEntry,
+} from '../../lib/meshcore/meshcoreHookTypes';
 import type { MeshcoreAutoaddWireState } from '../../lib/meshcoreContactAutoAdd';
 import type { CliHistoryEntry, RepeaterCommandService } from '../../lib/repeaterCommandService';
 import type {
@@ -10,13 +17,6 @@ import type {
   TelemetryPoint,
 } from '../../lib/types';
 import type { PendingDmAckEntry } from './meshcoreHookPreamble';
-import type {
-  DeviceLogEntry,
-  MeshCoreConnection,
-  MeshCoreContactRaw,
-  MeshCoreSelfInfo,
-  RxPacketEntry,
-} from './meshcoreHookTypes';
 
 export interface MeshcoreLegacyConnEventsCtx {
   connRef: RefObject<MeshCoreConnection | null>;

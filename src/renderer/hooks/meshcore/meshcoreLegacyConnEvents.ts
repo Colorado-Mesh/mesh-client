@@ -8,6 +8,12 @@ import {
   meshtasticSenderIdForRawLogFallback,
 } from '../../lib/foreignLoraDetection';
 import { shouldPreserveStaticGpsForSelfNode } from '../../lib/gpsSource';
+import type {
+  DeviceLogEntry,
+  MeshCoreConnection,
+  MeshCoreContactRaw,
+  RxPacketEntry,
+} from '../../lib/meshcore/meshcoreHookTypes';
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
@@ -67,12 +73,6 @@ import {
   meshcoreDmAckKeyU32,
   type PendingDmAckEntry,
 } from './meshcoreHookPreamble';
-import type {
-  DeviceLogEntry,
-  MeshCoreConnection,
-  MeshCoreContactRaw,
-  RxPacketEntry,
-} from './meshcoreHookTypes';
 import type { MeshcoreLegacyConnEventsCtx } from './meshcoreLegacyConnEventsCtx';
 
 export function attachMeshcoreLegacyConnEvents(

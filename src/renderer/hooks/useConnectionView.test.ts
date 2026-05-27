@@ -2,17 +2,17 @@ import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
-import { useLegacyConnectionView } from './useLegacyConnectionView';
+import { useConnectionView } from './useConnectionView';
 
 const IDENTITY = 'id-meshtastic-test';
 
-describe('useLegacyConnectionView', () => {
+describe('useConnectionView', () => {
   beforeEach(() => {
     useConnectionStore.setState({ connections: {} });
   });
 
   it('returns disconnected defaults when identity or store row is missing', () => {
-    const { result } = renderHook(() => useLegacyConnectionView(null));
+    const { result } = renderHook(() => useConnectionView(null));
 
     expect(result.current.state.status).toBe('disconnected');
     expect(result.current.state.myNodeNum).toBe(0);
@@ -29,7 +29,7 @@ describe('useLegacyConnectionView', () => {
       connectionLoss: true,
     });
 
-    const { result } = renderHook(() => useLegacyConnectionView(IDENTITY));
+    const { result } = renderHook(() => useConnectionView(IDENTITY));
 
     expect(result.current.state.status).toBe('configured');
     expect(result.current.state.connectionType).toBe('serial');
@@ -42,7 +42,7 @@ describe('useLegacyConnectionView', () => {
   it('prefers store mqttStatus when present', () => {
     setConnection(IDENTITY, { mqttStatus: 'connected' });
 
-    const { result } = renderHook(() => useLegacyConnectionView(IDENTITY));
+    const { result } = renderHook(() => useConnectionView(IDENTITY));
 
     expect(result.current.mqttStatus).toBe('connected');
   });

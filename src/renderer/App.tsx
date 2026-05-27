@@ -28,9 +28,9 @@ import SignalPropagation from './components/SignalPropagation';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
+import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useDbRefresh } from './hooks/useDbRefresh';
-import { useLegacyConnectionView } from './hooks/useLegacyConnectionView';
 import { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
 import { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelActions';
 import { useMessages } from './hooks/useMessages';
@@ -678,7 +678,7 @@ function AppContent({
   }, [meshcoreNodesById]);
   const { refreshNodesFromDb: refreshMeshtasticNodesInStore } = useDbRefresh(meshtasticIdentityId);
   const sendMessage = useSendMessage(focusedIdentityId);
-  const meshtasticConnectionView = useLegacyConnectionView(meshtasticIdentityId);
+  const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const activeConnectionView = activeFacade.connectionView;
   const activeQueueFromStore = activeFacade.queue;
   const handleSend = useCallback(

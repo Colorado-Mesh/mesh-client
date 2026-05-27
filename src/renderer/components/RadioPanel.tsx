@@ -15,8 +15,8 @@ import {
 } from '@/shared/meshtasticUrlEncoder';
 
 import { serializeErrorLike } from '../hooks/meshcore/meshcoreHookPreamble';
-import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../hooks/meshcore/meshcoreHookTypes';
 import type { OurPosition } from '../lib/gpsSource';
+import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
 import {
   MESHCORE_CHANNEL_INDEX_MAX,

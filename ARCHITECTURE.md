@@ -10,7 +10,7 @@ Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 | -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers, window, GPS, updater |
 | Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                    |
-| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `stores/`, `lib/`, `locales/`, `workers/`                                                                                                                         |
+| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/` (protocol runtimes, single mount), `stores/`, `lib/`, `locales/`, `workers/`                                                                           |
 
 | Shared | `src/shared/` | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers |
 
@@ -71,12 +71,14 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 4. Minimal fix + co-located tests.
 5. `pnpm dlx vitest run <file>` and `pnpm run lint`.
 
-**First places to look:** `useDevice.ts` / `useMeshCore.ts` (connection); `stores/*` (UI state); `src/main/index.ts` (IPC).
+**First places to look:** `runtime/useMeshtasticRuntime.ts` / `runtime/useMeshcoreRuntime.ts` (protocol side effects); `hooks/useProtocolConnection.ts` (connect); `stores/*` (UI state); `src/main/index.ts` (IPC).
+
+**Renderer layers:** `runtime/` (single-mount protocol runtimes), `hooks/` (facades and store selectors), `lib/` (drivers, sessions, types). Prefer `useProtocolFacade(protocol)` in App for new wiring.
 
 ### Protocols
 
-- **Meshtastic:** `useDevice.ts`, `connection.ts` (`createConnection`).
-- **MeshCore:** `useMeshCore.ts`, `@liamcottle/meshcore.js`.
+- **Meshtastic:** `useMeshtasticRuntime.ts`, `MeshtasticProtocol.ts`, `connection.ts` (`createConnection`).
+- **MeshCore:** `useMeshcoreRuntime.ts`, `MeshCoreProtocol.ts`, `@liamcottle/meshcore.js`.
 
 ### Database
 
