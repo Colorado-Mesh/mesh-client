@@ -3431,7 +3431,9 @@ ipcMain.handle('db:deleteNodesNeverHeard', (event) => {
         "DELETE FROM nodes WHERE (last_heard IS NULL OR last_heard = 0) AND (favorited IS NULL OR favorited = 0) AND source != 'meshcore'",
       )
       .run();
-    console.debug(`[IPC] db:deleteNodesNeverHeard: pruned ${result.changes} never-heard nodes`);
+    if (result.changes > 0) {
+      console.debug(`[IPC] db:deleteNodesNeverHeard: pruned ${result.changes} never-heard nodes`);
+    }
     return result;
   } catch (err) {
     console.error(
@@ -3454,7 +3456,11 @@ ipcMain.handle('db:deleteNodesByAge', (event, days: number) => {
         "DELETE FROM nodes WHERE (last_heard < ? OR last_heard IS NULL OR last_heard = 0) AND (favorited IS NULL OR favorited = 0) AND source != 'meshcore'",
       )
       .run(cutoff);
-    console.debug(`[IPC] db:deleteNodesByAge: pruned ${result.changes} nodes older than ${days}d`);
+    if (result.changes > 0) {
+      console.debug(
+        `[IPC] db:deleteNodesByAge: pruned ${result.changes} nodes older than ${days}d`,
+      );
+    }
     return result;
   } catch (err) {
     console.error(
@@ -3473,9 +3479,11 @@ ipcMain.handle('db:pruneNodesByCount', (_event, maxCount: number) => {
         'DELETE FROM nodes WHERE node_id NOT IN (SELECT node_id FROM nodes ORDER BY last_heard DESC LIMIT ?)',
       )
       .run(maxCount);
-    console.debug(
-      `[IPC] db:pruneNodesByCount: pruned ${result.changes} nodes, keeping top ${maxCount}`,
-    );
+    if (result.changes > 0) {
+      console.debug(
+        `[IPC] db:pruneNodesByCount: pruned ${result.changes} nodes, keeping top ${maxCount}`,
+      );
+    }
     return result;
   } catch (err) {
     console.error(
@@ -3496,9 +3504,11 @@ ipcMain.handle('db:pruneMessagesByCount', (_event, maxCount: number) => {
         'DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY timestamp DESC, id DESC LIMIT ?)',
       )
       .run(cap);
-    console.debug(
-      `[IPC] db:pruneMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
-    );
+    if (result.changes > 0) {
+      console.debug(
+        `[IPC] db:pruneMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
+      );
+    }
     return result;
   } catch (err) {
     console.error(
@@ -3519,9 +3529,11 @@ ipcMain.handle('db:pruneMeshcoreMessagesByCount', (_event, maxCount: number) => 
         'DELETE FROM meshcore_messages WHERE id NOT IN (SELECT id FROM meshcore_messages ORDER BY timestamp DESC, id DESC LIMIT ?)',
       )
       .run(cap);
-    console.debug(
-      `[IPC] db:pruneMeshcoreMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
-    );
+    if (result.changes > 0) {
+      console.debug(
+        `[IPC] db:pruneMeshcoreMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
+      );
+    }
     return result;
   } catch (err) {
     console.error(
@@ -3616,7 +3628,9 @@ ipcMain.handle('db:deleteNodesBySource', (event, source: string) => {
 ipcMain.handle('db:migrateRfStubNodes', () => {
   try {
     const changes = migrateRfStubNodes();
-    console.debug(`[IPC] db:migrateRfStubNodes: renamed ${changes} RF stub nodes`);
+    if (changes > 0) {
+      console.debug(`[IPC] db:migrateRfStubNodes: renamed ${changes} RF stub nodes`);
+    }
     return changes;
   } catch (err) {
     console.error(
@@ -3633,7 +3647,9 @@ ipcMain.handle('db:deleteNodesWithoutLongname', (event) => {
   }
   try {
     const changes = deleteNodesWithoutLongname();
-    console.debug(`[IPC] db:deleteNodesWithoutLongname: pruned ${changes} unnamed nodes`);
+    if (changes > 0) {
+      console.debug(`[IPC] db:deleteNodesWithoutLongname: pruned ${changes} unnamed nodes`);
+    }
     return changes;
   } catch (err) {
     console.error(

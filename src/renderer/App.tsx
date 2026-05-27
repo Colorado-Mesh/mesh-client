@@ -80,6 +80,7 @@ import {
   parseMeshCoreBuildDate,
   semverGt,
 } from './lib/firmwareCheck';
+import { hydrateIdentityStoresFromDb } from './lib/hydrateIdentityStoresFromDb';
 import {
   validateLetsMeshManualCredentials,
   validateLetsMeshPresetConnect,
@@ -93,11 +94,11 @@ import {
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './lib/meshtasticMqttTlsMigration';
-import { fetchMessageRetention } from './lib/messageRetention';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { parseStoredJson } from './lib/parseStoredJson';
 import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
+import { runStartupDbPrune } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from './lib/storeRecordAdapters';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
@@ -1214,173 +1215,75 @@ function AppContent({
     setPendingDmTarget(null);
   }, []);
 
-  // ─── Startup pruning based on persisted app settings (protocol-aware) ─────
+  const {
+    refreshNodesFromDb: refreshMeshtasticNodesInStore,
+    refreshMessagesFromDb: refreshMeshtasticMessagesInStore,
+  } = meshtasticDbRefresh;
+  const {
+    refreshNodesFromDb: refreshMeshcoreNodesInStore,
+    refreshMessagesFromDb: refreshMeshcoreMessagesInStore,
+  } = meshcoreDbRefresh;
+
   const refreshNodesFromDb = useCallback(() => {
     if (protocol === 'meshtastic') {
       meshtasticPanelActions.refreshNodesFromDb();
-      void meshtasticDbRefresh.refreshNodesFromDb();
+      void refreshMeshtasticNodesInStore();
     } else {
       void meshcorePanelActions.refreshNodesFromDb();
-      void meshcoreDbRefresh.refreshNodesFromDb();
+      void refreshMeshcoreNodesInStore();
     }
   }, [
     protocol,
     meshtasticPanelActions,
     meshcorePanelActions,
-    meshtasticDbRefresh,
-    meshcoreDbRefresh,
+    refreshMeshtasticNodesInStore,
+    refreshMeshcoreNodesInStore,
   ]);
 
   const refreshMessagesFromDb = useCallback(() => {
     if (protocol === 'meshtastic') {
       meshtasticPanelActions.refreshMessagesFromDb();
-      void meshtasticDbRefresh.refreshMessagesFromDb();
+      void refreshMeshtasticMessagesInStore();
     } else {
       void meshcorePanelActions.refreshMessagesFromDb();
-      void meshcoreDbRefresh.refreshMessagesFromDb();
+      void refreshMeshcoreMessagesInStore();
     }
   }, [
     protocol,
     meshtasticPanelActions,
     meshcorePanelActions,
-    meshtasticDbRefresh,
-    meshcoreDbRefresh,
+    refreshMeshtasticMessagesInStore,
+    refreshMeshcoreMessagesInStore,
   ]);
+
+  const postStartupPruneHydrateRef = useRef<() => void>(() => {});
+  useLayoutEffect(() => {
+    postStartupPruneHydrateRef.current = () => {
+      if (meshtasticIdentityId) {
+        meshtasticPanelActions.refreshNodesFromDb();
+        meshtasticPanelActions.refreshMessagesFromDb();
+        void hydrateIdentityStoresFromDb('meshtastic', meshtasticIdentityId, {
+          nodes: true,
+          messages: true,
+        });
+      }
+      if (meshcoreIdentityId) {
+        void meshcorePanelActions.refreshNodesFromDb();
+        void meshcorePanelActions.refreshMessagesFromDb();
+        void hydrateIdentityStoresFromDb('meshcore', meshcoreIdentityId, {
+          nodes: true,
+          messages: true,
+        });
+      }
+    };
+  }, [meshtasticIdentityId, meshcoreIdentityId, meshtasticPanelActions, meshcorePanelActions]);
+
+  // ─── Startup pruning (once per session; see startupDbPrune.ts) ─────────────
   useEffect(() => {
-    const startupProtocol = getStoredMeshProtocol();
-    const raw =
-      parseStoredJson<Record<string, unknown>>(getAppSettingsRaw(), 'App startup node pruning') ??
-      {};
-    const s = { ...DEFAULT_APP_SETTINGS_SHARED, ...raw };
-    const ops: Promise<unknown>[] = [];
-
-    if (startupProtocol === 'meshtastic') {
-      ops.push(
-        // One-time migration: rename legacy "RF !xxxxxxxx" stub nodes to "!xxxxxxxx"
-        window.electronAPI.db.migrateRfStubNodes().catch((e: unknown) => {
-          console.warn('[App] startup migrateRfStubNodes failed ' + errLikeToLogString(e));
-        }),
-        // Delete nodes with last_heard = never (placeholder stubs with no data)
-        window.electronAPI.db.deleteNodesNeverHeard().catch((e: unknown) => {
-          console.warn('[App] startup deleteNodesNeverHeard failed ' + errLikeToLogString(e));
-        }),
-      );
-      if (s.autoPruneEnabled) {
-        const days =
-          typeof s.autoPruneDays === 'number' && s.autoPruneDays > 0 ? s.autoPruneDays : 30;
-        ops.push(
-          window.electronAPI.db.deleteNodesByAge(days).catch((e: unknown) => {
-            console.warn('[App] startup deleteNodesByAge failed ' + errLikeToLogString(e));
-          }),
-        );
-      }
-      if (s.nodeCapEnabled) {
-        const cap =
-          typeof s.nodeCapCount === 'number' && s.nodeCapCount > 0 ? s.nodeCapCount : 10000;
-        ops.push(
-          window.electronAPI.db.pruneNodesByCount(cap).catch((e: unknown) => {
-            console.warn('[App] startup pruneNodesByCount failed ' + errLikeToLogString(e));
-          }),
-        );
-      }
-      if (s.pruneEmptyNamesEnabled) {
-        ops.push(
-          window.electronAPI.db.deleteNodesWithoutLongname().catch((e: unknown) => {
-            console.warn(
-              '[App] startup deleteNodesWithoutLongname failed ' + errLikeToLogString(e),
-            );
-          }),
-        );
-      }
-      if (s.positionHistoryPruneEnabled) {
-        const days =
-          typeof s.positionHistoryPruneDays === 'number' && s.positionHistoryPruneDays > 0
-            ? s.positionHistoryPruneDays
-            : 30;
-        ops.push(
-          window.electronAPI.db.prunePositionHistory(days).catch((e: unknown) => {
-            console.warn('[App] startup prunePositionHistory failed ' + errLikeToLogString(e));
-          }),
-        );
-      }
-    } else if (startupProtocol === 'meshcore') {
-      if (s.meshcoreDeleteNeverAdvertised) {
-        ops.push(
-          window.electronAPI.db.deleteMeshcoreContactsNeverAdvertised().catch((e: unknown) => {
-            console.warn(
-              '[App] startup deleteMeshcoreContactsNeverAdvertised failed ' + errLikeToLogString(e),
-            );
-          }),
-        );
-      }
-      if (s.meshcoreAutoPruneEnabled) {
-        const days =
-          typeof s.meshcoreAutoPruneDays === 'number' && s.meshcoreAutoPruneDays > 0
-            ? s.meshcoreAutoPruneDays
-            : 30;
-        ops.push(
-          window.electronAPI.db.deleteMeshcoreContactsByAge(days).catch((e: unknown) => {
-            console.warn(
-              '[App] startup deleteMeshcoreContactsByAge failed ' + errLikeToLogString(e),
-            );
-          }),
-        );
-      }
-      if (s.meshcoreContactCapEnabled) {
-        const cap =
-          typeof s.meshcoreContactCapCount === 'number' && s.meshcoreContactCapCount > 0
-            ? s.meshcoreContactCapCount
-            : 5000;
-        ops.push(
-          window.electronAPI.db.pruneMeshcoreContactsByCount(cap).catch((e: unknown) => {
-            console.warn(
-              '[App] startup pruneMeshcoreContactsByCount failed ' + errLikeToLogString(e),
-            );
-          }),
-        );
-      }
-    }
-
-    // Issue #387: DB-backed message retention. Two independent caps; prune
-    // both tables on startup since both protocols may have data even if the
-    // user is currently in the other one. Failures are best-effort: log and
-    // continue so a transient DB lock doesn't block app startup.
-    ops.push(
-      fetchMessageRetention()
-        .then((r) => {
-          const innerOps: Promise<unknown>[] = [];
-          if (r.meshtasticEnabled) {
-            innerOps.push(
-              window.electronAPI.db.pruneMessagesByCount(r.meshtasticCount).catch((e: unknown) => {
-                console.warn('[App] startup pruneMessagesByCount failed ' + errLikeToLogString(e));
-              }),
-            );
-          }
-          if (r.meshcoreEnabled) {
-            innerOps.push(
-              window.electronAPI.db
-                .pruneMeshcoreMessagesByCount(r.meshcoreCount)
-                .catch((e: unknown) => {
-                  console.warn(
-                    '[App] startup pruneMeshcoreMessagesByCount failed ' + errLikeToLogString(e),
-                  );
-                }),
-            );
-          }
-          return Promise.all(innerOps);
-        })
-        .catch((e: unknown) => {
-          console.warn('[App] startup message retention prune failed ' + errLikeToLogString(e));
-        }),
-    );
-
-    if (ops.length > 0) {
-      void Promise.all(ops).then(() => {
-        refreshNodesFromDb();
-        refreshMessagesFromDb();
-      });
-    }
-  }, [refreshNodesFromDb, refreshMessagesFromDb]);
+    void runStartupDbPrune().then(() => {
+      postStartupPruneHydrateRef.current();
+    });
+  }, []);
 
   // Dual-mode: each protocol manages its own MQTT connection independently.
   // No automatic MQTT disconnect on context switch.
