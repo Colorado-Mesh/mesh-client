@@ -32,6 +32,7 @@ import {
   resolveOurPosition,
   shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
+import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
 import {
   buildMeshcoreChannelIncomingMessage,
@@ -1189,6 +1190,7 @@ export function useMeshCore() {
   const connRef = useRef<MeshCoreConnection | null>(null);
   const meshcoreConnectTypeRef = useRef<'ble' | 'serial' | 'tcp'>('ble');
   const meshcoreIngressDetachRef = useRef<(() => void) | null>(null);
+  const meshcoreIngestDetachRef = useRef<(() => void) | null>(null);
   const meshcoreIdentityIdRef = useRef<string | null>(null);
   const [meshcoreIdentityId, setMeshcoreIdentityId] = useState<string | null>(null);
   const ipcTcpRef = useRef<IpcTcpConnection | null>(null);
@@ -2017,6 +2019,10 @@ export function useMeshCore() {
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */
   const meshcoreConnEventListenersTeardownRef = useRef<(() => void) | null>(null);
   const teardownMeshcoreConnEventListeners = useCallback(() => {
+    if (meshcoreIngestDetachRef.current) {
+      meshcoreIngestDetachRef.current();
+      meshcoreIngestDetachRef.current = null;
+    }
     if (meshcoreIngressDetachRef.current) {
       try {
         meshcoreIngressDetachRef.current();
@@ -3408,6 +3414,10 @@ export function useMeshCore() {
       meshcoreIngressDetachRef.current = ingress.detach;
       meshcoreIdentityIdRef.current = ingress.identityId;
       setMeshcoreIdentityId(ingress.identityId);
+      if (meshcoreIngestDetachRef.current) {
+        meshcoreIngestDetachRef.current();
+      }
+      meshcoreIngestDetachRef.current = attachMeshcoreIngest(ingress.identityId);
       setConnection(ingress.identityId, {
         status: 'configured',
         connectionType: transportType === 'tcp' ? 'http' : transportType,

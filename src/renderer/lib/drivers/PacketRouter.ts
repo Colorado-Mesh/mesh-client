@@ -33,7 +33,18 @@ function upsertByIndex<T extends { index: number }>(arr: T[], item: T): T[] {
   return next.sort((a, b) => a.index - b.index);
 }
 
+export type PacketRouterListener = (event: DomainEvent, identityId: IdentityId) => void;
+
 class PacketRouter {
+  private listeners: PacketRouterListener[] = [];
+
+  addListener(listener: PacketRouterListener): () => void {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== listener);
+    };
+  }
+
   dispatch(event: DomainEvent, identityId: IdentityId): void {
     switch (event.type) {
       case 'text_message':
@@ -143,6 +154,13 @@ class PacketRouter {
       case 'meshcore_channel':
         upsertMeshcoreChannel(identityId, event.payload);
         break;
+    }
+    for (const listener of this.listeners) {
+      try {
+        listener(event, identityId);
+      } catch (e) {
+        console.warn('[PacketRouter] listener error', e);
+      }
     }
   }
 }

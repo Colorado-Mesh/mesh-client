@@ -97,6 +97,7 @@ import type {
   ChatMessage,
   ConfigTargetContext,
   DeviceState,
+  MeshNode,
   MeshProtocol,
   MQTTSettings,
 } from './lib/types';
@@ -625,24 +626,22 @@ export default function App() {
   );
   const meshtasticStoreMessages = useMessages(meshtasticIdentityId);
   const meshcoreStoreMessages = useMessages(meshcoreIdentityId);
-  const meshtasticUiMessages = useMemo(() => {
-    const fromStore = messageRecordsToChatMessages(meshtasticStoreMessages);
-    return fromStore.length > 0 ? fromStore : meshtasticDevice.messages;
-  }, [meshtasticStoreMessages, meshtasticDevice.messages]);
-  const meshcoreUiMessages = useMemo(() => {
-    const fromStore = messageRecordsToChatMessages(meshcoreStoreMessages);
-    return fromStore.length > 0 ? fromStore : meshcoreDevice.messages;
-  }, [meshcoreStoreMessages, meshcoreDevice.messages]);
+  const meshtasticUiMessages = useMemo(
+    () => messageRecordsToChatMessages(meshtasticStoreMessages),
+    [meshtasticStoreMessages],
+  );
+  const meshcoreUiMessages = useMemo(
+    () => messageRecordsToChatMessages(meshcoreStoreMessages),
+    [meshcoreStoreMessages],
+  );
   const meshtasticUiNodes = useMemo(() => {
-    if (!meshtasticNodesById) return meshtasticDevice.nodes;
-    const fromStore = nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesById));
-    return fromStore.size > 0 ? fromStore : meshtasticDevice.nodes;
-  }, [meshtasticNodesById, meshtasticDevice.nodes]);
+    if (!meshtasticNodesById) return new Map<number, MeshNode>();
+    return nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesById));
+  }, [meshtasticNodesById]);
   const meshcoreUiNodes = useMemo(() => {
-    if (!meshcoreNodesById) return meshcoreDevice.nodes;
-    const fromStore = nodeRecordsToMeshNodeMap(Object.values(meshcoreNodesById));
-    return fromStore.size > 0 ? fromStore : meshcoreDevice.nodes;
-  }, [meshcoreNodesById, meshcoreDevice.nodes]);
+    if (!meshcoreNodesById) return new Map<number, MeshNode>();
+    return nodeRecordsToMeshNodeMap(Object.values(meshcoreNodesById));
+  }, [meshcoreNodesById]);
   const { refreshNodesFromDb: refreshMeshtasticNodesInStore } = useDbRefresh(meshtasticIdentityId);
   const sendMessage = useSendMessage(focusedIdentityId);
   const handleSend = useCallback(

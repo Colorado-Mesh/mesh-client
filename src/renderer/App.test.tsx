@@ -3,8 +3,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
 import App from './App';
+import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
 import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
+import { chatMessageToMessageRecord } from './lib/storeRecordAdapters';
+import type { ChatMessage } from './lib/types';
+import { useIdentityStore } from './stores/identityStore';
+import { useMessageStore } from './stores/messageStore';
+
+const MESHTASTIC_TEST_IDENTITY = 'meshtastic-app-test';
+
+function syncMeshtasticMessagesToStore(messages: ChatMessage[]): void {
+  const byId: Record<string, ReturnType<typeof chatMessageToMessageRecord>> = {};
+  for (const msg of messages) {
+    const rec = chatMessageToMessageRecord(msg);
+    byId[rec.id] = rec;
+  }
+  useMessageStore.setState((s) => ({
+    messages: { ...s.messages, [MESHTASTIC_TEST_IDENTITY]: byId },
+  }));
+}
 
 const {
   createDeviceMock,
@@ -139,6 +157,20 @@ beforeEach(() => {
   getStoredMeshProtocolMock.mockReset();
   getStoredMeshProtocolMock.mockReturnValue('meshtastic');
   lastChatPanelProps.current = null;
+  useIdentityStore.setState({
+    identities: {
+      [MESHTASTIC_TEST_IDENTITY]: {
+        id: MESHTASTIC_TEST_IDENTITY,
+        protocol: meshtasticProtocol,
+        signature: 'meshtastic:app-test',
+        transports: [],
+        createdAt: Date.now(),
+        lastSeenAt: Date.now(),
+      },
+    },
+    activeIdentityId: MESHTASTIC_TEST_IDENTITY,
+  });
+  useMessageStore.setState({ messages: {} });
   useDeviceMock.mockReset();
   useDeviceMock.mockImplementation(() => createDeviceMock());
   useMeshCoreMock.mockReset();
@@ -530,6 +562,7 @@ describe('App accessibility', () => {
       messages: [existingMessage],
     };
     useDeviceMock.mockReturnValue(initialDevice);
+    syncMeshtasticMessagesToStore(initialDevice.messages);
     const { rerender } = render(<App />);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
@@ -538,20 +571,22 @@ describe('App accessibility', () => {
     });
 
     setDocumentHidden(true);
+    const hiddenMessages = [
+      existingMessage,
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'hidden ping',
+        channel: 0,
+        timestamp: Date.now(),
+        status: 'acked' as const,
+      },
+    ];
     useDeviceMock.mockReturnValue({
       ...initialDevice,
-      messages: [
-        existingMessage,
-        {
-          sender_id: 2,
-          sender_name: 'Alice',
-          payload: 'hidden ping',
-          channel: 0,
-          timestamp: Date.now(),
-          status: 'acked' as const,
-        },
-      ],
+      messages: hiddenMessages,
     });
+    syncMeshtasticMessagesToStore(hiddenMessages);
     rerender(<App />);
 
     await waitFor(() => {
@@ -584,6 +619,7 @@ describe('App accessibility', () => {
       messages: [existingMessage],
     };
     useDeviceMock.mockReturnValue(initialDevice);
+    syncMeshtasticMessagesToStore(initialDevice.messages);
     const { rerender } = render(<App />);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
@@ -592,20 +628,22 @@ describe('App accessibility', () => {
     });
 
     setDocumentHidden(true);
+    const focusMessages = [
+      existingMessage,
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'focus ping',
+        channel: 0,
+        timestamp: Date.now(),
+        status: 'acked' as const,
+      },
+    ];
     useDeviceMock.mockReturnValue({
       ...initialDevice,
-      messages: [
-        existingMessage,
-        {
-          sender_id: 2,
-          sender_name: 'Alice',
-          payload: 'focus ping',
-          channel: 0,
-          timestamp: Date.now(),
-          status: 'acked' as const,
-        },
-      ],
+      messages: focusMessages,
     });
+    syncMeshtasticMessagesToStore(focusMessages);
     rerender(<App />);
 
     await waitFor(() => {

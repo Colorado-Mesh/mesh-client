@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Config, Mesh, Portnums } from '@meshtastic/protobufs';
@@ -95,6 +94,10 @@ import {
   shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
 import { meshtasticHwModelName } from '../lib/hardwareModels';
+import {
+  attachMeshtasticIngest,
+  type MeshtasticIngestSession,
+} from '../lib/ingest/meshtasticIngest';
 import { bindMeshtasticIngress, meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { setRemoteAdminReadsActive } from '../lib/meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
@@ -298,6 +301,9 @@ export function useDevice() {
   const unsubscribesRef = useRef<(() => void)[]>([]);
   /** Protocol ingress + ConnectionDriver handle registration (issues #375 / #377). */
   const meshtasticIngressDetachRef = useRef<(() => void) | null>(null);
+  const meshtasticIngestSessionRef = useRef<MeshtasticIngestSession | null>(null);
+  /** True when `connectionDriver.connect` opened the transport (serial/http). */
+  const meshtasticDriverConnectedRef = useRef(false);
   const meshtasticIdentityIdRef = useRef<string | null>(null);
   const [meshtasticIdentityId, setMeshtasticIdentityId] = useState<string | null>(null);
 
@@ -637,6 +643,10 @@ export function useDevice() {
 
   // ─── Helper: clean up all event subscriptions ───────────────────
   const cleanupSubscriptions = useCallback(() => {
+    if (meshtasticIngestSessionRef.current) {
+      meshtasticIngestSessionRef.current.detach();
+      meshtasticIngestSessionRef.current = null;
+    }
     if (meshtasticIngressDetachRef.current) {
       try {
         meshtasticIngressDetachRef.current();
@@ -646,6 +656,7 @@ export function useDevice() {
       meshtasticIngressDetachRef.current = null;
     }
     meshtasticIdentityIdRef.current = null;
+    meshtasticDriverConnectedRef.current = false;
     setMeshtasticIdentityId(null);
     for (const unsub of unsubscribesRef.current) {
       try {
@@ -1505,25 +1516,76 @@ export function useDevice() {
     requestStoreForwardHistoryRef.current = requestStoreForwardHistory;
   }, [requestStoreForwardHistory]);
 
+  /** HTTP uses `ConnectionDriver.connect`; BLE/serial keep legacy open + `bindMeshtasticIngress`. */
+  const openMeshtasticTransport = useCallback(
+    async (
+      type: ConnectionType,
+      opts: {
+        httpAddress?: string;
+        blePeripheralId?: string;
+        lastSerialPortId?: string | null;
+      },
+    ): Promise<{ device: MeshDevice; driverIdentityId?: string }> => {
+      if (type === 'http') {
+        const params = meshtasticTransportParams('http', { host: opts.httpAddress });
+        const identityId = await connectionDriver.connect('meshtastic', params);
+        meshtasticDriverConnectedRef.current = true;
+        const device = connectionDriver.getHandle(identityId) as MeshDevice | null;
+        if (!device) {
+          throw new Error('[useDevice] ConnectionDriver.connect returned no handle');
+        }
+        return { device, driverIdentityId: identityId };
+      }
+      if (type === 'ble') {
+        const device = await createBleConnection(opts.blePeripheralId, 'meshtastic', touchLastData);
+        return { device };
+      }
+      if (type === 'serial') {
+        const device = opts.lastSerialPortId
+          ? await reconnectSerial(opts.lastSerialPortId)
+          : await createConnection('serial');
+        return { device };
+      }
+      throw new Error(`[useDevice] unsupported connection type: ${type}`);
+    },
+    [touchLastData],
+  );
+
   // ─── Wire up all event subscriptions for a device ─────────────
   const wireSubscriptions = useCallback(
-    (device: MeshDevice, type: ConnectionType) => {
+    (device: MeshDevice, type: ConnectionType, opts?: { driverIdentityId?: string }) => {
       // Protocol ingress → identity-scoped stores (before legacy handlers so both
       // receive SDK events when the transport supports multiple subscribers).
-      // Legacy handlers below are still required for DB, MQTT dedup, watchdog, etc.
-      // See docs/hook-deconstruction-ingress.md — do not delete event blocks until
-      // those concerns move behind PacketRouter or a shared ingest layer.
+      // Legacy handlers below are still required for MQTT, watchdog, etc.
+      // See docs/hook-deconstruction-ingress.md
       if (meshtasticIngressDetachRef.current) {
         meshtasticIngressDetachRef.current();
       }
       const cp = connectionParamsRef.current;
-      const ingress = bindMeshtasticIngress(device, type, {
-        peripheralId: cp?.blePeripheralId,
-        host: cp?.httpAddress,
-      });
-      meshtasticIngressDetachRef.current = ingress.detach;
-      meshtasticIdentityIdRef.current = ingress.identityId;
-      setMeshtasticIdentityId(ingress.identityId);
+      let identityId = opts?.driverIdentityId ?? null;
+      if (identityId) {
+        meshtasticIngressDetachRef.current = null;
+        meshtasticIdentityIdRef.current = identityId;
+        setMeshtasticIdentityId(identityId);
+      } else {
+        const ingress = bindMeshtasticIngress(device, type, {
+          peripheralId: cp?.blePeripheralId,
+          host: cp?.httpAddress,
+        });
+        meshtasticIngressDetachRef.current = ingress.detach;
+        identityId = ingress.identityId;
+        meshtasticIdentityIdRef.current = identityId;
+        setMeshtasticIdentityId(identityId);
+      }
+      if (meshtasticIngestSessionRef.current) {
+        meshtasticIngestSessionRef.current.detach();
+      }
+      if (identityId) {
+        meshtasticIngestSessionRef.current = attachMeshtasticIngest(identityId, {
+          getIsConfiguring: () => isConfiguringRef.current,
+          getMyNodeNum: () => myNodeNumRef.current,
+        });
+      }
 
       // ─── Device status ─────────────────────────────────────────
       const unsub1 = device.events.onDeviceStatus.subscribe((status) => {
@@ -1547,6 +1609,7 @@ export function useDevice() {
         // Track configuring phase so packet replays are marked as historical
         if (status === 3 || status === 5 || status === 6) {
           isConfiguringRef.current = true;
+          meshtasticIngestSessionRef.current?.setConfiguring(true);
           if (status === 6 && type === 'ble' && !configureTimeoutRef.current) {
             configureTimeoutRef.current = setTimeout(() => {
               console.warn('[useDevice] configure timeout (BLE 30s) — forcing disconnect');
@@ -1578,6 +1641,7 @@ export function useDevice() {
         if (status === 7) {
           clearConfigureTimeout();
           isConfiguringRef.current = false;
+          meshtasticIngestSessionRef.current?.setConfiguring(false);
           lastDataReceivedRef.current = Date.now();
           startWatchdog();
           void refreshOurPositionRef.current();
@@ -1826,25 +1890,26 @@ export function useDevice() {
           ...(resolvedText.viaStoreForward ? { viaStoreForward: true } : {}),
         };
         const msg = enrichMeshtasticReplyPreviews(msgBase, messagesRef.current, getNodeName);
+        const chatInStore = Boolean(meshtasticIdentityIdRef.current);
 
         // Packet ID dedup: skip if already seen (e.g. via MQTT) so same message is not shown twice
         if (!isEcho && !msg.emoji && msg.packetId && isDuplicate(msg.packetId)) {
-          // Upgrade receivedVia to 'both' if this packet was already saved via MQTT
-          const rfDedupPacketId = msg.packetId;
-          const rfDedupHops = meshtasticComputedRfHopsAway(meshPacket);
-          setMessages((prev) =>
-            prev.map((m) =>
-              meshtasticPacketIdsEqual(m.packetId, rfDedupPacketId) && m.receivedVia === 'mqtt'
-                ? {
-                    ...m,
-                    receivedVia: 'both' as const,
-                    rxHops: m.rxHops ?? rfDedupHops,
-                    packetId: rfDedupPacketId,
-                  }
-                : m,
-            ),
-          );
-          void window.electronAPI.db.updateMessageReceivedVia(rfDedupPacketId, rfDedupHops);
+          if (!chatInStore) {
+            const rfDedupPacketId = msg.packetId;
+            const rfDedupHops = meshtasticComputedRfHopsAway(meshPacket);
+            setMessages((prev) =>
+              prev.map((m) =>
+                meshtasticPacketIdsEqual(m.packetId, rfDedupPacketId) && m.receivedVia === 'mqtt'
+                  ? {
+                      ...m,
+                      receivedVia: 'both' as const,
+                      rxHops: m.rxHops ?? rfDedupHops,
+                      packetId: rfDedupPacketId,
+                    }
+                  : m,
+              ),
+            );
+          }
           return;
         }
 
@@ -1862,7 +1927,7 @@ export function useDevice() {
               isHistory: isConfiguringRef.current || undefined,
             };
 
-        if (!isEcho && !rfMsg.emoji) {
+        if (!chatInStore && !isEcho && !rfMsg.emoji) {
           const crossDup = findMeshtasticCrossTransportDuplicate(messagesRef.current, rfMsg);
           if (crossDup) {
             const rfDedupHops = meshtasticComputedRfHopsAway(meshPacket);
@@ -1880,30 +1945,30 @@ export function useDevice() {
                 : normalizeMeshtasticPacketId(crossDup.packetId);
             if (pid !== undefined && pid !== 0) {
               isDuplicate(pid); // registers as seen to suppress future duplicates
-              void window.electronAPI.db.updateMessageReceivedVia(pid, rfDedupHops);
             }
             return;
           }
         }
 
-        setMessages((prev) => {
-          // Dedup reaction retransmissions before the DB write completes
-          if (rfMsg.emoji && rfMsg.replyId) {
-            const isDup = prev.some(
-              (m) =>
-                m.emoji === rfMsg.emoji &&
-                m.replyId === rfMsg.replyId &&
-                m.sender_id === rfMsg.sender_id,
-            );
-            if (isDup) return prev;
-          }
-          // Dedup regular messages by packetId (e.g. device config-sync replay)
-          if (!rfMsg.emoji && rfMsg.packetId && prev.some((m) => m.packetId === rfMsg.packetId)) {
-            return prev;
-          }
-          return trimChatMessagesToMax([...prev, rfMsg], MAX_IN_MEMORY_CHAT_MESSAGES);
-        });
-        void window.electronAPI.db.saveMessage(rfMsg);
+        if (!chatInStore) {
+          setMessages((prev) => {
+            // Dedup reaction retransmissions before the DB write completes
+            if (rfMsg.emoji && rfMsg.replyId) {
+              const isDup = prev.some(
+                (m) =>
+                  m.emoji === rfMsg.emoji &&
+                  m.replyId === rfMsg.replyId &&
+                  m.sender_id === rfMsg.sender_id,
+              );
+              if (isDup) return prev;
+            }
+            // Dedup regular messages by packetId (e.g. device config-sync replay)
+            if (!rfMsg.emoji && rfMsg.packetId && prev.some((m) => m.packetId === rfMsg.packetId)) {
+              return prev;
+            }
+            return trimChatMessagesToMax([...prev, rfMsg], MAX_IN_MEMORY_CHAT_MESSAGES);
+          });
+        }
 
         // Gateway uplink: forward RF messages to MQTT if uplinkEnabled for this channel
         // Skip our own echoes, reactions, and DMs (privacy)
@@ -3347,20 +3412,16 @@ export function useDevice() {
 
       try {
         console.debug('[useDevice] connect', type, httpAddress ?? blePeripheralId);
-        let device: MeshDevice;
-        if (type === 'ble') {
-          // On Linux, peripheralId is optional - createBleConnection will call requestDevice()
-          device = await createBleConnection(blePeripheralId, 'meshtastic', touchLastData);
-        } else {
-          device = await createConnection(type, httpAddress);
-        }
-        deviceRef.current = device;
+        const opened = await openMeshtasticTransport(type, { httpAddress, blePeripheralId });
+        deviceRef.current = opened.device;
 
         // Wire all event subscriptions
-        wireSubscriptions(device, type);
+        wireSubscriptions(opened.device, type, {
+          driverIdentityId: opened.driverIdentityId,
+        });
 
         // Start configuration AFTER all listeners are wired
-        await device.configure();
+        await opened.device.configure();
       } catch (err) {
         clearConfigureTimeout();
         console.error('[Meshtastic] Connection failed: ' + errLikeToLogString(err));
@@ -3377,7 +3438,13 @@ export function useDevice() {
         throw err;
       }
     },
-    [wireSubscriptions, cleanupSubscriptions, stopWatchdog, clearConfigureTimeout, touchLastData],
+    [
+      wireSubscriptions,
+      cleanupSubscriptions,
+      stopWatchdog,
+      clearConfigureTimeout,
+      openMeshtasticTransport,
+    ],
   );
 
   /**
@@ -3421,18 +3488,16 @@ export function useDevice() {
 
       try {
         console.debug('[useDevice] connectAutomatic', type, httpAddress ?? blePeripheralId);
-        let device: MeshDevice;
-        if (type === 'ble') {
-          // On Linux, peripheralId is optional - createBleConnection will call requestDevice()
-          device = await createBleConnection(blePeripheralId, 'meshtastic', touchLastData);
-        } else if (type === 'serial') {
-          device = await reconnectSerial(lastSerialPortId);
-        } else {
-          device = await createConnection(type, httpAddress);
-        }
-        deviceRef.current = device;
-        wireSubscriptions(device, type);
-        await device.configure();
+        const opened = await openMeshtasticTransport(type, {
+          httpAddress,
+          blePeripheralId,
+          lastSerialPortId,
+        });
+        deviceRef.current = opened.device;
+        wireSubscriptions(opened.device, type, {
+          driverIdentityId: opened.driverIdentityId,
+        });
+        await opened.device.configure();
       } catch (err) {
         clearConfigureTimeout();
         console.error('[Meshtastic] Auto-connect failed: ' + errLikeToLogString(err));
@@ -3449,12 +3514,22 @@ export function useDevice() {
         throw err;
       }
     },
-    [wireSubscriptions, cleanupSubscriptions, stopWatchdog, clearConfigureTimeout, touchLastData],
+    [
+      wireSubscriptions,
+      cleanupSubscriptions,
+      stopWatchdog,
+      clearConfigureTimeout,
+      openMeshtasticTransport,
+    ],
   );
 
   const disconnect = useCallback(async () => {
     // Stop all monitoring and reconnection
     clearConfigureTimeout();
+    const driverIdentity =
+      meshtasticDriverConnectedRef.current && meshtasticIdentityIdRef.current
+        ? meshtasticIdentityIdRef.current
+        : null;
     cleanupSubscriptions();
     stopWatchdog();
     stopGpsInterval();
@@ -3465,7 +3540,11 @@ export function useDevice() {
 
     const device = deviceRef.current;
     deviceRef.current = null;
-    if (device) {
+    if (driverIdentity) {
+      await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
+        console.debug('[useDevice] driver disconnect ' + errLikeToLogString(e));
+      });
+    } else if (device) {
       await safeDisconnect(device);
     }
     setState({
