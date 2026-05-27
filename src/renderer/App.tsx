@@ -95,6 +95,7 @@ import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './lib/meshtasticMqttTlsMigration';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
+import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
 import { parseStoredJson } from './lib/parseStoredJson';
 import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
@@ -635,6 +636,10 @@ function AppContent({
 
   useEffect(() => {
     void usePathHistoryStore.getState().loadAllFromDb();
+  }, []);
+
+  useLayoutEffect(() => {
+    ensureOfflineProtocolIdentities();
   }, []);
 
   const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredMeshProtocol());
@@ -1259,6 +1264,7 @@ function AppContent({
   const postStartupPruneHydrateRef = useRef<() => void>(() => {});
   useLayoutEffect(() => {
     postStartupPruneHydrateRef.current = () => {
+      ensureOfflineProtocolIdentities();
       if (meshtasticIdentityId) {
         meshtasticPanelActions.refreshNodesFromDb();
         meshtasticPanelActions.refreshMessagesFromDb();

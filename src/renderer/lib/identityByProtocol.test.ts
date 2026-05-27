@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { addIdentity, setActiveIdentity, useIdentityStore } from '../stores/identityStore';
+import { upsertNode } from '../stores/nodeStore';
 import { getIdentityIdForProtocol, resolveIdentityIdForProtocol } from './identityByProtocol';
+import {
+  ensureOfflineProtocolIdentities,
+  OFFLINE_MESHTASTIC_IDENTITY_ID,
+} from './offlineProtocolIdentities';
 import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from './protocols/MeshtasticProtocol';
 
@@ -50,6 +55,28 @@ describe('getIdentityIdForProtocol', () => {
     });
     setActiveIdentity('id-mc');
     expect(getIdentityIdForProtocol('meshtastic')).toBe('id-mt');
+  });
+
+  it('prefers offline identity when active slice is empty but offline has hydrated data', () => {
+    ensureOfflineProtocolIdentities();
+    addIdentity({
+      id: 'id-mt-connected-empty',
+      protocol: meshtasticProtocol,
+      signature: 'meshtastic:node:99',
+      transports: [
+        {
+          transportId: 't1',
+          type: 'ble',
+          status: 'connected',
+          params: { type: 'ble', peripheralId: 'ble-test' },
+        },
+      ],
+      createdAt: 50,
+      lastSeenAt: 50,
+    });
+    setActiveIdentity('id-mt-connected-empty');
+    upsertNode(OFFLINE_MESHTASTIC_IDENTITY_ID, { nodeId: 1, longName: 'From DB' });
+    expect(getIdentityIdForProtocol('meshtastic')).toBe(OFFLINE_MESHTASTIC_IDENTITY_ID);
   });
 
   it('resolveIdentityIdForProtocol matches getIdentityIdForProtocol', () => {

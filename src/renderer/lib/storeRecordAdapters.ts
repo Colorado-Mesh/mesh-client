@@ -1,3 +1,8 @@
+import {
+  isMeshtasticBroadcastNodeNum,
+  MESHTASTIC_BROADCAST_NODE_NUM,
+} from '@/shared/nodeNameUtils';
+
 import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
 import type { NeighborInfoEvent, TraceRouteEvent, WaypointEvent } from './protocols/Protocol';
@@ -11,6 +16,7 @@ import type {
 
 export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const packetId = /^\d+$/.test(record.id) ? Number(record.id) : undefined;
+  const to = record.to != null && !isMeshtasticBroadcastNodeNum(record.to) ? record.to : undefined;
   return {
     ...(packetId != null ? { id: packetId } : {}),
     sender_id: record.from,
@@ -24,7 +30,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     receivedVia: record.receivedVia,
     isHistory: record.isHistory,
     error: record.error,
-    to: record.to,
+    to,
     replyId: record.replyTo != null ? Number(record.replyTo) : undefined,
     replyPreviewText: record.replyPreviewText,
     replyPreviewSender: record.replyPreviewSender,
@@ -156,11 +162,15 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     msg.packetId != null
       ? String(msg.packetId)
       : `${msg.sender_id}-${msg.timestamp}-${msg.channel}`;
+  const to =
+    msg.to != null && !isMeshtasticBroadcastNodeNum(msg.to)
+      ? msg.to
+      : MESHTASTIC_BROADCAST_NODE_NUM;
   return {
     id,
     from: msg.sender_id,
     senderName: msg.sender_name,
-    to: msg.to ?? 0xffffffff,
+    to,
     payload: msg.payload,
     channelIndex: msg.channel,
     timestamp: msg.timestamp,

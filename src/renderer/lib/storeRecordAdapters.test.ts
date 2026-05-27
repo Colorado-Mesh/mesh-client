@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
+import { MESHTASTIC_BROADCAST_NODE_NUM } from '@/shared/nodeNameUtils';
+
 import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
-import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from './storeRecordAdapters';
+import {
+  chatMessageToMessageRecord,
+  messageRecordsToChatMessages,
+  messageRecordToChatMessage,
+  nodeRecordsToMeshNodeMap,
+} from './storeRecordAdapters';
 import type { ChatMessage, MeshNode } from './types';
 
 describe('store record adapters (merge precedence)', () => {
@@ -20,6 +27,21 @@ describe('store record adapters (merge precedence)', () => {
     const msgs = messageRecordsToChatMessages(records);
     expect(msgs[0].packetId).toBe(42);
     expect(msgs[0].payload).toBe('from store');
+    expect(msgs[0].to).toBeUndefined();
+  });
+
+  it('round-trips channel messages without treating broadcast as DM', () => {
+    const channelMsg: ChatMessage = {
+      sender_id: 3,
+      sender_name: 'Node',
+      payload: 'hello channel',
+      channel: 0,
+      timestamp: 1000,
+    };
+    const record = chatMessageToMessageRecord(channelMsg);
+    expect(record.to).toBe(MESHTASTIC_BROADCAST_NODE_NUM);
+    const back = messageRecordToChatMessage(record);
+    expect(back.to).toBeUndefined();
   });
 
   it('nodeRecordsToMeshNodeMap merges legacy fields when spread under hook merge pattern', () => {

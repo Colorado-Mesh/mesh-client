@@ -13,6 +13,7 @@ import {
 import { clearMessageIdentity } from '../../stores/messageStore';
 import { clearNodeIdentity } from '../../stores/nodeStore';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { tryReuseOfflineProtocolIdentity } from '../offlineProtocolIdentities';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import type { DiscoveryInfo, DomainEvent, Protocol } from '../protocols/Protocol';
 import { getProtocolForType } from '../protocols/protocolRegistry';
@@ -114,16 +115,27 @@ export class ConnectionDriver {
     let createdProvisional = false;
 
     if (!identityId || !getIdentity(identityId)) {
-      identityId = randomId('id');
-      addIdentity({
-        id: identityId,
-        protocol,
-        signature: provisionalKey,
-        transports: [],
-        createdAt: Date.now(),
-        lastSeenAt: Date.now(),
-      });
-      createdProvisional = true;
+      const reusableOffline = tryReuseOfflineProtocolIdentity(
+        protocol.type as 'meshtastic' | 'meshcore',
+      );
+      if (reusableOffline && getIdentity(reusableOffline)) {
+        identityId = reusableOffline;
+        updateIdentity(reusableOffline, {
+          signature: provisionalKey,
+          lastSeenAt: Date.now(),
+        });
+      } else {
+        identityId = randomId('id');
+        addIdentity({
+          id: identityId,
+          protocol,
+          signature: provisionalKey,
+          transports: [],
+          createdAt: Date.now(),
+          lastSeenAt: Date.now(),
+        });
+        createdProvisional = true;
+      }
     }
 
     let handle: unknown;

@@ -10,6 +10,7 @@ import {
 } from '../stores/identityStore';
 import { connectionDriver } from './drivers/ConnectionDriver';
 import { packetRouter } from './drivers/PacketRouter';
+import { tryReuseOfflineProtocolIdentity } from './offlineProtocolIdentities';
 import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from './protocols/MeshtasticProtocol';
 import type { DiscoveryInfo } from './protocols/Protocol';
@@ -34,6 +35,17 @@ function resolveOrCreateIdentity(
   if (existing) {
     connectionDriver.registerTransportKeys(existing, provisionalKey, resolvedKey);
     return existing;
+  }
+  const reusableOffline = tryReuseOfflineProtocolIdentity(protocol.type);
+  if (reusableOffline) {
+    updateIdentity(reusableOffline, {
+      signature: resolvedKey,
+      lastSeenAt: Date.now(),
+      ...(discovery?.myNodeNum != null ? { selfNodeNum: discovery.myNodeNum } : {}),
+      ...(discovery?.publicKey ? { publicKey: discovery.publicKey } : {}),
+    });
+    connectionDriver.registerTransportKeys(reusableOffline, provisionalKey, resolvedKey);
+    return reusableOffline;
   }
   const identityId = randomIdentityId(protocol.type);
   addIdentity({
