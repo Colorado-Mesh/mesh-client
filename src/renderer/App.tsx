@@ -27,13 +27,13 @@ import { LinkIcon } from './components/SignalBars';
 import SignalPropagation from './components/SignalPropagation';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
-import { useConnectionByProtocol } from './hooks/useConnectionByProtocol';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useDbRefresh } from './hooks/useDbRefresh';
 import { useDevice } from './hooks/useDevice';
 import { useMeshCore } from './hooks/useMeshCore';
-import { useMergedMessages, useMergedNodesMap } from './hooks/useMeshStoreUi';
+import { useMessages } from './hooks/useMessages';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
+import { useSendMessage } from './hooks/useSendMessage';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
 import { ContactGroupsModal, NodeDetailModal } from './lazyModals';
@@ -91,6 +91,7 @@ import { parseStoredJson } from './lib/parseStoredJson';
 import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
+import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from './lib/storeRecordAdapters';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
 import type {
   ChatMessage,
@@ -100,8 +101,10 @@ import type {
   MQTTSettings,
 } from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
+import { useIdentityStore } from './stores/identityStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
 import { useMapViewportStore } from './stores/mapViewportStore';
+import { useNodeStore } from './stores/nodeStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
 
@@ -607,17 +610,46 @@ export default function App() {
 
   const meshtasticDevice = useDevice();
   const meshcoreDevice = useMeshCore();
-  useConnectionByProtocol('meshtastic');
-  useConnectionByProtocol('meshcore');
-  const meshtasticUiMessages = useMergedMessages(
-    meshtasticDevice.identityId,
-    meshtasticDevice.messages,
+  const meshtasticIdentityId = useIdentityStore(
+    (s) => Object.values(s.identities).find((i) => i.protocol.type === 'meshtastic')?.id ?? null,
   );
-  const meshcoreUiMessages = useMergedMessages(meshcoreDevice.identityId, meshcoreDevice.messages);
-  const meshtasticUiNodes = useMergedNodesMap(meshtasticDevice.identityId, meshtasticDevice.nodes);
-  const meshcoreUiNodes = useMergedNodesMap(meshcoreDevice.identityId, meshcoreDevice.nodes);
-  const { refreshNodesFromDb: refreshMeshtasticNodesInStore } = useDbRefresh(
-    meshtasticDevice.identityId,
+  const meshcoreIdentityId = useIdentityStore(
+    (s) => Object.values(s.identities).find((i) => i.protocol.type === 'meshcore')?.id ?? null,
+  );
+  const focusedIdentityId = protocol === 'meshcore' ? meshcoreIdentityId : meshtasticIdentityId;
+  const meshtasticNodesById = useNodeStore((s) =>
+    meshtasticIdentityId ? s.nodes[meshtasticIdentityId] : undefined,
+  );
+  const meshcoreNodesById = useNodeStore((s) =>
+    meshcoreIdentityId ? s.nodes[meshcoreIdentityId] : undefined,
+  );
+  const meshtasticStoreMessages = useMessages(meshtasticIdentityId);
+  const meshcoreStoreMessages = useMessages(meshcoreIdentityId);
+  const meshtasticUiMessages = useMemo(() => {
+    const fromStore = messageRecordsToChatMessages(meshtasticStoreMessages);
+    return fromStore.length > 0 ? fromStore : meshtasticDevice.messages;
+  }, [meshtasticStoreMessages, meshtasticDevice.messages]);
+  const meshcoreUiMessages = useMemo(() => {
+    const fromStore = messageRecordsToChatMessages(meshcoreStoreMessages);
+    return fromStore.length > 0 ? fromStore : meshcoreDevice.messages;
+  }, [meshcoreStoreMessages, meshcoreDevice.messages]);
+  const meshtasticUiNodes = useMemo(() => {
+    if (!meshtasticNodesById) return meshtasticDevice.nodes;
+    const fromStore = nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesById));
+    return fromStore.size > 0 ? fromStore : meshtasticDevice.nodes;
+  }, [meshtasticNodesById, meshtasticDevice.nodes]);
+  const meshcoreUiNodes = useMemo(() => {
+    if (!meshcoreNodesById) return meshcoreDevice.nodes;
+    const fromStore = nodeRecordsToMeshNodeMap(Object.values(meshcoreNodesById));
+    return fromStore.size > 0 ? fromStore : meshcoreDevice.nodes;
+  }, [meshcoreNodesById, meshcoreDevice.nodes]);
+  const { refreshNodesFromDb: refreshMeshtasticNodesInStore } = useDbRefresh(meshtasticIdentityId);
+  const sendMessage = useSendMessage(focusedIdentityId);
+  const handleSend = useCallback(
+    (text: string, channel: number, destination?: number, replyId?: number) => {
+      sendMessage(text, channel, destination, replyId != null ? String(replyId) : undefined);
+    },
+    [sendMessage],
   );
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
   const contactGroupsSelfId =
@@ -1020,9 +1052,14 @@ export default function App() {
 
   const handleResend = useCallback(
     (msg: ChatMessage) => {
-      device.sendMessage(msg.payload, msg.channel, msg.to ?? undefined, msg.replyId);
+      sendMessage(
+        msg.payload,
+        msg.channel,
+        msg.to ?? undefined,
+        msg.replyId != null ? String(msg.replyId) : undefined,
+      );
     },
-    [device],
+    [sendMessage],
   );
 
   const traceRouteHops = useMemo(() => {
@@ -1995,7 +2032,7 @@ export default function App() {
                                   )
                                 : [device.selfNodeId].filter((id) => id > 0)
                             }
-                            onSend={device.sendMessage}
+                            onSend={handleSend}
                             onReact={device.sendReaction}
                             onResend={handleResend}
                             onNodeClick={setSelectedNodeId}

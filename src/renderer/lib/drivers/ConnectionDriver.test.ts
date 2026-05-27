@@ -112,4 +112,25 @@ describe('ConnectionDriver', () => {
     expect(connectionDriver.lookupIdentityId(`meshtastic:ble:${peripheralId}`)).toBe(existingId);
     await connectionDriver.disconnect(identityId);
   });
+
+  it('removeIdentity clears transport keys and identity record', async () => {
+    const peripheralId = `remove-${Date.now()}`;
+    const transportKey = `meshtastic:ble:${peripheralId}`;
+    const identityId = `remove-id-${Date.now()}`;
+    addIdentity({
+      id: identityId,
+      protocol: meshtasticProtocol,
+      signature: transportKey,
+      transports: [],
+      createdAt: Date.now(),
+      lastSeenAt: Date.now(),
+    });
+    connectionDriver.registerTransportKeys(identityId, transportKey);
+
+    await connectionDriver.removeIdentity(identityId);
+
+    expect(connectionDriver.lookupIdentityId(transportKey)).toBeNull();
+    expect(getIdentity(identityId)).toBeNull();
+    expect(useConnectionStore.getState().connections[identityId]).toBeUndefined();
+  });
 });

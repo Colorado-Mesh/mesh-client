@@ -1,6 +1,13 @@
 import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
-import type { ChatMessage, MeshNode } from './types';
+import type { NeighborInfoEvent, TraceRouteEvent, WaypointEvent } from './protocols/Protocol';
+import type {
+  ChatMessage,
+  MeshNeighbor,
+  MeshNode,
+  MeshWaypoint,
+  NeighborInfoRecord,
+} from './types';
 
 export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const packetId = /^\d+$/.test(record.id) ? Number(record.id) : undefined;
@@ -92,6 +99,56 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     favorited: node.favorited,
     meshcoreLocalStats: node.meshcore_local_stats,
   };
+}
+
+export function waypointEventsToMeshWaypointMap(
+  byId: Record<number, WaypointEvent>,
+): Map<number, MeshWaypoint> {
+  const map = new Map<number, MeshWaypoint>();
+  for (const event of Object.values(byId)) {
+    map.set(event.id, {
+      id: event.id,
+      latitude: event.latitude,
+      longitude: event.longitude,
+      name: event.name,
+      description: event.description,
+      lockedTo: event.lockedTo,
+      expire: event.expire,
+      from: event.from,
+      timestamp: event.timestamp,
+    });
+  }
+  return map;
+}
+
+export function neighborInfoEventsToRecordMap(
+  byNode: Record<number, NeighborInfoEvent>,
+): Map<number, NeighborInfoRecord> {
+  const map = new Map<number, NeighborInfoRecord>();
+  for (const event of Object.values(byNode)) {
+    map.set(event.nodeId, {
+      nodeId: event.nodeId,
+      neighbors: event.neighbors.map(
+        (n): MeshNeighbor => ({
+          nodeId: n.nodeId,
+          snr: n.snr,
+          lastRxTime: n.lastRxTime,
+        }),
+      ),
+      timestamp: event.timestamp,
+    });
+  }
+  return map;
+}
+
+export function traceRouteEventsToResultsMap(
+  events: TraceRouteEvent[],
+): Map<number, { route: number[]; from: number; timestamp: number }> {
+  const map = new Map<number, { route: number[]; from: number; timestamp: number }>();
+  for (const event of events) {
+    map.set(event.from, { from: event.from, route: event.route, timestamp: event.timestamp });
+  }
+  return map;
 }
 
 export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {

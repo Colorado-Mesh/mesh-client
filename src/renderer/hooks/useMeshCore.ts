@@ -133,6 +133,7 @@ import {
   selectGrantedSerialPort,
 } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
+import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import {
   MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
@@ -150,6 +151,8 @@ import type {
 } from '../lib/types';
 import { setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { useMessageStore } from '../stores/messageStore';
+import { useNodeStore } from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
@@ -6212,11 +6215,26 @@ export function useMeshCore() {
     }
   }, []);
 
+  const resolvedMessages = useMemo(() => {
+    if (!meshcoreIdentityId) return messages;
+    const byId = useMessageStore.getState().messages[meshcoreIdentityId];
+    if (!byId) return messages;
+    const fromStore = messageRecordsToChatMessages(Object.values(byId));
+    return fromStore.length > 0 ? fromStore : messages;
+  }, [meshcoreIdentityId, messages]);
+  const resolvedNodes = useMemo(() => {
+    if (!meshcoreIdentityId) return nodes;
+    const byId = useNodeStore.getState().nodes[meshcoreIdentityId];
+    if (!byId) return nodes;
+    const fromStore = nodeRecordsToMeshNodeMap(Object.values(byId));
+    return fromStore.size > 0 ? fromStore : nodes;
+  }, [meshcoreIdentityId, nodes]);
+
   return useMemo(
     () => ({
       state,
-      nodes,
-      messages,
+      nodes: resolvedNodes,
+      messages: resolvedMessages,
       channels,
       selfInfo,
       meshcoreLocalStats: nodesRef.current.get(myNodeNumRef.current)?.meshcore_local_stats ?? null,
@@ -6333,8 +6351,8 @@ export function useMeshCore() {
     }),
     [
       state,
-      nodes,
-      messages,
+      resolvedNodes,
+      resolvedMessages,
       channels,
       selfInfo,
       meshcoreIdentityId,

@@ -51,6 +51,10 @@ See `bindMeshcoreIngress` in `src/renderer/lib/meshIdentityBridge.ts` and `initC
 
 After `onMyNodeInfo`, Meshtastic identity signature becomes `meshtastic:node:<num>`. `ConnectionDriver.remapMeshtasticNodeSignature` registers both transport and node keys so BLE/serial reconnect reuses the same `identityId` (see `meshIdentityBridge.test.ts`).
 
+## Upstream `deconstruct-hooks` delta (preflight)
+
+As of the closure work, `git fetch origin deconstruct-hooks` reports **no commits** after `698b70a2` on `origin/deconstruct-hooks`. No additional selective port was required beyond what is already on `refactor/hook-deconstruction`.
+
 ## Prior work
 
 Selective port from branch `deconstruct-hooks` (contributor SHAs for PR credit):
@@ -58,6 +62,16 @@ Selective port from branch `deconstruct-hooks` (contributor SHAs for PR credit):
 - `c31ef1a6` — protocol + driver scaffold
 - `4e8f3a2b` — identity stores
 - `698b70a2` — ingress bind pattern
+
+## Issue closure status ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377))
+
+| Goal                                                                                 | Status                                                    |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| Protocol layer + identity stores                                                     | Done                                                      |
+| App reads `useMessages` / `useNodes` / `useSendMessage`                              | Done (`App.tsx`)                                          |
+| God-hook duplicate ingress removed (Meshtastic queue/neighbor/module/waypoint state) | Partial — side-effect handlers remain                     |
+| `useDevice` / `useMeshCore` facades &lt;2k LOC                                       | **Not yet** — still large; return values read from stores |
+| Full handler deletion + `ConnectionDriver.connect` production path                   | Follow-up                                                 |
 
 ## Manual smoke checklist
 

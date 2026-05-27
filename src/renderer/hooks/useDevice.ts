@@ -2,7 +2,7 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Config, Mesh, Portnums } from '@meshtastic/protobufs';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
@@ -150,6 +150,13 @@ import { normalizeReactionEmoji, reactionGlyphFromPicker } from '../lib/reaction
 import { enrichMeshtasticReplyPreviews } from '../lib/replyPreview';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
+import {
+  messageRecordsToChatMessages,
+  neighborInfoEventsToRecordMap,
+  nodeRecordsToMeshNodeMap,
+  traceRouteEventsToResultsMap,
+  waypointEventsToMeshWaypointMap,
+} from '../lib/storeRecordAdapters';
 import { MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS } from '../lib/timeConstants';
 import { TransportManager } from '../lib/transport/TransportManager';
 import type { StatusUpdateEvent } from '../lib/transport/types';
@@ -168,9 +175,12 @@ import type {
   RemoteConfigChannelsTailStatus,
   TelemetryPoint,
 } from '../lib/types';
-import { setConnection } from '../stores/connectionStore';
+import { setConnection, useConnectionStore } from '../stores/connectionStore';
+import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { updateIdentity } from '../stores/identityStore';
+import { useMessageStore } from '../stores/messageStore';
+import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
 type ChannelType = Parameters<MeshDevice['setChannel']>[0];
@@ -2807,27 +2817,10 @@ export function useDevice() {
       });
       unsubscribesRef.current.push(unsubTraceLegacy);
 
-      // ─── Queue status ──────────────────────────────────────────
-      const unsubQueue = device.events.onQueueStatus.subscribe((qs) => {
-        setQueueStatus({ free: qs.free, maxlen: qs.maxlen, res: qs.res });
-      });
-      unsubscribesRef.current.push(unsubQueue);
+      // Queue status → connectionStore via MeshtasticProtocol + PacketRouter (no legacy handler).
 
-      // ─── Device log records ────────────────────────────────────
-      const MAX_DEVICE_LOGS = 500;
+      // Device logs → deviceStore via protocol; legacy handler only for foreign LoRa parsing.
       const unsubLog = device.events.onLogRecord.subscribe((record) => {
-        setDeviceLogs((prev) => {
-          const next = prev.length >= MAX_DEVICE_LOGS ? prev.slice(-MAX_DEVICE_LOGS + 1) : prev;
-          return [
-            ...next,
-            {
-              message: record.message,
-              time: Date.now(),
-              source: record.source,
-              level: record.level,
-            },
-          ];
-        });
         applyMeshtasticForeignLoraFromLog(record.message);
       });
       unsubscribesRef.current.push(unsubLog);
@@ -2838,32 +2831,9 @@ export function useDevice() {
       });
       unsubscribesRef.current.push(unsubForeignLoraLogLine);
 
-      // ─── Neighbor info ─────────────────────────────────────────
-      const unsubNeighbor = device.events.onNeighborInfoPacket.subscribe((packet) => {
-        touchLastData();
-        const data = packet.data as {
-          nodeId?: number;
-          neighbors?: { nodeId?: number; snr?: number; lastRxTime?: number }[];
-        };
-        if (!data.nodeId) return;
-        const record: NeighborInfoRecord = {
-          nodeId: data.nodeId,
-          neighbors: (data.neighbors ?? []).map((n) => ({
-            nodeId: n.nodeId ?? 0,
-            snr: n.snr ?? 0,
-            lastRxTime: n.lastRxTime ?? 0,
-          })),
-          timestamp: Date.now(),
-        };
-        setNeighborInfo((prev) => {
-          const updated = new Map(prev);
-          updated.set(record.nodeId, record);
-          return updated;
-        });
-      });
-      unsubscribesRef.current.push(unsubNeighbor);
+      // Neighbor info → nodeStore via protocol ingress.
 
-      // ─── Waypoints ─────────────────────────────────────────────
+      // Waypoints → nodeStore via protocol; legacy handler only relays MQTT uplink.
       const unsubWaypoint = device.events.onWaypointPacket.subscribe((packet) => {
         touchLastData();
         const data = packet.data as {
@@ -2877,28 +2847,6 @@ export function useDevice() {
           expire?: number;
         };
         if (!data.id) return;
-        const waypoint: MeshWaypoint = {
-          id: data.id,
-          latitude: (data.latitudeI ?? 0) / 1e7,
-          longitude: (data.longitudeI ?? 0) / 1e7,
-          name: data.name ?? '',
-          description: data.description,
-          icon: data.icon,
-          lockedTo: data.lockedTo,
-          expire: data.expire,
-          from: packet.from,
-          timestamp: Date.now(),
-        };
-        // expire=1 means deletion
-        setWaypoints((prev) => {
-          const updated = new Map(prev);
-          if (data.expire === 1) {
-            updated.delete(data.id!);
-          } else {
-            updated.set(waypoint.id, waypoint);
-          }
-          return updated;
-        });
 
         const mp = packet as { from?: number; to?: number; channel?: number };
         const fromNode = mp.from;
@@ -2947,18 +2895,7 @@ export function useDevice() {
       });
       unsubscribesRef.current.push(unsubWaypoint);
 
-      // ─── Module config packets ─────────────────────────────────
-      const unsubModuleConfig = device.events.onModuleConfigPacket.subscribe((config) => {
-        if (configureTargetNodeNumRef.current != null) return;
-        const cfg = config as { payloadVariant?: { case?: string; value?: unknown } };
-        if (cfg.payloadVariant?.case) {
-          setModuleConfigs((prev) => ({
-            ...prev,
-            [cfg.payloadVariant!.case!]: cfg.payloadVariant!.value,
-          }));
-        }
-      });
-      unsubscribesRef.current.push(unsubModuleConfig);
+      // Module config → deviceStore via protocol ingress (skipped during remote configure).
 
       const unsubRemoteAdmin = device.events.onMeshPacket.subscribe((meshPacket) => {
         remoteAdminClientRef.current?.handleMeshPacket(meshPacket as never);
@@ -4843,19 +4780,102 @@ export function useDevice() {
     setRawPackets([]);
   }, []);
 
+  // Read identity-scoped store slices synchronously (no zustand subscribe here — App
+  // subscribes via useMessages/useNodes; legacy setState still triggers re-renders).
+  const resolvedMessages = useMemo(() => {
+    if (!meshtasticIdentityId) return messages;
+    const byId = useMessageStore.getState().messages[meshtasticIdentityId];
+    if (!byId) return messages;
+    const fromStore = messageRecordsToChatMessages(Object.values(byId));
+    return fromStore.length > 0 ? fromStore : messages;
+  }, [meshtasticIdentityId, messages]);
+
+  const resolvedNodes = useMemo(() => {
+    if (!meshtasticIdentityId) return nodes;
+    const byId = useNodeStore.getState().nodes[meshtasticIdentityId];
+    if (!byId) return nodes;
+    const fromStore = nodeRecordsToMeshNodeMap(Object.values(byId));
+    return fromStore.size > 0 ? fromStore : nodes;
+  }, [meshtasticIdentityId, nodes]);
+
+  const resolvedTraceRouteResults = useMemo(() => {
+    if (!meshtasticIdentityId) return traceRouteResults;
+    const traceRoutesFromStore = useNodeStore.getState().traceRoutes[meshtasticIdentityId] ?? [];
+    if (traceRoutesFromStore.length === 0) return traceRouteResults;
+    return traceRouteEventsToResultsMap(traceRoutesFromStore);
+  }, [meshtasticIdentityId, traceRouteResults]);
+
+  const resolvedWaypoints = useMemo(() => {
+    if (!meshtasticIdentityId) return waypoints;
+    const waypointsFromStore = useNodeStore.getState().waypoints[meshtasticIdentityId] ?? {};
+    if (Object.keys(waypointsFromStore).length === 0) return waypoints;
+    return waypointEventsToMeshWaypointMap(waypointsFromStore);
+  }, [meshtasticIdentityId, waypoints]);
+
+  const resolvedNeighborInfo = useMemo(() => {
+    if (!meshtasticIdentityId) return neighborInfo;
+    const neighborInfoFromStore = useNodeStore.getState().neighborInfo[meshtasticIdentityId] ?? {};
+    if (Object.keys(neighborInfoFromStore).length === 0) return neighborInfo;
+    return neighborInfoEventsToRecordMap(neighborInfoFromStore);
+  }, [meshtasticIdentityId, neighborInfo]);
+
+  const resolvedQueueStatus = useMemo(() => {
+    if (!meshtasticIdentityId) return queueStatus;
+    const conn = useConnectionStore.getState().connections[meshtasticIdentityId];
+    if (conn?.queueFree != null && conn.queueMax != null) {
+      return { free: conn.queueFree, maxlen: conn.queueMax, res: 0 };
+    }
+    return queueStatus;
+  }, [meshtasticIdentityId, queueStatus]);
+
+  const resolvedChannels = useMemo(() => {
+    if (!meshtasticIdentityId) return channels;
+    const rec = useDeviceStore.getState().devices[meshtasticIdentityId];
+    if (rec?.channels.length) return rec.channels;
+    return channels;
+  }, [meshtasticIdentityId, channels]);
+
+  const resolvedChannelConfigs = useMemo(() => {
+    if (!meshtasticIdentityId) return channelConfigs;
+    const rec = useDeviceStore.getState().devices[meshtasticIdentityId];
+    if (rec?.channelConfigs.length) return rec.channelConfigs;
+    return channelConfigs;
+  }, [meshtasticIdentityId, channelConfigs]);
+
+  const resolvedModuleConfigs = useMemo(() => {
+    if (!meshtasticIdentityId) return moduleConfigs;
+    const rec = useDeviceStore.getState().devices[meshtasticIdentityId];
+    if (rec && Object.keys(rec.moduleConfigs).length > 0) return rec.moduleConfigs;
+    return moduleConfigs;
+  }, [meshtasticIdentityId, moduleConfigs]);
+
+  const resolvedDeviceLogs = useMemo(() => {
+    if (!meshtasticIdentityId) return deviceLogs;
+    const rec = useDeviceStore.getState().devices[meshtasticIdentityId];
+    if (rec?.deviceLogs.length) return rec.deviceLogs;
+    return deviceLogs;
+  }, [meshtasticIdentityId, deviceLogs]);
+
+  const resolvedRawPackets = useMemo(() => {
+    if (!meshtasticIdentityId) return rawPackets;
+    const rec = useDeviceStore.getState().devices[meshtasticIdentityId];
+    if (rec?.rawPackets.length) return rec.rawPackets;
+    return rawPackets;
+  }, [meshtasticIdentityId, rawPackets]);
+
   return {
     state,
     mqttStatus,
     mqttConnectionLoss,
-    messages,
-    nodes,
+    messages: resolvedMessages,
+    nodes: resolvedNodes,
     telemetry,
     signalTelemetry,
     environmentTelemetry,
-    channels,
-    channelConfigs,
+    channels: resolvedChannels,
+    channelConfigs: resolvedChannelConfigs,
     loraConfig,
-    traceRouteResults,
+    traceRouteResults: resolvedTraceRouteResults,
     ourPosition,
     selfNodeId,
     virtualNodeId,
@@ -4895,18 +4915,18 @@ export function useDevice() {
     getNodes,
     deviceOwner,
     setOwner,
-    queueStatus,
-    deviceLogs,
-    rawPackets,
+    queueStatus: resolvedQueueStatus,
+    deviceLogs: resolvedDeviceLogs,
+    rawPackets: resolvedRawPackets,
     clearRawPackets,
-    neighborInfo,
-    waypoints,
+    neighborInfo: resolvedNeighborInfo,
+    waypoints: resolvedWaypoints,
     rebootOta,
     enterDfuMode,
     factoryResetConfig,
     sendWaypoint,
     deleteWaypoint,
-    moduleConfigs,
+    moduleConfigs: resolvedModuleConfigs,
     setModuleConfig,
     setCannedMessages,
     ringtone,
