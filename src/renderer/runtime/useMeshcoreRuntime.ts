@@ -3,9 +3,66 @@ import { CayenneLpp } from '@liamcottle/meshcore.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
+/* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { withTimeout } from '../../shared/withTimeout';
+import {
+  contactToDbRow,
+  formatStructuredLogDetail,
+  INITIAL_STATE,
+  MANUAL_CONTACTS_KEY,
+  mapMeshcoreDbRowsToChatMessages,
+  MAX_ENV_TELEMETRY_POINTS,
+  MAX_TELEMETRY_POINTS,
+  mergeMeshcoreDbHydrationWithLive,
+  mergeStubNodesFromMeshcoreMessages,
+  MESHCORE_DEVICE_QUERY_APP_VER,
+  MESHCORE_DM_ACK_TIMEOUT_MIN_MS,
+  MESHCORE_INIT_TIMEOUT_MS,
+  MESHCORE_NEIGHBORS_TIMEOUT_MS,
+  MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS,
+  MESHCORE_PING_NO_ROUTE_ERROR_MSG,
+  MESHCORE_RESPONSE_DEVICE_INFO,
+  MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
+  MESHCORE_STATUS_TIMEOUT_MS,
+  MESHCORE_TELEMETRY_TIMEOUT_MS,
+  MESHCORE_TRACE_PRIME_WAIT_MS,
+  MESHCORE_TRACE_TIMEOUT_MS,
+  meshcoreContactRawFromDevice,
+  meshcoreDmAckKeyU32,
+  meshcoreFullPubKeyBytesFromContactDbHex,
+  meshcoreMessageDedupeKey,
+  meshcorePendingDmAckMapKeys,
+  meshcorePingNoRouteErrorExpiryUpdate,
+  meshcoreTraceRouteRejectReason,
+  messageToDbRow,
+  normalizeMeshCoreError,
+  type PendingDmAckEntry,
+  serializeErrorLike,
+  waitForMeshcorePath129ForNode,
+} from '../hooks/meshcore/meshcoreHookPreamble';
+import type {
+  CayenneLppEntry,
+  DeviceLogEntry,
+  MeshCoreConnection,
+  MeshcoreContactDbRow,
+  MeshCoreContactRaw,
+  MeshcoreMessageDbRow,
+  MeshCoreNeighborEntry,
+  MeshCoreNeighborResult,
+  MeshCoreNodeTelemetry,
+  MeshCorePacketStatsData,
+  MeshCoreRadioStatsData,
+  MeshCoreRepeaterStatus,
+  MeshCoreSelfInfo,
+  MeshCoreStatsResponse,
+  MeshcoreTraceResultEntry,
+  RxPacketEntry,
+} from '../hooks/meshcore/meshcoreHookTypes';
+import { attachMeshcoreLegacyConnEvents } from '../hooks/meshcore/meshcoreLegacyConnEvents';
+import type { MeshcoreLegacyConnEventsCtx } from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
+import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
 import {
   classifyMeshcoreBleTimeoutStage,
   MESHCORE_SETUP_ABORT_MESSAGE,
@@ -90,6 +147,7 @@ import {
 } from '../lib/repeaterCommandService';
 import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
+import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
@@ -108,70 +166,13 @@ import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
-import {
-  contactToDbRow,
-  formatStructuredLogDetail,
-  INITIAL_STATE,
-  MANUAL_CONTACTS_KEY,
-  mapMeshcoreDbRowsToChatMessages,
-  MAX_ENV_TELEMETRY_POINTS,
-  MAX_TELEMETRY_POINTS,
-  mergeMeshcoreDbHydrationWithLive,
-  mergeStubNodesFromMeshcoreMessages,
-  MESHCORE_DEVICE_QUERY_APP_VER,
-  MESHCORE_DM_ACK_TIMEOUT_MIN_MS,
-  MESHCORE_INIT_TIMEOUT_MS,
-  MESHCORE_NEIGHBORS_TIMEOUT_MS,
-  MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS,
-  MESHCORE_PING_NO_ROUTE_ERROR_MSG,
-  MESHCORE_RESPONSE_DEVICE_INFO,
-  MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
-  MESHCORE_STATUS_TIMEOUT_MS,
-  MESHCORE_TELEMETRY_TIMEOUT_MS,
-  MESHCORE_TRACE_PRIME_WAIT_MS,
-  MESHCORE_TRACE_TIMEOUT_MS,
-  meshcoreContactRawFromDevice,
-  meshcoreDmAckKeyU32,
-  meshcoreFullPubKeyBytesFromContactDbHex,
-  meshcoreMessageDedupeKey,
-  meshcorePendingDmAckMapKeys,
-  meshcorePingNoRouteErrorExpiryUpdate,
-  meshcoreTraceRouteRejectReason,
-  messageToDbRow,
-  normalizeMeshCoreError,
-  type PendingDmAckEntry,
-  serializeErrorLike,
-  waitForMeshcorePath129ForNode,
-} from './meshcore/meshcoreHookPreamble';
-import type {
-  CayenneLppEntry,
-  DeviceLogEntry,
-  MeshCoreConnection,
-  MeshcoreContactDbRow,
-  MeshCoreContactRaw,
-  MeshcoreMessageDbRow,
-  MeshCoreNeighborEntry,
-  MeshCoreNeighborResult,
-  MeshCoreNodeTelemetry,
-  MeshCorePacketStatsData,
-  MeshCoreRadioStatsData,
-  MeshCoreRepeaterStatus,
-  MeshCoreSelfInfo,
-  MeshCoreStatsResponse,
-  MeshcoreTraceResultEntry,
-  RxPacketEntry,
-} from './meshcore/meshcoreHookTypes';
-import { attachMeshcoreLegacyConnEvents } from './meshcore/meshcoreLegacyConnEvents';
-import type { MeshcoreLegacyConnEventsCtx } from './meshcore/meshcoreLegacyConnEventsCtx';
-import { openMeshCoreTransport } from './openMeshCoreTransport';
 
-export type { CliHistoryEntry } from '../lib/repeaterCommandService';
 export {
   MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS,
   MESHCORE_PING_NO_ROUTE_ERROR_MSG,
   meshcorePingNoRouteErrorExpiryUpdate,
   serializeErrorLike,
-} from './meshcore/meshcoreHookPreamble';
+} from '../hooks/meshcore/meshcoreHookPreamble';
 export type {
   CayenneLppEntry,
   MeshCoreContactRaw,
@@ -181,9 +182,10 @@ export type {
   MeshCoreRepeaterStatus,
   MeshCoreSelfInfo,
   RxPacketEntry,
-} from './meshcore/meshcoreHookTypes';
+} from '../hooks/meshcore/meshcoreHookTypes';
+export type { CliHistoryEntry } from '../lib/repeaterCommandService';
 
-export function useMeshCoreImpl() {
+export function useMeshcoreRuntime() {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [queueStatus, setQueueStatus] = useState<{
     free: number;
@@ -3907,6 +3909,40 @@ export function useMeshCoreImpl() {
     return fromStore.size > 0 ? fromStore : nodes;
   }, [meshcoreIdentityId, nodes]);
 
+  useEffect(() => {
+    if (!meshcoreIdentityId) return;
+    setConnection(meshcoreIdentityId, {
+      status: state.status,
+      connectionLoss: state.connectionLoss,
+      myNodeNum: state.myNodeNum,
+      connectionType: state.connectionType,
+      reconnectAttempt: state.reconnectAttempt,
+      lastDataReceivedAt: state.lastDataReceived ? new Date(state.lastDataReceived) : undefined,
+      firmwareVersion: state.firmwareVersion,
+      manufacturerModel: state.manufacturerModel,
+      batteryPercent: state.batteryPercent,
+      batteryCharging: state.batteryCharging,
+      mqttStatus,
+    });
+  }, [meshcoreIdentityId, state, mqttStatus]);
+
+  useEffect(() => {
+    registerMeshcoreSession({
+      prepareRfConnect,
+      attachRfSession,
+      handleRfConnectFailure,
+      finalizeDriverDisconnect,
+      connectAutomatic,
+    });
+    return () => registerMeshcoreSession(null);
+  }, [
+    prepareRfConnect,
+    attachRfSession,
+    handleRfConnectFailure,
+    finalizeDriverDisconnect,
+    connectAutomatic,
+  ]);
+
   return useMemo(
     () => ({
       state,
@@ -4124,3 +4160,5 @@ export function useMeshCoreImpl() {
     ],
   );
 }
+
+export type MeshcoreRuntime = ReturnType<typeof useMeshcoreRuntime>;

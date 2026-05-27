@@ -16,7 +16,7 @@ vi.mock('./useDisconnect', () => ({
 
 const IDENTITY = 'id-facade-mt';
 
-function legacyStub() {
+function runtimeStub() {
   return {
     state: {
       status: 'disconnected' as const,
@@ -60,6 +60,17 @@ function legacyStub() {
   };
 }
 
+const meshtasticRuntime = runtimeStub();
+const meshcoreRuntime = runtimeStub();
+
+vi.mock('../runtime/MeshtasticRuntimeContext', () => ({
+  useMeshtasticRuntimeContext: () => meshtasticRuntime,
+}));
+
+vi.mock('../runtime/MeshcoreRuntimeContext', () => ({
+  useMeshcoreRuntimeContext: () => meshcoreRuntime,
+}));
+
 describe('useProtocolFacade', () => {
   beforeEach(() => {
     useConnectionStore.setState({ connections: {} });
@@ -76,18 +87,14 @@ describe('useProtocolFacade', () => {
       connectionType: 'serial',
       myNodeNum: 0xabc,
       mqttStatus: 'connected',
+      connectionLoss: true,
       queueFree: 2,
       queueMax: 16,
     });
   });
 
   it('exposes store-backed connection view and panel actions for the active protocol', () => {
-    const meshtastic = legacyStub();
-    const meshcore = legacyStub();
-
-    const { result } = renderHook(() =>
-      useProtocolFacade('meshtastic', meshtastic as never, meshcore as never),
-    );
+    const { result } = renderHook(() => useProtocolFacade('meshtastic'));
 
     expect(result.current.focusedIdentityId).toBe(IDENTITY);
     expect(result.current.panel.protocol).toBe('meshtastic');
@@ -96,6 +103,6 @@ describe('useProtocolFacade', () => {
     expect(result.current.connectionView.mqttStatus).toBe('connected');
     expect(result.current.connectionView.state.connectionLoss).toBe(true);
     expect(result.current.queue).toEqual({ free: 2, maxlen: 16 });
-    expect(result.current.panel.actions.setConfig).toBe(meshtastic.setConfig);
+    expect(result.current.panel.actions.setConfig).toBe(meshtasticRuntime.setConfig);
   });
 });

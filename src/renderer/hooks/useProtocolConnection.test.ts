@@ -2,6 +2,11 @@ import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
+import { type MeshcoreSessionApi, registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
+import {
+  type MeshtasticSessionApi,
+  registerMeshtasticSession,
+} from '../lib/sessions/meshtasticSession';
 import { addIdentity } from '../stores/identityStore';
 import { useProtocolConnect, useProtocolDisconnect } from './useProtocolConnection';
 
@@ -16,51 +21,48 @@ vi.mock('./useDisconnect', () => ({
   useDisconnect: () => mockDriverDisconnect,
 }));
 
-function createMeshtasticStub() {
+function createMeshtasticSessionStub(): MeshtasticSessionApi {
   return {
     prepareRfConnect: vi.fn().mockResolvedValue(undefined),
     attachRfSession: vi.fn().mockResolvedValue(undefined),
     handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
     finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
-    connect: vi.fn(),
     connectAutomatic: vi.fn(),
-    disconnect: vi.fn(),
   };
 }
 
-function createMeshcoreStub() {
+function createMeshcoreSessionStub(): MeshcoreSessionApi {
   return {
     prepareRfConnect: vi.fn().mockResolvedValue(undefined),
     attachRfSession: vi.fn().mockResolvedValue(undefined),
     handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
     finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
-    connect: vi.fn(),
     connectAutomatic: vi.fn(),
-    disconnect: vi.fn(),
   };
 }
 
 describe('useProtocolConnect (driver-first)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    registerMeshtasticSession(null);
+    registerMeshcoreSession(null);
   });
 
-  it('prepares, driver-connects, then attaches Meshtastic legacy session', async () => {
-    const meshtastic = createMeshtasticStub();
-    const meshcore = createMeshcoreStub();
-    const { result } = renderHook(() => useProtocolConnect(meshtastic as never, meshcore as never));
+  it('prepares, driver-connects, then attaches Meshtastic session', async () => {
+    const meshtastic = createMeshtasticSessionStub();
+    registerMeshtasticSession(meshtastic);
+    const { result } = renderHook(() => useProtocolConnect());
 
     await result.current('meshtastic', 'serial', undefined, undefined);
 
     expect(meshtastic.prepareRfConnect).toHaveBeenCalledWith('serial', undefined, undefined);
     expect(meshtastic.attachRfSession).toHaveBeenCalledWith('id-meshtastic-driver', 'serial');
-    expect(meshcore.prepareRfConnect).not.toHaveBeenCalled();
   });
 
-  it('maps http to tcp and attaches MeshCore legacy session', async () => {
-    const meshtastic = createMeshtasticStub();
-    const meshcore = createMeshcoreStub();
-    const { result } = renderHook(() => useProtocolConnect(meshtastic as never, meshcore as never));
+  it('maps http to tcp and attaches MeshCore session', async () => {
+    const meshcore = createMeshcoreSessionStub();
+    registerMeshcoreSession(meshcore);
+    const { result } = renderHook(() => useProtocolConnect());
 
     await result.current('meshcore', 'http', '10.0.0.1', undefined);
 
@@ -72,6 +74,8 @@ describe('useProtocolConnect (driver-first)', () => {
 describe('useProtocolDisconnect (driver-first)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    registerMeshtasticSession(null);
+    registerMeshcoreSession(null);
     addIdentity({
       id: 'id-meshtastic-test',
       protocol: meshtasticProtocol,
@@ -82,12 +86,10 @@ describe('useProtocolDisconnect (driver-first)', () => {
     });
   });
 
-  it('finalizes legacy session then disconnects driver for the protocol identity', async () => {
-    const meshtastic = createMeshtasticStub();
-    const meshcore = createMeshcoreStub();
-    const { result } = renderHook(() =>
-      useProtocolDisconnect(meshtastic as never, meshcore as never),
-    );
+  it('finalizes session then disconnects driver for the protocol identity', async () => {
+    const meshtastic = createMeshtasticSessionStub();
+    registerMeshtasticSession(meshtastic);
+    const { result } = renderHook(() => useProtocolDisconnect());
 
     await result.current('meshtastic');
 

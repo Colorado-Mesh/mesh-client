@@ -6,7 +6,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 const SENDER_ID = 0x12345678;
 
@@ -68,7 +68,7 @@ describe('useMeshCore mount hydration', () => {
   });
 
   it('loads persisted meshcore messages from SQLite on mount without connecting a device', async () => {
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.messages.length).toBe(1);
@@ -92,7 +92,7 @@ describe('useMeshCore mount hydration', () => {
       { node_id: SENDER_ID, hops: 5, hops_away: null },
     ] as never[]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.nodes.get(SENDER_ID)?.hops_away).toBe(5);
@@ -124,7 +124,7 @@ describe('useMeshCore mount hydration', () => {
       { node_id: SENDER_ID, hops: 7, hops_away: null },
     ] as never[]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.nodes.get(CONTACT_ONLY_ID)?.hops_away).toBe(3);
@@ -139,7 +139,7 @@ describe('useMeshCore mount hydration', () => {
       { node_id: SENDER_ID, hops: null, hops_away: 4 },
     ] as never[]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.nodes.get(SENDER_ID)?.hops_away).toBe(4);
@@ -149,7 +149,7 @@ describe('useMeshCore mount hydration', () => {
   it('leaves messages empty when the DB returns no rows', async () => {
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
@@ -163,7 +163,7 @@ describe('useMeshCore mount hydration', () => {
       sampleAckOnlyMeshcoreDbRow(),
     ]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
@@ -178,7 +178,7 @@ describe('useMeshCore mount hydration', () => {
       { ...sampleMeshcoreDbRow(), id: 43 },
     ]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.messages.length).toBe(1);
@@ -192,7 +192,7 @@ describe('useMeshCore mount hydration', () => {
     const dmRow = sampleIncomingDmMeshcoreDbRow();
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([dmRow]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.messages.length).toBe(1);
@@ -213,7 +213,7 @@ describe('useMeshCore mount hydration', () => {
       },
     ]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.messages.length).toBe(1);
@@ -246,7 +246,7 @@ describe('useMeshCore mount hydration', () => {
       },
     ]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.messages.length).toBe(2);
@@ -280,7 +280,7 @@ describe('useMeshCore mount hydration', () => {
       },
     ]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.messages.length).toBe(2);
@@ -302,7 +302,7 @@ describe('useMeshCore mount hydration', () => {
       },
     ]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.messages.length).toBe(1);
@@ -325,7 +325,7 @@ describe('useMeshCore mount hydration', () => {
       return () => {};
     });
 
-    renderHook(() => useMeshCore());
+    renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(meshcoreChatHandler).toBeDefined();
@@ -393,7 +393,7 @@ describe('useMeshCore disconnect DB rehydration', () => {
   });
 
   it('reloads persisted hops from SQLite after disconnect (reconnect merge baseline)', async () => {
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.nodes.get(NODE_ID)?.hops_away).toBe(4);

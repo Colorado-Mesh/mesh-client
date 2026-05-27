@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
-import type { MeshCoreSelfInfo } from '../hooks/useMeshCore';
+import type { MeshCoreSelfInfo } from '../hooks/meshcore/meshcoreHookTypes';
 import {
   MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX,
   type MeshcoreAutoaddWireState,

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs, react-hooks/set-state-in-effect, react-hooks/purity, @typescript-eslint/no-confusing-void-expression */
 import { create, toBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Config, Mesh, Portnums } from '@meshtastic/protobufs';
@@ -122,6 +123,7 @@ import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { normalizeReactionEmoji, reactionGlyphFromPicker } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews } from '../lib/replyPreview';
+import { registerMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import {
   messageRecordsToChatMessages,
@@ -147,7 +149,7 @@ import type {
   RemoteConfigChannelsTailStatus,
   TelemetryPoint,
 } from '../lib/types';
-import { useConnectionStore } from '../stores/connectionStore';
+import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useMessageStore } from '../stores/messageStore';
@@ -232,7 +234,7 @@ function meshtasticMqttPublishOpts(
   return mqttOnly ? { preferManualOverRadio: true } : undefined;
 }
 
-export function useDeviceImpl() {
+export function useMeshtasticRuntime() {
   const deviceRef = useRef<MeshDevice | null>(null);
   // Track own node number in a ref so event callbacks can access it
   // without relying on the private device.myNodeInfo property
@@ -3198,6 +3200,40 @@ export function useDeviceImpl() {
     return rawPackets;
   }, [meshtasticIdentityId, rawPackets]);
 
+  useEffect(() => {
+    if (!meshtasticIdentityId) return;
+    setConnection(meshtasticIdentityId, {
+      status: state.status,
+      connectionLoss: state.connectionLoss,
+      myNodeNum: state.myNodeNum,
+      connectionType: state.connectionType,
+      reconnectAttempt: state.reconnectAttempt,
+      lastDataReceivedAt: state.lastDataReceived ? new Date(state.lastDataReceived) : undefined,
+      firmwareVersion: state.firmwareVersion,
+      manufacturerModel: state.manufacturerModel,
+      batteryPercent: state.batteryPercent,
+      batteryCharging: state.batteryCharging,
+      mqttStatus,
+    });
+  }, [meshtasticIdentityId, state, mqttStatus]);
+
+  useEffect(() => {
+    registerMeshtasticSession({
+      prepareRfConnect,
+      attachRfSession,
+      handleRfConnectFailure,
+      finalizeDriverDisconnect,
+      connectAutomatic,
+    });
+    return () => registerMeshtasticSession(null);
+  }, [
+    prepareRfConnect,
+    attachRfSession,
+    handleRfConnectFailure,
+    finalizeDriverDisconnect,
+    connectAutomatic,
+  ]);
+
   return {
     state,
     mqttStatus,
@@ -3361,3 +3397,5 @@ export function createChatStubNode(nodeId: number, source: 'rf' | 'mqtt'): MeshN
     last_heard: Date.now(),
   };
 }
+
+export type MeshtasticRuntime = ReturnType<typeof useMeshtasticRuntime>;

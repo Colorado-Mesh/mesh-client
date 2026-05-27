@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
-import type { RxPacketEntry } from '../hooks/useMeshCore';
+import type { RxPacketEntry } from '../hooks/meshcore/meshcoreHookTypes';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 
 // ── Types ─────────────────────────────────────────────────────────────────────

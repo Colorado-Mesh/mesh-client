@@ -14,11 +14,8 @@ import {
   pskFingerprint,
 } from '@/shared/meshtasticUrlEncoder';
 
-import {
-  type MeshCoreContactRaw,
-  type MeshCoreSelfInfo,
-  serializeErrorLike,
-} from '../hooks/useMeshCore';
+import { serializeErrorLike } from '../hooks/meshcore/meshcoreHookPreamble';
+import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../hooks/meshcore/meshcoreHookTypes';
 import type { OurPosition } from '../lib/gpsSource';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
 import {

@@ -20,8 +20,8 @@ import {
   MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS,
   MESHCORE_PING_NO_ROUTE_ERROR_MSG,
   meshcorePingNoRouteErrorExpiryUpdate,
-  useMeshCore,
-} from './useMeshCore';
+} from '../hooks/meshcore/meshcoreHookPreamble';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 const getSelfInfoMock = vi.fn();
 
@@ -251,7 +251,7 @@ describe('useMeshCore refreshNodesFromDb hop preservation', () => {
       .mockResolvedValueOnce([rowWithHops])
       .mockResolvedValueOnce([rowWithoutHops]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(3);
@@ -316,7 +316,7 @@ describe('useMeshCore traceRoute no-route error expiry', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
@@ -409,7 +409,7 @@ describe('useMeshCore traceRoute path outcome attribution', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
     await waitFor(() => {
       expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
     });
@@ -449,7 +449,7 @@ describe('useMeshCore traceRoute path outcome attribution', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
     await waitFor(() => {
       expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
     });

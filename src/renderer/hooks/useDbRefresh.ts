@@ -7,7 +7,7 @@ import { upsertNode } from '../stores/nodeStore';
 
 /**
  * Re-pulls Meshtastic nodes from SQLite into the identity-scoped node store.
- * Requires `identityId` from `useDevice().identityId` after connect.
+ * Requires `identityId` from the Meshtastic runtime after connect.
  */
 export function useRefreshNodesFromDb(identityId: IdentityId | null) {
   return useCallback(async (): Promise<void> => {

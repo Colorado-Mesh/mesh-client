@@ -10,7 +10,7 @@ import {
 import { MESHTASTIC_MQTT_SETTINGS_KEY } from '@/renderer/lib/meshtasticMqttSettingsStorage';
 
 import * as connection from '../lib/connection';
-import { useDevice } from './useDevice';
+import { useMeshtasticRuntime } from '../runtime/useMeshtasticRuntime';
 
 vi.mock('../lib/connection', () => ({
   createBleConnection: vi.fn(),
@@ -50,7 +50,7 @@ function createStubDevice(
   } as unknown as MeshDevice;
 }
 
-describe('useDevice — MQTT-first virtual id handoff', () => {
+describe('useMeshtasticRuntime — MQTT-first virtual id handoff', () => {
   let mqttStatusHandler: MqttStatusHandler | undefined;
   let myNodeInfoHandler: MyNodeInfoHandler | undefined;
   let consoleDebugSpy: ReturnType<typeof vi.spyOn>;
@@ -86,7 +86,7 @@ describe('useDevice — MQTT-first virtual id handoff', () => {
   });
 
   it('MQTT connect publishes NodeInfo with virtual from when no last RF', async () => {
-    const { result } = renderHook(() => useDevice());
+    const { result } = renderHook(() => useMeshtasticRuntime());
 
     act(() => {
       mqttStatusHandler?.({ status: 'connected', protocol: 'meshtastic' });
@@ -108,7 +108,7 @@ describe('useDevice — MQTT-first virtual id handoff', () => {
       JSON.stringify({ [MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY]: String(REAL_ID) }),
     );
 
-    const { result } = renderHook(() => useDevice());
+    const { result } = renderHook(() => useMeshtasticRuntime());
 
     act(() => {
       mqttStatusHandler?.({ status: 'connected', protocol: 'meshtastic' });
@@ -138,7 +138,7 @@ describe('useDevice — MQTT-first virtual id handoff', () => {
     );
     vi.mocked(connection.createConnection).mockResolvedValue(device);
 
-    const { result } = renderHook(() => useDevice());
+    const { result } = renderHook(() => useMeshtasticRuntime());
 
     act(() => {
       mqttStatusHandler?.({ status: 'connected', protocol: 'meshtastic' });

@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { IdentityId, MeshProtocol } from '../lib/types';
-import type { UseDeviceReturn, UseMeshCoreReturn } from './legacyHookTypes';
+import type { MeshcoreRuntime, MeshtasticRuntime } from '../runtime/runtimeTypes';
 import { useMeshcorePanelActions } from './useMeshcorePanelActions';
 import { useMeshtasticPanelActions } from './useMeshtasticPanelActions';
 
@@ -19,14 +19,14 @@ export interface PanelActionsBundle {
 }
 
 /**
- * Identity-scoped panel write facade ([#377]). Resolves injected legacy instances by protocol
+ * Identity-scoped panel write facade ([#377]). Resolves runtime instances by protocol
  * without App-level `protocol ===` for action selection.
  */
 export function usePanelActions(
   protocol: MeshProtocol,
   identityId: IdentityId | null,
-  meshtastic: UseDeviceReturn,
-  meshcore: UseMeshCoreReturn,
+  meshtastic: MeshtasticRuntime,
+  meshcore: MeshcoreRuntime,
 ): PanelActionsBundle {
   const meshtasticActions = useMeshtasticPanelActions(meshtastic);
   const meshcoreActions = useMeshcorePanelActions(meshcore);

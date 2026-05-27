@@ -16,6 +16,8 @@ export interface ConnectionRecord {
   status: ConnectionStatus;
   connectionType: ConnectionType | null;
   mqttStatus: MQTTStatus;
+  /** True when the last drop was unexpected (not manual disconnect). */
+  connectionLoss?: boolean;
   reconnectAttempt: number;
   myNodeNum: number;
   lastDataReceivedAt?: Date;

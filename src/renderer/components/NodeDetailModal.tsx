@@ -13,7 +13,7 @@ import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
-} from '../hooks/useMeshCore';
+} from '../hooks/meshcore/meshcoreHookTypes';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { formatCoordPair } from '../lib/coordUtils';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';

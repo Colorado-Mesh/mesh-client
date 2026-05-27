@@ -17,7 +17,7 @@ import {
   computeNodeInfoLastHeardMs,
   emptyNode,
   mergeMeshtasticUserPacketLastHeard,
-} from './useDevice';
+} from '../runtime/useMeshtasticRuntime';
 
 const MY_NODE_NUM = 0xdeadbeef;
 

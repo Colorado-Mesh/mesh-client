@@ -6,8 +6,10 @@ import App from './App';
 import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
 import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
+import { registerMeshtasticSession } from './lib/sessions/meshtasticSession';
 import { chatMessageToMessageRecord } from './lib/storeRecordAdapters';
 import type { ChatMessage } from './lib/types';
+import { setConnection, useConnectionStore } from './stores/connectionStore';
 import { useIdentityStore } from './stores/identityStore';
 import { useMessageStore } from './stores/messageStore';
 
@@ -221,6 +223,14 @@ beforeEach(() => {
     activeIdentityId: MESHTASTIC_TEST_IDENTITY,
   });
   useMessageStore.setState({ messages: {} });
+  useConnectionStore.setState({ connections: {} });
+  registerMeshtasticSession({
+    prepareRfConnect: vi.fn().mockResolvedValue(undefined),
+    attachRfSession: vi.fn().mockResolvedValue(undefined),
+    handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
+    finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
+    connectAutomatic: vi.fn().mockResolvedValue(undefined),
+  });
   useDeviceMock.mockReset();
   useDeviceMock.mockImplementation(() => createDeviceMock());
   useMeshCoreMock.mockReset();
@@ -235,12 +245,12 @@ function setDocumentHidden(hidden: boolean): void {
   Object.defineProperty(document, 'hidden', { value: hidden, configurable: true });
 }
 
-vi.mock('./hooks/useDevice', () => ({
-  useDevice: () => useDeviceMock(),
+vi.mock('./runtime/useMeshtasticRuntime', () => ({
+  useMeshtasticRuntime: () => useDeviceMock(),
 }));
 
-vi.mock('./hooks/useMeshCore', () => ({
-  useMeshCore: () => useMeshCoreMock(),
+vi.mock('./runtime/useMeshcoreRuntime', () => ({
+  useMeshcoreRuntime: () => useMeshCoreMock(),
 }));
 
 vi.mock('./hooks/useTakServer', () => ({
@@ -495,6 +505,13 @@ describe('App accessibility', () => {
         connectionType: 'ble',
         connectionLoss: true,
       },
+    });
+    setConnection(MESHTASTIC_TEST_IDENTITY, {
+      status: 'reconnecting',
+      myNodeNum: 0x12345678,
+      connectionType: 'ble',
+      connectionLoss: true,
+      mqttStatus: 'disconnected',
     });
 
     render(<App />);

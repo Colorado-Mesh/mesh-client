@@ -9,7 +9,7 @@ import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
-} from '../hooks/useMeshCore';
+} from '../hooks/meshcore/meshcoreHookTypes';
 import {
   MeshcoreRepeaterRemoteAuthBanner,
   useMeshcoreRepeaterRemoteAuth,

@@ -2,10 +2,18 @@ import { useCallback, useMemo } from 'react';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { meshcoreConnectionType, protocolTransportParams } from '../lib/protocolTransportParams';
+import { getMeshcoreSession } from '../lib/sessions/meshcoreSession';
+import { getMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import type { ConnectionType, DeviceState, MeshProtocol, MQTTStatus } from '../lib/types';
-import type { UseDeviceReturn, UseMeshCoreReturn } from './legacyHookTypes';
 import { useConnect } from './useConnect';
+import { useConnectionByProtocol } from './useConnectionByProtocol';
 import { useDisconnect } from './useDisconnect';
+
+const INITIAL_DEVICE_STATE: DeviceState = {
+  status: 'disconnected',
+  myNodeNum: 0,
+  connectionType: null,
+};
 
 export interface ProtocolConnectionActions {
   state: DeviceState;
@@ -20,11 +28,27 @@ export interface ProtocolConnectionActions {
   disconnect: () => Promise<void>;
 }
 
+function deviceStateFromConnection(conn: ReturnType<typeof useConnectionByProtocol>): DeviceState {
+  if (!conn) return INITIAL_DEVICE_STATE;
+  return {
+    status: conn.status,
+    myNodeNum: conn.myNodeNum,
+    connectionType: conn.connectionType,
+    reconnectAttempt: conn.reconnectAttempt,
+    lastDataReceived: conn.lastDataReceivedAt?.getTime(),
+    firmwareVersion: conn.firmwareVersion,
+    manufacturerModel: conn.manufacturerModel,
+    batteryPercent: conn.batteryPercent,
+    batteryCharging: conn.batteryCharging,
+    connectionLoss: conn.connectionLoss,
+  };
+}
+
 /**
- * RF connect: `ConnectionDriver` opens the transport; legacy hooks attach wire listeners,
+ * RF connect: `ConnectionDriver` opens the transport; protocol runtime attaches wire listeners,
  * configure/initConn, and reconnect state ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375)).
  */
-export function useProtocolConnect(meshtastic: UseDeviceReturn, meshcore: UseMeshCoreReturn) {
+export function useProtocolConnect() {
   const driverConnect = useConnect();
 
   return useCallback(
@@ -41,6 +65,7 @@ export function useProtocolConnect(meshtastic: UseDeviceReturn, meshcore: UseMes
 
       if (protocol === 'meshcore') {
         const mcType = meshcoreConnectionType(type);
+        const meshcore = getMeshcoreSession();
         await meshcore.prepareRfConnect(mcType);
         try {
           const identityId = await driverConnect('meshcore', params);
@@ -52,6 +77,7 @@ export function useProtocolConnect(meshtastic: UseDeviceReturn, meshcore: UseMes
         return;
       }
 
+      const meshtastic = getMeshtasticSession();
       await meshtastic.prepareRfConnect(type, httpAddress, blePeripheralId);
       try {
         const identityId = await driverConnect('meshtastic', params);
@@ -61,69 +87,35 @@ export function useProtocolConnect(meshtastic: UseDeviceReturn, meshcore: UseMes
         throw err;
       }
     },
-    [meshtastic, meshcore, driverConnect],
+    [driverConnect],
   );
 }
 
-/** RF disconnect: legacy session cleanup, then driver transport teardown. */
-export function useProtocolDisconnect(meshtastic: UseDeviceReturn, meshcore: UseMeshCoreReturn) {
+/** RF disconnect: runtime session cleanup, then driver transport teardown. */
+export function useProtocolDisconnect() {
   const driverDisconnect = useDisconnect();
 
   return useCallback(
     async (protocol: MeshProtocol) => {
       const identityId = getIdentityIdForProtocol(protocol);
       if (protocol === 'meshcore') {
-        await meshcore.finalizeDriverDisconnect();
+        await getMeshcoreSession().finalizeDriverDisconnect();
       } else {
-        await meshtastic.finalizeDriverDisconnect();
+        await getMeshtasticSession().finalizeDriverDisconnect();
       }
       if (identityId) {
         await driverDisconnect(identityId);
       }
     },
-    [meshtastic, meshcore, driverDisconnect],
+    [driverDisconnect],
   );
 }
 
-export function createProtocolConnectionActions(
-  protocol: MeshProtocol,
-  meshtastic: UseDeviceReturn,
-  meshcore: UseMeshCoreReturn,
-  connect: ReturnType<typeof useProtocolConnect>,
-  disconnect: ReturnType<typeof useProtocolDisconnect>,
-): ProtocolConnectionActions {
-  return {
-    state: protocol === 'meshcore' ? meshcore.state : meshtastic.state,
-    mqttStatus: protocol === 'meshcore' ? meshcore.mqttStatus : meshtastic.mqttStatus,
-    connect: (type, httpAddress, blePeripheralId) =>
-      connect(protocol, type, httpAddress, blePeripheralId),
-    connectAutomatic: (type, httpAddress, lastSerialPortId, blePeripheralId) => {
-      if (protocol === 'meshcore') {
-        const meshType = type === 'http' ? 'http' : type;
-        if (meshType !== 'ble' && meshType !== 'serial' && meshType !== 'http') {
-          return Promise.reject(new Error(`MeshCore connectAutomatic: unsupported type ${type}`));
-        }
-        return meshcore.connectAutomatic(meshType, httpAddress, lastSerialPortId ?? null);
-      }
-      return meshtastic.connectAutomatic(
-        type,
-        httpAddress,
-        lastSerialPortId ?? null,
-        blePeripheralId,
-      );
-    },
-    disconnect: () => disconnect(protocol),
-  };
-}
-
-/** ConnectionPanel + header state for one protocol tab (injected legacy instances). */
-export function useProtocolConnectionActions(
-  protocol: MeshProtocol,
-  meshtastic: UseDeviceReturn,
-  meshcore: UseMeshCoreReturn,
-): ProtocolConnectionActions {
-  const connect = useProtocolConnect(meshtastic, meshcore);
-  const disconnect = useProtocolDisconnect(meshtastic, meshcore);
+/** ConnectionPanel + header state for one protocol tab. */
+export function useProtocolConnectionActions(protocol: MeshProtocol): ProtocolConnectionActions {
+  const connect = useProtocolConnect();
+  const disconnect = useProtocolDisconnect();
+  const storeConn = useConnectionByProtocol(protocol);
 
   const connectAutomatic = useCallback(
     (
@@ -137,16 +129,20 @@ export function useProtocolConnectionActions(
         if (meshType !== 'ble' && meshType !== 'serial' && meshType !== 'http') {
           return Promise.reject(new Error(`MeshCore connectAutomatic: unsupported type ${type}`));
         }
-        return meshcore.connectAutomatic(meshType, httpAddress, lastSerialPortId ?? null);
+        return getMeshcoreSession().connectAutomatic(
+          meshType,
+          httpAddress,
+          lastSerialPortId ?? null,
+        );
       }
-      return meshtastic.connectAutomatic(
+      return getMeshtasticSession().connectAutomatic(
         type,
         httpAddress,
         lastSerialPortId ?? null,
         blePeripheralId,
       );
     },
-    [protocol, meshtastic, meshcore],
+    [protocol],
   );
 
   const connectForProtocol = useCallback(
@@ -157,23 +153,18 @@ export function useProtocolConnectionActions(
 
   const disconnectForProtocol = useCallback(() => disconnect(protocol), [disconnect, protocol]);
 
+  const state = useMemo(() => deviceStateFromConnection(storeConn), [storeConn]);
+
+  const mqttStatus: MQTTStatus = storeConn?.mqttStatus ?? 'disconnected';
+
   return useMemo(
     () => ({
-      state: protocol === 'meshcore' ? meshcore.state : meshtastic.state,
-      mqttStatus: protocol === 'meshcore' ? meshcore.mqttStatus : meshtastic.mqttStatus,
+      state,
+      mqttStatus,
       connect: connectForProtocol,
       connectAutomatic,
       disconnect: disconnectForProtocol,
     }),
-    [
-      protocol,
-      meshtastic.state,
-      meshcore.state,
-      meshtastic.mqttStatus,
-      meshcore.mqttStatus,
-      connectForProtocol,
-      connectAutomatic,
-      disconnectForProtocol,
-    ],
+    [state, mqttStatus, connectForProtocol, connectAutomatic, disconnectForProtocol],
   );
 }

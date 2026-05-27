@@ -6,7 +6,7 @@ vi.mock('../../shared/withTimeout', () => ({
 }));
 
 import { withTimeout } from '../../shared/withTimeout';
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 describe('useMeshCore BLE Noble IPC timeout handling', () => {
   const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -35,7 +35,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       new Error('MeshCore BLE IPC open timed out after 25000ms'),
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -72,7 +72,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       },
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -110,7 +110,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       },
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -134,7 +134,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       new Error('Bluetooth adapter is not available'),
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -155,7 +155,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       ),
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -189,7 +189,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       },
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
     await expect(
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-5');
@@ -208,7 +208,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       new Error('BLE connectAsync timed out after 30000ms'),
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -238,7 +238,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       code: 'BLE_CUSTOM',
       detail: 'adapter glitch',
     });
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -255,7 +255,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue(
       new Error('Connection already in progress'),
     );
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -287,7 +287,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       },
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -327,7 +327,7 @@ describe('useMeshCore Linux BLE routing', () => {
   });
 
   it('uses Web Bluetooth path on Linux and does not call Noble IPC connect', async () => {
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {

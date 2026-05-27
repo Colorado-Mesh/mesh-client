@@ -1,78 +1,35 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { DeviceState, MQTTStatus } from '../lib/types';
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useLegacyConnectionView } from './useLegacyConnectionView';
 
 const IDENTITY = 'id-meshtastic-test';
-
-function legacyStub(overrides?: Partial<{ state: DeviceState; mqttStatus: MQTTStatus }>) {
-  return {
-    state: {
-      status: 'disconnected',
-      myNodeNum: 0,
-      connectionType: null,
-      connectionLoss: false,
-      reconnectAttempt: 0,
-      lastDataReceived: 0,
-      firmwareVersion: undefined,
-      manufacturerModel: undefined,
-      batteryPercent: undefined,
-      batteryCharging: undefined,
-      ...overrides?.state,
-    },
-    mqttStatus: overrides?.mqttStatus ?? ('disconnected' as const),
-  };
-}
 
 describe('useLegacyConnectionView', () => {
   beforeEach(() => {
     useConnectionStore.setState({ connections: {} });
   });
 
-  it('falls back to legacy hook state when identity or store row is missing', () => {
-    const legacy = legacyStub({
-      state: {
-        status: 'connected',
-        myNodeNum: 42,
-        connectionType: 'ble',
-        connectionLoss: false,
-        reconnectAttempt: 0,
-        lastDataReceived: 0,
-      },
-      mqttStatus: 'connecting',
-    });
+  it('returns disconnected defaults when identity or store row is missing', () => {
+    const { result } = renderHook(() => useLegacyConnectionView(null));
 
-    const { result } = renderHook(() => useLegacyConnectionView(null, legacy as never));
-
-    expect(result.current.state.status).toBe('connected');
-    expect(result.current.state.myNodeNum).toBe(42);
-    expect(result.current.mqttStatus).toBe('connecting');
+    expect(result.current.state.status).toBe('disconnected');
+    expect(result.current.state.myNodeNum).toBe(0);
+    expect(result.current.mqttStatus).toBe('disconnected');
   });
 
-  it('merges connection store fields with legacy connectionLoss', () => {
-    const legacy = legacyStub({
-      state: {
-        status: 'disconnected',
-        myNodeNum: 0,
-        connectionType: null,
-        connectionLoss: true,
-        reconnectAttempt: 0,
-        lastDataReceived: 0,
-      },
-      mqttStatus: 'disconnected',
-    });
-
+  it('reads connection fields from the identity-scoped store row', () => {
     setConnection(IDENTITY, {
       status: 'configured',
       connectionType: 'serial',
       myNodeNum: 0xabcd,
       mqttStatus: 'connected',
       reconnectAttempt: 2,
+      connectionLoss: true,
     });
 
-    const { result } = renderHook(() => useLegacyConnectionView(IDENTITY, legacy as never));
+    const { result } = renderHook(() => useLegacyConnectionView(IDENTITY));
 
     expect(result.current.state.status).toBe('configured');
     expect(result.current.state.connectionType).toBe('serial');
@@ -83,10 +40,9 @@ describe('useLegacyConnectionView', () => {
   });
 
   it('prefers store mqttStatus when present', () => {
-    const legacy = legacyStub({ mqttStatus: 'error' });
     setConnection(IDENTITY, { mqttStatus: 'connected' });
 
-    const { result } = renderHook(() => useLegacyConnectionView(IDENTITY, legacy as never));
+    const { result } = renderHook(() => useLegacyConnectionView(IDENTITY));
 
     expect(result.current.mqttStatus).toBe('connected');
   });

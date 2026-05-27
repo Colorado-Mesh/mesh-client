@@ -6,7 +6,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 /** Pubkey whose XOR-folded node id is non-zero (avoids Map key 0 edge cases in import tests). */
 const HEX32 = '0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20';
@@ -41,7 +41,7 @@ describe('useMeshCore importContacts', () => {
       ]),
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     let out: Awaited<ReturnType<typeof result.current.importContacts>>;
     await act(async () => {
@@ -83,7 +83,7 @@ describe('useMeshCore importContacts', () => {
       JSON.stringify([{ name: 'Known RPT', public_key: HEX32 }]),
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await act(async () => {
       await result.current.importContacts();
@@ -107,7 +107,7 @@ describe('useMeshCore importContacts', () => {
         ]),
       );
 
-      const { result } = renderHook(() => useMeshCore());
+      const { result } = renderHook(() => useMeshcoreRuntime());
 
       await act(async () => {
         await result.current.importContacts();

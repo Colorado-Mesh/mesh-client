@@ -6,7 +6,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { meshcoreSyntheticPlaceholderPubKeyHex } from '../lib/meshcoreUtils';
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 const STUB_SENDER_ID = 0x12345678;
 
@@ -28,7 +28,7 @@ describe('useMeshCore contact management (no radio connection)', () => {
   });
 
   it('clearAllMeshcoreContacts clears SQLite and empties nodes when self node id is 0', async () => {
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('useMeshCore contact management (no radio connection)', () => {
   });
 
   it('applyMeshcoreContactAutoAdd throws when not connected', async () => {
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
@@ -56,7 +56,7 @@ describe('useMeshCore contact management (no radio connection)', () => {
   });
 
   it('refreshMeshcoreAutoaddFromDevice resolves without error when not connected', async () => {
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
@@ -87,7 +87,7 @@ describe('useMeshCore contact management (no radio connection)', () => {
       },
     ]);
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.nodes.has(STUB_SENDER_ID)).toBe(true);

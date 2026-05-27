@@ -140,7 +140,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
   };
 });
 
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 /** Pubkey whose XOR-folded node id is non-zero (matches import-contacts tests). */
 const PEER_PUBKEY_HEX = '0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20';
@@ -206,7 +206,7 @@ describe('useMeshCore DB pubkey backfill for DM send', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await act(async () => {
       await result.current.connect('serial');
@@ -296,7 +296,7 @@ describe('useMeshCore DM reply (wire + persistence)', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.messages.length).toBe(1);
@@ -344,7 +344,7 @@ describe('useMeshCore DM reply (wire + persistence)', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();

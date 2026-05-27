@@ -138,7 +138,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
 });
 
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 const SELF_PUBKEY = new Uint8Array(32).fill(0xab);
 const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
@@ -215,7 +215,7 @@ describe('useMeshCore stats parsing', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await act(async () => {
       await result.current.connect('serial');
@@ -244,7 +244,7 @@ describe('useMeshCore stats parsing', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await act(async () => {
       await result.current.connect('serial');
@@ -282,7 +282,7 @@ describe('useMeshCore stats parsing', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     let connectPromise: Promise<void> | undefined;
     await act(async () => {

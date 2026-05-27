@@ -188,7 +188,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
   };
 });
 
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 const SELF_PUBKEY = new Uint8Array(32).fill(0xab);
 
@@ -226,7 +226,7 @@ describe('useMeshCore connection listener teardown', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await act(async () => {
       await result.current.connect('serial');
@@ -256,7 +256,7 @@ describe('useMeshCore connection listener teardown', () => {
       value: { requestPort },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await act(async () => {
       await result.current.connect('serial');
@@ -290,7 +290,7 @@ describe('useMeshCore connection listener teardown', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await act(async () => {
       await result.current.connect('serial');

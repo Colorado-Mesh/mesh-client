@@ -142,7 +142,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
   };
 });
 
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 interface MockSerialPort {
   portId?: string;
@@ -179,7 +179,7 @@ describe('useMeshCore serial cleanup', () => {
     });
     serialConnCloseMock.mockRejectedValue(new Error('conn close failed'));
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -201,7 +201,7 @@ describe('useMeshCore serial cleanup', () => {
     });
     serialConnCloseMock.mockRejectedValue(new Error('conn close failed'));
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {

@@ -3,7 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as connection from '../lib/connection';
-import { useDevice } from './useDevice';
+import { useMeshtasticRuntime } from '../runtime/useMeshtasticRuntime';
 
 vi.mock('../lib/connection', () => ({
   createBleConnection: vi.fn(),
@@ -20,7 +20,7 @@ function createStubDevice(configure: MeshDevice['configure']): MeshDevice {
   return { configure, events, transport: {} } as unknown as MeshDevice;
 }
 
-describe('useDevice — configure() rejection', () => {
+describe('useMeshtasticRuntime — configure() rejection', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -37,7 +37,7 @@ describe('useDevice — configure() rejection', () => {
     const device = createStubDevice(vi.fn().mockRejectedValue(err));
     vi.mocked(connection.createConnection).mockResolvedValue(device);
 
-    const { result } = renderHook(() => useDevice());
+    const { result } = renderHook(() => useMeshtasticRuntime());
 
     await expect(result.current.connect('http', 'http://127.0.0.1')).rejects.toThrow(
       'Packet does not exist',
