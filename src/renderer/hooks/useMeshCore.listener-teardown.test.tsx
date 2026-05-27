@@ -302,14 +302,16 @@ describe('useMeshCore connection listener teardown', () => {
     const conn = lastMeshSerialMock.current!;
     expect(conn.persistentListenerCount()).toBeGreaterThan(0);
 
-    act(() => {
+    await act(async () => {
       conn.emit('disconnected');
+      await new Promise<void>((r) => setTimeout(r, 0));
     });
 
-    await waitFor(() => {
-      expect(result.current.state.status).toBe('disconnected');
+    await act(async () => {
+      await result.current.disconnect();
     });
 
     expect(conn.persistentListenerCount()).toBe(0);
+    expect(result.current.state.status).toBe('disconnected');
   });
 });

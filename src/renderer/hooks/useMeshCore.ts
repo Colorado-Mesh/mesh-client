@@ -1,9 +1,5 @@
-import {
-  CayenneLpp,
-  Connection,
-  SerialConnection,
-  WebSerialConnection,
-} from '@liamcottle/meshcore.js';
+import type { Connection } from '@liamcottle/meshcore.js';
+import { CayenneLpp } from '@liamcottle/meshcore.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
@@ -14,11 +10,11 @@ import { parseMeshCoreRfPacket } from '../../shared/meshcoreRfPacketParse';
 import { withTimeout } from '../../shared/withTimeout';
 import {
   classifyMeshcoreBleTimeoutStage,
-  isMeshcoreRetryableBleErrorMessage,
   MESHCORE_SETUP_ABORT_MESSAGE,
 } from '../lib/bleConnectErrors';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
+import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import {
   classifyPayload,
   classifyProximity,
@@ -40,7 +36,6 @@ import {
   findMeshcoreDmReplyParent,
   normalizeMeshcoreIncomingText,
 } from '../lib/meshcoreChannelText';
-import { MeshcoreCompanionTxEchoFilter } from '../lib/meshcoreCompanionTxEchoFilter';
 import {
   buildGetAutoaddConfigFrame,
   buildSetAutoaddConfigFrame,
@@ -108,8 +103,11 @@ import {
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
-import { MeshcoreWebBluetoothConnection } from '../lib/meshcoreWebBluetoothConnection';
-import { bindMeshcoreIngress } from '../lib/meshIdentityBridge';
+import {
+  bindMeshcoreIngress,
+  finalizeMeshcoreDriverIdentity,
+  meshcoreTransportParams,
+} from '../lib/meshIdentityBridge';
 import { getMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
 import {
@@ -118,7 +116,6 @@ import {
   mergeMeshcoreLastHeardFromAdvert,
 } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
-import { parseTcpAddress } from '../lib/parseTcpAddress';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../lib/rawPacketLogConstants';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import {
@@ -127,19 +124,13 @@ import {
   type RepeaterCommandService,
 } from '../lib/repeaterCommandService';
 import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
-import {
-  getPortSignature,
-  LAST_SERIAL_PORT_KEY,
-  persistSerialPortIdentity,
-  selectGrantedSerialPort,
-} from '../lib/serialPortSignature';
+import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import {
   MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
 } from '../lib/timeConstants';
-import { TransportWebBluetoothIpc } from '../lib/transportWebBluetoothIpc';
 import type {
   ChatMessage,
   DeviceState,
@@ -147,7 +138,6 @@ import type {
   MeshCoreLocalStats,
   MeshNode,
   MQTTStatus,
-  NobleBleSessionId,
   TelemetryPoint,
 } from '../lib/types';
 import { setConnection } from '../stores/connectionStore';
@@ -157,6 +147,7 @@ import { useNodeStore } from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
+import { openMeshCoreTransport } from './openMeshCoreTransport';
 
 /** MeshCore expected ACK CRCs are uint32; meshcore.js / BLE may surface them as signed. Normalize for Map keys, React state, and SQLite packet_id. */
 function meshcoreDmAckKeyU32(crc: number): number {
@@ -253,73 +244,6 @@ function messageToDbRow(
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface SerialConnectionInstance extends InstanceType<typeof SerialConnection> {}
-
-/** meshcore.js BLE (NUS) uses raw companion frames like Web Bluetooth — not USB serial framing. */
-interface NobleIpcMeshcoreConnectionInstance {
-  emit(event: string | number, ...args: unknown[]): void;
-  onConnected(): Promise<void>;
-  onDisconnected(): void;
-  onFrameReceived(frame: Uint8Array): void;
-}
-
-/** Runtime Connection + onFrameReceived (NUS path); meshcore.d.ts covers the shared base. */
-const MeshcoreConnectionBase =
-  Connection as unknown as new () => NobleIpcMeshcoreConnectionInstance;
-
-// Umbrella timeout for the IPC call to main process to connect BLE.
-// Must exceed the sum of all per-operation GATT timeouts on the slowest platform:
-// non-macOS: connectAsync(30s) + discovery(30s) + subscribe×2(20s each) = 100s.
-const NOBLE_IPC_CONNECT_TIMEOUT_MS = 120_000;
-
-/** Vite renderer may omit `process.platform`; WinRT handshakes need a longer budget. */
-function rendererLikelyWin32(): boolean {
-  try {
-    if (typeof process !== 'undefined' && process.platform === 'win32') return true;
-  } catch {
-    // catch-no-log-ok process access can throw in some renderer bundles; fall back to UA heuristics
-  }
-  if (typeof navigator !== 'undefined') {
-    const ua = navigator.userAgent ?? '';
-    if (/Windows/i.test(ua)) return true;
-    const plat = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
-      ?.platform;
-    if (plat && /Windows/i.test(plat)) return true;
-    // Legacy fallback when userAgent / userAgentData are inconclusive (Chromium still exposes platform on Win).
-
-    if (navigator.platform && /Win/i.test(navigator.platform)) return true;
-  }
-  return false;
-}
-
-function rendererLikelyLinux(): boolean {
-  try {
-    if (typeof process !== 'undefined' && process.platform === 'linux') return true;
-  } catch {
-    // catch-no-log-ok process access can throw in some renderer bundles; fall back to UA heuristics
-  }
-  if (typeof navigator !== 'undefined') {
-    const ua = navigator.userAgent ?? '';
-    if (/Linux/i.test(ua)) return true;
-    const plat = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
-      ?.platform;
-    if (plat && /Linux/i.test(plat)) return true;
-
-    if (navigator.platform && /Linux/i.test(navigator.platform)) return true;
-  }
-  return false;
-}
-
-/** WinRT + companion handshake can be slower than CoreBluetooth. */
-const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = rendererLikelyWin32()
-  ? 45_000
-  : rendererLikelyLinux()
-    ? 60_000
-    : 20_000;
-const NOBLE_IPC_CONNECT_MAX_ATTEMPTS = 2;
-const WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS = 2;
-const WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS = 1_500;
 // Contact list streaming is O(N contacts) — use a generous timeout across all platforms.
 const MESHCORE_INIT_TIMEOUT_MS = 60_000;
 /** Companion Ok/Err for `sendFloodAdvert` — meshcore.js has no internal timeout. */
@@ -365,229 +289,6 @@ function formatStructuredLogDetail(detail: Record<string, unknown>): string {
   } catch {
     // catch-no-log-ok stringify fallback for circular / non-serializable log payloads
     return sanitizeLogMessage('{}');
-  }
-}
-
-/** TCP connection implemented over IPC bridge (main-process net.Socket). */
-class IpcTcpConnection {
-  private host: string;
-  private port: number;
-  private inner: SerialConnectionInstance | null = null;
-  private cleanupFns: (() => void)[] = [];
-
-  constructor(host: string, port: number) {
-    this.host = host;
-    this.port = port;
-  }
-
-  async connect() {
-    try {
-      // Create a subclass that wires write → IPC
-      class TcpOverIpc extends (SerialConnection as unknown as new () => SerialConnectionInstance) {
-        async write(bytes: Uint8Array) {
-          try {
-            await window.electronAPI.meshcore.tcp.write(Array.from(bytes));
-          } catch (e) {
-            console.error('[IpcTcpConnection] write error ' + errLikeToLogString(e));
-            throw e;
-          }
-        }
-        async close() {
-          await window.electronAPI.meshcore.tcp.disconnect();
-        }
-      }
-
-      const instance = new TcpOverIpc();
-      this.inner = instance;
-
-      const offData = window.electronAPI.meshcore.tcp.onData((bytes) => {
-        void instance.onDataReceived(bytes);
-      });
-      const offDisc = window.electronAPI.meshcore.tcp.onDisconnected(() => {
-        instance.onDisconnected();
-      });
-      this.cleanupFns = [offData, offDisc];
-
-      await window.electronAPI.meshcore.tcp.connect(this.host, this.port);
-      await instance.onConnected();
-    } catch (e) {
-      console.error('[IpcTcpConnection] connect/onConnected error ' + errLikeToLogString(e));
-      throw e;
-    }
-  }
-
-  get connection() {
-    return this.inner;
-  }
-
-  cleanup() {
-    this.cleanupFns.forEach((fn) => {
-      fn();
-    });
-    this.cleanupFns = [];
-  }
-}
-
-/** BLE connection implemented over session-scoped Noble IPC. */
-class IpcNobleConnection {
-  private static meshcoreConnectChain = Promise.resolve();
-
-  private readonly peripheralId: string;
-  private readonly sessionId: NobleBleSessionId;
-  private inner: NobleIpcMeshcoreConnectionInstance | null = null;
-  private cleanupFns: (() => void)[] = [];
-
-  constructor(
-    peripheralId: string,
-    sessionId: NobleBleSessionId = 'meshcore',
-    private readonly onInnerInstance?: (conn: NobleIpcMeshcoreConnectionInstance) => void,
-  ) {
-    this.peripheralId = peripheralId;
-    this.sessionId = sessionId;
-  }
-
-  async connect() {
-    const runConnect = async () => {
-      const sessionId = this.sessionId;
-      const txEchoFilter = new MeshcoreCompanionTxEchoFilter();
-      class NobleOverIpc extends MeshcoreConnectionBase {
-        constructor(private readonly session: NobleBleSessionId) {
-          super();
-        }
-
-        /**
-         * Raw companion frames over Nordic UART (same as meshcore.js WebBleConnection), not SerialConnection's
-         * USB framing (0x3c/0x3e + length) used for WebSerial/TCP.
-         */
-        async sendToRadioFrame(data: Uint8Array) {
-          txEchoFilter.noteOutbound(data);
-          this.emit('tx', data);
-          await this.write(data);
-        }
-
-        async write(bytes: Uint8Array) {
-          await window.electronAPI.nobleBleToRadio(this.session, bytes);
-        }
-
-        async close() {
-          await window.electronAPI.disconnectNobleBle(this.session);
-        }
-      }
-
-      const instance = new NobleOverIpc(sessionId) as unknown as NobleIpcMeshcoreConnectionInstance;
-      this.inner = instance;
-      this.onInnerInstance?.(instance);
-      /** Reject pending companion handshake when noble disconnects or aborts (e.g. Win32 pairing / watchdog). */
-      let rejectHandshakeOnDisconnect: ((err: Error) => void) | undefined;
-      const disconnectAbortsHandshake = new Promise<never>((_, reject) => {
-        rejectHandshakeOnDisconnect = reject;
-      });
-      // Guard against unhandled rejection if the outer withTimeout rejects before disconnect fires.
-      disconnectAbortsHandshake.catch(() => {});
-      const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
-        if (sid !== sessionId) return;
-        const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-        if (txEchoFilter.isEcho(frame)) {
-          return;
-        }
-        instance.onFrameReceived(frame);
-      });
-      const offDisc = window.electronAPI.onNobleBleDisconnected((sid) => {
-        if (sid !== sessionId) return;
-        console.warn(`[IpcNobleConnection:${sessionId}] peripheral disconnected`);
-        instance.onDisconnected();
-        const r = rejectHandshakeOnDisconnect;
-        rejectHandshakeOnDisconnect = undefined;
-        r?.(
-          new Error(
-            'BLE peripheral disconnected during handshake (pairing step finished or link lost — retry connect)',
-          ),
-        );
-      });
-      const offAbort = window.electronAPI.onNobleBleConnectAborted(
-        ({ sessionId: sid, message }) => {
-          if (sid !== sessionId) return;
-          console.warn(`[IpcNobleConnection:${sessionId}] connect aborted by main: ${message}`);
-          const r = rejectHandshakeOnDisconnect;
-          rejectHandshakeOnDisconnect = undefined;
-          r?.(new Error(message));
-        },
-      );
-      this.cleanupFns = [offData, offDisc, offAbort];
-      try {
-        await withTimeout(
-          window.electronAPI.connectNobleBle(sessionId, this.peripheralId).then((result) => {
-            if (!result.ok) throw new Error(result.error || 'BLE connect failed');
-          }),
-          NOBLE_IPC_CONNECT_TIMEOUT_MS,
-          'MeshCore BLE IPC open',
-        );
-        const disconnectAlreadyFired = rejectHandshakeOnDisconnect === undefined;
-        if (disconnectAlreadyFired) {
-          console.warn(
-            `[IpcNobleConnection:${sessionId}] disconnect raced ahead of handshake — will fail immediately`,
-          );
-        } else {
-          console.info(
-            `[IpcNobleConnection:${sessionId}] waiting on onConnected() timeout=${NOBLE_IPC_HANDSHAKE_TIMEOUT_MS}ms`,
-          );
-        }
-        const handshakeStart = Date.now();
-        await withTimeout(
-          Promise.race([
-            instance.onConnected().then(() => {
-              rejectHandshakeOnDisconnect = undefined;
-              console.info(
-                `[IpcNobleConnection:${sessionId}] onConnected() resolved after ${Date.now() - handshakeStart}ms`,
-              );
-            }),
-            disconnectAbortsHandshake,
-          ]),
-          NOBLE_IPC_HANDSHAKE_TIMEOUT_MS,
-          'MeshCore BLE protocol handshake',
-        );
-        console.info(
-          `[IpcNobleConnection:${sessionId}] handshake complete after ${Date.now() - handshakeStart}ms`,
-        );
-      } catch (err) {
-        try {
-          await window.electronAPI.disconnectNobleBle(sessionId);
-        } catch {
-          // catch-no-log-ok best-effort disconnect after connect failure
-        }
-        this.cleanup();
-        this.inner = null;
-        throw err;
-      }
-    };
-
-    if (this.sessionId !== 'meshcore') {
-      await runConnect();
-      return;
-    }
-
-    const prev = IpcNobleConnection.meshcoreConnectChain;
-    let releaseChain!: () => void;
-    IpcNobleConnection.meshcoreConnectChain = new Promise<void>((resolve) => {
-      releaseChain = resolve;
-    });
-    await prev;
-    try {
-      await runConnect();
-    } finally {
-      releaseChain();
-    }
-  }
-
-  get connection() {
-    return this.inner;
-  }
-
-  cleanup() {
-    this.cleanupFns.forEach((fn) => {
-      fn();
-    });
-    this.cleanupFns = [];
   }
 }
 
@@ -1192,10 +893,8 @@ export function useMeshCore() {
   const meshcoreIngressDetachRef = useRef<(() => void) | null>(null);
   const meshcoreIngestDetachRef = useRef<(() => void) | null>(null);
   const meshcoreIdentityIdRef = useRef<string | null>(null);
+  const meshcoreDriverConnectedRef = useRef(false);
   const [meshcoreIdentityId, setMeshcoreIdentityId] = useState<string | null>(null);
-  const ipcTcpRef = useRef<IpcTcpConnection | null>(null);
-  const ipcNobleRef = useRef<IpcNobleConnection | null>(null);
-  const webBluetoothTransportRef = useRef<TransportWebBluetoothIpc | null>(null);
   const bleConnectInProgressRef = useRef(false);
   /** Incremented on `disconnect()` so in-flight `initConn` can abort instead of timing out. */
   const meshcoreSetupGenerationRef = useRef(0);
@@ -2018,24 +1717,37 @@ export function useMeshCore() {
 
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */
   const meshcoreConnEventListenersTeardownRef = useRef<(() => void) | null>(null);
-  const teardownMeshcoreConnEventListeners = useCallback(() => {
-    if (meshcoreIngestDetachRef.current) {
-      meshcoreIngestDetachRef.current();
-      meshcoreIngestDetachRef.current = null;
-    }
-    if (meshcoreIngressDetachRef.current) {
-      try {
-        meshcoreIngressDetachRef.current();
-      } catch (e) {
-        console.debug('[useMeshCore] ingress detach error ' + errLikeToLogString(e));
+  const teardownMeshcoreConnEventListeners = useCallback(
+    (opts?: { driverDisconnect?: boolean }) => {
+      if (meshcoreIngestDetachRef.current) {
+        meshcoreIngestDetachRef.current();
+        meshcoreIngestDetachRef.current = null;
       }
-      meshcoreIngressDetachRef.current = null;
-    }
-    meshcoreIdentityIdRef.current = null;
-    setMeshcoreIdentityId(null);
-    meshcoreConnEventListenersTeardownRef.current?.();
-    meshcoreConnEventListenersTeardownRef.current = null;
-  }, []);
+      const driverIdentity =
+        meshcoreDriverConnectedRef.current && meshcoreIdentityIdRef.current
+          ? meshcoreIdentityIdRef.current
+          : null;
+      const shouldDriverDisconnect = opts?.driverDisconnect !== false;
+      if (driverIdentity && shouldDriverDisconnect) {
+        meshcoreDriverConnectedRef.current = false;
+        void connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
+          console.debug('[useMeshCore] driver disconnect ' + errLikeToLogString(e));
+        });
+      } else if (meshcoreIngressDetachRef.current) {
+        try {
+          meshcoreIngressDetachRef.current();
+        } catch (e) {
+          console.debug('[useMeshCore] ingress detach error ' + errLikeToLogString(e));
+        }
+        meshcoreIngressDetachRef.current = null;
+      }
+      meshcoreIdentityIdRef.current = null;
+      setMeshcoreIdentityId(null);
+      meshcoreConnEventListenersTeardownRef.current?.();
+      meshcoreConnEventListenersTeardownRef.current = null;
+    },
+    [],
+  );
 
   const setupEventListeners = useCallback(
     (conn: MeshCoreConnection) => {
@@ -3220,13 +2932,6 @@ export function useMeshCore() {
       });
 
       onMeshcoreConn('disconnected', () => {
-        teardownMeshcoreConnEventListeners();
-        ipcTcpRef.current?.cleanup();
-        ipcTcpRef.current = null;
-        ipcNobleRef.current?.cleanup();
-        ipcNobleRef.current = null;
-        meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();
-        setMeshcorePingRouteReadyEpoch((e) => e + 1);
         setState((prev) => {
           const wasOperational =
             prev.status === 'connected' || prev.status === 'configured' || prev.status === 'stale';
@@ -3236,28 +2941,25 @@ export function useMeshCore() {
             connectionLoss: wasOperational,
           };
         });
-        setQueueStatus(null);
-        // Clear pending contacts refresh timer
-        if (meshcoreContactsRefreshTimerRef.current) {
-          clearTimeout(meshcoreContactsRefreshTimerRef.current);
-          meshcoreContactsRefreshTimerRef.current = null;
-        }
-        // Clear waiting messages poll
-        if (meshcoreWaitingMessagesPollRef.current) {
-          clearInterval(meshcoreWaitingMessagesPollRef.current);
-          meshcoreWaitingMessagesPollRef.current = null;
-        }
-        // Release the underlying transport (serial port lock, BLE IPC session) so the
-        // next connect attempt can open it cleanly. Without this, an unexpected
-        // device-side disconnect leaves the raw SerialPort open at the browser level
-        // and the next serialPort.open() throws "The port is already open."
-        // Defer via setTimeout to avoid re-entrancy while the 'disconnected' event is firing.
         const staleConn = connRef.current;
         connRef.current = null;
-        if (staleConn)
-          setTimeout(() => {
+        queueMicrotask(() => {
+          teardownMeshcoreConnEventListeners({ driverDisconnect: false });
+          meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();
+          setMeshcorePingRouteReadyEpoch((e) => e + 1);
+          setQueueStatus(null);
+          if (meshcoreContactsRefreshTimerRef.current) {
+            clearTimeout(meshcoreContactsRefreshTimerRef.current);
+            meshcoreContactsRefreshTimerRef.current = null;
+          }
+          if (meshcoreWaitingMessagesPollRef.current) {
+            clearInterval(meshcoreWaitingMessagesPollRef.current);
+            meshcoreWaitingMessagesPollRef.current = null;
+          }
+          if (staleConn) {
             void staleConn.close().catch(() => {});
-          }, 0);
+          }
+        });
       });
 
       onMeshcoreConn('rx', (data: unknown) => {
@@ -3344,7 +3046,7 @@ export function useMeshCore() {
 
   /** Shared post-connection handshake: wire events, fetch self info, contacts, channels. */
   const initConn = useCallback(
-    async (conn: MeshCoreConnection, setupGen: number) => {
+    async (conn: MeshCoreConnection, setupGen: number, opts?: { driverIdentityId?: string }) => {
       connRef.current = conn;
       meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
 
@@ -3396,33 +3098,49 @@ export function useMeshCore() {
         useDiagnosticsStore.getState().migrateForeignLoraFromZero(myNodeId);
       }
 
-      if (meshcoreIngressDetachRef.current) {
-        meshcoreIngressDetachRef.current();
-      }
       const transportType = meshcoreConnectTypeRef.current;
-      // MeshCore protocol ingress covers advert/DM/channel only; waiting messages,
-      // stats, MQTT, and repeater RPCs stay in this hook — see docs/hook-deconstruction-ingress.md.
-      const ingress = bindMeshcoreIngress(
-        conn as unknown as Connection,
-        transportType,
-        {},
-        {
-          myNodeNum: myNodeId,
-          publicKey: info.publicKey,
-        },
-      );
-      meshcoreIngressDetachRef.current = ingress.detach;
-      meshcoreIdentityIdRef.current = ingress.identityId;
-      setMeshcoreIdentityId(ingress.identityId);
+      const discovery = { myNodeNum: myNodeId, publicKey: info.publicKey };
+      let identityId = opts?.driverIdentityId ?? null;
+      if (identityId) {
+        if (meshcoreIngressDetachRef.current) {
+          meshcoreIngressDetachRef.current();
+          meshcoreIngressDetachRef.current = null;
+        }
+        finalizeMeshcoreDriverIdentity(
+          identityId,
+          meshcoreTransportParams(transportType, {}),
+          discovery,
+        );
+        meshcoreIdentityIdRef.current = identityId;
+        setMeshcoreIdentityId(identityId);
+      } else {
+        if (meshcoreIngressDetachRef.current) {
+          meshcoreIngressDetachRef.current();
+        }
+        // MeshCore protocol ingress covers advert/DM/channel only; waiting messages,
+        // stats, MQTT, and repeater RPCs stay in this hook — see docs/hook-deconstruction-ingress.md.
+        const ingress = bindMeshcoreIngress(
+          conn as unknown as Connection,
+          transportType,
+          {},
+          discovery,
+        );
+        meshcoreIngressDetachRef.current = ingress.detach;
+        identityId = ingress.identityId;
+        meshcoreIdentityIdRef.current = identityId;
+        setMeshcoreIdentityId(identityId);
+      }
       if (meshcoreIngestDetachRef.current) {
         meshcoreIngestDetachRef.current();
       }
-      meshcoreIngestDetachRef.current = attachMeshcoreIngest(ingress.identityId);
-      setConnection(ingress.identityId, {
-        status: 'configured',
-        connectionType: transportType === 'tcp' ? 'http' : transportType,
-        myNodeNum: myNodeId,
-      });
+      if (identityId) {
+        meshcoreIngestDetachRef.current = attachMeshcoreIngest(identityId);
+        setConnection(identityId, {
+          status: 'configured',
+          connectionType: transportType === 'tcp' ? 'http' : transportType,
+          myNodeNum: myNodeId,
+        });
+      }
 
       try {
         const rawExport = await awaitUnlessMeshcoreSetupCancelled(
@@ -3594,200 +3312,29 @@ export function useMeshCore() {
       });
 
       if (type === 'ble') bleConnectInProgressRef.current = true;
-      let conn: MeshCoreConnection | null = null;
-      let serialRawPort: SerialPort | null = null;
       /** Linux MeshCore uses renderer Web Bluetooth (not Noble IPC) — timeout copy must match. */
-      let meshcoreBleLinuxWebBluetooth = false;
+      const meshcoreBleLinuxWebBluetooth =
+        type === 'ble' && navigator.userAgent.toLowerCase().includes('linux');
 
       try {
         const setupGen = meshcoreSetupGenerationRef.current;
-        if (type === 'ble') {
-          const isLinux = navigator.userAgent.toLowerCase().includes('linux');
-          if (isLinux) {
-            meshcoreBleLinuxWebBluetooth = true;
-            window.electronAPI.resetBlePairingRetryCount('meshcore');
-            let reuseWebBluetoothDeviceId: string | null = null;
-            for (let attempt = 1; attempt <= WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS; attempt++) {
-              const attemptStartedAt = Date.now();
-              const transport = new TransportWebBluetoothIpc('meshcore');
-              try {
-                const meshcoreConn = new MeshcoreWebBluetoothConnection(transport);
-                await meshcoreConn.connect(reuseWebBluetoothDeviceId ?? undefined);
-                webBluetoothTransportRef.current = transport;
-                conn = meshcoreConn as unknown as MeshCoreConnection;
-                if (attempt > 1) {
-                  console.info(
-                    `[useMeshCore] connect: BLE via Web Bluetooth recovered on retry ${formatStructuredLogDetail(
-                      {
-                        attempt,
-                        maxAttempts: WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS,
-                        elapsedMs: Date.now() - attemptStartedAt,
-                      },
-                    )}`,
-                  );
-                }
-                console.info('[useMeshCore] connect: BLE via Web Bluetooth connected');
-                break;
-              } catch (bleErr) {
-                const activeDeviceInfo = transport.getDeviceInfo();
-                if (activeDeviceInfo?.deviceId) {
-                  reuseWebBluetoothDeviceId = activeDeviceInfo.deviceId;
-                } else {
-                  const grantedDeviceId = transport.getLastGrantedDeviceId();
-                  if (grantedDeviceId) {
-                    reuseWebBluetoothDeviceId = grantedDeviceId;
-                  }
-                }
-                // Clean up transport on failure before retry
-                try {
-                  await transport.disconnect();
-                } catch {
-                  // catch-no-log-ok Web Bluetooth cleanup on failed attempt
-                }
-
-                const rawBleMessage = serializeErrorLike(bleErr) || 'BLE connect failed';
-                const isTimeout = rawBleMessage.includes('timed out');
-                const isPairingError =
-                  bleErr instanceof Error &&
-                  (bleErr as Error & { isPairingRelated?: boolean }).isPairingRelated;
-                console.warn(
-                  `[useMeshCore] connect: BLE via Web Bluetooth attempt failed ${formatStructuredLogDetail(
-                    {
-                      attempt,
-                      maxAttempts: WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS,
-                      isTimeout,
-                      isPairingError,
-                      elapsedMs: Date.now() - attemptStartedAt,
-                      message: rawBleMessage,
-                    },
-                  )}`,
-                );
-                webBluetoothTransportRef.current = null;
-
-                // Don't retry on pairing errors (user needs to fix pairing, not retry)
-                if (isPairingError || !isTimeout || attempt >= WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS) {
-                  throw bleErr;
-                }
-
-                // `requestDevice()` requires a user gesture; retries must reuse a granted device id.
-                if (!reuseWebBluetoothDeviceId) {
-                  throw new Error(
-                    'Bluetooth connection timed out before a device could be reused. Tap Connect again to retry.',
-                  );
-                }
-
-                await new Promise<void>((r) => setTimeout(r, WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS));
-              }
-            }
-          } else {
-            if (!blePeripheralId) {
-              throw new Error('BLE peripheral ID required');
-            }
-            let connected = false;
-            let lastBleError: unknown = null;
-            for (let attempt = 1; attempt <= NOBLE_IPC_CONNECT_MAX_ATTEMPTS; attempt++) {
-              const attemptStartedAt = Date.now();
-              const registerMeshcoreConnListenersEarly = (
-                innerConn: NobleIpcMeshcoreConnectionInstance,
-              ) => {
-                if (meshcoreSetupGenerationRef.current !== setupGen) return;
-                connRef.current = innerConn as unknown as MeshCoreConnection;
-                if (meshcoreConnEventListenersTeardownRef.current) {
-                  meshcoreConnEventListenersTeardownRef.current();
-                }
-                meshcoreConnEventListenersTeardownRef.current = setupEventListeners(
-                  innerConn as unknown as MeshCoreConnection,
-                );
-              };
-              const nobleConn = new IpcNobleConnection(
-                blePeripheralId,
-                'meshcore',
-                registerMeshcoreConnListenersEarly,
-              );
-              ipcNobleRef.current = nobleConn;
-              try {
-                await nobleConn.connect();
-                conn = nobleConn.connection as unknown as MeshCoreConnection;
-                connected = true;
-                if (attempt > 1) {
-                  console.info(
-                    `[useMeshCore] connect: BLE via Noble IPC recovered on retry ${formatStructuredLogDetail(
-                      {
-                        attempt,
-                        maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
-                        elapsedMs: Date.now() - attemptStartedAt,
-                      },
-                    )}`,
-                  );
-                }
-                break;
-              } catch (bleErr) {
-                lastBleError = bleErr;
-                const rawBleMessage = serializeErrorLike(bleErr) || 'BLE connect failed';
-                const stage = classifyMeshcoreBleTimeoutStage(rawBleMessage);
-                const isTimeout = stage !== 'unknown';
-                const isRetryable = isMeshcoreRetryableBleErrorMessage(rawBleMessage);
-                console.warn(
-                  `[useMeshCore] connect: BLE Noble IPC attempt failed ${formatStructuredLogDetail({
-                    attempt,
-                    maxAttempts: NOBLE_IPC_CONNECT_MAX_ATTEMPTS,
-                    isTimeout,
-                    isRetryable,
-                    stage,
-                    elapsedMs: Date.now() - attemptStartedAt,
-                    message: rawBleMessage,
-                  })}`,
-                );
-                ipcNobleRef.current?.cleanup();
-                ipcNobleRef.current = null;
-                if (!isRetryable || attempt >= NOBLE_IPC_CONNECT_MAX_ATTEMPTS) {
-                  throw bleErr;
-                }
-                // Brief pause before retry: gives BlueZ/WinRT time to release adapter state
-                // after a failed or timed-out connect attempt.
-                await new Promise<void>((r) => setTimeout(r, 1500));
-              }
-            }
-            if (!connected) {
-              if (lastBleError instanceof Error) throw lastBleError;
-              throw new Error('BLE connect failed');
-            }
-          }
-        } else if (type === 'serial') {
-          if (!navigator.serial?.requestPort) throw new Error('Web Serial API not available');
-          const port = await navigator.serial.requestPort();
-          serialRawPort = port;
-          persistSerialPortIdentity(serialRawPort);
-          await (serialRawPort as any).open({ baudRate: 115200 });
-          conn = new (WebSerialConnection as unknown as new (port: unknown) => MeshCoreConnection)(
-            serialRawPort,
-          );
-          {
-            const sid = localStorage.getItem(LAST_SERIAL_PORT_KEY);
-            const sig = getPortSignature(serialRawPort);
-            const parts = ['transport=serial', 'stack=meshcore'];
-            if (sid) parts.push(`portId=${sid}`);
-            if (sig.usbVendorId != null) parts.push(`usbVendorId=${sig.usbVendorId}`);
-            if (sig.usbProductId != null) parts.push(`usbProductId=${sig.usbProductId}`);
-            void window.electronAPI.log.logDeviceConnection(parts.join(' '));
-          }
-        } else {
-          // tcp
-          const { host, port } = parseTcpAddress(tcpHost ?? 'localhost');
-          const tcpConn = new IpcTcpConnection(host, port);
-          ipcTcpRef.current = tcpConn;
-          await tcpConn.connect();
-          conn = tcpConn.connection as unknown as MeshCoreConnection;
+        if (type === 'ble' && !meshcoreBleLinuxWebBluetooth && !blePeripheralId) {
+          throw new Error('BLE peripheral ID required');
         }
-
-        if (!conn) throw new Error('Connection initialization failed');
+        const opened = await openMeshCoreTransport(type, {
+          blePeripheralId,
+          host: type === 'tcp' ? (tcpHost ?? 'localhost') : undefined,
+        });
+        meshcoreDriverConnectedRef.current = true;
+        const conn = opened.conn as unknown as MeshCoreConnection;
         if (meshcoreSetupGenerationRef.current !== setupGen) {
-          void conn.close().catch(() => {});
+          meshcoreDriverConnectedRef.current = false;
+          await connectionDriver.disconnect(opened.driverIdentityId).catch(() => {});
           throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
         }
         connRef.current = conn;
         meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
-        await initConn(conn, setupGen);
+        await initConn(conn, setupGen, { driverIdentityId: opened.driverIdentityId });
         if (type === 'serial') {
           const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
           const nodeName = selfInfoRef.current?.name?.trim() || null;
@@ -3814,27 +3361,7 @@ export function useMeshCore() {
         if (isSetupAbort) {
           setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
           teardownMeshcoreConnEventListeners();
-          ipcTcpRef.current?.cleanup();
-          ipcTcpRef.current = null;
-          ipcNobleRef.current?.cleanup();
-          ipcNobleRef.current = null;
-          if (type === 'serial') {
-            connRef.current = null;
-            if (conn) {
-              try {
-                await conn.close();
-              } catch {
-                // catch-no-log-ok port may already be in a bad state
-              }
-            }
-            if (serialRawPort) {
-              try {
-                await serialRawPort.close();
-              } catch {
-                // catch-no-log-ok port may already be in a bad state
-              }
-            }
-          }
+          connRef.current = null;
           throw err;
         }
         const rawMessage = serializeErrorLike(err) || 'Connection failed';
@@ -3892,28 +3419,7 @@ export function useMeshCore() {
         );
         setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
         teardownMeshcoreConnEventListeners();
-        ipcTcpRef.current?.cleanup();
-        ipcTcpRef.current = null;
-        ipcNobleRef.current?.cleanup();
-        ipcNobleRef.current = null;
-        // Release serial port lock so the next attempt can open it
-        if (type === 'serial') {
-          connRef.current = null;
-          if (conn) {
-            try {
-              await conn.close();
-            } catch {
-              // catch-no-log-ok port may already be in a bad state
-            }
-          }
-          if (serialRawPort) {
-            try {
-              await serialRawPort.close();
-            } catch {
-              // catch-no-log-ok port may already be in a bad state
-            }
-          }
-        }
+        connRef.current = null;
         throw normalizedErr;
       } finally {
         if (type === 'ble') bleConnectInProgressRef.current = false;
@@ -3935,42 +3441,34 @@ export function useMeshCore() {
       lastSerialPortId?: string | null,
     ) => {
       if (type === 'serial') {
+        meshcoreConnectTypeRef.current = 'serial';
         setState({
           status: 'connecting',
           myNodeNum: 0,
           connectionType: 'serial',
           connectionLoss: false,
         });
-        let serialPort: SerialPort | null = null;
-        let serialConn: MeshCoreConnection | null = null;
         try {
           const setupGen = meshcoreSetupGenerationRef.current;
-          if (!navigator.serial?.getPorts) throw new Error('Web Serial API not available');
-          const ports = await navigator.serial.getPorts();
-          serialPort = selectGrantedSerialPort(ports, lastSerialPortId);
-          persistSerialPortIdentity(serialPort);
-          await serialPort.open({ baudRate: 115200 });
-          serialConn = new (WebSerialConnection as unknown as new (
-            port: unknown,
-          ) => MeshCoreConnection)(serialPort);
-          await initConn(serialConn, setupGen);
-          {
-            const sid = localStorage.getItem(LAST_SERIAL_PORT_KEY);
-            const sig = getPortSignature(serialPort);
-            const parts = ['transport=serial', 'stack=meshcore'];
-            if (sid) parts.push(`portId=${sid}`);
-            if (sig.usbVendorId != null) parts.push(`usbVendorId=${sig.usbVendorId}`);
-            if (sig.usbProductId != null) parts.push(`usbProductId=${sig.usbProductId}`);
-            void window.electronAPI.log.logDeviceConnection(parts.join(' '));
+          const opened = await openMeshCoreTransport('serial', {
+            portSignature: lastSerialPortId,
+          });
+          meshcoreDriverConnectedRef.current = true;
+          const conn = opened.conn as unknown as MeshCoreConnection;
+          if (meshcoreSetupGenerationRef.current !== setupGen) {
+            meshcoreDriverConnectedRef.current = false;
+            await connectionDriver.disconnect(opened.driverIdentityId).catch(() => {});
+            throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
           }
+          connRef.current = conn;
+          meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
+          await initConn(conn, setupGen, { driverIdentityId: opened.driverIdentityId });
         } catch (err) {
           const isSetupAbort =
             err instanceof DOMException &&
             err.name === 'AbortError' &&
             err.message === MESHCORE_SETUP_ABORT_MESSAGE;
-          if (isSetupAbort) {
-            // disconnect during setup
-          } else {
+          if (!isSetupAbort) {
             console.error(
               '[useMeshCore] connectAutomatic serial error',
               serializeErrorLike(err) || err,
@@ -3979,21 +3477,6 @@ export function useMeshCore() {
           setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
           connRef.current = null;
           teardownMeshcoreConnEventListeners();
-          // Always try both: conn.close() may throw if the read pump already errored
-          if (serialConn) {
-            try {
-              await serialConn.close();
-            } catch {
-              // catch-no-log-ok port may already be in a bad state
-            }
-          }
-          if (serialPort) {
-            try {
-              await serialPort.close();
-            } catch {
-              // catch-no-log-ok port may already be in a bad state
-            }
-          }
           throw err;
         }
       } else if (type === 'http') {
@@ -4019,7 +3502,7 @@ export function useMeshCore() {
       }
       // BLE: requires user gesture — not supported for auto-connect
     },
-    [initConn, connect, teardownMeshcoreConnEventListeners],
+    [initConn, connect, setupEventListeners, teardownMeshcoreConnEventListeners],
   );
 
   const disconnect = useCallback(async () => {
@@ -4035,19 +3518,14 @@ export function useMeshCore() {
     // Clear pending CLI commands
     repeaterCommandServiceRef.current?.clear();
 
-    teardownMeshcoreConnEventListeners();
-    try {
-      await connRef.current?.close();
-    } catch (e) {
-      console.warn('[useMeshCore] disconnect: close error ' + errLikeToLogString(e));
-    }
-    ipcTcpRef.current?.cleanup();
-    ipcTcpRef.current = null;
-    ipcNobleRef.current?.cleanup();
-    ipcNobleRef.current = null;
-    if (webBluetoothTransportRef.current) {
-      await webBluetoothTransportRef.current.disconnect();
-      webBluetoothTransportRef.current = null;
+    const usedDriverConnect = meshcoreDriverConnectedRef.current;
+    teardownMeshcoreConnEventListeners({ driverDisconnect: true });
+    if (!usedDriverConnect) {
+      try {
+        await connRef.current?.close();
+      } catch (e) {
+        console.warn('[useMeshCore] disconnect: close error ' + errLikeToLogString(e));
+      }
     }
     connRef.current = null;
     meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();

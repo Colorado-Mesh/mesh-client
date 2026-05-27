@@ -105,6 +105,22 @@ export function bindMeshtasticIngress(
   return { identityId, detach: detachDriver };
 }
 
+/** After driver connect + `getSelfInfo`, align identity signature with resolved node id. */
+export function finalizeMeshcoreDriverIdentity(
+  identityId: IdentityId,
+  params: TransportParams,
+  discovery: DiscoveryInfo,
+): void {
+  const provisionalKey = meshcoreProtocol.identitySignature(params);
+  const resolvedKey = meshcoreProtocol.identitySignature(params, discovery);
+  updateIdentity(identityId, {
+    signature: resolvedKey,
+    selfNodeNum: discovery.myNodeNum,
+    publicKey: discovery.publicKey,
+  });
+  connectionDriver.registerTransportKeys(identityId, provisionalKey, resolvedKey);
+}
+
 export interface MeshcoreIngressBind {
   identityId: IdentityId;
   detach: () => void;

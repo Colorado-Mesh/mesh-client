@@ -6,7 +6,7 @@ import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHCORE_CAPABILITIES } from '../radio/BaseRadioProvider';
 import type { TransportParams } from '../types';
 import type { MeshCoreTransportParams } from './meshcore/MeshCoreTransport';
-import { createMeshCoreConnection } from './meshcore/MeshCoreTransport';
+import { createMeshCoreConnection, reconnectMeshcoreSerial } from './meshcore/MeshCoreTransport';
 import type {
   ContactRecord,
   DiscoveryInfo,
@@ -129,6 +129,9 @@ export class MeshCoreProtocol implements Protocol {
   // --- SDK bootstrap ---
 
   async createDevice(params: TransportParams): Promise<Connection> {
+    if (params.type === 'serial' && params.portSignature) {
+      return reconnectMeshcoreSerial(params.portSignature);
+    }
     const transport = this.transportParamsToMeshCore(params);
     return createMeshCoreConnection(transport);
   }

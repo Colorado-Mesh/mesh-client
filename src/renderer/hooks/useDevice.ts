@@ -71,12 +71,7 @@ import {
   mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
-import {
-  createBleConnection,
-  createConnection,
-  reconnectSerial,
-  safeDisconnect,
-} from '../lib/connection';
+import { safeDisconnect } from '../lib/connection';
 import { validateCoords } from '../lib/coordUtils';
 import {
   getMergedNodesForForeignLoraDiagnostics,
@@ -99,6 +94,7 @@ import {
   type MeshtasticIngestSession,
 } from '../lib/ingest/meshtasticIngest';
 import { bindMeshtasticIngress, meshtasticTransportParams } from '../lib/meshIdentityBridge';
+import { pushMeshtasticTransportSideEffectUnsubs } from '../lib/meshtastic/meshtasticLegacyDeviceEvents';
 import { setRemoteAdminReadsActive } from '../lib/meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
@@ -1516,7 +1512,7 @@ export function useDevice() {
     requestStoreForwardHistoryRef.current = requestStoreForwardHistory;
   }, [requestStoreForwardHistory]);
 
-  /** HTTP uses `ConnectionDriver.connect`; BLE/serial keep legacy open + `bindMeshtasticIngress`. */
+  /** All transports use `ConnectionDriver.connect`; legacy handlers stay in `wireSubscriptions`. */
   const openMeshtasticTransport = useCallback(
     async (
       type: ConnectionType,
@@ -1525,30 +1521,21 @@ export function useDevice() {
         blePeripheralId?: string;
         lastSerialPortId?: string | null;
       },
-    ): Promise<{ device: MeshDevice; driverIdentityId?: string }> => {
-      if (type === 'http') {
-        const params = meshtasticTransportParams('http', { host: opts.httpAddress });
-        const identityId = await connectionDriver.connect('meshtastic', params);
-        meshtasticDriverConnectedRef.current = true;
-        const device = connectionDriver.getHandle(identityId) as MeshDevice | null;
-        if (!device) {
-          throw new Error('[useDevice] ConnectionDriver.connect returned no handle');
-        }
-        return { device, driverIdentityId: identityId };
+    ): Promise<{ device: MeshDevice; driverIdentityId: string }> => {
+      const params = meshtasticTransportParams(type, {
+        peripheralId: opts.blePeripheralId,
+        portSignature: opts.lastSerialPortId ?? undefined,
+        host: opts.httpAddress,
+      });
+      const identityId = await connectionDriver.connect('meshtastic', params);
+      meshtasticDriverConnectedRef.current = true;
+      const device = connectionDriver.getHandle(identityId) as MeshDevice | null;
+      if (!device) {
+        throw new Error('[useDevice] ConnectionDriver.connect returned no handle');
       }
-      if (type === 'ble') {
-        const device = await createBleConnection(opts.blePeripheralId, 'meshtastic', touchLastData);
-        return { device };
-      }
-      if (type === 'serial') {
-        const device = opts.lastSerialPortId
-          ? await reconnectSerial(opts.lastSerialPortId)
-          : await createConnection('serial');
-        return { device };
-      }
-      throw new Error(`[useDevice] unsupported connection type: ${type}`);
+      return { device, driverIdentityId: identityId };
     },
-    [touchLastData],
+    [],
   );
 
   // ─── Wire up all event subscriptions for a device ─────────────
@@ -3236,24 +3223,14 @@ export function useDevice() {
       });
       unsubscribesRef.current.push(unsubAtakForwarder);
 
-      // ─── Noble BLE disconnect detection ────────────────────────
-      if (type === 'ble') {
-        const unsubNobleDisconnect = window.electronAPI.onNobleBleDisconnected((sessionId) => {
-          if (sessionId !== 'meshtastic') return;
-          console.warn('[useDevice] Noble BLE disconnected event received');
+      pushMeshtasticTransportSideEffectUnsubs(
+        device,
+        type,
+        (unsub) => unsubscribesRef.current.push(unsub),
+        () => {
           handleConnectionLostRef.current();
-        });
-        unsubscribesRef.current.push(unsubNobleDisconnect);
-      }
-
-      // ─── Serial/BLE heartbeat — periodic liveness for watchdog on quiet links
-      if (type === 'serial' || type === 'ble') {
-        try {
-          device.setHeartbeatInterval(60_000);
-        } catch (e) {
-          console.warn(`[useDevice] ${type}: setHeartbeatInterval failed ` + errLikeToLogString(e));
-        }
-      }
+        },
+      );
     },
     [
       touchLastData,
@@ -3351,16 +3328,15 @@ export function useDevice() {
     if (!isReconnectingRef.current || reconnectGenerationRef.current !== generation) return;
 
     try {
-      let device: MeshDevice;
-      if (params.type === 'ble') {
-        if (!params.blePeripheralId) throw new Error('BLE peripheral ID not stored for reconnect');
-        device = await createBleConnection(params.blePeripheralId, 'meshtastic', touchLastData);
-      } else {
-        device = await createConnection(params.type, params.httpAddress);
-      }
-      deviceRef.current = device;
-      wireSubscriptions(device, params.type);
-      await device.configure();
+      const opened = await openMeshtasticTransport(params.type, {
+        httpAddress: params.httpAddress,
+        blePeripheralId: params.blePeripheralId,
+      });
+      deviceRef.current = opened.device;
+      wireSubscriptions(opened.device, params.type, {
+        driverIdentityId: opened.driverIdentityId,
+      });
+      await opened.device.configure();
 
       // Success
       console.debug(`[useDevice] Reconnect succeeded on attempt ${reconnectAttemptRef.current}`);
@@ -3375,7 +3351,7 @@ export function useDevice() {
       // Retry
       void attemptReconnectRef.current();
     }
-  }, [wireSubscriptions, touchLastData]);
+  }, [wireSubscriptions, openMeshtasticTransport]);
 
   // Keep the ref in sync
   attemptReconnectRef.current = attemptReconnect;

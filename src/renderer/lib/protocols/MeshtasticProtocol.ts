@@ -79,7 +79,7 @@ export class MeshtasticProtocol implements Protocol {
       case 'ble':
         return createBleConnection(params.peripheralId, 'meshtastic');
       case 'serial':
-        return reconnectSerial();
+        return reconnectSerial(params.portSignature);
       case 'http':
         return createConnection('http', params.host);
       default:

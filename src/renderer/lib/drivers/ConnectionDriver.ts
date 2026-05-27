@@ -12,9 +12,9 @@ import {
 } from '../../stores/identityStore';
 import { clearMessageIdentity } from '../../stores/messageStore';
 import { clearNodeIdentity } from '../../stores/nodeStore';
-import { meshcoreProtocol } from '../protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import type { DiscoveryInfo, DomainEvent, Protocol } from '../protocols/Protocol';
+import { getProtocolForType } from '../protocols/protocolRegistry';
 import type {
   ConnectionType,
   IdentityId,
@@ -24,13 +24,8 @@ import type {
 } from '../types';
 import { packetRouter } from './PacketRouter';
 
-const PROTOCOLS: Record<string, Protocol> = {
-  meshtastic: meshtasticProtocol,
-  meshcore: meshcoreProtocol,
-};
-
 export function getProtocol(type: string): Protocol | null {
-  return PROTOCOLS[type] ?? null;
+  return getProtocolForType(type);
 }
 
 interface TransportSlot {
@@ -110,7 +105,7 @@ export class ConnectionDriver {
   }
 
   async connect(protocolType: string, params: TransportParams): Promise<IdentityId> {
-    const protocol = PROTOCOLS[protocolType];
+    const protocol = getProtocolForType(protocolType);
     if (!protocol) throw new Error(`Unknown protocol: ${protocolType}`);
 
     const provisionalKey = protocol.identitySignature(params);

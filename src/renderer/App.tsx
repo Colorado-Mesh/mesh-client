@@ -27,6 +27,7 @@ import { LinkIcon } from './components/SignalBars';
 import SignalPropagation from './components/SignalPropagation';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
+import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useDbRefresh } from './hooks/useDbRefresh';
 import { useDevice } from './hooks/useDevice';
@@ -102,7 +103,6 @@ import type {
   MQTTSettings,
 } from './lib/types';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
-import { useIdentityStore } from './stores/identityStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
 import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
@@ -611,13 +611,12 @@ export default function App() {
 
   const meshtasticDevice = useDevice();
   const meshcoreDevice = useMeshCore();
-  const meshtasticIdentityId = useIdentityStore(
-    (s) => Object.values(s.identities).find((i) => i.protocol.type === 'meshtastic')?.id ?? null,
-  );
-  const meshcoreIdentityId = useIdentityStore(
-    (s) => Object.values(s.identities).find((i) => i.protocol.type === 'meshcore')?.id ?? null,
-  );
-  const focusedIdentityId = protocol === 'meshcore' ? meshcoreIdentityId : meshtasticIdentityId;
+  const {
+    meshtasticIdentityId,
+    meshcoreIdentityId,
+    focusedIdentityId,
+    capabilities: activeProtocolCapabilities,
+  } = useActiveMeshIdentity(protocol);
   const meshtasticNodesById = useNodeStore((s) =>
     meshtasticIdentityId ? s.nodes[meshtasticIdentityId] : undefined,
   );
@@ -713,7 +712,7 @@ export default function App() {
     return m;
   }, [protocol, meshcoreDevice.selfInfo, meshcoreDevice.meshcoreContactsForTelemetry]);
 
-  const capabilities = useRadioProvider(protocol);
+  const capabilities = activeProtocolCapabilities;
   const meshtasticCapabilities = useRadioProvider('meshtastic');
   const meshcoreCapabilities = useRadioProvider('meshcore');
 

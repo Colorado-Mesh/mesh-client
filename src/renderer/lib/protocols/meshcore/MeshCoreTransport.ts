@@ -3,7 +3,8 @@ import { Connection, SerialConnection, WebSerialConnection } from '@liamcottle/m
 import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
 import { MeshcoreWebBluetoothConnection } from '../../meshcoreWebBluetoothConnection';
-import { persistSerialPortIdentity } from '../../serialPortSignature';
+import { parseTcpAddress } from '../../parseTcpAddress';
+import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
 import { TransportWebBluetoothIpc } from '../../transportWebBluetoothIpc';
 import type { NobleBleSessionId } from '../../types';
 
@@ -153,20 +154,35 @@ class IpcTcpConnection {
   }
 }
 
-async function connectTcp(host: string): Promise<Connection> {
-  const tcp = new IpcTcpConnection(host);
+async function connectTcp(hostAddr: string): Promise<Connection> {
+  const { host, port } = parseTcpAddress(hostAddr);
+  const tcp = new IpcTcpConnection(host, port);
   await tcp.connect();
   return tcp.connection;
 }
 
 // ─── Serial ───────────────────────────────────────────────────────────────────
 
-async function connectSerial(): Promise<Connection> {
-  if (!navigator.serial?.requestPort) throw new Error('Web Serial API not available');
-  const port = await navigator.serial.requestPort();
+async function openSerialPort(port: SerialPort): Promise<Connection> {
   persistSerialPortIdentity(port);
   await (port as unknown as { open(opts: object): Promise<void> }).open({ baudRate: 115200 });
   return new (WebSerialConnection as unknown as new (port: unknown) => Connection)(port);
+}
+
+async function connectSerial(): Promise<Connection> {
+  if (!navigator.serial?.requestPort) throw new Error('Web Serial API not available');
+  const port = await navigator.serial.requestPort();
+  return openSerialPort(port);
+}
+
+/** Gesture-free serial reconnect using a previously granted port id or signature. */
+export async function reconnectMeshcoreSerial(lastPortId?: string | null): Promise<Connection> {
+  if (!navigator.serial?.getPorts) {
+    throw new Error('Web Serial API not available');
+  }
+  const ports = await navigator.serial.getPorts();
+  const port = selectGrantedSerialPort(ports, lastPortId);
+  return openSerialPort(port);
 }
 
 // ─── BLE: Noble IPC (Mac / Windows) ──────────────────────────────────────────
