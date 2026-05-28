@@ -4419,7 +4419,7 @@ ipcMain.handle(
       if (!Number.isFinite(id) || id < 1) {
         throw new Error('db:updateMeshcoreMessageSender: invalid messageId');
       }
-      if (!Number.isFinite(sid) || sid < 0) {
+      if (!Number.isFinite(sid) || sid < 1) {
         throw new Error('db:updateMeshcoreMessageSender: invalid senderId');
       }
       const name = typeof senderName === 'string' ? senderName.trim().slice(0, 64) : '';

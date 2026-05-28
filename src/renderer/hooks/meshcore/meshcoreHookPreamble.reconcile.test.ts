@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MESHCORE_UNKNOWN_SENDER_STUB_ID } from '../../lib/meshcoreUtils';
 import type { ChatMessage } from '../../lib/types';
@@ -6,6 +6,7 @@ import {
   mapMeshcoreDbRowsToChatMessages,
   type MeshcoreMessageDbRow,
   meshcoreReconcileChannelSenderIds,
+  persistMeshcoreMessageSenderRepairs,
 } from './meshcoreHookPreamble';
 
 function row(
@@ -90,5 +91,42 @@ describe('mapMeshcoreDbRowsToChatMessages', () => {
     expect(ambiguous?.sender_id).toBe(0xa9ba4a2a);
     expect(ambiguous?.sender_name).toBe('10th mountain division');
     expect(ambiguous?.payload).toBe('T');
+  });
+});
+
+describe('persistMeshcoreMessageSenderRepairs', () => {
+  const updateMeshcoreMessageSender = vi.fn().mockResolvedValue(undefined);
+
+  beforeEach(() => {
+    vi.spyOn(window.electronAPI.db, 'updateMeshcoreMessageSender').mockImplementation(
+      updateMeshcoreMessageSender,
+    );
+    updateMeshcoreMessageSender.mockClear();
+  });
+
+  it('persists sender repairs for reconciled rows and skips Unknown stub ids', async () => {
+    const namedId = 0xa9ba4a2a;
+    const rows: MeshcoreMessageDbRow[] = [
+      row({ id: 1, sender_id: MESHCORE_UNKNOWN_SENDER_STUB_ID, payload: 'T' }),
+      row({
+        id: 2,
+        sender_id: namedId,
+        sender_name: '10th mountain division',
+        payload: 'T',
+      }),
+    ];
+    const mapped = mapMeshcoreDbRowsToChatMessages(rows);
+    await persistMeshcoreMessageSenderRepairs(rows, mapped);
+    expect(updateMeshcoreMessageSender).toHaveBeenCalledTimes(1);
+    expect(updateMeshcoreMessageSender).toHaveBeenCalledWith(1, namedId, '10th mountain division');
+  });
+
+  it('does not call IPC when mapped senders match DB rows', async () => {
+    const rows: MeshcoreMessageDbRow[] = [
+      row({ id: 3, sender_id: 42, sender_name: 'Alice', payload: 'hi' }),
+    ];
+    const mapped = mapMeshcoreDbRowsToChatMessages(rows);
+    await persistMeshcoreMessageSenderRepairs(rows, mapped);
+    expect(updateMeshcoreMessageSender).not.toHaveBeenCalled();
   });
 });

@@ -113,7 +113,7 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 
 ### Renderer hook architecture (dual protocol)
 
-See **Renderer: hooks vs runtime vs lib** (layout map above) and [docs/renderer-side-effect-migration.md](docs/renderer-side-effect-migration.md) for migration status ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377)). Default rules for new UI:
+See **Renderer: hooks vs runtime vs lib** (layout map above). Legacy `useDevice` / `useMeshCore` are removed ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377)). Default rules for new UI:
 
 | Concern                                               | Use                                                                                                                                                         |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
