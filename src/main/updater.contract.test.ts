@@ -4,6 +4,9 @@ import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
 const UPDATER_SOURCE = readFileSync(join(__dirname, 'updater.ts'), 'utf-8');
+const PACKAGE_JSON = JSON.parse(
+  readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'),
+) as { dependencies?: Record<string, string> };
 
 describe('updater source contracts', () => {
   it('falls back to GitHub API when electron-updater is missing instead of skipping IPC handlers', () => {
@@ -16,5 +19,9 @@ describe('updater source contracts', () => {
     expect(UPDATER_SOURCE).toContain('notifyOnSettled: true');
     expect(UPDATER_SOURCE).toContain('notifyOnSettled: false');
     expect(UPDATER_SOURCE).toContain('getCheckNowFromMenu');
+  });
+
+  it('declares builder-util-runtime so electron-updater resolves in packaged Windows builds', () => {
+    expect(PACKAGE_JSON.dependencies?.['builder-util-runtime']).toBeTruthy();
   });
 });

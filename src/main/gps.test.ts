@@ -5,7 +5,7 @@ import https from 'https';
 import si from 'systeminformation';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getGpsFix, GpsHardwareError } from './gps';
+import { getGpsFix, GpsHardwareError, shouldUseWifiNetworksPreflight } from './gps';
 
 // gps.ts uses `import https from 'https'` (default import) and `import si from 'systeminformation'`
 // Mocks must export a `default` to satisfy default imports.
@@ -114,6 +114,17 @@ describe('getGpsFix', () => {
     setupHttpsSuccess(JSON.stringify({ success: true, latitude: 51.5, longitude: -0.12 }));
     const result = await getGpsFix();
     expect(result).toMatchObject({ lat: 51.5, lon: -0.12, source: 'ip' });
+  });
+
+  it('on Windows skips wifiNetworks and uses inetChecksite preflight only', async () => {
+    const platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
+    setupHttpsSuccess(JSON.stringify({ success: true, latitude: 40.0, longitude: -105.0 }));
+    const result = await getGpsFix();
+    expect(shouldUseWifiNetworksPreflight()).toBe(false);
+    expect(si.wifiNetworks).not.toHaveBeenCalled();
+    expect(si.inetChecksite).toHaveBeenCalledWith('https://ipwho.is');
+    expect(result).toMatchObject({ lat: 40.0, lon: -105.0, source: 'ip' });
+    platformSpy.mockRestore();
   });
 
   it('returns GpsFixError for coordinates outside valid range', async () => {
