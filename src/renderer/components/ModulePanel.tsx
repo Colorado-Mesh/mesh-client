@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
@@ -479,7 +480,7 @@ export default function ModulePanel({
         // catch-no-log-ok commit failure surfaced in module panel toast
         addToast(
           t('modulePanel.commitFailed', {
-            message: err instanceof Error ? err.message : 'Unknown error',
+            message: formatMeshtasticModuleApplyError(err, t),
           }),
           'error',
         );
@@ -488,13 +489,21 @@ export default function ModulePanel({
       console.warn('[ModulePanel] apply failed ' + errLikeToLogString(err));
       addToast(
         t('modulePanel.failed', {
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: formatMeshtasticModuleApplyError(err, t),
         }),
         'error',
       );
     } finally {
       setApplyingSection(null);
     }
+  };
+
+  const validateMqttRelayBeforeApply = (): string | null => {
+    if (!mqttEnabled) return null;
+    if (!mqttAddress.trim()) {
+      return t('modulePanel.errors.mqttAddressRequired');
+    }
+    return null;
   };
 
   return (
@@ -607,7 +616,7 @@ export default function ModulePanel({
             console.warn('[ModulePanel] canned messages failed ' + errLikeToLogString(err));
             addToast(
               t('modulePanel.failed', {
-                message: err instanceof Error ? err.message : 'Unknown error',
+                message: formatMeshtasticModuleApplyError(err, t),
               }),
               'error',
             );
@@ -846,9 +855,14 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionMqttRelay')}
         onApply={() => {
+          const validationError = validateMqttRelayBeforeApply();
+          if (validationError) {
+            addToast(validationError, 'error');
+            return;
+          }
           void applyModule('MQTT Relay', 'mqtt', {
             enabled: mqttEnabled,
-            address: mqttAddress,
+            address: mqttAddress.trim(),
             username: mqttUsername,
             password: mqttPassword,
             encryptionEnabled: mqttEncryption,
@@ -1013,7 +1027,7 @@ export default function ModulePanel({
               console.warn('[ModulePanel] RTTTL apply failed ' + errLikeToLogString(err));
               addToast(
                 t('modulePanel.failed', {
-                  message: err instanceof Error ? err.message : 'Unknown error',
+                  message: formatMeshtasticModuleApplyError(err, t),
                 }),
                 'error',
               );

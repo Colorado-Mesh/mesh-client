@@ -81,4 +81,17 @@ describe('connection serial cleanup', () => {
     expect(port.close).toHaveBeenCalledTimes(1);
     expect(device.complete).toHaveBeenCalledTimes(1);
   });
+
+  it('safeDisconnect closes TransportWebSerial connection field', async () => {
+    const port = makeMockSerialPort();
+    const device = {
+      disconnect: vi.fn().mockResolvedValue(undefined),
+      complete: vi.fn(),
+      transport: { connection: port },
+    } as unknown as MeshDevice;
+
+    await safeDisconnect(device);
+
+    expect(port.close).toHaveBeenCalledTimes(1);
+  });
 });

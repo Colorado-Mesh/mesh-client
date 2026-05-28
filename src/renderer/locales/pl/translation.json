@@ -712,6 +712,16 @@
       "gpio": "GPIO",
       "rangeTest": "Test zasięgu",
       "storeForward": "Otrzymano S&F"
+    },
+    "errors": {
+      "generic": "Urządzenie odrzuciło tę zmianę.",
+      "badRequest": "Urządzenie odrzuciło tę konfigurację (nieprawidłowe lub nieobsługiwane ustawienia).",
+      "notAuthorized": "Brak uprawnień do zmiany tego ustawienia na urządzeniu.",
+      "timeout": "Urządzenie nie zareagowało na czas.",
+      "noChannel": "Brak dostępnego kanału do wysłania tej konfiguracji.",
+      "routingError": "Błąd urządzenia {{name}} (kod {{code}}).",
+      "transportLost": "Utracono łącze szeregowe lub Bluetooth — ponowne łączenie…",
+      "mqttAddressRequired": "Wprowadź adres brokera MQTT przed włączeniem przekaźnika MQTT po stronie urządzenia."
     }
   },
   "appPanel": {

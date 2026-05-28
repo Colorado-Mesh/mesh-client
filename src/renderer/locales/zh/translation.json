@@ -712,6 +712,16 @@
       "gpio": "通用输入输出接口",
       "rangeTest": "范围测试",
       "storeForward": "收到S&F"
+    },
+    "errors": {
+      "generic": "设备拒绝了此更改。",
+      "badRequest": "设备拒绝了此配置（无效或不支持的设置）。",
+      "notAuthorized": "无权更改设备上的此设置。",
+      "timeout": "设备没有及时响应。",
+      "noChannel": "没有可用于发送此配置的通道。",
+      "routingError": "设备错误 {{name}}（代码 {{code}}）。",
+      "transportLost": "串行或蓝牙链接丢失—正在重新连接…",
+      "mqttAddressRequired": "在启用设备端MQTT中继之前输入MQTT代理地址。"
     }
   },
   "appPanel": {

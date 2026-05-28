@@ -609,6 +609,16 @@
     "sectionSent": "{{name}} sent. Device may briefly reboot.",
     "commitFailed": "Commit failed: {{message}}",
     "failed": "Failed: {{message}}",
+    "errors": {
+      "generic": "The device rejected this change.",
+      "badRequest": "The device rejected this configuration (invalid or unsupported settings).",
+      "notAuthorized": "Not authorized to change this setting on the device.",
+      "timeout": "The device did not respond in time.",
+      "noChannel": "No channel available to send this configuration.",
+      "routingError": "Device error {{name}} (code {{code}}).",
+      "transportLost": "Serial or Bluetooth link lost — reconnecting…",
+      "mqttAddressRequired": "Enter an MQTT broker address before enabling device-side MQTT relay."
+    },
     "cannedMessagesApplied": "Canned Messages applied.",
     "rtttlSaved": "RTTTL ringtone saved.",
     "title": "Module Configuration",

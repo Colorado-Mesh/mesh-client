@@ -712,6 +712,16 @@
       "gpio": "GPIO",
       "rangeTest": "Prova di portata",
       "storeForward": "Ricevuto S&F"
+    },
+    "errors": {
+      "generic": "Il dispositivo ha rifiutato questa modifica.",
+      "badRequest": "Il dispositivo ha rifiutato questa configurazione (impostazioni non valide o non supportate).",
+      "notAuthorized": "Non autorizzato a modificare questa impostazione sul dispositivo.",
+      "timeout": "Il dispositivo non rispose.",
+      "noChannel": "Nessun canale disponibile per inviare questa configurazione.",
+      "routingError": "Errore del dispositivo {{name}} (codice {{code}}).",
+      "transportLost": "Collegamento seriale o Bluetooth perso — riconnessione in corso...",
+      "mqttAddressRequired": "Immettere un indirizzo del broker MQTT prima di abilitare il relè MQTT lato dispositivo."
     }
   },
   "appPanel": {

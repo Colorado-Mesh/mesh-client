@@ -324,10 +324,14 @@ export async function createConnection(
   return new MeshDevice(transport as any);
 }
 
-function getSerialPortFromMeshTransport(transport: unknown): SerialPort | null {
-  const candidate = transport as { port?: SerialPort };
+/** Resolve the underlying Web Serial port from Meshtastic transport wrappers. */
+export function getSerialPortFromMeshTransport(transport: unknown): SerialPort | null {
+  const candidate = transport as { port?: SerialPort; connection?: SerialPort };
   if (candidate?.port && typeof candidate.port.close === 'function') {
     return candidate.port;
+  }
+  if (candidate?.connection && typeof candidate.connection.close === 'function') {
+    return candidate.connection;
   }
   return null;
 }

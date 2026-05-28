@@ -712,6 +712,16 @@
       "gpio": "GPIO",
       "rangeTest": "Tes jangkauan",
       "storeForward": "Menerima S&F"
+    },
+    "errors": {
+      "generic": "Perangkat menolak perubahan ini.",
+      "badRequest": "Perangkat menolak konfigurasi ini (pengaturan tidak valid atau tidak didukung).",
+      "notAuthorized": "Tidak diizinkan untuk mengubah pengaturan ini di perangkat.",
+      "timeout": "Perangkat tidak merespons tepat waktu.",
+      "noChannel": "Tidak ada saluran yang tersedia untuk mengirim konfigurasi ini.",
+      "routingError": "Kesalahan perangkat {{name}} (kode {{code}}).",
+      "transportLost": "Tautan serial atau Bluetooth hilang — menghubungkan kembali…",
+      "mqttAddressRequired": "Masukkan alamat broker MQTT sebelum mengaktifkan relai MQTT sisi perangkat."
     }
   },
   "appPanel": {

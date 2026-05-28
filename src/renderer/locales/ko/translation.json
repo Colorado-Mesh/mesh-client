@@ -712,6 +712,16 @@
       "gpio": "GPIO",
       "rangeTest": "범위 테스트",
       "storeForward": "S&F를 받았습니다"
+    },
+    "errors": {
+      "generic": "장치가 이 변경을 거부했습니다.",
+      "badRequest": "장치가 이 구성을 거부했습니다 (유효하지 않거나 지원되지 않는 설정).",
+      "notAuthorized": "장치에서 이 설정을 변경할 수 있는 권한이 없습니다.",
+      "timeout": "장치가 제시간에 응답하지 않았습니다.",
+      "noChannel": "이 구성을 전송할 수 있는 채널이 없습니다.",
+      "routingError": "장치 오류 {{name}} (코드 {{code}}).",
+      "transportLost": "시리얼 또는 블루투스 링크 분실 — 다시 연결 중...",
+      "mqttAddressRequired": "장치 측 MQTT 릴레이를 활성화하기 전에 MQTT 브로커 주소를 입력하십시오."
     }
   },
   "appPanel": {

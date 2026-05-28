@@ -2,6 +2,7 @@ import type { MeshDevice } from '@meshtastic/core';
 
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { ConnectionType } from '../types';
+import { attachMeshtasticTransportLossWatch } from './meshtasticTransportLossDetection';
 
 /**
  * Transport-level side effects not yet modeled as `DomainEvent`s (Noble disconnect,
@@ -11,16 +12,20 @@ export function pushMeshtasticTransportSideEffectUnsubs(
   device: MeshDevice,
   type: ConnectionType,
   push: (unsub: () => void) => void,
-  onNobleDisconnect: () => void,
+  onTransportLost: () => void,
 ): void {
   if (type === 'ble') {
     push(
       window.electronAPI.onNobleBleDisconnected((sessionId) => {
         if (sessionId !== 'meshtastic') return;
         console.warn('[meshtasticLegacyDeviceEvents] Noble BLE disconnected');
-        onNobleDisconnect();
+        onTransportLost();
       }),
     );
+  }
+
+  if (type === 'serial' || type === 'ble') {
+    push(attachMeshtasticTransportLossWatch(device, type, onTransportLost));
   }
 
   if (type === 'serial' || type === 'ble') {
