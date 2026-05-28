@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildMeshtasticNodeMapFromDbRows,
+  dedupeMeshtasticHydrationOrphanSends,
   mergeMeshtasticDbHydrationWithLive,
   meshtasticLoosePersistenceMatchKey,
 } from './meshtasticDbCacheHydration';
@@ -60,6 +61,18 @@ describe('buildMeshtasticNodeMapFromDbRows', () => {
     ]);
     expect(map.has(0xabc123)).toBe(false);
     expect(map.has(42)).toBe(true);
+  });
+});
+
+describe('dedupeMeshtasticHydrationOrphanSends', () => {
+  it('drops stale sending row when acked twin exists for same outbound text', () => {
+    const rows = [
+      msg({ payload: 'test', timestamp: 1000, packetId: 111, status: 'sending' }),
+      msg({ payload: 'test', timestamp: 1005, packetId: 222, status: 'acked' }),
+    ];
+    const deduped = dedupeMeshtasticHydrationOrphanSends(rows);
+    expect(deduped).toHaveLength(1);
+    expect(deduped[0]?.packetId).toBe(222);
   });
 });
 

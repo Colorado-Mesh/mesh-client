@@ -98,6 +98,34 @@ export async function loadMeshtasticNodeMapFromDb(): Promise<Map<number, MeshNod
   return buildMeshtasticNodeMapFromDbRows(savedNodes, meshcoreContacts as MeshcoreContactHopRow[]);
 }
 
+const ORPHAN_OPTIMISTIC_WINDOW_MS = 120_000;
+
+/**
+ * Drop stale optimistic SQLite rows left when RF echo persisted the real packet_id
+ * before updateMessagePacketId could rewrite the temp id (restart showed duplicates).
+ */
+export function dedupeMeshtasticHydrationOrphanSends(messages: ChatMessage[]): ChatMessage[] {
+  const dropPacketIds = new Set<number>();
+  for (const candidate of messages) {
+    if (candidate.status !== 'sending' || candidate.packetId == null || candidate.packetId === 0) {
+      continue;
+    }
+    const hasAckedTwin = messages.some(
+      (other) =>
+        other !== candidate &&
+        other.sender_id === candidate.sender_id &&
+        other.channel === candidate.channel &&
+        other.payload === candidate.payload &&
+        other.status !== 'sending' &&
+        other.packetId != null &&
+        other.packetId !== candidate.packetId &&
+        Math.abs(other.timestamp - candidate.timestamp) <= ORPHAN_OPTIMISTIC_WINDOW_MS,
+    );
+    if (hasAckedTwin) dropPacketIds.add(candidate.packetId);
+  }
+  return messages.filter((m) => m.packetId == null || !dropPacketIds.has(m.packetId));
+}
+
 export function meshtasticLoosePersistenceMatchKey(msg: ChatMessage): string {
   return [
     msg.sender_id,
@@ -140,5 +168,5 @@ export async function loadMeshtasticMessagesFromDb(): Promise<ChatMessage[]> {
     ...m,
     emoji: m.emoji != null ? sanitizeUnicodeReactionScalar(m.emoji) : undefined,
   }));
-  return sanitized.reverse();
+  return dedupeMeshtasticHydrationOrphanSends(sanitized).reverse();
 }

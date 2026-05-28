@@ -703,6 +703,19 @@ function AppContent({
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const activeConnectionView = activeFacade.connectionView;
   const activeQueueFromStore = activeFacade.queue;
+  const nowMs = Date.now();
+  const myNodeNumForQueue = activeConnectionView.state.myNodeNum;
+  const sendingWindowMs = 30_000;
+  const sendingMessagesForQueue =
+    protocol === 'meshtastic'
+      ? activeFacade.messages.filter(
+          (m) =>
+            m.status === 'sending' &&
+            nowMs - m.timestamp <= sendingWindowMs &&
+            (myNodeNumForQueue <= 0 || m.from === myNodeNumForQueue),
+        )
+      : [];
+  const hasLocalSendingMessage = sendingMessagesForQueue.length > 0;
   const handleSend = useCallback(
     (text: string, channel: number, destination?: number, replyId?: number) => {
       sendMessage(text, channel, destination, replyId != null ? String(replyId) : undefined);
@@ -1649,7 +1662,9 @@ function AppContent({
   const activeQueue =
     activeQueueFromStore ??
     (legacyQueue != null ? { free: legacyQueue.free, maxlen: legacyQueue.maxlen } : null);
-  const queueUsed = activeQueue ? activeQueue.maxlen - activeQueue.free : 0;
+  const rawQueueUsed = activeQueue ? activeQueue.maxlen - activeQueue.free : 0;
+  const queueUsed =
+    protocol === 'meshtastic' && rawQueueUsed === 1 && !hasLocalSendingMessage ? 0 : rawQueueUsed;
   const queueShowBadge = activeQueue != null;
   const queueColorClass =
     queueUsed <= 10

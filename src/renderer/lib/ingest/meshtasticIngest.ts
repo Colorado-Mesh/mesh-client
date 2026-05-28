@@ -83,6 +83,11 @@ function handleTextMessage(
   const isEcho = incoming.sender_id === myNodeNum;
 
   if (isEcho) {
+    // Outbound RF uses useSendMessage (optimistic row + updateMessagePacketId). Saving the
+    // echo here races and leaves a stale temp packet_id row in SQLite (restart duplicates).
+    if (record.status === 'sending') {
+      return;
+    }
     void window.electronAPI.db.saveMessage(incoming).catch((e: unknown) => {
       console.debug('[meshtasticIngest] saveMessage echo failed ' + errLikeToLogString(e));
     });

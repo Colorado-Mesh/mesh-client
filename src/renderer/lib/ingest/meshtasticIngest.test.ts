@@ -50,6 +50,44 @@ describe('attachMeshtasticIngest', () => {
     session.detach();
   });
 
+  it('skips saveMessage for own RF echo while outbound row is still sending', () => {
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          '42': {
+            id: '42',
+            from: 0xbbbb,
+            to: 0xffffffff,
+            payload: 'outbound',
+            channelIndex: 1,
+            timestamp: 2000,
+            status: 'sending',
+          },
+        },
+      },
+    });
+    const session = attachMeshtasticIngest(ID, {
+      getIsConfiguring: () => false,
+      getMyNodeNum: () => 0xbbbb,
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: '99',
+          from: 0xbbbb,
+          to: 0xffffffff,
+          payload: 'outbound',
+          channelIndex: 1,
+          timestamp: 2100,
+        },
+      },
+      ID,
+    );
+    expect(saveMessage).not.toHaveBeenCalled();
+    session.detach();
+  });
+
   it('upgrades mqtt duplicate to both without second saveMessage', () => {
     useMessageStore.setState({
       messages: {
