@@ -490,7 +490,10 @@
     "channelLoading": "Wczytywanie…",
     "channelLoadFailed": "Wczytywanie nieudane",
     "retryRemoteChannels": "Ponów próbę załadowania kanałów",
-    "resetNodeDbPreserveFavorites": "Zachowaj ulubione węzły na urządzeniu"
+    "resetNodeDbPreserveFavorites": "Zachowaj ulubione węzły na urządzeniu",
+    "offloadReconcileStillFull": "Zakończono odciążanie, ale radio nadal zgłasza pełne kontakty ({{count}}/350). Połącz się ponownie i spróbuj ponownie.",
+    "offloadReconcileStillNearFull": "Zakończono odciążanie, ale radio nadal zgłasza wysokie wykorzystanie kontaktu ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Odciążanie zakończone, ale odświeżanie kontaktu nie powiodło się. Ponownie połącz i odśwież kontakty."
   },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",

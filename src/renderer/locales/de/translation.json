@@ -490,7 +490,10 @@
     "channelLoading": "Lädt…",
     "channelLoadFailed": "Laden fehlgeschlagen",
     "retryRemoteChannels": "Kanäle erneut laden",
-    "resetNodeDbPreserveFavorites": "Bevorzugte Knoten auf dem Gerät beibehalten"
+    "resetNodeDbPreserveFavorites": "Bevorzugte Knoten auf dem Gerät beibehalten",
+    "offloadReconcileStillFull": "Entladen abgeschlossen, aber Radio meldet immer noch vollständige Kontakte ({{count}}/350). Erneut verbinden und erneut versuchen.",
+    "offloadReconcileStillNearFull": "Entladen abgeschlossen, aber Funk meldet immer noch eine hohe Kontaktnutzung ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Entladen abgeschlossen, aber Kontaktaktualisierung fehlgeschlagen. Kontakte erneut verbinden und aktualisieren."
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",

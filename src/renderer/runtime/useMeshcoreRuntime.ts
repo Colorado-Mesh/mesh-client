@@ -1363,6 +1363,14 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshCore] initConn getContacts ${getContactsMs}ms (total ${Math.round(performance.now() - initConnPerfStart)}ms)`,
       );
+      // Reconcile radio truth: clear stale flags before re-marking contacts seen on-device.
+      try {
+        await window.electronAPI.db.markAllMeshcoreContactsOffRadio();
+      } catch (e) {
+        console.warn(
+          '[useMeshCore] initConn markAllMeshcoreContactsOffRadio failed ' + errLikeToLogString(e),
+        );
+      }
       const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
       setMeshcoreContactsForTelemetry(contacts);
       const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
@@ -2239,6 +2247,29 @@ export function useMeshcoreRuntime() {
         .join('');
       pubKeyPrefixMapRef.current.set(prefix, myId);
     }
+  }, []);
+
+  const offloadContactsFromRadio = useCallback(async (): Promise<number> => {
+    const conn = connRef.current;
+    if (!conn) {
+      throw new Error('Not connected to radio');
+    }
+    const myId = myNodeNumRef.current;
+    const raw = await conn.getContacts();
+    let removed = 0;
+    for (const c of raw) {
+      const id = pubkeyToNodeId(c.publicKey);
+      if (id === myId) continue;
+      try {
+        await conn.removeContact(c.publicKey);
+        removed += 1;
+      } catch (e: unknown) {
+        console.warn(
+          '[useMeshCore] offloadContactsFromRadio removeContact error ' + errLikeToLogString(e),
+        );
+      }
+    }
+    return removed;
   }, []);
 
   const setOwner = useCallback(
@@ -4067,6 +4098,7 @@ export function useMeshcoreRuntime() {
       deleteNode,
       clearAllRepeaters,
       clearAllMeshcoreContacts,
+      offloadContactsFromRadio,
       setOwner,
       traceRoute,
       meshcoreCanPingTrace,
@@ -4196,6 +4228,7 @@ export function useMeshcoreRuntime() {
       deleteNode,
       clearAllRepeaters,
       clearAllMeshcoreContacts,
+      offloadContactsFromRadio,
       setOwner,
       traceRoute,
       meshcoreCanPingTrace,

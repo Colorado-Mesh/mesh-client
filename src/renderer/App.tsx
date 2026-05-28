@@ -2141,6 +2141,11 @@ function AppContent({
                                 ? meshcorePanelActions.sendAdvert
                                 : undefined
                             }
+                            onOffloadContactsFromRadio={
+                              capabilities.hasContactImportExport
+                                ? meshcorePanelActions.offloadContactsFromRadio
+                                : undefined
+                            }
                             meshcoreRadioOperational={isOperational}
                             onShowOnMap={handleShowOnMap}
                           />
@@ -2326,6 +2331,16 @@ function AppContent({
                               }
                               onSyncClock={
                                 protocol === 'meshcore' ? meshcorePanelActions.syncClock : undefined
+                              }
+                              onRefreshContacts={
+                                protocol === 'meshcore'
+                                  ? meshcorePanelActions.refreshContacts
+                                  : undefined
+                              }
+                              onOffloadContactsFromRadio={
+                                protocol === 'meshcore'
+                                  ? meshcorePanelActions.offloadContactsFromRadio
+                                  : undefined
                               }
                             />
                           </Suspense>

@@ -490,7 +490,10 @@
     "channelLoading": "로드 중…",
     "channelLoadFailed": "불러오기 실패",
     "retryRemoteChannels": "채널 불러오기 재시도",
-    "resetNodeDbPreserveFavorites": "장치에 즐겨찾는 노드 유지"
+    "resetNodeDbPreserveFavorites": "장치에 즐겨찾는 노드 유지",
+    "offloadReconcileStillFull": "오프로드가 완료되었지만 라디오는 여전히 가득 찬 연락처({{count}}/350)를 보고합니다. 다시 연결하고 다시 시도하세요.",
+    "offloadReconcileStillNearFull": "오프로드가 완료되었지만 라디오는 여전히 높은 연락처 사용량({{count}}/350)을 보고합니다.",
+    "offloadReconcileRefreshFailed": "오프로드가 완료되었지만 연락처 새로 고침에 실패했습니다. 연락처를 다시 연결하고 새로 고칩니다."
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",

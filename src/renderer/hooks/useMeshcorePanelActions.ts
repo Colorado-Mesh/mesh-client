@@ -33,6 +33,7 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       setRadioParams: runtime.setRadioParams,
       refreshMeshcoreAutoaddFromDevice: runtime.refreshMeshcoreAutoaddFromDevice,
       clearAllMeshcoreContacts: runtime.clearAllMeshcoreContacts,
+      offloadContactsFromRadio: runtime.offloadContactsFromRadio,
       clearAllRepeaters: runtime.clearAllRepeaters,
       requestRepeaterStatus: runtime.requestRepeaterStatus,
       requestNeighbors: runtime.requestNeighbors,

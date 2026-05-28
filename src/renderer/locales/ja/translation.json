@@ -490,7 +490,10 @@
     "channelLoading": "読み込み中…",
     "channelLoadFailed": "読み込み失敗",
     "retryRemoteChannels": "チャネルの読み込みを再試行",
-    "resetNodeDbPreserveFavorites": "デバイス上のお気に入りのノードを保持する"
+    "resetNodeDbPreserveFavorites": "デバイス上のお気に入りのノードを保持する",
+    "offloadReconcileStillFull": "オフロードが完了しましたが、無線はまだ満杯の連絡先を報告しています（{{count}}/350）。再接続して再試行してください。",
+    "offloadReconcileStillNearFull": "オフロードは完了しましたが、無線は連絡先の使用率が高いと報告しています（{{count}}/350）。",
+    "offloadReconcileRefreshFailed": "オフロードが完了しましたが、連絡先の更新に失敗しました。連絡先を再接続して更新します。"
   },
   "securityPanel": {
     "keyRegenRequested": "キーの再生成が要求されました。デバイスは新しいキーを生成します。",

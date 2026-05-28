@@ -490,7 +490,10 @@
     "channelLoading": "加载中…",
     "channelLoadFailed": "加载失败",
     "retryRemoteChannels": "重试加载频道",
-    "resetNodeDbPreserveFavorites": "保留设备上的常用节点"
+    "resetNodeDbPreserveFavorites": "保留设备上的常用节点",
+    "offloadReconcileStillFull": "卸载已完成，但无线电仍报告联系人已满（{{count}}/350）。请重新连接并重试。",
+    "offloadReconcileStillNearFull": "卸载已完成，但无线电仍报告联系人使用率较高（{{count}}/350）。",
+    "offloadReconcileRefreshFailed": "卸载已完成，但联系人刷新失败。重新连接并刷新联系人。"
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",

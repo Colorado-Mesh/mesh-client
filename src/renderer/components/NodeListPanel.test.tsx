@@ -49,6 +49,33 @@ const { addToastMock } = vi.hoisted(() => ({
   addToastMock: vi.fn(),
 }));
 
+const { meshcoreContactCapacityState, offloadAndReconcileMock, refreshCountMock } = vi.hoisted(
+  () => ({
+    meshcoreContactCapacityState: {
+      contactCount: null as number | null,
+      loading: false,
+      summary: {
+        count: null as number | null,
+        level: 'normal',
+        isWarning: false,
+        isCritical: false,
+      },
+    },
+    offloadAndReconcileMock: vi.fn(),
+    refreshCountMock: vi.fn(),
+  }),
+);
+
+vi.mock('../hooks/useMeshcoreContactCapacity', () => ({
+  useMeshcoreContactCapacity: () => ({
+    contactCount: meshcoreContactCapacityState.contactCount,
+    loading: meshcoreContactCapacityState.loading,
+    summary: meshcoreContactCapacityState.summary,
+    offloadAndReconcile: offloadAndReconcileMock,
+    refreshCount: refreshCountMock,
+  }),
+}));
+
 vi.mock('./Toast', () => ({
   useToast: () => ({
     addToast: addToastMock,
@@ -63,6 +90,19 @@ const defaultFilter = {
 };
 
 describe('NodeListPanel accessibility', () => {
+  beforeEach(() => {
+    meshcoreContactCapacityState.contactCount = null;
+    meshcoreContactCapacityState.loading = false;
+    meshcoreContactCapacityState.summary = {
+      count: null,
+      level: 'normal',
+      isWarning: false,
+      isCritical: false,
+    };
+    offloadAndReconcileMock.mockReset();
+    refreshCountMock.mockReset();
+  });
+
   it('has no axe violations with empty nodes', async () => {
     const { container } = render(
       <NodeListPanel
@@ -282,6 +322,58 @@ describe('NodeListPanel import contacts', () => {
     const btn = screen.getByRole('button', { name: 'Refresh contacts from radio' });
     await user.click(btn);
     expect(onRefreshContacts).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows meshcore capacity warning and offload action when near full', () => {
+    meshcoreContactCapacityState.contactCount = 349;
+    meshcoreContactCapacityState.summary = {
+      count: 349,
+      level: 'critical',
+      isWarning: true,
+      isCritical: true,
+    };
+    render(
+      <NodeListPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+      />,
+    );
+    expect(screen.getByText('Radio near capacity: 349/350')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Offload' })).toBeInTheDocument();
+  });
+
+  it('offload action reconciles via provided refresh callback', async () => {
+    const user = userEvent.setup();
+    const onRefreshContacts = vi.fn().mockResolvedValue(undefined);
+    meshcoreContactCapacityState.contactCount = 349;
+    meshcoreContactCapacityState.summary = {
+      count: 349,
+      level: 'critical',
+      isWarning: true,
+      isCritical: true,
+    };
+    offloadAndReconcileMock.mockResolvedValue({
+      offloadedCount: 12,
+      reconciledCount: 8,
+      refreshFailed: false,
+    });
+    render(
+      <NodeListPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+        onRefreshContacts={onRefreshContacts}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Offload' }));
+    expect(offloadAndReconcileMock).toHaveBeenCalledWith(onRefreshContacts, undefined);
   });
 
   it('renders full public key under name when meshcoreShowPublicKeys and map entry exist', () => {

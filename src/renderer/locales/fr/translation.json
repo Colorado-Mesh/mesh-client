@@ -490,7 +490,10 @@
     "channelLoading": "Chargement…",
     "channelLoadFailed": "Échec du chargement",
     "retryRemoteChannels": "Réessayer le chargement des canaux",
-    "resetNodeDbPreserveFavorites": "Préserver les nœuds favoris sur l'appareil"
+    "resetNodeDbPreserveFavorites": "Préserver les nœuds favoris sur l'appareil",
+    "offloadReconcileStillFull": "Le déchargement est terminé, mais la radio signale toujours des contacts complets ({{count}}/350). Reconnectez-vous et réessayez.",
+    "offloadReconcileStillNearFull": "Le déchargement est terminé, mais la radio signale toujours une utilisation élevée des contacts ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Le déchargement est terminé, mais l'actualisation du contact a échoué. Reconnectez et actualisez les contacts."
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",

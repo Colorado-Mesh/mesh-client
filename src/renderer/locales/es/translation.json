@@ -490,7 +490,10 @@
     "channelLoading": "Cargando…",
     "channelLoadFailed": "Fallo al cargar",
     "retryRemoteChannels": "Reintentar cargar los canales",
-    "resetNodeDbPreserveFavorites": "Conservar los nodos favoritos en el dispositivo"
+    "resetNodeDbPreserveFavorites": "Conservar los nodos favoritos en el dispositivo",
+    "offloadReconcileStillFull": "Descarga completada, pero la radio aún informa de contactos completos ({{count}}/350). Vuelve a conectarte y vuelve a intentarlo.",
+    "offloadReconcileStillNearFull": "Descarga completada, pero la radio todavía informa de un alto uso de contactos ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Descarga completada, pero ha fallado la actualización del contacto. Vuelva a conectar y actualice los contactos."
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneración de claves solicitada. El dispositivo generará nuevas claves.",
