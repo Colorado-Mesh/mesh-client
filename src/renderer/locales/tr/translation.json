@@ -490,7 +490,10 @@
     "channelLoading": "Yükleniyor…",
     "channelLoadFailed": "Yükleme başarısız",
     "retryRemoteChannels": "Kanalları yeniden yüklemeyi deneyin",
-    "resetNodeDbPreserveFavorites": "Cihazdaki favori düğümleri koru"
+    "resetNodeDbPreserveFavorites": "Cihazdaki favori düğümleri koru",
+    "offloadReconcileStillFull": "Boşaltma tamamlandı, ancak telsiz hala tam temaslıları bildiriyor ({{count}}/350). Yeniden bağlanın ve yeniden deneyin.",
+    "offloadReconcileStillNearFull": "Boşaltma tamamlandı, ancak telsiz hala yüksek temas kullanımı bildiriyor ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Boşaltma tamamlandı, ancak kişi yenileme başarısız oldu. Kişileri yeniden bağlayın ve yenileyin."
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",

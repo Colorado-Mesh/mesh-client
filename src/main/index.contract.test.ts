@@ -69,6 +69,13 @@ describe('Meshtastic message DB IPC (source contract)', () => {
 });
 
 describe('MeshCore DB IPC (source contract)', () => {
+  it('registers updateMeshcoreMessageSender with validated sender id and name', () => {
+    expect(INDEX_SOURCE).toContain("'db:updateMeshcoreMessageSender'");
+    expect(INDEX_SOURCE).toContain('db:updateMeshcoreMessageSender: invalid senderId');
+    expect(INDEX_SOURCE).toMatch(/sender_name = @sender_name WHERE id = @id/);
+    expect(INDEX_SOURCE).toMatch(/sid < 1/);
+  });
+
   it('registers updateMeshcoreContactLastRf for repeater Status persistence', () => {
     expect(INDEX_SOURCE).toContain("'db:updateMeshcoreContactLastRf'");
     expect(INDEX_SOURCE).toContain('last_snr = ?,');

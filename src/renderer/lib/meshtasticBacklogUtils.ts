@@ -449,7 +449,6 @@ export function isDuplicateHistoryMessage(
 ): boolean {
   return messages.some(
     (m) =>
-      m.isHistory &&
       m.sender_id === candidate.sender_id &&
       m.payload === candidate.payload &&
       Math.abs((m.timestamp ?? 0) - (candidate.timestamp ?? 0)) < windowMs,

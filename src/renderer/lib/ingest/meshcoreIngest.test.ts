@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
+import {
+  MESHCORE_UNKNOWN_SENDER_STUB_ID,
+  meshcoreChatStubNodeIdFromDisplayName,
+} from '../meshcoreUtils';
 import { attachMeshcoreIngest, meshcoreIngestHandleTextMessage } from './meshcoreIngest';
 
 const ID = 'meshcore-ingest-test';
@@ -37,6 +41,82 @@ describe('attachMeshcoreIngest', () => {
     );
     expect(saveNode).not.toHaveBeenCalled();
     detach();
+  });
+
+  it('does not lump plain channel text under the shared Unknown stub id', () => {
+    const msgId = 'ch:0:1700000099';
+    upsertMessage(ID, {
+      id: msgId,
+      from: 0,
+      to: 0,
+      payload: 'Morning folks! New mesh user here',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_099,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: msgId,
+        from: 0,
+        to: 0,
+        payload: 'Morning folks! New mesh user here',
+        channelIndex: 0,
+        timestamp: 1_700_000_000_099,
+      },
+    });
+    const row = useMessageStore.getState().messages[ID]?.[msgId];
+    expect(row?.from).toBe(0);
+    expect(row?.from).not.toBe(MESHCORE_UNKNOWN_SENDER_STUB_ID);
+    expect(saveMeshcoreMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ sender_id: null, sender_name: 'Unknown' }),
+    );
+  });
+
+  it('relinks channel ingest to named sender when history has same channel+payload', () => {
+    const namedId = meshcoreChatStubNodeIdFromDisplayName('Alice');
+    const priorId = 'ch:0:1700000000';
+    const incomingId = 'ch:0:1700000001';
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          [priorId]: {
+            id: priorId,
+            from: namedId,
+            senderName: 'Alice',
+            to: 0xffffffff,
+            payload: 'T',
+            channelIndex: 0,
+            timestamp: 1_700_000_000_000,
+          },
+        },
+      },
+    });
+    upsertMessage(ID, {
+      id: incomingId,
+      from: MESHCORE_UNKNOWN_SENDER_STUB_ID,
+      senderName: 'Unknown',
+      to: 0xffffffff,
+      payload: 'T',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_001,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: incomingId,
+        from: 0,
+        to: 0,
+        payload: 'T',
+        channelIndex: 0,
+        timestamp: 1_700_000_000_001,
+      },
+    });
+    const row = useMessageStore.getState().messages[ID]?.[incomingId];
+    expect(row?.from).toBe(namedId);
+    expect(row?.senderName).toBe('Alice');
+    expect(saveMeshcoreMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ sender_id: namedId, sender_name: 'Alice', payload: 'T' }),
+    );
   });
 
   it('parses inbound tapback wire text into messageStore with emoji + replyTo', () => {

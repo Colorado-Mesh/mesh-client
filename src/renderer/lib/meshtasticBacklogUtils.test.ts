@@ -547,4 +547,23 @@ describe('meshtasticBacklogUtils', () => {
       }),
     ).toBe(false);
   });
+
+  it('dedupes Store&Forward replay against existing live message', () => {
+    const existingLive = [
+      {
+        isHistory: false,
+        sender_id: 0xabcd1234,
+        payload: 'cached',
+        timestamp: 1000,
+      },
+    ];
+    expect(
+      isDuplicateHistoryMessage(existingLive, {
+        isHistory: true,
+        sender_id: 0xabcd1234,
+        payload: 'cached',
+        timestamp: 3000,
+      }),
+    ).toBe(true);
+  });
 });

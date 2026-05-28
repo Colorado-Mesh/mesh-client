@@ -490,7 +490,10 @@
     "channelLoading": "Načítání…",
     "channelLoadFailed": "Načítání selhalo",
     "retryRemoteChannels": "Zkusit načítání kanálů znovu",
-    "resetNodeDbPreserveFavorites": "Zachovat oblíbené uzly v zařízení"
+    "resetNodeDbPreserveFavorites": "Zachovat oblíbené uzly v zařízení",
+    "offloadReconcileStillFull": "Vyložení dokončeno, ale rádio stále hlásí plné kontakty ({{count}}/350). Připojte se znovu a zkuste to znovu.",
+    "offloadReconcileStillNearFull": "Vyložení bylo dokončeno, ale rádio stále hlásí vysoké využití kontaktu ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Odstranění bylo dokončeno, ale obnovení kontaktu se nezdařilo. Znovu připojte a obnovte kontakty."
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",

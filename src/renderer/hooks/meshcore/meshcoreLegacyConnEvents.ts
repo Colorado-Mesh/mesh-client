@@ -17,7 +17,7 @@ import type {
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
-  normalizeMeshcoreIncomingText,
+  resolveMeshcoreChannelMessageSender,
 } from '../../lib/meshcoreChannelText';
 import {
   meshcoreCoerceRadioRxFrame,
@@ -26,6 +26,7 @@ import {
 import {
   MESHCORE_CHAT_CORRELATE_WINDOW_MS,
   meshcoreCorrelateOrSynthesizeChatEntry,
+  meshcoreFindRecentGrpTxtRawPacket,
 } from '../../lib/meshcoreRawPacketCorrelate';
 import {
   meshcoreRawPacketLogFromBytesFallback,
@@ -41,10 +42,10 @@ import {
   mergeHwModelOnContactUpdate,
   mergeMeshcoreChatStubNodes,
   MESHCORE_COORD_SCALE,
-  meshcoreChatStubNodeIdFromDisplayName,
   meshcoreContactToMeshNode,
   meshcoreContactTypeFromHwModel,
   meshcoreInferHopsFromOutPath,
+  meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMinimalNodeFromAdvertEvent,
   meshcoreSliceContactOutPathForTrace,
@@ -97,6 +98,7 @@ export function attachMeshcoreLegacyConnEvents(
   conn: MeshCoreConnection,
   ctx: MeshcoreLegacyConnEventsCtx,
 ): () => void {
+  const protocolOwnedEvents = new Set<string | number>([128, 7, 8, 138, 'rx']);
   const {
     meshcoreIdentityIdRef,
     connRef,
@@ -142,6 +144,7 @@ export function attachMeshcoreLegacyConnEvents(
     handler: (...args: unknown[]) => void;
   }[] = [];
   const onMeshcoreConn = (event: string | number, handler: (...args: unknown[]) => void) => {
+    if (protocolOwnedEvents.has(event)) return;
     conn.on(event, handler);
     meshcorePersistentListenerRegs.push({ event, handler });
   };
@@ -656,28 +659,39 @@ export function attachMeshcoreLegacyConnEvents(
           logTransportLineAsDevice(d.text);
           continue;
         }
-        const normalized = normalizeMeshcoreIncomingText(d.text);
-        const displayName = normalized.senderName ?? 'Unknown';
-        const stubId = meshcoreChatStubNodeIdFromDisplayName(displayName);
-        setNodes((prev) => {
-          const next = new Map(prev);
-          const existing = next.get(stubId);
-          next.set(
-            stubId,
-            existing
-              ? {
-                  ...existing,
-                  last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
-                }
-              : minimalMeshcoreChatNode(stubId, displayName, d.senderTimestamp, 'rf'),
-          );
-          return next;
+        const resolved = resolveMeshcoreChannelMessageSender({
+          rawText: d.text,
+          nodes: nodesRef.current,
         });
+        if (resolved.senderId !== 0) {
+          setNodes((prev) => {
+            const next = new Map(prev);
+            const existing = next.get(resolved.senderId);
+            next.set(
+              resolved.senderId,
+              existing
+                ? meshcoreMergeChannelDisplayNameOntoNode(
+                    {
+                      ...existing,
+                      last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
+                    },
+                    resolved.displayName,
+                  )
+                : minimalMeshcoreChatNode(
+                    resolved.senderId,
+                    resolved.displayName,
+                    d.senderTimestamp,
+                    'rf',
+                  ),
+            );
+            return next;
+          });
+        }
         addMessage({
           ...buildMeshcoreChannelIncomingMessage(messagesRef.current, {
             rawText: d.text,
-            senderId: stubId,
-            displayName,
+            senderId: resolved.senderId,
+            displayName: resolved.displayName,
             channel: d.channelIdx,
             timestamp: d.senderTimestamp * 1000,
             receivedVia: 'rf',
@@ -724,7 +738,6 @@ export function attachMeshcoreLegacyConnEvents(
       console.warn('[useMeshCore] event 7: unknown pubKeyPrefix, sender will be 0', prefix);
     }
     const sender = nodesRef.current.get(senderId);
-
     // CLI data response (txtType === 1)
     if (d.txtType === 1) {
       const service = repeaterCommandServiceRef.current;
@@ -821,60 +834,63 @@ export function attachMeshcoreLegacyConnEvents(
       logTransportLineAsDevice(d.text);
       return;
     }
-    const normalized = normalizeMeshcoreIncomingText(d.text);
-    const displayName = normalized.senderName ?? 'Unknown';
-    const stubId = meshcoreChatStubNodeIdFromDisplayName(displayName);
-    // Look up hopCount from the most recent unattributed GRP_TXT raw packet
-    // (event 136 always fires before event 8 for the same RF message).
-    const rfMatch = rawPacketsRef.current
-      .slice()
-      .reverse()
-      .find(
-        (e) =>
-          e.payloadTypeString === 'GRP_TXT' &&
-          e.fromNodeId === null &&
-          now - e.ts <= MESHCORE_CHAT_CORRELATE_WINDOW_MS,
-      );
+    const rfMatch = meshcoreFindRecentGrpTxtRawPacket(rawPacketsRef.current, now);
     const hopsAway = rfMatch?.hopCount;
-    setNodes((prev) => {
-      const next = new Map(prev);
-      const existing = next.get(stubId);
-      const updated: MeshNode = existing
-        ? {
-            ...existing,
-            last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
-            ...(hopsAway != null ? { hops_away: hopsAway } : {}),
-            source: 'rf',
-            heard_via_mqtt_only: false,
-            via_mqtt: false,
-          }
-        : {
-            ...minimalMeshcoreChatNode(stubId, displayName, d.senderTimestamp, 'rf'),
-            ...(hopsAway != null ? { hops_away: hopsAway } : {}),
-            source: 'rf',
-            heard_via_mqtt_only: false,
-            via_mqtt: false,
-          };
-      next.set(stubId, updated);
-      if (hopsAway != null) {
-        void window.electronAPI.db.saveMeshcoreContact({
-          node_id: stubId,
-          public_key: meshcoreSyntheticPlaceholderPubKeyHex(stubId),
-          adv_name: displayName,
-          contact_type: 1,
-          last_advert: d.senderTimestamp,
-          nickname: null,
-          hops_away: hopsAway,
-          on_radio: 1,
-        });
-      }
-      return next;
+    const resolved = resolveMeshcoreChannelMessageSender({
+      rawText: d.text,
+      rfFromNodeId: rfMatch?.fromNodeId ?? null,
+      rfAdvertName: rfMatch?.advertName ?? null,
+      nodes: nodesRef.current,
     });
+    if (resolved.senderId !== 0) {
+      setNodes((prev) => {
+        const next = new Map(prev);
+        const existing = next.get(resolved.senderId);
+        const updated: MeshNode = existing
+          ? meshcoreMergeChannelDisplayNameOntoNode(
+              {
+                ...existing,
+                last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
+                ...(hopsAway != null ? { hops_away: hopsAway } : {}),
+                source: 'rf',
+                heard_via_mqtt_only: false,
+                via_mqtt: false,
+              },
+              resolved.displayName,
+            )
+          : {
+              ...minimalMeshcoreChatNode(
+                resolved.senderId,
+                resolved.displayName,
+                d.senderTimestamp,
+                'rf',
+              ),
+              ...(hopsAway != null ? { hops_away: hopsAway } : {}),
+              source: 'rf',
+              heard_via_mqtt_only: false,
+              via_mqtt: false,
+            };
+        next.set(resolved.senderId, updated);
+        if (hopsAway != null) {
+          void window.electronAPI.db.saveMeshcoreContact({
+            node_id: resolved.senderId,
+            public_key: meshcoreSyntheticPlaceholderPubKeyHex(resolved.senderId),
+            adv_name: resolved.displayName,
+            contact_type: 1,
+            last_advert: d.senderTimestamp,
+            nickname: null,
+            hops_away: hopsAway,
+            on_radio: 1,
+          });
+        }
+        return next;
+      });
+    }
     addMessage(
       buildMeshcoreChannelIncomingMessage(messagesRef.current, {
         rawText: d.text,
-        senderId: stubId,
-        displayName,
+        senderId: resolved.senderId,
+        displayName: resolved.displayName,
         channel: d.channelIdx,
         timestamp: d.senderTimestamp * 1000,
         receivedVia: 'rf',
@@ -895,7 +911,7 @@ export function attachMeshcoreLegacyConnEvents(
         });
     }
     setRawPackets((prev) =>
-      meshcoreCorrelateOrSynthesizeChatEntry(prev, 'GRP_TXT', stubId, {
+      meshcoreCorrelateOrSynthesizeChatEntry(prev, 'GRP_TXT', resolved.senderId || null, {
         ts: now,
         snr: 0,
         rssi: 0,
@@ -903,7 +919,7 @@ export function attachMeshcoreLegacyConnEvents(
         routeTypeString: null,
         payloadTypeString: 'GRP_TXT',
         hopCount: 0,
-        fromNodeId: stubId,
+        fromNodeId: resolved.senderId || null,
         messageFingerprintHex: null,
         transportScopeCode: null,
         transportReturnCode: null,

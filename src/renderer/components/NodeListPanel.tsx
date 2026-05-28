@@ -8,6 +8,7 @@ import {
   meshtasticNodeIdMatchesHexQuery,
 } from '../../shared/nodeNameUtils';
 import type { LocationFilter } from '../App';
+import { useMeshcoreContactCapacity } from '../hooks/useMeshcoreContactCapacity';
 import {
   formatCoordColumns,
   latestPositionHistoryPoint,
@@ -16,6 +17,7 @@ import {
 import { getRoutingRowForNode } from '../lib/diagnostics/diagnosticRows';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
+import { MESHCORE_CONTACTS_WARNING_THRESHOLD, MESHCORE_MAX_CONTACTS } from '../lib/meshcoreUtils';
 import {
   MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS,
   MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS,
@@ -168,6 +170,7 @@ interface Props {
   meshcoreShowPublicKeys?: boolean;
   meshcorePublicKeyHexByNodeId?: Map<number, string>;
   onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
+  onOffloadContactsFromRadio?: () => Promise<number>;
 }
 
 export default function NodeListPanel({
@@ -192,6 +195,7 @@ export default function NodeListPanel({
   meshcoreShowPublicKeys = false,
   meshcorePublicKeyHexByNodeId,
   onShowOnMap,
+  onOffloadContactsFromRadio,
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
@@ -209,6 +213,12 @@ export default function NodeListPanel({
   const [importLoading, setImportLoading] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
   const [advertLoading, setAdvertLoading] = useState(false);
+  const {
+    contactCount,
+    loading: offloadLoading,
+    offloadAndReconcile,
+    summary,
+  } = useMeshcoreContactCapacity({ enabled: mode === 'meshcore' });
 
   useEffect(() => {
     if (mode === 'meshcore' && MESHCORE_INAPPLICABLE_SORT_FIELDS.includes(sortField)) {
@@ -278,6 +288,32 @@ export default function NodeListPanel({
       );
     } finally {
       setAdvertLoading(false);
+    }
+  };
+
+  const handleOffloadContacts = async () => {
+    try {
+      const { offloadedCount, reconciledCount, refreshFailed } = await offloadAndReconcile(
+        onRefreshContacts,
+        onOffloadContactsFromRadio,
+      );
+      addToast(t('radioPanel.offloadedContacts', { count: offloadedCount }), 'success');
+      if (reconciledCount !== null && reconciledCount >= MESHCORE_MAX_CONTACTS) {
+        addToast(t('radioPanel.offloadReconcileStillFull', { count: reconciledCount }), 'error');
+      } else if (
+        reconciledCount !== null &&
+        reconciledCount >= MESHCORE_CONTACTS_WARNING_THRESHOLD
+      ) {
+        addToast(
+          t('radioPanel.offloadReconcileStillNearFull', { count: reconciledCount }),
+          'error',
+        );
+      } else if (refreshFailed) {
+        addToast(t('radioPanel.offloadReconcileRefreshFailed'), 'error');
+      }
+    } catch (e) {
+      console.warn('[NodeListPanel] offload contacts failed:', e instanceof Error ? e.message : e);
+      addToast(t('radioPanel.failedOffloadContacts'), 'error');
     }
   };
 
@@ -609,6 +645,37 @@ export default function NodeListPanel({
       </div>
       {mode === 'meshcore' && (
         <p className="max-w-2xl text-xs text-gray-500">{t('nodeListPanel.meshcoreImportedHint')}</p>
+      )}
+      {mode === 'meshcore' && summary.isWarning && (
+        <div
+          className={`shrink-0 rounded-lg border px-3 py-2 text-xs ${
+            summary.isCritical
+              ? 'border-red-700 bg-red-900/30 text-red-200'
+              : 'border-yellow-700 bg-yellow-900/30 text-yellow-200'
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span>
+              {t('nodeDetailModal.radioCapacityTitle', {
+                current: contactCount ?? '?',
+                max: MESHCORE_MAX_CONTACTS,
+              })}
+            </span>
+            {contactCount !== null && contactCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  void handleOffloadContacts();
+                }}
+                disabled={offloadLoading}
+                aria-label={t('radioPanel.offloadContacts')}
+                className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50 disabled:opacity-40"
+              >
+                {offloadLoading ? '...' : t('radioPanel.offloadContacts')}
+              </button>
+            ) : null}
+          </div>
+        </div>
       )}
 
       {/* Group filter (MeshCore + Meshtastic when contactGroupsEnabled) */}

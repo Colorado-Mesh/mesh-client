@@ -490,7 +490,10 @@
     "channelLoading": "Caricamento in corso…",
     "channelLoadFailed": "Caricamento fallito",
     "retryRemoteChannels": "Riprova a caricare i canali",
-    "resetNodeDbPreserveFavorites": "Mantieni i nodi preferiti sul dispositivo"
+    "resetNodeDbPreserveFavorites": "Mantieni i nodi preferiti sul dispositivo",
+    "offloadReconcileStillFull": "Scaricamento completato ma la radio segnala ancora i contatti completi ({{count}}/350). Riconnettiti e riprova.",
+    "offloadReconcileStillNearFull": "Scaricamento completato, ma la radio segnala ancora un elevato utilizzo dei contatti ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Offload completato, ma l'aggiornamento del contatto non è riuscito. Ricollegare e aggiornare i contatti."
   },
   "securityPanel": {
     "keyRegenRequested": "Rigenerazione chiave richiesta. Il dispositivo genererà nuove chiavi.",

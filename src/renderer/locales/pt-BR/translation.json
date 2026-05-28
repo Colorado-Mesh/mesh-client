@@ -490,7 +490,10 @@
     "channelLoading": "Carregando…",
     "channelLoadFailed": "Carregamento falhou",
     "retryRemoteChannels": "Tentar carregar novamente os canais",
-    "resetNodeDbPreserveFavorites": "Preservar os nós favoritos no dispositivo"
+    "resetNodeDbPreserveFavorites": "Preservar os nós favoritos no dispositivo",
+    "offloadReconcileStillFull": "Descarregamento concluído, mas o rádio ainda relata contatos completos ({{count}}/350). Reconecte e tente novamente.",
+    "offloadReconcileStillNearFull": "Descarregamento concluído, mas o rádio ainda relata alto uso de contato ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Descarregamento concluído, mas a atualização do contato falhou. Reconecte e atualize os contatos."
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneração de chave solicitada. O dispositivo gerará novas chaves.",

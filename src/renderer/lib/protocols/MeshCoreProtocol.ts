@@ -2,6 +2,7 @@
 import type { Connection } from '@liamcottle/meshcore.js';
 
 import { meshcoreDmAckKeyU32 } from '../../hooks/meshcore/meshcoreHookPreamble';
+import { meshcoreCoerceRadioRxFrame, parseAutoaddConfigResponse } from '../meshcoreContactAutoAdd';
 import { pubkeyToNodeId } from '../meshcoreUtils';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHCORE_CAPABILITIES } from '../radio/BaseRadioProvider';
@@ -28,6 +29,9 @@ const MESHCORE_COORD_SCALE = 1e6;
 const EVENT_ADVERT = 128;
 const EVENT_DIRECT_MESSAGE = 7;
 const EVENT_CHANNEL_MESSAGE = 8;
+const EVENT_NEW_CONTACT = 138;
+const EVENT_RX = 'rx';
+const EVENT_DISCONNECTED = 'disconnected';
 
 // --- Re-exported types for components that previously imported from this module ---
 
@@ -171,15 +175,30 @@ export class MeshCoreProtocol implements Protocol {
     const onChannel = (data: unknown) => {
       this.decodeChannelMessage(data).forEach(emit);
     };
+    const onContact = (data: unknown) => {
+      this.decodeContact(data, pubKeyByNodeId, nodeIdByPrefix).forEach(emit);
+    };
+    const onRx = (data: unknown) => {
+      this.decodeRx(data).forEach(emit);
+    };
+    const onDisconnected = () => {
+      emit({ type: 'device_status', payload: { status: 'disconnected' } });
+    };
 
     bus.on(EVENT_ADVERT, onAdvert);
     bus.on(EVENT_DIRECT_MESSAGE, onDm);
     bus.on(EVENT_CHANNEL_MESSAGE, onChannel);
+    bus.on(EVENT_NEW_CONTACT, onContact);
+    bus.on(EVENT_RX, onRx);
+    bus.on(EVENT_DISCONNECTED, onDisconnected);
 
     return () => {
       bus.off(EVENT_ADVERT, onAdvert);
       bus.off(EVENT_DIRECT_MESSAGE, onDm);
       bus.off(EVENT_CHANNEL_MESSAGE, onChannel);
+      bus.off(EVENT_NEW_CONTACT, onContact);
+      bus.off(EVENT_RX, onRx);
+      bus.off(EVENT_DISCONNECTED, onDisconnected);
     };
   }
 
@@ -497,6 +516,41 @@ export class MeshCoreProtocol implements Protocol {
         },
       },
     ];
+  }
+
+  private decodeContact(
+    raw: unknown,
+    pubKeyByNodeId: Map<number, Uint8Array>,
+    nodeIdByPrefix: Map<string, number>,
+  ): DomainEvent[] {
+    const d = raw as {
+      publicKey?: Uint8Array;
+      advLat?: number;
+      advLon?: number;
+      lastAdvert?: number;
+      advName?: string;
+    };
+    if (!(d.publicKey instanceof Uint8Array) || d.publicKey.length !== 32) return [];
+    return this.decodeAdvert(
+      {
+        publicKey: d.publicKey,
+        advLat: d.advLat,
+        advLon: d.advLon,
+        lastAdvert: d.lastAdvert,
+        advName: d.advName,
+      },
+      pubKeyByNodeId,
+      nodeIdByPrefix,
+    );
+  }
+
+  private decodeRx(raw: unknown): DomainEvent[] {
+    const frame = meshcoreCoerceRadioRxFrame(raw);
+    const autoadd = frame ? parseAutoaddConfigResponse(frame) : null;
+    if (autoadd) {
+      return [{ type: 'device_autoadd', payload: autoadd }];
+    }
+    return [];
   }
 
   // --- Helpers ---

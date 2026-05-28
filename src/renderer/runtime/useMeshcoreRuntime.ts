@@ -10,9 +10,11 @@ import { withTimeout } from '../../shared/withTimeout';
 import {
   buildMeshcoreNodeMapFromDb,
   contactToDbRow,
+  findMeshcoreCrossTransportDuplicate,
   formatStructuredLogDetail,
   INITIAL_STATE,
   MANUAL_CONTACTS_KEY,
+  mapMeshcoreCrossTransportUpgrade,
   mapMeshcoreDbRowsToChatMessages,
   MAX_ENV_TELEMETRY_POINTS,
   MAX_TELEMETRY_POINTS,
@@ -41,6 +43,7 @@ import {
   messageToDbRow,
   normalizeMeshCoreError,
   type PendingDmAckEntry,
+  persistMeshcoreMessageSenderRepairs,
   serializeErrorLike,
   waitForMeshcorePath129ForNode,
 } from '../hooks/meshcore/meshcoreHookPreamble';
@@ -58,7 +61,6 @@ import type { OurPosition } from '../lib/gpsSource';
 import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
 import { syncMeshcoreNodesMapToIdentityStore } from '../lib/hydrateIdentityStoresFromDb';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
-import { runMeshcoreMountHydration } from '../lib/legacySideEffects/meshcoreDbHydration';
 import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
 import type {
@@ -83,6 +85,7 @@ import {
   buildMeshcoreChannelIncomingMessage,
   findMeshcoreDmReplyParent,
   normalizeMeshcoreIncomingText,
+  resolveMeshcoreChannelMessageSender,
 } from '../lib/meshcoreChannelText';
 import {
   buildGetAutoaddConfigFrame,
@@ -119,12 +122,12 @@ import {
   MESHCORE_MAX_CONTACTS,
   MESHCORE_RPC_SNR_RAW_TO_DB,
   meshcoreAppendRepeaterAuthHint,
-  meshcoreChatStubNodeIdFromDisplayName,
   meshcoreConnectionImpliesUsbPower,
   meshcoreContactToMeshNode,
   meshcoreIsChatStubNodeId,
   meshcoreIsSyntheticPlaceholderPubKeyHex,
   meshcoreManufacturerModelFromDeviceQuery,
+  meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreScaledAdvLatLonToDeg,
@@ -620,7 +623,9 @@ export function useMeshcoreRuntime() {
           }
         }
       }
-      const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
+      const meshcoreRows = dbMsgs as MeshcoreMessageDbRow[];
+      const mapped = mapMeshcoreDbRowsToChatMessages(meshcoreRows);
+      void persistMeshcoreMessageSenderRepairs(meshcoreRows, mapped);
       const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
       for (const n of savedNodes as MeshcoreSavedNodeHopRow[]) {
         const hopCount = n.hops ?? n.hops_away;
@@ -649,9 +654,10 @@ export function useMeshcoreRuntime() {
     [],
   );
 
-  // Load persisted MeshCore contacts + messages from DB on mount (side-effect module).
   useEffect(() => {
-    return runMeshcoreMountHydration(reloadMeshcoreNodesFromDb);
+    void reloadMeshcoreNodesFromDb({ hydrateMessages: true }).catch((e: unknown) => {
+      console.warn('[useMeshCore] initial db reload failed ' + errLikeToLogString(e));
+    });
   }, [reloadMeshcoreNodesFromDb]);
 
   // Mirror self radio battery into the home MeshNode (node list + node detail); refreshContacts rebuilds from selfInfo
@@ -707,6 +713,12 @@ export function useMeshcoreRuntime() {
         if (isDup) {
           return prev;
         }
+        const crossTransportDup = findMeshcoreCrossTransportDuplicate(prev, msg);
+        if (crossTransportDup) {
+          const { messages: next, matched } = mapMeshcoreCrossTransportUpgrade(prev, msg);
+          if (matched) return next;
+          return prev;
+        }
         inserted = true;
         return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
       });
@@ -731,30 +743,37 @@ export function useMeshcoreRuntime() {
       if (isMeshcoreTransportStatusChatLine(m.text)) {
         return;
       }
-      let resolvedId =
-        m.senderNodeId != null && Number.isFinite(m.senderNodeId) ? m.senderNodeId >>> 0 : 0;
       const ts = m.timestamp ?? Date.now();
       const tsSec = Math.floor(ts / 1000);
-      const displayName =
-        m.senderName ?? (resolvedId ? `Node-${resolvedId.toString(16).toUpperCase()}` : 'Unknown');
-      if (resolvedId === 0) {
-        resolvedId = meshcoreChatStubNodeIdFromDisplayName(displayName);
-      }
-      setNodes((prev) => {
-        const next = new Map(prev);
-        const existing = next.get(resolvedId);
-        const merged: MeshNode = existing
-          ? {
-              ...existing,
-              long_name: m.senderName ?? existing.long_name,
-              short_name: '',
-              last_heard: Math.max(existing.last_heard ?? 0, tsSec),
-              heard_via_mqtt: true,
-            }
-          : minimalMeshcoreChatNode(resolvedId, displayName, tsSec, 'mqtt');
-        next.set(resolvedId, merged);
-        return next;
+      const fromNodeId =
+        m.senderNodeId != null && Number.isFinite(m.senderNodeId) ? m.senderNodeId >>> 0 : 0;
+      const resolved = resolveMeshcoreChannelMessageSender({
+        rawText: m.text,
+        fromNodeId,
+        recordSenderName: m.senderName,
+        nodes: nodesRef.current,
       });
+      const resolvedId = resolved.senderId;
+      const displayName = resolved.displayName;
+      if (resolvedId !== 0) {
+        setNodes((prev) => {
+          const next = new Map(prev);
+          const existing = next.get(resolvedId);
+          const merged: MeshNode = existing
+            ? meshcoreMergeChannelDisplayNameOntoNode(
+                {
+                  ...existing,
+                  short_name: '',
+                  last_heard: Math.max(existing.last_heard ?? 0, tsSec),
+                  heard_via_mqtt: true,
+                },
+                m.senderName ?? displayName,
+              )
+            : minimalMeshcoreChatNode(resolvedId, displayName, tsSec, 'mqtt');
+          next.set(resolvedId, merged);
+          return next;
+        });
+      }
       if (
         !meshcoreIsChatStubNodeId(resolvedId) &&
         !pubKeyMapRef.current.has(resolvedId) &&
@@ -1355,6 +1374,14 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshCore] initConn getContacts ${getContactsMs}ms (total ${Math.round(performance.now() - initConnPerfStart)}ms)`,
       );
+      // Reconcile radio truth: clear stale flags before re-marking contacts seen on-device.
+      try {
+        await window.electronAPI.db.markAllMeshcoreContactsOffRadio();
+      } catch (e) {
+        console.warn(
+          '[useMeshCore] initConn markAllMeshcoreContactsOffRadio failed ' + errLikeToLogString(e),
+        );
+      }
       const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
       setMeshcoreContactsForTelemetry(contacts);
       const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
@@ -2231,6 +2258,29 @@ export function useMeshcoreRuntime() {
         .join('');
       pubKeyPrefixMapRef.current.set(prefix, myId);
     }
+  }, []);
+
+  const offloadContactsFromRadio = useCallback(async (): Promise<number> => {
+    const conn = connRef.current;
+    if (!conn) {
+      throw new Error('Not connected to radio');
+    }
+    const myId = myNodeNumRef.current;
+    const raw = await conn.getContacts();
+    let removed = 0;
+    for (const c of raw) {
+      const id = pubkeyToNodeId(c.publicKey);
+      if (id === myId) continue;
+      try {
+        await conn.removeContact(c.publicKey);
+        removed += 1;
+      } catch (e: unknown) {
+        console.warn(
+          '[useMeshCore] offloadContactsFromRadio removeContact error ' + errLikeToLogString(e),
+        );
+      }
+    }
+    return removed;
   }, []);
 
   const setOwner = useCallback(
@@ -3981,6 +4031,7 @@ export function useMeshcoreRuntime() {
         500,
       )) as MeshcoreMessageDbRow[];
       const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
+      void persistMeshcoreMessageSenderRepairs(dbMsgs, mapped);
       setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
       setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
     } catch (e) {
@@ -4059,6 +4110,7 @@ export function useMeshcoreRuntime() {
       deleteNode,
       clearAllRepeaters,
       clearAllMeshcoreContacts,
+      offloadContactsFromRadio,
       setOwner,
       traceRoute,
       meshcoreCanPingTrace,
@@ -4188,6 +4240,7 @@ export function useMeshcoreRuntime() {
       deleteNode,
       clearAllRepeaters,
       clearAllMeshcoreContacts,
+      offloadContactsFromRadio,
       setOwner,
       traceRoute,
       meshcoreCanPingTrace,

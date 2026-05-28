@@ -15,7 +15,7 @@ import {
   setTelemetryDeviceUpdateInterval,
   upsertMeshcoreChannel,
 } from '../../stores/deviceStore';
-import { upsertMessage } from '../../stores/messageStore';
+import { renameMessageId, upsertMessage, useMessageStore } from '../../stores/messageStore';
 import {
   addTraceRoute,
   updatePosition,
@@ -49,6 +49,22 @@ class PacketRouter {
   dispatch(event: DomainEvent, identityId: IdentityId): void {
     switch (event.type) {
       case 'text_message':
+        if (event.payload.id) {
+          const byIdentity = useMessageStore.getState().messages[identityId] ?? {};
+          const optimistic = Object.values(byIdentity).find(
+            (m) =>
+              m.status === 'sending' &&
+              m.id !== event.payload.id &&
+              m.from === event.payload.from &&
+              m.to === event.payload.to &&
+              m.channelIndex === event.payload.channelIndex &&
+              m.payload === event.payload.payload &&
+              Math.abs(m.timestamp - event.payload.timestamp) <= 30_000,
+          );
+          if (optimistic) {
+            renameMessageId(identityId, optimistic.id, event.payload.id);
+          }
+        }
         // Upsert (not add) so an outbound echo carrying the same packetId-derived
         // id merges into the optimistic row written by useSendMessage instead of
         // creating a duplicate.
@@ -119,12 +135,13 @@ class PacketRouter {
       case 'telemetry_interval':
         setTelemetryDeviceUpdateInterval(identityId, event.payload.interval);
         break;
-      case 'queue_status':
+      case 'queue_status': {
         setConnection(identityId, {
           queueFree: event.payload.free,
           queueMax: event.payload.maxlen,
         });
         break;
+      }
       case 'device_log':
         appendDeviceLog(identityId, event.payload);
         break;

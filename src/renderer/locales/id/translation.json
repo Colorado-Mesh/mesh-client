@@ -490,7 +490,10 @@
     "channelLoading": "Memuat…",
     "channelLoadFailed": "Pemuatan gagal",
     "retryRemoteChannels": "Coba lagi memuat saluran",
-    "resetNodeDbPreserveFavorites": "Pertahankan node favorit di perangkat"
+    "resetNodeDbPreserveFavorites": "Pertahankan node favorit di perangkat",
+    "offloadReconcileStillFull": "Offload selesai tetapi radio masih melaporkan kontak penuh ({{count}}/350). Sambungkan kembali dan coba lagi.",
+    "offloadReconcileStillNearFull": "Offload selesai tetapi radio masih melaporkan penggunaan kontak yang tinggi ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Pembongkaran muatan selesai, tetapi penyegaran kontak gagal. Sambungkan kembali dan segarkan kontak."
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",

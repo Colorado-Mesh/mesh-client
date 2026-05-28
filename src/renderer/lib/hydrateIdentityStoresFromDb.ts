@@ -3,6 +3,7 @@ import {
   buildMeshcoreNodeMapFromDb,
   mapMeshcoreDbRowsToChatMessages,
   type MeshcoreSavedNodeHopRow,
+  persistMeshcoreMessageSenderRepairs,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { upsertMessageRecordsForIdentity } from '../stores/messageStore';
 import { upsertNodeRecordsForIdentity } from '../stores/nodeStore';
@@ -13,6 +14,7 @@ import { getMeshtasticMessageLoadLimit } from './legacySideEffects/meshtasticDbH
 import type { MeshcoreContactDbRow, MeshcoreMessageDbRow } from './meshcore/meshcoreHookTypes';
 import {
   buildMeshtasticNodeMapFromDbRows,
+  dedupeMeshtasticHydrationOrphanSends,
   loadMeshtasticNodeMapFromDb,
 } from './meshtasticDbCacheHydration';
 import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
@@ -33,10 +35,12 @@ export async function hydrateMeshtasticNodesFromDb(identityId: IdentityId): Prom
 
 export async function hydrateMeshtasticMessagesFromDb(identityId: IdentityId): Promise<void> {
   const msgs = await window.electronAPI.db.getMessages(undefined, getMeshtasticMessageLoadLimit());
-  const sanitized = msgs.map((m) => ({
-    ...m,
-    emoji: m.emoji != null ? sanitizeUnicodeReactionScalar(m.emoji) : undefined,
-  }));
+  const sanitized = dedupeMeshtasticHydrationOrphanSends(
+    msgs.map((m) => ({
+      ...m,
+      emoji: m.emoji != null ? sanitizeUnicodeReactionScalar(m.emoji) : undefined,
+    })),
+  );
   const reversed = sanitized.reverse();
   const trimmed = trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES);
   upsertMessageRecordsForIdentity(
@@ -90,7 +94,9 @@ export async function hydrateMeshcoreMessagesFromDb(identityId: IdentityId): Pro
     undefined,
     MESHCORE_DB_MESSAGE_LOAD_LIMIT,
   );
-  const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
+  const rows = dbMsgs as MeshcoreMessageDbRow[];
+  const mapped = mapMeshcoreDbRowsToChatMessages(rows);
+  void persistMeshcoreMessageSenderRepairs(rows, mapped);
   const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);
   upsertMessageRecordsForIdentity(
     identityId,

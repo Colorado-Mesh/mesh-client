@@ -167,6 +167,9 @@
   },
   "radioPanel": {
     "offloadedContacts": "Offloaded {{count}} contacts to database.",
+    "offloadReconcileStillFull": "Offload completed but radio still reports full contacts ({{count}}/350). Reconnect and retry.",
+    "offloadReconcileStillNearFull": "Offload completed but radio still reports high contact usage ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Offload completed, but contact refresh failed. Reconnect and refresh contacts.",
     "failedOffloadContacts": "Failed to offload contacts.",
     "floodAdvertSent": "Flood advert sent",
     "advertFailed": "Advert failed: {{message}}",

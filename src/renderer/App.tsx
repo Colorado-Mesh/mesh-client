@@ -34,6 +34,7 @@ import { useProtocolDbRefresh } from './hooks/useDbRefresh';
 import { useDualProtocolPanelActions } from './hooks/useDualProtocolPanelActions';
 import { useMessages } from './hooks/useMessages';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
+import { useNowMs } from './hooks/useNowMs';
 import {
   useProtocolConnect,
   useProtocolConnectionActions,
@@ -703,6 +704,26 @@ function AppContent({
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const activeConnectionView = activeFacade.connectionView;
   const activeQueueFromStore = activeFacade.queue;
+  const myNodeNumForQueue = activeConnectionView.state.myNodeNum;
+  const sendingWindowMs = 30_000;
+  const hasMeshtasticSendingRow = useMemo(
+    () =>
+      protocol === 'meshtastic' &&
+      activeFacade.messages.some(
+        (m) => m.status === 'sending' && (myNodeNumForQueue <= 0 || m.from === myNodeNumForQueue),
+      ),
+    [protocol, activeFacade.messages, myNodeNumForQueue],
+  );
+  const nowMs = useNowMs(hasMeshtasticSendingRow, 5_000);
+  const hasLocalSendingMessage = useMemo(() => {
+    if (!hasMeshtasticSendingRow || nowMs <= 0) return false;
+    return activeFacade.messages.some(
+      (m) =>
+        m.status === 'sending' &&
+        nowMs - m.timestamp <= sendingWindowMs &&
+        (myNodeNumForQueue <= 0 || m.from === myNodeNumForQueue),
+    );
+  }, [hasMeshtasticSendingRow, nowMs, activeFacade.messages, myNodeNumForQueue, sendingWindowMs]);
   const handleSend = useCallback(
     (text: string, channel: number, destination?: number, replyId?: number) => {
       sendMessage(text, channel, destination, replyId != null ? String(replyId) : undefined);
@@ -1649,7 +1670,9 @@ function AppContent({
   const activeQueue =
     activeQueueFromStore ??
     (legacyQueue != null ? { free: legacyQueue.free, maxlen: legacyQueue.maxlen } : null);
-  const queueUsed = activeQueue ? activeQueue.maxlen - activeQueue.free : 0;
+  const rawQueueUsed = activeQueue ? activeQueue.maxlen - activeQueue.free : 0;
+  const queueUsed =
+    protocol === 'meshtastic' && rawQueueUsed === 1 && !hasLocalSendingMessage ? 0 : rawQueueUsed;
   const queueShowBadge = activeQueue != null;
   const queueColorClass =
     queueUsed <= 10
@@ -2141,6 +2164,11 @@ function AppContent({
                                 ? meshcorePanelActions.sendAdvert
                                 : undefined
                             }
+                            onOffloadContactsFromRadio={
+                              capabilities.hasContactImportExport
+                                ? meshcorePanelActions.offloadContactsFromRadio
+                                : undefined
+                            }
                             meshcoreRadioOperational={isOperational}
                             onShowOnMap={handleShowOnMap}
                           />
@@ -2326,6 +2354,16 @@ function AppContent({
                               }
                               onSyncClock={
                                 protocol === 'meshcore' ? meshcorePanelActions.syncClock : undefined
+                              }
+                              onRefreshContacts={
+                                protocol === 'meshcore'
+                                  ? meshcorePanelActions.refreshContacts
+                                  : undefined
+                              }
+                              onOffloadContactsFromRadio={
+                                protocol === 'meshcore'
+                                  ? meshcorePanelActions.offloadContactsFromRadio
+                                  : undefined
                               }
                             />
                           </Suspense>
@@ -2816,18 +2854,18 @@ function AppContent({
             }
             onToggleFavorite={detailModalPanelActions.setNodeFavorited}
             remoteAdminKey={
-              selectedNode != null
-                ? activeRuntime.getRemoteAdminKeyForNode(selectedNode.node_id)
+              detailModalProtocol === 'meshtastic' && selectedNode != null
+                ? meshtasticRuntime.getRemoteAdminKeyForNode(selectedNode.node_id)
                 : undefined
             }
             onSaveRemoteAdminKey={
               detailModalProtocol === 'meshtastic' && hasLocalMeshtasticRadio
-                ? activeRuntime.setRemoteAdminKeyForNode
+                ? meshtasticRuntime.setRemoteAdminKeyForNode
                 : undefined
             }
             hasRemoteAdminKey={
-              selectedNode != null
-                ? Boolean(activeRuntime.getRemoteAdminKeyForNode(selectedNode.node_id))
+              detailModalProtocol === 'meshtastic' && selectedNode != null
+                ? Boolean(meshtasticRuntime.getRemoteAdminKeyForNode(selectedNode.node_id))
                 : false
             }
             onConfigureRemotely={

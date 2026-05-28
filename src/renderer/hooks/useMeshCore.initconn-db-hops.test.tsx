@@ -303,6 +303,7 @@ describe('useMeshCore initConn merges DB hops at first connect', () => {
       expect(result.current.state.status).toBe('configured');
     });
 
+    expect(window.electronAPI.db.markAllMeshcoreContactsOffRadio).toHaveBeenCalled();
     expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(4);
   });
 });

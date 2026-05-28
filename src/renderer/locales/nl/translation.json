@@ -490,7 +490,10 @@
     "channelLoading": "Laden…",
     "channelLoadFailed": "Laden mislukt",
     "retryRemoteChannels": "Opnieuw proberen kanalen te laden",
-    "resetNodeDbPreserveFavorites": "Favoriete knooppunten op het apparaat behouden"
+    "resetNodeDbPreserveFavorites": "Favoriete knooppunten op het apparaat behouden",
+    "offloadReconcileStillFull": "Offload voltooid, maar radio meldt nog steeds volledige contacten ({{count}}/350). Maak opnieuw verbinding en probeer het opnieuw.",
+    "offloadReconcileStillNearFull": "Offload voltooid, maar radio meldt nog steeds een hoog contactgebruik ({{count}}/350).",
+    "offloadReconcileRefreshFailed": "Offload voltooid, maar het vernieuwen van het contact is mislukt. Contacten opnieuw verbinden en vernieuwen."
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",

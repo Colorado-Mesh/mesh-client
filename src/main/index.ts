@@ -3824,18 +3824,25 @@ ipcMain.handle(
 
 /** Replace optimistic temp `packet_id` with the real mesh id from `sendText()` (tapbacks key on `reply_id`). */
 ipcMain.handle('db:updateMessagePacketId', (_event, oldPacketId: number, newPacketId: number) => {
+  const oldPid = safeNonNegativeInt(oldPacketId);
+  const newPid = safeNonNegativeInt(newPacketId);
+  if (oldPid === newPid) return;
+  const db = getDatabase();
+  const deleteByPacketId = db.prepareOnce('DELETE FROM messages WHERE packet_id = ?');
   try {
-    const oldPid = safeNonNegativeInt(oldPacketId);
-    const newPid = safeNonNegativeInt(newPacketId);
-    const db = getDatabase();
-    return db
+    const updated = db
       .prepareOnce('UPDATE messages SET packet_id = ? WHERE packet_id = ?')
       .run(newPid, oldPid);
+    if (updated.changes > 0) return;
+    // RF echo may have inserted the real packet_id before this runs; drop orphan temp row.
+    deleteByPacketId.run(oldPid);
   } catch (err) {
-    console.error(
-      '[IPC] db:updateMessagePacketId failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('UNIQUE constraint failed')) {
+      deleteByPacketId.run(oldPid);
+      return;
+    }
+    console.error('[IPC] db:updateMessagePacketId failed:', sanitizeLogMessage(msg));
     throw err;
   }
 });
@@ -4402,6 +4409,36 @@ ipcMain.handle('meshcore:openJsonFile', async () => {
     throw err;
   }
 });
+
+ipcMain.handle(
+  'db:updateMeshcoreMessageSender',
+  (_event, messageId: number, senderId: number, senderName: string) => {
+    try {
+      const id = messageId;
+      const sid = senderId;
+      if (!Number.isFinite(id) || id < 1) {
+        throw new Error('db:updateMeshcoreMessageSender: invalid messageId');
+      }
+      if (!Number.isFinite(sid) || sid < 1) {
+        throw new Error('db:updateMeshcoreMessageSender: invalid senderId');
+      }
+      const name = typeof senderName === 'string' ? senderName.trim().slice(0, 64) : '';
+      if (!name) throw new Error('db:updateMeshcoreMessageSender: senderName required');
+      const db = getDatabase();
+      return db
+        .prepareOnce(
+          'UPDATE meshcore_messages SET sender_id = @sender_id, sender_name = @sender_name WHERE id = @id',
+        )
+        .run({ id, sender_id: sid, sender_name: name });
+    } catch (err) {
+      console.error(
+        '[IPC] db:updateMeshcoreMessageSender failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  },
+);
 
 ipcMain.handle('db:updateMeshcoreMessageStatus', (_event, packetId: number, status: string) => {
   try {

@@ -15,12 +15,13 @@ import {
 } from '@/shared/meshtasticUrlEncoder';
 
 import { serializeErrorLike } from '../hooks/meshcore/meshcoreHookPreamble';
+import { useMeshcoreContactCapacity } from '../hooks/useMeshcoreContactCapacity';
 import type { OurPosition } from '../lib/gpsSource';
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
 import {
   MESHCORE_CHANNEL_INDEX_MAX,
-  MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
+  MESHCORE_CONTACTS_WARNING_THRESHOLD,
   MESHCORE_MAX_CONTACTS,
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreSelfInfoBwToDisplayKhz,
@@ -120,6 +121,8 @@ interface Props {
   onClearAllMeshcoreContacts?: () => Promise<void>;
   onSendAdvert?: () => Promise<void>;
   onSyncClock?: () => Promise<void>;
+  onRefreshContacts?: () => Promise<void>;
+  onOffloadContactsFromRadio?: () => Promise<number>;
   /** Remote admin: channel indices that failed to load from the target node. */
   remoteChannelFailedIndices?: number[];
   /** Remote admin: background fetch status for channels 1–7. */
@@ -179,45 +182,44 @@ const DISPLAY_UNITS = [
 ];
 
 /** Contact count badge with offload button for MeshCore */
-function ContactCountBadge() {
-  const [contactCount, setContactCount] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
+function ContactCountBadge({
+  onRefreshContacts,
+  onOffloadContactsFromRadio,
+}: {
+  onRefreshContacts?: () => Promise<void>;
+  onOffloadContactsFromRadio?: () => Promise<number>;
+}) {
+  const { contactCount, loading, offloadAndReconcile, summary } = useMeshcoreContactCapacity();
   const { addToast } = useToast();
   const { t } = useTranslation();
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetch = async () => {
-      try {
-        const count = await window.electronAPI.db.getMeshcoreContactCount();
-        if (!cancelled) setContactCount(count);
-      } catch {
-        // catch-no-log-ok handle gracefully - show as unknown
-        if (!cancelled) setContactCount(null);
-      }
-    };
-    void fetch();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const handleOffload = async () => {
-    setLoading(true);
     try {
-      const count = await window.electronAPI.db.offloadAllMeshcoreContacts();
-      setContactCount((prev) => (prev !== null ? 0 : prev));
-      addToast(t('radioPanel.offloadedContacts', { count }), 'success');
+      const { offloadedCount, reconciledCount, refreshFailed } = await offloadAndReconcile(
+        onRefreshContacts,
+        onOffloadContactsFromRadio,
+      );
+      addToast(t('radioPanel.offloadedContacts', { count: offloadedCount }), 'success');
+      if (reconciledCount !== null && reconciledCount >= MESHCORE_MAX_CONTACTS) {
+        addToast(t('radioPanel.offloadReconcileStillFull', { count: reconciledCount }), 'error');
+      } else if (
+        reconciledCount !== null &&
+        reconciledCount >= MESHCORE_CONTACTS_WARNING_THRESHOLD
+      ) {
+        addToast(
+          t('radioPanel.offloadReconcileStillNearFull', { count: reconciledCount }),
+          'error',
+        );
+      } else if (refreshFailed) {
+        addToast(t('radioPanel.offloadReconcileRefreshFailed'), 'error');
+      }
     } catch (e) {
       console.warn('[RadioPanel] offloadAllMeshcoreContacts error ' + errLikeToLogString(e));
       addToast(t('radioPanel.failedOffloadContacts'), 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
-  const isNearCapacity =
-    contactCount !== null && contactCount >= MESHCORE_CONTACTS_CRITICAL_THRESHOLD;
+  const isNearCapacity = summary.isCritical;
 
   return (
     <div className="flex items-center gap-2">
@@ -628,6 +630,8 @@ export default function RadioPanel({
   onClearAllMeshcoreContacts,
   onSendAdvert,
   onSyncClock,
+  onRefreshContacts,
+  onOffloadContactsFromRadio,
   remoteChannelFailedIndices,
   remoteChannelsTailStatus,
   onRetryRemoteChannelsTail,
@@ -1974,7 +1978,12 @@ export default function RadioPanel({
                 )}
               </button>
             )}
-            {capabilities?.hasCompanionContactManagementConfig && <ContactCountBadge />}
+            {capabilities?.hasCompanionContactManagementConfig && (
+              <ContactCountBadge
+                onRefreshContacts={onRefreshContacts}
+                onOffloadContactsFromRadio={onOffloadContactsFromRadio}
+              />
+            )}
           </div>
         </div>
       )}
