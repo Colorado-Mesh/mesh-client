@@ -849,6 +849,15 @@ export function useMeshcoreRuntime() {
           slicedPath.length,
         );
         const node: MeshNode = { ...base, last_heard, hops_away: hopsAway };
+        if (prevNode?.channel_utilization != null) {
+          node.channel_utilization = prevNode.channel_utilization;
+        }
+        if (prevNode?.air_util_tx != null) {
+          node.air_util_tx = prevNode.air_util_tx;
+        }
+        if (prevNode?.meshcore_local_stats != null) {
+          node.meshcore_local_stats = prevNode.meshcore_local_stats;
+        }
         const mergedHwModel = mergeHwModelOnContactUpdate(prevNode?.hw_model, node.hw_model);
         if (mergedHwModel !== node.hw_model) {
           node.hw_model = mergedHwModel;

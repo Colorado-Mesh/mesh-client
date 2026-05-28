@@ -6,9 +6,11 @@ import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
 import {
   chatMessageToMessageRecord,
+  meshNodeToNodeRecord,
   messageRecordsToChatMessages,
   messageRecordToChatMessage,
   nodeRecordsToMeshNodeMap,
+  nodeRecordToMeshNode,
 } from './storeRecordAdapters';
 import type { ChatMessage, MeshNode } from './types';
 
@@ -62,6 +64,33 @@ describe('store record adapters (merge precedence)', () => {
     expect(record.to).toBe(MESHTASTIC_BROADCAST_NODE_NUM);
     const back = messageRecordToChatMessage(record);
     expect(back.to).toBeUndefined();
+  });
+
+  it('round-trips channel utilization and air util between NodeRecord and MeshNode', () => {
+    const record: NodeRecord = {
+      nodeId: 1,
+      longName: 'Alpha',
+      channelUtilization: 42.5,
+      airUtilTx: 3.1,
+    };
+    const node = nodeRecordToMeshNode(record);
+    expect(node.channel_utilization).toBe(42.5);
+    expect(node.air_util_tx).toBe(3.1);
+    const back = meshNodeToNodeRecord({
+      ...node,
+      node_id: 1,
+      long_name: 'Alpha',
+      short_name: 'AL',
+      hw_model: 'T-Beam',
+      snr: 0,
+      rssi: 0,
+      battery: 0,
+      last_heard: 0,
+      latitude: null,
+      longitude: null,
+    });
+    expect(back.channelUtilization).toBe(42.5);
+    expect(back.airUtilTx).toBe(3.1);
   });
 
   it('nodeRecordsToMeshNodeMap merges legacy fields when spread under hook merge pattern', () => {

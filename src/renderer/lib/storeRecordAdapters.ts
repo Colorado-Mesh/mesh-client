@@ -69,6 +69,9 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     source: record.source,
     on_radio: record.onRadio,
     favorited: record.favorited,
+    voltage: record.voltage,
+    channel_utilization: record.channelUtilization,
+    air_util_tx: record.airUtilTx,
     meshcore_local_stats: record.meshcoreLocalStats,
   };
 }
@@ -109,6 +112,9 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     source: node.source,
     onRadio: node.on_radio,
     favorited: node.favorited,
+    voltage: node.voltage,
+    channelUtilization: node.channel_utilization,
+    airUtilTx: node.air_util_tx,
     meshcoreLocalStats: node.meshcore_local_stats,
   };
 }
