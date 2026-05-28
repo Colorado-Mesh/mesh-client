@@ -93,6 +93,7 @@ import {
   parseAutoaddConfigResponse,
 } from '../lib/meshcoreContactAutoAdd';
 import { queueLenFromMeshCoreCoreStatsRaw } from '../lib/meshcoreCoreStatsQueue';
+import { awaitDualNobleBleMeshtasticSettle } from '../lib/meshcoreDualNobleBleInit';
 import {
   buildMeshcoreGetNeighboursRequest,
   parseMeshcoreGetNeighboursResponse,
@@ -1211,7 +1212,12 @@ export function useMeshcoreRuntime() {
       const getContactsStart = performance.now();
       const contactsPromise = awaitUnlessMeshcoreSetupCancelled(
         setupGen,
-        withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts'),
+        (async () => {
+          if (meshcoreConnectTypeRef.current === 'ble') {
+            await awaitDualNobleBleMeshtasticSettle();
+          }
+          return withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts');
+        })(),
       );
       const channelsPromise = awaitUnlessMeshcoreSetupCancelled(
         setupGen,

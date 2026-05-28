@@ -86,6 +86,7 @@ import type {
   TelemetryPoint,
 } from '../types';
 import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticLegacyDeviceEvents';
+import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 
 const MAX_TELEMETRY_POINTS = 50;
 const BROADCAST_ADDR = 0xffffffff;
@@ -196,6 +197,7 @@ export interface MeshtasticLegacyWireSubscriptionDeps {
   rfHeardNodeIds: RefObject<Set<number>>;
   sfHistoryRequestedServersRef: RefObject<Set<number>>;
   skipLocalLoraConfigRef: RefObject<boolean>;
+  loraConfigRef: RefObject<MeshtasticLoraConfig | null>;
   unsubscribesRef: RefObject<(() => void)[]>;
   virtualNodeIdRef: RefObject<number>;
   touchLastData: () => void;
@@ -351,6 +353,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     rfHeardNodeIds,
     sfHistoryRequestedServersRef,
     skipLocalLoraConfigRef,
+    loraConfigRef,
     unsubscribesRef,
     virtualNodeIdRef,
     touchLastData,
@@ -507,9 +510,16 @@ export function attachMeshtasticLegacyWireSubscriptions(
       }
       localLoraConfigTimerRef.current = setTimeout(() => {
         localLoraConfigTimerRef.current = undefined;
-        if (skipLocalLoraConfigRef.current) return;
-        if (configureTargetNodeNumRef.current != null) return;
-        if (remoteAdminStatusRef.current === 'loading') return;
+        if (
+          !shouldFetchLocalLoraConfigAfterConfigure({
+            skipLocalLoraConfig: skipLocalLoraConfigRef.current,
+            configureTargetNodeNum: configureTargetNodeNumRef.current,
+            remoteAdminStatus: remoteAdminStatusRef.current,
+            loraConfig: loraConfigRef.current,
+          })
+        ) {
+          return;
+        }
         void deviceRef.current
           ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
           .catch((e: unknown) => {

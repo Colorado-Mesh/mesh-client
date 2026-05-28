@@ -2,6 +2,7 @@ import { Connection, SerialConnection, WebSerialConnection } from '@liamcottle/m
 
 import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
+import { MeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
 import { MeshcoreWebBluetoothConnection } from '../../meshcoreWebBluetoothConnection';
 import { parseTcpAddress } from '../../parseTcpAddress';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
@@ -193,6 +194,7 @@ class IpcNobleConnection {
 
   private readonly peripheralId: string;
   private readonly sessionId: NobleBleSessionId;
+  private readonly txEchoFilter = new MeshcoreCompanionTxEchoFilter();
   private inner: NobleIpcMeshcoreConnectionInstance | null = null;
   private cleanupFns: (() => void)[] = [];
 
@@ -204,12 +206,14 @@ class IpcNobleConnection {
   async connect(): Promise<void> {
     const runConnect = async () => {
       const { sessionId } = this;
+      const txEchoFilter = this.txEchoFilter;
 
       class NobleOverIpc extends MeshcoreConnectionBase {
         constructor(private readonly session: NobleBleSessionId) {
           super();
         }
         async sendToRadioFrame(data: Uint8Array) {
+          txEchoFilter.noteOutbound(data);
           this.emit('tx', data);
           await this.write(data);
         }
@@ -233,6 +237,7 @@ class IpcNobleConnection {
       const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
         if (sid !== sessionId) return;
         const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        if (txEchoFilter.isEcho(frame)) return;
         instance.onFrameReceived(frame);
       });
       const offDisc = window.electronAPI.onNobleBleDisconnected((sid) => {

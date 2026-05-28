@@ -396,6 +396,8 @@ export function useMeshtasticRuntime() {
   const [remoteAdminKeysByNode, setRemoteAdminKeysByNode] = useState<Record<string, string>>({});
   const remoteAdminKeysByNodeRef = useRef<Record<string, string>>({});
   const [loraConfig, setLoraConfig] = useState<MeshtasticLoraConfig | null>(null);
+  const loraConfigRef = useRef<MeshtasticLoraConfig | null>(null);
+  loraConfigRef.current = loraConfig;
 
   // ─── Additional packet type state ─────────────────────────────────
   const [remoteHardwareMessages, setRemoteHardwareMessages] = useState<
@@ -1473,6 +1475,7 @@ export function useMeshtasticRuntime() {
       rfHeardNodeIds,
       sfHistoryRequestedServersRef,
       skipLocalLoraConfigRef,
+      loraConfigRef,
       unsubscribesRef,
       virtualNodeIdRef,
       touchLastData,

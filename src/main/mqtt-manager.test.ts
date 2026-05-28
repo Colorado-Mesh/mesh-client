@@ -15,6 +15,7 @@ import {
   MQTTManager,
   parseChannelPskLine,
   parseMeshtasticMqttEncryptedTopicChannelName,
+  parseMeshtasticMqttEncryptedTopicGatewayId,
   parsePsk,
   portNumEnumToProtoName,
   prepareMqttProtobufBytes,
@@ -227,6 +228,20 @@ describe('parseMeshtasticMqttEncryptedTopicChannelName', () => {
   it('returns undefined for JSON topics', () => {
     expect(
       parseMeshtasticMqttEncryptedTopicChannelName('msh/US/CO/2/json/LongFast/!698524e8'),
+    ).toBeUndefined();
+  });
+});
+
+describe('parseMeshtasticMqttEncryptedTopicGatewayId', () => {
+  it('extracts gateway id from encrypted MQTT topic', () => {
+    expect(parseMeshtasticMqttEncryptedTopicGatewayId('msh/US/CO/2/e/LongFast/!835bb187')).toBe(
+      '!835bb187',
+    );
+  });
+
+  it('returns undefined for JSON topics', () => {
+    expect(
+      parseMeshtasticMqttEncryptedTopicGatewayId('msh/US/CO/2/json/LongFast/!698524e8'),
     ).toBeUndefined();
   });
 });
@@ -565,6 +580,16 @@ describe('tryDecryptAllKeys', () => {
       debugSpy.mock.calls.some((args: unknown[]) =>
         String(args[0]).includes('Decrypt failed for topic channel "CustomChan"'),
       ),
+    ).toBe(true);
+    expect(
+      debugSpy.mock.calls.some((args: unknown[]) => {
+        const line = String(args[0]);
+        return (
+          line.includes('from=0x44444444') &&
+          line.includes('packetId=5') &&
+          line.includes('gateway=!44444444')
+        );
+      }),
     ).toBe(true);
     debugSpy.mockRestore();
   });
