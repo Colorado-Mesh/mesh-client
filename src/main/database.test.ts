@@ -231,54 +231,54 @@ describe('saveNode UPSERT COALESCE preservation', () => {
  * Tests for saveMeshcoreContact UPSERT — ensures partial contact updates preserve existing data.
  */
 describe('saveMeshcoreContact UPSERT COALESCE preservation', () => {
-  const INDEX_SOURCE = readFileSync(join(__dirname, '../main/index.ts'), 'utf-8');
+  const DATABASE_SOURCE = readFileSync(join(__dirname, '../main/database.ts'), 'utf-8');
 
   it('uses COALESCE for adv_name to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DATABASE_SOURCE).toMatch(
       /adv_name = COALESCE\(NULLIF\(excluded\.adv_name, ''\), meshcore_contacts\.adv_name\)/,
     );
   });
 
   it('uses COALESCE for last_advert to only update when positive', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DATABASE_SOURCE).toMatch(
       /last_advert = CASE WHEN excluded\.last_advert IS NOT NULL AND excluded\.last_advert > 0/,
     );
   });
 
   it('uses COALESCE for adv_lat to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DATABASE_SOURCE).toMatch(
       /adv_lat = CASE WHEN excluded\.adv_lat IS NOT NULL AND excluded\.adv_lat != 0/,
     );
   });
 
   it('uses COALESCE for adv_lon to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DATABASE_SOURCE).toMatch(
       /adv_lon = CASE WHEN excluded\.adv_lon IS NOT NULL AND excluded\.adv_lon != 0/,
     );
   });
 
   it('uses COALESCE for last_snr to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DATABASE_SOURCE).toMatch(
       /last_snr = COALESCE\(excluded\.last_snr, meshcore_contacts\.last_snr\)/,
     );
   });
 
   it('uses COALESCE for last_rssi to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DATABASE_SOURCE).toMatch(
       /last_rssi = COALESCE\(excluded\.last_rssi, meshcore_contacts\.last_rssi\)/,
     );
   });
 
   it('uses excluded.on_radio directly to overwrite existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/on_radio = excluded\.on_radio/);
+    expect(DATABASE_SOURCE).toMatch(/on_radio = excluded\.on_radio/);
   });
 
   it('uses excluded.last_synced_from_radio directly to overwrite existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/last_synced_from_radio = excluded\.last_synced_from_radio/);
+    expect(DATABASE_SOURCE).toMatch(/last_synced_from_radio = excluded\.last_synced_from_radio/);
   });
 
   it('preserves public_key when incoming is empty or invalid', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DATABASE_SOURCE).toMatch(
       /public_key = CASE WHEN excluded\.public_key IS NOT NULL AND excluded\.public_key != '' AND LENGTH\(excluded\.public_key\) = 64 THEN excluded\.public_key ELSE meshcore_contacts\.public_key END/,
     );
   });

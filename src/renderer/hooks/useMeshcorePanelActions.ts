@@ -1,0 +1,55 @@
+import { useMemo } from 'react';
+
+import type { MeshcoreRuntime } from '../runtime/runtimeTypes';
+
+/** MeshCore panel callbacks backed by the App-mounted protocol runtime. */
+export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
+  return useMemo(
+    () => ({
+      setConfig: runtime.setConfig,
+      commitConfig: runtime.commitConfig,
+      setDeviceChannel: runtime.setDeviceChannel,
+      clearChannel: runtime.clearChannel,
+      reboot: runtime.reboot,
+      shutdown: runtime.shutdown,
+      factoryReset: runtime.factoryReset,
+      resetNodeDb: runtime.resetNodeDb,
+      sendPositionToDevice: runtime.sendPositionToDevice,
+      setOwner: runtime.setOwner,
+      traceRoute: runtime.traceRoute,
+      refreshOurPosition: runtime.refreshOurPosition,
+      sendWaypoint: runtime.sendWaypoint,
+      deleteWaypoint: runtime.deleteWaypoint,
+      requestPosition: runtime.requestPosition,
+      importContacts: runtime.importContacts,
+      refreshContacts: runtime.refreshContacts,
+      sendAdvert: runtime.sendAdvert,
+      syncClock: runtime.syncClock,
+      meshcoreSetChannel: runtime.setMeshcoreChannel,
+      meshcoreDeleteChannel: runtime.deleteMeshcoreChannel,
+      applyMeshcoreContactAutoAdd: runtime.applyMeshcoreContactAutoAdd,
+      applyMeshcoreTelemetryPrivacy: runtime.applyMeshcoreTelemetryPrivacyPolicy,
+      getPickerStyleNodeLabel: runtime.getPickerStyleNodeLabel,
+      setRadioParams: runtime.setRadioParams,
+      refreshMeshcoreAutoaddFromDevice: runtime.refreshMeshcoreAutoaddFromDevice,
+      clearAllMeshcoreContacts: runtime.clearAllMeshcoreContacts,
+      clearAllRepeaters: runtime.clearAllRepeaters,
+      requestRepeaterStatus: runtime.requestRepeaterStatus,
+      requestNeighbors: runtime.requestNeighbors,
+      requestTelemetry: runtime.requestTelemetry,
+      sendRepeaterCliCommand: runtime.sendRepeaterCliCommand,
+      clearCliHistory: runtime.clearCliHistory,
+      deleteNode: runtime.deleteNode,
+      setNodeFavorited: runtime.setNodeFavorited,
+      clearRawPackets: runtime.clearRawPackets,
+      requestRefresh: runtime.requestRefresh,
+      refreshNodesFromDb: runtime.refreshNodesFromDb,
+      refreshMessagesFromDb: runtime.refreshMessagesFromDb,
+      getFullNodeLabel: runtime.getFullNodeLabel,
+      signData: runtime.signData,
+      exportPrivateKey: runtime.exportPrivateKey,
+      importPrivateKey: runtime.importPrivateKey,
+    }),
+    [runtime],
+  );
+}

@@ -117,6 +117,18 @@ export function parseMeshtasticMqttEncryptedTopicChannelName(topic: string): str
   return channelName.length > 0 ? channelName : undefined;
 }
 
+/** Extract gateway id (`!xxxxxxxx`) from `.../2/e/{channelName}/{gatewayId}`. */
+export function parseMeshtasticMqttEncryptedTopicGatewayId(topic: string): string | undefined {
+  const marker = '/2/e/';
+  const idx = topic.indexOf(marker);
+  if (idx === -1) return undefined;
+  const rest = topic.slice(idx + marker.length);
+  const slash = rest.indexOf('/');
+  if (slash === -1) return undefined;
+  const gatewayId = rest.slice(slash + 1);
+  return gatewayId.length > 0 ? gatewayId : undefined;
+}
+
 /** Map numeric PortNum to protobuf enum name string (e.g. TEXT_MESSAGE_APP). */
 export function portNumEnumToProtoName(portnum: number): string {
   return PORT_NUM_TO_PROTO_NAME.get(portnum) ?? 'UNKNOWN_APP';
@@ -1916,9 +1928,12 @@ export class MQTTManager extends EventEmitter {
     }
     if (topic) {
       const channelName = parseMeshtasticMqttEncryptedTopicChannelName(topic) ?? 'unknown';
+      const gatewayId = parseMeshtasticMqttEncryptedTopicGatewayId(topic);
+      const fromHex = `0x${(from >>> 0).toString(16)}`;
+      const gatewaySuffix = gatewayId ? ` gateway=${sanitizeLogMessage(gatewayId)}` : '';
       this.logSampledDebug(
         `mqtt-decrypt-failed:${channelName}`,
-        `[Meshtastic MQTT] Decrypt failed for topic channel "${sanitizeLogMessage(channelName)}" (${allKeys.length} keys tried)`,
+        `[Meshtastic MQTT] Decrypt failed for topic channel "${sanitizeLogMessage(channelName)}" (${allKeys.length} keys tried) from=${sanitizeLogMessage(fromHex)} packetId=${packetId >>> 0}${gatewaySuffix}`,
       );
     }
     return null;

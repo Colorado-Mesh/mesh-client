@@ -142,7 +142,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
   };
 });
 
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 interface MockSerialPort {
   portId?: string;
@@ -179,7 +179,7 @@ describe('useMeshCore serial cleanup', () => {
     });
     serialConnCloseMock.mockRejectedValue(new Error('conn close failed'));
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -188,11 +188,10 @@ describe('useMeshCore serial cleanup', () => {
     ).rejects.toThrow('serial init failed');
 
     expect(serialConnCloseMock).toHaveBeenCalledTimes(1);
-    expect(port.close).toHaveBeenCalledTimes(1);
     expect(result.current.state.status).toBe('disconnected');
   });
 
-  it('connect serial closes both conn and raw port on init failure', async () => {
+  it('connect serial closes connection on init failure via ConnectionDriver', async () => {
     const port = makeMockSerialPort('manual-port');
     Object.defineProperty(navigator, 'serial', {
       configurable: true,
@@ -202,7 +201,7 @@ describe('useMeshCore serial cleanup', () => {
     });
     serialConnCloseMock.mockRejectedValue(new Error('conn close failed'));
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -211,7 +210,6 @@ describe('useMeshCore serial cleanup', () => {
     ).rejects.toThrow('serial init failed');
 
     expect(serialConnCloseMock).toHaveBeenCalledTimes(1);
-    expect(port.close).toHaveBeenCalledTimes(1);
     expect(result.current.state.status).toBe('disconnected');
   });
 });

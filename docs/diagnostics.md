@@ -567,7 +567,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 #### bad_route (`RoutingDiagnosticEngine.detectBadRoute()`)
 
-**Duplicate tracking:** `diagnosticsStore.packetStats` accumulates `{ total, duplicates }` per originating node. `total` is incremented on every `processNodeUpdate` call for that node; `duplicates` is incremented by `recordDuplicate()`, which is called from the MQTT dedup handler and the RF dedup path in `useDevice.ts`. The ratio `duplicates / total` is evaluated against the 55% threshold.
+**Duplicate tracking:** `diagnosticsStore.packetStats` accumulates `{ total, duplicates }` per originating node. `total` is incremented on every `processNodeUpdate` call for that node; `duplicates` is incremented by `recordDuplicate()`, which is called from the Meshtastic runtime MQTT dedup handler (`runtime/useMeshtasticRuntime.ts`). The ratio `duplicates / total` is evaluated against the 55% threshold.
 
 **Close-in over-hopping:** Uses the same haversine distance as hop_goblin but converted to miles (1 km = 0.621371 mi); threshold is 5 miles × profile multiplier. The hop threshold used here is `hopsThreshold + 2`; for Standard profile that is 4, City 5, Canyon 6.
 

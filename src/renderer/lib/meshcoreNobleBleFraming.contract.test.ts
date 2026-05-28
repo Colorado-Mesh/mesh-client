@@ -12,7 +12,9 @@
  * @see node_modules/@liamcottle/meshcore.js/src/connection/web_ble_connection.js
  */
 import { Connection, Constants, SerialConnection } from '@liamcottle/meshcore.js';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+import { MeshcoreCompanionTxEchoFilter } from './meshcoreCompanionTxEchoFilter';
 
 class CaptureSerial extends SerialConnection {
   writes: Uint8Array[] = [];
@@ -66,5 +68,29 @@ describe('MeshCore BLE (NUS) vs USB serial framing contract', () => {
     expect(first[0]).toBe(Constants.CommandCodes.DeviceQuery);
     expect(first[1]).toBe(Constants.SupportedCompanionProtocolVersion);
     expect(first[0]).not.toBe(Constants.SerialFrameTypes.Outgoing);
+  });
+});
+
+/** Mirrors IpcNobleConnection NobleOverIpc + onNobleBleFromRadio (see MeshCoreTransport.ts). */
+describe('MeshCore Noble IPC TX echo filter contract', () => {
+  it('drops inbound NUS frames that echo a recent outbound companion command', () => {
+    const filter = new MeshcoreCompanionTxEchoFilter();
+    const onFrameReceived = vi.fn();
+    const cmd = new Uint8Array([25, 0, 0]); // CMD_SEND_RAW_DATA
+
+    const sendToRadioFrame = (data: Uint8Array) => {
+      filter.noteOutbound(data);
+    };
+    const onNobleBleFromRadio = (frame: Uint8Array) => {
+      if (filter.isEcho(frame)) return;
+      onFrameReceived(frame);
+    };
+
+    sendToRadioFrame(cmd);
+    onNobleBleFromRadio(cmd);
+    expect(onFrameReceived).not.toHaveBeenCalled();
+
+    onNobleBleFromRadio(new Uint8Array([0])); // RESP_OK
+    expect(onFrameReceived).toHaveBeenCalledTimes(1);
   });
 });

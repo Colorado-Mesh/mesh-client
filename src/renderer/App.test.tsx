@@ -3,8 +3,28 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
 import App from './App';
+import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
 import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
+import { registerMeshtasticSession } from './lib/sessions/meshtasticSession';
+import { chatMessageToMessageRecord } from './lib/storeRecordAdapters';
+import type { ChatMessage } from './lib/types';
+import { setConnection, useConnectionStore } from './stores/connectionStore';
+import { useIdentityStore } from './stores/identityStore';
+import { useMessageStore } from './stores/messageStore';
+
+const MESHTASTIC_TEST_IDENTITY = 'meshtastic-app-test';
+
+function syncMeshtasticMessagesToStore(messages: ChatMessage[]): void {
+  const byId: Record<string, ReturnType<typeof chatMessageToMessageRecord>> = {};
+  for (const msg of messages) {
+    const rec = chatMessageToMessageRecord(msg);
+    byId[rec.id] = rec;
+  }
+  useMessageStore.setState((s) => ({
+    messages: { ...s.messages, [MESHTASTIC_TEST_IDENTITY]: byId },
+  }));
+}
 
 const {
   createDeviceMock,
@@ -35,6 +55,7 @@ const {
     telemetryEnabled: true,
     queueStatus: null,
     refreshNodesFromDb: vi.fn(),
+    refreshMessagesFromDb: vi.fn(),
     getNodes: vi.fn(),
     selfNodeId: 0,
     virtualNodeId: 0,
@@ -59,6 +80,43 @@ const {
     telemetryDeviceUpdateInterval: null,
     setConfig: vi.fn().mockResolvedValue(undefined),
     commitConfig: vi.fn().mockResolvedValue(undefined),
+    setDeviceChannel: vi.fn().mockResolvedValue(undefined),
+    clearChannel: vi.fn().mockResolvedValue(undefined),
+    applyChannelSet: vi.fn().mockResolvedValue(undefined),
+    reboot: vi.fn().mockResolvedValue(undefined),
+    shutdown: vi.fn().mockResolvedValue(undefined),
+    factoryReset: vi.fn().mockResolvedValue(undefined),
+    resetNodeDb: vi.fn().mockResolvedValue(undefined),
+    sendPositionToDevice: vi.fn().mockResolvedValue(undefined),
+    setOwner: vi.fn().mockResolvedValue(undefined),
+    rebootOta: vi.fn().mockResolvedValue(undefined),
+    enterDfuMode: vi.fn().mockResolvedValue(undefined),
+    factoryResetConfig: vi.fn().mockResolvedValue(undefined),
+    refreshOurPosition: vi.fn().mockResolvedValue(undefined),
+    sendWaypoint: vi.fn().mockResolvedValue(undefined),
+    deleteWaypoint: vi.fn().mockResolvedValue(undefined),
+    requestPosition: vi.fn().mockResolvedValue(undefined),
+    setModuleConfig: vi.fn().mockResolvedValue(undefined),
+    setCannedMessages: vi.fn().mockResolvedValue(undefined),
+    setRingtone: vi.fn().mockResolvedValue(undefined),
+    requestStoreForwardHistory: vi.fn().mockResolvedValue(undefined),
+    requestRefresh: vi.fn().mockResolvedValue(undefined),
+    setNodeFavorited: vi.fn().mockResolvedValue(undefined),
+    deleteNode: vi.fn().mockResolvedValue(undefined),
+    getRemoteAdminSessionStatus: vi.fn(),
+    waypoints: [],
+    ringtone: '',
+    storeForwardMessages: [],
+    rangeTestPackets: [],
+    serialMessages: [],
+    remoteHardwareMessages: [],
+    ipTunnelMessages: [],
+    telemetry: [],
+    signalTelemetry: [],
+    environmentTelemetry: [],
+    neighborInfo: new Map(),
+    getRemoteAdminKeyForNode: vi.fn(),
+    setRemoteAdminKeyForNode: vi.fn(),
   }),
   createMeshCoreMock: () => ({
     state: { status: 'disconnected', myNodeNum: 0, connectionType: null },
@@ -124,7 +182,20 @@ const {
     importPrivateKey: vi.fn().mockResolvedValue(undefined),
     exportContact: vi.fn().mockResolvedValue(undefined),
     shareContact: vi.fn().mockResolvedValue(undefined),
-    sendReaction: vi.fn().mockResolvedValue(undefined),
+    setConfig: vi.fn().mockResolvedValue(undefined),
+    commitConfig: vi.fn().mockResolvedValue(undefined),
+    setDeviceChannel: vi.fn().mockResolvedValue(undefined),
+    clearChannel: vi.fn().mockResolvedValue(undefined),
+    reboot: vi.fn().mockResolvedValue(undefined),
+    shutdown: vi.fn().mockResolvedValue(undefined),
+    factoryReset: vi.fn().mockResolvedValue(undefined),
+    resetNodeDb: vi.fn().mockResolvedValue(undefined),
+    sendPositionToDevice: vi.fn().mockResolvedValue(undefined),
+    refreshOurPosition: vi.fn().mockResolvedValue(undefined),
+    sendWaypoint: vi.fn().mockResolvedValue(undefined),
+    deleteWaypoint: vi.fn().mockResolvedValue(undefined),
+    requestPosition: vi.fn().mockResolvedValue(undefined),
+    deleteNode: vi.fn().mockResolvedValue(undefined),
     setNodeFavorited: vi.fn().mockResolvedValue(undefined),
   }),
   getStoredMeshProtocolMock: vi.fn(() => 'meshtastic'),
@@ -139,6 +210,29 @@ beforeEach(() => {
   getStoredMeshProtocolMock.mockReset();
   getStoredMeshProtocolMock.mockReturnValue('meshtastic');
   lastChatPanelProps.current = null;
+  useIdentityStore.setState({
+    identities: {
+      [MESHTASTIC_TEST_IDENTITY]: {
+        id: MESHTASTIC_TEST_IDENTITY,
+        protocol: meshtasticProtocol,
+        signature: 'meshtastic:app-test',
+        transports: [],
+        createdAt: Date.now(),
+        lastSeenAt: Date.now(),
+      },
+    },
+    activeIdentityId: MESHTASTIC_TEST_IDENTITY,
+  });
+  useMessageStore.setState({ messages: {} });
+  useConnectionStore.setState({ connections: {} });
+  registerMeshtasticSession({
+    prepareRfConnect: vi.fn().mockResolvedValue(undefined),
+    attachRfSession: vi.fn().mockResolvedValue(undefined),
+    handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
+    finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
+    connectAutomatic: vi.fn().mockResolvedValue(undefined),
+    sendChatMessage: vi.fn(),
+  });
   useDeviceMock.mockReset();
   useDeviceMock.mockImplementation(() => createDeviceMock());
   useMeshCoreMock.mockReset();
@@ -153,12 +247,12 @@ function setDocumentHidden(hidden: boolean): void {
   Object.defineProperty(document, 'hidden', { value: hidden, configurable: true });
 }
 
-vi.mock('./hooks/useDevice', () => ({
-  useDevice: () => useDeviceMock(),
+vi.mock('./runtime/useMeshtasticRuntime', () => ({
+  useMeshtasticRuntime: () => useDeviceMock(),
 }));
 
-vi.mock('./hooks/useMeshCore', () => ({
-  useMeshCore: () => useMeshCoreMock(),
+vi.mock('./runtime/useMeshcoreRuntime', () => ({
+  useMeshcoreRuntime: () => useMeshCoreMock(),
 }));
 
 vi.mock('./hooks/useTakServer', () => ({
@@ -322,6 +416,15 @@ vi.mock('../preload', () => ({
   },
 }));
 
+describe('legacy hook mount invariant', () => {
+  it('does not multiply legacy hook mounts via connection/panel wrappers', () => {
+    render(<App />);
+    // Pre-dedupe App mounted useDevice 3× (App + two connection wrappers). Allow one re-render.
+    expect(useDeviceMock.mock.calls.length).toBeLessThan(3);
+    expect(useMeshCoreMock.mock.calls.length).toBeLessThan(3);
+  });
+});
+
 describe('App accessibility', () => {
   it('does not log mount-time act warnings during render', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -404,6 +507,13 @@ describe('App accessibility', () => {
         connectionType: 'ble',
         connectionLoss: true,
       },
+    });
+    setConnection(MESHTASTIC_TEST_IDENTITY, {
+      status: 'reconnecting',
+      myNodeNum: 0x12345678,
+      connectionType: 'ble',
+      connectionLoss: true,
+      mqttStatus: 'disconnected',
     });
 
     render(<App />);
@@ -530,6 +640,7 @@ describe('App accessibility', () => {
       messages: [existingMessage],
     };
     useDeviceMock.mockReturnValue(initialDevice);
+    syncMeshtasticMessagesToStore(initialDevice.messages);
     const { rerender } = render(<App />);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
@@ -538,20 +649,22 @@ describe('App accessibility', () => {
     });
 
     setDocumentHidden(true);
+    const hiddenMessages = [
+      existingMessage,
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'hidden ping',
+        channel: 0,
+        timestamp: Date.now(),
+        status: 'acked' as const,
+      },
+    ];
     useDeviceMock.mockReturnValue({
       ...initialDevice,
-      messages: [
-        existingMessage,
-        {
-          sender_id: 2,
-          sender_name: 'Alice',
-          payload: 'hidden ping',
-          channel: 0,
-          timestamp: Date.now(),
-          status: 'acked' as const,
-        },
-      ],
+      messages: hiddenMessages,
     });
+    syncMeshtasticMessagesToStore(hiddenMessages);
     rerender(<App />);
 
     await waitFor(() => {
@@ -584,6 +697,7 @@ describe('App accessibility', () => {
       messages: [existingMessage],
     };
     useDeviceMock.mockReturnValue(initialDevice);
+    syncMeshtasticMessagesToStore(initialDevice.messages);
     const { rerender } = render(<App />);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
@@ -592,20 +706,22 @@ describe('App accessibility', () => {
     });
 
     setDocumentHidden(true);
+    const focusMessages = [
+      existingMessage,
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'focus ping',
+        channel: 0,
+        timestamp: Date.now(),
+        status: 'acked' as const,
+      },
+    ];
     useDeviceMock.mockReturnValue({
       ...initialDevice,
-      messages: [
-        existingMessage,
-        {
-          sender_id: 2,
-          sender_name: 'Alice',
-          payload: 'focus ping',
-          channel: 0,
-          timestamp: Date.now(),
-          status: 'acked' as const,
-        },
-      ],
+      messages: focusMessages,
     });
+    syncMeshtasticMessagesToStore(focusMessages);
     rerender(<App />);
 
     await waitFor(() => {

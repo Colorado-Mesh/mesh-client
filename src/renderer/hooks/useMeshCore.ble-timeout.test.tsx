@@ -6,15 +6,17 @@ vi.mock('../../shared/withTimeout', () => ({
 }));
 
 import { withTimeout } from '../../shared/withTimeout';
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 describe('useMeshCore BLE Noble IPC timeout handling', () => {
   const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   let userAgentSpy: { mockRestore: () => void } | null = null;
+  const originalProcessPlatform = process.platform;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
     userAgentSpy = vi
       .spyOn(window.navigator, 'userAgent', 'get')
       .mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
@@ -28,6 +30,10 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
   afterEach(() => {
     userAgentSpy?.mockRestore();
     userAgentSpy = null;
+    Object.defineProperty(process, 'platform', {
+      value: originalProcessPlatform,
+      configurable: true,
+    });
   });
 
   it('fails fast with user-facing timeout guidance when IPC open times out', async () => {
@@ -35,7 +41,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       new Error('MeshCore BLE IPC open timed out after 25000ms'),
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -49,7 +55,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":true,"isRetryable":true,"stage":"ipc-open","elapsedMs":\d+,"message":"MeshCore BLE IPC open timed out after 25000ms"\}/,
+        /\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed: MeshCore BLE IPC open timed out after 25000ms/,
       ),
     );
     expect(warnSpy).toHaveBeenCalledWith(
@@ -72,7 +78,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       },
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -110,7 +116,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       },
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -122,14 +128,10 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":true,"isRetryable":true,"stage":"ipc-open"/,
-      ),
+      expect.stringMatching(/\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed:/),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":2,"maxAttempts":2,"isTimeout":true,"isRetryable":true,"stage":"protocol-handshake"/,
-      ),
+      expect.stringMatching(/\[MeshCoreTransport\] Noble BLE attempt 2\/2 failed:/),
     );
   });
 
@@ -138,7 +140,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       new Error('Bluetooth adapter is not available'),
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -148,9 +150,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":false,"isRetryable":false,"stage":"unknown"/,
-      ),
+      expect.stringMatching(/\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed:/),
     );
   });
 
@@ -161,7 +161,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       ),
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -173,9 +173,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":false,"isRetryable":false,"stage":"unknown"/,
-      ),
+      expect.stringMatching(/\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed:/),
     );
   });
 
@@ -197,7 +195,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       },
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
     await expect(
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-5');
@@ -216,7 +214,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       new Error('BLE connectAsync timed out after 30000ms'),
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -230,7 +228,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":true,"isRetryable":true,"stage":"ipc-open","elapsedMs":\d+,"message":"BLE connectAsync timed out after 30000ms"\}/,
+        /\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed: BLE connectAsync timed out after 30000ms/,
       ),
     );
     expect(warnSpy).toHaveBeenCalledWith(
@@ -246,7 +244,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       code: 'BLE_CUSTOM',
       detail: 'adapter glitch',
     });
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -263,7 +261,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue(
       new Error('Connection already in progress'),
     );
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -276,7 +274,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":false,"isRetryable":true,"stage":"unknown"/,
+        /\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed: Connection already in progress/,
       ),
     );
   });
@@ -295,7 +293,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       },
     );
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
@@ -308,7 +306,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /\[useMeshCore\] connect: BLE Noble IPC attempt failed \{"attempt":1,"maxAttempts":2,"isTimeout":false,"isRetryable":true,"stage":"unknown","elapsedMs":\d+,"message":"Device is unreachable while discovering services"\}/,
+        /\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed: Device is unreachable while discovering services/,
       ),
     );
   });
@@ -316,9 +314,11 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
 describe('useMeshCore Linux BLE routing', () => {
   let userAgentSpy: { mockRestore: () => void } | null = null;
+  const originalProcessPlatform = process.platform;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
     userAgentSpy = vi
       .spyOn(window.navigator, 'userAgent', 'get')
       .mockReturnValue(
@@ -332,10 +332,14 @@ describe('useMeshCore Linux BLE routing', () => {
   afterEach(() => {
     userAgentSpy?.mockRestore();
     userAgentSpy = null;
+    Object.defineProperty(process, 'platform', {
+      value: originalProcessPlatform,
+      configurable: true,
+    });
   });
 
   it('uses Web Bluetooth path on Linux and does not call Noble IPC connect', async () => {
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {

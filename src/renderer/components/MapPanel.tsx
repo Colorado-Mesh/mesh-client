@@ -346,6 +346,7 @@ const NodeHalo = memo(
   },
   (prev, next) =>
     prev.node === next.node &&
+    prev.node.channel_utilization === next.node.channel_utilization &&
     prev.anomalyHalosEnabled === next.anomalyHalosEnabled &&
     prev.congestionHalosEnabled === next.congestionHalosEnabled &&
     prev.anomaly?.type === next.anomaly?.type &&

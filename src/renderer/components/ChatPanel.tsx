@@ -24,7 +24,6 @@ import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/n
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { useChatOutbox } from '../hooks/useChatOutbox';
-import type { RequestStoreForwardHistoryResult } from '../hooks/useDevice';
 import { useNowMs } from '../hooks/useNowMs';
 import {
   countMessageChars,
@@ -54,6 +53,7 @@ import { emojiDisplayLabel, reactionDisplayGlyph, reactionGlyphFromPicker } from
 import { truncateReplyPreviewText } from '../lib/replyPreview';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '../lib/timeConstants';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
+import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';

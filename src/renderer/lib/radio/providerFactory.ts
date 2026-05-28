@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 
+import { getProtocolRegistration } from '../protocols/protocolRegistry';
 import type { MeshProtocol } from '../types';
 import type { ProtocolCapabilities } from './BaseRadioProvider';
-import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './BaseRadioProvider';
+import { MESHTASTIC_CAPABILITIES } from './BaseRadioProvider';
 
 export type { ProtocolCapabilities };
 
@@ -12,7 +13,7 @@ export type { ProtocolCapabilities };
  */
 export function useRadioProvider(protocol: MeshProtocol): ProtocolCapabilities {
   return useMemo(
-    () => (protocol === 'meshcore' ? MESHCORE_CAPABILITIES : MESHTASTIC_CAPABILITIES),
+    () => getProtocolRegistration(protocol)?.capabilities ?? MESHTASTIC_CAPABILITIES,
     [protocol],
   );
 }

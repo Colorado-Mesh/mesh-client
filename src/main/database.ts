@@ -130,6 +130,57 @@ export function pruneMeshcoreContactsByCount(maxCount: number): number {
   return Number(result.changes);
 }
 
+export interface MeshcoreContactUpsertParams {
+  node_id: number;
+  public_key: string;
+  adv_name: string | null;
+  contact_type: number;
+  last_advert: number | null;
+  adv_lat: number | null;
+  adv_lon: number | null;
+  last_snr: number | null;
+  last_rssi: number | null;
+  nickname: string | null;
+  contact_flags: number;
+  hops_away: number | null;
+  on_radio: number | null;
+  last_synced_from_radio: string | null;
+}
+
+const MESHCORE_CONTACT_UPSERT_SQL =
+  'INSERT INTO meshcore_contacts ' +
+  '(node_id, public_key, adv_name, contact_type, last_advert, adv_lat, adv_lon, last_snr, last_rssi, favorited, nickname, contact_flags, hops_away, on_radio, last_synced_from_radio) ' +
+  'VALUES (@node_id, @public_key, @adv_name, @contact_type, @last_advert, @adv_lat, @adv_lon, @last_snr, @last_rssi, 0, @nickname, @contact_flags, @hops_away, @on_radio, @last_synced_from_radio) ' +
+  'ON CONFLICT(node_id) DO UPDATE SET ' +
+  "public_key = CASE WHEN excluded.public_key IS NOT NULL AND excluded.public_key != '' AND LENGTH(excluded.public_key) = 64 THEN excluded.public_key ELSE meshcore_contacts.public_key END, " +
+  "adv_name = COALESCE(NULLIF(excluded.adv_name, ''), meshcore_contacts.adv_name), " +
+  'contact_type = COALESCE(excluded.contact_type, meshcore_contacts.contact_type), ' +
+  'last_advert = CASE WHEN excluded.last_advert IS NOT NULL AND excluded.last_advert > 0 THEN excluded.last_advert ELSE meshcore_contacts.last_advert END, ' +
+  'adv_lat = CASE WHEN excluded.adv_lat IS NOT NULL AND excluded.adv_lat != 0 THEN excluded.adv_lat ELSE meshcore_contacts.adv_lat END, ' +
+  'adv_lon = CASE WHEN excluded.adv_lon IS NOT NULL AND excluded.adv_lon != 0 THEN excluded.adv_lon ELSE meshcore_contacts.adv_lon END, ' +
+  'last_snr = COALESCE(excluded.last_snr, meshcore_contacts.last_snr), ' +
+  'last_rssi = COALESCE(excluded.last_rssi, meshcore_contacts.last_rssi), ' +
+  'favorited = meshcore_contacts.favorited, ' +
+  'nickname = COALESCE(excluded.nickname, meshcore_contacts.nickname), ' +
+  'contact_flags = COALESCE(excluded.contact_flags, meshcore_contacts.contact_flags), ' +
+  'hops_away = CASE WHEN excluded.hops_away IS NOT NULL AND (meshcore_contacts.hops_away IS NULL OR excluded.hops_away < meshcore_contacts.hops_away) THEN excluded.hops_away ELSE meshcore_contacts.hops_away END, ' +
+  'on_radio = excluded.on_radio, ' +
+  'last_synced_from_radio = excluded.last_synced_from_radio';
+
+/** Persist many MeshCore contacts in one SQLite transaction (radio sync hot path). */
+export function saveMeshcoreContactsBatch(contacts: MeshcoreContactUpsertParams[]): number {
+  if (contacts.length === 0) return 0;
+  const d = getDatabase();
+  const stmt = d.prepareOnce(MESHCORE_CONTACT_UPSERT_SQL);
+  const run = d.transaction(() => {
+    for (const c of contacts) {
+      stmt.run(c);
+    }
+  });
+  run();
+  return contacts.length;
+}
+
 function createBaseTables(): void {
   try {
     db!.execScript(CANONICAL_CREATE_ALL_DDL);

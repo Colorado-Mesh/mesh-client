@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../hooks/useMeshCore';
+import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import {
   countMeshcoreContactsWithFlagMask,
   MESHCORE_CONTACT_FLAG_TELEM_BASE,

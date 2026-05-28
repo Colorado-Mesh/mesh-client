@@ -80,13 +80,16 @@ describe('MeshCore DB IPC (source contract)', () => {
   });
 
   it('saveMeshcoreContact uses UPSERT that preserves favorited on conflict', () => {
+    const DATABASE_SOURCE = readFileSync(join(__dirname, '../main/database.ts'), 'utf-8');
     expect(INDEX_SOURCE).toContain("'db:saveMeshcoreContact'");
-    expect(INDEX_SOURCE).toContain('ON CONFLICT(node_id) DO UPDATE SET');
-    expect(INDEX_SOURCE).toContain('favorited = meshcore_contacts.favorited');
-    expect(INDEX_SOURCE).toContain(
+    expect(INDEX_SOURCE).toContain("'db:saveMeshcoreContactsBatch'");
+    expect(INDEX_SOURCE).toContain('saveMeshcoreContactsBatch');
+    expect(DATABASE_SOURCE).toContain('ON CONFLICT(node_id) DO UPDATE SET');
+    expect(DATABASE_SOURCE).toContain('favorited = meshcore_contacts.favorited');
+    expect(DATABASE_SOURCE).toContain(
       'hops_away = CASE WHEN excluded.hops_away IS NOT NULL AND (meshcore_contacts.hops_away IS NULL OR excluded.hops_away < meshcore_contacts.hops_away) THEN excluded.hops_away ELSE meshcore_contacts.hops_away END,',
     );
-    expect(INDEX_SOURCE).not.toContain('INSERT OR REPLACE INTO meshcore_contacts');
+    expect(DATABASE_SOURCE).not.toContain('INSERT OR REPLACE INTO meshcore_contacts');
   });
 });
 

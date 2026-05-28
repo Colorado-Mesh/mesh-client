@@ -197,7 +197,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
   };
 });
 
-import { useMeshCore } from './useMeshCore';
+import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 function makeMockSerialPort() {
   return {
@@ -246,7 +246,7 @@ describe('useMeshCore initConn merges DB hops at first connect', () => {
       value: { requestPort: vi.fn().mockResolvedValue(port) },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(4);
@@ -289,7 +289,7 @@ describe('useMeshCore initConn merges DB hops at first connect', () => {
       },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(4);
@@ -336,7 +336,7 @@ describe('useMeshCore buildNodesFromContacts merges nodes-table hops when meshco
       value: { requestPort: vi.fn().mockResolvedValue(port) },
     });
 
-    const { result } = renderHook(() => useMeshCore());
+    const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
       expect(vi.mocked(window.electronAPI.db.getMeshcoreContacts)).toHaveBeenCalled();

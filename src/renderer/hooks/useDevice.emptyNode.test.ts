@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createChatStubNode, emptyNode } from './useDevice';
+import { createChatStubNode, emptyNode } from '../runtime/useMeshtasticRuntime';
 
 describe('emptyNode', () => {
   it('generates an empty long_name until identity is received from the mesh', () => {

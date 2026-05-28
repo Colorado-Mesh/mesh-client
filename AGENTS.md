@@ -24,10 +24,20 @@ Path alias `@/*` → `src/*` (see `tsconfig.json`).
 | -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers, window, GPS, updater |
 | Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                    |
-| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `stores/`, `lib/` (includes `lib/diagnostics/`, `lib/radio/`, `lib/transport/`), `workers/`                                                                       |
+| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/`, `stores/`, `lib/` (includes `lib/diagnostics/`, `lib/meshcore/`, `lib/radio/`, `lib/transport/`), `workers/`                                          |
 | Shared   | `src/shared/`   | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers                                                                                                                                                     |
 
 Entry points: `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.tsx`, `src/renderer/App.tsx`.
+
+### Renderer: hooks vs runtime vs lib
+
+| Layer        | Path                    | Role                                                                                                                                                                          |
+| ------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **runtime/** | `src/renderer/runtime/` | Protocol side effects (`useMeshtasticRuntime`, `useMeshcoreRuntime`). Mount **once** from `App.tsx` via context providers; do not remount in child components or hooks.       |
+| **hooks/**   | `src/renderer/hooks/`   | React composition: `useProtocolFacade`, store selectors (`useMessages`, `useConnectionView`), panel action bundles, feature hooks (`useChatOutbox`). No large protocol logic. |
+| **lib/**     | `src/renderer/lib/`     | Pure logic, drivers (`ConnectionDriver`), sessions, ingest, protocol types (e.g. `lib/meshcore/meshcoreHookTypes.ts`).                                                        |
+
+**App wiring:** Prefer `useProtocolFacade(protocol)` for connection state, panel actions, nodes, and messages. Use per-protocol `useProtocolConnectionActions('meshtastic' \| 'meshcore')` only when both protocol tabs need separate ConnectionPanel props.
 
 ### Dual protocol
 
@@ -101,24 +111,44 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 - **Extend:** adjust `DiagnosticRow` in `src/renderer/lib/types.ts`, add detector, wire `replaceRoutingRowsFromMap` / `replaceRfRowsForNode`; TTL defaults in `diagnosticRows.ts` (routing 24h, RF 1h).
 - **Full reference:** [docs/diagnostics.md](docs/diagnostics.md).
 
+### Renderer hook architecture (dual protocol)
+
+See **Renderer: hooks vs runtime vs lib** (layout map above) and [docs/renderer-side-effect-migration.md](docs/renderer-side-effect-migration.md) for migration status ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377)). Default rules for new UI:
+
+| Concern                                               | Use                                                                                                                                                         |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Orchestration (App tab)                               | `useProtocolFacade(protocol)` — connection, `useConnectionView`, panel bundle, nodes, messages                                                              |
+| Active protocol identity                              | `useActiveMeshIdentity(protocol)` — focused `identityId` per tab; prefer `capabilities` over `protocol ===`                                                 |
+| Dual-protocol panel bundles (App)                     | `useDualProtocolPanelActions(meshtasticRuntime, meshcoreRuntime)` — single hook site for both protocols                                                     |
+| Reads (nodes, messages, connection fields)            | Zustand stores + `useNodes` / `useMessages` / `useConnectionView` / `useConnectionStatus`                                                                   |
+| Writes (configure, send, admin, panel callbacks)      | `usePanelActions(protocol, identityId, …)` / `useProtocolFacade(protocol).panel` or `useSendMessage(identityId)`                                            |
+| Connect / disconnect / auto-connect                   | `useProtocolConnectionActions(protocol)` (`useProtocolConnect` + `useProtocolDisconnect` + `lib/sessions/*Session.ts`); driver-first via `ConnectionDriver` |
+| Wire subscriptions, MQTT IPC, reconnect, DB hydration | `useMeshtasticRuntime` / `useMeshcoreRuntime` in `runtime/` — mount **once** from `App.tsx` via context providers                                           |
+
+Do **not** remount protocol runtimes in child components. Do **not** compare `protocol === 'meshcore'` for feature gates; use `ProtocolCapabilities` / `useRadioProvider(protocol)`.
+
+Protocol SDK adapters: `src/renderer/lib/protocols/`. Connection lifecycle: `ConnectionDriver`; inbound domain events: `PacketRouter` → stores.
+
+**Identity-scoped UI stores:** `identityStore`, `nodeStore`, `messageStore`, `connectionStore` — nodes/messages keyed by `identityId`. **SQLite → UI:** `lib/hydrateIdentityStoresFromDb.ts` (coordinator: `identityHydrationCoordinator.ts`; Meshtastic node map: `meshtasticDbCacheHydration.ts`); manual refresh via `hooks/useDbRefresh.ts`. Runtimes still use legacy mount hydration (`lib/legacySideEffects/*DbHydration.ts`) for runtime-local refs until fully retired.
+
 ### First places to look
 
-- Connection issues: `useDevice.ts` / `useMeshCore.ts`
-- UI state: `stores/*`
+- Connection issues: `ConnectionDriver`, `useProtocolConnection.ts`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts`
+- UI state: `stores/*`, `useConnectionView.ts`
 - IPC: `src/main/index.ts`
 
 ### Protocol entry points
 
-- **Meshtastic:** `useDevice.ts`, `connection.ts` (`createConnection`)
-- **MeshCore:** `useMeshCore.ts`, `@liamcottle/meshcore.js`
+- **Meshtastic:** `MeshtasticProtocol.ts`, `useMeshtasticRuntime` (side effects), `connection.ts` (`createConnection`)
+- **MeshCore:** `MeshCoreProtocol.ts`, `useMeshcoreRuntime` (side effects), `@liamcottle/meshcore.js`
 
 ### Database
 
-WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-compat.ts` over `node:sqlite`. After schema changes: `pnpm run check:db-migrations`.
+WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-compat.ts` over `node:sqlite`. After schema changes: `pnpm run check:db-migrations`. **Startup maintenance:** `lib/startupDbPrune.ts` — single-flight per session from `App.tsx` (node/message retention, RF stub migration); do not re-invoke from unstable effect deps.
 
 ### BLE and serial
 
-Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-manager.ts` (macOS/Windows), Web Bluetooth IPC on Linux. Serial: `connection.ts`, `serialPortSignature.ts`. Reconnect watchdog: `useDevice.ts`.
+Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-manager.ts` (macOS/Windows), Web Bluetooth IPC on Linux. Serial: `connection.ts`, `serialPortSignature.ts`. Reconnect watchdog: `runtime/useMeshtasticRuntime.ts`.
 
 **ATT MTU / writes:** Noble `toRadio` writes in `noble-ble-manager.ts` are chunked using negotiated `peripheral.mtu` (sanitized via `src/shared/bleAttWriteLimit.ts`; values below spec min 23 are coerced—NobleMac may log `MTU updated: 20` before a full exchange). Linux Web Bluetooth uses `webbluetooth-ble-manager.ts`; when Chromium exposes `maximumWriteValueLength`, writes are chunked—there is no standard Web API for negotiated MTU ([WebBluetoothCG#383](https://github.com/WebBluetoothCG/web-bluetooth/issues/383)).
 
@@ -129,7 +159,7 @@ Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-m
 - **Channel URLs:** `src/shared/meshtasticUrlEncoder.ts` (parse/generate), `src/shared/meshtasticChannelApply.ts` (replace vs add-only apply); Radio panel UI; Meshtastic-only.
 - **S&F chat history:** `src/renderer/lib/meshtasticBacklogUtils.ts` — `CLIENT_HISTORY` on primary router heartbeat after RF configure (auto: 50-msg cap, 120 min window cap, 15 min per-server cooldown, 5 min offline gate; `storeForwardAutoFetchHistory` opt-out; manual catch-up in Chat). Protobuf decode for replayed text, `via_store_forward` on messages; do not await SDK queue for history (async replay).
 - **MQTT broker clientId:** `src/main/mqtt-broker-client-id.ts` — stable per-install IDs in `app_settings` (`meshtasticMqttClientId`, `meshcoreMqttClientId`); MeshCore LetsMesh `v1_` username unchanged as clientId.
-- **PKC remote admin (firmware 2.5+):** `meshtasticRemoteAdmin.ts` — PKI-wrapped `AdminMessage` via `MeshDevice.sendRaw()` (`pkiEncrypted: true`, channel omitted on wire); session passkeys (~300s); tab-scoped snapshot routes in `meshtasticRemoteAdminSnapshot.ts` (Channels-first LoRa load). Per-node keys: `meshtasticRemoteAdminKeyStorage.ts` (`meshtasticRemoteAdminKey:<nodeNum>` in `app_settings`; base64 / `base64:` / 64-char hex paste). Dest public key: NodeDB hex first, stored admin-key base64 fallback. `useDevice.ts`: `configureTargetNodeNum`, `remoteConfigSnapshot`, `runRemoteAdminOp` (errors → UI + toast); serialize admin reads with S&F (`remoteAdminReadsActiveCount` in `meshtasticBacklogUtils.ts`). **Requires connected local radio** (MQTT-only cannot admin). UI: `ConfigureNodeSelector.tsx`; NodeDetailModal admin key + **Configure node remotely**; SecurityPanel **Copy** public key. Persist last target in `meshtasticConfigureTargetNodeNum`. Gate with `hasRemoteAdmin`. Legacy admin channel (PSK + `"admin"`) out of scope.
+- **PKC remote admin (firmware 2.5+):** `meshtasticRemoteAdmin.ts` — PKI-wrapped `AdminMessage` via `MeshDevice.sendRaw()` (`pkiEncrypted: true`, channel omitted on wire); session passkeys (~300s); tab-scoped snapshot routes in `meshtasticRemoteAdminSnapshot.ts` (Channels-first LoRa load). Per-node keys: `meshtasticRemoteAdminKeyStorage.ts` (`meshtasticRemoteAdminKey:<nodeNum>` in `app_settings`; base64 / `base64:` / 64-char hex paste). Dest public key: NodeDB hex first, stored admin-key base64 fallback. `useMeshtasticRuntime`: `configureTargetNodeNum`, `remoteConfigSnapshot`, `runRemoteAdminOp` (errors → UI + toast); serialize admin reads with S&F (`remoteAdminReadsActiveCount` in `meshtasticBacklogUtils.ts`). **Requires connected local radio** (MQTT-only cannot admin). UI: `ConfigureNodeSelector.tsx`; NodeDetailModal admin key + **Configure node remotely**; SecurityPanel **Copy** public key. Persist last target in `meshtasticConfigureTargetNodeNum`. Gate with `hasRemoteAdmin`. Legacy admin channel (PSK + `"admin"`) out of scope.
 - **Meshtastic last heard:** `meshtasticLastHeard.ts` — bump `last_heard` on live RF packets (not only text); `computeNodeInfoLastHeardMs` prevents configure replay from regressing fresher client timestamps.
 - **Static GPS:** `src/renderer/lib/gpsSource.ts` — App tab static coordinates sync to self-node, map, and radio `setPosition`.
 
@@ -157,34 +187,35 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 - **Payload / links:** `ChatPayloadText.tsx` — mention highlighting, search marks, URL linkification; link previews via `chat:fetchLinkPreview` (`src/main/fetchLinkPreview.ts`, blocks localhost/private IPs, 10s timeout, 64 KiB HTML cap).
 - **Storage helpers:** `src/renderer/lib/chatPanelProtocolStorage.ts` — drafts (`mesh-client:drafts:<protocol>`), open DM tabs, last-read, per-view mute (`mesh-client:mutedViews:<protocol>`), starred (`mesh-client:starred:<protocol>`, cap 200).
 - **Notifications:** `src/renderer/lib/chatNotifications.ts` — `playMessageNotification()` (AudioContext beep); global mute `mesh-client:notifMuted`; per-view mute in `mutedViews`.
-- **Meshtastic dedup:** `meshtasticMessageDedup.ts` — merges delayed RF/MQTT duplicates (10-minute content window) in `useDevice.ts`.
-- **Reactions / tapbacks:** `reactions.ts` — normalize Meshtastic `emoji` + payload UTF-8; `ChatPanel.tsx` attaches tapbacks via `replyId` + `sendReaction` in `useDevice.ts`.
+- **Meshtastic dedup:** `meshtasticMessageDedup.ts` — merges delayed RF/MQTT duplicates (10-minute content window) in `useMeshtasticRuntime` ingest.
+- **Reactions / tapbacks:** `reactions.ts` — normalize Meshtastic `emoji` + payload UTF-8; `ChatPanel.tsx` attaches tapbacks via `replyId` + runtime/panel `sendReaction`.
 - **Mention segments:** `src/renderer/lib/chatMentionSegments.ts` — parse/build `@[Name]` tokens; `MentionAutocomplete.tsx` renders the dropdown.
 - **Export IPC:** `chat:export` — renderer calls `window.electronAPI.chat.export(messages)`; main opens a Save dialog and writes a `.txt` file.
 
 ### Common issues
 
-| Symptom                | Where to check                                         |
-| ---------------------- | ------------------------------------------------------ |
-| Connection fails       | `useDevice.ts`, `useMeshCore.ts`                       |
-| Send fails             | `useDevice.sendText`, `useMeshCore` send paths         |
-| UI stale               | Zustand store, effect deps                             |
-| BLE timeout            | `noble-ble-manager.ts`, `bleConnectErrors`             |
-| Serial missing         | `serialPortSignature.ts`                               |
-| MQTT loop              | `mqtt-manager.ts`                                      |
-| DB errors              | `database.ts` migrations                               |
-| Log gaps               | `log-service.ts`, log tags                             |
-| Chat export fails      | `chat:export` handler in `src/main/index.ts`           |
-| Draft not restored     | `chatPanelProtocolStorage.ts`, `viewKey` logic         |
-| Mention picker missing | `MentionAutocomplete.tsx`, `buildMentionCandidates`    |
-| Link preview missing   | `fetchLinkPreview.ts`, `chat:fetchLinkPreview` IPC     |
-| Duplicate RF+MQTT msg  | `meshtasticMessageDedup.ts`, `useDevice.ts` ingest     |
-| MQTT decrypt / sender  | `mqtt-manager.ts`, `meshtasticMqttIdentity.ts`         |
-| Remote admin fails     | `meshtasticRemoteAdmin.ts`, key storage                |
-| S&F history garbled    | `meshtasticBacklogUtils.ts` decode, heartbeat trigger  |
-| Garbled TEXT_MESSAGE   | `meshtasticBacklogUtils.ts` readable-text filter       |
-| Channel URL apply      | `meshtasticChannelApply.ts`, `meshtasticUrlEncoder.ts` |
-| Header red on loss     | `connectionHeaderStatus.ts`, `mqttDisconnectIntent.ts` |
+| Symptom                  | Where to check                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------- |
+| Connection fails         | `ConnectionDriver`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts` |
+| Send fails               | `useSendMessage`, runtime send paths                                                   |
+| UI stale                 | Zustand store, effect deps                                                             |
+| Empty chat/nodes offline | `hydrateIdentityStoresFromDb`, connect-time cache in runtimes, `useDbRefresh`          |
+| BLE timeout              | `noble-ble-manager.ts`, `bleConnectErrors`                                             |
+| Serial missing           | `serialPortSignature.ts`                                                               |
+| MQTT loop                | `mqtt-manager.ts`                                                                      |
+| DB errors                | `database.ts` migrations                                                               |
+| Log gaps                 | `log-service.ts`, log tags                                                             |
+| Chat export fails        | `chat:export` handler in `src/main/index.ts`                                           |
+| Draft not restored       | `chatPanelProtocolStorage.ts`, `viewKey` logic                                         |
+| Mention picker missing   | `MentionAutocomplete.tsx`, `buildMentionCandidates`                                    |
+| Link preview missing     | `fetchLinkPreview.ts`, `chat:fetchLinkPreview` IPC                                     |
+| Duplicate RF+MQTT msg    | `meshtasticMessageDedup.ts`, Meshtastic runtime ingest                                 |
+| MQTT decrypt / sender    | `mqtt-manager.ts`, `meshtasticMqttIdentity.ts`                                         |
+| Remote admin fails       | `meshtasticRemoteAdmin.ts`, key storage                                                |
+| S&F history garbled      | `meshtasticBacklogUtils.ts` decode, heartbeat trigger                                  |
+| Garbled TEXT_MESSAGE     | `meshtasticBacklogUtils.ts` readable-text filter                                       |
+| Channel URL apply        | `meshtasticChannelApply.ts`, `meshtasticUrlEncoder.ts`                                 |
+| Header red on loss       | `connectionHeaderStatus.ts`, `mqttDisconnectIntent.ts`                                 |
 
 ## 9. Cursor / Claude indexing
 

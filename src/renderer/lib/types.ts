@@ -12,7 +12,44 @@ export type { TAKClientInfo, TAKServerStatus, TAKSettings };
 
 export type ConnectionType = 'ble' | 'serial' | 'http';
 
-export type MeshProtocol = 'meshtastic' | 'meshcore';
+/** All transports the ConnectionDriver can manage. Superset of `ConnectionType`. */
+export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'mqtt';
+
+export type TransportStatus =
+  | 'connecting'
+  | 'connected'
+  | 'disconnected'
+  | 'reconnecting'
+  | 'stale';
+
+/** Transport-specific connect parameters. Open union — additional protocols add their own variants. */
+export type TransportParams =
+  | { type: 'ble'; peripheralId?: string }
+  | { type: 'serial'; portSignature?: string }
+  | { type: 'http'; host: string }
+  | { type: 'tcp'; host: string }
+  | { type: 'mqtt'; broker: string; topic?: string; pubkey?: string };
+
+export interface TransportRef {
+  /** Opaque id assigned by ConnectionDriver for this transport instance. */
+  transportId: string;
+  type: TransportType;
+  status: TransportStatus;
+  params: TransportParams;
+  /** Last raw event timestamp; watchdog reads this. */
+  lastDataReceivedAt?: number;
+}
+
+export type IdentityId = string;
+
+/** Built-in protocols; extend {@link REGISTERED_MESH_PROTOCOLS} when adding adapters. */
+export const REGISTERED_MESH_PROTOCOLS = ['meshtastic', 'meshcore'] as const;
+
+export type MeshProtocol = (typeof REGISTERED_MESH_PROTOCOLS)[number];
+
+export function isMeshProtocol(value: string): value is MeshProtocol {
+  return (REGISTERED_MESH_PROTOCOLS as readonly string[]).includes(value);
+}
 
 export type AnomalyType =
   | 'hop_goblin'
@@ -529,6 +566,24 @@ declare global {
           on_radio?: number;
           last_synced_from_radio?: string | null;
         }) => Promise<unknown>;
+        saveMeshcoreContactsBatch: (
+          contacts: {
+            node_id: number;
+            public_key: string;
+            adv_name?: string | null;
+            contact_type?: number;
+            last_advert?: number | null;
+            adv_lat?: number | null;
+            adv_lon?: number | null;
+            last_snr?: number | null;
+            last_rssi?: number | null;
+            nickname?: string | null;
+            contact_flags?: number | null;
+            hops_away?: number | null;
+            on_radio?: number | null;
+            last_synced_from_radio?: string | null;
+          }[],
+        ) => Promise<number>;
         updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<unknown>;
         updateMeshcoreContactAdvert: (
           nodeId: number,

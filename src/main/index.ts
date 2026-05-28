@@ -49,12 +49,14 @@ import {
   getMeshcoreTraceHistory,
   initDatabase,
   mergeDatabase,
+  type MeshcoreContactUpsertParams,
   migrateRfStubNodes,
   pruneMeshcoreContactsByCount,
   pruneMeshcorePathHistory,
   prunePositionHistory,
   recordMeshcorePathOutcome,
   removeContactFromGroup,
+  saveMeshcoreContactsBatch,
   saveMeshcoreHopHistory,
   saveMeshcoreTraceHistory,
   searchMeshcoreMessages,
@@ -579,6 +581,28 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
   ) {
     throw new Error('db:saveMeshcoreContact: last_synced_from_radio must be a string <= 128');
   }
+}
+
+function meshcoreContactInputToUpsertParams(
+  c: Record<string, unknown>,
+): MeshcoreContactUpsertParams {
+  return {
+    node_id: Number(c.node_id),
+    public_key: c.public_key as string,
+    adv_name: typeof c.adv_name === 'string' ? c.adv_name : null,
+    contact_type: c.contact_type != null ? Number(c.contact_type) : 0,
+    last_advert: c.last_advert != null ? Number(c.last_advert) : null,
+    adv_lat: c.adv_lat != null ? Number(c.adv_lat) : null,
+    adv_lon: c.adv_lon != null ? Number(c.adv_lon) : null,
+    last_snr: c.last_snr != null ? Number(c.last_snr) : null,
+    last_rssi: c.last_rssi != null ? Number(c.last_rssi) : null,
+    nickname: typeof c.nickname === 'string' ? c.nickname : null,
+    contact_flags: c.contact_flags != null ? Number(c.contact_flags) : 0,
+    hops_away: c.hops_away != null ? Number(c.hops_away) : null,
+    on_radio: c.on_radio != null ? Number(c.on_radio) : null,
+    last_synced_from_radio:
+      typeof c.last_synced_from_radio === 'string' ? c.last_synced_from_radio : null,
+  };
 }
 
 function validateTakSettings(settings: unknown): asserts settings is TAKSettings {
@@ -3431,7 +3455,9 @@ ipcMain.handle('db:deleteNodesNeverHeard', (event) => {
         "DELETE FROM nodes WHERE (last_heard IS NULL OR last_heard = 0) AND (favorited IS NULL OR favorited = 0) AND source != 'meshcore'",
       )
       .run();
-    console.debug(`[IPC] db:deleteNodesNeverHeard: pruned ${result.changes} never-heard nodes`);
+    if (result.changes > 0) {
+      console.debug(`[IPC] db:deleteNodesNeverHeard: pruned ${result.changes} never-heard nodes`);
+    }
     return result;
   } catch (err) {
     console.error(
@@ -3454,7 +3480,11 @@ ipcMain.handle('db:deleteNodesByAge', (event, days: number) => {
         "DELETE FROM nodes WHERE (last_heard < ? OR last_heard IS NULL OR last_heard = 0) AND (favorited IS NULL OR favorited = 0) AND source != 'meshcore'",
       )
       .run(cutoff);
-    console.debug(`[IPC] db:deleteNodesByAge: pruned ${result.changes} nodes older than ${days}d`);
+    if (result.changes > 0) {
+      console.debug(
+        `[IPC] db:deleteNodesByAge: pruned ${result.changes} nodes older than ${days}d`,
+      );
+    }
     return result;
   } catch (err) {
     console.error(
@@ -3473,9 +3503,11 @@ ipcMain.handle('db:pruneNodesByCount', (_event, maxCount: number) => {
         'DELETE FROM nodes WHERE node_id NOT IN (SELECT node_id FROM nodes ORDER BY last_heard DESC LIMIT ?)',
       )
       .run(maxCount);
-    console.debug(
-      `[IPC] db:pruneNodesByCount: pruned ${result.changes} nodes, keeping top ${maxCount}`,
-    );
+    if (result.changes > 0) {
+      console.debug(
+        `[IPC] db:pruneNodesByCount: pruned ${result.changes} nodes, keeping top ${maxCount}`,
+      );
+    }
     return result;
   } catch (err) {
     console.error(
@@ -3496,9 +3528,11 @@ ipcMain.handle('db:pruneMessagesByCount', (_event, maxCount: number) => {
         'DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY timestamp DESC, id DESC LIMIT ?)',
       )
       .run(cap);
-    console.debug(
-      `[IPC] db:pruneMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
-    );
+    if (result.changes > 0) {
+      console.debug(
+        `[IPC] db:pruneMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
+      );
+    }
     return result;
   } catch (err) {
     console.error(
@@ -3519,9 +3553,11 @@ ipcMain.handle('db:pruneMeshcoreMessagesByCount', (_event, maxCount: number) => 
         'DELETE FROM meshcore_messages WHERE id NOT IN (SELECT id FROM meshcore_messages ORDER BY timestamp DESC, id DESC LIMIT ?)',
       )
       .run(cap);
-    console.debug(
-      `[IPC] db:pruneMeshcoreMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
-    );
+    if (result.changes > 0) {
+      console.debug(
+        `[IPC] db:pruneMeshcoreMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
+      );
+    }
     return result;
   } catch (err) {
     console.error(
@@ -3616,7 +3652,9 @@ ipcMain.handle('db:deleteNodesBySource', (event, source: string) => {
 ipcMain.handle('db:migrateRfStubNodes', () => {
   try {
     const changes = migrateRfStubNodes();
-    console.debug(`[IPC] db:migrateRfStubNodes: renamed ${changes} RF stub nodes`);
+    if (changes > 0) {
+      console.debug(`[IPC] db:migrateRfStubNodes: renamed ${changes} RF stub nodes`);
+    }
     return changes;
   } catch (err) {
     console.error(
@@ -3633,7 +3671,9 @@ ipcMain.handle('db:deleteNodesWithoutLongname', (event) => {
   }
   try {
     const changes = deleteNodesWithoutLongname();
-    console.debug(`[IPC] db:deleteNodesWithoutLongname: pruned ${changes} unnamed nodes`);
+    if (changes > 0) {
+      console.debug(`[IPC] db:deleteNodesWithoutLongname: pruned ${changes} unnamed nodes`);
+    }
     return changes;
   } catch (err) {
     console.error(
@@ -4216,49 +4256,33 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
 ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
   try {
     validateSaveMeshcoreContact(contact);
-    const c = contact as Record<string, unknown>;
-    const db = getDatabase();
-    return db
-      .prepareOnce(
-        'INSERT INTO meshcore_contacts ' +
-          '(node_id, public_key, adv_name, contact_type, last_advert, adv_lat, adv_lon, last_snr, last_rssi, favorited, nickname, contact_flags, hops_away, on_radio, last_synced_from_radio) ' +
-          'VALUES (@node_id, @public_key, @adv_name, @contact_type, @last_advert, @adv_lat, @adv_lon, @last_snr, @last_rssi, 0, @nickname, @contact_flags, @hops_away, @on_radio, @last_synced_from_radio) ' +
-          'ON CONFLICT(node_id) DO UPDATE SET ' +
-          "public_key = CASE WHEN excluded.public_key IS NOT NULL AND excluded.public_key != '' AND LENGTH(excluded.public_key) = 64 THEN excluded.public_key ELSE meshcore_contacts.public_key END, " +
-          "adv_name = COALESCE(NULLIF(excluded.adv_name, ''), meshcore_contacts.adv_name), " +
-          'contact_type = COALESCE(excluded.contact_type, meshcore_contacts.contact_type), ' +
-          'last_advert = CASE WHEN excluded.last_advert IS NOT NULL AND excluded.last_advert > 0 THEN excluded.last_advert ELSE meshcore_contacts.last_advert END, ' +
-          'adv_lat = CASE WHEN excluded.adv_lat IS NOT NULL AND excluded.adv_lat != 0 THEN excluded.adv_lat ELSE meshcore_contacts.adv_lat END, ' +
-          'adv_lon = CASE WHEN excluded.adv_lon IS NOT NULL AND excluded.adv_lon != 0 THEN excluded.adv_lon ELSE meshcore_contacts.adv_lon END, ' +
-          'last_snr = COALESCE(excluded.last_snr, meshcore_contacts.last_snr), ' +
-          'last_rssi = COALESCE(excluded.last_rssi, meshcore_contacts.last_rssi), ' +
-          'favorited = meshcore_contacts.favorited, ' +
-          'nickname = COALESCE(excluded.nickname, meshcore_contacts.nickname), ' +
-          'contact_flags = COALESCE(excluded.contact_flags, meshcore_contacts.contact_flags), ' +
-          'hops_away = CASE WHEN excluded.hops_away IS NOT NULL AND (meshcore_contacts.hops_away IS NULL OR excluded.hops_away < meshcore_contacts.hops_away) THEN excluded.hops_away ELSE meshcore_contacts.hops_away END, ' +
-          'on_radio = excluded.on_radio, ' +
-          'last_synced_from_radio = excluded.last_synced_from_radio',
-      )
-      .run({
-        node_id: Number(c.node_id),
-        public_key: c.public_key as string,
-        adv_name: typeof c.adv_name === 'string' ? c.adv_name : null,
-        contact_type: c.contact_type != null ? Number(c.contact_type) : 0,
-        last_advert: c.last_advert != null ? Number(c.last_advert) : null,
-        adv_lat: c.adv_lat != null ? Number(c.adv_lat) : null,
-        adv_lon: c.adv_lon != null ? Number(c.adv_lon) : null,
-        last_snr: c.last_snr != null ? Number(c.last_snr) : null,
-        last_rssi: c.last_rssi != null ? Number(c.last_rssi) : null,
-        nickname: typeof c.nickname === 'string' ? c.nickname : null,
-        contact_flags: c.contact_flags != null ? Number(c.contact_flags) : 0,
-        hops_away: c.hops_away != null ? Number(c.hops_away) : null,
-        on_radio: c.on_radio != null ? Number(c.on_radio) : null,
-        last_synced_from_radio:
-          typeof c.last_synced_from_radio === 'string' ? c.last_synced_from_radio : null,
-      });
+    return saveMeshcoreContactsBatch([meshcoreContactInputToUpsertParams(contact)]);
   } catch (err) {
     console.error(
       '[IPC] db:saveMeshcoreContact failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('db:saveMeshcoreContactsBatch', (_event, contacts: unknown) => {
+  try {
+    if (!Array.isArray(contacts)) {
+      throw new Error('db:saveMeshcoreContactsBatch: contacts must be an array');
+    }
+    if (contacts.length > 500) {
+      throw new Error('db:saveMeshcoreContactsBatch: max 500 contacts per batch');
+    }
+    const rows: MeshcoreContactUpsertParams[] = [];
+    for (const contact of contacts) {
+      validateSaveMeshcoreContact(contact);
+      rows.push(meshcoreContactInputToUpsertParams(contact));
+    }
+    return saveMeshcoreContactsBatch(rows);
+  } catch (err) {
+    console.error(
+      '[IPC] db:saveMeshcoreContactsBatch failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

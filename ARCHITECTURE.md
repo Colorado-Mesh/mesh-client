@@ -10,7 +10,7 @@ Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 | -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers, window, GPS, updater |
 | Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                    |
-| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `stores/`, `lib/`, `locales/`, `workers/`                                                                                                                         |
+| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/` (protocol runtimes, single mount), `stores/`, `lib/`, `locales/`, `workers/`                                                                           |
 
 | Shared | `src/shared/` | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers |
 
@@ -71,20 +71,23 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 4. Minimal fix + co-located tests.
 5. `pnpm dlx vitest run <file>` and `pnpm run lint`.
 
-**First places to look:** `useDevice.ts` / `useMeshCore.ts` (connection); `stores/*` (UI state); `src/main/index.ts` (IPC).
+**First places to look:** `runtime/useMeshtasticRuntime.ts` / `runtime/useMeshcoreRuntime.ts` (protocol side effects); `hooks/useProtocolConnection.ts` (connect); `stores/*` (UI state); `src/main/index.ts` (IPC).
+
+**Renderer layers:** `runtime/` (single-mount protocol runtimes), `hooks/` (facades and store selectors), `lib/` (drivers, sessions, types), `stores/` (identity-scoped UI: `identityStore`, `nodeStore`, `messageStore`, `connectionStore`). Prefer `useProtocolFacade(protocol)` in App for new wiring. Hook deconstruction status: [docs/renderer-side-effect-migration.md](docs/renderer-side-effect-migration.md).
 
 ### Protocols
 
-- **Meshtastic:** `useDevice.ts`, `connection.ts` (`createConnection`).
-- **MeshCore:** `useMeshCore.ts`, `@liamcottle/meshcore.js`.
+- **Meshtastic:** `runtime/useMeshtasticRuntime.ts`, `lib/protocols/MeshtasticProtocol.ts`, `lib/connection.ts` (`createConnection`).
+- **MeshCore:** `runtime/useMeshcoreRuntime.ts`, `lib/protocols/MeshCoreProtocol.ts`, `@liamcottle/meshcore.js`.
 
 ### Database
 
 - WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-compat.ts` over `node:sqlite`. After schema changes: `pnpm run check:db-migrations`.
+- **Renderer DB → UI:** `lib/hydrateIdentityStoresFromDb.ts` (identity-scoped Zustand hydration; connect-time node cache before RF configure). **Startup prune:** `lib/startupDbPrune.ts` (once per app session from `App.tsx`).
 
 ### BLE and serial
 
-- Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-manager.ts` (macOS/Windows), Web Bluetooth IPC on Linux. Serial: `connection.ts`, `serialPortSignature.ts`. Errors: `humanize*` in `connection.ts`. Reconnect watchdog: `useDevice.ts`.
+- Meshtastic BLE: `lib/connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-manager.ts` (macOS/Windows), Web Bluetooth IPC on Linux. Serial: `lib/connection.ts`, `serialPortSignature.ts`. Errors: `humanize*` in `lib/connection.ts`. Reconnect watchdog: `runtime/useMeshtasticRuntime.ts`.
 - **ATT MTU:** Noble sessions chunk `toRadio` writes from `peripheral.mtu` / `mtu` events (`bleAttWriteLimit.ts` for spec-safe defaults). Web Bluetooth (Linux) chunks only when Chromium exposes `BluetoothRemoteGATTCharacteristic.maximumWriteValueLength`; otherwise a single `writeValue` per payload (no portable negotiated-MTU API in the web spec).
 
 ### MQTT
@@ -99,17 +102,18 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 ### Common issues
 
-| Symptom             | Where to check                                                   |
-| ------------------- | ---------------------------------------------------------------- |
-| Connection fails    | `useDevice.ts`, `useMeshCore.ts`                                 |
-| Send fails          | `useDevice.sendText`, `useMeshCore` send paths                   |
-| UI stale            | Zustand store, effect deps                                       |
-| BLE timeout         | `noble-ble-manager.ts`, `bleConnectErrors`                       |
-| Serial missing      | `serialPortSignature.ts`                                         |
-| MQTT loop           | `mqtt-manager.ts`                                                |
-| MQTT decrypt fail   | `mqtt-manager.ts`, `meshtasticChannelPskInput.ts`                |
-| MQTT-only sender    | `meshtasticMqttIdentity.ts`, `useDevice.ts`                      |
-| Remote admin fail   | `meshtasticRemoteAdmin.ts`, `meshtasticRemoteAdminKeyStorage.ts` |
-| Garbled chat insert | `meshtasticBacklogUtils.ts` readable-text filter                 |
-| DB errors           | `database.ts` migrations                                         |
-| Log gaps            | `log-service.ts`, log tags                                       |
+| Symptom                  | Where to check                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Connection fails         | `ConnectionDriver`, `hooks/useProtocolConnection.ts`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts` |
+| Send fails               | `hooks/useSendMessage.ts`, runtime send APIs, `TransportManager`                                                         |
+| UI stale                 | Zustand store, effect deps                                                                                               |
+| Empty chat/nodes offline | `hydrateIdentityStoresFromDb`, runtime connect-time DB cache, `hooks/useDbRefresh.ts`                                    |
+| BLE timeout              | `noble-ble-manager.ts`, `bleConnectErrors`                                                                               |
+| Serial missing           | `serialPortSignature.ts`                                                                                                 |
+| MQTT loop                | `mqtt-manager.ts`                                                                                                        |
+| MQTT decrypt fail        | `mqtt-manager.ts`, `meshtasticChannelPskInput.ts`                                                                        |
+| MQTT-only sender         | `meshtasticMqttIdentity.ts`, `runtime/useMeshtasticRuntime.ts`, `hooks/useSendMessage.ts`                                |
+| Remote admin fail        | `meshtasticRemoteAdmin.ts`, `meshtasticRemoteAdminKeyStorage.ts`                                                         |
+| Garbled chat insert      | `meshtasticBacklogUtils.ts` readable-text filter                                                                         |
+| DB errors                | `database.ts` migrations                                                                                                 |
+| Log gaps                 | `log-service.ts`, log tags                                                                                               |

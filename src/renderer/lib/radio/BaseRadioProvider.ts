@@ -89,6 +89,12 @@ export interface ProtocolCapabilities {
   hasCryptoOperations: boolean;
   /** Whether the raw RF packet log viewer is available (MeshCore LOG_RX_DATA) */
   hasRawPacketLog: boolean;
+  /** Node list tab label uses "Contacts" instead of "Nodes" */
+  nodeListTabUsesContactsLabel: boolean;
+  /** Modules tab shows repeater tooling (MeshCore "Repeaters" tab slot) */
+  modulesTabUsesRepeatersLabel: boolean;
+  /** Radio panel: import JSON device config (MeshCore companion) */
+  hasJsonRadioConfigImport: boolean;
   /** Node stale threshold in milliseconds (for node status UI) */
   nodeStaleThresholdMs: number;
   /** Node offline threshold in milliseconds (for node status UI) */
@@ -139,6 +145,9 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasContactImportExport: false,
   hasCryptoOperations: true,
   hasRawPacketLog: true,
+  nodeListTabUsesContactsLabel: false,
+  modulesTabUsesRepeatersLabel: false,
+  hasJsonRadioConfigImport: false,
   nodeStaleThresholdMs: 2 * 60 * 60 * 1000, // 2 hours
   nodeOfflineThresholdMs: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
@@ -188,6 +197,9 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasContactImportExport: true,
   hasCryptoOperations: true,
   hasRawPacketLog: true,
+  nodeListTabUsesContactsLabel: true,
+  modulesTabUsesRepeatersLabel: true,
+  hasJsonRadioConfigImport: true,
   nodeStaleThresholdMs: 48 * 60 * 60 * 1000, // 48 hours
   nodeOfflineThresholdMs: 96 * 60 * 60 * 1000, // 96 hours
 };
