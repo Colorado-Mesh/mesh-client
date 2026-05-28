@@ -38,6 +38,9 @@ importers:
       '@stoprocent/noble':
         specifier: ^2.5.3
         version: 2.5.3
+      builder-util-runtime:
+        specifier: 9.5.1
+        version: 9.5.1
       electron-updater:
         specifier: ^6.8.3
         version: 6.8.3

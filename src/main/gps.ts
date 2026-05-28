@@ -120,36 +120,40 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
+/** Whether to run si.wifiNetworks() as the GPS preflight (exported for tests). */
+export function shouldUseWifiNetworksPreflight(): boolean {
+  // Windows: systeminformation wifiNetworks() uses powerShell().then() internally;
+  // parse errors reject that inner chain, not the promise returned to callers, so
+  // .catch() on wifiNetworks() cannot prevent unhandled rejections (wifi.js ~493).
+  return process.platform !== 'win32';
+}
+
+async function inetChecksitePreflight(): Promise<void> {
+  try {
+    await withTimeout(si.inetChecksite('https://ipwho.is'), GPS_SYSTEM_CHECK_TIMEOUT_MS, undefined);
+  } catch (e) {
+    const msg = sanitizeLogMessage((e as Error).message);
+    console.warn(`[gps] inetChecksite preflight failed: ${msg}`);
+  }
+}
+
+/** Lightweight connectivity check before IP geolocation (result discarded). */
+async function runGpsConnectivityPreflight(): Promise<void> {
+  if (!shouldUseWifiNetworksPreflight()) {
+    await inetChecksitePreflight();
+    return;
+  }
+
+  // WiFi scan verifies permissions / interfaces on macOS and Linux. Attach .catch()
+  // so a late rejection after the timeout race does not surface as unhandled.
+  const wifiPromise = si.wifiNetworks().catch(() => undefined);
+  await withTimeout(wifiPromise, GPS_SYSTEM_CHECK_TIMEOUT_MS, undefined);
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function getGpsFix(): Promise<GpsFixResult> {
-  try {
-    // Use a WiFi network scan as a lightweight system check: this verifies that
-    // the systeminformation module has required permissions and that basic
-    // network interfaces are available before attempting IP geolocation.
-    //
-    // The actual scan result is intentionally discarded: we only care that the
-    // call succeeds (proving permissions/hardware are OK) or fails fast so we
-    // can fall back to inetChecksite below. The timeout bounds the cost, so
-    // running this scan for its side effects is intentional and acceptable.
-    // Attach .catch() so that if the timeout wins the race, a later rejection
-    // from si.wifiNetworks() (e.g. systeminformation wifi.js .split() on undefined)
-    // does not become an unhandled promise rejection.
-    const wifiPromise = si.wifiNetworks().catch(() => undefined);
-    await withTimeout(wifiPromise, GPS_SYSTEM_CHECK_TIMEOUT_MS, undefined);
-  } catch {
-    // Optional: WiFi scan can fail (permissions, no adapter). Try inetChecksite as fallback.
-    try {
-      await withTimeout(
-        si.inetChecksite('https://ipwho.is'),
-        GPS_SYSTEM_CHECK_TIMEOUT_MS,
-        undefined,
-      );
-    } catch (e) {
-      const msg = sanitizeLogMessage((e as Error).message);
-      console.warn(`[gps] inetChecksite fallback failed: ${msg}`);
-    }
-  }
+  await runGpsConnectivityPreflight();
 
   try {
     const fix = await getIpFix();
