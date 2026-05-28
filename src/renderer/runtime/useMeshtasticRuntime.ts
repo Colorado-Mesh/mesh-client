@@ -160,7 +160,7 @@ import type {
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
-import { useMessageStore } from '../stores/messageStore';
+import { upsertMessage, useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
@@ -3058,10 +3058,24 @@ export function useMeshtasticRuntime() {
         myNodeNumRef.current = from;
         setState((prev) => ({ ...prev, myNodeNum: from }));
       }
+      const identityId = meshtasticIdentityIdRef.current;
+      const storeMsgs = identityId
+        ? messageRecordsToChatMessages(
+            Object.values(useMessageStore.getState().messages[identityId] ?? {}),
+          )
+        : messagesRef.current;
       const repliedMsg =
-        messagesRef.current.find((m) => m.packetId === replyId) ??
-        messagesRef.current.find((m) => m.timestamp === replyId) ??
+        storeMsgs.find((m) => m.packetId === replyId) ??
+        storeMsgs.find((m) => m.timestamp === replyId) ??
         null;
+      const wireReplyId = repliedMsg?.packetId;
+      if (wireReplyId == null || wireReplyId === 0) {
+        return Promise.reject(
+          new Error(
+            'Tapback requires the message RF packet id (wait for send ack or refresh chat).',
+          ),
+        );
+      }
       const replyTargetsMqttOnly = repliedMsg?.receivedVia === 'mqtt';
       if (hasMqtt && replyTargetsMqttOnly) {
         return Promise.reject(
@@ -3087,22 +3101,42 @@ export function useMeshtasticRuntime() {
         channel,
         timestamp: Date.now(),
         emoji: safeScalar,
-        replyId,
+        replyId: wireReplyId,
       };
 
-      // Optimistic update — dedup guard in echo handler prevents duplicate when echo arrives
-      setMessages((prev) => {
-        const isDup = prev.some(
-          (m) =>
-            m.emoji === safeScalar &&
-            m.replyId === replyId &&
-            m.sender_id === from &&
-            m.payload === tapPayload,
-        );
-        if (isDup) return prev;
-        return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
-      });
-      void window.electronAPI.db.saveMessage(msg);
+      if (identityId) {
+        const reactionTempId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
+        upsertMessage(identityId, {
+          id: String(reactionTempId),
+          from,
+          senderName: getNodeName(from),
+          to: BROADCAST_ADDR,
+          payload: tapPayload,
+          channelIndex: channel,
+          timestamp: msg.timestamp,
+          tapback: true,
+          replyTo: String(wireReplyId),
+        });
+        void window.electronAPI.db
+          .saveMessage({ ...msg, packetId: reactionTempId })
+          .catch((e: unknown) => {
+            console.debug('[useDevice] sendReaction saveMessage failed ' + errLikeToLogString(e));
+          });
+      } else {
+        // Legacy runtime-only path (no identity store yet)
+        setMessages((prev) => {
+          const isDup = prev.some(
+            (m) =>
+              m.emoji === safeScalar &&
+              m.replyId === wireReplyId &&
+              m.sender_id === from &&
+              m.payload === tapPayload,
+          );
+          if (isDup) return prev;
+          return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
+        });
+        void window.electronAPI.db.saveMessage(msg);
+      }
 
       // Device transport — mesh.proto: `emoji` is a boolean flag; the glyph is UTF-8 in `payload`.
       if (deviceRef.current) {
@@ -3112,7 +3146,7 @@ export function useMeshtasticRuntime() {
             'broadcast',
             true,
             channel,
-            replyId,
+            wireReplyId,
             MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
           )
           .then(() => {})
@@ -3140,7 +3174,7 @@ export function useMeshtasticRuntime() {
             channelName: reactionMqtt.channelName,
             pskBase64: reactionMqtt.pskBase64,
             emoji: MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
-            replyId,
+            replyId: wireReplyId,
             publishJsonMirror: reactionMqtt.publishJsonMirror,
           })
           .then((packetId) => {

@@ -30,6 +30,26 @@ describe('store record adapters (merge precedence)', () => {
     expect(msgs[0].to).toBeUndefined();
   });
 
+  it('round-trips tapback reactions via tapback flag and payload glyph', () => {
+    const reaction: ChatMessage = {
+      sender_id: 1,
+      sender_name: 'Me',
+      payload: '👍',
+      channel: 0,
+      timestamp: 2000,
+      emoji: 128077,
+      replyId: 424242,
+      packetId: 77,
+    };
+    const record = chatMessageToMessageRecord(reaction);
+    expect(record.tapback).toBe(true);
+    expect(record.replyTo).toBe('424242');
+    const back = messageRecordToChatMessage(record);
+    expect(back.emoji).toBe(128077);
+    expect(back.replyId).toBe(424242);
+    expect(back.packetId).toBe(77);
+  });
+
   it('round-trips channel messages without treating broadcast as DM', () => {
     const channelMsg: ChatMessage = {
       sender_id: 3,

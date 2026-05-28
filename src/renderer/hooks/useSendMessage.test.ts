@@ -85,6 +85,43 @@ describe('useSendMessage', () => {
     warn.mockRestore();
   });
 
+  it('persists Meshtastic optimistic send to SQLite with temp packet_id', async () => {
+    const saveMessage = vi.spyOn(window.electronAPI.db, 'saveMessage').mockResolvedValue(undefined);
+    const updateStatus = vi
+      .spyOn(window.electronAPI.db, 'updateMessageStatus')
+      .mockResolvedValue(undefined);
+    const sendSpy = vi.spyOn(meshtasticProtocol, 'sendMessage').mockResolvedValue({ packetId: 99 });
+    const handle = { kind: 'rf' };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    addIdentity({
+      id: ID_MT,
+      protocol: meshtasticProtocol,
+      signature: 'sig-mt',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MT, { status: 'configured', myNodeNum: 42 });
+
+    const { result } = renderHook(() => useSendMessage(ID_MT));
+    result.current('persist me', 0);
+
+    await vi.waitFor(() => {
+      expect(saveMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: 'persist me',
+          sender_id: 42,
+          packetId: expect.any(Number),
+          status: 'sending',
+        }),
+      );
+      expect(updateStatus).toHaveBeenCalledWith(99, 'acked');
+    });
+    sendSpy.mockRestore();
+    saveMessage.mockRestore();
+    updateStatus.mockRestore();
+  });
+
   it('sends via protocol when RF handle exists', async () => {
     const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({ packetId: 1 });
     const handle = { kind: 'rf' };

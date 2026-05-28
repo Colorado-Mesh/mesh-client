@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
+import { messageRecordToChatMessage } from '../lib/storeRecordAdapters';
 import type { IdentityId } from '../lib/types';
 import { getConnection } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
@@ -50,18 +51,35 @@ export function useSendMessage(
         return;
       }
 
-      const provisionalId = `out:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+      const isMeshtastic = identity.protocol.type === 'meshtastic';
+      // Meshtastic: numeric temp packet id (matches RF echo + SQLite packet_id / tapback reply_id).
+      const meshtasticTempPacketId = isMeshtastic
+        ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0
+        : undefined;
+      const provisionalId =
+        meshtasticTempPacketId != null
+          ? String(meshtasticTempPacketId)
+          : `out:${Date.now()}:${Math.random().toString(36).slice(2)}`;
       const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
-      addMessage(identityId, {
+      const record = {
         id: provisionalId,
         from: myNodeNum,
         to: destination ?? 0xffffffff,
         payload: text,
         channelIndex,
         timestamp: Date.now(),
-        status: 'sending',
+        status: 'sending' as const,
         replyTo,
-      });
+      };
+      addMessage(identityId, record);
+
+      if (isMeshtastic) {
+        void window.electronAPI.db
+          .saveMessage(messageRecordToChatMessage(record))
+          .catch((e: unknown) => {
+            console.debug('[useSendMessage] saveMessage failed ' + errLikeToLogString(e));
+          });
+      }
 
       // MeshCore DMs need the destination pubkey; look up on nodeStore.
       let destinationPubKey: Uint8Array | undefined;
@@ -72,14 +90,44 @@ export function useSendMessage(
       void identity.protocol
         .sendMessage(handle, { text, channelIndex, destination, destinationPubKey, replyTo })
         .then((res) => {
-          if (res.packetId != null) {
-            renameMessageId(identityId, provisionalId, String(res.packetId));
+          const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
+          if (res.packetId != null && resolvedId !== provisionalId) {
+            renameMessageId(identityId, provisionalId, resolvedId);
+            if (isMeshtastic && meshtasticTempPacketId != null) {
+              void window.electronAPI.db
+                .updateMessagePacketId(meshtasticTempPacketId, res.packetId >>> 0)
+                .catch((e: unknown) => {
+                  console.debug(
+                    '[useSendMessage] updateMessagePacketId failed ' + errLikeToLogString(e),
+                  );
+                });
+            }
+          }
+          updateMessageStatus(identityId, resolvedId, 'acked');
+          if (isMeshtastic && meshtasticTempPacketId != null) {
+            const rowPacketId = res.packetId ?? meshtasticTempPacketId;
+            void window.electronAPI.db
+              .updateMessageStatus(rowPacketId, 'acked')
+              .catch((e: unknown) => {
+                console.debug(
+                  '[useSendMessage] updateMessageStatus failed ' + errLikeToLogString(e),
+                );
+              });
           }
         })
         .catch((e: unknown) => {
           const errMsg = errLikeToLogString(e);
           console.warn('[useSendMessage] send failed ' + errMsg);
           updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
+          if (isMeshtastic && meshtasticTempPacketId != null) {
+            void window.electronAPI.db
+              .updateMessageStatus(meshtasticTempPacketId, 'failed', errMsg)
+              .catch((dbErr: unknown) => {
+                console.debug(
+                  '[useSendMessage] updateMessageStatus failed ' + errLikeToLogString(dbErr),
+                );
+              });
+          }
         });
     },
     [identityId],

@@ -2,10 +2,12 @@ import {
   isMeshtasticBroadcastNodeNum,
   MESHTASTIC_BROADCAST_NODE_NUM,
 } from '@/shared/nodeNameUtils';
+import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '@/shared/reactionEmoji';
 
 import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
 import type { NeighborInfoEvent, TraceRouteEvent, WaypointEvent } from './protocols/Protocol';
+import { normalizeReactionEmoji } from './reactions';
 import type {
   ChatMessage,
   MeshNeighbor,
@@ -17,6 +19,9 @@ import type {
 export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const packetId = /^\d+$/.test(record.id) ? Number(record.id) : undefined;
   const to = record.to != null && !isMeshtasticBroadcastNodeNum(record.to) ? record.to : undefined;
+  const reactionScalar = record.tapback
+    ? normalizeReactionEmoji(MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG, record.payload)
+    : undefined;
   return {
     ...(packetId != null ? { id: packetId } : {}),
     sender_id: record.from,
@@ -31,6 +36,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     isHistory: record.isHistory,
     error: record.error,
     to,
+    ...(reactionScalar != null ? { emoji: reactionScalar } : {}),
     replyId: record.replyTo != null ? Number(record.replyTo) : undefined,
     replyPreviewText: record.replyPreviewText,
     replyPreviewSender: record.replyPreviewSender,
@@ -179,6 +185,7 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     receivedVia: msg.receivedVia,
     isHistory: msg.isHistory,
     error: msg.error,
+    tapback: msg.emoji != null ? true : undefined,
     replyTo: msg.replyId != null ? String(msg.replyId) : undefined,
     replyPreviewText: msg.replyPreviewText,
     replyPreviewSender: msg.replyPreviewSender,
