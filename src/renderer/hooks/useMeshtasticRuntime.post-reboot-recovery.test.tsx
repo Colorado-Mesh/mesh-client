@@ -62,7 +62,7 @@ describe('useMeshtasticRuntime post-reboot recovery', () => {
     disconnectSpy.mockRestore();
   });
 
-  it('schedules transport reset after local commitConfig on serial', async () => {
+  it('commitConfig alone does not schedule transport reset (waits for DeviceRestarting)', async () => {
     const { result } = renderHook(() => useMeshtasticRuntime());
 
     await act(async () => {
@@ -74,19 +74,18 @@ describe('useMeshtasticRuntime post-reboot recovery', () => {
     });
 
     expect(stubDevice.commitEditSettings).toHaveBeenCalledTimes(1);
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('post-commit reboot recovery scheduled (commitConfig)'),
+    expect(consoleWarnSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('post-commit reboot recovery scheduled'),
     );
 
-    await act(async () => {
-      vi.advanceTimersByTime(MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS);
-      await Promise.resolve();
+    act(() => {
+      vi.advanceTimersByTime(MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS + 1_000);
     });
 
-    expect(disconnectSpy).toHaveBeenCalled();
+    expect(disconnectSpy).not.toHaveBeenCalled();
   });
 
-  it('DeviceRestarting triggers recovery', async () => {
+  it('DeviceRestarting triggers recovery after grace delay', async () => {
     const { result } = renderHook(() => useMeshtasticRuntime());
 
     await act(async () => {
@@ -116,8 +115,8 @@ describe('useMeshtasticRuntime post-reboot recovery', () => {
       await result.current.connectAutomatic('serial', undefined, 'port-abc');
     });
 
-    await act(async () => {
-      await result.current.commitConfig();
+    act(() => {
+      stubDevice.emitDeviceStatus(1);
     });
 
     await act(async () => {

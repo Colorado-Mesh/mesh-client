@@ -33,14 +33,14 @@ describe('useMeshtasticRuntime — configure() rejection', () => {
   });
 
   it('rejects connect() and resets state when configure fails (no unhandled rejection)', async () => {
-    const err = new Error('Packet does not exist');
+    const err = new Error('Permission denied');
     const device = createStubDevice(vi.fn().mockRejectedValue(err));
     vi.mocked(connection.createConnection).mockResolvedValue(device);
 
     const { result } = renderHook(() => useMeshtasticRuntime());
 
     await expect(result.current.connect('http', 'http://127.0.0.1')).rejects.toThrow(
-      'Packet does not exist',
+      'Permission denied',
     );
 
     await waitFor(() => {

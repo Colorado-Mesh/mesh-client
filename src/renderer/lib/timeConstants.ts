@@ -28,5 +28,5 @@ export const MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS = 8_000;
 /** Delay before local SDK LoRa getConfig after configure (avoids BLE contention with remote admin). */
 export const MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS = 2_500;
 
-/** Grace delay before transport teardown/reconnect after config commit reboot (Serial/BLE). */
-export const MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS = 4_000;
+/** Grace delay before transport teardown/reconnect after DeviceRestarting (Serial/BLE). */
+export const MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS = 15_000;

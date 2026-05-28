@@ -83,6 +83,7 @@ import {
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
 import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
+import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
 import {
   attachMeshtasticLegacyWireSubscriptions,
   type MeshtasticLegacyWireSubscriptionDeps,
@@ -705,7 +706,8 @@ export function useMeshtasticRuntime() {
     (source = 'unknown') => {
       const params = connectionParamsRef.current;
       if (!params || (params.type !== 'ble' && params.type !== 'serial')) return;
-      if (isReconnectingRef.current || postRebootRecoveryScheduledRef.current) return;
+      if (isReconnectingRef.current) return;
+      if (source !== 'DeviceRestarting' && postRebootRecoveryScheduledRef.current) return;
 
       postRebootRecoveryScheduledRef.current = true;
       deviceConfiguredRef.current = false;
@@ -1713,7 +1715,9 @@ export function useMeshtasticRuntime() {
       wireSubscriptions(opened.device, params.type, {
         driverIdentityId: opened.driverIdentityId,
       });
-      await opened.device.configure();
+      await configureMeshtasticDeviceWithRetry(opened.device, {
+        logTag: 'useMeshtasticRuntime reconnect',
+      });
 
       // Success
       console.debug(
@@ -1855,7 +1859,9 @@ export function useMeshtasticRuntime() {
         }
       })();
 
-      await activeDevice.configure();
+      await configureMeshtasticDeviceWithRetry(activeDevice, {
+        logTag: 'useMeshtasticRuntime attachRfSession',
+      });
     },
     [applyMeshtasticNodesToUi, wireSubscriptions],
   );
@@ -2550,7 +2556,6 @@ export function useMeshtasticRuntime() {
     }
     if (!deviceRef.current) return;
     await deviceRef.current.commitEditSettings();
-    schedulePostCommitRebootRecoveryRef.current('commitConfig');
   }, [refreshRemoteConfigSnapshot, runRemoteAdminOp]);
 
   const setDeviceChannel = useCallback(

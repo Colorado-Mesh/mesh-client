@@ -468,33 +468,33 @@ export default function ModulePanel({
     setAmbientBlue(parseInt(hex.slice(5, 7), 16));
   };
 
-  const applyModule = (sectionName: string, moduleCase: string, value: unknown) => {
+  const applyModule = async (sectionName: string, moduleCase: string, value: unknown) => {
     setApplyingSection(sectionName);
-    const setPromise = onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
-    void setPromise
-      .then(() => {
-        addToast(t('modulePanel.sectionSent', { name: sectionName }), 'success');
-        return onCommit()
-          .then(() => {})
-          .catch((err: unknown) => {
-            addToast(
-              t('modulePanel.commitFailed', {
-                message: err instanceof Error ? err.message : 'Unknown error',
-              }),
-              'error',
-            );
-          });
-      })
-      .catch((err: unknown) => {
-        console.warn('[ModulePanel] apply failed ' + errLikeToLogString(err));
+    try {
+      await onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
+      addToast(t('modulePanel.sectionSent', { name: sectionName }), 'success');
+      try {
+        await onCommit();
+      } catch (err: unknown) {
+        // catch-no-log-ok commit failure surfaced in module panel toast
         addToast(
-          t('modulePanel.failed', {
+          t('modulePanel.commitFailed', {
             message: err instanceof Error ? err.message : 'Unknown error',
           }),
           'error',
         );
-      });
-    setApplyingSection(null);
+      }
+    } catch (err: unknown) {
+      console.warn('[ModulePanel] apply failed ' + errLikeToLogString(err));
+      addToast(
+        t('modulePanel.failed', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        'error',
+      );
+    } finally {
+      setApplyingSection(null);
+    }
   };
 
   return (
@@ -525,7 +525,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionAmbientLighting')}
         onApply={() => {
-          applyModule('Ambient Lighting', 'ambientLighting', {
+          void applyModule('Ambient Lighting', 'ambientLighting', {
             ledState: ambientLedState,
             red: ambientRed,
             green: ambientGreen,
@@ -648,7 +648,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionDetectionSensor')}
         onApply={() => {
-          applyModule('Detection Sensor', 'detectionSensor', {
+          void applyModule('Detection Sensor', 'detectionSensor', {
             enabled: detectEnabled,
             name: detectName,
             minimumBroadcastSecs: detectMinBroadcast,
@@ -696,7 +696,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionExternalNotification')}
         onApply={() => {
-          applyModule('External Notification', 'externalNotification', {
+          void applyModule('External Notification', 'externalNotification', {
             enabled: extEnabled,
             active: extActive,
             output: extOutput,
@@ -846,7 +846,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionMqttRelay')}
         onApply={() => {
-          applyModule('MQTT Relay', 'mqtt', {
+          void applyModule('MQTT Relay', 'mqtt', {
             enabled: mqttEnabled,
             address: mqttAddress,
             username: mqttUsername,
@@ -928,7 +928,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionPaxCounter')}
         onApply={() => {
-          applyModule('Pax Counter', 'paxcounter', {
+          void applyModule('Pax Counter', 'paxcounter', {
             enabled: paxEnabled,
             paxcounterUpdateInterval: paxInterval,
           });
@@ -964,7 +964,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionRangeTest')}
         onApply={() => {
-          applyModule('Range Test', 'rangeTest', {
+          void applyModule('Range Test', 'rangeTest', {
             enabled: rangeEnabled,
             sender: rangeSenderInterval,
             save: rangeSave,
@@ -1077,7 +1077,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionSerialModule')}
         onApply={() => {
-          applyModule('Serial Module', 'serial', {
+          void applyModule('Serial Module', 'serial', {
             enabled: serialEnabled,
             echo: serialEcho,
             baud: serialBaud,
@@ -1127,7 +1127,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionStoreForward')}
         onApply={() => {
-          applyModule('Store & Forward', 'storeForward', {
+          void applyModule('Store & Forward', 'storeForward', {
             enabled: sfEnabled,
             heartbeat: sfHeartbeat,
             numRecords: sfNumRecords,
@@ -1188,7 +1188,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionTelemetryModule')}
         onApply={() => {
-          applyModule('Telemetry Module', 'telemetry', {
+          void applyModule('Telemetry Module', 'telemetry', {
             deviceUpdateInterval: telDeviceInterval,
             environmentUpdateInterval: telEnvInterval,
             environmentMeasurementEnabled: telEnvEnabled,
