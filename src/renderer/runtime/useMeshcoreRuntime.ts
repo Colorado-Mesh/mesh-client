@@ -154,7 +154,11 @@ import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
-import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
+import {
+  chatMessageToMessageRecord,
+  messageRecordsToChatMessages,
+  nodeRecordsToMeshNodeMap,
+} from '../lib/storeRecordAdapters';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type {
   ChatMessage,
@@ -167,7 +171,7 @@ import type {
 } from '../lib/types';
 import { setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
-import { useMessageStore } from '../stores/messageStore';
+import { upsertMessage, useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
@@ -3481,13 +3485,35 @@ export function useMeshcoreRuntime() {
       if (!parsed) {
         throw new Error('Invalid reaction emoji');
       }
-      const reactedTo = messagesRef.current.find(
-        (m) => m.packetId === replyId || m.timestamp === replyId,
-      );
+      const storeId = meshcoreIdentityIdRef.current;
+      const storeMessages =
+        storeId != null
+          ? messageRecordsToChatMessages(
+              Object.values(useMessageStore.getState().messages[storeId] ?? {}),
+            )
+          : [];
+      const reactedTo =
+        storeMessages.find((m) => m.packetId === replyId || m.timestamp === replyId) ??
+        messagesRef.current.find((m) => m.packetId === replyId || m.timestamp === replyId);
       const targetName = reactedTo?.sender_name || 'Unknown';
       const tapbackText = `@[${targetName}] ${parsed.glyph}`;
       const conn = connRef.current;
       const me = myNodeNumRef.current;
+
+      const publishTapback = (tapbackMsg: ChatMessage) => {
+        addMessage(tapbackMsg);
+        if (storeId) {
+          upsertMessage(storeId, chatMessageToMessageRecord(tapbackMsg));
+        }
+        void window.electronAPI.db
+          .saveMeshcoreMessage(messageToDbRow(tapbackMsg))
+          .catch((e: unknown) => {
+            console.warn(
+              '[useMeshCore] saveMeshcoreMessage (tapback) error ' + errLikeToLogString(e),
+            );
+          });
+      };
+
       if (reactedTo?.to != null) {
         const peerNodeId =
           reactedTo.sender_id === me && reactedTo.to != null ? reactedTo.to : reactedTo.sender_id;
@@ -3499,17 +3525,19 @@ export function useMeshcoreRuntime() {
         }
         // Tapbacks are fire-and-forget; no ACK tracking or status UI for reactions
         await conn.sendTextMessage(pubKey, tapbackText);
-        addMessage({
+        const tapbackTs = Date.now();
+        const tapbackMsg: ChatMessage = {
           sender_id: me,
           sender_name: selfInfo?.name ?? 'Me',
           payload: parsed.glyph,
           channel: -1,
-          timestamp: Date.now(),
+          timestamp: tapbackTs,
           status: 'acked',
           emoji: parsed.scalar,
           replyId,
           to: peerNodeId,
-        });
+        };
+        publishTapback(tapbackMsg);
       } else {
         const outboundChannel =
           reactedTo != null && typeof reactedTo.channel === 'number' && reactedTo.channel >= 0
@@ -3519,7 +3547,7 @@ export function useMeshcoreRuntime() {
               : channel;
         // Tapbacks are fire-and-forget; no ACK tracking or status UI for reactions
         await conn.sendChannelTextMessage(outboundChannel, tapbackText);
-        addMessage({
+        publishTapback({
           sender_id: me,
           sender_name: selfInfo?.name ?? 'Me',
           payload: parsed.glyph,

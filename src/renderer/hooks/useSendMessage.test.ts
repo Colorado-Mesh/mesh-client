@@ -42,6 +42,7 @@ describe('useSendMessage', () => {
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     useMessageStore.setState({ messages: {} });
     vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
+    vi.spyOn(window.electronAPI.db, 'saveMeshcoreMessage').mockResolvedValue(undefined);
   });
 
   it('delegates to Meshtastic runtime sendChatMessage when MQTT-only (no RF handle)', () => {
@@ -146,6 +147,40 @@ describe('useSendMessage', () => {
       );
     });
     sendSpy.mockRestore();
+  });
+
+  it('persists MeshCore outbound to meshcore_messages after send resolves', async () => {
+    const saveMeshcoreMessage = vi
+      .spyOn(window.electronAPI.db, 'saveMeshcoreMessage')
+      .mockResolvedValue(undefined);
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({});
+    const handle = { kind: 'rf' };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC));
+    result.current('persist meshcore', 6);
+
+    await vi.waitFor(() => {
+      expect(saveMeshcoreMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: 'persist meshcore',
+          channel_idx: 6,
+          sender_id: 7,
+          status: 'acked',
+        }),
+      );
+    });
+    sendSpy.mockRestore();
+    saveMeshcoreMessage.mockRestore();
   });
 
   it('marks optimistic message failed when protocol send rejects', async () => {

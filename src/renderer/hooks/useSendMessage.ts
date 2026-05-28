@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 
+import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
@@ -7,8 +8,30 @@ import { messageRecordToChatMessage } from '../lib/storeRecordAdapters';
 import type { IdentityId } from '../lib/types';
 import { getConnection } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
-import { addMessage, renameMessageId, updateMessageStatus } from '../stores/messageStore';
+import {
+  addMessage,
+  type MessageRecord,
+  renameMessageId,
+  updateMessageStatus,
+} from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
+
+function persistMeshcoreOutboundRow(
+  record: MessageRecord,
+  myNodeNum: number,
+  senderName: string,
+  status: 'sending' | 'acked' | 'failed',
+  packetId?: number,
+): void {
+  const chat = messageRecordToChatMessage({ ...record, status });
+  chat.sender_id = myNodeNum;
+  chat.sender_name = senderName;
+  if (packetId != null) chat.packetId = packetId;
+  if (record.to !== 0xffffffff) chat.to = record.to;
+  void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(chat)).catch((e: unknown) => {
+    console.warn('[useSendMessage] saveMeshcoreMessage failed ' + errLikeToLogString(e));
+  });
+}
 
 export function useSendMessage(
   identityId: IdentityId | null,
@@ -61,6 +84,10 @@ export function useSendMessage(
           ? String(meshtasticTempPacketId)
           : `out:${Date.now()}:${Math.random().toString(36).slice(2)}`;
       const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
+      const meshcoreSenderName =
+        identity.protocol.type === 'meshcore'
+          ? (useNodeStore.getState().nodes[identityId]?.[myNodeNum]?.longName ?? 'Me')
+          : 'Me';
       const record = {
         id: provisionalId,
         from: myNodeNum,
@@ -104,6 +131,20 @@ export function useSendMessage(
             }
           }
           updateMessageStatus(identityId, resolvedId, 'acked');
+          if (identity.protocol.type === 'meshcore') {
+            const rowForDb: MessageRecord = {
+              ...record,
+              id: resolvedId,
+              status: 'acked',
+            };
+            persistMeshcoreOutboundRow(
+              rowForDb,
+              myNodeNum,
+              meshcoreSenderName,
+              'acked',
+              res.packetId != null ? res.packetId >>> 0 : undefined,
+            );
+          }
           if (isMeshtastic && meshtasticTempPacketId != null) {
             const rowPacketId = res.packetId ?? meshtasticTempPacketId;
             void window.electronAPI.db
@@ -119,6 +160,9 @@ export function useSendMessage(
           const errMsg = errLikeToLogString(e);
           console.warn('[useSendMessage] send failed ' + errMsg);
           updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
+          if (identity.protocol.type === 'meshcore') {
+            persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
+          }
           if (isMeshtastic && meshtasticTempPacketId != null) {
             void window.electronAPI.db
               .updateMessageStatus(meshtasticTempPacketId, 'failed', errMsg)
