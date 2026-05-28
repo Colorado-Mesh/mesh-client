@@ -17,6 +17,7 @@ import {
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
 } from '../../lib/meshcoreUtils';
+import { mergeMeshcoreLastHeardFromAdvert } from '../../lib/nodeStatus';
 import type { ChatMessage, DeviceState, MeshNode } from '../../lib/types';
 
 /** MeshCore expected ACK CRCs are uint32; meshcore.js / BLE may surface them as signed. Normalize for Map keys, React state, and SQLite packet_id. */
@@ -403,6 +404,100 @@ export function meshcoreFullPubKeyBytesFromContactDbHex(raw: string): Uint8Array
   const pairs = hex.match(/.{2}/g);
   if (pairs?.length !== 32) return null;
   return new Uint8Array(pairs.map((b) => parseInt(b, 16)));
+}
+
+export interface MergeMeshcoreDbContactsRefs {
+  pubKeyByNodeId: Map<number, Uint8Array>;
+  pubKeyPrefixByHex: Map<string, number>;
+  nicknameByNodeId: Map<number, string>;
+}
+
+/** Merge persisted SQLite contacts into an in-memory node map (off-radio imports, favorited flags). */
+export async function mergeMeshcoreContactsFromDbIntoNodeMap(
+  nextNodes: Map<number, MeshNode>,
+  prevSnap: Map<number, MeshNode>,
+  refs: MergeMeshcoreDbContactsRefs,
+): Promise<void> {
+  const dbContacts = (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
+  for (const row of dbContacts) {
+    if (refs.pubKeyByNodeId.has(row.node_id)) continue;
+    const bytes = meshcoreFullPubKeyBytesFromContactDbHex(row.public_key);
+    if (!bytes) continue;
+    refs.pubKeyByNodeId.set(row.node_id, bytes);
+    const prefix = Array.from(bytes.slice(0, 6))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    refs.pubKeyPrefixByHex.set(prefix, row.node_id);
+  }
+  for (const row of dbContacts) {
+    if (!nextNodes.has(row.node_id)) {
+      const last_heard = mergeMeshcoreLastHeardFromAdvert(
+        row.last_advert,
+        prevSnap.get(row.node_id)?.last_heard,
+      );
+      const newHwModel = CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown';
+      const prevNode = prevSnap.get(row.node_id);
+      const prevHwModel = prevNode?.hw_model;
+      const mergedHwModel =
+        prevHwModel && prevHwModel !== 'None' && prevHwModel !== 'Unknown'
+          ? prevHwModel
+          : newHwModel;
+      nextNodes.set(row.node_id, {
+        node_id: row.node_id,
+        long_name: row.nickname ?? row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
+        short_name: '',
+        hw_model: mergedHwModel,
+        battery: 0,
+        snr: row.last_snr ?? 0,
+        rssi: row.last_rssi ?? 0,
+        last_heard,
+        latitude: row.adv_lat ?? null,
+        longitude: row.adv_lon ?? null,
+        favorited: row.favorited === 1,
+        hops_away: row.hops_away ?? prevSnap.get(row.node_id)?.hops_away,
+      });
+    }
+  }
+  for (const row of dbContacts as (MeshcoreContactDbRow & { hops?: number | null })[]) {
+    const existing = nextNodes.get(row.node_id);
+    if (!existing) continue;
+    if (existing.hops_away === undefined) {
+      const hopCount = row.hops_away ?? row.hops;
+      if (hopCount != null) {
+        nextNodes.set(row.node_id, { ...existing, hops_away: hopCount });
+      }
+    }
+  }
+  for (const row of dbContacts) {
+    const existing = nextNodes.get(row.node_id);
+    if (existing) {
+      const fallbackSnr =
+        typeof row.last_snr === 'number' && Number.isFinite(row.last_snr) && row.last_snr !== 0
+          ? row.last_snr
+          : null;
+      const fallbackRssi =
+        typeof row.last_rssi === 'number' && Number.isFinite(row.last_rssi) && row.last_rssi !== 0
+          ? row.last_rssi
+          : null;
+      const nextSnr =
+        typeof existing.snr === 'number' && Number.isFinite(existing.snr) && existing.snr !== 0
+          ? existing.snr
+          : (fallbackSnr ?? existing.snr);
+      const nextRssi =
+        typeof existing.rssi === 'number' && Number.isFinite(existing.rssi) && existing.rssi !== 0
+          ? existing.rssi
+          : (fallbackRssi ?? existing.rssi);
+      nextNodes.set(row.node_id, {
+        ...existing,
+        favorited: row.favorited === 1,
+        snr: nextSnr,
+        rssi: nextRssi,
+      });
+    }
+  }
+  for (const row of dbContacts) {
+    if (row.nickname) refs.nicknameByNodeId.set(row.node_id, row.nickname);
+  }
 }
 
 /** Map persisted MeshCore message rows to chat messages (stub sender id; trust stored payload). */

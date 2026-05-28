@@ -5,13 +5,13 @@ import {
   type MeshcoreSavedNodeHopRow,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { upsertMessage } from '../stores/messageStore';
-import { upsertNode } from '../stores/nodeStore';
+import { upsertNode, upsertNodeRecordsForIdentity } from '../stores/nodeStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { errLikeToLogString } from './errLikeToLogString';
 import { getMeshtasticMessageLoadLimit } from './legacySideEffects/meshtasticDbHydration';
 import type { MeshcoreContactDbRow, MeshcoreMessageDbRow } from './meshcore/meshcoreHookTypes';
 import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
-import type { IdentityId, MeshProtocol } from './types';
+import type { IdentityId, MeshNode, MeshProtocol } from './types';
 
 /** MeshCore SQLite message load cap (matches runtime mount hydration). */
 export const MESHCORE_DB_MESSAGE_LOAD_LIMIT = 500;
@@ -59,6 +59,17 @@ export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promis
   for (const node of nodeMap.values()) {
     upsertNode(identityId, meshNodeToNodeRecord(node));
   }
+}
+
+/** Push an in-memory MeshCore node map into identity-scoped Zustand (e.g. after radio contact sync). */
+export function syncMeshcoreNodesMapToIdentityStore(
+  identityId: IdentityId,
+  nodes: Map<number, MeshNode>,
+): void {
+  upsertNodeRecordsForIdentity(
+    identityId,
+    Array.from(nodes.values(), (node) => meshNodeToNodeRecord(node)),
+  );
 }
 
 export async function hydrateMeshcoreMessagesFromDb(identityId: IdentityId): Promise<void> {

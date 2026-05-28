@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useMessageStore } from '../stores/messageStore';
-import { useNodeStore } from '../stores/nodeStore';
+import { upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
 import {
   hydrateIdentityStoresFromDb,
   hydrateMeshcoreMessagesFromDb,
   hydrateMeshcoreNodesFromDb,
   hydrateMeshtasticMessagesFromDb,
   hydrateMeshtasticNodesFromDb,
+  syncMeshcoreNodesMapToIdentityStore,
 } from './hydrateIdentityStoresFromDb';
 
 const ID_MT = 'id-hydrate-mt';
@@ -112,5 +113,63 @@ describe('hydrateIdentityStoresFromDb', () => {
 
     expect(getNodes).toHaveBeenCalled();
     expect(getMeshcoreContacts).toHaveBeenCalled();
+  });
+
+  it('syncMeshcoreNodesMapToIdentityStore upserts runtime node map into Zustand', () => {
+    const nodes = new Map([
+      [
+        0xabc,
+        {
+          node_id: 0xabc,
+          long_name: 'Repeater-A',
+          short_name: '',
+          hw_model: 'Repeater',
+          battery: 0,
+          snr: 1,
+          rssi: -70,
+          last_heard: 1000,
+          latitude: null,
+          longitude: null,
+          favorited: true,
+        },
+      ],
+      [
+        0xdef,
+        {
+          node_id: 0xdef,
+          long_name: 'Chat-B',
+          short_name: '',
+          hw_model: 'Chat',
+          battery: 0,
+          snr: 0,
+          rssi: 0,
+          last_heard: 2000,
+          latitude: null,
+          longitude: null,
+        },
+      ],
+    ]);
+
+    syncMeshcoreNodesMapToIdentityStore(ID_MC, nodes);
+
+    const byId = useNodeStore.getState().nodes[ID_MC];
+    expect(Object.keys(byId ?? {})).toHaveLength(2);
+    expect(byId?.[0xabc]?.hwModel).toBe('Repeater');
+    expect(byId?.[0xabc]?.favorited).toBe(true);
+    expect(byId?.[0xdef]?.longName).toBe('Chat-B');
+  });
+
+  it('upsertNodeRecordsForIdentity merges large batches in one store update', () => {
+    const records = Array.from({ length: 350 }, (_, i) => ({
+      nodeId: i + 1,
+      hwModel: i % 2 === 0 ? 'Repeater' : 'Chat',
+    }));
+
+    upsertNodeRecordsForIdentity(ID_MC, records);
+
+    const byId = useNodeStore.getState().nodes[ID_MC];
+    expect(Object.keys(byId ?? {})).toHaveLength(350);
+    expect(byId?.[1]?.hwModel).toBe('Repeater');
+    expect(byId?.[2]?.hwModel).toBe('Chat');
   });
 });

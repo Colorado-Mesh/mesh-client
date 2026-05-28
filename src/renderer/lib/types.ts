@@ -566,6 +566,24 @@ declare global {
           on_radio?: number;
           last_synced_from_radio?: string | null;
         }) => Promise<unknown>;
+        saveMeshcoreContactsBatch: (
+          contacts: {
+            node_id: number;
+            public_key: string;
+            adv_name?: string | null;
+            contact_type?: number;
+            last_advert?: number | null;
+            adv_lat?: number | null;
+            adv_lon?: number | null;
+            last_snr?: number | null;
+            last_rssi?: number | null;
+            nickname?: string | null;
+            contact_flags?: number | null;
+            hops_away?: number | null;
+            on_radio?: number | null;
+            last_synced_from_radio?: string | null;
+          }[],
+        ) => Promise<number>;
         updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<unknown>;
         updateMeshcoreContactAdvert: (
           nodeId: number,

@@ -8,6 +8,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { withTimeout } from '../../shared/withTimeout';
 import {
+  buildMeshcoreNodeMapFromDb,
   contactToDbRow,
   formatStructuredLogDetail,
   INITIAL_STATE,
@@ -15,6 +16,7 @@ import {
   mapMeshcoreDbRowsToChatMessages,
   MAX_ENV_TELEMETRY_POINTS,
   MAX_TELEMETRY_POINTS,
+  mergeMeshcoreContactsFromDbIntoNodeMap,
   mergeMeshcoreDbHydrationWithLive,
   mergeStubNodesFromMeshcoreMessages,
   MESHCORE_DEVICE_QUERY_APP_VER,
@@ -31,7 +33,6 @@ import {
   MESHCORE_TRACE_TIMEOUT_MS,
   meshcoreContactRawFromDevice,
   meshcoreDmAckKeyU32,
-  meshcoreFullPubKeyBytesFromContactDbHex,
   meshcoreMessageDedupeKey,
   meshcorePendingDmAckMapKeys,
   meshcorePingNoRouteErrorExpiryUpdate,
@@ -55,6 +56,7 @@ import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import type { OurPosition } from '../lib/gpsSource';
 import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
+import { syncMeshcoreNodesMapToIdentityStore } from '../lib/hydrateIdentityStoresFromDb';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
 import { runMeshcoreMountHydration } from '../lib/legacySideEffects/meshcoreDbHydration';
 import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
@@ -139,6 +141,7 @@ import {
 } from '../lib/meshIdentityBridge';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
 import { lastHeardToUnixSeconds, mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
+import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import {
@@ -271,7 +274,6 @@ export function useMeshcoreRuntime() {
   /** SQLite hydration snapshot set synchronously before `setNodes` so initConn can merge hops when `nodesRef` has not flushed yet. */
   const meshcoreLastPersistedNodesRef = useRef<Map<number, MeshNode>>(new Map());
   /** Mount DB load — initConn awaits this so an immediate connect does not skip persisted hop counts. */
-  const meshcoreMountHydrationPromiseRef = useRef<Promise<void> | null>(null);
   /** Same baseline as initConn: avoid empty `nodesRef` during contact rebuilds (debounced 129 / refresh). */
   const meshcorePreviousNodesBaselineForBuild = useCallback(
     () => (nodesRef.current.size > 0 ? nodesRef.current : meshcoreLastPersistedNodesRef.current),
@@ -628,6 +630,13 @@ export function useMeshcoreRuntime() {
       meshcoreLastPersistedNodesRef.current = new Map(mergedInitial);
 
       setNodes(mergedInitial);
+      const storeId =
+        meshcoreIdentityIdRef.current ??
+        meshcorePendingDriverIdentityRef.current ??
+        getOfflineIdentityIdForProtocol('meshcore');
+      if (storeId) {
+        syncMeshcoreNodesMapToIdentityStore(storeId, mergedInitial);
+      }
       if (opts?.hydrateMessages && mapped.length > 0) {
         setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
       }
@@ -788,6 +797,10 @@ export function useMeshcoreRuntime() {
         previousNodes?: Map<number, MeshNode>;
         /** If true, save contacts with on_radio=1. */
         contactsFromRadio?: boolean;
+        /** Skip SQLite merge (show radio contacts immediately; merge in background). */
+        deferDbMerge?: boolean;
+        /** Skip path-history writes during large radio contact sync. */
+        deferPathHistory?: boolean;
       },
     ): Promise<Map<number, MeshNode>> => {
       const prevSnap = opts?.previousNodes ?? new Map<number, MeshNode>();
@@ -815,6 +828,7 @@ export function useMeshcoreRuntime() {
             errLikeToLogString(e),
         );
       }
+      const pendingDbRows: ReturnType<typeof contactToDbRow>[] = [];
       for (const contact of contacts) {
         const base = meshcoreContactToMeshNode(contact);
         const last_heard = mergeMeshcoreLastHeardFromAdvert(
@@ -838,7 +852,7 @@ export function useMeshcoreRuntime() {
         pubKeyMapRef.current.set(node.node_id, contact.publicKey);
         outPathMapRef.current.set(node.node_id, slicedPath);
         const contactPathBytes = slicedPath.length > 0 ? Array.from(slicedPath) : [];
-        if (contactPathBytes.length > 0) {
+        if (!opts?.deferPathHistory && contactPathBytes.length > 0) {
           const pathHash = computePathHash(contactPathBytes);
           const existing = usePathHistoryStore.getState().records.get(node.node_id) ?? [];
           if (!existing.some((r) => r.pathHash === pathHash)) {
@@ -858,103 +872,23 @@ export function useMeshcoreRuntime() {
         const prevHopsAway = prevNode?.hops_away;
         const hopsToSave = hopsAway ?? prevHopsAway ?? undefined;
         const dbRow = contactToDbRow(contact, undefined, onRadio, now, hopsToSave);
-        void window.electronAPI.db.saveMeshcoreContact(dbRow).catch((e: unknown) => {
-          console.warn('[useMeshCore] saveMeshcoreContact error ' + errLikeToLogString(e));
+        pendingDbRows.push(dbRow);
+      }
+      if (pendingDbRows.length > 0) {
+        void window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows).catch((e: unknown) => {
+          console.warn('[useMeshCore] saveMeshcoreContactsBatch error ' + errLikeToLogString(e));
         });
       }
-      try {
-        const dbContacts =
-          (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
-        for (const row of dbContacts) {
-          if (pubKeyMapRef.current.has(row.node_id)) continue;
-          const bytes = meshcoreFullPubKeyBytesFromContactDbHex(row.public_key);
-          if (!bytes) continue;
-          pubKeyMapRef.current.set(row.node_id, bytes);
-          const prefix = Array.from(bytes.slice(0, 6))
-            .map((b) => b.toString(16).padStart(2, '0'))
-            .join('');
-          pubKeyPrefixMapRef.current.set(prefix, row.node_id);
+      if (!opts?.deferDbMerge) {
+        try {
+          await mergeMeshcoreContactsFromDbIntoNodeMap(nextNodes, prevSnap, {
+            pubKeyByNodeId: pubKeyMapRef.current,
+            pubKeyPrefixByHex: pubKeyPrefixMapRef.current,
+            nicknameByNodeId: nicknameMapRef.current,
+          });
+        } catch (e) {
+          console.warn('[useMeshCore] loadContactsFromDb error ' + errLikeToLogString(e));
         }
-        for (const row of dbContacts) {
-          if (!nextNodes.has(row.node_id)) {
-            const last_heard = mergeMeshcoreLastHeardFromAdvert(
-              row.last_advert,
-              prevSnap.get(row.node_id)?.last_heard,
-            );
-            const newHwModel = CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown';
-            const prevNode = prevSnap.get(row.node_id);
-            const prevHwModel = prevNode?.hw_model;
-            const mergedHwModel =
-              prevHwModel && prevHwModel !== 'None' && prevHwModel !== 'Unknown'
-                ? prevHwModel
-                : newHwModel;
-            nextNodes.set(row.node_id, {
-              node_id: row.node_id,
-              long_name:
-                row.nickname ?? row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
-              short_name: '',
-              hw_model: mergedHwModel,
-              battery: 0,
-              snr: row.last_snr ?? 0,
-              rssi: row.last_rssi ?? 0,
-              last_heard,
-              latitude: row.adv_lat ?? null,
-              longitude: row.adv_lon ?? null,
-              favorited: row.favorited === 1,
-              hops_away: row.hops_away ?? prevSnap.get(row.node_id)?.hops_away,
-            });
-          }
-        }
-        for (const row of dbContacts as (MeshcoreContactDbRow & { hops?: number | null })[]) {
-          const existing = nextNodes.get(row.node_id);
-          if (!existing) continue;
-          if (existing.hops_away === undefined) {
-            const hopCount = row.hops_away ?? row.hops;
-            if (hopCount != null) {
-              nextNodes.set(row.node_id, { ...existing, hops_away: hopCount });
-            }
-          }
-        }
-        for (const row of dbContacts) {
-          const existing = nextNodes.get(row.node_id);
-          if (existing) {
-            const fallbackSnr =
-              typeof row.last_snr === 'number' &&
-              Number.isFinite(row.last_snr) &&
-              row.last_snr !== 0
-                ? row.last_snr
-                : null;
-            const fallbackRssi =
-              typeof row.last_rssi === 'number' &&
-              Number.isFinite(row.last_rssi) &&
-              row.last_rssi !== 0
-                ? row.last_rssi
-                : null;
-            const nextSnr =
-              typeof existing.snr === 'number' &&
-              Number.isFinite(existing.snr) &&
-              existing.snr !== 0
-                ? existing.snr
-                : (fallbackSnr ?? existing.snr);
-            const nextRssi =
-              typeof existing.rssi === 'number' &&
-              Number.isFinite(existing.rssi) &&
-              existing.rssi !== 0
-                ? existing.rssi
-                : (fallbackRssi ?? existing.rssi);
-            nextNodes.set(row.node_id, {
-              ...existing,
-              favorited: row.favorited === 1,
-              snr: nextSnr,
-              rssi: nextRssi,
-            });
-          }
-        }
-        for (const row of dbContacts) {
-          if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
-        }
-      } catch (e) {
-        console.warn('[useMeshCore] loadContactsFromDb error ' + errLikeToLogString(e));
       }
 
       for (const [nodeId, node] of nextNodes) {
@@ -1038,6 +972,44 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     buildNodesFromContactsRef.current = buildNodesFromContacts;
   }, [buildNodesFromContacts]);
+
+  const resolveMeshcoreStoreIdentityId = useCallback((): string | null => {
+    return (
+      meshcoreIdentityIdRef.current ??
+      meshcorePendingDriverIdentityRef.current ??
+      getOfflineIdentityIdForProtocol('meshcore')
+    );
+  }, []);
+
+  const applyMeshcoreNodesToUi = useCallback(
+    (nodeMap: Map<number, MeshNode>) => {
+      const mergedForStore = mergeMeshcoreChatStubNodes(nodesRef.current, nodeMap);
+      setNodes(mergedForStore);
+      const storeId = resolveMeshcoreStoreIdentityId();
+      if (storeId) syncMeshcoreNodesMapToIdentityStore(storeId, mergedForStore);
+    },
+    [resolveMeshcoreStoreIdentityId],
+  );
+
+  const deferMeshcoreDbContactMerge = useCallback(
+    async (nodeMap: Map<number, MeshNode>, prevSnap: Map<number, MeshNode>) => {
+      try {
+        await mergeMeshcoreContactsFromDbIntoNodeMap(nodeMap, prevSnap, {
+          pubKeyByNodeId: pubKeyMapRef.current,
+          pubKeyPrefixByHex: pubKeyPrefixMapRef.current,
+          nicknameByNodeId: nicknameMapRef.current,
+        });
+        for (const [nodeId, node] of nodeMap) {
+          const nick = nicknameMapRef.current.get(nodeId);
+          if (nick) nodeMap.set(nodeId, { ...node, long_name: nick, short_name: '' });
+        }
+        applyMeshcoreNodesToUi(nodeMap);
+      } catch (e) {
+        console.warn('[useMeshCore] deferred db contact merge failed ' + errLikeToLogString(e));
+      }
+    },
+    [applyMeshcoreNodesToUi],
+  );
 
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */
   const meshcoreConnEventListenersTeardownRef = useRef<(() => void) | null>(null);
@@ -1209,24 +1181,84 @@ export function useMeshcoreRuntime() {
         });
       });
 
-      // Load persisted messages from DB before device's MsgWaiting fires (merge with mount-hydrated state)
-      try {
-        const dbMsgs = (await awaitUnlessMeshcoreSetupCancelled(
-          setupGen,
-          window.electronAPI.db.getMeshcoreMessages(undefined, 500),
-        )) as MeshcoreMessageDbRow[];
-        if (dbMsgs.length > 0) {
-          const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
-          setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
-          setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
+      // Load persisted messages in background (not required for contact/repeater list).
+      void (async () => {
+        try {
+          const dbMsgs = (await awaitUnlessMeshcoreSetupCancelled(
+            setupGen,
+            window.electronAPI.db.getMeshcoreMessages(undefined, 500),
+          )) as MeshcoreMessageDbRow[];
+          if (dbMsgs.length > 0) {
+            const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
+            setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
+            setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
+          }
+        } catch (e) {
+          if (e instanceof DOMException && e.name === 'AbortError') return;
+          console.warn('[useMeshCore] loadMessagesFromDb error ' + errLikeToLogString(e));
         }
-      } catch (e) {
-        if (e instanceof DOMException && e.name === 'AbortError') throw e;
-        console.warn('[useMeshCore] loadMessagesFromDb error ' + errLikeToLogString(e));
+      })();
+
+      const initConnPerfStart = performance.now();
+      const driverStoreId = opts?.driverIdentityId ?? resolveMeshcoreStoreIdentityId();
+      if (driverStoreId) {
+        meshcoreIdentityIdRef.current = driverStoreId;
+        setMeshcoreIdentityId(driverStoreId);
       }
 
-      // Fetch self info, contacts, channels (sequential — device handles one request at a time)
-      const rawInfo = await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.getSelfInfo(5000));
+      const getSelfInfoStart = performance.now();
+      const selfInfoPromise = awaitUnlessMeshcoreSetupCancelled(setupGen, conn.getSelfInfo(5000));
+      const getContactsStart = performance.now();
+      const contactsPromise = awaitUnlessMeshcoreSetupCancelled(
+        setupGen,
+        withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts'),
+      );
+      const channelsPromise = awaitUnlessMeshcoreSetupCancelled(
+        setupGen,
+        withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
+      );
+      void (async () => {
+        try {
+          const rawChannels = await channelsPromise;
+          setChannels(
+            rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+          );
+        } catch (e) {
+          if (e instanceof DOMException && e.name === 'AbortError') return;
+          console.warn('[useMeshCore] getChannels error ' + errLikeToLogString(e));
+        }
+      })();
+
+      // Show persisted contacts immediately while the radio contact dump runs over BLE.
+      const dbCacheStart = performance.now();
+      let dbCacheNodeCount = 0;
+      if (driverStoreId) {
+        try {
+          const [rows, dbMsgs, savedNodes] = await Promise.all([
+            window.electronAPI.db.getMeshcoreContacts(),
+            window.electronAPI.db.getMeshcoreMessages(undefined, 500),
+            window.electronAPI.db.getNodes(),
+          ]);
+          const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
+          const cachedNodes = buildMeshcoreNodeMapFromDb(
+            rows as MeshcoreContactDbRow[],
+            savedNodes as MeshcoreSavedNodeHopRow[],
+            mapped,
+          );
+          dbCacheNodeCount = cachedNodes.size;
+          meshcoreLastPersistedNodesRef.current = new Map(cachedNodes);
+          applyMeshcoreNodesToUi(cachedNodes);
+        } catch (e) {
+          if (e instanceof DOMException && e.name === 'AbortError') throw e;
+          console.warn('[useMeshCore] initConn db cache hydrate failed ' + errLikeToLogString(e));
+        }
+      }
+      const dbCacheMs = Math.round(performance.now() - dbCacheStart);
+      console.debug(`[useMeshCore] initConn dbCache→UI ${dbCacheMs}ms (${dbCacheNodeCount} nodes)`);
+
+      const rawInfo = await selfInfoPromise;
+      const getSelfInfoMs = Math.round(performance.now() - getSelfInfoStart);
+      console.debug(`[useMeshCore] initConn getSelfInfo ${getSelfInfoMs}ms`);
       const info = enrichMeshCoreSelfInfo(rawInfo);
       setSelfInfo(info);
       setState((prev) => ({ ...prev, status: 'connected' }));
@@ -1286,52 +1318,13 @@ export function useMeshcoreRuntime() {
         });
       }
 
-      try {
-        const rawExport = await awaitUnlessMeshcoreSetupCancelled(
-          setupGen,
-          withTimeout(conn.exportPrivateKey(), 10_000, 'exportPrivateKey'),
-        );
-        const privBytes = coerceMeshcoreExportPrivateKeyResult(rawExport);
-        void tryPersistMeshcoreIdentityFromRadioExport(info.publicKey, privBytes);
-      } catch (e) {
-        console.debug(
-          '[useMeshCore] exportPrivateKey for MQTT identity cache skipped ' + errLikeToLogString(e),
-        );
-      }
-
-      try {
-        // Must match meshcore.js onConnected (SupportedCompanionProtocolVersion); ver 0 can yield Err/empty DeviceInfo.
-        const deviceInfo = await conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER);
-        setState((prev) => {
-          const next = { ...prev };
-          if (deviceInfo?.firmware_build_date) {
-            next.firmwareVersion = deviceInfo.firmware_build_date;
-          }
-          const mm = meshcoreManufacturerModelFromDeviceQuery(deviceInfo);
-          if (mm) {
-            next.manufacturerModel = mm;
-          }
-          return next;
-        });
-      } catch {
-        // catch-no-log-ok deviceQuery optional for firmware string
-      }
-
-      const rawChannels = await awaitUnlessMeshcoreSetupCancelled(
-        setupGen,
-        withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
-      );
-      setChannels(
-        rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
-      );
-
-      const contactsRaw = await awaitUnlessMeshcoreSetupCancelled(
-        setupGen,
-        withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts'),
+      const contactsRaw = await contactsPromise;
+      const getContactsMs = Math.round(performance.now() - getContactsStart);
+      console.debug(
+        `[useMeshCore] initConn getContacts ${getContactsMs}ms (total ${Math.round(performance.now() - initConnPerfStart)}ms)`,
       );
       const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
       setMeshcoreContactsForTelemetry(contacts);
-      await meshcoreMountHydrationPromiseRef.current?.catch(() => {});
       const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
       const newNodes = await awaitUnlessMeshcoreSetupCancelled(
         setupGen,
@@ -1340,9 +1333,51 @@ export function useMeshcoreRuntime() {
           myNodeId,
           previousNodes: previousNodesBaseline,
           contactsFromRadio: true,
+          deferDbMerge: true,
+          deferPathHistory: true,
         }),
       );
-      setNodes((prev) => mergeMeshcoreChatStubNodes(prev, newNodes));
+      applyMeshcoreNodesToUi(newNodes);
+      const contactsToUiMs = Math.round(performance.now() - initConnPerfStart);
+      console.debug(
+        `[useMeshCore] initConn contacts→UI ${contactsToUiMs}ms (${newNodes.size} nodes)`,
+      );
+      void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
+
+      // MQTT identity, firmware, channels — deferred so Repeaters/Contacts populate first.
+      void (async () => {
+        try {
+          const rawExport = await awaitUnlessMeshcoreSetupCancelled(
+            setupGen,
+            withTimeout(conn.exportPrivateKey(), 10_000, 'exportPrivateKey'),
+          );
+          const privBytes = coerceMeshcoreExportPrivateKeyResult(rawExport);
+          void tryPersistMeshcoreIdentityFromRadioExport(info.publicKey, privBytes);
+        } catch (e) {
+          if (e instanceof DOMException && e.name === 'AbortError') return;
+          console.debug(
+            '[useMeshCore] exportPrivateKey for MQTT identity cache skipped ' +
+              errLikeToLogString(e),
+          );
+        }
+
+        try {
+          const deviceInfo = await conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER);
+          setState((prev) => {
+            const next = { ...prev };
+            if (deviceInfo?.firmware_build_date) {
+              next.firmwareVersion = deviceInfo.firmware_build_date;
+            }
+            const mm = meshcoreManufacturerModelFromDeviceQuery(deviceInfo);
+            if (mm) {
+              next.manufacturerModel = mm;
+            }
+            return next;
+          });
+        } catch {
+          // catch-no-log-ok deviceQuery optional for firmware string
+        }
+      })();
 
       // Re-resolve map/App GPS after nodesRef picks up getSelfInfo advert coords (same tick as setNodes is too early).
       requestAnimationFrame(() => {
@@ -1421,9 +1456,12 @@ export function useMeshcoreRuntime() {
     },
     [
       awaitUnlessMeshcoreSetupCancelled,
+      applyMeshcoreNodesToUi,
       buildNodesFromContacts,
+      deferMeshcoreDbContactMerge,
       meshcorePreviousNodesBaselineForBuild,
       refreshMeshcoreAutoaddFromDevice,
+      resolveMeshcoreStoreIdentityId,
       setupEventListeners,
     ],
   );
@@ -1991,13 +2029,17 @@ export function useMeshcoreRuntime() {
       const contactsRaw = await connRef.current.getContacts();
       const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
       setMeshcoreContactsForTelemetry(contacts);
+      const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
       const newNodes = await buildNodesFromContacts(contacts, {
         self: selfInfo,
         myNodeId: myNodeNumRef.current,
-        previousNodes: meshcorePreviousNodesBaselineForBuild(),
-        contactsFromRadio: true, // Signal to save with on_radio=1
+        previousNodes: previousNodesBaseline,
+        contactsFromRadio: true,
+        deferDbMerge: true,
+        deferPathHistory: true,
       });
-      setNodes((prev) => mergeMeshcoreChatStubNodes(prev, newNodes));
+      applyMeshcoreNodesToUi(newNodes);
+      void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
       // Warn if approaching contact limit
       if (contacts.length > MESHCORE_CONTACTS_WARNING_THRESHOLD) {
@@ -2008,7 +2050,13 @@ export function useMeshcoreRuntime() {
     } catch (e) {
       console.error('[useMeshCore] refreshContacts error ' + errLikeToLogString(e));
     }
-  }, [buildNodesFromContacts, meshcorePreviousNodesBaselineForBuild, selfInfo]);
+  }, [
+    buildNodesFromContacts,
+    meshcorePreviousNodesBaselineForBuild,
+    selfInfo,
+    applyMeshcoreNodesToUi,
+    deferMeshcoreDbContactMerge,
+  ]);
 
   const sendAdvert = useCallback(async () => {
     const conn = connRef.current;
@@ -3335,6 +3383,10 @@ export function useMeshcoreRuntime() {
             rowPrior != null && rowPrior > 0 ? rowPrior : uiPriorSec > 0 ? uiPriorSec : importSec;
           lastAdvertForDbByNodeId.set(nodeId, lastAdvertForDb);
         }
+        const storeId = meshcoreIdentityIdRef.current;
+        if (storeId) {
+          syncMeshcoreNodesMapToIdentityStore(storeId, next);
+        }
         return next;
       });
 
@@ -3822,6 +3874,7 @@ export function useMeshcoreRuntime() {
         favorited: number;
         hops_away: number | null;
       }[];
+      let nextMap: Map<number, MeshNode> | null = null;
       setNodes((prev) => {
         const next = new Map(prev);
         for (const row of dbContacts) {
@@ -3852,12 +3905,17 @@ export function useMeshcoreRuntime() {
             ...(mergedHopsAway != null ? { hops_away: mergedHopsAway } : {}),
           });
         }
+        nextMap = next;
         return next;
       });
+      const storeId = resolveMeshcoreStoreIdentityId();
+      if (storeId && nextMap) {
+        syncMeshcoreNodesMapToIdentityStore(storeId, nextMap);
+      }
     } catch (e) {
       console.warn('[useMeshCore] refreshNodesFromDb error ' + errLikeToLogString(e));
     }
-  }, []);
+  }, [resolveMeshcoreStoreIdentityId]);
   const refreshMessagesFromDb = useCallback(async () => {
     try {
       const dbMsgs = (await window.electronAPI.db.getMeshcoreMessages(

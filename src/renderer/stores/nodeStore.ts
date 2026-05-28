@@ -159,6 +159,41 @@ export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
   });
 }
 
+/** Full MeshCore (or other) node record merge — use when syncing from MeshNode / DB rows. */
+export function upsertNodeRecord(identityId: IdentityId, record: NodeRecord): void {
+  useNodeStore.setState((s) => {
+    const byId = s.nodes[identityId] ?? {};
+    const { nodeId, ...patch } = record;
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: {
+          ...byId,
+          [nodeId]: mergeNode(byId[nodeId], nodeId, patch),
+        },
+      },
+    };
+  });
+}
+
+/** Single setState merge for many nodes (avoids losing updates when syncing large radio contact lists). */
+export function upsertNodeRecordsForIdentity(identityId: IdentityId, records: NodeRecord[]): void {
+  if (records.length === 0) return;
+  useNodeStore.setState((s) => {
+    const byId = { ...(s.nodes[identityId] ?? {}) };
+    for (const record of records) {
+      const { nodeId, ...patch } = record;
+      byId[nodeId] = mergeNode(byId[nodeId], nodeId, patch);
+    }
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: byId,
+      },
+    };
+  });
+}
+
 export function updatePosition(identityId: IdentityId, event: PositionEvent): void {
   useNodeStore.setState((s) => {
     const byId = s.nodes[identityId] ?? {};
