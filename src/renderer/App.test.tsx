@@ -31,6 +31,7 @@ const {
   createMeshCoreMock,
   getStoredMeshProtocolMock,
   lastChatPanelProps,
+  lastNodeDetailModalProps,
   useDeviceMock,
   useMeshCoreMock,
 } = vi.hoisted(() => ({
@@ -197,9 +198,12 @@ const {
     requestPosition: vi.fn().mockResolvedValue(undefined),
     deleteNode: vi.fn().mockResolvedValue(undefined),
     setNodeFavorited: vi.fn().mockResolvedValue(undefined),
+    getRemoteAdminKeyForNode: vi.fn(),
+    setRemoteAdminKeyForNode: vi.fn(),
   }),
   getStoredMeshProtocolMock: vi.fn(() => 'meshtastic'),
   lastChatPanelProps: { current: null as null | Record<string, unknown> },
+  lastNodeDetailModalProps: { current: null as null | Record<string, unknown> },
   useDeviceMock: vi.fn(),
   useMeshCoreMock: vi.fn(),
 }));
@@ -210,6 +214,7 @@ beforeEach(() => {
   getStoredMeshProtocolMock.mockReset();
   getStoredMeshProtocolMock.mockReturnValue('meshtastic');
   lastChatPanelProps.current = null;
+  lastNodeDetailModalProps.current = null;
   useIdentityStore.setState({
     identities: {
       [MESHTASTIC_TEST_IDENTITY]: {
@@ -313,7 +318,10 @@ vi.mock('./lazyTabPanels', () => ({
 
 vi.mock('./lazyModals', () => ({
   ContactGroupsModal: () => null,
-  NodeDetailModal: () => null,
+  NodeDetailModal: (props: Record<string, unknown>) => {
+    lastNodeDetailModalProps.current = props;
+    return null;
+  },
 }));
 
 vi.mock('./lib/themeColors', () => ({
@@ -575,6 +583,49 @@ describe('App accessibility', () => {
         { index: 2, name: 'Ops' },
       ]);
     });
+  });
+
+  it('keeps MeshCore node detail remote-admin props protocol-gated after node click', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    const meshtasticRuntime = createDeviceMock();
+    const meshcoreRuntime = {
+      ...createMeshCoreMock(),
+      state: { status: 'configured', myNodeNum: 0x12345678, connectionType: 'tcp' },
+      selfNodeId: 0x12345678,
+      nodes: new Map([
+        [
+          0x23456789,
+          {
+            node_id: 0x23456789,
+            user: { id: '!23456789', long_name: 'Peer Node', short_name: 'Peer' },
+          },
+        ],
+      ]),
+    };
+    useDeviceMock.mockReturnValue(meshtasticRuntime);
+    useMeshCoreMock.mockReturnValue(meshcoreRuntime);
+
+    render(<App />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
+
+    await waitFor(() => {
+      expect(lastChatPanelProps.current).not.toBeNull();
+    });
+    const onNodeClick = lastChatPanelProps.current?.onNodeClick as
+      | ((nodeId: number) => void)
+      | null;
+    expect(onNodeClick).toBeTruthy();
+    onNodeClick?.(0x23456789);
+
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current).not.toBeNull();
+      expect(lastNodeDetailModalProps.current?.protocol).toBe('meshcore');
+    });
+
+    expect(lastNodeDetailModalProps.current?.remoteAdminKey).toBeUndefined();
+    expect(lastNodeDetailModalProps.current?.hasRemoteAdminKey).toBe(false);
+    expect(lastNodeDetailModalProps.current?.onSaveRemoteAdminKey).toBeUndefined();
+    expect(meshtasticRuntime.getRemoteAdminKeyForNode).not.toHaveBeenCalled();
   });
 
   it('keeps scrolling inside the main viewport container', () => {

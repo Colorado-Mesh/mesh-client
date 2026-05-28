@@ -2816,18 +2816,18 @@ function AppContent({
             }
             onToggleFavorite={detailModalPanelActions.setNodeFavorited}
             remoteAdminKey={
-              selectedNode != null
-                ? activeRuntime.getRemoteAdminKeyForNode(selectedNode.node_id)
+              detailModalProtocol === 'meshtastic' && selectedNode != null
+                ? meshtasticRuntime.getRemoteAdminKeyForNode(selectedNode.node_id)
                 : undefined
             }
             onSaveRemoteAdminKey={
               detailModalProtocol === 'meshtastic' && hasLocalMeshtasticRadio
-                ? activeRuntime.setRemoteAdminKeyForNode
+                ? meshtasticRuntime.setRemoteAdminKeyForNode
                 : undefined
             }
             hasRemoteAdminKey={
-              selectedNode != null
-                ? Boolean(activeRuntime.getRemoteAdminKeyForNode(selectedNode.node_id))
+              detailModalProtocol === 'meshtastic' && selectedNode != null
+                ? Boolean(meshtasticRuntime.getRemoteAdminKeyForNode(selectedNode.node_id))
                 : false
             }
             onConfigureRemotely={
