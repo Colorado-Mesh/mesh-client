@@ -39,11 +39,16 @@ export function meshtasticCrossTransportMatch(
   incoming: ChatMessage,
   windowMs: number = MESHTASTIC_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
 ): boolean {
-  if (existing.emoji != null || incoming.emoji != null) return false;
   if (existing.sender_id !== incoming.sender_id) return false;
   if (existing.channel !== incoming.channel) return false;
   if (dmTarget(existing) !== dmTarget(incoming)) return false;
-  if (
+  const existingIsReaction = existing.emoji != null || existing.replyId != null;
+  const incomingIsReaction = incoming.emoji != null || incoming.replyId != null;
+  if (existingIsReaction || incomingIsReaction) {
+    if (!existingIsReaction || !incomingIsReaction) return false;
+    if (existing.emoji !== incoming.emoji) return false;
+    if (existing.replyId !== incoming.replyId) return false;
+  } else if (
     normalizeMeshtasticDedupPayload(existing.payload) !==
     normalizeMeshtasticDedupPayload(incoming.payload)
   ) {
@@ -62,7 +67,6 @@ export function findMeshtasticCrossTransportDuplicate(
   incoming: ChatMessage,
   windowMs: number = MESHTASTIC_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
 ): ChatMessage | undefined {
-  if (incoming.emoji != null) return undefined;
   const start = Math.max(0, messages.length - CROSS_TRANSPORT_SCAN_LIMIT);
   for (let i = messages.length - 1; i >= start; i--) {
     const existing = messages[i];

@@ -10,9 +10,11 @@ import { withTimeout } from '../../shared/withTimeout';
 import {
   buildMeshcoreNodeMapFromDb,
   contactToDbRow,
+  findMeshcoreCrossTransportDuplicate,
   formatStructuredLogDetail,
   INITIAL_STATE,
   MANUAL_CONTACTS_KEY,
+  mapMeshcoreCrossTransportUpgrade,
   mapMeshcoreDbRowsToChatMessages,
   MAX_ENV_TELEMETRY_POINTS,
   MAX_TELEMETRY_POINTS,
@@ -705,6 +707,12 @@ export function useMeshcoreRuntime() {
       setMessages((prev) => {
         const isDup = prev.some((m) => meshcoreMessageDedupeKey(m) === incomingKey);
         if (isDup) {
+          return prev;
+        }
+        const crossTransportDup = findMeshcoreCrossTransportDuplicate(prev, msg);
+        if (crossTransportDup) {
+          const { messages: next, matched } = mapMeshcoreCrossTransportUpgrade(prev, msg);
+          if (matched) return next;
           return prev;
         }
         inserted = true;

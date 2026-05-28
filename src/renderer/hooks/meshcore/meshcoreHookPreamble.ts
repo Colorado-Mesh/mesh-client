@@ -13,6 +13,7 @@ import {
   MESHCORE_COORD_SCALE,
   meshcoreChatStubNodeIdFromDisplayName,
   meshcoreInferHopsFromOutPath,
+  meshcoreIsChatStubNodeId,
   meshcoreIsSyntheticPlaceholderPubKeyHex,
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
@@ -255,6 +256,92 @@ export function meshcoreMessageDedupeKey(msg: ChatMessage): string {
     msg.emoji ?? '',
     msg.replyId ?? '',
   ].join('|');
+}
+
+export const MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS = 5_000;
+const MESHCORE_CROSS_TRANSPORT_SCAN_LIMIT = 200;
+
+function normalizeMeshcoreSenderNameForDedup(name: string | undefined): string {
+  return (name ?? '').trim().toLowerCase();
+}
+
+function meshcoreSenderMatchesForDedup(a: ChatMessage, b: ChatMessage): boolean {
+  if (a.sender_id === b.sender_id) return true;
+  const aStub = meshcoreIsChatStubNodeId(a.sender_id);
+  const bStub = meshcoreIsChatStubNodeId(b.sender_id);
+  if (!aStub && !bStub) return false;
+  const aName = normalizeMeshcoreSenderNameForDedup(a.sender_name);
+  const bName = normalizeMeshcoreSenderNameForDedup(b.sender_name);
+  return aName.length > 0 && aName === bName;
+}
+
+function meshcoreTransportsAreCross(existing: ChatMessage, incoming: ChatMessage): boolean {
+  const existingVia = existing.receivedVia;
+  const incomingVia = incoming.receivedVia;
+  if (!existingVia || !incomingVia) return false;
+  if (existingVia === incomingVia || existingVia === 'both' || incomingVia === 'both') return false;
+  return true;
+}
+
+function meshcoreReceivedViaMerged(
+  existing: ChatMessage['receivedVia'],
+  incoming: ChatMessage['receivedVia'],
+): ChatMessage['receivedVia'] {
+  if (existing === 'both' || incoming === 'both') return 'both';
+  if (!existing) return incoming;
+  if (!incoming) return existing;
+  if (existing !== incoming) return 'both';
+  return existing;
+}
+
+export function meshcoreCrossTransportMatch(
+  existing: ChatMessage,
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
+): boolean {
+  if (!meshcoreTransportsAreCross(existing, incoming)) return false;
+  if (!meshcoreSenderMatchesForDedup(existing, incoming)) return false;
+  if (existing.channel !== incoming.channel) return false;
+  if ((existing.to ?? undefined) !== (incoming.to ?? undefined)) return false;
+  if ((existing.emoji ?? undefined) !== (incoming.emoji ?? undefined)) return false;
+  if ((existing.replyId ?? undefined) !== (incoming.replyId ?? undefined)) return false;
+  const existingBody = existing.meshcoreDedupeKey ?? existing.payload;
+  const incomingBody = incoming.meshcoreDedupeKey ?? incoming.payload;
+  if (existingBody !== incomingBody && existing.payload !== incoming.payload) return false;
+  if (Math.abs(existing.timestamp - incoming.timestamp) > windowMs) return false;
+  return true;
+}
+
+export function findMeshcoreCrossTransportDuplicate(
+  messages: readonly ChatMessage[],
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
+): ChatMessage | undefined {
+  const start = Math.max(0, messages.length - MESHCORE_CROSS_TRANSPORT_SCAN_LIMIT);
+  for (let i = messages.length - 1; i >= start; i--) {
+    const existing = messages[i];
+    if (meshcoreCrossTransportMatch(existing, incoming, windowMs)) {
+      return existing;
+    }
+  }
+  return undefined;
+}
+
+export function mapMeshcoreCrossTransportUpgrade(
+  messages: readonly ChatMessage[],
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
+): { messages: ChatMessage[]; matched: boolean } {
+  let matched = false;
+  const next = messages.map((m) => {
+    if (!meshcoreCrossTransportMatch(m, incoming, windowMs)) return m;
+    matched = true;
+    return {
+      ...m,
+      receivedVia: meshcoreReceivedViaMerged(m.receivedVia, incoming.receivedVia),
+    };
+  });
+  return { messages: matched ? next : [...messages], matched };
 }
 
 /** Match DB vs live without `meshcoreDedupeKey` (DB rows only have normalized payload). */

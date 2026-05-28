@@ -1134,30 +1134,25 @@ export function useMeshtasticRuntime() {
         getNodeName,
       );
 
-      if (!mqttWithPreviews.emoji) {
-        const crossDup = findMeshtasticCrossTransportDuplicate(
-          messagesRef.current,
-          mqttWithPreviews,
-        );
-        if (crossDup) {
-          setMessages((prev) => {
-            const { messages: next, matched } = mapMeshtasticCrossTransportUpgrade(
-              prev,
-              mqttWithPreviews,
-            );
-            if (!matched) return prev;
-            return next;
-          });
-          const pid =
-            normalizedPacketId !== undefined && normalizedPacketId !== 0
-              ? normalizedPacketId
-              : normalizeMeshtasticPacketId(crossDup.packetId);
-          if (pid !== undefined && pid !== 0) {
-            isDuplicate(pid); // registers as seen to suppress future duplicates
-            void window.electronAPI.db.updateMessageReceivedVia(pid);
-          }
-          return;
+      const crossDup = findMeshtasticCrossTransportDuplicate(messagesRef.current, mqttWithPreviews);
+      if (crossDup) {
+        setMessages((prev) => {
+          const { messages: next, matched } = mapMeshtasticCrossTransportUpgrade(
+            prev,
+            mqttWithPreviews,
+          );
+          if (!matched) return prev;
+          return next;
+        });
+        const pid =
+          normalizedPacketId !== undefined && normalizedPacketId !== 0
+            ? normalizedPacketId
+            : normalizeMeshtasticPacketId(crossDup.packetId);
+        if (pid !== undefined && pid !== 0) {
+          isDuplicate(pid); // registers as seen to suppress future duplicates
+          void window.electronAPI.db.updateMessageReceivedVia(pid);
         }
+        return;
       }
 
       setMessages((prev) => {

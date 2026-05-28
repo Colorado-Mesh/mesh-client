@@ -76,10 +76,15 @@ describe('meshtasticCrossTransportMatch', () => {
     expect(meshtasticCrossTransportMatch(mqtt, rf)).toBe(true);
   });
 
-  it('never matches reactions', () => {
+  it('matches reaction duplicates across transports', () => {
     const mqtt = baseMsg({ receivedVia: 'mqtt', emoji: 0x1f44d, replyId: 99 });
-    const rf = baseMsg({ receivedVia: 'rf', emoji: 0x1f44d, replyId: 99 });
-    expect(meshtasticCrossTransportMatch(mqtt, rf)).toBe(false);
+    const rf = baseMsg({
+      receivedVia: 'rf',
+      emoji: 0x1f44d,
+      replyId: 99,
+      timestamp: mqtt.timestamp + 5,
+    });
+    expect(meshtasticCrossTransportMatch(mqtt, rf)).toBe(true);
   });
 });
 
@@ -194,7 +199,7 @@ describe('useDevice cross-transport integration — logic layer', () => {
     expect(packetIdForDb).toBe(0xcccccccc);
   });
 
-  it('no cross-dup when message is a reaction (emoji set)', () => {
+  it('cross-dup when reaction arrives on opposite transport', () => {
     const mqttReaction = baseMsg({ receivedVia: 'mqtt', emoji: 0x1f44d, replyId: 42 });
     const rfReaction = baseMsg({
       receivedVia: 'rf',
@@ -202,7 +207,7 @@ describe('useDevice cross-transport integration — logic layer', () => {
       replyId: 42,
       timestamp: mqttReaction.timestamp + 5_000,
     });
-    expect(findMeshtasticCrossTransportDuplicate([mqttReaction], rfReaction)).toBeUndefined();
+    expect(findMeshtasticCrossTransportDuplicate([mqttReaction], rfReaction)).toBe(mqttReaction);
   });
 
   it('no cross-dup when payloads differ', () => {

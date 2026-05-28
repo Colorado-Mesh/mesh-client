@@ -6,6 +6,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { meshcoreChatStubNodeIdFromDisplayName } from '../lib/meshcoreUtils';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
 const SENDER_ID = 0x12345678;
@@ -354,6 +355,50 @@ describe('useMeshCore mount hydration', () => {
         timestamp: ts,
       }),
     );
+  });
+
+  it('merges RF history + MQTT duplicate into one message with receivedVia both', async () => {
+    const senderName = 'SynthUser';
+    const baseTs = 1_700_000_010_000;
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([
+      {
+        ...sampleMeshcoreDbRow(),
+        id: 91,
+        sender_id: meshcoreChatStubNodeIdFromDisplayName(senderName),
+        sender_name: senderName,
+        payload: 'same dedup body',
+        timestamp: baseTs,
+        received_via: 'rf',
+      },
+    ]);
+    let meshcoreChatHandler: ((raw: unknown) => void) | undefined;
+    vi.mocked(window.electronAPI.mqtt.onMeshcoreChat).mockImplementation((cb) => {
+      meshcoreChatHandler = cb;
+      return () => {};
+    });
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+    await waitFor(() => {
+      expect(result.current.messages.length).toBe(1);
+      expect(meshcoreChatHandler).toBeDefined();
+    });
+    vi.mocked(window.electronAPI.db.saveMeshcoreMessage).mockClear();
+
+    act(() => {
+      meshcoreChatHandler!({
+        text: `${senderName}: same dedup body`,
+        channelIdx: 0,
+        senderName,
+        senderNodeId: 0xabcd1234,
+        timestamp: baseTs + 1000,
+      });
+    });
+
+    await waitFor(() => {
+      expect(result.current.messages.length).toBe(1);
+    });
+    expect(result.current.messages[0].receivedVia).toBe('both');
+    expect(window.electronAPI.db.saveMeshcoreMessage).not.toHaveBeenCalled();
   });
 });
 
