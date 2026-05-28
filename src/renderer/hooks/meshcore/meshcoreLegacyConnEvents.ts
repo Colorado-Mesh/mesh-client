@@ -97,6 +97,7 @@ export function attachMeshcoreLegacyConnEvents(
   conn: MeshCoreConnection,
   ctx: MeshcoreLegacyConnEventsCtx,
 ): () => void {
+  const protocolOwnedEvents = new Set<string | number>([128, 7, 8, 138, 'rx']);
   const {
     meshcoreIdentityIdRef,
     connRef,
@@ -142,6 +143,7 @@ export function attachMeshcoreLegacyConnEvents(
     handler: (...args: unknown[]) => void;
   }[] = [];
   const onMeshcoreConn = (event: string | number, handler: (...args: unknown[]) => void) => {
+    if (protocolOwnedEvents.has(event)) return;
     conn.on(event, handler);
     meshcorePersistentListenerRegs.push({ event, handler });
   };

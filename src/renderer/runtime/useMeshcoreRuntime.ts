@@ -58,7 +58,6 @@ import type { OurPosition } from '../lib/gpsSource';
 import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
 import { syncMeshcoreNodesMapToIdentityStore } from '../lib/hydrateIdentityStoresFromDb';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
-import { runMeshcoreMountHydration } from '../lib/legacySideEffects/meshcoreDbHydration';
 import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
 import type {
@@ -649,9 +648,10 @@ export function useMeshcoreRuntime() {
     [],
   );
 
-  // Load persisted MeshCore contacts + messages from DB on mount (side-effect module).
   useEffect(() => {
-    return runMeshcoreMountHydration(reloadMeshcoreNodesFromDb);
+    void reloadMeshcoreNodesFromDb({ hydrateMessages: true }).catch((e: unknown) => {
+      console.warn('[useMeshCore] initial db reload failed ' + errLikeToLogString(e));
+    });
   }, [reloadMeshcoreNodesFromDb]);
 
   // Mirror self radio battery into the home MeshNode (node list + node detail); refreshContacts rebuilds from selfInfo

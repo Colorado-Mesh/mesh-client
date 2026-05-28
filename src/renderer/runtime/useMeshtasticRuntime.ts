@@ -81,7 +81,6 @@ import {
   syncMeshtasticNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
-import { runMeshtasticDbHydration } from '../lib/legacySideEffects/meshtasticDbHydration';
 import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import {
@@ -705,20 +704,6 @@ export function useMeshtasticRuntime() {
       }
     }, WATCHDOG_INTERVAL_MS);
   }, [getThresholds]);
-
-  // Load saved data from DB on mount (side-effect module; moves to driver connect later)
-  useEffect(() => {
-    runMeshtasticDbHydration({
-      setMessages,
-      setNodes,
-      onNodesLoaded: (nodeMap) => {
-        nodesRef.current = nodeMap;
-      },
-      seedSeenPacketId: (packetId, expiresAt) => {
-        seenPacketIds.current.set(packetId, expiresAt);
-      },
-    });
-  }, []);
 
   useEffect(() => {
     moduleConfigsRef.current = moduleConfigs;
