@@ -130,6 +130,7 @@ import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { normalizeReactionEmoji, reactionGlyphFromPicker } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews } from '../lib/replyPreview';
+import { loadLastSerialPortId } from '../lib/serialPortSignature';
 import { registerMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import {
@@ -139,6 +140,7 @@ import {
   traceRouteEventsToResultsMap,
   waypointEventsToMeshWaypointMap,
 } from '../lib/storeRecordAdapters';
+import { MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS } from '../lib/timeConstants';
 import { TransportManager } from '../lib/transport/TransportManager';
 import type { StatusUpdateEvent } from '../lib/transport/types';
 import type {
@@ -258,9 +260,12 @@ export function useMeshtasticRuntime() {
     type: ConnectionType;
     httpAddress?: string;
     blePeripheralId?: string;
+    lastSerialPortId?: string | null;
   } | null>(null);
   const isReconnectingRef = useRef<boolean>(false);
   const reconnectGenerationRef = useRef<number>(0);
+  const postRebootRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const postRebootRecoveryScheduledRef = useRef(false);
   const transportManagerRef = useRef<TransportManager | null>(null);
   const onStatusUpdateRef = useRef<(event: StatusUpdateEvent) => void>(() => {});
   // Tracks the tempId of an in-flight optimistic message (device path) so the echo can be skipped
@@ -685,6 +690,50 @@ export function useMeshtasticRuntime() {
   // ─── Forward declarations for mutual recursion ────────────────
   const handleConnectionLostRef = useRef<() => void>(() => {});
   const attemptReconnectRef = useRef<() => Promise<void>>(async () => {});
+  const schedulePostCommitRebootRecoveryRef = useRef<(source?: string) => void>(() => {});
+  const clearPostCommitRebootRecoveryRef = useRef<() => void>(() => {});
+
+  const clearPostCommitRebootRecovery = useCallback(() => {
+    if (postRebootRecoveryTimerRef.current != null) {
+      clearTimeout(postRebootRecoveryTimerRef.current);
+      postRebootRecoveryTimerRef.current = null;
+    }
+    postRebootRecoveryScheduledRef.current = false;
+  }, []);
+
+  const schedulePostCommitRebootRecovery = useCallback(
+    (source = 'unknown') => {
+      const params = connectionParamsRef.current;
+      if (!params || (params.type !== 'ble' && params.type !== 'serial')) return;
+      if (isReconnectingRef.current || postRebootRecoveryScheduledRef.current) return;
+
+      postRebootRecoveryScheduledRef.current = true;
+      deviceConfiguredRef.current = false;
+      isConfiguringRef.current = true;
+      meshtasticIngestSessionRef.current?.setConfiguring(true);
+      stopWatchdog();
+      stopGpsInterval();
+
+      console.warn(
+        `[useMeshtasticRuntime] post-commit reboot recovery scheduled (${source}) — ` +
+          `transport reset in ${MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS}ms`,
+      );
+
+      if (postRebootRecoveryTimerRef.current != null) {
+        clearTimeout(postRebootRecoveryTimerRef.current);
+      }
+      postRebootRecoveryTimerRef.current = setTimeout(() => {
+        postRebootRecoveryTimerRef.current = null;
+        postRebootRecoveryScheduledRef.current = false;
+        if (!connectionParamsRef.current) return;
+        handleConnectionLostRef.current();
+      }, MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS);
+    },
+    [stopWatchdog, stopGpsInterval],
+  );
+
+  clearPostCommitRebootRecoveryRef.current = clearPostCommitRebootRecovery;
+  schedulePostCommitRebootRecoveryRef.current = schedulePostCommitRebootRecovery;
 
   // ─── Watchdog: start monitoring data freshness ────────────────
   const startWatchdog = useCallback(() => {
@@ -1449,6 +1498,8 @@ export function useMeshtasticRuntime() {
       deviceGpsModeRef,
       deviceRef,
       handleConnectionLostRef,
+      schedulePostCommitRebootRecoveryRef,
+      clearPostCommitRebootRecoveryRef,
       isConfiguringRef,
       lastDataReceivedRef,
       lastNodeInfoRequestAtRef,
@@ -1568,6 +1619,8 @@ export function useMeshtasticRuntime() {
     isReconnectingRef.current = true;
 
     void (async () => {
+      clearPostCommitRebootRecovery();
+      deviceConfiguredRef.current = false;
       // Clean up existing connection before reconnect (BlueZ needs GATT fully torn down).
       clearConfigureTimeout();
       cleanupSubscriptions();
@@ -1588,7 +1641,13 @@ export function useMeshtasticRuntime() {
       }
       void attemptReconnectRef.current();
     })();
-  }, [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog, stopGpsInterval]);
+  }, [
+    clearConfigureTimeout,
+    cleanupSubscriptions,
+    stopWatchdog,
+    stopGpsInterval,
+    clearPostCommitRebootRecovery,
+  ]);
 
   // Keep the ref in sync
   handleConnectionLostRef.current = handleConnectionLost;
@@ -1648,6 +1707,7 @@ export function useMeshtasticRuntime() {
       opened = await openMeshtasticTransport(params.type, {
         httpAddress: params.httpAddress,
         blePeripheralId: params.blePeripheralId,
+        lastSerialPortId: params.lastSerialPortId,
       });
       deviceRef.current = opened.device;
       wireSubscriptions(opened.device, params.type, {
@@ -1690,8 +1750,15 @@ export function useMeshtasticRuntime() {
   attemptReconnectRef.current = attemptReconnect;
 
   const prepareRfConnect = useCallback(
-    async (type: ConnectionType, httpAddress?: string, blePeripheralId?: string): Promise<void> => {
+    async (
+      type: ConnectionType,
+      httpAddress?: string,
+      blePeripheralId?: string,
+      lastSerialPortId?: string | null,
+    ): Promise<void> => {
       clearConfigureTimeout();
+      clearPostCommitRebootRecovery();
+      deviceConfiguredRef.current = false;
       if (deviceRef.current || meshtasticDriverConnectedRef.current) {
         cleanupSubscriptions();
         stopWatchdog();
@@ -1708,7 +1775,14 @@ export function useMeshtasticRuntime() {
           });
         }
       }
-      connectionParamsRef.current = { type, httpAddress, blePeripheralId };
+      const resolvedSerialPortId =
+        type === 'serial' ? (lastSerialPortId ?? loadLastSerialPortId()) : undefined;
+      connectionParamsRef.current = {
+        type,
+        httpAddress,
+        blePeripheralId,
+        lastSerialPortId: resolvedSerialPortId,
+      };
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
       reconnectGenerationRef.current++;
@@ -1721,7 +1795,7 @@ export function useMeshtasticRuntime() {
         batteryCharging: undefined,
       }));
     },
-    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog],
+    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog, clearPostCommitRebootRecovery],
   );
 
   const applyMeshtasticNodesToUi = useCallback(
@@ -1822,6 +1896,8 @@ export function useMeshtasticRuntime() {
     async (opts?: { disconnectDriver?: boolean }) => {
       const disconnectDriver = opts?.disconnectDriver !== false;
       clearConfigureTimeout();
+      clearPostCommitRebootRecovery();
+      deviceConfiguredRef.current = false;
       const driverIdentity =
         meshtasticDriverConnectedRef.current &&
         (meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current)
@@ -1867,17 +1943,26 @@ export function useMeshtasticRuntime() {
       remoteAdminClientRef.current?.resetEditState();
       remoteAdminClientRef.current?.sessionStore.clear();
     },
-    [cleanupSubscriptions, stopWatchdog, stopGpsInterval, clearConfigureTimeout],
+    [
+      cleanupSubscriptions,
+      stopWatchdog,
+      stopGpsInterval,
+      clearConfigureTimeout,
+      clearPostCommitRebootRecovery,
+    ],
   );
-
-  // ─── Connect ──────────────────────────────────────────────────
   const connect = useCallback(
     async (type: ConnectionType, httpAddress?: string, blePeripheralId?: string) => {
-      await prepareRfConnect(type, httpAddress, blePeripheralId);
+      const serialPortId = type === 'serial' ? loadLastSerialPortId() : undefined;
+      await prepareRfConnect(type, httpAddress, blePeripheralId, serialPortId);
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       try {
         console.debug('[useMeshtasticRuntime] connect', type, httpAddress ?? blePeripheralId);
-        opened = await openMeshtasticTransport(type, { httpAddress, blePeripheralId });
+        opened = await openMeshtasticTransport(type, {
+          httpAddress,
+          blePeripheralId,
+          lastSerialPortId: serialPortId,
+        });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
         console.error('[useMeshtasticRuntime] Connection failed: ' + errLikeToLogString(err));
@@ -1900,7 +1985,7 @@ export function useMeshtasticRuntime() {
       lastSerialPortId?: string | null,
       blePeripheralId?: string,
     ) => {
-      await prepareRfConnect(type, httpAddress, blePeripheralId);
+      await prepareRfConnect(type, httpAddress, blePeripheralId, lastSerialPortId);
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       try {
         console.debug(
@@ -2465,6 +2550,7 @@ export function useMeshtasticRuntime() {
     }
     if (!deviceRef.current) return;
     await deviceRef.current.commitEditSettings();
+    schedulePostCommitRebootRecoveryRef.current('commitConfig');
   }, [refreshRemoteConfigSnapshot, runRemoteAdminOp]);
 
   const setDeviceChannel = useCallback(

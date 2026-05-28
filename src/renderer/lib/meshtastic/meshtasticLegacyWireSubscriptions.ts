@@ -161,11 +161,14 @@ export interface MeshtasticLegacyWireSubscriptionDeps {
     type: ConnectionType;
     httpAddress?: string;
     blePeripheralId?: string;
+    lastSerialPortId?: string | null;
   } | null>;
   deviceConfiguredRef: RefObject<boolean>;
   deviceGpsModeRef: RefObject<number>;
   deviceRef: RefObject<MeshDevice | null>;
   handleConnectionLostRef: RefObject<() => void>;
+  schedulePostCommitRebootRecoveryRef: RefObject<(source?: string) => void>;
+  clearPostCommitRebootRecoveryRef: RefObject<() => void>;
   isConfiguringRef: RefObject<boolean>;
   lastDataReceivedRef: RefObject<number>;
   lastNodeInfoRequestAtRef: RefObject<Map<number, number>>;
@@ -327,6 +330,8 @@ export function attachMeshtasticLegacyWireSubscriptions(
     deviceGpsModeRef,
     deviceRef,
     handleConnectionLostRef,
+    schedulePostCommitRebootRecoveryRef,
+    clearPostCommitRebootRecoveryRef,
     isConfiguringRef,
     lastDataReceivedRef,
     lastNodeInfoRequestAtRef,
@@ -446,7 +451,9 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
   // ─── Device status ─────────────────────────────────────────
   const unsub1 = device.events.onDeviceStatus.subscribe((status) => {
-    touchLastData();
+    if (status !== 1) {
+      touchLastData();
+    }
     const statusMap: Record<number, DeviceState['status']> = {
       1: 'connecting', // DeviceRestarting
       2: 'disconnected', // DeviceDisconnected
@@ -462,6 +469,13 @@ export function attachMeshtasticLegacyWireSubscriptions(
       status: mapped,
       ...(mapped === 'configured' || mapped === 'connected' ? { connectionLoss: false } : {}),
     }));
+
+    if (status === 1) {
+      deviceConfiguredRef.current = false;
+      isConfiguringRef.current = true;
+      meshtasticIngestSessionRef.current?.setConfiguring(true);
+      schedulePostCommitRebootRecoveryRef.current('DeviceRestarting');
+    }
 
     // Track configuring phase so packet replays are marked as historical
     if (status === 3 || status === 5 || status === 6) {
@@ -496,6 +510,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
     // Start watchdog when configured
     if (status === 7) {
+      clearPostCommitRebootRecoveryRef.current();
       clearConfigureTimeout();
       isConfiguringRef.current = false;
       meshtasticIngestSessionRef.current?.setConfiguring(false);

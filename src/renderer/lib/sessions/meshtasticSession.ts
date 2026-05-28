@@ -6,6 +6,7 @@ export interface MeshtasticSessionApi {
     type: ConnectionType,
     httpAddress?: string,
     blePeripheralId?: string,
+    lastSerialPortId?: string | null,
   ) => Promise<void>;
   attachRfSession: (driverIdentityId: string, type: ConnectionType) => Promise<void>;
   handleRfConnectFailure: (driverIdentityId?: string) => Promise<void>;

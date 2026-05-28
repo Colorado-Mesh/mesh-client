@@ -30,6 +30,15 @@ export function signaturesEqual(a: SerialPortSignature | null, b: SerialPortSign
   );
 }
 
+export function loadLastSerialPortId(): string | null {
+  try {
+    return localStorage.getItem(LAST_SERIAL_PORT_KEY);
+  } catch {
+    // catch-no-log-ok localStorage read failure — no saved port id
+    return null;
+  }
+}
+
 export function loadLastSerialPortSignature(): SerialPortSignature | null {
   try {
     const raw = localStorage.getItem(LAST_SERIAL_PORT_SIGNATURE_KEY);

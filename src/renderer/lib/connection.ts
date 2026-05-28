@@ -324,6 +324,26 @@ export async function createConnection(
   return new MeshDevice(transport as any);
 }
 
+function getSerialPortFromMeshTransport(transport: unknown): SerialPort | null {
+  const candidate = transport as { port?: SerialPort };
+  if (candidate?.port && typeof candidate.port.close === 'function') {
+    return candidate.port;
+  }
+  return null;
+}
+
+/** Best-effort close of an open Web Serial port before reconnect. */
+export async function closeSerialPortIfOpen(port: SerialPort): Promise<void> {
+  if (!port.readable && !port.writable) return;
+  try {
+    await port.close();
+  } catch (e) {
+    console.debug(
+      `[connection] closeSerialPortIfOpen ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
+}
+
 /**
  * Attempt to reconnect to a previously-granted serial port without
  * requiring a new user gesture. Uses navigator.serial.getPorts() to
@@ -342,6 +362,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
     `[connection] reconnectSerial: getPorts returned ${ports.length} port(s), lastPortId=${lastPortId ?? 'none'}`,
   );
   const port = selectGrantedSerialPort(ports, lastPortId);
+  await closeSerialPortIfOpen(port);
   persistSerialPortIdentity(port);
   console.debug(
     `[connection] reconnectSerial: using port portId=${(port as SerialPort & { portId?: string }).portId ?? 'none'} usbVendor=${port.getInfo?.().usbVendorId ?? 'n/a'} usbProduct=${port.getInfo?.().usbProductId ?? 'n/a'}`,
@@ -412,6 +433,10 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
       );
     }
   } finally {
+    const serialPort = getSerialPortFromMeshTransport(device.transport);
+    if (serialPort) {
+      await closeSerialPortIfOpen(serialPort);
+    }
     // Always complete device streams to prevent memory leaks
     try {
       device.complete();
