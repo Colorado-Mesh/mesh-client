@@ -151,7 +151,7 @@ function makeMockSerialPort() {
   };
 }
 
-describe('useMeshCore stats parsing', () => {
+describe('useMeshcoreRuntime stats parsing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);

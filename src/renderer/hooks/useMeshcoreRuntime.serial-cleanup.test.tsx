@@ -160,7 +160,7 @@ function makeMockSerialPort(portId = 'port-1'): MockSerialPort {
   };
 }
 
-describe('useMeshCore serial cleanup', () => {
+describe('useMeshcoreRuntime serial cleanup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);

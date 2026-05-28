@@ -115,7 +115,7 @@ export class TransportManager {
           const packetId = typeof pe.packetId === 'number' ? pe.packetId : undefined;
           const error = pe.error ?? String(err);
           console.warn(
-            `[Meshtastic] sendText failed ${err instanceof Error ? err.message : String(err)}`,
+            `[useMeshtasticRuntime] sendText failed ${err instanceof Error ? err.message : String(err)}`,
           );
           onStatusUpdateRef.current({
             tempId,

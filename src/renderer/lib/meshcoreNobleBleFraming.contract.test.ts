@@ -8,7 +8,7 @@
  * If IpcNobleConnection ever subclasses SerialConnection again, the first BLE write would
  * pick up 0x3c framing and firmware will not respond — handshake timeout on all OSes.
  *
- * @see useMeshCore.ts IpcNobleConnection / NobleOverIpc
+ * @see useMeshcoreRuntime.ts IpcNobleConnection / NobleOverIpc
  * @see node_modules/@liamcottle/meshcore.js/src/connection/web_ble_connection.js
  */
 import { Connection, Constants, SerialConnection } from '@liamcottle/meshcore.js';

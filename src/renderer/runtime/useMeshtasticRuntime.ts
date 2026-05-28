@@ -501,7 +501,7 @@ export function useMeshtasticRuntime() {
     }
     if (entries.length === 0) return;
     void window.electronAPI.mqtt.updateChannelKeys({ entries }).catch((e: unknown) => {
-      console.warn('[useDevice] mqtt.updateChannelKeys failed ' + errLikeToLogString(e));
+      console.warn('[useMeshtasticRuntime] mqtt.updateChannelKeys failed ' + errLikeToLogString(e));
     });
   }, []);
 
@@ -574,7 +574,7 @@ export function useMeshtasticRuntime() {
     // If we were in "stale" state, recover to "configured"
     setState((s) => {
       if (s.status === 'stale') {
-        console.debug('[useDevice] watchdog: recovered from stale → configured');
+        console.debug('[useMeshtasticRuntime] watchdog: recovered from stale → configured');
         return { ...s, status: 'configured', lastDataReceived: Date.now() };
       }
       return s;
@@ -598,7 +598,9 @@ export function useMeshtasticRuntime() {
       try {
         meshtasticIngressDetachRef.current();
       } catch (e) {
-        console.debug('[useDevice] ingress detach error (ignored) ' + errLikeToLogString(e));
+        console.debug(
+          '[useMeshtasticRuntime] ingress detach error (ignored) ' + errLikeToLogString(e),
+        );
       }
       meshtasticIngressDetachRef.current = null;
     }
@@ -609,7 +611,9 @@ export function useMeshtasticRuntime() {
       try {
         unsub();
       } catch (e) {
-        console.debug('[useDevice] unsubscribe error (ignored) ' + errLikeToLogString(e));
+        console.debug(
+          '[useMeshtasticRuntime] unsubscribe error (ignored) ' + errLikeToLogString(e),
+        );
       }
     }
     unsubscribesRef.current = [];
@@ -659,7 +663,7 @@ export function useMeshtasticRuntime() {
     try {
       const gpsParsed = parseStoredJson<{ refreshInterval?: number }>(
         localStorage.getItem('mesh-client:gpsSettings'),
-        'useDevice startGpsInterval',
+        'useMeshtasticRuntime startGpsInterval',
       );
       const intervalSecs = gpsParsed?.refreshInterval ?? 0;
       if (intervalSecs > 0) {
@@ -667,7 +671,9 @@ export function useMeshtasticRuntime() {
           // Dual-protocol: avoid host IP/geo refresh churn while MeshCore is the active UI protocol.
           if (getStoredMeshProtocol() !== 'meshtastic') return;
           refreshOurPositionRef.current().catch((err: unknown) => {
-            console.error('[useDevice] GPS interval refresh error: ' + errLikeToLogString(err));
+            console.error(
+              '[useMeshtasticRuntime] GPS interval refresh error: ' + errLikeToLogString(err),
+            );
           });
         }, intervalSecs * 1000);
       }
@@ -690,11 +696,11 @@ export function useMeshtasticRuntime() {
       const transport = connectionParamsRef.current?.type ?? 'unknown';
       if (elapsed > dead) {
         console.warn(
-          `[useDevice] watchdog: ${transport} dead for ${elapsed}ms, triggering reconnect`,
+          `[useMeshtasticRuntime] watchdog: ${transport} dead for ${elapsed}ms, triggering reconnect`,
         );
         handleConnectionLostRef.current();
       } else if (elapsed > stale) {
-        console.warn(`[useDevice] watchdog: ${transport} stale for ${elapsed}ms`);
+        console.warn(`[useMeshtasticRuntime] watchdog: ${transport} stale for ${elapsed}ms`);
         setState((s) => {
           if (s.status === 'configured' || s.status === 'connected') {
             return { ...s, status: 'stale', lastDataReceived: lastDataReceivedRef.current };
@@ -744,13 +750,15 @@ export function useMeshtasticRuntime() {
           }
         }
         if (Object.keys(partial).length === 0) return;
-        mergeAppSettingsPartial(partial, 'useDevice hydrate remote admin keys');
+        mergeAppSettingsPartial(partial, 'useMeshtasticRuntime hydrate remote admin keys');
         const map = readMeshtasticRemoteAdminKeyMap();
         setRemoteAdminKeysByNode(map);
         remoteAdminKeysByNodeRef.current = map;
       })
       .catch((e: unknown) => {
-        console.warn('[useDevice] hydrate remote admin keys failed ' + errLikeToLogString(e));
+        console.warn(
+          '[useMeshtasticRuntime] hydrate remote admin keys failed ' + errLikeToLogString(e),
+        );
       });
   }, [state.status]);
 
@@ -826,7 +834,7 @@ export function useMeshtasticRuntime() {
         myNodeNumRef.current = mqttOnlyId;
         setState((prev) => ({ ...prev, myNodeNum: mqttOnlyId }));
         console.debug(
-          `[useDevice] MQTT-only identity: from=!${mqttOnlyId.toString(16).padStart(8, '0')} source=${mqttOnlyIdentitySource(lastRfSelfNodeIdRef.current)}`,
+          `[useMeshtasticRuntime] MQTT-only identity: from=!${mqttOnlyId.toString(16).padStart(8, '0')} source=${mqttOnlyIdentitySource(lastRfSelfNodeIdRef.current)}`,
         );
         updateNodes((prev) => {
           const updated = new Map(prev);
@@ -835,7 +843,9 @@ export function useMeshtasticRuntime() {
             if (staleVirtualId !== mqttOnlyId) {
               updated.delete(staleVirtualId);
               void window.electronAPI.db.deleteNode(staleVirtualId).catch((e: unknown) => {
-                console.debug('[useDevice] deleteNode stale virtual ' + errLikeToLogString(e));
+                console.debug(
+                  '[useMeshtasticRuntime] deleteNode stale virtual ' + errLikeToLogString(e),
+                );
               });
             }
             const existing = updated.get(mqttOnlyId) ?? emptyNode(mqttOnlyId);
@@ -905,7 +915,9 @@ export function useMeshtasticRuntime() {
               publishJsonMirror: presenceMqtt.publishJsonMirror,
             })
             .catch((e: unknown) => {
-              console.warn('[useDevice] MQTT presence publish failed ' + errLikeToLogString(e));
+              console.warn(
+                '[useMeshtasticRuntime] MQTT presence publish failed ' + errLikeToLogString(e),
+              );
             });
         };
         if (mqttPresenceInitTimerRef.current) clearTimeout(mqttPresenceInitTimerRef.current);
@@ -1224,7 +1236,7 @@ export function useMeshtasticRuntime() {
       deviceRef.current = null;
       if (device) {
         safeDisconnect(device).catch((e: unknown) => {
-          console.debug('[useDevice] unmount safeDisconnect ' + errLikeToLogString(e));
+          console.debug('[useMeshtasticRuntime] unmount safeDisconnect ' + errLikeToLogString(e));
         });
       }
     };
@@ -1289,7 +1301,9 @@ export function useMeshtasticRuntime() {
 
       if (serverNodeId == null) {
         if (!manual) {
-          console.debug('[useDevice] Store & Forward history skipped: no server node yet');
+          console.debug(
+            '[useMeshtasticRuntime] Store & Forward history skipped: no server node yet',
+          );
         }
         return { ok: false, code: 'no_server' };
       }
@@ -1298,7 +1312,9 @@ export function useMeshtasticRuntime() {
       const activeDevice = deviceRef.current;
       if (!myNode || !activeDevice || !deviceConfiguredRef.current) {
         if (!manual) {
-          console.debug('[useDevice] Store & Forward history skipped: radio not configured');
+          console.debug(
+            '[useMeshtasticRuntime] Store & Forward history skipped: radio not configured',
+          );
         }
         return { ok: false, code: 'not_configured' };
       }
@@ -1315,7 +1331,7 @@ export function useMeshtasticRuntime() {
         const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
         const settings = parseStoredJson<Record<string, unknown>>(
           getAppSettingsRaw(),
-          'useDevice storeForwardAutoFetchHistory',
+          'useMeshtasticRuntime storeForwardAutoFetchHistory',
         );
         const sfAuto = settings?.storeForwardAutoFetchHistory;
         const autoFetchEnabled = sfAuto !== false && sfAuto !== 'false';
@@ -1369,7 +1385,7 @@ export function useMeshtasticRuntime() {
         await writeToRadioWithoutQueue(activeDevice, toRadioBytes);
         recordSfHistoryFetch(serverNodeId, now);
         console.debug(
-          `[useDevice] Store & Forward CLIENT_HISTORY sent to 0x${serverNodeId.toString(16)} ch=${channel} manual=${manual}`,
+          `[useMeshtasticRuntime] Store & Forward CLIENT_HISTORY sent to 0x${serverNodeId.toString(16)} ch=${channel} manual=${manual}`,
         );
         return { ok: true };
       } catch (e: unknown) {
@@ -1377,7 +1393,7 @@ export function useMeshtasticRuntime() {
           releaseStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId);
         }
         console.error(
-          '[useDevice] Store & Forward history request failed ' + errLikeToLogString(e),
+          '[useMeshtasticRuntime] Store & Forward history request failed ' + errLikeToLogString(e),
         );
         return { ok: false, code: 'send_failed' };
       }
@@ -1410,9 +1426,11 @@ export function useMeshtasticRuntime() {
       if (!device) {
         meshtasticDriverConnectedRef.current = false;
         await connectionDriver.disconnect(identityId).catch((e: unknown) => {
-          console.debug('[useDevice] openMeshtasticTransport rollback ' + errLikeToLogString(e));
+          console.debug(
+            '[useMeshtasticRuntime] openMeshtasticTransport rollback ' + errLikeToLogString(e),
+          );
         });
-        throw new Error('[useDevice] ConnectionDriver.connect returned no handle');
+        throw new Error('[useMeshtasticRuntime] ConnectionDriver.connect returned no handle');
       }
       return { device, driverIdentityId: identityId };
     },
@@ -1546,7 +1564,7 @@ export function useMeshtasticRuntime() {
   // ─── Connection lost handler ──────────────────────────────────
   const handleConnectionLost = useCallback(() => {
     if (isReconnectingRef.current) return;
-    console.warn('[useDevice] Connection lost — initiating reconnect');
+    console.warn('[useMeshtasticRuntime] Connection lost — initiating reconnect');
     isReconnectingRef.current = true;
 
     void (async () => {
@@ -1563,7 +1581,8 @@ export function useMeshtasticRuntime() {
       if (driverIdentity) {
         await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
           console.debug(
-            '[useDevice] handleConnectionLost driver disconnect ' + errLikeToLogString(e),
+            '[useMeshtasticRuntime] handleConnectionLost driver disconnect ' +
+              errLikeToLogString(e),
           );
         });
       }
@@ -1617,7 +1636,7 @@ export function useMeshtasticRuntime() {
 
     const delay = Math.min(2000 * Math.pow(2, reconnectAttemptRef.current - 1), 32000);
     console.debug(
-      `[useDevice] reconnect: waiting ${delay}ms before attempt ${reconnectAttemptRef.current}/${MAX_RECONNECT_ATTEMPTS}`,
+      `[useMeshtasticRuntime] reconnect: waiting ${delay}ms before attempt ${reconnectAttemptRef.current}/${MAX_RECONNECT_ATTEMPTS}`,
     );
     await new Promise((r) => setTimeout(r, delay));
 
@@ -1637,7 +1656,9 @@ export function useMeshtasticRuntime() {
       await opened.device.configure();
 
       // Success
-      console.debug(`[useDevice] Reconnect succeeded on attempt ${reconnectAttemptRef.current}`);
+      console.debug(
+        `[useMeshtasticRuntime] Reconnect succeeded on attempt ${reconnectAttemptRef.current}`,
+      );
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
     } catch (err) {
@@ -1650,11 +1671,13 @@ export function useMeshtasticRuntime() {
       meshtasticPendingDriverIdentityRef.current = null;
       if (failedDriverIdentity) {
         await connectionDriver.disconnect(failedDriverIdentity).catch((e: unknown) => {
-          console.debug('[useDevice] reconnect failure driver disconnect ' + errLikeToLogString(e));
+          console.debug(
+            '[useMeshtasticRuntime] reconnect failure driver disconnect ' + errLikeToLogString(e),
+          );
         });
       }
       console.warn(
-        `[Meshtastic] Reconnect attempt ${reconnectAttemptRef.current} failed:` +
+        `[useMeshtasticRuntime] Reconnect attempt ${reconnectAttemptRef.current} failed:` +
           ' ' +
           errLikeToLogString(err),
       );
@@ -1680,7 +1703,7 @@ export function useMeshtasticRuntime() {
         if (driverIdentity) {
           await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
             console.debug(
-              '[useDevice] prepareRfConnect driver disconnect ' + errLikeToLogString(e),
+              '[useMeshtasticRuntime] prepareRfConnect driver disconnect ' + errLikeToLogString(e),
             );
           });
         }
@@ -1717,7 +1740,9 @@ export function useMeshtasticRuntime() {
       const activeDevice =
         device ?? (connectionDriver.getHandle(driverIdentityId) as MeshDevice | null);
       if (!activeDevice) {
-        throw new Error('[useDevice] attachRfSession: ConnectionDriver returned no handle');
+        throw new Error(
+          '[useMeshtasticRuntime] attachRfSession: ConnectionDriver returned no handle',
+        );
       }
       deviceRef.current = activeDevice;
       wireSubscriptions(activeDevice, type, { driverIdentityId });
@@ -1731,11 +1756,11 @@ export function useMeshtasticRuntime() {
         applyMeshtasticNodesToUi(driverIdentityId, cachedNodes);
       } catch (e) {
         console.warn(
-          '[useDevice] attachRfSession db cache hydrate failed ' + errLikeToLogString(e),
+          '[useMeshtasticRuntime] attachRfSession db cache hydrate failed ' + errLikeToLogString(e),
         );
       }
       console.debug(
-        `[useDevice] attachRfSession dbCache→UI ${Math.round(performance.now() - dbCacheStart)}ms (${dbCacheNodeCount} nodes)`,
+        `[useMeshtasticRuntime] attachRfSession dbCache→UI ${Math.round(performance.now() - dbCacheStart)}ms (${dbCacheNodeCount} nodes)`,
       );
 
       void (async () => {
@@ -1750,7 +1775,8 @@ export function useMeshtasticRuntime() {
           await hydrateMeshtasticMessagesFromDb(driverIdentityId);
         } catch (e) {
           console.warn(
-            '[useDevice] attachRfSession message cache hydrate failed ' + errLikeToLogString(e),
+            '[useMeshtasticRuntime] attachRfSession message cache hydrate failed ' +
+              errLikeToLogString(e),
           );
         }
       })();
@@ -1763,7 +1789,7 @@ export function useMeshtasticRuntime() {
   const handleRfConnectFailure = useCallback(
     async (driverIdentityId?: string): Promise<void> => {
       clearConfigureTimeout();
-      console.error('[Meshtastic] Connection failed');
+      console.error('[useMeshtasticRuntime] Connection failed');
       cleanupSubscriptions();
       stopWatchdog();
       deviceRef.current = null;
@@ -1774,7 +1800,8 @@ export function useMeshtasticRuntime() {
       if (meshtasticDriverConnectedRef.current && identityToDisconnect) {
         await connectionDriver.disconnect(identityToDisconnect).catch((e: unknown) => {
           console.debug(
-            '[useDevice] handleRfConnectFailure driver disconnect ' + errLikeToLogString(e),
+            '[useMeshtasticRuntime] handleRfConnectFailure driver disconnect ' +
+              errLikeToLogString(e),
           );
         });
       }
@@ -1812,11 +1839,11 @@ export function useMeshtasticRuntime() {
       deviceRef.current = null;
       if (disconnectDriver && driverIdentity) {
         await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
-          console.debug('[useDevice] driver disconnect ' + errLikeToLogString(e));
+          console.debug('[useMeshtasticRuntime] driver disconnect ' + errLikeToLogString(e));
         });
       } else if (!disconnectDriver && device) {
         await safeDisconnect(device).catch((e: unknown) => {
-          console.debug('[useDevice] finalize safeDisconnect ' + errLikeToLogString(e));
+          console.debug('[useMeshtasticRuntime] finalize safeDisconnect ' + errLikeToLogString(e));
         });
       } else if (disconnectDriver && device && !driverIdentity) {
         await safeDisconnect(device);
@@ -1849,11 +1876,11 @@ export function useMeshtasticRuntime() {
       await prepareRfConnect(type, httpAddress, blePeripheralId);
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       try {
-        console.debug('[useDevice] connect', type, httpAddress ?? blePeripheralId);
+        console.debug('[useMeshtasticRuntime] connect', type, httpAddress ?? blePeripheralId);
         opened = await openMeshtasticTransport(type, { httpAddress, blePeripheralId });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
-        console.error('[Meshtastic] Connection failed: ' + errLikeToLogString(err));
+        console.error('[useMeshtasticRuntime] Connection failed: ' + errLikeToLogString(err));
         await handleRfConnectFailure(opened?.driverIdentityId);
         throw err;
       }
@@ -1876,7 +1903,11 @@ export function useMeshtasticRuntime() {
       await prepareRfConnect(type, httpAddress, blePeripheralId);
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       try {
-        console.debug('[useDevice] connectAutomatic', type, httpAddress ?? blePeripheralId);
+        console.debug(
+          '[useMeshtasticRuntime] connectAutomatic',
+          type,
+          httpAddress ?? blePeripheralId,
+        );
         opened = await openMeshtasticTransport(type, {
           httpAddress,
           blePeripheralId,
@@ -1884,7 +1915,7 @@ export function useMeshtasticRuntime() {
         });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
-        console.error('[Meshtastic] Auto-connect failed: ' + errLikeToLogString(err));
+        console.error('[useMeshtasticRuntime] Auto-connect failed: ' + errLikeToLogString(err));
         await handleRfConnectFailure(opened?.driverIdentityId);
         throw err;
       }
@@ -1934,7 +1965,7 @@ export function useMeshtasticRuntime() {
             .then(() => window.electronAPI.db.updateMessageStatus(resolvedPid, 'acked'))
             .catch((err: unknown) => {
               console.error(
-                '[useDevice] device ack DB update failed:',
+                '[useMeshtasticRuntime] device ack DB update failed:',
                 err instanceof Error ? err.message : String(err),
               );
             });
@@ -2049,7 +2080,9 @@ export function useMeshtasticRuntime() {
         remoteAdminKeysByNodeRef.current = map;
       } catch (e) {
         const msg = normalizeRemoteAdminError(e);
-        console.warn('[useDevice] setRemoteAdminKeyForNode failed ' + errLikeToLogString(e));
+        console.warn(
+          '[useMeshtasticRuntime] setRemoteAdminKeyForNode failed ' + errLikeToLogString(e),
+        );
         throw new Error(msg);
       }
     },
@@ -2231,7 +2264,8 @@ export function useMeshtasticRuntime() {
                     setRemoteConfigChannelsTailStatus('partial');
                   }
                   console.warn(
-                    '[useDevice] remote config background fetch failed ' + errLikeToLogString(e),
+                    '[useMeshtasticRuntime] remote config background fetch failed ' +
+                      errLikeToLogString(e),
                   );
                 } finally {
                   setRemoteAdminReadsActive(false);
@@ -2251,14 +2285,17 @@ export function useMeshtasticRuntime() {
               setRemoteConfigChannelsTailStatus('partial');
             }
             console.warn(
-              '[useDevice] remote config background fetch failed ' + errLikeToLogString(e),
+              '[useMeshtasticRuntime] remote config background fetch failed ' +
+                errLikeToLogString(e),
             );
             return;
           }
           const msg = normalizeRemoteAdminError(e);
           setRemoteAdminStatus('error');
           setRemoteAdminError(msg);
-          console.warn('[useDevice] remote config fetch failed ' + errLikeToLogString(e));
+          console.warn(
+            '[useMeshtasticRuntime] remote config fetch failed ' + errLikeToLogString(e),
+          );
         } finally {
           setRemoteAdminReadsActive(false);
           if (loadingWatchdogId != null) clearTimeout(loadingWatchdogId);
@@ -2284,7 +2321,9 @@ export function useMeshtasticRuntime() {
           const msg = normalizeRemoteAdminError(e);
           setRemoteAdminStatus('error');
           setRemoteAdminError(msg);
-          console.warn('[useDevice] remote admin operation failed ' + errLikeToLogString(e));
+          console.warn(
+            '[useMeshtasticRuntime] remote admin operation failed ' + errLikeToLogString(e),
+          );
           throw e;
         }
       };
@@ -2324,13 +2363,14 @@ export function useMeshtasticRuntime() {
     mergeAppSetting(
       'meshtasticConfigureTargetNodeNum',
       persistValue,
-      'useDevice setConfigureTargetNodeNum',
+      'useMeshtasticRuntime setConfigureTargetNodeNum',
     );
     void window.electronAPI.appSettings
       .set('meshtasticConfigureTargetNodeNum', persistValue)
       .catch((e: unknown) => {
         console.warn(
-          '[useDevice] meshtasticConfigureTargetNodeNum persist failed ' + errLikeToLogString(e),
+          '[useMeshtasticRuntime] meshtasticConfigureTargetNodeNum persist failed ' +
+            errLikeToLogString(e),
         );
       });
     if (normalized == null) {
@@ -2365,7 +2405,7 @@ export function useMeshtasticRuntime() {
     // Radio / Security / Modules configure dropdown always starts on local radio after startup.
     const settings = parseStoredJson<Record<string, unknown>>(
       getAppSettingsRaw(),
-      'useDevice meshtasticConfigureTargetNodeNum startup',
+      'useMeshtasticRuntime meshtasticConfigureTargetNodeNum startup',
     );
     const raw = settings?.meshtasticConfigureTargetNodeNum;
     if (
@@ -2387,7 +2427,7 @@ export function useMeshtasticRuntime() {
         mergeAppSetting(
           'meshtasticConfigureTargetNodeNum',
           '',
-          'useDevice startup default local configure target',
+          'useMeshtasticRuntime startup default local configure target',
         );
         void window.electronAPI.appSettings
           .set('meshtasticConfigureTargetNodeNum', '')
@@ -2395,7 +2435,7 @@ export function useMeshtasticRuntime() {
             // catch-no-log-ok best-effort clear persisted remote target on startup
           });
       }
-      console.debug('[useDevice] configure target defaulted to local radio on startup');
+      console.debug('[useMeshtasticRuntime] configure target defaulted to local radio on startup');
     }
   }, [state.status]);
 
@@ -2708,7 +2748,9 @@ export function useMeshtasticRuntime() {
               },
             })
             .catch((e: unknown) => {
-              console.debug('[useDevice] MQTT publishWaypoint failed ' + errLikeToLogString(e));
+              console.debug(
+                '[useMeshtasticRuntime] MQTT publishWaypoint failed ' + errLikeToLogString(e),
+              );
             });
         }
       }
@@ -2757,7 +2799,8 @@ export function useMeshtasticRuntime() {
           })
           .catch((e: unknown) => {
             console.debug(
-              '[useDevice] MQTT publishWaypoint (delete) failed ' + errLikeToLogString(e),
+              '[useMeshtasticRuntime] MQTT publishWaypoint (delete) failed ' +
+                errLikeToLogString(e),
             );
           });
       }
@@ -2848,7 +2891,7 @@ export function useMeshtasticRuntime() {
       }
       await window.electronAPI.db.deleteNode(nodeId);
       console.debug(
-        `[useDevice] deleteNode: removed 0x${nodeId.toString(16).toUpperCase()} from memory`,
+        `[useMeshtasticRuntime] deleteNode: removed 0x${nodeId.toString(16).toUpperCase()} from memory`,
       );
       updateNodes((prev) => {
         const updated = new Map(prev);
@@ -2862,7 +2905,7 @@ export function useMeshtasticRuntime() {
   const refreshNodesFromDb = useCallback(() => {
     void loadMeshtasticNodeMapFromDb()
       .then((nodeMap) => {
-        console.debug(`[useDevice] refreshNodesFromDb: loaded ${nodeMap.size} nodes`);
+        console.debug(`[useMeshtasticRuntime] refreshNodesFromDb: loaded ${nodeMap.size} nodes`);
         nodesRef.current = nodeMap;
         setNodes(nodeMap);
         const storeId =
@@ -2870,14 +2913,16 @@ export function useMeshtasticRuntime() {
         if (storeId) syncMeshtasticNodesMapToIdentityStore(storeId, nodeMap);
       })
       .catch((err: unknown) => {
-        console.error('[useDevice] Failed to refresh nodes: ' + errLikeToLogString(err));
+        console.error('[useMeshtasticRuntime] Failed to refresh nodes: ' + errLikeToLogString(err));
       });
   }, []);
 
   const refreshMessagesFromDb = useCallback(() => {
     void loadMeshtasticMessagesFromDb()
       .then((fromDb) => {
-        console.debug(`[useDevice] refreshMessagesFromDb: loaded ${fromDb.length} messages`);
+        console.debug(
+          `[useMeshtasticRuntime] refreshMessagesFromDb: loaded ${fromDb.length} messages`,
+        );
         for (const m of fromDb) {
           if (m.packetId) {
             seenPacketIds.current.set(m.packetId, Date.now() + 10 * 60 * 1000);
@@ -2889,7 +2934,9 @@ export function useMeshtasticRuntime() {
         if (storeId) void hydrateMeshtasticMessagesFromDb(storeId);
       })
       .catch((err: unknown) => {
-        console.error('[useDevice] Failed to refresh messages: ' + errLikeToLogString(err));
+        console.error(
+          '[useMeshtasticRuntime] Failed to refresh messages: ' + errLikeToLogString(err),
+        );
       });
   }, []);
 
@@ -2974,7 +3021,9 @@ export function useMeshtasticRuntime() {
               }) as PositionType,
             )
             .catch((e: unknown) => {
-              console.debug('[useDevice] setPosition non-fatal ' + errLikeToLogString(e));
+              console.debug(
+                '[useMeshtasticRuntime] setPosition non-fatal ' + errLikeToLogString(e),
+              );
             });
         }
       }
@@ -3011,7 +3060,9 @@ export function useMeshtasticRuntime() {
       if (secs > 0) {
         gpsIntervalRef.current = setInterval(() => {
           refreshOurPositionRef.current().catch((err: unknown) => {
-            console.error('[useDevice] GPS interval refresh error: ' + errLikeToLogString(err));
+            console.error(
+              '[useMeshtasticRuntime] GPS interval refresh error: ' + errLikeToLogString(err),
+            );
           });
         }, secs * 1000);
       }
@@ -3100,7 +3151,9 @@ export function useMeshtasticRuntime() {
         void window.electronAPI.db
           .saveMessage({ ...msg, packetId: reactionTempId })
           .catch((e: unknown) => {
-            console.debug('[useDevice] sendReaction saveMessage failed ' + errLikeToLogString(e));
+            console.debug(
+              '[useMeshtasticRuntime] sendReaction saveMessage failed ' + errLikeToLogString(e),
+            );
           });
       } else {
         // Legacy runtime-only path (no identity store yet)
@@ -3132,7 +3185,7 @@ export function useMeshtasticRuntime() {
           .then(() => {})
           .catch((e: unknown) => {
             console.warn(
-              '[useDevice] sendReaction device sendText failed ' + errLikeToLogString(e),
+              '[useMeshtasticRuntime] sendReaction device sendText failed ' + errLikeToLogString(e),
             );
           });
       } else if (hasMqtt) {

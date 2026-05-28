@@ -220,6 +220,7 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
   {
     id: 'sdk-meshtastic',
     patterns: [
+      /\[useMeshtasticRuntime\]/i,
       /\[iMeshDevice\]/i,
       /\[TransportNobleIpc\]/i,
       /\[NobleBleManager\]/i,
@@ -232,7 +233,7 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
   {
     id: 'sdk-meshcore',
     patterns: [
-      /\[useMeshCore\]/i,
+      /\[useMeshcoreRuntime\]/i,
       /\[MeshcoreMqttAdapter\]/i,
       /\[BLE:meshcore\]/i,
       /\[IpcNobleConnection:meshcore\]/i,

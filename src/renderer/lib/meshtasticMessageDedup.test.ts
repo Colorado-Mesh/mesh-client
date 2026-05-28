@@ -155,9 +155,9 @@ describe('mapMeshtasticCrossTransportUpgrade', () => {
   });
 });
 
-describe('useDevice cross-transport integration — logic layer', () => {
+describe('Meshtastic runtime cross-transport integration — logic layer', () => {
   it('MQTT path: upgrade-then-return skips saving duplicate when cross-dup found', () => {
-    // Simulates the MQTT handler in useDevice: find duplicate → upgrade state → return early
+    // Simulates the MQTT handler in useMeshtasticRuntime: find duplicate → upgrade state → return early
     const rfMsg = baseMsg({ packetId: 0xaaaaaaaa, receivedVia: 'rf' });
     const mqttMsg = baseMsg({
       packetId: 0xbbbbbbbb,
@@ -176,7 +176,7 @@ describe('useDevice cross-transport integration — logic layer', () => {
   });
 
   it('RF path: upgrade-then-return skips saving duplicate when cross-dup found', () => {
-    // Simulates the RF handler in useDevice: MQTT message arrived first, RF arrives later
+    // Simulates the RF handler in useMeshtasticRuntime: MQTT message arrived first, RF arrives later
     const mqttMsg = baseMsg({ packetId: 0xaaaaaaaa, receivedVia: 'mqtt' });
     const rfMsg = baseMsg({
       packetId: 0xcccccccc,

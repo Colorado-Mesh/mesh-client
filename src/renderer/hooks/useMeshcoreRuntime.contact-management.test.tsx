@@ -20,7 +20,7 @@ const APPLY_PARAMS = {
   maxHopsWire: 0,
 } as const;
 
-describe('useMeshCore contact management (no radio connection)', () => {
+describe('useMeshcoreRuntime contact management (no radio connection)', () => {
   beforeEach(() => {
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);

@@ -207,7 +207,7 @@ function makeMockSerialPort() {
   };
 }
 
-describe('useMeshCore initConn merges DB hops at first connect', () => {
+describe('useMeshcoreRuntime initConn merges DB hops at first connect', () => {
   beforeEach(() => {
     capturedConn = null;
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
@@ -313,7 +313,7 @@ describe('useMeshCore initConn merges DB hops at first connect', () => {
  * empty when `buildNodesFromContacts` rebuilds from `getContacts` — persisted `nodes` rows are
  * the fallback for contacts not present in prevSnap.
  */
-describe('useMeshCore buildNodesFromContacts merges nodes-table hops when meshcore_contacts is empty', () => {
+describe('useMeshcoreRuntime buildNodesFromContacts merges nodes-table hops when meshcore_contacts is empty', () => {
   beforeEach(() => {
     capturedConn = null;
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);

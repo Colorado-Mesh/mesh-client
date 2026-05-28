@@ -21,7 +21,7 @@ function pubKeyBytesFromHex(hex: string): Uint8Array {
 
 const IMPORT_NODE_ID = pubkeyToNodeId(pubKeyBytesFromHex(HEX32));
 
-describe('useMeshCore importContacts', () => {
+describe('useMeshcoreRuntime importContacts', () => {
   beforeEach(() => {
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);

@@ -221,7 +221,7 @@ describe('analyzeLogs', () => {
   it('detects Store & Forward history request failures', () => {
     const entries: LogEntry[] = [
       makeEntry(
-        "[useDevice] Store & Forward history request failed Failed to execute 'getWriter' on 'WritableStream': Cannot create writer when WritableStream is locked",
+        "[useMeshtasticRuntime] Store & Forward history request failed Failed to execute 'getWriter' on 'WritableStream': Cannot create writer when WritableStream is locked",
         'error',
       ),
     ];
@@ -374,7 +374,7 @@ describe('analyzeLogs', () => {
   it('filters protocol-specific SDK patterns for meshtastic (warn/error only)', () => {
     const entries: LogEntry[] = [
       makeEntry('[iMeshDevice] error: connection lost', 'error'),
-      makeEntry('[useMeshCore] error: something failed', 'warn'),
+      makeEntry('[useMeshcoreRuntime] error: something failed', 'warn'),
     ];
     const result = analyzeLogs(entries, 'meshtastic');
     const meshtasticCategory = result.categories.find((c) => c.id === 'sdk-meshtastic');
@@ -395,7 +395,7 @@ describe('analyzeLogs', () => {
 
   it('filters protocol-specific SDK patterns for meshcore (warn/error only)', () => {
     const entries: LogEntry[] = [
-      makeEntry('[useMeshCore] error: connection lost', 'error'),
+      makeEntry('[useMeshcoreRuntime] error: connection lost', 'error'),
       makeEntry('[iMeshDevice] error: something failed', 'warn'),
     ];
     const result = analyzeLogs(entries, 'meshcore');
@@ -408,7 +408,7 @@ describe('analyzeLogs', () => {
 
   it('does not flag MeshCore SDK debug lines', () => {
     const entries: LogEntry[] = [
-      makeEntry('[useMeshCore] event 128: advert from ABCD', 'debug'),
+      makeEntry('[useMeshcoreRuntime] event 128: advert from ABCD', 'debug'),
       makeEntry('[BLE:meshcore] connect idempotent skip — already connected', 'log'),
     ];
     const result = analyzeLogs(entries, 'meshcore');

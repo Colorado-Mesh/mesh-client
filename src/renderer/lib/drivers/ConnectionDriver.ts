@@ -245,7 +245,7 @@ export class ConnectionDriver {
   }
 
   /**
-   * Attach a transport opened by legacy hooks (`useDevice` / `useMeshCore`) so
+   * Attach a transport opened by legacy hooks (`useMeshtasticRuntime` / `useMeshcoreRuntime`) so
    * action hooks can resolve the live SDK handle. Caller supplies teardown from
    * `protocol.subscribe` (ingress is already wired before this call).
    */

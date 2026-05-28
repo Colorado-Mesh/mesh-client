@@ -535,13 +535,13 @@ export function useMeshcoreRuntime() {
       meshcoreStatsPollRef.current = setInterval(() => {
         if (!meshcoreHookMountedRef.current) return;
         void fetchAndUpdateLocalStats().catch((e: unknown) => {
-          console.warn('[useMeshCore] periodic stats poll failed ' + errLikeToLogString(e));
+          console.warn('[useMeshcoreRuntime] periodic stats poll failed ' + errLikeToLogString(e));
         });
       }, MESHCORE_STATS_POLL_MS);
 
       // Initial stats fetch on connect
       void fetchAndUpdateLocalStats().catch((e: unknown) => {
-        console.warn('[useMeshCore] initial stats fetch failed ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] initial stats fetch failed ' + errLikeToLogString(e));
       });
     }
     return () => {
@@ -656,7 +656,7 @@ export function useMeshcoreRuntime() {
 
   useEffect(() => {
     void reloadMeshcoreNodesFromDb({ hydrateMessages: true }).catch((e: unknown) => {
-      console.warn('[useMeshCore] initial db reload failed ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] initial db reload failed ' + errLikeToLogString(e));
     });
   }, [reloadMeshcoreNodesFromDb]);
 
@@ -725,7 +725,7 @@ export function useMeshcoreRuntime() {
     });
     if (inserted) {
       void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(msg)).catch((e: unknown) => {
-        console.warn('[useMeshCore] saveMeshcoreMessage error ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] saveMeshcoreMessage error ' + errLikeToLogString(e));
       });
     }
   }, []);
@@ -792,7 +792,7 @@ export function useMeshcoreRuntime() {
           })
           .catch((e: unknown) => {
             console.warn(
-              '[useMeshCore] saveMeshcoreContact (mqtt chat) error ' + errLikeToLogString(e),
+              '[useMeshcoreRuntime] saveMeshcoreContact (mqtt chat) error ' + errLikeToLogString(e),
             );
           });
       }
@@ -848,7 +848,7 @@ export function useMeshcoreRuntime() {
         }
       } catch (e) {
         console.warn(
-          '[useMeshCore] buildNodesFromContacts: getNodes for hops fallback ' +
+          '[useMeshcoreRuntime] buildNodesFromContacts: getNodes for hops fallback ' +
             errLikeToLogString(e),
         );
       }
@@ -909,7 +909,9 @@ export function useMeshcoreRuntime() {
       }
       if (pendingDbRows.length > 0) {
         void window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows).catch((e: unknown) => {
-          console.warn('[useMeshCore] saveMeshcoreContactsBatch error ' + errLikeToLogString(e));
+          console.warn(
+            '[useMeshcoreRuntime] saveMeshcoreContactsBatch error ' + errLikeToLogString(e),
+          );
         });
       }
       if (!opts?.deferDbMerge) {
@@ -920,7 +922,7 @@ export function useMeshcoreRuntime() {
             nicknameByNodeId: nicknameMapRef.current,
           });
         } catch (e) {
-          console.warn('[useMeshCore] loadContactsFromDb error ' + errLikeToLogString(e));
+          console.warn('[useMeshcoreRuntime] loadContactsFromDb error ' + errLikeToLogString(e));
         }
       }
 
@@ -1038,7 +1040,9 @@ export function useMeshcoreRuntime() {
         }
         applyMeshcoreNodesToUi(nodeMap);
       } catch (e) {
-        console.warn('[useMeshCore] deferred db contact merge failed ' + errLikeToLogString(e));
+        console.warn(
+          '[useMeshcoreRuntime] deferred db contact merge failed ' + errLikeToLogString(e),
+        );
       }
     },
     [applyMeshcoreNodesToUi],
@@ -1062,13 +1066,13 @@ export function useMeshcoreRuntime() {
         meshcoreDriverConnectedRef.current = false;
         meshcorePendingDriverIdentityRef.current = null;
         void connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
-          console.debug('[useMeshCore] driver disconnect ' + errLikeToLogString(e));
+          console.debug('[useMeshcoreRuntime] driver disconnect ' + errLikeToLogString(e));
         });
       } else if (meshcoreIngressDetachRef.current) {
         try {
           meshcoreIngressDetachRef.current();
         } catch (e) {
-          console.debug('[useMeshCore] ingress detach error ' + errLikeToLogString(e));
+          console.debug('[useMeshcoreRuntime] ingress detach error ' + errLikeToLogString(e));
         }
         meshcoreIngressDetachRef.current = null;
       }
@@ -1241,7 +1245,7 @@ export function useMeshcoreRuntime() {
           }
         } catch (e) {
           if (e instanceof DOMException && e.name === 'AbortError') return;
-          console.warn('[useMeshCore] loadMessagesFromDb error ' + errLikeToLogString(e));
+          console.warn('[useMeshcoreRuntime] loadMessagesFromDb error ' + errLikeToLogString(e));
         }
       })();
 
@@ -1276,7 +1280,7 @@ export function useMeshcoreRuntime() {
           );
         } catch (e) {
           if (e instanceof DOMException && e.name === 'AbortError') return;
-          console.warn('[useMeshCore] getChannels error ' + errLikeToLogString(e));
+          console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
         }
       })();
 
@@ -1301,15 +1305,19 @@ export function useMeshcoreRuntime() {
           applyMeshcoreNodesToUi(cachedNodes);
         } catch (e) {
           if (e instanceof DOMException && e.name === 'AbortError') throw e;
-          console.warn('[useMeshCore] initConn db cache hydrate failed ' + errLikeToLogString(e));
+          console.warn(
+            '[useMeshcoreRuntime] initConn db cache hydrate failed ' + errLikeToLogString(e),
+          );
         }
       }
       const dbCacheMs = Math.round(performance.now() - dbCacheStart);
-      console.debug(`[useMeshCore] initConn dbCache→UI ${dbCacheMs}ms (${dbCacheNodeCount} nodes)`);
+      console.debug(
+        `[useMeshcoreRuntime] initConn dbCache→UI ${dbCacheMs}ms (${dbCacheNodeCount} nodes)`,
+      );
 
       const rawInfo = await selfInfoPromise;
       const getSelfInfoMs = Math.round(performance.now() - getSelfInfoStart);
-      console.debug(`[useMeshCore] initConn getSelfInfo ${getSelfInfoMs}ms`);
+      console.debug(`[useMeshcoreRuntime] initConn getSelfInfo ${getSelfInfoMs}ms`);
       const info = enrichMeshCoreSelfInfo(rawInfo);
       setSelfInfo(info);
       setState((prev) => ({ ...prev, status: 'connected' }));
@@ -1372,14 +1380,15 @@ export function useMeshcoreRuntime() {
       const contactsRaw = await contactsPromise;
       const getContactsMs = Math.round(performance.now() - getContactsStart);
       console.debug(
-        `[useMeshCore] initConn getContacts ${getContactsMs}ms (total ${Math.round(performance.now() - initConnPerfStart)}ms)`,
+        `[useMeshcoreRuntime] initConn getContacts ${getContactsMs}ms (total ${Math.round(performance.now() - initConnPerfStart)}ms)`,
       );
       // Reconcile radio truth: clear stale flags before re-marking contacts seen on-device.
       try {
         await window.electronAPI.db.markAllMeshcoreContactsOffRadio();
       } catch (e) {
         console.warn(
-          '[useMeshCore] initConn markAllMeshcoreContactsOffRadio failed ' + errLikeToLogString(e),
+          '[useMeshcoreRuntime] initConn markAllMeshcoreContactsOffRadio failed ' +
+            errLikeToLogString(e),
         );
       }
       const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
@@ -1399,7 +1408,7 @@ export function useMeshcoreRuntime() {
       applyMeshcoreNodesToUi(newNodes);
       const contactsToUiMs = Math.round(performance.now() - initConnPerfStart);
       console.debug(
-        `[useMeshCore] initConn contacts→UI ${contactsToUiMs}ms (${newNodes.size} nodes)`,
+        `[useMeshcoreRuntime] initConn contacts→UI ${contactsToUiMs}ms (${newNodes.size} nodes)`,
       );
       void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
@@ -1415,7 +1424,7 @@ export function useMeshcoreRuntime() {
         } catch (e) {
           if (e instanceof DOMException && e.name === 'AbortError') return;
           console.debug(
-            '[useMeshCore] exportPrivateKey for MQTT identity cache skipped ' +
+            '[useMeshcoreRuntime] exportPrivateKey for MQTT identity cache skipped ' +
               errLikeToLogString(e),
           );
         }
@@ -1442,11 +1451,14 @@ export function useMeshcoreRuntime() {
       requestAnimationFrame(() => {
         queueMicrotask(() => {
           void refreshOurPositionMeshCoreRef.current().catch((e: unknown) => {
-            console.debug('[useMeshCore] post-connect refreshOurPosition ' + errLikeToLogString(e));
+            console.debug(
+              '[useMeshcoreRuntime] post-connect refreshOurPosition ' + errLikeToLogString(e),
+            );
           });
           void requestTelemetryMeshCoreRef.current(myNodeId).catch((e: unknown) => {
             console.debug(
-              '[useMeshCore] post-connect self telemetry (altitude) ' + errLikeToLogString(e),
+              '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
+                errLikeToLogString(e),
             );
           });
         });
@@ -1462,13 +1474,15 @@ export function useMeshcoreRuntime() {
         }
       } catch (e) {
         if (e instanceof DOMException && e.name === 'AbortError') throw e;
-        console.warn('[useMeshCore] setManualAddContacts (init) error ' + errLikeToLogString(e));
+        console.warn(
+          '[useMeshcoreRuntime] setManualAddContacts (init) error ' + errLikeToLogString(e),
+        );
       }
 
       await awaitUnlessMeshcoreSetupCancelled(
         setupGen,
         conn.syncDeviceTime().catch((e: unknown) => {
-          console.warn('[useMeshCore] syncDeviceTime error ' + errLikeToLogString(e));
+          console.warn('[useMeshcoreRuntime] syncDeviceTime error ' + errLikeToLogString(e));
         }),
       );
       await awaitUnlessMeshcoreSetupCancelled(
@@ -1479,7 +1493,7 @@ export function useMeshcoreRuntime() {
             setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts } : prev));
           })
           .catch((e: unknown) => {
-            console.warn('[useMeshCore] getBatteryVoltage error ' + errLikeToLogString(e));
+            console.warn('[useMeshcoreRuntime] getBatteryVoltage error ' + errLikeToLogString(e));
           }),
       );
 
@@ -1487,7 +1501,8 @@ export function useMeshcoreRuntime() {
         setupGen,
         refreshMeshcoreAutoaddFromDevice().catch((e: unknown) => {
           console.warn(
-            '[useMeshCore] refreshMeshcoreAutoaddFromDevice (init) error ' + errLikeToLogString(e),
+            '[useMeshcoreRuntime] refreshMeshcoreAutoaddFromDevice (init) error ' +
+              errLikeToLogString(e),
           );
         }),
       );
@@ -1498,7 +1513,8 @@ export function useMeshcoreRuntime() {
         await processWaitingMessagesRef.current?.();
       } catch (e) {
         console.warn(
-          '[useMeshCore] initConn: proactive getWaitingMessages failed ' + errLikeToLogString(e),
+          '[useMeshcoreRuntime] initConn: proactive getWaitingMessages failed ' +
+            errLikeToLogString(e),
         );
       }
 
@@ -1509,7 +1525,9 @@ export function useMeshcoreRuntime() {
       meshcoreWaitingMessagesPollRef.current = setInterval(() => {
         if (!meshcoreHookMountedRef.current) return;
         void processWaitingMessagesRef.current?.().catch((e: unknown) => {
-          console.warn('[useMeshCore] periodic getWaitingMessages failed ' + errLikeToLogString(e));
+          console.warn(
+            '[useMeshcoreRuntime] periodic getWaitingMessages failed ' + errLikeToLogString(e),
+          );
         });
       }, MESHCORE_WAITING_MESSAGES_POLL_MS);
     },
@@ -1547,7 +1565,7 @@ export function useMeshcoreRuntime() {
       } else if (staleConn) {
         teardownMeshcoreConnEventListeners({ driverDisconnect: false });
         await staleConn.close().catch((e: unknown) => {
-          console.debug('[useMeshCore] prepareRfConnect close ' + errLikeToLogString(e));
+          console.debug('[useMeshcoreRuntime] prepareRfConnect close ' + errLikeToLogString(e));
         });
       }
       meshcoreConnectTypeRef.current = type;
@@ -1569,12 +1587,16 @@ export function useMeshcoreRuntime() {
       meshcorePendingDriverIdentityRef.current = driverIdentityId;
       const conn = connectionDriver.getHandle(driverIdentityId) as MeshCoreConnection | null;
       if (!conn) {
-        throw new Error('[useMeshCore] attachRfSession: ConnectionDriver returned no handle');
+        throw new Error(
+          '[useMeshcoreRuntime] attachRfSession: ConnectionDriver returned no handle',
+        );
       }
       if (meshcoreSetupGenerationRef.current !== setupGen) {
         meshcoreDriverConnectedRef.current = false;
         await connectionDriver.disconnect(driverIdentityId).catch((e: unknown) => {
-          console.debug('[useMeshCore] attachRfSession abort disconnect ' + errLikeToLogString(e));
+          console.debug(
+            '[useMeshcoreRuntime] attachRfSession abort disconnect ' + errLikeToLogString(e),
+          );
         });
         throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
       }
@@ -1590,7 +1612,7 @@ export function useMeshcoreRuntime() {
             const cache =
               parseStoredJson<Record<string, string>>(
                 localStorage.getItem(key),
-                'useMeshCore serialPortNodeNames cache',
+                'useMeshcoreRuntime serialPortNodeNames cache',
               ) ?? {};
             cache[portId] = nodeName;
             localStorage.setItem(key, JSON.stringify(cache));
@@ -1634,7 +1656,9 @@ export function useMeshcoreRuntime() {
         try {
           await connRef.current?.close();
         } catch (e) {
-          console.warn('[useMeshCore] finalizeDriverDisconnect close ' + errLikeToLogString(e));
+          console.warn(
+            '[useMeshcoreRuntime] finalizeDriverDisconnect close ' + errLikeToLogString(e),
+          );
         }
       }
       connRef.current = null;
@@ -1649,7 +1673,7 @@ export function useMeshcoreRuntime() {
         await reloadMeshcoreNodesFromDb({ hydrateMessages: false });
       } catch (e: unknown) {
         console.warn(
-          '[useMeshCore] finalizeDriverDisconnect rehydrate failed ' + errLikeToLogString(e),
+          '[useMeshcoreRuntime] finalizeDriverDisconnect rehydrate failed ' + errLikeToLogString(e),
         );
         setNodes(new Map());
       }
@@ -1744,17 +1768,19 @@ export function useMeshcoreRuntime() {
         if (isBleConnectTimeout) {
           console.warn(
             meshcoreBleLinuxWebBluetooth
-              ? `[useMeshCore] connect: BLE Web Bluetooth timed out ${formatStructuredLogDetail({
-                  stage: bleTimeoutStage,
-                })}`
-              : `[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback ${formatStructuredLogDetail(
+              ? `[useMeshcoreRuntime] connect: BLE Web Bluetooth timed out ${formatStructuredLogDetail(
+                  {
+                    stage: bleTimeoutStage,
+                  },
+                )}`
+              : `[useMeshcoreRuntime] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback ${formatStructuredLogDetail(
                   { stage: bleTimeoutStage },
                 )}`,
           );
         }
         const errForLog = serializeErrorLike(err) || '(no error object)';
         console.error(
-          `[useMeshCore] connect error ${formatStructuredLogDetail({
+          `[useMeshcoreRuntime] connect error ${formatStructuredLogDetail({
             userMessage: normalizedErr.message,
             raw: errForLog,
             bleTimeoutStage: isBleConnectTimeout ? bleTimeoutStage : null,
@@ -1796,7 +1822,7 @@ export function useMeshcoreRuntime() {
             err.message === MESHCORE_SETUP_ABORT_MESSAGE;
           if (!isSetupAbort) {
             console.error(
-              '[useMeshCore] connectAutomatic serial error',
+              '[useMeshcoreRuntime] connectAutomatic serial error',
               serializeErrorLike(err) || err,
             );
           }
@@ -1836,7 +1862,7 @@ export function useMeshcoreRuntime() {
   const sendMessage = useCallback(
     async (text: string, channelIdx: number, destNodeId?: number, replyId?: number) => {
       if (!connRef.current) {
-        console.warn('[useMeshCore] sendMessage: no active connection, dropping send');
+        console.warn('[useMeshcoreRuntime] sendMessage: no active connection, dropping send');
         return;
       }
       if (destNodeId !== undefined) {
@@ -1917,7 +1943,8 @@ export function useMeshcoreRuntime() {
               })
               .catch((e: unknown) => {
                 console.warn(
-                  '[useMeshCore] saveMeshcoreMessage (outgoing) error ' + errLikeToLogString(e),
+                  '[useMeshcoreRuntime] saveMeshcoreMessage (outgoing) error ' +
+                    errLikeToLogString(e),
                 );
               });
 
@@ -1952,7 +1979,7 @@ export function useMeshcoreRuntime() {
                 .updateMeshcoreMessageStatus(ackKey, 'failed')
                 .catch((e: unknown) => {
                   console.warn(
-                    '[useMeshCore] updateMeshcoreMessageStatus (timeout) error ' +
+                    '[useMeshcoreRuntime] updateMeshcoreMessageStatus (timeout) error ' +
                       errLikeToLogString(e),
                   );
                 });
@@ -1989,13 +2016,13 @@ export function useMeshcoreRuntime() {
               })
               .catch((e: unknown) => {
                 console.warn(
-                  '[useMeshCore] saveMeshcoreMessage (outgoing-no-ack) error ' +
+                  '[useMeshcoreRuntime] saveMeshcoreMessage (outgoing-no-ack) error ' +
                     errLikeToLogString(e),
                 );
               });
           }
         } catch (e) {
-          console.warn('[useMeshCore] sendTextMessage error ' + errLikeToLogString(e));
+          console.warn('[useMeshcoreRuntime] sendTextMessage error ' + errLikeToLogString(e));
           setMessages((prev) =>
             prev.map((m) =>
               m === tempMsg || (m.timestamp === sentAt && m.status === 'sending')
@@ -2045,7 +2072,7 @@ export function useMeshcoreRuntime() {
                 })
                 .catch((e: unknown) => {
                   console.warn(
-                    '[useMeshCore] publishMeshcorePacketLog (sent via RF) error ' +
+                    '[useMeshcoreRuntime] publishMeshcorePacketLog (sent via RF) error ' +
                       errLikeToLogString(e),
                   );
                 });
@@ -2071,7 +2098,8 @@ export function useMeshcoreRuntime() {
           }
         } catch (e) {
           console.warn(
-            '[useMeshCore] sendChannelTextMessage / publishMeshcore error ' + errLikeToLogString(e),
+            '[useMeshcoreRuntime] sendChannelTextMessage / publishMeshcore error ' +
+              errLikeToLogString(e),
           );
         }
       }
@@ -2103,11 +2131,11 @@ export function useMeshcoreRuntime() {
       // Warn if approaching contact limit
       if (contacts.length > MESHCORE_CONTACTS_WARNING_THRESHOLD) {
         console.warn(
-          `[useMeshCore] refreshContacts: radio contacts near limit (${contacts.length}/${MESHCORE_MAX_CONTACTS})`,
+          `[useMeshcoreRuntime] refreshContacts: radio contacts near limit (${contacts.length}/${MESHCORE_MAX_CONTACTS})`,
         );
       }
     } catch (e) {
-      console.error('[useMeshCore] refreshContacts error ' + errLikeToLogString(e));
+      console.error('[useMeshcoreRuntime] refreshContacts error ' + errLikeToLogString(e));
     }
   }, [
     buildNodesFromContacts,
@@ -2130,7 +2158,7 @@ export function useMeshcoreRuntime() {
       );
     } catch (e: unknown) {
       if (e == null || (e instanceof Error && e.message === '')) {
-        console.warn('[useMeshCore] sendAdvert: empty rejection from radio');
+        console.warn('[useMeshcoreRuntime] sendAdvert: empty rejection from radio');
         throw new Error('MeshCore advert rejected by radio');
       }
       throw e;
@@ -2147,7 +2175,7 @@ export function useMeshcoreRuntime() {
     try {
       await connRef.current.reboot();
     } catch (e) {
-      console.warn('[useMeshCore] reboot error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] reboot error ' + errLikeToLogString(e));
     }
     await disconnect();
   }, [disconnect]);
@@ -2170,7 +2198,7 @@ export function useMeshcoreRuntime() {
       try {
         await connRef.current.removeContact(pubKey);
       } catch (e) {
-        console.warn('[useMeshCore] removeContact error ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] removeContact error ' + errLikeToLogString(e));
       }
     } else if (meshcoreIsChatStubNodeId(nodeId)) {
       // stub node: skip radio removal
@@ -2191,7 +2219,7 @@ export function useMeshcoreRuntime() {
       return next;
     });
     await window.electronAPI.db.deleteMeshcoreContact(nodeId).catch((e: unknown) => {
-      console.warn('[useMeshCore] deleteMeshcoreContact error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] deleteMeshcoreContact error ' + errLikeToLogString(e));
     });
   }, []);
 
@@ -2208,7 +2236,7 @@ export function useMeshcoreRuntime() {
       return next;
     });
     await window.electronAPI.db.clearMeshcoreRepeaters().catch((e: unknown) => {
-      console.warn('[useMeshCore] clearMeshcoreRepeaters error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] clearMeshcoreRepeaters error ' + errLikeToLogString(e));
     });
   }, []);
 
@@ -2223,20 +2251,22 @@ export function useMeshcoreRuntime() {
           if (id === myId) continue;
           await conn.removeContact(c.publicKey).catch((e: unknown) => {
             console.warn(
-              '[useMeshCore] clearAllMeshcoreContacts removeContact error ' + errLikeToLogString(e),
+              '[useMeshcoreRuntime] clearAllMeshcoreContacts removeContact error ' +
+                errLikeToLogString(e),
             );
           });
         }
       } catch (e: unknown) {
         console.warn(
-          '[useMeshCore] clearAllMeshcoreContacts getContacts error ' + errLikeToLogString(e),
+          '[useMeshcoreRuntime] clearAllMeshcoreContacts getContacts error ' +
+            errLikeToLogString(e),
         );
       }
     }
     try {
       await window.electronAPI.db.clearMeshcoreContacts();
     } catch (e: unknown) {
-      console.warn('[useMeshCore] clearMeshcoreContacts DB error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] clearMeshcoreContacts DB error ' + errLikeToLogString(e));
       throw e instanceof Error ? e : new Error(String(e));
     }
     setMeshcoreContactsForTelemetry([]);
@@ -2276,7 +2306,8 @@ export function useMeshcoreRuntime() {
         removed += 1;
       } catch (e: unknown) {
         console.warn(
-          '[useMeshCore] offloadContactsFromRadio removeContact error ' + errLikeToLogString(e),
+          '[useMeshcoreRuntime] offloadContactsFromRadio removeContact error ' +
+            errLikeToLogString(e),
         );
       }
     }
@@ -2286,13 +2317,13 @@ export function useMeshcoreRuntime() {
   const setOwner = useCallback(
     async (owner: { longName: string; shortName: string; isLicensed: boolean }) => {
       if (!connRef.current) {
-        console.warn('[useMeshCore] setOwner: connRef.current is null, aborting');
+        console.warn('[useMeshcoreRuntime] setOwner: connRef.current is null, aborting');
         return;
       }
       try {
         await connRef.current.setAdvertName(owner.longName);
       } catch (e) {
-        console.error('[useMeshCore] setAdvertName threw: ' + errLikeToLogString(e));
+        console.error('[useMeshcoreRuntime] setAdvertName threw: ' + errLikeToLogString(e));
         throw e;
       }
       setSelfInfo((prev) => (prev ? { ...prev, name: owner.longName } : prev));
@@ -2303,7 +2334,7 @@ export function useMeshcoreRuntime() {
   const setRadioParams = useCallback(
     async (p: { freq: number; bw: number; sf: number; cr: number; txPower: number }) => {
       if (!connRef.current) {
-        console.warn('[useMeshCore] setRadioParams: connRef.current is null, aborting');
+        console.warn('[useMeshcoreRuntime] setRadioParams: connRef.current is null, aborting');
         return;
       }
       try {
@@ -2311,7 +2342,7 @@ export function useMeshcoreRuntime() {
         const freqKhz = Math.round(p.freq / 1000);
         await connRef.current.setRadioParams(freqKhz, p.bw, p.sf, p.cr);
       } catch (e) {
-        console.error('[useMeshCore] setRadioParams threw: ' + errLikeToLogString(e));
+        console.error('[useMeshcoreRuntime] setRadioParams threw: ' + errLikeToLogString(e));
         throw normalizeMeshCoreError(
           e,
           'Failed to apply radio settings. The device may not support changing radio parameters over this connection.',
@@ -2320,7 +2351,7 @@ export function useMeshcoreRuntime() {
       try {
         await connRef.current.setTxPower(p.txPower);
       } catch (e) {
-        console.error('[useMeshCore] setTxPower threw: ' + errLikeToLogString(e));
+        console.error('[useMeshcoreRuntime] setTxPower threw: ' + errLikeToLogString(e));
         throw normalizeMeshCoreError(
           e,
           'Failed to set TX power. The device may not support changing it over this connection.',
@@ -2356,7 +2387,7 @@ export function useMeshcoreRuntime() {
           const existing =
             parseStoredJson<Record<string, unknown>>(
               localStorage.getItem('mesh-client:gpsSettings'),
-              'useMeshCore sendPositionToDeviceMeshCore persist static',
+              'useMeshcoreRuntime sendPositionToDeviceMeshCore persist static',
             ) ?? {};
           const refreshInterval =
             typeof existing.refreshInterval === 'number' ? existing.refreshInterval : 0;
@@ -2398,7 +2429,7 @@ export function useMeshcoreRuntime() {
         }
       } catch (e) {
         console.error(
-          `[useMeshCore] setAdvertLatLong failed ${formatStructuredLogDetail({
+          `[useMeshcoreRuntime] setAdvertLatLong failed ${formatStructuredLogDetail({
             lat,
             lon,
             latInt,
@@ -2433,7 +2464,8 @@ export function useMeshcoreRuntime() {
       .updateMeshcoreContactAdvert(nodeId, nowSec, lat, lon)
       .catch((e: unknown) => {
         console.warn(
-          '[useMeshCore] updateMeshcoreContactAdvert (RPC bump) error ' + errLikeToLogString(e),
+          '[useMeshcoreRuntime] updateMeshcoreContactAdvert (RPC bump) error ' +
+            errLikeToLogString(e),
         );
       });
   }, []);
@@ -2505,7 +2537,7 @@ export function useMeshcoreRuntime() {
             }
           } catch (e: unknown) {
             console.warn(
-              '[useMeshCore] traceRoute getContacts refresh failed ' + errLikeToLogString(e),
+              '[useMeshcoreRuntime] traceRoute getContacts refresh failed ' + errLikeToLogString(e),
             );
           }
         }
@@ -2532,7 +2564,8 @@ export function useMeshcoreRuntime() {
             );
           } catch (e: unknown) {
             console.warn(
-              '[useMeshCore] traceRoute prime: sendFloodAdvert failed ' + errLikeToLogString(e),
+              '[useMeshcoreRuntime] traceRoute prime: sendFloodAdvert failed ' +
+                errLikeToLogString(e),
             );
           }
           await waitForMeshcorePath129ForNode(conn, nodeId, MESHCORE_TRACE_PRIME_WAIT_MS);
@@ -2556,7 +2589,8 @@ export function useMeshcoreRuntime() {
             }
           } catch (e: unknown) {
             console.warn(
-              '[useMeshCore] traceRoute post-prime getContacts failed ' + errLikeToLogString(e),
+              '[useMeshcoreRuntime] traceRoute post-prime getContacts failed ' +
+                errLikeToLogString(e),
             );
           }
           if (!storedPath || storedPath.length <= 1) {
@@ -2683,7 +2717,7 @@ export function useMeshcoreRuntime() {
           .updateMeshcoreContactLastRf(nodeId, lastSnrRf, lastRssiRf, hopsToSave, nowSecTrace)
           .catch((e: unknown) => {
             console.warn(
-              '[useMeshCore] updateMeshcoreContactLastRf (traceRoute) error ' +
+              '[useMeshcoreRuntime] updateMeshcoreContactLastRf (traceRoute) error ' +
                 errLikeToLogString(e),
             );
           });
@@ -2715,7 +2749,7 @@ export function useMeshcoreRuntime() {
           next.set(nodeId, friendlyErr);
           return next;
         });
-        console.warn('[useMeshCore] traceRoute error ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] traceRoute error ' + errLikeToLogString(e));
       }
     },
     [bumpMeshcoreNodeLastHeardFromRpc, clearMeshcorePingNoRouteExpiryTimer],
@@ -2791,7 +2825,7 @@ export function useMeshcoreRuntime() {
               .updateMeshcoreContactLastRf(nodeId, lastSnrDb, raw.last_rssi)
               .catch((e: unknown) => {
                 console.warn(
-                  '[useMeshCore] updateMeshcoreContactLastRf error ' + errLikeToLogString(e),
+                  '[useMeshcoreRuntime] updateMeshcoreContactLastRf error ' + errLikeToLogString(e),
                 );
               });
           }
@@ -2810,7 +2844,7 @@ export function useMeshcoreRuntime() {
           next.set(nodeId, friendlyErr);
           return next;
         });
-        console.warn('[useMeshCore] requestRepeaterStatus error ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] requestRepeaterStatus error ' + errLikeToLogString(e));
       }
     },
     [bumpMeshcoreNodeLastHeardFromRpc],
@@ -2852,7 +2886,8 @@ export function useMeshcoreRuntime() {
           entries = CayenneLpp.parse(raw.lppSensorData) as CayenneLppEntry[];
         } catch (parseErr: unknown) {
           console.warn(
-            '[useMeshCore] requestTelemetry CayenneLpp.parse error ' + errLikeToLogString(parseErr),
+            '[useMeshcoreRuntime] requestTelemetry CayenneLpp.parse error ' +
+              errLikeToLogString(parseErr),
           );
         }
         const result: MeshCoreNodeTelemetry = { fetchedAt: Date.now(), entries };
@@ -2928,7 +2963,7 @@ export function useMeshcoreRuntime() {
         next.set(nodeId, friendlyErr);
         return next;
       });
-      console.warn('[useMeshCore] requestTelemetry error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] requestTelemetry error ' + errLikeToLogString(e));
     }
   }, []);
 
@@ -3022,7 +3057,7 @@ export function useMeshcoreRuntime() {
         next.set(nodeId, friendlyErr);
         return next;
       });
-      console.warn('[useMeshCore] requestNeighbors error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] requestNeighbors error ' + errLikeToLogString(e));
       throw new Error(friendlyErr);
     }
   }, []);
@@ -3112,7 +3147,7 @@ export function useMeshcoreRuntime() {
           text: `[Error: ${friendlyErr}]`,
           timestamp: Date.now(),
         });
-        console.warn('[useMeshCore] sendRepeaterCliCommand error ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] sendRepeaterCliCommand error ' + errLikeToLogString(e));
         throw new Error(friendlyErr);
       }
     },
@@ -3247,30 +3282,30 @@ export function useMeshcoreRuntime() {
         // catch-no-log-ok localStorage quota or private mode — non-critical setting
       }
     } catch (e) {
-      console.warn('[useMeshCore] toggleManualAddContacts error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] toggleManualAddContacts error ' + errLikeToLogString(e));
     }
   }, []);
 
   const setMeshcoreChannel = useCallback(async (idx: number, name: string, secret: Uint8Array) => {
     if (!connRef.current) {
-      console.warn('[useMeshCore] setMeshcoreChannel: no connection');
+      console.warn('[useMeshcoreRuntime] setMeshcoreChannel: no connection');
       return;
     }
 
     // Validate parameters
     if (!Number.isInteger(idx) || idx < 0 || idx > 39) {
-      console.warn('[useMeshCore] setMeshcoreChannel: invalid channel index', idx);
+      console.warn('[useMeshcoreRuntime] setMeshcoreChannel: invalid channel index', idx);
       throw new Error(`Invalid channel index: ${idx}. Must be 0-39.`);
     }
 
     if (typeof name !== 'string' || name.length === 0) {
-      console.warn('[useMeshCore] setMeshcoreChannel: invalid name', name);
+      console.warn('[useMeshcoreRuntime] setMeshcoreChannel: invalid name', name);
       throw new Error('Channel name must be a non-empty string');
     }
 
     if (!(secret instanceof Uint8Array) || secret.length === 0) {
       console.warn(
-        '[useMeshCore] setMeshcoreChannel: invalid secret ' + errLikeToLogString(secret),
+        '[useMeshcoreRuntime] setMeshcoreChannel: invalid secret ' + errLikeToLogString(secret),
       );
       throw new Error('Channel secret must be a non-empty Uint8Array');
     }
@@ -3284,7 +3319,7 @@ export function useMeshcoreRuntime() {
     } catch (e) {
       const error = normalizeMeshCoreError(e, 'Failed to save channel to device');
       console.warn(
-        `[useMeshCore] setMeshcoreChannel error ${formatStructuredLogDetail({
+        `[useMeshcoreRuntime] setMeshcoreChannel error ${formatStructuredLogDetail({
           errorMessage: error.message,
           errorType: typeof e,
           idx,
@@ -3302,7 +3337,7 @@ export function useMeshcoreRuntime() {
       await connRef.current.deleteChannel(idx);
       setChannels((prev) => prev.filter((c) => c.index !== idx));
     } catch (e) {
-      console.warn('[useMeshCore] deleteMeshcoreChannel error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] deleteMeshcoreChannel error ' + errLikeToLogString(e));
     }
   }, []);
 
@@ -3330,7 +3365,7 @@ export function useMeshcoreRuntime() {
         throw new Error('JSON root must be an array or an object containing an array');
       }
     } catch (e) {
-      console.warn('[useMeshCore] importContacts: parse error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] importContacts: parse error ' + errLikeToLogString(e));
       return { imported: 0, skipped: 0, errors: [e instanceof Error ? e.message : String(e)] };
     }
 
@@ -3380,7 +3415,7 @@ export function useMeshcoreRuntime() {
       }
       const pubKey = parsePublicKey(rawKey);
       if (!pubKey) {
-        console.warn('[useMeshCore] importContacts: invalid public key for', name, rawKey);
+        console.warn('[useMeshcoreRuntime] importContacts: invalid public key for', name, rawKey);
         errors.push(`Skipped "${name}": invalid public key`);
         skipped++;
         continue;
@@ -3411,7 +3446,7 @@ export function useMeshcoreRuntime() {
         }[];
       } catch (e: unknown) {
         console.warn(
-          '[useMeshCore] importContacts: getMeshcoreContacts for last_advert merge ' +
+          '[useMeshcoreRuntime] importContacts: getMeshcoreContacts for last_advert merge ' +
             errLikeToLogString(e),
         );
       }
@@ -3494,7 +3529,8 @@ export function useMeshcoreRuntime() {
           })
           .catch((e: unknown) => {
             console.warn(
-              '[useMeshCore] saveMeshcoreContact (import contacts) error ' + errLikeToLogString(e),
+              '[useMeshcoreRuntime] saveMeshcoreContact (import contacts) error ' +
+                errLikeToLogString(e),
             );
           });
       }
@@ -3524,7 +3560,9 @@ export function useMeshcoreRuntime() {
     try {
       await window.electronAPI.db.updateMeshcoreContactFavorited(nodeId, favorited, hex);
     } catch (e) {
-      console.warn('[useMeshCore] updateMeshcoreContactFavorited error ' + errLikeToLogString(e));
+      console.warn(
+        '[useMeshcoreRuntime] updateMeshcoreContactFavorited error ' + errLikeToLogString(e),
+      );
       setNodes((prev) => {
         const n = prev.get(nodeId);
         if (!n) return prev;
@@ -3568,7 +3606,7 @@ export function useMeshcoreRuntime() {
           .saveMeshcoreMessage(messageToDbRow(tapbackMsg))
           .catch((e: unknown) => {
             console.warn(
-              '[useMeshCore] saveMeshcoreMessage (tapback) error ' + errLikeToLogString(e),
+              '[useMeshcoreRuntime] saveMeshcoreMessage (tapback) error ' + errLikeToLogString(e),
             );
           });
       };
@@ -3629,7 +3667,7 @@ export function useMeshcoreRuntime() {
       const result = await conn.getDeviceTime();
       return result?.time ?? null;
     } catch (e: unknown) {
-      console.warn('[useMeshCore] getDeviceTime error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] getDeviceTime error ' + errLikeToLogString(e));
       return null;
     }
   }, []);
@@ -3640,7 +3678,7 @@ export function useMeshcoreRuntime() {
     try {
       await conn.setDeviceTime(Math.floor(Date.now() / 1000));
     } catch (e: unknown) {
-      console.warn('[useMeshCore] syncDeviceTime error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] syncDeviceTime error ' + errLikeToLogString(e));
       throw e;
     }
   }, []);
@@ -3658,7 +3696,7 @@ export function useMeshcoreRuntime() {
         }
         return result;
       } catch (e: unknown) {
-        console.warn('[useMeshCore] getDeviceInfo error ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] getDeviceInfo error ' + errLikeToLogString(e));
         return null;
       }
     },
@@ -3675,7 +3713,7 @@ export function useMeshcoreRuntime() {
         await refreshContacts();
         return true;
       } catch (e: unknown) {
-        console.warn('[useMeshCore] importContact error ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] importContact error ' + errLikeToLogString(e));
         return false;
       }
     },
@@ -3687,14 +3725,14 @@ export function useMeshcoreRuntime() {
     if (!conn) return null;
     const pubKey = pubKeyMapRef.current.get(nodeId);
     if (!pubKey) {
-      console.warn('[useMeshCore] exportContact: no public key for node', nodeId);
+      console.warn('[useMeshcoreRuntime] exportContact: no public key for node', nodeId);
       return null;
     }
     try {
       const result = await conn.exportContact(pubKey);
       return result;
     } catch (e: unknown) {
-      console.warn('[useMeshCore] exportContact error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] exportContact error ' + errLikeToLogString(e));
       return null;
     }
   }, []);
@@ -3704,14 +3742,14 @@ export function useMeshcoreRuntime() {
     if (!conn) return false;
     const pubKey = pubKeyMapRef.current.get(nodeId);
     if (!pubKey) {
-      console.warn('[useMeshCore] shareContact: no public key for node', nodeId);
+      console.warn('[useMeshcoreRuntime] shareContact: no public key for node', nodeId);
       return false;
     }
     try {
       await conn.shareContact(pubKey);
       return true;
     } catch (e: unknown) {
-      console.warn('[useMeshCore] shareContact error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] shareContact error ' + errLikeToLogString(e));
       return false;
     }
   }, []);
@@ -3725,7 +3763,7 @@ export function useMeshcoreRuntime() {
     if (!conn) return false;
     const pubKey = pubKeyMapRef.current.get(nodeId);
     if (!pubKey) {
-      console.warn('[useMeshCore] setContactPath: no public key for node', nodeId);
+      console.warn('[useMeshcoreRuntime] setContactPath: no public key for node', nodeId);
       return false;
     }
     // Reset the path first, then if we had full contact data we would call setContactPath
@@ -3734,7 +3772,7 @@ export function useMeshcoreRuntime() {
       await conn.resetPath(pubKey);
       return true;
     } catch (e: unknown) {
-      console.warn('[useMeshCore] setContactPath error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] setContactPath error ' + errLikeToLogString(e));
       return false;
     }
   }, []);
@@ -3744,14 +3782,14 @@ export function useMeshcoreRuntime() {
     if (!conn) return false;
     const pubKey = pubKeyMapRef.current.get(nodeId);
     if (!pubKey) {
-      console.warn('[useMeshCore] resetContactPath: no public key for node', nodeId);
+      console.warn('[useMeshcoreRuntime] resetContactPath: no public key for node', nodeId);
       return false;
     }
     try {
       await conn.resetPath(pubKey);
       return true;
     } catch (e: unknown) {
-      console.warn('[useMeshCore] resetContactPath error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] resetContactPath error ' + errLikeToLogString(e));
       return false;
     }
   }, []);
@@ -3765,7 +3803,7 @@ export function useMeshcoreRuntime() {
         const result = await conn.getStatsRadio();
         return result;
       } catch (e: unknown) {
-        console.warn('[useMeshCore] getRadioStats error ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] getRadioStats error ' + errLikeToLogString(e));
         return null;
       }
     }, []);
@@ -3778,7 +3816,7 @@ export function useMeshcoreRuntime() {
         const result = await conn.getStatsPackets();
         return result;
       } catch (e: unknown) {
-        console.warn('[useMeshCore] getPacketStats error ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] getPacketStats error ' + errLikeToLogString(e));
         return null;
       }
     }, []);
@@ -3798,7 +3836,7 @@ export function useMeshcoreRuntime() {
         await conn.sendChannelData(channelIdx, pathLen, path, dataType, payload);
         return true;
       } catch (e: unknown) {
-        console.warn('[useMeshCore] sendChannelData error ' + errLikeToLogString(e));
+        console.warn('[useMeshcoreRuntime] sendChannelData error ' + errLikeToLogString(e));
         return false;
       }
     },
@@ -3813,7 +3851,7 @@ export function useMeshcoreRuntime() {
       const signature = await conn.sign(data);
       return signature;
     } catch (e: unknown) {
-      console.warn('[useMeshCore] signData error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] signData error ' + errLikeToLogString(e));
       return null;
     }
   }, []);
@@ -3825,7 +3863,7 @@ export function useMeshcoreRuntime() {
       const raw = await conn.exportPrivateKey();
       return coerceMeshcoreExportPrivateKeyResult(raw);
     } catch (e: unknown) {
-      console.warn('[useMeshCore] exportPrivateKey error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] exportPrivateKey error ' + errLikeToLogString(e));
       return null;
     }
   }, []);
@@ -3837,7 +3875,7 @@ export function useMeshcoreRuntime() {
       await conn.importPrivateKey(privateKey);
       return true;
     } catch (e: unknown) {
-      console.warn('[useMeshCore] importPrivateKey error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] importPrivateKey error ' + errLikeToLogString(e));
       return false;
     }
   }, []);
@@ -3850,7 +3888,7 @@ export function useMeshcoreRuntime() {
       const messages = await conn.getWaitingMessages();
       return messages;
     } catch (e: unknown) {
-      console.warn('[useMeshCore] getWaitingMessages error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] getWaitingMessages error ' + errLikeToLogString(e));
       return null;
     }
   }, []);
@@ -3862,7 +3900,7 @@ export function useMeshcoreRuntime() {
       const msg = await conn.syncNextMessage();
       return msg;
     } catch (e: unknown) {
-      console.warn('[useMeshCore] syncNextMessage error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] syncNextMessage error ' + errLikeToLogString(e));
       return null;
     }
   }, []);
@@ -3880,7 +3918,7 @@ export function useMeshcoreRuntime() {
     const storedStatic = readStoredStaticGps();
     const staticLat = storedStatic?.lat;
     const staticLon = storedStatic?.lon;
-    // Match useDevice: when a static override exists, do not let device coords win over it.
+    // Match useMeshtasticRuntime: when a static override exists, do not let device coords win over it.
     const devLat = storedStatic != null ? undefined : myNode?.latitude;
     const devLon = storedStatic != null ? undefined : myNode?.longitude;
     const devAlt = storedStatic != null ? undefined : myNode?.altitude;
@@ -3927,7 +3965,8 @@ export function useMeshcoreRuntime() {
       if (pos.source === 'static' && connRef.current) {
         sendPositionToDeviceMeshCore(pos.lat, pos.lon).catch((e: unknown) => {
           console.debug(
-            '[useMeshCore] refreshOurPosition setAdvertLatLong non-fatal ' + errLikeToLogString(e),
+            '[useMeshcoreRuntime] refreshOurPosition setAdvertLatLong non-fatal ' +
+              errLikeToLogString(e),
           );
         });
       }
@@ -3938,7 +3977,7 @@ export function useMeshcoreRuntime() {
 
   refreshOurPositionMeshCoreRef.current = refreshOurPositionNoop;
 
-  // Same as useDevice: resolve map/static GPS on startup so MapPanel receives ourPosition.
+  // Same as useMeshtasticRuntime: resolve map/static GPS on startup so MapPanel receives ourPosition.
   useEffect(() => {
     void refreshOurPositionNoop();
   }, [refreshOurPositionNoop]);
@@ -4021,7 +4060,7 @@ export function useMeshcoreRuntime() {
         syncMeshcoreNodesMapToIdentityStore(storeId, nextMap);
       }
     } catch (e) {
-      console.warn('[useMeshCore] refreshNodesFromDb error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] refreshNodesFromDb error ' + errLikeToLogString(e));
     }
   }, [resolveMeshcoreStoreIdentityId]);
   const refreshMessagesFromDb = useCallback(async () => {
@@ -4035,7 +4074,7 @@ export function useMeshcoreRuntime() {
       setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
       setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
     } catch (e) {
-      console.warn('[useMeshCore] refreshMessagesFromDb error ' + errLikeToLogString(e));
+      console.warn('[useMeshcoreRuntime] refreshMessagesFromDb error ' + errLikeToLogString(e));
     }
   }, []);
 

@@ -317,7 +317,7 @@ export async function createConnection(
   }
 
   // NOTE: Do NOT call device.configure() here. It must be called AFTER
-  // event subscriptions are set up in useDevice.ts, otherwise the initial
+  // event subscriptions are set up in useMeshtasticRuntime, otherwise the initial
   // node/channel/config dump is emitted before any listeners exist.
 
   assertTransportReadyForMeshDevice(transport, 'Meshtastic serial');
@@ -408,7 +408,7 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
       }
     } else {
       console.warn(
-        `[Meshtastic] Disconnect error: ${err instanceof Error ? err.message : String(err)}`,
+        `[useMeshtasticRuntime] Disconnect error: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
   } finally {

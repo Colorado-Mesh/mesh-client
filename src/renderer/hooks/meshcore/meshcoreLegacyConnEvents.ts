@@ -205,7 +205,7 @@ export function attachMeshcoreLegacyConnEvents(
       );
       if (rawAdvertSec != null && rawAdvertSec > nowSec + LAST_HEARD_MAX_FUTURE_SKEW_SEC) {
         console.debug(
-          `[useMeshCore] clamped future lastAdvert nodeId=${nodeId.toString(16)} advertSec=${rawAdvertSec} nowSec=${nowSec}`,
+          `[useMeshcoreRuntime] clamped future lastAdvert nodeId=${nodeId.toString(16)} advertSec=${rawAdvertSec} nowSec=${nowSec}`,
         );
       }
       persistOut.persistLastAdvert = lastHeard;
@@ -276,7 +276,7 @@ export function attachMeshcoreLegacyConnEvents(
             .updateMeshcoreContactType(nodeId, mergedType)
             .catch((e: unknown) => {
               console.warn(
-                '[useMeshCore] updateMeshcoreContactType error ' + errLikeToLogString(e),
+                '[useMeshcoreRuntime] updateMeshcoreContactType error ' + errLikeToLogString(e),
               );
             });
         }
@@ -312,7 +312,8 @@ export function attachMeshcoreLegacyConnEvents(
         })
         .catch((e: unknown) => {
           console.warn(
-            '[useMeshCore] saveMeshcoreContact (event 128 new) error ' + errLikeToLogString(e),
+            '[useMeshcoreRuntime] saveMeshcoreContact (event 128 new) error ' +
+              errLikeToLogString(e),
           );
         });
     } else if (persistOut.kind === 'update') {
@@ -325,7 +326,9 @@ export function attachMeshcoreLegacyConnEvents(
           persistOut.persistAdvName,
         )
         .catch((e: unknown) => {
-          console.warn('[useMeshCore] updateMeshcoreContactAdvert error ' + errLikeToLogString(e));
+          console.warn(
+            '[useMeshcoreRuntime] updateMeshcoreContactAdvert error ' + errLikeToLogString(e),
+          );
         });
     }
     // Foreign LoRa for MeshCore overhear is recorded from RF RX (event 136), not advert sync (128).
@@ -393,7 +396,8 @@ export function attachMeshcoreLegacyConnEvents(
         })
         .catch((e: unknown) => {
           console.warn(
-            '[useMeshCore] saveMeshcoreContact (event 129 new) error ' + errLikeToLogString(e),
+            '[useMeshcoreRuntime] saveMeshcoreContact (event 129 new) error ' +
+              errLikeToLogString(e),
           );
         });
     }
@@ -420,7 +424,7 @@ export function attachMeshcoreLegacyConnEvents(
         }
       } catch (e: unknown) {
         console.warn(
-          '[useMeshCore] immediate path refresh after 129 error ' + errLikeToLogString(e),
+          '[useMeshcoreRuntime] immediate path refresh after 129 error ' + errLikeToLogString(e),
         );
       }
     })();
@@ -457,7 +461,9 @@ export function attachMeshcoreLegacyConnEvents(
             }
           }
         } catch (e) {
-          console.warn('[useMeshCore] debounced contacts refresh error ' + errLikeToLogString(e));
+          console.warn(
+            '[useMeshcoreRuntime] debounced contacts refresh error ' + errLikeToLogString(e),
+          );
         }
       })();
     }, 2000);
@@ -468,7 +474,7 @@ export function attachMeshcoreLegacyConnEvents(
   onMeshcoreConn(130, (data: unknown) => {
     const d = data as { ackCode: number; roundTrip?: number };
     if (typeof d.ackCode !== 'number' || !Number.isFinite(d.ackCode)) {
-      console.warn('[useMeshCore] event 130: non-numeric ackCode', d.ackCode);
+      console.warn('[useMeshcoreRuntime] event 130: non-numeric ackCode', d.ackCode);
       return;
     }
     const isNack = d.ackCode === 0x81 || d.ackCode === 129; // 0x81 or signed representation
@@ -518,7 +524,8 @@ export function attachMeshcoreLegacyConnEvents(
           .updateMeshcoreMessageStatus(lateKey, newStatus)
           .catch((e: unknown) => {
             console.warn(
-              '[useMeshCore] updateMeshcoreMessageStatus (late 130) error ' + errLikeToLogString(e),
+              '[useMeshcoreRuntime] updateMeshcoreMessageStatus (late 130) error ' +
+                errLikeToLogString(e),
             );
           });
       }
@@ -552,7 +559,9 @@ export function attachMeshcoreLegacyConnEvents(
       syncMeshcoreDmAckToMessageStore(storeId, canon, myNodeNumRef.current, newStatus);
     }
     void window.electronAPI.db.updateMeshcoreMessageStatus(canon, newStatus).catch((e: unknown) => {
-      console.warn('[useMeshCore] updateMeshcoreMessageStatus error ' + errLikeToLogString(e));
+      console.warn(
+        '[useMeshcoreRuntime] updateMeshcoreMessageStatus error ' + errLikeToLogString(e),
+      );
     });
   });
 
@@ -596,7 +605,7 @@ export function attachMeshcoreLegacyConnEvents(
       .saveMeshcoreContact(contactToDbRow(d, nick ?? null, 1, undefined, mergedHopsForDb))
       .catch((e: unknown) => {
         console.warn(
-          '[useMeshCore] saveMeshcoreContact (event 138) error ' + errLikeToLogString(e),
+          '[useMeshcoreRuntime] saveMeshcoreContact (event 138) error ' + errLikeToLogString(e),
         );
       });
   });
@@ -618,7 +627,7 @@ export function attachMeshcoreLegacyConnEvents(
         const senderId = pubKeyPrefixMapRef.current.get(prefix) ?? 0;
         if (senderId === 0) {
           console.warn(
-            '[useMeshCore] event 131: unknown pubKeyPrefix in queued DM, sender will be 0',
+            '[useMeshcoreRuntime] event 131: unknown pubKeyPrefix in queued DM, sender will be 0',
             prefix,
           );
         }
@@ -708,13 +717,15 @@ export function attachMeshcoreLegacyConnEvents(
         await processWaitingMessages();
       } catch (e) {
         console.warn(
-          '[useMeshCore] getWaitingMessages error, retrying in 2 s ' + errLikeToLogString(e),
+          '[useMeshcoreRuntime] getWaitingMessages error, retrying in 2 s ' + errLikeToLogString(e),
         );
         // Single retry — device may be busy during BLE reconnect
         setTimeout(() => {
           if (!meshcoreHookMountedRef.current) return;
           void processWaitingMessages().catch((e2: unknown) => {
-            console.warn('[useMeshCore] getWaitingMessages retry failed ' + errLikeToLogString(e2));
+            console.warn(
+              '[useMeshcoreRuntime] getWaitingMessages retry failed ' + errLikeToLogString(e2),
+            );
           });
         }, 2_000);
       }
@@ -735,7 +746,7 @@ export function attachMeshcoreLegacyConnEvents(
       .join('');
     const senderId = pubKeyPrefixMapRef.current.get(prefix) ?? 0;
     if (senderId === 0) {
-      console.warn('[useMeshCore] event 7: unknown pubKeyPrefix, sender will be 0', prefix);
+      console.warn('[useMeshcoreRuntime] event 7: unknown pubKeyPrefix, sender will be 0', prefix);
     }
     const sender = nodesRef.current.get(senderId);
     // CLI data response (txtType === 1)
@@ -748,7 +759,7 @@ export function attachMeshcoreLegacyConnEvents(
         }
       } else {
         console.warn(
-          '[useMeshCore] event 7: CLI response received but no command service active (sender:',
+          '[useMeshcoreRuntime] event 7: CLI response received but no command service active (sender:',
           senderId.toString(16).toUpperCase(),
           ')',
         );
@@ -906,7 +917,8 @@ export function attachMeshcoreLegacyConnEvents(
         })
         .catch((e: unknown) => {
           console.warn(
-            '[useMeshCore] publishMeshcorePacketLog (heard RF) error ' + errLikeToLogString(e),
+            '[useMeshcoreRuntime] publishMeshcorePacketLog (heard RF) error ' +
+              errLikeToLogString(e),
           );
         });
     }
@@ -1037,7 +1049,8 @@ export function attachMeshcoreLegacyConnEvents(
               )
               .catch((e: unknown) => {
                 console.warn(
-                  '[useMeshCore] updateMeshcoreContactRfTransport error ' + errLikeToLogString(e),
+                  '[useMeshcoreRuntime] updateMeshcoreContactRfTransport error ' +
+                    errLikeToLogString(e),
                 );
               });
           }
@@ -1092,14 +1105,16 @@ export function attachMeshcoreLegacyConnEvents(
             .updateMeshcoreContactLastRf(fromNodeId!, snr, rssi, mergedHopsAway ?? hopCount, nowSec)
             .catch((e: unknown) => {
               console.warn(
-                '[useMeshCore] updateMeshcoreContactLastRf error ' + errLikeToLogString(e),
+                '[useMeshcoreRuntime] updateMeshcoreContactLastRf error ' + errLikeToLogString(e),
               );
             });
           void useDiagnosticsStore
             .getState()
             .saveMeshcoreHopHistory(fromNodeId!, now, mergedHopsAway ?? hopCount, snr, rssi)
             .catch((e: unknown) => {
-              console.warn('[useMeshCore] saveMeshcoreHopHistory error ' + errLikeToLogString(e));
+              console.warn(
+                '[useMeshcoreRuntime] saveMeshcoreHopHistory error ' + errLikeToLogString(e),
+              );
             });
 
           return next;

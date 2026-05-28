@@ -5,7 +5,7 @@ import type { ConnectionType } from '../types';
 
 /**
  * Transport-level side effects not yet modeled as `DomainEvent`s (Noble disconnect,
- * serial/BLE heartbeat). Pushed onto the hook unsubscribe list by `useDevice.wireSubscriptions`.
+ * serial/BLE heartbeat). Pushed onto the hook unsubscribe list by `useMeshtasticRuntime` wire subscriptions.
  */
 export function pushMeshtasticTransportSideEffectUnsubs(
   device: MeshDevice,

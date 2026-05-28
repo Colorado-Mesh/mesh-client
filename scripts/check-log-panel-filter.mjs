@@ -4,11 +4,14 @@
  * source file must be registered in isDeviceEntry() in LogPanel.tsx.
  *
  * This prevents the "new prefix added to noble-ble-manager / mqtt-manager /
- * meshcore-mqtt-adapter, but never added to the log filter" regression.
+ * meshcore-mqtt-adapter / useMeshtasticRuntime, but never added to the log filter"
+ * regression.
  *
  * Files checked:
- *   Meshtastic: src/main/noble-ble-manager.ts, src/main/mqtt-manager.ts
- *   MeshCore:   src/main/meshcore-mqtt-adapter.ts
+ *   Meshtastic main:  noble-ble-manager.ts, mqtt-manager.ts
+ *   Meshtastic renderer: useMeshtasticRuntime.ts, meshtasticLegacyWireSubscriptions.ts
+ *   MeshCore main:    meshcore-mqtt-adapter.ts
+ *   MeshCore renderer: useMeshcoreRuntime.ts, meshcoreLegacyConnEvents.ts
  *
  * Filter source: src/renderer/components/LogPanel.tsx
  *
@@ -32,8 +35,14 @@ const DEVICE_FILES = {
   meshtastic: [
     path.join(ROOT, 'src', 'main', 'noble-ble-manager.ts'),
     path.join(ROOT, 'src', 'main', 'mqtt-manager.ts'),
+    path.join(ROOT, 'src', 'renderer', 'runtime', 'useMeshtasticRuntime.ts'),
+    path.join(ROOT, 'src', 'renderer', 'lib', 'meshtastic', 'meshtasticLegacyWireSubscriptions.ts'),
   ],
-  meshcore: [path.join(ROOT, 'src', 'main', 'meshcore-mqtt-adapter.ts')],
+  meshcore: [
+    path.join(ROOT, 'src', 'main', 'meshcore-mqtt-adapter.ts'),
+    path.join(ROOT, 'src', 'renderer', 'runtime', 'useMeshcoreRuntime.ts'),
+    path.join(ROOT, 'src', 'renderer', 'hooks', 'meshcore', 'meshcoreLegacyConnEvents.ts'),
+  ],
 };
 
 const SUPPRESSED = /\/\/\s*log-filter-ok\b/;

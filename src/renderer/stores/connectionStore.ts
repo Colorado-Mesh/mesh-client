@@ -27,7 +27,7 @@ export interface ConnectionRecord {
   batteryCharging?: boolean;
   queueFree?: number;
   queueMax?: number;
-  // Telemetry/GPS/identity-related state previously held inside useDevice.
+  // Telemetry/GPS/identity-related state previously held inside useMeshtasticRuntime.
   telemetryEnabled?: boolean;
   gpsLoading?: boolean;
   gpsIntervalMs?: number;

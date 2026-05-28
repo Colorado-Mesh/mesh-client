@@ -30,7 +30,7 @@ const BLE_READ_PUMP_MAX_ITERATIONS = 512;
 const POST_WRITE_SAFETY_READ_DELAYS_MS = [100, 500, 1500, 4000, 8000];
 /** Timeout for individual GATT readValue calls in the drain loop (shorter than discovery). */
 const GATT_READ_VALUE_TIMEOUT_MS = 10_000;
-/** Periodic GATT read on quiet notify links — below useDevice BLE_STALE_THRESHOLD_MS (90s). */
+/** Periodic GATT read on quiet notify links — below useMeshtasticRuntime BLE_STALE_THRESHOLD_MS (90s). */
 const GATT_KEEPALIVE_INTERVAL_MS = 45_000;
 /**
  * Background fromRadio poll interval — catches responses that arrive after the post-write

@@ -83,6 +83,7 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     return (
       entry.source === 'sdk' ||
       entry.source.includes('meshtastic') ||
+      entry.message.includes('[useMeshtasticRuntime]') ||
       entry.message.includes('[iMeshDevice]') ||
       entry.message.includes('[TransportNobleIpc]') ||
       entry.message.includes('[NobleBleManager]') ||
@@ -94,7 +95,7 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
   if (protocol === 'meshcore') {
     return (
       entry.source.includes('meshcore') ||
-      entry.message.includes('[useMeshCore]') ||
+      entry.message.includes('[useMeshcoreRuntime]') ||
       entry.message.includes('[MeshCore MQTT]') ||
       entry.message.includes('[BLE:meshcore]') ||
       entry.message.includes('[IpcNobleConnection:meshcore]')
@@ -105,8 +106,9 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     entry.source === 'sdk' ||
     entry.source.includes('meshtastic') ||
     entry.source.includes('meshcore') ||
+    entry.message.includes('[useMeshtasticRuntime]') ||
     entry.message.includes('[iMeshDevice]') ||
-    entry.message.includes('[useMeshCore]') ||
+    entry.message.includes('[useMeshcoreRuntime]') ||
     entry.message.includes('[TransportNobleIpc]') ||
     entry.message.includes('[MeshCore MQTT]') ||
     entry.message.includes('[NobleBleManager]') ||
