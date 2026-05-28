@@ -113,11 +113,13 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 
 ### Renderer hook architecture (dual protocol)
 
-See **Renderer: hooks vs runtime vs lib** (layout map above). Default rules for new UI:
+See **Renderer: hooks vs runtime vs lib** (layout map above) and [docs/renderer-side-effect-migration.md](docs/renderer-side-effect-migration.md) for migration status ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377)). Default rules for new UI:
 
 | Concern                                               | Use                                                                                                                                                         |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Orchestration (App tab)                               | `useProtocolFacade(protocol)` — connection, `useConnectionView`, panel bundle, nodes, messages                                                              |
+| Active protocol identity                              | `useActiveMeshIdentity(protocol)` — focused `identityId` per tab; prefer `capabilities` over `protocol ===`                                                 |
+| Dual-protocol panel bundles (App)                     | `useDualProtocolPanelActions(meshtasticRuntime, meshcoreRuntime)` — single hook site for both protocols                                                     |
 | Reads (nodes, messages, connection fields)            | Zustand stores + `useNodes` / `useMessages` / `useConnectionView` / `useConnectionStatus`                                                                   |
 | Writes (configure, send, admin, panel callbacks)      | `usePanelActions(protocol, identityId, …)` / `useProtocolFacade(protocol).panel` or `useSendMessage(identityId)`                                            |
 | Connect / disconnect / auto-connect                   | `useProtocolConnectionActions(protocol)` (`useProtocolConnect` + `useProtocolDisconnect` + `lib/sessions/*Session.ts`); driver-first via `ConnectionDriver` |
@@ -126,6 +128,8 @@ See **Renderer: hooks vs runtime vs lib** (layout map above). Default rules for 
 Do **not** remount protocol runtimes in child components. Do **not** compare `protocol === 'meshcore'` for feature gates; use `ProtocolCapabilities` / `useRadioProvider(protocol)`.
 
 Protocol SDK adapters: `src/renderer/lib/protocols/`. Connection lifecycle: `ConnectionDriver`; inbound domain events: `PacketRouter` → stores.
+
+**Identity-scoped UI stores:** `identityStore`, `nodeStore`, `messageStore`, `connectionStore` — nodes/messages keyed by `identityId`. **SQLite → UI:** `lib/hydrateIdentityStoresFromDb.ts` (coordinator: `identityHydrationCoordinator.ts`; Meshtastic node map: `meshtasticDbCacheHydration.ts`); manual refresh via `hooks/useDbRefresh.ts`. Runtimes still use legacy mount hydration (`lib/legacySideEffects/*DbHydration.ts`) for runtime-local refs until fully retired.
 
 ### First places to look
 
@@ -140,7 +144,7 @@ Protocol SDK adapters: `src/renderer/lib/protocols/`. Connection lifecycle: `Con
 
 ### Database
 
-WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-compat.ts` over `node:sqlite`. After schema changes: `pnpm run check:db-migrations`.
+WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-compat.ts` over `node:sqlite`. After schema changes: `pnpm run check:db-migrations`. **Startup maintenance:** `lib/startupDbPrune.ts` — single-flight per session from `App.tsx` (node/message retention, RF stub migration); do not re-invoke from unstable effect deps.
 
 ### BLE and serial
 
@@ -190,27 +194,28 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 
 ### Common issues
 
-| Symptom                | Where to check                                                                         |
-| ---------------------- | -------------------------------------------------------------------------------------- |
-| Connection fails       | `ConnectionDriver`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts` |
-| Send fails             | `useSendMessage`, runtime send paths                                                   |
-| UI stale               | Zustand store, effect deps                                                             |
-| BLE timeout            | `noble-ble-manager.ts`, `bleConnectErrors`                                             |
-| Serial missing         | `serialPortSignature.ts`                                                               |
-| MQTT loop              | `mqtt-manager.ts`                                                                      |
-| DB errors              | `database.ts` migrations                                                               |
-| Log gaps               | `log-service.ts`, log tags                                                             |
-| Chat export fails      | `chat:export` handler in `src/main/index.ts`                                           |
-| Draft not restored     | `chatPanelProtocolStorage.ts`, `viewKey` logic                                         |
-| Mention picker missing | `MentionAutocomplete.tsx`, `buildMentionCandidates`                                    |
-| Link preview missing   | `fetchLinkPreview.ts`, `chat:fetchLinkPreview` IPC                                     |
-| Duplicate RF+MQTT msg  | `meshtasticMessageDedup.ts`, Meshtastic runtime ingest                                 |
-| MQTT decrypt / sender  | `mqtt-manager.ts`, `meshtasticMqttIdentity.ts`                                         |
-| Remote admin fails     | `meshtasticRemoteAdmin.ts`, key storage                                                |
-| S&F history garbled    | `meshtasticBacklogUtils.ts` decode, heartbeat trigger                                  |
-| Garbled TEXT_MESSAGE   | `meshtasticBacklogUtils.ts` readable-text filter                                       |
-| Channel URL apply      | `meshtasticChannelApply.ts`, `meshtasticUrlEncoder.ts`                                 |
-| Header red on loss     | `connectionHeaderStatus.ts`, `mqttDisconnectIntent.ts`                                 |
+| Symptom                  | Where to check                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------- |
+| Connection fails         | `ConnectionDriver`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts` |
+| Send fails               | `useSendMessage`, runtime send paths                                                   |
+| UI stale                 | Zustand store, effect deps                                                             |
+| Empty chat/nodes offline | `hydrateIdentityStoresFromDb`, connect-time cache in runtimes, `useDbRefresh`          |
+| BLE timeout              | `noble-ble-manager.ts`, `bleConnectErrors`                                             |
+| Serial missing           | `serialPortSignature.ts`                                                               |
+| MQTT loop                | `mqtt-manager.ts`                                                                      |
+| DB errors                | `database.ts` migrations                                                               |
+| Log gaps                 | `log-service.ts`, log tags                                                             |
+| Chat export fails        | `chat:export` handler in `src/main/index.ts`                                           |
+| Draft not restored       | `chatPanelProtocolStorage.ts`, `viewKey` logic                                         |
+| Mention picker missing   | `MentionAutocomplete.tsx`, `buildMentionCandidates`                                    |
+| Link preview missing     | `fetchLinkPreview.ts`, `chat:fetchLinkPreview` IPC                                     |
+| Duplicate RF+MQTT msg    | `meshtasticMessageDedup.ts`, Meshtastic runtime ingest                                 |
+| MQTT decrypt / sender    | `mqtt-manager.ts`, `meshtasticMqttIdentity.ts`                                         |
+| Remote admin fails       | `meshtasticRemoteAdmin.ts`, key storage                                                |
+| S&F history garbled      | `meshtasticBacklogUtils.ts` decode, heartbeat trigger                                  |
+| Garbled TEXT_MESSAGE     | `meshtasticBacklogUtils.ts` readable-text filter                                       |
+| Channel URL apply        | `meshtasticChannelApply.ts`, `meshtasticUrlEncoder.ts`                                 |
+| Header red on loss       | `connectionHeaderStatus.ts`, `mqttDisconnectIntent.ts`                                 |
 
 ## 9. Cursor / Claude indexing
 

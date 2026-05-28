@@ -52,6 +52,7 @@ For development setup and local build/test workflow, see:
   - [Development Guide](development-environment.md)
   - [Accessibility Checklist](accessibility-checklist.md)
   - [Contributing](contributing.md)
+  - [Renderer side-effect migration](renderer-side-effect-migration.md) (hook/runtime/store boundaries)
 - **MeshCore Roadmap**
   - [Feature Parity](meshcore-meshtastic-parity.md)
   - [MQTT Auth](letsmesh-mqtt-auth.md)

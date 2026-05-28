@@ -73,7 +73,7 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 **First places to look:** `runtime/useMeshtasticRuntime.ts` / `runtime/useMeshcoreRuntime.ts` (protocol side effects); `hooks/useProtocolConnection.ts` (connect); `stores/*` (UI state); `src/main/index.ts` (IPC).
 
-**Renderer layers:** `runtime/` (single-mount protocol runtimes), `hooks/` (facades and store selectors), `lib/` (drivers, sessions, types). Prefer `useProtocolFacade(protocol)` in App for new wiring.
+**Renderer layers:** `runtime/` (single-mount protocol runtimes), `hooks/` (facades and store selectors), `lib/` (drivers, sessions, types), `stores/` (identity-scoped UI: `identityStore`, `nodeStore`, `messageStore`, `connectionStore`). Prefer `useProtocolFacade(protocol)` in App for new wiring. Hook deconstruction status: [docs/renderer-side-effect-migration.md](docs/renderer-side-effect-migration.md).
 
 ### Protocols
 
@@ -83,6 +83,7 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 ### Database
 
 - WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-compat.ts` over `node:sqlite`. After schema changes: `pnpm run check:db-migrations`.
+- **Renderer DB → UI:** `lib/hydrateIdentityStoresFromDb.ts` (identity-scoped Zustand hydration; connect-time node cache before RF configure). **Startup prune:** `lib/startupDbPrune.ts` (once per app session from `App.tsx`).
 
 ### BLE and serial
 
@@ -101,17 +102,18 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 ### Common issues
 
-| Symptom             | Where to check                                                                                                           |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Connection fails    | `ConnectionDriver`, `hooks/useProtocolConnection.ts`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts` |
-| Send fails          | `hooks/useSendMessage.ts`, runtime send APIs, `TransportManager`                                                         |
-| UI stale            | Zustand store, effect deps                                                                                               |
-| BLE timeout         | `noble-ble-manager.ts`, `bleConnectErrors`                                                                               |
-| Serial missing      | `serialPortSignature.ts`                                                                                                 |
-| MQTT loop           | `mqtt-manager.ts`                                                                                                        |
-| MQTT decrypt fail   | `mqtt-manager.ts`, `meshtasticChannelPskInput.ts`                                                                        |
-| MQTT-only sender    | `meshtasticMqttIdentity.ts`, `runtime/useMeshtasticRuntime.ts`, `hooks/useSendMessage.ts`                                |
-| Remote admin fail   | `meshtasticRemoteAdmin.ts`, `meshtasticRemoteAdminKeyStorage.ts`                                                         |
-| Garbled chat insert | `meshtasticBacklogUtils.ts` readable-text filter                                                                         |
-| DB errors           | `database.ts` migrations                                                                                                 |
-| Log gaps            | `log-service.ts`, log tags                                                                                               |
+| Symptom                  | Where to check                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Connection fails         | `ConnectionDriver`, `hooks/useProtocolConnection.ts`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts` |
+| Send fails               | `hooks/useSendMessage.ts`, runtime send APIs, `TransportManager`                                                         |
+| UI stale                 | Zustand store, effect deps                                                                                               |
+| Empty chat/nodes offline | `hydrateIdentityStoresFromDb`, runtime connect-time DB cache, `hooks/useDbRefresh.ts`                                    |
+| BLE timeout              | `noble-ble-manager.ts`, `bleConnectErrors`                                                                               |
+| Serial missing           | `serialPortSignature.ts`                                                                                                 |
+| MQTT loop                | `mqtt-manager.ts`                                                                                                        |
+| MQTT decrypt fail        | `mqtt-manager.ts`, `meshtasticChannelPskInput.ts`                                                                        |
+| MQTT-only sender         | `meshtasticMqttIdentity.ts`, `runtime/useMeshtasticRuntime.ts`, `hooks/useSendMessage.ts`                                |
+| Remote admin fail        | `meshtasticRemoteAdmin.ts`, `meshtasticRemoteAdminKeyStorage.ts`                                                         |
+| Garbled chat insert      | `meshtasticBacklogUtils.ts` readable-text filter                                                                         |
+| DB errors                | `database.ts` migrations                                                                                                 |
+| Log gaps                 | `log-service.ts`, log tags                                                                                               |
