@@ -31,8 +31,7 @@ import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
-import { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
-import { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelActions';
+import { useDualProtocolPanelActions } from './hooks/useDualProtocolPanelActions';
 import { useMessages } from './hooks/useMessages';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import {
@@ -80,7 +79,6 @@ import {
   parseMeshCoreBuildDate,
   semverGt,
 } from './lib/firmwareCheck';
-import { hydrateIdentityStoresFromDb } from './lib/hydrateIdentityStoresFromDb';
 import {
   validateLetsMeshManualCredentials,
   validateLetsMeshPresetConnect,
@@ -648,9 +646,12 @@ function AppContent({
   const protocolDisconnect = useProtocolDisconnect();
   const meshtasticConnection = useProtocolConnectionActions('meshtastic');
   const meshcoreConnection = useProtocolConnectionActions('meshcore');
-  const meshtasticPanelActions = useMeshtasticPanelActions(meshtasticRuntime);
-  const meshcorePanelActions = useMeshcorePanelActions(meshcoreRuntime);
-  const activeFacade = useProtocolFacade(protocol);
+  const { meshtastic: meshtasticPanelActions, meshcore: meshcorePanelActions } =
+    useDualProtocolPanelActions(meshtasticRuntime, meshcoreRuntime);
+  const activeFacade = useProtocolFacade(protocol, {
+    meshtastic: meshtasticPanelActions,
+    meshcore: meshcorePanelActions,
+  });
   const panelActions = activeFacade.panel.actions;
   const {
     meshtasticIdentityId,
@@ -1266,24 +1267,15 @@ function AppContent({
   useLayoutEffect(() => {
     postStartupPruneHydrateRef.current = () => {
       ensureOfflineProtocolIdentities();
-      if (meshtasticIdentityId) {
-        meshtasticPanelActions.refreshNodesFromDb();
-        meshtasticPanelActions.refreshMessagesFromDb();
-        void hydrateIdentityStoresFromDb('meshtastic', meshtasticIdentityId, {
-          nodes: true,
-          messages: true,
-        });
-      }
-      if (meshcoreIdentityId) {
-        void meshcorePanelActions.refreshNodesFromDb();
-        void meshcorePanelActions.refreshMessagesFromDb();
-        void hydrateIdentityStoresFromDb('meshcore', meshcoreIdentityId, {
-          nodes: true,
-          messages: true,
-        });
-      }
+      if (meshtasticIdentityId) void refreshMeshtasticAllFromDb();
+      if (meshcoreIdentityId) void refreshMeshcoreAllFromDb();
     };
-  }, [meshtasticIdentityId, meshcoreIdentityId, meshtasticPanelActions, meshcorePanelActions]);
+  }, [
+    meshtasticIdentityId,
+    meshcoreIdentityId,
+    refreshMeshtasticAllFromDb,
+    refreshMeshcoreAllFromDb,
+  ]);
 
   // ─── Startup pruning (once per session; see startupDbPrune.ts) ─────────────
   useEffect(() => {

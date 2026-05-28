@@ -76,7 +76,10 @@ import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { matchForeignLoraFromMeshtasticLog } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
 import { readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
-import { meshtasticHwModelName } from '../lib/hardwareModels';
+import {
+  hydrateMeshtasticMessagesFromDb,
+  syncMeshtasticNodesMapToIdentityStore,
+} from '../lib/hydrateIdentityStoresFromDb';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
 import { runMeshtasticDbHydration } from '../lib/legacySideEffects/meshtasticDbHydration';
 import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
@@ -87,6 +90,11 @@ import {
 } from '../lib/meshtastic/meshtasticLegacyWireSubscriptions';
 import { setRemoteAdminReadsActive } from '../lib/meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
+import {
+  loadMeshtasticMessagesFromDb,
+  loadMeshtasticNodeMapFromDb,
+  mergeMeshtasticDbHydrationWithLive,
+} from '../lib/meshtasticDbCacheHydration';
 import {
   findMeshtasticCrossTransportDuplicate,
   mapMeshtasticCrossTransportUpgrade,
@@ -161,16 +169,6 @@ type PositionType = Parameters<MeshDevice['setPosition']>[0];
 type UserType = Parameters<MeshDevice['setOwner']>[0];
 type WaypointType = Parameters<MeshDevice['sendWaypoint']>[0];
 type RemoteConfigRoute = 'radio' | 'channelsTail' | 'owner' | 'security' | 'modules';
-
-function getMessageLoadLimit(): number {
-  const s = parseStoredJson<{
-    messageLimitEnabled?: boolean;
-    messageLimitCount?: number;
-  }>(getAppSettingsRaw(), 'useDevice getMessageLoadLimit');
-  if (!s) return 1000;
-  if (s.messageLimitEnabled === false) return 10000;
-  return Math.max(1, s.messageLimitCount ?? 1000);
-}
 
 const BROADCAST_ADDR = 0xffffffff;
 
@@ -1718,6 +1716,15 @@ export function useMeshtasticRuntime() {
     [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog],
   );
 
+  const applyMeshtasticNodesToUi = useCallback(
+    (driverIdentityId: string, nodeMap: Map<number, MeshNode>) => {
+      nodesRef.current = nodeMap;
+      setNodes(nodeMap);
+      syncMeshtasticNodesMapToIdentityStore(driverIdentityId, nodeMap);
+    },
+    [],
+  );
+
   const attachRfSession = useCallback(
     async (driverIdentityId: string, type: ConnectionType, device?: MeshDevice): Promise<void> => {
       meshtasticDriverConnectedRef.current = true;
@@ -1729,9 +1736,43 @@ export function useMeshtasticRuntime() {
       }
       deviceRef.current = activeDevice;
       wireSubscriptions(activeDevice, type, { driverIdentityId });
+
+      // Show persisted nodes immediately while NodeDB configure replays over BLE/serial.
+      const dbCacheStart = performance.now();
+      let dbCacheNodeCount = 0;
+      try {
+        const cachedNodes = await loadMeshtasticNodeMapFromDb();
+        dbCacheNodeCount = cachedNodes.size;
+        applyMeshtasticNodesToUi(driverIdentityId, cachedNodes);
+      } catch (e) {
+        console.warn(
+          '[useDevice] attachRfSession db cache hydrate failed ' + errLikeToLogString(e),
+        );
+      }
+      console.debug(
+        `[useDevice] attachRfSession dbCache→UI ${Math.round(performance.now() - dbCacheStart)}ms (${dbCacheNodeCount} nodes)`,
+      );
+
+      void (async () => {
+        try {
+          const fromDb = await loadMeshtasticMessagesFromDb();
+          for (const m of fromDb) {
+            if (m.packetId) {
+              seenPacketIds.current.set(m.packetId, Date.now() + 10 * 60 * 1000);
+            }
+          }
+          setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb));
+          await hydrateMeshtasticMessagesFromDb(driverIdentityId);
+        } catch (e) {
+          console.warn(
+            '[useDevice] attachRfSession message cache hydrate failed ' + errLikeToLogString(e),
+          );
+        }
+      })();
+
       await activeDevice.configure();
     },
-    [wireSubscriptions],
+    [applyMeshtasticNodesToUi, wireSubscriptions],
   );
 
   const handleRfConnectFailure = useCallback(
@@ -2834,41 +2875,14 @@ export function useMeshtasticRuntime() {
   );
 
   const refreshNodesFromDb = useCallback(() => {
-    window.electronAPI.db
-      .getNodes()
-      .then((savedNodes) => {
-        const nodeMap = new Map<number, MeshNode>();
-        for (const n of savedNodes) {
-          const long_name = n.long_name ?? '';
-          const rawHw = n.hw_model;
-          const hw_model =
-            typeof rawHw === 'string' && /^\d+$/.test(rawHw.trim())
-              ? meshtasticHwModelName(parseInt(rawHw, 10))
-              : (rawHw ?? '');
-          nodeMap.set(n.node_id, {
-            ...n,
-            long_name,
-            hw_model,
-            short_name: meshtasticShortNameAfterClearingDefault(
-              long_name,
-              n.short_name ?? '',
-              n.node_id,
-            ),
-            role: parseNodeRole(n.role),
-            favorited: Boolean(n.favorited),
-            // Restore MQTT-only status from persisted source so these nodes show
-            // the globe indicator and suppressed hop count until heard via RF.
-            heard_via_mqtt_only: n.source === 'mqtt',
-            // MeshCore path/hop data
-            hops: n.hops ?? undefined,
-            path: typeof n.path === 'string' ? JSON.parse(n.path) : undefined,
-            // If hops (MeshCore) is present, use it for hops_away display, fallback to meshtastic hops_away
-            hops_away: n.hops ?? n.hops_away ?? undefined,
-          });
-        }
+    void loadMeshtasticNodeMapFromDb()
+      .then((nodeMap) => {
         console.debug(`[useDevice] refreshNodesFromDb: loaded ${nodeMap.size} nodes`);
         nodesRef.current = nodeMap;
         setNodes(nodeMap);
+        const storeId =
+          meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+        if (storeId) syncMeshtasticNodesMapToIdentityStore(storeId, nodeMap);
       })
       .catch((err: unknown) => {
         console.error('[useDevice] Failed to refresh nodes: ' + errLikeToLogString(err));
@@ -2876,15 +2890,21 @@ export function useMeshtasticRuntime() {
   }, []);
 
   const refreshMessagesFromDb = useCallback(() => {
-    window.electronAPI.db
-      .getMessages(undefined, getMessageLoadLimit())
-      .then((msgs) => {
-        console.debug(`[useDevice] refreshMessagesFromDb: loaded ${msgs.length} messages`);
-        setMessages(trimChatMessagesToMax(msgs.reverse(), MAX_IN_MEMORY_CHAT_MESSAGES));
+    void loadMeshtasticMessagesFromDb()
+      .then((fromDb) => {
+        console.debug(`[useDevice] refreshMessagesFromDb: loaded ${fromDb.length} messages`);
+        for (const m of fromDb) {
+          if (m.packetId) {
+            seenPacketIds.current.set(m.packetId, Date.now() + 10 * 60 * 1000);
+          }
+        }
+        setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb));
+        const storeId =
+          meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+        if (storeId) void hydrateMeshtasticMessagesFromDb(storeId);
       })
       .catch((err: unknown) => {
         console.error('[useDevice] Failed to refresh messages: ' + errLikeToLogString(err));
-        setMessages([]);
       });
   }, []);
 
@@ -3283,136 +3303,211 @@ export function useMeshtasticRuntime() {
     sendMessage,
   ]);
 
-  return {
-    state,
-    mqttStatus,
-    mqttConnectionLoss,
-    messages: resolvedMessages,
-    nodes: resolvedNodes,
-    telemetry,
-    signalTelemetry,
-    environmentTelemetry,
-    channels: resolvedChannels,
-    channelConfigs: resolvedChannelConfigs,
-    loraConfig,
-    traceRouteResults: resolvedTraceRouteResults,
-    ourPosition,
-    selfNodeId,
-    virtualNodeId,
-    lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
-    deviceGpsMode,
-    deviceFixedPosition,
-    telemetryEnabled,
-    telemetryDeviceUpdateInterval,
-    connect,
-    connectAutomatic,
-    disconnect,
-    prepareRfConnect,
-    attachRfSession,
-    handleRfConnectFailure,
-    finalizeDriverDisconnect,
-    sendMessage,
-    sendReaction,
-    setConfig,
-    commitConfig,
-    setDeviceChannel,
-    clearChannel,
-    applyChannelSet,
-    reboot,
-    shutdown,
-    factoryReset,
-    resetNodeDb,
-    requestPosition,
-    traceRoute,
-    deleteNode,
-    setNodeFavorited,
-    refreshNodesFromDb,
-    refreshMessagesFromDb,
-    requestRefresh,
-    gpsLoading,
-    refreshOurPosition,
-    sendPositionToDevice,
-    updateGpsInterval,
-    getNodeName,
-    getPickerStyleNodeLabel,
-    getFullNodeLabel,
-    getNodes,
-    deviceOwner,
-    setOwner,
-    queueStatus: resolvedQueueStatus,
-    deviceLogs: resolvedDeviceLogs,
-    rawPackets: resolvedRawPackets,
-    clearRawPackets,
-    neighborInfo: resolvedNeighborInfo,
-    waypoints: resolvedWaypoints,
-    rebootOta,
-    enterDfuMode,
-    factoryResetConfig,
-    sendWaypoint,
-    deleteWaypoint,
-    moduleConfigs: resolvedModuleConfigs,
-    setModuleConfig,
-    setCannedMessages,
-    ringtone,
-    setRingtone,
-    securityConfig,
-    remoteAdminKeysByNode,
-    getRemoteAdminKeyForNode,
-    setRemoteAdminKeyForNode,
-    getRemoteAdminSessionStatus,
-    configureTargetNodeNum,
-    setConfigureTargetNodeNum,
-    remoteAdminStatus,
-    remoteAdminError,
-    remoteConfigSnapshot,
-    remoteConfigChannelsTailStatus,
-    refreshRemoteConfigSnapshot,
-    // ─── Additional packet type state ───────────────────────────────
-    remoteHardwareMessages,
-    audioMessages,
-    detectionSensorEvents,
-    pingResponses,
-    ipTunnelMessages,
-    paxCounterData,
-    serialMessages,
-    storeForwardMessages,
-    requestStoreForwardHistory,
-    rangeTestPackets,
-    zpsMessages,
-    simulatorPackets,
-    atakMessages,
-    mapReports,
-    privateMessages,
-    /** Identity id for protocol-scoped stores; null when disconnected. */
-    identityId: meshtasticIdentityId,
-  };
-}
-
-// Maps legacy string role labels (stored by older app versions) to numeric IDs
-const LEGACY_ROLE_STRINGS: Record<string, number> = {
-  Client: 0,
-  Mute: 1,
-  Router: 2,
-  'Rtr+Client': 3,
-  Repeater: 4,
-  Tracker: 5,
-  Sensor: 6,
-  TAK: 7,
-  Hidden: 8,
-  'L&F': 9,
-  'TAK Tracker': 10,
-  'Rtr Late': 11,
-  Base: 12,
-};
-
-function parseNodeRole(val: unknown): number | undefined {
-  if (typeof val === 'number') return val;
-  if (typeof val === 'string') {
-    const n = parseInt(val, 10);
-    if (!isNaN(n)) return n;
-    return LEGACY_ROLE_STRINGS[val];
-  }
-  return undefined;
+  return useMemo(
+    () => ({
+      state,
+      mqttStatus,
+      mqttConnectionLoss,
+      messages: resolvedMessages,
+      nodes: resolvedNodes,
+      telemetry,
+      signalTelemetry,
+      environmentTelemetry,
+      channels: resolvedChannels,
+      channelConfigs: resolvedChannelConfigs,
+      loraConfig,
+      traceRouteResults: resolvedTraceRouteResults,
+      ourPosition,
+      selfNodeId,
+      virtualNodeId,
+      lastRfSelfNodeId: lastRfSelfNodeIdRef.current,
+      deviceGpsMode,
+      deviceFixedPosition,
+      telemetryEnabled,
+      telemetryDeviceUpdateInterval,
+      connect,
+      connectAutomatic,
+      disconnect,
+      prepareRfConnect,
+      attachRfSession,
+      handleRfConnectFailure,
+      finalizeDriverDisconnect,
+      sendMessage,
+      sendReaction,
+      setConfig,
+      commitConfig,
+      setDeviceChannel,
+      clearChannel,
+      applyChannelSet,
+      reboot,
+      shutdown,
+      factoryReset,
+      resetNodeDb,
+      requestPosition,
+      traceRoute,
+      deleteNode,
+      setNodeFavorited,
+      refreshNodesFromDb,
+      refreshMessagesFromDb,
+      requestRefresh,
+      gpsLoading,
+      refreshOurPosition,
+      sendPositionToDevice,
+      updateGpsInterval,
+      getNodeName,
+      getPickerStyleNodeLabel,
+      getFullNodeLabel,
+      getNodes,
+      deviceOwner,
+      setOwner,
+      queueStatus: resolvedQueueStatus,
+      deviceLogs: resolvedDeviceLogs,
+      rawPackets: resolvedRawPackets,
+      clearRawPackets,
+      neighborInfo: resolvedNeighborInfo,
+      waypoints: resolvedWaypoints,
+      rebootOta,
+      enterDfuMode,
+      factoryResetConfig,
+      sendWaypoint,
+      deleteWaypoint,
+      moduleConfigs: resolvedModuleConfigs,
+      setModuleConfig,
+      setCannedMessages,
+      ringtone,
+      setRingtone,
+      securityConfig,
+      remoteAdminKeysByNode,
+      getRemoteAdminKeyForNode,
+      setRemoteAdminKeyForNode,
+      getRemoteAdminSessionStatus,
+      configureTargetNodeNum,
+      setConfigureTargetNodeNum,
+      remoteAdminStatus,
+      remoteAdminError,
+      remoteConfigSnapshot,
+      remoteConfigChannelsTailStatus,
+      refreshRemoteConfigSnapshot,
+      // ─── Additional packet type state ───────────────────────────────
+      remoteHardwareMessages,
+      audioMessages,
+      detectionSensorEvents,
+      pingResponses,
+      ipTunnelMessages,
+      paxCounterData,
+      serialMessages,
+      storeForwardMessages,
+      requestStoreForwardHistory,
+      rangeTestPackets,
+      zpsMessages,
+      simulatorPackets,
+      atakMessages,
+      mapReports,
+      privateMessages,
+      /** Identity id for protocol-scoped stores; null when disconnected. */
+      identityId: meshtasticIdentityId,
+    }),
+    [
+      state,
+      mqttStatus,
+      mqttConnectionLoss,
+      resolvedMessages,
+      resolvedNodes,
+      telemetry,
+      signalTelemetry,
+      environmentTelemetry,
+      resolvedChannels,
+      resolvedChannelConfigs,
+      loraConfig,
+      resolvedTraceRouteResults,
+      ourPosition,
+      selfNodeId,
+      virtualNodeId,
+      deviceGpsMode,
+      deviceFixedPosition,
+      telemetryEnabled,
+      telemetryDeviceUpdateInterval,
+      connect,
+      connectAutomatic,
+      disconnect,
+      prepareRfConnect,
+      attachRfSession,
+      handleRfConnectFailure,
+      finalizeDriverDisconnect,
+      sendMessage,
+      sendReaction,
+      setConfig,
+      commitConfig,
+      setDeviceChannel,
+      clearChannel,
+      applyChannelSet,
+      reboot,
+      shutdown,
+      factoryReset,
+      resetNodeDb,
+      requestPosition,
+      traceRoute,
+      deleteNode,
+      setNodeFavorited,
+      refreshNodesFromDb,
+      refreshMessagesFromDb,
+      requestRefresh,
+      gpsLoading,
+      refreshOurPosition,
+      sendPositionToDevice,
+      updateGpsInterval,
+      getNodeName,
+      getPickerStyleNodeLabel,
+      getFullNodeLabel,
+      getNodes,
+      deviceOwner,
+      setOwner,
+      resolvedQueueStatus,
+      resolvedDeviceLogs,
+      resolvedRawPackets,
+      clearRawPackets,
+      resolvedNeighborInfo,
+      resolvedWaypoints,
+      rebootOta,
+      enterDfuMode,
+      factoryResetConfig,
+      sendWaypoint,
+      deleteWaypoint,
+      resolvedModuleConfigs,
+      setModuleConfig,
+      setCannedMessages,
+      ringtone,
+      setRingtone,
+      securityConfig,
+      remoteAdminKeysByNode,
+      getRemoteAdminKeyForNode,
+      setRemoteAdminKeyForNode,
+      getRemoteAdminSessionStatus,
+      configureTargetNodeNum,
+      setConfigureTargetNodeNum,
+      remoteAdminStatus,
+      remoteAdminError,
+      remoteConfigSnapshot,
+      remoteConfigChannelsTailStatus,
+      refreshRemoteConfigSnapshot,
+      remoteHardwareMessages,
+      audioMessages,
+      detectionSensorEvents,
+      pingResponses,
+      ipTunnelMessages,
+      paxCounterData,
+      serialMessages,
+      storeForwardMessages,
+      requestStoreForwardHistory,
+      rangeTestPackets,
+      zpsMessages,
+      simulatorPackets,
+      atakMessages,
+      mapReports,
+      privateMessages,
+      meshtasticIdentityId,
+    ],
+  );
 }
 
 export function emptyNode(nodeId: number): MeshNode {

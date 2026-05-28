@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useMessageStore } from '../stores/messageStore';
+import { upsertMessageRecordsForIdentity, useMessageStore } from '../stores/messageStore';
 import { upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
 import {
   hydrateIdentityStoresFromDb,
@@ -9,7 +9,9 @@ import {
   hydrateMeshtasticMessagesFromDb,
   hydrateMeshtasticNodesFromDb,
   syncMeshcoreNodesMapToIdentityStore,
+  syncMeshtasticNodesMapToIdentityStore,
 } from './hydrateIdentityStoresFromDb';
+import { resetIdentityHydrationCoordinatorForTests } from './identityHydrationCoordinator';
 
 const ID_MT = 'id-hydrate-mt';
 const ID_MC = 'id-hydrate-mc';
@@ -18,6 +20,7 @@ describe('hydrateIdentityStoresFromDb', () => {
   beforeEach(() => {
     useNodeStore.setState({ nodes: {} });
     useMessageStore.setState({ messages: {} });
+    resetIdentityHydrationCoordinatorForTests();
     vi.restoreAllMocks();
   });
 
@@ -157,6 +160,41 @@ describe('hydrateIdentityStoresFromDb', () => {
     expect(byId?.[0xabc]?.hwModel).toBe('Repeater');
     expect(byId?.[0xabc]?.favorited).toBe(true);
     expect(byId?.[0xdef]?.longName).toBe('Chat-B');
+  });
+
+  it('syncMeshtasticNodesMapToIdentityStore upserts runtime node map into Zustand', () => {
+    const nodes = new Map([
+      [
+        0x11,
+        {
+          node_id: 0x11,
+          long_name: 'Node-A',
+          short_name: 'NA',
+          hw_model: 'T-Beam',
+          battery: 0,
+          snr: 0,
+          rssi: 0,
+          last_heard: 1000,
+          latitude: null,
+          longitude: null,
+        },
+      ],
+    ]);
+    syncMeshtasticNodesMapToIdentityStore(ID_MT, nodes);
+    expect(useNodeStore.getState().nodes[ID_MT]?.[0x11]?.longName).toBe('Node-A');
+  });
+
+  it('upsertMessageRecordsForIdentity merges large batches in one store update', () => {
+    const records = Array.from({ length: 200 }, (_, i) => ({
+      id: String(i + 1),
+      from: 1,
+      to: 0xffffffff,
+      payload: `m${i}`,
+      channelIndex: 0,
+      timestamp: i,
+    }));
+    upsertMessageRecordsForIdentity(ID_MT, records);
+    expect(Object.keys(useMessageStore.getState().messages[ID_MT] ?? {})).toHaveLength(200);
   });
 
   it('upsertNodeRecordsForIdentity merges large batches in one store update', () => {

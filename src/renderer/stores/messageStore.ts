@@ -64,6 +64,24 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
   });
 }
 
+/** Single setState merge for many messages (startup / DB hydration). */
+export function upsertMessageRecordsForIdentity(
+  identityId: IdentityId,
+  records: MessageRecord[],
+): void {
+  if (records.length === 0) return;
+  useMessageStore.setState((s) => {
+    const byIdentity = { ...(s.messages[identityId] ?? {}) };
+    for (const message of records) {
+      const existing = byIdentity[message.id];
+      byIdentity[message.id] = existing ? { ...existing, ...message } : message;
+    }
+    return {
+      messages: { ...s.messages, [identityId]: byIdentity },
+    };
+  });
+}
+
 /**
  * Re-key a message (used when the optimistic provisional id is replaced by the
  * SDK-assigned packetId on send completion).

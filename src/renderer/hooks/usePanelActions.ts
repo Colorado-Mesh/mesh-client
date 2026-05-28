@@ -3,9 +3,9 @@ import { useMemo } from 'react';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { IdentityId, MeshProtocol } from '../lib/types';
-import type { MeshcoreRuntime, MeshtasticRuntime } from '../runtime/runtimeTypes';
-import { useMeshcorePanelActions } from './useMeshcorePanelActions';
-import { useMeshtasticPanelActions } from './useMeshtasticPanelActions';
+import type { DualProtocolPanelActions } from './useDualProtocolPanelActions';
+import type { useMeshcorePanelActions } from './useMeshcorePanelActions';
+import type { useMeshtasticPanelActions } from './useMeshtasticPanelActions';
 
 export type PanelActions =
   | ReturnType<typeof useMeshtasticPanelActions>
@@ -25,19 +25,16 @@ export interface PanelActionsBundle {
 export function usePanelActions(
   protocol: MeshProtocol,
   identityId: IdentityId | null,
-  meshtastic: MeshtasticRuntime,
-  meshcore: MeshcoreRuntime,
+  prebuilt: DualProtocolPanelActions,
 ): PanelActionsBundle {
-  const meshtasticActions = useMeshtasticPanelActions(meshtastic);
-  const meshcoreActions = useMeshcorePanelActions(meshcore);
   const capabilities = useRadioProvider(protocol);
 
   const actionsByProtocol = useMemo(
     (): Record<MeshProtocol, PanelActions> => ({
-      meshtastic: meshtasticActions,
-      meshcore: meshcoreActions,
+      meshtastic: prebuilt.meshtastic,
+      meshcore: prebuilt.meshcore,
     }),
-    [meshtasticActions, meshcoreActions],
+    [prebuilt],
   );
 
   const actions = actionsByProtocol[protocol];

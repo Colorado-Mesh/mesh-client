@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
 
 import type { MeshProtocol } from '../lib/types';
-import { useMeshcoreRuntimeContext } from '../runtime/MeshcoreRuntimeContext';
-import { useMeshtasticRuntimeContext } from '../runtime/MeshtasticRuntimeContext';
 import { useActiveMeshIdentity } from './useActiveMeshIdentity';
 import { useConnectionQueue } from './useConnectionStatus';
 import { useConnectionView } from './useConnectionView';
+import type { DualProtocolPanelActions } from './useDualProtocolPanelActions';
 import { useMessages } from './useMessages';
 import { useNodes } from './useNodes';
 import { type PanelActionsBundle, usePanelActions } from './usePanelActions';
@@ -28,15 +27,16 @@ export interface ProtocolFacade {
  * Single orchestration surface for the active protocol tab ([#377]). App and panels should
  * prefer this over duplicating per-protocol field selection.
  */
-export function useProtocolFacade(protocol: MeshProtocol): ProtocolFacade {
-  const meshtastic = useMeshtasticRuntimeContext();
-  const meshcore = useMeshcoreRuntimeContext();
+export function useProtocolFacade(
+  protocol: MeshProtocol,
+  panelPrebuilt: DualProtocolPanelActions,
+): ProtocolFacade {
   const { meshtasticIdentityId, meshcoreIdentityId, focusedIdentityId } =
     useActiveMeshIdentity(protocol);
   const connection = useProtocolConnectionActions(protocol);
   const connectionView = useConnectionView(focusedIdentityId);
   const queue = useConnectionQueue(focusedIdentityId);
-  const panel = usePanelActions(protocol, focusedIdentityId, meshtastic, meshcore);
+  const panel = usePanelActions(protocol, focusedIdentityId, panelPrebuilt);
   const nodes = useNodes(focusedIdentityId);
   const messages = useMessages(focusedIdentityId);
 

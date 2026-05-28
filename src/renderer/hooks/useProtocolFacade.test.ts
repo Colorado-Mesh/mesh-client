@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { addIdentity } from '../stores/identityStore';
+import type { DualProtocolPanelActions } from './useDualProtocolPanelActions';
 import { useProtocolFacade } from './useProtocolFacade';
 
 vi.mock('./useConnect', () => ({
@@ -90,7 +91,11 @@ describe('useProtocolFacade', () => {
   });
 
   it('exposes store-backed connection view and panel actions for the active protocol', () => {
-    const { result } = renderHook(() => useProtocolFacade('meshtastic'));
+    const panelPrebuilt = {
+      meshtastic: meshtasticRuntime,
+      meshcore: meshcoreRuntime,
+    } as unknown as DualProtocolPanelActions;
+    const { result } = renderHook(() => useProtocolFacade('meshtastic', panelPrebuilt));
 
     expect(result.current.focusedIdentityId).toBe(IDENTITY);
     expect(result.current.panel.protocol).toBe('meshtastic');

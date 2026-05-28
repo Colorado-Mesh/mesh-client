@@ -4,12 +4,17 @@ import {
   mapMeshcoreDbRowsToChatMessages,
   type MeshcoreSavedNodeHopRow,
 } from '../hooks/meshcore/meshcoreHookPreamble';
-import { upsertMessage } from '../stores/messageStore';
-import { upsertNode, upsertNodeRecordsForIdentity } from '../stores/nodeStore';
+import { upsertMessageRecordsForIdentity } from '../stores/messageStore';
+import { upsertNodeRecordsForIdentity } from '../stores/nodeStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { errLikeToLogString } from './errLikeToLogString';
+import { beginIdentityHydration } from './identityHydrationCoordinator';
 import { getMeshtasticMessageLoadLimit } from './legacySideEffects/meshtasticDbHydration';
 import type { MeshcoreContactDbRow, MeshcoreMessageDbRow } from './meshcore/meshcoreHookTypes';
+import {
+  buildMeshtasticNodeMapFromDbRows,
+  loadMeshtasticNodeMapFromDb,
+} from './meshtasticDbCacheHydration';
 import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
 import type { IdentityId, MeshNode, MeshProtocol } from './types';
 
@@ -22,10 +27,8 @@ export interface HydrateIdentityStoresOptions {
 }
 
 export async function hydrateMeshtasticNodesFromDb(identityId: IdentityId): Promise<void> {
-  const rows = await window.electronAPI.db.getNodes();
-  for (const row of rows) {
-    upsertNode(identityId, meshNodeToNodeRecord(row));
-  }
+  const nodeMap = await loadMeshtasticNodeMapFromDb();
+  syncMeshtasticNodesMapToIdentityStore(identityId, nodeMap);
 }
 
 export async function hydrateMeshtasticMessagesFromDb(identityId: IdentityId): Promise<void> {
@@ -36,9 +39,10 @@ export async function hydrateMeshtasticMessagesFromDb(identityId: IdentityId): P
   }));
   const reversed = sanitized.reverse();
   const trimmed = trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES);
-  for (const msg of trimmed) {
-    upsertMessage(identityId, chatMessageToMessageRecord(msg));
-  }
+  upsertMessageRecordsForIdentity(
+    identityId,
+    trimmed.map((msg) => chatMessageToMessageRecord(msg)),
+  );
 }
 
 export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promise<void> {
@@ -56,13 +60,22 @@ export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promis
     savedNodes as MeshcoreSavedNodeHopRow[],
     mapped,
   );
-  for (const node of nodeMap.values()) {
-    upsertNode(identityId, meshNodeToNodeRecord(node));
-  }
+  syncMeshcoreNodesMapToIdentityStore(identityId, nodeMap);
 }
 
 /** Push an in-memory MeshCore node map into identity-scoped Zustand (e.g. after radio contact sync). */
 export function syncMeshcoreNodesMapToIdentityStore(
+  identityId: IdentityId,
+  nodes: Map<number, MeshNode>,
+): void {
+  upsertNodeRecordsForIdentity(
+    identityId,
+    Array.from(nodes.values(), (node) => meshNodeToNodeRecord(node)),
+  );
+}
+
+/** Push an in-memory Meshtastic node map into identity-scoped Zustand (e.g. connect-time DB cache). */
+export function syncMeshtasticNodesMapToIdentityStore(
   identityId: IdentityId,
   nodes: Map<number, MeshNode>,
 ): void {
@@ -79,9 +92,10 @@ export async function hydrateMeshcoreMessagesFromDb(identityId: IdentityId): Pro
   );
   const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
   const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);
-  for (const msg of trimmed) {
-    upsertMessage(identityId, chatMessageToMessageRecord(msg));
-  }
+  upsertMessageRecordsForIdentity(
+    identityId,
+    trimmed.map((msg) => chatMessageToMessageRecord(msg)),
+  );
 }
 
 /**
@@ -95,15 +109,40 @@ export async function hydrateIdentityStoresFromDb(
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
+  if (!loadNodes && !loadMessages) return;
+
+  const isCurrent = beginIdentityHydration(protocol, identityId);
   try {
     if (protocol === 'meshtastic') {
-      if (loadNodes) await hydrateMeshtasticNodesFromDb(identityId);
-      if (loadMessages) await hydrateMeshtasticMessagesFromDb(identityId);
+      if (loadNodes && loadMessages) {
+        await Promise.all([
+          hydrateMeshtasticNodesFromDb(identityId),
+          hydrateMeshtasticMessagesFromDb(identityId),
+        ]);
+      } else if (loadNodes) {
+        await hydrateMeshtasticNodesFromDb(identityId);
+      } else if (loadMessages) {
+        await hydrateMeshtasticMessagesFromDb(identityId);
+      }
+      if (!isCurrent()) return;
       return;
     }
-    if (loadNodes) await hydrateMeshcoreNodesFromDb(identityId);
-    if (loadMessages) await hydrateMeshcoreMessagesFromDb(identityId);
+    if (loadNodes && loadMessages) {
+      await Promise.all([
+        hydrateMeshcoreNodesFromDb(identityId),
+        hydrateMeshcoreMessagesFromDb(identityId),
+      ]);
+    } else if (loadNodes) {
+      await hydrateMeshcoreNodesFromDb(identityId);
+    } else if (loadMessages) {
+      await hydrateMeshcoreMessagesFromDb(identityId);
+    }
+    if (!isCurrent()) return;
   } catch (e) {
+    if (!isCurrent()) return;
     console.warn(`[hydrateIdentityStoresFromDb] ${protocol} failed ` + errLikeToLogString(e));
   }
 }
+
+/** @internal Exported for tests that assert row mapping without IPC. */
+export { buildMeshtasticNodeMapFromDbRows };
