@@ -1949,7 +1949,10 @@ function ChatPanel({
               const pickerOpensAbove = i >= filteredMessages.length - 3;
 
               const senderNode = nodes.get(msg.sender_id);
-              const displaySenderName = nodeDisplayName(senderNode, protocol) || msg.sender_name;
+              const displaySenderName =
+                nodeDisplayName(senderNode, protocol) ||
+                msg.sender_name.trim() ||
+                (msg.sender_id > 0 ? getDmLabel(msg.sender_id) : '');
 
               // Day separator
               const daySeparator = daySeparatorIndices.has(i) ? (

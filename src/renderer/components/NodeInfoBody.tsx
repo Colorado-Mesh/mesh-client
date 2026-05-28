@@ -148,6 +148,8 @@ export interface NodeInfoBodyProps {
   /** Optional tracked positions passed from parent to avoid relying on store timing. */
   positionHistory?: Map<number, { t: number; lat: number; lon: number }[]>;
   onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
+  /** Meshtastic: show role "(pending)" only while NodeInfo may still arrive. */
+  awaitingNodeInfo?: boolean;
 }
 
 const SEVERITY_STYLES: Record<RFDiagnosis['severity'], string> = {
@@ -170,6 +172,7 @@ export default function NodeInfoBody({
   meshcoreManufacturerModel,
   positionHistory,
   onShowOnMap,
+  awaitingNodeInfo = false,
 }: NodeInfoBodyProps) {
   const { t } = useTranslation();
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
@@ -305,7 +308,7 @@ export default function NodeInfoBody({
             <span className="text-muted text-sm">{t('nodeInfoBody.role')}</span>
             <div className="flex items-center gap-2">
               <RoleDisplay role={node.role} />
-              {!node.short_name && !node.long_name && node.role === undefined && (
+              {awaitingNodeInfo && (
                 <span className="text-[10px] text-gray-500" title={t('nodeInfoBody.pendingTitle')}>
                   {t('nodeInfoBody.pending')}
                 </span>

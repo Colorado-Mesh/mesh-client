@@ -32,6 +32,18 @@ describe('store record adapters (merge precedence)', () => {
     expect(msgs[0].to).toBeUndefined();
   });
 
+  it('messageRecordToChatMessage falls back to hex node id when senderName is missing', () => {
+    const record: MessageRecord = {
+      id: '99',
+      from: 0x51f1662,
+      to: 0xffffffff,
+      payload: 'Hi from UA1662!',
+      channelIndex: 0,
+      timestamp: 100,
+    };
+    expect(messageRecordToChatMessage(record).sender_name).toBe('!051f1662');
+  });
+
   it('round-trips tapback reactions via tapback flag and payload glyph', () => {
     const reaction: ChatMessage = {
       sender_id: 1,

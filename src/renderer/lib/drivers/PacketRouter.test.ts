@@ -30,6 +30,7 @@ describe('PacketRouter', () => {
       },
       assert: () => {
         expect(useMessageStore.getState().messages[ID]['42'].payload).toBe('hello');
+        expect(useMessageStore.getState().messages[ID]['42'].senderName).toBe('!00000001');
       },
     },
     {
