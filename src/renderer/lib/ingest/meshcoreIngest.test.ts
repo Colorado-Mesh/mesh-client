@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
+import { MESHCORE_UNKNOWN_SENDER_STUB_ID } from '../meshcoreUtils';
 import { attachMeshcoreIngest, meshcoreIngestHandleTextMessage } from './meshcoreIngest';
 
 const ID = 'meshcore-ingest-test';
@@ -37,6 +38,35 @@ describe('attachMeshcoreIngest', () => {
     );
     expect(saveNode).not.toHaveBeenCalled();
     detach();
+  });
+
+  it('does not lump plain channel text under the shared Unknown stub id', () => {
+    const msgId = 'ch:0:1700000099';
+    upsertMessage(ID, {
+      id: msgId,
+      from: 0,
+      to: 0,
+      payload: 'Morning folks! New mesh user here',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_099,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: msgId,
+        from: 0,
+        to: 0,
+        payload: 'Morning folks! New mesh user here',
+        channelIndex: 0,
+        timestamp: 1_700_000_000_099,
+      },
+    });
+    const row = useMessageStore.getState().messages[ID]?.[msgId];
+    expect(row?.from).toBe(0);
+    expect(row?.from).not.toBe(MESHCORE_UNKNOWN_SENDER_STUB_ID);
+    expect(saveMeshcoreMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ sender_id: null, sender_name: 'Unknown' }),
+    );
   });
 
   it('parses inbound tapback wire text into messageStore with emoji + replyTo', () => {

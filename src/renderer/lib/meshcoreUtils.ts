@@ -1,3 +1,4 @@
+import { isPlaceholderLongName } from '../../shared/nodeNameUtils';
 import { mergeMeshcoreLastHeardFromAdvert } from './nodeStatus';
 import type { ConnectionType, MeshNode } from './types';
 
@@ -31,9 +32,35 @@ export function meshcoreChatStubNodeIdFromDisplayName(name: string): number {
   return (MESHCORE_CHAT_STUB_ID_MIN | (h & 0x0fffffff)) >>> 0;
 }
 
+/** Stable id used historically when all unidentified channel speakers were lumped under one stub. */
+export const MESHCORE_UNKNOWN_SENDER_STUB_ID = meshcoreChatStubNodeIdFromDisplayName('Unknown');
+
 export function meshcoreIsChatStubNodeId(nodeId: number): boolean {
   const u = nodeId >>> 0;
   return u >= MESHCORE_CHAT_STUB_ID_MIN && u <= MESHCORE_CHAT_STUB_ID_MAX;
+}
+
+/** True when `long_name` is empty or only the default hex-derived label (`Node-ABCD1234` / `!abcd1234`). */
+export function meshcoreIsPlaceholderNodeLongName(
+  longName: string | undefined,
+  nodeId: number,
+): boolean {
+  const t = (longName ?? '').trim();
+  if (!t) return true;
+  const hex = nodeId.toString(16).toUpperCase();
+  if (t.toUpperCase() === `NODE-${hex}`) return true;
+  return isPlaceholderLongName(t, nodeId);
+}
+
+/** Apply a channel display name when the node still has a hex placeholder label. */
+export function meshcoreMergeChannelDisplayNameOntoNode(
+  node: MeshNode,
+  displayName: string,
+): MeshNode {
+  const trimmed = displayName.trim();
+  if (!trimmed || trimmed === 'Unknown') return node;
+  if (!meshcoreIsPlaceholderNodeLongName(node.long_name, node.node_id)) return node;
+  return { ...node, long_name: trimmed, short_name: '' };
 }
 
 /**
@@ -51,8 +78,16 @@ export function isMeshcoreTransportStatusChatLine(text: string): boolean {
   if (!t) return false;
   if (/^\s*ack\s+@/iu.test(t)) return true;
   if (/^\s*nack\s+@/iu.test(t)) return true;
+  if (/^\s*\[[0-9a-f]{4}\]\s+@\[/iu.test(t)) return true;
+  if (/\|\s*\d+\s*hop/i.test(t) && /\bSNR\b/i.test(t)) return true;
   return false;
 }
+
+/**
+ * Max payload length for reconciling Unknown-stub rows onto a named sender with the same
+ * channel+payload. Longer shared phrases (e.g. "good morning!") are usually different people.
+ */
+export const MESHCORE_SENDER_RECONCILE_MAX_PAYLOAD_LEN = 8;
 
 /**
  * After `buildNodesFromContacts` replaces the node map, re-attach name-only RF/MQTT channel
@@ -66,7 +101,13 @@ export function mergeMeshcoreChatStubNodes(
   for (const [id, node] of prev) {
     if (meshcoreIsChatStubNodeId(id)) {
       const deviceNode = deviceNodes.get(id);
-      if (deviceNode && deviceNode.hw_model !== 'Chat') continue;
+      if (deviceNode && deviceNode.hw_model !== 'Chat') {
+        const merged = meshcoreMergeChannelDisplayNameOntoNode(deviceNode, node.long_name);
+        if (merged !== deviceNode) {
+          next.set(id, merged);
+        }
+        continue;
+      }
     }
     if (!deviceNodes.has(id)) {
       next.set(id, node);

@@ -43,6 +43,7 @@ import {
   messageToDbRow,
   normalizeMeshCoreError,
   type PendingDmAckEntry,
+  persistMeshcoreMessageSenderRepairs,
   serializeErrorLike,
   waitForMeshcorePath129ForNode,
 } from '../hooks/meshcore/meshcoreHookPreamble';
@@ -84,6 +85,7 @@ import {
   buildMeshcoreChannelIncomingMessage,
   findMeshcoreDmReplyParent,
   normalizeMeshcoreIncomingText,
+  resolveMeshcoreChannelMessageSender,
 } from '../lib/meshcoreChannelText';
 import {
   buildGetAutoaddConfigFrame,
@@ -120,12 +122,12 @@ import {
   MESHCORE_MAX_CONTACTS,
   MESHCORE_RPC_SNR_RAW_TO_DB,
   meshcoreAppendRepeaterAuthHint,
-  meshcoreChatStubNodeIdFromDisplayName,
   meshcoreConnectionImpliesUsbPower,
   meshcoreContactToMeshNode,
   meshcoreIsChatStubNodeId,
   meshcoreIsSyntheticPlaceholderPubKeyHex,
   meshcoreManufacturerModelFromDeviceQuery,
+  meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreScaledAdvLatLonToDeg,
@@ -621,7 +623,9 @@ export function useMeshcoreRuntime() {
           }
         }
       }
-      const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
+      const meshcoreRows = dbMsgs as MeshcoreMessageDbRow[];
+      const mapped = mapMeshcoreDbRowsToChatMessages(meshcoreRows);
+      void persistMeshcoreMessageSenderRepairs(meshcoreRows, mapped);
       const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
       for (const n of savedNodes as MeshcoreSavedNodeHopRow[]) {
         const hopCount = n.hops ?? n.hops_away;
@@ -739,30 +743,37 @@ export function useMeshcoreRuntime() {
       if (isMeshcoreTransportStatusChatLine(m.text)) {
         return;
       }
-      let resolvedId =
-        m.senderNodeId != null && Number.isFinite(m.senderNodeId) ? m.senderNodeId >>> 0 : 0;
       const ts = m.timestamp ?? Date.now();
       const tsSec = Math.floor(ts / 1000);
-      const displayName =
-        m.senderName ?? (resolvedId ? `Node-${resolvedId.toString(16).toUpperCase()}` : 'Unknown');
-      if (resolvedId === 0) {
-        resolvedId = meshcoreChatStubNodeIdFromDisplayName(displayName);
-      }
-      setNodes((prev) => {
-        const next = new Map(prev);
-        const existing = next.get(resolvedId);
-        const merged: MeshNode = existing
-          ? {
-              ...existing,
-              long_name: m.senderName ?? existing.long_name,
-              short_name: '',
-              last_heard: Math.max(existing.last_heard ?? 0, tsSec),
-              heard_via_mqtt: true,
-            }
-          : minimalMeshcoreChatNode(resolvedId, displayName, tsSec, 'mqtt');
-        next.set(resolvedId, merged);
-        return next;
+      const fromNodeId =
+        m.senderNodeId != null && Number.isFinite(m.senderNodeId) ? m.senderNodeId >>> 0 : 0;
+      const resolved = resolveMeshcoreChannelMessageSender({
+        rawText: m.text,
+        fromNodeId,
+        recordSenderName: m.senderName,
+        nodes: nodesRef.current,
       });
+      const resolvedId = resolved.senderId;
+      const displayName = resolved.displayName;
+      if (resolvedId !== 0) {
+        setNodes((prev) => {
+          const next = new Map(prev);
+          const existing = next.get(resolvedId);
+          const merged: MeshNode = existing
+            ? meshcoreMergeChannelDisplayNameOntoNode(
+                {
+                  ...existing,
+                  short_name: '',
+                  last_heard: Math.max(existing.last_heard ?? 0, tsSec),
+                  heard_via_mqtt: true,
+                },
+                m.senderName ?? displayName,
+              )
+            : minimalMeshcoreChatNode(resolvedId, displayName, tsSec, 'mqtt');
+          next.set(resolvedId, merged);
+          return next;
+        });
+      }
       if (
         !meshcoreIsChatStubNodeId(resolvedId) &&
         !pubKeyMapRef.current.has(resolvedId) &&
@@ -4020,6 +4031,7 @@ export function useMeshcoreRuntime() {
         500,
       )) as MeshcoreMessageDbRow[];
       const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
+      void persistMeshcoreMessageSenderRepairs(dbMsgs, mapped);
       setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
       setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
     } catch (e) {

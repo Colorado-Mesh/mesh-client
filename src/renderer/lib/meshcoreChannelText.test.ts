@@ -9,9 +9,43 @@ import {
   parseMeshcorePlainBracketLine,
   resolveMeshcoreBracketParentKey,
   resolveMeshcoreBracketParentKeyDm,
+  resolveMeshcoreChannelMessageSender,
 } from './meshcoreChannelText';
+import {
+  MESHCORE_UNKNOWN_SENDER_STUB_ID,
+  meshcoreChatStubNodeIdFromDisplayName,
+} from './meshcoreUtils';
 import { REPLY_PREVIEW_MAX_LEN } from './replyPreview';
 import type { ChatMessage } from './types';
+
+describe('resolveMeshcoreChannelMessageSender', () => {
+  it('does not assign the shared Unknown stub id for plain channel text', () => {
+    const r = resolveMeshcoreChannelMessageSender({
+      rawText: 'Morning folks! New mesh user here',
+    });
+    expect(r.displayName).toBe('Unknown');
+    expect(r.senderId).toBe(0);
+    expect(r.senderId).not.toBe(MESHCORE_UNKNOWN_SENDER_STUB_ID);
+  });
+
+  it('uses name-based stub id when wire text has DisplayName: prefix', () => {
+    const r = resolveMeshcoreChannelMessageSender({
+      rawText: 'Alice: hello channel',
+    });
+    expect(r.displayName).toBe('Alice');
+    expect(r.senderId).toBe(meshcoreChatStubNodeIdFromDisplayName('Alice'));
+  });
+
+  it('prefers RF fromNodeId and advert name over Unknown fallback', () => {
+    const r = resolveMeshcoreChannelMessageSender({
+      rawText: 'plain body',
+      rfFromNodeId: 0x12345678,
+      rfAdvertName: 'RF Name',
+    });
+    expect(r.senderId).toBe(0x12345678);
+    expect(r.displayName).toBe('RF Name');
+  });
+});
 
 describe('normalizeMeshcoreIncomingText', () => {
   it('strips bracket target and preserves sender name', () => {
@@ -27,6 +61,21 @@ describe('normalizeMeshcoreIncomingText', () => {
       senderName: 'A',
       payload: 'hello there',
       bracketTargetName: 'Bob',
+    });
+  });
+
+  it('does not split on colons inside r:hex tokens or times', () => {
+    expect(
+      normalizeMeshcoreIncomingText('what is "r:9da4:57"? Seems like my client is not rendering'),
+    ).toEqual({
+      payload: 'what is "r:9da4:57"? Seems like my client is not rendering',
+    });
+  });
+
+  it('still parses DisplayName: body when colon is followed by space', () => {
+    expect(normalizeMeshcoreIncomingText('10th mountain division: T')).toEqual({
+      senderName: '10th mountain division',
+      payload: 'T',
     });
   });
 });

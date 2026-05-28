@@ -5,11 +5,13 @@ import {
   isMeshcoreContactEligibleForUserGroup,
   isMeshcoreTransportStatusChatLine,
   mergeHwModelOnContactUpdate,
+  mergeMeshcoreChatStubNodes,
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
   meshcoreAppendRepeaterAuthHint,
   meshcoreApplyRepeaterSessionAuth,
   meshcoreApplyRepeaterSessionAuthSkip,
+  meshcoreChatStubNodeIdFromDisplayName,
   meshcoreClearRepeaterRemoteSessionAuth,
   meshcoreConnectionImpliesUsbPower,
   meshcoreContactToMeshNode,
@@ -18,8 +20,10 @@ import {
   meshcoreGetRepeaterSessionPassword,
   meshcoreHwModelIsContactTypeLabel,
   meshcoreInferHopsFromOutPath,
+  meshcoreIsPlaceholderNodeLongName,
   meshcoreIsRepeaterRemoteAuthTouched,
   meshcoreManufacturerModelFromDeviceQuery,
+  meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
@@ -29,6 +33,7 @@ import {
   meshcoreSliceContactOutPathForTrace,
   meshcoreTelemetryGpsAltitudeMeters,
   meshcoreTracePathLenToHops,
+  minimalMeshcoreChatNode,
   pubkeyToNodeId,
 } from './meshcoreUtils';
 
@@ -160,6 +165,14 @@ describe('isMeshcoreTransportStatusChatLine', () => {
 
   it('detects nack prefix', () => {
     expect(isMeshcoreTransportStatusChatLine('nack @[x] detail')).toBe(true);
+  });
+
+  it('detects path hash hop summary lines', () => {
+    expect(
+      isMeshcoreTransportStatusChatLine(
+        '[111b] @[🏴‍☠️CatDude AF5F] | 5 hops, 2-byte hashes, SNR 12.00 | recv 21:56:11',
+      ),
+    ).toBe(true);
   });
 });
 
@@ -556,6 +569,48 @@ describe('event 128 advert hw_model merge', () => {
   it('preserves Repeater when firmware advert reports None (type 0)', () => {
     const mergedHwModel = mergeHwModelOnContactUpdate('Repeater', 'None');
     expect(mergedHwModel).toBe('Repeater');
+  });
+});
+
+describe('meshcoreMergeChannelDisplayNameOntoNode', () => {
+  it('replaces Node-HEX placeholder with channel display name', () => {
+    const nodeId = meshcoreChatStubNodeIdFromDisplayName('10th mountain division');
+    const device = meshcoreContactToMeshNode({
+      publicKey: new Uint8Array(32).fill(1),
+      type: 0,
+      advName: '',
+      lastAdvert: 0,
+      advLat: 0,
+      advLon: 0,
+    });
+    const withId = {
+      ...device,
+      node_id: nodeId,
+      long_name: `Node-${nodeId.toString(16).toUpperCase()}`,
+    };
+    const merged = meshcoreMergeChannelDisplayNameOntoNode(withId, '10th mountain division');
+    expect(merged.long_name).toBe('10th mountain division');
+  });
+
+  it('mergeMeshcoreChatStubNodes applies channel name on stub/device id collision', () => {
+    const nodeId = meshcoreChatStubNodeIdFromDisplayName('10th mountain division');
+    const device = new Map([
+      [
+        nodeId,
+        {
+          ...minimalMeshcoreChatNode(nodeId, `Node-${nodeId.toString(16).toUpperCase()}`, 1, 'rf'),
+          hw_model: 'Unknown',
+        },
+      ],
+    ]);
+    const prev = new Map([
+      [nodeId, minimalMeshcoreChatNode(nodeId, '10th mountain division', 2, 'rf')],
+    ]);
+    const merged = mergeMeshcoreChatStubNodes(prev, device);
+    expect(merged.get(nodeId)?.long_name).toBe('10th mountain division');
+    expect(meshcoreIsPlaceholderNodeLongName(merged.get(nodeId)?.long_name ?? '', nodeId)).toBe(
+      false,
+    );
   });
 });
 

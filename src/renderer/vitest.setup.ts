@@ -91,6 +91,7 @@ const electronAPIMock = {
     searchMeshcoreMessages: vi.fn().mockResolvedValue([]),
     getMeshcoreContacts: vi.fn().mockResolvedValue([]),
     saveMeshcoreMessage: vi.fn().mockResolvedValue(undefined),
+    updateMeshcoreMessageSender: vi.fn().mockResolvedValue(undefined),
     saveMeshcoreContact: vi.fn().mockResolvedValue(undefined),
     saveMeshcoreContactsBatch: vi.fn().mockResolvedValue(0),
     updateMeshcoreContactRfTransport: vi.fn().mockResolvedValue(undefined),

@@ -1,6 +1,7 @@
+import { meshcoreChatStubNodeIdFromDisplayName } from './meshcoreUtils';
 import { normalizeReactionEmoji } from './reactions';
 import { findParentMessageForReply, truncateReplyPreviewText } from './replyPreview';
-import type { ChatMessage } from './types';
+import type { ChatMessage, MeshNode } from './types';
 
 export interface MeshcoreNormalizedText {
   senderName?: string;
@@ -31,11 +32,54 @@ export function parseMeshcorePlainBracketLine(rawText: string): MeshcoreNormaliz
 /**
  * Parse MeshCore channel line `DisplayName: payload` and strip `@[Target] ` prefix when present.
  */
+export interface MeshcoreChannelSenderResolution {
+  senderId: number;
+  displayName: string;
+  payload: string;
+}
+
+/**
+ * Resolve channel message sender id + display label from wire text, RF hints, and contacts.
+ * Does not assign the shared "Unknown" stub id — unidentified speakers keep senderId 0.
+ */
+export function resolveMeshcoreChannelMessageSender(opts: {
+  rawText: string;
+  fromNodeId?: number;
+  recordSenderName?: string | null;
+  rfFromNodeId?: number | null;
+  rfAdvertName?: string | null;
+  nodes?: Map<number, MeshNode>;
+}): MeshcoreChannelSenderResolution {
+  const normalized = normalizeMeshcoreIncomingText(opts.rawText);
+  const from = opts.fromNodeId ?? 0;
+  let senderId = opts.rfFromNodeId ?? (from !== 0 ? from : 0);
+  let displayName =
+    opts.recordSenderName?.trim() ||
+    normalized.senderName?.trim() ||
+    opts.rfAdvertName?.trim() ||
+    undefined;
+  if (senderId !== 0 && !displayName) {
+    const node = opts.nodes?.get(senderId);
+    displayName = node?.long_name?.trim() || node?.short_name?.trim() || undefined;
+    if (!displayName) {
+      displayName = `Node-${senderId.toString(16).toUpperCase()}`;
+    }
+  }
+  if (senderId === 0 && displayName) {
+    senderId = meshcoreChatStubNodeIdFromDisplayName(displayName);
+  }
+  return {
+    senderId,
+    displayName: displayName || 'Unknown',
+    payload: normalized.payload.length > 0 ? normalized.payload : opts.rawText.trim(),
+  };
+}
+
 export function normalizeMeshcoreIncomingText(rawText: string): MeshcoreNormalizedText {
   const text = (rawText ?? '').trim();
   if (!text) return { payload: '' };
   const colonIdx = text.indexOf(':');
-  if (colonIdx <= 0) return { payload: text };
+  if (colonIdx <= 0 || text[colonIdx + 1] !== ' ') return { payload: text };
   const senderCandidate = text.slice(0, colonIdx).trim();
   let payload = text.slice(colonIdx + 1).trim();
   if (!senderCandidate || !payload) return { payload: text };

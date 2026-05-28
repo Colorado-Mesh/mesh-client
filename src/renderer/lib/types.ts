@@ -545,6 +545,11 @@ declare global {
           reply_preview_sender?: string | null;
           rx_hops?: number | null;
         }) => Promise<unknown>;
+        updateMeshcoreMessageSender: (
+          messageId: number,
+          senderId: number,
+          senderName: string,
+        ) => Promise<unknown>;
         updateMeshcoreContactRfTransport: (
           nodeId: number,
           transportScope: number | null,

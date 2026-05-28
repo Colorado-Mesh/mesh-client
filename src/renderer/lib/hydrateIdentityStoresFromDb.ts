@@ -3,6 +3,7 @@ import {
   buildMeshcoreNodeMapFromDb,
   mapMeshcoreDbRowsToChatMessages,
   type MeshcoreSavedNodeHopRow,
+  persistMeshcoreMessageSenderRepairs,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { upsertMessageRecordsForIdentity } from '../stores/messageStore';
 import { upsertNodeRecordsForIdentity } from '../stores/nodeStore';
@@ -93,7 +94,9 @@ export async function hydrateMeshcoreMessagesFromDb(identityId: IdentityId): Pro
     undefined,
     MESHCORE_DB_MESSAGE_LOAD_LIMIT,
   );
-  const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
+  const rows = dbMsgs as MeshcoreMessageDbRow[];
+  const mapped = mapMeshcoreDbRowsToChatMessages(rows);
+  void persistMeshcoreMessageSenderRepairs(rows, mapped);
   const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);
   upsertMessageRecordsForIdentity(
     identityId,

@@ -8,6 +8,7 @@ export interface ChatCorrelateRxLike {
   ts: number;
   payloadTypeString: string | null;
   fromNodeId: number | null;
+  advertName?: string | null;
 }
 
 /**
@@ -39,4 +40,18 @@ export function meshcoreCorrelateOrSynthesizeChatEntry<T extends ChatCorrelateRx
   return next.length > MAX_RAW_PACKET_LOG_ENTRIES
     ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
     : next;
+}
+
+/** Most recent GRP_TXT raw log row within the chat correlation window (any fromNodeId). */
+export function meshcoreFindRecentGrpTxtRawPacket<T extends ChatCorrelateRxLike>(
+  prev: readonly T[],
+  now: number,
+  windowMs: number = MESHCORE_CHAT_CORRELATE_WINDOW_MS,
+): T | undefined {
+  for (let i = prev.length - 1; i >= 0; i--) {
+    const e = prev[i];
+    if (now - e.ts > windowMs) break;
+    if (e.payloadTypeString === 'GRP_TXT') return e;
+  }
+  return undefined;
 }

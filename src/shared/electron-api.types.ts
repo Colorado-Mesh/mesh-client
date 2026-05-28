@@ -208,6 +208,11 @@ export interface ElectronAPI {
     searchMessages: (query: string, limit?: number) => Promise<SavedMessage[]>;
     searchMeshcoreMessages: (query: string, limit?: number) => Promise<unknown[]>;
     getMeshcoreContacts: () => Promise<unknown[]>;
+    updateMeshcoreMessageSender: (
+      messageId: number,
+      senderId: number,
+      senderName: string,
+    ) => Promise<void>;
     saveMeshcoreMessage: (message: {
       sender_id?: number | null;
       sender_name?: string | null;

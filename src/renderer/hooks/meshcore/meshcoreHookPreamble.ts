@@ -11,10 +11,13 @@ import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
   MESHCORE_COORD_SCALE,
+  MESHCORE_SENDER_RECONCILE_MAX_PAYLOAD_LEN,
+  MESHCORE_UNKNOWN_SENDER_STUB_ID,
   meshcoreChatStubNodeIdFromDisplayName,
   meshcoreInferHopsFromOutPath,
   meshcoreIsChatStubNodeId,
   meshcoreIsSyntheticPlaceholderPubKeyHex,
+  meshcoreMergeChannelDisplayNameOntoNode,
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
 } from '../../lib/meshcoreUtils';
@@ -462,7 +465,7 @@ function shouldLegacyNormalizeMeshcoreDbPayload(
   if (senderName && senderName !== 'Unknown') return false;
   const t = payload.trim();
   const ci = t.indexOf(':');
-  if (ci <= 0 || ci >= t.length - 1) return false;
+  if (ci <= 0 || t[ci + 1] !== ' ' || ci >= t.length - 1) return false;
   const left = t.slice(0, ci).trim();
   const right = t.slice(ci + 1).trim();
   if (left.length < 6 || right.length < 1) return false;
@@ -587,20 +590,59 @@ export async function mergeMeshcoreContactsFromDbIntoNodeMap(
   }
 }
 
+function isAmbiguousMeshcoreSender(msg: Pick<ChatMessage, 'sender_id' | 'sender_name'>): boolean {
+  return (
+    msg.sender_id === 0 ||
+    msg.sender_id === MESHCORE_UNKNOWN_SENDER_STUB_ID ||
+    msg.sender_name === 'Unknown'
+  );
+}
+
+/**
+ * When the same channel+payload was stored under the global Unknown stub (or sender_id 0)
+ * but a later row has a resolved display name, re-link the ambiguous rows to that sender.
+ */
+export function meshcoreReconcileChannelSenderIds(messages: ChatMessage[]): ChatMessage[] {
+  const canonicalByKey = new Map<string, { senderId: number; senderName: string }>();
+  for (const m of messages) {
+    if (m.channel < 0) continue;
+    if (isAmbiguousMeshcoreSender(m)) continue;
+    canonicalByKey.set(`${m.channel}\0${m.payload}`, {
+      senderId: m.sender_id,
+      senderName: m.sender_name,
+    });
+  }
+  return messages.map((m) => {
+    if (m.channel < 0 || !isAmbiguousMeshcoreSender(m)) return m;
+    if (m.payload.length > MESHCORE_SENDER_RECONCILE_MAX_PAYLOAD_LEN) return m;
+    const canon = canonicalByKey.get(`${m.channel}\0${m.payload}`);
+    if (!canon) return m;
+    return { ...m, sender_id: canon.senderId, sender_name: canon.senderName };
+  });
+}
+
 /** Map persisted MeshCore message rows to chat messages (stub sender id; trust stored payload). */
 export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): ChatMessage[] {
   const mapped: ChatMessage[] = [];
   for (const r of rows) {
     if (isMeshcoreTransportStatusChatLine(r.payload)) continue;
     let displayPayload = r.payload;
+    const normalized = normalizeMeshcoreIncomingText(r.payload);
     let displayName = r.sender_name && r.sender_name !== 'Unknown' ? r.sender_name : 'Unknown';
-    if (shouldLegacyNormalizeMeshcoreDbPayload(r.sender_name, r.payload)) {
-      const normalized = normalizeMeshcoreIncomingText(r.payload);
+    if (normalized.senderName) {
+      const storedName = r.sender_name?.trim();
+      if (!storedName || storedName === 'Unknown') {
+        displayPayload = normalized.payload;
+        displayName = normalized.senderName;
+      } else if (normalized.senderName === storedName) {
+        displayPayload = normalized.payload;
+      }
+    } else if (shouldLegacyNormalizeMeshcoreDbPayload(r.sender_name, r.payload)) {
       displayPayload = normalized.payload;
       displayName = normalized.senderName ?? displayName;
     }
     let senderId = r.sender_id ?? 0;
-    if (senderId === 0) {
+    if (senderId === 0 && displayName && displayName !== 'Unknown') {
       senderId = meshcoreChatStubNodeIdFromDisplayName(displayName);
     }
     mapped.push({
@@ -628,7 +670,32 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
       rxHops: coerceOptionalDbInt(r.rx_hops),
     });
   }
-  return mapped;
+  return meshcoreReconcileChannelSenderIds(mapped);
+}
+
+/** Persist sender_id/name repairs after {@link mapMeshcoreDbRowsToChatMessages} reconciliation. */
+export async function persistMeshcoreMessageSenderRepairs(
+  rows: MeshcoreMessageDbRow[],
+  mapped: ChatMessage[],
+): Promise<void> {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  for (const m of mapped) {
+    if (m.id == null) continue;
+    const row = byId.get(m.id);
+    if (!row) continue;
+    const prevId = row.sender_id ?? 0;
+    const prevName = row.sender_name ?? 'Unknown';
+    if (prevId === m.sender_id && prevName === m.sender_name) continue;
+    if (m.sender_id === 0 || m.sender_id === MESHCORE_UNKNOWN_SENDER_STUB_ID) continue;
+    try {
+      await window.electronAPI.db.updateMeshcoreMessageSender(m.id, m.sender_id, m.sender_name);
+    } catch (e: unknown) {
+      console.warn(
+        '[meshcoreHookPreamble] updateMeshcoreMessageSender failed ' +
+          (e instanceof Error ? e.message : String(e)),
+      );
+    }
+  }
 }
 
 /** Ensure minimal chat nodes exist for message senders (RF/MQTT stubs before device connect). */
@@ -639,7 +706,14 @@ export function mergeStubNodesFromMeshcoreMessages(
   const next = new Map(prev);
   for (const msg of mapped) {
     if (msg.sender_id === 0) continue;
-    if (next.has(msg.sender_id)) continue;
+    if (msg.sender_name === 'Unknown' && msg.sender_id === MESHCORE_UNKNOWN_SENDER_STUB_ID)
+      continue;
+    if (next.has(msg.sender_id)) {
+      const existing = next.get(msg.sender_id)!;
+      const merged = meshcoreMergeChannelDisplayNameOntoNode(existing, msg.sender_name);
+      if (merged !== existing) next.set(msg.sender_id, merged);
+      continue;
+    }
     next.set(
       msg.sender_id,
       minimalMeshcoreChatNode(
