@@ -1387,11 +1387,11 @@ function ChatPanel({
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
-      {/* Row 1 — Channel selector + Search toggle */}
+      {/* Row 1 — Channel selector + toolbar utilities */}
       <div
-        className={`mb-1 flex min-w-0 items-center gap-2 ${viewMode === 'dm' ? 'opacity-50' : ''}`}
+        className={`mb-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 ${viewMode === 'dm' ? 'opacity-50' : ''}`}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2 whitespace-nowrap">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
             {t('chatPanel.channels')}
           </span>
@@ -1426,51 +1426,91 @@ function ChatPanel({
           })}
         </div>
 
-        <ChatToolbarTooltipButton
-          tooltip={t('chatPanel.jumpToDate')}
-          aria-pressed={showDatePicker}
-          aria-label={t('chatPanel.jumpToDate')}
-          className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-            showDatePicker
-              ? 'bg-brand-green/20 text-bright-green'
-              : 'text-muted hover:text-gray-300'
-          }`}
-          onClick={() => {
-            setShowDatePicker((v) => !v);
-          }}
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-        </ChatToolbarTooltipButton>
-
-        {protocol === 'meshtastic' && isConnected && !isMqttOnly && onFetchStoreForwardHistory && (
+        <div className="flex shrink-0 items-start gap-2 self-start">
           <ChatToolbarTooltipButton
-            tooltip={t('chatPanel.fetchStoreForwardHistoryHint')}
-            aria-label={t('chatPanel.fetchStoreForwardHistory')}
+            tooltip={t('chatPanel.jumpToDate')}
+            aria-pressed={showDatePicker}
+            aria-label={t('chatPanel.jumpToDate')}
+            className={`shrink-0 rounded-lg p-1.5 transition-colors ${
+              showDatePicker
+                ? 'bg-brand-green/20 text-bright-green'
+                : 'text-muted hover:text-gray-300'
+            }`}
+            onClick={() => {
+              setShowDatePicker((v) => !v);
+            }}
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </ChatToolbarTooltipButton>
+
+          {protocol === 'meshtastic' &&
+            isConnected &&
+            !isMqttOnly &&
+            onFetchStoreForwardHistory && (
+              <ChatToolbarTooltipButton
+                tooltip={t('chatPanel.fetchStoreForwardHistoryHint')}
+                aria-label={t('chatPanel.fetchStoreForwardHistory')}
+                onClick={() => {
+                  void (async () => {
+                    setChatActionError(null);
+                    const result = await onFetchStoreForwardHistory();
+                    if (!result.ok) {
+                      setChatActionError({
+                        message: t(`chatPanel.fetchStoreForwardHistoryError.${result.code}`),
+                        viewKey,
+                      });
+                      return;
+                    }
+                    addToast(t('chatPanel.fetchStoreForwardHistorySent'), 'success');
+                  })();
+                }}
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </ChatToolbarTooltipButton>
+            )}
+
+          <ChatToolbarTooltipButton
+            tooltip={t('chatPanel.exportChat')}
+            aria-label={t('chatPanel.exportChat')}
             onClick={() => {
               void (async () => {
-                setChatActionError(null);
-                const result = await onFetchStoreForwardHistory();
-                if (!result.ok) {
-                  setChatActionError({
-                    message: t(`chatPanel.fetchStoreForwardHistoryError.${result.code}`),
-                    viewKey,
-                  });
-                  return;
+                const msgs: ChatExportMessage[] = filteredMessages.map((m) => ({
+                  timestamp: m.timestamp,
+                  sender_name: m.sender_name,
+                  payload: m.payload,
+                  channel: m.channel,
+                  to: m.to,
+                }));
+                const result = await window.electronAPI.chat.export(msgs);
+                if (!result.success) {
+                  setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
                 }
-                addToast(t('chatPanel.fetchStoreForwardHistorySent'), 'success');
               })();
             }}
           >
@@ -1485,94 +1525,20 @@ function ChatPanel({
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
               />
             </svg>
           </ChatToolbarTooltipButton>
-        )}
 
-        <ChatToolbarTooltipButton
-          tooltip={t('chatPanel.exportChat')}
-          aria-label={t('chatPanel.exportChat')}
-          onClick={() => {
-            void (async () => {
-              const msgs: ChatExportMessage[] = filteredMessages.map((m) => ({
-                timestamp: m.timestamp,
-                sender_name: m.sender_name,
-                payload: m.payload,
-                channel: m.channel,
-                to: m.to,
-              }));
-              const result = await window.electronAPI.chat.export(msgs);
-              if (!result.success) {
-                setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
-              }
-            })();
-          }}
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-            />
-          </svg>
-        </ChatToolbarTooltipButton>
-
-        <ChatToolbarTooltipButton
-          tooltip={t('chatPanel.searchMessages')}
-          aria-pressed={showSearch}
-          aria-label={t('chatPanel.searchMessages')}
-          className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-            showSearch ? 'bg-brand-green/20 text-bright-green' : 'text-muted hover:text-gray-300'
-          }`}
-          onClick={() => {
-            setShowSearch(!showSearch);
-          }}
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        </ChatToolbarTooltipButton>
-
-        {viewMode !== 'starred' && (
           <ChatToolbarTooltipButton
-            tooltip={
-              mutedViews.has(viewKey)
-                ? t('chatPanel.unmuteConversation')
-                : t('chatPanel.muteConversation')
-            }
-            aria-pressed={mutedViews.has(viewKey)}
-            aria-label={
-              mutedViews.has(viewKey)
-                ? t('chatPanel.unmuteConversation')
-                : t('chatPanel.muteConversation')
-            }
+            tooltip={t('chatPanel.searchMessages')}
+            aria-pressed={showSearch}
+            aria-label={t('chatPanel.searchMessages')}
             className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-              mutedViews.has(viewKey)
-                ? 'text-amber-500 hover:text-amber-300'
-                : 'text-muted hover:text-gray-300'
+              showSearch ? 'bg-brand-green/20 text-bright-green' : 'text-muted hover:text-gray-300'
             }`}
             onClick={() => {
-              toggleMuteView(viewKey);
+              setShowSearch(!showSearch);
             }}
           >
             <svg
@@ -1583,51 +1549,90 @@ function ChatPanel({
               strokeWidth={2}
               aria-hidden="true"
             >
-              {mutedViews.has(viewKey) ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13.73 21a2 2 0 01-3.46 0M18.63 13A17.89 17.89 0 0118 8M6.26 6.26A5.86 5.86 0 006 8c0 7-3 9-3 9h10.5m3.5-9a6 6 0 00-9.33-5M3 3l18 18"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </ChatToolbarTooltipButton>
-        )}
 
-        <ChatToolbarTooltipButton
-          tooltip={t('chatPanel.starredMessages')}
-          aria-pressed={viewMode === 'starred'}
-          aria-label={t('chatPanel.starredMessages')}
-          className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-            viewMode === 'starred'
-              ? 'bg-brand-green/20 text-amber-400'
-              : 'text-muted hover:text-gray-300'
-          }`}
-          onClick={() => {
-            setViewMode((v) => (v === 'starred' ? 'channels' : 'starred'));
-          }}
-        >
-          <svg
-            className="h-4 w-4"
-            fill={viewMode === 'starred' ? 'currentColor' : 'none'}
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
+          {viewMode !== 'starred' && (
+            <ChatToolbarTooltipButton
+              tooltip={
+                mutedViews.has(viewKey)
+                  ? t('chatPanel.unmuteConversation')
+                  : t('chatPanel.muteConversation')
+              }
+              aria-pressed={mutedViews.has(viewKey)}
+              aria-label={
+                mutedViews.has(viewKey)
+                  ? t('chatPanel.unmuteConversation')
+                  : t('chatPanel.muteConversation')
+              }
+              className={`shrink-0 rounded-lg p-1.5 transition-colors ${
+                mutedViews.has(viewKey)
+                  ? 'text-amber-500 hover:text-amber-300'
+                  : 'text-muted hover:text-gray-300'
+              }`}
+              onClick={() => {
+                toggleMuteView(viewKey);
+              }}
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                {mutedViews.has(viewKey) ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.73 21a2 2 0 01-3.46 0M18.63 13A17.89 17.89 0 0118 8M6.26 6.26A5.86 5.86 0 006 8c0 7-3 9-3 9h10.5m3.5-9a6 6 0 00-9.33-5M3 3l18 18"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                )}
+              </svg>
+            </ChatToolbarTooltipButton>
+          )}
+
+          <ChatToolbarTooltipButton
+            tooltip={t('chatPanel.starredMessages')}
+            aria-pressed={viewMode === 'starred'}
+            aria-label={t('chatPanel.starredMessages')}
+            className={`shrink-0 rounded-lg p-1.5 transition-colors ${
+              viewMode === 'starred'
+                ? 'bg-brand-green/20 text-amber-400'
+                : 'text-muted hover:text-gray-300'
+            }`}
+            onClick={() => {
+              setViewMode((v) => (v === 'starred' ? 'channels' : 'starred'));
+            }}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-            />
-          </svg>
-        </ChatToolbarTooltipButton>
+            <svg
+              className="h-4 w-4"
+              fill={viewMode === 'starred' ? 'currentColor' : 'none'}
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+              />
+            </svg>
+          </ChatToolbarTooltipButton>
+        </div>
       </div>
 
       {/* Row 2 — DM tabs */}

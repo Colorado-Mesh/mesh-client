@@ -1188,6 +1188,34 @@ describe('ChatPanel unread watermarks', () => {
     expect(screen.queryByRole('button', { name: 'All' })).not.toBeInTheDocument();
   });
 
+  it('wraps channel pills in a dedicated column so toolbar utilities stay visible', () => {
+    const manyChannels = Array.from({ length: 24 }, (_, index) => ({
+      index,
+      name: `Ch${index}`,
+    }));
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} channels={manyChannels} />
+      </ToastProvider>,
+    );
+
+    const label = screen.getByText('Channels');
+    const channelsContainer = label.parentElement;
+    expect(channelsContainer?.className).toMatch(/flex-wrap/);
+    expect(channelsContainer?.className).not.toMatch(/whitespace-nowrap/);
+
+    const headerRow = channelsContainer?.parentElement;
+    expect(headerRow?.className).toMatch(/grid-cols-\[minmax\(0,1fr\)_auto\]/);
+
+    const exportBtn = screen.getByRole('button', { name: 'Export chat' });
+    const starredBtn = screen.getByRole('button', { name: 'Starred messages' });
+    expect(channelsContainer?.contains(exportBtn)).toBe(false);
+    expect(channelsContainer?.contains(starredBtn)).toBe(false);
+    expect(headerRow?.contains(exportBtn)).toBe(true);
+    expect(headerRow?.contains(starredBtn)).toBe(true);
+    expect(screen.getByRole('button', { name: 'Ch23' })).toBeInTheDocument();
+  });
+
   it('clears the unread divider without scrolling when all unread messages are visible', async () => {
     const ts = Date.now();
     // Seed a stored watermark so the component treats the last message as unread.
