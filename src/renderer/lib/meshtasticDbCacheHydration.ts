@@ -3,6 +3,7 @@ import { sanitizeUnicodeReactionScalar } from '../../shared/reactionEmoji';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { meshtasticHwModelName } from './hardwareModels';
 import { getMeshtasticMessageLoadLimit } from './legacySideEffects/meshtasticDbHydration';
+import { meshcoreHwModelIsContactTypeLabel } from './meshcoreUtils';
 import type { ChatMessage, MeshNode } from './types';
 
 const LEGACY_ROLE_STRINGS: Record<string, number> = {
@@ -56,6 +57,8 @@ export function buildMeshtasticNodeMapFromDbRows(
 ): Map<number, MeshNode> {
   const nodeMap = new Map<number, MeshNode>();
   for (const n of savedNodes) {
+    // MeshCore contact rows were incorrectly persisted via db.saveNode; keep them off the Meshtastic map.
+    if (meshcoreHwModelIsContactTypeLabel(n.hw_model ?? undefined)) continue;
     const long_name = n.long_name ?? '';
     const rawHw = n.hw_model;
     const hw_model =

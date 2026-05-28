@@ -460,12 +460,14 @@ export function useMeshtasticRuntime() {
     return virtualId;
   }, []);
 
-  // Keep nodesRef in sync with state
+  // Keep nodesRef in sync with state and identity-scoped nodeStore (App reads via useNodeStore).
   const updateNodes = useCallback(
     (updater: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => {
       setNodes((prev) => {
         const next = updater(prev);
         nodesRef.current = next;
+        const storeId = meshtasticIdentityIdRef.current;
+        if (storeId) syncMeshtasticNodesMapToIdentityStore(storeId, next);
         return next;
       });
     },
@@ -3189,86 +3191,103 @@ export function useMeshtasticRuntime() {
 
   // Read identity-scoped store slices synchronously (no zustand subscribe here — App
   // subscribes via useMessages/useNodes; legacy setState still triggers re-renders).
+  const meshtasticDeviceRecord = useDeviceStore((s) =>
+    meshtasticIdentityId ? s.devices[meshtasticIdentityId] : undefined,
+  );
+  const meshtasticNodesFromStore = useNodeStore((s) =>
+    meshtasticIdentityId ? s.nodes[meshtasticIdentityId] : undefined,
+  );
+  const meshtasticTraceRoutesFromStore = useNodeStore((s) =>
+    meshtasticIdentityId ? s.traceRoutes[meshtasticIdentityId] : undefined,
+  );
+  const meshtasticWaypointsFromStore = useNodeStore((s) =>
+    meshtasticIdentityId ? s.waypoints[meshtasticIdentityId] : undefined,
+  );
+  const meshtasticNeighborInfoFromStore = useNodeStore((s) =>
+    meshtasticIdentityId ? s.neighborInfo[meshtasticIdentityId] : undefined,
+  );
+  const meshtasticConnectionFromStore = useConnectionStore((s) =>
+    meshtasticIdentityId ? s.connections[meshtasticIdentityId] : undefined,
+  );
+  const meshtasticMessagesFromStore = useMessageStore((s) =>
+    meshtasticIdentityId ? s.messages[meshtasticIdentityId] : undefined,
+  );
+
   const resolvedMessages = useMemo(() => {
     if (!meshtasticIdentityId) return messages;
-    const byId = useMessageStore.getState().messages[meshtasticIdentityId];
-    if (!byId) return messages;
-    const fromStore = messageRecordsToChatMessages(Object.values(byId));
+    if (!meshtasticMessagesFromStore) return messages;
+    const fromStore = messageRecordsToChatMessages(Object.values(meshtasticMessagesFromStore));
     return fromStore.length > 0 ? fromStore : messages;
-  }, [meshtasticIdentityId, messages]);
+  }, [meshtasticIdentityId, messages, meshtasticMessagesFromStore]);
 
   const resolvedNodes = useMemo(() => {
     if (!meshtasticIdentityId) return nodes;
-    const byId = useNodeStore.getState().nodes[meshtasticIdentityId];
-    if (!byId) return nodes;
-    const fromStore = nodeRecordsToMeshNodeMap(Object.values(byId));
+    if (!meshtasticNodesFromStore) return nodes;
+    const fromStore = nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesFromStore));
     return fromStore.size > 0 ? fromStore : nodes;
-  }, [meshtasticIdentityId, nodes]);
+  }, [meshtasticIdentityId, nodes, meshtasticNodesFromStore]);
 
   const resolvedTraceRouteResults = useMemo(() => {
     if (!meshtasticIdentityId) return traceRouteResults;
-    const traceRoutesFromStore = useNodeStore.getState().traceRoutes[meshtasticIdentityId] ?? [];
+    const traceRoutesFromStore = meshtasticTraceRoutesFromStore ?? [];
     if (traceRoutesFromStore.length === 0) return traceRouteResults;
     return traceRouteEventsToResultsMap(traceRoutesFromStore);
-  }, [meshtasticIdentityId, traceRouteResults]);
+  }, [meshtasticIdentityId, traceRouteResults, meshtasticTraceRoutesFromStore]);
 
   const resolvedWaypoints = useMemo(() => {
     if (!meshtasticIdentityId) return waypoints;
-    const waypointsFromStore = useNodeStore.getState().waypoints[meshtasticIdentityId] ?? {};
+    const waypointsFromStore = meshtasticWaypointsFromStore ?? {};
     if (Object.keys(waypointsFromStore).length === 0) return waypoints;
     return waypointEventsToMeshWaypointMap(waypointsFromStore);
-  }, [meshtasticIdentityId, waypoints]);
+  }, [meshtasticIdentityId, waypoints, meshtasticWaypointsFromStore]);
 
   const resolvedNeighborInfo = useMemo(() => {
     if (!meshtasticIdentityId) return neighborInfo;
-    const neighborInfoFromStore = useNodeStore.getState().neighborInfo[meshtasticIdentityId] ?? {};
+    const neighborInfoFromStore = meshtasticNeighborInfoFromStore ?? {};
     if (Object.keys(neighborInfoFromStore).length === 0) return neighborInfo;
     return neighborInfoEventsToRecordMap(neighborInfoFromStore);
-  }, [meshtasticIdentityId, neighborInfo]);
+  }, [meshtasticIdentityId, neighborInfo, meshtasticNeighborInfoFromStore]);
 
   const resolvedQueueStatus = useMemo(() => {
     if (!meshtasticIdentityId) return queueStatus;
-    const conn = useConnectionStore.getState().connections[meshtasticIdentityId];
+    const conn = meshtasticConnectionFromStore;
     if (conn?.queueFree != null && conn.queueMax != null) {
       return { free: conn.queueFree, maxlen: conn.queueMax, res: 0 };
     }
     return queueStatus;
-  }, [meshtasticIdentityId, queueStatus]);
+  }, [meshtasticIdentityId, queueStatus, meshtasticConnectionFromStore]);
 
   const resolvedChannels = useMemo(() => {
     if (!meshtasticIdentityId) return channels;
-    const rec = useDeviceStore.getState().devices[meshtasticIdentityId];
-    if (rec?.channels.length) return rec.channels;
+    if (meshtasticDeviceRecord?.channels.length) return meshtasticDeviceRecord.channels;
     return channels;
-  }, [meshtasticIdentityId, channels]);
+  }, [meshtasticIdentityId, channels, meshtasticDeviceRecord]);
 
   const resolvedChannelConfigs = useMemo(() => {
     if (!meshtasticIdentityId) return channelConfigs;
-    const rec = useDeviceStore.getState().devices[meshtasticIdentityId];
-    if (rec?.channelConfigs.length) return rec.channelConfigs;
+    if (meshtasticDeviceRecord?.channelConfigs.length) return meshtasticDeviceRecord.channelConfigs;
     return channelConfigs;
-  }, [meshtasticIdentityId, channelConfigs]);
+  }, [meshtasticIdentityId, channelConfigs, meshtasticDeviceRecord]);
 
   const resolvedModuleConfigs = useMemo(() => {
     if (!meshtasticIdentityId) return moduleConfigs;
-    const rec = useDeviceStore.getState().devices[meshtasticIdentityId];
-    if (rec && Object.keys(rec.moduleConfigs).length > 0) return rec.moduleConfigs;
+    if (meshtasticDeviceRecord && Object.keys(meshtasticDeviceRecord.moduleConfigs).length > 0) {
+      return meshtasticDeviceRecord.moduleConfigs;
+    }
     return moduleConfigs;
-  }, [meshtasticIdentityId, moduleConfigs]);
+  }, [meshtasticIdentityId, moduleConfigs, meshtasticDeviceRecord]);
 
   const resolvedDeviceLogs = useMemo(() => {
     if (!meshtasticIdentityId) return deviceLogs;
-    const rec = useDeviceStore.getState().devices[meshtasticIdentityId];
-    if (rec?.deviceLogs.length) return rec.deviceLogs;
+    if (meshtasticDeviceRecord?.deviceLogs.length) return meshtasticDeviceRecord.deviceLogs;
     return deviceLogs;
-  }, [meshtasticIdentityId, deviceLogs]);
+  }, [meshtasticIdentityId, deviceLogs, meshtasticDeviceRecord]);
 
   const resolvedRawPackets = useMemo(() => {
     if (!meshtasticIdentityId) return rawPackets;
-    const rec = useDeviceStore.getState().devices[meshtasticIdentityId];
-    if (rec?.rawPackets.length) return rec.rawPackets;
+    if (meshtasticDeviceRecord?.rawPackets.length) return meshtasticDeviceRecord.rawPackets;
     return rawPackets;
-  }, [meshtasticIdentityId, rawPackets]);
+  }, [meshtasticIdentityId, rawPackets, meshtasticDeviceRecord]);
 
   useEffect(() => {
     if (!meshtasticIdentityId) return;

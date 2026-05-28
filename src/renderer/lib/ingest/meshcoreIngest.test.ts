@@ -19,7 +19,7 @@ describe('attachMeshcoreIngest', () => {
     vi.restoreAllMocks();
   });
 
-  it('persists node_info to SQLite after PacketRouter dispatch', () => {
+  it('does not write MeshCore contacts into the Meshtastic nodes table', () => {
     const detach = attachMeshcoreIngest(ID);
     packetRouter.dispatch(
       {
@@ -28,7 +28,7 @@ describe('attachMeshcoreIngest', () => {
       },
       ID,
     );
-    expect(saveNode).toHaveBeenCalledWith(expect.objectContaining({ node_id: 42 }));
+    expect(saveNode).not.toHaveBeenCalled();
     detach();
   });
 });

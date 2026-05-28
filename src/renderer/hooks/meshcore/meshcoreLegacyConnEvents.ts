@@ -60,8 +60,9 @@ import {
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../../lib/rawPacketLogConstants';
 import { getStoredMeshProtocol } from '../../lib/storedMeshProtocol';
 import { MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS } from '../../lib/timeConstants';
-import type { MeshNode, TelemetryPoint } from '../../lib/types';
+import type { IdentityId, MeshNode, TelemetryPoint } from '../../lib/types';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
+import { updateMessageStatus, useMessageStore } from '../../stores/messageStore';
 import { usePathHistoryStore } from '../../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import {
@@ -75,11 +76,29 @@ import {
 } from './meshcoreHookPreamble';
 import type { MeshcoreLegacyConnEventsCtx } from './meshcoreLegacyConnEventsCtx';
 
+/** Identity-scoped chat rows from {@link useSendMessage} use numeric ids after rename. */
+function syncMeshcoreDmAckToMessageStore(
+  identityId: IdentityId,
+  ackKeyU32: number,
+  selfId: number,
+  newStatus: 'acked' | 'failed',
+): void {
+  const byId = useMessageStore.getState().messages[identityId] ?? {};
+  for (const [id, rec] of Object.entries(byId)) {
+    if (rec.from !== selfId) continue;
+    if (rec.status !== 'sending' && rec.status !== 'failed') continue;
+    if (!/^\d+$/.test(id)) continue;
+    if (meshcoreDmAckKeyU32(Number(id)) !== ackKeyU32) continue;
+    updateMessageStatus(identityId, id, newStatus);
+  }
+}
+
 export function attachMeshcoreLegacyConnEvents(
   conn: MeshCoreConnection,
   ctx: MeshcoreLegacyConnEventsCtx,
 ): () => void {
   const {
+    meshcoreIdentityIdRef,
     connRef,
     lastPacketLogAtRef,
     lastPacketLogPublishFailureLogAtRef,
@@ -458,6 +477,7 @@ export function attachMeshcoreLegacyConnEvents(
     if (!pending) {
       const lateKey = meshcoreDmAckKeyU32(d.ackCode);
       const selfId = myNodeNumRef.current;
+      const newStatus = isNack ? 'failed' : 'acked';
       const hadLateOutbound = messagesRef.current.some(
         (m) =>
           m.packetId != null &&
@@ -466,19 +486,31 @@ export function attachMeshcoreLegacyConnEvents(
           m.to != null &&
           (m.status === 'sending' || m.status === 'failed'),
       );
-      if (hadLateOutbound) {
-        const newStatus = isNack ? 'failed' : 'acked';
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.packetId != null &&
-            meshcoreDmAckKeyU32(m.packetId) === lateKey &&
-            m.sender_id === selfId &&
-            m.to != null &&
-            (m.status === 'sending' || m.status === 'failed')
-              ? { ...m, status: newStatus }
-              : m,
-          ),
+      const storeId = meshcoreIdentityIdRef.current;
+      const hadLateInMessageStore =
+        storeId != null &&
+        Object.entries(useMessageStore.getState().messages[storeId] ?? {}).some(
+          ([id, rec]) =>
+            rec.from === selfId &&
+            (rec.status === 'sending' || rec.status === 'failed') &&
+            /^\d+$/.test(id) &&
+            meshcoreDmAckKeyU32(Number(id)) === lateKey,
         );
+      if (hadLateOutbound || hadLateInMessageStore) {
+        if (hadLateOutbound) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.packetId != null &&
+              meshcoreDmAckKeyU32(m.packetId) === lateKey &&
+              m.sender_id === selfId &&
+              m.to != null &&
+              (m.status === 'sending' || m.status === 'failed')
+                ? { ...m, status: newStatus }
+                : m,
+            ),
+          );
+        }
+        if (storeId) syncMeshcoreDmAckToMessageStore(storeId, lateKey, selfId, newStatus);
         void window.electronAPI.db
           .updateMeshcoreMessageStatus(lateKey, newStatus)
           .catch((e: unknown) => {
@@ -486,7 +518,6 @@ export function attachMeshcoreLegacyConnEvents(
               '[useMeshCore] updateMeshcoreMessageStatus (late 130) error ' + errLikeToLogString(e),
             );
           });
-        return;
       }
       return;
     }
@@ -513,6 +544,10 @@ export function attachMeshcoreLegacyConnEvents(
           : m,
       ),
     );
+    const storeId = meshcoreIdentityIdRef.current;
+    if (storeId) {
+      syncMeshcoreDmAckToMessageStore(storeId, canon, myNodeNumRef.current, newStatus);
+    }
     void window.electronAPI.db.updateMeshcoreMessageStatus(canon, newStatus).catch((e: unknown) => {
       console.warn('[useMeshCore] updateMeshcoreMessageStatus error ' + errLikeToLogString(e));
     });
@@ -822,7 +857,6 @@ export function attachMeshcoreLegacyConnEvents(
           };
       next.set(stubId, updated);
       if (hopsAway != null) {
-        void window.electronAPI.db.saveNode(updated);
         void window.electronAPI.db.saveMeshcoreContact({
           node_id: stubId,
           public_key: meshcoreSyntheticPlaceholderPubKeyHex(stubId),
@@ -1038,7 +1072,6 @@ export function attachMeshcoreLegacyConnEvents(
           const next = new Map(prev);
           next.set(fromNodeId!, updated);
 
-          void window.electronAPI.db.saveNode(updated);
           void window.electronAPI.db
             .updateMeshcoreContactLastRf(fromNodeId!, snr, rssi, mergedHopsAway ?? hopCount, nowSec)
             .catch((e: unknown) => {

@@ -3,20 +3,13 @@
  *
  * Failure point: DB IPC errors — logged; store remains authoritative.
  */
-import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
-import { errLikeToLogString } from '../errLikeToLogString';
-import { nodeRecordToMeshNode } from '../storeRecordAdapters';
 import type { IdentityId } from '../types';
 
+/** MeshCore contacts belong in meshcore_contacts SQLite, not the Meshtastic nodes table. */
 function persistContactNodes(identityId: IdentityId): void {
-  const byId = useNodeStore.getState().nodes[identityId] ?? {};
-  for (const record of Object.values(byId)) {
-    const meshNode = nodeRecordToMeshNode(record);
-    void window.electronAPI.db.saveNode(meshNode).catch((e: unknown) => {
-      console.debug('[meshcoreIngest] saveNode failed ' + errLikeToLogString(e));
-    });
-  }
+  // Legacy conn events and refreshContacts persist via saveMeshcoreContact.
+  void identityId;
 }
 
 function createListener(identityId: IdentityId): PacketRouterListener {

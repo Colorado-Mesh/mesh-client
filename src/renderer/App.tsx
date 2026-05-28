@@ -70,6 +70,7 @@ import {
   takHeaderVariant,
 } from './lib/connectionHeaderStatus';
 import { DEFAULT_APP_SETTINGS_SHARED } from './lib/defaultAppSettings';
+import { connectionDriver } from './lib/drivers/ConnectionDriver';
 import {
   fetchLatestMeshCoreRelease,
   fetchLatestMeshtasticRelease,
@@ -1560,6 +1561,7 @@ function AppContent({
 
   useEffect(() => {
     if (protocol !== 'meshcore' || !isOperational || autoFloodAdvertIntervalHours <= 0) return;
+    if (!meshcoreIdentityId || !connectionDriver.getHandle(meshcoreIdentityId)) return;
 
     if (!advertSentRef.current) {
       advertSentRef.current = true;
@@ -1578,7 +1580,13 @@ function AppContent({
     return () => {
       clearInterval(id);
     };
-  }, [protocol, isOperational, autoFloodAdvertIntervalHours, meshcorePanelActions]);
+  }, [
+    protocol,
+    isOperational,
+    autoFloodAdvertIntervalHours,
+    meshcorePanelActions,
+    meshcoreIdentityId,
+  ]);
 
   // Manual reconnect from banner
   const handleReconnect = useCallback(() => {
@@ -2041,7 +2049,7 @@ function AppContent({
                             onReact={
                               protocol === 'meshtastic'
                                 ? meshtasticPanelActions.sendReaction
-                                : async () => {}
+                                : meshcoreRuntime.sendReaction
                             }
                             onResend={handleResend}
                             onNodeClick={setSelectedNodeId}

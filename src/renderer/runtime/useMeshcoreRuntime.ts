@@ -1049,8 +1049,21 @@ export function useMeshcoreRuntime() {
     [],
   );
 
+  const getRemoteAdminKeyForNode = useCallback((nodeNum: number): string | undefined => {
+    void nodeNum;
+    return undefined;
+  }, []);
+
+  const setRemoteAdminKeyForNode = useCallback((nodeNum: number, key: string): Promise<void> => {
+    void nodeNum;
+    void key;
+    // Meshtastic-only remote admin; MeshCore has no equivalent.
+    return Promise.resolve();
+  }, []);
+
   const meshcoreLegacyConnEventsCtx = useMemo<MeshcoreLegacyConnEventsCtx>(
     () => ({
+      meshcoreIdentityIdRef,
       connRef,
       lastPacketLogAtRef,
       lastPacketLogPublishFailureLogAtRef,
@@ -3461,7 +3474,9 @@ export function useMeshcoreRuntime() {
 
   const sendReaction = useCallback(
     async (glyph: string, replyId: number, channel: number) => {
-      if (!connRef.current) return;
+      if (!connRef.current) {
+        throw new Error('Not connected to radio');
+      }
       const parsed = reactionGlyphFromPicker(glyph);
       if (!parsed) {
         throw new Error('Invalid reaction emoji');
@@ -4107,6 +4122,8 @@ export function useMeshcoreRuntime() {
       importPrivateKey,
       getWaitingMessages,
       syncNextMessage,
+      getRemoteAdminKeyForNode,
+      setRemoteAdminKeyForNode,
     }),
     [
       state,
@@ -4199,6 +4216,8 @@ export function useMeshcoreRuntime() {
       importPrivateKey,
       getWaitingMessages,
       syncNextMessage,
+      getRemoteAdminKeyForNode,
+      setRemoteAdminKeyForNode,
     ],
   );
 }

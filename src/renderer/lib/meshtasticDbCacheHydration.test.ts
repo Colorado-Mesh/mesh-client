@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildMeshtasticNodeMapFromDbRows,
   mergeMeshtasticDbHydrationWithLive,
   meshtasticLoosePersistenceMatchKey,
 } from './meshtasticDbCacheHydration';
@@ -16,6 +17,51 @@ function msg(
     ...partial,
   };
 }
+
+describe('buildMeshtasticNodeMapFromDbRows', () => {
+  it('excludes MeshCore-only rows persisted in the Meshtastic nodes table', () => {
+    const map = buildMeshtasticNodeMapFromDbRows([
+      {
+        node_id: 0xabc123,
+        long_name: 'MC Repeater',
+        short_name: '',
+        hw_model: 'Repeater',
+        battery: 0,
+        snr: 0,
+        rssi: 0,
+        last_heard: 1,
+        latitude: null,
+        longitude: null,
+        role: null,
+        favorited: 0,
+        source: 'rf',
+        hops: null,
+        path: null,
+        hops_away: 1,
+      } as never,
+      {
+        node_id: 42,
+        long_name: 'T-Beam',
+        short_name: 'TB',
+        hw_model: 'TBEAM',
+        battery: 0,
+        snr: 0,
+        rssi: 0,
+        last_heard: 1,
+        latitude: null,
+        longitude: null,
+        role: 0,
+        favorited: 0,
+        source: 'rf',
+        hops: null,
+        path: null,
+        hops_away: 0,
+      } as never,
+    ]);
+    expect(map.has(0xabc123)).toBe(false);
+    expect(map.has(42)).toBe(true);
+  });
+});
 
 describe('mergeMeshtasticDbHydrationWithLive', () => {
   it('preserves in-flight RF lines not yet in SQLite', () => {

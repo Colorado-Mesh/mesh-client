@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/require-await -- UnsupportedOperation stubs for Protocol surface not used on MeshCore */
 import type { Connection } from '@liamcottle/meshcore.js';
 
+import { meshcoreDmAckKeyU32 } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { pubkeyToNodeId } from '../meshcoreUtils';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHCORE_CAPABILITIES } from '../radio/BaseRadioProvider';
@@ -222,10 +223,11 @@ export class MeshCoreProtocol implements Protocol {
       if (!opts.destinationPubKey) {
         throw new Error('MeshCore sendMessage requires destinationPubKey for DM');
       }
-      await conn.sendTextMessage(opts.destinationPubKey, opts.text);
-    } else {
-      await conn.sendChannelTextMessage(opts.channelIndex ?? 0, opts.text);
+      const result = await conn.sendTextMessage(opts.destinationPubKey, opts.text);
+      const ackCrc = result?.expectedAckCrc;
+      return ackCrc != null ? { packetId: meshcoreDmAckKeyU32(ackCrc) } : {};
     }
+    await conn.sendChannelTextMessage(opts.channelIndex ?? 0, opts.text);
     return {};
   }
 
