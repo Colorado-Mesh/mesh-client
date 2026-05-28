@@ -12,9 +12,11 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
   const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   let userAgentSpy: { mockRestore: () => void } | null = null;
+  const originalProcessPlatform = process.platform;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
     userAgentSpy = vi
       .spyOn(window.navigator, 'userAgent', 'get')
       .mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
@@ -28,6 +30,10 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
   afterEach(() => {
     userAgentSpy?.mockRestore();
     userAgentSpy = null;
+    Object.defineProperty(process, 'platform', {
+      value: originalProcessPlatform,
+      configurable: true,
+    });
   });
 
   it('fails fast with user-facing timeout guidance when IPC open times out', async () => {
@@ -308,9 +314,11 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
 
 describe('useMeshCore Linux BLE routing', () => {
   let userAgentSpy: { mockRestore: () => void } | null = null;
+  const originalProcessPlatform = process.platform;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
     userAgentSpy = vi
       .spyOn(window.navigator, 'userAgent', 'get')
       .mockReturnValue(
@@ -324,6 +332,10 @@ describe('useMeshCore Linux BLE routing', () => {
   afterEach(() => {
     userAgentSpy?.mockRestore();
     userAgentSpy = null;
+    Object.defineProperty(process, 'platform', {
+      value: originalProcessPlatform,
+      configurable: true,
+    });
   });
 
   it('uses Web Bluetooth path on Linux and does not call Noble IPC connect', async () => {

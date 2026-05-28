@@ -1,6 +1,8 @@
 import type { Connection } from '@liamcottle/meshcore.js';
 import type { MeshDevice } from '@meshtastic/core';
 
+import { randomCorrelationSuffix } from '@/shared/randomCorrelationSuffix';
+
 import { setConnection } from '../stores/connectionStore';
 import {
   addIdentity,
@@ -17,7 +19,7 @@ import type { DiscoveryInfo } from './protocols/Protocol';
 import type { ConnectionType, IdentityId, TransportParams } from './types';
 
 function randomIdentityId(prefix: string): IdentityId {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${Date.now()}-${randomCorrelationSuffix()}`;
 }
 
 function resolveOrCreateIdentity(

@@ -1,3 +1,5 @@
+import { randomCorrelationSuffix } from '@/shared/randomCorrelationSuffix';
+
 import { removeConnection, setConnection } from '../../stores/connectionStore';
 import { clearDeviceIdentity } from '../../stores/deviceStore';
 import {
@@ -38,7 +40,7 @@ interface TransportSlot {
 }
 
 function randomId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${Date.now()}-${randomCorrelationSuffix()}`;
 }
 
 function transportTypeToConnectionType(type: TransportType): ConnectionType | null {
