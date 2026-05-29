@@ -24,6 +24,7 @@ import {
   MESHCORE_MAX_CONTACTS,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
+import { meshtasticNodeAwaitingNodeInfo } from '../lib/meshtastic/meshtasticNodeAwaitingNodeInfo';
 import { getNodeStatus } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
@@ -354,8 +355,8 @@ export default function NodeDetailModal({
   if (!node) return null;
 
   const hexId = formatMeshtasticNodeId(node.node_id);
-  // Check if this appears to be a node with incomplete data (empty names and no role)
-  const isIncomplete = !node.short_name && !node.long_name && node.role === undefined;
+  const awaitingNodeInfo =
+    protocol === 'meshtastic' && meshtasticNodeAwaitingNodeInfo(node, { isConnected });
   const displayName = node.short_name || node.long_name || hexId;
   const isOurNode = node.node_id === homeNode?.node_id;
   const nodeStatus = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
@@ -442,7 +443,7 @@ export default function NodeDetailModal({
                     {t('nodeDetailModal.mqttIgnoredBadge')}
                   </span>
                 )}
-                {isIncomplete && (
+                {awaitingNodeInfo && (
                   <span
                     className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
                     title={t('nodeDetailModal.nodeIncomplete')}
@@ -589,6 +590,7 @@ export default function NodeDetailModal({
                 meshcoreManufacturerModel={meshcoreManufacturerModel}
                 positionHistory={positionHistory}
                 onShowOnMap={onShowOnMap}
+                awaitingNodeInfo={awaitingNodeInfo}
               />
 
               {protocol === 'meshcore' &&

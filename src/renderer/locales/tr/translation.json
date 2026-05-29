@@ -712,6 +712,16 @@
       "gpio": "GPIO",
       "rangeTest": "Menzil testi",
       "storeForward": "S&F alındı"
+    },
+    "errors": {
+      "generic": "Cihaz bu değişikliği reddetti.",
+      "badRequest": "Cihaz bu yapılandırmayı reddetti (geçersiz veya desteklenmeyen ayarlar).",
+      "notAuthorized": "Cihazda bu ayarı değiştirme yetkisi yok.",
+      "timeout": "Cihaz zamanında yanıt vermedi.",
+      "noChannel": "Bu yapılandırmayı göndermek için kullanılabilir kanal yok.",
+      "routingError": "Cihaz hatası {{name}} (kod {{code}}).",
+      "transportLost": "Seri veya Bluetooth bağlantısı kayboldu — yeniden bağlanılıyor…",
+      "mqttAddressRequired": "Cihaz tarafında MQTT rölesini etkinleştirmeden önce bir MQTT aracı adresi girin."
     }
   },
   "appPanel": {

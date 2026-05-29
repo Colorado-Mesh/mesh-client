@@ -12,6 +12,7 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { beginIdentityHydration } from './identityHydrationCoordinator';
 import { getMeshtasticMessageLoadLimit } from './legacySideEffects/meshtasticDbHydration';
 import type { MeshcoreContactDbRow, MeshcoreMessageDbRow } from './meshcore/meshcoreHookTypes';
+import { ensureMeshtasticChatSenderInNodeStore } from './meshtastic/meshtasticChatSenderNode';
 import {
   buildMeshtasticNodeMapFromDbRows,
   dedupeMeshtasticHydrationOrphanSends,
@@ -47,6 +48,13 @@ export async function hydrateMeshtasticMessagesFromDb(identityId: IdentityId): P
     identityId,
     trimmed.map((msg) => chatMessageToMessageRecord(msg)),
   );
+  for (const msg of trimmed) {
+    if (msg.sender_id <= 0) continue;
+    ensureMeshtasticChatSenderInNodeStore(identityId, msg.sender_id, {
+      lastHeardAt: msg.timestamp,
+      source: msg.receivedVia === 'mqtt' ? 'mqtt' : 'rf',
+    });
+  }
 }
 
 export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promise<void> {

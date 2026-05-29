@@ -712,6 +712,16 @@
       "gpio": "GPIO",
       "rangeTest": "Bereiktest",
       "storeForward": "S&F ontvangen"
+    },
+    "errors": {
+      "generic": "Het apparaat heeft deze wijziging geweigerd.",
+      "badRequest": "Het apparaat heeft deze configuratie geweigerd (ongeldige of niet-ondersteunde instellingen).",
+      "notAuthorized": "Niet geautoriseerd om deze instelling op het apparaat te wijzigen.",
+      "timeout": "Het apparaat antwoordde niet",
+      "noChannel": "Geen kanaal beschikbaar om deze configuratie te verzenden.",
+      "routingError": "Apparaatfout {{name}} (code {{code}}).",
+      "transportLost": "Seriële of Bluetooth-link verloren — opnieuw verbinden...",
+      "mqttAddressRequired": "Voer een MQTT-makelaaradres in voordat u het MQTT-relais aan de apparaatzijde inschakelt."
     }
   },
   "appPanel": {

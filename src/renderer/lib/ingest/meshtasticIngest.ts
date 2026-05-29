@@ -9,6 +9,7 @@ import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
 import {
   findMeshtasticCrossTransportDuplicate,
   mapMeshtasticCrossTransportUpgrade,
@@ -74,6 +75,12 @@ function handleTextMessage(
   options: MeshtasticIngestOptions,
 ): void {
   if (options.getIsConfiguring()) return;
+
+  ensureMeshtasticChatSenderInNodeStore(identityId, event.payload.from, {
+    lastHeardAt: event.payload.timestamp,
+    source: 'rf',
+  });
+  persistNode(identityId, event.payload.from);
 
   const record = useMessageStore.getState().messages[identityId]?.[event.payload.id];
   if (!record) return;

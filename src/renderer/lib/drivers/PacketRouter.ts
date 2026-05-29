@@ -1,3 +1,5 @@
+import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+
 import type { ConnectionStatus } from '../../stores/connectionStore';
 import { setConnection } from '../../stores/connectionStore';
 import type { ChannelConfig } from '../../stores/deviceStore';
@@ -23,10 +25,22 @@ import {
   upsertNeighborInfo,
   upsertNode,
   upsertWaypoint,
+  useNodeStore,
 } from '../../stores/nodeStore';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
 import type { DomainEvent } from '../protocols/Protocol';
 import type { IdentityId } from '../types';
+
+function resolveMeshtasticSenderName(identityId: IdentityId, from: number): string | undefined {
+  if (from <= 0) return undefined;
+  const node = useNodeStore.getState().nodes[identityId]?.[from];
+  const shortName = node?.shortName?.trim();
+  if (shortName) return shortName;
+  const longName = node?.longName?.trim();
+  if (longName) return longName.length > 7 ? longName.slice(0, 7) : longName;
+  return formatMeshtasticNodeId(from);
+}
 
 function upsertByIndex<T extends { index: number }>(arr: T[], item: T): T[] {
   const i = arr.findIndex((x) => x.index === item.index);
@@ -48,7 +62,7 @@ class PacketRouter {
 
   dispatch(event: DomainEvent, identityId: IdentityId): void {
     switch (event.type) {
-      case 'text_message':
+      case 'text_message': {
         if (event.payload.id) {
           const byIdentity = useMessageStore.getState().messages[identityId] ?? {};
           const optimistic = Object.values(byIdentity).find(
@@ -68,6 +82,11 @@ class PacketRouter {
         // Upsert (not add) so an outbound echo carrying the same packetId-derived
         // id merges into the optimistic row written by useSendMessage instead of
         // creating a duplicate.
+        const senderName = resolveMeshtasticSenderName(identityId, event.payload.from);
+        ensureMeshtasticChatSenderInNodeStore(identityId, event.payload.from, {
+          lastHeardAt: event.payload.timestamp,
+          source: 'rf',
+        });
         upsertMessage(identityId, {
           id: event.payload.id,
           from: event.payload.from,
@@ -80,8 +99,10 @@ class PacketRouter {
           hopCount: event.payload.hopCount,
           tapback: event.payload.tapback,
           replyTo: event.payload.replyTo,
+          ...(senderName ? { senderName } : {}),
         });
         break;
+      }
       case 'node_info':
         upsertNode(identityId, event.payload);
         break;

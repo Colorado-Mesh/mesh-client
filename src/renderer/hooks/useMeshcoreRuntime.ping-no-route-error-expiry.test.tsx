@@ -39,7 +39,7 @@ const REMOTE_PUBKEY_HEX = Array.from(REMOTE_PUBKEY)
 const SELF_PUBKEY = new Uint8Array(32).fill(0xab);
 const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
 
-/** Matches {@link MESHCORE_TRACE_PRIME_WAIT_MS} in useMeshCore.ts — wait after flood advert for PathUpdated. */
+/** Matches {@link MESHCORE_TRACE_PRIME_WAIT_MS} in useMeshcoreRuntime.ts — wait after flood advert for PathUpdated. */
 const TRACE_PRIME_WAIT_MS = 12_000;
 
 vi.mock('@liamcottle/meshcore.js', () => {
@@ -220,7 +220,7 @@ describe('meshcorePingNoRouteErrorExpiryUpdate', () => {
   });
 });
 
-describe('useMeshCore refreshNodesFromDb hop preservation', () => {
+describe('useMeshcoreRuntime refreshNodesFromDb hop preservation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
@@ -265,7 +265,7 @@ describe('useMeshCore refreshNodesFromDb hop preservation', () => {
   });
 });
 
-describe('useMeshCore traceRoute no-route error expiry', () => {
+describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     runMeshcoreTracePathMultiplexedMock.mockResolvedValue({
@@ -357,7 +357,7 @@ describe('useMeshCore traceRoute no-route error expiry', () => {
   });
 });
 
-describe('useMeshCore traceRoute path outcome attribution', () => {
+describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     runMeshcoreTracePathMultiplexedMock.mockResolvedValue({

@@ -8,7 +8,7 @@ vi.mock('../../shared/withTimeout', () => ({
 import { withTimeout } from '../../shared/withTimeout';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 
-describe('useMeshCore BLE Noble IPC timeout handling', () => {
+describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
   const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   let userAgentSpy: { mockRestore: () => void } | null = null;
@@ -59,10 +59,10 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       ),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
+      '[useMeshcoreRuntime] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect error {"userMessage":"Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.","raw":"MeshCore BLE IPC open timed out after 25000ms","bleTimeoutStage":"ipc-open"}',
+      '[useMeshcoreRuntime] connect error {"userMessage":"Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.","raw":"MeshCore BLE IPC open timed out after 25000ms","bleTimeoutStage":"ipc-open"}',
     );
   });
 
@@ -93,11 +93,11 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"protocol-handshake"}',
+      '[useMeshcoreRuntime] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"protocol-handshake"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /\[useMeshCore\] connect error .*MeshCore BLE protocol handshake timed out after \d+ms.*"bleTimeoutStage":"protocol-handshake"/,
+        /\[useMeshcoreRuntime\] connect error .*MeshCore BLE protocol handshake timed out after \d+ms.*"bleTimeoutStage":"protocol-handshake"/,
       ),
     );
   });
@@ -232,10 +232,10 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
       ),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
+      '[useMeshcoreRuntime] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect error {"userMessage":"Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.","raw":"BLE connectAsync timed out after 30000ms","bleTimeoutStage":"ipc-open"}',
+      '[useMeshcoreRuntime] connect error {"userMessage":"Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.","raw":"BLE connectAsync timed out after 30000ms","bleTimeoutStage":"ipc-open"}',
     );
   });
 
@@ -253,7 +253,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
     ).rejects.toThrow('{"code":"BLE_CUSTOM","detail":"adapter glitch"}');
 
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshCore] connect error {"userMessage":"{\\"code\\":\\"BLE_CUSTOM\\",\\"detail\\":\\"adapter glitch\\"}","raw":"{\\"code\\":\\"BLE_CUSTOM\\",\\"detail\\":\\"adapter glitch\\"}","bleTimeoutStage":null}',
+      '[useMeshcoreRuntime] connect error {"userMessage":"{\\"code\\":\\"BLE_CUSTOM\\",\\"detail\\":\\"adapter glitch\\"}","raw":"{\\"code\\":\\"BLE_CUSTOM\\",\\"detail\\":\\"adapter glitch\\"}","bleTimeoutStage":null}',
     );
   });
 
@@ -312,7 +312,7 @@ describe('useMeshCore BLE Noble IPC timeout handling', () => {
   });
 });
 
-describe('useMeshCore Linux BLE routing', () => {
+describe('useMeshcoreRuntime Linux BLE routing', () => {
   let userAgentSpy: { mockRestore: () => void } | null = null;
   const originalProcessPlatform = process.platform;
 

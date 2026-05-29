@@ -20,6 +20,11 @@ const MESHCORE_SERVICE_UUID = '6e400001b5a3f393e0a9e50e24dcca9e';
 const MESHCORE_RX_UUID = '6e400002b5a3f393e0a9e50e24dcca9e';
 const MESHCORE_TX_UUID = '6e400003b5a3f393e0a9e50e24dcca9e';
 
+export interface NobleBleDisconnectOptions {
+  /** When false, skip emitting `disconnected` (e.g. connect() teardown before reconnect). */
+  notify?: boolean;
+}
+
 /** Max iterations per read-pump burst (avoids infinite spin on misbehaving stacks). */
 const BLE_READ_PUMP_MAX_ITERATIONS = 512;
 /** Timeout for a single fromRadio GATT read. */
@@ -805,7 +810,7 @@ export class NobleBleManager extends EventEmitter {
           return;
         }
       }
-      await this.disconnect(sessionId);
+      await this.disconnect(sessionId, { notify: false });
       // Re-open a fresh session (disconnect sets closing=true; reset it for the new connection).
       session.closing = false;
 
@@ -1235,7 +1240,8 @@ export class NobleBleManager extends EventEmitter {
     }
   }
 
-  async disconnect(sessionId: NobleSessionId): Promise<void> {
+  async disconnect(sessionId: NobleSessionId, options?: NobleBleDisconnectOptions): Promise<void> {
+    const notify = options?.notify !== false;
     const session = this.getSession(sessionId);
     const peripheral = session.connectedPeripheral;
     const fromRadio = session.fromRadioChar;
@@ -1284,7 +1290,9 @@ export class NobleBleManager extends EventEmitter {
         }
       }
     } finally {
-      this.emit('disconnected', { sessionId });
+      if (notify) {
+        this.emit('disconnected', { sessionId });
+      }
     }
   }
 

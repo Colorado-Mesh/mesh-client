@@ -712,6 +712,16 @@
       "gpio": "GPIO",
       "rangeTest": "Test de portée",
       "storeForward": "Reçu S&F"
+    },
+    "errors": {
+      "generic": "L'appareil a rejeté cette modification.",
+      "badRequest": "L'appareil a rejeté cette configuration (paramètres non valides ou non pris en charge).",
+      "notAuthorized": "Pas autorisé à modifier ce paramètre sur l'appareil.",
+      "timeout": "L'appareil n'a pas répondu à temps.",
+      "noChannel": "Aucun canal disponible pour envoyer cette configuration.",
+      "routingError": "Erreur de périphérique {{name}} (code {{code}}).",
+      "transportLost": "Liaison série ou Bluetooth perdue — reconnexion…",
+      "mqttAddressRequired": "Entrez une adresse de courtier MQTT avant d'activer le relais MQTT côté appareil."
     }
   },
   "appPanel": {

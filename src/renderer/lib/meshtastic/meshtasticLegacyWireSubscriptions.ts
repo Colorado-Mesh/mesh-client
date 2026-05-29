@@ -161,11 +161,14 @@ export interface MeshtasticLegacyWireSubscriptionDeps {
     type: ConnectionType;
     httpAddress?: string;
     blePeripheralId?: string;
+    lastSerialPortId?: string | null;
   } | null>;
   deviceConfiguredRef: RefObject<boolean>;
   deviceGpsModeRef: RefObject<number>;
   deviceRef: RefObject<MeshDevice | null>;
   handleConnectionLostRef: RefObject<() => void>;
+  schedulePostCommitRebootRecoveryRef: RefObject<(source?: string) => void>;
+  clearPostCommitRebootRecoveryRef: RefObject<() => void>;
   isConfiguringRef: RefObject<boolean>;
   lastDataReceivedRef: RefObject<number>;
   lastNodeInfoRequestAtRef: RefObject<Map<number, number>>;
@@ -327,6 +330,8 @@ export function attachMeshtasticLegacyWireSubscriptions(
     deviceGpsModeRef,
     deviceRef,
     handleConnectionLostRef,
+    schedulePostCommitRebootRecoveryRef,
+    clearPostCommitRebootRecoveryRef,
     isConfiguringRef,
     lastDataReceivedRef,
     lastNodeInfoRequestAtRef,
@@ -446,7 +451,9 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
   // ─── Device status ─────────────────────────────────────────
   const unsub1 = device.events.onDeviceStatus.subscribe((status) => {
-    touchLastData();
+    if (status !== 1) {
+      touchLastData();
+    }
     const statusMap: Record<number, DeviceState['status']> = {
       1: 'connecting', // DeviceRestarting
       2: 'disconnected', // DeviceDisconnected
@@ -463,19 +470,26 @@ export function attachMeshtasticLegacyWireSubscriptions(
       ...(mapped === 'configured' || mapped === 'connected' ? { connectionLoss: false } : {}),
     }));
 
+    if (status === 1) {
+      deviceConfiguredRef.current = false;
+      isConfiguringRef.current = true;
+      meshtasticIngestSessionRef.current?.setConfiguring(true);
+      schedulePostCommitRebootRecoveryRef.current('DeviceRestarting');
+    }
+
     // Track configuring phase so packet replays are marked as historical
     if (status === 3 || status === 5 || status === 6) {
       isConfiguringRef.current = true;
       meshtasticIngestSessionRef.current?.setConfiguring(true);
       if (status === 6 && type === 'ble' && !configureTimeoutRef.current) {
         configureTimeoutRef.current = setTimeout(() => {
-          console.warn('[useDevice] configure timeout (BLE 30s) — forcing disconnect');
+          console.warn('[useMeshtasticRuntime] configure timeout (BLE 30s) — forcing disconnect');
           const activeDevice = deviceRef.current;
           deviceRef.current = null;
           if (activeDevice) {
             void safeDisconnect(activeDevice).catch((e: unknown) => {
               console.debug(
-                '[useDevice] configure timeout safeDisconnect ' + errLikeToLogString(e),
+                '[useMeshtasticRuntime] configure timeout safeDisconnect ' + errLikeToLogString(e),
               );
             });
           }
@@ -496,6 +510,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
     // Start watchdog when configured
     if (status === 7) {
+      clearPostCommitRebootRecoveryRef.current();
       clearConfigureTimeout();
       isConfiguringRef.current = false;
       meshtasticIngestSessionRef.current?.setConfiguring(false);
@@ -523,7 +538,9 @@ export function attachMeshtasticLegacyWireSubscriptions(
         void deviceRef.current
           ?.getConfig(Admin.AdminMessage_ConfigType.LORA_CONFIG)
           .catch((e: unknown) => {
-            console.debug('[useDevice] LoRa config request failed ' + errLikeToLogString(e));
+            console.debug(
+              '[useMeshtasticRuntime] LoRa config request failed ' + errLikeToLogString(e),
+            );
           });
       }, MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS);
     }
@@ -577,12 +594,12 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
   // ─── My node info ──────────────────────────────────────────
   const unsub2 = device.events.onMyNodeInfo.subscribe((info) => {
-    console.debug(`[useDevice] onMyNodeInfo: myNodeNum=${info.myNodeNum}`);
+    console.debug(`[useMeshtasticRuntime] onMyNodeInfo: myNodeNum=${info.myNodeNum}`);
     touchLastData();
     const virtualNodeId = virtualNodeIdRef.current;
     if (virtualNodeId !== info.myNodeNum) {
       window.electronAPI.db.deleteNode(virtualNodeId).catch((e: unknown) => {
-        console.debug('[useDevice] deleteNode virtual ' + errLikeToLogString(e));
+        console.debug('[useMeshtasticRuntime] deleteNode virtual ' + errLikeToLogString(e));
       });
     }
     myNodeNumRef.current = info.myNodeNum;
@@ -662,9 +679,12 @@ export function attachMeshtasticLegacyWireSubscriptions(
     void (async () => {
       try {
         await device.sendPacket(new Uint8Array(), Portnums.PortNum.NODEINFO_APP, from);
-        console.debug(`[useDevice] NODEINFO request sent for 0x${from.toString(16)}`);
+        console.debug(`[useMeshtasticRuntime] NODEINFO request sent for 0x${from.toString(16)}`);
       } catch (e: unknown) {
-        console.debug('[useDevice] NODEINFO request failed', e instanceof Error ? e.message : e);
+        console.debug(
+          '[useMeshtasticRuntime] NODEINFO request failed',
+          e instanceof Error ? e.message : e,
+        );
       }
     })();
   };
@@ -711,7 +731,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     const resolvedText = resolveMeshtasticTextMessagePayload(payloadBytes);
     if (!resolvedText) {
       console.debug(
-        `[useDevice] Dropped non-readable TEXT_MESSAGE from 0x${meshPacket.from.toString(16)} len=${payloadBytes.length}`,
+        `[useMeshtasticRuntime] Dropped non-readable TEXT_MESSAGE from 0x${meshPacket.from.toString(16)} len=${payloadBytes.length}`,
       );
       return;
     }
@@ -852,7 +872,8 @@ export function attachMeshtasticLegacyWireSubscriptions(
             .then(isDuplicate)
             .catch((e: unknown) => {
               console.debug(
-                '[useDevice] MQTT publish echo register non-fatal ' + errLikeToLogString(e),
+                '[useMeshtasticRuntime] MQTT publish echo register non-fatal ' +
+                  errLikeToLogString(e),
               );
             });
         }
@@ -868,7 +889,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
           silent: false,
         });
       } catch (e) {
-        console.debug('[useDevice] Notification not available ' + errLikeToLogString(e));
+        console.debug('[useMeshtasticRuntime] Notification not available ' + errLikeToLogString(e));
       }
     }
   });
@@ -1051,7 +1072,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
       prevOwnRole !== ROLE_CLIENT_MUTE
     ) {
       console.info(
-        '[useDevice] Device role is Client Mute — position reports to device suppressed',
+        '[useMeshtasticRuntime] Device role is Client Mute — position reports to device suppressed',
       );
     }
     const updatedRfNode = nodesRef.current.get(nodeNum);
@@ -1082,7 +1103,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
           const cache =
             parseStoredJson<Record<string, string>>(
               localStorage.getItem(key),
-              'useDevice bleDeviceNames cache',
+              'useMeshtasticRuntime bleDeviceNames cache',
             ) ?? {};
           cache[btDevice.id] = shortName;
           localStorage.setItem(key, JSON.stringify(cache));
@@ -1104,7 +1125,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
           const cache =
             parseStoredJson<Record<string, string>>(
               localStorage.getItem(key),
-              'useDevice serialPortNodeNames cache',
+              'useMeshtasticRuntime serialPortNodeNames cache',
             ) ?? {};
           cache[portId] = shortName;
           localStorage.setItem(key, JSON.stringify(cache));
@@ -1445,7 +1466,9 @@ export function attachMeshtasticLegacyWireSubscriptions(
             : next;
         });
       } catch (e) {
-        console.debug('[useDevice] raw packet log entry failed ' + errLikeToLogString(e));
+        console.debug(
+          '[useMeshtasticRuntime] raw packet log entry failed ' + errLikeToLogString(e),
+        );
       }
 
       // Record noisy portnums for diagnostics
@@ -1801,7 +1824,9 @@ export function attachMeshtasticLegacyWireSubscriptions(
               },
             })
             .catch((e: unknown) => {
-              console.debug('[useDevice] MQTT waypoint relay failed ' + errLikeToLogString(e));
+              console.debug(
+                '[useMeshtasticRuntime] MQTT waypoint relay failed ' + errLikeToLogString(e),
+              );
             });
         }
       }

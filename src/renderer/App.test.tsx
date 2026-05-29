@@ -427,7 +427,7 @@ vi.mock('../preload', () => ({
 describe('legacy hook mount invariant', () => {
   it('does not multiply legacy hook mounts via connection/panel wrappers', () => {
     render(<App />);
-    // Pre-dedupe App mounted useDevice 3× (App + two connection wrappers). Allow one re-render.
+    // Pre-dedupe App mounted useMeshtasticRuntime 3× (App + two connection wrappers). Allow one re-render.
     expect(useDeviceMock.mock.calls.length).toBeLessThan(3);
     expect(useMeshCoreMock.mock.calls.length).toBeLessThan(3);
   });

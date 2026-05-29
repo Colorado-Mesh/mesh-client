@@ -28,8 +28,3 @@ export function useProtocolDbRefresh(protocol: MeshProtocol, identityId: Identit
     [refreshNodesFromDb, refreshMessagesFromDb, refreshAllFromDb],
   );
 }
-
-/** @deprecated Prefer {@link useProtocolDbRefresh} with explicit protocol. */
-export function useDbRefresh(identityId: IdentityId | null) {
-  return useProtocolDbRefresh('meshtastic', identityId);
-}

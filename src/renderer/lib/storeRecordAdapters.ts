@@ -1,4 +1,5 @@
 import {
+  formatMeshtasticNodeId,
   isMeshtasticBroadcastNodeNum,
   MESHTASTIC_BROADCAST_NODE_NUM,
 } from '@/shared/nodeNameUtils';
@@ -25,7 +26,8 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   return {
     ...(packetId != null ? { id: packetId } : {}),
     sender_id: record.from,
-    sender_name: record.senderName ?? '',
+    sender_name:
+      record.senderName?.trim() || (record.from > 0 ? formatMeshtasticNodeId(record.from) : ''),
     payload: record.payload,
     channel: record.channelIndex,
     timestamp: record.timestamp,

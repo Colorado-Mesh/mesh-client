@@ -11,7 +11,7 @@ export interface OpenMeshCoreTransportResult {
 
 /**
  * Opens a MeshCore transport via `ConnectionDriver.connect` (protocol subscribe → PacketRouter).
- * Post-connect handshake (`initConn`) and hook-only listeners remain in `useMeshCore`.
+ * Post-connect handshake (`initConn`) and hook-only listeners remain in `useMeshcoreRuntime`.
  */
 export async function openMeshCoreTransport(
   type: 'ble' | 'serial' | 'tcp',

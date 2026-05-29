@@ -83,7 +83,7 @@ describe('migrateRfStubNodes SQL', () => {
 
 /**
  * Verify the placeholder format that SQLite's printf('!%08x', node_id) produces.
- * This matches what emptyNode() generates in useDevice.ts.
+ * This matches what emptyNode() generates in useMeshtasticRuntime.
  */
 describe('placeholder name format', () => {
   function placeholder(nodeId: number): string {

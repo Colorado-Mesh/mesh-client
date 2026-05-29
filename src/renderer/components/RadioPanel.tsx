@@ -789,15 +789,15 @@ export default function RadioPanel({
           value: configValue,
         },
       });
-      const commitPromise = onCommit();
-      void commitPromise
-        .then(() => {})
-        .catch((err: unknown) => {
-          setStatus(
-            `${section} sent, but commit failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
-          );
-        });
-      setStatus(`${section} applied successfully. Device may briefly reboot.`);
+      try {
+        await onCommit();
+        setStatus(`${section} applied successfully. Device may briefly reboot.`);
+      } catch (err: unknown) {
+        // catch-no-log-ok commit failure surfaced in panel status text
+        setStatus(
+          `${section} sent, but commit failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        );
+      }
     } catch (err) {
       console.warn('[RadioPanel] apply section failed ' + errLikeToLogString(err));
       setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);

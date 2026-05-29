@@ -712,6 +712,16 @@
       "gpio": "GPIO",
       "rangeTest": "Test rozsahu",
       "storeForward": "Přijato S&F"
+    },
+    "errors": {
+      "generic": "Zařízení tuto změnu odmítlo.",
+      "badRequest": "Zařízení tuto konfiguraci odmítlo (neplatná nebo nepodporovaná nastavení).",
+      "notAuthorized": "Není oprávněn měnit toto nastavení na zařízení.",
+      "timeout": "Zařízení nereagovalo včas.",
+      "noChannel": "Pro odeslání této konfigurace není k dispozici žádný kanál.",
+      "routingError": "Chyba zařízení {{name}} (kód {{code}}).",
+      "transportLost": "Ztráta sériového nebo Bluetooth spojení — opětovné připojení…",
+      "mqttAddressRequired": "Před povolením relé MQTT na straně zařízení zadejte adresu makléře MQTT."
     }
   },
   "appPanel": {

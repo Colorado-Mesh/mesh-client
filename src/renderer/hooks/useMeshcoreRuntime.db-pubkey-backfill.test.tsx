@@ -167,7 +167,7 @@ function makeMockSerialPort() {
   };
 }
 
-describe('useMeshCore DB pubkey backfill for DM send', () => {
+describe('useMeshcoreRuntime DB pubkey backfill for DM send', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getContactsMock.mockResolvedValue([]);
@@ -241,7 +241,7 @@ describe('useMeshCore DB pubkey backfill for DM send', () => {
   });
 });
 
-describe('useMeshCore DM reply (wire + persistence)', () => {
+describe('useMeshcoreRuntime DM reply (wire + persistence)', () => {
   const contactRow = {
     node_id: PEER_NODE_ID,
     public_key: PEER_PUBKEY_HEX,

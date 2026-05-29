@@ -23,6 +23,30 @@ const HTTP_CONNECT_TIMEOUT_MS = 15_000;
 const BLE_CONNECT_MAX_ATTEMPTS = 2;
 const BLE_CONNECT_RETRY_DELAY_MS = 1_500;
 
+/** Serialize Noble BLE connects per session so overlapping attempts do not emit spurious disconnects. */
+const nobleBleConnectLocks = new Map<NobleBleSessionId, Promise<void>>();
+
+async function withNobleBleConnectLock<T>(
+  sessionId: NobleBleSessionId,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const previous = nobleBleConnectLocks.get(sessionId) ?? Promise.resolve();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  nobleBleConnectLocks.set(sessionId, gate);
+  await previous;
+  try {
+    return await fn();
+  } finally {
+    release();
+    if (nobleBleConnectLocks.get(sessionId) === gate) {
+      nobleBleConnectLocks.delete(sessionId);
+    }
+  }
+}
+
 function logMeshtasticDeviceConnection(detail: string): void {
   const fn = window.electronAPI?.log?.logDeviceConnection;
   if (typeof fn === 'function') void fn(detail);
@@ -157,51 +181,53 @@ export async function createBleConnection(
   }
   const transport = new TransportNobleIpc(sessionId);
   let lastError: unknown = null;
-  for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
-    const attemptStartedAt = Date.now();
-    try {
-      const connectResult = await window.electronAPI.connectNobleBle(sessionId, peripheralId);
-      if (!connectResult.ok) {
-        throw new Error(connectResult.error || 'BLE connect failed');
-      }
-      if (attempt > 1) {
-        console.info(
-          `[connection] createBleConnection recovered on retry ${formatJsonForRendererLog({
+  return withNobleBleConnectLock(sessionId, async () => {
+    for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
+      const attemptStartedAt = Date.now();
+      try {
+        const connectResult = await window.electronAPI.connectNobleBle(sessionId, peripheralId);
+        if (!connectResult.ok) {
+          throw new Error(connectResult.error || 'BLE connect failed');
+        }
+        if (attempt > 1) {
+          console.info(
+            `[connection] createBleConnection recovered on retry ${formatJsonForRendererLog({
+              sessionId,
+              peripheralId,
+              attempt,
+              maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
+              totalElapsedMs: Date.now() - connectStartedAt,
+            })}`,
+          );
+        }
+        console.debug('[connection] createBleConnection connected', peripheralId);
+        console.debug('[connection] createBleConnection elapsedMs', Date.now() - connectStartedAt);
+        assertTransportReadyForMeshDevice(transport, 'Meshtastic BLE (Noble)');
+        return new MeshDevice(transport);
+      } catch (err) {
+        lastError = err;
+        const message = err instanceof Error ? err.message : String(err);
+        const isTimeout = isMainProcessBleTimeoutMessage(message) || /timed out/i.test(message);
+        console.warn(
+          `[connection] createBleConnection attempt failed ${formatJsonForRendererLog({
             sessionId,
             peripheralId,
             attempt,
             maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
+            isTimeout,
+            attemptElapsedMs: Date.now() - attemptStartedAt,
             totalElapsedMs: Date.now() - connectStartedAt,
+            message,
           })}`,
         );
+        if (!isTimeout || attempt >= BLE_CONNECT_MAX_ATTEMPTS) {
+          break;
+        }
+        await new Promise<void>((r) => setTimeout(r, BLE_CONNECT_RETRY_DELAY_MS));
       }
-      console.debug('[connection] createBleConnection connected', peripheralId);
-      console.debug('[connection] createBleConnection elapsedMs', Date.now() - connectStartedAt);
-      assertTransportReadyForMeshDevice(transport, 'Meshtastic BLE (Noble)');
-      return new MeshDevice(transport);
-    } catch (err) {
-      lastError = err;
-      const message = err instanceof Error ? err.message : String(err);
-      const isTimeout = isMainProcessBleTimeoutMessage(message) || /timed out/i.test(message);
-      console.warn(
-        `[connection] createBleConnection attempt failed ${formatJsonForRendererLog({
-          sessionId,
-          peripheralId,
-          attempt,
-          maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
-          isTimeout,
-          attemptElapsedMs: Date.now() - attemptStartedAt,
-          totalElapsedMs: Date.now() - connectStartedAt,
-          message,
-        })}`,
-      );
-      if (!isTimeout || attempt >= BLE_CONNECT_MAX_ATTEMPTS) {
-        break;
-      }
-      await new Promise<void>((r) => setTimeout(r, BLE_CONNECT_RETRY_DELAY_MS));
     }
-  }
-  throw lastError instanceof Error ? lastError : new Error('BLE connection failed');
+    throw lastError instanceof Error ? lastError : new Error('BLE connection failed');
+  });
 }
 
 /**
@@ -317,11 +343,35 @@ export async function createConnection(
   }
 
   // NOTE: Do NOT call device.configure() here. It must be called AFTER
-  // event subscriptions are set up in useDevice.ts, otherwise the initial
+  // event subscriptions are set up in useMeshtasticRuntime, otherwise the initial
   // node/channel/config dump is emitted before any listeners exist.
 
   assertTransportReadyForMeshDevice(transport, 'Meshtastic serial');
   return new MeshDevice(transport as any);
+}
+
+/** Resolve the underlying Web Serial port from Meshtastic transport wrappers. */
+export function getSerialPortFromMeshTransport(transport: unknown): SerialPort | null {
+  const candidate = transport as { port?: SerialPort; connection?: SerialPort };
+  if (candidate?.port && typeof candidate.port.close === 'function') {
+    return candidate.port;
+  }
+  if (candidate?.connection && typeof candidate.connection.close === 'function') {
+    return candidate.connection;
+  }
+  return null;
+}
+
+/** Best-effort close of an open Web Serial port before reconnect. */
+export async function closeSerialPortIfOpen(port: SerialPort): Promise<void> {
+  if (!port.readable && !port.writable) return;
+  try {
+    await port.close();
+  } catch (e) {
+    console.debug(
+      `[connection] closeSerialPortIfOpen ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
 }
 
 /**
@@ -342,6 +392,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
     `[connection] reconnectSerial: getPorts returned ${ports.length} port(s), lastPortId=${lastPortId ?? 'none'}`,
   );
   const port = selectGrantedSerialPort(ports, lastPortId);
+  await closeSerialPortIfOpen(port);
   persistSerialPortIdentity(port);
   console.debug(
     `[connection] reconnectSerial: using port portId=${(port as SerialPort & { portId?: string }).portId ?? 'none'} usbVendor=${port.getInfo?.().usbVendorId ?? 'n/a'} usbProduct=${port.getInfo?.().usbProductId ?? 'n/a'}`,
@@ -408,10 +459,14 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
       }
     } else {
       console.warn(
-        `[Meshtastic] Disconnect error: ${err instanceof Error ? err.message : String(err)}`,
+        `[useMeshtasticRuntime] Disconnect error: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
   } finally {
+    const serialPort = getSerialPortFromMeshTransport(device.transport);
+    if (serialPort) {
+      await closeSerialPortIfOpen(serialPort);
+    }
     // Always complete device streams to prevent memory leaks
     try {
       device.complete();

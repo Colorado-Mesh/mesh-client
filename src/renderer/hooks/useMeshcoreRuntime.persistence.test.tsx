@@ -56,7 +56,7 @@ function sampleIncomingDmMeshcoreDbRow() {
   };
 }
 
-describe('useMeshCore mount hydration', () => {
+describe('useMeshcoreRuntime mount hydration', () => {
   beforeEach(() => {
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([sampleMeshcoreDbRow()]);
@@ -402,7 +402,7 @@ describe('useMeshCore mount hydration', () => {
   });
 });
 
-describe('useMeshCore disconnect DB rehydration', () => {
+describe('useMeshcoreRuntime disconnect DB rehydration', () => {
   const NODE_ID = 0xabcd1234;
   const REMOTE_PUBKEY_HEX = Array.from({ length: 32 }, (_, i) =>
     ((i * 17 + 3) & 0xff).toString(16).padStart(2, '0'),

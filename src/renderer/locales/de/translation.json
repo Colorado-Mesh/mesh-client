@@ -712,6 +712,16 @@
       "gpio": "GPIO",
       "rangeTest": "Reichweitentest",
       "storeForward": "S&F erhalten"
+    },
+    "errors": {
+      "generic": "Das Gerät hat diese Änderung abgelehnt.",
+      "badRequest": "Das Gerät hat diese Konfiguration abgelehnt (ungültige oder nicht unterstützte Einstellungen).",
+      "notAuthorized": "Nicht berechtigt, diese Einstellung am Gerät zu ändern.",
+      "timeout": "Das Gerät reagierte nicht rechtzeitig.",
+      "noChannel": "Kein Kanal zum Senden dieser Konfiguration verfügbar.",
+      "routingError": "Gerätefehler {{name}} (Code {{code}}).",
+      "transportLost": "Serielle oder Bluetooth-Verbindung verloren — Wiederverbindung...",
+      "mqttAddressRequired": "Geben Sie eine MQTT-Brokeradresse ein, bevor Sie das geräteseitige MQTT-Relay aktivieren."
     }
   },
   "appPanel": {

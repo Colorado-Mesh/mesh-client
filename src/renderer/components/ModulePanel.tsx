@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
@@ -468,33 +469,41 @@ export default function ModulePanel({
     setAmbientBlue(parseInt(hex.slice(5, 7), 16));
   };
 
-  const applyModule = (sectionName: string, moduleCase: string, value: unknown) => {
+  const applyModule = async (sectionName: string, moduleCase: string, value: unknown) => {
     setApplyingSection(sectionName);
-    const setPromise = onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
-    void setPromise
-      .then(() => {
-        addToast(t('modulePanel.sectionSent', { name: sectionName }), 'success');
-        return onCommit()
-          .then(() => {})
-          .catch((err: unknown) => {
-            addToast(
-              t('modulePanel.commitFailed', {
-                message: err instanceof Error ? err.message : 'Unknown error',
-              }),
-              'error',
-            );
-          });
-      })
-      .catch((err: unknown) => {
-        console.warn('[ModulePanel] apply failed ' + errLikeToLogString(err));
+    try {
+      await onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
+      addToast(t('modulePanel.sectionSent', { name: sectionName }), 'success');
+      try {
+        await onCommit();
+      } catch (err: unknown) {
+        // catch-no-log-ok commit failure surfaced in module panel toast
         addToast(
-          t('modulePanel.failed', {
-            message: err instanceof Error ? err.message : 'Unknown error',
+          t('modulePanel.commitFailed', {
+            message: formatMeshtasticModuleApplyError(err, t),
           }),
           'error',
         );
-      });
-    setApplyingSection(null);
+      }
+    } catch (err: unknown) {
+      console.warn('[ModulePanel] apply failed ' + errLikeToLogString(err));
+      addToast(
+        t('modulePanel.failed', {
+          message: formatMeshtasticModuleApplyError(err, t),
+        }),
+        'error',
+      );
+    } finally {
+      setApplyingSection(null);
+    }
+  };
+
+  const validateMqttRelayBeforeApply = (): string | null => {
+    if (!mqttEnabled) return null;
+    if (!mqttAddress.trim()) {
+      return t('modulePanel.errors.mqttAddressRequired');
+    }
+    return null;
   };
 
   return (
@@ -525,7 +534,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionAmbientLighting')}
         onApply={() => {
-          applyModule('Ambient Lighting', 'ambientLighting', {
+          void applyModule('Ambient Lighting', 'ambientLighting', {
             ledState: ambientLedState,
             red: ambientRed,
             green: ambientGreen,
@@ -607,7 +616,7 @@ export default function ModulePanel({
             console.warn('[ModulePanel] canned messages failed ' + errLikeToLogString(err));
             addToast(
               t('modulePanel.failed', {
-                message: err instanceof Error ? err.message : 'Unknown error',
+                message: formatMeshtasticModuleApplyError(err, t),
               }),
               'error',
             );
@@ -648,7 +657,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionDetectionSensor')}
         onApply={() => {
-          applyModule('Detection Sensor', 'detectionSensor', {
+          void applyModule('Detection Sensor', 'detectionSensor', {
             enabled: detectEnabled,
             name: detectName,
             minimumBroadcastSecs: detectMinBroadcast,
@@ -696,7 +705,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionExternalNotification')}
         onApply={() => {
-          applyModule('External Notification', 'externalNotification', {
+          void applyModule('External Notification', 'externalNotification', {
             enabled: extEnabled,
             active: extActive,
             output: extOutput,
@@ -846,9 +855,14 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionMqttRelay')}
         onApply={() => {
-          applyModule('MQTT Relay', 'mqtt', {
+          const validationError = validateMqttRelayBeforeApply();
+          if (validationError) {
+            addToast(validationError, 'error');
+            return;
+          }
+          void applyModule('MQTT Relay', 'mqtt', {
             enabled: mqttEnabled,
-            address: mqttAddress,
+            address: mqttAddress.trim(),
             username: mqttUsername,
             password: mqttPassword,
             encryptionEnabled: mqttEncryption,
@@ -928,7 +942,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionPaxCounter')}
         onApply={() => {
-          applyModule('Pax Counter', 'paxcounter', {
+          void applyModule('Pax Counter', 'paxcounter', {
             enabled: paxEnabled,
             paxcounterUpdateInterval: paxInterval,
           });
@@ -964,7 +978,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionRangeTest')}
         onApply={() => {
-          applyModule('Range Test', 'rangeTest', {
+          void applyModule('Range Test', 'rangeTest', {
             enabled: rangeEnabled,
             sender: rangeSenderInterval,
             save: rangeSave,
@@ -1013,7 +1027,7 @@ export default function ModulePanel({
               console.warn('[ModulePanel] RTTTL apply failed ' + errLikeToLogString(err));
               addToast(
                 t('modulePanel.failed', {
-                  message: err instanceof Error ? err.message : 'Unknown error',
+                  message: formatMeshtasticModuleApplyError(err, t),
                 }),
                 'error',
               );
@@ -1077,7 +1091,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionSerialModule')}
         onApply={() => {
-          applyModule('Serial Module', 'serial', {
+          void applyModule('Serial Module', 'serial', {
             enabled: serialEnabled,
             echo: serialEcho,
             baud: serialBaud,
@@ -1127,7 +1141,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionStoreForward')}
         onApply={() => {
-          applyModule('Store & Forward', 'storeForward', {
+          void applyModule('Store & Forward', 'storeForward', {
             enabled: sfEnabled,
             heartbeat: sfHeartbeat,
             numRecords: sfNumRecords,
@@ -1188,7 +1202,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionTelemetryModule')}
         onApply={() => {
-          applyModule('Telemetry Module', 'telemetry', {
+          void applyModule('Telemetry Module', 'telemetry', {
             deviceUpdateInterval: telDeviceInterval,
             environmentUpdateInterval: telEnvInterval,
             environmentMeasurementEnabled: telEnvEnabled,

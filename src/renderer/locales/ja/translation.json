@@ -712,6 +712,16 @@
       "gpio": "GPIO",
       "rangeTest": "範囲テスト",
       "storeForward": "S&Fを受け取りました"
+    },
+    "errors": {
+      "generic": "デバイスはこの変更を拒否しました。",
+      "badRequest": "デバイスがこの設定を拒否しました（無効またはサポートされていない設定）。",
+      "notAuthorized": "デバイスでこの設定を変更する権限がありません。",
+      "timeout": "デバイスが時間内に応答しませんでした。",
+      "noChannel": "この設定を送信できるチャネルがありません。",
+      "routingError": "デバイスエラー {{name}}（コード {{code}}）。",
+      "transportLost": "シリアルまたはBluetoothリンクが失われました—再接続しています...",
+      "mqttAddressRequired": "デバイス側のMQTTリレーを有効にする前に、MQTTブローカーアドレスを入力します。"
     }
   },
   "appPanel": {

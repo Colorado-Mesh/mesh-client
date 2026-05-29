@@ -5,7 +5,7 @@ const getSelfInfoMock = vi.fn();
 const getContactsMock = vi.fn();
 const getChannelsMock = vi.fn();
 
-/** Events registered by useMeshCore setupEventListeners (persistent conn.on). */
+/** Events registered by useMeshcoreRuntime setupEventListeners (persistent conn.on). */
 const MESHCORE_PERSISTENT_CONN_EVENTS = [
   128,
   129,
@@ -200,7 +200,7 @@ function makeMockSerialPort() {
   };
 }
 
-describe('useMeshCore connection listener teardown', () => {
+describe('useMeshcoreRuntime connection listener teardown', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     lastMeshSerialMock.current = null;

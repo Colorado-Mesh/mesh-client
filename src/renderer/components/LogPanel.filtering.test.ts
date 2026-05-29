@@ -25,6 +25,15 @@ describe('isDeviceEntry — Meshtastic protocol', () => {
     expect(isDeviceEntry(entry('meshtastic-sdk', 'some sdk message'), 'meshtastic')).toBe(true);
   });
 
+  it('classifies [useMeshtasticRuntime] runtime message as Meshtastic device entry', () => {
+    expect(
+      isDeviceEntry(
+        entry('main', '[useMeshtasticRuntime] Connection lost — initiating reconnect'),
+        'meshtastic',
+      ),
+    ).toBe(true);
+  });
+
   it('classifies [iMeshDevice] message as Meshtastic device entry', () => {
     expect(isDeviceEntry(entry('main', '[iMeshDevice] connected'), 'meshtastic')).toBe(true);
   });
@@ -66,8 +75,16 @@ describe('isDeviceEntry — Meshtastic protocol', () => {
     expect(isDeviceEntry(entry('meshcore', 'meshcore message'), 'meshtastic')).toBe(false);
   });
 
-  it('does NOT classify [useMeshCore] message as Meshtastic device entry', () => {
-    expect(isDeviceEntry(entry('main', '[useMeshCore] connected'), 'meshtastic')).toBe(false);
+  it('does NOT classify [useMeshcoreRuntime] message as Meshtastic device entry', () => {
+    expect(isDeviceEntry(entry('main', '[useMeshcoreRuntime] connected'), 'meshtastic')).toBe(
+      false,
+    );
+  });
+
+  it('does NOT classify [useMeshtasticRuntime] message as MeshCore device entry', () => {
+    expect(isDeviceEntry(entry('main', '[useMeshtasticRuntime] watchdog: stale'), 'meshcore')).toBe(
+      false,
+    );
   });
 
   it('does NOT classify [MeshCore MQTT] message as Meshtastic device entry', () => {
@@ -82,8 +99,8 @@ describe('isDeviceEntry — MeshCore protocol', () => {
     expect(isDeviceEntry(entry('meshcore', 'some message'), 'meshcore')).toBe(true);
   });
 
-  it('classifies [useMeshCore] message as MeshCore device entry', () => {
-    expect(isDeviceEntry(entry('main', '[useMeshCore] rx packet'), 'meshcore')).toBe(true);
+  it('classifies [useMeshcoreRuntime] message as MeshCore device entry', () => {
+    expect(isDeviceEntry(entry('main', '[useMeshcoreRuntime] rx packet'), 'meshcore')).toBe(true);
   });
 
   it('classifies [MeshCore MQTT] message as MeshCore device entry', () => {
@@ -186,8 +203,12 @@ describe('isDeviceEntry — no protocol (fallback)', () => {
     expect(isDeviceEntry(entry('main', '[iMeshDevice] something'))).toBe(true);
   });
 
-  it('classifies [useMeshCore] message as device entry', () => {
-    expect(isDeviceEntry(entry('main', '[useMeshCore] something'))).toBe(true);
+  it('classifies [useMeshtasticRuntime] message as device entry', () => {
+    expect(isDeviceEntry(entry('main', '[useMeshtasticRuntime] something'))).toBe(true);
+  });
+
+  it('classifies [useMeshcoreRuntime] message as device entry', () => {
+    expect(isDeviceEntry(entry('main', '[useMeshcoreRuntime] something'))).toBe(true);
   });
 
   it('does NOT classify generic app-only message as device entry', () => {

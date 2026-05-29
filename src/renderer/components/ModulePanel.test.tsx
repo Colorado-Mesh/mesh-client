@@ -87,6 +87,74 @@ describe('ModulePanel', () => {
     });
   });
 
+  it('shows readable message for routing BAD_REQUEST from device', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockRejectedValue({ id: 1, error: 32 });
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          mqtt: { enabled: false, address: 'mqtt.example.com' },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+      />,
+    );
+
+    const mqttDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'MQTT Relay (Device-Side)';
+    });
+    expect(mqttDetails).toBeDefined();
+    await user.click(mqttDetails!.querySelector('summary')!);
+    await user.click(screen.getByRole('button', { name: 'Apply MQTT Relay (Device-Side)' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Failed: The device rejected this configuration (invalid or unsupported settings).',
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('requires MQTT broker address when enabling relay', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn();
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          mqtt: { enabled: false, address: '' },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+      />,
+    );
+
+    const mqttDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'MQTT Relay (Device-Side)';
+    });
+    expect(mqttDetails).toBeDefined();
+    await user.click(mqttDetails!.querySelector('summary')!);
+
+    const enableSwitch = mqttDetails!.querySelector('[role="switch"]');
+    expect(enableSwitch).toBeTruthy();
+    await user.click(enableSwitch!);
+
+    await user.click(screen.getByRole('button', { name: 'Apply MQTT Relay (Device-Side)' }));
+
+    expect(onSetModuleConfig).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(
+        screen.getByText('Enter an MQTT broker address before enabling device-side MQTT relay.'),
+      ).toBeInTheDocument();
+    });
+  });
+
   it('disables local-only canned message and ringtone actions for a remote target', async () => {
     const user = userEvent.setup();
 
