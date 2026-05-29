@@ -125,7 +125,7 @@ export interface OutboxEntry {
   groupTotal: number | null;
 }
 
-export type OutboxEntryInput = Omit<OutboxEntry, 'id' | 'attemptCount' | 'updatedAt'>;
+export type OutboxEntryInput = Omit<OutboxEntry, 'id' | 'attemptCount' | 'updatedAt' | 'createdAt'>;
 
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 

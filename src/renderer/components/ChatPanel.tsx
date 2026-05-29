@@ -1051,7 +1051,6 @@ function ChatPanel({
 
     // Queue when: truly disconnected, OR MeshCore + MQTT-only (no device = packet-analyzer risk)
     if (!isConnected || (isMqttOnly && protocol === 'meshcore')) {
-      const now = Date.now();
       const groupId = textsToSend.length > 1 ? crypto.randomUUID() : null;
       for (let i = 0; i < textsToSend.length; i++) {
         await queueOutbox({
@@ -1064,7 +1063,6 @@ function ChatPanel({
           status: 'queued',
           error: null,
           nextRetryAt: null,
-          createdAt: now + i,
           groupId,
           groupIndex: groupId ? i : null,
           groupTotal: groupId ? textsToSend.length : null,

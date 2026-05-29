@@ -76,7 +76,6 @@ describe('useChatOutbox', () => {
       status: 'queued',
       error: null,
       nextRetryAt: null,
-      createdAt: Date.now(),
       groupId: null,
       groupIndex: null,
       groupTotal: null,
