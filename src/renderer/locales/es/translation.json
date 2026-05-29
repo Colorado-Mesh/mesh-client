@@ -1101,7 +1101,9 @@
       "historyReturnWindow": "Ventana de retorno del historial",
       "historyReturnMaxDesc": "Número máximo de mensajes que se devolverán cuando un nodo solicite el historial.",
       "historyReturnWindowDesc": "Cuánto retroceder en el tiempo para devolver mensajes (segundos).",
-      "remoteHardwareHint": "Los mensajes GPIO se reciben automáticamente cuando están habilitados en el dispositivo. Configure los pines GPIO en la configuración de hardware del dispositivo."
+      "remoteHardwareHint": "Los mensajes GPIO se reciben automáticamente cuando están habilitados en el dispositivo. Configure los pines GPIO en la configuración de hardware del dispositivo.",
+      "mqttProxyToClientEnabled": "Proxy al cliente",
+      "mqttProxyToClientEnabledDesc": "Enrute MQTT a través de la aplicación conectada en lugar de la propia pila de red de la radio. Requerido en dispositivos sin Wi-Fi/Ethernet cuando el relé MQTT está habilitado."
     },
     "applySection": "Aplicar {{section}}",
     "applyingButton": "Aplicando...",
@@ -1120,7 +1122,10 @@
       "noChannel": "No hay ningún canal disponible para enviar esta configuración.",
       "routingError": "Error del dispositivo {{name}} (código {{code}}).",
       "transportLost": "Enlace serie o Bluetooth perdido — reconectando...",
-      "mqttAddressRequired": "Introduzca una dirección de bróker MQTT antes de habilitar el relé MQTT del lado del dispositivo."
+      "mqttAddressRequired": "Introduzca una dirección de bróker MQTT antes de habilitar el relé MQTT del lado del dispositivo.",
+      "mqttDefaultServerTls": "El bróker público Meshtastic MQTT no es compatible con TLS. Desactive TLS o utilice una dirección de bróker personalizada.",
+      "mqttDefaultServerPort": "No incluya un puerto en la dirección pública del corredor MQTT de Meshtastic (use mqtt.meshtastic.org con no :port).",
+      "mqttProxyRequired": "Esta radio no tiene wifi. Habilite \"Proxy al cliente\" para que la aplicación reenvíe MQTT, o use LoRa \"OK a MQTT\" en lugar de MQTT del lado del dispositivo."
     }
   },
   "nodeDetailModal": {

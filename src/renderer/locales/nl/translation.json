@@ -1101,7 +1101,9 @@
       "historyReturnWindow": "Terugkeervenster geschiedenis",
       "historyReturnMaxDesc": "Max. aantal berichten dat moet worden geretourneerd wanneer een knooppunt geschiedenis opvraagt.",
       "historyReturnWindowDesc": "Hoe ver terug in de tijd om berichten te retourneren (seconden).",
-      "remoteHardwareHint": "GPIO-berichten worden automatisch ontvangen als deze op het apparaat zijn ingeschakeld. Configureer GPIO-pinnen in de hardware-instellingen van het apparaat."
+      "remoteHardwareHint": "GPIO-berichten worden automatisch ontvangen als deze op het apparaat zijn ingeschakeld. Configureer GPIO-pinnen in de hardware-instellingen van het apparaat.",
+      "mqttProxyToClientEnabled": "Volmacht aan opdrachtgever",
+      "mqttProxyToClientEnabledDesc": "Leid MQTT via de verbonden app in plaats van via de eigen netwerkstack van de radio. Vereist op apparaten zonder Wi-Fi/Ethernet wanneer MQTT-relais is ingeschakeld."
     },
     "applySection": "Toepassen {{section}}",
     "applyingButton": "Toepassen...",
@@ -1120,7 +1122,10 @@
       "noChannel": "Geen kanaal beschikbaar om deze configuratie te verzenden.",
       "routingError": "Apparaatfout {{name}} (code {{code}}).",
       "transportLost": "Seriële of Bluetooth-link verloren — opnieuw verbinden...",
-      "mqttAddressRequired": "Voer een MQTT-makelaaradres in voordat u het MQTT-relais aan de apparaatzijde inschakelt."
+      "mqttAddressRequired": "Voer een MQTT-makelaaradres in voordat u het MQTT-relais aan de apparaatzijde inschakelt.",
+      "mqttDefaultServerTls": "De openbare Meshtastic MQTT-makelaar ondersteunt TLS niet. Schakel TLS uit of gebruik een aangepast makelaarsadres.",
+      "mqttDefaultServerPort": "Neem geen poort op in het openbare Meshtastic MQTT broker-adres (gebruik mqtt.meshtastic.org met no :port).",
+      "mqttProxyRequired": "Deze radio heeft geen wifi. Schakel \"Proxy naar client\" in, zodat de app MQTT doorstuurt, of gebruik LoRa \"OK naar MQTT\" in plaats van MQTT aan de apparaatzijde."
     }
   },
   "nodeDetailModal": {

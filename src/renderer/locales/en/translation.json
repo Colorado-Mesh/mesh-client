@@ -979,7 +979,10 @@
       "noChannel": "No channel available to send this configuration.",
       "routingError": "Device error {{name}} (code {{code}}).",
       "transportLost": "Serial or Bluetooth link lost — reconnecting…",
-      "mqttAddressRequired": "Enter an MQTT broker address before enabling device-side MQTT relay."
+      "mqttAddressRequired": "Enter an MQTT broker address before enabling device-side MQTT relay.",
+      "mqttDefaultServerTls": "The public Meshtastic MQTT broker does not support TLS. Turn off TLS or use a custom broker address.",
+      "mqttDefaultServerPort": "Do not include a port in the public Meshtastic MQTT broker address (use mqtt.meshtastic.org with no :port).",
+      "mqttProxyRequired": "This radio has no Wi-Fi. Enable “Proxy to client” so the app forwards MQTT, or use LoRa “OK to MQTT” instead of device-side MQTT."
     },
     "cannedMessagesApplied": "Canned Messages applied.",
     "rtttlSaved": "RTTTL ringtone saved.",
@@ -1053,6 +1056,8 @@
       "useI2sBuzzerDesc": "Use I2S audio output as buzzer (T-Watch S3, T-Deck with speaker).",
       "mqttRelayEnabled": "MQTT relay enabled",
       "mqttRelayEnabledDesc": "Enable the device to relay packets to/from an MQTT broker.",
+      "mqttProxyToClientEnabled": "Proxy to client",
+      "mqttProxyToClientEnabledDesc": "Route MQTT through the connected app instead of the radio’s own network stack. Required on devices without Wi-Fi/Ethernet when MQTT relay is enabled.",
       "serverAddress": "Server address",
       "serverAddressDesc": "Leave empty to use default mqtt.meshtastic.org",
       "username": "Username",

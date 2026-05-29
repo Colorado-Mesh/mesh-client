@@ -1101,7 +1101,9 @@
       "historyReturnWindow": "내역 반납 창구",
       "historyReturnMaxDesc": "노드가 기록을 요청할 때 반환할 최대 메시지입니다.",
       "historyReturnWindowDesc": "메시지를 반환할 시간(초)입니다.",
-      "remoteHardwareHint": "GPIO 메시지는 장치에서 활성화되면 자동으로 수신됩니다. 장치 하드웨어 설정에서 GPIO 핀을 구성합니다."
+      "remoteHardwareHint": "GPIO 메시지는 장치에서 활성화되면 자동으로 수신됩니다. 장치 하드웨어 설정에서 GPIO 핀을 구성합니다.",
+      "mqttProxyToClientEnabled": "클라이언트에 프록시",
+      "mqttProxyToClientEnabledDesc": "라디오 자체 네트워크 스택 대신 연결된 앱을 통해 MQTT를 라우팅합니다. MQTT 릴레이가 활성화된 경우 Wi-Fi/이더넷이 없는 장치에 필요합니다."
     },
     "applySection": "{{section}} 적용",
     "applyingButton": "신청 중...",
@@ -1120,7 +1122,10 @@
       "noChannel": "이 구성을 전송할 수 있는 채널이 없습니다.",
       "routingError": "장치 오류 {{name}} (코드 {{code}}).",
       "transportLost": "시리얼 또는 블루투스 링크 분실 — 다시 연결 중...",
-      "mqttAddressRequired": "장치 측 MQTT 릴레이를 활성화하기 전에 MQTT 브로커 주소를 입력하십시오."
+      "mqttAddressRequired": "장치 측 MQTT 릴레이를 활성화하기 전에 MQTT 브로커 주소를 입력하십시오.",
+      "mqttDefaultServerTls": "공개 Meshtastic MQTT 브로커는 TLS를 지원하지 않습니다. TLS를 끄거나 사용자 정의 브로커 주소를 사용하십시오.",
+      "mqttDefaultServerPort": "공용 Meshtastic MQTT 브로커 주소에 포트를 포함하지 마십시오 (: port가 없는 mqtt.meshtastic.org 사용).",
+      "mqttProxyRequired": "이 라디오에는 Wi-Fi가 없습니다. 앱이 MQTT를 전달하도록 \"클라이언트에 프록시\" 를 활성화하거나 장치 측 MQTT 대신 LoRa \"MQTT에 확인\" 을 사용하십시오."
     }
   },
   "nodeDetailModal": {

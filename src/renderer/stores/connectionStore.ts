@@ -22,6 +22,10 @@ export interface ConnectionRecord {
   myNodeNum: number;
   lastDataReceivedAt?: Date;
   firmwareVersion?: string;
+  /** Meshtastic DeviceMetadata.hasWifi — native Wi-Fi on the radio MCU/board. */
+  deviceHasWifi?: boolean;
+  /** Meshtastic DeviceMetadata.hasEthernet — native Ethernet on the radio. */
+  deviceHasEthernet?: boolean;
   manufacturerModel?: string;
   batteryPercent?: number;
   batteryCharging?: boolean;

@@ -1101,7 +1101,9 @@
       "historyReturnWindow": "Návratové okno historie",
       "historyReturnMaxDesc": "Maximální počet zpráv, které se mají vrátit, když uzel požaduje historii.",
       "historyReturnWindowDesc": "Jak daleko zpět v čase vrátit zprávy (v sekundách).",
-      "remoteHardwareHint": "Zprávy GPIO jsou přijímány automaticky, když je zařízení povoleno. Nakonfigurujte piny GPIO v nastavení hardwaru zařízení."
+      "remoteHardwareHint": "Zprávy GPIO jsou přijímány automaticky, když je zařízení povoleno. Nakonfigurujte piny GPIO v nastavení hardwaru zařízení.",
+      "mqttProxyToClientEnabled": "Proxy ke klientovi",
+      "mqttProxyToClientEnabledDesc": "Směrování MQTT přes připojenou aplikaci namísto vlastního síťového zásobníku rádia. Vyžaduje se na zařízeních bez Wi-Fi/Ethernetu, pokud je povoleno relé MQTT."
     },
     "applySection": "Použít {{section}}",
     "applyingButton": "Aplikace...",
@@ -1120,7 +1122,10 @@
       "noChannel": "Pro odeslání této konfigurace není k dispozici žádný kanál.",
       "routingError": "Chyba zařízení {{name}} (kód {{code}}).",
       "transportLost": "Ztráta sériového nebo Bluetooth spojení — opětovné připojení…",
-      "mqttAddressRequired": "Před povolením relé MQTT na straně zařízení zadejte adresu makléře MQTT."
+      "mqttAddressRequired": "Před povolením relé MQTT na straně zařízení zadejte adresu makléře MQTT.",
+      "mqttDefaultServerTls": "Veřejný Meshtastic MQTT broker nepodporuje TLS. Vypněte TLS nebo použijte vlastní adresu makléře.",
+      "mqttDefaultServerPort": "Nezahrnujte port do veřejné adresy makléře Meshtastic MQTT (použijte mqtt.meshtastic.org bez :port).",
+      "mqttProxyRequired": "Toto rádio nemá Wi-Fi. Povolte „Proxy to client“, aby aplikace předávala MQTT, nebo použijte LoRa „OK to MQTT“ namísto MQTT na straně zařízení."
     }
   },
   "nodeDetailModal": {

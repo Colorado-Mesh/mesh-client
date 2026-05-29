@@ -1101,7 +1101,9 @@
       "historyReturnWindow": "Janela de retorno do histórico",
       "historyReturnMaxDesc": "Máximo de mensagens a serem retornadas quando um nó solicita histórico.",
       "historyReturnWindowDesc": "Quanto tempo atrás no tempo para retornar mensagens (segundos).",
-      "remoteHardwareHint": "As mensagens GPIO são recebidas automaticamente quando habilitadas no dispositivo. Configure os pinos GPIO nas configurações de hardware do dispositivo."
+      "remoteHardwareHint": "As mensagens GPIO são recebidas automaticamente quando habilitadas no dispositivo. Configure os pinos GPIO nas configurações de hardware do dispositivo.",
+      "mqttProxyToClientEnabled": "Proxy para o cliente",
+      "mqttProxyToClientEnabledDesc": "Encaminhe o MQTT através do aplicativo conectado em vez da própria pilha de rede do rádio. Necessário em dispositivos sem Wi-Fi/Ethernet quando o relé MQTT está ativado."
     },
     "applySection": "Aplicar {{section}}",
     "applyingButton": "Aplicando...",
@@ -1120,7 +1122,10 @@
       "noChannel": "Nenhum canal disponível para enviar esta configuração.",
       "routingError": "Erro de dispositivo {{name}} (código {{code}}).",
       "transportLost": "Link serial ou Bluetooth perdido — reconectando...",
-      "mqttAddressRequired": "Insira um endereço de corretor MQTT antes de ativar o relé MQTT do lado do dispositivo."
+      "mqttAddressRequired": "Insira um endereço de corretor MQTT antes de ativar o relé MQTT do lado do dispositivo.",
+      "mqttDefaultServerTls": "A corretora pública Meshtastic MQTT não suporta TLS. Desative o TLS ou use um endereço de corretor personalizado.",
+      "mqttDefaultServerPort": "Não inclua uma porta no endereço público do corretor Meshtastic MQTT (use mqtt.meshtastic.org com no :port).",
+      "mqttProxyRequired": "Este rádio não tem Wi-Fi. Ative \"Proxy para cliente\" para que o aplicativo encaminhe o MQTT ou use o LoRa \"OK para MQTT\" em vez do MQTT do lado do dispositivo."
     }
   },
   "nodeDetailModal": {

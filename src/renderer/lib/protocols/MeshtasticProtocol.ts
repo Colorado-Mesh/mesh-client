@@ -735,8 +735,15 @@ export class MeshtasticProtocol implements Protocol {
   }
 
   private decodeDeviceMetadata(raw: unknown): DomainEvent[] {
-    const packet = raw as { data?: { firmwareVersion?: string } };
-    const payload: DeviceMetadataEvent = { firmwareVersion: packet.data?.firmwareVersion };
+    const packet = raw as {
+      data?: { firmwareVersion?: string; hasWifi?: boolean; hasEthernet?: boolean };
+    };
+    const data = packet.data;
+    const payload: DeviceMetadataEvent = {
+      firmwareVersion: data?.firmwareVersion,
+      hasWifi: data?.hasWifi,
+      hasEthernet: data?.hasEthernet,
+    };
     return [{ type: 'device_metadata', payload }];
   }
 

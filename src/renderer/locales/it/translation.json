@@ -1101,7 +1101,9 @@
       "historyReturnWindow": "Finestra di restituzione della cronologia",
       "historyReturnMaxDesc": "Numero massimo di messaggi da restituire quando un nodo richiede la cronologia.",
       "historyReturnWindowDesc": "Quanto indietro nel tempo per restituire i messaggi (secondi).",
-      "remoteHardwareHint": "I messaggi GPIO vengono ricevuti automaticamente quando abilitati sul dispositivo. Configura i pin GPIO nelle impostazioni hardware del dispositivo."
+      "remoteHardwareHint": "I messaggi GPIO vengono ricevuti automaticamente quando abilitati sul dispositivo. Configura i pin GPIO nelle impostazioni hardware del dispositivo.",
+      "mqttProxyToClientEnabled": "Delega al cliente",
+      "mqttProxyToClientEnabledDesc": "Instradare MQTT attraverso l'app connessa invece dello stack di rete della radio. Richiesto su dispositivi senza Wi-Fi/Ethernet quando il relè MQTT è abilitato."
     },
     "applySection": "Applica {{section}}",
     "applyingButton": "Applicazione...",
@@ -1120,7 +1122,10 @@
       "noChannel": "Nessun canale disponibile per inviare questa configurazione.",
       "routingError": "Errore del dispositivo {{name}} (codice {{code}}).",
       "transportLost": "Collegamento seriale o Bluetooth perso — riconnessione in corso...",
-      "mqttAddressRequired": "Immettere un indirizzo del broker MQTT prima di abilitare il relè MQTT lato dispositivo."
+      "mqttAddressRequired": "Immettere un indirizzo del broker MQTT prima di abilitare il relè MQTT lato dispositivo.",
+      "mqttDefaultServerTls": "Il broker MQTT Meshtastic pubblico non supporta TLS. Disattiva TLS o utilizza un indirizzo broker personalizzato.",
+      "mqttDefaultServerPort": "Non includere una porta nell'indirizzo pubblico del broker MQTT Meshtastic (utilizzare mqtt.meshtastic.org con no :port).",
+      "mqttProxyRequired": "Questa radio non ha Wi-Fi. Abilitare \"Proxy to client\" in modo che l'app inoltri MQTT o utilizzare LoRa \"OK to MQTT\" invece di MQTT sul lato dispositivo."
     }
   },
   "nodeDetailModal": {

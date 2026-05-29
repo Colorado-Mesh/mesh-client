@@ -2454,6 +2454,10 @@ function AppContent({
                               ringtone={activeRuntime.ringtone}
                               onCommit={meshtasticPanelActions.commitConfig}
                               isConnected={isOperational}
+                              deviceNetwork={{
+                                hasWifi: meshtasticConnectionView.state.deviceHasWifi,
+                                hasEthernet: meshtasticConnectionView.state.deviceHasEthernet,
+                              }}
                               storeForwardMessages={activeRuntime.storeForwardMessages}
                               rangeTestPackets={activeRuntime.rangeTestPackets}
                               serialMessages={activeRuntime.serialMessages}

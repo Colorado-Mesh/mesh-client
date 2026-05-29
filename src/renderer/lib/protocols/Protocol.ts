@@ -228,6 +228,10 @@ export interface DeviceStatusEvent {
 
 export interface DeviceMetadataEvent {
   firmwareVersion?: string;
+  /** Native Wi-Fi capability reported by the radio (DeviceMetadata.hasWifi). */
+  hasWifi?: boolean;
+  /** Native Ethernet capability reported by the radio (DeviceMetadata.hasEthernet). */
+  hasEthernet?: boolean;
 }
 
 export interface NeighborInfoEvent {

@@ -1101,7 +1101,9 @@
       "historyReturnWindow": "履歴返却ウィンドウ",
       "historyReturnMaxDesc": "ノードが履歴を要求したときに返される最大メッセージ数。",
       "historyReturnWindowDesc": "メッセージを返す時間をどれだけ遡るか (秒)。",
-      "remoteHardwareHint": "GPIO メッセージは、デバイスで有効にすると自動的に受信されます。デバイスのハードウェア設定で GPIO ピンを構成します。"
+      "remoteHardwareHint": "GPIO メッセージは、デバイスで有効にすると自動的に受信されます。デバイスのハードウェア設定で GPIO ピンを構成します。",
+      "mqttProxyToClientEnabled": "クライアントへのプロキシ",
+      "mqttProxyToClientEnabledDesc": "ラジオ独自のネットワークスタックではなく、接続されたアプリを介してMQTTをルーティングします。MQTTリレーが有効になっている場合、Wi - Fi/イーサネットがないデバイスで必要です。"
     },
     "applySection": "{{section}}を適用",
     "applyingButton": "申請中...",
@@ -1120,7 +1122,10 @@
       "noChannel": "この設定を送信できるチャネルがありません。",
       "routingError": "デバイスエラー {{name}}（コード {{code}}）。",
       "transportLost": "シリアルまたはBluetoothリンクが失われました—再接続しています...",
-      "mqttAddressRequired": "デバイス側のMQTTリレーを有効にする前に、MQTTブローカーアドレスを入力します。"
+      "mqttAddressRequired": "デバイス側のMQTTリレーを有効にする前に、MQTTブローカーアドレスを入力します。",
+      "mqttDefaultServerTls": "パブリックMeshtastic MQTTブローカーはTLSをサポートしていません。TLSをオフにするか、カスタムブローカーアドレスを使用します。",
+      "mqttDefaultServerPort": "パブリックMeshtastic MQTTブローカーアドレスにポートを含めないでください（: portなしでmqtt.meshtastic.orgを使用してください）。",
+      "mqttProxyRequired": "このラジオにはWi - Fiがありません。「クライアントへのプロキシ」を有効にして、アプリがMQTTを転送するか、デバイス側のMQTTの代わりにLoRa「MQTTにOK」を使用します。"
     }
   },
   "nodeDetailModal": {

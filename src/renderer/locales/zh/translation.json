@@ -1101,7 +1101,9 @@
       "historyReturnWindow": "历史返回窗口",
       "historyReturnMaxDesc": "当节点请求历史记录时返回的最大消息数。",
       "historyReturnWindowDesc": "返回消息的时间早于多久（秒）。",
-      "remoteHardwareHint": "在设备上启用后，会自动接收 GPIO 消息。在设备硬件设置中配置 GPIO 引脚。"
+      "remoteHardwareHint": "在设备上启用后，会自动接收 GPIO 消息。在设备硬件设置中配置 GPIO 引脚。",
+      "mqttProxyToClientEnabled": "委托给客户",
+      "mqttProxyToClientEnabledDesc": "通过连接的应用程序路由MQTT ，而不是无线电自己的网络堆栈。启用MQTT中继时，在没有Wi-Fi/以太网的设备上是必需的。"
     },
     "applySection": "申请 {{section}}",
     "applyingButton": "正在申请...",
@@ -1120,7 +1122,10 @@
       "noChannel": "没有可用于发送此配置的通道。",
       "routingError": "设备错误 {{name}}（代码 {{code}}）。",
       "transportLost": "串行或蓝牙链接丢失—正在重新连接…",
-      "mqttAddressRequired": "在启用设备端MQTT中继之前输入MQTT代理地址。"
+      "mqttAddressRequired": "在启用设备端MQTT中继之前输入MQTT代理地址。",
+      "mqttDefaultServerTls": "公共Meshtastic MQTT代理不支持TLS。关闭TLS或使用自定义代理地址。",
+      "mqttDefaultServerPort": "不要在公共Meshtastic MQTT代理地址中包含端口（使用mqtt.meshtastic.org ，不带： port ）。",
+      "mqttProxyRequired": "这台收音机没有无线网络。启用“代理到客户端” ，以便应用程序转发MQTT ，或使用LoRa “OK to MQTT”而不是设备端MQTT。"
     }
   },
   "nodeDetailModal": {

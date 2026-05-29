@@ -172,12 +172,17 @@ class PacketRouter {
       case 'device_status':
         setConnection(identityId, { status: event.payload.status as ConnectionStatus });
         break;
-      case 'device_metadata':
-        // firmwareVersion is the only field; event may arrive before it is known
-        if (event.payload.firmwareVersion) {
-          setConnection(identityId, { firmwareVersion: event.payload.firmwareVersion });
+      case 'device_metadata': {
+        const { firmwareVersion, hasWifi, hasEthernet } = event.payload;
+        const updates: Parameters<typeof setConnection>[1] = {};
+        if (firmwareVersion) updates.firmwareVersion = firmwareVersion;
+        if (hasWifi != null) updates.deviceHasWifi = hasWifi;
+        if (hasEthernet != null) updates.deviceHasEthernet = hasEthernet;
+        if (Object.keys(updates).length > 0) {
+          setConnection(identityId, updates);
         }
         break;
+      }
       case 'neighbor_info':
         upsertNeighborInfo(identityId, event.payload);
         break;

@@ -434,6 +434,10 @@ export interface DeviceState {
   reconnectAttempt?: number;
   lastDataReceived?: number;
   firmwareVersion?: string;
+  /** Meshtastic: native Wi-Fi reported in DeviceMetadata. */
+  deviceHasWifi?: boolean;
+  /** Meshtastic: native Ethernet reported in DeviceMetadata. */
+  deviceHasEthernet?: boolean;
   /** MeshCore: manufacturer/model string from local `deviceQuery` (connected radio only). */
   manufacturerModel?: string;
   /** 0–100 from device metrics; omit until first reading */

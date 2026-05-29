@@ -1101,7 +1101,9 @@
       "historyReturnWindow": "Fenêtre de retour de l'historique",
       "historyReturnMaxDesc": "Nombre maximum de messages à renvoyer lorsqu'un nœud demande l'historique.",
       "historyReturnWindowDesc": "Jusqu’où retourner les messages (secondes) dans le temps.",
-      "remoteHardwareHint": "Les messages GPIO sont reçus automatiquement lorsqu'ils sont activés sur l'appareil. Configurez les broches GPIO dans les paramètres matériels de l'appareil."
+      "remoteHardwareHint": "Les messages GPIO sont reçus automatiquement lorsqu'ils sont activés sur l'appareil. Configurez les broches GPIO dans les paramètres matériels de l'appareil.",
+      "mqttProxyToClientEnabled": "Proxy au client",
+      "mqttProxyToClientEnabledDesc": "Acheminez le MQTT via l'application connectée au lieu de la pile réseau de la radio. Requis sur les appareils sans Wi-Fi/Ethernet lorsque le relais MQTT est activé."
     },
     "applySection": "Appliquer {{section}}",
     "applyingButton": "Candidature...",
@@ -1120,7 +1122,10 @@
       "noChannel": "Aucun canal disponible pour envoyer cette configuration.",
       "routingError": "Erreur de périphérique {{name}} (code {{code}}).",
       "transportLost": "Liaison série ou Bluetooth perdue — reconnexion…",
-      "mqttAddressRequired": "Entrez une adresse de courtier MQTT avant d'activer le relais MQTT côté appareil."
+      "mqttAddressRequired": "Entrez une adresse de courtier MQTT avant d'activer le relais MQTT côté appareil.",
+      "mqttDefaultServerTls": "Le courtier public Meshtastic MQTT ne prend pas en charge TLS. Désactivez TLS ou utilisez une adresse de courtier personnalisée.",
+      "mqttDefaultServerPort": "N'incluez pas de port dans l'adresse publique du courtier Meshtastic MQTT (utilisez mqtt.meshtastic.org avec no :port).",
+      "mqttProxyRequired": "Cette radio n'a pas de Wi-Fi. Activez « Proxy to client » pour que l'application transfère MQTT, ou utilisez LoRa « OK to MQTT » au lieu de MQTT côté appareil."
     }
   },
   "nodeDetailModal": {

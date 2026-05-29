@@ -1101,7 +1101,9 @@
       "historyReturnWindow": "Geçmişe dönüş penceresi",
       "historyReturnMaxDesc": "Bir düğüm geçmiş isteğinde bulunduğunda döndürülecek maksimum ileti sayısı.",
       "historyReturnWindowDesc": "Mesajların geri döndürülmesi için zaman açısından ne kadar geriye gidildiği (saniye).",
-      "remoteHardwareHint": "GPIO mesajları cihazda etkinleştirildiğinde otomatik olarak alınır. GPIO pinlerini cihazın donanım ayarlarında yapılandırın."
+      "remoteHardwareHint": "GPIO mesajları cihazda etkinleştirildiğinde otomatik olarak alınır. GPIO pinlerini cihazın donanım ayarlarında yapılandırın.",
+      "mqttProxyToClientEnabled": "Müşteriye vekalet",
+      "mqttProxyToClientEnabledDesc": "MQTT'yi radyonun kendi ağ yığını yerine bağlı uygulama üzerinden yönlendirin. MQTT rölesi etkinleştirildiğinde Wi - Fi/Ethernet olmayan cihazlarda gereklidir."
     },
     "applySection": "{{section}} uygula",
     "applyingButton": "Başvuruluyor...",
@@ -1120,7 +1122,10 @@
       "noChannel": "Bu yapılandırmayı göndermek için kullanılabilir kanal yok.",
       "routingError": "Cihaz hatası {{name}} (kod {{code}}).",
       "transportLost": "Seri veya Bluetooth bağlantısı kayboldu — yeniden bağlanılıyor…",
-      "mqttAddressRequired": "Cihaz tarafında MQTT rölesini etkinleştirmeden önce bir MQTT aracı adresi girin."
+      "mqttAddressRequired": "Cihaz tarafında MQTT rölesini etkinleştirmeden önce bir MQTT aracı adresi girin.",
+      "mqttDefaultServerTls": "Halka açık Meshtastic MQTT brokeri TLS'yi desteklememektedir. TLS'yi kapatın veya özel bir broker adresi kullanın.",
+      "mqttDefaultServerPort": "Meshtastic MQTT broker adresine bir bağlantı noktası eklemeyin (:port olmadan mqtt.meshtastic.org kullanın).",
+      "mqttProxyRequired": "Bu telsizde Wi - Fi yok. Uygulamanın MQTT'yi iletmesi için \"Proxy'den istemciye\" seçeneğini etkinleştirin veya cihaz tarafındaki MQTT yerine \"MQTT'ye Tamam\" LoRa'sını kullanın."
     }
   },
   "nodeDetailModal": {

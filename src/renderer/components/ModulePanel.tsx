@@ -1,9 +1,15 @@
 import type { TFunction } from 'i18next';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
+import {
+  buildMeshtasticMqttModuleApplyValue,
+  type MeshtasticDeviceNetworkCapabilities,
+  meshtasticDeviceRequiresMqttProxyToClient,
+  validateMeshtasticMqttModuleApply,
+} from '@/renderer/lib/meshtastic/meshtasticMqttModuleApply';
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
@@ -45,6 +51,8 @@ interface Props {
   ringtone?: string;
   onCommit: () => Promise<void>;
   isConnected: boolean;
+  /** Meshtastic DeviceMetadata network flags; used for MQTT proxy requirement. */
+  deviceNetwork?: MeshtasticDeviceNetworkCapabilities;
   storeForwardMessages?: Map<number, PacketMessage[]>;
   rangeTestPackets?: Map<number, PacketMessage[]>;
   serialMessages?: Map<number, PacketMessage[]>;
@@ -324,6 +332,7 @@ export default function ModulePanel({
   ringtone,
   onCommit,
   isConnected,
+  deviceNetwork,
   storeForwardMessages,
   rangeTestPackets,
   serialMessages,
@@ -369,6 +378,43 @@ export default function ModulePanel({
   const [mqttMapReporting, setMqttMapReporting] = useState<boolean>(
     cfgBool(mqttCfg.mapReportingEnabled, false),
   );
+  const [mqttProxyToClient, setMqttProxyToClient] = useState<boolean>(
+    cfgBool(mqttCfg.proxyToClientEnabled, false),
+  );
+
+  useEffect(() => {
+    const cfg = moduleConfigSlice(moduleConfigs.mqtt);
+    if (Object.keys(cfg).length === 0) return;
+    setMqttEnabled(cfgBool(cfg.enabled, false));
+    setMqttAddress(cfgStr(cfg.address, ''));
+    setMqttUsername(cfgStr(cfg.username, ''));
+    setMqttPassword(cfgStr(cfg.password, ''));
+    setMqttEncryption(cfgBool(cfg.encryptionEnabled, false));
+    setMqttJson(cfgBool(cfg.jsonEnabled, false));
+    setMqttTls(cfgBool(cfg.tlsEnabled, false));
+    setMqttRoot(cfgStr(cfg.root, ''));
+    setMqttMapReporting(cfgBool(cfg.mapReportingEnabled, false));
+    setMqttProxyToClient(cfgBool(cfg.proxyToClientEnabled, false));
+  }, [moduleConfigs.mqtt]);
+
+  useEffect(() => {
+    if (mqttEnabled && meshtasticDeviceRequiresMqttProxyToClient(deviceNetwork)) {
+      setMqttProxyToClient(true);
+    }
+  }, [mqttEnabled, deviceNetwork?.hasWifi, deviceNetwork?.hasEthernet, deviceNetwork]);
+
+  const buildMqttUiValues = () => ({
+    enabled: mqttEnabled,
+    address: mqttAddress,
+    username: mqttUsername,
+    password: mqttPassword,
+    encryptionEnabled: mqttEncryption,
+    jsonEnabled: mqttJson,
+    tlsEnabled: mqttTls,
+    root: mqttRoot,
+    mapReportingEnabled: mqttMapReporting,
+    proxyToClientEnabled: mqttProxyToClient,
+  });
 
   // ─── Canned messages ──────────────────────────────────────────
   const cannedCfg = moduleConfigSlice(moduleConfigs.cannedMessage);
@@ -499,11 +545,8 @@ export default function ModulePanel({
   };
 
   const validateMqttRelayBeforeApply = (): string | null => {
-    if (!mqttEnabled) return null;
-    if (!mqttAddress.trim()) {
-      return t('modulePanel.errors.mqttAddressRequired');
-    }
-    return null;
+    const merged = buildMeshtasticMqttModuleApplyValue(mqttCfg, buildMqttUiValues(), deviceNetwork);
+    return validateMeshtasticMqttModuleApply(merged, t, deviceNetwork);
   };
 
   return (
@@ -860,17 +903,11 @@ export default function ModulePanel({
             addToast(validationError, 'error');
             return;
           }
-          void applyModule('MQTT Relay', 'mqtt', {
-            enabled: mqttEnabled,
-            address: mqttAddress.trim(),
-            username: mqttUsername,
-            password: mqttPassword,
-            encryptionEnabled: mqttEncryption,
-            jsonEnabled: mqttJson,
-            tlsEnabled: mqttTls,
-            root: mqttRoot,
-            mapReportingEnabled: mqttMapReporting,
-          });
+          void applyModule(
+            'MQTT Relay',
+            'mqtt',
+            buildMeshtasticMqttModuleApplyValue(mqttCfg, buildMqttUiValues(), deviceNetwork),
+          );
         }}
         applying={applyingSection === 'MQTT Relay'}
         disabled={disabled}
@@ -881,6 +918,13 @@ export default function ModulePanel({
           onChange={setMqttEnabled}
           disabled={disabled}
           description={t('modulePanel.fields.mqttRelayEnabledDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.mqttProxyToClientEnabled')}
+          checked={mqttProxyToClient}
+          onChange={setMqttProxyToClient}
+          disabled={disabled || !mqttEnabled}
+          description={t('modulePanel.fields.mqttProxyToClientEnabledDesc')}
         />
         <ConfigText
           label={t('modulePanel.fields.serverAddress')}

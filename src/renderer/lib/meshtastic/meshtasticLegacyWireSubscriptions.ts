@@ -520,6 +520,14 @@ export function attachMeshtasticLegacyWireSubscriptions(
       startGpsInterval();
       setQueueStatus({ free: 16, maxlen: 16, res: 0 });
       deviceConfiguredRef.current = true;
+      const myNode = myNodeNumRef.current;
+      if (myNode > 0) {
+        void device.getMetadata(myNode).catch((e: unknown) => {
+          console.debug(
+            '[useMeshtasticRuntime] getMetadata after configure failed ' + errLikeToLogString(e),
+          );
+        });
+      }
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);
       }
@@ -662,8 +670,21 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
   // ─── Device metadata (firmware version) ────────────────────
   const unsub_meta = device.events.onDeviceMetadataPacket.subscribe((packet) => {
-    const ver = packet.data.firmwareVersion;
-    if (ver) setState((s) => ({ ...s, firmwareVersion: ver }));
+    const data = packet.data as {
+      firmwareVersion?: string;
+      hasWifi?: boolean;
+      hasEthernet?: boolean;
+    };
+    if (data.firmwareVersion) {
+      setState((s) => ({ ...s, firmwareVersion: data.firmwareVersion }));
+    }
+    const identityId = meshtasticIdentityIdRef.current;
+    if (identityId && (data.hasWifi != null || data.hasEthernet != null)) {
+      setConnection(identityId, {
+        ...(data.hasWifi != null ? { deviceHasWifi: data.hasWifi } : {}),
+        ...(data.hasEthernet != null ? { deviceHasEthernet: data.hasEthernet } : {}),
+      });
+    }
   });
   unsubscribesRef.current.push(unsub_meta);
 
