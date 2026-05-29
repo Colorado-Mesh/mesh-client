@@ -1971,7 +1971,16 @@
     "aclLevelReadWrite": "Read/Write (can post)",
     "aclLevelAdmin": "Admin",
     "aclApply": "Apply ACL",
-    "adminPasswordRequired": "Admin password is required to manage this room."
+    "adminPasswordRequired": "Admin password is required to manage this room.",
+    "rememberPassword": "Remember password",
+    "autoSync": "Auto-sync",
+    "autoSyncTooltip": "Periodically re-login to fetch new posts when the radio is connected",
+    "syncIntervalLabel": "Sync interval",
+    "syncInterval60": "Every 60 minutes",
+    "syncInterval120": "Every 2 hours",
+    "syncInterval240": "Every 4 hours",
+    "saveSyncConfig": "Save sync settings",
+    "lastSync": "Last sync"
   },
   "searchModal": {
     "closeSearch": "Close search",

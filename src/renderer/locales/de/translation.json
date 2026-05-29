@@ -1971,7 +1971,16 @@
     "aclApply": "ACL anwenden",
     "adminPasswordRequired": "Für die Verwaltung dieses Raums ist ein Admin-Passwort erforderlich.",
     "postFailed": "Fehler beim Posten im Raum",
-    "leaveRoom": "Raum verlassen"
+    "leaveRoom": "Raum verlassen",
+    "rememberPassword": "Passwort merken",
+    "autoSync": "Auto Sync",
+    "autoSyncTooltip": "Melden Sie sich regelmäßig erneut an, um neue Beiträge abzurufen, wenn das Radio angeschlossen ist",
+    "syncIntervalLabel": "Synchronisierungsintervall",
+    "syncInterval60": "alle 60 Minuten",
+    "syncInterval120": "Alle 2 Stunden",
+    "syncInterval240": "Alle 4 Stunden",
+    "saveSyncConfig": "Synchronisierung",
+    "lastSync": "Letzte Synchronisierung"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

@@ -1971,7 +1971,16 @@
     "aclApply": "ACL Uygula",
     "adminPasswordRequired": "Bu odayı yönetmek için yönetici şifresi gereklidir.",
     "postFailed": "Odaya gönderilemedi",
-    "leaveRoom": "Odadan çık"
+    "leaveRoom": "Odadan çık",
+    "rememberPassword": "Parolayı hatırla",
+    "autoSync": "Otomatik senkronizasyon",
+    "autoSyncTooltip": "Radyo bağlandığında yeni gönderileri almak için düzenli olarak yeniden giriş yapın",
+    "syncIntervalLabel": "Senkronizasyon aralığı",
+    "syncInterval60": "60 dakikada bir",
+    "syncInterval120": "2 saatte bir",
+    "syncInterval240": "4 saatte bir",
+    "saveSyncConfig": "Eşitleme Ayarları",
+    "lastSync": "Son senkronizasyon"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

@@ -1971,7 +1971,16 @@
     "aclApply": "Použít ACL",
     "adminPasswordRequired": "Pro správu této místnosti je vyžadováno heslo správce.",
     "postFailed": "Zveřejnění příspěvku na pokoj se nezdařilo",
-    "leaveRoom": "Opustit místnost"
+    "leaveRoom": "Opustit místnost",
+    "rememberPassword": "Zapamatujte si své heslo",
+    "autoSync": "Automatická synchronizace",
+    "autoSyncTooltip": "Pravidelně se znovu přihlaste, abyste získali nové příspěvky, když je rádio připojeno",
+    "syncIntervalLabel": "Interval synchronizace",
+    "syncInterval60": "Každých 60 minut",
+    "syncInterval120": "Každé 2 hodiny",
+    "syncInterval240": "Každé 4 hodiny",
+    "saveSyncConfig": "Uložit nastavení synchronizace",
+    "lastSync": "Poslední synchronizace"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

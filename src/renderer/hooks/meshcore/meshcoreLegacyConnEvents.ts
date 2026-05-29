@@ -39,6 +39,7 @@ import {
   meshcoreRfResolvePathSender,
 } from '../../lib/meshcoreRawPacketSender';
 import { shouldCoalesceSelfFloodAdvert } from '../../lib/meshcoreRawSelfFloodAdvertCoalesce';
+import { setMeshcoreRoomLastPostAt } from '../../lib/meshcoreRoomSyncStorage';
 import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
@@ -789,16 +790,18 @@ export function attachMeshcoreLegacyConnEvents(
       const authorName =
         authorNode?.long_name ??
         (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
+      const postTs = d.senderTimestamp * 1000;
       addMessage(
         buildMeshcoreRoomIncomingMessage({
           rawText: payload,
           roomServerId: senderId,
           authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
           authorName,
-          timestamp: d.senderTimestamp * 1000,
+          timestamp: postTs,
           receivedVia: 'rf',
         }),
       );
+      void setMeshcoreRoomLastPostAt(senderId, postTs);
       return;
     }
 

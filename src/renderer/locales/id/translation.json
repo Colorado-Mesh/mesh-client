@@ -1971,7 +1971,16 @@
     "aclApply": "Terapkan ACL",
     "adminPasswordRequired": "Kata sandi admin diperlukan untuk mengelola ruangan ini.",
     "postFailed": "Gagal mengeposkan ke ruangan",
-    "leaveRoom": "Tinggalkan ruangan"
+    "leaveRoom": "Tinggalkan ruangan",
+    "rememberPassword": "Ingat sandi",
+    "autoSync": "Sinkronisasi otomatis?",
+    "autoSyncTooltip": "Masuk kembali secara berkala untuk mengambil postingan baru saat radio terhubung",
+    "syncIntervalLabel": "Interval sinkronisasi",
+    "syncInterval60": "Setiap 60 menit",
+    "syncInterval120": "Every 2 hours",
+    "syncInterval240": "Setiap 4 jam",
+    "saveSyncConfig": "Simpan pengaturan sinkronisasi",
+    "lastSync": "Sinkronisasi terakhir"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

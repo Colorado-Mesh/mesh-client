@@ -1971,7 +1971,16 @@
     "aclApply": "ACLを適用",
     "adminPasswordRequired": "この部屋を管理するには管理者パスワードが必要です。",
     "postFailed": "ルームへの投稿に失敗しました",
-    "leaveRoom": "チャットルームを退出"
+    "leaveRoom": "チャットルームを退出",
+    "rememberPassword": "パスワードを記憶させる",
+    "autoSync": "自動同期",
+    "autoSyncTooltip": "ラジオが接続されているときに新しい投稿を取得するために定期的に再ログインする",
+    "syncIntervalLabel": "同期間隔",
+    "syncInterval60": "1 時間ごと",
+    "syncInterval120": "2時間ごと",
+    "syncInterval240": "4時間ごと",
+    "saveSyncConfig": "同期設定",
+    "lastSync": "前回同期"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

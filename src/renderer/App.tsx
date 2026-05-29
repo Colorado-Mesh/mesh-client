@@ -2487,6 +2487,7 @@ function AppContent({
                                 initialRoomTarget={pendingRoomTarget}
                                 onInitialRoomConsumed={handleRoomTargetConsumed}
                                 onLoginRoom={meshcorePanelActions.loginRoom}
+                                onLoginRoomWithSaved={meshcorePanelActions.loginRoomWithSaved}
                                 onSendRoomPost={meshcorePanelActions.sendRoomPost}
                                 onSendRoomAdminCli={meshcorePanelActions.sendRoomAdminCliCommand}
                                 meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}

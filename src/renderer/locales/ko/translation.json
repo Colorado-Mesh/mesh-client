@@ -1971,7 +1971,16 @@
     "aclApply": "ACL 적용",
     "adminPasswordRequired": "이 룸을 관리하려면 관리자 비밀번호가 필요합니다.",
     "postFailed": "룸에 게시하지 못했습니다.",
-    "leaveRoom": "방 나가기"
+    "leaveRoom": "방 나가기",
+    "rememberPassword": "비밀번호 기억하기",
+    "autoSync": "자동 동기화",
+    "autoSyncTooltip": "라디오가 연결되면 주기적으로 다시 로그인하여 새 게시물을 가져옵니다.",
+    "syncIntervalLabel": "동기화 간격",
+    "syncInterval60": "60분마다",
+    "syncInterval120": "2시간마다",
+    "syncInterval240": "4시간마다",
+    "saveSyncConfig": "동기화 설정 저장",
+    "lastSync": "마지막 동기화"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

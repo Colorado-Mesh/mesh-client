@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   meshcoreApplyRoomSession,
@@ -10,6 +10,10 @@ import {
 } from './meshcoreRoomSession';
 
 describe('meshcoreRoomSession', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('tracks read-only session and blocks posting', () => {
     meshcoreClearAllRoomSessions();
     meshcoreApplyRoomSession(0xabc, {
@@ -52,6 +56,25 @@ describe('meshcoreRoomSession', () => {
     };
     const pubKey = new Uint8Array(32);
     await expect(meshcoreRoomLogin(conn, 42, pubKey, '', {})).rejects.toThrow(/read-only/i);
+  });
+
+  it('retries login up to three times with backoff', async () => {
+    vi.useFakeTimers();
+    meshcoreClearAllRoomSessions();
+    const conn = {
+      login: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('timeout'))
+        .mockRejectedValueOnce(new Error('timeout'))
+        .mockResolvedValue({ permissions: 2 }),
+    };
+    const pubKey = new Uint8Array(32);
+    const loginPromise = meshcoreRoomLogin(conn, 42, pubKey, 'hello', {});
+    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(2_000);
+    await loginPromise;
+    expect(conn.login).toHaveBeenCalledTimes(3);
+    expect(meshcoreIsRoomLoggedIn(42)).toBe(true);
   });
 
   it('tryRelogin reuses stored guest password before posting', async () => {

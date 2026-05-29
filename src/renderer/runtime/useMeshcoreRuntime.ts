@@ -104,13 +104,25 @@ import {
 } from '../lib/meshcoreGetNeighboursBinary';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
+  getMeshcoreRoomCredential,
+  setMeshcoreRoomCredential,
+} from '../lib/meshcoreRoomCredentialStorage';
+import {
   meshcoreClearAllRoomSessions,
   meshcoreRoomCanAdmin,
   meshcoreRoomCanPost,
+  meshcoreRoomEffectiveGuestPassword,
   meshcoreRoomLogin,
   meshcoreRoomTryRelogin,
   meshcoreTryRemoteServerLogin,
 } from '../lib/meshcoreRoomSession';
+import { pickMostOverdueRoom, type RoomSyncSchedulerNode } from '../lib/meshcoreRoomSyncScheduler';
+import {
+  getMeshcoreRoomSyncConfig,
+  listMeshcoreRoomSyncEnabledNodeIds,
+  setMeshcoreRoomLastPostAt,
+  touchMeshcoreRoomLastSyncAt,
+} from '../lib/meshcoreRoomSyncStorage';
 import {
   buildMeshcoreSetOtherParamsFrame,
   enrichMeshCoreSelfInfo,
@@ -173,6 +185,8 @@ import {
 } from '../lib/storeRecordAdapters';
 import {
   MESHCORE_ROOM_POST_SENT_TIMEOUT_MS,
+  MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS,
+  MESHCORE_ROOM_SYNC_TICK_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
 } from '../lib/timeConstants';
 import type {
@@ -321,6 +335,9 @@ export function useMeshcoreRuntime() {
   const meshcoreHookMountedRef = useRef(true);
   const repeaterCommandServiceRef = useRef<RepeaterCommandService | null>(null);
   const repeaterRemoteRpcRef = useRef(createRepeaterRemoteRpcQueue());
+  const lastMeshcoreRoomSyncTxAtRef = useRef(0);
+  const roomSyncSchedulerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const meshcoreRoomReconnectSyncRef = useRef<() => void>(() => {});
   /** Debounced contacts refresh after path updates (event 129). */
   const meshcoreContactsRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** NodeIds that fired event 129 since last debounced contacts refresh (for path history recording). */
@@ -1546,6 +1563,8 @@ export function useMeshcoreRuntime() {
           );
         });
       }, MESHCORE_WAITING_MESSAGES_POLL_MS);
+
+      meshcoreRoomReconnectSyncRef.current();
     },
     [
       awaitUnlessMeshcoreSetupCancelled,
@@ -1713,6 +1732,10 @@ export function useMeshcoreRuntime() {
       if (meshcoreStatsPollRef.current) {
         clearInterval(meshcoreStatsPollRef.current);
         meshcoreStatsPollRef.current = null;
+      }
+      if (roomSyncSchedulerRef.current) {
+        clearInterval(roomSyncSchedulerRef.current);
+        roomSyncSchedulerRef.current = null;
       }
       prevTxAirSecsRef.current = null;
       prevStatsTimestampRef.current = null;
@@ -3190,7 +3213,11 @@ export function useMeshcoreRuntime() {
     async (
       nodeId: number,
       password: string,
-      opts?: { adminPassword?: string; guestPassword?: string },
+      opts?: {
+        adminPassword?: string;
+        guestPassword?: string;
+        rememberPassword?: boolean;
+      },
     ): Promise<void> => {
       const pubKey = pubKeyMapRef.current.get(nodeId);
       if (!pubKey) {
@@ -3214,9 +3241,138 @@ export function useMeshcoreRuntime() {
           guestPassword,
         });
       });
+      if (opts?.rememberPassword) {
+        await setMeshcoreRoomCredential(nodeId, { guestPassword, adminPassword });
+      }
     },
     [],
   );
+
+  const loginRoomWithSaved = useCallback(
+    async (nodeId: number): Promise<void> => {
+      const cred = getMeshcoreRoomCredential(nodeId);
+      if (!cred) {
+        throw new Error('No saved room credential');
+      }
+      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
+      await loginRoom(nodeId, password, {
+        guestPassword: password,
+        adminPassword: cred.adminPassword ?? '',
+      });
+    },
+    [loginRoom],
+  );
+
+  const runRoomSyncSchedulerTick = useCallback(async (): Promise<void> => {
+    if (!connRef.current || (state.status !== 'configured' && state.status !== 'connected')) {
+      return;
+    }
+    const now = Date.now();
+    if (now - lastMeshcoreRoomSyncTxAtRef.current < MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS) {
+      return;
+    }
+
+    const roomNodes: RoomSyncSchedulerNode[] = listMeshcoreRoomSyncEnabledNodeIds()
+      .filter((id) => nodesRef.current.get(id)?.hw_model === 'Room')
+      .map((id) => {
+        const cfg = getMeshcoreRoomSyncConfig(id);
+        return {
+          nodeId: id,
+          roomSyncEnabled: cfg.enabled,
+          roomSyncIntervalMinutes: cfg.intervalMinutes,
+          lastRoomSyncAt: cfg.lastSyncAt,
+        };
+      });
+
+    const target = pickMostOverdueRoom(roomNodes, now);
+    if (!target) return;
+
+    const cred = getMeshcoreRoomCredential(target.nodeId);
+    if (!cred) return;
+
+    const pubKey = pubKeyMapRef.current.get(target.nodeId);
+    if (!pubKey) return;
+
+    try {
+      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
+      await repeaterRemoteRpcRef.current(async () => {
+        const activeConn = connRef.current;
+        if (!activeConn) return;
+        await meshcoreRoomLogin(activeConn, target.nodeId, pubKey, password, {
+          guestPassword: password,
+          adminPassword: cred.adminPassword ?? '',
+        });
+      });
+      lastMeshcoreRoomSyncTxAtRef.current = Date.now();
+      await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
+    } catch (e: unknown) {
+      console.warn(
+        '[useMeshcoreRuntime] room sync scheduler login failed ' + errLikeToLogString(e),
+      );
+    }
+  }, [state.status]);
+
+  const runRoomReconnectSync = useCallback(async (): Promise<void> => {
+    if (!connRef.current) return;
+    const now = Date.now();
+    const roomNodes: RoomSyncSchedulerNode[] = listMeshcoreRoomSyncEnabledNodeIds()
+      .filter((id) => nodesRef.current.get(id)?.hw_model === 'Room')
+      .map((id) => {
+        const cfg = getMeshcoreRoomSyncConfig(id);
+        return {
+          nodeId: id,
+          roomSyncEnabled: cfg.enabled,
+          roomSyncIntervalMinutes: cfg.intervalMinutes,
+          lastRoomSyncAt: cfg.lastSyncAt,
+        };
+      });
+    const target = pickMostOverdueRoom(roomNodes, now);
+    if (!target) return;
+    const cred = getMeshcoreRoomCredential(target.nodeId);
+    if (!cred) return;
+    const pubKey = pubKeyMapRef.current.get(target.nodeId);
+    if (!pubKey) return;
+    try {
+      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
+      await repeaterRemoteRpcRef.current(async () => {
+        const activeConn = connRef.current;
+        if (!activeConn) return;
+        await meshcoreRoomLogin(activeConn, target.nodeId, pubKey, password, {
+          guestPassword: password,
+          adminPassword: cred.adminPassword ?? '',
+        });
+      });
+      lastMeshcoreRoomSyncTxAtRef.current = Date.now();
+      await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
+    } catch (e: unknown) {
+      console.debug('[useMeshcoreRuntime] room reconnect sync failed ' + errLikeToLogString(e));
+    }
+  }, []);
+
+  meshcoreRoomReconnectSyncRef.current = () => {
+    void runRoomReconnectSync();
+  };
+
+  useEffect(() => {
+    const operational = state.status === 'configured' || state.status === 'connected';
+    if (!operational) {
+      if (roomSyncSchedulerRef.current) {
+        clearInterval(roomSyncSchedulerRef.current);
+        roomSyncSchedulerRef.current = null;
+      }
+      return;
+    }
+    if (roomSyncSchedulerRef.current) return;
+    roomSyncSchedulerRef.current = setInterval(() => {
+      void runRoomSyncSchedulerTick();
+    }, MESHCORE_ROOM_SYNC_TICK_MS);
+    return () => {
+      if (roomSyncSchedulerRef.current) {
+        clearInterval(roomSyncSchedulerRef.current);
+        roomSyncSchedulerRef.current = null;
+      }
+    };
+  }, [state.status, runRoomSyncSchedulerTick]);
 
   const sendRoomPost = useCallback(
     async (nodeId: number, text: string): Promise<void> => {
@@ -3276,6 +3432,7 @@ export function useMeshcoreRuntime() {
               '[useMeshcoreRuntime] saveMeshcoreMessage (room post) error ' + errLikeToLogString(e),
             );
           });
+        void setMeshcoreRoomLastPostAt(nodeId, sentAt);
       } catch (e: unknown) {
         const failed: ChatMessage = { ...tempMsg, status: 'failed' };
         const storeId = meshcoreIdentityIdRef.current;
@@ -4340,6 +4497,7 @@ export function useMeshcoreRuntime() {
       meshcoreCliErrors,
       sendRepeaterCliCommand,
       loginRoom,
+      loginRoomWithSaved,
       sendRoomPost,
       sendRoomAdminCliCommand,
       clearCliHistory,
@@ -4473,6 +4631,7 @@ export function useMeshcoreRuntime() {
       meshcoreCliErrors,
       sendRepeaterCliCommand,
       loginRoom,
+      loginRoomWithSaved,
       sendRoomPost,
       sendRoomAdminCliCommand,
       clearCliHistory,

@@ -2,7 +2,12 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
-import { MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS } from './timeConstants';
+import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
+import {
+  MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS,
+  MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS,
+  MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS,
+} from './timeConstants';
 
 /** MeshCore room ACL role inferred after login (firmware PERM_ACL_* low bits). */
 export type MeshcoreRoomRole = 'none' | 'readonly' | 'readwrite' | 'admin';
@@ -116,6 +121,12 @@ export function meshcoreRoomEffectiveGuestPassword(password: string): string {
   return password.trim() || MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
 }
 
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export function meshcoreRoomLoginFailureMessage(err: unknown, password: string): string {
   const msg = errLikeToLogString(err).toLowerCase();
   if (msg.includes('timeout')) {
@@ -141,23 +152,38 @@ export async function meshcoreRoomLogin(
   const run = async (): Promise<void> => {
     const adminPassword = opts?.adminPassword ?? '';
     const guestPassword = opts?.guestPassword ?? password;
-    try {
-      const response = await conn.login(pubKey, password, MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS);
-      const permByte = parseLoginResponsePermissions(response);
-      const role =
-        permByte != null
-          ? roleFromPermissionsByte(permByte)
-          : roleFromPasswordHint(password, adminPassword, guestPassword);
-      meshcoreApplyRoomSession(nodeId, {
-        guestPassword,
-        adminPassword,
-        role,
-      });
-    } catch (e) {
-      const errMsg = errLikeToLogString(e);
-      console.warn('[meshcoreRoomSession] room login failed ' + errMsg);
-      throw new Error(meshcoreRoomLoginFailureMessage(e, password));
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS; attempt++) {
+      try {
+        const response = await conn.login(pubKey, password, MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS);
+        const permByte = parseLoginResponsePermissions(response);
+        const role =
+          permByte != null
+            ? roleFromPermissionsByte(permByte)
+            : roleFromPasswordHint(password, adminPassword, guestPassword);
+        const lastPostMs = getMeshcoreRoomLastPostAt(nodeId);
+        meshcoreApplyRoomSession(nodeId, {
+          guestPassword,
+          adminPassword,
+          role,
+          syncSince:
+            lastPostMs != null && lastPostMs > 0 ? Math.floor(lastPostMs / 1000) : undefined,
+        });
+        return;
+      } catch (e) {
+        lastErr = e;
+        const errMsg = errLikeToLogString(e);
+        if (attempt < MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS) {
+          console.warn(
+            `[meshcoreRoomSession] room login attempt ${attempt}/${MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS} failed ${errMsg}`,
+          );
+          await sleepMs(MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS);
+        } else {
+          console.warn('[meshcoreRoomSession] room login failed ' + errMsg);
+        }
+      }
     }
+    throw new Error(meshcoreRoomLoginFailureMessage(lastErr, password));
   };
 
   const next = roomLoginChain.then(run, run);

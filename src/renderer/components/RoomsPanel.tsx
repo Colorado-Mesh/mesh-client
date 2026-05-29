@@ -6,6 +6,10 @@ import { useMeshcoreRoomAuth } from '@/renderer/hooks/useMeshcoreRoomAuth';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { CliHistoryEntry } from '@/renderer/lib/meshcore/meshcoreHookTypes';
 import {
+  getMeshcoreRoomCredential,
+  listMeshcoreRoomCredentialNodeIds,
+} from '@/renderer/lib/meshcoreRoomCredentialStorage';
+import {
   MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
   meshcoreClearRoomSession,
   meshcoreGetRoomSession,
@@ -13,6 +17,11 @@ import {
   meshcoreRoomCanPost,
   meshcoreRoomEffectiveGuestPassword,
 } from '@/renderer/lib/meshcoreRoomSession';
+import {
+  getMeshcoreRoomLastPostAt,
+  getMeshcoreRoomSyncConfig,
+  setMeshcoreRoomSyncConfig,
+} from '@/renderer/lib/meshcoreRoomSyncStorage';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 
 interface Props {
@@ -25,8 +34,13 @@ interface Props {
   onLoginRoom: (
     nodeId: number,
     password: string,
-    opts?: { adminPassword?: string; guestPassword?: string },
+    opts?: {
+      adminPassword?: string;
+      guestPassword?: string;
+      rememberPassword?: boolean;
+    },
   ) => Promise<void>;
+  onLoginRoomWithSaved: (nodeId: number) => Promise<void>;
   onSendRoomPost: (nodeId: number, text: string) => Promise<void>;
   onSendRoomAdminCli: (nodeId: number, command: string) => Promise<string>;
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
@@ -46,6 +60,7 @@ export default function RoomsPanel({
   initialRoomTarget,
   onInitialRoomConsumed,
   onLoginRoom,
+  onLoginRoomWithSaved,
   onSendRoomPost,
   onSendRoomAdminCli,
   meshcoreCliHistories,
@@ -65,7 +80,19 @@ export default function RoomsPanel({
   const [cliPending, setCliPending] = useState(false);
   const [aclPubkey, setAclPubkey] = useState('');
   const [aclLevel, setAclLevel] = useState(1);
+  const [rememberPassword, setRememberPassword] = useState(false);
+  const [syncEnabled, setSyncEnabled] = useState(false);
+  const [syncInterval, setSyncInterval] = useState(60);
+  const [syncConfigDirty, setSyncConfigDirty] = useState(false);
+  const [storedRoomIds, setStoredRoomIds] = useState<Set<number>>(
+    () => new Set(listMeshcoreRoomCredentialNodeIds()),
+  );
+  const autoLoginAttempted = useRef<Set<number>>(new Set());
   const streamRef = useRef<HTMLDivElement>(null);
+
+  const refreshStoredRooms = useCallback(() => {
+    setStoredRoomIds(new Set(listMeshcoreRoomCredentialNodeIds()));
+  }, []);
 
   const roomServers = useMemo(
     () =>
@@ -85,9 +112,15 @@ export default function RoomsPanel({
   }, [messages, selectedRoomId]);
 
   const newestPostTs = useMemo(() => {
-    if (roomPosts.length === 0) return null;
+    if (roomPosts.length === 0) {
+      if (selectedRoomId == null) return null;
+      return getMeshcoreRoomLastPostAt(selectedRoomId);
+    }
     return Math.max(...roomPosts.map((m) => m.timestamp));
-  }, [roomPosts]);
+  }, [roomPosts, selectedRoomId]);
+
+  const lastSyncAt =
+    selectedRoomId != null ? getMeshcoreRoomSyncConfig(selectedRoomId).lastSyncAt : null;
 
   const postCountByRoom = useMemo(() => {
     const counts = new Map<number, number>();
@@ -109,12 +142,44 @@ export default function RoomsPanel({
     streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight });
   }, [roomPosts.length, selectedRoomId]);
 
-  const handleSelectRoom = useCallback((nodeId: number) => {
-    setSelectedRoomId(nodeId);
-    setLoginError(null);
-    setLoginPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
-    setManageOpen(false);
+  const loadSyncConfig = useCallback((nodeId: number) => {
+    const config = getMeshcoreRoomSyncConfig(nodeId);
+    setSyncEnabled(config.enabled);
+    setSyncInterval(config.intervalMinutes);
+    setSyncConfigDirty(false);
   }, []);
+
+  const handleSelectRoom = useCallback(
+    (nodeId: number) => {
+      setSelectedRoomId(nodeId);
+      setLoginError(null);
+      setLoginPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
+      setRememberPassword(false);
+      setManageOpen(false);
+      loadSyncConfig(nodeId);
+    },
+    [loadSyncConfig],
+  );
+
+  useEffect(() => {
+    if (selectedRoomId == null || !isConnected) return;
+    if (meshcoreIsRoomLoggedIn(selectedRoomId)) return;
+    if (autoLoginAttempted.current.has(selectedRoomId)) return;
+    if (!getMeshcoreRoomCredential(selectedRoomId)) return;
+    autoLoginAttempted.current.add(selectedRoomId);
+    setLoginLoading(true);
+    setLoginError(null);
+    void onLoginRoomWithSaved(selectedRoomId)
+      .then(() => {
+        refreshStoredRooms();
+      })
+      .catch((e: unknown) => {
+        setLoginError(e instanceof Error ? e.message : t('roomsPanel.loginFailed'));
+      })
+      .finally(() => {
+        setLoginLoading(false);
+      });
+  }, [isConnected, onLoginRoomWithSaved, refreshStoredRooms, selectedRoomId, t]);
 
   const handleLogin = useCallback(async () => {
     if (selectedRoomId == null) return;
@@ -125,7 +190,9 @@ export default function RoomsPanel({
       await onLoginRoom(selectedRoomId, password, {
         guestPassword: password,
         adminPassword: '',
+        rememberPassword,
       });
+      if (rememberPassword) refreshStoredRooms();
       setLoginPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
     } catch (e) {
       // catch-no-log-ok login failure surfaced in loginError UI
@@ -133,7 +200,16 @@ export default function RoomsPanel({
     } finally {
       setLoginLoading(false);
     }
-  }, [loginPassword, onLoginRoom, selectedRoomId, t]);
+  }, [loginPassword, onLoginRoom, rememberPassword, refreshStoredRooms, selectedRoomId, t]);
+
+  const handleSaveSyncConfig = useCallback(async () => {
+    if (selectedRoomId == null) return;
+    await setMeshcoreRoomSyncConfig(selectedRoomId, {
+      enabled: syncEnabled,
+      intervalMinutes: syncInterval,
+    });
+    setSyncConfigDirty(false);
+  }, [selectedRoomId, syncEnabled, syncInterval]);
 
   const handleSend = useCallback(async () => {
     if (selectedRoomId == null || !draft.trim()) return;
@@ -228,6 +304,7 @@ export default function RoomsPanel({
               roomServers.map((room) => {
                 const count = postCountByRoom.get(room.node_id) ?? 0;
                 const isLogged = meshcoreIsRoomLoggedIn(room.node_id);
+                const hasSaved = storedRoomIds.has(room.node_id);
                 return (
                   <button
                     key={room.node_id}
@@ -240,8 +317,17 @@ export default function RoomsPanel({
                     }`}
                   >
                     <div className="flex items-center gap-2 text-sm text-gray-200">
-                      <span className={isLogged ? 'text-brand-green' : 'text-gray-500'} aria-hidden>
-                        {isLogged ? '●' : '○'}
+                      <span
+                        className={
+                          isLogged
+                            ? 'text-brand-green'
+                            : hasSaved
+                              ? 'text-amber-400/90'
+                              : 'text-gray-500'
+                        }
+                        aria-hidden
+                      >
+                        {isLogged ? '●' : hasSaved ? '◐' : '○'}
                       </span>
                       <span className="truncate">{room.long_name}</span>
                     </div>
@@ -281,6 +367,17 @@ export default function RoomsPanel({
                   className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
                   aria-label={t('roomsPanel.guestPasswordLabel')}
                 />
+                <label className="flex items-center gap-2 text-xs text-gray-400">
+                  <input
+                    type="checkbox"
+                    checked={rememberPassword}
+                    onChange={(e) => {
+                      setRememberPassword(e.target.checked);
+                    }}
+                    disabled={loginLoading || !isConnected}
+                  />
+                  {t('roomsPanel.rememberPassword')}
+                </label>
                 <button
                   type="button"
                   onClick={() => {
@@ -337,7 +434,55 @@ export default function RoomsPanel({
                       · {t('roomsPanel.lastPost')}: {formatTimestamp(newestPostTs)}
                     </>
                   )}
+                  {lastSyncAt != null && (
+                    <>
+                      {' '}
+                      · {t('roomsPanel.lastSync')}: {formatTimestamp(lastSyncAt)}
+                    </>
+                  )}
                 </span>
+                <label
+                  className="flex items-center gap-1.5 text-xs text-gray-400"
+                  title={t('roomsPanel.autoSyncTooltip')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={syncEnabled}
+                    onChange={(e) => {
+                      setSyncEnabled(e.target.checked);
+                      setSyncConfigDirty(true);
+                    }}
+                    aria-label={t('roomsPanel.autoSync')}
+                  />
+                  {t('roomsPanel.autoSync')}
+                </label>
+                {syncEnabled && (
+                  <select
+                    value={syncInterval}
+                    onChange={(e) => {
+                      setSyncInterval(Number.parseInt(e.target.value, 10));
+                      setSyncConfigDirty(true);
+                    }}
+                    className="rounded border border-gray-600 bg-gray-800 px-2 py-0.5 text-xs text-gray-200"
+                    aria-label={t('roomsPanel.syncIntervalLabel')}
+                  >
+                    <option value={60}>{t('roomsPanel.syncInterval60')}</option>
+                    <option value={120}>{t('roomsPanel.syncInterval120')}</option>
+                    <option value={240}>{t('roomsPanel.syncInterval240')}</option>
+                  </select>
+                )}
+                {syncConfigDirty && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleSaveSyncConfig();
+                    }}
+                    className="rounded border border-gray-600 bg-gray-800 px-2 py-0.5 text-xs text-gray-300 hover:bg-gray-700"
+                    aria-label={t('roomsPanel.saveSyncConfig')}
+                  >
+                    {t('roomsPanel.saveSyncConfig')}
+                  </button>
+                )}
                 {sessionRole === 'readonly' && (
                   <span className="rounded bg-amber-900/40 px-2 py-0.5 text-xs text-amber-200">
                     {t('roomsPanel.readOnlyBadge')}

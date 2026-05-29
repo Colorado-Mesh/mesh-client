@@ -43,12 +43,14 @@ describe('RoomsPanel', () => {
         isConnected
         initialRoomTarget={room.node_id}
         onLoginRoom={vi.fn()}
+        onLoginRoomWithSaved={vi.fn()}
         onSendRoomPost={vi.fn()}
         onSendRoomAdminCli={vi.fn()}
       />,
     );
 
     expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+    expect(screen.getByText('roomsPanel.rememberPassword')).toBeInTheDocument();
   });
 
   it('disables composer when session is read-only', () => {
@@ -80,11 +82,13 @@ describe('RoomsPanel', () => {
         isConnected
         initialRoomTarget={room.node_id}
         onLoginRoom={vi.fn()}
+        onLoginRoomWithSaved={vi.fn()}
         onSendRoomPost={vi.fn()}
         onSendRoomAdminCli={vi.fn()}
       />,
     );
 
     expect(screen.getByText('roomsPanel.readOnlyHint')).toBeInTheDocument();
+    expect(screen.getByText('roomsPanel.autoSync')).toBeInTheDocument();
   });
 });

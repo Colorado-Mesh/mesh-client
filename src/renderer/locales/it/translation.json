@@ -1971,7 +1971,16 @@
     "aclApply": "Applica ACL",
     "adminPasswordRequired": "La password di amministratore è necessaria per gestire questa stanza.",
     "postFailed": "Impossibile pubblicare nella stanza",
-    "leaveRoom": "Lasciare la stanza"
+    "leaveRoom": "Lasciare la stanza",
+    "rememberPassword": "Ricorda la password",
+    "autoSync": "Sincronizzazione automatica",
+    "autoSyncTooltip": "Effettua periodicamente il re-login per recuperare nuovi post quando la radio è collegata",
+    "syncIntervalLabel": "Intervallo sincronizzazione dati",
+    "syncInterval60": "Ogni 60 minuti",
+    "syncInterval120": "每2小时",
+    "syncInterval240": "Ogni 4 ore",
+    "saveSyncConfig": "Salva le impostazioni di sincronizzazione",
+    "lastSync": "Ultima sincronizzazione"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

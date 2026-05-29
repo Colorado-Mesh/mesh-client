@@ -1971,7 +1971,16 @@
     "aclApply": "Aplicar ACL",
     "adminPasswordRequired": "A senha de administrador é necessária para gerenciar esta sala.",
     "postFailed": "Falha ao publicar na sala",
-    "leaveRoom": "Sair da sala"
+    "leaveRoom": "Sair da sala",
+    "rememberPassword": "Lembrar senha",
+    "autoSync": "Sincronização automática",
+    "autoSyncTooltip": "Faça login novamente periodicamente para buscar novas postagens quando o rádio estiver conectado",
+    "syncIntervalLabel": "Intervalo de SINCRONIZAÇÃO =",
+    "syncInterval60": "A cada 60 minutos",
+    "syncInterval120": "A cada 2 horas",
+    "syncInterval240": "A cada 4 horas",
+    "saveSyncConfig": "Configurações da sincronização",
+    "lastSync": "Última sincronização"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

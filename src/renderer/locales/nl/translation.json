@@ -1971,7 +1971,16 @@
     "aclApply": "ACL toepassen",
     "adminPasswordRequired": "Beheerderswachtwoord is vereist om deze ruimte te beheren.",
     "postFailed": "Posten naar kamer mislukt",
-    "leaveRoom": "Kamer verlaten"
+    "leaveRoom": "Kamer verlaten",
+    "rememberPassword": "Wachtwoord onthouden",
+    "autoSync": "Auto sync.",
+    "autoSyncTooltip": "Log regelmatig opnieuw in om nieuwe berichten op te halen wanneer de radio is aangesloten",
+    "syncIntervalLabel": "Synchronisatie-interval",
+    "syncInterval60": "Elke 60 minuten",
+    "syncInterval120": "Elke 2 uur",
+    "syncInterval240": "Elke 4 uur",
+    "saveSyncConfig": "Synchronisatie instellingen",
+    "lastSync": "Laatste synchronisatie"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",
