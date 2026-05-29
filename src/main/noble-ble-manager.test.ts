@@ -189,4 +189,8 @@ describe('NobleBleManager.connect — release other session on same peripheral (
     expect(SOURCE).toContain('await this.disconnect(otherSessionId)');
     expect(SOURCE).not.toContain('already in use by the');
   });
+
+  it('suppresses renderer disconnect notify when connect tears down the prior session', () => {
+    expect(SOURCE).toContain('await this.disconnect(sessionId, { notify: false })');
+  });
 });

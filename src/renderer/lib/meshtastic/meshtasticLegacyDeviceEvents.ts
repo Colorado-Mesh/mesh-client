@@ -24,7 +24,7 @@ export function pushMeshtasticTransportSideEffectUnsubs(
     );
   }
 
-  if (type === 'serial' || type === 'ble') {
+  if (type === 'serial') {
     push(attachMeshtasticTransportLossWatch(device, type, onTransportLost));
   }
 

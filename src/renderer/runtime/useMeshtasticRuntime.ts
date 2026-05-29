@@ -471,13 +471,18 @@ export function useMeshtasticRuntime() {
       setNodes((prev) => {
         const next = updater(prev);
         nodesRef.current = next;
-        const storeId = meshtasticIdentityIdRef.current;
-        if (storeId) syncMeshtasticNodesMapToIdentityStore(storeId, next);
         return next;
       });
     },
     [],
   );
+
+  // Push runtime node map into identity-scoped Zustand after commit — never inside setState updaters.
+  useEffect(() => {
+    const storeId = meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+    if (!storeId) return;
+    syncMeshtasticNodesMapToIdentityStore(storeId, nodes);
+  }, [nodes, meshtasticIdentityId]);
 
   const ensureNodeExists = useCallback(
     (nodeNum: number, source: 'rf' | 'mqtt') => {
