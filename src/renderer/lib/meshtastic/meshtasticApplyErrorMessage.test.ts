@@ -41,6 +41,35 @@ describe('meshtasticApplyErrorMessage', () => {
     ).toBe('modulePanel.errors.badRequest (MQTT invalid config)');
   });
 
+  it('does not append expired clientNotification detail', async () => {
+    try {
+      vi.useFakeTimers();
+      const { recordMeshtasticClientNotification } = await import('./meshtasticClientNotification');
+      recordMeshtasticClientNotification('MQTT invalid config');
+      vi.advanceTimersByTime(9000);
+      expect(
+        formatMeshtasticModuleApplyError(
+          { id: 1, error: Mesh.Routing_Error.BAD_REQUEST },
+          t as never,
+        ),
+      ).toBe('modulePanel.errors.badRequest');
+    } finally {
+      vi.useRealTimers();
+      clearMeshtasticClientNotification();
+    }
+  });
+
+  it('does not append clientNotification for NOT_AUTHORIZED', async () => {
+    const { recordMeshtasticClientNotification } = await import('./meshtasticClientNotification');
+    recordMeshtasticClientNotification('should not appear');
+    expect(
+      formatMeshtasticModuleApplyError(
+        { id: 1, error: Mesh.Routing_Error.NOT_AUTHORIZED },
+        t as never,
+      ),
+    ).toBe('modulePanel.errors.notAuthorized');
+  });
+
   it('falls back to routingError with code and name for unknown codes', () => {
     const code = 99;
     expect(formatMeshtasticModuleApplyError({ error: code }, t as never)).toBe(

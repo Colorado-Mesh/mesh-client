@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
+import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
   mergeMeshtasticConfigApplyValue,
   stripMeshtasticProtobufMeta,
@@ -250,6 +251,7 @@ export default function SecurityPanel({
   const applyConfig = useCallback(
     async (value: Partial<SecurityConfig>) => {
       if (!securityConfig) return;
+      clearMeshtasticClientNotification();
       const merged = mergeMeshtasticConfigApplyValue(
         securityConfig,
         value,

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSyncFormFromConfig } from '@/renderer/hooks/useSyncFormFromConfig';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
+import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
   mergeMeshtasticConfigApplyValue,
   meshtasticConfigSlice,
@@ -866,6 +867,7 @@ export default function RadioPanel({
     configValue: Record<string, unknown>,
   ) => {
     if (!isConnected) return;
+    clearMeshtasticClientNotification();
     setApplyingSection(section);
     setStatus(`Applying ${section}...`);
     const deviceSlice =

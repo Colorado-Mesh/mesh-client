@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSyncFormFromConfig } from '@/renderer/hooks/useSyncFormFromConfig';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
+import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
   buildMeshtasticModuleApplyValue,
   mergeMeshtasticConfigApplyValue,
@@ -588,6 +589,7 @@ export default function ModulePanel({
   };
 
   const applyModule = async (sectionName: string, moduleCase: string, value: unknown) => {
+    clearMeshtasticClientNotification();
     setApplyingSection(sectionName);
     try {
       await onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });

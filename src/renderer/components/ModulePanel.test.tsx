@@ -151,6 +151,46 @@ describe('ModulePanel', () => {
     });
   });
 
+  it('blocks serial apply when console override is on but device mode is unset', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: false,
+            echo: true,
+            baud: 115200,
+            mode: 0,
+            overrideConsoleSerialPort: true,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+    await user.click(serialDetails!.querySelector('[role="switch"]')!);
+    await user.click(screen.getByRole('button', { name: 'Apply Serial Module' }));
+
+    expect(onSetModuleConfig).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Serial console override is enabled on the device. Set a valid serial mode on the radio before enabling the serial module here.',
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
   it('preserves serial overrideConsoleSerialPort and mode from device on apply', async () => {
     const user = userEvent.setup();
     const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
