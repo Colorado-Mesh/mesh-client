@@ -363,7 +363,7 @@ export default function RoomsPanel({
                     if (e.key === 'Enter') void handleLogin();
                   }}
                   placeholder={t('roomsPanel.guestPasswordPlaceholder')}
-                  disabled={loginLoading || !isConnected}
+                  disabled={!isConnected}
                   className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
                   aria-label={t('roomsPanel.guestPasswordLabel')}
                 />
@@ -374,7 +374,7 @@ export default function RoomsPanel({
                     onChange={(e) => {
                       setRememberPassword(e.target.checked);
                     }}
-                    disabled={loginLoading || !isConnected}
+                    disabled={!isConnected}
                   />
                   {t('roomsPanel.rememberPassword')}
                 </label>
@@ -383,10 +383,10 @@ export default function RoomsPanel({
                   onClick={() => {
                     void handleLogin();
                   }}
-                  disabled={loginLoading || !isConnected}
+                  disabled={!isConnected}
                   className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 w-full rounded border px-3 py-2 text-sm font-medium disabled:opacity-40"
                 >
-                  {loginLoading ? t('roomsPanel.loggingIn') : t('roomsPanel.loginButton')}
+                  {t('roomsPanel.loginButton')}
                 </button>
                 <button
                   type="button"
@@ -406,7 +406,7 @@ export default function RoomsPanel({
                       }
                     })();
                   }}
-                  disabled={loginLoading || !isConnected}
+                  disabled={!isConnected}
                   className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-40"
                 >
                   {t('roomsPanel.continueReadOnly')}
@@ -602,7 +602,7 @@ export default function RoomsPanel({
                     >
                       {t('roomsPanel.cliSend')}
                     </button>
-                    {onClearCliHistory && selectedRoomId != null && (
+                    {onClearCliHistory && (
                       <button
                         type="button"
                         onClick={() => {
