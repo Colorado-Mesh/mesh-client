@@ -4,6 +4,7 @@ import {
   addMessage,
   type MessageRecord,
   renameMessageId,
+  updateMessageStatus,
   upsertMessage,
   useMessageStore,
 } from './messageStore';
@@ -51,5 +52,28 @@ describe('messageStore', () => {
   it('renameMessageId is a no-op when source id missing', () => {
     renameMessageId(ID, 'nope', 'real');
     expect(useMessageStore.getState().messages[ID]).toBeUndefined();
+  });
+
+  it('updateMessageStatus sets error when provided', () => {
+    addMessage(ID, { ...makeMsg('m1'), status: 'sending' });
+    updateMessageStatus(ID, 'm1', 'failed', 'timeout');
+    expect(useMessageStore.getState().messages[ID].m1).toMatchObject({
+      status: 'failed',
+      error: 'timeout',
+    });
+  });
+
+  it('updateMessageStatus preserves error when omitted on failed', () => {
+    addMessage(ID, { ...makeMsg('m1'), status: 'failed', error: 'timeout' });
+    updateMessageStatus(ID, 'm1', 'failed');
+    expect(useMessageStore.getState().messages[ID].m1.error).toBe('timeout');
+  });
+
+  it('updateMessageStatus clears error on ack when omitted', () => {
+    addMessage(ID, { ...makeMsg('m1'), status: 'failed', error: 'timeout' });
+    updateMessageStatus(ID, 'm1', 'acked');
+    const rec = useMessageStore.getState().messages[ID].m1;
+    expect(rec.status).toBe('acked');
+    expect(rec.error).toBeUndefined();
   });
 });
