@@ -10,7 +10,6 @@ import { upsertNodeRecordsForIdentity } from '../stores/nodeStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { errLikeToLogString } from './errLikeToLogString';
 import { beginIdentityHydration } from './identityHydrationCoordinator';
-import { getMeshtasticMessageLoadLimit } from './legacySideEffects/meshtasticDbHydration';
 import type { MeshcoreContactDbRow, MeshcoreMessageDbRow } from './meshcore/meshcoreHookTypes';
 import { ensureMeshtasticChatSenderInNodeStore } from './meshtastic/meshtasticChatSenderNode';
 import {
@@ -18,6 +17,7 @@ import {
   dedupeMeshtasticHydrationOrphanSends,
   loadMeshtasticNodeMapFromDb,
 } from './meshtasticDbCacheHydration';
+import { getMeshtasticMessageLoadLimit } from './meshtasticMessageLoadLimit';
 import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
 import type { IdentityId, MeshNode, MeshProtocol } from './types';
 

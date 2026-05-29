@@ -129,7 +129,7 @@ Do **not** remount protocol runtimes in child components. Do **not** compare `pr
 
 Protocol SDK adapters: `src/renderer/lib/protocols/`. Connection lifecycle: `ConnectionDriver`; inbound domain events: `PacketRouter` → stores.
 
-**Identity-scoped UI stores:** `identityStore`, `nodeStore`, `messageStore`, `connectionStore` — nodes/messages keyed by `identityId`. **SQLite → UI:** `lib/hydrateIdentityStoresFromDb.ts` (coordinator: `identityHydrationCoordinator.ts`; Meshtastic node map: `meshtasticDbCacheHydration.ts`); manual refresh via `hooks/useDbRefresh.ts`. Runtimes still use legacy mount hydration (`lib/legacySideEffects/*DbHydration.ts`) for runtime-local refs until fully retired.
+**Identity-scoped UI stores:** `identityStore`, `nodeStore`, `messageStore`, `connectionStore` — nodes/messages keyed by `identityId`. **SQLite → UI:** `lib/hydrateIdentityStoresFromDb.ts` (coordinator: `identityHydrationCoordinator.ts`; Meshtastic node map: `meshtasticDbCacheHydration.ts`; message cap: `meshtasticMessageLoadLimit.ts`); manual refresh via `hooks/useDbRefresh.ts`. Runtimes may still merge DB rows into hook-local refs on connect; identity-scoped Zustand hydration is the canonical UI path ([#375]).
 
 ### First places to look
 

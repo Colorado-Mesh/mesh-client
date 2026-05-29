@@ -81,7 +81,6 @@ import {
   syncMeshtasticNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
-import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
 import {
@@ -159,7 +158,11 @@ import type {
   RemoteConfigChannelsTailStatus,
   TelemetryPoint,
 } from '../lib/types';
-import { setConnection, useConnectionStore } from '../stores/connectionStore';
+import {
+  mirrorMqttStatusToConnection,
+  setConnection,
+  useConnectionStore,
+} from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { upsertMessage, useMessageStore } from '../stores/messageStore';

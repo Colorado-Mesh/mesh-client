@@ -62,7 +62,6 @@ import type { OurPosition } from '../lib/gpsSource';
 import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
 import { syncMeshcoreNodesMapToIdentityStore } from '../lib/hydrateIdentityStoresFromDb';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
-import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
 import type {
   CayenneLppEntry,
@@ -198,7 +197,7 @@ import type {
   MQTTStatus,
   TelemetryPoint,
 } from '../lib/types';
-import { setConnection } from '../stores/connectionStore';
+import { mirrorMqttStatusToConnection, setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { upsertMessage, useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';

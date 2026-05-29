@@ -83,3 +83,13 @@ export function removeConnection(id: IdentityId): void {
 export function getConnection(id: IdentityId): ConnectionRecord | undefined {
   return useConnectionStore.getState().connections[id];
 }
+
+/** Mirrors MQTT IPC status into the identity-scoped connection store. */
+export function mirrorMqttStatusToConnection(
+  identityId: IdentityId | null,
+  status: MQTTStatus,
+): void {
+  if (identityId) {
+    setConnection(identityId, { mqttStatus: status });
+  }
+}
