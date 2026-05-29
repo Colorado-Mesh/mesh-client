@@ -1125,7 +1125,8 @@
       "mqttAddressRequired": "Masukkan alamat broker MQTT sebelum mengaktifkan relai MQTT sisi perangkat.",
       "mqttDefaultServerTls": "Broker MQTT Meshtastic publik tidak mendukung TLS. Nonaktifkan TLS atau gunakan alamat broker khusus.",
       "mqttDefaultServerPort": "Jangan sertakan port di alamat broker Meshtastic MQTT publik (gunakan mqtt.meshtastic.org tanpa :port).",
-      "mqttProxyRequired": "Radio ini tidak memiliki Wi-Fi. Aktifkan \"Proksi ke klien\" sehingga aplikasi meneruskan MQTT, atau gunakan LoRa \"OK to MQTT\" alih-alih MQTT sisi perangkat."
+      "mqttProxyRequired": "Radio ini tidak memiliki Wi-Fi. Aktifkan \"Proksi ke klien\" sehingga aplikasi meneruskan MQTT, atau gunakan LoRa \"OK to MQTT\" alih-alih MQTT sisi perangkat.",
+      "serialOverrideRequiresMode": "Penimpaan konsol serial diaktifkan pada perangkat. Atur mode serial yang valid di radio sebelum mengaktifkan modul serial di sini."
     }
   },
   "nodeDetailModal": {

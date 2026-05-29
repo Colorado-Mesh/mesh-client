@@ -28,6 +28,7 @@ import {
   meshtasticWireUint32NonZero,
 } from '../../../shared/reactionEmoji';
 import { setConnection } from '../../stores/connectionStore';
+import { setMeshtasticConfigSlice } from '../../stores/deviceStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { updateIdentity } from '../../stores/identityStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
@@ -85,6 +86,7 @@ import type {
   RemoteAdminStatus,
   TelemetryPoint,
 } from '../types';
+import { recordMeshtasticClientNotification } from './meshtasticClientNotification';
 import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticLegacyDeviceEvents';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 
@@ -1623,8 +1625,25 @@ export function attachMeshtasticLegacyWireSubscriptions(
     if (cfg.payloadVariant?.case === 'lora' && cfg.payloadVariant.value != null) {
       setLoraConfig(cfg.payloadVariant.value as MeshtasticLoraConfig);
     }
+    const configCase = cfg.payloadVariant?.case;
+    const configValue = cfg.payloadVariant?.value;
+    const identityId = meshtasticIdentityIdRef.current;
+    if (configCase && configValue != null && identityId) {
+      setMeshtasticConfigSlice(identityId, configCase, configValue);
+    }
   });
   unsubscribesRef.current.push(unsubConfig);
+
+  const unsubFromRadio = device.events.onFromRadio.subscribe((packet) => {
+    const variant = packet.payloadVariant;
+    if (variant?.case === 'clientNotification') {
+      const message = variant.value?.message;
+      if (typeof message === 'string' && message.trim()) {
+        recordMeshtasticClientNotification(message);
+      }
+    }
+  });
+  unsubscribesRef.current.push(unsubFromRadio);
 
   // ─── Trace route responses (concurrent in-flight: pending per node + outbound packet id map)
   //     onMeshPacket reads Data; onTraceRoutePacket fallback (@meshtastic/core)

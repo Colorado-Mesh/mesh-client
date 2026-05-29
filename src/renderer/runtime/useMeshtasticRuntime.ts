@@ -3443,6 +3443,11 @@ export function useMeshtasticRuntime() {
     return moduleConfigs;
   }, [meshtasticIdentityId, moduleConfigs, meshtasticDeviceRecord]);
 
+  const resolvedMeshtasticConfigSlices = useMemo(() => {
+    if (!meshtasticIdentityId) return {};
+    return meshtasticDeviceRecord?.meshtasticConfigSlices ?? {};
+  }, [meshtasticIdentityId, meshtasticDeviceRecord]);
+
   const resolvedDeviceLogs = useMemo(() => {
     if (!meshtasticIdentityId) return deviceLogs;
     if (meshtasticDeviceRecord?.deviceLogs.length) return meshtasticDeviceRecord.deviceLogs;
@@ -3560,6 +3565,7 @@ export function useMeshtasticRuntime() {
       sendWaypoint,
       deleteWaypoint,
       moduleConfigs: resolvedModuleConfigs,
+      meshtasticConfigSlices: resolvedMeshtasticConfigSlices,
       setModuleConfig,
       setCannedMessages,
       ringtone,
@@ -3662,6 +3668,7 @@ export function useMeshtasticRuntime() {
       sendWaypoint,
       deleteWaypoint,
       resolvedModuleConfigs,
+      resolvedMeshtasticConfigSlices,
       setModuleConfig,
       setCannedMessages,
       ringtone,

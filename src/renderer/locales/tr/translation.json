@@ -1125,7 +1125,8 @@
       "mqttAddressRequired": "Cihaz tarafında MQTT rölesini etkinleştirmeden önce bir MQTT aracı adresi girin.",
       "mqttDefaultServerTls": "Halka açık Meshtastic MQTT brokeri TLS'yi desteklememektedir. TLS'yi kapatın veya özel bir broker adresi kullanın.",
       "mqttDefaultServerPort": "Meshtastic MQTT broker adresine bir bağlantı noktası eklemeyin (:port olmadan mqtt.meshtastic.org kullanın).",
-      "mqttProxyRequired": "Bu telsizde Wi-Fi yok. Uygulamanın MQTT'yi iletmesi için \"İstemciye proxy\" seçeneğini etkinleştirin veya cihaz tarafındaki MQTT yerine LoRa \"OK to MQTT\" kullanın."
+      "mqttProxyRequired": "Bu telsizde Wi-Fi yok. Uygulamanın MQTT'yi iletmesi için \"İstemciye proxy\" seçeneğini etkinleştirin veya cihaz tarafındaki MQTT yerine LoRa \"OK to MQTT\" kullanın.",
+      "serialOverrideRequiresMode": "Cihazda seri konsol geçersiz kılma etkinleştirilmiştir. Burada seri modülü etkinleştirmeden önce radyoda geçerli bir seri modu ayarlayın."
     }
   },
   "nodeDetailModal": {

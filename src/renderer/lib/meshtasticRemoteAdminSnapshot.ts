@@ -43,6 +43,7 @@ const MODULE_CONFIG_FETCHES: {
 export const REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT = MODULE_CONFIG_FETCHES.length;
 
 const DEFERRED_CONFIG_TYPES = [
+  Admin.AdminMessage_ConfigType.DEVICE_CONFIG,
   Admin.AdminMessage_ConfigType.POSITION_CONFIG,
   Admin.AdminMessage_ConfigType.POWER_CONFIG,
   Admin.AdminMessage_ConfigType.NETWORK_CONFIG,
@@ -143,6 +144,10 @@ function applyConfigResultsToSnapshot(
     if (value == null) continue;
     const caseName = configPayloadCase(value);
     const payload = configPayloadValue(value);
+    if (caseName && payload != null) {
+      snapshot.configSlices ??= {};
+      snapshot.configSlices[caseName] = payload;
+    }
     if (caseName === 'lora') {
       snapshot.loraConfig = payload as MeshtasticLoraConfig;
     } else if (caseName === 'security') {

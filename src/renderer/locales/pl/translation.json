@@ -1125,7 +1125,8 @@
       "mqttAddressRequired": "Wprowadź adres brokera MQTT przed włączeniem przekaźnika MQTT po stronie urządzenia.",
       "mqttDefaultServerTls": "Publiczny broker Meshtastic MQTT nie obsługuje TLS. Wyłącz TLS lub użyj niestandardowego adresu brokera.",
       "mqttDefaultServerPort": "Nie umieszczaj portu w publicznym adresie brokera Meshtastic MQTT (użyj mqtt.meshtastic.org z nr :port).",
-      "mqttProxyRequired": "To radio nie ma Wi-Fi. Włącz „Proxy do klienta”, aby aplikacja przekazała MQTT, lub użyj LoRa „OK to MQTT” zamiast MQTT po stronie urządzenia."
+      "mqttProxyRequired": "To radio nie ma Wi-Fi. Włącz „Proxy do klienta”, aby aplikacja przekazała MQTT, lub użyj LoRa „OK to MQTT” zamiast MQTT po stronie urządzenia.",
+      "serialOverrideRequiresMode": "W urządzeniu włączone jest nadpisywanie konsoli szeregowej. Ustaw prawidłowy tryb szeregowy w radiu przed włączeniem modułu szeregowego tutaj."
     }
   },
   "nodeDetailModal": {

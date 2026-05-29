@@ -1125,7 +1125,8 @@
       "mqttAddressRequired": "Geben Sie eine MQTT-Brokeradresse ein, bevor Sie das geräteseitige MQTT-Relay aktivieren.",
       "mqttDefaultServerTls": "Der öffentliche Meshtastic MQTT Broker unterstützt TLS nicht. Deaktivieren Sie TLS oder verwenden Sie eine benutzerdefinierte Broker-Adresse.",
       "mqttDefaultServerPort": "Fügen Sie keinen Port in die öffentliche Meshtastic MQTT-Brokeradresse ein (verwenden Sie mqtt.meshtastic.org mit no :port).",
-      "mqttProxyRequired": "Dieses Radio hat kein WLAN. Aktivieren Sie „Proxy zum Client“, damit die App MQTT weiterleitet, oder verwenden Sie LoRa „OK to MQTT“ anstelle von geräteseitigem MQTT."
+      "mqttProxyRequired": "Dieses Radio hat kein WLAN. Aktivieren Sie „Proxy zum Client“, damit die App MQTT weiterleitet, oder verwenden Sie LoRa „OK to MQTT“ anstelle von geräteseitigem MQTT.",
+      "serialOverrideRequiresMode": "Die serielle Konsolenüberschreibung ist auf dem Gerät aktiviert. Stellen Sie einen gültigen seriellen Modus am Radio ein, bevor Sie das serielle Modul hier aktivieren."
     }
   },
   "nodeDetailModal": {

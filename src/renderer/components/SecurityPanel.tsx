@@ -3,6 +3,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
+import {
+  mergeMeshtasticConfigApplyValue,
+  stripMeshtasticProtobufMeta,
+} from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
@@ -245,7 +250,10 @@ export default function SecurityPanel({
   const applyConfig = useCallback(
     async (value: Partial<SecurityConfig>) => {
       if (!securityConfig) return;
-      const merged = { ...securityConfig, ...value };
+      const merged = mergeMeshtasticConfigApplyValue(
+        securityConfig,
+        value,
+      ) as unknown as SecurityConfig;
       let payload: SecurityConfig = merged;
       if (isRemoteTarget && (!merged.privateKey || merged.privateKey.length === 0)) {
         payload = {
@@ -260,7 +268,7 @@ export default function SecurityPanel({
       await onSetConfig({
         payloadVariant: {
           case: 'security',
-          value: payload,
+          value: stripMeshtasticProtobufMeta(payload as unknown as Record<string, unknown>),
         },
       });
       await onCommit();
@@ -282,7 +290,7 @@ export default function SecurityPanel({
       console.warn('[SecurityPanel] handleRegenerate ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.failed', {
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: formatMeshtasticModuleApplyError(err, t),
         }),
         'error',
       );
@@ -309,7 +317,7 @@ export default function SecurityPanel({
       console.warn('[SecurityPanel] handleApplyAdminKeys ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.failed', {
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: formatMeshtasticModuleApplyError(err, t),
         }),
         'error',
       );
@@ -328,7 +336,7 @@ export default function SecurityPanel({
       console.warn('[SecurityPanel] handleApplyToggles ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.failed', {
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: formatMeshtasticModuleApplyError(err, t),
         }),
         'error',
       );

@@ -1125,7 +1125,8 @@
       "mqttAddressRequired": "Insira um endereço de corretor MQTT antes de ativar o relé MQTT do lado do dispositivo.",
       "mqttDefaultServerTls": "A corretora pública Meshtastic MQTT não suporta TLS. Desative o TLS ou use um endereço de corretor personalizado.",
       "mqttDefaultServerPort": "Não inclua uma porta no endereço público do corretor Meshtastic MQTT (use mqtt.meshtastic.org com no :port).",
-      "mqttProxyRequired": "Este rádio não tem Wi-Fi. Ative \"Proxy para cliente\" para que o aplicativo encaminhe o MQTT ou use o LoRa \"OK para MQTT\" em vez do MQTT do lado do dispositivo."
+      "mqttProxyRequired": "Este rádio não tem Wi-Fi. Ative \"Proxy para cliente\" para que o aplicativo encaminhe o MQTT ou use o LoRa \"OK para MQTT\" em vez do MQTT do lado do dispositivo.",
+      "serialOverrideRequiresMode": "A substituição do console serial está ativada no dispositivo. Defina um modo serial válido no rádio antes de ativar o módulo serial aqui."
     }
   },
   "nodeDetailModal": {

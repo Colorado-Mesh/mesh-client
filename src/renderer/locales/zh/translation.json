@@ -1125,7 +1125,8 @@
       "mqttAddressRequired": "在启用设备端MQTT中继之前输入MQTT代理地址。",
       "mqttDefaultServerTls": "公共Meshtastic MQTT代理不支持TLS。关闭TLS或使用自定义代理地址。",
       "mqttDefaultServerPort": "不要在公共Meshtastic MQTT代理地址中包含端口（使用mqtt.meshtastic.org ，不带： port ）。",
-      "mqttProxyRequired": "这台收音机没有无线网络。启用“代理到客户端” ，以便应用程序转发MQTT ，或使用LoRa “OK to MQTT”而不是设备端MQTT。"
+      "mqttProxyRequired": "这台收音机没有无线网络。启用“代理到客户端” ，以便应用程序转发MQTT ，或使用LoRa “OK to MQTT”而不是设备端MQTT。",
+      "serialOverrideRequiresMode": "设备上启用了串行控制台覆盖。在此处启用串行模块之前，请在收音机上设置有效的串行模式。"
     }
   },
   "nodeDetailModal": {

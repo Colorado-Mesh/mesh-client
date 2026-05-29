@@ -12,6 +12,7 @@ import {
   setMeshcoreAutoaddConfig,
   setMeshcoreContacts,
   setMeshcoreSelfInfo,
+  setMeshtasticConfigSlice,
   setModuleConfigs,
   setSecurityConfig,
   setTelemetryDeviceUpdateInterval,
@@ -155,6 +156,9 @@ class PacketRouter {
       }
       case 'telemetry_interval':
         setTelemetryDeviceUpdateInterval(identityId, event.payload.interval);
+        break;
+      case 'meshtastic_config_slice':
+        setMeshtasticConfigSlice(identityId, event.payload.configCase, event.payload.value);
         break;
       case 'queue_status': {
         setConnection(identityId, {

@@ -263,6 +263,8 @@ export interface MeshtasticRemoteConfigSnapshot {
     positionPrecision: number;
   }[];
   moduleConfigs?: Record<string, unknown>;
+  /** Full Meshtastic Config protobuf slices from remote admin fetch (device, lora, display, …). */
+  configSlices?: Record<string, unknown>;
   deviceFixedPosition?: boolean | null;
   telemetryDeviceUpdateInterval?: number | null;
   deviceGpsMode?: number | null;

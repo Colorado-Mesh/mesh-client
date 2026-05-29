@@ -1031,6 +1031,9 @@ function AppContent({
   const effectiveModuleConfigs = isRemoteConfigureTarget
     ? (activeRuntime.remoteConfigSnapshot?.moduleConfigs ?? {})
     : activeRuntime.moduleConfigs;
+  const effectiveMeshtasticConfigSlices = isRemoteConfigureTarget
+    ? (activeRuntime.remoteConfigSnapshot?.configSlices ?? {})
+    : activeRuntime.meshtasticConfigSlices;
   const effectiveSecurityConfig = isRemoteConfigureTarget
     ? (activeRuntime.remoteConfigSnapshot?.securityConfig ?? null)
     : activeRuntime.securityConfig;
@@ -2266,6 +2269,11 @@ function AppContent({
                               }
                               meshtasticLoraConfig={
                                 protocol === 'meshtastic' ? effectiveLoraConfig : undefined
+                              }
+                              meshtasticConfigSlices={
+                                protocol === 'meshtastic'
+                                  ? effectiveMeshtasticConfigSlices
+                                  : undefined
                               }
                               onApplyChannelSet={
                                 capabilities.hasChannelConfig

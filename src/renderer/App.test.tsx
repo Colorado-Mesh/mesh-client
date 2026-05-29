@@ -75,6 +75,7 @@ const {
     channelConfigs: [],
     loraConfig: null,
     moduleConfigs: {},
+    meshtasticConfigSlices: {},
     securityConfig: null,
     deviceOwner: null,
     deviceFixedPosition: null,

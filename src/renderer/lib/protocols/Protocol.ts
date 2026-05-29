@@ -244,6 +244,11 @@ export interface TelemetryIntervalEvent {
   interval: number;
 }
 
+export interface MeshtasticConfigSliceEvent {
+  configCase: string;
+  value: unknown;
+}
+
 export type DomainEvent =
   | { type: 'text_message'; payload: TextMessageEvent }
   | { type: 'node_info'; payload: NodeInfoEvent }
@@ -256,6 +261,7 @@ export type DomainEvent =
   | { type: 'security_config'; payload: SecurityConfigEvent }
   | { type: 'module_config'; payload: ModuleConfigEvent }
   | { type: 'telemetry_interval'; payload: TelemetryIntervalEvent }
+  | { type: 'meshtastic_config_slice'; payload: MeshtasticConfigSliceEvent }
   | { type: 'queue_status'; payload: QueueStatusEvent }
   | { type: 'device_log'; payload: DeviceLogEvent }
   | { type: 'raw_packet'; payload: RawPacketEntry }

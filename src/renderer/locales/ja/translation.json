@@ -1125,7 +1125,8 @@
       "mqttAddressRequired": "デバイス側のMQTTリレーを有効にする前に、MQTTブローカーアドレスを入力します。",
       "mqttDefaultServerTls": "パブリックMeshtastic MQTTブローカーはTLSをサポートしていません。TLSをオフにするか、カスタムブローカーアドレスを使用します。",
       "mqttDefaultServerPort": "パブリックMeshtastic MQTTブローカーアドレスにポートを含めないでください（: portなしでmqtt.meshtastic.orgを使用してください）。",
-      "mqttProxyRequired": "このラジオにはWi-Fiがありません。「クライアントへのプロキシ」を有効にしてアプリがMQTTを転送するか、デバイス側MQTTの代わりにLoRa「OK to MQTT」を使用します。"
+      "mqttProxyRequired": "このラジオにはWi-Fiがありません。「クライアントへのプロキシ」を有効にしてアプリがMQTTを転送するか、デバイス側MQTTの代わりにLoRa「OK to MQTT」を使用します。",
+      "serialOverrideRequiresMode": "シリアルコンソールオーバーライドがデバイスで有効になっています。ここでシリアルモジュールを有効にする前に、無線で有効なシリアルモードを設定します。"
     }
   },
   "nodeDetailModal": {

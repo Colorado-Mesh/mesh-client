@@ -1125,7 +1125,8 @@
       "mqttAddressRequired": "Před povolením relé MQTT na straně zařízení zadejte adresu makléře MQTT.",
       "mqttDefaultServerTls": "Veřejný Meshtastic MQTT broker nepodporuje TLS. Vypněte TLS nebo použijte vlastní adresu makléře.",
       "mqttDefaultServerPort": "Nezahrnujte port do veřejné adresy makléře Meshtastic MQTT (použijte mqtt.meshtastic.org bez :port).",
-      "mqttProxyRequired": "Toto rádio nemá Wi-Fi. Povolte „Proxy ke klientovi“, aby aplikace předávala MQTT, nebo použijte LoRa „OK to MQTT“ namísto MQTT na straně zařízení."
+      "mqttProxyRequired": "Toto rádio nemá Wi-Fi. Povolte „Proxy ke klientovi“, aby aplikace předávala MQTT, nebo použijte LoRa „OK to MQTT“ namísto MQTT na straně zařízení.",
+      "serialOverrideRequiresMode": "Na zařízení je povoleno přepsání sériové konzoly. Před povolením sériového modulu zde nastavte platný sériový režim v rádiu."
     }
   },
   "nodeDetailModal": {

@@ -1125,7 +1125,8 @@
       "mqttAddressRequired": "Entrez une adresse de courtier MQTT avant d'activer le relais MQTT côté appareil.",
       "mqttDefaultServerTls": "Le courtier public Meshtastic MQTT ne prend pas en charge TLS. Désactivez TLS ou utilisez une adresse de courtier personnalisée.",
       "mqttDefaultServerPort": "N'incluez pas de port dans l'adresse publique du courtier Meshtastic MQTT (utilisez mqtt.meshtastic.org avec no :port).",
-      "mqttProxyRequired": "Cette radio n'a pas de Wi-Fi. Activez « Proxy au client » pour que l'application transfère MQTT, ou utilisez LoRa « OK to MQTT » au lieu de MQTT côté appareil."
+      "mqttProxyRequired": "Cette radio n'a pas de Wi-Fi. Activez « Proxy au client » pour que l'application transfère MQTT, ou utilisez LoRa « OK to MQTT » au lieu de MQTT côté appareil.",
+      "serialOverrideRequiresMode": "Le remplacement de la console série est activé sur l'appareil. Définissez un mode série valide sur la radio avant d'activer le module série ici."
     }
   },
   "nodeDetailModal": {

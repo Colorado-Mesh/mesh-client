@@ -195,4 +195,46 @@ describe('SecurityPanel', () => {
       expect(onCommit).toHaveBeenCalled();
     });
   });
+
+  it('apply admin keys preserves administration toggle fields from device config', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+
+    renderWithToast(
+      <SecurityPanel
+        onSetConfig={onSetConfig}
+        onCommit={onCommit}
+        isConnected
+        securityConfig={{
+          ...makeSecurityConfig(),
+          isManaged: true,
+          serialEnabled: true,
+          debugLogApiEnabled: false,
+          adminChannelEnabled: true,
+        }}
+      />,
+    );
+
+    const adminKeyB64 = btoa(String.fromCharCode(...new Uint8Array(32).fill(0xab)));
+    await user.click(screen.getByRole('button', { name: '+ Add Admin Key' }));
+    const adminKeyInput = screen.getByPlaceholderText('Base64-encoded 32-byte public key');
+    await user.type(adminKeyInput, adminKeyB64);
+    await user.click(screen.getByRole('button', { name: 'Apply Admin Keys' }));
+
+    await waitFor(() => {
+      expect(onSetConfig).toHaveBeenCalledWith({
+        payloadVariant: {
+          case: 'security',
+          value: expect.objectContaining({
+            isManaged: true,
+            serialEnabled: true,
+            debugLogApiEnabled: false,
+            adminChannelEnabled: true,
+            adminKey: expect.any(Array),
+          }),
+        },
+      });
+    });
+  });
 });

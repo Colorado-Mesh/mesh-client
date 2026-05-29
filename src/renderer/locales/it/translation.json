@@ -1125,7 +1125,8 @@
       "mqttAddressRequired": "Immettere un indirizzo del broker MQTT prima di abilitare il relè MQTT lato dispositivo.",
       "mqttDefaultServerTls": "Il broker MQTT Meshtastic pubblico non supporta TLS. Disattiva TLS o utilizza un indirizzo broker personalizzato.",
       "mqttDefaultServerPort": "Non includere una porta nell'indirizzo pubblico del broker MQTT Meshtastic (utilizzare mqtt.meshtastic.org con no :port).",
-      "mqttProxyRequired": "Questa radio non ha Wi-Fi. Abilitare \"Proxy al client\" in modo che l'app inoltri MQTT o utilizzare LoRa \"OK to MQTT\" invece di MQTT sul lato dispositivo."
+      "mqttProxyRequired": "Questa radio non ha Wi-Fi. Abilitare \"Proxy al client\" in modo che l'app inoltri MQTT o utilizzare LoRa \"OK to MQTT\" invece di MQTT sul lato dispositivo.",
+      "serialOverrideRequiresMode": "L'override della console seriale è abilitato sul dispositivo. Impostare una modalità seriale valida sulla radio prima di abilitare il modulo seriale qui."
     }
   },
   "nodeDetailModal": {

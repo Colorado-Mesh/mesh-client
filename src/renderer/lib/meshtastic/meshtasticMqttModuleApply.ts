@@ -1,5 +1,9 @@
 import type { TFunction } from 'i18next';
 
+import { mergeMeshtasticConfigApplyValue } from './meshtasticConfigApply';
+
+export { stripMeshtasticProtobufMeta } from './meshtasticConfigApply';
+
 const DEFAULT_MQTT_ADDRESS = 'mqtt.meshtastic.org';
 
 function cfgBool(v: unknown, fallback: boolean): boolean {
@@ -8,13 +12,6 @@ function cfgBool(v: unknown, fallback: boolean): boolean {
 
 function cfgStr(v: unknown, fallback: string): string {
   return typeof v === 'string' ? v : fallback;
-}
-
-/** Strip protobuf metadata before sending config back to the radio. */
-export function stripMeshtasticProtobufMeta(cfg: Record<string, unknown>): Record<string, unknown> {
-  const rest = { ...cfg };
-  delete rest.$typeName;
-  return rest;
 }
 
 export interface MqttModuleUiValues {
@@ -50,11 +47,9 @@ export function buildMeshtasticMqttModuleApplyValue(
   ui: MqttModuleUiValues,
   deviceNetwork?: MeshtasticDeviceNetworkCapabilities,
 ): Record<string, unknown> {
-  const base = stripMeshtasticProtobufMeta(deviceMqtt);
   const requiresProxy = ui.enabled && meshtasticDeviceRequiresMqttProxyToClient(deviceNetwork);
   const proxyToClientEnabled = requiresProxy ? true : ui.proxyToClientEnabled;
-  const merged: Record<string, unknown> = {
-    ...base,
+  const merged = mergeMeshtasticConfigApplyValue(deviceMqtt, {
     enabled: ui.enabled,
     address: ui.address.trim(),
     username: ui.username,
@@ -65,7 +60,7 @@ export function buildMeshtasticMqttModuleApplyValue(
     root: ui.root,
     mapReportingEnabled: ui.mapReportingEnabled,
     proxyToClientEnabled,
-  };
+  });
 
   if (merged.mapReportingEnabled === true && merged.mapReportSettings == null) {
     merged.mapReportSettings = {

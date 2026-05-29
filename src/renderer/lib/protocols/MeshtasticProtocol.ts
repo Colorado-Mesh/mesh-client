@@ -656,6 +656,11 @@ export class MeshtasticProtocol implements Protocol {
       events.push({ type: 'security_config', payload: secPayload });
     }
 
+    events.push({
+      type: 'meshtastic_config_slice',
+      payload: { configCase: variant.case, value: variant.value },
+    });
+
     return events;
   }
 

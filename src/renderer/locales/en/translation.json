@@ -982,7 +982,8 @@
       "mqttAddressRequired": "Enter an MQTT broker address before enabling device-side MQTT relay.",
       "mqttDefaultServerTls": "The public Meshtastic MQTT broker does not support TLS. Turn off TLS or use a custom broker address.",
       "mqttDefaultServerPort": "Do not include a port in the public Meshtastic MQTT broker address (use mqtt.meshtastic.org with no :port).",
-      "mqttProxyRequired": "This radio has no Wi-Fi. Enable “Proxy to client” so the app forwards MQTT, or use LoRa “OK to MQTT” instead of device-side MQTT."
+      "mqttProxyRequired": "This radio has no Wi-Fi. Enable “Proxy to client” so the app forwards MQTT, or use LoRa “OK to MQTT” instead of device-side MQTT.",
+      "serialOverrideRequiresMode": "Serial console override is enabled on the device. Set a valid serial mode on the radio before enabling the serial module here."
     },
     "cannedMessagesApplied": "Canned Messages applied.",
     "rtttlSaved": "RTTTL ringtone saved.",
