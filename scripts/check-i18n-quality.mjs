@@ -58,7 +58,38 @@ export const RETRY_REMOTE_CHANNELS_KEY = 'radioPanel.retryRemoteChannels';
 export const ROOMS_PANEL_PREFIX = 'roomsPanel.';
 
 /** Keys outside roomsPanel that still refer to MeshCore Room servers. */
-export const MESHCORE_ROOM_UI_KEYS = new Set(['tabs.rooms', 'nodeDetailModal.openRoomButton']);
+export const MESHCORE_ROOM_UI_KEYS = new Set([
+  'tabs.rooms',
+  'nodeDetailModal.openRoomButton',
+  'meshcoreContactSettings.typeRoomServers',
+  'nodesPanel.meshcoreTypeRoom',
+]);
+
+/** modulePanel MQTT proxy toggle + error (must not use legal/delegation false friends). */
+export const MQTT_PROXY_UI_KEYS = new Set([
+  'modulePanel.fields.mqttProxyToClientEnabled',
+  'modulePanel.errors.mqttProxyRequired',
+]);
+
+/** Auto-translate often turns "proxy to client" into power-of-attorney / legal delegation. */
+export const MQTT_PROXY_LEGAL_FALSE_FRIENDS = [
+  { re: /\bProkura\b/i, hint: 'use networking "Proxy … client", not legal Prokura' },
+  { re: /Volmacht aan/i, hint: 'use "Proxy naar client", not legal volmacht' },
+  { re: /Pełnomocnik/i, hint: 'use "Proxy do klienta", not legal pełnomocnik' },
+  { re: /Müşteriye vekalet/i, hint: 'use "İstemciye proxy", not legal vekalet' },
+  { re: /^Delega al cliente$/i, hint: 'use "Proxy al client", not legal delega' },
+  { re: /^委托给/i, hint: 'use "代理到客户端" or "向客户端代理", not legal 委托' },
+];
+
+/** English toggle label left in localized mqttProxyRequired error text. */
+export const MQTT_PROXY_EN_LABEL_RE = /Proxy to client/i;
+
+/** MyMemory/CAT often inserts spaces inside Wi-Fi. */
+export const WIFI_SPACED_RE = /Wi\s+-\s*Fi/i;
+
+/** CJK in locales that are not Chinese, Japanese, or Korean. */
+export const CJK_SCRIPT_RE = /[\u3040-\u30ff\u4e00-\u9fff\uac00-\ud7af]/;
+export const CJK_LOCALES = new Set(['zh', 'ja', 'ko']);
 
 /**
  * MT often translates MeshCore Room (chat server) as hotel/bedroom/meeting room.
@@ -113,7 +144,15 @@ export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_MAX_LEN = 24;
 export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_SENTENCE_RE = /[.!?]|(?:\S+\s+){3,}\S+/;
 
 /** roomsPanel leaf keys that must not remain identical to English. */
-export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set(['readOnlyBadge', 'aclLevelLabel']);
+export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'readOnlyBadge',
+  'aclLevelLabel',
+  'aclLevelAdmin',
+  'postButton',
+  'postCount',
+  'syncInterval120',
+  'syncInterval240',
+]);
 
 /** Leaf keys where English ends with … and locale must not use ASCII dot runs. */
 export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChannel']);
@@ -155,6 +194,16 @@ const UNTRANSLATED_READ_ONLY_BADGE_RE = /\(read only\)/i;
 
 function isMeshcoreRoomUiKey(flatKey) {
   return flatKey.startsWith(ROOMS_PANEL_PREFIX) || MESHCORE_ROOM_UI_KEYS.has(flatKey);
+}
+
+function isMqttProxyUiKey(flatKey) {
+  return MQTT_PROXY_UI_KEYS.has(flatKey);
+}
+
+/** Dutch MT often translates English "mesh" as fabric "gaas". */
+function nlMeshGaasIssue(enVal, val) {
+  if (!/\bmesh\b/i.test(enVal) || !/\bgaas\b/i.test(val)) return null;
+  return 'use "mesh" for the network, not fabric "gaas"';
 }
 
 /** True if the string contains at least one cased lowercase letter (incl. Polish, etc.). */
@@ -322,6 +371,44 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
         issues.push(`roomsPanel false friend: ${hint}`);
       }
     }
+  }
+
+  if (locale === 'ja' && flatKey === 'nodesPanel.meshcoreTypeRoom' && /部屋/.test(val)) {
+    issues.push('roomsPanel false friend: use "ルーム" for MeshCore Room type, not hotel 部屋');
+  }
+
+  if (locale === 'nl' && isMeshcoreRoomUiKey(flatKey) && /\b[Kk]amer\b/.test(val)) {
+    issues.push('roomsPanel false friend: use "ruimte" for MeshCore Room, not hotel "kamer"');
+  }
+
+  if (locale === 'nl') {
+    const gaasIssue = nlMeshGaasIssue(enVal, val);
+    if (gaasIssue) issues.push(gaasIssue);
+  }
+
+  if (isMqttProxyUiKey(flatKey)) {
+    for (const { re, hint } of MQTT_PROXY_LEGAL_FALSE_FRIENDS) {
+      if (re.test(val)) {
+        issues.push(`mqttProxy false friend: ${hint}`);
+      }
+    }
+    if (
+      flatKey === 'modulePanel.errors.mqttProxyRequired' &&
+      locale !== 'en' &&
+      MQTT_PROXY_EN_LABEL_RE.test(val)
+    ) {
+      issues.push(
+        'mqttProxyRequired still quotes English "Proxy to client" — use the locale mqttProxyToClientEnabled label',
+      );
+    }
+  }
+
+  if (enVal.includes('Wi-Fi') && WIFI_SPACED_RE.test(val)) {
+    issues.push('use "Wi-Fi" without spaces around the hyphen (not "Wi - Fi")');
+  }
+
+  if (!CJK_LOCALES.has(locale) && CJK_SCRIPT_RE.test(val) && !CJK_SCRIPT_RE.test(enVal)) {
+    issues.push('wrong-script contamination (CJK characters in a non-CJK locale)');
   }
 
   if (

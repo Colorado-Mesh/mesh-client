@@ -370,6 +370,79 @@ describe('localeStringQualityIssues', () => {
       }),
     ).toEqual([]);
   });
+
+  it('flags hotel-room false friend on nodesPanel.meshcoreTypeRoom', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'nodesPanel.meshcoreTypeRoom',
+      val: 'Habitación',
+      enVal: 'Room',
+    });
+    expectIssue(issues, 'roomsPanel false friend');
+    expectIssue(issues, 'habitación');
+  });
+
+  it('flags legal false friend on mqttProxyToClientEnabled', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'modulePanel.fields.mqttProxyToClientEnabled',
+      val: 'Prokura gegenüber dem Kunden',
+      enVal: 'Proxy to client',
+    });
+    expectIssue(issues, 'mqttProxy false friend');
+  });
+
+  it('flags English Proxy to client in mqttProxyRequired', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'modulePanel.errors.mqttProxyRequired',
+      val: 'Activez « Proxy to client » pour transférer MQTT.',
+      enVal:
+        'This radio has no Wi-Fi. Enable “Proxy to client” so the app forwards MQTT, or use LoRa “OK to MQTT” instead of device-side MQTT.',
+    });
+    expectIssue(issues, 'mqttProxyRequired still quotes English');
+  });
+
+  it('flags spaced Wi-Fi from auto-translate', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'modulePanel.errors.mqttProxyRequired',
+      val: 'Radio ini tidak memiliki Wi - Fi.',
+      enVal:
+        'This radio has no Wi-Fi. Enable “Proxy to client” so the app forwards MQTT, or use LoRa “OK to MQTT” instead of device-side MQTT.',
+    });
+    expectIssue(issues, 'Wi-Fi" without spaces');
+  });
+
+  it('flags CJK contamination in Italian', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'roomsPanel.syncInterval120',
+      val: '每2小时',
+      enVal: 'Every 2 hours',
+    });
+    expectIssue(issues, 'wrong-script contamination');
+  });
+
+  it('flags Dutch gaas for English mesh', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'diagnosticsPanel.noDiagnosticsHealthy',
+      val: 'Het gaas ziet er gezond uit!',
+      enVal: 'No diagnostics detected. The mesh looks healthy!',
+    });
+    expectIssue(issues, 'fabric "gaas"');
+  });
+
+  it('flags untranslated aclLevelAdmin in roomsPanel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'roomsPanel.aclLevelAdmin',
+      val: 'Admin',
+      enVal: 'Admin',
+    });
+    expectIssue(issues, 'aclLevelAdmin" is still identical to English');
+  });
 });
 
 describe('protectedBrandIssues', () => {

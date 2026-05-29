@@ -1102,7 +1102,7 @@
       "historyReturnMaxDesc": "当节点请求历史记录时返回的最大消息数。",
       "historyReturnWindowDesc": "返回消息的时间早于多久（秒）。",
       "remoteHardwareHint": "在设备上启用后，会自动接收 GPIO 消息。在设备硬件设置中配置 GPIO 引脚。",
-      "mqttProxyToClientEnabled": "委托给客户",
+      "mqttProxyToClientEnabled": "代理到客户端",
       "mqttProxyToClientEnabledDesc": "通过连接的应用程序路由MQTT ，而不是无线电自己的网络堆栈。启用MQTT中继时，在没有Wi-Fi/以太网的设备上是必需的。"
     },
     "applySection": "申请 {{section}}",
@@ -1983,7 +1983,7 @@
     "syncIntervalLabel": "同步间隔",
     "syncInterval60": "每60分钟",
     "syncInterval120": "每2小时",
-    "syncInterval240": "Every 4 hours",
+    "syncInterval240": "每4小时",
     "saveSyncConfig": "保存 Sync 设置",
     "lastSync": "上次同步"
   },

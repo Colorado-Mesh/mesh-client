@@ -582,7 +582,7 @@
     "dropRoutingRowsLabel": "Verwijder routeringsrijen die ouder zijn dan",
     "hoursRange": "uur (1–168)",
     "staleRoutingHelp": "Toegepast bij belasting, persistentie en samenvoeging. RF-bevindingen vervallen nog steeds na 1 uur.",
-    "noDiagnosticsHealthy": "Geen diagnose gedetecteerd. Het gaas ziet er gezond uit!",
+    "noDiagnosticsHealthy": "Geen diagnose gedetecteerd. Het mesh ziet er gezond uit!",
     "noAnomaliesMatchSearch": "Er zijn geen afwijkingen die overeenkomen met uw zoekopdracht.",
     "tableNode": "Knooppunt",
     "tableOffense": "Overtreding",
@@ -928,7 +928,7 @@
     "autoAddTypesHeading": "Typen automatisch toevoegen (alleen geselecteerde modus)",
     "typeChatUsers": "Chat-gebruikers",
     "typeRepeaters": "Repeaters",
-    "typeRoomServers": "Kamerservers",
+    "typeRoomServers": "Ruimteservers",
     "typeSensors": "Sensoren",
     "overwriteOldestTitle": "Overschrijf oudste",
     "overwriteOldestHelp": "Wanneer de contactenlijst vol is, vervangt u het oudste niet-favoriete contact door nieuwe.",
@@ -1102,7 +1102,7 @@
       "historyReturnMaxDesc": "Max. aantal berichten dat moet worden geretourneerd wanneer een knooppunt geschiedenis opvraagt.",
       "historyReturnWindowDesc": "Hoe ver terug in de tijd om berichten te retourneren (seconden).",
       "remoteHardwareHint": "GPIO-berichten worden automatisch ontvangen als deze op het apparaat zijn ingeschakeld. Configureer GPIO-pinnen in de hardware-instellingen van het apparaat.",
-      "mqttProxyToClientEnabled": "Volmacht aan opdrachtgever",
+      "mqttProxyToClientEnabled": "Proxy naar client",
       "mqttProxyToClientEnabledDesc": "Leid MQTT via de verbonden app in plaats van via de eigen netwerkstack van de radio. Vereist op apparaten zonder Wi-Fi/Ethernet wanneer MQTT-relais is ingeschakeld."
     },
     "applySection": "Toepassen {{section}}",
@@ -1125,7 +1125,7 @@
       "mqttAddressRequired": "Voer een MQTT-makelaaradres in voordat u het MQTT-relais aan de apparaatzijde inschakelt.",
       "mqttDefaultServerTls": "De openbare Meshtastic MQTT-makelaar ondersteunt TLS niet. Schakel TLS uit of gebruik een aangepast makelaarsadres.",
       "mqttDefaultServerPort": "Neem geen poort op in het openbare Meshtastic MQTT broker-adres (gebruik mqtt.meshtastic.org met no :port).",
-      "mqttProxyRequired": "Deze radio heeft geen wifi. Schakel \"Proxy naar client\" in, zodat de app MQTT doorstuurt, of gebruik LoRa \"OK naar MQTT\" in plaats van MQTT aan de apparaatzijde."
+      "mqttProxyRequired": "Deze radio heeft geen wifi. Schakel \"Proxy naar client\" in zodat de app MQTT doorstuurt, of gebruik LoRa \"OK naar MQTT\" in plaats van MQTT aan de apparaatzijde."
     }
   },
   "nodeDetailModal": {
@@ -1271,7 +1271,7 @@
     "remoteAdminKeyHint": "Nadat u de openbare sleutel van uw lokale radio (Radio → Security → Copy) aan de Admin keys van dit externe knooppunt hebt toegevoegd, plakt u dezelfde sleutel hier ter bevestiging. Gebruik daarna Configureren op het tabblad Radio.",
     "remoteAdminKeyInvalid": "Voer een geldige openbare admin-sleutel in (base64, base64:… of hex van 64 tekens).",
     "configureRemotelyHint": "Opent radio-instellingen voor dit knooppunt via de mesh (vereist lokale radio en opgeslagen admin-sleutel).",
-    "openRoomButton": "🏠 Kamer openen"
+    "openRoomButton": "🏠 Ruimte openen"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -1417,7 +1417,7 @@
     "buttonImportContacts": "Contacten importeren",
     "meshcoreTypeChat": "Chatten",
     "meshcoreTypeRepeater": "Repeater",
-    "meshcoreTypeRoom": "Kamer",
+    "meshcoreTypeRoom": "Ruimte",
     "statusOnline": "Online",
     "statusStale": "Muf",
     "statusOffline": "Offline",
@@ -1818,7 +1818,7 @@
       "configResponseUnexpected": "Externe beheerder heeft een onverwachte configuratie-antwoord geretourneerd.",
       "channelConfigPartial": "Een of meer kanaalinstellingen konden niet worden geladen vanaf het externe knooppunt.",
       "channelResponseUnexpected": "De externe beheerder heeft een onverwacht kanaalantwoord geretourneerd.",
-      "noRemotePublicKey": "Dit knooppunt heeft nog geen openbare PKI-sleutel. Wacht op een NodeInfo pakket over het gaas, of gebruik de apparaat-app één keer om sleutels uit te wisselen.",
+      "noRemotePublicKey": "Dit knooppunt heeft nog geen openbare PKI-sleutel. Wacht op een NodeInfo-pakket over het mesh, of gebruik de app een keer om sleutels uit te wisselen.",
       "noAdminKeyConfigured": "Plak en bewaar een beheerderssleutel voor dit knooppunt in het dialoogvenster met knooppuntdetails voordat u een externe beheerder gebruikt.",
       "invalidAdminKey": "Admin-sleutel moet 32 bytes zijn (base64, base64:… of 64 tekens hex).",
       "publicKeyUnauthorized": "Niet geautoriseerd: deze beheerderssleutel is niet geautoriseerd op het externe knooppunt. Controleer of de sleutel wordt vermeld onder Beheertoetsen op het externe apparaat.",
@@ -1940,12 +1940,12 @@
     "title": "Roomservers",
     "noRoomsYet": "Nog geen roomservers ontdekt. Roomcontacten verschijnen wanneer type Room op het mesh adverteert.",
     "selectRoom": "Selecteer een roomserver om berichten te bekijken en te plaatsen",
-    "postCount": "{{count}} posts",
+    "postCount": "{{count}} berichten",
     "lastPost": "Laatste post",
     "loginTitle": "Inloggen op roomserver",
     "adminLoginTitle": "Inloggen beheerder",
     "loginHelp": "Voer het wachtwoord van de gast in om mee te doen en te posten. Standaard is dit vaak \"hallo\". Laat leeg voor alleen-lezen servers.",
-    "adminLoginHelp": "Voer het beheerderswachtwoord van de kamer in om instellingen en ACL's te beheren. Standaard is dit vaak \"wachtwoord\".",
+    "adminLoginHelp": "Voer het beheerderswachtwoord van de ruimte in om instellingen en ACL's te beheren. Standaard is dit vaak \"wachtwoord\".",
     "guestPasswordLabel": "Gastwachtwoord",
     "guestPasswordPlaceholder": "hallo",
     "adminPasswordLabel": "Admin wachtwoord",
@@ -1953,12 +1953,12 @@
     "loginButton": "Login",
     "loggingIn": "Bezig met inloggen...",
     "loginFailed": "Aanmelden mislukt",
-    "cancelLoginDialog": "Inlogdialoogvenster kamer annuleren",
+    "cancelLoginDialog": "Inlogdialoog ruimte annuleren",
     "continueReadOnly": "Doorgaan met alleen-lezen",
     "readOnlyBadge": "Alleen-lezen",
     "readOnlyHint": "Je hebt alleen-lezen toegang. Log in met een gast- of beheerderswachtwoord om te plaatsen.",
-    "noPostsYet": "Nog geen berichten in deze kamer.",
-    "postPlaceholder": "Posten naar kamer...",
+    "noPostsYet": "Nog geen berichten in deze ruimte.",
+    "postPlaceholder": "Posten naar ruimte…",
     "postButton": "Plaatsen",
     "posting": "Plaatsen…",
     "manageRoom": "Beheren",
@@ -1972,11 +1972,11 @@
     "aclLevelRemove": "Toegang verwijderen",
     "aclLevelGuest": "Gast (alleen-lezen)",
     "aclLevelReadWrite": "Lezen/schrijven (kan posten)",
-    "aclLevelAdmin": "Admin",
+    "aclLevelAdmin": "Beheerder",
     "aclApply": "ACL toepassen",
     "adminPasswordRequired": "Beheerderswachtwoord is vereist om deze ruimte te beheren.",
-    "postFailed": "Posten naar kamer mislukt",
-    "leaveRoom": "Kamer verlaten",
+    "postFailed": "Posten naar ruimte mislukt",
+    "leaveRoom": "Ruimte verlaten",
     "rememberPassword": "Wachtwoord onthouden",
     "autoSync": "Auto sync.",
     "autoSyncTooltip": "Log regelmatig opnieuw in om nieuwe berichten op te halen wanneer de radio is aangesloten",
@@ -2076,7 +2076,7 @@
       "stayConnected": "Blijf verbonden",
       "signalsOut": "Signalen uit",
       "gladYouAreHere": "Fijn dat je er bent",
-      "keepTheMeshAlive": "Houd het gaas levend"
+      "keepTheMeshAlive": "Houd het mesh levend"
     }
   },
   "tabs": {
@@ -2097,7 +2097,7 @@
     "repeaters": "Repeaters",
     "rf": "RF",
     "graph": "Diagram",
-    "rooms": "Kamers"
+    "rooms": "Ruimtes"
   },
   "takServerPanel": {
     "title": "TAK-server",

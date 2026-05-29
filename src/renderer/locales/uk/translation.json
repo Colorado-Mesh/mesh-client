@@ -1102,7 +1102,7 @@
       "historyReturnMaxDesc": "Максимальна кількість повідомлень для повернення, коли вузол запитує історію.",
       "historyReturnWindowDesc": "Відстань у часі для повернення повідомлень (у секундах).",
       "remoteHardwareHint": "Повідомлення GPIO надходять автоматично, якщо ввімкнено на пристрої. Налаштуйте контакти GPIO в апаратних налаштуваннях пристрою.",
-      "mqttProxyToClientEnabled": "Проксі-сервер клієнта",
+      "mqttProxyToClientEnabled": "Проксі для клієнта",
       "mqttProxyToClientEnabledDesc": "Маршрутизуйте MQTT через підключений додаток замість власного мережевого стека радіостанції. Обов 'язково на пристроях без Wi-Fi/Ethernet, коли увімкнено реле MQTT."
     },
     "applySection": "Застосувати {{section}}",
@@ -1125,7 +1125,7 @@
       "mqttAddressRequired": "Введіть адресу брокера MQTT, перш ніж увімкнути реле MQTT на стороні пристрою.",
       "mqttDefaultServerTls": "Публічний Meshtastic MQTT-брокер не підтримує TLS. Вимкніть TLS або використовуйте спеціальну адресу брокера.",
       "mqttDefaultServerPort": "Не включайте порт до публічної адреси брокера Meshtastic MQTT (використовуйте mqtt.meshtastic.org без :port).",
-      "mqttProxyRequired": "У цьому радіо немає Wi-Fi. Увімкніть \"Proxy to client\", щоб програма пересилала MQTT, або використовуйте LoRa \"OK to MQTT\" замість MQTT на стороні пристрою."
+      "mqttProxyRequired": "У цьому радіо немає Wi-Fi. Увімкніть «Проксі для клієнта», щоб програма пересилала MQTT, або використовуйте LoRa «OK to MQTT» замість MQTT на стороні пристрою."
     }
   },
   "nodeDetailModal": {
@@ -1417,7 +1417,7 @@
     "buttonImportContacts": "Імпортувати контакти",
     "meshcoreTypeChat": "Розмова",
     "meshcoreTypeRepeater": "Повторювач",
-    "meshcoreTypeRoom": "Приміщення",
+    "meshcoreTypeRoom": "Кімната",
     "statusOnline": "В мережі",
     "statusStale": "Несвіжий",
     "statusOffline": "Офлайн",
@@ -1972,7 +1972,7 @@
     "aclLevelRemove": "Видалити доступ",
     "aclLevelGuest": "Гість (лише для читання)",
     "aclLevelReadWrite": "Читання/запис (може публікувати)",
-    "aclLevelAdmin": "Admin",
+    "aclLevelAdmin": "Адміністратор",
     "aclApply": "Застосувати ACL",
     "adminPasswordRequired": "Для керування цією кімнатою потрібен пароль адміністратора.",
     "postFailed": "Не вдалося опублікувати до кімнати",

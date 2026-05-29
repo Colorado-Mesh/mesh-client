@@ -1102,7 +1102,7 @@
       "historyReturnMaxDesc": "Максимальное количество сообщений, возвращаемых, когда узел запрашивает историю.",
       "historyReturnWindowDesc": "Как далеко во времени следует возвращать сообщения (в секундах).",
       "remoteHardwareHint": "Сообщения GPIO принимаются автоматически, если они включены на устройстве. Настройте контакты GPIO в настройках оборудования устройства.",
-      "mqttProxyToClientEnabled": "Прокси-сервер для клиента",
+      "mqttProxyToClientEnabled": "Прокси для клиента",
       "mqttProxyToClientEnabledDesc": "Маршрутизируйте MQTT через подключенное приложение вместо собственного сетевого стека радиостанции. Требуется на устройствах без Wi-Fi/Ethernet, когда включено реле MQTT."
     },
     "applySection": "Применить {{section}}",
@@ -1125,7 +1125,7 @@
       "mqttAddressRequired": "Введите адрес брокера MQTT перед включением реле MQTT на стороне устройства.",
       "mqttDefaultServerTls": "Публичный Meshtastic MQTT-брокер не поддерживает TLS. Отключите TLS или используйте пользовательский адрес брокера.",
       "mqttDefaultServerPort": "Не включайте порт в публичный адрес брокера Meshtastic MQTT (используйте mqtt.meshtastic.org с no :port).",
-      "mqttProxyRequired": "В этом радио нет Wi-Fi. Включите «Proxy to client», чтобы приложение пересылало MQTT, или используйте LoRa «OK to MQTT» вместо MQTT на стороне устройства."
+      "mqttProxyRequired": "В этом радио нет Wi-Fi. Включите «Прокси для клиента», чтобы приложение пересылало MQTT, или используйте LoRa «OK to MQTT» вместо MQTT на стороне устройства."
     }
   },
   "nodeDetailModal": {

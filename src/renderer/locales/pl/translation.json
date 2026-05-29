@@ -1102,7 +1102,7 @@
       "historyReturnMaxDesc": "Maksymalna liczba komunikatów zwracanych, gdy węzeł żąda historii.",
       "historyReturnWindowDesc": "Jak daleko w czasie należy zwracać wiadomości (w sekundach).",
       "remoteHardwareHint": "Wiadomości GPIO są odbierane automatycznie, jeśli są włączone w urządzeniu. Skonfiguruj piny GPIO w ustawieniach sprzętowych urządzenia.",
-      "mqttProxyToClientEnabled": "Pełnomocnik klienta",
+      "mqttProxyToClientEnabled": "Proxy do klienta",
       "mqttProxyToClientEnabledDesc": "Przekieruj MQTT przez połączoną aplikację zamiast własnego stosu sieci radia. Wymagane na urządzeniach bez Wi-Fi/Ethernet, gdy włączony jest przekaźnik MQTT."
     },
     "applySection": "Zastosuj {{section}}",
@@ -1125,7 +1125,7 @@
       "mqttAddressRequired": "Wprowadź adres brokera MQTT przed włączeniem przekaźnika MQTT po stronie urządzenia.",
       "mqttDefaultServerTls": "Publiczny broker Meshtastic MQTT nie obsługuje TLS. Wyłącz TLS lub użyj niestandardowego adresu brokera.",
       "mqttDefaultServerPort": "Nie umieszczaj portu w publicznym adresie brokera Meshtastic MQTT (użyj mqtt.meshtastic.org z nr :port).",
-      "mqttProxyRequired": "To radio nie ma Wi-Fi. Włącz „Proxy do klienta”, aby aplikacja przekazała dalej MQTT, lub użyj LoRa „OK do MQTT” zamiast MQTT po stronie urządzenia."
+      "mqttProxyRequired": "To radio nie ma Wi-Fi. Włącz „Proxy do klienta”, aby aplikacja przekazała MQTT, lub użyj LoRa „OK to MQTT” zamiast MQTT po stronie urządzenia."
     }
   },
   "nodeDetailModal": {

@@ -1103,7 +1103,7 @@
       "historyReturnWindowDesc": "Seberapa jauh waktu untuk membalas pesan (detik).",
       "remoteHardwareHint": "Pesan GPIO diterima secara otomatis ketika diaktifkan pada perangkat. Konfigurasikan pin GPIO di pengaturan perangkat keras perangkat.",
       "mqttProxyToClientEnabled": "Proksi ke klien",
-      "mqttProxyToClientEnabledDesc": "Rutekan MQTT melalui aplikasi yang terhubung alih - alih tumpukan jaringan radio itu sendiri. Diperlukan pada perangkat tanpa Wi - Fi/Ethernet saat relai MQTT diaktifkan."
+      "mqttProxyToClientEnabledDesc": "Rutekan MQTT melalui aplikasi yang terhubung alih-alih tumpukan jaringan radio itu sendiri. Diperlukan pada perangkat tanpa Wi-Fi/Ethernet saat relai MQTT diaktifkan."
     },
     "applySection": "Terapkan {{section}}",
     "applyingButton": "Melamar...",
@@ -1125,7 +1125,7 @@
       "mqttAddressRequired": "Masukkan alamat broker MQTT sebelum mengaktifkan relai MQTT sisi perangkat.",
       "mqttDefaultServerTls": "Broker MQTT Meshtastic publik tidak mendukung TLS. Nonaktifkan TLS atau gunakan alamat broker khusus.",
       "mqttDefaultServerPort": "Jangan sertakan port di alamat broker Meshtastic MQTT publik (gunakan mqtt.meshtastic.org tanpa :port).",
-      "mqttProxyRequired": "Radio ini tidak memiliki Wi - Fi. Aktifkan \"Proxy to client\" sehingga aplikasi meneruskan MQTT, atau gunakan LoRa \"OK to MQTT\" alih - alih MQTT sisi perangkat."
+      "mqttProxyRequired": "Radio ini tidak memiliki Wi-Fi. Aktifkan \"Proksi ke klien\" sehingga aplikasi meneruskan MQTT, atau gunakan LoRa \"OK to MQTT\" alih-alih MQTT sisi perangkat."
     }
   },
   "nodeDetailModal": {
@@ -1972,7 +1972,7 @@
     "aclLevelRemove": "Hapus akses",
     "aclLevelGuest": "Tamu (hanya baca)",
     "aclLevelReadWrite": "Baca/Tulis (bisa posting)",
-    "aclLevelAdmin": "Admin",
+    "aclLevelAdmin": "Administrator",
     "aclApply": "Terapkan ACL",
     "adminPasswordRequired": "Kata sandi admin diperlukan untuk mengelola ruangan ini.",
     "postFailed": "Gagal mengeposkan ke ruangan",
@@ -1982,7 +1982,7 @@
     "autoSyncTooltip": "Masuk kembali secara berkala untuk mengambil postingan baru saat radio terhubung",
     "syncIntervalLabel": "Interval sinkronisasi",
     "syncInterval60": "Setiap 60 menit",
-    "syncInterval120": "Every 2 hours",
+    "syncInterval120": "Setiap 2 jam",
     "syncInterval240": "Setiap 4 jam",
     "saveSyncConfig": "Simpan pengaturan sinkronisasi",
     "lastSync": "Sinkronisasi terakhir"

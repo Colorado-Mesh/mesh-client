@@ -390,7 +390,7 @@
     "forgetDevice": "このデバイスを忘れてください",
     "bluetooth": "ブルートゥース",
     "usbSerial": "USBシリアル",
-    "wifiHttp": "Wi - Fi/HTTP",
+    "wifiHttp": "Wi-Fi/HTTP",
     "tcpIp": "TCP/IP",
     "deviceAddress": "デバイスアドレス",
     "deviceAddressHint": "ホスト名または IP アドレスを入力します (http:// は除く)",
@@ -1103,7 +1103,7 @@
       "historyReturnWindowDesc": "メッセージを返す時間をどれだけ遡るか (秒)。",
       "remoteHardwareHint": "GPIO メッセージは、デバイスで有効にすると自動的に受信されます。デバイスのハードウェア設定で GPIO ピンを構成します。",
       "mqttProxyToClientEnabled": "クライアントへのプロキシ",
-      "mqttProxyToClientEnabledDesc": "ラジオ独自のネットワークスタックではなく、接続されたアプリを介してMQTTをルーティングします。MQTTリレーが有効になっている場合、Wi - Fi/イーサネットがないデバイスで必要です。"
+      "mqttProxyToClientEnabledDesc": "ラジオ独自のネットワークスタックではなく、接続されたアプリを介してMQTTをルーティングします。MQTTリレーが有効になっている場合、Wi-Fi/イーサネットがないデバイスで必要です。"
     },
     "applySection": "{{section}}を適用",
     "applyingButton": "申請中...",
@@ -1125,7 +1125,7 @@
       "mqttAddressRequired": "デバイス側のMQTTリレーを有効にする前に、MQTTブローカーアドレスを入力します。",
       "mqttDefaultServerTls": "パブリックMeshtastic MQTTブローカーはTLSをサポートしていません。TLSをオフにするか、カスタムブローカーアドレスを使用します。",
       "mqttDefaultServerPort": "パブリックMeshtastic MQTTブローカーアドレスにポートを含めないでください（: portなしでmqtt.meshtastic.orgを使用してください）。",
-      "mqttProxyRequired": "このラジオにはWi - Fiがありません。「クライアントへのプロキシ」を有効にして、アプリがMQTTを転送するか、デバイス側のMQTTの代わりにLoRa「MQTTにOK」を使用します。"
+      "mqttProxyRequired": "このラジオにはWi-Fiがありません。「クライアントへのプロキシ」を有効にしてアプリがMQTTを転送するか、デバイス側MQTTの代わりにLoRa「OK to MQTT」を使用します。"
     }
   },
   "nodeDetailModal": {
@@ -1417,7 +1417,7 @@
     "buttonImportContacts": "連絡先のインポート",
     "meshcoreTypeChat": "チャット",
     "meshcoreTypeRepeater": "リピータ",
-    "meshcoreTypeRoom": "部屋",
+    "meshcoreTypeRoom": "ルーム",
     "statusOnline": "オンライン",
     "statusStale": "古い",
     "statusOffline": "オフライン",

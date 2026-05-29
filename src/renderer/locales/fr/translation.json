@@ -1125,7 +1125,7 @@
       "mqttAddressRequired": "Entrez une adresse de courtier MQTT avant d'activer le relais MQTT côté appareil.",
       "mqttDefaultServerTls": "Le courtier public Meshtastic MQTT ne prend pas en charge TLS. Désactivez TLS ou utilisez une adresse de courtier personnalisée.",
       "mqttDefaultServerPort": "N'incluez pas de port dans l'adresse publique du courtier Meshtastic MQTT (utilisez mqtt.meshtastic.org avec no :port).",
-      "mqttProxyRequired": "Cette radio n'a pas de Wi-Fi. Activez « Proxy to client » pour que l'application transfère MQTT, ou utilisez LoRa « OK to MQTT » au lieu de MQTT côté appareil."
+      "mqttProxyRequired": "Cette radio n'a pas de Wi-Fi. Activez « Proxy au client » pour que l'application transfère MQTT, ou utilisez LoRa « OK to MQTT » au lieu de MQTT côté appareil."
     }
   },
   "nodeDetailModal": {
@@ -1417,7 +1417,7 @@
     "buttonImportContacts": "Contacts",
     "meshcoreTypeChat": "Chat",
     "meshcoreTypeRepeater": "Répéteur",
-    "meshcoreTypeRoom": "Chambre",
+    "meshcoreTypeRoom": "Salle",
     "statusOnline": "En ligne",
     "statusStale": "goût de vieux",
     "statusOffline": "Hors ligne",
@@ -1972,7 +1972,7 @@
     "aclLevelRemove": "Retirer l'accès",
     "aclLevelGuest": "Invité (lecture seule)",
     "aclLevelReadWrite": "Lecture/écriture (peut poster)",
-    "aclLevelAdmin": "Admin",
+    "aclLevelAdmin": "Administrateur",
     "aclApply": "Appliquer ACL",
     "adminPasswordRequired": "Un mot de passe administrateur est nécessaire pour gérer cette salle.",
     "postFailed": "Échec de la publication dans la salle",

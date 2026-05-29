@@ -928,7 +928,7 @@
     "autoAddTypesHeading": "Typen automatisch hinzufügen (nur ausgewählter Modus)",
     "typeChatUsers": "Chat-Benutzer",
     "typeRepeaters": "Wiederholer",
-    "typeRoomServers": "Zimmerserver",
+    "typeRoomServers": "Raumserver",
     "typeSensors": "Sensoren",
     "overwriteOldestTitle": "Älteste überschreiben",
     "overwriteOldestHelp": "Wenn die Kontaktliste voll ist, ersetzen Sie den ältesten Nicht-Favoriten-Kontakt durch einen neuen.",
@@ -1102,7 +1102,7 @@
       "historyReturnMaxDesc": "Maximale Anzahl an Nachrichten, die zurückgegeben werden, wenn ein Knoten den Verlauf anfordert.",
       "historyReturnWindowDesc": "Wie weit zurück in der Zeit, bis Nachrichten zurückgegeben werden sollen (Sekunden).",
       "remoteHardwareHint": "GPIO-Nachrichten werden automatisch empfangen, wenn sie auf dem Gerät aktiviert sind. Konfigurieren Sie GPIO-Pins in den Hardwareeinstellungen des Geräts.",
-      "mqttProxyToClientEnabled": "Prokura gegenüber dem Kunden",
+      "mqttProxyToClientEnabled": "Proxy zum Client",
       "mqttProxyToClientEnabledDesc": "Leiten Sie MQTT über die verbundene App statt über den funkeigenen Netzwerkstack. Erforderlich für Geräte ohne WLAN/Ethernet, wenn das MQTT-Relais aktiviert ist."
     },
     "applySection": "Bewerben Sie sich {{section}}",
@@ -1125,7 +1125,7 @@
       "mqttAddressRequired": "Geben Sie eine MQTT-Brokeradresse ein, bevor Sie das geräteseitige MQTT-Relay aktivieren.",
       "mqttDefaultServerTls": "Der öffentliche Meshtastic MQTT Broker unterstützt TLS nicht. Deaktivieren Sie TLS oder verwenden Sie eine benutzerdefinierte Broker-Adresse.",
       "mqttDefaultServerPort": "Fügen Sie keinen Port in die öffentliche Meshtastic MQTT-Brokeradresse ein (verwenden Sie mqtt.meshtastic.org mit no :port).",
-      "mqttProxyRequired": "Dieses Radio hat kein WLAN. Aktivieren Sie \"Proxy to client\", damit die App MQTT weiterleitet, oder verwenden Sie LoRa \"OK to MQTT\" anstelle von geräteseitigem MQTT."
+      "mqttProxyRequired": "Dieses Radio hat kein WLAN. Aktivieren Sie „Proxy zum Client“, damit die App MQTT weiterleitet, oder verwenden Sie LoRa „OK to MQTT“ anstelle von geräteseitigem MQTT."
     }
   },
   "nodeDetailModal": {

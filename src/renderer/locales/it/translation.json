@@ -1102,7 +1102,7 @@
       "historyReturnMaxDesc": "Numero massimo di messaggi da restituire quando un nodo richiede la cronologia.",
       "historyReturnWindowDesc": "Quanto indietro nel tempo per restituire i messaggi (secondi).",
       "remoteHardwareHint": "I messaggi GPIO vengono ricevuti automaticamente quando abilitati sul dispositivo. Configura i pin GPIO nelle impostazioni hardware del dispositivo.",
-      "mqttProxyToClientEnabled": "Delega al cliente",
+      "mqttProxyToClientEnabled": "Proxy al client",
       "mqttProxyToClientEnabledDesc": "Instradare MQTT attraverso l'app connessa invece dello stack di rete della radio. Richiesto su dispositivi senza Wi-Fi/Ethernet quando il relè MQTT è abilitato."
     },
     "applySection": "Applica {{section}}",
@@ -1125,7 +1125,7 @@
       "mqttAddressRequired": "Immettere un indirizzo del broker MQTT prima di abilitare il relè MQTT lato dispositivo.",
       "mqttDefaultServerTls": "Il broker MQTT Meshtastic pubblico non supporta TLS. Disattiva TLS o utilizza un indirizzo broker personalizzato.",
       "mqttDefaultServerPort": "Non includere una porta nell'indirizzo pubblico del broker MQTT Meshtastic (utilizzare mqtt.meshtastic.org con no :port).",
-      "mqttProxyRequired": "Questa radio non ha Wi-Fi. Abilitare \"Proxy to client\" in modo che l'app inoltri MQTT o utilizzare LoRa \"OK to MQTT\" invece di MQTT sul lato dispositivo."
+      "mqttProxyRequired": "Questa radio non ha Wi-Fi. Abilitare \"Proxy al client\" in modo che l'app inoltri MQTT o utilizzare LoRa \"OK to MQTT\" invece di MQTT sul lato dispositivo."
     }
   },
   "nodeDetailModal": {
@@ -1417,7 +1417,7 @@
     "buttonImportContacts": "Importa contatti",
     "meshcoreTypeChat": "Chiacchierata",
     "meshcoreTypeRepeater": "Ripetitore",
-    "meshcoreTypeRoom": "Camera",
+    "meshcoreTypeRoom": "Sala",
     "statusOnline": "In linea",
     "statusStale": "Stanco",
     "statusOffline": "Non in linea",
@@ -1862,7 +1862,7 @@
     "columnName": "Nome",
     "columnLastHeard": "Ultimo sentito:",
     "columnHops": "Salti",
-    "columnUptime": "正常运行时间",
+    "columnUptime": "Tempo di attività",
     "columnAirPct": "Aria",
     "columnReliability": "Affidabilità",
     "columnActions": "Azioni",
@@ -1959,7 +1959,7 @@
     "readOnlyHint": "Hai accesso in sola lettura. Accedi con una password di ospite o amministratore per pubblicare.",
     "noPostsYet": "Ancora nessun post in questa stanza.",
     "postPlaceholder": "Pubblica nella stanza...",
-    "postButton": "Post",
+    "postButton": "Pubblica",
     "posting": "Invio",
     "manageRoom": "Gestione",
     "manageHeading": "Amministrazione della sala",
@@ -1972,7 +1972,7 @@
     "aclLevelRemove": "Rimuovere l'accesso",
     "aclLevelGuest": "Ospite (sola lettura)",
     "aclLevelReadWrite": "Lettura/scrittura (può pubblicare)",
-    "aclLevelAdmin": "Admin",
+    "aclLevelAdmin": "Amministratore",
     "aclApply": "Applica ACL",
     "adminPasswordRequired": "La password di amministratore è necessaria per gestire questa stanza.",
     "postFailed": "Impossibile pubblicare nella stanza",
@@ -1982,7 +1982,7 @@
     "autoSyncTooltip": "Effettua periodicamente il re-login per recuperare nuovi post quando la radio è collegata",
     "syncIntervalLabel": "Intervallo sincronizzazione dati",
     "syncInterval60": "Ogni 60 minuti",
-    "syncInterval120": "每2小时",
+    "syncInterval120": "Ogni 2 ore",
     "syncInterval240": "Ogni 4 ore",
     "saveSyncConfig": "Salva le impostazioni di sincronizzazione",
     "lastSync": "Ultima sincronizzazione"
