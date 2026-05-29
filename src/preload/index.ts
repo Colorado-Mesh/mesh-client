@@ -118,6 +118,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       reply_preview_text?: string | null;
       reply_preview_sender?: string | null;
       rx_hops?: number | null;
+      room_server_id?: number | null;
     }) => ipcRenderer.invoke('db:saveMeshcoreMessage', message),
     saveMeshcoreContact: (contact: {
       node_id: number;

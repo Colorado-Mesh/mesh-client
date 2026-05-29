@@ -228,6 +228,10 @@ export interface DeviceStatusEvent {
 
 export interface DeviceMetadataEvent {
   firmwareVersion?: string;
+  /** Native Wi-Fi capability reported by the radio (DeviceMetadata.hasWifi). */
+  hasWifi?: boolean;
+  /** Native Ethernet capability reported by the radio (DeviceMetadata.hasEthernet). */
+  hasEthernet?: boolean;
 }
 
 export interface NeighborInfoEvent {
@@ -238,6 +242,11 @@ export interface NeighborInfoEvent {
 
 export interface TelemetryIntervalEvent {
   interval: number;
+}
+
+export interface MeshtasticConfigSliceEvent {
+  configCase: string;
+  value: unknown;
 }
 
 export type DomainEvent =
@@ -252,6 +261,7 @@ export type DomainEvent =
   | { type: 'security_config'; payload: SecurityConfigEvent }
   | { type: 'module_config'; payload: ModuleConfigEvent }
   | { type: 'telemetry_interval'; payload: TelemetryIntervalEvent }
+  | { type: 'meshtastic_config_slice'; payload: MeshtasticConfigSliceEvent }
   | { type: 'queue_status'; payload: QueueStatusEvent }
   | { type: 'device_log'; payload: DeviceLogEvent }
   | { type: 'raw_packet'; payload: RawPacketEntry }

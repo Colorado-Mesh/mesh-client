@@ -1,0 +1,250 @@
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+
+import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
+import { meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
+import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
+import {
+  MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS,
+  MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS,
+  MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS,
+} from './timeConstants';
+
+/** MeshCore room ACL role inferred after login (firmware PERM_ACL_* low bits). */
+export type MeshcoreRoomRole = 'none' | 'readonly' | 'readwrite' | 'admin';
+
+export interface MeshcoreRoomSession {
+  guestPassword: string;
+  adminPassword: string;
+  role: MeshcoreRoomRole;
+  loggedInAt: number;
+  /** Newest post timestamp synced from server (seconds, firmware clock). */
+  syncSince?: number;
+}
+
+/** Minimal connection surface for room server `login`. */
+export interface MeshcoreRoomLoginConn {
+  login(
+    contactPublicKey: Uint8Array,
+    password: string,
+    extraTimeoutMillis?: number,
+  ): Promise<unknown>;
+}
+
+/** Firmware PERM_ACL_ROLE_MASK values (CommonCLI / room server ACL). */
+export const MESHCORE_ROOM_PERM_GUEST = 0;
+export const MESHCORE_ROOM_PERM_READ_WRITE = 2;
+export const MESHCORE_ROOM_PERM_ADMIN = 3;
+
+const sessions = new Map<number, MeshcoreRoomSession>();
+
+/** Serializes room logins so concurrent BLE login frames do not collide. */
+let roomLoginChain: Promise<void> = Promise.resolve();
+
+export function meshcoreGetRoomSession(nodeId: number): MeshcoreRoomSession | undefined {
+  return sessions.get(nodeId);
+}
+
+export function meshcoreIsRoomLoggedIn(nodeId: number): boolean {
+  const s = sessions.get(nodeId);
+  return s != null && s.role !== 'none';
+}
+
+export function meshcoreRoomCanPost(nodeId: number): boolean {
+  const s = sessions.get(nodeId);
+  if (!s || s.role === 'none' || s.role === 'readonly') return false;
+  return true;
+}
+
+export function meshcoreRoomCanAdmin(nodeId: number): boolean {
+  return sessions.get(nodeId)?.role === 'admin';
+}
+
+export function meshcoreClearAllRoomSessions(): void {
+  sessions.clear();
+}
+
+export function meshcoreClearRoomSession(nodeId: number): void {
+  sessions.delete(nodeId);
+}
+
+function roleFromPermissionsByte(permissions: number): MeshcoreRoomRole {
+  const roleBits = permissions & 0x03;
+  if (roleBits === MESHCORE_ROOM_PERM_ADMIN) return 'admin';
+  if (roleBits === MESHCORE_ROOM_PERM_READ_WRITE) return 'readwrite';
+  if (roleBits === MESHCORE_ROOM_PERM_GUEST) return 'readonly';
+  return 'readonly';
+}
+
+function roleFromPasswordHint(
+  password: string,
+  adminPassword: string,
+  guestPassword: string,
+): MeshcoreRoomRole {
+  if (adminPassword.length > 0 && password === adminPassword) return 'admin';
+  if (password.length === 0) return 'readonly';
+  if (guestPassword.length > 0 && password === guestPassword) return 'readwrite';
+  // Non-empty password that isn't stored admin — treat as guest/read-write attempt.
+  return 'readwrite';
+}
+
+function parseLoginResponsePermissions(response: unknown): number | null {
+  if (!response || typeof response !== 'object') return null;
+  const r = response as Record<string, unknown>;
+  if (typeof r.permissions === 'number' && Number.isFinite(r.permissions)) {
+    return r.permissions & 0xff;
+  }
+  return null;
+}
+
+export function meshcoreApplyRoomSession(
+  nodeId: number,
+  params: {
+    guestPassword: string;
+    adminPassword: string;
+    role: MeshcoreRoomRole;
+    syncSince?: number;
+  },
+): void {
+  sessions.set(nodeId, {
+    guestPassword: params.guestPassword,
+    adminPassword: params.adminPassword,
+    role: params.role,
+    loggedInAt: Date.now(),
+    syncSince: params.syncSince,
+  });
+}
+
+/** Default room guest password when firmware uses factory defaults (see MeshCore ROOM_PASSWORD). */
+export const MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD = 'hello';
+
+export function meshcoreRoomEffectiveGuestPassword(password: string): string {
+  return password.trim() || MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
+}
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+export function meshcoreRoomLoginFailureMessage(err: unknown, password: string): string {
+  const msg = errLikeToLogString(err).toLowerCase();
+  if (msg.includes('timeout')) {
+    if (password.length === 0) {
+      return 'Room login timed out. Try guest password "hello", or confirm this server allows read-only login.';
+    }
+    return 'Room login timed out. The room may be out of range or not responding.';
+  }
+  return 'Room login failed';
+}
+
+/**
+ * Login to a room server and store session state.
+ * Failure point: radio timeout or wrong password — throws; caller shows UI error.
+ */
+export async function meshcoreRoomLogin(
+  conn: MeshcoreRoomLoginConn,
+  nodeId: number,
+  pubKey: Uint8Array,
+  password: string,
+  opts?: { adminPassword?: string; guestPassword?: string },
+): Promise<void> {
+  const run = async (): Promise<void> => {
+    const adminPassword = opts?.adminPassword ?? '';
+    const guestPassword = opts?.guestPassword ?? password;
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS; attempt++) {
+      try {
+        const response = await conn.login(pubKey, password, MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS);
+        const permByte = parseLoginResponsePermissions(response);
+        const role =
+          permByte != null
+            ? roleFromPermissionsByte(permByte)
+            : roleFromPasswordHint(password, adminPassword, guestPassword);
+        const lastPostMs = getMeshcoreRoomLastPostAt(nodeId);
+        meshcoreApplyRoomSession(nodeId, {
+          guestPassword,
+          adminPassword,
+          role,
+          syncSince:
+            lastPostMs != null && lastPostMs > 0 ? Math.floor(lastPostMs / 1000) : undefined,
+        });
+        return;
+      } catch (e) {
+        lastErr = e;
+        const errMsg = errLikeToLogString(e);
+        if (attempt < MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS) {
+          console.warn(
+            `[meshcoreRoomSession] room login attempt ${attempt}/${MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS} failed ${errMsg}`,
+          );
+          await sleepMs(MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS);
+        } else {
+          console.warn('[meshcoreRoomSession] room login failed ' + errMsg);
+        }
+      }
+    }
+    throw new Error(meshcoreRoomLoginFailureMessage(lastErr, password));
+  };
+
+  const next = roomLoginChain.then(run, run);
+  roomLoginChain = next.catch(() => {});
+  await next;
+}
+
+/** Best-effort re-login using stored session passwords (e.g. before post or admin CLI). */
+export async function meshcoreRoomTryRelogin(
+  conn: MeshcoreRoomLoginConn,
+  nodeId: number,
+  pubKey: Uint8Array,
+  mode: 'post' | 'admin',
+): Promise<boolean> {
+  const session = sessions.get(nodeId);
+  if (!session) return false;
+  const password =
+    mode === 'admin' && session.adminPassword.length > 0
+      ? session.adminPassword
+      : session.guestPassword;
+  return meshcoreRoomLogin(conn, nodeId, pubKey, password, {
+    adminPassword: session.adminPassword,
+    guestPassword: session.guestPassword,
+  }).then(
+    () => true,
+    () => false,
+  );
+}
+
+export function meshcoreRoomEnsureLoggedIn(nodeId: number, mode: 'post' | 'admin'): boolean {
+  if (!meshcoreIsRoomLoggedIn(nodeId)) return false;
+  if (mode === 'admin') return meshcoreRoomCanAdmin(nodeId);
+  return meshcoreRoomCanPost(nodeId);
+}
+
+/** Best-effort admin login before room server status/telemetry/CLI (uses session admin password). */
+export async function meshcoreRoomTryAdminLogin(
+  conn: MeshcoreRoomLoginConn,
+  nodeId: number,
+  pubKey: Uint8Array,
+): Promise<void> {
+  const session = sessions.get(nodeId);
+  if (!session) return;
+  const password = session.adminPassword.trim() || session.guestPassword.trim();
+  if (!password) return;
+  await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
+    adminPassword: session.adminPassword,
+    guestPassword: session.guestPassword,
+  });
+}
+
+/** Repeater admin login or room server admin login depending on contact type. */
+export async function meshcoreTryRemoteServerLogin(
+  conn: MeshcoreRepeaterLoginConn,
+  nodeId: number,
+  pubKey: Uint8Array,
+  hwModel: string | undefined,
+): Promise<void> {
+  if (hwModel === 'Room') {
+    await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
+    return;
+  }
+  await meshcoreRepeaterTryLogin(conn, pubKey);
+}

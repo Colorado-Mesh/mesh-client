@@ -340,3 +340,50 @@ export function buildMeshcoreDmIncomingMessage(
 
   return { ...base, payload: opts.rawText };
 }
+
+/** meshcore.js `TxtTypes.SignedPlain` — room server pushed posts. */
+export const MESHCORE_TXT_TYPE_SIGNED_PLAIN = 2;
+
+export function parseMeshcoreRoomPostPayload(
+  text: string,
+  pubKeyPrefixToNodeId: Map<string, number>,
+): { authorId: number; payload: string } {
+  if (text.length <= 4) {
+    return { authorId: 0, payload: text };
+  }
+  const prefix = Array.from(text.slice(0, 4))
+    .map((c) => (c.charCodeAt(0) & 0xff).toString(16).padStart(2, '0'))
+    .join('');
+  const authorId = pubKeyPrefixToNodeId.get(prefix) ?? 0;
+  return { authorId, payload: text.slice(4) };
+}
+
+export interface BuildMeshcoreRoomIncomingOpts {
+  rawText: string;
+  roomServerId: number;
+  authorId: number;
+  authorName: string;
+  timestamp: number;
+  receivedVia: ChatMessage['receivedVia'];
+  rxHops?: number;
+}
+
+export function buildMeshcoreRoomIncomingMessage(opts: BuildMeshcoreRoomIncomingOpts): ChatMessage {
+  const rxFields =
+    opts.rxHops != null && Number.isFinite(opts.rxHops)
+      ? ({ rxHops: opts.rxHops } satisfies Pick<ChatMessage, 'rxHops'>)
+      : {};
+  return {
+    sender_id: opts.authorId,
+    sender_name: opts.authorName,
+    payload: opts.rawText,
+    channel: -2,
+    timestamp: opts.timestamp,
+    status: 'acked',
+    receivedVia: opts.receivedVia,
+    roomServerId: opts.roomServerId,
+    to: opts.roomServerId,
+    meshcoreDedupeKey: opts.rawText,
+    ...rxFields,
+  };
+}

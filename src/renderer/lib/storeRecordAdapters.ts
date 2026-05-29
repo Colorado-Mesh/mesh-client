@@ -42,6 +42,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     replyId: record.replyTo != null ? Number(record.replyTo) : undefined,
     replyPreviewText: record.replyPreviewText,
     replyPreviewSender: record.replyPreviewSender,
+    ...(record.roomServerId != null ? { roomServerId: record.roomServerId } : {}),
   };
 }
 
@@ -197,5 +198,6 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     replyTo: msg.replyId != null ? String(msg.replyId) : undefined,
     replyPreviewText: msg.replyPreviewText,
     replyPreviewSender: msg.replyPreviewSender,
+    ...(msg.roomServerId != null ? { roomServerId: msg.roomServerId } : {}),
   };
 }

@@ -22,6 +22,10 @@ export interface ConnectionRecord {
   myNodeNum: number;
   lastDataReceivedAt?: Date;
   firmwareVersion?: string;
+  /** Meshtastic DeviceMetadata.hasWifi — native Wi-Fi on the radio MCU/board. */
+  deviceHasWifi?: boolean;
+  /** Meshtastic DeviceMetadata.hasEthernet — native Ethernet on the radio. */
+  deviceHasEthernet?: boolean;
   manufacturerModel?: string;
   batteryPercent?: number;
   batteryCharging?: boolean;
@@ -78,4 +82,14 @@ export function removeConnection(id: IdentityId): void {
 
 export function getConnection(id: IdentityId): ConnectionRecord | undefined {
   return useConnectionStore.getState().connections[id];
+}
+
+/** Mirrors MQTT IPC status into the identity-scoped connection store. */
+export function mirrorMqttStatusToConnection(
+  identityId: IdentityId | null,
+  status: MQTTStatus,
+): void {
+  if (identityId) {
+    setConnection(identityId, { mqttStatus: status });
+  }
 }

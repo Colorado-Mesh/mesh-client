@@ -263,6 +263,8 @@ export interface MeshtasticRemoteConfigSnapshot {
     positionPrecision: number;
   }[];
   moduleConfigs?: Record<string, unknown>;
+  /** Full Meshtastic Config protobuf slices from remote admin fetch (device, lora, display, …). */
+  configSlices?: Record<string, unknown>;
   deviceFixedPosition?: boolean | null;
   telemetryDeviceUpdateInterval?: number | null;
   deviceGpsMode?: number | null;
@@ -395,6 +397,8 @@ export interface ChatMessage {
   rxHops?: number;
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
   viaStoreForward?: boolean;
+  /** MeshCore room server BBS post (not a DM). */
+  roomServerId?: number;
 }
 
 export interface TelemetryPoint {
@@ -432,6 +436,10 @@ export interface DeviceState {
   reconnectAttempt?: number;
   lastDataReceived?: number;
   firmwareVersion?: string;
+  /** Meshtastic: native Wi-Fi reported in DeviceMetadata. */
+  deviceHasWifi?: boolean;
+  /** Meshtastic: native Ethernet reported in DeviceMetadata. */
+  deviceHasEthernet?: boolean;
   /** MeshCore: manufacturer/model string from local `deviceQuery` (connected radio only). */
   manufacturerModel?: string;
   /** 0–100 from device metrics; omit until first reading */
@@ -544,6 +552,7 @@ declare global {
           reply_preview_text?: string | null;
           reply_preview_sender?: string | null;
           rx_hops?: number | null;
+          room_server_id?: number | null;
         }) => Promise<unknown>;
         updateMeshcoreMessageSender: (
           messageId: number,

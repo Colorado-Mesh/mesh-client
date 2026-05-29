@@ -13,6 +13,8 @@ function deviceStateFromStore(record: ConnectionRecord): DeviceState {
     reconnectAttempt: record.reconnectAttempt,
     lastDataReceived: record.lastDataReceivedAt?.getTime(),
     firmwareVersion: record.firmwareVersion,
+    deviceHasWifi: record.deviceHasWifi,
+    deviceHasEthernet: record.deviceHasEthernet,
     manufacturerModel: record.manufacturerModel,
     batteryPercent: record.batteryPercent,
     batteryCharging: record.batteryCharging,

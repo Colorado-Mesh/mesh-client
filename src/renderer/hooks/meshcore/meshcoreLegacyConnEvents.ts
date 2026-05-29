@@ -17,6 +17,9 @@ import type {
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
+  buildMeshcoreRoomIncomingMessage,
+  MESHCORE_TXT_TYPE_SIGNED_PLAIN,
+  parseMeshcoreRoomPostPayload,
   resolveMeshcoreChannelMessageSender,
 } from '../../lib/meshcoreChannelText';
 import {
@@ -36,6 +39,7 @@ import {
   meshcoreRfResolvePathSender,
 } from '../../lib/meshcoreRawPacketSender';
 import { shouldCoalesceSelfFloodAdvert } from '../../lib/meshcoreRawSelfFloodAdvertCoalesce';
+import { setMeshcoreRoomLastPostAt } from '../../lib/meshcoreRoomSyncStorage';
 import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
@@ -773,6 +777,31 @@ export function attachMeshcoreLegacyConnEvents(
           timestamp: Date.now(),
         });
       }
+      return;
+    }
+
+    // Room server pushed post (SignedPlain) — not a DM to the room infrastructure node.
+    if (d.txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN && sender?.hw_model === 'Room') {
+      const { authorId, payload } = parseMeshcoreRoomPostPayload(
+        d.text,
+        pubKeyPrefixMapRef.current,
+      );
+      const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
+      const authorName =
+        authorNode?.long_name ??
+        (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
+      const postTs = d.senderTimestamp * 1000;
+      addMessage(
+        buildMeshcoreRoomIncomingMessage({
+          rawText: payload,
+          roomServerId: senderId,
+          authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
+          authorName,
+          timestamp: postTs,
+          receivedVia: 'rf',
+        }),
+      );
+      void setMeshcoreRoomLastPostAt(senderId, postTs);
       return;
     }
 

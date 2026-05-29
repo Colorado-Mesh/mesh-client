@@ -2,8 +2,8 @@ import { meshtasticShortNameAfterClearingDefault } from '../../shared/nodeNameUt
 import { sanitizeUnicodeReactionScalar } from '../../shared/reactionEmoji';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { meshtasticHwModelName } from './hardwareModels';
-import { getMeshtasticMessageLoadLimit } from './legacySideEffects/meshtasticDbHydration';
 import { meshcoreHwModelIsContactTypeLabel } from './meshcoreUtils';
+import { getMeshtasticMessageLoadLimit } from './meshtasticMessageLoadLimit';
 import type { ChatMessage, MeshNode } from './types';
 
 const LEGACY_ROLE_STRINGS: Record<string, number> = {

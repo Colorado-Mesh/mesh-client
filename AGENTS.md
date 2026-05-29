@@ -129,7 +129,7 @@ Do **not** remount protocol runtimes in child components. Do **not** compare `pr
 
 Protocol SDK adapters: `src/renderer/lib/protocols/`. Connection lifecycle: `ConnectionDriver`; inbound domain events: `PacketRouter` → stores.
 
-**Identity-scoped UI stores:** `identityStore`, `nodeStore`, `messageStore`, `connectionStore` — nodes/messages keyed by `identityId`. **SQLite → UI:** `lib/hydrateIdentityStoresFromDb.ts` (coordinator: `identityHydrationCoordinator.ts`; Meshtastic node map: `meshtasticDbCacheHydration.ts`); manual refresh via `hooks/useDbRefresh.ts`. Runtimes still use legacy mount hydration (`lib/legacySideEffects/*DbHydration.ts`) for runtime-local refs until fully retired.
+**Identity-scoped UI stores:** `identityStore`, `nodeStore`, `messageStore`, `connectionStore` — nodes/messages keyed by `identityId`. **SQLite → UI:** `lib/hydrateIdentityStoresFromDb.ts` (coordinator: `identityHydrationCoordinator.ts`; Meshtastic node map: `meshtasticDbCacheHydration.ts`; message cap: `meshtasticMessageLoadLimit.ts`); manual refresh via `hooks/useDbRefresh.ts`. Runtimes may still merge DB rows into hook-local refs on connect; identity-scoped Zustand hydration is the canonical UI path ([#375]).
 
 ### First places to look
 
@@ -156,6 +156,7 @@ Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-m
 
 ### Meshtastic channel URLs & Store & Forward
 
+- **Config apply (Radio / Modules / Security):** Firmware `setConfig` / `setModuleConfig` replace full protobuf structs. UI must merge cached device slices with form edits via `meshtasticConfigApply.ts` (`mergeMeshtasticConfigApplyValue`, `buildMeshtasticModuleApplyValue`); slices live in `deviceStore.meshtasticConfigSlices` and `moduleConfigs` (PacketRouter + `meshtasticLegacyWireSubscriptions`). Module-specific validation: `meshtasticMqttModuleApply.ts`, `meshtasticSerialModuleApply.ts`. Apply failures surface `clientNotification` text within 8s (`meshtasticClientNotification.ts` → `formatMeshtasticModuleApplyError`). Forms re-sync after reboot via `useSyncFormFromConfig`.
 - **Channel URLs:** `src/shared/meshtasticUrlEncoder.ts` (parse/generate), `src/shared/meshtasticChannelApply.ts` (replace vs add-only apply); Radio panel UI; Meshtastic-only.
 - **S&F chat history:** `src/renderer/lib/meshtasticBacklogUtils.ts` — `CLIENT_HISTORY` on primary router heartbeat after RF configure (auto: 50-msg cap, 120 min window cap, 15 min per-server cooldown, 5 min offline gate; `storeForwardAutoFetchHistory` opt-out; manual catch-up in Chat). Protobuf decode for replayed text, `via_store_forward` on messages; do not await SDK queue for history (async replay).
 - **MQTT broker clientId:** `src/main/mqtt-broker-client-id.ts` — stable per-install IDs in `app_settings` (`meshtasticMqttClientId`, `meshcoreMqttClientId`); MeshCore LetsMesh `v1_` username unchanged as clientId.

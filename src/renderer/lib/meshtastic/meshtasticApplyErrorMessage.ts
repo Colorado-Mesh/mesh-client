@@ -1,7 +1,10 @@
 import { Mesh } from '@meshtastic/protobufs';
 import type { TFunction } from 'i18next';
 
+import { sanitizeLogMessage } from '@/main/sanitize-log-message';
+
 import { errLikeToLogString } from '../errLikeToLogString';
+import { peekRecentMeshtasticClientNotification } from './meshtasticClientNotification';
 import { isMeshtasticTransportLostError } from './meshtasticTransportLossDetection';
 
 const ROUTING_ERROR_CODE_RE = /"error"\s*:\s*(\d+)/;
@@ -47,6 +50,16 @@ function modulePanelErrorKeyForRoutingCode(code: number): string | null {
   }
 }
 
+function appendClientNotificationDetail(base: string, code: number | undefined): string {
+  const RoutingError = Mesh.Routing_Error as Record<string, number>;
+  const shouldAppend =
+    code === RoutingError.BAD_REQUEST || code == null || code === RoutingError.NO_RESPONSE;
+  if (!shouldAppend) return base;
+  const detail = peekRecentMeshtasticClientNotification();
+  if (!detail) return base;
+  return `${base} (${sanitizeLogMessage(detail)})`;
+}
+
 /** User-facing message for module/radio apply failures (local radio, not remote admin). */
 export function formatMeshtasticModuleApplyError(err: unknown, t: TFunction): string {
   if (isMeshtasticTransportLostError(err)) {
@@ -56,16 +69,18 @@ export function formatMeshtasticModuleApplyError(err: unknown, t: TFunction): st
   const code = parseMeshtasticRoutingErrorCode(err);
   if (code != null) {
     const key = modulePanelErrorKeyForRoutingCode(code);
-    if (key) return t(key);
-    return t('modulePanel.errors.routingError', {
-      code,
-      name: meshtasticRoutingErrorName(code),
-    });
+    const base = key
+      ? t(key)
+      : t('modulePanel.errors.routingError', {
+          code,
+          name: meshtasticRoutingErrorName(code),
+        });
+    return appendClientNotificationDetail(base, code);
   }
 
   if (err instanceof Error && err.message.trim()) {
-    return err.message;
+    return appendClientNotificationDetail(err.message, undefined);
   }
 
-  return t('modulePanel.errors.generic');
+  return appendClientNotificationDetail(t('modulePanel.errors.generic'), undefined);
 }

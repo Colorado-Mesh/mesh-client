@@ -4,7 +4,6 @@ import { useIdentityStore } from '../stores/identityStore';
 import { getIdentityIdForProtocol } from './identityByProtocol';
 import {
   ensureOfflineProtocolIdentities,
-  getOfflineIdentityIdForProtocol,
   OFFLINE_MESHCORE_IDENTITY_ID,
   OFFLINE_MESHTASTIC_IDENTITY_ID,
   tryReuseOfflineProtocolIdentity,
@@ -27,6 +26,6 @@ describe('offlineProtocolIdentities', () => {
   it('tryReuseOfflineProtocolIdentity returns offline id before connect', () => {
     ensureOfflineProtocolIdentities();
     expect(tryReuseOfflineProtocolIdentity('meshtastic')).toBe(OFFLINE_MESHTASTIC_IDENTITY_ID);
-    expect(getOfflineIdentityIdForProtocol('meshcore')).toBe(OFFLINE_MESHCORE_IDENTITY_ID);
+    expect(tryReuseOfflineProtocolIdentity('meshcore')).toBe(OFFLINE_MESHCORE_IDENTITY_ID);
   });
 });

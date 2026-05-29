@@ -43,13 +43,28 @@ describe('ModulePanel', () => {
     expect(screen.getByText('Waiting for module config from device…')).toBeInTheDocument();
   });
 
-  it('applies telemetry module with updated device interval', async () => {
+  it('applies telemetry module with updated device interval and preserves hidden fields', async () => {
     const user = userEvent.setup();
     const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
     const onCommit = vi.fn().mockResolvedValue(undefined);
 
     renderWithToast(
-      <ModulePanel {...baseProps} onSetModuleConfig={onSetModuleConfig} onCommit={onCommit} />,
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          telemetry: {
+            deviceUpdateInterval: 1800,
+            environmentUpdateInterval: 1800,
+            environmentMeasurementEnabled: false,
+            powerMeasurementEnabled: false,
+            airQualityEnabled: false,
+            healthMeasurementEnabled: true,
+            powerUpdateInterval: 900,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
     );
 
     const telemetryDetails = [...document.querySelectorAll('details')].find((d) => {
@@ -80,10 +95,149 @@ describe('ModulePanel', () => {
             environmentMeasurementEnabled: false,
             powerMeasurementEnabled: false,
             airQualityEnabled: false,
+            healthMeasurementEnabled: true,
+            powerUpdateInterval: 900,
           }),
         },
       });
       expect(onCommit).toHaveBeenCalled();
+    });
+  });
+
+  it('preserves isServer and uses records field for Store & Forward apply', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          storeForward: {
+            enabled: true,
+            isServer: true,
+            records: 100,
+            heartbeat: true,
+            historyReturnMax: 25,
+            historyReturnWindow: 7200,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
+    );
+
+    const sfDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Store & Forward Module';
+    });
+    expect(sfDetails).toBeDefined();
+    await user.click(sfDetails!.querySelector('summary')!);
+    await user.click(screen.getByRole('button', { name: 'Apply Store & Forward Module' }));
+
+    await waitFor(() => {
+      expect(onSetModuleConfig).toHaveBeenCalledWith({
+        payloadVariant: {
+          case: 'storeForward',
+          value: expect.objectContaining({
+            enabled: true,
+            isServer: true,
+            records: 100,
+            heartbeat: true,
+          }),
+        },
+      });
+    });
+  });
+
+  it('blocks serial apply when console override is on but device mode is unset', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: false,
+            echo: true,
+            baud: 115200,
+            mode: 0,
+            overrideConsoleSerialPort: true,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+    await user.click(serialDetails!.querySelector('[role="switch"]')!);
+    await user.click(screen.getByRole('button', { name: 'Apply Serial Module' }));
+
+    expect(onSetModuleConfig).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Serial console override is enabled on the device. Set a valid serial mode on the radio before enabling the serial module here.',
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('preserves serial overrideConsoleSerialPort and mode from device on apply', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: false,
+            echo: true,
+            baud: 115200,
+            mode: 2,
+            overrideConsoleSerialPort: true,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+
+    const enableSwitch = serialDetails!.querySelector('[role="switch"]');
+    await user.click(enableSwitch!);
+    await user.click(screen.getByRole('button', { name: 'Apply Serial Module' }));
+
+    await waitFor(() => {
+      expect(onSetModuleConfig).toHaveBeenCalledWith({
+        payloadVariant: {
+          case: 'serial',
+          value: expect.objectContaining({
+            enabled: true,
+            echo: true,
+            baud: 115200,
+            mode: 2,
+            overrideConsoleSerialPort: true,
+          }),
+        },
+      });
     });
   });
 

@@ -12,6 +12,7 @@ import {
   setMeshcoreAutoaddConfig,
   setMeshcoreContacts,
   setMeshcoreSelfInfo,
+  setMeshtasticConfigSlice,
   setModuleConfigs,
   setSecurityConfig,
   setTelemetryDeviceUpdateInterval,
@@ -156,6 +157,9 @@ class PacketRouter {
       case 'telemetry_interval':
         setTelemetryDeviceUpdateInterval(identityId, event.payload.interval);
         break;
+      case 'meshtastic_config_slice':
+        setMeshtasticConfigSlice(identityId, event.payload.configCase, event.payload.value);
+        break;
       case 'queue_status': {
         setConnection(identityId, {
           queueFree: event.payload.free,
@@ -172,12 +176,17 @@ class PacketRouter {
       case 'device_status':
         setConnection(identityId, { status: event.payload.status as ConnectionStatus });
         break;
-      case 'device_metadata':
-        // firmwareVersion is the only field; event may arrive before it is known
-        if (event.payload.firmwareVersion) {
-          setConnection(identityId, { firmwareVersion: event.payload.firmwareVersion });
+      case 'device_metadata': {
+        const { firmwareVersion, hasWifi, hasEthernet } = event.payload;
+        const updates: Parameters<typeof setConnection>[1] = {};
+        if (firmwareVersion) updates.firmwareVersion = firmwareVersion;
+        if (hasWifi != null) updates.deviceHasWifi = hasWifi;
+        if (hasEthernet != null) updates.deviceHasEthernet = hasEthernet;
+        if (Object.keys(updates).length > 0) {
+          setConnection(identityId, updates);
         }
         break;
+      }
       case 'neighbor_info':
         upsertNeighborInfo(identityId, event.payload);
         break;

@@ -656,6 +656,11 @@ export class MeshtasticProtocol implements Protocol {
       events.push({ type: 'security_config', payload: secPayload });
     }
 
+    events.push({
+      type: 'meshtastic_config_slice',
+      payload: { configCase: variant.case, value: variant.value },
+    });
+
     return events;
   }
 
@@ -735,8 +740,15 @@ export class MeshtasticProtocol implements Protocol {
   }
 
   private decodeDeviceMetadata(raw: unknown): DomainEvent[] {
-    const packet = raw as { data?: { firmwareVersion?: string } };
-    const payload: DeviceMetadataEvent = { firmwareVersion: packet.data?.firmwareVersion };
+    const packet = raw as {
+      data?: { firmwareVersion?: string; hasWifi?: boolean; hasEthernet?: boolean };
+    };
+    const data = packet.data;
+    const payload: DeviceMetadataEvent = {
+      firmwareVersion: data?.firmwareVersion,
+      hasWifi: data?.hasWifi,
+      hasEthernet: data?.hasEthernet,
+    };
     return [{ type: 'device_metadata', payload }];
   }
 

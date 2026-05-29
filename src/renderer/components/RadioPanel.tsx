@@ -2,7 +2,14 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useSyncFormFromConfig } from '@/renderer/hooks/useSyncFormFromConfig';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
+import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
+import {
+  mergeMeshtasticConfigApplyValue,
+  meshtasticConfigSlice,
+} from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ApplyChannelSetResult } from '@/shared/meshtasticChannelApply';
 import {
@@ -100,6 +107,8 @@ interface Props {
   }) => Promise<void>;
   meshcoreAutoadd?: MeshcoreAutoaddWireState | null;
   meshtasticLoraConfig?: MeshtasticLoraConfig | null;
+  /** Cached Meshtastic Config slices for merge-on-apply (local device or remote snapshot). */
+  meshtasticConfigSlices?: Record<string, unknown>;
   onApplyChannelSet?: (
     parsed: ParsedChannelSet,
     options?: { applyLora?: boolean },
@@ -616,6 +625,7 @@ export default function RadioPanel({
   onApplyLoraParams,
   loraConfig,
   meshtasticLoraConfig,
+  meshtasticConfigSlices,
   onApplyChannelSet,
   meshcoreSelfInfo,
   meshcoreContactsForTelemetry,
@@ -733,6 +743,83 @@ export default function RadioPanel({
     }
   }, [deviceFixedPosition]);
 
+  useSyncFormFromConfig(meshtasticConfigSlices?.bluetooth, (cfg) => {
+    if (typeof cfg.enabled === 'boolean') setBtEnabled(cfg.enabled);
+    if (typeof cfg.fixedPin === 'number') setBtFixedPin(cfg.fixedPin);
+  });
+
+  useSyncFormFromConfig(meshtasticConfigSlices?.device, (cfg) => {
+    if (typeof cfg.role === 'number') setDeviceRole(cfg.role);
+  });
+
+  useSyncFormFromConfig(meshtasticConfigSlices?.display, (cfg) => {
+    if (typeof cfg.screenOnSecs === 'number') setScreenOnSecs(cfg.screenOnSecs);
+    if (typeof cfg.units === 'number') setDisplayUnits(cfg.units);
+  });
+
+  useSyncFormFromConfig(meshtasticConfigSlices?.position, (cfg) => {
+    if (typeof cfg.positionBroadcastSecs === 'number') {
+      setPositionBroadcastSecs(cfg.positionBroadcastSecs);
+    }
+    if (typeof cfg.gpsUpdateInterval === 'number') setGpsUpdateInterval(cfg.gpsUpdateInterval);
+    if (typeof cfg.fixedPosition === 'boolean') setFixedPosition(cfg.fixedPosition);
+    if (typeof cfg.gpsMode === 'number') setGpsMode(cfg.gpsMode);
+    if (typeof cfg.positionPrecision === 'number') setPositionPrecision(cfg.positionPrecision);
+    if (typeof cfg.smartPositionEnabled === 'boolean') {
+      setSmartPositionEnabled(cfg.smartPositionEnabled);
+    }
+    if (typeof cfg.broadcastSmartMinimumDistance === 'number') {
+      setSmartPositionMinDistance(cfg.broadcastSmartMinimumDistance);
+    }
+    if (typeof cfg.broadcastSmartMinimumIntervalSecs === 'number') {
+      setSmartPositionMinInterval(cfg.broadcastSmartMinimumIntervalSecs);
+    }
+  });
+
+  useSyncFormFromConfig(meshtasticConfigSlices?.power, (cfg) => {
+    if (typeof cfg.isPowerSaving === 'boolean') setIsPowerSaving(cfg.isPowerSaving);
+    if (typeof cfg.minWakeSecs === 'number') setMinWakeSecs(cfg.minWakeSecs);
+    if (typeof cfg.waitBluetoothSecs === 'number') setWaitBluetoothSecs(cfg.waitBluetoothSecs);
+    if (typeof cfg.sdsSecs === 'number') setSdsSecs(cfg.sdsSecs);
+    if (typeof cfg.lsSecs === 'number') setLsSecs(cfg.lsSecs);
+    if (typeof cfg.onBatteryShutdownAfterSecs === 'number') {
+      setOnBatteryShutdownAfterSecs(cfg.onBatteryShutdownAfterSecs);
+    }
+  });
+
+  useSyncFormFromConfig(meshtasticConfigSlices?.network, (cfg) => {
+    if (typeof cfg.wifiEnabled === 'boolean') setWifiEnabled(cfg.wifiEnabled);
+    if (typeof cfg.wifiSsid === 'string') setWifiSsid(cfg.wifiSsid);
+    if (typeof cfg.wifiPsk === 'string') setWifiPsk(cfg.wifiPsk);
+    if (typeof cfg.ntpServer === 'string') setNtpServer(cfg.ntpServer);
+    if (typeof cfg.ethEnabled === 'boolean') setEthEnabled(cfg.ethEnabled);
+  });
+
+  useSyncFormFromConfig(meshtasticConfigSlices?.telemetry, (cfg) => {
+    const interval =
+      typeof cfg.deviceUpdateInterval === 'number'
+        ? cfg.deviceUpdateInterval
+        : typeof cfg.device_update_interval === 'number'
+          ? cfg.device_update_interval
+          : undefined;
+    if (typeof interval === 'number') setDeviceUpdateInterval(interval);
+  });
+
+  useEffect(() => {
+    const loraRaw = meshtasticLoraConfig ?? meshtasticConfigSlices?.lora;
+    const lora = meshtasticConfigSlice(loraRaw);
+    if (Object.keys(lora).length === 0) return;
+    if (typeof lora.region === 'number') setRegion(lora.region);
+    if (typeof lora.modemPreset === 'number') setModemPreset(lora.modemPreset);
+    if (typeof lora.usePreset === 'boolean') setUsePreset(lora.usePreset);
+    if (typeof lora.hopLimit === 'number') setHopLimit(lora.hopLimit);
+    if (typeof lora.bandwidth === 'number') setBandwidth(lora.bandwidth);
+    if (typeof lora.spreadFactor === 'number') setSpreadFactor(lora.spreadFactor);
+    if (typeof lora.codingRate === 'number') setCodingRate(lora.codingRate);
+    if (typeof lora.txPower === 'number') setTxPower(lora.txPower);
+    if (typeof lora.sx126xRxBoostedGain === 'boolean') setRxBoostedGain(lora.sx126xRxBoostedGain);
+  }, [meshtasticLoraConfig, meshtasticConfigSlices?.lora]);
+
   useEffect(() => {
     const a = ourPosition?.altitudeMeters;
     if (a == null || !Number.isFinite(a)) return;
@@ -780,13 +867,19 @@ export default function RadioPanel({
     configValue: Record<string, unknown>,
   ) => {
     if (!isConnected) return;
+    clearMeshtasticClientNotification();
     setApplyingSection(section);
     setStatus(`Applying ${section}...`);
+    const deviceSlice =
+      configCase === 'lora' && meshtasticLoraConfig
+        ? meshtasticLoraConfig
+        : meshtasticConfigSlices?.[configCase];
+    const merged = mergeMeshtasticConfigApplyValue(deviceSlice, configValue);
     try {
       await onSetConfig({
         payloadVariant: {
           case: configCase,
-          value: configValue,
+          value: merged,
         },
       });
       try {
@@ -795,12 +888,12 @@ export default function RadioPanel({
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in panel status text
         setStatus(
-          `${section} sent, but commit failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          `${section} sent, but commit failed: ${formatMeshtasticModuleApplyError(err, t)}`,
         );
       }
     } catch (err) {
       console.warn('[RadioPanel] apply section failed ' + errLikeToLogString(err));
-      setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setStatus(`Failed: ${formatMeshtasticModuleApplyError(err, t)}`);
     } finally {
       setApplyingSection(null);
     }

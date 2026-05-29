@@ -13,7 +13,7 @@ overrides:
 
 patchedDependencies:
   '@liamcottle/meshcore.js@1.13.0':
-    hash: fed0cf4906e50dabb2fa7360570dcfa615635093c7f06a7270b3b679e126fd7e
+    hash: cb054ae2e703a540c49884ed779d16e5804e8c0a82e7ce11bc09d68604c62c8e
     path: patches/@liamcottle__meshcore.js@1.13.0.patch
   debug@4.4.3:
     hash: cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37
@@ -86,7 +86,7 @@ importers:
         version: 10.0.1(eslint@10.4.0(jiti@2.7.0))
       '@liamcottle/meshcore.js':
         specifier: ^1.13.0
-        version: 1.13.0(patch_hash=fed0cf4906e50dabb2fa7360570dcfa615635093c7f06a7270b3b679e126fd7e)
+        version: 1.13.0(patch_hash=cb054ae2e703a540c49884ed779d16e5804e8c0a82e7ce11bc09d68604c62c8e)
       '@meshtastic/core':
         specifier: npm:@jsr/meshtastic__core@^2.6.6
         version: '@jsr/meshtastic__core@2.6.6(buffer@6.0.3)'
@@ -5104,7 +5104,7 @@ snapshots:
     transitivePeerDependencies:
       - buffer
 
-  '@liamcottle/meshcore.js@1.13.0(patch_hash=fed0cf4906e50dabb2fa7360570dcfa615635093c7f06a7270b3b679e126fd7e)':
+  '@liamcottle/meshcore.js@1.13.0(patch_hash=cb054ae2e703a540c49884ed779d16e5804e8c0a82e7ce11bc09d68604c62c8e)':
     dependencies:
       '@noble/curves': 1.9.7
       serialport: 13.0.0

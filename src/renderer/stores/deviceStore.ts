@@ -99,6 +99,8 @@ function emptyPortBuffers(): MeshtasticPortBuffers {
 export interface DeviceRecord {
   channels: { index: number; name: string }[];
   channelConfigs: ChannelConfig[];
+  /** Full Meshtastic Config protobuf slices keyed by payloadVariant case (device, lora, …). */
+  meshtasticConfigSlices: Record<string, unknown>;
   moduleConfigs: Record<string, unknown>;
   securityConfig: SecurityConfig | null;
   deviceOwner: DeviceOwner | null;
@@ -119,6 +121,7 @@ export interface DeviceRecord {
 const defaultRecord: DeviceRecord = {
   channels: [],
   channelConfigs: [],
+  meshtasticConfigSlices: {},
   moduleConfigs: {},
   securityConfig: null,
   deviceOwner: null,
@@ -161,6 +164,24 @@ export function setDeviceChannels(
 
 export function setModuleConfigs(id: IdentityId, moduleConfigs: Record<string, unknown>): void {
   patch(id, { moduleConfigs });
+}
+
+export function setMeshtasticConfigSlice(id: IdentityId, configCase: string, value: unknown): void {
+  useDeviceStore.setState((s) => {
+    const rec = s.devices[id] ?? defaultRecord;
+    return {
+      devices: {
+        ...s.devices,
+        [id]: {
+          ...rec,
+          meshtasticConfigSlices: {
+            ...rec.meshtasticConfigSlices,
+            [configCase]: value,
+          },
+        },
+      },
+    };
+  });
 }
 
 export function setSecurityConfig(id: IdentityId, securityConfig: SecurityConfig): void {

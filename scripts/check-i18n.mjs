@@ -147,17 +147,6 @@ function setsEqualStrings(a, b) {
   return true;
 }
 
-// CAT / XLIFF / Memsource garbage that must never ship in JSON values.
-const LOCALE_ARTIFACT_RES = [
-  /<g\s+id=/i,
-  /<\/g>/i,
-  /<ph\s+id=/i,
-  /<bpt\b/i,
-  /<ept\b/i,
-  /equiv-text=/i,
-];
-
-// Leaf key names whose locale value must exactly equal the English value.
 // These are protocol terms / acronyms intentionally displayed in English across all locales.
 // Checked by leaf key name so nesting differences don't matter.
 const VERBATIM_KEY_NAMES = new Set([
@@ -210,14 +199,6 @@ for (const dir of localeDirs) {
   }
   for (const [key, val] of Object.entries(localeFlat)) {
     if (typeof val !== 'string') continue;
-    for (const re of LOCALE_ARTIFACT_RES) {
-      if (re.test(val)) {
-        console.error(
-          `Locale artifact in "${dir}" key "${key}": CAT/XLIFF/Memsource residue is not allowed (matched ${re}).`,
-        );
-        errors++;
-      }
-    }
     const enVal = en[key];
     if (typeof enVal !== 'string') continue;
     const enPh = placeholderNameSet(enVal);

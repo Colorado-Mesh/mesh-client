@@ -662,7 +662,7 @@ describe('ChatPanel compact mode', () => {
     compactMode: true,
   };
 
-  it('merges consecutive same-sender channel bubbles when timestamps are more than 5 minutes apart', () => {
+  it('merges consecutive same-sender channel bubbles and shows only one sender header', () => {
     const base = new Date('2026-05-09T12:00:00').getTime();
     render(
       <ToastProvider>

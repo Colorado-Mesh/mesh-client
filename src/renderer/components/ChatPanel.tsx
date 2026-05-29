@@ -23,6 +23,7 @@ import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
+import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useChatOutbox } from '../hooks/useChatOutbox';
 import { useNowMs } from '../hooks/useNowMs';
 import {
@@ -477,6 +478,7 @@ function ChatPanel({
   /** DM peer for a message, excluding broadcast and non-DM traffic. */
   const resolveDmPeer = useCallback(
     (msg: ChatMessage): number | undefined => {
+      if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return undefined;
       if (msg.to == null) return undefined;
       let peer: number | undefined;
       if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
@@ -1049,7 +1051,6 @@ function ChatPanel({
 
     // Queue when: truly disconnected, OR MeshCore + MQTT-only (no device = packet-analyzer risk)
     if (!isConnected || (isMqttOnly && protocol === 'meshcore')) {
-      const now = Date.now();
       const groupId = textsToSend.length > 1 ? crypto.randomUUID() : null;
       for (let i = 0; i < textsToSend.length; i++) {
         await queueOutbox({
@@ -1062,7 +1063,6 @@ function ChatPanel({
           status: 'queued',
           error: null,
           nextRetryAt: null,
-          createdAt: now + i,
           groupId,
           groupIndex: groupId ? i : null,
           groupTotal: groupId ? textsToSend.length : null,

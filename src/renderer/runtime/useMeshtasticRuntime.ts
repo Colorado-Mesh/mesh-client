@@ -81,7 +81,6 @@ import {
   syncMeshtasticNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
-import { mirrorMqttStatusToConnection } from '../lib/legacySideEffects/mqttStatusBridge';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
 import {
@@ -159,7 +158,11 @@ import type {
   RemoteConfigChannelsTailStatus,
   TelemetryPoint,
 } from '../lib/types';
-import { setConnection, useConnectionStore } from '../stores/connectionStore';
+import {
+  mirrorMqttStatusToConnection,
+  setConnection,
+  useConnectionStore,
+} from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { upsertMessage, useMessageStore } from '../stores/messageStore';
@@ -3440,6 +3443,11 @@ export function useMeshtasticRuntime() {
     return moduleConfigs;
   }, [meshtasticIdentityId, moduleConfigs, meshtasticDeviceRecord]);
 
+  const resolvedMeshtasticConfigSlices = useMemo(() => {
+    if (!meshtasticIdentityId) return {};
+    return meshtasticDeviceRecord?.meshtasticConfigSlices ?? {};
+  }, [meshtasticIdentityId, meshtasticDeviceRecord]);
+
   const resolvedDeviceLogs = useMemo(() => {
     if (!meshtasticIdentityId) return deviceLogs;
     if (meshtasticDeviceRecord?.deviceLogs.length) return meshtasticDeviceRecord.deviceLogs;
@@ -3557,6 +3565,7 @@ export function useMeshtasticRuntime() {
       sendWaypoint,
       deleteWaypoint,
       moduleConfigs: resolvedModuleConfigs,
+      meshtasticConfigSlices: resolvedMeshtasticConfigSlices,
       setModuleConfig,
       setCannedMessages,
       ringtone,
@@ -3659,6 +3668,7 @@ export function useMeshtasticRuntime() {
       sendWaypoint,
       deleteWaypoint,
       resolvedModuleConfigs,
+      resolvedMeshtasticConfigSlices,
       setModuleConfig,
       setCannedMessages,
       ringtone,

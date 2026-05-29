@@ -27,6 +27,8 @@ export interface MessageRecord {
   receivedVia?: MessageTransport;
   isHistory?: boolean;
   error?: string;
+  /** MeshCore room server posts (BBS); filters Rooms panel stream. */
+  roomServerId?: number;
 }
 
 interface MessageStoreState {

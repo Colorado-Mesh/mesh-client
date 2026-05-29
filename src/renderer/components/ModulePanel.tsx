@@ -1,9 +1,23 @@
 import type { TFunction } from 'i18next';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useSyncFormFromConfig } from '@/renderer/hooks/useSyncFormFromConfig';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
+import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
+import {
+  buildMeshtasticModuleApplyValue,
+  mergeMeshtasticConfigApplyValue,
+  meshtasticConfigSlice,
+} from '@/renderer/lib/meshtastic/meshtasticConfigApply';
+import {
+  buildMeshtasticMqttModuleApplyValue,
+  type MeshtasticDeviceNetworkCapabilities,
+  meshtasticDeviceRequiresMqttProxyToClient,
+  validateMeshtasticMqttModuleApply,
+} from '@/renderer/lib/meshtastic/meshtasticMqttModuleApply';
+import { validateMeshtasticSerialModuleApply } from '@/renderer/lib/meshtastic/meshtasticSerialModuleApply';
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
@@ -16,12 +30,8 @@ interface PacketMessage {
   timestamp: number;
 }
 
-/** Narrow unknown module config payloads from IPC/protobuf to a plain record for field reads. */
-function moduleConfigSlice(raw: unknown): Record<string, unknown> {
-  if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
-    return raw as Record<string, unknown>;
-  }
-  return {};
+function storeForwardRecordsFromCfg(cfg: Record<string, unknown>): number {
+  return cfgNum(cfg.records ?? cfg.numRecords, 0);
 }
 
 function cfgBool(v: unknown, fallback: boolean): boolean {
@@ -45,6 +55,8 @@ interface Props {
   ringtone?: string;
   onCommit: () => Promise<void>;
   isConnected: boolean;
+  /** Meshtastic DeviceMetadata network flags; used for MQTT proxy requirement. */
+  deviceNetwork?: MeshtasticDeviceNetworkCapabilities;
   storeForwardMessages?: Map<number, PacketMessage[]>;
   rangeTestPackets?: Map<number, PacketMessage[]>;
   serialMessages?: Map<number, PacketMessage[]>;
@@ -324,6 +336,7 @@ export default function ModulePanel({
   ringtone,
   onCommit,
   isConnected,
+  deviceNetwork,
   storeForwardMessages,
   rangeTestPackets,
   serialMessages,
@@ -337,7 +350,7 @@ export default function ModulePanel({
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
 
   // ─── Telemetry module ──────────────────────────────────────────
-  const telCfg = moduleConfigSlice(moduleConfigs.telemetry);
+  const telCfg = meshtasticConfigSlice(moduleConfigs.telemetry);
   const [telDeviceInterval, setTelDeviceInterval] = useState<number>(
     cfgNum(telCfg.deviceUpdateInterval, 1800),
   );
@@ -355,7 +368,7 @@ export default function ModulePanel({
   );
 
   // ─── MQTT relay module ─────────────────────────────────────────
-  const mqttCfg = moduleConfigSlice(moduleConfigs.mqtt);
+  const mqttCfg = meshtasticConfigSlice(moduleConfigs.mqtt);
   const [mqttEnabled, setMqttEnabled] = useState<boolean>(cfgBool(mqttCfg.enabled, false));
   const [mqttAddress, setMqttAddress] = useState<string>(cfgStr(mqttCfg.address, ''));
   const [mqttUsername, setMqttUsername] = useState<string>(cfgStr(mqttCfg.username, ''));
@@ -369,20 +382,42 @@ export default function ModulePanel({
   const [mqttMapReporting, setMqttMapReporting] = useState<boolean>(
     cfgBool(mqttCfg.mapReportingEnabled, false),
   );
+  const [mqttProxyToClient, setMqttProxyToClient] = useState<boolean>(
+    cfgBool(mqttCfg.proxyToClientEnabled, false),
+  );
+
+  useEffect(() => {
+    if (mqttEnabled && meshtasticDeviceRequiresMqttProxyToClient(deviceNetwork)) {
+      setMqttProxyToClient(true);
+    }
+  }, [mqttEnabled, deviceNetwork?.hasWifi, deviceNetwork?.hasEthernet, deviceNetwork]);
+
+  const buildMqttUiValues = () => ({
+    enabled: mqttEnabled,
+    address: mqttAddress,
+    username: mqttUsername,
+    password: mqttPassword,
+    encryptionEnabled: mqttEncryption,
+    jsonEnabled: mqttJson,
+    tlsEnabled: mqttTls,
+    root: mqttRoot,
+    mapReportingEnabled: mqttMapReporting,
+    proxyToClientEnabled: mqttProxyToClient,
+  });
 
   // ─── Canned messages ──────────────────────────────────────────
-  const cannedCfg = moduleConfigSlice(moduleConfigs.cannedMessage);
+  const cannedCfg = meshtasticConfigSlice(moduleConfigs.cannedMessage);
   const [cannedEnabled, setCannedEnabled] = useState<boolean>(cfgBool(cannedCfg.enabled, false));
   const [cannedText, setCannedText] = useState<string>(cfgStr(cannedCfg.messages, ''));
 
   // ─── Serial module ─────────────────────────────────────────────
-  const serialCfg = moduleConfigSlice(moduleConfigs.serial);
+  const serialCfg = meshtasticConfigSlice(moduleConfigs.serial);
   const [serialEnabled, setSerialEnabled] = useState<boolean>(cfgBool(serialCfg.enabled, false));
   const [serialEcho, setSerialEcho] = useState<boolean>(cfgBool(serialCfg.echo, false));
   const [serialBaud, setSerialBaud] = useState<number>(cfgNum(serialCfg.baud, 38400));
 
   // ─── Range test module ─────────────────────────────────────────
-  const rangeCfg = moduleConfigSlice(moduleConfigs.rangeTest);
+  const rangeCfg = meshtasticConfigSlice(moduleConfigs.rangeTest);
   const [rangeEnabled, setRangeEnabled] = useState<boolean>(cfgBool(rangeCfg.enabled, false));
   const [rangeSenderInterval, setRangeSenderInterval] = useState<number>(
     cfgNum(rangeCfg.sender, 0),
@@ -390,17 +425,17 @@ export default function ModulePanel({
   const [rangeSave, setRangeSave] = useState<boolean>(cfgBool(rangeCfg.save, false));
 
   // ─── Store and Forward module ──────────────────────────────────
-  const sfCfg = moduleConfigSlice(moduleConfigs.storeForward);
+  const sfCfg = meshtasticConfigSlice(moduleConfigs.storeForward);
   const [sfEnabled, setSfEnabled] = useState<boolean>(cfgBool(sfCfg.enabled, false));
   const [sfHeartbeat, setSfHeartbeat] = useState<boolean>(cfgBool(sfCfg.heartbeat, false));
-  const [sfNumRecords, setSfNumRecords] = useState<number>(cfgNum(sfCfg.numRecords, 0));
+  const [sfNumRecords, setSfNumRecords] = useState<number>(storeForwardRecordsFromCfg(sfCfg));
   const [sfHistoryMax, setSfHistoryMax] = useState<number>(cfgNum(sfCfg.historyReturnMax, 25));
   const [sfHistoryWindow, setSfHistoryWindow] = useState<number>(
     cfgNum(sfCfg.historyReturnWindow, 7200),
   );
 
   // ─── Detection sensor module ──────────────────────────────────
-  const detectCfg = moduleConfigSlice(moduleConfigs.detectionSensor);
+  const detectCfg = meshtasticConfigSlice(moduleConfigs.detectionSensor);
   const [detectEnabled, setDetectEnabled] = useState<boolean>(cfgBool(detectCfg.enabled, false));
   const [detectName, setDetectName] = useState<string>(cfgStr(detectCfg.name, ''));
   const [detectMinBroadcast, setDetectMinBroadcast] = useState<number>(
@@ -411,14 +446,14 @@ export default function ModulePanel({
   );
 
   // ─── Pax counter module ────────────────────────────────────────
-  const paxCfg = moduleConfigSlice(moduleConfigs.paxcounter);
+  const paxCfg = meshtasticConfigSlice(moduleConfigs.paxcounter);
   const [paxEnabled, setPaxEnabled] = useState<boolean>(cfgBool(paxCfg.enabled, false));
   const [paxInterval, setPaxInterval] = useState<number>(
     cfgNum(paxCfg.paxcounterUpdateInterval, 0),
   );
 
   // ─── External Notification module ─────────────────────────────
-  const extNotifCfg = moduleConfigSlice(moduleConfigs.externalNotification);
+  const extNotifCfg = meshtasticConfigSlice(moduleConfigs.externalNotification);
   const [extEnabled, setExtEnabled] = useState<boolean>(cfgBool(extNotifCfg.enabled, false));
   const [extActive, setExtActive] = useState<boolean>(cfgBool(extNotifCfg.active, false));
   const [extOutput, setExtOutput] = useState<number>(cfgNum(extNotifCfg.output, 0));
@@ -450,7 +485,7 @@ export default function ModulePanel({
   );
 
   // ─── Ambient Lighting module ───────────────────────────────────
-  const ambientCfg = moduleConfigSlice(moduleConfigs.ambientLighting);
+  const ambientCfg = meshtasticConfigSlice(moduleConfigs.ambientLighting);
   const [ambientLedState, setAmbientLedState] = useState<boolean>(
     cfgBool(ambientCfg.ledState, false),
   );
@@ -462,6 +497,90 @@ export default function ModulePanel({
   // ─── RTTTL Ringtone ───────────────────────────────────────────
   const [ringtoneText, setRingtoneText] = useState<string>(ringtone ?? '');
 
+  useSyncFormFromConfig(moduleConfigs.telemetry, (cfg) => {
+    setTelDeviceInterval(cfgNum(cfg.deviceUpdateInterval, 1800));
+    setTelEnvInterval(cfgNum(cfg.environmentUpdateInterval, 1800));
+    setTelEnvEnabled(cfgBool(cfg.environmentMeasurementEnabled, false));
+    setTelPowerEnabled(cfgBool(cfg.powerMeasurementEnabled, false));
+    setTelAirQualityEnabled(cfgBool(cfg.airQualityEnabled, false));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.mqtt, (cfg) => {
+    setMqttEnabled(cfgBool(cfg.enabled, false));
+    setMqttAddress(cfgStr(cfg.address, ''));
+    setMqttUsername(cfgStr(cfg.username, ''));
+    setMqttPassword(cfgStr(cfg.password, ''));
+    setMqttEncryption(cfgBool(cfg.encryptionEnabled, false));
+    setMqttJson(cfgBool(cfg.jsonEnabled, false));
+    setMqttTls(cfgBool(cfg.tlsEnabled, false));
+    setMqttRoot(cfgStr(cfg.root, ''));
+    setMqttMapReporting(cfgBool(cfg.mapReportingEnabled, false));
+    setMqttProxyToClient(cfgBool(cfg.proxyToClientEnabled, false));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.cannedMessage, (cfg) => {
+    setCannedEnabled(cfgBool(cfg.enabled, false));
+    setCannedText(cfgStr(cfg.messages, ''));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.serial, (cfg) => {
+    setSerialEnabled(cfgBool(cfg.enabled, false));
+    setSerialEcho(cfgBool(cfg.echo, false));
+    setSerialBaud(cfgNum(cfg.baud, 38400));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.rangeTest, (cfg) => {
+    setRangeEnabled(cfgBool(cfg.enabled, false));
+    setRangeSenderInterval(cfgNum(cfg.sender, 0));
+    setRangeSave(cfgBool(cfg.save, false));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.storeForward, (cfg) => {
+    setSfEnabled(cfgBool(cfg.enabled, false));
+    setSfHeartbeat(cfgBool(cfg.heartbeat, false));
+    setSfNumRecords(storeForwardRecordsFromCfg(cfg));
+    setSfHistoryMax(cfgNum(cfg.historyReturnMax, 25));
+    setSfHistoryWindow(cfgNum(cfg.historyReturnWindow, 7200));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.detectionSensor, (cfg) => {
+    setDetectEnabled(cfgBool(cfg.enabled, false));
+    setDetectName(cfgStr(cfg.name, ''));
+    setDetectMinBroadcast(cfgNum(cfg.minimumBroadcastSecs, 0));
+    setDetectStateBroadcast(cfgNum(cfg.stateBroadcastSecs, 0));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.paxcounter, (cfg) => {
+    setPaxEnabled(cfgBool(cfg.enabled, false));
+    setPaxInterval(cfgNum(cfg.paxcounterUpdateInterval, 0));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.externalNotification, (cfg) => {
+    setExtEnabled(cfgBool(cfg.enabled, false));
+    setExtActive(cfgBool(cfg.active, false));
+    setExtOutput(cfgNum(cfg.output, 0));
+    setExtOutputBuzzer(cfgNum(cfg.outputBuzzer, 0));
+    setExtOutputVibra(cfgNum(cfg.outputVibra, 0));
+    setExtOutputMs(cfgNum(cfg.outputMs, 1000));
+    setExtNagTimeout(cfgNum(cfg.nagTimeout, 0));
+    setExtAlertMessage(cfgBool(cfg.alertMessage, false));
+    setExtAlertMessageBuzzer(cfgBool(cfg.alertMessageBuzzer, false));
+    setExtAlertMessageVibra(cfgBool(cfg.alertMessageVibra, false));
+    setExtAlertBell(cfgBool(cfg.alertBell, false));
+    setExtAlertBellBuzzer(cfgBool(cfg.alertBellBuzzer, false));
+    setExtAlertBellVibra(cfgBool(cfg.alertBellVibra, false));
+    setExtUsePwm(cfgBool(cfg.usePwm, false));
+    setExtUseI2sAsBuzzer(cfgBool(cfg.useI2sAsBuzzer, false));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.ambientLighting, (cfg) => {
+    setAmbientLedState(cfgBool(cfg.ledState, false));
+    setAmbientRed(cfgNum(cfg.red, 0));
+    setAmbientGreen(cfgNum(cfg.green, 0));
+    setAmbientBlue(cfgNum(cfg.blue, 0));
+    setAmbientCurrent(cfgNum(cfg.current, 10));
+  });
+
   const ambientHex = `#${[ambientRed, ambientGreen, ambientBlue].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
   const handleAmbientColorChange = (hex: string) => {
     setAmbientRed(parseInt(hex.slice(1, 3), 16));
@@ -470,6 +589,7 @@ export default function ModulePanel({
   };
 
   const applyModule = async (sectionName: string, moduleCase: string, value: unknown) => {
+    clearMeshtasticClientNotification();
     setApplyingSection(sectionName);
     try {
       await onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
@@ -498,12 +618,22 @@ export default function ModulePanel({
     }
   };
 
+  const applyMeshtasticModule = (
+    sectionName: string,
+    moduleCase: string,
+    deviceSlice: unknown,
+    uiOverrides: Record<string, unknown>,
+  ) => {
+    void applyModule(
+      sectionName,
+      moduleCase,
+      buildMeshtasticModuleApplyValue(moduleCase, deviceSlice, uiOverrides),
+    );
+  };
+
   const validateMqttRelayBeforeApply = (): string | null => {
-    if (!mqttEnabled) return null;
-    if (!mqttAddress.trim()) {
-      return t('modulePanel.errors.mqttAddressRequired');
-    }
-    return null;
+    const merged = buildMeshtasticMqttModuleApplyValue(mqttCfg, buildMqttUiValues(), deviceNetwork);
+    return validateMeshtasticMqttModuleApply(merged, t, deviceNetwork);
   };
 
   return (
@@ -534,7 +664,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionAmbientLighting')}
         onApply={() => {
-          void applyModule('Ambient Lighting', 'ambientLighting', {
+          applyMeshtasticModule('Ambient Lighting', 'ambientLighting', ambientCfg, {
             ledState: ambientLedState,
             red: ambientRed,
             green: ambientGreen,
@@ -607,7 +737,7 @@ export default function ModulePanel({
             await onSetModuleConfig({
               payloadVariant: {
                 case: 'cannedMessage',
-                value: { enabled: cannedEnabled },
+                value: mergeMeshtasticConfigApplyValue(cannedCfg, { enabled: cannedEnabled }),
               },
             });
             await onCommit();
@@ -657,7 +787,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionDetectionSensor')}
         onApply={() => {
-          void applyModule('Detection Sensor', 'detectionSensor', {
+          applyMeshtasticModule('Detection Sensor', 'detectionSensor', detectCfg, {
             enabled: detectEnabled,
             name: detectName,
             minimumBroadcastSecs: detectMinBroadcast,
@@ -705,7 +835,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionExternalNotification')}
         onApply={() => {
-          void applyModule('External Notification', 'externalNotification', {
+          applyMeshtasticModule('External Notification', 'externalNotification', extNotifCfg, {
             enabled: extEnabled,
             active: extActive,
             output: extOutput,
@@ -860,17 +990,11 @@ export default function ModulePanel({
             addToast(validationError, 'error');
             return;
           }
-          void applyModule('MQTT Relay', 'mqtt', {
-            enabled: mqttEnabled,
-            address: mqttAddress.trim(),
-            username: mqttUsername,
-            password: mqttPassword,
-            encryptionEnabled: mqttEncryption,
-            jsonEnabled: mqttJson,
-            tlsEnabled: mqttTls,
-            root: mqttRoot,
-            mapReportingEnabled: mqttMapReporting,
-          });
+          void applyModule(
+            'MQTT Relay',
+            'mqtt',
+            buildMeshtasticMqttModuleApplyValue(mqttCfg, buildMqttUiValues(), deviceNetwork),
+          );
         }}
         applying={applyingSection === 'MQTT Relay'}
         disabled={disabled}
@@ -881,6 +1005,13 @@ export default function ModulePanel({
           onChange={setMqttEnabled}
           disabled={disabled}
           description={t('modulePanel.fields.mqttRelayEnabledDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.mqttProxyToClientEnabled')}
+          checked={mqttProxyToClient}
+          onChange={setMqttProxyToClient}
+          disabled={disabled || !mqttEnabled}
+          description={t('modulePanel.fields.mqttProxyToClientEnabledDesc')}
         />
         <ConfigText
           label={t('modulePanel.fields.serverAddress')}
@@ -942,7 +1073,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionPaxCounter')}
         onApply={() => {
-          void applyModule('Pax Counter', 'paxcounter', {
+          applyMeshtasticModule('Pax Counter', 'paxcounter', paxCfg, {
             enabled: paxEnabled,
             paxcounterUpdateInterval: paxInterval,
           });
@@ -978,7 +1109,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionRangeTest')}
         onApply={() => {
-          void applyModule('Range Test', 'rangeTest', {
+          applyMeshtasticModule('Range Test', 'rangeTest', rangeCfg, {
             enabled: rangeEnabled,
             sender: rangeSenderInterval,
             save: rangeSave,
@@ -1091,11 +1222,17 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionSerialModule')}
         onApply={() => {
-          void applyModule('Serial Module', 'serial', {
+          const merged = buildMeshtasticModuleApplyValue('serial', serialCfg, {
             enabled: serialEnabled,
             echo: serialEcho,
             baud: serialBaud,
           });
+          const validationError = validateMeshtasticSerialModuleApply(merged, t);
+          if (validationError) {
+            addToast(validationError, 'error');
+            return;
+          }
+          void applyModule('Serial Module', 'serial', merged);
         }}
         applying={applyingSection === 'Serial Module'}
         disabled={disabled}
@@ -1141,10 +1278,10 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionStoreForward')}
         onApply={() => {
-          void applyModule('Store & Forward', 'storeForward', {
+          applyMeshtasticModule('Store & Forward', 'storeForward', sfCfg, {
             enabled: sfEnabled,
             heartbeat: sfHeartbeat,
-            numRecords: sfNumRecords,
+            records: sfNumRecords,
             historyReturnMax: sfHistoryMax,
             historyReturnWindow: sfHistoryWindow,
           });
@@ -1202,7 +1339,7 @@ export default function ModulePanel({
       <ModuleSection
         title={t('modulePanel.sectionTelemetryModule')}
         onApply={() => {
-          void applyModule('Telemetry Module', 'telemetry', {
+          applyMeshtasticModule('Telemetry Module', 'telemetry', telCfg, {
             deviceUpdateInterval: telDeviceInterval,
             environmentUpdateInterval: telEnvInterval,
             environmentMeasurementEnabled: telEnvEnabled,
