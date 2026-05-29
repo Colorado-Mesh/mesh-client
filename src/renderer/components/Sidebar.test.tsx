@@ -50,6 +50,21 @@ describe('Sidebar', () => {
     expect(tab.querySelector('svg')).toBeInTheDocument();
   });
 
+  it('renders an icon for Rooms tab', () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['Rooms']}
+        tabSlotIds={['Rooms']}
+        active={0}
+        onChange={onChange}
+        {...defaultProps}
+      />,
+    );
+    const tab = screen.getByRole('tab', { name: 'Rooms' });
+    expect(tab.querySelector('svg')).toBeInTheDocument();
+  });
+
   it('shows tab label when expanded', () => {
     const onChange = vi.fn();
     render(

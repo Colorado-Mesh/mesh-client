@@ -539,6 +539,11 @@ function validateSaveMeshcoreMessage(msg: unknown): asserts msg is Record<string
     if (!Number.isInteger(h) || h < 0)
       throw new Error('db:saveMeshcoreMessage: rx_hops must be a non-negative integer');
   }
+  if (m.room_server_id != null) {
+    const rs = Number(m.room_server_id);
+    if (!Number.isInteger(rs) || rs < 0)
+      throw new Error('db:saveMeshcoreMessage: room_server_id must be a non-negative integer');
+  }
 }
 
 function validateSaveMeshcoreContact(contact: unknown): asserts contact is Record<
@@ -4228,8 +4233,8 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
     return db
       .prepareOnce(
         'INSERT OR IGNORE INTO meshcore_messages ' +
-          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops) ' +
-          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops)',
+          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops, room_server_id) ' +
+          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops, @room_server_id)',
       )
       .run({
         sender_id: m.sender_id != null ? Number(m.sender_id) : null,
@@ -4249,6 +4254,10 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
         rx_hops:
           m.rx_hops != null && Number.isFinite(Number(m.rx_hops))
             ? Math.trunc(Number(m.rx_hops))
+            : null,
+        room_server_id:
+          m.room_server_id != null && Number.isFinite(Number(m.room_server_id))
+            ? Math.trunc(Number(m.room_server_id))
             : null,
       });
   } catch (err) {

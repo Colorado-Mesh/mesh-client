@@ -54,11 +54,82 @@ export const RETRY_REMOTE_CHANNELS_FORBIDDEN = {
 
 export const RETRY_REMOTE_CHANNELS_KEY = 'radioPanel.retryRemoteChannels';
 
+/** MeshCore Room panel — chat room servers, not hotel/bedroom/meeting rooms. */
+export const ROOMS_PANEL_PREFIX = 'roomsPanel.';
+
+/** Keys outside roomsPanel that still refer to MeshCore Room servers. */
+export const MESHCORE_ROOM_UI_KEYS = new Set(['tabs.rooms', 'nodeDetailModal.openRoomButton']);
+
+/**
+ * MT often translates MeshCore Room (chat server) as hotel/bedroom/meeting room.
+ * Matched by locale on roomsPanel.* and tabs.rooms.
+ */
+export const ROOMS_PANEL_FALSE_FRIENDS = {
+  de: [{ re: /\bZimmer\b/i, hint: 'use "Raum" for MeshCore Room, not hotel "Zimmer"' }],
+  fr: [{ re: /\bchambre\b/i, hint: 'use "salle" for MeshCore Room, not hotel "chambre"' }],
+  es: [{ re: /\bhabitaci[oó]n\b/i, hint: 'use "sala" for MeshCore Room, not hotel "habitación"' }],
+  'pt-BR': [{ re: /\bquarto\b/i, hint: 'use "sala" for MeshCore Room, not hotel "quarto"' }],
+  ko: [
+    {
+      re: /객실|회의실/,
+      hint: 'use "룸" for MeshCore Room, not hotel/meeting "객실/회의실"',
+    },
+  ],
+  ru: [
+    {
+      re: /номер/i,
+      hint: 'use "комната" for MeshCore Room, not hotel "номер"',
+    },
+    {
+      re: /помещени/i,
+      hint: 'use "комната" for MeshCore Room admin copy, not generic "помещение"',
+    },
+  ],
+  id: [{ re: /\bkamar\b/i, hint: 'use "ruangan" for MeshCore Room, not hotel "kamar"' }],
+  nl: [{ re: /\bgaas\b/i, hint: 'use "mesh" for the network, not fabric "gaas"' }],
+  uk: [
+    {
+      re: /приміщен/i,
+      hint: 'use "кімната" for MeshCore Room admin copy, not generic "приміщення"',
+    },
+  ],
+  pl: [
+    {
+      re: /\b[Pp]omieszczen/i,
+      hint: 'use "pokój" for MeshCore Room, not physical-space "pomieszczenie"',
+    },
+  ],
+};
+
+/** Default-password hint placeholders — must stay short literals, not MT sentences. */
+export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_KEYS = new Set([
+  'guestPasswordPlaceholder',
+  'adminPasswordPlaceholder',
+]);
+
+export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_MAX_LEN = 24;
+
+/** Four or more whitespace-separated tokens, or sentence-ending punctuation. */
+export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_SENTENCE_RE = /[.!?]|(?:\S+\s+){3,}\S+/;
+
+/** roomsPanel leaf keys that must not remain identical to English. */
+export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set(['readOnlyBadge', 'aclLevelLabel']);
+
 /** Leaf keys where English ends with … and locale must not use ASCII dot runs. */
 export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChannel']);
 
 /** CAT / Memsource placeholder tokens (e.g. __ PH0 __) that must be {{name}} instead. */
 export const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
+
+/** CAT / XLIFF / Memsource XML tags that must never ship in JSON values. */
+export const LOCALE_ARTIFACT_RES = [
+  /<g\s+id=/i,
+  /<\/g>/i,
+  /<ph\s+id=/i,
+  /<bpt\b/i,
+  /<ept\b/i,
+  /equiv-text=/i,
+];
 
 /** Brand / product names preserved verbatim when present in English. */
 export const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT'];
@@ -79,6 +150,12 @@ const FR_CHANNEL_FALSE_FRIEND_RE = /\bchaînes?\b/i;
 const UNTRANSLATED_COPY_MESHTASTIC_RE = /^Copy meshtastic/i;
 
 const UNTRANSLATED_REMOTE_ADMIN_DOCS_RE = /remote admin docs/i;
+
+const UNTRANSLATED_READ_ONLY_BADGE_RE = /\(read only\)/i;
+
+function isMeshcoreRoomUiKey(flatKey) {
+  return flatKey.startsWith(ROOMS_PANEL_PREFIX) || MESHCORE_ROOM_UI_KEYS.has(flatKey);
+}
 
 /** True if the string contains at least one cased lowercase letter (incl. Polish, etc.). */
 function hasLowercaseLetter(s) {
@@ -121,6 +198,13 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
 
   if (CAT_PH_PLACEHOLDER_RE.test(val)) {
     issues.push('CAT/XLIFF __ PH __ placeholder residue is not allowed');
+  }
+
+  for (const re of LOCALE_ARTIFACT_RES) {
+    if (re.test(val)) {
+      issues.push(`CAT/XLIFF/Memsource XML residue is not allowed (matched ${re})`);
+      break;
+    }
   }
 
   if (MOJIBAKE_RE.test(val)) {
@@ -230,6 +314,47 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
 
   if (locale === 'nl' && leafKey === 'channelLoadFailed' && /\bmislukte\b/i.test(val)) {
     issues.push('use past participle "mislukt" for failed-state labels, not "mislukte"');
+  }
+
+  if (isMeshcoreRoomUiKey(flatKey)) {
+    for (const { re, hint } of ROOMS_PANEL_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`roomsPanel false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS.has(leafKey) &&
+    val === enVal
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    leafKey === 'readOnlyBadge' &&
+    UNTRANSLATED_READ_ONLY_BADGE_RE.test(val)
+  ) {
+    issues.push('translate readOnlyBadge — do not leave English "(read only)"');
+  }
+
+  if (
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    ROOMS_PANEL_PASSWORD_PLACEHOLDER_KEYS.has(leafKey)
+  ) {
+    if (val.length > ROOMS_PANEL_PASSWORD_PLACEHOLDER_MAX_LEN) {
+      issues.push(
+        'roomsPanel password placeholder must be a short literal default-password hint, not a long phrase',
+      );
+    } else if (ROOMS_PANEL_PASSWORD_PLACEHOLDER_SENTENCE_RE.test(val.trim())) {
+      issues.push(
+        'roomsPanel password placeholder looks like an MT sentence — use a short literal (e.g. hello, password)',
+      );
+    }
   }
 
   return issues;

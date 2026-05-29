@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -10,6 +10,7 @@ import {
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
+import { useMeshcoreRoomAuth } from '../hooks/useMeshcoreRoomAuth';
 import { formatCoordPair } from '../lib/coordUtils';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
 import type {
@@ -49,6 +50,14 @@ interface NodeDetailModalProps {
   traceRouteHops?: string[];
   onDeleteNode: (nodeNum: number) => Promise<void>;
   onMessageNode?: (nodeNum: number) => void;
+  /** MeshCore room server: open Rooms tab for BBS posts (not DM). */
+  onOpenRoom?: (nodeNum: number) => void;
+  /** MeshCore room server login before status/admin actions. */
+  onLoginRoom?: (
+    nodeId: number,
+    password: string,
+    opts?: { adminPassword?: string; guestPassword?: string },
+  ) => Promise<void>;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
   isConnected: boolean;
   homeNode?: MeshNode | null;
@@ -118,6 +127,8 @@ export default function NodeDetailModal({
   traceRouteHops,
   onDeleteNode,
   onMessageNode,
+  onOpenRoom,
+  onLoginRoom,
   onToggleFavorite,
   isConnected,
   homeNode = null,
@@ -149,6 +160,34 @@ export default function NodeDetailModal({
 }: NodeDetailModalProps) {
   const { t } = useTranslation();
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
+  const { ensureRoomAuth, RemoteAuthModal: RoomAuthModal } = useMeshcoreRoomAuth();
+
+  const ensureRemoteRpcAccess = useCallback(
+    async (
+      nodeId: number,
+      hwModel: string | undefined,
+      mode: 'guest' | 'admin',
+    ): Promise<boolean> => {
+      if (hwModel === 'Room') {
+        const roomName = node?.long_name ?? `Room-${nodeId.toString(16)}`;
+        const auth = await ensureRoomAuth(nodeId, mode === 'admin' ? 'admin' : 'guest', roomName);
+        if (!auth.ok || !onLoginRoom) return false;
+        const password = mode === 'admin' ? auth.adminPassword : auth.guestPassword;
+        try {
+          await onLoginRoom(nodeId, password, {
+            adminPassword: auth.adminPassword,
+            guestPassword: auth.guestPassword,
+          });
+          return true;
+        } catch (e) {
+          console.warn('[NodeDetailModal] room login failed ' + errLikeToLogString(e));
+          return false;
+        }
+      }
+      return ensureConfigured();
+    },
+    [ensureConfigured, ensureRoomAuth, node?.long_name, onLoginRoom],
+  );
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [adminKeyStatus, setAdminKeyStatus] = useState<string | null>(null);
@@ -1378,7 +1417,8 @@ export default function NodeDetailModal({
                 {protocol === 'meshcore' && onRequestRepeaterStatus && (
                   <button
                     onClick={async () => {
-                      if (!(await ensureConfigured())) return;
+                      if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
+                        return;
                       setRepeaterStatusPending(true);
                       setActionStatus(t('nodeDetailModal.requestingStatus'));
                       try {
@@ -1409,7 +1449,8 @@ export default function NodeDetailModal({
                     title={t('nodeDetailModal.cayenneLppTitle')}
                     aria-label={t('nodeDetailModal.sensorTelemetryLpp')}
                     onClick={async () => {
-                      if (!(await ensureConfigured())) return;
+                      if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
+                        return;
                       setTelemetryPending(true);
                       setActionStatus(t('nodeDetailModal.requestingSensorTelemetry'));
                       try {
@@ -1439,7 +1480,8 @@ export default function NodeDetailModal({
                 {protocol === 'meshcore' && onRequestNeighbors && node.hw_model === 'Repeater' && (
                   <button
                     onClick={async () => {
-                      if (!(await ensureConfigured())) return;
+                      if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
+                        return;
                       setNeighborsPending(true);
                       setActionStatus(t('nodeDetailModal.requestingNeighbors'));
                       try {
@@ -1466,7 +1508,20 @@ export default function NodeDetailModal({
                       : t('nodeDetailModal.getNeighbors')}
                   </button>
                 )}
-                {onMessageNode && (
+                {onOpenRoom && protocol === 'meshcore' && node.hw_model === 'Room' && (
+                  <button
+                    onClick={() => {
+                      onOpenRoom(node.node_id);
+                      onClose();
+                    }}
+                    disabled={!isConnected || !contactPubkey}
+                    title={!contactPubkey ? t('nodeDetailModal.messageNoKeyTitle') : undefined}
+                    className="min-w-[8rem] flex-1 rounded-lg bg-purple-700/50 px-3 py-2 text-sm font-medium text-purple-300 transition-colors hover:bg-purple-600/50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {t('nodeDetailModal.openRoomButton')}
+                  </button>
+                )}
+                {onMessageNode && !(protocol === 'meshcore' && node.hw_model === 'Room') && (
                   <button
                     onClick={() => {
                       onMessageNode(node.node_id);
@@ -1486,7 +1541,8 @@ export default function NodeDetailModal({
                 {protocol === 'meshcore' && onExportContact && (
                   <button
                     onClick={async () => {
-                      if (!(await ensureConfigured())) return;
+                      if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
+                        return;
                       setExportContactPending(true);
                       setActionStatus(t('nodeDetailModal.exportingContact'));
                       try {
@@ -1527,7 +1583,8 @@ export default function NodeDetailModal({
                 {protocol === 'meshcore' && onShareContact && (
                   <button
                     onClick={async () => {
-                      if (!(await ensureConfigured())) return;
+                      if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
+                        return;
                       setShareContactPending(true);
                       setActionStatus(t('nodeDetailModal.sharingContact'));
                       try {
@@ -1751,6 +1808,7 @@ export default function NodeDetailModal({
         </div>
       </div>
       {RemoteAuthModal}
+      {RoomAuthModal}
     </>
   );
 }

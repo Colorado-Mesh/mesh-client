@@ -268,6 +268,108 @@ describe('localeStringQualityIssues', () => {
     });
     expectIssue(issues, 'use past participle "mislukt"');
   });
+
+  it('flags CAT XLIFF XML tags in roomsPanel cliSend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'roomsPanel.cliSend',
+      val: '<g id="9770">Spedisci</g>:',
+      enVal: 'Send',
+    });
+    expectIssue(issues, 'CAT/XLIFF/Memsource XML residue is not allowed');
+  });
+
+  it('flags __ PH0 __ placeholders in roomsPanel postCount', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'roomsPanel.postCount',
+      val: '__ PH0 __件の投稿',
+      enVal: '{{count}} posts',
+    });
+    expectIssue(issues, 'CAT/XLIFF __ PH __ placeholder residue is not allowed');
+  });
+
+  it('flags hotel-room false friend in roomsPanel copy', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'roomsPanel.postPlaceholder',
+      val: 'Im Zimmer posten…',
+      enVal: 'Post to room…',
+    });
+    expectIssue(issues, 'roomsPanel false friend');
+    expectIssue(issues, 'not hotel "Zimmer"');
+  });
+
+  it('flags hotel-room false friend on tabs.rooms', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'tabs.rooms',
+      val: 'Pomieszczenia',
+      enVal: 'Rooms',
+    });
+    expectIssue(issues, 'roomsPanel false friend');
+    expectIssue(issues, 'pomieszczenie');
+  });
+
+  it('flags untranslated English readOnlyBadge in roomsPanel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'tr',
+      flatKey: 'roomsPanel.readOnlyBadge',
+      val: ' (read only)',
+      enVal: 'Read-only',
+    });
+    expectIssue(issues, 'translate readOnlyBadge');
+  });
+
+  it('flags MT sentence in guestPasswordPlaceholder', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ko',
+      flatKey: 'roomsPanel.guestPasswordPlaceholder',
+      val: '제 이름은 Azlan입니다.',
+      enVal: 'hello',
+    });
+    expectIssue(issues, 'roomsPanel password placeholder looks like an MT sentence');
+  });
+
+  it('flags long garbage guestPasswordPlaceholder', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'roomsPanel.guestPasswordPlaceholder',
+      val: 'baka ja nai yo extra words here',
+      enVal: 'hello',
+    });
+    expectIssue(issues, 'roomsPanel password placeholder must be a short literal');
+  });
+
+  it('passes valid roomsPanel password placeholders', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'roomsPanel.guestPasswordPlaceholder',
+        val: 'hallo',
+        enVal: 'hello',
+      }),
+    ).toEqual([]);
+    expect(
+      localeStringQualityIssues({
+        locale: 'fr',
+        flatKey: 'roomsPanel.adminPasswordPlaceholder',
+        val: 'mot de passe',
+        enVal: 'password',
+      }),
+    ).toEqual([]);
+  });
+
+  it('passes valid MeshCore Room terminology in roomsPanel', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'roomsPanel.postPlaceholder',
+        val: 'Im Raum posten…',
+        enVal: 'Post to room…',
+      }),
+    ).toEqual([]);
+  });
 });
 
 describe('protectedBrandIssues', () => {

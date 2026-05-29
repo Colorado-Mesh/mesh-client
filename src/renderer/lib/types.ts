@@ -395,6 +395,8 @@ export interface ChatMessage {
   rxHops?: number;
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
   viaStoreForward?: boolean;
+  /** MeshCore room server BBS post (not a DM). */
+  roomServerId?: number;
 }
 
 export interface TelemetryPoint {
@@ -544,6 +546,7 @@ declare global {
           reply_preview_text?: string | null;
           reply_preview_sender?: string | null;
           rx_hops?: number | null;
+          room_server_id?: number | null;
         }) => Promise<unknown>;
         updateMeshcoreMessageSender: (
           messageId: number,

@@ -28,6 +28,7 @@ import {
   MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS,
   MESHCORE_PING_NO_ROUTE_ERROR_MSG,
   MESHCORE_RESPONSE_DEVICE_INFO,
+  MESHCORE_ROOM_MESSAGE_CHANNEL,
   MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
   MESHCORE_STATUS_TIMEOUT_MS,
   MESHCORE_TELEMETRY_TIMEOUT_MS,
@@ -103,6 +104,14 @@ import {
 } from '../lib/meshcoreGetNeighboursBinary';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
+  meshcoreClearAllRoomSessions,
+  meshcoreRoomCanAdmin,
+  meshcoreRoomCanPost,
+  meshcoreRoomLogin,
+  meshcoreRoomTryRelogin,
+  meshcoreTryRemoteServerLogin,
+} from '../lib/meshcoreRoomSession';
+import {
   buildMeshcoreSetOtherParamsFrame,
   enrichMeshCoreSelfInfo,
   packMeshcoreTelemetryModesByte,
@@ -162,7 +171,10 @@ import {
   messageRecordsToChatMessages,
   nodeRecordsToMeshNodeMap,
 } from '../lib/storeRecordAdapters';
-import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
+import {
+  MESHCORE_ROOM_POST_SENT_TIMEOUT_MS,
+  MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+} from '../lib/timeConstants';
 import type {
   ChatMessage,
   DeviceState,
@@ -724,6 +736,10 @@ export function useMeshcoreRuntime() {
       });
     });
     if (inserted) {
+      const storeId = meshcoreIdentityIdRef.current;
+      if (storeId) {
+        upsertMessage(storeId, chatMessageToMessageRecord(msg));
+      }
       void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(msg)).catch((e: unknown) => {
         console.warn('[useMeshcoreRuntime] saveMeshcoreMessage error ' + errLikeToLogString(e));
       });
@@ -1691,6 +1707,7 @@ export function useMeshcoreRuntime() {
       setMeshcoreNeighbors(new Map());
       setMeshcoreCliHistories(new Map());
       setMeshcoreCliErrors(new Map());
+      meshcoreClearAllRoomSessions();
       setEnvironmentTelemetry([]);
       setState(INITIAL_STATE);
       if (meshcoreStatsPollRef.current) {
@@ -2785,7 +2802,12 @@ export function useMeshcoreRuntime() {
           if (!conn) {
             throw new Error('Not connected to device');
           }
-          await meshcoreRepeaterTryLogin(conn, pubKey);
+          await meshcoreTryRemoteServerLogin(
+            conn,
+            nodeId,
+            pubKey,
+            nodesRef.current.get(nodeId)?.hw_model,
+          );
           const raw = await conn.getStatus(pubKey, MESHCORE_STATUS_TIMEOUT_MS);
           const lastSnrDb = raw.last_snr * MESHCORE_RPC_SNR_RAW_TO_DB;
           const status: MeshCoreRepeaterStatus = {
@@ -2879,7 +2901,12 @@ export function useMeshcoreRuntime() {
         if (!conn) {
           throw new Error('Not connected to device');
         }
-        await meshcoreRepeaterTryLogin(conn, pubKey);
+        await meshcoreTryRemoteServerLogin(
+          conn,
+          nodeId,
+          pubKey,
+          nodesRef.current.get(nodeId)?.hw_model,
+        );
         const raw = await conn.getTelemetry(pubKey, MESHCORE_TELEMETRY_TIMEOUT_MS);
         let entries: CayenneLppEntry[] = [];
         try {
@@ -3115,7 +3142,12 @@ export function useMeshcoreRuntime() {
             timestamp: Date.now(),
           });
 
-          await meshcoreRepeaterTryLogin(conn, pubKey);
+          await meshcoreTryRemoteServerLogin(
+            conn,
+            nodeId,
+            pubKey,
+            nodesRef.current.get(nodeId)?.hw_model,
+          );
           const txtType = 1; // TxtTypes.CliData
           await conn.sendTextMessage(pubKey, commandWithToken, txtType);
 
@@ -3152,6 +3184,138 @@ export function useMeshcoreRuntime() {
       }
     },
     [addCliHistoryEntry, bumpMeshcoreNodeLastHeardFromRpc, meshcoreTraceResults],
+  );
+
+  const loginRoom = useCallback(
+    async (
+      nodeId: number,
+      password: string,
+      opts?: { adminPassword?: string; guestPassword?: string },
+    ): Promise<void> => {
+      const pubKey = pubKeyMapRef.current.get(nodeId);
+      if (!pubKey) {
+        throw new Error('Room not found (no encryption key)');
+      }
+      const conn = connRef.current;
+      if (!conn) {
+        throw new Error('Not connected to device');
+      }
+      const guestPassword = opts?.guestPassword ?? password;
+      const adminPassword = opts?.adminPassword ?? '';
+      // Serialize with other companion RPCs that consume ResponseCodes.Sent (status, trace, etc.).
+      // meshcore.js login() uses once(Sent); concurrent BLE commands can steal that ack and break login.
+      await repeaterRemoteRpcRef.current(async () => {
+        const activeConn = connRef.current;
+        if (!activeConn) {
+          throw new Error('Not connected to device');
+        }
+        await meshcoreRoomLogin(activeConn, nodeId, pubKey, password, {
+          adminPassword,
+          guestPassword,
+        });
+      });
+    },
+    [],
+  );
+
+  const sendRoomPost = useCallback(
+    async (nodeId: number, text: string): Promise<void> => {
+      const pubKey = pubKeyMapRef.current.get(nodeId);
+      if (!pubKey) {
+        throw new Error('Room not found (no encryption key)');
+      }
+      const conn = connRef.current;
+      if (!conn) {
+        throw new Error('Not connected to device');
+      }
+      if (!meshcoreRoomCanPost(nodeId)) {
+        const relogged = await meshcoreRoomTryRelogin(conn, nodeId, pubKey, 'post');
+        if (!relogged || !meshcoreRoomCanPost(nodeId)) {
+          throw new Error('Not logged in to room or read-only access');
+        }
+      }
+      const sentAt = Date.now();
+      const tempMsg: ChatMessage = {
+        sender_id: myNodeNumRef.current,
+        sender_name: selfInfo?.name ?? 'Me',
+        payload: text,
+        channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+        timestamp: sentAt,
+        status: 'sending',
+        roomServerId: nodeId,
+        to: nodeId,
+      };
+      addMessage(tempMsg);
+      try {
+        const result = await Promise.race([
+          conn.sendTextMessage(pubKey, text),
+          new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('timeout')), MESHCORE_ROOM_POST_SENT_TIMEOUT_MS);
+          }),
+        ]);
+        void fetchAndUpdateLocalStats();
+        const acked: ChatMessage = {
+          ...tempMsg,
+          sender_id: myNodeNumRef.current,
+          status: 'acked',
+          packetId: result?.expectedAckCrc,
+        };
+        const storeId = meshcoreIdentityIdRef.current;
+        if (storeId) {
+          upsertMessage(storeId, chatMessageToMessageRecord(acked));
+        }
+        setMessages((prev) =>
+          prev.map((m) =>
+            m === tempMsg || (m.timestamp === sentAt && m.status === 'sending') ? acked : m,
+          ),
+        );
+        void window.electronAPI.db
+          .saveMeshcoreMessage(messageToDbRow(acked))
+          .catch((e: unknown) => {
+            console.warn(
+              '[useMeshcoreRuntime] saveMeshcoreMessage (room post) error ' + errLikeToLogString(e),
+            );
+          });
+      } catch (e: unknown) {
+        const failed: ChatMessage = { ...tempMsg, status: 'failed' };
+        const storeId = meshcoreIdentityIdRef.current;
+        if (storeId) {
+          upsertMessage(storeId, chatMessageToMessageRecord(failed));
+        }
+        setMessages((prev) =>
+          prev.map((m) =>
+            m === tempMsg || (m.timestamp === sentAt && m.status === 'sending') ? failed : m,
+          ),
+        );
+        throw e;
+      }
+    },
+    [addMessage, fetchAndUpdateLocalStats, selfInfo?.name],
+  );
+
+  const sendRoomAdminCliCommand = useCallback(
+    async (nodeId: number, command: string): Promise<string> => {
+      const node = nodesRef.current.get(nodeId);
+      if (node?.hw_model !== 'Room') {
+        return sendRepeaterCliCommand(nodeId, command, false);
+      }
+      const pubKey = pubKeyMapRef.current.get(nodeId);
+      if (!pubKey) {
+        throw new Error('Room not found (no encryption key)');
+      }
+      const conn = connRef.current;
+      if (!conn) {
+        throw new Error('Not connected to device');
+      }
+      if (!meshcoreRoomCanAdmin(nodeId)) {
+        const relogged = await meshcoreRoomTryRelogin(conn, nodeId, pubKey, 'admin');
+        if (!relogged || !meshcoreRoomCanAdmin(nodeId)) {
+          throw new Error('Room admin login required');
+        }
+      }
+      return sendRepeaterCliCommand(nodeId, command, false);
+    },
+    [sendRepeaterCliCommand],
   );
 
   const applyMeshcoreTelemetryPrivacyPolicy = useCallback(
@@ -4175,6 +4339,9 @@ export function useMeshcoreRuntime() {
       meshcoreCliHistories,
       meshcoreCliErrors,
       sendRepeaterCliCommand,
+      loginRoom,
+      sendRoomPost,
+      sendRoomAdminCliCommand,
       clearCliHistory,
       manualAddContacts,
       mqttStatus,
@@ -4305,6 +4472,9 @@ export function useMeshcoreRuntime() {
       meshcoreCliHistories,
       meshcoreCliErrors,
       sendRepeaterCliCommand,
+      loginRoom,
+      sendRoomPost,
+      sendRoomAdminCliCommand,
       clearCliHistory,
       manualAddContacts,
       mqttStatus,

@@ -56,6 +56,7 @@ import {
   RawPacketLogPanel,
   RepeatersPanel,
   RFHistogramsPanel,
+  RoomsPanel,
   SecurityPanel,
   TakServerPanel,
   TelemetryPanel,
@@ -132,6 +133,7 @@ const TAB_CAPABILITY_REQUIREMENTS: (keyof ProtocolCapabilities | undefined)[] = 
   undefined, // Map
   undefined, // Radio
   undefined, // Modules
+  'hasRoomServersPanel', // Rooms
   undefined, // Telemetry
   'hasSecurityPanel', // Security
   'hasTakPanel', // TAK
@@ -175,6 +177,7 @@ const TAB_SLOT_IDS = [
   'Map',
   'Radio',
   'Modules',
+  'Rooms',
   'Telemetry',
   'Security',
   'TAK',
@@ -187,10 +190,12 @@ const TAB_SLOT_IDS = [
 ] as const;
 
 const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
+const ROOMS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Rooms');
 
 function tabLabelKey(capabilities: ProtocolCapabilities, panelIndex: number): `tabs.${string}` {
   if (panelIndex === 2 && capabilities.nodeListTabUsesContactsLabel) return 'tabs.contacts';
   if (panelIndex === 5 && capabilities.modulesTabUsesRepeatersLabel) return 'tabs.repeaters';
+  if (panelIndex === 6 && capabilities.hasRoomServersPanel) return 'tabs.rooms';
   return `tabs.${TAB_SLOT_IDS[panelIndex].toLowerCase()}`;
 }
 
@@ -543,6 +548,7 @@ function AppContent({
     return Boolean(s.chatCompactMode);
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
+  const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
   const [meshtasticUnread, setMeshtasticUnread] = useState(() => readPersistedUnread('meshtastic'));
   const [meshcoreUnread, setMeshcoreUnread] = useState(() => readPersistedUnread('meshcore'));
   const [logPanelVisible, setLogPanelVisible] = useState(readLogPanelVisible);
@@ -1094,7 +1100,7 @@ function AppContent({
     if (!hasLocalMeshtasticRadio) return;
     if (activePanelIndex === 5) {
       void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'modules');
-    } else if (activePanelIndex === 7) {
+    } else if (activePanelIndex === 8) {
       void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'security');
     }
   }, [
@@ -1199,6 +1205,7 @@ function AppContent({
   }, [protocol, activeRuntime.channels]);
 
   const [chatTabVisited, setChatTabVisited] = useState(false);
+  const [roomsTabVisited, setRoomsTabVisited] = useState(false);
   const [chatPanelFreeze, setChatPanelFreeze] = useState<{
     messages: typeof activeRuntime.messages;
     channels: typeof chatChannels;
@@ -1230,9 +1237,16 @@ function AppContent({
   useEffect(() => {
     setChatTabVisited(false);
     setChatPanelFreeze(null);
+    setRoomsTabVisited(false);
     prevPanelIndexForChatFreezeRef.current = activePanelIndex;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- protocol-only reset; capture current panel for ref sync
   }, [protocol]);
+
+  useEffect(() => {
+    if (protocol === 'meshcore' && activePanelIndex === ROOMS_PANEL_INDEX) {
+      setRoomsTabVisited(true);
+    }
+  }, [activePanelIndex, protocol]);
 
   const isChatPanelFrozen = chatTabVisited && activePanelIndex !== 1;
   const freeze = chatPanelFreeze;
@@ -1647,6 +1661,24 @@ function AppContent({
   const handleMessageNode = useCallback((nodeNum: number) => {
     setPendingDmTarget(nodeNum);
     setActiveTab(1); // Switch to Chat tab
+  }, []);
+
+  const handleOpenRoom = useCallback(
+    (nodeNum: number) => {
+      setPendingRoomTarget(nodeNum);
+      const roomsSlotIndex = TAB_SLOT_IDS.indexOf('Rooms');
+      const filteredIndex = meshcoreTabs.tabIndexToPanelIndex.findIndex(
+        (panelIndex) => panelIndex === roomsSlotIndex,
+      );
+      if (filteredIndex >= 0) {
+        setActiveTab(filteredIndex);
+      }
+    },
+    [meshcoreTabs.tabIndexToPanelIndex],
+  );
+
+  const handleRoomTargetConsumed = useCallback(() => {
+    setPendingRoomTarget(null);
   }, []);
 
   const handleLocationFilterChange = useCallback((f: LocationFilter) => {
@@ -2439,7 +2471,41 @@ function AppContent({
                       hidden={activePanelIndex !== 6}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 6 ? (
+                      {(activePanelIndex === ROOMS_PANEL_INDEX || roomsTabVisited) &&
+                      protocol === 'meshcore' ? (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <div
+                              className="h-full w-full min-w-0"
+                              hidden={activePanelIndex !== ROOMS_PANEL_INDEX}
+                            >
+                              <RoomsPanel
+                                nodes={meshcoreUiNodes}
+                                messages={meshcoreRuntime.messages}
+                                myNodeNum={meshcoreRuntime.selfNodeId}
+                                isConnected={isOperational}
+                                initialRoomTarget={pendingRoomTarget}
+                                onInitialRoomConsumed={handleRoomTargetConsumed}
+                                onLoginRoom={meshcorePanelActions.loginRoom}
+                                onSendRoomPost={meshcorePanelActions.sendRoomPost}
+                                onSendRoomAdminCli={meshcorePanelActions.sendRoomAdminCliCommand}
+                                meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}
+                                meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
+                                onClearCliHistory={meshcorePanelActions.clearCliHistory}
+                              />
+                            </div>
+                          </Suspense>
+                        </ErrorBoundary>
+                      ) : null}
+                    </div>
+                    <div
+                      id="panel-7"
+                      role="tabpanel"
+                      aria-labelledby="tab-7"
+                      hidden={activePanelIndex !== 7}
+                      className="w-full min-w-0"
+                    >
+                      {activePanelIndex === 7 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TelemetryPanel
@@ -2460,13 +2526,13 @@ function AppContent({
                       ) : null}
                     </div>
                     <div
-                      id="panel-7"
+                      id="panel-8"
                       role="tabpanel"
-                      aria-labelledby="tab-7"
-                      hidden={activePanelIndex !== 7}
+                      aria-labelledby="tab-8"
+                      hidden={activePanelIndex !== 8}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 7 ? (
+                      {activePanelIndex === 8 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {configureNodeSelector}
@@ -2496,13 +2562,13 @@ function AppContent({
                       ) : null}
                     </div>
                     <div
-                      id="panel-8"
+                      id="panel-9"
                       role="tabpanel"
-                      aria-labelledby="tab-8"
-                      hidden={activePanelIndex !== 8}
+                      aria-labelledby="tab-9"
+                      hidden={activePanelIndex !== 9}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 8 ? (
+                      {activePanelIndex === 9 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TakServerPanel
@@ -2514,13 +2580,13 @@ function AppContent({
                       ) : null}
                     </div>
                     <div
-                      id="panel-9"
+                      id="panel-10"
                       role="tabpanel"
-                      aria-labelledby="tab-9"
-                      hidden={activePanelIndex !== 9}
+                      aria-labelledby="tab-10"
+                      hidden={activePanelIndex !== 10}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 9 ? (
+                      {activePanelIndex === 10 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <AppPanel
@@ -2563,13 +2629,13 @@ function AppContent({
                       ) : null}
                     </div>
                     <div
-                      id="panel-10"
+                      id="panel-11"
                       role="tabpanel"
-                      aria-labelledby="tab-10"
-                      hidden={activePanelIndex !== 10}
+                      aria-labelledby="tab-11"
+                      hidden={activePanelIndex !== 11}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 10 ? (
+                      {activePanelIndex === 11 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <DiagnosticsPanel
@@ -2597,13 +2663,13 @@ function AppContent({
                       ) : null}
                     </div>
                     <div
-                      id="panel-11"
+                      id="panel-12"
                       role="tabpanel"
-                      aria-labelledby="tab-11"
-                      hidden={activePanelIndex !== 11}
+                      aria-labelledby="tab-12"
+                      hidden={activePanelIndex !== 12}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 11 && capabilities.hasRawPacketLog ? (
+                      {activePanelIndex === 12 && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <div className="p-4">
@@ -2629,13 +2695,13 @@ function AppContent({
                       ) : null}
                     </div>
                     <div
-                      id="panel-12"
+                      id="panel-13"
                       role="tabpanel"
-                      aria-labelledby="tab-12"
-                      hidden={activePanelIndex !== 12}
+                      aria-labelledby="tab-13"
+                      hidden={activePanelIndex !== 13}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 12 && capabilities.hasRawPacketLog ? (
+                      {activePanelIndex === 13 && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {protocol === 'meshcore' ? (
@@ -2660,13 +2726,13 @@ function AppContent({
                       ) : null}
                     </div>
                     <div
-                      id="panel-13"
+                      id="panel-14"
                       role="tabpanel"
-                      aria-labelledby="tab-13"
-                      hidden={activePanelIndex !== 13}
+                      aria-labelledby="tab-14"
+                      hidden={activePanelIndex !== 14}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 13 ? (
+                      {activePanelIndex === 14 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <RFHistogramsPanel nodes={nodesForUi} />
@@ -2675,14 +2741,14 @@ function AppContent({
                       ) : null}
                     </div>
                     <div
-                      id="panel-14"
+                      id="panel-15"
                       role="tabpanel"
-                      aria-labelledby="tab-14"
-                      hidden={activePanelIndex !== 14}
+                      aria-labelledby="tab-15"
+                      hidden={activePanelIndex !== 15}
                       className="w-full min-w-0"
                       style={{ height: 'calc(100vh - 140px)' }}
                     >
-                      {activePanelIndex === 14 ? (
+                      {activePanelIndex === 15 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <PeerGraphPanel
@@ -2850,7 +2916,19 @@ function AppContent({
               setSelectedNodeId(null);
             }}
             onMessageNode={
-              selectedNode?.node_id !== detailMyNodeNum ? handleMessageNode : undefined
+              selectedNode?.node_id !== detailMyNodeNum && selectedNode?.hw_model !== 'Room'
+                ? handleMessageNode
+                : undefined
+            }
+            onOpenRoom={
+              detailModalProtocol === 'meshcore' &&
+              selectedNode?.hw_model === 'Room' &&
+              selectedNode.node_id !== detailMyNodeNum
+                ? handleOpenRoom
+                : undefined
+            }
+            onLoginRoom={
+              detailModalProtocol === 'meshcore' ? meshcorePanelActions.loginRoom : undefined
             }
             onToggleFavorite={detailModalPanelActions.setNodeFavorited}
             remoteAdminKey={

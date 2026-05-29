@@ -93,6 +93,17 @@ function meshcoreReceivedViaFromDb(raw: unknown): NonNullable<ChatMessage['recei
   return 'rf';
 }
 
+/** MeshCore chat channel index for room server BBS posts (not DMs at -1). */
+export const MESHCORE_ROOM_MESSAGE_CHANNEL = -2;
+
+/** Room BBS posts use `roomServerId` / channel -2; they must not appear in Chat DM tabs. */
+export function isMeshcoreRoomChatMessage(msg: {
+  roomServerId?: number;
+  channel?: number;
+}): boolean {
+  return msg.roomServerId != null || msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL;
+}
+
 export function messageToDbRow(
   msg: ChatMessage,
 ): Parameters<typeof window.electronAPI.db.saveMeshcoreMessage>[0] {
@@ -116,6 +127,7 @@ export function messageToDbRow(
     reply_preview_text: msg.replyPreviewText ?? null,
     reply_preview_sender: msg.replyPreviewSender ?? null,
     rx_hops: msg.rxHops != null && Number.isFinite(msg.rxHops) ? Math.trunc(msg.rxHops) : null,
+    room_server_id: msg.roomServerId ?? null,
   };
 }
 
@@ -451,6 +463,7 @@ export interface MeshcoreMessageDbRow {
   reply_preview_text?: string | null;
   reply_preview_sender?: string | null;
   rx_hops?: number | null;
+  room_server_id?: number | null;
 }
 
 /**
@@ -668,6 +681,7 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
       replyPreviewSender:
         typeof r.reply_preview_sender === 'string' ? r.reply_preview_sender : undefined,
       rxHops: coerceOptionalDbInt(r.rx_hops),
+      roomServerId: coerceOptionalDbInt(r.room_server_id),
     });
   }
   return meshcoreReconcileChannelSenderIds(mapped);

@@ -93,6 +93,8 @@ export interface ProtocolCapabilities {
   nodeListTabUsesContactsLabel: boolean;
   /** Modules tab shows repeater tooling (MeshCore "Repeaters" tab slot) */
   modulesTabUsesRepeatersLabel: boolean;
+  /** Dedicated Rooms tab for MeshCore room server BBS */
+  hasRoomServersPanel: boolean;
   /** Radio panel: import JSON device config (MeshCore companion) */
   hasJsonRadioConfigImport: boolean;
   /** Node stale threshold in milliseconds (for node status UI) */
@@ -147,6 +149,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasRawPacketLog: true,
   nodeListTabUsesContactsLabel: false,
   modulesTabUsesRepeatersLabel: false,
+  hasRoomServersPanel: false,
   hasJsonRadioConfigImport: false,
   nodeStaleThresholdMs: 2 * 60 * 60 * 1000, // 2 hours
   nodeOfflineThresholdMs: 7 * 24 * 60 * 60 * 1000, // 7 days
@@ -199,6 +202,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasRawPacketLog: true,
   nodeListTabUsesContactsLabel: true,
   modulesTabUsesRepeatersLabel: true,
+  hasRoomServersPanel: true,
   hasJsonRadioConfigImport: true,
   nodeStaleThresholdMs: 48 * 60 * 60 * 1000, // 48 hours
   nodeOfflineThresholdMs: 96 * 60 * 60 * 1000, // 96 hours

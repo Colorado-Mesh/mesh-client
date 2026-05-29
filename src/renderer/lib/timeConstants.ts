@@ -19,6 +19,12 @@ export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
  */
 export const MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS = 45_000;
 
+/** Extra wait after SENT for room server login over RF (multi-hop); meshcore.js adds this to estTimeout. */
+export const MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS = 45_000;
+
+/** Cap wait for SendLogin / room post `sendTextMessage` Sent response (meshcore.js has no timeout). */
+export const MESHCORE_ROOM_POST_SENT_TIMEOUT_MS = 45_000;
+
 /**
  * Raw packet log: startup (and similar) can deliver two distinct LOG_RX frames for the same node's
  * FLOOD ADVERT within seconds; coalesce so the sniffer shows one row (newest wins).

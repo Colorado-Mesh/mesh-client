@@ -9,7 +9,7 @@ import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 33;
+export const CURRENT_SCHEMA_VERSION = 34;
 
 /**
  * Tables only — used during upgrades so we do not CREATE UNIQUE indexes before
@@ -101,7 +101,8 @@ export const CANONICAL_TABLES_DDL = `
         rx_packet_fingerprint TEXT,
         reply_preview_text TEXT,
         reply_preview_sender TEXT,
-        rx_hops INTEGER
+        rx_hops INTEGER,
+        room_server_id INTEGER
       );
 
       CREATE TABLE IF NOT EXISTS position_history (
@@ -309,6 +310,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     reply_preview_text: 'TEXT',
     reply_preview_sender: 'TEXT',
     rx_hops: 'INTEGER',
+    room_server_id: 'INTEGER',
   },
   position_history: {
     node_id: 'INTEGER NOT NULL',
