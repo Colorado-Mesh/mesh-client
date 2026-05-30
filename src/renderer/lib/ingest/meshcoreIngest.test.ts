@@ -167,6 +167,36 @@ describe('attachMeshcoreIngest', () => {
     );
   });
 
+  it('parses SignedPlain room posts when room node is not yet in nodeStore', () => {
+    const roomId = 0xdeadbeee;
+    const msgId = `room:${roomId}:1700000200`;
+    upsertMessage(ID, {
+      id: msgId,
+      from: roomId,
+      to: 0,
+      payload: '\0\0\0\0Posted early',
+      channelIndex: -2,
+      timestamp: 1_700_000_200_000,
+      roomServerId: roomId,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: msgId,
+        from: roomId,
+        to: 0,
+        payload: '\0\0\0\0Posted early',
+        channelIndex: -2,
+        timestamp: 1_700_000_200_000,
+        txtType: 2,
+        roomServerId: roomId,
+      },
+    });
+    const row = useMessageStore.getState().messages[ID]?.[msgId];
+    expect(row?.payload).toBe('Posted early');
+    expect(row?.roomServerId).toBe(roomId);
+  });
+
   it('parses inbound tapback wire text into messageStore with emoji + replyTo', () => {
     const parentTs = 1_700_000_000_000;
     const parentId = 'ch:0:1700000000';

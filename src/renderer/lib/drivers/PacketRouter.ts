@@ -1,5 +1,6 @@
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
+import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '../../hooks/meshcore/meshcoreHookPreamble';
 import type { ConnectionStatus } from '../../stores/connectionStore';
 import { setConnection } from '../../stores/connectionStore';
 import type { ChannelConfig } from '../../stores/deviceStore';
@@ -32,6 +33,7 @@ import {
 import { errLikeToLogString } from '../errLikeToLogString';
 import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
 import type { DomainEvent } from '../protocols/Protocol';
+import { MESHCORE_ROOM_POST_DEDUP_WINDOW_MS } from '../timeConstants';
 import type { IdentityId } from '../types';
 
 function resolveMeshtasticSenderName(identityId: IdentityId, from: number): string | undefined {
@@ -51,6 +53,40 @@ function upsertByIndex<T extends { index: number }>(arr: T[], item: T): T[] {
 }
 
 export type PacketRouterListener = (event: DomainEvent, identityId: IdentityId) => void;
+
+function roomPostWireBody(payload: string): string {
+  return payload.length > 4 ? payload.slice(4) : payload;
+}
+
+function findRoomPostOptimistic(
+  records: {
+    id: string;
+    status?: string;
+    roomServerId?: number;
+    channelIndex?: number;
+    payload: string;
+    timestamp: number;
+  }[],
+  event: Extract<DomainEvent, { type: 'text_message' }>['payload'],
+): (typeof records)[number] | undefined {
+  const roomServerId = event.roomServerId ?? event.from;
+  if (roomServerId == null || roomServerId === 0) return undefined;
+  const isRoomWire =
+    event.roomServerId != null ||
+    event.channelIndex === MESHCORE_ROOM_MESSAGE_CHANNEL ||
+    event.id.startsWith('room:');
+  if (!isRoomWire) return undefined;
+  const body = roomPostWireBody(event.payload);
+  return records.find(
+    (m) =>
+      m.status === 'sending' &&
+      m.id !== event.id &&
+      m.roomServerId === roomServerId &&
+      m.channelIndex === MESHCORE_ROOM_MESSAGE_CHANNEL &&
+      m.payload === body &&
+      Math.abs(m.timestamp - event.timestamp) <= MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
+  );
+}
 
 class PacketRouter {
   private listeners: PacketRouterListener[] = [];
@@ -75,10 +111,12 @@ class PacketRouter {
               m.to === event.payload.to &&
               m.channelIndex === event.payload.channelIndex &&
               m.payload === event.payload.payload &&
-              Math.abs(m.timestamp - event.payload.timestamp) <= 30_000,
+              Math.abs(m.timestamp - event.payload.timestamp) <= MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
           );
-          if (optimistic) {
-            renameMessageId(identityId, optimistic.id, event.payload.id);
+          const roomOptimistic =
+            optimistic ?? findRoomPostOptimistic(Object.values(byIdentity), event.payload);
+          if (roomOptimistic) {
+            renameMessageId(identityId, roomOptimistic.id, event.payload.id);
           }
         }
         // Upsert (not add) so an outbound echo carrying the same packetId-derived

@@ -22,8 +22,20 @@ export const MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS = 45_000;
 /** Extra wait after SENT for room server login over RF (multi-hop); meshcore.js adds this to estTimeout. */
 export const MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS = 45_000;
 
+/** Max wait for `RESP_SENT` after SendLogin before rejecting (companion never acked the command). */
+export const MESHCORE_ROOM_LOGIN_SENT_WAIT_MS = MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS;
+
+/** Hop-scaled floor for room login response wait (matches outbound DM ACK formula in useMeshcoreRuntime). */
+export function computeRoomLoginExtraTimeoutMs(hopsAway: number): number {
+  const hopScaled = 3_000 + Math.max(0, hopsAway) * 2_500;
+  return Math.max(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS, hopScaled);
+}
+
 /** Cap wait for SendLogin / room post `sendTextMessage` Sent response (meshcore.js has no timeout). */
 export const MESHCORE_ROOM_POST_SENT_TIMEOUT_MS = 45_000;
+
+/** Room post dedup window: optimistic client timestamp vs firmware echo / replay overlap. */
+export const MESHCORE_ROOM_POST_DEDUP_WINDOW_MS = 30_000;
 
 /** Room login attempts before giving up (matches MeshMonitor loginToRoom). */
 export const MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS = 3;

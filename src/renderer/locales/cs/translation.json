@@ -1994,7 +1994,9 @@
     "syncInterval120": "Každé 2 hodiny",
     "syncInterval240": "Každé 4 hodiny",
     "saveSyncConfig": "Uložit nastavení synchronizace",
-    "lastSync": "Poslední synchronizace"
+    "lastSync": "Poslední synchronizace",
+    "cancelLogin": "Zrušit přihlášení",
+    "cancelLoginHint": "Přihlašování do jiné místnosti může skončit nejdříve v rádiu. Zrušit zastaví další pokusy v této místnosti."
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

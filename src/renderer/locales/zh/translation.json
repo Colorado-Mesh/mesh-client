@@ -1994,7 +1994,9 @@
     "syncInterval120": "每2小时",
     "syncInterval240": "每4小时",
     "saveSyncConfig": "保存 Sync 设置",
-    "lastSync": "上次同步"
+    "lastSync": "上次同步",
+    "cancelLogin": "取消登录",
+    "cancelLoginHint": "另一个房间登录可能首先在收音机上完成。取消可停止对此房间的进一步尝试。"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

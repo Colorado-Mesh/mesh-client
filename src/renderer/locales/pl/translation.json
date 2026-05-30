@@ -1994,7 +1994,9 @@
     "syncInterval120": "Co 2 godziny",
     "syncInterval240": "Co 4 godziny",
     "saveSyncConfig": "Ustawienia synchronizacji",
-    "lastSync": "Ostatnia synchronizacja"
+    "lastSync": "Ostatnia synchronizacja",
+    "cancelLogin": "Anuluj logowanie",
+    "cancelLoginHint": "Kolejne logowanie do pokoju może najpierw zakończyć się w radiu. Anulowanie zatrzymuje dalsze próby dla tego pokoju."
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

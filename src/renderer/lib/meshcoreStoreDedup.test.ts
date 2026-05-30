@@ -2,10 +2,14 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '../hooks/meshcore/meshcoreHookPreamble';
 import { upsertMessage, useMessageStore } from '../stores/messageStore';
-import { buildMeshcoreChannelIncomingMessage } from './meshcoreChannelText';
+import {
+  buildMeshcoreChannelIncomingMessage,
+  buildMeshcoreRoomIncomingMessage,
+} from './meshcoreChannelText';
 import {
   meshcoreChannelMessageStoreId,
   meshcoreMessageStoreId,
+  meshcoreRoomMessageStoreId,
   upsertMeshcoreMessageWithDedup,
 } from './meshcoreStoreDedup';
 
@@ -85,5 +89,109 @@ describe('meshcoreStoreDedup', () => {
       meshcoreDedupeKey: 'Welcome',
     };
     expect(meshcoreMessageStoreId(msg)).toBe(`room:${roomId >>> 0}:1700000000`);
+  });
+
+  it('merges optimistic room post with firmware RF echo', () => {
+    const roomId = 0xac200e59;
+    const authorId = 0x11;
+    const firmwareTsMs = 1_700_000_000_000;
+    const clientTsMs = firmwareTsMs + 2_500;
+
+    const optimistic = {
+      sender_id: authorId,
+      sender_name: 'NV0N 01',
+      payload: 'Testing from the mesh-client',
+      meshcoreDedupeKey: 'Testing from the mesh-client',
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: clientTsMs,
+      status: 'sending' as const,
+      roomServerId: roomId,
+      to: roomId,
+    };
+    upsertMeshcoreMessageWithDedup(ID, optimistic);
+
+    const echo = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Testing from the mesh-client',
+      roomServerId: roomId,
+      authorId,
+      authorName: 'NV0N 01',
+      timestamp: firmwareTsMs,
+      receivedVia: 'rf',
+    });
+    const result = upsertMeshcoreMessageWithDedup(
+      ID,
+      echo,
+      meshcoreRoomMessageStoreId(roomId, Math.floor(firmwareTsMs / 1000)),
+    );
+
+    expect(result.inserted).toBe(false);
+    expect(result.message.timestamp).toBe(firmwareTsMs);
+    expect(result.message.status).toBe('acked');
+    expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(1);
+  });
+
+  it('merges duplicate room posts from dual ingress with identical firmware timestamp', () => {
+    const roomId = 0xac200e59;
+    const authorId = 0x22;
+    const tsMs = 1_700_000_001_000;
+    const tsSec = Math.floor(tsMs / 1000);
+    const canonicalId = meshcoreRoomMessageStoreId(roomId, tsSec);
+
+    const first = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Hello room',
+      roomServerId: roomId,
+      authorId,
+      authorName: 'Alice',
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    upsertMeshcoreMessageWithDedup(ID, first, canonicalId);
+
+    const replay = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Hello room',
+      roomServerId: roomId,
+      authorId,
+      authorName: 'Alice',
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    const result = upsertMeshcoreMessageWithDedup(ID, replay, canonicalId);
+
+    expect(result.inserted).toBe(false);
+    expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(1);
+  });
+
+  it('merges event-131 replay with live event-7 room post within skew window', () => {
+    const roomId = 0xac200e59;
+    const authorId = 0x33;
+    const tsMs = 1_700_000_002_000;
+
+    upsertMeshcoreMessageWithDedup(
+      ID,
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'Sync replay',
+        roomServerId: roomId,
+        authorId,
+        authorName: 'Bob',
+        timestamp: tsMs,
+        receivedVia: 'rf',
+      }),
+    );
+
+    const result = upsertMeshcoreMessageWithDedup(
+      ID,
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'Sync replay',
+        roomServerId: roomId,
+        authorId,
+        authorName: 'Bob',
+        timestamp: tsMs + 500,
+        receivedVia: 'rf',
+      }),
+      meshcoreRoomMessageStoreId(roomId, Math.floor((tsMs + 500) / 1000)),
+    );
+
+    expect(result.inserted).toBe(false);
+    expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(1);
   });
 });

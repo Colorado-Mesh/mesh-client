@@ -40,25 +40,6 @@ function listChatMessages(identityId: IdentityId): ChatMessage[] {
   return messageRecordsToChatMessages(Object.values(byId));
 }
 
-function resolveRoomServerSender(
-  identityId: IdentityId,
-  senderId: number,
-): MeshNodeLike | undefined {
-  const record = useNodeStore.getState().nodes[identityId]?.[senderId];
-  if (!record) return undefined;
-  return { hw_model: record.hwModel ?? '' };
-}
-
-interface MeshNodeLike {
-  hw_model: string;
-}
-
-function isRoomServerSender(identityId: IdentityId, senderId: number): boolean {
-  if (senderId === 0) return false;
-  const node = resolveRoomServerSender(identityId, senderId);
-  return node?.hw_model === 'Room';
-}
-
 function buildPrefixToNodeIdMap(identityId: IdentityId): Map<string, number> {
   const map = new Map<string, number>();
   const nodes = useNodeStore.getState().nodes[identityId] ?? {};
@@ -89,7 +70,7 @@ function handleTextMessage(
     event.payload.roomServerId != null ||
     event.payload.channelIndex === MESHCORE_ROOM_MESSAGE_CHANNEL ||
     event.payload.id.startsWith('room:');
-  const isRoomEvent = looksLikeRoom && isRoomServerSender(identityId, roomServerId);
+  const isRoomEvent = looksLikeRoom && roomServerId !== 0;
 
   if (isRoomEvent) {
     const prefixMap = buildPrefixToNodeIdMap(identityId);

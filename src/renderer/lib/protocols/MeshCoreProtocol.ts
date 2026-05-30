@@ -7,7 +7,7 @@ import {
 } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { MESHCORE_TXT_TYPE_SIGNED_PLAIN } from '../meshcoreChannelText';
 import { meshcoreCoerceRadioRxFrame, parseAutoaddConfigResponse } from '../meshcoreContactAutoAdd';
-import { pubkeyToNodeId } from '../meshcoreUtils';
+import { isMeshcoreTransportStatusChatLine, pubkeyToNodeId } from '../meshcoreUtils';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHCORE_CAPABILITIES } from '../radio/BaseRadioProvider';
 import type { TransportParams } from '../types';
@@ -478,6 +478,22 @@ export class MeshCoreProtocol implements Protocol {
     return events;
   }
 
+  /** MeshCore hop ACK / path-hash summaries — device log only, not chat (see legacy event 7/8). */
+  private decodeTransportStatusChatLine(text: string): DomainEvent[] {
+    const line = text.length > 220 ? `${text.slice(0, 220)}…` : text;
+    return [
+      {
+        type: 'device_log',
+        payload: {
+          message: line,
+          time: Date.now(),
+          source: 'meshcore',
+          level: 0,
+        },
+      },
+    ];
+  }
+
   private decodeDirectMessage(raw: unknown, nodeIdByPrefix: Map<string, number>): DomainEvent[] {
     const d = raw as {
       pubKeyPrefix: Uint8Array;
@@ -486,6 +502,9 @@ export class MeshCoreProtocol implements Protocol {
       txtType?: number;
     };
     if (d.txtType === 1) return [];
+    if (isMeshcoreTransportStatusChatLine(d.text)) {
+      return this.decodeTransportStatusChatLine(d.text);
+    }
     const prefix = Array.from(d.pubKeyPrefix)
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
@@ -512,6 +531,9 @@ export class MeshCoreProtocol implements Protocol {
 
   private decodeChannelMessage(raw: unknown): DomainEvent[] {
     const d = raw as { channelIdx: number; text: string; senderTimestamp: number };
+    if (isMeshcoreTransportStatusChatLine(d.text)) {
+      return this.decodeTransportStatusChatLine(d.text);
+    }
     return [
       {
         type: 'text_message',

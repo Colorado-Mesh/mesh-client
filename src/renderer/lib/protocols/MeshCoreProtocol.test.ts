@@ -67,6 +67,27 @@ describe('MeshCoreProtocol.subscribe', () => {
     teardown();
   });
 
+  it('routes transport status channel lines to device_log instead of chat', () => {
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    conn.emit(EVENT_CHANNEL_MESSAGE, {
+      channelIdx: 6,
+      text: '[2552] @[Nix Mobile 3] | 1 hops, 1-byte hashes, SNR -1.75 | recv 16:44:41',
+      senderTimestamp: 1_700_000,
+    });
+    expect(events.some((e) => e.type === 'text_message')).toBe(false);
+    const log = events.find((e) => e.type === 'device_log');
+    expect(log).toMatchObject({
+      type: 'device_log',
+      payload: expect.objectContaining({
+        source: 'meshcore',
+        message: expect.stringContaining('SNR -1.75'),
+      }),
+    });
+    teardown();
+  });
+
   it('emits room-shaped text_message for SignedPlain direct messages', () => {
     const conn = mockMeshCoreConnection();
     const events: DomainEvent[] = [];
