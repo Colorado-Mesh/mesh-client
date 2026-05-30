@@ -4,8 +4,12 @@ import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
   findMeshcoreDmReplyParent,
+  meshcoreBracketDisplayNamesMatch,
+  meshcoreChannelRepairRawText,
+  meshcoreChatMessagesForDisplay,
   meshcorePayloadIsTapbackEmojiOnly,
   normalizeMeshcoreIncomingText,
+  parseMeshcoreBracketPrefix,
   parseMeshcorePlainBracketLine,
   resolveMeshcoreBracketParentKey,
   resolveMeshcoreBracketParentKeyDm,
@@ -53,6 +57,7 @@ describe('normalizeMeshcoreIncomingText', () => {
       senderName: 'NVON 01',
       payload: '👍',
       bracketTargetName: 'NVON 02',
+      hadBracketReplyPrefix: true,
     });
   });
 
@@ -61,6 +66,7 @@ describe('normalizeMeshcoreIncomingText', () => {
       senderName: 'A',
       payload: 'hello there',
       bracketTargetName: 'Bob',
+      hadBracketReplyPrefix: true,
     });
   });
 
@@ -85,6 +91,7 @@ describe('parseMeshcorePlainBracketLine', () => {
     expect(parseMeshcorePlainBracketLine('@[Alice] 👍')).toEqual({
       bracketTargetName: 'Alice',
       payload: '👍',
+      hadBracketReplyPrefix: true,
     });
   });
 
@@ -261,6 +268,21 @@ describe('meshcorePayloadIsTapbackEmojiOnly', () => {
   });
 });
 
+describe('meshcoreBracketDisplayNamesMatch', () => {
+  it('matches case and surrounding whitespace', () => {
+    expect(meshcoreBracketDisplayNamesMatch('  Bob ', 'bob')).toBe(true);
+  });
+
+  it('matches when one name contains the other', () => {
+    expect(meshcoreBracketDisplayNamesMatch('W0STR mobl', 'W0STR')).toBe(true);
+  });
+
+  it('matches mobile alias to station name via callsign token', () => {
+    expect(meshcoreBracketDisplayNamesMatch('🛩️ W0STR mobl', '🛩️ W0STR 01')).toBe(true);
+    expect(meshcoreBracketDisplayNamesMatch('W0STR mobl', '🛩️ W0STR 01')).toBe(true);
+  });
+});
+
 describe('resolveMeshcoreBracketParentKey', () => {
   const baseTime = 1_000_000;
   const parents: ChatMessage[] = [
@@ -365,6 +387,95 @@ describe('buildMeshcoreChannelIncomingMessage', () => {
       rxHops: 2,
     });
     expect(msg.rxHops).toBe(2);
+  });
+
+  it('strips bracket prefix and sets preview sender when parent is missing', () => {
+    const msg = buildMeshcoreChannelIncomingMessage([], {
+      rawText: 'TB-Dek: @[W0STR mobl] agreed, coffee',
+      senderId: 2,
+      displayName: 'TB-Dek',
+      channel: 8,
+      timestamp: 3_000_000,
+      receivedVia: 'rf',
+    });
+    expect(msg.replyId).toBeUndefined();
+    expect(msg.payload).toBe('agreed, coffee');
+    expect(msg.replyPreviewSender).toBe('W0STR mobl');
+    expect(msg.payload).not.toMatch(/@\[/);
+  });
+});
+
+describe('meshcoreChannelRepairRawText', () => {
+  it('does not duplicate Sender prefix when payload already has colon form', () => {
+    const raw = meshcoreChannelRepairRawText({
+      sender_id: 1,
+      sender_name: 'TB-Dek',
+      payload: 'TB-Dek: @[W0STR mobl] agreed',
+      channel: 8,
+      timestamp: 1,
+      status: 'acked',
+    });
+    expect(raw).toBe('TB-Dek: @[W0STR mobl] agreed');
+  });
+});
+
+describe('parseMeshcoreBracketPrefix', () => {
+  it('parses empty bracket reply @[] with body only', () => {
+    expect(parseMeshcoreBracketPrefix('@[] agreed, coffee')).toEqual({
+      hadBracketPrefix: true,
+      targetName: undefined,
+      body: 'agreed, coffee',
+    });
+  });
+});
+
+describe('repairMeshcoreDisplayMessages', () => {
+  it('repairs stored rows that still contain @[ in payload', () => {
+    const broken: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'TB-Dek',
+      payload: '@[W0STR mobl] agreed',
+      channel: 8,
+      timestamp: 3_000_001,
+      status: 'acked',
+    };
+    const parent: ChatMessage = {
+      sender_id: 1,
+      sender_name: '🛩️ W0STR 01',
+      payload: 'morning',
+      channel: 8,
+      timestamp: 3_000_000,
+      status: 'acked',
+      packetId: 77,
+    };
+    const out = meshcoreChatMessagesForDisplay([parent, broken]);
+    expect(out[1]?.payload).toBe('agreed');
+    expect(out[1]?.replyId).toBe(77);
+    expect(out[1]?.replyPreviewSender).toBe('🛩️ W0STR 01');
+  });
+
+  it('repairs @[] empty bracket by inferring latest prior speaker on channel', () => {
+    const parent: ChatMessage = {
+      sender_id: 1,
+      sender_name: '🔥 W0RMT 03',
+      payload: 'morning. It is absolutely necessary this morning',
+      channel: 8,
+      timestamp: 3_000_000,
+      status: 'acked',
+      packetId: 88,
+    };
+    const broken: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'TB-Dek',
+      payload: '@[] agreed, a nice yirgacheffe',
+      channel: 8,
+      timestamp: 3_000_001,
+      status: 'acked',
+    };
+    const out = meshcoreChatMessagesForDisplay([parent, broken]);
+    expect(out[1]?.payload).toBe('agreed, a nice yirgacheffe');
+    expect(out[1]?.replyId).toBe(88);
+    expect(out[1]?.replyPreviewSender).toBe('🔥 W0RMT 03');
   });
 });
 

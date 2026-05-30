@@ -4,9 +4,11 @@ import { meshcoreChatStubNodeIdFromDisplayName } from '../../lib/meshcoreUtils';
 import type { ChatMessage } from '../../lib/types';
 import {
   findMeshcoreCrossTransportDuplicate,
+  findMeshcoreTapbackEchoDuplicate,
   mapMeshcoreCrossTransportUpgrade,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
   meshcoreCrossTransportMatch,
+  meshcoreTapbackEchoMatch,
 } from './meshcoreHookPreamble';
 
 function baseMsg(overrides: Partial<ChatMessage> = {}): ChatMessage {
@@ -68,6 +70,26 @@ describe('meshcoreCrossTransportMatch', () => {
       timestamp: mqtt.timestamp + 1_000,
     });
     expect(meshcoreCrossTransportMatch(mqtt, rf)).toBe(true);
+  });
+
+  it('matches tapback echo on same transport within window', () => {
+    const local = baseMsg({
+      emoji: 0x1f44d,
+      replyId: 99,
+      payload: '👍',
+      timestamp: 1_700_000_000_000,
+      receivedVia: 'rf',
+    });
+    const echo = baseMsg({
+      emoji: 0x1f44d,
+      replyId: 99,
+      payload: '👍',
+      meshcoreDedupeKey: 'Me: @[Bob] 👍',
+      timestamp: local.timestamp + 2_000,
+      receivedVia: 'rf',
+    });
+    expect(meshcoreTapbackEchoMatch(local, echo)).toBe(true);
+    expect(findMeshcoreTapbackEchoDuplicate([local], echo)).toBe(local);
   });
 
   it('matches reaction duplicates across transports', () => {

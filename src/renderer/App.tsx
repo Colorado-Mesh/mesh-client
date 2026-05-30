@@ -97,6 +97,7 @@ import {
   letsMeshMqttUsernameFromIdentity,
   readMeshcoreIdentityAsync,
 } from './lib/letsMeshJwt';
+import { meshcoreChatMessagesForDisplay } from './lib/meshcoreChannelText';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './lib/meshtasticMqttTlsMigration';
@@ -670,7 +671,7 @@ function AppContent({
     [meshtasticStoreMessages],
   );
   const meshcoreUiMessages = useMemo(
-    () => messageRecordsToChatMessages(meshcoreStoreMessages),
+    () => meshcoreChatMessagesForDisplay(messageRecordsToChatMessages(meshcoreStoreMessages)),
     [meshcoreStoreMessages],
   );
   const meshtasticUiNodes = useMemo(() => {

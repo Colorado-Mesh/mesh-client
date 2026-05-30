@@ -50,6 +50,7 @@ import {
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
 import { computeChannelUnreadCounts, computeDmUnreadCounts } from '../lib/chatUnreadCounts';
+import { meshcoreChatMessagesForDisplay } from '../lib/meshcoreChannelText';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayLabel, reactionDisplayGlyph, reactionGlyphFromPicker } from '../lib/reactions';
@@ -657,6 +658,11 @@ function ChatPanel({
     }
   }, [initialDmTarget, onDmTargetConsumed]);
 
+  const displayMessages = useMemo(
+    () => (protocol === 'meshcore' ? meshcoreChatMessagesForDisplay(messages) : messages),
+    [messages, protocol],
+  );
+
   // Separate regular messages from reaction messages
   const { regularMessages, reactionsByReplyId } = useMemo(() => {
     const regular: ChatMessage[] = [];
@@ -665,7 +671,7 @@ function ChatPanel({
       { emoji: number; payload: string; sender_id: number; sender_name: string; id?: number }[]
     >();
 
-    for (const msg of messages) {
+    for (const msg of displayMessages) {
       if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) {
         continue;
       }
@@ -684,7 +690,7 @@ function ChatPanel({
       }
     }
     return { regularMessages: regular, reactionsByReplyId: reactions };
-  }, [messages, protocol]);
+  }, [displayMessages, protocol]);
 
   const inferredDmTabs = useMemo(() => {
     const peers = new Map<number, number>();
@@ -2120,10 +2126,13 @@ function ChatPanel({
                         )}
 
                         {/* Quoted reply preview */}
-                        {msg.replyId &&
+                        {(msg.replyId != null ||
+                          msg.replyPreviewSender != null ||
+                          msg.replyPreviewText != null) &&
                           !msg.emoji &&
                           (() => {
-                            const orig = messageByReplyKey.get(msg.replyId);
+                            const orig =
+                              msg.replyId != null ? messageByReplyKey.get(msg.replyId) : undefined;
                             const quoteSnippet = orig
                               ? truncateReplyPreviewText(orig.payload)
                               : msg.replyPreviewText;
@@ -2131,28 +2140,52 @@ function ChatPanel({
                               ? nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
                                 orig.sender_name
                               : msg.replyPreviewSender;
+                            const canJumpToParent = msg.replyId != null && !!orig;
                             if (!quoteSnippet && !quotedLabel) return null;
-                            return (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  scrollToQuotedParent(msg.replyId!);
-                                }}
-                                className="bg-secondary-dark/50 hover:bg-secondary-dark/80 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left transition-colors"
-                                aria-label={t('chatPanel.jumpToQuotedMessage', {
-                                  sender: quotedLabel ?? '',
-                                })}
-                              >
+                            const quoteClassName =
+                              'bg-secondary-dark/50 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left';
+                            const quoteBody = (
+                              <>
                                 <div className="min-h-[2rem] w-0.5 shrink-0 self-stretch rounded-full bg-gray-500" />
                                 <div className="min-w-0 flex-1">
                                   <span className="block text-[10px] font-semibold text-gray-400">
                                     {quotedLabel}
                                   </span>
-                                  <span className="line-clamp-2 block text-[11px] break-words text-gray-500">
-                                    {quoteSnippet}
-                                  </span>
+                                  {quoteSnippet ? (
+                                    <span className="line-clamp-2 block text-[11px] break-words text-gray-500">
+                                      {quoteSnippet}
+                                    </span>
+                                  ) : null}
                                 </div>
-                              </button>
+                              </>
+                            );
+                            if (canJumpToParent) {
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    scrollToQuotedParent(msg.replyId!);
+                                  }}
+                                  className={`${quoteClassName} hover:bg-secondary-dark/80 transition-colors`}
+                                  aria-label={t('chatPanel.jumpToQuotedMessage', {
+                                    sender: quotedLabel ?? '',
+                                  })}
+                                >
+                                  {quoteBody}
+                                </button>
+                              );
+                            }
+                            return (
+                              <div
+                                className={quoteClassName}
+                                aria-label={
+                                  quotedLabel
+                                    ? t('chatPanel.jumpToQuotedMessage', { sender: quotedLabel })
+                                    : undefined
+                                }
+                              >
+                                {quoteBody}
+                              </div>
                             );
                           })()}
 
