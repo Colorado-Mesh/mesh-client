@@ -182,3 +182,19 @@ export function loadPersistedLastReadInitial(protocol: MeshProtocol): Record<str
   }
   return {};
 }
+
+const persistedLastReadSubscribers = new Set<(protocol: MeshProtocol) => void>();
+
+/** Notify App (sidebar/tray) when ChatPanel advances a last-read watermark. */
+export function notifyPersistedLastReadChanged(protocol: MeshProtocol): void {
+  for (const cb of persistedLastReadSubscribers) {
+    cb(protocol);
+  }
+}
+
+export function subscribePersistedLastRead(listener: (protocol: MeshProtocol) => void): () => void {
+  persistedLastReadSubscribers.add(listener);
+  return () => {
+    persistedLastReadSubscribers.delete(listener);
+  };
+}

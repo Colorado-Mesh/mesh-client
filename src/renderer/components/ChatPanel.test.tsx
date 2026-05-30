@@ -1188,6 +1188,97 @@ describe('ChatPanel unread watermarks', () => {
     expect(screen.queryByRole('button', { name: 'All' })).not.toBeInTheDocument();
   });
 
+  it.each(['meshtastic', 'meshcore'] as const)(
+    'keeps unread badge on another channel when isActive becomes true (%s)',
+    (protocol) => {
+      const ts = Date.now();
+      const unreadMsg = {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Ops ping',
+        channel: 1,
+        timestamp: ts,
+        status: 'acked' as const,
+      };
+      const { rerender } = render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol={protocol} isActive={false} messages={[unreadMsg]} />
+        </ToastProvider>,
+      );
+      expect(screen.getByRole('button', { name: 'Ops 1' })).toBeInTheDocument();
+
+      rerender(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol={protocol} isActive messages={[unreadMsg]} />
+        </ToastProvider>,
+      );
+      expect(screen.getByRole('button', { name: 'Ops 1' })).toBeInTheDocument();
+    },
+  );
+
+  it.each(['meshtastic', 'meshcore'] as const)(
+    'does not advance last-read when isActive toggles on the same view (%s)',
+    (protocol) => {
+      const ts = Date.now();
+      localStorage.removeItem(`mesh-client:lastRead:${protocol}`);
+      const unreadMsg = {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'General ping',
+        channel: 0,
+        timestamp: ts,
+        status: 'acked' as const,
+      };
+      const { rerender } = render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol={protocol} isActive={false} messages={[unreadMsg]} />
+        </ToastProvider>,
+      );
+
+      rerender(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol={protocol} isActive messages={[unreadMsg]} />
+        </ToastProvider>,
+      );
+
+      const stored = JSON.parse(
+        localStorage.getItem(`mesh-client:lastRead:${protocol}`) ?? '{}',
+      ) as Record<string, number>;
+      expect(stored['ch:0']).toBeUndefined();
+    },
+  );
+
+  it('does not mark channel read while hidden when a new message arrives on another channel', () => {
+    const ts = Date.now();
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} isActive={false} messages={[]} />
+      </ToastProvider>,
+    );
+
+    const newMsg = {
+      sender_id: 2,
+      sender_name: 'Alice',
+      payload: 'New while away',
+      channel: 1,
+      timestamp: ts,
+      status: 'acked' as const,
+    };
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} isActive={false} messages={[newMsg]} />
+      </ToastProvider>,
+    );
+    expect(screen.getByRole('button', { name: 'Ops 1' })).toBeInTheDocument();
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} isActive messages={[newMsg]} />
+      </ToastProvider>,
+    );
+    expect(screen.getByRole('button', { name: 'Ops 1' })).toBeInTheDocument();
+  });
+
   it('wraps channel pills in a dedicated column so toolbar utilities stay visible', () => {
     const manyChannels = Array.from({ length: 24 }, (_, index) => ({
       index,
