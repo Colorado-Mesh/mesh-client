@@ -1,5 +1,6 @@
 import {
   findMeshcoreCrossTransportDuplicate,
+  findMeshcoreRoomPostDuplicate,
   MESHCORE_ROOM_MESSAGE_CHANNEL,
   meshcoreMessageDedupeKey,
 } from '../hooks/meshcore/meshcoreHookPreamble';
@@ -64,6 +65,55 @@ function findStoreRecordIdForMessage(identityId: IdentityId, msg: ChatMessage): 
   return undefined;
 }
 
+function mergeRoomPostDuplicate(existing: ChatMessage, incoming: ChatMessage): ChatMessage {
+  const timestamp =
+    incoming.receivedVia === 'rf' && incoming.timestamp !== existing.timestamp
+      ? incoming.timestamp
+      : existing.timestamp;
+  const status =
+    existing.status === 'sending'
+      ? (incoming.status ?? 'acked')
+      : (existing.status ?? incoming.status ?? 'acked');
+  return {
+    ...existing,
+    ...incoming,
+    timestamp,
+    status,
+    payload: incoming.meshcoreDedupeKey ?? incoming.payload ?? existing.payload,
+    meshcoreDedupeKey: incoming.meshcoreDedupeKey ?? existing.meshcoreDedupeKey,
+    sender_name: incoming.sender_name || existing.sender_name,
+    receivedVia: mergeMeshcoreReceivedVia(existing.receivedVia, incoming.receivedVia),
+    rxHops: existing.rxHops ?? incoming.rxHops,
+    packetId: incoming.packetId ?? existing.packetId,
+  };
+}
+
+function applyRoomPostDuplicateMerge(
+  identityId: IdentityId,
+  roomDup: ChatMessage,
+  msg: ChatMessage,
+  preferredId?: string,
+): MeshcoreStoreUpsertResult {
+  const merged = mergeRoomPostDuplicate(roomDup, msg);
+  const existingRecordId = findStoreRecordIdForMessage(identityId, roomDup);
+  const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
+  const record = chatMessageToMessageRecord(merged);
+  record.id = canonicalId;
+  upsertMessage(identityId, record);
+  const altIds = new Set<string>();
+  if (existingRecordId && existingRecordId !== canonicalId) {
+    altIds.add(existingRecordId);
+  }
+  const incomingId = meshcoreMessageStoreId(msg);
+  if (incomingId !== canonicalId) {
+    altIds.add(incomingId);
+  }
+  for (const altId of altIds) {
+    deleteMessage(identityId, altId);
+  }
+  return { inserted: false, message: merged, canonicalId };
+}
+
 export interface MeshcoreStoreUpsertResult {
   inserted: boolean;
   message: ChatMessage;
@@ -122,6 +172,11 @@ export function upsertMeshcoreMessageWithDedup(
       deleteMessage(identityId, altId);
     }
     return { inserted: false, message: merged, canonicalId };
+  }
+
+  const roomDup = findMeshcoreRoomPostDuplicate(storeMessages, msg);
+  if (roomDup) {
+    return applyRoomPostDuplicateMerge(identityId, roomDup, msg, preferredId);
   }
 
   const canonicalId = preferredId ?? meshcoreMessageStoreId(msg);

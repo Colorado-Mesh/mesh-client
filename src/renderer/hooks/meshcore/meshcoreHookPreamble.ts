@@ -22,6 +22,7 @@ import {
   pubkeyToNodeId,
 } from '../../lib/meshcoreUtils';
 import { mergeMeshcoreLastHeardFromAdvert } from '../../lib/nodeStatus';
+import { MESHCORE_ROOM_POST_DEDUP_WINDOW_MS } from '../../lib/timeConstants';
 import type { ChatMessage, DeviceState, MeshNode } from '../../lib/types';
 
 /** MeshCore expected ACK CRCs are uint32; meshcore.js / BLE may surface them as signed. Normalize for Map keys, React state, and SQLite packet_id. */
@@ -327,6 +328,45 @@ export function meshcoreCrossTransportMatch(
   return true;
 }
 
+function meshcoreRoomServerIdForDedup(msg: ChatMessage): number | undefined {
+  if (msg.roomServerId != null) return msg.roomServerId;
+  if (msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL && msg.to != null) return msg.to;
+  return undefined;
+}
+
+/** Same room, author, and body within a clock-skew window (RF echo / dual ingress). */
+export function meshcoreRoomPostMatch(
+  existing: ChatMessage,
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
+): boolean {
+  const existingRoom = meshcoreRoomServerIdForDedup(existing);
+  const incomingRoom = meshcoreRoomServerIdForDedup(incoming);
+  if (existingRoom == null || incomingRoom == null) return false;
+  if (existingRoom !== incomingRoom) return false;
+  if (!meshcoreSenderMatchesForDedup(existing, incoming)) return false;
+  const existingBody = existing.meshcoreDedupeKey ?? existing.payload;
+  const incomingBody = incoming.meshcoreDedupeKey ?? incoming.payload;
+  if (existingBody !== incomingBody && existing.payload !== incoming.payload) return false;
+  if (Math.abs(existing.timestamp - incoming.timestamp) > windowMs) return false;
+  return true;
+}
+
+export function findMeshcoreRoomPostDuplicate(
+  messages: readonly ChatMessage[],
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
+): ChatMessage | undefined {
+  const start = Math.max(0, messages.length - MESHCORE_CROSS_TRANSPORT_SCAN_LIMIT);
+  for (let i = messages.length - 1; i >= start; i--) {
+    const existing = messages[i];
+    if (meshcoreRoomPostMatch(existing, incoming, windowMs)) {
+      return existing;
+    }
+  }
+  return undefined;
+}
+
 export function findMeshcoreCrossTransportDuplicate(
   messages: readonly ChatMessage[],
   incoming: ChatMessage,
@@ -361,12 +401,19 @@ export function mapMeshcoreCrossTransportUpgrade(
 
 /** Match DB vs live without `meshcoreDedupeKey` (DB rows only have normalized payload). */
 function meshcoreLoosePersistenceMatchKey(msg: ChatMessage): string {
+  const roomKey =
+    msg.roomServerId != null
+      ? String(msg.roomServerId)
+      : msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL && msg.to != null
+        ? String(msg.to)
+        : '';
   return [
     msg.sender_id,
     msg.channel,
     msg.timestamp,
     msg.payload,
     msg.to ?? '',
+    roomKey,
     msg.emoji ?? '',
     msg.replyId ?? '',
   ].join('|');

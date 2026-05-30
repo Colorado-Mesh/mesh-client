@@ -143,6 +143,9 @@ export function attachMeshcoreLegacyConnEvents(
     meshcorePreviousNodesBaselineForBuild,
   } = ctx;
 
+  /** PacketRouter + meshcoreIngest own parsed room posts when identity is bound. */
+  const legacyOwnsRoomPosts = (): boolean => meshcoreIdentityIdRef.current == null;
+
   const meshcorePersistentListenerRegs: {
     event: string | number;
     handler: (...args: unknown[]) => void;
@@ -651,24 +654,28 @@ export function attachMeshcoreLegacyConnEvents(
         if (isMeshcoreTransportStatusChatLine(d.text)) {
           logTransportLineAsDevice(d.text);
         } else if (sender?.hw_model === 'Room') {
-          const { authorId, payload } = parseMeshcoreRoomPostPayload(
-            d.text,
-            pubKeyPrefixMapRef.current,
-          );
-          const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
-          const authorName =
-            authorNode?.long_name ??
-            (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
-          addMessage(
-            buildMeshcoreRoomIncomingMessage({
-              rawText: payload,
-              roomServerId: senderId,
-              authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
-              authorName,
-              timestamp: d.senderTimestamp * 1000,
-              receivedVia: 'rf',
-            }),
-          );
+          if (!legacyOwnsRoomPosts()) {
+            void setMeshcoreRoomLastPostAt(senderId, d.senderTimestamp * 1000);
+          } else {
+            const { authorId, payload } = parseMeshcoreRoomPostPayload(
+              d.text,
+              pubKeyPrefixMapRef.current,
+            );
+            const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
+            const authorName =
+              authorNode?.long_name ??
+              (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
+            addMessage(
+              buildMeshcoreRoomIncomingMessage({
+                rawText: payload,
+                roomServerId: senderId,
+                authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
+                authorName,
+                timestamp: d.senderTimestamp * 1000,
+                receivedVia: 'rf',
+              }),
+            );
+          }
         } else {
           addMessage({
             ...buildMeshcoreDmIncomingMessage(messagesRef.current, {
@@ -801,6 +808,11 @@ export function attachMeshcoreLegacyConnEvents(
 
     // Room server pushed post (SignedPlain) — not a DM to the room infrastructure node.
     if (d.txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN && sender?.hw_model === 'Room') {
+      const postTs = d.senderTimestamp * 1000;
+      if (!legacyOwnsRoomPosts()) {
+        void setMeshcoreRoomLastPostAt(senderId, postTs);
+        return;
+      }
       const { authorId, payload } = parseMeshcoreRoomPostPayload(
         d.text,
         pubKeyPrefixMapRef.current,
@@ -809,7 +821,6 @@ export function attachMeshcoreLegacyConnEvents(
       const authorName =
         authorNode?.long_name ??
         (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
-      const postTs = d.senderTimestamp * 1000;
       addMessage(
         buildMeshcoreRoomIncomingMessage({
           rawText: payload,

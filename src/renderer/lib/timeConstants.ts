@@ -25,6 +25,9 @@ export const MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS = 45_000;
 /** Cap wait for SendLogin / room post `sendTextMessage` Sent response (meshcore.js has no timeout). */
 export const MESHCORE_ROOM_POST_SENT_TIMEOUT_MS = 45_000;
 
+/** Room post dedup window: optimistic client timestamp vs firmware echo / replay overlap. */
+export const MESHCORE_ROOM_POST_DEDUP_WINDOW_MS = 30_000;
+
 /** Room login attempts before giving up (matches MeshMonitor loginToRoom). */
 export const MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS = 3;
 

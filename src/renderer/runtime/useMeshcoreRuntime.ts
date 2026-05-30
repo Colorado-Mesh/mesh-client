@@ -3431,6 +3431,7 @@ export function useMeshcoreRuntime() {
         sender_id: myNodeNumRef.current,
         sender_name: selfInfo?.name ?? 'Me',
         payload: text,
+        meshcoreDedupeKey: text,
         channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
         timestamp: sentAt,
         status: 'sending',
@@ -3448,13 +3449,12 @@ export function useMeshcoreRuntime() {
         void fetchAndUpdateLocalStats();
         const acked: ChatMessage = {
           ...tempMsg,
-          sender_id: myNodeNumRef.current,
           status: 'acked',
           packetId: result?.expectedAckCrc,
         };
         const storeId = meshcoreIdentityIdRef.current;
         if (storeId) {
-          upsertMessage(storeId, chatMessageToMessageRecord(acked));
+          upsertMeshcoreMessageWithDedup(storeId, acked);
         }
         setMessages((prev) =>
           prev.map((m) =>
@@ -3473,7 +3473,7 @@ export function useMeshcoreRuntime() {
         const failed: ChatMessage = { ...tempMsg, status: 'failed' };
         const storeId = meshcoreIdentityIdRef.current;
         if (storeId) {
-          upsertMessage(storeId, chatMessageToMessageRecord(failed));
+          upsertMeshcoreMessageWithDedup(storeId, failed);
         }
         setMessages((prev) =>
           prev.map((m) =>

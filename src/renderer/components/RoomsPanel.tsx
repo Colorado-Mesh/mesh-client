@@ -585,11 +585,15 @@ export default function RoomsPanel({
                 {roomPosts.length === 0 ? (
                   <p className="text-sm text-gray-500">{t('roomsPanel.noPostsYet')}</p>
                 ) : (
-                  roomPosts.map((m, i) => {
+                  roomPosts.map((m) => {
                     const isOwn = m.sender_id === myNodeNum;
+                    const rowKey =
+                      m.roomServerId != null
+                        ? `room:${m.roomServerId}:${Math.floor(m.timestamp / 1000)}:${m.sender_id}`
+                        : `${m.timestamp}:${m.sender_id}:${m.payload}`;
                     return (
                       <div
-                        key={`${m.timestamp}:${i}`}
+                        key={rowKey}
                         className={`rounded-lg px-3 py-2 text-sm ${
                           isOwn
                             ? 'bg-purple-900/30 text-purple-100'
