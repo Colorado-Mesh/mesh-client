@@ -11,6 +11,7 @@ import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
 import {
   MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS,
   MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS,
+  type MeshcoreCompanionTransport,
 } from './timeConstants';
 
 export { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE };
@@ -168,6 +169,12 @@ function sleepMs(ms: number): Promise<void> {
 
 export function meshcoreRoomLoginFailureMessage(err: unknown, password: string): string {
   const msg = errLikeToLogString(err).toLowerCase();
+  if (msg.includes('rejected') || msg.includes('wrong password') || msg.includes('acl denied')) {
+    if (password.length === 0) {
+      return 'Room login rejected. Try guest password "hello", or confirm this server allows read-only login.';
+    }
+    return 'Room login rejected. Check the guest or admin password for this room server.';
+  }
   if (msg.includes('timeout')) {
     if (password.length === 0) {
       return 'Room login timed out. Try guest password "hello", or confirm this server allows read-only login.';
@@ -191,6 +198,7 @@ export async function meshcoreRoomLogin(
     guestPassword?: string;
     signal?: AbortSignal;
     hopsAway?: number;
+    companionTransport?: MeshcoreCompanionTransport;
   },
 ): Promise<void> {
   const run = async (): Promise<void> => {
@@ -204,6 +212,7 @@ export async function meshcoreRoomLogin(
         try {
           const response = await runMeshcoreRoomLogin(conn, pubKey, password, {
             hopsAway: opts?.hopsAway,
+            companionTransport: opts?.companionTransport,
             signal,
           });
           throwIfRoomLoginAborted(signal);

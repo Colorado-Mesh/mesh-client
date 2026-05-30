@@ -2990,10 +2990,18 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
 const MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX = 'meshtasticRemoteAdminKey:';
+/** MeshCore Rooms tab — must match renderer meshcoreRoomSyncStorage / meshcoreRoomCredentialStorage. */
+const MESHCORE_ROOM_SYNC_SETTING_PREFIX = 'meshcoreRoomSync:';
+const MESHCORE_ROOM_LAST_POST_SETTING_PREFIX = 'meshcoreRoomLastPost:';
+const MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX = 'meshcoreRoomCredential:';
 
 function isAppSettingsKeyAllowed(key: string): boolean {
   return (
-    APP_SETTINGS_ALLOWED_KEYS.has(key) || key.startsWith(MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX)
+    APP_SETTINGS_ALLOWED_KEYS.has(key) ||
+    key.startsWith(MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX) ||
+    key.startsWith(MESHCORE_ROOM_SYNC_SETTING_PREFIX) ||
+    key.startsWith(MESHCORE_ROOM_LAST_POST_SETTING_PREFIX) ||
+    key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX)
   );
 }
 

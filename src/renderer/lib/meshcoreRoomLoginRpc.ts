@@ -1,4 +1,8 @@
-import { computeRoomLoginExtraTimeoutMs, MESHCORE_ROOM_LOGIN_SENT_WAIT_MS } from './timeConstants';
+import {
+  computeRoomLoginExtraTimeoutMs,
+  computeRoomLoginSentWaitMs,
+  type MeshcoreCompanionTransport,
+} from './timeConstants';
 
 /** DOMException.message when user cancels an in-flight room login. */
 export const MESHCORE_ROOM_LOGIN_ABORT_MESSAGE = 'Room login cancelled';
@@ -12,6 +16,9 @@ const MC_RESP_SENT = 6;
 
 /** meshcore.js PushCodes.LoginSuccess */
 const MC_PUSH_LOGIN_SUCCESS = 0x85;
+
+/** meshcore.js PushCodes.LoginFail — wrong password / ACL denied (emitted after patch). */
+const MC_PUSH_LOGIN_FAIL = 0x86;
 
 export interface MeshcoreRoomLoginResponse {
   reserved?: number;
@@ -81,10 +88,15 @@ export function runMeshcoreRoomLogin(
   conn: MeshcoreRoomLoginRpcConnection,
   contactPublicKey: Uint8Array,
   password: string,
-  opts?: { hopsAway?: number; signal?: AbortSignal },
+  opts?: {
+    hopsAway?: number;
+    signal?: AbortSignal;
+    companionTransport?: MeshcoreCompanionTransport;
+  },
 ): Promise<MeshcoreRoomLoginResponse> {
   const expectedPrefix = contactPublicKey.subarray(0, 6);
   const extraTimeoutMs = computeRoomLoginExtraTimeoutMs(opts?.hopsAway ?? 0);
+  const sentWaitMs = computeRoomLoginSentWaitMs(opts?.companionTransport);
   const signal = opts?.signal;
 
   return new Promise((resolve, reject) => {
@@ -106,6 +118,7 @@ export function runMeshcoreRoomLogin(
       conn.off(MC_RESP_SENT, onSent);
       conn.off(MC_RESP_ERR, onErr);
       conn.off(MC_PUSH_LOGIN_SUCCESS, onLoginSuccess);
+      conn.off(MC_PUSH_LOGIN_FAIL, onLoginFail);
       signal?.removeEventListener('abort', onAbort);
     };
 
@@ -158,7 +171,24 @@ export function runMeshcoreRoomLogin(
         );
         return;
       }
+      console.debug(
+        `[meshcoreRoomLoginRpc] LoginSuccess prefix=${prefixToHex(prefix)} permissions=${String(r.permissions ?? 'n/a')}`,
+      );
       succeed(r);
+    };
+
+    const onLoginFail = (response: unknown): void => {
+      const r = response as MeshcoreRoomLoginResponse;
+      const prefix = r.pubKeyPrefix;
+      if (!(prefix instanceof Uint8Array) || prefix.length !== 6) return;
+      if (!pubKeyPrefixesEqual(expectedPrefix, prefix)) {
+        console.debug(
+          `[meshcoreRoomLoginRpc] LoginFail prefix mismatch expected=${prefixToHex(expectedPrefix)} got=${prefixToHex(prefix)}`,
+        );
+        return;
+      }
+      console.debug(`[meshcoreRoomLoginRpc] LoginFail prefix=${prefixToHex(prefix)}`);
+      fail(new Error('room login rejected (wrong password or ACL denied)'));
     };
 
     const onSent = (response: unknown): void => {
@@ -172,6 +202,9 @@ export function runMeshcoreRoomLogin(
       conn.off(MC_RESP_ERR, onErr);
       const r = response as { estTimeout?: number };
       estTimeoutMs = r.estTimeout ?? 0;
+      console.debug(
+        `[meshcoreRoomLoginRpc] SendLogin SENT estTimeoutMs=${estTimeoutMs} extraTimeoutMs=${extraTimeoutMs} hops=${String(opts?.hopsAway ?? 0)}`,
+      );
       startResponseTimer();
     };
 
@@ -184,13 +217,14 @@ export function runMeshcoreRoomLogin(
     };
 
     conn.on(MC_PUSH_LOGIN_SUCCESS, onLoginSuccess);
+    conn.on(MC_PUSH_LOGIN_FAIL, onLoginFail);
     conn.once(MC_RESP_SENT, onSent);
     conn.once(MC_RESP_ERR, onErr);
 
     sentWaitTimer = setTimeout(() => {
       if (settled || sentReceived) return;
       fail(new Error('timeout waiting for room login acknowledgment'));
-    }, MESHCORE_ROOM_LOGIN_SENT_WAIT_MS);
+    }, sentWaitMs);
 
     void conn
       .sendToRadioFrame(buildSendLoginFrame(contactPublicKey, password))

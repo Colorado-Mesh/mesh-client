@@ -501,6 +501,38 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 - The device must be **flashed as Companion HTTP** (not BLE-only firmware).
 - If `meshtastic.local` is not resolved, see [HTTP / WiFi connection issues](#http--wifi-connection-issues).
 
+### MeshCore: Room server login, posts, and Windows 10
+
+**Minimum Windows**: Mesh-Client (Electron 41) supports **Windows 10 version 1809+** and Windows 11. Windows 10 22H2 is supported; issues reported only on Win10 are usually MeshCore protocol or app regressions, not an unsupported OS.
+
+**Rooms vs Chat**: Official MeshCore room clients use the **Rooms** tab BBS login path. Room-server posts appear there (`SignedPlain` / channel `-2`), **not** in Chat channel pills. Admin traffic sent as normal **channel text** shows in **Chat** only.
+
+**Guest / read-only login fails with timeout or "rejected"**:
+
+- Many room servers reject blank passwords; use guest password **`hello`** or the password configured on the server.
+- Logs showing `unhandled frame: code=134` (push `0x86`) mean the room server sent **LoginFail** (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.
+- **Admin password** working while guest fails usually means the server ACL does not allow guest/read-only login with that password.
+
+**No room history after login**:
+
+- Firmware only **pushes new posts** after a successful login; it does not backfill old BBS messages. Enable **Auto-sync** on the Rooms tab to periodic re-login while connected.
+
+**Queue badge stuck at `Q: 255/256`**:
+
+- Usually means the companion radio outbound queue is nearly full, or (on older builds) CORE stats were mis-parsed. Enable debug logging and export logs if the badge stays red for minutes with no traffic; look for `[useMeshcoreRuntime] high queue depth=`.
+
+**Windows packaged updater: `Cannot find module 'semver'`**:
+
+- Fixed by declaring `semver` as a direct production dependency (same class of issue as `builder-util-runtime` on hoisted `dist:win` builds). Updater falls back to GitHub Releases API until you install a build with the fix.
+
+**Retest checklist (after upgrading from a known-good build)**:
+
+1. Connect MeshCore over TCP or BLE; confirm nodes load.
+2. Open **Rooms** → log in with explicit guest password **`hello`** (or admin if testing post/admin CLI).
+3. Confirm room posts appear in **Rooms**, not Chat channels.
+4. Open **Chat** on another channel; verify unread badges on channel pills when messages arrive.
+5. Export logs (**Log → Export**) if login still fails; include `[meshcoreRoomLoginRpc]` lines.
+
 ### MeshCore: Trace Route or Ping trace times out
 
 **Cause**: Nodes you only **hear** on the mesh; but that do **not** have **your** node in **their** contact list; are sometimes called foreign or one-way contacts. MeshCore firmware may not answer **Trace Route** (node detail) or **Ping trace** (Repeaters panel) for those peers, so the app waits until the trace/ping timeout with no TraceData response. You may see **Trace route timed out** in the node detail modal or an error toast from **Ping trace**.

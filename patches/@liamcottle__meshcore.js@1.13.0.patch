@@ -1,8 +1,8 @@
 diff --git a/src/connection/connection.js b/src/connection/connection.js
-index af6f6d670adc0948d3453df34acbbde46c1b4250..b0eaddb5675fab04fa3d149b5e0f35b33198fdd5 100644
+index af6f6d670adc0948d3453df34acbbde46c1b4250..4ec84dae698ee87e63b98bfc2a4fcab302b1d2c5 100644
 --- a/src/connection/connection.js
 +++ b/src/connection/connection.js
-@@ -231,7 +231,13 @@
+@@ -231,7 +231,13 @@ class Connection extends EventEmitter {
          const data = new BufferWriter();
          data.writeByte(Constants.CommandCodes.SendLogin);
          data.writeBytes(publicKey); // 32 bytes - id of repeater or room server
@@ -17,7 +17,30 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..b0eaddb5675fab04fa3d149b5e0f35b3
          await this.sendToRadioFrame(data.toBytes());
      }
  
-@@ -494,15 +494,24 @@ class Connection extends EventEmitter {
+@@ -400,6 +406,8 @@ class Connection extends EventEmitter {
+             this.onRawDataPush(bufferReader);
+         } else if(responseCode === Constants.PushCodes.LoginSuccess){
+             this.onLoginSuccessPush(bufferReader);
++        } else if(responseCode === Constants.PushCodes.LoginFail){
++            this.onLoginFailPush(bufferReader);
+         } else if(responseCode === Constants.PushCodes.StatusResponse){
+             this.onStatusResponsePush(bufferReader);
+         } else if(responseCode === Constants.PushCodes.LogRxData){
+@@ -459,6 +467,13 @@ class Connection extends EventEmitter {
+         });
+     }
+ 
++    onLoginFailPush(bufferReader) {
++        this.emit(Constants.PushCodes.LoginFail, {
++            reserved: bufferReader.readByte(), // reserved
++            pubKeyPrefix: bufferReader.readBytes(6), // 6 bytes of public key this login fail is from
++        });
++    }
++
+     onStatusResponsePush(bufferReader) {
+         this.emit(Constants.PushCodes.StatusResponse, {
+             reserved: bufferReader.readByte(), // reserved
+@@ -494,15 +509,24 @@ class Connection extends EventEmitter {
      onTraceDataPush(bufferReader) {
          const reserved = bufferReader.readByte();
          const pathLen = bufferReader.readUInt8();
