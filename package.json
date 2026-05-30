@@ -125,7 +125,7 @@
     "electron": "^41.7.1",
     "electron-builder": "^26.12.0",
     "esbuild": "^0.28.0",
-    "eslint": "^10.4.0",
+    "eslint": "^10.4.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-electron": "^7.0.0",
     "eslint-plugin-import": "^2.32.0",
@@ -187,12 +187,12 @@
       "yauzl": "^3.2.1"
     },
     "patchedDependencies": {
+      "@jsr/meshtastic__core@2.6.6": "patches/@jsr__meshtastic__core@2.6.6.patch",
+      "@jsr/meshtastic__transport-web-serial@0.2.5": "patches/@jsr__meshtastic__transport-web-serial@0.2.5.patch",
       "@liamcottle/meshcore.js@1.13.0": "patches/@liamcottle__meshcore.js@1.13.0.patch",
       "debug@4.4.3": "patches/debug@4.4.3.patch",
       "readable-stream@4.7.0": "patches/readable-stream@4.7.0.patch",
-      "usb@2.17.0": "patches/usb@2.17.0.patch",
-      "@jsr/meshtastic__core@2.6.6": "patches/@jsr__meshtastic__core@2.6.6.patch",
-      "@jsr/meshtastic__transport-web-serial@0.2.5": "patches/@jsr__meshtastic__transport-web-serial@0.2.5.patch"
+      "usb@2.17.0": "patches/usb@2.17.0.patch"
     },
     "minimumReleaseAgeExclude": [
       "lodash",
