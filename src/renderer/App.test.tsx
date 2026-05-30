@@ -376,9 +376,13 @@ vi.mock('./lib/letsMeshJwt', () => ({
   readMeshcoreIdentity: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock('./lib/parseStoredJson', () => ({
-  parseStoredJson: vi.fn().mockReturnValue(null),
-}));
+vi.mock('./lib/parseStoredJson', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('./lib/parseStoredJson')>();
+  return {
+    parseStoredJson: vi.fn(actual.parseStoredJson),
+  };
+});
 
 vi.mock('./lib/meshtasticMqttTlsMigration', () => ({
   MESHTASTIC_OFFICIAL_PRESET_DEFAULTS: {},
@@ -575,7 +579,7 @@ describe('App accessibility', () => {
     });
 
     render(<App />);
-    fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
 
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
@@ -607,7 +611,7 @@ describe('App accessibility', () => {
     useMeshCoreMock.mockReturnValue(meshcoreRuntime);
 
     render(<App />);
-    fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
 
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
@@ -676,7 +680,7 @@ describe('App accessibility', () => {
     expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });
 
-  it('clears the Sidebar Chat unread badge when visible again while Chat is already active', async () => {
+  it('keeps Sidebar Chat unread badge when visible again while Chat is already active', async () => {
     const existingMessage = {
       sender_id: 2,
       sender_name: 'Alice',
@@ -685,6 +689,10 @@ describe('App accessibility', () => {
       timestamp: Date.now() - 1000,
       status: 'acked' as const,
     };
+    localStorage.setItem(
+      'mesh-client:lastRead:meshtastic',
+      JSON.stringify({ 'ch:0': existingMessage.timestamp }),
+    );
     const initialDevice = {
       ...createDeviceMock(),
       state: { status: 'configured', myNodeNum: 1, connectionType: null },
@@ -695,7 +703,7 @@ describe('App accessibility', () => {
     syncMeshtasticMessagesToStore(initialDevice.messages);
     const { rerender } = render(<App />);
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
     });
@@ -727,12 +735,48 @@ describe('App accessibility', () => {
     fireEvent(document, new Event('visibilitychange'));
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Chat' })).toBeInTheDocument();
-      expect(screen.queryByRole('tab', { name: 'Chat 1 unread' })).not.toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
     });
   });
 
-  it('clears only the active protocol Sidebar Chat unread badge on focus', async () => {
+  it('keeps Sidebar Chat unread after opening Chat when unread is on another channel', async () => {
+    const ts = Date.now();
+    const messages = [
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Ops ping',
+        channel: 1,
+        timestamp: ts,
+        status: 'acked' as const,
+      },
+    ];
+    const initialDevice = {
+      ...createDeviceMock(),
+      state: { status: 'configured', myNodeNum: 1, connectionType: null },
+      selfNodeId: 1,
+      channels: [
+        { index: 0, name: 'General' },
+        { index: 1, name: 'Ops' },
+      ],
+      messages,
+    };
+    useDeviceMock.mockReturnValue(initialDevice);
+    syncMeshtasticMessagesToStore(messages);
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+    await waitFor(() => {
+      expect(lastChatPanelProps.current).not.toBeNull();
+      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+    });
+  });
+
+  it('derives cross-protocol header badge from messages, not stale localStorage counter', () => {
     localStorage.setItem('mesh-client:meshcoreChatUnread', '4');
     const existingMessage = {
       sender_id: 2,
@@ -750,43 +794,13 @@ describe('App accessibility', () => {
     };
     useDeviceMock.mockReturnValue(initialDevice);
     syncMeshtasticMessagesToStore(initialDevice.messages);
-    const { rerender } = render(<App />);
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
-    await waitFor(() => {
-      expect(lastChatPanelProps.current).not.toBeNull();
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      selfNodeId: 1,
+      messages: [],
     });
+    render(<App />);
 
-    setDocumentHidden(true);
-    const focusMessages = [
-      existingMessage,
-      {
-        sender_id: 2,
-        sender_name: 'Alice',
-        payload: 'focus ping',
-        channel: 0,
-        timestamp: Date.now(),
-        status: 'acked' as const,
-      },
-    ];
-    useDeviceMock.mockReturnValue({
-      ...initialDevice,
-      messages: focusMessages,
-    });
-    syncMeshtasticMessagesToStore(focusMessages);
-    rerender(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
-    });
-
-    setDocumentHidden(false);
-    fireEvent.focus(window);
-
-    await waitFor(() => {
-      expect(screen.queryByRole('tab', { name: 'Chat 1 unread' })).not.toBeInTheDocument();
-      expect(localStorage.getItem('mesh-client:meshtasticChatUnread')).toBe('0');
-      expect(localStorage.getItem('mesh-client:meshcoreChatUnread')).toBe('4');
-    });
+    expect(screen.queryByText('4')).not.toBeInTheDocument();
   });
 });

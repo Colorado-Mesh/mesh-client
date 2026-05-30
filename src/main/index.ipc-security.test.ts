@@ -3,13 +3,16 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
+import { isValidHttpHostname } from './httpHostValidation';
+
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
 
 // ─── http:preflight / http:connect hostname validation ──────────────
 
 describe('validateHttpHost (source contract)', () => {
-  it('defines VALID_HOSTNAME_RE with a regex that rejects leading-hyphen labels', () => {
-    expect(INDEX_SOURCE).toContain('const VALID_HOSTNAME_RE =');
+  it('uses isValidHttpHostname from httpHostValidation', () => {
+    expect(INDEX_SOURCE).toContain("import { isValidHttpHostname } from './httpHostValidation'");
+    expect(INDEX_SOURCE).toContain('isValidHttpHostname(host)');
   });
 
   it('calls validateHttpHost in http:preflight handler', () => {
@@ -27,29 +30,17 @@ describe('validateHttpHost (source contract)', () => {
     expect(connectBody).toContain('validateHttpHost(');
   });
 
-  it('rejects whitespace in hostnames via VALID_HOSTNAME_RE', () => {
-    // Extract the regex literal from source and evaluate it to run unit tests
-    const matches = [...INDEX_SOURCE.matchAll(/const VALID_HOSTNAME_RE =\s*(\/[^\n]+\/)/g)];
-    expect(matches).toHaveLength(1);
-    const regexStr = matches[0][1];
-    // Build the actual RegExp from the source literal
-    const flags = regexStr.slice(regexStr.lastIndexOf('/') + 1);
-    const pattern = regexStr.slice(1, regexStr.lastIndexOf('/'));
-    const re = new RegExp(pattern, flags);
-
-    // Valid cases
-    expect(re.test('example.com')).toBe(true);
-    expect(re.test('my-router.local')).toBe(true);
-    expect(re.test('192.168.1.1')).toBe(true);
-    expect(re.test('a')).toBe(true);
-    expect(re.test('sub.domain.example.org')).toBe(true);
-
-    // Invalid cases
-    expect(re.test('host with spaces')).toBe(false);
-    expect(re.test('-leading-hyphen.com')).toBe(false);
-    expect(re.test('trailing-hyphen-.com')).toBe(false);
-    expect(re.test('')).toBe(false);
-    expect(re.test('has..double.dot')).toBe(false);
+  it('rejects whitespace in hostnames via isValidHttpHostname', () => {
+    expect(isValidHttpHostname('example.com')).toBe(true);
+    expect(isValidHttpHostname('my-router.local')).toBe(true);
+    expect(isValidHttpHostname('192.168.1.1')).toBe(true);
+    expect(isValidHttpHostname('a')).toBe(true);
+    expect(isValidHttpHostname('sub.domain.example.org')).toBe(true);
+    expect(isValidHttpHostname('host with spaces')).toBe(false);
+    expect(isValidHttpHostname('-leading-hyphen.com')).toBe(false);
+    expect(isValidHttpHostname('trailing-hyphen-.com')).toBe(false);
+    expect(isValidHttpHostname('')).toBe(false);
+    expect(isValidHttpHostname('has..double.dot')).toBe(false);
   });
 });
 
@@ -94,18 +85,15 @@ describe('storage IPC input validation (source contract)', () => {
 // ─── bluetooth-pair input validation ───────────────────────────────
 
 describe('bluetooth-pair input validation (source contract)', () => {
-  it('validates MAC address format with a regex', () => {
-    // The MAC_ADDRESS_REGEX constant must exist
-    expect(INDEX_SOURCE).toContain(
-      'const MAC_ADDRESS_REGEX = /^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/',
-    );
+  it('validates MAC address format with isMacAddress', () => {
+    expect(INDEX_SOURCE).toContain('function isMacAddress(value: string): boolean');
   });
 
-  it('applies MAC_ADDRESS_REGEX in bluetooth-pair handler', () => {
+  it('applies isMacAddress in bluetooth-pair handler', () => {
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('bluetooth-pair'");
     expect(handlerIdx).toBeGreaterThan(-1);
     const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
-    expect(body).toContain('MAC_ADDRESS_REGEX.test(');
+    expect(body).toContain('isMacAddress(macAddress)');
   });
 });
 
@@ -161,7 +149,7 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
 
   it('does not use a bare length-only host check in meshcore:tcp-connect', () => {
     // The old pattern was: typeof host !== 'string' || host.length === 0 || host.length > MAX_TCP_HOST_LENGTH
-    // It should now delegate entirely to validateHttpHost which applies VALID_HOSTNAME_RE
+    // It should now delegate entirely to validateHttpHost which applies isValidHttpHostname
     expect(INDEX_SOURCE).not.toContain('MAX_TCP_HOST_LENGTH');
   });
 });

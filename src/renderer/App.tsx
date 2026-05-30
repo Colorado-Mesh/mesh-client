@@ -10,6 +10,11 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  loadPersistedLastReadInitial,
+  subscribePersistedLastRead,
+} from '@/renderer/lib/chatPanelProtocolStorage';
+import { totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
@@ -254,20 +259,6 @@ function readLogPanelVisible(): boolean {
   } catch (e) {
     console.debug('[App] readLogPanelVisible ' + errLikeToLogString(e));
     return false;
-  }
-}
-
-function readPersistedUnread(protocol: 'meshtastic' | 'meshcore'): number {
-  try {
-    const key = protocol === 'meshcore' ? MESHCORE_UNREAD_KEY : MESHTASTIC_UNREAD_KEY;
-    const raw = localStorage.getItem(key);
-    if (raw == null) return 0;
-    const n = Math.floor(Number(raw));
-    if (!Number.isFinite(n) || n < 0) return 0;
-    return Math.min(n, 99999);
-  } catch (e) {
-    console.debug('[App] readPersistedUnread ' + errLikeToLogString(e));
-    return 0;
   }
 }
 
@@ -549,8 +540,7 @@ function AppContent({
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
-  const [meshtasticUnread, setMeshtasticUnread] = useState(() => readPersistedUnread('meshtastic'));
-  const [meshcoreUnread, setMeshcoreUnread] = useState(() => readPersistedUnread('meshcore'));
+  const [lastReadRevision, setLastReadRevision] = useState({ meshtastic: 0, meshcore: 0 });
   const [logPanelVisible, setLogPanelVisible] = useState(readLogPanelVisible);
   const prevMeshtasticMsgCountRef = useRef(0);
   const prevMeshcoreMsgCountRef = useRef(0);
@@ -763,6 +753,54 @@ function AppContent({
   const meshcoreSelfIdRef = useRef(meshcoreRuntime.selfNodeId);
   const nodesForUi = protocol === 'meshcore' ? meshcoreUiNodes : meshtasticUiNodes;
   const activeUiMessages = protocol === 'meshcore' ? meshcoreUiMessages : meshtasticUiMessages;
+
+  useEffect(() => {
+    return subscribePersistedLastRead((changedProtocol) => {
+      setLastReadRevision((prev) => ({
+        ...prev,
+        [changedProtocol]: prev[changedProtocol] + 1,
+      }));
+    });
+  }, []);
+
+  const meshtasticOwnNodeIdSet = useMemo(() => {
+    const ids = meshtasticMqttOwnNodeIds(
+      meshtasticRuntime.selfNodeId,
+      meshtasticRuntime.virtualNodeId,
+      meshtasticRuntime.lastRfSelfNodeId,
+    );
+    return new Set(ids.filter((id) => id > 0));
+  }, [
+    meshtasticRuntime.selfNodeId,
+    meshtasticRuntime.virtualNodeId,
+    meshtasticRuntime.lastRfSelfNodeId,
+  ]);
+
+  const meshcoreOwnNodeIdSet = useMemo(() => {
+    const id = meshcoreRuntime.selfNodeId;
+    return id > 0 ? new Set([id]) : new Set<number>();
+  }, [meshcoreRuntime.selfNodeId]);
+
+  const meshtasticChatUnread = useMemo(() => {
+    void lastReadRevision.meshtastic;
+    return totalUnreadCount(
+      meshtasticUiMessages,
+      loadPersistedLastReadInitial('meshtastic'),
+      meshtasticOwnNodeIdSet,
+      'meshtastic',
+    );
+  }, [lastReadRevision.meshtastic, meshtasticOwnNodeIdSet, meshtasticUiMessages]);
+
+  const meshcoreChatUnread = useMemo(() => {
+    void lastReadRevision.meshcore;
+    return totalUnreadCount(
+      meshcoreUiMessages,
+      loadPersistedLastReadInitial('meshcore'),
+      meshcoreOwnNodeIdSet,
+      'meshcore',
+    );
+  }, [lastReadRevision.meshcore, meshcoreOwnNodeIdSet, meshcoreUiMessages]);
+
   /** Meshtastic + MeshCore nodes for Diagnostics (foreign MeshCore sender labels/links). */
   const nodesForDiagnostics = useMemo(() => {
     const merged = new Map(meshtasticUiNodes);
@@ -1490,7 +1528,7 @@ function AppContent({
       return;
     }
     const isActiveAndChatOpen =
-      protocolRef.current === 'meshtastic' && activeTabRef.current === 1 && !document.hidden;
+      protocolRef.current === 'meshtastic' && activePanelIndexRef.current === 1 && !document.hidden;
     if (count > prevMeshtasticMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshtasticMsgsRef.current.slice(prevMeshtasticMsgCountRef.current);
       const realNew = newMsgs.filter(
@@ -1510,9 +1548,6 @@ function AppContent({
           });
           if (audible) playMessageNotification();
         }
-        queueMicrotask(() => {
-          setMeshtasticUnread((prev) => prev + realNew.length);
-        });
       }
     }
     prevMeshtasticMsgCountRef.current = count;
@@ -1527,72 +1562,33 @@ function AppContent({
       return;
     }
     const isActiveAndChatOpen =
-      protocolRef.current === 'meshcore' && activeTabRef.current === 1 && !document.hidden;
+      protocolRef.current === 'meshcore' && activePanelIndexRef.current === 1 && !document.hidden;
     if (count > prevMeshcoreMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshcoreMsgsRef.current.slice(prevMeshcoreMsgCountRef.current);
       const realNew = newMsgs.filter(
         (m) => m.sender_id !== meshcoreSelfIdRef.current && !m.emoji && !m.isHistory,
       );
       if (realNew.length > 0) {
-        queueMicrotask(() => {
-          setMeshcoreUnread((prev) => prev + realNew.length);
-        });
+        if (localStorage.getItem('mesh-client:notifMuted') !== '1') {
+          playMessageNotification();
+        }
       }
     }
     prevMeshcoreMsgCountRef.current = count;
   }, [meshcoreUiMessages.length]);
 
-  const clearChatUnreadForProtocol = useCallback((targetProtocol: MeshProtocol) => {
-    if (targetProtocol === 'meshtastic') {
-      setMeshtasticUnread(0);
-    } else {
-      setMeshcoreUnread(0);
-    }
-  }, []);
-
-  // ─── Clear active protocol's unread when Chat panel becomes active ──
+  // ─── Persist derived unread + sync combined total to tray ────────────────
   useEffect(() => {
-    if (activePanelIndex === 1) {
-      queueMicrotask(() => {
-        clearChatUnreadForProtocol(protocol);
-      });
-    }
-  }, [activePanelIndex, clearChatUnreadForProtocol, protocol]);
-
-  // If messages arrive while Chat is selected but the app is hidden/unfocused, the
-  // active-panel effect above will not rerun when the user returns.
-  useEffect(() => {
-    const clearIfVisibleChatActive = () => {
-      if (document.hidden || activePanelIndexRef.current !== 1) return;
-      queueMicrotask(() => {
-        clearChatUnreadForProtocol(protocolRef.current);
-      });
-    };
-
-    const handleVisibilityChange = () => {
-      clearIfVisibleChatActive();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', clearIfVisibleChatActive);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', clearIfVisibleChatActive);
-    };
-  }, [clearChatUnreadForProtocol]);
-
-  // ─── Persist unread + sync combined total to tray ────────────────
-  useEffect(() => {
-    persistUnread('meshtastic', meshtasticUnread);
-  }, [meshtasticUnread]);
+    persistUnread('meshtastic', meshtasticChatUnread);
+  }, [meshtasticChatUnread]);
 
   useEffect(() => {
-    persistUnread('meshcore', meshcoreUnread);
-  }, [meshcoreUnread]);
+    persistUnread('meshcore', meshcoreChatUnread);
+  }, [meshcoreChatUnread]);
 
   useEffect(() => {
-    window.electronAPI.setTrayUnread(meshtasticUnread + meshcoreUnread);
-  }, [meshtasticUnread, meshcoreUnread]);
+    window.electronAPI.setTrayUnread(meshtasticChatUnread + meshcoreChatUnread);
+  }, [meshtasticChatUnread, meshcoreChatUnread]);
 
   // ─── Auto flood advert (MeshCore) ────────────────────────────────
   const advertSentRef = useRef(false);
@@ -1825,9 +1821,9 @@ function AppContent({
                 }`}
               >
                 Meshtastic
-                {meshtasticUnread > 0 && protocol !== 'meshtastic' && (
+                {meshtasticChatUnread > 0 && protocol !== 'meshtastic' && (
                   <span className="bg-brand-green/30 text-brand-green ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold">
-                    {meshtasticUnread > 99 ? '99+' : meshtasticUnread}
+                    {meshtasticChatUnread > 99 ? '99+' : meshtasticChatUnread}
                   </span>
                 )}
               </button>
@@ -1846,9 +1842,9 @@ function AppContent({
                 }`}
               >
                 MeshCore
-                {meshcoreUnread > 0 && protocol !== 'meshcore' && (
+                {meshcoreChatUnread > 0 && protocol !== 'meshcore' && (
                   <span className="ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-600/30 px-0.5 text-[10px] font-bold text-cyan-400">
-                    {meshcoreUnread > 99 ? '99+' : meshcoreUnread}
+                    {meshcoreChatUnread > 99 ? '99+' : meshcoreChatUnread}
                   </span>
                 )}
               </button>
@@ -1994,7 +1990,7 @@ function AppContent({
               tabSlotIds={tabSlotIds}
               active={activeTab}
               onChange={setActiveTab}
-              chatUnread={protocol === 'meshtastic' ? meshtasticUnread : meshcoreUnread}
+              chatUnread={protocol === 'meshtastic' ? meshtasticChatUnread : meshcoreChatUnread}
               collapsed={sidebarCollapsed}
               onToggle={handleSidebarToggle}
             />
@@ -2092,6 +2088,7 @@ function AppContent({
                           <ChatPanel
                             key={protocol}
                             messages={chatMessagesForPanel}
+                            messagesForUnread={activeUiMessages}
                             channels={chatChannelsForPanel}
                             myNodeNum={activeRuntime.selfNodeId}
                             ownNodeIds={

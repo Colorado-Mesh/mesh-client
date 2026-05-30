@@ -360,9 +360,10 @@ export function isRemoteAdminReadsActive(): boolean {
   return remoteAdminReadsActiveCount > 0;
 }
 
-const TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS = 5;
-const TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS_ADMIN = 20;
-const TO_RADIO_WRITER_LOCK_RETRY_MS = 25;
+/** Default budget ~10s (50+100+…+950ms) — SDK heartbeats and S&F replay can hold the lock longer. */
+const TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS = 20;
+const TO_RADIO_WRITER_LOCK_MAX_ATTEMPTS_ADMIN = 30;
+const TO_RADIO_WRITER_LOCK_RETRY_MS = 50;
 const TO_RADIO_WRITER_LOCK_RETRY_MS_ADMIN = 50;
 
 const WRITABLE_STREAM_LOCKED_PATTERN = /WritableStream is locked/i;

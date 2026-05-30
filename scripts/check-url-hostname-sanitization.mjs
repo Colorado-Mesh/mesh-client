@@ -17,8 +17,17 @@ const ROOT = path.resolve(__dirname, '..');
 const SCAN_DIRS = ['src/main', 'src/preload', 'src/renderer'].map((d) => path.join(ROOT, d));
 
 const SUBSTRING_ON_LITERAL = /\.(?:includes|indexOf)\s*\(\s*['"]([^'"]+)['"]\s*[,)]/g;
+
 /** At least label.tld — excludes decimals like scale(0.4167) and paths like 2/e/. */
-const HOSTNAME_LITERAL = /^[a-z0-9](?:[a-z0-9-]*\.)+[a-z][a-z0-9-]*$/i;
+function isHostnameLikeLiteral(literal) {
+  const labels = literal.split('.');
+  if (labels.length < 2) return false;
+  return labels.every((label) => {
+    if (label.length === 0) return false;
+    if (!/^[a-z0-9-]+$/i.test(label)) return false;
+    return /^[a-z0-9]/i.test(label) && /[a-z0-9]$/i.test(label);
+  });
+}
 const URL_CONTEXT =
   /\b(?:url|href|uri|hostname|host|address|fetch|redirect|location|origin|endpoint|opengraph)\b/i;
 const SUPPRESSED = /\/\/\s*url-hostname-check-ok\b/;
@@ -35,7 +44,7 @@ export function checkLine(line) {
   SUBSTRING_ON_LITERAL.lastIndex = 0;
   while ((match = SUBSTRING_ON_LITERAL.exec(line)) !== null) {
     const literal = match[1];
-    if (!HOSTNAME_LITERAL.test(literal)) continue;
+    if (!isHostnameLikeLiteral(literal)) continue;
     if (SKIP_LITERAL.test(literal)) continue;
     if (!URL_CONTEXT.test(line)) continue;
     violations.push({

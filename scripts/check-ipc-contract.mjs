@@ -28,17 +28,23 @@ const MAIN_FILES = [
 
 const SUPPRESS = /\/\/\s*ipc-contract-ok\b/;
 
+const IPC_RENDERER_INVOKE_RE = /\bipcRenderer\.invoke\s*\(\s*['"]([^'"]+)['"]/g;
+const IPC_RENDERER_SEND_RE = /\bipcRenderer\.send\s*\(\s*['"]([^'"]+)['"]/g;
+const IPC_MAIN_HANDLE_RE = /\bipcMain\.handle\s*\(\s*['"]([^'"]+)['"]/g;
+const IPC_MAIN_ON_RE = /\bipcMain\.on\s*\(\s*['"]([^'"]+)['"]/g;
+const WEB_CONTENTS_SEND_RE = /\bwebContents\.send\s*\(\s*['"]([^'"]+)['"]/g;
+const IPC_RENDERER_ON_RE = /\bipcRenderer\.on\s*\(\s*['"]([^'"]+)['"]/g;
+
 // ─── Extraction helpers ────────────────────────────────────────────────────────
 
 /**
  * Extract channel name strings from lines matching a given IPC pattern.
  * Looks for: pattern('channel-name')  or  pattern("channel-name")
  */
-function extractChannels(source, ipcPattern) {
+function extractChannels(source, channelRe) {
   const channels = new Set();
-  const re = new RegExp(String.raw`\b${ipcPattern}\s*\(\s*['"]([^'"]+)['"]`, 'g');
 
-  for (const match of source.matchAll(re)) {
+  for (const match of source.matchAll(channelRe)) {
     const lineStart = source.lastIndexOf('\n', match.index) + 1;
     const lineEnd = source.indexOf('\n', match.index);
     const line = source.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
@@ -64,14 +70,14 @@ function main() {
   const mainSrc = MAIN_FILES.map(readSource).join('\n');
 
   // Renderer → Main (renderer invokes, main must handle)
-  const rendererInvokes = extractChannels(preloadSrc, 'ipcRenderer\\.invoke');
-  const rendererSends = extractChannels(preloadSrc, 'ipcRenderer\\.send');
-  const mainHandles = extractChannels(mainSrc, 'ipcMain\\.handle');
-  const mainOns = extractChannels(mainSrc, 'ipcMain\\.on');
+  const rendererInvokes = extractChannels(preloadSrc, IPC_RENDERER_INVOKE_RE);
+  const rendererSends = extractChannels(preloadSrc, IPC_RENDERER_SEND_RE);
+  const mainHandles = extractChannels(mainSrc, IPC_MAIN_HANDLE_RE);
+  const mainOns = extractChannels(mainSrc, IPC_MAIN_ON_RE);
 
   // Main → Renderer (main pushes events, preload must listen)
-  const mainPushes = extractChannels(mainSrc, 'webContents\\.send');
-  const rendererListens = extractChannels(preloadSrc, 'ipcRenderer\\.on');
+  const mainPushes = extractChannels(mainSrc, WEB_CONTENTS_SEND_RE);
+  const rendererListens = extractChannels(preloadSrc, IPC_RENDERER_ON_RE);
 
   const errors = [];
   const warnings = [];
@@ -116,9 +122,7 @@ function main() {
     console.error(
       '\nEach channel invoked/sent from the preload must have a matching handler in main.',
     );
-    console.error(
-      'To suppress a known false positive, add // ipc-contract-ok on the same line.',
-    );
+    console.error('To suppress a known false positive, add // ipc-contract-ok on the same line.');
     process.exit(1);
   }
 

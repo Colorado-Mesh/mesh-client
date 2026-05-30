@@ -12,7 +12,7 @@ export function isExpectedNobleDisconnectError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
   const message = err.message.toLowerCase();
   return (
-    /\bdisconnected\b(?:\s*[:#-]?\s*\d+)?/.test(message) ||
+    message.includes('disconnected') ||
     message.includes('not connected') ||
     message.includes('not currently connected')
   );

@@ -844,7 +844,15 @@ export function useMeshtasticRuntime() {
 
   // ─── MQTT event subscriptions (independent of RF device) ──────
   useEffect(() => {
-    const unsubStatus = window.electronAPI.mqtt.onStatus(({ status: s, protocol }) => {
+    const api = window.electronAPI;
+    if (!api?.mqtt) {
+      console.error(
+        '[useMeshtasticRuntime] electronAPI.mqtt unavailable — preload not loaded; MQTT subscriptions skipped',
+      );
+      return;
+    }
+
+    const unsubStatus = api.mqtt.onStatus(({ status: s, protocol }) => {
       if (protocol !== 'meshtastic') return;
       const prev = mqttStatusRef.current;
       mqttStatusRef.current = s;

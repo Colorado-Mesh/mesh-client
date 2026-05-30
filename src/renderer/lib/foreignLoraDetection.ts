@@ -88,6 +88,20 @@ function parseHexByteTokens(fragment: string): Uint8Array | null {
   return out;
 }
 
+function collectHexTokensAfterIndex(message: string, startIdx: number): string | null {
+  const tokens: string[] = [];
+  for (const part of message.slice(startIdx).trim().split(/\s+/)) {
+    const normalized = part.replace(/^0x/i, '');
+    if (/^[0-9a-f]{2}$/i.test(normalized)) {
+      tokens.push(normalized);
+      continue;
+    }
+    if (tokens.length > 0) break;
+  }
+  if (tokens.length === 0) return null;
+  return tokens.join(' ');
+}
+
 /** Pull a raw byte buffer from common Meshtastic firmware log hex dumps (often after 0x3c). */
 export function extractHexPayloadFromMeshtasticLog(message: string): Uint8Array | null {
   const dataPayloadRe =
@@ -98,18 +112,12 @@ export function extractHexPayloadFromMeshtasticLog(message: string): Uint8Array 
     if (bytes) return bytes;
   }
 
-  const patterns = [
-    /\b3c\s+((?:[0-9a-f]{2}\s+){7,}[0-9a-f]{2})/i,
-    /\b0x3c\s*((?:0x[0-9a-f]{2}\s*){8,})/i,
-  ];
-  for (const re of patterns) {
-    const m = message.match(re);
-    if (!m?.[1]) continue;
-    let fragment = m[1];
-    if (/^0x/i.test(fragment.trim())) {
-      fragment = fragment.replace(/0x/gi, '').replace(/\s+/g, ' ');
-    }
-    const bytes = parseHexByteTokens(fragment.startsWith('3c') ? fragment : `3c ${fragment}`);
+  for (const marker of [/\b3c\b/i, /\b0x3c\b/i]) {
+    const markerMatch = marker.exec(message);
+    if (!markerMatch) continue;
+    const fragment = collectHexTokensAfterIndex(message, markerMatch.index + markerMatch[0].length);
+    if (!fragment) continue;
+    const bytes = parseHexByteTokens(`3c ${fragment}`);
     if (bytes) return bytes;
   }
   return null;
@@ -147,13 +155,27 @@ export function isForeignLoraLogCandidate(message: string): boolean {
   return isDecodeFail(message) || containsMeshCorePattern(message);
 }
 
+function parseOptionalFloatPrefix(text: string): number | undefined {
+  const intMatch = /^(-?\d+)/.exec(text);
+  if (!intMatch) return undefined;
+  let value = Number(intMatch[1]);
+  const rest = text.slice(intMatch[0].length);
+  const fracMatch = /^\.(\d+)/.exec(rest);
+  if (fracMatch) {
+    value += Number(`0.${fracMatch[1]}`);
+  }
+  return value;
+}
+
 /** Extract RSSI and SNR from a Meshtastic device log message. */
 export function extractRssiSnr(message: string): { rssi?: number; snr?: number } {
-  const rssiMatch = /rssi[=:\s]+(-?\d+)/i.exec(message);
-  const snrMatch = /snr[=:\s]+(-?\d+(?:\.\d+)?)/i.exec(message);
+  const rssiMatch = /\brssi[=:\s]+(-?\d+)/i.exec(message);
+  const snrKeyMatch = /\bsnr[=:\s]+/i.exec(message);
   return {
     rssi: rssiMatch ? parseInt(rssiMatch[1], 10) : undefined,
-    snr: snrMatch ? parseFloat(snrMatch[1]) : undefined,
+    snr: snrKeyMatch
+      ? parseOptionalFloatPrefix(message.slice(snrKeyMatch.index + snrKeyMatch[0].length).trim())
+      : undefined,
   };
 }
 

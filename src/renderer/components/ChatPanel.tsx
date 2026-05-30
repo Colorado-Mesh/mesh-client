@@ -42,12 +42,14 @@ import {
   loadOpenDmTabsInitial,
   loadPersistedLastReadInitial,
   loadStarred,
+  notifyPersistedLastReadChanged,
   openDmTabsStorageKey,
   saveDraft,
   saveMutedViews,
   saveStarred,
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
+import { computeChannelUnreadCounts, computeDmUnreadCounts } from '../lib/chatUnreadCounts';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayLabel, reactionDisplayGlyph, reactionGlyphFromPicker } from '../lib/reactions';
@@ -410,6 +412,8 @@ export function getDistFromChatBottom(
 
 export interface ChatPanelProps {
   messages: ChatMessage[];
+  /** Live message list for unread badges when `messages` is frozen (leaving Chat tab). */
+  messagesForUnread?: ChatMessage[];
   channels: { index: number; name: string }[];
   myNodeNum: number;
   ownNodeIds?: number[];
@@ -446,6 +450,7 @@ export interface ChatPanelProps {
 
 function ChatPanel({
   messages,
+  messagesForUnread,
   channels,
   myNodeNum,
   ownNodeIds,
@@ -613,10 +618,13 @@ function ChatPanel({
   useEffect(() => {
     try {
       localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify(persistedLastRead));
+      notifyPersistedLastReadChanged(protocol);
     } catch (e) {
       console.warn('[ChatPanel] persist lastRead failed ' + errLikeToLogString(e));
     }
   }, [persistedLastRead, protocol]);
+
+  const unreadSourceMessages = messagesForUnread ?? messages;
 
   const getDmLabel = useCallback(
     (nodeNum: number) => {
@@ -704,20 +712,10 @@ function ChatPanel({
   const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
 
   /** Incoming DM messages per peer newer than persisted last-read for `dm:${peer}` (channel unread map skips DMs). */
-  const dmUnreadCounts = useMemo(() => {
-    const counts = new Map<number, number>();
-    for (const msg of regularMessages) {
-      if (msg.isHistory) continue;
-      const peer = resolveDmPeer(msg);
-      if (peer == null) continue;
-      if (isOwnNode(msg.sender_id)) continue;
-      const lr = persistedLastRead[`dm:${peer}`] ?? 0;
-      if (msg.timestamp > lr) {
-        counts.set(peer, (counts.get(peer) ?? 0) + 1);
-      }
-    }
-    return counts;
-  }, [isOwnNode, persistedLastRead, regularMessages, resolveDmPeer]);
+  const dmUnreadCounts = useMemo(
+    () => computeDmUnreadCounts(unreadSourceMessages, persistedLastRead, ownNodeIdSet, protocol),
+    [ownNodeIdSet, persistedLastRead, protocol, unreadSourceMessages],
+  );
 
   // Lookup map for rendering quoted replies (packetId in Meshtastic, timestamp fallback in MeshCore)
   const messageByReplyKey = useMemo(() => {
@@ -729,19 +727,11 @@ function ChatPanel({
     return map;
   }, [regularMessages]);
 
-  const unreadCounts = useMemo(() => {
-    const counts = new Map<number, number>();
-    for (const msg of regularMessages) {
-      if (isOwnNode(msg.sender_id)) continue; // own messages don't count
-      if (msg.to) continue; // DMs don't contribute to channel unread counts
-      if (msg.isHistory) continue; // history rehydration must not create fresh unread badges
-      const lastRead = persistedLastRead[`ch:${msg.channel}`] ?? 0;
-      if (msg.timestamp > lastRead) {
-        counts.set(msg.channel, (counts.get(msg.channel) ?? 0) + 1);
-      }
-    }
-    return counts;
-  }, [isOwnNode, persistedLastRead, regularMessages]);
+  const unreadCounts = useMemo(
+    () =>
+      computeChannelUnreadCounts(unreadSourceMessages, persistedLastRead, ownNodeIdSet, protocol),
+    [ownNodeIdSet, persistedLastRead, protocol, unreadSourceMessages],
+  );
 
   const viewMessages = useMemo(() => {
     if (viewMode === 'dm' && activeDmNode != null) {
@@ -814,10 +804,19 @@ function ChatPanel({
     setTriggerScrollToUnread((n) => n + 1);
   }, [viewKey]);
 
+  const prevViewKeyForReadRef = useRef<string | null>(null);
+  // Mark read when the user switches channel/DM while chat is active — not on tab re-entry alone.
   useEffect(() => {
-    if (!isActive) return;
-    markCurrentViewRead();
-  }, [isActive, markCurrentViewRead]);
+    if (!isActive) {
+      prevViewKeyForReadRef.current = viewKey;
+      return;
+    }
+    const prev = prevViewKeyForReadRef.current;
+    if (prev !== null && prev !== viewKey) {
+      markCurrentViewRead();
+    }
+    prevViewKeyForReadRef.current = viewKey;
+  }, [viewKey, isActive, markCurrentViewRead]);
 
   // Draft persistence: save/restore unsent input when view changes (also loads on initial mount)
   const prevViewKeyRef = useRef<string | null>(null);
@@ -881,6 +880,7 @@ function ChatPanel({
 
   const applyNearBottomReadState = useCallback(
     (distFromBottom: number) => {
+      if (document.hidden) return;
       if (distFromBottom < 50) {
         markCurrentViewRead();
         setUnreadDividerTimestamp(0); // hide divider once user has read to bottom
@@ -905,6 +905,7 @@ function ChatPanel({
 
   // Auto-scroll on new messages (only if near bottom)
   useEffect(() => {
+    if (!isActive || document.hidden) return;
     const el = scrollContainerRef.current;
     if (!el) return;
     const distFromBottom = getDistFromChatBottom(
@@ -921,6 +922,7 @@ function ChatPanel({
     });
   }, [
     filteredMessages.length,
+    isActive,
     outerScrollMetricsRootRef,
     updateScrollButtonVisibility,
     applyNearBottomReadState,

@@ -8,7 +8,16 @@ export const LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS = 10_000;
 /** After a failed image fetch (e.g. 429), do not retry until this elapses. */
 export const LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS = 5 * 60 * 1000;
 
-const LINK_PREVIEW_IP_RE = /^(\d{1,3}\.){3}\d{1,3}$/;
+function isIpv4Literal(hostname: string): boolean {
+  const parts = hostname.split('.');
+  if (parts.length !== 4) return false;
+  return parts.every((part) => {
+    if (!/^\d{1,3}$/.test(part)) return false;
+    const n = Number(part);
+    return n >= 0 && n <= 255;
+  });
+}
+
 const LINK_PREVIEW_BLOCKED_HOSTNAMES = new Set(['localhost', '[::1]', '::1', '0.0.0.0']);
 
 /** og:image hosts that rate-limit direct renderer loads; fetch once in main instead. */
@@ -28,9 +37,7 @@ export function clearLinkPreviewCachesForTests(): void {
 }
 
 export function isBlockedHostname(hostname: string): boolean {
-  return (
-    LINK_PREVIEW_BLOCKED_HOSTNAMES.has(hostname.toLowerCase()) || LINK_PREVIEW_IP_RE.test(hostname)
-  );
+  return LINK_PREVIEW_BLOCKED_HOSTNAMES.has(hostname.toLowerCase()) || isIpv4Literal(hostname);
 }
 
 export function shouldProxyPreviewImageUrl(imageUrl: string): boolean {

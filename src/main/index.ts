@@ -67,6 +67,7 @@ import {
 } from './database';
 import { fetchLinkPreview } from './fetchLinkPreview';
 import { getGpsFix } from './gps';
+import { isValidHttpHostname } from './httpHostValidation';
 import {
   clearLogFile,
   exportLogTo,
@@ -188,7 +189,11 @@ const nobleBleManager = new NobleBleManager();
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
 
 /** MAC address format: XX:XX:XX:XX:XX:XX */
-const MAC_ADDRESS_REGEX = /^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/;
+function isMacAddress(value: string): boolean {
+  const parts = value.split(':');
+  if (parts.length !== 6) return false;
+  return parts.every((part) => /^[0-9A-Fa-f]{2}$/.test(part));
+}
 
 let takServerManager: TakServerManager | null = null;
 let takServerManagerLoadPromise: Promise<TakServerManager> | null = null;
@@ -1894,7 +1899,7 @@ ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
     throw new Error('bluetooth-unpair: macAddress must be a string');
   }
   // Validate MAC format (XX:XX:XX:XX:XX:XX)
-  if (!MAC_ADDRESS_REGEX.test(macAddress)) {
+  if (!isMacAddress(macAddress)) {
     throw new Error('bluetooth-unpair: invalid MAC address format');
   }
 
@@ -1993,7 +1998,7 @@ ipcMain.handle('bluetooth-pair', async (_event, macAddress: unknown, pin: unknow
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-pair: macAddress must be a string');
   }
-  if (!MAC_ADDRESS_REGEX.test(macAddress)) {
+  if (!isMacAddress(macAddress)) {
     throw new Error('bluetooth-pair: invalid MAC address format');
   }
   let normalizedPin: string | undefined;
@@ -2176,7 +2181,7 @@ ipcMain.handle('bluetooth-connect', async (_event, macAddress: unknown) => {
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-connect: macAddress must be a string');
   }
-  if (!MAC_ADDRESS_REGEX.test(macAddress)) {
+  if (!isMacAddress(macAddress)) {
     throw new Error('bluetooth-connect: invalid MAC address format');
   }
   console.debug('[IPC] bluetooth-connect:', macAddress);
@@ -2214,7 +2219,7 @@ ipcMain.handle('bluetooth-untrust', async (_event, macAddress: unknown) => {
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-untrust: macAddress must be a string');
   }
-  if (!MAC_ADDRESS_REGEX.test(macAddress)) {
+  if (!isMacAddress(macAddress)) {
     throw new Error('bluetooth-untrust: invalid MAC address format');
   }
   console.debug('[IPC] bluetooth-untrust:', macAddress);
@@ -2253,7 +2258,7 @@ ipcMain.handle('bluetooth-get-info', async (_event, macAddress: unknown) => {
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-get-info: macAddress must be a string');
   }
-  if (!MAC_ADDRESS_REGEX.test(macAddress)) {
+  if (!isMacAddress(macAddress)) {
     throw new Error('bluetooth-get-info: invalid MAC address format');
   }
   return new Promise<string>((resolve) => {
@@ -5199,19 +5204,11 @@ const HTTP_FETCH_INTERVAL_MS = 3000;
 const HTTP_WRITE_TO_RADIO_MAX_BYTES = 256 * 1024;
 const MAX_HOST_LENGTH = 253;
 
-/**
- * Hostname validation: accepts DNS labels (a-z, 0-9, hyphens) and dotted IPv4 quads.
- * Rejects hostnames with leading/trailing hyphens per RFC 1123.
- * An empty string or anything over 253 chars is caught separately by the caller.
- */
-const VALID_HOSTNAME_RE =
-  /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
-
 function validateHttpHost(host: unknown): asserts host is string {
   if (typeof host !== 'string' || host.length === 0 || host.length > MAX_HOST_LENGTH) {
     throw new Error('Invalid host');
   }
-  if (!VALID_HOSTNAME_RE.test(host)) {
+  if (!isValidHttpHostname(host)) {
     throw new Error('Invalid host format');
   }
 }
