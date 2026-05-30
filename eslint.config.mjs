@@ -171,12 +171,15 @@ export default tseslint.config(
       security,
     },
     rules: {
-      ...security.configs.recommended.rules,
-      // Disable rules with high false positive rate in this codebase
+      // Promote every recommended rule to error
+      ...Object.fromEntries(
+        Object.entries(security.configs.recommended.rules).map(([rule]) => [rule, 'error']),
+      ),
+      // Hybrid: keep high false-positive rules disabled
       'security/detect-object-injection': 'off', // Common pattern for data structures
       'security/detect-non-literal-fs-filename': 'off', // Scripts use variable paths intentionally
-      'security/detect-non-literal-regexp': 'off', // Dynamic regex patterns are expected
-      'security/detect-unsafe-regex': 'off', // Too many false positives for safe patterns
+      // Explicit trojan-source guard (also in recommended)
+      'security/detect-bidi-characters': 'error',
     },
   },
   // No-secrets: detect hardcoded secrets/API keys

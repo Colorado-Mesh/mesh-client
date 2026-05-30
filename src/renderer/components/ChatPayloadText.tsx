@@ -7,23 +7,30 @@ import { parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
 function highlightCaseInsensitive(text: string, query: string): ReactNode {
   const q = query.trim();
   if (!q) return text;
-  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const splitRegex = new RegExp(`(${escaped})`, 'gi');
-  const parts = text.split(splitRegex);
+  const lowerText = text.toLowerCase();
   const lowerQuery = q.toLowerCase();
-  return (
-    <>
-      {parts.map((part, i) =>
-        part.toLowerCase() === lowerQuery ? (
-          <mark key={i} className="rounded bg-yellow-500/40 px-0.5 text-yellow-200">
-            {part}
-          </mark>
-        ) : (
-          <span key={i}>{part}</span>
-        ),
-      )}
-    </>
-  );
+  const nodes: ReactNode[] = [];
+  let start = 0;
+  while (start < text.length) {
+    const idx = lowerText.indexOf(lowerQuery, start);
+    if (idx === -1) {
+      if (start < text.length) {
+        nodes.push(<span key={start}>{text.slice(start)}</span>);
+      }
+      break;
+    }
+    if (idx > start) {
+      nodes.push(<span key={start}>{text.slice(start, idx)}</span>);
+    }
+    nodes.push(
+      <mark key={idx} className="rounded bg-yellow-500/40 px-0.5 text-yellow-200">
+        {text.slice(idx, idx + q.length)}
+      </mark>,
+    );
+    start = idx + q.length;
+  }
+  if (nodes.length === 0) return text;
+  return <>{nodes}</>;
 }
 
 interface LinkPreviewData {

@@ -141,7 +141,11 @@ export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_KEYS = new Set([
 export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_MAX_LEN = 24;
 
 /** Four or more whitespace-separated tokens, or sentence-ending punctuation. */
-export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_SENTENCE_RE = /[.!?]|(?:\S+\s+){3,}\S+/;
+export function looksLikePasswordPlaceholderSentence(text) {
+  if (/[.!?]/.test(text)) return true;
+  const tokens = text.trim().split(/\s+/).filter(Boolean);
+  return tokens.length >= 4;
+}
 
 /** roomsPanel leaf keys that must not remain identical to English. */
 export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
@@ -172,6 +176,14 @@ export const LOCALE_ARTIFACT_RES = [
 
 /** Brand / product names preserved verbatim when present in English. */
 export const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT'];
+
+const BRAND_WORD_RES = new Map([
+  ['TAK', /\bTAK\b/g],
+  ['Discord', /\bDiscord\b/g],
+  ['Meshtastic', /\bMeshtastic\b/g],
+  ['MeshCore', /\bMeshCore\b/g],
+  ['MQTT', /\bMQTT\b/g],
+]);
 
 // UTF-8 Cyrillic (etc.) misread as Latin-1 in JSON.
 const MOJIBAKE_RE = /Ð[\u0080-\u00FF]{2,}|Ã[\u0080-\u00BF]{2,}|Â[\u0080-\u00BF]{2,}/;
@@ -212,7 +224,8 @@ function hasLowercaseLetter(s) {
 }
 
 function brandOccurrenceCount(text, brand) {
-  const re = new RegExp(`\\b${brand}\\b`, 'g');
+  const re = BRAND_WORD_RES.get(brand);
+  if (!re) return 0;
   return (text.match(re) || []).length;
 }
 
@@ -437,7 +450,7 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
       issues.push(
         'roomsPanel password placeholder must be a short literal default-password hint, not a long phrase',
       );
-    } else if (ROOMS_PANEL_PASSWORD_PLACEHOLDER_SENTENCE_RE.test(val.trim())) {
+    } else if (looksLikePasswordPlaceholderSentence(val.trim())) {
       issues.push(
         'roomsPanel password placeholder looks like an MT sentence — use a short literal (e.g. hello, password)',
       );

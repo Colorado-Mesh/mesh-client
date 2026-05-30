@@ -64,13 +64,12 @@ function extractTagsFromFile(filePath) {
     if (!/\bconsole\.(debug|warn|error|info|log)\s*\(/.test(line)) continue;
     if (SUPPRESSED.test(line)) continue;
 
-    // Match the opening quote/backtick of the first string argument, then [TAG
-    const match = line.match(/console\.\w+\s*\(\s*[`'"]\[([A-Za-z][A-Za-z0-9 ]*(?::[^`'"$\]]*)?)/);
-    if (!match) continue;
+    const staticTagMatch = line.match(/console\.\w+\s*\(\s*[`'"]\[([A-Za-z][A-Za-z0-9 ]+)\]/);
+    const dynamicTagMatch = line.match(/console\.\w+\s*\(\s*[`'"]\[([A-Za-z][A-Za-z0-9 ]+):/);
+    const tagMatch = staticTagMatch ?? dynamicTagMatch;
+    if (!tagMatch) continue;
 
-    const inner = match[1];
-    // Dynamic prefix like [BLE:${sessionId}] → extract '[BLE:' (static portion)
-    const tag = inner.endsWith(':') ? `[${inner}` : `[${inner}]`;
+    const tag = dynamicTagMatch ? `[${tagMatch[1]}:` : `[${tagMatch[1]}]`;
     tags.push({ tag, file: path.relative(ROOT, filePath), line: i + 1 });
   }
 
