@@ -280,14 +280,12 @@ export default function RoomsPanel({
       setDraft('');
     } catch (e) {
       console.warn('[RoomsPanel] sendRoomPost failed ' + errLikeToLogString(e));
-      if (selectedRoomId != null) {
-        setLoginErrorsByRoom((prev) =>
-          new Map(prev).set(
-            selectedRoomId,
-            e instanceof Error ? e.message : t('roomsPanel.postFailed'),
-          ),
-        );
-      }
+      setLoginErrorsByRoom((prev) =>
+        new Map(prev).set(
+          selectedRoomId,
+          e instanceof Error ? e.message : t('roomsPanel.postFailed'),
+        ),
+      );
     } finally {
       setSendPending(false);
     }
