@@ -85,6 +85,7 @@ import type {
 import {
   buildMeshcoreChannelIncomingMessage,
   findMeshcoreDmReplyParent,
+  meshcoreChatMessagesForDisplay,
   normalizeMeshcoreIncomingText,
   resolveMeshcoreChannelMessageSender,
 } from '../lib/meshcoreChannelText';
@@ -180,11 +181,7 @@ import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
-import {
-  chatMessageToMessageRecord,
-  messageRecordsToChatMessages,
-  nodeRecordsToMeshNodeMap,
-} from '../lib/storeRecordAdapters';
+import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import {
   MESHCORE_ROOM_POST_SENT_TIMEOUT_MS,
   MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS,
@@ -202,7 +199,7 @@ import type {
 } from '../lib/types';
 import { mirrorMqttStatusToConnection, setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
-import { upsertMessage, useMessageStore } from '../stores/messageStore';
+import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
@@ -3989,9 +3986,6 @@ export function useMeshcoreRuntime() {
 
       const publishTapback = (tapbackMsg: ChatMessage) => {
         addMessage(tapbackMsg);
-        if (storeId) {
-          upsertMessage(storeId, chatMessageToMessageRecord(tapbackMsg));
-        }
         void window.electronAPI.db
           .saveMeshcoreMessage(messageToDbRow(tapbackMsg))
           .catch((e: unknown) => {
@@ -4472,8 +4466,10 @@ export function useMeshcoreRuntime() {
     if (!meshcoreIdentityId) return messages;
     const byId = useMessageStore.getState().messages[meshcoreIdentityId];
     if (!byId) return messages;
-    const fromStore = messageRecordsToChatMessages(Object.values(byId));
-    return fromStore.length > 0 ? fromStore : messages;
+    const fromStore = meshcoreChatMessagesForDisplay(
+      messageRecordsToChatMessages(Object.values(byId)),
+    );
+    return fromStore.length > 0 ? fromStore : meshcoreChatMessagesForDisplay(messages);
   }, [meshcoreIdentityId, messages]);
   const resolvedNodes = useMemo(() => {
     if (!meshcoreIdentityId) return nodes;

@@ -8,24 +8,43 @@ export interface MeshcoreNormalizedText {
   payload: string;
   /** Name inside `@[...]` when that prefix was present on the payload (after `Sender: `). */
   bracketTargetName?: string;
+  /** True when payload began with `@[…]` even if the name inside brackets was empty (`@[]`). */
+  hadBracketReplyPrefix?: boolean;
 }
 
-const BRACKET_PAYLOAD = /^@\[([^\]]+)\]\s*(.*)$/su;
+/** Leading reply/tapback marker; name inside brackets may be empty on the wire (`@[] body`). */
+const BRACKET_PREFIX = /^@\[([^\]]*)\]\s*(.*)$/su;
 
-/** DM / plain-text tapback lines are the full body `@[TargetName] …` (no `Sender: ` prefix). */
-const PLAIN_BRACKET_LINE = /^@\[([^\]]+)\]\s*(.*)$/su;
+/**
+ * Parse a leading `@[Name] rest` segment (name may be empty — firmware sometimes sends `@[] body`).
+ */
+export function parseMeshcoreBracketPrefix(rawText: string): {
+  hadBracketPrefix: boolean;
+  targetName?: string;
+  body: string;
+} {
+  const t = (rawText ?? '').trim();
+  if (!t) return { hadBracketPrefix: false, body: '' };
+  const m = BRACKET_PREFIX.exec(t);
+  if (!m) return { hadBracketPrefix: false, body: t };
+  const targetName = m[1].trim();
+  return {
+    hadBracketPrefix: true,
+    targetName: targetName.length > 0 ? targetName : undefined,
+    body: (m[2] ?? '').trim(),
+  };
+}
 
 /**
  * Parse a full DM body (or any line) for a leading `@[Name] rest` segment.
  */
 export function parseMeshcorePlainBracketLine(rawText: string): MeshcoreNormalizedText {
-  const t = (rawText ?? '').trim();
-  if (!t) return { payload: '' };
-  const m = PLAIN_BRACKET_LINE.exec(t);
-  if (!m) return { payload: t };
+  const parsed = parseMeshcoreBracketPrefix(rawText);
+  if (!parsed.hadBracketPrefix) return { payload: parsed.body };
   return {
-    bracketTargetName: m[1].trim(),
-    payload: (m[2] ?? '').trim(),
+    hadBracketReplyPrefix: true,
+    payload: parsed.body,
+    ...(parsed.targetName ? { bracketTargetName: parsed.targetName } : {}),
   };
 }
 
@@ -83,13 +102,17 @@ export function normalizeMeshcoreIncomingText(rawText: string): MeshcoreNormaliz
   const senderCandidate = text.slice(0, colonIdx).trim();
   let payload = text.slice(colonIdx + 1).trim();
   if (!senderCandidate || !payload) return { payload: text };
-  const m = BRACKET_PAYLOAD.exec(payload);
-  let bracketTargetName: string | undefined;
-  if (m) {
-    bracketTargetName = m[1].trim();
-    payload = (m[2] ?? '').trim();
+  const bracket = parseMeshcoreBracketPrefix(payload);
+  if (bracket.hadBracketPrefix) {
+    payload = bracket.body;
+    return {
+      senderName: senderCandidate,
+      payload,
+      hadBracketReplyPrefix: true,
+      ...(bracket.targetName ? { bracketTargetName: bracket.targetName } : {}),
+    };
   }
-  return { senderName: senderCandidate, payload, bracketTargetName };
+  return { senderName: senderCandidate, payload };
 }
 
 /** True when `payload` is a single grapheme cluster and normalizes as a reaction emoji. */
@@ -114,6 +137,62 @@ export interface MeshcoreParentResolveOpts {
   to: number | undefined;
 }
 
+/** Alphanumeric tokens for callsign matching (emoji/punctuation stripped). */
+export function meshcoreDisplayNameTokens(name: string): string[] {
+  const stripped = name.replace(/\p{Extended_Pictographic}/gu, ' ');
+  const tokens: string[] = [];
+  for (const part of stripped.toLowerCase().split(/\s+/)) {
+    const t = part.replace(/[^a-z0-9]/gi, '');
+    if (t.length >= 3) tokens.push(t);
+  }
+  return tokens;
+}
+
+/** Compare bracket `@[Name]` targets to stored `sender_name` (trim, case, callsign tokens). */
+export function meshcoreBracketDisplayNamesMatch(target: string, senderName: string): boolean {
+  const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+  const t = norm(target);
+  const n = norm(senderName);
+  if (!t || !n) return false;
+  if (t === n) return true;
+  if (t.length >= 4 && (n.includes(t) || t.includes(n))) return true;
+  const tTokens = meshcoreDisplayNameTokens(target);
+  const nTokens = meshcoreDisplayNameTokens(senderName);
+  if (tTokens.length > 0 && nTokens.length > 0) {
+    for (const tt of tTokens) {
+      for (const nt of nTokens) {
+        if (tt === nt || nt.startsWith(tt) || tt.startsWith(nt)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function meshcoreBracketUnresolvedReplyFields(
+  target: string,
+  body: string,
+  fallbackPayload: string,
+): Pick<ChatMessage, 'payload' | 'replyPreviewSender'> {
+  const trimmed = body.trim();
+  return {
+    payload: trimmed.length > 0 ? trimmed : fallbackPayload,
+    replyPreviewSender: target,
+  };
+}
+
+/** Rebuild wire text for {@link repairMeshcoreDisplayMessages} without duplicating `Sender: `. */
+export function meshcoreChannelRepairRawText(msg: ChatMessage): string {
+  const p = msg.payload.trim();
+  if (/^[^:\n]{1,80}:\s/u.test(p)) return p;
+  return `${msg.sender_name}: ${p}`;
+}
+
+/** Sort + parse/repair MeshCore chat rows for UI (store, runtime, ChatPanel). */
+export function meshcoreChatMessagesForDisplay(messages: readonly ChatMessage[]): ChatMessage[] {
+  const sorted = [...messages].sort((a, b) => a.timestamp - b.timestamp);
+  return repairMeshcoreDisplayMessages(sorted);
+}
+
 /**
  * Latest message in the same thread whose `sender_name` matches `targetName` and is strictly older than `beforeTimestamp`.
  */
@@ -127,7 +206,7 @@ export function resolveMeshcoreBracketParentKey(
     if ((m.to ?? undefined) !== (opts.to ?? undefined)) continue;
     if (m.emoji != null && m.replyId != null) continue;
     if (m.timestamp >= opts.beforeTimestamp) continue;
-    if (m.sender_name !== opts.targetName) continue;
+    if (!meshcoreBracketDisplayNamesMatch(opts.targetName, m.sender_name)) continue;
     if (!best || m.timestamp > best.timestamp) best = m;
   }
   if (!best) return undefined;
@@ -156,7 +235,7 @@ export function resolveMeshcoreBracketParentKeyDm(
     if (!inThread) continue;
     if (m.emoji != null && m.replyId != null) continue;
     if (m.timestamp >= opts.beforeTimestamp) continue;
-    if (m.sender_name !== opts.targetName) continue;
+    if (!meshcoreBracketDisplayNamesMatch(opts.targetName, m.sender_name)) continue;
     if (!best || m.timestamp > best.timestamp) best = m;
   }
   if (!best) return undefined;
@@ -231,6 +310,13 @@ export function buildMeshcoreChannelIncomingMessage(
   };
 
   const target = normalized.bracketTargetName;
+  if (normalized.hadBracketReplyPrefix && !target) {
+    const body = normalized.payload.trim();
+    return {
+      ...base,
+      payload: body.length > 0 ? body : fallbackPayload,
+    };
+  }
   if (target) {
     const parentKey = resolveMeshcoreBracketParentKey(messages, {
       channel: opts.channel,
@@ -257,13 +343,123 @@ export function buildMeshcoreChannelIncomingMessage(
         return { ...base, payload: body, replyId: parentKey, ...previewFields };
       }
     }
-    return { ...base, payload: fallbackPayload };
+    const body = normalized.payload.trim();
+    return { ...base, ...meshcoreBracketUnresolvedReplyFields(target, body, fallbackPayload) };
   }
 
   return {
     ...base,
     payload: normalized.payload.length > 0 ? normalized.payload : fallbackPayload,
   };
+}
+
+/**
+ * Re-parse stored/live rows that still carry `@[Name]` in payload without `replyId` (e.g. parent
+ * was missing at first ingest). Runs in timestamp order so parent resolution can use prior rows.
+ */
+/** When the wire sends `@[] body`, infer parent as the latest prior message from another sender in-thread. */
+function inferMeshcoreEmptyBracketReplyParent(
+  prior: readonly ChatMessage[],
+  msg: ChatMessage,
+): ChatMessage | undefined {
+  let best: ChatMessage | undefined;
+  for (const m of prior) {
+    if (m.channel !== msg.channel) continue;
+    if ((m.to ?? undefined) !== (msg.to ?? undefined)) continue;
+    if (m.timestamp >= msg.timestamp) continue;
+    if (m.sender_id === msg.sender_id) continue;
+    if (m.emoji != null && m.replyId != null) continue;
+    if (!best || m.timestamp > best.timestamp) best = m;
+  }
+  return best;
+}
+
+function mergeRepairedMeshcoreMessage(existing: ChatMessage, rebuilt: ChatMessage): ChatMessage {
+  return {
+    ...rebuilt,
+    id: existing.id,
+    packetId: existing.packetId ?? rebuilt.packetId,
+    receivedVia: existing.receivedVia ?? rebuilt.receivedVia,
+    isHistory: existing.isHistory ?? rebuilt.isHistory,
+    meshcoreDedupeKey: existing.meshcoreDedupeKey ?? rebuilt.meshcoreDedupeKey,
+    status: existing.status ?? rebuilt.status,
+  };
+}
+
+export function repairMeshcoreDisplayMessages(messages: readonly ChatMessage[]): ChatMessage[] {
+  const prior: ChatMessage[] = [];
+  const out: ChatMessage[] = [];
+  for (const msg of messages) {
+    let next = msg;
+    if (msg.emoji != null && msg.replyId != null) {
+      prior.push(next);
+      out.push(next);
+      continue;
+    }
+    if (msg.replyId != null && !msg.replyPreviewSender && !msg.replyPreviewText) {
+      const parent = findParentMessageForReply(prior, msg.replyId);
+      if (parent) {
+        next = {
+          ...msg,
+          replyPreviewText: truncateReplyPreviewText(parent.payload),
+          replyPreviewSender: parent.sender_name,
+        };
+      }
+    }
+    const parsed = parseMeshcorePlainBracketLine(msg.payload.trim());
+    if (parsed.hadBracketReplyPrefix && !parsed.bracketTargetName) {
+      const body =
+        parsed.payload.length > 0
+          ? parsed.payload
+          : msg.payload.replace(/^@\[\s*\]\s*/u, '').trim();
+      const inferred = inferMeshcoreEmptyBracketReplyParent(prior, msg);
+      if (inferred) {
+        const parentKey = inferred.packetId ?? inferred.timestamp;
+        next = {
+          ...msg,
+          payload: body,
+          replyId: parentKey,
+          replyPreviewText: truncateReplyPreviewText(inferred.payload),
+          replyPreviewSender: inferred.sender_name,
+        };
+      } else {
+        next = { ...msg, payload: body };
+      }
+    } else if (parsed.bracketTargetName) {
+      if (msg.channel === -1 && msg.to != null) {
+        next = mergeRepairedMeshcoreMessage(
+          msg,
+          buildMeshcoreDmIncomingMessage(prior, {
+            rawText: msg.payload,
+            senderId: msg.sender_id,
+            displayName: msg.sender_name,
+            timestamp: msg.timestamp,
+            receivedVia: msg.receivedVia,
+            peerNodeId: msg.sender_id,
+            myNodeId: msg.to,
+            to: msg.to,
+            rxHops: msg.rxHops,
+          }),
+        );
+      } else if (msg.channel >= 0) {
+        next = mergeRepairedMeshcoreMessage(
+          msg,
+          buildMeshcoreChannelIncomingMessage(prior, {
+            rawText: meshcoreChannelRepairRawText(msg),
+            senderId: msg.sender_id,
+            displayName: msg.sender_name,
+            channel: msg.channel,
+            timestamp: msg.timestamp,
+            receivedVia: msg.receivedVia,
+            rxHops: msg.rxHops,
+          }),
+        );
+      }
+    }
+    prior.push(next);
+    out.push(next);
+  }
+  return out;
 }
 
 export interface BuildMeshcoreDmIncomingOpts {
@@ -309,6 +505,10 @@ export function buildMeshcoreDmIncomingMessage(
     ...rxFields,
   };
 
+  if (parsed.hadBracketReplyPrefix && !parsed.bracketTargetName) {
+    const body = parsed.payload.trim();
+    return { ...base, payload: body.length > 0 ? body : opts.rawText };
+  }
   const target = parsed.bracketTargetName;
   if (target) {
     const parentKey = resolveMeshcoreBracketParentKeyDm(messages, {
@@ -336,6 +536,8 @@ export function buildMeshcoreDmIncomingMessage(
         return { ...base, payload: body, replyId: parentKey, ...previewFields };
       }
     }
+    const body = parsed.payload.trim();
+    return { ...base, ...meshcoreBracketUnresolvedReplyFields(target, body, opts.rawText) };
   }
 
   return { ...base, payload: opts.rawText };

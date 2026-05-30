@@ -994,6 +994,31 @@ describe('ChatPanel StatusBadge', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders quoted preview from replyPreviewSender without replyId (MeshCore unresolved parent)', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshcore"
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'TB-Dek',
+              payload: 'agreed, coffee',
+              channel: 0,
+              timestamp: Date.now(),
+              replyPreviewSender: '🛩️ W0STR mobl',
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText(/W0STR mobl/)).toBeInTheDocument();
+    expect(screen.getByText('agreed, coffee')).toBeInTheDocument();
+    expect(screen.queryByText('@[')).not.toBeInTheDocument();
+  });
+
   it('renders quoted preview from stored replyPreview fields when parent is not in messages', () => {
     render(
       <ToastProvider>
@@ -1015,9 +1040,8 @@ describe('ChatPanel StatusBadge', () => {
         />
       </ToastProvider>,
     );
-    expect(
-      screen.getByRole('button', { name: /Jump to quoted message from Alice/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/Jump to quoted message from Alice/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Jump to quoted message from Alice/i })).toBeNull();
     expect(screen.getByText('Saved parent snippet')).toBeInTheDocument();
   });
 

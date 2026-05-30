@@ -1,6 +1,7 @@
 import {
   findMeshcoreCrossTransportDuplicate,
   findMeshcoreRoomPostDuplicate,
+  findMeshcoreTapbackEchoDuplicate,
   MESHCORE_ROOM_MESSAGE_CHANNEL,
   meshcoreMessageDedupeKey,
 } from '../hooks/meshcore/meshcoreHookPreamble';
@@ -151,6 +152,28 @@ export function upsertMeshcoreMessageWithDedup(
       message: exactMatch,
       canonicalId,
     };
+  }
+
+  const tapbackDup = findMeshcoreTapbackEchoDuplicate(storeMessages, msg);
+  if (tapbackDup) {
+    const merged: ChatMessage = {
+      ...tapbackDup,
+      receivedVia: mergeMeshcoreReceivedVia(tapbackDup.receivedVia, msg.receivedVia),
+      rxHops: tapbackDup.rxHops ?? msg.rxHops,
+      meshcoreDedupeKey: msg.meshcoreDedupeKey ?? tapbackDup.meshcoreDedupeKey,
+    };
+    const canonicalId =
+      preferredId ??
+      findStoreRecordIdForMessage(identityId, tapbackDup) ??
+      meshcoreMessageStoreId(merged);
+    const record = chatMessageToMessageRecord(merged);
+    record.id = canonicalId;
+    upsertMessage(identityId, record);
+    const altId = meshcoreMessageStoreId(msg);
+    if (altId !== canonicalId) {
+      deleteMessage(identityId, altId);
+    }
+    return { inserted: false, message: merged, canonicalId };
   }
 
   const crossDup = findMeshcoreCrossTransportDuplicate(storeMessages, msg);

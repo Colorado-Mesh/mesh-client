@@ -6,7 +6,10 @@ import type {
   MeshcoreContactDbRow,
   MeshCoreContactRaw,
 } from '../../lib/meshcore/meshcoreHookTypes';
-import { normalizeMeshcoreIncomingText } from '../../lib/meshcoreChannelText';
+import {
+  meshcoreChatMessagesForDisplay,
+  normalizeMeshcoreIncomingText,
+} from '../../lib/meshcoreChannelText';
 import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
@@ -361,6 +364,39 @@ export function findMeshcoreRoomPostDuplicate(
   for (let i = messages.length - 1; i >= start; i--) {
     const existing = messages[i];
     if (meshcoreRoomPostMatch(existing, incoming, windowMs)) {
+      return existing;
+    }
+  }
+  return undefined;
+}
+
+export const MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS = 30_000;
+
+/** Outbound tapback (local optimistic) vs RF/MQTT echo of `@[Name] emoji` — same transport allowed. */
+export function meshcoreTapbackEchoMatch(
+  existing: ChatMessage,
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
+): boolean {
+  if (existing.emoji == null || incoming.emoji == null) return false;
+  if ((existing.replyId ?? undefined) !== (incoming.replyId ?? undefined)) return false;
+  if (existing.channel !== incoming.channel) return false;
+  if ((existing.to ?? undefined) !== (incoming.to ?? undefined)) return false;
+  if (existing.emoji !== incoming.emoji) return false;
+  if (!meshcoreSenderMatchesForDedup(existing, incoming)) return false;
+  if (Math.abs(existing.timestamp - incoming.timestamp) > windowMs) return false;
+  return true;
+}
+
+export function findMeshcoreTapbackEchoDuplicate(
+  messages: readonly ChatMessage[],
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
+): ChatMessage | undefined {
+  const start = Math.max(0, messages.length - MESHCORE_CROSS_TRANSPORT_SCAN_LIMIT);
+  for (let i = messages.length - 1; i >= start; i--) {
+    const existing = messages[i];
+    if (meshcoreTapbackEchoMatch(existing, incoming, windowMs)) {
       return existing;
     }
   }
@@ -731,7 +767,7 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
       roomServerId: coerceOptionalDbInt(r.room_server_id),
     });
   }
-  return meshcoreReconcileChannelSenderIds(mapped);
+  return meshcoreChatMessagesForDisplay(meshcoreReconcileChannelSenderIds(mapped));
 }
 
 /** Persist sender_id/name repairs after {@link mapMeshcoreDbRowsToChatMessages} reconciliation. */
