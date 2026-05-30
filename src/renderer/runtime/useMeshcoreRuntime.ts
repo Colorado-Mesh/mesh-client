@@ -36,6 +36,7 @@ import {
   MESHCORE_TRACE_TIMEOUT_MS,
   meshcoreContactRawFromDevice,
   meshcoreDmAckKeyU32,
+  meshcoreFullPubKeyBytesFromContactDbHex,
   meshcoreMessageDedupeKey,
   meshcorePendingDmAckMapKeys,
   meshcorePingNoRouteErrorExpiryUpdate,
@@ -3251,9 +3252,38 @@ export function useMeshcoreRuntime() {
         rememberPassword?: boolean;
       },
     ): Promise<void> => {
-      const pubKey = pubKeyMapRef.current.get(nodeId);
+      let pubKey = pubKeyMapRef.current.get(nodeId);
       if (!pubKey) {
         throw new Error('Room not found (no encryption key)');
+      }
+      const pubKeyHex = Array.from(pubKey)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      if (meshcoreIsSyntheticPlaceholderPubKeyHex(pubKeyHex)) {
+        throw new Error(
+          'Room has no RF encryption key — wait for contact sync or reconnect radio.',
+        );
+      }
+      if (pubkeyToNodeId(pubKey) !== nodeId) {
+        try {
+          const rows =
+            (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
+          const row = rows.find((r) => r.node_id === nodeId);
+          if (row) {
+            const bytes = meshcoreFullPubKeyBytesFromContactDbHex(row.public_key);
+            if (bytes && pubkeyToNodeId(bytes) === nodeId) {
+              pubKeyMapRef.current.set(nodeId, bytes);
+              pubKey = bytes;
+            }
+          }
+        } catch (e: unknown) {
+          console.warn(
+            '[useMeshcoreRuntime] loginRoom pubkey reload from DB failed ' + errLikeToLogString(e),
+          );
+        }
+        if (pubkeyToNodeId(pubKey) !== nodeId) {
+          throw new Error('Room key out of sync — reconnect or refresh contacts.');
+        }
       }
       const conn = connRef.current;
       if (!conn) {
@@ -3261,8 +3291,8 @@ export function useMeshcoreRuntime() {
       }
       const guestPassword = opts?.guestPassword ?? password;
       const adminPassword = opts?.adminPassword ?? '';
+      const hopsAway = nodesRef.current.get(nodeId)?.hops_away;
       // Serialize with other companion RPCs that consume ResponseCodes.Sent (status, trace, etc.).
-      // meshcore.js login() uses once(Sent); concurrent BLE commands can steal that ack and break login.
       await repeaterRemoteRpcRef.current(async () => {
         const activeConn = connRef.current;
         if (!activeConn) {
@@ -3271,6 +3301,7 @@ export function useMeshcoreRuntime() {
         await meshcoreRoomLogin(activeConn, nodeId, pubKey, password, {
           adminPassword,
           guestPassword,
+          hopsAway,
         });
       });
       if (opts?.rememberPassword) {
@@ -3337,6 +3368,7 @@ export function useMeshcoreRuntime() {
         await meshcoreRoomLogin(activeConn, target.nodeId, pubKey, password, {
           guestPassword: password,
           adminPassword: cred.adminPassword ?? '',
+          hopsAway: nodesRef.current.get(target.nodeId)?.hops_away,
         });
       });
       lastMeshcoreRoomSyncTxAtRef.current = Date.now();
@@ -3376,6 +3408,7 @@ export function useMeshcoreRuntime() {
         await meshcoreRoomLogin(activeConn, target.nodeId, pubKey, password, {
           guestPassword: password,
           adminPassword: cred.adminPassword ?? '',
+          hopsAway: nodesRef.current.get(target.nodeId)?.hops_away,
         });
       });
       lastMeshcoreRoomSyncTxAtRef.current = Date.now();

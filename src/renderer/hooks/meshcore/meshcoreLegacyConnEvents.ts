@@ -243,6 +243,11 @@ export function attachMeshcoreLegacyConnEvents(
         return next;
       }
       persistOut.kind = 'update';
+      pubKeyMapRef.current.set(nodeId, d.publicKey);
+      const prefix = Array.from(d.publicKey.slice(0, 6))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      pubKeyPrefixMapRef.current.set(prefix, nodeId);
       const next = new Map(prev);
       const skipSelfStaticCoords = shouldPreserveStaticGpsForSelfNode(nodeId, myNodeNumRef.current);
       persistOut.persistLat =

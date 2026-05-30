@@ -2,12 +2,18 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
+import {
+  MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
+  type MeshcoreRoomLoginRpcConnection,
+  runMeshcoreRoomLogin,
+} from './meshcoreRoomLoginRpc';
 import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
 import {
-  MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS,
   MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS,
   MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS,
 } from './timeConstants';
+
+export { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE };
 
 /** MeshCore room ACL role inferred after login (firmware PERM_ACL_* low bits). */
 export type MeshcoreRoomRole = 'none' | 'readonly' | 'readwrite' | 'admin';
@@ -21,14 +27,8 @@ export interface MeshcoreRoomSession {
   syncSince?: number;
 }
 
-/** Minimal connection surface for room server `login`. */
-export interface MeshcoreRoomLoginConn {
-  login(
-    contactPublicKey: Uint8Array,
-    password: string,
-    extraTimeoutMillis?: number,
-  ): Promise<unknown>;
-}
+/** Minimal connection surface for room server login. */
+export type MeshcoreRoomLoginConn = MeshcoreRoomLoginRpcConnection;
 
 /** Firmware PERM_ACL_ROLE_MASK values (CommonCLI / room server ACL). */
 export const MESHCORE_ROOM_PERM_GUEST = 0;
@@ -42,9 +42,6 @@ let roomLoginChain: Promise<void> = Promise.resolve();
 
 /** Per-room login abort controllers (replaced on each new login for the same node). */
 const roomLoginAbortControllers = new Map<number, AbortController>();
-
-/** DOMException.message when user cancels an in-flight room login. */
-export const MESHCORE_ROOM_LOGIN_ABORT_MESSAGE = 'Room login cancelled';
 
 export function meshcoreIsRoomLoginAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.message === MESHCORE_ROOM_LOGIN_ABORT_MESSAGE;
@@ -189,7 +186,12 @@ export async function meshcoreRoomLogin(
   nodeId: number,
   pubKey: Uint8Array,
   password: string,
-  opts?: { adminPassword?: string; guestPassword?: string; signal?: AbortSignal },
+  opts?: {
+    adminPassword?: string;
+    guestPassword?: string;
+    signal?: AbortSignal;
+    hopsAway?: number;
+  },
 ): Promise<void> {
   const run = async (): Promise<void> => {
     const signal = beginRoomLoginAbortSignal(nodeId, opts?.signal);
@@ -200,7 +202,10 @@ export async function meshcoreRoomLogin(
       for (let attempt = 1; attempt <= MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS; attempt++) {
         throwIfRoomLoginAborted(signal);
         try {
-          const response = await conn.login(pubKey, password, MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS);
+          const response = await runMeshcoreRoomLogin(conn, pubKey, password, {
+            hopsAway: opts?.hopsAway,
+            signal,
+          });
           throwIfRoomLoginAborted(signal);
           const permByte = parseLoginResponsePermissions(response);
           const role =
@@ -289,8 +294,10 @@ export async function meshcoreRoomTryAdminLogin(
 }
 
 /** Repeater admin login or room server admin login depending on contact type. */
+export type MeshcoreRemoteServerLoginConn = MeshcoreRepeaterLoginConn & MeshcoreRoomLoginConn;
+
 export async function meshcoreTryRemoteServerLogin(
-  conn: MeshcoreRepeaterLoginConn,
+  conn: MeshcoreRemoteServerLoginConn,
   nodeId: number,
   pubKey: Uint8Array,
   hwModel: string | undefined,
