@@ -22,13 +22,34 @@ export const MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS = 45_000;
 /** Extra wait after SENT for room server login over RF (multi-hop); meshcore.js adds this to estTimeout. */
 export const MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS = 45_000;
 
+/** Post-SENT wait when the room server is direct on mesh (0 hops). LAN/TCP users often hit this path. */
+export const MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS = 15_000;
+
 /** Max wait for `RESP_SENT` after SendLogin before rejecting (companion never acked the command). */
 export const MESHCORE_ROOM_LOGIN_SENT_WAIT_MS = MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS;
 
+/** SendLogin SENT ack wait when companion is TCP or USB serial (local link, not BLE). */
+export const MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS = 15_000;
+
+/** Companion transport for room login timeout selection. */
+export type MeshcoreCompanionTransport = 'ble' | 'serial' | 'tcp';
+
 /** Hop-scaled floor for room login response wait (matches outbound DM ACK formula in useMeshcoreRuntime). */
 export function computeRoomLoginExtraTimeoutMs(hopsAway: number): number {
-  const hopScaled = 3_000 + Math.max(0, hopsAway) * 2_500;
+  if (hopsAway <= 0) {
+    return MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS;
+  }
+  const hopScaled = 3_000 + hopsAway * 2_500;
   return Math.max(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS, hopScaled);
+}
+
+/** Max wait for SendLogin `RESP_SENT` before rejecting; shorter on TCP/serial companion links. */
+export function computeRoomLoginSentWaitMs(
+  companionTransport: MeshcoreCompanionTransport = 'ble',
+): number {
+  return companionTransport === 'ble'
+    ? MESHCORE_ROOM_LOGIN_SENT_WAIT_MS
+    : MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS;
 }
 
 /** Cap wait for SendLogin / room post `sendTextMessage` Sent response (meshcore.js has no timeout). */

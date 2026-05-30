@@ -8,7 +8,11 @@ import {
 } from './meshcoreRoomLoginRpc';
 import {
   computeRoomLoginExtraTimeoutMs,
+  computeRoomLoginSentWaitMs,
+  MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS,
   MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS,
+  MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS,
+  MESHCORE_ROOM_LOGIN_SENT_WAIT_MS,
 } from './timeConstants';
 
 const MC_RESP_ERR = 1;
@@ -94,7 +98,11 @@ describe('buildSendLoginFrame', () => {
 });
 
 describe('computeRoomLoginExtraTimeoutMs', () => {
-  it('uses floor for nearby rooms', () => {
+  it('uses shorter floor for direct (0-hop) rooms', () => {
+    expect(computeRoomLoginExtraTimeoutMs(0)).toBe(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS);
+  });
+
+  it('uses RF floor for nearby multi-hop rooms', () => {
     expect(computeRoomLoginExtraTimeoutMs(2)).toBe(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS);
   });
 
@@ -103,6 +111,18 @@ describe('computeRoomLoginExtraTimeoutMs', () => {
     expect(computeRoomLoginExtraTimeoutMs(18)).toBeGreaterThan(
       MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS,
     );
+  });
+});
+
+describe('computeRoomLoginSentWaitMs', () => {
+  it('uses BLE SENT wait by default', () => {
+    expect(computeRoomLoginSentWaitMs()).toBe(MESHCORE_ROOM_LOGIN_SENT_WAIT_MS);
+    expect(computeRoomLoginSentWaitMs('ble')).toBe(MESHCORE_ROOM_LOGIN_SENT_WAIT_MS);
+  });
+
+  it('uses shorter SENT wait for TCP and serial companion links', () => {
+    expect(computeRoomLoginSentWaitMs('tcp')).toBe(MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS);
+    expect(computeRoomLoginSentWaitMs('serial')).toBe(MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS);
   });
 });
 
@@ -135,19 +155,31 @@ describe('runMeshcoreRoomLogin', () => {
     });
   });
 
-  it('rejects when Sent acknowledgment never arrives', async () => {
+  it('rejects when Sent acknowledgment never arrives on TCP within direct wait', async () => {
     const conn = createMockConn();
     const pubKey = makePubKey(3);
 
-    const loginPromise = runMeshcoreRoomLogin(conn, pubKey, 'hello');
+    const loginPromise = runMeshcoreRoomLogin(conn, pubKey, 'hello', { companionTransport: 'tcp' });
     await Promise.resolve();
 
     const rejection = expect(loginPromise).rejects.toThrow(/acknowledgment/i);
-    await vi.advanceTimersByTimeAsync(45_000);
+    await vi.advanceTimersByTimeAsync(MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS);
     await rejection;
   });
 
-  it('rejects on response timeout after Sent', async () => {
+  it('rejects when Sent acknowledgment never arrives on BLE within full wait', async () => {
+    const conn = createMockConn();
+    const pubKey = makePubKey(3);
+
+    const loginPromise = runMeshcoreRoomLogin(conn, pubKey, 'hello', { companionTransport: 'ble' });
+    await Promise.resolve();
+
+    const rejection = expect(loginPromise).rejects.toThrow(/acknowledgment/i);
+    await vi.advanceTimersByTimeAsync(MESHCORE_ROOM_LOGIN_SENT_WAIT_MS);
+    await rejection;
+  });
+
+  it('rejects on response timeout after Sent for direct room', async () => {
     const conn = createMockConn();
     const pubKey = makePubKey(4);
 
@@ -156,7 +188,7 @@ describe('runMeshcoreRoomLogin', () => {
 
     conn.emit(MC_RESP_SENT, { estTimeout: 2_000 });
     const rejection = expect(loginPromise).rejects.toThrow('timeout');
-    await vi.advanceTimersByTimeAsync(45_000 + 2_000);
+    await vi.advanceTimersByTimeAsync(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS + 2_000);
     await rejection;
   });
 

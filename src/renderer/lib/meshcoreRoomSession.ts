@@ -11,6 +11,7 @@ import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
 import {
   MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS,
   MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS,
+  type MeshcoreCompanionTransport,
 } from './timeConstants';
 
 export { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE };
@@ -191,6 +192,7 @@ export async function meshcoreRoomLogin(
     guestPassword?: string;
     signal?: AbortSignal;
     hopsAway?: number;
+    companionTransport?: MeshcoreCompanionTransport;
   },
 ): Promise<void> {
   const run = async (): Promise<void> => {
@@ -204,6 +206,7 @@ export async function meshcoreRoomLogin(
         try {
           const response = await runMeshcoreRoomLogin(conn, pubKey, password, {
             hopsAway: opts?.hopsAway,
+            companionTransport: opts?.companionTransport,
             signal,
           });
           throwIfRoomLoginAborted(signal);

@@ -3299,6 +3299,7 @@ export function useMeshcoreRuntime() {
           adminPassword,
           guestPassword,
           hopsAway,
+          companionTransport: meshcoreConnectTypeRef.current,
         });
       });
       if (opts?.rememberPassword) {

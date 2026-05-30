@@ -1,4 +1,8 @@
-import { computeRoomLoginExtraTimeoutMs, MESHCORE_ROOM_LOGIN_SENT_WAIT_MS } from './timeConstants';
+import {
+  computeRoomLoginExtraTimeoutMs,
+  computeRoomLoginSentWaitMs,
+  type MeshcoreCompanionTransport,
+} from './timeConstants';
 
 /** DOMException.message when user cancels an in-flight room login. */
 export const MESHCORE_ROOM_LOGIN_ABORT_MESSAGE = 'Room login cancelled';
@@ -81,10 +85,15 @@ export function runMeshcoreRoomLogin(
   conn: MeshcoreRoomLoginRpcConnection,
   contactPublicKey: Uint8Array,
   password: string,
-  opts?: { hopsAway?: number; signal?: AbortSignal },
+  opts?: {
+    hopsAway?: number;
+    signal?: AbortSignal;
+    companionTransport?: MeshcoreCompanionTransport;
+  },
 ): Promise<MeshcoreRoomLoginResponse> {
   const expectedPrefix = contactPublicKey.subarray(0, 6);
   const extraTimeoutMs = computeRoomLoginExtraTimeoutMs(opts?.hopsAway ?? 0);
+  const sentWaitMs = computeRoomLoginSentWaitMs(opts?.companionTransport);
   const signal = opts?.signal;
 
   return new Promise((resolve, reject) => {
@@ -190,7 +199,7 @@ export function runMeshcoreRoomLogin(
     sentWaitTimer = setTimeout(() => {
       if (settled || sentReceived) return;
       fail(new Error('timeout waiting for room login acknowledgment'));
-    }, MESHCORE_ROOM_LOGIN_SENT_WAIT_MS);
+    }, sentWaitMs);
 
     void conn
       .sendToRadioFrame(buildSendLoginFrame(contactPublicKey, password))
