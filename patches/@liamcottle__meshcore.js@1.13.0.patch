@@ -1,23 +1,20 @@
 diff --git a/src/connection/connection.js b/src/connection/connection.js
-index af6f6d670adc0948d3453df34acbbde46c1b4250..4ec84dae698ee87e63b98bfc2a4fcab302b1d2c5 100644
+index af6f6d670adc0948d3453df34acbbde46c1b4250..0000000000000000000000000000000000000000 100644
 --- a/src/connection/connection.js
 +++ b/src/connection/connection.js
-@@ -231,7 +231,13 @@ class Connection extends EventEmitter {
+@@ -231,7 +231,10 @@
          const data = new BufferWriter();
          data.writeByte(Constants.CommandCodes.SendLogin);
          data.writeBytes(publicKey); // 32 bytes - id of repeater or room server
 -        data.writeString(password); // password is remainder of frame, max 15 characters
-+        // Empty password must be a null byte (read-only / ACL login). Non-empty uses variable-length
-+        // framing so companion firmware parses the guest/admin password field correctly.
-+        if (password.length === 0) {
-+            data.writeCString(password, 16);
-+        } else {
++        // Empty password = read-only ACL (0 bytes, matches official Android). Non-empty uses writeString.
++        if (password.length > 0) {
 +            data.writeString(password);
 +        }
          await this.sendToRadioFrame(data.toBytes());
      }
  
-@@ -400,6 +406,8 @@ class Connection extends EventEmitter {
+@@ -400,6 +403,8 @@
              this.onRawDataPush(bufferReader);
          } else if(responseCode === Constants.PushCodes.LoginSuccess){
              this.onLoginSuccessPush(bufferReader);
@@ -26,7 +23,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..4ec84dae698ee87e63b98bfc2a4fcab3
          } else if(responseCode === Constants.PushCodes.StatusResponse){
              this.onStatusResponsePush(bufferReader);
          } else if(responseCode === Constants.PushCodes.LogRxData){
-@@ -459,6 +467,13 @@ class Connection extends EventEmitter {
+@@ -459,6 +464,13 @@
          });
      }
  
@@ -40,7 +37,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..4ec84dae698ee87e63b98bfc2a4fcab3
      onStatusResponsePush(bufferReader) {
          this.emit(Constants.PushCodes.StatusResponse, {
              reserved: bufferReader.readByte(), // reserved
-@@ -494,15 +509,24 @@ class Connection extends EventEmitter {
+@@ -494,15 +506,24 @@
      onTraceDataPush(bufferReader) {
          const reserved = bufferReader.readByte();
          const pathLen = bufferReader.readUInt8();

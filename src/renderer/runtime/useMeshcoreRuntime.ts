@@ -85,6 +85,8 @@ import type {
 import {
   buildMeshcoreChannelIncomingMessage,
   findMeshcoreDmReplyParent,
+  formatMeshcoreRoomPostWireText,
+  MESHCORE_TXT_TYPE_SIGNED_PLAIN,
   meshcoreChatMessagesForDisplay,
   normalizeMeshcoreIncomingText,
   resolveMeshcoreChannelMessageSender,
@@ -3483,8 +3485,13 @@ export function useMeshcoreRuntime() {
       };
       addMessage(tempMsg);
       try {
+        const authorPubKey = selfInfo?.publicKey;
+        if (!authorPubKey || authorPubKey.length < 4) {
+          throw new Error('Local identity public key unavailable for room post');
+        }
+        const wireText = formatMeshcoreRoomPostWireText(authorPubKey, text);
         const result = await Promise.race([
-          conn.sendTextMessage(pubKey, text),
+          conn.sendTextMessage(pubKey, wireText, MESHCORE_TXT_TYPE_SIGNED_PLAIN),
           new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error('timeout')), MESHCORE_ROOM_POST_SENT_TIMEOUT_MS);
           }),
@@ -3526,7 +3533,7 @@ export function useMeshcoreRuntime() {
         throw e;
       }
     },
-    [addMessage, fetchAndUpdateLocalStats, selfInfo?.name],
+    [addMessage, fetchAndUpdateLocalStats, selfInfo?.name, selfInfo?.publicKey],
   );
 
   const sendRoomAdminCliCommand = useCallback(

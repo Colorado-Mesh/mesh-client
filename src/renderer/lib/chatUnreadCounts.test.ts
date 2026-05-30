@@ -65,4 +65,29 @@ describe('chatUnreadCounts', () => {
     );
     expect(total).toBe(2);
   });
+
+  it('counts device-timestamp message unread despite client-clock lastRead watermark', () => {
+    const clientNow = 1_700_000_000_000;
+    const deviceTs = clientNow - 60_000;
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: 0, timestamp: deviceTs })],
+      { 'ch:0': clientNow },
+      ownNodes,
+      'meshcore',
+    );
+    expect(counts.get(0)).toBeUndefined();
+  });
+
+  it('excludes MeshCore room BBS posts from channel unread', () => {
+    const total = totalUnreadCount(
+      [
+        msg({ channel: -2, roomServerId: 0xabc, timestamp: 2000 }),
+        msg({ channel: 0, timestamp: 2000 }),
+      ],
+      {},
+      ownNodes,
+      'meshcore',
+    );
+    expect(total).toBe(1);
+  });
 });

@@ -1104,8 +1104,8 @@ function ChatPanel({
       clearDraft(protocol, viewKey);
       setMentionQuery(null);
       setReplyTo(null);
-      const now = Date.now();
-      setPersistedLastRead((prev) => ({ ...prev, [viewKey]: now }));
+      // Own sends are excluded from unread counts; do not advance lastRead with Date.now() here —
+      // MeshCore channel rows use device senderTimestamp and a client clock watermark suppresses badges.
       setUnreadDividerTimestamp(0);
     } catch (err) {
       console.error('[ChatPanel] Send failed: ' + errLikeToLogString(err));

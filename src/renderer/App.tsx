@@ -14,7 +14,7 @@ import {
   loadPersistedLastReadInitial,
   subscribePersistedLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
-import { totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
+import { filterRegularChatMessages, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
@@ -1566,7 +1566,7 @@ function AppContent({
       protocolRef.current === 'meshcore' && activePanelIndexRef.current === 1 && !document.hidden;
     if (count > prevMeshcoreMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshcoreMsgsRef.current.slice(prevMeshcoreMsgCountRef.current);
-      const realNew = newMsgs.filter(
+      const realNew = filterRegularChatMessages(newMsgs, 'meshcore').filter(
         (m) => m.sender_id !== meshcoreSelfIdRef.current && !m.emoji && !m.isHistory,
       );
       if (realNew.length > 0) {
