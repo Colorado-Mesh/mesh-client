@@ -5,21 +5,28 @@
  * Fallback: skip DB write; live UI still updates from store upserts.
  */
 import {
+  isMeshcoreRoomChatMessage,
+  MESHCORE_ROOM_MESSAGE_CHANNEL,
   meshcoreReconcileChannelSenderIds,
   messageToDbRow,
 } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { getConnection } from '../../stores/connectionStore';
-import { upsertMessage, useMessageStore } from '../../stores/messageStore';
+import { useMessageStore } from '../../stores/messageStore';
+import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
+  buildMeshcoreRoomIncomingMessage,
+  MESHCORE_TXT_TYPE_SIGNED_PLAIN,
+  parseMeshcoreRoomPostPayload,
   resolveMeshcoreChannelMessageSender,
 } from '../meshcoreChannelText';
+import { upsertMeshcoreMessageWithDedup } from '../meshcoreStoreDedup';
 import { meshcoreChatStubNodeIdFromDisplayName } from '../meshcoreUtils';
 import type { DomainEvent } from '../protocols/Protocol';
-import { chatMessageToMessageRecord, messageRecordsToChatMessages } from '../storeRecordAdapters';
+import { messageRecordsToChatMessages } from '../storeRecordAdapters';
 import type { ChatMessage, IdentityId } from '../types';
 
 /** MeshCore contacts belong in meshcore_contacts SQLite, not the Meshtastic nodes table. */
@@ -33,6 +40,39 @@ function listChatMessages(identityId: IdentityId): ChatMessage[] {
   return messageRecordsToChatMessages(Object.values(byId));
 }
 
+function resolveRoomServerSender(
+  identityId: IdentityId,
+  senderId: number,
+): MeshNodeLike | undefined {
+  const record = useNodeStore.getState().nodes[identityId]?.[senderId];
+  if (!record) return undefined;
+  return { hw_model: record.hwModel ?? '' };
+}
+
+interface MeshNodeLike {
+  hw_model: string;
+}
+
+function isRoomServerSender(identityId: IdentityId, senderId: number): boolean {
+  if (senderId === 0) return false;
+  const node = resolveRoomServerSender(identityId, senderId);
+  return node?.hw_model === 'Room';
+}
+
+function buildPrefixToNodeIdMap(identityId: IdentityId): Map<string, number> {
+  const map = new Map<string, number>();
+  const nodes = useNodeStore.getState().nodes[identityId] ?? {};
+  for (const node of Object.values(nodes)) {
+    if (node.publicKey instanceof Uint8Array && node.publicKey.length >= 4) {
+      const prefix = Array.from(node.publicKey.slice(0, 4))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      map.set(prefix, node.nodeId);
+    }
+  }
+  return map;
+}
+
 function handleTextMessage(
   identityId: IdentityId,
   event: Extract<DomainEvent, { type: 'text_message' }>,
@@ -43,6 +83,45 @@ function handleTextMessage(
   const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
   const messages = listChatMessages(identityId);
   const isChannel = event.payload.id.startsWith('ch:');
+  const roomServerId = event.payload.roomServerId ?? event.payload.from;
+  const looksLikeRoom =
+    event.payload.txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN ||
+    event.payload.roomServerId != null ||
+    event.payload.channelIndex === MESHCORE_ROOM_MESSAGE_CHANNEL ||
+    event.payload.id.startsWith('room:');
+  const isRoomEvent = looksLikeRoom && isRoomServerSender(identityId, roomServerId);
+
+  if (isRoomEvent) {
+    const prefixMap = buildPrefixToNodeIdMap(identityId);
+    const { authorId, payload } = parseMeshcoreRoomPostPayload(event.payload.payload, prefixMap);
+    const authorNode =
+      authorId !== 0 ? useNodeStore.getState().nodes[identityId]?.[authorId] : undefined;
+    const authorName =
+      authorNode?.longName?.trim() ||
+      (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
+    const merged = buildMeshcoreRoomIncomingMessage({
+      rawText: payload,
+      roomServerId,
+      authorId: authorId !== 0 ? authorId : myNodeNum || 0,
+      authorName,
+      timestamp: event.payload.timestamp,
+      receivedVia: record.receivedVia ?? 'rf',
+      rxHops: event.payload.hopCount,
+    });
+    const { inserted, message: stored } = upsertMeshcoreMessageWithDedup(
+      identityId,
+      merged,
+      event.payload.id,
+    );
+    const isEcho = myNodeNum > 0 && authorId === myNodeNum;
+    if (inserted && !isEcho) {
+      void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(stored)).catch((e: unknown) => {
+        console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
+      });
+    }
+    return;
+  }
+
   const channelSender = isChannel
     ? resolveMeshcoreChannelMessageSender({
         rawText: event.payload.payload,
@@ -90,17 +169,22 @@ function handleTextMessage(
     isChannel && messages.length > 0
       ? (meshcoreReconcileChannelSenderIds([...messages, merged]).at(-1) ?? merged)
       : merged;
-  const nextRecord = chatMessageToMessageRecord(reconciled);
-  nextRecord.id = event.payload.id;
-  upsertMessage(identityId, nextRecord);
+
+  if (isMeshcoreRoomChatMessage(reconciled)) {
+    return;
+  }
+
+  const { inserted, message: stored } = upsertMeshcoreMessageWithDedup(
+    identityId,
+    reconciled,
+    event.payload.id,
+  );
 
   const isEcho = myNodeNum > 0 && senderId === myNodeNum;
-  if (!isEcho) {
-    void window.electronAPI.db
-      .saveMeshcoreMessage(messageToDbRow(reconciled))
-      .catch((e: unknown) => {
-        console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
-      });
+  if (inserted && !isEcho) {
+    void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(stored)).catch((e: unknown) => {
+      console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
+    });
   }
 }
 

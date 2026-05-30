@@ -650,6 +650,25 @@ export function attachMeshcoreLegacyConnEvents(
         }
         if (isMeshcoreTransportStatusChatLine(d.text)) {
           logTransportLineAsDevice(d.text);
+        } else if (sender?.hw_model === 'Room') {
+          const { authorId, payload } = parseMeshcoreRoomPostPayload(
+            d.text,
+            pubKeyPrefixMapRef.current,
+          );
+          const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
+          const authorName =
+            authorNode?.long_name ??
+            (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
+          addMessage(
+            buildMeshcoreRoomIncomingMessage({
+              rawText: payload,
+              roomServerId: senderId,
+              authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
+              authorName,
+              timestamp: d.senderTimestamp * 1000,
+              receivedVia: 'rf',
+            }),
+          );
         } else {
           addMessage({
             ...buildMeshcoreDmIncomingMessage(messagesRef.current, {

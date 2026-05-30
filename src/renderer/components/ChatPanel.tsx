@@ -658,6 +658,9 @@ function ChatPanel({
     >();
 
     for (const msg of messages) {
+      if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) {
+        continue;
+      }
       if (msg.emoji && msg.replyId) {
         const existing = reactions.get(msg.replyId) ?? [];
         existing.push({
@@ -673,7 +676,7 @@ function ChatPanel({
       }
     }
     return { regularMessages: regular, reactionsByReplyId: reactions };
-  }, [messages]);
+  }, [messages, protocol]);
 
   const inferredDmTabs = useMemo(() => {
     const peers = new Map<number, number>();

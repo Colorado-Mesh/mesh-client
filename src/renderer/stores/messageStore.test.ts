@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   addMessage,
+  deleteMessage,
   type MessageRecord,
   renameMessageId,
   updateMessageStatus,
@@ -75,5 +76,11 @@ describe('messageStore', () => {
     const rec = useMessageStore.getState().messages[ID].m1;
     expect(rec.status).toBe('acked');
     expect(rec.error).toBeUndefined();
+  });
+
+  it('deleteMessage removes a row by id', () => {
+    addMessage(ID, makeMsg('m1'));
+    deleteMessage(ID, 'm1');
+    expect(useMessageStore.getState().messages[ID]?.m1).toBeUndefined();
   });
 });

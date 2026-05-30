@@ -6,6 +6,7 @@ import type { DomainEvent } from './Protocol';
 
 const EVENT_ADVERT = 128;
 const EVENT_CHANNEL_MESSAGE = 8;
+const EVENT_DIRECT_MESSAGE = 7;
 
 function mockMeshCoreConnection() {
   const handlers = new Map<string | number, Set<(...args: unknown[]) => void>>();
@@ -62,6 +63,35 @@ describe('MeshCoreProtocol.subscribe', () => {
     expect(text).toMatchObject({
       type: 'text_message',
       payload: expect.objectContaining({ payload: 'hello mesh', channelIndex: 0 }),
+    });
+    teardown();
+  });
+
+  it('emits room-shaped text_message for SignedPlain direct messages', () => {
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
+    conn.emit(EVENT_ADVERT, {
+      publicKey,
+      advName: 'RoomServer',
+      lastAdvert: 1_700_000_000,
+    });
+    conn.emit(EVENT_DIRECT_MESSAGE, {
+      pubKeyPrefix: publicKey.slice(0, 6),
+      text: '\0\0\0\0Welcome',
+      senderTimestamp: 1_700_000_100,
+      txtType: 2,
+    });
+    const text = events.find((e) => e.type === 'text_message');
+    expect(text).toMatchObject({
+      type: 'text_message',
+      payload: expect.objectContaining({
+        channelIndex: -2,
+        txtType: 2,
+        roomServerId: expect.any(Number),
+        id: expect.stringMatching(/^room:/),
+      }),
     });
     teardown();
   });

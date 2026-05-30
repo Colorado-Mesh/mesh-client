@@ -15,6 +15,10 @@ export interface TextMessageEvent {
   hopCount?: number;
   tapback?: boolean;
   replyTo?: string;
+  /** meshcore.js TxtTypes (e.g. SignedPlain room posts). */
+  txtType?: number;
+  /** MeshCore room server infrastructure node id for BBS posts. */
+  roomServerId?: number;
 }
 
 export interface NodeInfoEvent {

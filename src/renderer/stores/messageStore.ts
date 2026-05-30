@@ -128,6 +128,19 @@ export function updateMessageStatus(
   });
 }
 
+export function deleteMessage(identityId: IdentityId, messageId: string): void {
+  useMessageStore.setState((s) => {
+    const byIdentity = s.messages[identityId];
+    if (!byIdentity?.[messageId]) return s;
+    return {
+      messages: {
+        ...s.messages,
+        [identityId]: omitRecordKey(byIdentity, messageId),
+      },
+    };
+  });
+}
+
 export function clearMessageIdentity(identityId: IdentityId): void {
   useMessageStore.setState((s) => ({
     messages: omitRecordKey(s.messages, identityId),

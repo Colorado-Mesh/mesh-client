@@ -134,6 +134,7 @@ import { loadLastSerialPortId } from '../lib/serialPortSignature';
 import { registerMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import {
+  chatMessageToMessageRecord,
   messageRecordsToChatMessages,
   neighborInfoEventsToRecordMap,
   nodeRecordsToMeshNodeMap,
@@ -1176,6 +1177,7 @@ export function useMeshtasticRuntime() {
         if (getStoredMeshProtocol() === 'meshtastic') {
           useDiagnosticsStore.getState().recordDuplicate(msg.sender_id);
         }
+        const storeId = meshtasticIdentityIdRef.current;
         // Upgrade receivedVia to 'both' if this packet was already saved via RF
         setMessages((prev) =>
           prev.map((m) =>
@@ -1184,6 +1186,20 @@ export function useMeshtasticRuntime() {
               : m,
           ),
         );
+        if (storeId) {
+          const storeMsgs = messageRecordsToChatMessages(
+            Object.values(useMessageStore.getState().messages[storeId] ?? {}),
+          );
+          for (const m of storeMsgs) {
+            if (meshtasticPacketIdsEqual(m.packetId, packetId) && m.receivedVia === 'rf') {
+              upsertMessage(
+                storeId,
+                chatMessageToMessageRecord({ ...m, receivedVia: 'both', packetId }),
+              );
+            }
+          }
+        }
+        meshtasticIngestSessionRef.current?.markPacketSeen(packetId);
         if (packetId !== 0) void window.electronAPI.db.updateMessageReceivedVia(packetId);
         return;
       }
@@ -1205,7 +1221,15 @@ export function useMeshtasticRuntime() {
         getNodeName,
       );
 
-      const crossDup = findMeshtasticCrossTransportDuplicate(messagesRef.current, mqttWithPreviews);
+      const storeId = meshtasticIdentityIdRef.current;
+      const storeMsgs = storeId
+        ? messageRecordsToChatMessages(
+            Object.values(useMessageStore.getState().messages[storeId] ?? {}),
+          )
+        : [];
+      const dedupSource = storeMsgs.length > 0 ? storeMsgs : messagesRef.current;
+
+      const crossDup = findMeshtasticCrossTransportDuplicate(dedupSource, mqttWithPreviews);
       if (crossDup) {
         setMessages((prev) => {
           const { messages: next, matched } = mapMeshtasticCrossTransportUpgrade(
@@ -1215,12 +1239,26 @@ export function useMeshtasticRuntime() {
           if (!matched) return prev;
           return next;
         });
+        if (storeId) {
+          const { messages: storeNext, matched } = mapMeshtasticCrossTransportUpgrade(
+            storeMsgs,
+            mqttWithPreviews,
+          );
+          if (matched) {
+            for (const m of storeNext) {
+              if (m.receivedVia === 'both') {
+                upsertMessage(storeId, chatMessageToMessageRecord(m));
+              }
+            }
+          }
+        }
         const pid =
           normalizedPacketId !== undefined && normalizedPacketId !== 0
             ? normalizedPacketId
             : normalizeMeshtasticPacketId(crossDup.packetId);
         if (pid !== undefined && pid !== 0) {
           isDuplicate(pid); // registers as seen to suppress future duplicates
+          meshtasticIngestSessionRef.current?.markPacketSeen(pid);
           void window.electronAPI.db.updateMessageReceivedVia(pid);
         }
         return;
@@ -1236,6 +1274,9 @@ export function useMeshtasticRuntime() {
         if (isDup) return prev;
         return trimChatMessagesToMax([...prev, mqttWithPreviews], MAX_IN_MEMORY_CHAT_MESSAGES);
       });
+      if (storeId) {
+        upsertMessage(storeId, chatMessageToMessageRecord(mqttWithPreviews));
+      }
       void window.electronAPI.db.saveMessage(mqttWithPreviews);
     });
 

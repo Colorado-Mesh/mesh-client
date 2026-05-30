@@ -18,6 +18,7 @@ import {
   setTelemetryDeviceUpdateInterval,
   upsertMeshcoreChannel,
 } from '../../stores/deviceStore';
+import { getIdentity } from '../../stores/identityStore';
 import { renameMessageId, upsertMessage, useMessageStore } from '../../stores/messageStore';
 import {
   addTraceRoute,
@@ -83,11 +84,15 @@ class PacketRouter {
         // Upsert (not add) so an outbound echo carrying the same packetId-derived
         // id merges into the optimistic row written by useSendMessage instead of
         // creating a duplicate.
+        const isMeshtastic = getIdentity(identityId)?.protocol.type === 'meshtastic';
+        if (isMeshtastic) {
+          ensureMeshtasticChatSenderInNodeStore(identityId, event.payload.from, {
+            lastHeardAt: event.payload.timestamp,
+            source: 'rf',
+          });
+        }
         const senderName = resolveMeshtasticSenderName(identityId, event.payload.from);
-        ensureMeshtasticChatSenderInNodeStore(identityId, event.payload.from, {
-          lastHeardAt: event.payload.timestamp,
-          source: 'rf',
-        });
+        const existingRecord = useMessageStore.getState().messages[identityId]?.[event.payload.id];
         upsertMessage(identityId, {
           id: event.payload.id,
           from: event.payload.from,
@@ -100,6 +105,10 @@ class PacketRouter {
           hopCount: event.payload.hopCount,
           tapback: event.payload.tapback,
           replyTo: event.payload.replyTo,
+          ...(existingRecord?.receivedVia === 'mqtt' ? {} : { receivedVia: 'rf' as const }),
+          ...(event.payload.roomServerId != null
+            ? { roomServerId: event.payload.roomServerId }
+            : {}),
           ...(senderName ? { senderName } : {}),
         });
         break;
