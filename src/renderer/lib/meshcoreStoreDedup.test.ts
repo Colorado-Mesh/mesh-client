@@ -52,6 +52,25 @@ describe('meshcoreStoreDedup', () => {
     expect(rows[0]?.receivedVia).toBe('both');
   });
 
+  it('merges receivedVia on exact dedupe-key match', () => {
+    const tsMs = 1_700_000_010_000;
+    const channelMsg = buildMeshcoreChannelIncomingMessage([], {
+      rawText: 'Alice: hello mesh',
+      senderId: 0xabcd1234,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    upsertMeshcoreMessageWithDedup(ID, channelMsg);
+
+    const mqttDup = { ...channelMsg, receivedVia: 'mqtt' as const };
+    const result = upsertMeshcoreMessageWithDedup(ID, mqttDup);
+    expect(result.inserted).toBe(false);
+    expect(result.message.receivedVia).toBe('both');
+    expect(useMessageStore.getState().messages[ID]?.[result.canonicalId]?.receivedVia).toBe('both');
+  });
+
   it('assigns room store ids for room server posts', () => {
     const roomId = 0xac200e59;
     const msg = {

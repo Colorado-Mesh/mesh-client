@@ -333,8 +333,8 @@ describe('analyzeLogs', () => {
     const result = analyzeLogs(
       [
         makeEntry(
-          '[connection] reconnectSerial createFromPort failed port is already open',
-          'debug',
+          '[connection] TransportWebSerial.createFromPort failed port is already open',
+          'warn',
         ),
       ],
       'meshtastic',
@@ -345,6 +345,19 @@ describe('analyzeLogs', () => {
       'meshcore',
     );
     expect(meshcore.categories.find((c) => c.id === 'serial-reconnect')).toBeUndefined();
+  });
+
+  it('ignores routine serial teardown debug lines for serial-reconnect', () => {
+    const result = analyzeLogs(
+      [
+        makeEntry(
+          '[connection] safeDisconnect after serial teardown {"fromDeviceLocked":false}',
+          'debug',
+        ),
+      ],
+      'meshtastic',
+    );
+    expect(result.categories.find((c) => c.id === 'serial-reconnect')).toBeUndefined();
   });
 
   it('classifies IpcNobleConnection:meshtastic under sdk-meshtastic', () => {

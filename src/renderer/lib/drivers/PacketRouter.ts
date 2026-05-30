@@ -93,6 +93,10 @@ class PacketRouter {
         }
         const senderName = resolveMeshtasticSenderName(identityId, event.payload.from);
         const existingRecord = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+        const receivedVia =
+          existingRecord?.receivedVia === 'mqtt' || existingRecord?.receivedVia === 'both'
+            ? ('both' as const)
+            : ('rf' as const);
         upsertMessage(identityId, {
           id: event.payload.id,
           from: event.payload.from,
@@ -105,7 +109,7 @@ class PacketRouter {
           hopCount: event.payload.hopCount,
           tapback: event.payload.tapback,
           replyTo: event.payload.replyTo,
-          ...(existingRecord?.receivedVia === 'mqtt' ? {} : { receivedVia: 'rf' as const }),
+          receivedVia,
           ...(event.payload.roomServerId != null
             ? { roomServerId: event.payload.roomServerId }
             : {}),

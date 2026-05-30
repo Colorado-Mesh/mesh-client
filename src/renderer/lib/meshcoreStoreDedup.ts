@@ -84,13 +84,22 @@ export function upsertMeshcoreMessageWithDedup(
 
   const exactMatch = storeMessages.find((m) => meshcoreMessageDedupeKey(m) === incomingKey);
   if (exactMatch) {
+    const canonicalId =
+      findStoreRecordIdForMessage(identityId, exactMatch) ??
+      preferredId ??
+      meshcoreMessageStoreId(exactMatch);
+    const mergedReceivedVia = mergeMeshcoreReceivedVia(exactMatch.receivedVia, msg.receivedVia);
+    if (mergedReceivedVia !== exactMatch.receivedVia) {
+      const merged: ChatMessage = { ...exactMatch, receivedVia: mergedReceivedVia };
+      const record = chatMessageToMessageRecord(merged);
+      record.id = canonicalId;
+      upsertMessage(identityId, record);
+      return { inserted: false, message: merged, canonicalId };
+    }
     return {
       inserted: false,
       message: exactMatch,
-      canonicalId:
-        findStoreRecordIdForMessage(identityId, exactMatch) ??
-        preferredId ??
-        meshcoreMessageStoreId(exactMatch),
+      canonicalId,
     };
   }
 

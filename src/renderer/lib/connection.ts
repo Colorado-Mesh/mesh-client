@@ -409,7 +409,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
   try {
     transport = await TransportWebSerial.createFromPort(port, 115200);
   } catch (err) {
-    console.debug(
+    console.warn(
       `[connection] TransportWebSerial.createFromPort failed ${err instanceof Error ? err.message : String(err)}`,
     );
     logMeshtasticSerialStreamDiagnostics('reconnectSerial createFromPort failed', null, port);

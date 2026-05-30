@@ -102,6 +102,74 @@ describe('PacketRouter', () => {
     expect(Object.keys(useMessageStore.getState().messages[ID])).toHaveLength(1);
   });
 
+  it('upgrades receivedVia to both when RF follows MQTT on the same id', () => {
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          msg1: {
+            id: 'msg1',
+            from: 1,
+            to: 0xffffffff,
+            payload: 'hello',
+            channelIndex: 0,
+            timestamp: 1000,
+            receivedVia: 'mqtt',
+          },
+        },
+      },
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: 'msg1',
+          from: 1,
+          to: 0xffffffff,
+          payload: 'hello',
+          channelIndex: 0,
+          timestamp: 1000,
+          rxSnr: 10,
+        },
+      },
+      ID,
+    );
+    expect(useMessageStore.getState().messages[ID].msg1.receivedVia).toBe('both');
+    expect(useMessageStore.getState().messages[ID].msg1.rxSnr).toBe(10);
+  });
+
+  it('preserves receivedVia both when RF re-upserts the same id', () => {
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          msg1: {
+            id: 'msg1',
+            from: 1,
+            to: 0xffffffff,
+            payload: 'hello',
+            channelIndex: 0,
+            timestamp: 1000,
+            receivedVia: 'both',
+          },
+        },
+      },
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: 'msg1',
+          from: 1,
+          to: 0xffffffff,
+          payload: 'hello',
+          channelIndex: 0,
+          timestamp: 1000,
+        },
+      },
+      ID,
+    );
+    expect(useMessageStore.getState().messages[ID].msg1.receivedVia).toBe('both');
+  });
+
   it('ignores unknown event types without throwing', () => {
     expect(() => {
       packetRouter.dispatch({ type: 'nonexistent' } as unknown as DomainEvent, ID);

@@ -222,13 +222,13 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     patterns: [
       /port is already open/i,
       /Cannot cancel a locked stream/i,
-      /locked stream/i,
       /reconnectSerial createFromPort failed/i,
-      /safeDisconnect after serial teardown/i,
+      /TransportWebSerial\.createFromPort failed/i,
     ],
     severity: 'warning',
     protocols: ['meshtastic'],
     recommendationGroup: 'serial-reconnect',
+    requireWarnOrError: true,
   },
   {
     id: 'sdk-meshtastic',
