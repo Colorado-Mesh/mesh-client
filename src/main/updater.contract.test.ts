@@ -24,4 +24,8 @@ describe('updater source contracts', () => {
   it('declares builder-util-runtime so electron-updater resolves in packaged Windows builds', () => {
     expect(PACKAGE_JSON.dependencies?.['builder-util-runtime']).toBeTruthy();
   });
+
+  it('declares semver so electron-updater resolves in hoisted Windows app.asar builds', () => {
+    expect(PACKAGE_JSON.dependencies?.semver).toBeTruthy();
+  });
 });

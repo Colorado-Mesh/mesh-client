@@ -18,6 +18,7 @@ import {
 const MC_RESP_ERR = 1;
 const MC_RESP_SENT = 6;
 const MC_PUSH_LOGIN_SUCCESS = 0x85;
+const MC_PUSH_LOGIN_FAIL = 0x86;
 
 function makePubKey(seed: number): Uint8Array {
   const key = new Uint8Array(32);
@@ -238,5 +239,36 @@ describe('runMeshcoreRoomLogin', () => {
     conn.emit(MC_RESP_ERR);
 
     await expect(loginPromise).rejects.toThrow(/rejected room login/i);
+  });
+
+  it('rejects immediately on matching LoginFail push', async () => {
+    const conn = createMockConn();
+    const pubKey = makePubKey(0xab);
+
+    const loginPromise = runMeshcoreRoomLogin(conn, pubKey, 'hello');
+    await Promise.resolve();
+
+    conn.emit(MC_RESP_SENT, { estTimeout: 45_000 });
+    conn.emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: pubKey.subarray(0, 6), reserved: 0 });
+
+    await expect(loginPromise).rejects.toThrow(/wrong password or ACL denied/i);
+  });
+
+  it('ignores LoginFail with wrong pubkey prefix', async () => {
+    const conn = createMockConn();
+    const pubKey = makePubKey(0xab);
+    const wrongPrefix = makePubKey(0xcd).subarray(0, 6);
+
+    const loginPromise = runMeshcoreRoomLogin(conn, pubKey, 'hello', { hopsAway: 0 });
+    await Promise.resolve();
+
+    conn.emit(MC_RESP_SENT, { estTimeout: 1_000 });
+    conn.emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: wrongPrefix, reserved: 0 });
+    conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: pubKey.subarray(0, 6), reserved: 1 });
+
+    await expect(loginPromise).resolves.toEqual({
+      pubKeyPrefix: pubKey.subarray(0, 6),
+      reserved: 1,
+    });
   });
 });

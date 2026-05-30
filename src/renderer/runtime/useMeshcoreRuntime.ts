@@ -386,6 +386,18 @@ export function useMeshcoreRuntime() {
       queueLenFromMeshCoreCoreStatsRaw(coreStats.raw, core.queueLen),
       256,
     );
+    if (queueLenCapped >= 250) {
+      const raw = coreStats.raw;
+      const rawHex =
+        raw != null && raw.length > 0
+          ? Array.from(raw)
+              .map((b) => b.toString(16).padStart(2, '0'))
+              .join('')
+          : 'none';
+      console.debug(
+        `[useMeshcoreRuntime] high queue depth=${queueLenCapped} meshcoreJsParsed=${core.queueLen} rawLen=${raw?.length ?? 0} rawHex=${rawHex}`,
+      );
+    }
     setQueueStatus({ free: 256 - queueLenCapped, maxlen: 256, res: 0 });
     const now = Date.now();
     setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts: core.batteryMilliVolts } : prev));
