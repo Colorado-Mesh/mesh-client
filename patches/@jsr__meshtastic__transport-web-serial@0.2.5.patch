@@ -1,0 +1,155 @@
+diff --git a/src/transport.js b/src/transport.js
+index a63295a65cc6ddc6a100888c364a01b0fcd2fa85..3112c9ab79c2247dfc7ab50d5406220c512b0518 100755
+--- a/src/transport.js
++++ b/src/transport.js
+@@ -1,10 +1,29 @@
+ import { Utils } from "@meshtastic/core";
++function createToDeviceStream() {
++  return new TransformStream({
++    transform (chunk, controller) {
++      const bufLen = chunk.length;
++      const header = new Uint8Array([
++        0x94,
++        0xc3,
++        bufLen >> 8 & 0xff,
++        bufLen & 0xff
++      ]);
++      controller.enqueue(new Uint8Array([
++        ...header,
++        ...chunk
++      ]));
++    }
++  });
++}
++
+ export class TransportWebSerial {
+   _toDevice;
+   _fromDevice;
+   connection;
+   pipePromise = null;
+   abortController;
++  toDeviceStream;
+   static async create(baudRate) {
+     const port = await navigator.serial.requestPort();
+     await port.open({
+@@ -25,10 +44,11 @@ export class TransportWebSerial {
+     this.connection = connection;
+     this.abortController = new AbortController();
+     // Set up the pipe with abort signal for clean cancellation
+-    this.pipePromise = Utils.toDeviceStream.readable.pipeTo(connection.writable, {
++    this.toDeviceStream = createToDeviceStream();
++    this.pipePromise = this.toDeviceStream.readable.pipeTo(connection.writable, {
+       signal: this.abortController.signal
+     });
+-    this._toDevice = Utils.toDeviceStream.writable;
++    this._toDevice = this.toDeviceStream.writable;
+     this._fromDevice = connection.readable.pipeThrough(Utils.fromDeviceStream());
+   }
+   get toDevice() {
+@@ -47,10 +67,7 @@ export class TransportWebSerial {
+       if (this.pipePromise) {
+         try {
+           await this.pipePromise;
+-        } catch (error) {
+-          if (error instanceof Error && error.name !== 'AbortError') {
+-            throw error;
+-          }
++        } catch  {
+         }
+       }
+       // Cancel any remaining streams
+@@ -74,9 +91,11 @@ export class TransportWebSerial {
+     // Create a new AbortController for the new connection
+     this.abortController = new AbortController();
+     // Re-establish the pipe connection
+-    this.pipePromise = Utils.toDeviceStream.readable.pipeTo(this.connection.writable, {
++    this.toDeviceStream = createToDeviceStream();
++    this.pipePromise = this.toDeviceStream.readable.pipeTo(this.connection.writable, {
+       signal: this.abortController.signal
+     });
++    this._toDevice = this.toDeviceStream.writable;
+   }
+ }
+ //# sourceMappingURL=transport.js.map
+\ No newline at end of file
+diff --git a/src/transport.ts b/src/transport.ts
+index 1c1706dc5c4996f0139e558460c3ffbb50235dff..268c8bcd4f62e80d58d477e38c99d194d11d9549 100755
+--- a/src/transport.ts
++++ b/src/transport.ts
+@@ -1,12 +1,28 @@
+ import type { Types } from "@meshtastic/core";
+ import { Utils } from "@meshtastic/core";
+ 
++function createToDeviceStream() {
++  return new TransformStream({
++    transform(chunk, controller) {
++      const bufLen = chunk.length;
++      const header = new Uint8Array([
++        0x94,
++        0xc3,
++        (bufLen >> 8) & 0xff,
++        bufLen & 0xff,
++      ]);
++      controller.enqueue(new Uint8Array([...header, ...chunk]));
++    },
++  });
++}
++
+ export class TransportWebSerial implements Types.Transport {
+   private _toDevice: WritableStream<Uint8Array>;
+   private _fromDevice: ReadableStream<Types.DeviceOutput>;
+   private connection: SerialPort;
+   private pipePromise: Promise<void> | null = null;
+   private abortController: AbortController;
++  private toDeviceStream: TransformStream<Uint8Array, Uint8Array>;
+ 
+   public static async create(baudRate?: number): Promise<TransportWebSerial> {
+     const port = await navigator.serial.requestPort();
+@@ -29,14 +45,14 @@ export class TransportWebSerial implements Types.Transport {
+ 
+     this.connection = connection;
+     this.abortController = new AbortController();
++    this.toDeviceStream = createToDeviceStream();
+ 
+     // Set up the pipe with abort signal for clean cancellation
+-    this.pipePromise = Utils.toDeviceStream.readable.pipeTo(
+-      connection.writable,
+-      { signal: this.abortController.signal }
+-    );
++    this.pipePromise = this.toDeviceStream.readable.pipeTo(connection.writable, {
++      signal: this.abortController.signal,
++    });
+ 
+-    this._toDevice = Utils.toDeviceStream.writable;
++    this._toDevice = this.toDeviceStream.writable;
+     this._fromDevice = connection.readable.pipeThrough(
+       Utils.fromDeviceStream(),
+     );
+@@ -62,10 +78,8 @@ export class TransportWebSerial implements Types.Transport {
+       if (this.pipePromise) {
+         try {
+           await this.pipePromise;
+-        } catch (error) {
+-          if (error instanceof Error && error.name !== 'AbortError') {
+-            throw error;
+-          }
++        } catch {
++          // Swallow pipe errors — toDevice.close() can reject with TypeError before abort settles
+         }
+       }
+ 
+@@ -95,9 +109,10 @@ export class TransportWebSerial implements Types.Transport {
+     this.abortController = new AbortController();
+     
+     // Re-establish the pipe connection
+-    this.pipePromise = Utils.toDeviceStream.readable.pipeTo(
+-      this.connection.writable,
+-      { signal: this.abortController.signal }
+-    );
++    this.toDeviceStream = createToDeviceStream();
++    this.pipePromise = this.toDeviceStream.readable.pipeTo(this.connection.writable, {
++      signal: this.abortController.signal,
++    });
++    this._toDevice = this.toDeviceStream.writable;
+   }
+ }

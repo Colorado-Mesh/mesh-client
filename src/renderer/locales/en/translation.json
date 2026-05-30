@@ -453,7 +453,8 @@
         "accessDeniedWindowsHint": "Ensure the correct USB driver is installed (CH340, CP210x, or FTDI). Check Device Manager for a yellow warning on the COM port.",
         "accessDeniedLinuxHint": "On Linux, add your user to the dialout group: sudo usermod -aG dialout $USER (then log out and back in)",
         "disconnectedHint": "Ensure the USB cable is connected and the device is powered on.",
-        "timeoutHint": "If the port appeared briefly, try reconnecting the USB cable."
+        "timeoutHint": "If the port appeared briefly, try reconnecting the USB cable.",
+        "portStillOpenHint": "The USB serial port did not release cleanly. Quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again."
       },
       "http": {
         "timeoutMdnsWindows": "On Windows, meshtastic.local requires Bonjour (installed with iTunes). Use the device's IP address instead.",
@@ -833,6 +834,10 @@
         "label": "Store & Forward History Issues",
         "recommendation": "Store & Forward chat history could not be requested from a router (often a brief race with other radio traffic). If chat backlog stays empty, reconnect or wait for the next router heartbeat."
       },
+      "serial-reconnect": {
+        "label": "USB Serial Reconnect",
+        "recommendation": "USB serial did not release cleanly after disconnect. Quit mesh-client and reopen it, or unplug and replug the cable, then connect again."
+      },
       "sdk-meshtastic": {
         "label": "Meshtastic SDK Warnings/Errors",
         "recommendation": "Meshtastic stack reported a warning or error. If it repeats, check firmware, transport (BLE/serial), and reconnect."
@@ -845,6 +850,9 @@
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Do the thing."
+      },
+      "serial-reconnect": {
+        "recommendation": "USB serial did not release cleanly after disconnect. Quit mesh-client and reopen it, or unplug and replug the cable, then connect again."
       }
     }
   },

@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "正しい USB ドライバーがインストールされていることを確認してください (CH340、CP210x、または FTDI)。デバイス マネージャーで COM ポートに黄色の警告が表示されていないか確認してください。",
         "accessDeniedLinuxHint": "Linux では、ユーザーをダイヤルアウト グループに追加します: sudo usermod -aG digialout $USER (その後、ログアウトして再度ログインします)",
         "disconnectedHint": "USB ケーブルが接続されており、デバイスの電源が入っていることを確認します。",
-        "timeoutHint": "ポートが一時的に表示された場合は、USB ケーブルを再接続してみてください。"
+        "timeoutHint": "ポートが一時的に表示された場合は、USB ケーブルを再接続してみてください。",
+        "portStillOpenHint": "USBシリアルポートがきれいに解放されませんでした。メッシュクライアントを完全に終了して再度開くか、USBケーブルのプラグを抜いて再接続してから、もう一度接続します。"
       },
       "http": {
         "timeoutMdnsWindows": "Windows では、meshtastic.local には Bonjour (iTunes とともにインストールされる) が必要です。代わりにデバイスの IP アドレスを使用してください。",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Store & Forward 履歴の問題",
         "recommendation": "Store & Forwardチャット履歴をルーターから要求できませんでした（多くの場合、他の無線トラフィックとの短いレース）。チャットバックログが空のままの場合は、再接続するか、次のルーターのハートビートを待ちます。"
+      },
+      "serial-reconnect": {
+        "label": "USBシリアル再接続",
+        "recommendation": "USBシリアルは、切断後にきれいに解放されませんでした。メッシュクライアントを終了して再度開くか、ケーブルを抜いて再接続してから再度接続します。"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "やるべきことをやれ。"
+      },
+      "serial-reconnect": {
+        "recommendation": "USBシリアルは、切断後にきれいに解放されませんでした。メッシュクライアントを終了して再度開くか、ケーブルを抜いて再接続してから再度接続します。"
       }
     }
   },

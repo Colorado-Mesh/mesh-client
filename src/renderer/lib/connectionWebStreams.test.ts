@@ -8,8 +8,8 @@ import {
   getMeshtasticStreamsDiagnostics,
 } from './connectionWebStreams';
 
-/** Guards Issue #407: @meshtastic/transport-web-serial expects a TransformStream singleton, not a factory. */
-describe('Meshtastic Utils.toDeviceStream (serial transport contract)', () => {
+/** Guards Issue #407: @meshtastic/core still exports Utils.toDeviceStream for other transports. */
+describe('Meshtastic Utils.toDeviceStream (core stream contract)', () => {
   it('exposes toDeviceStream.readable.pipeTo (same module resolution as MeshDevice)', () => {
     expect(typeof Utils.toDeviceStream).not.toBe('function');
     const td = Utils.toDeviceStream as TransformStream;

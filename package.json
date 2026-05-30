@@ -190,7 +190,9 @@
       "@liamcottle/meshcore.js@1.13.0": "patches/@liamcottle__meshcore.js@1.13.0.patch",
       "debug@4.4.3": "patches/debug@4.4.3.patch",
       "readable-stream@4.7.0": "patches/readable-stream@4.7.0.patch",
-      "usb@2.17.0": "patches/usb@2.17.0.patch"
+      "usb@2.17.0": "patches/usb@2.17.0.patch",
+      "@jsr/meshtastic__core@2.6.6": "patches/@jsr__meshtastic__core@2.6.6.patch",
+      "@jsr/meshtastic__transport-web-serial@0.2.5": "patches/@jsr__meshtastic__transport-web-serial@0.2.5.patch"
     },
     "minimumReleaseAgeExclude": [
       "lodash",

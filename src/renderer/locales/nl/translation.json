@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "Zorg ervoor dat het juiste USB-stuurprogramma is geïnstalleerd (CH340, CP210x of FTDI). Controleer Apparaatbeheer op een gele waarschuwing op de COM-poort.",
         "accessDeniedLinuxHint": "Voeg op Linux uw gebruiker toe aan de dialout-groep: sudo usermod -aG dialout $USER (log vervolgens uit en weer in)",
         "disconnectedHint": "Zorg ervoor dat de USB-kabel is aangesloten en dat het apparaat is ingeschakeld.",
-        "timeoutHint": "Als de poort even verschijnt, probeer dan de USB-kabel opnieuw aan te sluiten."
+        "timeoutHint": "Als de poort even verschijnt, probeer dan de USB-kabel opnieuw aan te sluiten.",
+        "portStillOpenHint": "De USB seriële poort is niet schoon losgekomen. Sluit de mesh-client volledig af en open deze opnieuw, of trek de stekker uit het stopcontact en sluit de USB-kabel opnieuw aan."
       },
       "http": {
         "timeoutMdnsWindows": "Op Windows vereist meshtastic.local Bonjour (geïnstalleerd met iTunes). Gebruik in plaats daarvan het IP-adres van het apparaat.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Problemen met Store & Forward-geschiedenis",
         "recommendation": "Chatgeschiedenis opslaan en doorsturen kon niet worden aangevraagd bij een router (vaak een korte race met ander radioverkeer). Als de chatachterstand leeg blijft, maak dan opnieuw verbinding of wacht op de volgende hartslag van de router."
+      },
+      "serial-reconnect": {
+        "label": "USB-serieel opnieuw verbinden",
+        "recommendation": "USB-serieel werd niet schoon vrijgegeven na het verbreken van de verbinding. Sluit de mesh-client af en open deze opnieuw, of trek de stekker uit het stopcontact en sluit de kabel opnieuw aan."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Doe het ding."
+      },
+      "serial-reconnect": {
+        "recommendation": "USB-serieel werd niet schoon vrijgegeven na het verbreken van de verbinding. Sluit de mesh-client af en open deze opnieuw, of trek de stekker uit het stopcontact en sluit de kabel opnieuw aan."
       }
     }
   },

@@ -113,10 +113,29 @@ export function updateMessageStatus(
     const byIdentity = s.messages[identityId];
     const existing = byIdentity?.[messageId];
     if (!existing) return s;
+    const updated: MessageRecord = { ...existing, status };
+    if (error !== undefined) {
+      updated.error = error;
+    } else if (status === 'acked') {
+      updated.error = undefined;
+    }
     return {
       messages: {
         ...s.messages,
-        [identityId]: { ...byIdentity, [messageId]: { ...existing, status, error } },
+        [identityId]: { ...byIdentity, [messageId]: updated },
+      },
+    };
+  });
+}
+
+export function deleteMessage(identityId: IdentityId, messageId: string): void {
+  useMessageStore.setState((s) => {
+    const byIdentity = s.messages[identityId];
+    if (!byIdentity?.[messageId]) return s;
+    return {
+      messages: {
+        ...s.messages,
+        [identityId]: omitRecordKey(byIdentity, messageId),
       },
     };
   });

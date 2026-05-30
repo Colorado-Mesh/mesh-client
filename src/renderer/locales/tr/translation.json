@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "Doğru USB sürücüsünün (CH340, CP210x veya FTDI) kurulu olduğundan emin olun. COM bağlantı noktasında sarı bir uyarı olup olmadığını görmek için Aygıt Yöneticisini kontrol edin.",
         "accessDeniedLinuxHint": "Linux'ta kullanıcınızı arama grubuna ekleyin: sudo usermod -aG dialout $USER (sonra oturumu kapatıp tekrar açın)",
         "disconnectedHint": "USB kablosunun bağlı olduğundan ve cihazın açık olduğundan emin olun.",
-        "timeoutHint": "Bağlantı noktası kısa süreliğine belirirse USB kablosunu yeniden bağlamayı deneyin."
+        "timeoutHint": "Bağlantı noktası kısa süreliğine belirirse USB kablosunu yeniden bağlamayı deneyin.",
+        "portStillOpenHint": "USB seri bağlantı noktası temiz bir şekilde serbest bırakılmadı. Mesh istemcisinden tamamen çıkın ve yeniden açın veya USB kablosunu çıkarıp yeniden takın, ardından tekrar bağlayın."
       },
       "http": {
         "timeoutMdnsWindows": "Windows'ta meshtastic.local, Bonjour'u (iTunes ile birlikte yüklenir) gerektirir. Bunun yerine cihazın IP adresini kullanın.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Store & Forward geçmiş sorunları",
         "recommendation": "Sohbet geçmişini sakla ve ilet bir yönlendiriciden talep edilemez (genellikle diğer radyo trafiğiyle kısa bir yarış). Sohbet iş yığını boş kalırsa, yeniden bağlanın veya bir sonraki yönlendiricinin kalp atışını bekleyin."
+      },
+      "serial-reconnect": {
+        "label": "USB Seri Yeniden Bağlantı",
+        "recommendation": "USB seri bağlantısı kesildikten sonra temiz bir şekilde serbest bırakılmadı. Mesh istemcisinden çıkın ve yeniden açın veya kabloyu çıkarıp yeniden takın, ardından tekrar bağlayın."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Şunu yap."
+      },
+      "serial-reconnect": {
+        "recommendation": "USB seri bağlantısı kesildikten sonra temiz bir şekilde serbest bırakılmadı. Mesh istemcisinden çıkın ve yeniden açın veya kabloyu çıkarıp yeniden takın, ardından tekrar bağlayın."
       }
     }
   },

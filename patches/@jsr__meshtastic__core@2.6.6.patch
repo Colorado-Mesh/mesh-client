@@ -1,0 +1,89 @@
+diff --git a/src/meshDevice.js b/src/meshDevice.js
+index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..4a5825db35031f37e23c208b372c49f090320c25 100755
+--- a/src/meshDevice.js
++++ b/src/meshDevice.js
+@@ -20,6 +20,8 @@ export class MeshDevice {
+   events;
+   xModem;
+   _heartbeatIntervalId;
++  _fromDeviceAc;
++  _fromDevicePipe;
+   constructor(transport, configId){
+     this.log = new Logger({
+       name: "iMeshDevice",
+@@ -48,7 +50,11 @@ export class MeshDevice {
+     this.events.onPendingSettingsChange.subscribe((state)=>{
+       this.pendingSettingsChanges = state;
+     });
+-    this.transport.fromDevice.pipeTo(decodePacket(this));
++    this._fromDeviceAc = new AbortController();
++    this._fromDevicePipe = this.transport.fromDevice.pipeTo(decodePacket(this), {
++      signal: this._fromDeviceAc.signal
++    });
++    void this._fromDevicePipe.catch(()=>{});
+   }
+   /** Abstract method that connects to the radio */ // protected abstract connect(
+   //   parameters: Types.ConnectionParameters,
+@@ -448,6 +454,16 @@ export class MeshDevice {
+     }
+     this.complete();
+     await this.transport.toDevice.close();
++    if (this._fromDeviceAc) {
++      this._fromDeviceAc.abort();
++      try {
++        await this._fromDevicePipe;
++      } catch  {
++      }
++    }
++    await Promise.resolve();
++    await Promise.resolve();
++    await Promise.resolve();
+     await this.transport.disconnect();
+   }
+   /**
+diff --git a/src/meshDevice.ts b/src/meshDevice.ts
+index ddca80fc9134fa56ac273b17387e62af087c95c6..11539785db789bfb261cd3b8d084fc71bf38d095 100755
+--- a/src/meshDevice.ts
++++ b/src/meshDevice.ts
+@@ -41,6 +41,10 @@ export class MeshDevice {
+ 
+   private _heartbeatIntervalId: ReturnType<typeof setInterval> | undefined;
+ 
++  private _fromDeviceAc: AbortController | undefined;
++
++  private _fromDevicePipe: Promise<void> | undefined;
++
+   constructor(transport: Transport, configId?: number) {
+     this.log = new Logger({
+       name: "iMeshDevice",
+@@ -75,7 +79,11 @@ export class MeshDevice {
+       this.pendingSettingsChanges = state;
+     });
+ 
+-    this.transport.fromDevice.pipeTo(decodePacket(this));
++    this._fromDeviceAc = new AbortController();
++    this._fromDevicePipe = this.transport.fromDevice.pipeTo(decodePacket(this), {
++      signal: this._fromDeviceAc.signal,
++    });
++    void this._fromDevicePipe.catch(() => {});
+   }
+ 
+   /** Abstract method that connects to the radio */
+@@ -818,6 +826,17 @@ export class MeshDevice {
+ 
+     this.complete();
+     await this.transport.toDevice.close();
++    if (this._fromDeviceAc) {
++      this._fromDeviceAc.abort();
++      try {
++        await this._fromDevicePipe;
++      } catch {
++        // catch-no-log-ok pipe aborted during disconnect
++      }
++    }
++    await Promise.resolve();
++    await Promise.resolve();
++    await Promise.resolve();
+     await this.transport.disconnect();
+   }
+ 

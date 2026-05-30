@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "Certifique-se de que o driver USB correto esteja instalado (CH340, CP210x ou FTDI). Verifique o Gerenciador de Dispositivos para ver se há um aviso amarelo na porta COM.",
         "accessDeniedLinuxHint": "No Linux, adicione seu usuário ao grupo dialout: sudo usermod -aG dialout $USER (depois efetue logout e login novamente)",
         "disconnectedHint": "Certifique-se de que o cabo USB esteja conectado e o dispositivo esteja ligado.",
-        "timeoutHint": "Se a porta aparecer brevemente, tente reconectar o cabo USB."
+        "timeoutHint": "Se a porta aparecer brevemente, tente reconectar o cabo USB.",
+        "portStillOpenHint": "A porta serial USB não foi liberada de forma limpa. Saia do mesh-client completamente e reabra-o, ou desconecte e reconecte o cabo USB e conecte novamente."
       },
       "http": {
         "timeoutMdnsWindows": "No Windows, Meshtastic.local requer Bonjour (instalado com iTunes). Use o endereço IP do dispositivo.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Problemas no histórico Store & Forward",
         "recommendation": "O histórico de bate-papo de armazenamento e encaminhamento não pôde ser solicitado a um roteador (geralmente uma breve corrida com outro tráfego de rádio). Se o backlog do chat permanecer vazio, reconecte-se ou aguarde o próximo batimento cardíaco do roteador."
+      },
+      "serial-reconnect": {
+        "label": "Reconexão serial USB",
+        "recommendation": "A série USB não foi liberada de forma limpa após a desconexão. Saia do mesh-client e reabra-o, ou desconecte e reconecte o cabo e conecte novamente."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Faça a coisa."
+      },
+      "serial-reconnect": {
+        "recommendation": "A série USB não foi liberada de forma limpa após a desconexão. Saia do mesh-client e reabra-o, ou desconecte e reconecte o cabo e conecte novamente."
       }
     }
   },

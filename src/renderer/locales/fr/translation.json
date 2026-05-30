@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "Assurez-vous que le bon pilote USB est installé (CH340, CP210x ou FTDI). Vérifiez le Gestionnaire de périphériques pour un avertissement jaune sur le port COM.",
         "accessDeniedLinuxHint": "Sous Linux, ajoutez votre utilisateur au groupe de numérotation : sudo usermod -aG dialout $USER (puis déconnectez-vous et reconnectez-vous)",
         "disconnectedHint": "Assurez-vous que le câble USB est connecté et que l'appareil est sous tension.",
-        "timeoutHint": "Si le port apparaît brièvement, essayez de reconnecter le câble USB."
+        "timeoutHint": "Si le port apparaît brièvement, essayez de reconnecter le câble USB.",
+        "portStillOpenHint": "Le port série USB ne s'est pas libéré proprement. Quittez complètement le client maillé et rouvrez-le, ou débranchez et rebranchez le câble USB, puis reconnectez-le."
       },
       "http": {
         "timeoutMdnsWindows": "Sous Windows, meshtastic.local nécessite Bonjour (installé avec iTunes). Utilisez plutôt l'adresse IP de l'appareil.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Problèmes d’historique Store & Forward",
         "recommendation": "L'historique du chat Store & Forward n'a pas pu être demandé à un routeur (souvent une brève course avec d'autres trafics radio). Si le backlog de discussion reste vide, reconnectez-vous ou attendez le prochain battement de cœur du routeur."
+      },
+      "serial-reconnect": {
+        "label": "USB Serial Reconnect",
+        "recommendation": "La série USB ne s'est pas libérée proprement après la déconnexion. Quittez le client maillé et rouvrez-le, ou débranchez et rebranchez le câble, puis reconnectez-le."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Faites la chose."
+      },
+      "serial-reconnect": {
+        "recommendation": "La série USB ne s'est pas libérée proprement après la déconnexion. Quittez le client maillé et rouvrez-le, ou débranchez et rebranchez le câble, puis reconnectez-le."
       }
     }
   },

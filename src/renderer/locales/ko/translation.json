@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "올바른 USB 드라이버(CH340, CP210x 또는 FTDI)가 설치되어 있는지 확인하세요. COM 포트에 노란색 경고가 있는지 장치 관리자를 확인하세요.",
         "accessDeniedLinuxHint": "Linux에서는 다이얼아웃 그룹에 사용자를 추가합니다. sudo usermod -aG 다이얼아웃 $USER(그런 다음 로그아웃했다가 다시 로그인)",
         "disconnectedHint": "USB 케이블이 연결되어 있고 장치의 전원이 켜져 있는지 확인하세요.",
-        "timeoutHint": "포트가 잠시 나타나는 경우 USB 케이블을 다시 연결해 보세요."
+        "timeoutHint": "포트가 잠시 나타나는 경우 USB 케이블을 다시 연결해 보세요.",
+        "portStillOpenHint": "USB 직렬 포트가 깨끗하게 해제되지 않았습니다. 메시 클라이언트를 완전히 종료하고 다시 열거나 USB 케이블을 뽑았다가 다시 연결합니다."
       },
       "http": {
         "timeoutMdnsWindows": "Windows의 경우 meshtastic.local에는 Bonjour(iTunes와 함께 설치)가 필요합니다. 대신 장치의 IP 주소를 사용하십시오.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Store & Forward 기록 문제",
         "recommendation": "라우터에서 스토어 및 포워드 채팅 기록을 요청할 수 없습니다 (종종 다른 무선 트래픽과의 짧은 레이스). 채팅 백로그가 비어 있는 경우 다시 연결하거나 다음 라우터 하트비트를 기다립니다."
+      },
+      "serial-reconnect": {
+        "label": "USB 직렬 재연결",
+        "recommendation": "분리 후 USB 시리얼이 깨끗하게 해제되지 않았습니다. 메시 클라이언트를 종료하고 다시 열거나 케이블을 뽑았다가 다시 연결합니다."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "그 일을 하세요."
+      },
+      "serial-reconnect": {
+        "recommendation": "분리 후 USB 시리얼이 깨끗하게 해제되지 않았습니다. 메시 클라이언트를 종료하고 다시 열거나 케이블을 뽑았다가 다시 연결합니다."
       }
     }
   },

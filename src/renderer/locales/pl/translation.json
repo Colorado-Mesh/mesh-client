@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "Upewnij się, że zainstalowany jest właściwy sterownik USB (CH340, CP210x lub FTDI). Sprawdź Menedżera urządzeń, czy na porcie COM nie pojawia się żółte ostrzeżenie.",
         "accessDeniedLinuxHint": "W systemie Linux dodaj użytkownika do grupy dialout: sudo usermod -aG dialout $USER (następnie wyloguj się i zaloguj ponownie)",
         "disconnectedHint": "Upewnij się, że kabel USB jest podłączony, a urządzenie jest włączone.",
-        "timeoutHint": "Jeśli port pojawił się na chwilę, spróbuj ponownie podłączyć kabel USB."
+        "timeoutHint": "Jeśli port pojawił się na chwilę, spróbuj ponownie podłączyć kabel USB.",
+        "portStillOpenHint": "Port szeregowy USB nie zwolnił się czysto. Całkowicie zamknij sieć i otwórz ją ponownie lub odłącz i ponownie podłącz kabel USB, a następnie podłącz ponownie."
       },
       "http": {
         "timeoutMdnsWindows": "W systemie Windows meshtastic.local wymaga Bonjour (instalowanego z iTunes). Zamiast tego użyj adresu IP urządzenia.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Problemy historii Store & Forward",
         "recommendation": "Nie można zażądać historii czatu Store & Forward od routera (często krótki wyścig z innym ruchem radiowym). Jeśli backlog czatu pozostaje pusty, podłącz ponownie lub poczekaj na kolejne tętno routera."
+      },
+      "serial-reconnect": {
+        "label": "Ponowne połączenie szeregowe USB",
+        "recommendation": "Szereg USB nie zwolnił się czysto po rozłączeniu. Zamknij mesh-client i otwórz go ponownie lub odłącz i ponownie podłącz kabel, a następnie podłącz ponownie."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Zrób to."
+      },
+      "serial-reconnect": {
+        "recommendation": "Szereg USB nie zwolnił się czysto po rozłączeniu. Zamknij mesh-client i otwórz go ponownie lub odłącz i ponownie podłącz kabel, a następnie podłącz ponownie."
       }
     }
   },

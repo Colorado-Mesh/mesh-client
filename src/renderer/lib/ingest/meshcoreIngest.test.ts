@@ -119,6 +119,54 @@ describe('attachMeshcoreIngest', () => {
     );
   });
 
+  it('routes SignedPlain room server posts with roomServerId', () => {
+    const roomId = 0xac200e59;
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [roomId]: {
+            nodeId: roomId,
+            longName: 'TestRoom',
+            hwModel: 'Room',
+          },
+        },
+      },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+    const msgId = `room:${roomId}:1700000100`;
+    upsertMessage(ID, {
+      id: msgId,
+      from: roomId,
+      to: 0,
+      payload: '\0\0\0\0Hi room',
+      channelIndex: -2,
+      timestamp: 1_700_000_100_000,
+      roomServerId: roomId,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: msgId,
+        from: roomId,
+        to: 0,
+        payload: '\0\0\0\0Hi room',
+        channelIndex: -2,
+        timestamp: 1_700_000_100_000,
+        txtType: 2,
+        roomServerId: roomId,
+      },
+    });
+    const row = useMessageStore.getState().messages[ID]?.[msgId];
+    expect(row?.roomServerId).toBe(roomId);
+    expect(row?.channelIndex).toBe(-2);
+    expect(row?.payload).toBe('Hi room');
+    expect(saveMeshcoreMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ room_server_id: roomId, channel_idx: -2, payload: 'Hi room' }),
+    );
+  });
+
   it('parses inbound tapback wire text into messageStore with emoji + replyTo', () => {
     const parentTs = 1_700_000_000_000;
     const parentId = 'ch:0:1700000000';

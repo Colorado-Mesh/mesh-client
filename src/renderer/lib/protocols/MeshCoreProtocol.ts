@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/require-await -- UnsupportedOperation stubs for Protocol surface not used on MeshCore */
 import type { Connection } from '@liamcottle/meshcore.js';
 
-import { meshcoreDmAckKeyU32 } from '../../hooks/meshcore/meshcoreHookPreamble';
+import {
+  MESHCORE_ROOM_MESSAGE_CHANNEL,
+  meshcoreDmAckKeyU32,
+} from '../../hooks/meshcore/meshcoreHookPreamble';
+import { MESHCORE_TXT_TYPE_SIGNED_PLAIN } from '../meshcoreChannelText';
 import { meshcoreCoerceRadioRxFrame, parseAutoaddConfigResponse } from '../meshcoreContactAutoAdd';
 import { pubkeyToNodeId } from '../meshcoreUtils';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
@@ -486,16 +490,21 @@ export class MeshCoreProtocol implements Protocol {
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
     const senderId = nodeIdByPrefix.get(prefix) ?? 0;
+    const isSignedPlain = d.txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN;
     return [
       {
         type: 'text_message',
         payload: {
-          id: `${senderId}:${d.senderTimestamp}`,
+          id: isSignedPlain
+            ? `room:${senderId}:${d.senderTimestamp}`
+            : `${senderId}:${d.senderTimestamp}`,
           from: senderId,
           to: 0,
           payload: d.text,
-          channelIndex: 0,
+          channelIndex: isSignedPlain ? MESHCORE_ROOM_MESSAGE_CHANNEL : -1,
           timestamp: d.senderTimestamp * 1000,
+          ...(d.txtType != null ? { txtType: d.txtType } : {}),
+          ...(isSignedPlain ? { roomServerId: senderId } : {}),
         },
       },
     ];

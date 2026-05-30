@@ -2,6 +2,7 @@ import { Connection, SerialConnection, WebSerialConnection } from '@liamcottle/m
 
 import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
+import { closeSerialPortIfOpen } from '../../connection';
 import { MeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
 import { MeshcoreWebBluetoothConnection } from '../../meshcoreWebBluetoothConnection';
 import { parseTcpAddress } from '../../parseTcpAddress';
@@ -183,6 +184,7 @@ export async function reconnectMeshcoreSerial(lastPortId?: string | null): Promi
   }
   const ports = await navigator.serial.getPorts();
   const port = selectGrantedSerialPort(ports, lastPortId);
+  await closeSerialPortIfOpen(port);
   return openSerialPort(port);
 }
 

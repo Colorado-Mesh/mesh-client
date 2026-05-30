@@ -47,6 +47,16 @@ describe('connection serial cleanup', () => {
     expect(port.close).not.toHaveBeenCalled();
   });
 
+  it('closeSerialPortIfOpen swallows close rejection when streams stay locked', async () => {
+    const port = makeMockSerialPort({
+      close: vi
+        .fn()
+        .mockRejectedValue(new DOMException('Cannot cancel a locked stream', 'InvalidStateError')),
+    });
+    await expect(closeSerialPortIfOpen(port as unknown as SerialPort)).resolves.toBeUndefined();
+    expect(port.close).toHaveBeenCalledTimes(1);
+  });
+
   it('reconnectSerial closes an open port before createFromPort', async () => {
     const port = makeMockSerialPort({ portId: 'saved-port' });
     Object.defineProperty(navigator, 'serial', {
@@ -69,15 +79,18 @@ describe('connection serial cleanup', () => {
 
   it('safeDisconnect closes underlying serial port after device.disconnect', async () => {
     const port = makeMockSerialPort();
+    const fromDevice = new ReadableStream();
+    const cancelSpy = vi.spyOn(fromDevice, 'cancel');
     const device = {
       disconnect: vi.fn().mockResolvedValue(undefined),
       complete: vi.fn(),
-      transport: { port },
+      transport: { port, fromDevice },
     } as unknown as MeshDevice;
 
     await safeDisconnect(device);
 
     expect(device.disconnect).toHaveBeenCalledTimes(1);
+    expect(cancelSpy).toHaveBeenCalled();
     expect(port.close).toHaveBeenCalledTimes(1);
     expect(device.complete).toHaveBeenCalledTimes(1);
   });

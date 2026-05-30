@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "Ujistěte se, že je nainstalován správný ovladač USB (CH340, CP210x nebo FTDI). Zkontrolujte ve Správci zařízení žluté varování na portu COM.",
         "accessDeniedLinuxHint": "V systému Linux přidejte svého uživatele do skupiny dialout: sudo usermod -aG dialout $USER (pak se odhlaste a znovu přihlaste)",
         "disconnectedHint": "Ujistěte se, že je připojen kabel USB a zařízení je zapnuté.",
-        "timeoutHint": "Pokud se port krátce objeví, zkuste znovu připojit kabel USB."
+        "timeoutHint": "Pokud se port krátce objeví, zkuste znovu připojit kabel USB.",
+        "portStillOpenHint": "Sériový port USB se neuvolnil čistě. Úplně ukončete síťového klienta a znovu jej otevřete, nebo odpojte a znovu připojte kabel USB a poté jej znovu připojte."
       },
       "http": {
         "timeoutMdnsWindows": "Ve Windows vyžaduje meshtastic.local Bonjour (nainstalovaný s iTunes). Místo toho použijte IP adresu zařízení.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Problémy historie Store & Forward",
         "recommendation": "Z routeru nebylo možné vyžádat historii chatu Store & Forward (často se jedná o krátký závod s jiným rádiovým provozem). Pokud nevyřízený chat zůstane prázdný, znovu se připojte nebo počkejte na další srdeční tep směrovače."
+      },
+      "serial-reconnect": {
+        "label": "Sériové připojení USB",
+        "recommendation": "USB sériový port se po odpojení neuvolnil čistě. Ukončete síťového klienta a znovu jej otevřete, nebo odpojte a znovu zapojte kabel a poté jej znovu připojte."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Udělej tu věc."
+      },
+      "serial-reconnect": {
+        "recommendation": "USB sériový port se po odpojení neuvolnil čistě. Ukončete síťového klienta a znovu jej otevřete, nebo odpojte a znovu zapojte kabel a poté jej znovu připojte."
       }
     }
   },

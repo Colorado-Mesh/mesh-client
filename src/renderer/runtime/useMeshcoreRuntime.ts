@@ -122,6 +122,7 @@ import {
   setMeshcoreRoomLastPostAt,
   touchMeshcoreRoomLastSyncAt,
 } from '../lib/meshcoreRoomSyncStorage';
+import { upsertMeshcoreMessageWithDedup } from '../lib/meshcoreStoreDedup';
 import {
   buildMeshcoreSetOtherParamsFrame,
   enrichMeshCoreSelfInfo,
@@ -731,34 +732,65 @@ export function useMeshcoreRuntime() {
   }, [selfInfo?.batteryMilliVolts, state.connectionType]);
 
   const addMessage = useCallback((msg: ChatMessage) => {
-    const incomingKey = meshcoreMessageDedupeKey(msg);
-    let inserted = false;
-    // flushSync: `inserted` must reflect the updater result before persisting. React 19 can defer
-    // the functional update; without flush, saveMeshcoreMessage never runs while UI still updates.
-    flushSync(() => {
-      setMessages((prev) => {
-        const isDup = prev.some((m) => meshcoreMessageDedupeKey(m) === incomingKey);
-        if (isDup) {
-          return prev;
-        }
-        const crossTransportDup = findMeshcoreCrossTransportDuplicate(prev, msg);
-        if (crossTransportDup) {
-          const { messages: next, matched } = mapMeshcoreCrossTransportUpgrade(prev, msg);
-          if (matched) return next;
-          return prev;
-        }
-        inserted = true;
-        return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
+    const storeId = meshcoreIdentityIdRef.current;
+    let result: { inserted: boolean; message: ChatMessage };
+    if (storeId) {
+      result = upsertMeshcoreMessageWithDedup(storeId, msg);
+    } else {
+      let inserted = false;
+      flushSync(() => {
+        setMessages((prev) => {
+          const incomingKey = meshcoreMessageDedupeKey(msg);
+          if (prev.some((m) => meshcoreMessageDedupeKey(m) === incomingKey)) {
+            return prev;
+          }
+          const crossTransportDup = findMeshcoreCrossTransportDuplicate(prev, msg);
+          if (crossTransportDup) {
+            const { messages: next, matched } = mapMeshcoreCrossTransportUpgrade(prev, msg);
+            if (matched) return next;
+            return prev;
+          }
+          inserted = true;
+          return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
+        });
       });
-    });
-    if (inserted) {
-      const storeId = meshcoreIdentityIdRef.current;
-      if (storeId) {
-        upsertMessage(storeId, chatMessageToMessageRecord(msg));
-      }
-      void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(msg)).catch((e: unknown) => {
-        console.warn('[useMeshcoreRuntime] saveMeshcoreMessage error ' + errLikeToLogString(e));
+      result = { inserted, message: msg };
+    }
+
+    const incomingKey = meshcoreMessageDedupeKey(result.message);
+    if (storeId) {
+      flushSync(() => {
+        setMessages((prev) => {
+          const exactDup = prev.some((m) => meshcoreMessageDedupeKey(m) === incomingKey);
+          if (exactDup) {
+            if (!result.inserted) {
+              return prev.map((m) =>
+                meshcoreMessageDedupeKey(m) === incomingKey
+                  ? { ...m, receivedVia: result.message.receivedVia }
+                  : m,
+              );
+            }
+            return prev;
+          }
+          if (!result.inserted) {
+            const crossDup = findMeshcoreCrossTransportDuplicate(prev, msg);
+            if (crossDup) {
+              const { messages: next, matched } = mapMeshcoreCrossTransportUpgrade(prev, msg);
+              if (matched) return next;
+            }
+            return prev;
+          }
+          return trimChatMessagesToMax([...prev, result.message], MAX_IN_MEMORY_CHAT_MESSAGES);
+        });
       });
+    }
+
+    if (result.inserted) {
+      void window.electronAPI.db
+        .saveMeshcoreMessage(messageToDbRow(result.message))
+        .catch((e: unknown) => {
+          console.warn('[useMeshcoreRuntime] saveMeshcoreMessage error ' + errLikeToLogString(e));
+        });
     }
   }, []);
 

@@ -104,3 +104,40 @@ export function assertTransportReadyForMeshDevice(transport: unknown, context: s
     `${context}: Meshtastic transport is missing readable/writable streams (fromDevice/toDevice). Reconnect USB serial or try another transport; include app version if reporting.`,
   );
 }
+
+export interface MeshtasticSerialStreamDiagnostics {
+  portHasReadable: boolean | undefined;
+  portHasWritable: boolean | undefined;
+  fromDeviceLocked: boolean | undefined;
+}
+
+/** Snapshot Web Serial port + transport stream lock state for reconnect debugging. */
+export function getMeshtasticSerialStreamDiagnostics(
+  transport: unknown,
+  port?: SerialPort | null,
+): MeshtasticSerialStreamDiagnostics {
+  const fromDevice = (transport as { fromDevice?: ReadableStream } | null)?.fromDevice;
+  let fromDeviceLocked: boolean | undefined;
+  if (fromDevice != null && 'locked' in fromDevice) {
+    fromDeviceLocked = fromDevice.locked;
+  }
+  return {
+    portHasReadable: port != null ? port.readable != null : undefined,
+    portHasWritable: port != null ? port.writable != null : undefined,
+    fromDeviceLocked,
+  };
+}
+
+/** Logs stream/port diagnostics to the renderer console (and disk log when forwarded). */
+export function logMeshtasticSerialStreamDiagnostics(
+  context: string,
+  transport: unknown,
+  port?: SerialPort | null,
+): void {
+  console.debug(
+    `[connection] ${context} ${formatJsonForRendererLog({
+      ...getMeshtasticStreamsDiagnostics(),
+      ...getMeshtasticSerialStreamDiagnostics(transport, port),
+    })}`,
+  );
+}
