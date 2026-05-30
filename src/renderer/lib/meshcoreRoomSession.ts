@@ -40,6 +40,44 @@ const sessions = new Map<number, MeshcoreRoomSession>();
 /** Serializes room logins so concurrent BLE login frames do not collide. */
 let roomLoginChain: Promise<void> = Promise.resolve();
 
+/** Per-room login abort controllers (replaced on each new login for the same node). */
+const roomLoginAbortControllers = new Map<number, AbortController>();
+
+/** DOMException.message when user cancels an in-flight room login. */
+export const MESHCORE_ROOM_LOGIN_ABORT_MESSAGE = 'Room login cancelled';
+
+export function meshcoreIsRoomLoginAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.message === MESHCORE_ROOM_LOGIN_ABORT_MESSAGE;
+}
+
+export function meshcoreCancelRoomLogin(nodeId: number): void {
+  roomLoginAbortControllers.get(nodeId)?.abort();
+}
+
+function throwIfRoomLoginAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) {
+    throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+  }
+}
+
+function beginRoomLoginAbortSignal(nodeId: number, externalSignal?: AbortSignal): AbortSignal {
+  roomLoginAbortControllers.get(nodeId)?.abort();
+  const controller = new AbortController();
+  roomLoginAbortControllers.set(nodeId, controller);
+  if (externalSignal?.aborted) {
+    controller.abort();
+  } else if (externalSignal) {
+    externalSignal.addEventListener(
+      'abort',
+      () => {
+        controller.abort();
+      },
+      { once: true },
+    );
+  }
+  return controller.signal;
+}
+
 export function meshcoreGetRoomSession(nodeId: number): MeshcoreRoomSession | undefined {
   return sessions.get(nodeId);
 }
@@ -60,6 +98,10 @@ export function meshcoreRoomCanAdmin(nodeId: number): boolean {
 }
 
 export function meshcoreClearAllRoomSessions(): void {
+  for (const controller of roomLoginAbortControllers.values()) {
+    controller.abort();
+  }
+  roomLoginAbortControllers.clear();
   sessions.clear();
 }
 
@@ -147,43 +189,54 @@ export async function meshcoreRoomLogin(
   nodeId: number,
   pubKey: Uint8Array,
   password: string,
-  opts?: { adminPassword?: string; guestPassword?: string },
+  opts?: { adminPassword?: string; guestPassword?: string; signal?: AbortSignal },
 ): Promise<void> {
   const run = async (): Promise<void> => {
+    const signal = beginRoomLoginAbortSignal(nodeId, opts?.signal);
     const adminPassword = opts?.adminPassword ?? '';
     const guestPassword = opts?.guestPassword ?? password;
     let lastErr: unknown;
-    for (let attempt = 1; attempt <= MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS; attempt++) {
-      try {
-        const response = await conn.login(pubKey, password, MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS);
-        const permByte = parseLoginResponsePermissions(response);
-        const role =
-          permByte != null
-            ? roleFromPermissionsByte(permByte)
-            : roleFromPasswordHint(password, adminPassword, guestPassword);
-        const lastPostMs = getMeshcoreRoomLastPostAt(nodeId);
-        meshcoreApplyRoomSession(nodeId, {
-          guestPassword,
-          adminPassword,
-          role,
-          syncSince:
-            lastPostMs != null && lastPostMs > 0 ? Math.floor(lastPostMs / 1000) : undefined,
-        });
-        return;
-      } catch (e) {
-        lastErr = e;
-        const errMsg = errLikeToLogString(e);
-        if (attempt < MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS) {
-          console.warn(
-            `[meshcoreRoomSession] room login attempt ${attempt}/${MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS} failed ${errMsg}`,
-          );
-          await sleepMs(MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS);
-        } else {
-          console.warn('[meshcoreRoomSession] room login failed ' + errMsg);
+    try {
+      for (let attempt = 1; attempt <= MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS; attempt++) {
+        throwIfRoomLoginAborted(signal);
+        try {
+          const response = await conn.login(pubKey, password, MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS);
+          throwIfRoomLoginAborted(signal);
+          const permByte = parseLoginResponsePermissions(response);
+          const role =
+            permByte != null
+              ? roleFromPermissionsByte(permByte)
+              : roleFromPasswordHint(password, adminPassword, guestPassword);
+          const lastPostMs = getMeshcoreRoomLastPostAt(nodeId);
+          meshcoreApplyRoomSession(nodeId, {
+            guestPassword,
+            adminPassword,
+            role,
+            syncSince:
+              lastPostMs != null && lastPostMs > 0 ? Math.floor(lastPostMs / 1000) : undefined,
+          });
+          return;
+        } catch (e) {
+          if (meshcoreIsRoomLoginAbortError(e)) throw e;
+          lastErr = e;
+          const errMsg = errLikeToLogString(e);
+          if (attempt < MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS) {
+            console.warn(
+              `[meshcoreRoomSession] room login attempt ${attempt}/${MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS} failed ${errMsg}`,
+            );
+            throwIfRoomLoginAborted(signal);
+            await sleepMs(MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS);
+          } else {
+            console.warn('[meshcoreRoomSession] room login failed ' + errMsg);
+          }
         }
       }
+      throw new Error(meshcoreRoomLoginFailureMessage(lastErr, password));
+    } finally {
+      if (roomLoginAbortControllers.get(nodeId)?.signal === signal) {
+        roomLoginAbortControllers.delete(nodeId);
+      }
     }
-    throw new Error(meshcoreRoomLoginFailureMessage(lastErr, password));
   };
 
   const next = roomLoginChain.then(run, run);

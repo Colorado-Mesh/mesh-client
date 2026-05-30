@@ -1994,7 +1994,9 @@
     "syncInterval120": "2時間ごと",
     "syncInterval240": "4時間ごと",
     "saveSyncConfig": "同期設定",
-    "lastSync": "前回同期"
+    "lastSync": "前回同期",
+    "cancelLogin": "ログインをキャンセル",
+    "cancelLoginHint": "最初にラジオで別の部屋のログインが終了する場合があります。キャンセルすると、この部屋へのこれ以上の試みが停止します。"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

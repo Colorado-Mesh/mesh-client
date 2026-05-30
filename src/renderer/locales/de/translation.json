@@ -1994,7 +1994,9 @@
     "syncInterval120": "Alle 2 Stunden",
     "syncInterval240": "Alle 4 Stunden",
     "saveSyncConfig": "Synchronisierung",
-    "lastSync": "Letzte Synchronisierung"
+    "lastSync": "Letzte Synchronisierung",
+    "cancelLogin": "Anmeldung abbrechen",
+    "cancelLoginHint": "Eine weitere Raumanmeldung kann zuerst über das Radio abgeschlossen werden. Abbrechen stoppt weitere Versuche für diesen Raum."
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
   meshcoreApplyRoomSession,
+  meshcoreCancelRoomLogin,
   meshcoreClearAllRoomSessions,
   meshcoreIsRoomLoggedIn,
+  meshcoreIsRoomLoginAbortError,
   meshcoreRoomCanPost,
   meshcoreRoomLogin,
   meshcoreRoomTryRelogin,
@@ -12,6 +15,7 @@ import {
 describe('meshcoreRoomSession', () => {
   afterEach(() => {
     vi.useRealTimers();
+    meshcoreClearAllRoomSessions();
   });
 
   it('tracks read-only session and blocks posting', () => {
@@ -89,5 +93,58 @@ describe('meshcoreRoomSession', () => {
     const ok = await meshcoreRoomTryRelogin(conn, 42, pubKey, 'post');
     expect(ok).toBe(true);
     expect(conn.login).toHaveBeenCalledWith(pubKey, 'hello', 45_000);
+  });
+
+  it('cancel before second retry stops after first login attempt', async () => {
+    vi.useFakeTimers();
+    const conn = {
+      login: vi.fn().mockRejectedValueOnce(new Error('timeout')),
+    };
+    const pubKey = new Uint8Array(32);
+    const loginPromise = meshcoreRoomLogin(conn, 42, pubKey, 'hello', {});
+    const settled = loginPromise.then(
+      () => ({ ok: true as const }),
+      (err: unknown) => ({ ok: false as const, err }),
+    );
+    await Promise.resolve();
+    meshcoreCancelRoomLogin(42);
+    await vi.runAllTimersAsync();
+    const result = await settled;
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(meshcoreIsRoomLoginAbortError(result.err)).toBe(true);
+    }
+    expect(conn.login).toHaveBeenCalledTimes(1);
+    expect(meshcoreIsRoomLoggedIn(42)).toBe(false);
+  });
+
+  it('does not apply session when login resolves after cancel', async () => {
+    let resolveLogin!: (value: { permissions: number }) => void;
+    const loginDeferred = new Promise<{ permissions: number }>((resolve) => {
+      resolveLogin = resolve;
+    });
+    const conn = {
+      login: vi.fn().mockReturnValue(loginDeferred),
+    };
+    const pubKey = new Uint8Array(32);
+    const loginPromise = meshcoreRoomLogin(conn, 42, pubKey, 'hello', {});
+    const settled = loginPromise.then(
+      () => ({ ok: true as const }),
+      (err: unknown) => ({ ok: false as const, err }),
+    );
+    await Promise.resolve();
+    expect(conn.login).toHaveBeenCalledTimes(1);
+    meshcoreCancelRoomLogin(42);
+    resolveLogin({ permissions: 2 });
+    const result = await settled;
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(meshcoreIsRoomLoginAbortError(result.err)).toBe(true);
+    }
+    expect(meshcoreIsRoomLoggedIn(42)).toBe(false);
+  });
+
+  it('exports abort message constant', () => {
+    expect(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE).toBe('Room login cancelled');
   });
 });

@@ -41,6 +41,7 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       sendRepeaterCliCommand: runtime.sendRepeaterCliCommand,
       loginRoom: runtime.loginRoom,
       loginRoomWithSaved: runtime.loginRoomWithSaved,
+      cancelRoomLogin: runtime.cancelRoomLogin,
       sendRoomPost: runtime.sendRoomPost,
       sendRoomAdminCliCommand: runtime.sendRoomAdminCliCommand,
       clearCliHistory: runtime.clearCliHistory,

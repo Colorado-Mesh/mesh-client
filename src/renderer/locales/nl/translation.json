@@ -1994,7 +1994,9 @@
     "syncInterval120": "Elke 2 uur",
     "syncInterval240": "Elke 4 uur",
     "saveSyncConfig": "Synchronisatie instellingen",
-    "lastSync": "Laatste synchronisatie"
+    "lastSync": "Laatste synchronisatie",
+    "cancelLogin": "Inloggen annuleren",
+    "cancelLoginHint": "Een andere ruimtelogin kan eerst op de radio eindigen. Annuleer stopt verdere pogingen voor deze ruimte."
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

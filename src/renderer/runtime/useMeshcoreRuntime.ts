@@ -107,6 +107,7 @@ import {
   setMeshcoreRoomCredential,
 } from '../lib/meshcoreRoomCredentialStorage';
 import {
+  meshcoreCancelRoomLogin,
   meshcoreClearAllRoomSessions,
   meshcoreRoomCanAdmin,
   meshcoreRoomCanPost,
@@ -3279,6 +3280,10 @@ export function useMeshcoreRuntime() {
     [],
   );
 
+  const cancelRoomLogin = useCallback((nodeId: number): void => {
+    meshcoreCancelRoomLogin(nodeId);
+  }, []);
+
   const loginRoomWithSaved = useCallback(
     async (nodeId: number): Promise<void> => {
       const cred = getMeshcoreRoomCredential(nodeId);
@@ -4529,6 +4534,7 @@ export function useMeshcoreRuntime() {
       sendRepeaterCliCommand,
       loginRoom,
       loginRoomWithSaved,
+      cancelRoomLogin,
       sendRoomPost,
       sendRoomAdminCliCommand,
       clearCliHistory,
@@ -4663,6 +4669,7 @@ export function useMeshcoreRuntime() {
       sendRepeaterCliCommand,
       loginRoom,
       loginRoomWithSaved,
+      cancelRoomLogin,
       sendRoomPost,
       sendRoomAdminCliCommand,
       clearCliHistory,

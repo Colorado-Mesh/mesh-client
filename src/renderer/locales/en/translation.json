@@ -1962,6 +1962,8 @@
     "loginButton": "Login",
     "loggingIn": "Logging in…",
     "loginFailed": "Room login failed",
+    "cancelLogin": "Cancel login",
+    "cancelLoginHint": "Another room login may finish on the radio first. Cancel stops further attempts for this room.",
     "cancelLoginDialog": "Cancel room login dialog",
     "continueReadOnly": "Continue read-only",
     "readOnlyBadge": "Read-only",

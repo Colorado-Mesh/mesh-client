@@ -1994,7 +1994,9 @@
     "syncInterval120": "Cada 2 horas",
     "syncInterval240": "Cada 4 horas",
     "saveSyncConfig": "Ajustes de sincronización",
-    "lastSync": "Última sincronización"
+    "lastSync": "Última sincronización",
+    "cancelLogin": "Cancelar inicio de sesión",
+    "cancelLoginHint": "Es posible que otro inicio de sesión en la sala termine primero en la radio. Cancelar detiene más intentos de esta sala."
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",

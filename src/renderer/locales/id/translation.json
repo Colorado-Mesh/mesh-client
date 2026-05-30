@@ -1994,7 +1994,9 @@
     "syncInterval120": "Setiap 2 jam",
     "syncInterval240": "Setiap 4 jam",
     "saveSyncConfig": "Simpan pengaturan sinkronisasi",
-    "lastSync": "Sinkronisasi terakhir"
+    "lastSync": "Sinkronisasi terakhir",
+    "cancelLogin": "Batalkan Log Masuk",
+    "cancelLoginHint": "Login ruangan lain mungkin selesai di radio terlebih dahulu. Batalkan upaya perhentian lebih lanjut untuk ruangan ini."
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

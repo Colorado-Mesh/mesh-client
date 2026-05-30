@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -14,6 +13,7 @@ import {
   meshcoreClearRoomSession,
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
+  meshcoreIsRoomLoginAbortError,
   meshcoreRoomCanPost,
   meshcoreRoomEffectiveGuestPassword,
 } from '@/renderer/lib/meshcoreRoomSession';
@@ -41,6 +41,7 @@ interface Props {
     },
   ) => Promise<void>;
   onLoginRoomWithSaved: (nodeId: number) => Promise<void>;
+  onCancelRoomLogin: (nodeId: number) => void;
   onSendRoomPost: (nodeId: number, text: string) => Promise<void>;
   onSendRoomAdminCli: (nodeId: number, command: string) => Promise<string>;
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
@@ -61,6 +62,7 @@ export default function RoomsPanel({
   onInitialRoomConsumed,
   onLoginRoom,
   onLoginRoomWithSaved,
+  onCancelRoomLogin,
   onSendRoomPost,
   onSendRoomAdminCli,
   meshcoreCliHistories,
@@ -71,8 +73,8 @@ export default function RoomsPanel({
   const { ensureRoomAuth, RemoteAuthModal } = useMeshcoreRoomAuth();
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [loginPassword, setLoginPassword] = useState(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginLoadingRoomIds, setLoginLoadingRoomIds] = useState<Set<number>>(() => new Set());
+  const [loginErrorsByRoom, setLoginErrorsByRoom] = useState<Map<number, string>>(() => new Map());
   const [draft, setDraft] = useState('');
   const [sendPending, setSendPending] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
@@ -88,6 +90,7 @@ export default function RoomsPanel({
     () => new Set(listMeshcoreRoomCredentialNodeIds()),
   );
   const autoLoginAttempted = useRef<Set<number>>(new Set());
+  const loginAttemptGenRef = useRef<Map<number, number>>(new Map());
   const streamRef = useRef<HTMLDivElement>(null);
 
   const refreshStoredRooms = useCallback(() => {
@@ -152,7 +155,12 @@ export default function RoomsPanel({
   const handleSelectRoom = useCallback(
     (nodeId: number) => {
       setSelectedRoomId(nodeId);
-      setLoginError(null);
+      setLoginErrorsByRoom((prev) => {
+        if (!prev.has(nodeId)) return prev;
+        const next = new Map(prev);
+        next.delete(nodeId);
+        return next;
+      });
       setLoginPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
       setRememberPassword(false);
       setManageOpen(false);
@@ -161,46 +169,99 @@ export default function RoomsPanel({
     [loadSyncConfig],
   );
 
+  const startRoomLogin = useCallback(
+    (nodeId: number, loginFn: () => Promise<void>) => {
+      const gen = (loginAttemptGenRef.current.get(nodeId) ?? 0) + 1;
+      loginAttemptGenRef.current.set(nodeId, gen);
+      setLoginLoadingRoomIds((prev) => new Set(prev).add(nodeId));
+      setLoginErrorsByRoom((prev) => {
+        if (!prev.has(nodeId)) return prev;
+        const next = new Map(prev);
+        next.delete(nodeId);
+        return next;
+      });
+      void loginFn()
+        .then(() => {
+          if (loginAttemptGenRef.current.get(nodeId) !== gen) return;
+          refreshStoredRooms();
+        })
+        .catch((e: unknown) => {
+          if (loginAttemptGenRef.current.get(nodeId) !== gen) return;
+          if (meshcoreIsRoomLoginAbortError(e)) return;
+          setLoginErrorsByRoom((prev) =>
+            new Map(prev).set(nodeId, e instanceof Error ? e.message : t('roomsPanel.loginFailed')),
+          );
+        })
+        .finally(() => {
+          if (loginAttemptGenRef.current.get(nodeId) !== gen) return;
+          setLoginLoadingRoomIds((prev) => {
+            if (!prev.has(nodeId)) return prev;
+            const next = new Set(prev);
+            next.delete(nodeId);
+            return next;
+          });
+        });
+    },
+    [refreshStoredRooms, t],
+  );
+
+  const handleCancelLogin = useCallback(() => {
+    if (selectedRoomId == null) return;
+    onCancelRoomLogin(selectedRoomId);
+    autoLoginAttempted.current.delete(selectedRoomId);
+    loginAttemptGenRef.current.set(
+      selectedRoomId,
+      (loginAttemptGenRef.current.get(selectedRoomId) ?? 0) + 1,
+    );
+    setLoginLoadingRoomIds((prev) => {
+      if (!prev.has(selectedRoomId)) return prev;
+      const next = new Set(prev);
+      next.delete(selectedRoomId);
+      return next;
+    });
+  }, [onCancelRoomLogin, selectedRoomId]);
+
   useEffect(() => {
     if (selectedRoomId == null || !isConnected) return;
     if (meshcoreIsRoomLoggedIn(selectedRoomId)) return;
     if (autoLoginAttempted.current.has(selectedRoomId)) return;
     if (!getMeshcoreRoomCredential(selectedRoomId)) return;
     autoLoginAttempted.current.add(selectedRoomId);
-    setLoginLoading(true);
-    setLoginError(null);
-    void onLoginRoomWithSaved(selectedRoomId)
-      .then(() => {
-        refreshStoredRooms();
-      })
-      .catch((e: unknown) => {
-        setLoginError(e instanceof Error ? e.message : t('roomsPanel.loginFailed'));
-      })
-      .finally(() => {
-        setLoginLoading(false);
-      });
-  }, [isConnected, onLoginRoomWithSaved, refreshStoredRooms, selectedRoomId, t]);
+    startRoomLogin(selectedRoomId, () => onLoginRoomWithSaved(selectedRoomId));
+  }, [isConnected, onLoginRoomWithSaved, selectedRoomId, startRoomLogin]);
 
-  const handleLogin = useCallback(async () => {
+  const handleLogin = useCallback(() => {
     if (selectedRoomId == null) return;
-    setLoginLoading(true);
-    setLoginError(null);
-    try {
-      const password = meshcoreRoomEffectiveGuestPassword(loginPassword);
-      await onLoginRoom(selectedRoomId, password, {
+    const nodeId = selectedRoomId;
+    const password = meshcoreRoomEffectiveGuestPassword(loginPassword);
+    startRoomLogin(nodeId, async () => {
+      await onLoginRoom(nodeId, password, {
         guestPassword: password,
         adminPassword: '',
         rememberPassword,
       });
       if (rememberPassword) refreshStoredRooms();
       setLoginPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
-    } catch (e) {
-      // catch-no-log-ok login failure surfaced in loginError UI
-      setLoginError(e instanceof Error ? e.message : t('roomsPanel.loginFailed'));
-    } finally {
-      setLoginLoading(false);
-    }
-  }, [loginPassword, onLoginRoom, rememberPassword, refreshStoredRooms, selectedRoomId, t]);
+    });
+  }, [
+    loginPassword,
+    onLoginRoom,
+    rememberPassword,
+    refreshStoredRooms,
+    selectedRoomId,
+    startRoomLogin,
+  ]);
+
+  const handleReadOnlyLogin = useCallback(() => {
+    if (selectedRoomId == null) return;
+    const nodeId = selectedRoomId;
+    startRoomLogin(nodeId, () =>
+      onLoginRoom(nodeId, '', {
+        guestPassword: '',
+        adminPassword: '',
+      }),
+    );
+  }, [onLoginRoom, selectedRoomId, startRoomLogin]);
 
   const handleSaveSyncConfig = useCallback(async () => {
     if (selectedRoomId == null) return;
@@ -219,7 +280,14 @@ export default function RoomsPanel({
       setDraft('');
     } catch (e) {
       console.warn('[RoomsPanel] sendRoomPost failed ' + errLikeToLogString(e));
-      setLoginError(e instanceof Error ? e.message : t('roomsPanel.postFailed'));
+      if (selectedRoomId != null) {
+        setLoginErrorsByRoom((prev) =>
+          new Map(prev).set(
+            selectedRoomId,
+            e instanceof Error ? e.message : t('roomsPanel.postFailed'),
+          ),
+        );
+      }
     } finally {
       setSendPending(false);
     }
@@ -229,34 +297,36 @@ export default function RoomsPanel({
     if (selectedRoomId == null) return;
     meshcoreClearRoomSession(selectedRoomId);
     setManageOpen(false);
-    setLoginError(null);
+    setLoginErrorsByRoom((prev) => {
+      if (!prev.has(selectedRoomId)) return prev;
+      const next = new Map(prev);
+      next.delete(selectedRoomId);
+      return next;
+    });
   }, [selectedRoomId]);
 
   const handleAdminLogin = useCallback(async () => {
     if (selectedRoomId == null) return;
+    const nodeId = selectedRoomId;
     const auth = await ensureRoomAuth(
-      selectedRoomId,
+      nodeId,
       'admin',
-      activeRoom?.long_name ?? `Room-${selectedRoomId.toString(16)}`,
+      activeRoom?.long_name ?? `Room-${nodeId.toString(16)}`,
     );
     if (!auth.ok) return;
     const adminPassword = auth.adminPassword.trim();
     const guestPassword = auth.guestPassword.trim();
     if (!adminPassword) {
-      setLoginError(t('roomsPanel.adminPasswordRequired'));
+      setLoginErrorsByRoom((prev) =>
+        new Map(prev).set(nodeId, t('roomsPanel.adminPasswordRequired')),
+      );
       return;
     }
-    setLoginLoading(true);
-    try {
-      await onLoginRoom(selectedRoomId, adminPassword, { adminPassword, guestPassword });
+    startRoomLogin(nodeId, async () => {
+      await onLoginRoom(nodeId, adminPassword, { adminPassword, guestPassword });
       setManageOpen(true);
-    } catch (e) {
-      // catch-no-log-ok login failure surfaced in loginError UI
-      setLoginError(e instanceof Error ? e.message : t('roomsPanel.loginFailed'));
-    } finally {
-      setLoginLoading(false);
-    }
-  }, [activeRoom?.long_name, ensureRoomAuth, onLoginRoom, selectedRoomId, t]);
+    });
+  }, [activeRoom?.long_name, ensureRoomAuth, onLoginRoom, selectedRoomId, startRoomLogin, t]);
 
   const handleCliSend = useCallback(async () => {
     if (selectedRoomId == null || !cliInput.trim()) return;
@@ -283,6 +353,10 @@ export default function RoomsPanel({
   );
 
   const loggedIn = selectedRoomId != null && meshcoreIsRoomLoggedIn(selectedRoomId);
+  const selectedRoomLoginLoading =
+    selectedRoomId != null && loginLoadingRoomIds.has(selectedRoomId);
+  const loginError =
+    selectedRoomId != null ? (loginErrorsByRoom.get(selectedRoomId) ?? null) : null;
   const canPost = selectedRoomId != null && meshcoreRoomCanPost(selectedRoomId);
   const sessionRole = selectedRoomId != null ? meshcoreGetRoomSession(selectedRoomId)?.role : null;
   const cliHistory =
@@ -305,6 +379,7 @@ export default function RoomsPanel({
                 const count = postCountByRoom.get(room.node_id) ?? 0;
                 const isLogged = meshcoreIsRoomLoggedIn(room.node_id);
                 const hasSaved = storedRoomIds.has(room.node_id);
+                const isLoggingIn = loginLoadingRoomIds.has(room.node_id);
                 return (
                   <button
                     key={room.node_id}
@@ -321,13 +396,15 @@ export default function RoomsPanel({
                         className={
                           isLogged
                             ? 'text-brand-green'
-                            : hasSaved
-                              ? 'text-amber-400/90'
-                              : 'text-gray-500'
+                            : isLoggingIn
+                              ? 'text-amber-300'
+                              : hasSaved
+                                ? 'text-amber-400/90'
+                                : 'text-gray-500'
                         }
                         aria-hidden
                       >
-                        {isLogged ? '●' : hasSaved ? '◐' : '○'}
+                        {isLogged ? '●' : isLoggingIn ? '◌' : hasSaved ? '◐' : '○'}
                       </span>
                       <span className="truncate">{room.long_name}</span>
                     </div>
@@ -348,7 +425,7 @@ export default function RoomsPanel({
             </div>
           )}
 
-          {selectedRoomId && !loggedIn && !loginLoading && (
+          {selectedRoomId && !loggedIn && !selectedRoomLoginLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-950/80 p-4">
               <div className="w-full max-w-sm space-y-3 rounded-lg border border-gray-600 bg-gray-900 p-4">
                 <h3 className="text-base font-semibold text-white">{t('roomsPanel.loginTitle')}</h3>
@@ -360,7 +437,7 @@ export default function RoomsPanel({
                     setLoginPassword(e.target.value);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') void handleLogin();
+                    if (e.key === 'Enter') handleLogin();
                   }}
                   placeholder={t('roomsPanel.guestPasswordPlaceholder')}
                   disabled={!isConnected}
@@ -380,9 +457,7 @@ export default function RoomsPanel({
                 </label>
                 <button
                   type="button"
-                  onClick={() => {
-                    void handleLogin();
-                  }}
+                  onClick={handleLogin}
                   disabled={!isConnected}
                   className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 w-full rounded border px-3 py-2 text-sm font-medium disabled:opacity-40"
                 >
@@ -390,22 +465,7 @@ export default function RoomsPanel({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    void (async () => {
-                      setLoginLoading(true);
-                      try {
-                        await onLoginRoom(selectedRoomId, '', {
-                          guestPassword: '',
-                          adminPassword: '',
-                        });
-                      } catch (e) {
-                        // catch-no-log-ok read-only login failure surfaced in loginError UI
-                        setLoginError(e instanceof Error ? e.message : t('roomsPanel.loginFailed'));
-                      } finally {
-                        setLoginLoading(false);
-                      }
-                    })();
-                  }}
+                  onClick={handleReadOnlyLogin}
                   disabled={!isConnected}
                   className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-40"
                 >
@@ -416,9 +476,20 @@ export default function RoomsPanel({
             </div>
           )}
 
-          {selectedRoomId && loginLoading && (
-            <div className="flex flex-1 items-center justify-center text-sm text-gray-400">
-              {t('roomsPanel.loggingIn')}
+          {selectedRoomId && !loggedIn && selectedRoomLoginLoading && (
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-sm text-gray-400">
+              <p>{t('roomsPanel.loggingIn')}</p>
+              <p className="max-w-xs text-center text-xs text-gray-500">
+                {t('roomsPanel.cancelLoginHint')}
+              </p>
+              <button
+                type="button"
+                onClick={handleCancelLogin}
+                className="rounded border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                aria-label={t('roomsPanel.cancelLogin')}
+              >
+                {t('roomsPanel.cancelLogin')}
+              </button>
             </div>
           )}
 
