@@ -97,6 +97,12 @@ function humanizeSerialError(err: unknown, t: TFunction): string {
       hint: t('connectionPanel.humanize.serial.timeoutHint'),
     });
   }
+  if (/already open|locked stream|cannot cancel a locked/i.test(msg)) {
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.serial.portStillOpenHint'),
+    });
+  }
   return msg;
 }
 

@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "Pastikan driver USB yang benar telah diinstal (CH340, CP210x, atau FTDI). Periksa Device Manager untuk peringatan kuning pada port COM.",
         "accessDeniedLinuxHint": "Di Linux, tambahkan pengguna Anda ke grup dialout: sudo usermod -aG dialout $USER (lalu logout dan masuk kembali)",
         "disconnectedHint": "Pastikan kabel USB terhubung dan perangkat dihidupkan.",
-        "timeoutHint": "Jika port muncul sebentar, coba sambungkan kembali kabel USB."
+        "timeoutHint": "Jika port muncul sebentar, coba sambungkan kembali kabel USB.",
+        "portStillOpenHint": "Port serial USB tidak terlepas dengan bersih. Keluar dari mesh - client sepenuhnya dan buka kembali, atau cabut dan pasang kembali kabel USB, lalu sambungkan lagi."
       },
       "http": {
         "timeoutMdnsWindows": "Di Windows, meshtastic.local memerlukan Bonjour (diinstal dengan iTunes). Gunakan alamat IP perangkat sebagai gantinya.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Masalah riwayat Store & Forward",
         "recommendation": "Riwayat obrolan Simpan & Teruskan tidak dapat diminta dari router (sering kali perlombaan singkat dengan lalu lintas radio lainnya). Jika backlog obrolan tetap kosong, sambungkan kembali atau tunggu detak jantung router berikutnya."
+      },
+      "serial-reconnect": {
+        "label": "Sambungkan Ulang Serial USB",
+        "recommendation": "Serial USB tidak terlepas dengan bersih setelah terputus. Keluar dari mesh - client dan buka kembali, atau cabut dan pasang kembali kabel, lalu sambungkan lagi."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Lakukan hal itu."
+      },
+      "serial-reconnect": {
+        "recommendation": "Serial USB tidak terlepas dengan bersih setelah terputus. Keluar dari mesh - client dan buka kembali, atau cabut dan pasang kembali kabel, lalu sambungkan lagi."
       }
     }
   },

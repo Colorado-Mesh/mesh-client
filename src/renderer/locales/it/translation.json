@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "Assicurarsi che sia installato il driver USB corretto (CH340, CP210x o FTDI). Controllare Gestione dispositivi per un avviso giallo sulla porta COM.",
         "accessDeniedLinuxHint": "Su Linux, aggiungi il tuo utente al gruppo dialout: sudo usermod -aG dialout $USER (quindi disconnettiti e accedi nuovamente)",
         "disconnectedHint": "Assicurarsi che il cavo USB sia collegato e che il dispositivo sia acceso.",
-        "timeoutHint": "Se la porta viene visualizzata brevemente, provare a ricollegare il cavo USB."
+        "timeoutHint": "Se la porta viene visualizzata brevemente, provare a ricollegare il cavo USB.",
+        "portStillOpenHint": "La porta seriale USB non si è sbloccata in modo pulito. Uscire completamente dal client mesh e riaprirlo, oppure scollegare e ricollegare il cavo USB, quindi ricollegarlo."
       },
       "http": {
         "timeoutMdnsWindows": "Su Windows, Meshtastic.local richiede Bonjour (installato con iTunes). Utilizza invece l'indirizzo IP del dispositivo.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Problemi cronologia Store & Forward",
         "recommendation": "Non è stato possibile richiedere la cronologia chat Store & Forward da un router (spesso una breve corsa con altro traffico radio). Se il backlog della chat rimane vuoto, riconnettiti o attendi il prossimo heartbeat del router."
+      },
+      "serial-reconnect": {
+        "label": "Ricollegamento seriale USB",
+        "recommendation": "Il seriale USB non si è rilasciato in modo pulito dopo la disconnessione. Uscire dal client mesh e riaprirlo, oppure scollegare e ricollegare il cavo, quindi ricollegarlo."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Fai la cosa."
+      },
+      "serial-reconnect": {
+        "recommendation": "Il seriale USB non si è rilasciato in modo pulito dopo la disconnessione. Uscire dal client mesh e riaprirlo, oppure scollegare e ricollegare il cavo, quindi ricollegarlo."
       }
     }
   },

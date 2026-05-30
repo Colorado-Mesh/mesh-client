@@ -20,6 +20,7 @@ export const LOG_ANALYZER_CATEGORY_LABEL_KEYS: Record<string, string> = {
   'ble-meshcore-notify-watchdog': 'logAnalyzer.categories.ble-meshcore-notify-watchdog.label',
   'bluetooth-pairing': 'logAnalyzer.categories.bluetooth-pairing.label',
   'store-forward': 'logAnalyzer.categories.store-forward.label',
+  'serial-reconnect': 'logAnalyzer.categories.serial-reconnect.label',
   'sdk-meshtastic': 'logAnalyzer.categories.sdk-meshtastic.label',
   'sdk-meshcore': 'logAnalyzer.categories.sdk-meshcore.label',
 };

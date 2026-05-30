@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "确保安装了正确的 USB 驱动程序（CH340、CP210x 或 FTDI）。检查设备管理器中 COM 端口上是否有黄色警告。",
         "accessDeniedLinuxHint": "在 Linux 上，将您的用户添加到 dialout 组： sudo usermod -aG dialout $USER （然后注销并重新登录）",
         "disconnectedHint": "确保 USB 电缆已连接并且设备已开机。",
-        "timeoutHint": "如果该端口短暂出现，请尝试重新连接 USB 电缆。"
+        "timeoutHint": "如果该端口短暂出现，请尝试重新连接 USB 电缆。",
+        "portStillOpenHint": "USB串行端口未完全释放。完全退出网状客户端并重新打开，或拔下并重新插入USB电缆，然后重新连接。"
       },
       "http": {
         "timeoutMdnsWindows": "在 Windows 上，meshtastic.local 需要 Bonjour（与 iTunes 一起安装）。请改用设备的 IP 地址。",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Store & Forward 历史记录问题",
         "recommendation": "无法从路由器请求存储和转发聊天历史记录（通常是与其他无线电流量的短暂比赛）。如果聊天积压保持为空，请重新连接或等待下一个路由器心跳。"
+      },
+      "serial-reconnect": {
+        "label": "USB串行重新连接",
+        "recommendation": "断开连接后， USB串行未完全释放。退出网状客户端并重新打开，或拔下并重新插入电缆，然后重新连接。"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "做事。"
+      },
+      "serial-reconnect": {
+        "recommendation": "断开连接后， USB串行未完全释放。退出网状客户端并重新打开，或拔下并重新插入电缆，然后重新连接。"
       }
     }
   },

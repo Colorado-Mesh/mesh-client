@@ -7,6 +7,7 @@ import {
   assertTransportReadyForMeshDevice,
   formatJsonForRendererLog,
   getMeshtasticStreamsDiagnostics,
+  logMeshtasticSerialStreamDiagnostics,
 } from './connectionWebStreams';
 import {
   getPortSignature,
@@ -411,6 +412,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
     console.debug(
       `[connection] TransportWebSerial.createFromPort failed ${err instanceof Error ? err.message : String(err)}`,
     );
+    logMeshtasticSerialStreamDiagnostics('reconnectSerial createFromPort failed', null, port);
     rethrowIfTransportWebSerialPipeToFailed(err, 'TransportWebSerial.createFromPort');
   }
   {
@@ -424,6 +426,21 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
   }
   assertTransportReadyForMeshDevice(transport, 'Meshtastic serial (reconnect)');
   return new MeshDevice(transport);
+}
+
+/** Best-effort cancel of Meshtastic inbound decode stream (serial and HTTP). */
+async function cancelMeshtasticFromDeviceBestEffort(
+  transport: MeshDevice['transport'],
+): Promise<void> {
+  const fromDevice = transport?.fromDevice as ReadableStream | undefined;
+  if (!fromDevice || typeof fromDevice.cancel !== 'function') return;
+  try {
+    await fromDevice.cancel();
+  } catch (e) {
+    console.debug(
+      `[connection] safeDisconnect fromDevice.cancel ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
 }
 
 /**
@@ -449,14 +466,7 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
         );
       }
 
-      // Close fromDevice stream to prevent GC leaks and lingering fetches (HTTP)
-      try {
-        await (device.transport.fromDevice as ReadableStream).cancel();
-      } catch (e) {
-        console.debug(
-          `[connection] safeDisconnect fromDevice.cancel ${e instanceof Error ? e.message : String(e)}`,
-        );
-      }
+      await cancelMeshtasticFromDeviceBestEffort(device.transport);
     } else {
       console.warn(
         `[useMeshtasticRuntime] Disconnect error: ${err instanceof Error ? err.message : String(err)}`,
@@ -465,7 +475,13 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
   } finally {
     const serialPort = getSerialPortFromMeshTransport(device.transport);
     if (serialPort) {
+      await cancelMeshtasticFromDeviceBestEffort(device.transport);
       await closeSerialPortIfOpen(serialPort);
+      logMeshtasticSerialStreamDiagnostics(
+        'safeDisconnect after serial teardown',
+        device.transport,
+        serialPort,
+      );
     }
     // Always complete device streams to prevent memory leaks
     try {

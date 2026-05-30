@@ -175,6 +175,20 @@ After running xattr, check Privacy & Security again (scroll to the bottom); the 
 - The Bluetooth connection can drop silently; click Disconnect, then Connect again
 - For serial: the USB cable may have been bumped; reconnect
 
+### Meshtastic USB serial: reconnect fails with "port is already open"
+
+After **Disconnect** then **Connect** (or auto-reconnect), the connection panel may show:
+
+`Failed to execute 'open' on 'SerialPort': The port is already open.`
+
+This means Chromium still holds the previous Web Serial session (locked streams). mesh-client ships patched `@meshtastic/core` and `@meshtastic/transport-web-serial` to tear down pipes on disconnect; if you still see this on an older build:
+
+1. **Quit mesh-client completely** (not only Disconnect) and reopen the app, then connect again.
+2. Or **unplug and replug** the USB cable, then connect.
+3. Open the **Log** panel, enable **debug**, reproduce once, and click **Analyze** — look for **USB Serial Reconnect** recommendations.
+
+BLE or Wi‑Fi/HTTP avoids this USB serial path when you need a reliable reconnect loop.
+
 ### Connection or transport issues: use Log **Analyze**
 
 Open the **Log** panel (right rail), enable **debug** if needed, reproduce the problem, then click **Analyze**. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists **suggested next steps**. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is **heuristic**; treat recommendations as hints, not guarantees.

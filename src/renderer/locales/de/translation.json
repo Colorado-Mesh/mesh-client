@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "Stellen Sie sicher, dass der richtige USB-Treiber installiert ist (CH340, CP210x oder FTDI). Überprüfen Sie im Geräte-Manager, ob am COM-Port eine gelbe Warnung angezeigt wird.",
         "accessDeniedLinuxHint": "Fügen Sie unter Linux Ihren Benutzer zur Dialout-Gruppe hinzu: sudo usermod -aG dialout $USER (dann abmelden und wieder anmelden)",
         "disconnectedHint": "Stellen Sie sicher, dass das USB-Kabel angeschlossen und das Gerät eingeschaltet ist.",
-        "timeoutHint": "Wenn der Anschluss kurzzeitig angezeigt wird, versuchen Sie, das USB-Kabel erneut anzuschließen."
+        "timeoutHint": "Wenn der Anschluss kurzzeitig angezeigt wird, versuchen Sie, das USB-Kabel erneut anzuschließen.",
+        "portStillOpenHint": "Die serielle USB-Schnittstelle wurde nicht sauber freigegeben. Beenden Sie den Mesh-Client vollständig und öffnen Sie ihn erneut, oder ziehen Sie den Stecker und stecken Sie das USB-Kabel erneut ein und schließen Sie es erneut an."
       },
       "http": {
         "timeoutMdnsWindows": "Unter Windows erfordert meshtastic.local Bonjour (installiert mit iTunes). Verwenden Sie stattdessen die IP-Adresse des Geräts.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Store- & Forward-Verlaufsprobleme",
         "recommendation": "Store & Forward Chat-Verlauf konnte nicht von einem Router angefordert werden (oft ein kurzes Rennen mit anderem Funkverkehr). Wenn das Chat-Backlog leer bleibt, verbinden Sie sich erneut oder warten Sie auf den nächsten Herzschlag des Routers."
+      },
+      "serial-reconnect": {
+        "label": "USB-Serielle Wiederverbindung",
+        "recommendation": "USB-Seriell wurde nach dem Trennen nicht sauber freigegeben. Beenden Sie den Mesh-Client und öffnen Sie ihn erneut, oder ziehen Sie den Netzstecker und stecken Sie das Kabel erneut ein und schließen Sie es dann erneut an."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Mach das Ding."
+      },
+      "serial-reconnect": {
+        "recommendation": "USB-Seriell wurde nach dem Trennen nicht sauber freigegeben. Beenden Sie den Mesh-Client und öffnen Sie ihn erneut, oder ziehen Sie den Netzstecker und stecken Sie das Kabel erneut ein und schließen Sie es dann erneut an."
       }
     }
   },

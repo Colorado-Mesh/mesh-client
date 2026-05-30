@@ -218,6 +218,19 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     requireWarnOrError: true,
   },
   {
+    id: 'serial-reconnect',
+    patterns: [
+      /port is already open/i,
+      /Cannot cancel a locked stream/i,
+      /locked stream/i,
+      /reconnectSerial createFromPort failed/i,
+      /safeDisconnect after serial teardown/i,
+    ],
+    severity: 'warning',
+    protocols: ['meshtastic'],
+    recommendationGroup: 'serial-reconnect',
+  },
+  {
     id: 'sdk-meshtastic',
     patterns: [
       /\[useMeshtasticRuntime\]/i,

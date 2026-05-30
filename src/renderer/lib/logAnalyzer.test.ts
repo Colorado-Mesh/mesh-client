@@ -329,6 +329,24 @@ describe('analyzeLogs', () => {
     expect(result.categories.find((c) => c.id === 'meshcore-tcp')).toBeDefined();
   });
 
+  it('detects Meshtastic serial reconnect failures', () => {
+    const result = analyzeLogs(
+      [
+        makeEntry(
+          '[connection] reconnectSerial createFromPort failed port is already open',
+          'debug',
+        ),
+      ],
+      'meshtastic',
+    );
+    expect(result.categories.find((c) => c.id === 'serial-reconnect')).toBeDefined();
+    const meshcore = analyzeLogs(
+      [makeEntry('Failed to execute open on SerialPort: The port is already open.', 'error')],
+      'meshcore',
+    );
+    expect(meshcore.categories.find((c) => c.id === 'serial-reconnect')).toBeUndefined();
+  });
+
   it('classifies IpcNobleConnection:meshtastic under sdk-meshtastic', () => {
     const result = analyzeLogs(
       [makeEntry('[IpcNobleConnection:meshtastic] peripheral disconnected', 'warn')],

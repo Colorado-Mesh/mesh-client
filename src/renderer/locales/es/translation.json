@@ -443,7 +443,8 @@
         "accessDeniedWindowsHint": "Asegúrese de que esté instalado el controlador USB correcto (CH340, CP210x o FTDI). Consulte el Administrador de dispositivos para ver si aparece una advertencia amarilla en el puerto COM.",
         "accessDeniedLinuxHint": "En Linux, agregue su usuario al grupo de acceso telefónico: sudo usermod -aG dialout $USER (luego cierre sesión y vuelva a iniciarla)",
         "disconnectedHint": "Asegúrese de que el cable USB esté conectado y que el dispositivo esté encendido.",
-        "timeoutHint": "Si el puerto apareció brevemente, intente volver a conectar el cable USB."
+        "timeoutHint": "Si el puerto apareció brevemente, intente volver a conectar el cable USB.",
+        "portStillOpenHint": "El puerto serie USB no se ha liberado correctamente. Salga del cliente de malla por completo y vuelva a abrirlo, o desenchufe y vuelva a conectar el cable USB, luego conéctelo de nuevo."
       },
       "http": {
         "timeoutMdnsWindows": "En Windows, meshtastic.local requiere Bonjour (instalado con iTunes). Utilice la dirección IP del dispositivo en su lugar.",
@@ -840,11 +841,18 @@
       "store-forward": {
         "label": "Problemas del historial Store & Forward",
         "recommendation": "No se pudo solicitar el historial de chat de almacenamiento y reenvío desde un router (a menudo una breve carrera con otro tráfico de radio). Si el trabajo pendiente del chat permanece vacío, vuelva a conectarse o espere el próximo latido del router."
+      },
+      "serial-reconnect": {
+        "label": "Reconexión serie USB",
+        "recommendation": "El USB serial no se liberó limpiamente después de la desconexión. Salga del cliente de malla y vuelva a abrirlo, o desenchufe y vuelva a enchufar el cable, luego conéctelo de nuevo."
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Haz la cosa."
+      },
+      "serial-reconnect": {
+        "recommendation": "El USB serial no se liberó limpiamente después de la desconexión. Salga del cliente de malla y vuelva a abrirlo, o desenchufe y vuelva a enchufar el cable, luego conéctelo de nuevo."
       }
     }
   },
