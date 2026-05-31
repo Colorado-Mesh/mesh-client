@@ -79,7 +79,7 @@ describe('useMeshcoreRuntime mount hydration', () => {
     expect(m.payload).toBe('Hello from DB');
     expect(m.sender_name).toBe('Alice');
     expect(m.sender_id).toBe(SENDER_ID);
-    expect(m.isHistory).toBe(true);
+    expect(m.isHistory).toBeUndefined();
     expect(m.receivedVia).toBe('mqtt');
 
     expect(result.current.nodes.has(SENDER_ID)).toBe(true);

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { upsertMessageRecordsForIdentity, useMessageStore } from '../stores/messageStore';
 import { upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
+import { totalUnreadCount } from './chatUnreadCounts';
 import {
   hydrateIdentityStoresFromDb,
   hydrateMeshcoreMessagesFromDb,
@@ -12,6 +13,7 @@ import {
   syncMeshtasticNodesMapToIdentityStore,
 } from './hydrateIdentityStoresFromDb';
 import { resetIdentityHydrationCoordinatorForTests } from './identityHydrationCoordinator';
+import { messageRecordsToChatMessages } from './storeRecordAdapters';
 
 const ID_MT = 'id-hydrate-mt';
 const ID_MC = 'id-hydrate-mc';
@@ -101,6 +103,36 @@ describe('hydrateIdentityStoresFromDb', () => {
 
     expect(useNodeStore.getState().nodes[ID_MC]?.[0xabc]?.longName).toBe('Repeater');
     expect(Object.keys(useMessageStore.getState().messages[ID_MC] ?? {})).toHaveLength(1);
+  });
+
+  it('MeshCore DB hydration preserves unread eligibility (no isHistory on persisted rows)', async () => {
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockResolvedValue([
+      {
+        id: 7,
+        sender_id: 0xdef,
+        sender_name: 'Alice',
+        payload: 'unread after restart',
+        channel_idx: 1,
+        timestamp: 9000,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: null,
+        to_node: null,
+      },
+    ]);
+
+    await hydrateMeshcoreMessagesFromDb(ID_MC);
+
+    const records = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
+    const messages = messageRecordsToChatMessages(records);
+    expect(messages[0]?.isHistory).toBeUndefined();
+
+    const ownNodes = new Set([1]);
+    const unread = totalUnreadCount(messages, { 'ch:1': 1000 }, ownNodes, 'meshcore');
+    expect(unread).toBe(1);
   });
 
   it('dispatches by protocol via hydrateIdentityStoresFromDb', async () => {
