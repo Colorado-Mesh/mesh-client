@@ -276,7 +276,8 @@
       "overMax": "Задовго — максимум {{totalMax}} символів ({{maxParts}} повідомлень)",
       "sendParts_one": "Надіслати {{count}} деталь",
       "sendParts_other": "Надіслати запчастини ({{count}})"
-    }
+    },
+    "sendFailed": "Не вдалося надіслати"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -2026,7 +2027,15 @@
     "membersRefreshAcl": "Оновити ACL",
     "membersAclLoading": "Завантаження ACL…",
     "membersAclLastFetched": "Отримано ACL {{time}}",
-    "membersAclFetchFailed": "Не вдалося отримати ACL"
+    "membersAclFetchFailed": "Не вдалося отримати ACL",
+    "autoLoginOnConnect": "Автоматичний вхід під час підключення",
+    "autoLoginOnConnectTooltip": "Автоматичний вхід після підключення радіостанції (потрібен збережений пароль; лише радіочастоти)",
+    "autoLoginRequiresSavedPassword": "Спочатку збережіть пароль, щоб увімкнути автоматичний вхід",
+    "autoLoginFailed": "Помилка автоматичного входу: {{error}}",
+    "autoLoginFailedAria": "Помилка автоматичного входу: {{error}}",
+    "jumpToLatest": "Перейти до останньої версії",
+    "jumpToUnread": "Перейти до непрочитаного",
+    "newMessagesDivider": "нове повідомлення"
   },
   "searchModal": {
     "closeSearch": "Закрити розклад пошуку",

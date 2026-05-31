@@ -276,7 +276,8 @@
       "overMax": "Слишком долго — максимум {{totalMax}} символов ({{maxParts}} сообщений)",
       "sendParts_one": "Отправить {{count}} деталь",
       "sendParts_other": "Отправьте {{count}} деталей"
-    }
+    },
+    "sendFailed": "Сбой отправки"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -2026,7 +2027,15 @@
     "membersRefreshAcl": "Обновить ACL",
     "membersAclLoading": "Загрузка ACL…",
     "membersAclLastFetched": "Получено ACL {{time}}",
-    "membersAclFetchFailed": "Не удалось получить ACL"
+    "membersAclFetchFailed": "Не удалось получить ACL",
+    "autoLoginOnConnect": "Автоматический вход в систему при подключении",
+    "autoLoginOnConnectTooltip": "Автоматический вход в систему при подключении радиостанции (требуется сохраненный пароль; только RF)",
+    "autoLoginRequiresSavedPassword": "Сначала сохраните пароль, чтобы включить автоматический вход",
+    "autoLoginFailed": "Ошибка автоматического входа: {{error}}",
+    "autoLoginFailedAria": "Ошибка автоматического входа: {{error}}",
+    "jumpToLatest": "Перейти к последним",
+    "jumpToUnread": "Перейти к непрочитанным",
+    "newMessagesDivider": "Новые письма"
   },
   "searchModal": {
     "closeSearch": "Закрыть поиск",

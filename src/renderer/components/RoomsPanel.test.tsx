@@ -3,7 +3,13 @@ import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannelText';
+import {
+  clearAllMeshcoreRoomAutoLoginFailures,
+  setMeshcoreRoomAutoLoginFailure,
+} from '@/renderer/lib/meshcoreRoomAutoLoginFailure';
+import { meshcoreRoomCredentialSettingForNode } from '@/renderer/lib/meshcoreRoomCredentialStorage';
 import {
   meshcoreApplyRoomSession,
   meshcoreClearAllRoomSessions,
@@ -51,7 +57,6 @@ function renderRoomsPanel(
   props: Partial<ComponentProps<typeof RoomsPanel>> = {},
 ) {
   const onLoginRoom = props.onLoginRoom ?? vi.fn().mockResolvedValue(undefined);
-  const onLoginRoomWithSaved = props.onLoginRoomWithSaved ?? vi.fn().mockResolvedValue(undefined);
   const onCancelRoomLogin = props.onCancelRoomLogin ?? vi.fn();
   const onLeaveRoom = props.onLeaveRoom ?? vi.fn().mockResolvedValue(undefined);
   render(
@@ -61,7 +66,6 @@ function renderRoomsPanel(
       myNodeNum={1}
       isConnected
       onLoginRoom={onLoginRoom}
-      onLoginRoomWithSaved={onLoginRoomWithSaved}
       onCancelRoomLogin={onCancelRoomLogin}
       onLeaveRoom={onLeaveRoom}
       onSendRoomPost={vi.fn()}
@@ -69,13 +73,14 @@ function renderRoomsPanel(
       {...props}
     />,
   );
-  return { onLoginRoom, onLoginRoomWithSaved, onCancelRoomLogin, onLeaveRoom };
+  return { onLoginRoom, onCancelRoomLogin, onLeaveRoom };
 }
 
 describe('RoomsPanel', () => {
   beforeEach(() => {
     localStorage.clear();
     meshcoreClearAllRoomSessions();
+    clearAllMeshcoreRoomAutoLoginFailures();
   });
 
   it('shows login overlay for selected room when not logged in', () => {
@@ -301,7 +306,6 @@ describe('RoomsPanel', () => {
         isConnected
         initialRoomTarget={room.node_id}
         onLoginRoom={vi.fn().mockResolvedValue(undefined)}
-        onLoginRoomWithSaved={vi.fn().mockResolvedValue(undefined)}
         onCancelRoomLogin={vi.fn()}
         onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
         onSendRoomPost={onSendRoomPost}
@@ -336,7 +340,6 @@ describe('RoomsPanel', () => {
         isConnected
         initialRoomTarget={room.node_id}
         onLoginRoom={vi.fn().mockResolvedValue(undefined)}
-        onLoginRoomWithSaved={vi.fn().mockResolvedValue(undefined)}
         onCancelRoomLogin={vi.fn()}
         onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
         onSendRoomPost={onSendRoomPost}
@@ -369,7 +372,6 @@ describe('RoomsPanel', () => {
         isConnected
         initialRoomTarget={room.node_id}
         onLoginRoom={vi.fn().mockResolvedValue(undefined)}
-        onLoginRoomWithSaved={vi.fn().mockResolvedValue(undefined)}
         onCancelRoomLogin={vi.fn()}
         onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
         onSendRoomPost={vi.fn()}
@@ -570,5 +572,55 @@ describe('RoomsPanel', () => {
     const raw = localStorage.getItem('mesh-client:starred:meshcore');
     expect(raw).toBeTruthy();
     expect(raw).toContain('Bookmark me');
+  });
+
+  it('does not auto-login on room select when saved credentials exist', async () => {
+    const room = makeRoom(0x100e, 'Saved Creds Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    mergeAppSetting(
+      meshcoreRoomCredentialSettingForNode(room.node_id),
+      JSON.stringify({ guestPassword: 'hello' }),
+      'RoomsPanel.test saved cred',
+    );
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+    });
+  });
+
+  it('shows red ring on room marker when auto-login failed', () => {
+    const room = makeRoom(0x100f, 'Failed Auto Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    setMeshcoreRoomAutoLoginFailure(room.node_id, 'timeout');
+
+    renderRoomsPanel(nodes);
+
+    const marker = screen.getByLabelText('roomsPanel.autoLoginFailedAria');
+    expect(marker.className).toContain('ring-red-500');
+  });
+
+  it('clears auto-login failure marker after successful manual login', async () => {
+    const room = makeRoom(0x1010, 'Recover Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    setMeshcoreRoomAutoLoginFailure(room.node_id, 'timeout');
+    const onLoginRoom = vi.fn().mockImplementation(() => {
+      meshcoreApplyRoomSession(room.node_id, {
+        guestPassword: 'hello',
+        adminPassword: '',
+        role: 'readwrite',
+      });
+    });
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
+
+    await userEvent.click(screen.getByRole('button', { name: 'roomsPanel.loginButton' }));
+    await waitFor(() => {
+      expect(onLoginRoom).toHaveBeenCalled();
+    });
+    expect(screen.queryByLabelText('roomsPanel.autoLoginFailedAria')).not.toBeInTheDocument();
   });
 });

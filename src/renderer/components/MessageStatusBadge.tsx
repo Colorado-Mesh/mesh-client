@@ -5,6 +5,8 @@ export interface MessageStatusBadgeProps {
   transport: 'device' | 'mqtt' | 'outbox';
   connectionType?: 'ble' | 'serial' | 'http' | null;
   error?: string;
+  /** Room BBS posts ack on companion SENT, not mesh hop ACK. */
+  context?: 'dm' | 'room';
 }
 
 export function MessageStatusBadge({
@@ -12,6 +14,7 @@ export function MessageStatusBadge({
   transport,
   connectionType,
   error,
+  context = 'dm',
 }: MessageStatusBadgeProps) {
   if (status === 'queued') {
     return (
@@ -32,17 +35,19 @@ export function MessageStatusBadge({
       ? '\u23F3'
       : status === 'acked'
         ? '\u2713'
-        : transport === 'device'
-          ? 'no ACK'
-          : '\u2717';
+        : context === 'room'
+          ? '\u2717'
+          : transport === 'device'
+            ? 'no ACK'
+            : '\u2717';
   const colorClass =
     status === 'sending'
       ? 'text-muted'
       : status === 'acked'
         ? 'text-bright-green'
-        : transport === 'device'
-          ? 'text-yellow-400'
-          : 'text-red-400';
+        : context === 'room' || transport !== 'device'
+          ? 'text-red-400'
+          : 'text-yellow-400';
   const label =
     transport === 'mqtt'
       ? 'MQTT'
@@ -52,11 +57,19 @@ export function MessageStatusBadge({
           ? 'WiFi'
           : 'BT';
   const failedReason =
-    status === 'failed' && transport === 'device'
-      ? 'No ACK (message may still have been broadcast; no other node in range to acknowledge)'
-      : error || 'Failed';
+    status === 'failed' && context === 'room'
+      ? (error ?? 'Failed to post')
+      : status === 'failed' && transport === 'device'
+        ? 'No ACK (message may still have been broadcast; no other node in range to acknowledge)'
+        : error || 'Failed';
   const tooltip = `${transport === 'mqtt' ? 'MQTT' : 'Device'}: ${
-    status === 'sending' ? 'Sending...' : status === 'acked' ? 'Delivered' : failedReason
+    status === 'sending'
+      ? 'Sending...'
+      : status === 'acked'
+        ? context === 'room'
+          ? 'Posted'
+          : 'Delivered'
+        : failedReason
   }`;
   return (
     <HelpTooltip text={tooltip}>

@@ -276,7 +276,8 @@
       "overMax": "너무 깁니다 — 최대 {{totalMax}}자 ({{maxParts}}메시지)",
       "sendParts_one": "{{count}}개 보내기",
       "sendParts_other": "{{count}}개 보내기"
-    }
+    },
+    "sendFailed": "전송 실패"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -2026,7 +2027,15 @@
     "membersRefreshAcl": "ACL 새로 고침",
     "membersAclLoading": "ACL 로드 중...",
     "membersAclLastFetched": "ACL 조회 {{time}}",
-    "membersAclFetchFailed": "ACL을 가져올 수 없습니다"
+    "membersAclFetchFailed": "ACL을 가져올 수 없습니다",
+    "autoLoginOnConnect": "연결되면 자동 로그인",
+    "autoLoginOnConnectTooltip": "라디오가 연결되면 자동으로 로그인합니다 (저장된 비밀번호 필요, RF만 해당).",
+    "autoLoginRequiresSavedPassword": "자동 로그인을 활성화하려면 먼저 비밀번호를 저장하세요",
+    "autoLoginFailed": "자동 로그인 실패: {{error}}",
+    "autoLoginFailedAria": "자동 로그인 실패: {{error}}",
+    "jumpToLatest": "최근 페이지로 이동",
+    "jumpToUnread": "읽지 않음으로 이동",
+    "newMessagesDivider": "새 메시지"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

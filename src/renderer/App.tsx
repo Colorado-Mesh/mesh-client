@@ -557,6 +557,7 @@ function AppContent({
   const mainViewportRef = useRef<HTMLDivElement>(null);
   const activePanelIndexRef = useRef(0);
   const scrollToTopChatRef = useRef<(() => void) | null>(null);
+  const scrollToTopRoomsRef = useRef<(() => void) | null>(null);
   const [showMainScrollTop, setShowMainScrollTop] = useState(false);
   const [updateState, setUpdateState] = useState<UpdateState>({ phase: 'idle' });
   const menuUpdateNotifyCtrl = useMemo(
@@ -983,7 +984,8 @@ function AppContent({
     const viewport = mainViewportRef.current;
     if (!viewport) return;
     const handleMainScroll = () => {
-      if (activePanelIndexRef.current === 1) {
+      const panel = activePanelIndexRef.current;
+      if (panel === 1 || panel === ROOMS_PANEL_INDEX) {
         setShowMainScrollTop(false);
       } else {
         setShowMainScrollTop(viewport.scrollTop > 200);
@@ -999,6 +1001,8 @@ function AppContent({
   const scrollMainToTop = useCallback(() => {
     if (activePanelIndex === 1 && scrollToTopChatRef.current) {
       scrollToTopChatRef.current();
+    } else if (activePanelIndex === ROOMS_PANEL_INDEX && scrollToTopRoomsRef.current) {
+      scrollToTopRoomsRef.current();
     } else {
       mainViewportRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -2537,7 +2541,7 @@ function AppContent({
                       role="tabpanel"
                       aria-labelledby="tab-6"
                       hidden={activePanelIndex !== 6}
-                      className="w-full min-w-0"
+                      className="h-full w-full min-w-0"
                     >
                       {(activePanelIndex === ROOMS_PANEL_INDEX || roomsTabVisited) &&
                       protocol === 'meshcore' ? (
@@ -2557,7 +2561,6 @@ function AppContent({
                                 initialRoomTarget={pendingRoomTarget}
                                 onInitialRoomConsumed={handleRoomTargetConsumed}
                                 onLoginRoom={meshcorePanelActions.loginRoom}
-                                onLoginRoomWithSaved={meshcorePanelActions.loginRoomWithSaved}
                                 onCancelRoomLogin={meshcorePanelActions.cancelRoomLogin}
                                 onLeaveRoom={meshcorePanelActions.leaveRoom}
                                 onSendRoomPost={meshcorePanelActions.sendRoomPost}
@@ -2566,6 +2569,8 @@ function AppContent({
                                 meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
                                 onClearCliHistory={meshcorePanelActions.clearCliHistory}
                                 onMessageNode={handleMessageNode}
+                                scrollToTopRef={scrollToTopRoomsRef}
+                                outerScrollMetricsRootRef={mainViewportRef}
                               />
                             </div>
                           </Suspense>
@@ -2839,17 +2844,19 @@ function AppContent({
               </div>
             </div>
 
-            {showMainScrollTop && activePanelIndex !== 1 && (
-              <button
-                type="button"
-                onClick={scrollMainToTop}
-                className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-28 bottom-12 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
-                title={t('aria.backToTop')}
-                aria-label={t('aria.backToTop')}
-              >
-                ↑ Top
-              </button>
-            )}
+            {showMainScrollTop &&
+              activePanelIndex !== 1 &&
+              activePanelIndex !== ROOMS_PANEL_INDEX && (
+                <button
+                  type="button"
+                  onClick={scrollMainToTop}
+                  className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-28 bottom-12 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
+                  title={t('aria.backToTop')}
+                  aria-label={t('aria.backToTop')}
+                >
+                  ↑ Top
+                </button>
+              )}
 
             {/* Footer - fixed height at bottom of Content Wrapper */}
             <footer className="text-muted bg-deep-black flex h-8 shrink-0 items-center justify-between border-t border-slate-800 px-4 text-[10px]">

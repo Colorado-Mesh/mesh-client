@@ -276,7 +276,8 @@
       "overMax": "Çok uzun — maksimum {{totalMax}} karakter ({{maxParts}} mesaj)",
       "sendParts_one": "{{count}} parça gönder",
       "sendParts_other": "{{count}} parça gönder"
-    }
+    },
+    "sendFailed": "Gönderilemedi"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -2026,7 +2027,15 @@
     "membersRefreshAcl": "ACL'yi yenile",
     "membersAclLoading": "ACL yükleniyor…",
     "membersAclLastFetched": "ACL {{time}} aldı",
-    "membersAclFetchFailed": "ACL alınamadı"
+    "membersAclFetchFailed": "ACL alınamadı",
+    "autoLoginOnConnect": "Bağlandığında otomatik giriş yap",
+    "autoLoginOnConnectTooltip": "Radyo bağlandığında otomatik olarak oturum açın (kayıtlı şifre gerektirir; yalnızca RF)",
+    "autoLoginRequiresSavedPassword": "Otomatik girişi etkinleştirmek için önce şifreyi kaydedin",
+    "autoLoginFailed": "Otomatik giriş başarısız: {{error}}",
+    "autoLoginFailedAria": "Otomatik giriş başarısız: {{error}}",
+    "jumpToLatest": "En yeniye atla",
+    "jumpToUnread": "Okunmamışlara atla",
+    "newMessagesDivider": "Yeni mesajlar"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

@@ -276,7 +276,8 @@
       "overMax": "Terlalu panjang — maksimum {{totalMax}} karakter ({{maxParts}} pesan)",
       "sendParts_one": "Kirim {{count}} bagian",
       "sendParts_other": "Kirim {{count}} bagian"
-    }
+    },
+    "sendFailed": "Pengiriman gagal"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -2026,7 +2027,15 @@
     "membersRefreshAcl": "Segarkan ACL",
     "membersAclLoading": "Memuat ACL…",
     "membersAclLastFetched": "ACL diambil {{time}}",
-    "membersAclFetchFailed": "Tidak dapat mengambil ACL"
+    "membersAclFetchFailed": "Tidak dapat mengambil ACL",
+    "autoLoginOnConnect": "Masuk otomatis saat tersambung",
+    "autoLoginOnConnectTooltip": "Masuk secara otomatis saat radio terhubung (hanya memerlukan kata sandi yang disimpan; hanya RF)",
+    "autoLoginRequiresSavedPassword": "Simpan kata sandi terlebih dahulu untuk mengaktifkan login otomatis",
+    "autoLoginFailed": "Gagal masuk otomatis: {{error}}",
+    "autoLoginFailedAria": "Gagal masuk otomatis: {{error}}",
+    "jumpToLatest": "Langsung ke yang terbaru",
+    "jumpToUnread": "Langsung ke belum dibaca",
+    "newMessagesDivider": "Pesan baru"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

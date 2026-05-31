@@ -276,7 +276,8 @@
       "overMax": "太长 — 最多 {{totalMax}} 个字符（{{maxParts}} 条消息）",
       "sendParts_one": "发送 {{count}} 部分",
       "sendParts_other": "发送 {{count}} 部分"
-    }
+    },
+    "sendFailed": "发送失败"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2026,7 +2027,15 @@
     "membersRefreshAcl": "刷新ACL",
     "membersAclLoading": "正在加载ACL…",
     "membersAclLastFetched": "ACL 已于 {{time}} 获取",
-    "membersAclFetchFailed": "无法获取 ACL"
+    "membersAclFetchFailed": "无法获取 ACL",
+    "autoLoginOnConnect": "连接时自动登录",
+    "autoLoginOnConnectTooltip": "无线电连接时自动登录（需要保存密码；仅限射频）",
+    "autoLoginRequiresSavedPassword": "先保存密码以启用自动登录",
+    "autoLoginFailed": "自动登录失败：{{error}}",
+    "autoLoginFailedAria": "自动登录失败：{{error}}",
+    "jumpToLatest": "跳转到最新",
+    "jumpToUnread": "跳至未读",
+    "newMessagesDivider": "新消息"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

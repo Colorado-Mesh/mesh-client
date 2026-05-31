@@ -276,7 +276,8 @@
       "overMax": "長すぎます — 最大{{totalMax}}文字（{{maxParts}}メッセージ）",
       "sendParts_one": "{{count}}件を送信",
       "sendParts_other": "{{count}}件を送信"
-    }
+    },
+    "sendFailed": "送信に失敗しました"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -2026,7 +2027,15 @@
     "membersRefreshAcl": "ACLを更新",
     "membersAclLoading": "ACLを読み込んでいます…",
     "membersAclLastFetched": "ACL取得 {{time}}",
-    "membersAclFetchFailed": "ACLを取得できませんでした"
+    "membersAclFetchFailed": "ACLを取得できませんでした",
+    "autoLoginOnConnect": "接続時に自動ログイン",
+    "autoLoginOnConnectTooltip": "無線が接続されると自動的にログインします（保存されたパスワードが必要です。RFのみ）",
+    "autoLoginRequiresSavedPassword": "自動ログインを有効にするには、まずパスワードを保存してください",
+    "autoLoginFailed": "自動ログインに失敗しました：{{error}}",
+    "autoLoginFailedAria": "自動ログインに失敗しました：{{error}}",
+    "jumpToLatest": "最新情報にジャンプ",
+    "jumpToUnread": "未読へジャンプ",
+    "newMessagesDivider": "新着メッセージ"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

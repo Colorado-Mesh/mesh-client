@@ -285,8 +285,9 @@ export function ChatComposer({
       onSendSuccess?.();
     } catch (err) {
       console.error('[ChatComposer] Send failed: ' + errLikeToLogString(err));
+      const fallback = variant === 'room' ? t('roomsPanel.postFailed') : t('chatPanel.sendFailed');
       setChatActionError({
-        message: err instanceof Error ? err.message : 'Send failed',
+        message: err instanceof Error ? err.message : fallback,
         viewKey,
       });
     } finally {
@@ -310,6 +311,7 @@ export function ChatComposer({
     replyTo,
     sending,
     t,
+    variant,
     viewKey,
     wireOverheadFirstChunk,
   ]);

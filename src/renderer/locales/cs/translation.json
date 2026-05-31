@@ -276,7 +276,8 @@
       "overMax": "Příliš dlouhé — maximum {{totalMax}} znaků ({{maxParts}} zpráv)",
       "sendParts_one": "Odeslat {{count}} díl",
       "sendParts_other": "Odeslat {{count}} díly"
-    }
+    },
+    "sendFailed": "Odeslání se nezdařilo"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -2026,7 +2027,15 @@
     "membersRefreshAcl": "Obnovit ACL",
     "membersAclLoading": "Načítání ACL...",
     "membersAclLastFetched": "ACL načteno {{time}}",
-    "membersAclFetchFailed": "Nepodařilo se načíst ACL"
+    "membersAclFetchFailed": "Nepodařilo se načíst ACL",
+    "autoLoginOnConnect": "Automatické přihlášení po připojení",
+    "autoLoginOnConnectTooltip": "Automaticky se přihlásit, když se rádio připojí (vyžaduje uložené heslo; pouze RF)",
+    "autoLoginRequiresSavedPassword": "Nejprve uložte heslo pro povolení automatického přihlášení",
+    "autoLoginFailed": "Automatické přihlášení se nezdařilo: {{error}}",
+    "autoLoginFailedAria": "Automatické přihlášení se nezdařilo: {{error}}",
+    "jumpToLatest": "Přejít na nejnovější",
+    "jumpToUnread": "Přejít na nepřečtené",
+    "newMessagesDivider": "Nové zprávy"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

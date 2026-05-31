@@ -276,7 +276,8 @@
       "overMax": "Te lang — maximaal {{totalMax}} tekens ({{maxParts}} berichten)",
       "sendParts_one": "Verstuur {{count}} onderdeel",
       "sendParts_other": "Verstuur {{count}} onderdelen"
-    }
+    },
+    "sendFailed": "Verzenden mislukt"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -2026,7 +2027,15 @@
     "membersRefreshAcl": "ACL vernieuwen",
     "membersAclLoading": "ACL laden...",
     "membersAclLastFetched": "ACL opgehaald {{time}}",
-    "membersAclFetchFailed": "ACL ophalen mislukt"
+    "membersAclFetchFailed": "ACL ophalen mislukt",
+    "autoLoginOnConnect": "Automatisch inloggen bij verbinding",
+    "autoLoginOnConnectTooltip": "Log automatisch in wanneer de radio verbinding maakt (vereist opgeslagen wachtwoord; alleen RF)",
+    "autoLoginRequiresSavedPassword": "Sla het wachtwoord eerst op om automatisch inloggen in te schakelen",
+    "autoLoginFailed": "Automatisch inloggen mislukt: {{error}}",
+    "autoLoginFailedAria": "Automatisch inloggen mislukt: {{error}}",
+    "jumpToLatest": "Spring naar het laatste nieuws",
+    "jumpToUnread": "Ga naar ongelezen",
+    "newMessagesDivider": "Nieuwe berichten"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

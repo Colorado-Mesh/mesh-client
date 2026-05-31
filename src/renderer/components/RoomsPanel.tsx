@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMeshcoreRoomAuth } from '@/renderer/hooks/useMeshcoreRoomAuth';
@@ -19,9 +27,11 @@ import {
   parseMeshcoreRoomAclResponse,
 } from '@/renderer/lib/meshcoreRoomAclParser';
 import {
-  getMeshcoreRoomCredential,
-  listMeshcoreRoomCredentialNodeIds,
-} from '@/renderer/lib/meshcoreRoomCredentialStorage';
+  clearMeshcoreRoomAutoLoginFailure,
+  getMeshcoreRoomAutoLoginFailure,
+  subscribeMeshcoreRoomAutoLoginFailureChanges,
+} from '@/renderer/lib/meshcoreRoomAutoLoginFailure';
+import { listMeshcoreRoomCredentialNodeIds } from '@/renderer/lib/meshcoreRoomCredentialStorage';
 import {
   MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
   meshcoreGetRoomSession,
@@ -42,8 +52,21 @@ import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
 import { ChatComposer } from './ChatComposer';
+import { getDistFromChatBottom } from './ChatPanel';
 import { ChatPayloadText } from './ChatPayloadText';
 import { MessageStatusBadge } from './MessageStatusBadge';
+
+function RoomUnreadDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <div className="flex-1 border-t border-red-500/50" />
+      <span className="shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-red-400 uppercase">
+        {label}
+      </span>
+      <div className="flex-1 border-t border-red-500/50" />
+    </div>
+  );
+}
 
 interface Props {
   nodes: Map<number, MeshNode>;
@@ -64,7 +87,6 @@ interface Props {
       rememberPassword?: boolean;
     },
   ) => Promise<void>;
-  onLoginRoomWithSaved: (nodeId: number) => Promise<void>;
   onCancelRoomLogin: (nodeId: number) => void;
   onLeaveRoom: (nodeId: number) => Promise<void>;
   onSendRoomPost: (nodeId: number, text: string) => Promise<void>;
@@ -73,6 +95,10 @@ interface Props {
   meshcoreCliErrors?: Map<number, string>;
   onClearCliHistory?: (nodeId: number) => void;
   onMessageNode?: (nodeNum: number) => void;
+  /** Ref for scroll-to-top (Rooms tab inner message stream). */
+  scrollToTopRef?: React.RefObject<(() => void) | null>;
+  /** Main app scrollport for distance-from-bottom when outer viewport scrolls. */
+  outerScrollMetricsRootRef?: React.RefObject<HTMLElement | null>;
 }
 
 function formatTimestamp(ts: number): string {
@@ -137,7 +163,6 @@ export default function RoomsPanel({
   initialRoomTarget,
   onInitialRoomConsumed,
   onLoginRoom,
-  onLoginRoomWithSaved,
   onCancelRoomLogin,
   onLeaveRoom,
   onSendRoomPost,
@@ -146,6 +171,8 @@ export default function RoomsPanel({
   meshcoreCliErrors,
   onClearCliHistory,
   onMessageNode,
+  scrollToTopRef,
+  outerScrollMetricsRootRef,
 }: Props) {
   const { t } = useTranslation();
   const { ensureRoomAuth, RemoteAuthModal } = useMeshcoreRoomAuth();
@@ -164,14 +191,19 @@ export default function RoomsPanel({
   const [rememberPassword, setRememberPassword] = useState(false);
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [syncInterval, setSyncInterval] = useState(60);
+  const [autoLoginOnConnect, setAutoLoginOnConnect] = useState(false);
   const [syncConfigDirty, setSyncConfigDirty] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [showScrollTopButton, setShowScrollTopButton] = useState(false);
+  const [unreadDividerTimestamp, setUnreadDividerTimestamp] = useState(0);
+  const [, setAutoLoginFailureEpoch] = useState(0);
   const [storedRoomIds, setStoredRoomIds] = useState<Set<number>>(
     () => new Set(listMeshcoreRoomCredentialNodeIds()),
   );
-  const autoLoginAttempted = useRef<Set<number>>(new Set());
   const loginAttemptGenRef = useRef<Map<number, number>>(new Map());
   const leaveAttemptGenRef = useRef<Map<number, number>>(new Map());
   const streamRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
     loadPersistedRoomsLastRead(),
   );
@@ -199,6 +231,18 @@ export default function RoomsPanel({
       setRoomSessionEpoch((n) => n + 1);
     });
   }, []);
+
+  useEffect(() => {
+    return subscribeMeshcoreRoomAutoLoginFailureChanges(() => {
+      setAutoLoginFailureEpoch((n) => n + 1);
+    });
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    streamRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  useImperativeHandle(scrollToTopRef, () => scrollToTop, [scrollToTop]);
 
   const roomServers = useMemo(
     () =>
@@ -254,14 +298,81 @@ export default function RoomsPanel({
     });
   }, [roomPosts, selectedRoomId]);
 
+  const updateScrollButtonVisibility = useCallback(() => {
+    const distFromBottom = getDistFromChatBottom(
+      streamRef.current,
+      messagesEndRef.current,
+      outerScrollMetricsRootRef?.current ?? null,
+    );
+    if (distFromBottom == null) return undefined;
+    setShowScrollButton(distFromBottom > 200);
+    const scrollTop = streamRef.current?.scrollTop ?? 0;
+    setShowScrollTopButton(scrollTop > 200);
+    return distFromBottom;
+  }, [outerScrollMetricsRootRef]);
+
+  const applyNearBottomReadState = useCallback(
+    (distFromBottom: number) => {
+      if (!isActive || document.hidden) return;
+      if (distFromBottom < 50) {
+        markSelectedRoomRead();
+        setUnreadDividerTimestamp(0);
+      }
+    },
+    [isActive, markSelectedRoomRead],
+  );
+
   const handleStreamScroll = useCallback(() => {
-    const el = streamRef.current;
-    if (!el || !isActive) return;
-    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distFromBottom < 50) {
-      markSelectedRoomRead();
+    const distFromBottom = updateScrollButtonVisibility();
+    if (distFromBottom === undefined) return;
+    applyNearBottomReadState(distFromBottom);
+  }, [applyNearBottomReadState, updateScrollButtonVisibility]);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useLayoutEffect(() => {
+    requestAnimationFrame(() => {
+      updateScrollButtonVisibility();
+    });
+  }, [updateScrollButtonVisibility]);
+
+  useEffect(() => {
+    if (!isActive || document.hidden || selectedRoomId == null) return;
+    const distFromBottom = getDistFromChatBottom(
+      streamRef.current,
+      messagesEndRef.current,
+      outerScrollMetricsRootRef?.current ?? null,
+    );
+    if (distFromBottom != null && distFromBottom < 200) {
+      scrollToBottom();
     }
-  }, [isActive, markSelectedRoomRead]);
+    requestAnimationFrame(() => {
+      const dist = updateScrollButtonVisibility();
+      if (dist !== undefined) applyNearBottomReadState(dist);
+    });
+  }, [
+    applyNearBottomReadState,
+    isActive,
+    outerScrollMetricsRootRef,
+    roomPosts.length,
+    scrollToBottom,
+    selectedRoomId,
+    updateScrollButtonVisibility,
+  ]);
+
+  useEffect(() => {
+    const outer = outerScrollMetricsRootRef?.current;
+    if (!outer) return;
+    const onOuterScroll = () => {
+      handleStreamScroll();
+    };
+    outer.addEventListener('scroll', onOuterScroll);
+    return () => {
+      outer.removeEventListener('scroll', onOuterScroll);
+    };
+  }, [handleStreamScroll, outerScrollMetricsRootRef]);
 
   useEffect(() => {
     if (initialRoomTarget != null) {
@@ -270,29 +381,18 @@ export default function RoomsPanel({
     }
   }, [initialRoomTarget, onInitialRoomConsumed]);
 
-  useEffect(() => {
-    streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight });
-  }, [roomPosts.length, selectedRoomId]);
-
-  useEffect(() => {
-    if (!isActive || selectedRoomId == null || !meshcoreIsRoomLoggedIn(selectedRoomId)) return;
-    const el = streamRef.current;
-    if (!el) return;
-    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distFromBottom < 50) {
-      markSelectedRoomRead();
-    }
-  }, [isActive, markSelectedRoomRead, roomPosts.length, selectedRoomId]);
-
   const loadSyncConfig = useCallback((nodeId: number) => {
     const config = getMeshcoreRoomSyncConfig(nodeId);
     setSyncEnabled(config.enabled);
     setSyncInterval(config.intervalMinutes);
+    setAutoLoginOnConnect(config.autoLoginOnConnect ?? false);
     setSyncConfigDirty(false);
   }, []);
 
   const handleSelectRoom = useCallback(
     (nodeId: number) => {
+      const lastRead = persistedRoomsLastRead[nodeId] ?? 0;
+      setUnreadDividerTimestamp(lastRead);
       setSelectedRoomId(nodeId);
       setLoginErrorsByRoom((prev) => {
         if (!prev.has(nodeId)) return prev;
@@ -311,11 +411,12 @@ export default function RoomsPanel({
       setManageOpen(false);
       loadSyncConfig(nodeId);
     },
-    [loadSyncConfig],
+    [loadSyncConfig, persistedRoomsLastRead],
   );
 
   const startRoomLogin = useCallback(
     (nodeId: number, loginFn: () => Promise<void>) => {
+      clearMeshcoreRoomAutoLoginFailure(nodeId);
       const gen = (loginAttemptGenRef.current.get(nodeId) ?? 0) + 1;
       loginAttemptGenRef.current.set(nodeId, gen);
       setLoginLoadingRoomIds((prev) => new Set(prev).add(nodeId));
@@ -353,7 +454,6 @@ export default function RoomsPanel({
   const handleCancelLogin = useCallback(() => {
     if (selectedRoomId == null) return;
     onCancelRoomLogin(selectedRoomId);
-    autoLoginAttempted.current.delete(selectedRoomId);
     loginAttemptGenRef.current.set(
       selectedRoomId,
       (loginAttemptGenRef.current.get(selectedRoomId) ?? 0) + 1,
@@ -365,15 +465,6 @@ export default function RoomsPanel({
       return next;
     });
   }, [onCancelRoomLogin, selectedRoomId]);
-
-  useEffect(() => {
-    if (selectedRoomId == null || !isConnected) return;
-    if (meshcoreIsRoomLoggedIn(selectedRoomId)) return;
-    if (autoLoginAttempted.current.has(selectedRoomId)) return;
-    if (!getMeshcoreRoomCredential(selectedRoomId)) return;
-    autoLoginAttempted.current.add(selectedRoomId);
-    startRoomLogin(selectedRoomId, () => onLoginRoomWithSaved(selectedRoomId));
-  }, [isConnected, onLoginRoomWithSaved, selectedRoomId, startRoomLogin]);
 
   const handleLogin = useCallback(() => {
     if (selectedRoomId == null) return;
@@ -413,9 +504,10 @@ export default function RoomsPanel({
     await setMeshcoreRoomSyncConfig(selectedRoomId, {
       enabled: syncEnabled,
       intervalMinutes: syncInterval,
+      autoLoginOnConnect,
     });
     setSyncConfigDirty(false);
-  }, [selectedRoomId, syncEnabled, syncInterval]);
+  }, [autoLoginOnConnect, selectedRoomId, syncEnabled, syncInterval]);
 
   const roomViewKey = selectedRoomId != null ? `room:${selectedRoomId}` : 'room:none';
 
@@ -540,7 +632,6 @@ export default function RoomsPanel({
       void leaveFn()
         .then(() => {
           if (leaveAttemptGenRef.current.get(nodeId) !== gen) return;
-          autoLoginAttempted.current.delete(nodeId);
           setManageOpen(false);
           setLoginErrorsByRoom((prev) => {
             if (!prev.has(nodeId)) return prev;
@@ -663,7 +754,7 @@ export default function RoomsPanel({
   const cliError = selectedRoomId != null ? meshcoreCliErrors?.get(selectedRoomId) : undefined;
 
   return (
-    <div className="flex h-full min-h-[28rem] flex-col gap-3">
+    <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
       {RemoteAuthModal}
       <div className="flex min-h-0 flex-1 gap-3">
         <div className="bg-secondary-dark flex w-64 shrink-0 flex-col overflow-hidden rounded-lg border border-gray-700">
@@ -681,6 +772,25 @@ export default function RoomsPanel({
                 const hasSaved = storedRoomIds.has(room.node_id);
                 const isLoggingIn = loginLoadingRoomIds.has(room.node_id);
                 const isLeaving = leaveLoadingRoomIds.has(room.node_id);
+                const autoLoginFailed = getMeshcoreRoomAutoLoginFailure(room.node_id);
+                const showAutoLoginFailed =
+                  Boolean(autoLoginFailed) && !isLogged && !isLoggingIn && !isLeaving;
+                const markerColorClass = isLogged
+                  ? 'text-brand-green'
+                  : isLeaving
+                    ? 'text-amber-300'
+                    : isLoggingIn
+                      ? 'text-amber-300'
+                      : hasSaved
+                        ? 'text-amber-400/90'
+                        : 'text-gray-500';
+                const markerGlyph = isLogged
+                  ? '●'
+                  : isLeaving || isLoggingIn
+                    ? '◌'
+                    : hasSaved
+                      ? '◐'
+                      : '○';
                 return (
                   <button
                     key={room.node_id}
@@ -695,20 +805,18 @@ export default function RoomsPanel({
                   >
                     <div className="flex items-center gap-2 text-sm text-gray-200">
                       <span
-                        className={
-                          isLogged
-                            ? 'text-brand-green'
-                            : isLeaving
-                              ? 'text-amber-300'
-                              : isLoggingIn
-                                ? 'text-amber-300'
-                                : hasSaved
-                                  ? 'text-amber-400/90'
-                                  : 'text-gray-500'
+                        className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${
+                          showAutoLoginFailed ? 'ring-2 ring-red-500' : ''
+                        } ${markerColorClass}`}
+                        aria-hidden={!showAutoLoginFailed}
+                        aria-label={
+                          showAutoLoginFailed
+                            ? t('roomsPanel.autoLoginFailedAria', { error: autoLoginFailed })
+                            : undefined
                         }
-                        aria-hidden
+                        title={showAutoLoginFailed ? autoLoginFailed : undefined}
                       >
-                        {isLogged ? '●' : isLeaving || isLoggingIn ? '◌' : hasSaved ? '◐' : '○'}
+                        {markerGlyph}
                       </span>
                       <span className="truncate">{room.long_name}</span>
                       {unread > 0 && selectedRoomId !== room.node_id && (
@@ -791,6 +899,15 @@ export default function RoomsPanel({
                   {t('roomsPanel.continueReadOnly')}
                 </button>
                 {loginError && <p className="text-sm text-red-400">{loginError}</p>}
+                {selectedRoomId != null &&
+                  getMeshcoreRoomAutoLoginFailure(selectedRoomId) &&
+                  !loginError && (
+                    <p className="text-sm text-red-400" role="alert">
+                      {t('roomsPanel.autoLoginFailed', {
+                        error: getMeshcoreRoomAutoLoginFailure(selectedRoomId),
+                      })}
+                    </p>
+                  )}
               </div>
             </div>
           )}
@@ -814,7 +931,7 @@ export default function RoomsPanel({
 
           {selectedRoomId && loggedIn && (
             <>
-              <div className="flex flex-wrap items-center gap-2 border-b border-gray-700 px-3 py-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-700 px-3 py-2">
                 <span className="text-sm font-medium text-gray-200">{activeRoom?.long_name}</span>
                 <span className="text-xs text-gray-500">
                   {t('roomsPanel.postCount', { count: roomPosts.length })}
@@ -846,6 +963,27 @@ export default function RoomsPanel({
                   />
                   {t('roomsPanel.autoSync')}
                 </label>
+                <label
+                  className="flex items-center gap-1.5 text-xs text-gray-400"
+                  title={t('roomsPanel.autoLoginOnConnectTooltip')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={autoLoginOnConnect}
+                    onChange={(e) => {
+                      setAutoLoginOnConnect(e.target.checked);
+                      setSyncConfigDirty(true);
+                    }}
+                    disabled={selectedRoomId == null || !storedRoomIds.has(selectedRoomId)}
+                    aria-label={t('roomsPanel.autoLoginOnConnect')}
+                  />
+                  {t('roomsPanel.autoLoginOnConnect')}
+                </label>
+                {selectedRoomId != null && !storedRoomIds.has(selectedRoomId) && (
+                  <span className="text-[10px] text-gray-500">
+                    {t('roomsPanel.autoLoginRequiresSavedPassword')}
+                  </span>
+                )}
                 {syncEnabled && (
                   <select
                     value={syncInterval}
@@ -928,7 +1066,7 @@ export default function RoomsPanel({
                 </div>
               </div>
 
-              <div className="border-b border-gray-700 px-3 py-2">
+              <div className="shrink-0 border-b border-gray-700 px-3 py-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -1048,207 +1186,260 @@ export default function RoomsPanel({
                 </div>
               )}
 
-              <div
-                ref={streamRef}
-                onScroll={handleStreamScroll}
-                className={`min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2 ${
-                  streamView === 'starred' ? '' : ''
-                }`}
-              >
-                {streamView === 'starred' ? (
-                  roomStarred.length === 0 ? (
-                    <p className="text-sm text-gray-500">{t('chatPanel.noStarredMessages')}</p>
-                  ) : (
-                    roomStarred.map((s) => {
-                      const roomLabel = s.viewKey.startsWith('room:')
-                        ? (nodes.get(Number.parseInt(s.viewKey.slice(5), 10))?.long_name ??
-                          s.viewKey)
-                        : s.viewKey;
-                      return (
-                        <div
-                          key={s.starId}
-                          className="rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-sm"
-                        >
-                          <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
-                            <span className="font-medium text-gray-300">{s.sender_name}</span>
-                            <span>{formatTimestamp(s.timestamp)}</span>
-                            <span className="rounded bg-slate-700 px-1 text-[9px] text-gray-400">
-                              {roomLabel}
-                            </span>
-                          </div>
-                          <p className="break-words whitespace-pre-wrap text-gray-200">
-                            {s.payload}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const [, roomRaw] = s.viewKey.split(':');
-                              const roomId = Number.parseInt(roomRaw ?? '', 10);
-                              if (Number.isFinite(roomId)) {
-                                setSelectedRoomId(roomId);
-                              }
-                              setStreamView('posts');
-                              setScrollToRowKey(s.starId);
-                            }}
-                            className="mt-2 text-[10px] text-cyan-400 hover:text-cyan-200"
-                            aria-label={t('chatPanel.goToMessage')}
+              <div className="relative min-h-0 flex-1">
+                <div
+                  ref={streamRef}
+                  onScroll={handleStreamScroll}
+                  className="h-full min-h-0 space-y-2 overflow-y-auto px-3 py-2"
+                >
+                  {streamView === 'starred' ? (
+                    roomStarred.length === 0 ? (
+                      <p className="text-sm text-gray-500">{t('chatPanel.noStarredMessages')}</p>
+                    ) : (
+                      roomStarred.map((s) => {
+                        const roomLabel = s.viewKey.startsWith('room:')
+                          ? (nodes.get(Number.parseInt(s.viewKey.slice(5), 10))?.long_name ??
+                            s.viewKey)
+                          : s.viewKey;
+                        return (
+                          <div
+                            key={s.starId}
+                            className="rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-sm"
                           >
-                            {t('chatPanel.goToMessage')}
-                          </button>
+                            <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
+                              <span className="font-medium text-gray-300">{s.sender_name}</span>
+                              <span>{formatTimestamp(s.timestamp)}</span>
+                              <span className="rounded bg-slate-700 px-1 text-[9px] text-gray-400">
+                                {roomLabel}
+                              </span>
+                            </div>
+                            <p className="break-words whitespace-pre-wrap text-gray-200">
+                              {s.payload}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const [, roomRaw] = s.viewKey.split(':');
+                                const roomId = Number.parseInt(roomRaw ?? '', 10);
+                                if (Number.isFinite(roomId)) {
+                                  setSelectedRoomId(roomId);
+                                }
+                                setStreamView('posts');
+                                setScrollToRowKey(s.starId);
+                              }}
+                              className="mt-2 text-[10px] text-cyan-400 hover:text-cyan-200"
+                              aria-label={t('chatPanel.goToMessage')}
+                            >
+                              {t('chatPanel.goToMessage')}
+                            </button>
+                          </div>
+                        );
+                      })
+                    )
+                  ) : roomPosts.length === 0 ? (
+                    <p className="text-sm text-gray-500">{t('roomsPanel.noPostsYet')}</p>
+                  ) : (
+                    roomPosts.map((m, index) => {
+                      const isOwn = m.sender_id === myNodeNum;
+                      const rowKey = roomPostRowKey(m);
+                      const starId = roomMsgStarId(m);
+                      const isStarred = starredIdSet.has(starId);
+                      const showDm =
+                        onMessageNode != null && canDmMeshcorePoster(m.sender_id, myNodeNum, nodes);
+                      const showUnreadDivider =
+                        unreadDividerTimestamp > 0 &&
+                        m.timestamp > unreadDividerTimestamp &&
+                        (index === 0 || roomPosts[index - 1].timestamp <= unreadDividerTimestamp);
+                      return (
+                        <div key={rowKey}>
+                          {showUnreadDivider && (
+                            <RoomUnreadDivider label={t('roomsPanel.newMessagesDivider')} />
+                          )}
+                          <div
+                            ref={(el) => {
+                              if (el) postRowRefs.current.set(rowKey, el);
+                              else postRowRefs.current.delete(rowKey);
+                            }}
+                            className={`group/msg rounded-lg px-3 py-2 text-sm ${
+                              isOwn
+                                ? 'bg-purple-900/30 text-purple-100'
+                                : 'bg-gray-800/60 text-gray-200'
+                            }`}
+                          >
+                            <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
+                              <span className="font-medium text-gray-300">{m.sender_name}</span>
+                              <span>{formatTimestamp(m.timestamp)}</span>
+                              <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+                                {showDm && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      onMessageNode?.(m.sender_id);
+                                    }}
+                                    className="rounded p-0.5 text-gray-500 hover:text-cyan-300"
+                                    aria-label={t('nodeDetailModal.messageButton')}
+                                    title={t('nodeDetailModal.messageButton')}
+                                  >
+                                    <svg
+                                      className="h-3.5 w-3.5"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                      strokeWidth={2}
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                      />
+                                    </svg>
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    toggleStar(m);
+                                  }}
+                                  className={`rounded p-0.5 transition-colors ${
+                                    isStarred
+                                      ? 'text-amber-400 hover:text-amber-200'
+                                      : 'text-gray-500 hover:text-amber-400'
+                                  }`}
+                                  aria-label={
+                                    isStarred
+                                      ? t('chatPanel.unstarMessage')
+                                      : t('chatPanel.starMessage')
+                                  }
+                                  title={
+                                    isStarred
+                                      ? t('chatPanel.unstarMessage')
+                                      : t('chatPanel.starMessage')
+                                  }
+                                >
+                                  <svg
+                                    className="h-3.5 w-3.5"
+                                    fill={isStarred ? 'currentColor' : 'none'}
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                                    />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    void writeClipboardText(m.payload).catch((err: unknown) => {
+                                      console.warn(
+                                        '[RoomsPanel] copy failed ' + errLikeToLogString(err),
+                                      );
+                                    });
+                                  }}
+                                  className="rounded p-0.5 text-gray-500 hover:text-gray-300"
+                                  aria-label={t('chatPanel.copyMessage')}
+                                  title={t('chatPanel.copyMessage')}
+                                >
+                                  <svg
+                                    className="h-3.5 w-3.5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                    />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                            <div className="break-words whitespace-pre-wrap">
+                              <ChatPayloadText text={m.payload} query="" />
+                            </div>
+                            {isOwn && m.status && (
+                              <div className="mt-0.5 flex items-center justify-end gap-1">
+                                {m.status === 'failed' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      void onSendRoomPost(selectedRoomId, m.payload);
+                                    }}
+                                    className="text-gray-500 transition-colors hover:text-gray-300"
+                                    title={t('chatPanel.resendMessage')}
+                                    aria-label={t('chatPanel.resendMessage')}
+                                  >
+                                    ↻
+                                  </button>
+                                )}
+                                <MessageStatusBadge
+                                  status={m.status}
+                                  transport="device"
+                                  connectionType={connectionType}
+                                  error={m.error ?? undefined}
+                                  context="room"
+                                />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     })
-                  )
-                ) : roomPosts.length === 0 ? (
-                  <p className="text-sm text-gray-500">{t('roomsPanel.noPostsYet')}</p>
-                ) : (
-                  roomPosts.map((m) => {
-                    const isOwn = m.sender_id === myNodeNum;
-                    const rowKey = roomPostRowKey(m);
-                    const starId = roomMsgStarId(m);
-                    const isStarred = starredIdSet.has(starId);
-                    const showDm =
-                      onMessageNode != null && canDmMeshcorePoster(m.sender_id, myNodeNum, nodes);
-                    return (
-                      <div
-                        key={rowKey}
-                        ref={(el) => {
-                          if (el) postRowRefs.current.set(rowKey, el);
-                          else postRowRefs.current.delete(rowKey);
-                        }}
-                        className={`group/msg rounded-lg px-3 py-2 text-sm ${
-                          isOwn
-                            ? 'bg-purple-900/30 text-purple-100'
-                            : 'bg-gray-800/60 text-gray-200'
-                        }`}
-                      >
-                        <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
-                          <span className="font-medium text-gray-300">{m.sender_name}</span>
-                          <span>{formatTimestamp(m.timestamp)}</span>
-                          <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
-                            {showDm && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  onMessageNode?.(m.sender_id);
-                                }}
-                                className="rounded p-0.5 text-gray-500 hover:text-cyan-300"
-                                aria-label={t('nodeDetailModal.messageButton')}
-                                title={t('nodeDetailModal.messageButton')}
-                              >
-                                <svg
-                                  className="h-3.5 w-3.5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                  />
-                                </svg>
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                toggleStar(m);
-                              }}
-                              className={`rounded p-0.5 transition-colors ${
-                                isStarred
-                                  ? 'text-amber-400 hover:text-amber-200'
-                                  : 'text-gray-500 hover:text-amber-400'
-                              }`}
-                              aria-label={
-                                isStarred
-                                  ? t('chatPanel.unstarMessage')
-                                  : t('chatPanel.starMessage')
-                              }
-                              title={
-                                isStarred
-                                  ? t('chatPanel.unstarMessage')
-                                  : t('chatPanel.starMessage')
-                              }
-                            >
-                              <svg
-                                className="h-3.5 w-3.5"
-                                fill={isStarred ? 'currentColor' : 'none'}
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                                />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void writeClipboardText(m.payload).catch((err: unknown) => {
-                                  console.warn(
-                                    '[RoomsPanel] copy failed ' + errLikeToLogString(err),
-                                  );
-                                });
-                              }}
-                              className="rounded p-0.5 text-gray-500 hover:text-gray-300"
-                              aria-label={t('chatPanel.copyMessage')}
-                              title={t('chatPanel.copyMessage')}
-                            >
-                              <svg
-                                className="h-3.5 w-3.5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                        <div className="break-words whitespace-pre-wrap">
-                          <ChatPayloadText text={m.payload} query="" />
-                        </div>
-                        {isOwn && m.status && (
-                          <div className="mt-0.5 flex items-center justify-end gap-1">
-                            {m.status === 'failed' && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  void onSendRoomPost(selectedRoomId, m.payload);
-                                }}
-                                className="text-gray-500 transition-colors hover:text-gray-300"
-                                title={t('chatPanel.resendMessage')}
-                                aria-label={t('chatPanel.resendMessage')}
-                              >
-                                ↻
-                              </button>
-                            )}
-                            <MessageStatusBadge
-                              status={m.status}
-                              transport="device"
-                              connectionType={connectionType}
-                              error={m.error ?? undefined}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+                {showScrollTopButton && streamView === 'posts' && (
+                  <button
+                    type="button"
+                    onClick={scrollToTop}
+                    className="bg-secondary-dark absolute top-2 right-2 z-10 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
+                    aria-label={t('aria.backToTop')}
+                  >
+                    ↑ {t('aria.backToTop')}
+                  </button>
+                )}
+                {showScrollButton && streamView === 'posts' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      scrollToBottom();
+                      setUnreadDividerTimestamp(0);
+                    }}
+                    className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
+                    aria-label={
+                      unreadDividerTimestamp > 0
+                        ? t('roomsPanel.jumpToUnread')
+                        : t('roomsPanel.jumpToLatest')
+                    }
+                  >
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      aria-hidden
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                      />
+                    </svg>
+                    {unreadDividerTimestamp > 0
+                      ? t('roomsPanel.jumpToUnread')
+                      : t('roomsPanel.jumpToLatest')}
+                  </button>
                 )}
               </div>
 
               <div
-                className={`border-t border-gray-700 p-3 ${streamView === 'starred' ? 'hidden' : ''}`}
+                className={`shrink-0 border-t border-gray-700 p-3 ${streamView === 'starred' ? 'hidden' : ''}`}
               >
                 {!canPost ? (
                   <div className="space-y-2">

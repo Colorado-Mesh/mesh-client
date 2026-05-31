@@ -276,7 +276,8 @@
       "overMax": "Zbyt długie — maksymalnie {{totalMax}} znaków ({{maxParts}} wiadomości)",
       "sendParts_one": "Wyślij część {{count}}",
       "sendParts_other": "Wyślij części {{count}}"
-    }
+    },
+    "sendFailed": "Wysyłanie nieudane"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -2026,7 +2027,15 @@
     "membersRefreshAcl": "Odśwież listę ACL",
     "membersAclLoading": "Ładowanie listy ACL…",
     "membersAclLastFetched": "Pobrano ACL {{time}}",
-    "membersAclFetchFailed": "Nie można pobrać ACL"
+    "membersAclFetchFailed": "Nie można pobrać ACL",
+    "autoLoginOnConnect": "Automatyczne logowanie po połączeniu",
+    "autoLoginOnConnectTooltip": "Zaloguj się automatycznie po połączeniu radia (wymaga zapisanego hasła; tylko RF)",
+    "autoLoginRequiresSavedPassword": "Najpierw zapisz hasło, aby włączyć automatyczne logowanie",
+    "autoLoginFailed": "Automatyczne logowanie nie powiodło się: {{error}}",
+    "autoLoginFailedAria": "Automatyczne logowanie nie powiodło się: {{error}}",
+    "jumpToLatest": "Przejdź do najnowszych",
+    "jumpToUnread": "Przejdź do nieprzeczytanych",
+    "newMessagesDivider": "Nowe wiadomości"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",
