@@ -128,6 +128,24 @@ export function updateMessageStatus(
   });
 }
 
+export function updateMessageMqttStatus(
+  identityId: IdentityId,
+  messageId: string,
+  mqttStatus: MessageStatus,
+): void {
+  useMessageStore.setState((s) => {
+    const byIdentity = s.messages[identityId];
+    const existing = byIdentity?.[messageId];
+    if (!existing) return s;
+    return {
+      messages: {
+        ...s.messages,
+        [identityId]: { ...byIdentity, [messageId]: { ...existing, mqttStatus } },
+      },
+    };
+  });
+}
+
 export function deleteMessage(identityId: IdentityId, messageId: string): void {
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId];

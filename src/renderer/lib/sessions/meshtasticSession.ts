@@ -42,3 +42,25 @@ export function getMeshtasticSession(): MeshtasticSessionApi {
 export function tryGetMeshtasticSession(): MeshtasticSessionApi | null {
   return activeSession;
 }
+
+/** Maps TransportManager tempId → current messageStore row id (survives PacketRouter echo re-key). */
+const outboundStoreKeyByTempId = new Map<number, string>();
+
+export function trackMeshtasticOutboundTempId(tempId: number, storeKey: string): void {
+  outboundStoreKeyByTempId.set(tempId >>> 0, storeKey);
+}
+
+export function retargetMeshtasticOutboundTempId(tempId: number, newStoreKey: string): void {
+  const key = tempId >>> 0;
+  if (outboundStoreKeyByTempId.has(key)) {
+    outboundStoreKeyByTempId.set(key, newStoreKey);
+  }
+}
+
+export function resolveMeshtasticOutboundStoreKey(tempId: number, fallback: string): string {
+  return outboundStoreKeyByTempId.get(tempId >>> 0) ?? fallback;
+}
+
+export function clearMeshtasticOutboundTempId(tempId: number): void {
+  outboundStoreKeyByTempId.delete(tempId >>> 0);
+}

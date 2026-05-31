@@ -131,7 +131,12 @@ import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { normalizeReactionEmoji, reactionGlyphFromPicker } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews } from '../lib/replyPreview';
 import { loadLastSerialPortId } from '../lib/serialPortSignature';
-import { registerMeshtasticSession } from '../lib/sessions/meshtasticSession';
+import {
+  clearMeshtasticOutboundTempId,
+  registerMeshtasticSession,
+  resolveMeshtasticOutboundStoreKey,
+  trackMeshtasticOutboundTempId,
+} from '../lib/sessions/meshtasticSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import {
   chatMessageToMessageRecord,
@@ -166,7 +171,14 @@ import {
 } from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
-import { upsertMessage, useMessageStore } from '../stores/messageStore';
+import {
+  addMessage,
+  renameMessageId,
+  updateMessageMqttStatus,
+  updateMessageStatus,
+  upsertMessage,
+  useMessageStore,
+} from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
@@ -2081,6 +2093,8 @@ export function useMeshtasticRuntime() {
   const handleTransportStatus = useCallback(
     (event: StatusUpdateEvent) => {
       const { tempId, transport, status, finalPacketId, error } = event;
+      const identityId = meshtasticIdentityIdRef.current;
+      const tempIdStr = String(tempId);
 
       if (transport === 'device') {
         if (status === 'acked') {
@@ -2094,6 +2108,8 @@ export function useMeshtasticRuntime() {
           if (resolvedPid !== tempId) {
             ackMeshPacketIdByTempIdRef.current.set(tempId, resolvedPid);
           }
+          const resolvedIdStr = String(resolvedPid);
+          const storeKeyBeforeAck = resolveMeshtasticOutboundStoreKey(tempId, tempIdStr);
           setMessages((prev) =>
             prev.map((m) =>
               m.packetId === tempId
@@ -2105,6 +2121,13 @@ export function useMeshtasticRuntime() {
                 : m,
             ),
           );
+          if (identityId) {
+            if (resolvedPid !== tempId) {
+              renameMessageId(identityId, storeKeyBeforeAck, resolvedIdStr);
+            }
+            trackMeshtasticOutboundTempId(tempId, resolvedIdStr);
+            updateMessageStatus(identityId, resolvedIdStr, 'acked');
+          }
           void (
             resolvedPid !== tempId
               ? window.electronAPI.db.updateMessagePacketId(tempId, resolvedPid)
@@ -2124,11 +2147,18 @@ export function useMeshtasticRuntime() {
               m.packetId === tempId ? { ...m, status: 'failed' as const, error } : m,
             ),
           );
+          if (identityId) {
+            const storeKey = resolveMeshtasticOutboundStoreKey(tempId, tempIdStr);
+            updateMessageStatus(identityId, storeKey, 'failed', error);
+            clearMeshtasticOutboundTempId(tempId);
+          }
           void window.electronAPI.db.updateMessageStatus(tempId, 'failed', error);
         }
       } else {
         // mqtt — read current device status from state so the DB update is consistent
         const rowPacketId = ackMeshPacketIdByTempIdRef.current.get(tempId) ?? tempId;
+        const rowPacketIdStr = String(rowPacketId);
+        const storeMessageId = resolveMeshtasticOutboundStoreKey(tempId, rowPacketIdStr);
         setMessages((prev) => {
           const existing = prev.find((m) => m.packetId === rowPacketId);
           if (status !== 'sending' && existing) {
@@ -2142,6 +2172,12 @@ export function useMeshtasticRuntime() {
           }
           return prev.map((m) => (m.packetId === rowPacketId ? { ...m, mqttStatus: status } : m));
         });
+        if (identityId) {
+          updateMessageMqttStatus(identityId, storeMessageId, status);
+          if (status === 'acked' || status === 'failed') {
+            clearMeshtasticOutboundTempId(tempId);
+          }
+        }
       }
     },
     [isDuplicate],
@@ -2191,6 +2227,11 @@ export function useMeshtasticRuntime() {
       );
       setMessages((prev) => trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES));
       void window.electronAPI.db.saveMessage(msg);
+      const identityId = meshtasticIdentityIdRef.current;
+      if (identityId) {
+        trackMeshtasticOutboundTempId(tempId, String(tempId));
+        addMessage(identityId, chatMessageToMessageRecord(msg));
+      }
 
       // For device path: track this tempId so the RF echo can be suppressed (avoids duplicate)
       if (deviceRef.current) {
