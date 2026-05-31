@@ -1953,7 +1953,7 @@
     "lastPost": "Letzter Beitrag",
     "loginTitle": "Melden Sie sich beim Server an",
     "adminLoginTitle": "Admin-Anmeldung",
-    "loginHelp": "Geben Sie das Gastpasswort ein, um beizutreten und zu posten. Standard ist oft „hello“. Leer lassen für schreibgeschützte Server.",
+    "loginHelp": "Geben Sie das Gastpasswort ein, um beizutreten und zu posten. Standard ist oft „hello“. Für Server ohne Gastpasswort „Schreibgeschützt fortfahren“ verwenden (Login sendet „hello“, wenn das Feld leer ist).",
     "adminLoginHelp": "Geben Sie das Raumadministrator-Passwort ein, um Einstellungen und ACLs zu verwalten. Standard ist oft \"Passwort\".",
     "guestPasswordLabel": "Gastpasswort",
     "guestPasswordPlaceholder": "hallo",
@@ -1997,7 +1997,7 @@
     "lastSync": "Letzte Synchronisierung",
     "cancelLogin": "Anmeldung abbrechen",
     "cancelLoginHint": "Eine weitere Raumanmeldung kann zuerst über das Radio abgeschlossen werden. Abbrechen stoppt weitere Versuche für diesen Raum.",
-    "emptyGuestLoginHint": "Leeres Gästefeld: Verwenden Sie Weiter schreibgeschützt für leere Passwortserver. Die Anmeldung erfordert ein Passwort und sendet \"Hallo\", wenn das Feld leer ist.",
+    "emptyGuestLoginHint": "Leeres Gästefeld: „Schreibgeschützt fortfahren“ für Server ohne Passwort. Login erfordert ein Passwort und sendet „hello“, wenn das Feld leer ist.",
     "unreadPosts": "{{count}} neu"
   },
   "searchModal": {

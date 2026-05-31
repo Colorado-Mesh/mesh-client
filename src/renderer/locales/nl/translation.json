@@ -1953,7 +1953,7 @@
     "lastPost": "Laatste post",
     "loginTitle": "Inloggen op roomserver",
     "adminLoginTitle": "Inloggen beheerder",
-    "loginHelp": "Voer het wachtwoord van de gast in om mee te doen en te posten. Standaard is dit vaak \"hallo\". Laat leeg voor alleen-lezen servers.",
+    "loginHelp": "Voer het gastwachtwoord in om mee te doen en te plaatsen. Standaard is vaak \"hello\". Voor servers zonder gastwachtwoord: \"Doorgaan met alleen-lezen\" (inloggen stuurt \"hello\" als het veld leeg is).",
     "adminLoginHelp": "Voer het beheerderswachtwoord van de ruimte in om instellingen en ACL's te beheren. Standaard is dit vaak \"wachtwoord\".",
     "guestPasswordLabel": "Gastwachtwoord",
     "guestPasswordPlaceholder": "hallo",
@@ -1997,7 +1997,7 @@
     "lastSync": "Laatste synchronisatie",
     "cancelLogin": "Inloggen annuleren",
     "cancelLoginHint": "Een andere ruimtelogin kan eerst op de radio eindigen. Annuleer stopt verdere pogingen voor deze ruimte.",
-    "emptyGuestLoginHint": "Leeg gastveld: gebruik Continue read-only voor blanco wachtwoordservers. Inloggen vereist een wachtwoord en stuurt \"hallo\" wanneer het veld leeg is.",
+    "emptyGuestLoginHint": "Leeg gastveld: gebruik Doorgaan met alleen-lezen voor servers zonder wachtwoord. Inloggen vereist een wachtwoord en stuurt \"hello\" als het veld leeg is.",
     "unreadPosts": "{{count}} nieuw"
   },
   "searchModal": {

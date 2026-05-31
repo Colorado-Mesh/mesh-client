@@ -1953,7 +1953,7 @@
     "lastPost": "Poslední příspěvek",
     "loginTitle": "Přihlaste se na pokojový server",
     "adminLoginTitle": "Přihlásit se správcem",
-    "loginHelp": "Pro připojení a zveřejnění zadej heslo hosta. Výchozí je často „ahoj“. Ponechte prázdné pro servery pouze pro čtení.",
+    "loginHelp": "Pro připojení a publikování zadej heslo hosta. Výchozí hodnota je často „hello“. U serverů bez hesla hosta použij „Pokračovat pouze pro čtení“ (přihlášení odešle „hello“, je-li pole prázdné).",
     "adminLoginHelp": "Zadejte heslo správce místnosti pro správu nastavení a ACL. Výchozí je často „heslo“.",
     "guestPasswordLabel": "Heslo hosta",
     "guestPasswordPlaceholder": "hello",
@@ -1998,7 +1998,7 @@
     "cancelLogin": "Zrušit přihlášení",
     "cancelLoginHint": "Přihlašování do jiné místnosti může skončit nejdříve v rádiu. Zrušit zastaví další pokusy v této místnosti.",
     "emptyGuestLoginHint": "Prázdné pole hosta: použijte Pokračovat pouze pro čtení pro servery s prázdným heslem. Přihlášení vyžaduje heslo a pokud je pole prázdné, odešle \"hello\".",
-    "unreadPosts": "{{count}} nové"
+    "unreadPosts": "{{count}} nových"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

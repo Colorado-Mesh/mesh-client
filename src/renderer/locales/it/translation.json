@@ -1953,7 +1953,7 @@
     "lastPost": "Ultimo post",
     "loginTitle": "Accedi al server della sala",
     "adminLoginTitle": "Login Amministratore",
-    "loginHelp": "Inserisci la password ospite per partecipare e pubblicare. Il valore predefinito è spesso \"ciao\". Lasciare vuoto per i server di sola lettura.",
+    "loginHelp": "Inserisci la password ospite per partecipare e pubblicare. Il valore predefinito è spesso «hello». Per i server senza password ospite, usa «Continua in sola lettura» (l'accesso invia «hello» se il campo è vuoto).",
     "adminLoginHelp": "Inserisci la password dell'amministratore della room per gestire le impostazioni e gli ACL. Il valore predefinito è spesso \"password\".",
     "guestPasswordLabel": "Password ospite",
     "guestPasswordPlaceholder": "ciao",
@@ -1997,8 +1997,8 @@
     "lastSync": "Ultima sincronizzazione",
     "cancelLogin": "Annullo login",
     "cancelLoginHint": "Il login di un'altra stanza potrebbe terminare prima alla radio. Annulla interrompe ulteriori tentativi per questa stanza.",
-    "emptyGuestLoginHint": "Campo ospite vuoto: utilizzare Continua in sola lettura per i server di password vuoti. L'accesso richiede una password e invia \"ciao\" quando il campo è vuoto.",
-    "unreadPosts": "{{count}} nuovo"
+    "emptyGuestLoginHint": "Campo ospite vuoto: usa «Continua in sola lettura» per i server senza password. L'accesso richiede una password e invia «hello» se il campo è vuoto.",
+    "unreadPosts": "{{count}} nuovi"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

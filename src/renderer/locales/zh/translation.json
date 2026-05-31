@@ -1953,7 +1953,7 @@
     "lastPost": "最后发表",
     "loginTitle": "登录聊天室服务器",
     "adminLoginTitle": "管理员登录",
-    "loginHelp": "输入要加入和发布的访客密码。默认值通常为“hello”。对于只读服务器，留空。",
+    "loginHelp": "输入访客密码以加入和发布。默认常为「hello」。无访客密码的服务器请使用「继续只读」（字段为空时登录会发送「hello」）。",
     "adminLoginHelp": "输入聊天室管理员密码以管理设置和ACL。默认值通常为“密码”。",
     "guestPasswordLabel": "访客密码",
     "guestPasswordPlaceholder": "你好",
@@ -1997,7 +1997,7 @@
     "lastSync": "上次同步",
     "cancelLogin": "取消登录",
     "cancelLoginHint": "另一个房间登录可能首先在收音机上完成。取消可停止对此房间的进一步尝试。",
-    "emptyGuestLoginHint": "空来宾字段：对空密码服务器使用继续只读。登录需要密码，当字段为空时发送“hello”。",
+    "emptyGuestLoginHint": "访客密码为空：对无密码服务器使用「继续只读」。登录需要密码，字段为空时会发送「hello」。",
     "unreadPosts": "新消息 {{count}} 条"
   },
   "searchModal": {

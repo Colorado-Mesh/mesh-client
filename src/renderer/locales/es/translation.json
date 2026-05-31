@@ -1953,7 +1953,7 @@
     "lastPost": "Última publicación",
     "loginTitle": "Iniciar sesión en el servidor de la sala",
     "adminLoginTitle": "Inicio de sesión del administrador",
-    "loginHelp": "Introduce la contraseña del huésped para unirte y publicar. El valor predeterminado suele ser \"hola\". Dejar vacío para servidores de solo lectura.",
+    "loginHelp": "Introduce la contraseña de invitado para unirte y publicar. El valor predeterminado suele ser «hello». Para servidores sin contraseña de invitado, usa «Continuar con la opción de solo lectura» (el inicio de sesión envía «hello» si el campo está vacío).",
     "adminLoginHelp": "Introduzca la contraseña del administrador de la sala para gestionar la configuración y las ACL. El valor predeterminado suele ser \"contraseña\".",
     "guestPasswordLabel": "Contraseña de invitado",
     "guestPasswordPlaceholder": "hola",
@@ -1997,8 +1997,8 @@
     "lastSync": "Última sincronización",
     "cancelLogin": "Cancelar inicio de sesión",
     "cancelLoginHint": "Es posible que otro inicio de sesión en la sala termine primero en la radio. Cancelar detiene más intentos de esta sala.",
-    "emptyGuestLoginHint": "Campo de invitado vacío: use Continuar solo lectura para servidores de contraseñas en blanco. El inicio de sesión requiere una contraseña y envía \"hola\" cuando el campo está vacío.",
-    "unreadPosts": "{{count}} nuevo"
+    "emptyGuestLoginHint": "Campo de invitado vacío: usa «Continuar con la opción de solo lectura» para servidores sin contraseña. El inicio de sesión requiere una contraseña y envía «hello» si el campo está vacío.",
+    "unreadPosts": "{{count}} nuevos"
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",

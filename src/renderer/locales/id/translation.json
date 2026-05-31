@@ -1953,7 +1953,7 @@
     "lastPost": "Postingan terakhir",
     "loginTitle": "Masuk ke server ruangan",
     "adminLoginTitle": "Login admin ruangan",
-    "loginHelp": "Masukkan kata sandi tamu untuk bergabung dan memposting. Defaultnya sering \"hello\". Biarkan kosong untuk server hanya baca.",
+    "loginHelp": "Masukkan kata sandi tamu untuk bergabung dan memposting. Bawaannya sering \"hello\". Untuk server tanpa kata sandi tamu, gunakan Lanjutkan hanya baca (Login mengirim \"hello\" saat kolom kosong).",
     "adminLoginHelp": "Masukkan kata sandi admin ruangan untuk mengelola pengaturan dan ACL. Default sering kali \"password\".",
     "guestPasswordLabel": "Sandi tamu",
     "guestPasswordPlaceholder": "hello",
@@ -1997,7 +1997,7 @@
     "lastSync": "Sinkronisasi terakhir",
     "cancelLogin": "Batalkan Log Masuk",
     "cancelLoginHint": "Login ruangan lain mungkin selesai di radio terlebih dahulu. Batalkan upaya perhentian lebih lanjut untuk ruangan ini.",
-    "emptyGuestLoginHint": "Kolom tamu kosong: gunakan Lanjutkan hanya baca untuk server kata sandi kosong. Login memerlukan kata sandi dan mengirim \"halo\" saat kolom kosong.",
+    "emptyGuestLoginHint": "Kolom tamu kosong: gunakan Lanjutkan hanya baca untuk server tanpa kata sandi. Login memerlukan kata sandi dan mengirim \"hello\" saat kolom kosong.",
     "unreadPosts": "{{count}} baru"
   },
   "searchModal": {

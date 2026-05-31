@@ -443,6 +443,59 @@ describe('localeStringQualityIssues', () => {
     });
     expectIssue(issues, 'aclLevelAdmin" is still identical to English');
   });
+
+  it('flags stale roomsPanel loginHelp that only says leave empty', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'roomsPanel.loginHelp',
+      val: 'Mot de passe invité. Laissez vide pour lecture seule.',
+      enVal:
+        'Enter the guest password. Default is often "hello". For servers with no guest password, use Continue read-only (Login sends "hello" when the field is empty).',
+    });
+    expectIssue(issues, 'leave the field empty');
+  });
+
+  it('flags translated hello password in roomsPanel emptyGuestLoginHint', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'roomsPanel.emptyGuestLoginHint',
+      val: 'Leeres Feld: sendet "Hallo" wenn leer.',
+      enVal:
+        'Empty guest field: use Continue read-only for blank-password servers. Login requires a password and sends "hello" when the field is empty.',
+    });
+    expectIssue(issues, 'wire password "hello"');
+  });
+
+  it('flags English Continue read-only in Dutch emptyGuestLoginHint', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'roomsPanel.emptyGuestLoginHint',
+      val: 'Gebruik Continue read-only voor servers.',
+      enVal:
+        'Empty guest field: use Continue read-only for blank-password servers. Login requires a password and sends "hello" when the field is empty.',
+    });
+    expectIssue(issues, 'still quotes English "Continue read-only"');
+  });
+
+  it('flags Polish Nowość on unreadPosts', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'roomsPanel.unreadPosts',
+      val: '{{count}} Nowość',
+      enVal: '{{count}} new',
+    });
+    expectIssue(issues, 'Nowość');
+  });
+
+  it('flags untranslated unreadPosts identical to English', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ru',
+      flatKey: 'roomsPanel.unreadPosts',
+      val: '{{count}} new',
+      enVal: '{{count}} new',
+    });
+    expectIssue(issues, 'unreadPosts" is still identical to English');
+  });
 });
 
 describe('protectedBrandIssues', () => {

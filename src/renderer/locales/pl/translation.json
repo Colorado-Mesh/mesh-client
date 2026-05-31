@@ -1953,7 +1953,7 @@
     "lastPost": "Ostatni wpis",
     "loginTitle": "Zaloguj się do serwera pokojowego",
     "adminLoginTitle": "Login administratora",
-    "loginHelp": "Wprowadź hasło gościa, aby dołączyć i opublikować. Domyślnym ustawieniem jest często „witaj”. Pozostaw puste dla serwerów tylko do odczytu.",
+    "loginHelp": "Wprowadź hasło gościa, aby dołączyć i publikować. Domyślnie często jest „hello”. Na serwerach bez hasła gościa użyj „Kontynuuj tylko do odczytu” (logowanie wysyła „hello”, gdy pole jest puste).",
     "adminLoginHelp": "Wprowadź hasło administratora pokoju, aby zarządzać ustawieniami i listami ACL. Domyślne jest często „hasło”.",
     "guestPasswordLabel": "Hasło gościa",
     "guestPasswordPlaceholder": "cześć",
@@ -1998,7 +1998,7 @@
     "cancelLogin": "Anuluj logowanie",
     "cancelLoginHint": "Kolejne logowanie do pokoju może najpierw zakończyć się w radiu. Anulowanie zatrzymuje dalsze próby dla tego pokoju.",
     "emptyGuestLoginHint": "Puste pole gościa: użyj opcji Kontynuuj tylko do odczytu dla serwerów z pustym hasłem. Logowanie wymaga podania hasła i wysyła \"hello\", gdy pole jest puste.",
-    "unreadPosts": "{{count}} Nowość"
+    "unreadPosts": "{{count}} nowe"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

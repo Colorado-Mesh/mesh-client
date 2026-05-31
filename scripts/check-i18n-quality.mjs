@@ -156,7 +156,53 @@ export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'postCount',
   'syncInterval120',
   'syncInterval240',
+  'unreadPosts',
 ]);
+
+/** Hints that describe the wire default guest password (literal hello, not a greeting translation). */
+export const ROOMS_PANEL_LITERAL_HELLO_KEYS = new Set(['loginHelp', 'emptyGuestLoginHint']);
+
+/**
+ * Auto-translate often replaces the MeshCore default password "hello" with a localized greeting.
+ * Only checked on ROOMS_PANEL_LITERAL_HELLO_KEYS when English mentions "hello".
+ */
+export const ROOMS_HELLO_PASSWORD_FALSE_FRIENDS = {
+  cs: [{ re: /\bahoj\b/i, hint: 'keep wire password "hello", not Czech greeting "ahoj"' }],
+  de: [{ re: /\bHallo\b/i, hint: 'keep wire password "hello", not German greeting "Hallo"' }],
+  es: [{ re: /\bhola\b/i, hint: 'keep wire password "hello", not Spanish greeting "hola"' }],
+  fr: [{ re: /bonjour/i, hint: 'keep wire password "hello", not French greeting "bonjour"' }],
+  id: [{ re: /\bhalo\b/i, hint: 'keep wire password "hello", not Indonesian greeting "halo"' }],
+  it: [{ re: /\bciao\b/i, hint: 'keep wire password "hello", not Italian greeting "ciao"' }],
+  'pt-BR': [{ re: /\bolá\b/i, hint: 'keep wire password "hello", not Portuguese greeting "olá"' }],
+  nl: [{ re: /\bhallo\b/i, hint: 'keep wire password "hello", not Dutch greeting "hallo"' }],
+  pl: [{ re: /\bwitaj\b/i, hint: 'keep wire password "hello", not Polish greeting "witaj"' }],
+  ru: [{ re: /привет/i, hint: 'keep wire password "hello", not Russian greeting "привет"' }],
+  tr: [{ re: /merhaba/i, hint: 'keep wire password "hello", not Turkish greeting "merhaba"' }],
+  uk: [{ re: /привіт/i, hint: 'keep wire password "hello", not Ukrainian greeting "привіт"' }],
+};
+
+/** Outdated loginHelp that tells users to leave the field empty instead of Continue read-only. */
+export const STALE_ROOMS_LOGIN_HELP_RES = [
+  /leave (?:it )?empty/i,
+  /leave blank/i,
+  /leer lassen/i,
+  /laissez vide/i,
+  /deixe em branco/i,
+  /dejar vac[ií]o/i,
+  /lasciare vuoto/i,
+  /ponechte pr[aá]zdn[eé]/i,
+  /pozostaw puste/i,
+  /biarkan kosong/i,
+  /boş bırak/i,
+  /留空/,
+  /空白のまま/,
+  /비워\s*둡/,
+  /залиште порожнім/i,
+  /оставьте пустым/i,
+];
+
+/** Polish MT often uses "Nowość" (novelty) instead of "new" for unread counts. */
+export const PL_UNREAD_NOWOSC_RE = /Nowość/i;
 
 /** Leaf keys where English ends with … and locale must not use ASCII dot runs. */
 export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChannel']);
@@ -440,6 +486,55 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     UNTRANSLATED_READ_ONLY_BADGE_RE.test(val)
   ) {
     issues.push('translate readOnlyBadge — do not leave English "(read only)"');
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey === `${ROOMS_PANEL_PREFIX}loginHelp` &&
+    enVal.includes('Continue read-only')
+  ) {
+    for (const re of STALE_ROOMS_LOGIN_HELP_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'loginHelp still tells users to leave the field empty — mention Continue read-only and Login sending "hello"',
+        );
+        break;
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey === `${ROOMS_PANEL_PREFIX}emptyGuestLoginHint` &&
+    /Continue read-only/i.test(val)
+  ) {
+    issues.push(
+      'emptyGuestLoginHint still quotes English "Continue read-only" — use the locale continueReadOnly button label',
+    );
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    ROOMS_PANEL_LITERAL_HELLO_KEYS.has(leafKey) &&
+    enVal.includes('"hello"')
+  ) {
+    if (!/hello/i.test(val)) {
+      issues.push('MeshCore default guest password must stay literal "hello" in this hint');
+    }
+    for (const { re, hint } of ROOMS_HELLO_PASSWORD_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`roomsPanel hello password: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    locale === 'pl' &&
+    flatKey === `${ROOMS_PANEL_PREFIX}unreadPosts` &&
+    PL_UNREAD_NOWOSC_RE.test(val)
+  ) {
+    issues.push('unreadPosts uses "Nowość" (novelty) — use "nowe" or "nowych" for unread count');
   }
 
   if (

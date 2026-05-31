@@ -1953,7 +1953,7 @@
     "lastPost": "Son Gönderi",
     "loginTitle": "Sunucuya Giriş Yapın",
     "adminLoginTitle": "Yönetici oturumu açma",
-    "loginHelp": "Katılmak ve yayınlamak için misafir şifresini girin. Varsayılan genellikle \"merhaba\" dır. Salt okunur sunucular için boş bırakın.",
+    "loginHelp": "Katılmak ve yayınlamak için misafir şifresini girin. Varsayılan genellikle \"hello\"dır. Misafir şifresi olmayan sunucular için \"Salt okunur olarak devam et\" kullanın (giriş alan boşken \"hello\" gönderir).",
     "adminLoginHelp": "Ayarları ve ACL'leri yönetmek için oda yöneticisi şifresini girin. Varsayılan genellikle \"parola\" dır.",
     "guestPasswordLabel": "Misafir parolası",
     "guestPasswordPlaceholder": "merhaba",
@@ -1997,7 +1997,7 @@
     "lastSync": "Son senkronizasyon",
     "cancelLogin": "Girişi iptal et",
     "cancelLoginHint": "Başka bir odada oturum açma işlemi önce radyoda bitebilir. İptal, bu oda için daha fazla deneme yapmayı durdurur.",
-    "emptyGuestLoginHint": "Boş konuk alanı: boş parola sunucuları için Devam salt okunur kullanın. Giriş bir şifre gerektirir ve alan boş olduğunda \"merhaba\" gönderir.",
+    "emptyGuestLoginHint": "Boş konuk alanı: boş parola sunucuları için \"Salt okunur olarak devam et\" kullanın. Giriş bir şifre gerektirir ve alan boşken \"hello\" gönderir.",
     "unreadPosts": "{{count}} yeni"
   },
   "searchModal": {
