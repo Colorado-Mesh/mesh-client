@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMeshcoreRoomAuth } from '@/renderer/hooks/useMeshcoreRoomAuth';
+import { MESHCORE_PAYLOAD_LIMIT } from '@/renderer/lib/chatComposerLimits';
 import {
   loadPersistedRoomsLastRead,
   mergeRoomLastReadWatermark,
@@ -30,12 +31,18 @@ import {
   setMeshcoreRoomSyncConfig,
 } from '@/renderer/lib/meshcoreRoomSyncStorage';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+
+import { ChatComposer } from './ChatComposer';
+import { ChatPayloadText } from './ChatPayloadText';
+import { MessageStatusBadge } from './MessageStatusBadge';
 
 interface Props {
   nodes: Map<number, MeshNode>;
   messages: ChatMessage[];
   myNodeNum: number;
   isConnected: boolean;
+  connectionType?: 'ble' | 'serial' | 'http' | null;
   /** True when the Rooms tab panel is visible (for mark-read while viewing). */
   isActive?: boolean;
   initialRoomTarget?: number | null;
@@ -67,6 +74,7 @@ export default function RoomsPanel({
   messages,
   myNodeNum,
   isConnected,
+  connectionType,
   isActive = false,
   initialRoomTarget,
   onInitialRoomConsumed,
@@ -85,8 +93,6 @@ export default function RoomsPanel({
   const [loginPassword, setLoginPassword] = useState(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
   const [loginLoadingRoomIds, setLoginLoadingRoomIds] = useState<Set<number>>(() => new Set());
   const [loginErrorsByRoom, setLoginErrorsByRoom] = useState<Map<number, string>>(() => new Map());
-  const [draft, setDraft] = useState('');
-  const [sendPending, setSendPending] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [cliInput, setCliInput] = useState('');
   const [cliPending, setCliPending] = useState(false);
@@ -326,24 +332,39 @@ export default function RoomsPanel({
     setSyncConfigDirty(false);
   }, [selectedRoomId, syncEnabled, syncInterval]);
 
-  const handleSend = useCallback(async () => {
-    if (selectedRoomId == null || !draft.trim()) return;
-    setSendPending(true);
-    try {
-      await onSendRoomPost(selectedRoomId, draft.trim());
-      setDraft('');
-    } catch (e) {
-      console.warn('[RoomsPanel] sendRoomPost failed ' + errLikeToLogString(e));
-      setLoginErrorsByRoom((prev) =>
-        new Map(prev).set(
-          selectedRoomId,
-          e instanceof Error ? e.message : t('roomsPanel.postFailed'),
-        ),
-      );
-    } finally {
-      setSendPending(false);
+  const roomViewKey = selectedRoomId != null ? `room:${selectedRoomId}` : 'room:none';
+
+  const mentionNodes = useMemo(() => {
+    const map = new Map<number, MeshNode>();
+    for (const n of nodes.values()) {
+      map.set(n.node_id, n);
     }
-  }, [draft, onSendRoomPost, selectedRoomId, t]);
+    for (const m of roomPosts) {
+      if (!map.has(m.sender_id)) {
+        map.set(m.sender_id, {
+          node_id: m.sender_id,
+          long_name: m.sender_name,
+          short_name: '',
+          hw_model: '',
+          battery: 0,
+          snr: 0,
+          rssi: 0,
+          last_heard: 0,
+          latitude: null,
+          longitude: null,
+        });
+      }
+    }
+    return map;
+  }, [nodes, roomPosts]);
+
+  const handleSendChunk = useCallback(
+    async (text: string) => {
+      if (selectedRoomId == null) return;
+      await onSendRoomPost(selectedRoomId, text);
+    },
+    [onSendRoomPost, selectedRoomId],
+  );
 
   const handleLeaveRoom = useCallback(() => {
     if (selectedRoomId == null) return;
@@ -359,6 +380,10 @@ export default function RoomsPanel({
 
   const handleAdminLogin = useCallback(async () => {
     if (selectedRoomId == null) return;
+    if (manageOpen) {
+      setManageOpen(false);
+      return;
+    }
     const nodeId = selectedRoomId;
     const auth = await ensureRoomAuth(
       nodeId,
@@ -378,7 +403,26 @@ export default function RoomsPanel({
       await onLoginRoom(nodeId, adminPassword, { adminPassword, guestPassword });
       setManageOpen(true);
     });
-  }, [activeRoom?.long_name, ensureRoomAuth, onLoginRoom, selectedRoomId, startRoomLogin, t]);
+  }, [
+    activeRoom?.long_name,
+    ensureRoomAuth,
+    manageOpen,
+    onLoginRoom,
+    selectedRoomId,
+    startRoomLogin,
+    t,
+  ]);
+
+  useEffect(() => {
+    if (!manageOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setManageOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [manageOpen]);
 
   const handleCliSend = useCallback(async () => {
     if (selectedRoomId == null || !cliInput.trim()) return;
@@ -644,7 +688,12 @@ export default function RoomsPanel({
                       void handleAdminLogin();
                     }}
                     disabled={!isConnected}
-                    className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 disabled:opacity-40"
+                    className={`rounded border px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 disabled:opacity-40 ${
+                      manageOpen
+                        ? 'border-brand-green/50 bg-brand-green/20 text-brand-green'
+                        : 'border-gray-600 bg-gray-800'
+                    }`}
+                    aria-pressed={manageOpen}
                   >
                     {t('roomsPanel.manageRoom')}
                   </button>
@@ -668,7 +717,7 @@ export default function RoomsPanel({
                     return (
                       <div
                         key={rowKey}
-                        className={`rounded-lg px-3 py-2 text-sm ${
+                        className={`group/msg rounded-lg px-3 py-2 text-sm ${
                           isOwn
                             ? 'bg-purple-900/30 text-purple-100'
                             : 'bg-gray-800/60 text-gray-200'
@@ -677,8 +726,62 @@ export default function RoomsPanel({
                         <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
                           <span className="font-medium text-gray-300">{m.sender_name}</span>
                           <span>{formatTimestamp(m.timestamp)}</span>
+                          <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void writeClipboardText(m.payload).catch((err: unknown) => {
+                                  console.warn(
+                                    '[RoomsPanel] copy failed ' + errLikeToLogString(err),
+                                  );
+                                });
+                              }}
+                              className="rounded p-0.5 text-gray-500 hover:text-gray-300"
+                              aria-label={t('chatPanel.copyMessage')}
+                              title={t('chatPanel.copyMessage')}
+                            >
+                              <svg
+                                className="h-3.5 w-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
-                        <p className="break-words whitespace-pre-wrap">{m.payload}</p>
+                        <div className="break-words whitespace-pre-wrap">
+                          <ChatPayloadText text={m.payload} query="" />
+                        </div>
+                        {isOwn && m.status && (
+                          <div className="mt-0.5 flex items-center justify-end gap-1">
+                            {m.status === 'failed' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void onSendRoomPost(selectedRoomId, m.payload);
+                                }}
+                                className="text-gray-500 transition-colors hover:text-gray-300"
+                                title={t('chatPanel.resendMessage')}
+                                aria-label={t('chatPanel.resendMessage')}
+                              >
+                                ↻
+                              </button>
+                            )}
+                            <MessageStatusBadge
+                              status={m.status}
+                              transport="device"
+                              connectionType={connectionType}
+                              error={m.error ?? undefined}
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -689,43 +792,40 @@ export default function RoomsPanel({
                 {!canPost ? (
                   <p className="text-xs text-amber-200/90">{t('roomsPanel.readOnlyHint')}</p>
                 ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={draft}
-                      onChange={(e) => {
-                        setDraft(e.target.value);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          void handleSend();
-                        }
-                      }}
-                      disabled={!isConnected || sendPending}
-                      placeholder={t('roomsPanel.postPlaceholder')}
-                      className="min-w-0 flex-1 rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
-                      aria-label={t('roomsPanel.postPlaceholder')}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void handleSend();
-                      }}
-                      disabled={!isConnected || sendPending || !draft.trim()}
-                      className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-4 py-2 text-sm font-medium disabled:opacity-40"
-                    >
-                      {sendPending ? t('roomsPanel.posting') : t('roomsPanel.postButton')}
-                    </button>
-                  </div>
+                  <ChatComposer
+                    protocol="meshcore"
+                    viewKey={roomViewKey}
+                    isConnected={isConnected}
+                    connectionType={connectionType}
+                    allowOutbox={false}
+                    variant="room"
+                    placeholder={t('roomsPanel.postPlaceholder')}
+                    sendButtonLabel={t('roomsPanel.postButton')}
+                    sendingButtonLabel={t('roomsPanel.posting')}
+                    payloadLimit={MESHCORE_PAYLOAD_LIMIT - 4}
+                    mentionNodes={mentionNodes}
+                    onSendChunk={handleSendChunk}
+                  />
                 )}
               </div>
 
               {manageOpen && (
                 <div className="border-t border-gray-700 p-3">
-                  <h4 className="mb-2 text-sm font-medium text-gray-200">
-                    {t('roomsPanel.manageHeading')}
-                  </h4>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <h4 className="text-sm font-medium text-gray-200">
+                      {t('roomsPanel.manageHeading')}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setManageOpen(false);
+                      }}
+                      className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700"
+                      aria-label={t('roomsPanel.closeManage')}
+                    >
+                      {t('roomsPanel.closeManage')}
+                    </button>
+                  </div>
                   <div className="mb-2 flex gap-2">
                     <input
                       type="text"

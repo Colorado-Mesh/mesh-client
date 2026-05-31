@@ -1977,6 +1977,7 @@
     "posting": "Posting…",
     "leaveRoom": "Leave room",
     "manageRoom": "Manage",
+    "closeManage": "Close",
     "manageHeading": "Room administration",
     "cliPlaceholder": "Admin CLI command…",
     "cliSend": "Send",

@@ -1998,7 +1998,8 @@
     "cancelLogin": "Inloggen annuleren",
     "cancelLoginHint": "Een andere ruimtelogin kan eerst op de radio eindigen. Annuleer stopt verdere pogingen voor deze ruimte.",
     "emptyGuestLoginHint": "Leeg gastveld: gebruik Doorgaan met alleen-lezen voor servers zonder wachtwoord. Inloggen vereist een wachtwoord en stuurt \"hello\" als het veld leeg is.",
-    "unreadPosts": "{{count}} nieuw"
+    "unreadPosts": "{{count}} nieuw",
+    "closeManage": "Sluiten"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

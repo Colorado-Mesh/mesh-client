@@ -26,25 +26,16 @@ import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useChatOutbox } from '../hooks/useChatOutbox';
 import { useNowMs } from '../hooks/useNowMs';
-import {
-  countMessageChars,
-  getChatPayloadLimit,
-  MAX_CHUNKS,
-  splitChatMessage,
-} from '../lib/chatComposerLimits';
 import { playMessageNotification } from '../lib/chatNotifications';
 import {
-  clearDraft,
   dismissedDmTabsStorageKey,
   lastReadStorageKey,
-  loadDraftsInitial,
   loadMutedViews,
   loadOpenDmTabsInitial,
   loadPersistedLastReadInitial,
   loadStarred,
   notifyPersistedLastReadChanged,
   openDmTabsStorageKey,
-  saveDraft,
   saveMutedViews,
   saveStarred,
   type StarredMessage,
@@ -58,9 +49,10 @@ import { truncateReplyPreviewText } from '../lib/replyPreview';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '../lib/timeConstants';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
+import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
-import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
+import { MessageStatusBadge } from './MessageStatusBadge';
 import { useToast } from './Toast';
 
 /** Toolbar icon button with Electron-friendly HelpTooltip (native `title` does not show). */
@@ -123,71 +115,6 @@ function DmPeerInfoBar({ dmNode, nowMs, t }: { dmNode: MeshNode; nowMs: number; 
     >
       {parts.join(' · ')}
     </div>
-  );
-}
-
-function StatusBadge({
-  status,
-  transport,
-  connectionType,
-  error,
-}: {
-  status: 'sending' | 'acked' | 'failed' | 'queued' | 'blocked';
-  transport: 'device' | 'mqtt' | 'outbox';
-  connectionType?: 'ble' | 'serial' | 'http' | null;
-  error?: string;
-}) {
-  if (status === 'queued') {
-    return (
-      <HelpTooltip text="Queued \u2014 will send when connected">
-        <span className="text-muted text-[10px]">\u23F3 Queued</span>
-      </HelpTooltip>
-    );
-  }
-  if (status === 'blocked') {
-    return (
-      <HelpTooltip text={error ?? 'Blocked \u2014 no encryption key available'}>
-        <span className="text-[10px] text-amber-400">\uD83D\uDD12 Blocked</span>
-      </HelpTooltip>
-    );
-  }
-  const icon =
-    status === 'sending'
-      ? '\u23F3'
-      : status === 'acked'
-        ? '\u2713'
-        : transport === 'device'
-          ? 'no ACK'
-          : '\u2717';
-  const colorClass =
-    status === 'sending'
-      ? 'text-muted'
-      : status === 'acked'
-        ? 'text-bright-green'
-        : transport === 'device'
-          ? 'text-yellow-400'
-          : 'text-red-400';
-  const label =
-    transport === 'mqtt'
-      ? 'MQTT'
-      : connectionType === 'serial'
-        ? 'USB'
-        : connectionType === 'http'
-          ? 'WiFi'
-          : 'BT';
-  const failedReason =
-    status === 'failed' && transport === 'device'
-      ? 'No ACK (message may still have been broadcast; no other node in range to acknowledge)'
-      : error || 'Failed';
-  const tooltip = `${transport === 'mqtt' ? 'MQTT' : 'Device'}: ${
-    status === 'sending' ? 'Sending...' : status === 'acked' ? 'Delivered' : failedReason
-  }`;
-  return (
-    <HelpTooltip text={tooltip}>
-      <span className={`text-[10px] ${colorClass}`}>
-        {label} {icon}
-      </span>
-    </HelpTooltip>
   );
 }
 
@@ -501,29 +428,24 @@ function ChatPanel({
   }, []);
 
   useImperativeHandle(scrollToTopRef, () => scrollToTop, [scrollToTop]);
-  const [input, setInput] = useState('');
   const [channel, setChannel] = useState(() => (channels.length > 0 ? channels[0].index : 0));
   useEffect(() => {
     if (channels.length > 0 && !channels.some((c) => c.index === channel)) {
       setChannel(channels[0].index);
     }
   }, [channels, channel]);
-  const [sending, setSending] = useState(false);
   const [chatActionError, setChatActionError] = useState<{
     message: string;
     viewKey: string;
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
-  const [showComposePicker, setShowComposePicker] = useState(false);
   const isLinux = useMemo(() => window.electronAPI.getPlatform() === 'linux', []);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const emojiPickerRef = useRef<HTMLElement | null>(null);
   const reactionPickerRef = useRef<HTMLElement | null>(null);
   const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
@@ -533,10 +455,6 @@ function ChatPanel({
   >(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Feature: draft persistence — always reflect latest input/viewKey in refs used by effects
-  const inputValueRef = useRef(input);
-  inputValueRef.current = input;
-
   // Feature: sender filter
   const [filterSender, setFilterSender] = useState<number | null>(null);
 
@@ -545,11 +463,6 @@ function ChatPanel({
   const [jumpDate, setJumpDate] = useState('');
 
   const prevMessagesLengthRef = useRef(messages.length);
-
-  // Feature: @mention autocomplete
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionTriggerPos, setMentionTriggerPos] = useState(0);
-  const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
 
   // Feature: per-conversation mute
   const [mutedViews, setMutedViews] = useState<Set<string>>(() => loadMutedViews(protocol));
@@ -770,9 +683,6 @@ function ChatPanel({
     return `ch:${channel}`;
   }, [viewMode, activeDmNode, channel]);
 
-  // null = too many chunks (blocked); [] = fits in one; [..] = multi-part
-  const inputChunks = useMemo(() => splitChatMessage(input.trim(), protocol), [input, protocol]);
-
   const outboxSendFn = useCallback(
     (text: string, ch: number, dest?: number, replyId?: number) =>
       Promise.resolve().then(() => onSend(text, ch, dest, replyId)),
@@ -824,24 +734,9 @@ function ChatPanel({
     prevViewKeyForReadRef.current = viewKey;
   }, [viewKey, isActive, markCurrentViewRead]);
 
-  // Draft persistence: save/restore unsent input when view changes (also loads on initial mount)
-  const prevViewKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    const prevKey = prevViewKeyRef.current;
-    if (prevKey !== null && prevKey !== viewKey) {
-      const currentInput = inputValueRef.current;
-      if (currentInput.trim()) {
-        saveDraft(protocol, prevKey, currentInput);
-      } else {
-        clearDraft(protocol, prevKey);
-      }
-    }
-    prevViewKeyRef.current = viewKey;
-    const drafts = loadDraftsInitial(protocol);
-    setInput(drafts[viewKey] ?? '');
-    setMentionQuery(null);
     setFilterSender(null);
-  }, [viewKey, protocol]);
+  }, [viewKey]);
 
   // Persist per-conversation mute
   useEffect(() => {
@@ -1022,10 +917,7 @@ function ChatPanel({
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setPickerOpenFor(null);
-        setShowComposePicker(false);
-        if (mentionQuery != null) {
-          setMentionQuery(null);
-        } else if (replyTo) {
+        if (replyTo) {
           setReplyTo(null);
         } else if (filterSender != null) {
           setFilterSender(null);
@@ -1042,7 +934,7 @@ function ChatPanel({
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [showSearch, viewMode, replyTo, mentionQuery, filterSender, showDatePicker]);
+  }, [showSearch, viewMode, replyTo, filterSender, showDatePicker]);
 
   useEffect(() => {
     if (showSearch) {
@@ -1050,73 +942,15 @@ function ChatPanel({
     }
   }, [showSearch]);
 
-  const handleSend = async () => {
-    if (!input.trim() || sending) return;
-    const chunks = splitChatMessage(input.trim(), protocol);
-    if (chunks === null) return; // >MAX_CHUNKS, send button should already be disabled
-
-    const sendChannel = channel;
-    const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
-    const replyKey = replyTo ? (replyTo.packetId ?? replyTo.timestamp) : undefined;
-    const textsToSend = chunks.length === 0 ? [input.trim()] : chunks;
-
-    // Queue when: truly disconnected, OR MeshCore + MQTT-only (no device = packet-analyzer risk)
-    if (!isConnected || (isMqttOnly && protocol === 'meshcore')) {
-      const groupId = textsToSend.length > 1 ? crypto.randomUUID() : null;
-      for (let i = 0; i < textsToSend.length; i++) {
-        await queueOutbox({
-          protocol,
-          viewKey,
-          channel: sendChannel,
-          toNode: destination ?? null,
-          payload: textsToSend[i],
-          replyId: i === 0 ? (replyKey ?? null) : null,
-          status: 'queued',
-          error: null,
-          nextRetryAt: null,
-          groupId,
-          groupIndex: groupId ? i : null,
-          groupTotal: groupId ? textsToSend.length : null,
-        });
-      }
-      setInput('');
-      clearDraft(protocol, viewKey);
-      setMentionQuery(null);
-      setReplyTo(null);
-      return;
-    }
-
-    setSending(true);
-    setChatActionError(null);
-    try {
-      console.debug('[ChatPanel] handleSend');
-      // Chunked send: first chunk carries the replyId; subsequent chunks do not
-      for (let i = 0; i < textsToSend.length; i++) {
-        const sendOutcome = onSend(
-          textsToSend[i],
-          sendChannel,
-          destination,
-          i === 0 ? replyKey : undefined,
-        );
-        await Promise.resolve(sendOutcome);
-      }
-      setInput('');
-      clearDraft(protocol, viewKey);
-      setMentionQuery(null);
-      setReplyTo(null);
-      // Own sends are excluded from unread counts; do not advance lastRead with Date.now() here —
-      // MeshCore channel rows use device senderTimestamp and a client clock watermark suppresses badges.
-      setUnreadDividerTimestamp(0);
-    } catch (err) {
-      console.error('[ChatPanel] Send failed: ' + errLikeToLogString(err));
-      setChatActionError({
-        message: err instanceof Error ? err.message : 'Send failed',
-        viewKey,
-      });
-    } finally {
-      setSending(false);
-    }
-  };
+  const handleSendChunk = useCallback(
+    async (text: string, opts?: { replyId?: number }) => {
+      const sendChannel = channel;
+      const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
+      const sendOutcome = onSend(text, sendChannel, destination, opts?.replyId);
+      await Promise.resolve(sendOutcome);
+    },
+    [activeDmNode, channel, onSend, viewMode],
+  );
 
   const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
     // Match handleSend: UI uses channel -1 as "primary"; MeshCore/Meshtastic send expects 0.
@@ -1135,31 +969,6 @@ function ChatPanel({
     }
   };
   handleReactRef.current = handleReact;
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (mentionQuery != null && mentionCandidates.length > 0) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setMentionSelectedIdx((i) => Math.min(i + 1, mentionCandidates.length - 1));
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setMentionSelectedIdx((i) => Math.max(0, i - 1));
-        return;
-      }
-      if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
-        e.preventDefault();
-        const candidate = mentionCandidates[mentionSelectedIdx];
-        if (candidate) insertMention(candidate.name);
-        return;
-      }
-    }
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      void handleSend();
-    }
-  };
 
   // Open a DM tab for a node
   const openDmTo = useCallback((nodeNum: number) => {
@@ -1274,30 +1083,6 @@ function ChatPanel({
     return -1;
   }, [filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
 
-  useEffect(() => {
-    const el = emojiPickerRef.current;
-    if (!el) return;
-    const handler = (e: Event) => {
-      const unicode: string = (e as CustomEvent).detail.emoji.unicode;
-      const textarea = inputRef.current;
-      const currentValue = textarea?.value ?? '';
-      const start = textarea?.selectionStart ?? currentValue.length;
-      const end = textarea?.selectionEnd ?? currentValue.length;
-      const newVal = currentValue.slice(0, start) + unicode + currentValue.slice(end);
-      if (newVal.length > 228) return;
-      setInput(newVal);
-      setShowComposePicker(false);
-      requestAnimationFrame(() => {
-        textarea?.focus();
-        textarea?.setSelectionRange(start + unicode.length, start + unicode.length);
-      });
-    };
-    el.addEventListener('emoji-click', handler);
-    return () => {
-      el.removeEventListener('emoji-click', handler);
-    };
-  }, [showComposePicker]);
-
   // Linux reaction picker — attach emoji-click on the <emoji-picker> web component
   useEffect(() => {
     if (!pickerOpenFor) return;
@@ -1341,35 +1126,7 @@ function ChatPanel({
   const isDmMode = viewMode === 'dm' && activeDmNode != null;
   const nowMs = useNowMs(isDmMode);
   const dmNodeName = activeDmNode != null ? getDmLabel(activeDmNode) : '';
-  // @mention autocomplete candidates
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  const mentionCandidates = useMemo(
-    () =>
-      mentionQuery != null
-        ? buildMentionCandidates(nodes, protocol ?? 'meshtastic', mentionQuery)
-        : [],
-    [mentionQuery, nodes, protocol],
-  );
-
-  const insertMention = useCallback(
-    (name: string) => {
-      const textarea = inputRef.current;
-      const currentInput = inputValueRef.current;
-      const insert = `@[${name}] `;
-      const before = currentInput.slice(0, mentionTriggerPos);
-      const after = currentInput.slice(mentionTriggerPos + (mentionQuery?.length ?? 0) + 1);
-      const newVal = before + insert + after;
-      if (newVal.length > 228) return;
-      setInput(newVal);
-      setMentionQuery(null);
-      requestAnimationFrame(() => {
-        const newCursor = mentionTriggerPos + insert.length;
-        textarea?.focus();
-        textarea?.setSelectionRange(newCursor, newCursor);
-      });
-    },
-    [mentionTriggerPos, mentionQuery],
-  );
+  const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Jump to date — scroll to first message with matching day key
   const handleJumpToDate = useCallback((dateStr: string) => {
@@ -2244,9 +2001,9 @@ function ChatPanel({
                             )}
                             {msg.mqttStatus ? (
                               <>
-                                <StatusBadge status={msg.mqttStatus} transport="mqtt" />
+                                <MessageStatusBadge status={msg.mqttStatus} transport="mqtt" />
                                 {msg.status && (
-                                  <StatusBadge
+                                  <MessageStatusBadge
                                     status={msg.status}
                                     transport="device"
                                     connectionType={connectionType}
@@ -2255,7 +2012,7 @@ function ChatPanel({
                                 )}
                               </>
                             ) : msg.status ? (
-                              <StatusBadge
+                              <MessageStatusBadge
                                 status={msg.status}
                                 transport={isMqttOnly ? 'mqtt' : 'device'}
                                 connectionType={connectionType}
@@ -2301,7 +2058,7 @@ function ChatPanel({
                             <button
                               onClick={() => {
                                 setReplyTo(msg);
-                                inputRef.current?.focus();
+                                composerInputRef.current?.focus();
                               }}
                               className="rounded p-1 text-xs text-gray-600 hover:text-blue-400"
                               aria-label={t('chatPanel.replyToMessage')}
@@ -2519,181 +2276,33 @@ function ChatPanel({
       />
 
       {/* Compose emoji picker — Linux only; macOS/Windows use native showEmojiPanel() */}
-      {isLinux && showComposePicker && (
-        <emoji-picker
-          ref={emojiPickerRef}
-          style={{ width: '100%', maxWidth: '350px', alignSelf: 'flex-start' }}
-        />
-      )}
-
-      {/* Reply preview bar */}
-      {replyTo && (
-        <div className="bg-secondary-dark/80 mb-1 flex items-center gap-2 rounded-xl border border-gray-600/50 px-3 py-1.5 text-xs">
-          <svg
-            className="h-3 w-3 shrink-0 text-blue-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"
-            />
-          </svg>
-          <span className="text-gray-400">
-            Replying to{' '}
-            <span className="font-medium text-gray-200">
-              {nodeDisplayName(nodes.get(replyTo.sender_id), protocol) || replyTo.sender_name}
-            </span>
-            :
-          </span>
-          <span className="flex-1 truncate text-gray-500">
-            {replyTo.payload.length > 60 ? replyTo.payload.slice(0, 60) + '…' : replyTo.payload}
-          </span>
-          <button
-            onClick={() => {
-              setReplyTo(null);
-            }}
-            className="text-muted ml-1 leading-none hover:text-gray-200"
-            title={t('chatPanel.cancelReply')}
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <ChatComposer
+        className="mt-1"
+        protocol={protocol}
+        viewKey={viewKey}
+        isConnected={isConnected}
+        connectionType={connectionType}
+        isMqttOnly={isMqttOnly}
+        isDmMode={isDmMode}
+        placeholder={composePlaceholder}
+        replyTo={replyTo}
+        onReplyClear={() => {
+          setReplyTo(null);
+        }}
+        mentionNodes={nodes}
+        outboxChannel={channel}
+        outboxDestination={viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined}
+        queueOutbox={queueOutbox}
+        onSendChunk={handleSendChunk}
+        onSendSuccess={() => {
+          setUnreadDividerTimestamp(0);
+        }}
+        textareaRef={composerInputRef}
+      />
 
       {chatActionError?.viewKey === viewKey && (
         <div role="alert" className="mt-2 px-1 text-sm text-red-400">
           {chatActionError.message}
-        </div>
-      )}
-
-      {/* Input area — textarea so Chromium applies spellcheck (single-line inputs often skip it) */}
-      <div className="mt-1 flex min-w-0 gap-2">
-        <div className="relative min-w-0 flex-1">
-          {mentionQuery != null && mentionCandidates.length > 0 && (
-            <MentionAutocomplete
-              candidates={mentionCandidates}
-              selectedIdx={mentionSelectedIdx}
-              onSelect={insertMention}
-              onSetSelectedIdx={setMentionSelectedIdx}
-            />
-          )}
-          <textarea
-            ref={inputRef}
-            rows={1}
-            value={input}
-            onChange={(e) => {
-              const val = e.target.value;
-              setInput(val);
-              setChatActionError(null);
-              // Detect @ trigger from end of current value (works reliably in all environments)
-              const match = /@(\w*)$/.exec(val);
-              if (match) {
-                setMentionQuery(match[1]);
-                setMentionTriggerPos(val.length - match[0].length);
-                setMentionSelectedIdx(0);
-              } else {
-                setMentionQuery(null);
-              }
-            }}
-            onKeyDown={handleKeyDown}
-            spellCheck
-            lang={
-              typeof navigator !== 'undefined' && navigator.language
-                ? navigator.language
-                : undefined
-            }
-            enterKeyHint="send"
-            placeholder={composePlaceholder}
-            aria-label={composePlaceholder}
-            className={`max-h-32 min-h-[42px] w-full resize-none overflow-y-auto rounded-xl border px-4 py-2.5 text-gray-200 transition-colors focus:outline-none ${
-              !isConnected || sending ? 'opacity-60' : ''
-            } ${
-              isDmMode
-                ? 'border-purple-600/50 bg-purple-900/20 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30'
-                : 'bg-secondary-dark/80 focus:border-brand-green/50 focus:ring-brand-green/30 border-gray-600/50 focus:ring-1'
-            }`}
-            maxLength={getChatPayloadLimit(protocol) * MAX_CHUNKS}
-          />
-        </div>
-        {/* end relative wrapper */}
-        <HelpTooltip text={t('chatPanel.insertEmoji')}>
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault(); // keep textarea focused; also pre-focus it so OS settles before showEmojiPanel()
-              if (!isLinux) inputRef.current?.focus();
-            }}
-            onClick={() => {
-              if (isLinux) {
-                setShowComposePicker((prev) => !prev);
-              } else {
-                void window.electronAPI.showEmojiPanel();
-              }
-            }}
-            disabled={!isConnected || sending}
-            aria-label={t('chatPanel.emojiButton')}
-            className={`rounded-xl px-2.5 py-2.5 transition-colors disabled:opacity-50 ${
-              showComposePicker
-                ? 'bg-brand-green/20 text-bright-green'
-                : 'bg-secondary-dark/80 text-muted border border-gray-600/50 hover:text-gray-300'
-            }`}
-          >
-            😊
-          </button>
-        </HelpTooltip>
-        <button
-          onClick={handleSend}
-          disabled={!input.trim() || sending || inputChunks === null}
-          aria-label={
-            sending
-              ? t('chatPanel.sendButtonSending')
-              : !isConnected || (isMqttOnly && protocol === 'meshcore')
-                ? 'Queue message'
-                : isDmMode
-                  ? t('chatPanel.sendButtonDm')
-                  : t('chatPanel.sendButton')
-          }
-          className={`rounded-xl px-5 py-2.5 font-medium transition-colors ${
-            !isConnected || (isMqttOnly && protocol === 'meshcore')
-              ? 'disabled:text-muted bg-slate-600 text-white hover:bg-slate-500 disabled:bg-gray-600'
-              : isDmMode
-                ? 'disabled:text-muted bg-purple-600 text-white hover:bg-purple-500 disabled:bg-gray-600'
-                : 'disabled:text-muted bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-600'
-          }`}
-        >
-          {sending
-            ? t('chatPanel.sendButtonSending')
-            : !isConnected || (isMqttOnly && protocol === 'meshcore')
-              ? 'Queue'
-              : inputChunks !== null && inputChunks.length > 0
-                ? `Send ${inputChunks.length} Parts`
-                : isDmMode
-                  ? t('chatPanel.sendButtonDm')
-                  : t('chatPanel.sendButton')}
-        </button>
-      </div>
-      {/* Character count — only show near limit */}
-      {countMessageChars(input) > Math.floor(getChatPayloadLimit(protocol) * 0.8) && (
-        <div className="text-muted mt-1 text-right text-xs">
-          {inputChunks === null ? (
-            <span className="text-red-400">
-              {countMessageChars(input)}/{getChatPayloadLimit(protocol)} — too long (max{' '}
-              {MAX_CHUNKS} parts)
-            </span>
-          ) : inputChunks.length > 0 ? (
-            <span>
-              {countMessageChars(input)}/{getChatPayloadLimit(protocol)} — will send as{' '}
-              {inputChunks.length} parts
-            </span>
-          ) : (
-            <span>
-              {countMessageChars(input)}/{getChatPayloadLimit(protocol)}
-            </span>
-          )}
         </div>
       )}
     </div>

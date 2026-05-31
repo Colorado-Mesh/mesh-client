@@ -1998,7 +1998,8 @@
     "cancelLogin": "取消登录",
     "cancelLoginHint": "另一个房间登录可能首先在收音机上完成。取消可停止对此房间的进一步尝试。",
     "emptyGuestLoginHint": "访客密码为空：对无密码服务器使用「继续只读」。登录需要密码，字段为空时会发送「hello」。",
-    "unreadPosts": "新消息 {{count}} 条"
+    "unreadPosts": "新消息 {{count}} 条",
+    "closeManage": "关闭"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

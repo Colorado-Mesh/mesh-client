@@ -1998,7 +1998,8 @@
     "cancelLogin": "Anuluj logowanie",
     "cancelLoginHint": "Kolejne logowanie do pokoju może najpierw zakończyć się w radiu. Anulowanie zatrzymuje dalsze próby dla tego pokoju.",
     "emptyGuestLoginHint": "Puste pole gościa: użyj opcji Kontynuuj tylko do odczytu dla serwerów z pustym hasłem. Logowanie wymaga podania hasła i wysyła \"hello\", gdy pole jest puste.",
-    "unreadPosts": "{{count}} nowe"
+    "unreadPosts": "{{count}} nowe",
+    "closeManage": "Zamknij"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

@@ -4,7 +4,8 @@ export const MESHTASTIC_PAYLOAD_LIMIT = 228;
 export const MESHCORE_PAYLOAD_LIMIT = 133;
 export const MAX_CHUNKS = 9;
 
-export function getChatPayloadLimit(protocol: MeshProtocol): number {
+export function getChatPayloadLimit(protocol: MeshProtocol, override?: number): number {
+  if (override != null) return override;
   return protocol === 'meshcore' ? MESHCORE_PAYLOAD_LIMIT : MESHTASTIC_PAYLOAD_LIMIT;
 }
 
@@ -20,8 +21,12 @@ export function countMessageChars(text: string): number {
  * Splitting prefers word boundaries; hard-splits only when a single token exceeds the available
  * body space.
  */
-export function splitChatMessage(text: string, protocol: MeshProtocol): string[] | null {
-  const limit = getChatPayloadLimit(protocol);
+export function splitChatMessage(
+  text: string,
+  protocol: MeshProtocol,
+  payloadLimit?: number,
+): string[] | null {
+  const limit = getChatPayloadLimit(protocol, payloadLimit);
   const trimmed = text.trim();
 
   // How much body space does "[N/N] " cost? Prefix length depends on total chunk count.

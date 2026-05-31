@@ -1998,7 +1998,8 @@
     "cancelLogin": "Batalkan Log Masuk",
     "cancelLoginHint": "Login ruangan lain mungkin selesai di radio terlebih dahulu. Batalkan upaya perhentian lebih lanjut untuk ruangan ini.",
     "emptyGuestLoginHint": "Kolom tamu kosong: gunakan Lanjutkan hanya baca untuk server tanpa kata sandi. Login memerlukan kata sandi dan mengirim \"hello\" saat kolom kosong.",
-    "unreadPosts": "{{count}} baru"
+    "unreadPosts": "{{count}} baru",
+    "closeManage": "Tutup"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

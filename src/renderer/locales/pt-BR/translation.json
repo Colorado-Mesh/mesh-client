@@ -1998,7 +1998,8 @@
     "cancelLogin": "Cancelar início de sessão",
     "cancelLoginHint": "O login de outra sala pode terminar no rádio primeiro. Cancelar interrompe novas tentativas para esta sala.",
     "emptyGuestLoginHint": "Campo de convidado vazio: use «Continuar somente leitura» para servidores sem senha. O login requer uma senha e envia «hello» quando o campo está vazio.",
-    "unreadPosts": "{{count}} novos"
+    "unreadPosts": "{{count}} novos",
+    "closeManage": "Fechar"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

@@ -704,6 +704,7 @@ function AppContent({
   }, [meshcoreIdentityId, refreshMeshcoreAllFromDb]);
   const sendMessage = useSendMessage(focusedIdentityId);
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
+  const meshcoreConnectionView = useConnectionView(meshcoreIdentityId);
   const activeConnectionView = activeFacade.connectionView;
   const activeQueueFromStore = activeFacade.queue;
   const myNodeNumForQueue = activeConnectionView.state.myNodeNum;
@@ -2535,6 +2536,7 @@ function AppContent({
                                 messages={meshcoreUiMessages}
                                 myNodeNum={meshcoreRuntime.selfNodeId}
                                 isConnected={isOperational}
+                                connectionType={meshcoreConnectionView.state.connectionType}
                                 isActive={activePanelIndex === ROOMS_PANEL_INDEX}
                                 initialRoomTarget={pendingRoomTarget}
                                 onInitialRoomConsumed={handleRoomTargetConsumed}
