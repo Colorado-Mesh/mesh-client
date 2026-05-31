@@ -2000,7 +2000,11 @@
     "emptyGuestLoginHint": "Campo de convidado vazio: use «Continuar somente leitura» para servidores sem senha. O login requer uma senha e envia «hello» quando o campo está vazio.",
     "unreadPosts": "{{count}} novos",
     "closeManage": "Fechar",
-    "upgradeAccess": "Acesso de upgrade"
+    "upgradeAccess": "Acesso de upgrade",
+    "leavingRoom": "Partir",
+    "leaveRoomInProgress": "Saindo da sala…",
+    "leaveRoomHint": "Aguardando o seu rádio confirmar o logout. Isso pode levar alguns segundos sobre a malha.",
+    "leaveRoomFailed": "Não foi possível sair da sala"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

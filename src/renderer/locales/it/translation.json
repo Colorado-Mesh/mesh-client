@@ -2000,7 +2000,11 @@
     "emptyGuestLoginHint": "Campo ospite vuoto: usa «Continua in sola lettura» per i server senza password. L'accesso richiede una password e invia «hello» se il campo è vuoto.",
     "unreadPosts": "{{count}} nuovi",
     "closeManage": "Chiudi",
-    "upgradeAccess": "Aggiorna per Accedere"
+    "upgradeAccess": "Aggiorna per Accedere",
+    "leavingRoom": "Lasciare",
+    "leaveRoomInProgress": "Lasciare spazio...",
+    "leaveRoomHint": "In attesa che la radio confermi il logout. Questo può richiedere alcuni secondi sulla rete.",
+    "leaveRoomFailed": "Impossibile lasciare spazio"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

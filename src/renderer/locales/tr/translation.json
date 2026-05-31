@@ -2000,7 +2000,11 @@
     "emptyGuestLoginHint": "Boş konuk alanı: boş parola sunucuları için \"Salt okunur olarak devam et\" kullanın. Giriş bir şifre gerektirir ve alan boşken \"hello\" gönderir.",
     "unreadPosts": "{{count}} yeni",
     "closeManage": "Kapat",
-    "upgradeAccess": "Erişimi yükselt"
+    "upgradeAccess": "Erişimi yükselt",
+    "leavingRoom": "Çıkış",
+    "leaveRoomInProgress": "Odadan çıkılıyor…",
+    "leaveRoomHint": "Radyonuzun oturumu kapatmayı onaylaması bekleniyor. Bu, ağ üzerinde birkaç saniye sürebilir.",
+    "leaveRoomFailed": "Odadan çıkılamadı"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

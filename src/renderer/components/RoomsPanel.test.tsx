@@ -7,6 +7,7 @@ import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannel
 import {
   meshcoreApplyRoomSession,
   meshcoreClearAllRoomSessions,
+  meshcoreClearRoomSession,
 } from '@/renderer/lib/meshcoreRoomSession';
 import { computeRoomUnreadCounts } from '@/renderer/lib/meshcoreRoomsUnread';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
@@ -52,6 +53,7 @@ function renderRoomsPanel(
   const onLoginRoom = props.onLoginRoom ?? vi.fn().mockResolvedValue(undefined);
   const onLoginRoomWithSaved = props.onLoginRoomWithSaved ?? vi.fn().mockResolvedValue(undefined);
   const onCancelRoomLogin = props.onCancelRoomLogin ?? vi.fn();
+  const onLeaveRoom = props.onLeaveRoom ?? vi.fn().mockResolvedValue(undefined);
   render(
     <RoomsPanel
       nodes={nodes}
@@ -61,12 +63,13 @@ function renderRoomsPanel(
       onLoginRoom={onLoginRoom}
       onLoginRoomWithSaved={onLoginRoomWithSaved}
       onCancelRoomLogin={onCancelRoomLogin}
+      onLeaveRoom={onLeaveRoom}
       onSendRoomPost={vi.fn()}
       onSendRoomAdminCli={vi.fn()}
       {...props}
     />,
   );
-  return { onLoginRoom, onLoginRoomWithSaved, onCancelRoomLogin };
+  return { onLoginRoom, onLoginRoomWithSaved, onCancelRoomLogin, onLeaveRoom };
 }
 
 describe('RoomsPanel', () => {
@@ -300,6 +303,7 @@ describe('RoomsPanel', () => {
         onLoginRoom={vi.fn().mockResolvedValue(undefined)}
         onLoginRoomWithSaved={vi.fn().mockResolvedValue(undefined)}
         onCancelRoomLogin={vi.fn()}
+        onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
         onSendRoomPost={onSendRoomPost}
         onSendRoomAdminCli={vi.fn()}
       />,
@@ -334,6 +338,7 @@ describe('RoomsPanel', () => {
         onLoginRoom={vi.fn().mockResolvedValue(undefined)}
         onLoginRoomWithSaved={vi.fn().mockResolvedValue(undefined)}
         onCancelRoomLogin={vi.fn()}
+        onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
         onSendRoomPost={onSendRoomPost}
         onSendRoomAdminCli={vi.fn()}
       />,
@@ -366,6 +371,7 @@ describe('RoomsPanel', () => {
         onLoginRoom={vi.fn().mockResolvedValue(undefined)}
         onLoginRoomWithSaved={vi.fn().mockResolvedValue(undefined)}
         onCancelRoomLogin={vi.fn()}
+        onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
         onSendRoomPost={vi.fn()}
         onSendRoomAdminCli={vi.fn()}
       />,
@@ -407,5 +413,85 @@ describe('RoomsPanel', () => {
       connectionType: 'ble',
     });
     expect(screen.getByText(/BT/)).toBeInTheDocument();
+  });
+
+  it('shows leave in progress while onLeaveRoom is pending', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x100b, 'Leave Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    let resolveLeave!: () => void;
+    const onLeaveRoom = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveLeave = resolve;
+        }),
+    );
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+      onLeaveRoom,
+    });
+
+    fireEvent.click(screen.getByLabelText('roomsPanel.leaveRoom'));
+    expect(screen.getByText('roomsPanel.leaveRoomInProgress')).toBeInTheDocument();
+    expect(screen.getByLabelText('roomsPanel.leavingRoom')).toBeDisabled();
+
+    resolveLeave();
+    await waitFor(() => {
+      expect(onLeaveRoom).toHaveBeenCalledWith(room.node_id);
+    });
+  });
+
+  it('shows login overlay after leave completes and session is cleared', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x100c, 'Left Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const onLeaveRoom = vi.fn((nodeId: number) => {
+      meshcoreClearRoomSession(nodeId);
+      return Promise.resolve();
+    });
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+      onLeaveRoom,
+    });
+
+    fireEvent.click(screen.getByLabelText('roomsPanel.leaveRoom'));
+    await waitFor(() => {
+      expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+    });
+  });
+
+  it('shows leave error and keeps composer when onLeaveRoom fails', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x100d, 'Stuck Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const onLeaveRoom = vi.fn().mockRejectedValue(new Error('Room logout timed out'));
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+      onLeaveRoom,
+    });
+
+    fireEvent.click(screen.getByLabelText('roomsPanel.leaveRoom'));
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Room logout timed out');
+    });
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 });

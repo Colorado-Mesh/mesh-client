@@ -117,6 +117,8 @@ import {
   meshcoreRoomCanPost,
   meshcoreRoomEffectiveGuestPassword,
   meshcoreRoomLogin,
+  meshcoreRoomLogout,
+  meshcoreRoomLogoutFailureMessage,
   meshcoreRoomTryRelogin,
   meshcoreTryRemoteServerLogin,
 } from '../lib/meshcoreRoomSession';
@@ -3327,6 +3329,58 @@ export function useMeshcoreRuntime() {
     meshcoreCancelRoomLogin(nodeId);
   }, []);
 
+  const leaveRoom = useCallback(async (nodeId: number): Promise<void> => {
+    let pubKey = pubKeyMapRef.current.get(nodeId);
+    if (!pubKey) {
+      throw new Error('Room not found (no encryption key)');
+    }
+    const pubKeyHex = Array.from(pubKey)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    if (meshcoreIsSyntheticPlaceholderPubKeyHex(pubKeyHex)) {
+      throw new Error('Room has no RF encryption key — wait for contact sync or reconnect radio.');
+    }
+    if (pubkeyToNodeId(pubKey) !== nodeId) {
+      try {
+        const rows = (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
+        const row = rows.find((r) => r.node_id === nodeId);
+        if (row) {
+          const bytes = meshcoreFullPubKeyBytesFromContactDbHex(row.public_key);
+          if (bytes && pubkeyToNodeId(bytes) === nodeId) {
+            pubKeyMapRef.current.set(nodeId, bytes);
+            pubKey = bytes;
+          }
+        }
+      } catch (e: unknown) {
+        console.warn(
+          '[useMeshcoreRuntime] leaveRoom pubkey reload from DB failed ' + errLikeToLogString(e),
+        );
+      }
+      if (pubkeyToNodeId(pubKey) !== nodeId) {
+        throw new Error('Room key out of sync — reconnect or refresh contacts.');
+      }
+    }
+    const conn = connRef.current;
+    if (!conn) {
+      throw new Error('Not connected to device');
+    }
+    try {
+      await repeaterRemoteRpcRef.current(async () => {
+        const activeConn = connRef.current;
+        if (!activeConn) {
+          throw new Error('Not connected to device');
+        }
+        await meshcoreRoomLogout(activeConn, nodeId, pubKey, {
+          companionTransport: meshcoreConnectTypeRef.current,
+        });
+      });
+    } catch (e: unknown) {
+      const friendlyErr = meshcoreRoomLogoutFailureMessage(e);
+      console.warn('[useMeshcoreRuntime] leaveRoom failed ' + errLikeToLogString(e));
+      throw new Error(friendlyErr);
+    }
+  }, []);
+
   const loginRoomWithSaved = useCallback(
     async (nodeId: number): Promise<void> => {
       const cred = getMeshcoreRoomCredential(nodeId);
@@ -4595,6 +4649,7 @@ export function useMeshcoreRuntime() {
       loginRoom,
       loginRoomWithSaved,
       cancelRoomLogin,
+      leaveRoom,
       sendRoomPost,
       sendRoomAdminCliCommand,
       clearCliHistory,
@@ -4730,6 +4785,7 @@ export function useMeshcoreRuntime() {
       loginRoom,
       loginRoomWithSaved,
       cancelRoomLogin,
+      leaveRoom,
       sendRoomPost,
       sendRoomAdminCliCommand,
       clearCliHistory,

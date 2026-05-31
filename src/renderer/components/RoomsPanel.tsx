@@ -17,12 +17,12 @@ import {
 } from '@/renderer/lib/meshcoreRoomCredentialStorage';
 import {
   MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
-  meshcoreClearRoomSession,
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
   meshcoreIsRoomLoginAbortError,
   meshcoreRoomCanPost,
   meshcoreRoomEffectiveGuestPassword,
+  subscribeMeshcoreRoomSessionChanges,
 } from '@/renderer/lib/meshcoreRoomSession';
 import { computeRoomUnreadCounts } from '@/renderer/lib/meshcoreRoomsUnread';
 import {
@@ -58,6 +58,7 @@ interface Props {
   ) => Promise<void>;
   onLoginRoomWithSaved: (nodeId: number) => Promise<void>;
   onCancelRoomLogin: (nodeId: number) => void;
+  onLeaveRoom: (nodeId: number) => Promise<void>;
   onSendRoomPost: (nodeId: number, text: string) => Promise<void>;
   onSendRoomAdminCli: (nodeId: number, command: string) => Promise<string>;
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
@@ -81,6 +82,7 @@ export default function RoomsPanel({
   onLoginRoom,
   onLoginRoomWithSaved,
   onCancelRoomLogin,
+  onLeaveRoom,
   onSendRoomPost,
   onSendRoomAdminCli,
   meshcoreCliHistories,
@@ -92,7 +94,10 @@ export default function RoomsPanel({
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [loginPassword, setLoginPassword] = useState(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
   const [loginLoadingRoomIds, setLoginLoadingRoomIds] = useState<Set<number>>(() => new Set());
+  const [leaveLoadingRoomIds, setLeaveLoadingRoomIds] = useState<Set<number>>(() => new Set());
   const [loginErrorsByRoom, setLoginErrorsByRoom] = useState<Map<number, string>>(() => new Map());
+  const [leaveErrorsByRoom, setLeaveErrorsByRoom] = useState<Map<number, string>>(() => new Map());
+  const [, setRoomSessionEpoch] = useState(0);
   const [manageOpen, setManageOpen] = useState(false);
   const [cliInput, setCliInput] = useState('');
   const [cliPending, setCliPending] = useState(false);
@@ -107,6 +112,7 @@ export default function RoomsPanel({
   );
   const autoLoginAttempted = useRef<Set<number>>(new Set());
   const loginAttemptGenRef = useRef<Map<number, number>>(new Map());
+  const leaveAttemptGenRef = useRef<Map<number, number>>(new Map());
   const streamRef = useRef<HTMLDivElement>(null);
   const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
     loadPersistedRoomsLastRead(),
@@ -119,6 +125,12 @@ export default function RoomsPanel({
 
   const refreshStoredRooms = useCallback(() => {
     setStoredRoomIds(new Set(listMeshcoreRoomCredentialNodeIds()));
+  }, []);
+
+  useEffect(() => {
+    return subscribeMeshcoreRoomSessionChanges(() => {
+      setRoomSessionEpoch((n) => n + 1);
+    });
   }, []);
 
   const roomServers = useMemo(
@@ -216,6 +228,12 @@ export default function RoomsPanel({
     (nodeId: number) => {
       setSelectedRoomId(nodeId);
       setLoginErrorsByRoom((prev) => {
+        if (!prev.has(nodeId)) return prev;
+        const next = new Map(prev);
+        next.delete(nodeId);
+        return next;
+      });
+      setLeaveErrorsByRoom((prev) => {
         if (!prev.has(nodeId)) return prev;
         const next = new Map(prev);
         next.delete(nodeId);
@@ -366,17 +384,55 @@ export default function RoomsPanel({
     [onSendRoomPost, selectedRoomId],
   );
 
+  const startRoomLeave = useCallback(
+    (nodeId: number, leaveFn: () => Promise<void>) => {
+      const gen = (leaveAttemptGenRef.current.get(nodeId) ?? 0) + 1;
+      leaveAttemptGenRef.current.set(nodeId, gen);
+      setLeaveLoadingRoomIds((prev) => new Set(prev).add(nodeId));
+      setLeaveErrorsByRoom((prev) => {
+        if (!prev.has(nodeId)) return prev;
+        const next = new Map(prev);
+        next.delete(nodeId);
+        return next;
+      });
+      void leaveFn()
+        .then(() => {
+          if (leaveAttemptGenRef.current.get(nodeId) !== gen) return;
+          autoLoginAttempted.current.delete(nodeId);
+          setManageOpen(false);
+          setLoginErrorsByRoom((prev) => {
+            if (!prev.has(nodeId)) return prev;
+            const next = new Map(prev);
+            next.delete(nodeId);
+            return next;
+          });
+        })
+        .catch((e: unknown) => {
+          if (leaveAttemptGenRef.current.get(nodeId) !== gen) return;
+          setLeaveErrorsByRoom((prev) =>
+            new Map(prev).set(
+              nodeId,
+              e instanceof Error ? e.message : t('roomsPanel.leaveRoomFailed'),
+            ),
+          );
+        })
+        .finally(() => {
+          if (leaveAttemptGenRef.current.get(nodeId) !== gen) return;
+          setLeaveLoadingRoomIds((prev) => {
+            if (!prev.has(nodeId)) return prev;
+            const next = new Set(prev);
+            next.delete(nodeId);
+            return next;
+          });
+        });
+    },
+    [t],
+  );
+
   const handleLeaveRoom = useCallback(() => {
-    if (selectedRoomId == null) return;
-    meshcoreClearRoomSession(selectedRoomId);
-    setManageOpen(false);
-    setLoginErrorsByRoom((prev) => {
-      if (!prev.has(selectedRoomId)) return prev;
-      const next = new Map(prev);
-      next.delete(selectedRoomId);
-      return next;
-    });
-  }, [selectedRoomId]);
+    if (selectedRoomId == null || !isConnected) return;
+    startRoomLeave(selectedRoomId, () => onLeaveRoom(selectedRoomId));
+  }, [isConnected, onLeaveRoom, selectedRoomId, startRoomLeave]);
 
   const handleAdminLogin = useCallback(async () => {
     if (selectedRoomId == null) return;
@@ -452,8 +508,12 @@ export default function RoomsPanel({
   const guestFieldEmpty = loginPassword.trim().length === 0;
   const selectedRoomLoginLoading =
     selectedRoomId != null && loginLoadingRoomIds.has(selectedRoomId);
+  const selectedRoomLeaveLoading =
+    selectedRoomId != null && leaveLoadingRoomIds.has(selectedRoomId);
   const loginError =
     selectedRoomId != null ? (loginErrorsByRoom.get(selectedRoomId) ?? null) : null;
+  const leaveError =
+    selectedRoomId != null ? (leaveErrorsByRoom.get(selectedRoomId) ?? null) : null;
   const canPost = selectedRoomId != null && meshcoreRoomCanPost(selectedRoomId);
   const sessionRole = selectedRoomId != null ? meshcoreGetRoomSession(selectedRoomId)?.role : null;
   const cliHistory =
@@ -478,6 +538,7 @@ export default function RoomsPanel({
                 const isLogged = meshcoreIsRoomLoggedIn(room.node_id);
                 const hasSaved = storedRoomIds.has(room.node_id);
                 const isLoggingIn = loginLoadingRoomIds.has(room.node_id);
+                const isLeaving = leaveLoadingRoomIds.has(room.node_id);
                 return (
                   <button
                     key={room.node_id}
@@ -495,15 +556,17 @@ export default function RoomsPanel({
                         className={
                           isLogged
                             ? 'text-brand-green'
-                            : isLoggingIn
+                            : isLeaving
                               ? 'text-amber-300'
-                              : hasSaved
-                                ? 'text-amber-400/90'
-                                : 'text-gray-500'
+                              : isLoggingIn
+                                ? 'text-amber-300'
+                                : hasSaved
+                                  ? 'text-amber-400/90'
+                                  : 'text-gray-500'
                         }
                         aria-hidden
                       >
-                        {isLogged ? '●' : isLoggingIn ? '◌' : hasSaved ? '◐' : '○'}
+                        {isLogged ? '●' : isLeaving || isLoggingIn ? '◌' : hasSaved ? '◐' : '○'}
                       </span>
                       <span className="truncate">{room.long_name}</span>
                       {unread > 0 && selectedRoomId !== room.node_id && (
@@ -677,10 +740,17 @@ export default function RoomsPanel({
                   <button
                     type="button"
                     onClick={handleLeaveRoom}
-                    className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700"
-                    aria-label={t('roomsPanel.leaveRoom')}
+                    disabled={!isConnected || selectedRoomLeaveLoading}
+                    className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label={
+                      selectedRoomLeaveLoading
+                        ? t('roomsPanel.leavingRoom')
+                        : t('roomsPanel.leaveRoom')
+                    }
                   >
-                    {t('roomsPanel.leaveRoom')}
+                    {selectedRoomLeaveLoading
+                      ? t('roomsPanel.leavingRoom')
+                      : t('roomsPanel.leaveRoom')}
                   </button>
                   <button
                     type="button"
@@ -699,6 +769,21 @@ export default function RoomsPanel({
                   </button>
                 </div>
               </div>
+
+              {leaveError && (
+                <p role="alert" className="border-b border-gray-700 px-3 py-2 text-sm text-red-400">
+                  {leaveError}
+                </p>
+              )}
+
+              {selectedRoomLeaveLoading && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-gray-950/80 p-6 text-sm text-gray-400">
+                  <p>{t('roomsPanel.leaveRoomInProgress')}</p>
+                  <p className="max-w-xs text-center text-xs text-gray-500">
+                    {t('roomsPanel.leaveRoomHint')}
+                  </p>
+                </div>
+              )}
 
               <div
                 ref={streamRef}

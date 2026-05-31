@@ -2543,6 +2543,7 @@ function AppContent({
                                 onLoginRoom={meshcorePanelActions.loginRoom}
                                 onLoginRoomWithSaved={meshcorePanelActions.loginRoomWithSaved}
                                 onCancelRoomLogin={meshcorePanelActions.cancelRoomLogin}
+                                onLeaveRoom={meshcorePanelActions.leaveRoom}
                                 onSendRoomPost={meshcorePanelActions.sendRoomPost}
                                 onSendRoomAdminCli={meshcorePanelActions.sendRoomAdminCliCommand}
                                 meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}

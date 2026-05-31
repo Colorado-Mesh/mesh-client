@@ -2000,7 +2000,11 @@
     "emptyGuestLoginHint": "비어 있는 게스트 필드: 빈 비밀번호 서버에는 \"읽기 전용으로 계속\"을 사용하세요. 로그인에는 비밀번호가 필요하며 필드가 비어 있으면 \"hello\"를 보냅니다.",
     "unreadPosts": "새 글 {{count}}개",
     "closeManage": "닫기",
-    "upgradeAccess": "업그레이드 액세스"
+    "upgradeAccess": "업그레이드 액세스",
+    "leavingRoom": "떠나기",
+    "leaveRoomInProgress": "방을 나가는 중…",
+    "leaveRoomHint": "라디오에서 로그아웃을 확인하는 중입니다. 메시에 몇 초 정도 걸릴 수 있습니다.",
+    "leaveRoomFailed": "자리를 비울 수 없음"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

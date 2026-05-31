@@ -2000,7 +2000,11 @@
     "emptyGuestLoginHint": "Leeg gastveld: gebruik Doorgaan met alleen-lezen voor servers zonder wachtwoord. Inloggen vereist een wachtwoord en stuurt \"hello\" als het veld leeg is.",
     "unreadPosts": "{{count}} nieuw",
     "closeManage": "Sluiten",
-    "upgradeAccess": "Toegang upgraden"
+    "upgradeAccess": "Toegang upgraden",
+    "leavingRoom": "Latende",
+    "leaveRoomInProgress": "Ruimte verlaten…",
+    "leaveRoomHint": "Wachten op je radio om uitloggen te bevestigen. Dit kan een paar seconden duren over het mesh.",
+    "leaveRoomFailed": "Kan de ruimte niet verlaten"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

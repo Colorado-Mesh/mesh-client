@@ -2000,7 +2000,11 @@
     "emptyGuestLoginHint": "访客密码为空：对无密码服务器使用「继续只读」。登录需要密码，字段为空时会发送「hello」。",
     "unreadPosts": "新消息 {{count}} 条",
     "closeManage": "关闭",
-    "upgradeAccess": "升级到访问"
+    "upgradeAccess": "升级到访问",
+    "leavingRoom": "办公室",
+    "leaveRoomInProgress": "正在离开房间……",
+    "leaveRoomHint": "正在等待您的收音机确认注销。这可能需要几秒钟的时间。",
+    "leaveRoomFailed": "出不去了"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

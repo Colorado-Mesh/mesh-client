@@ -2000,7 +2000,11 @@
     "emptyGuestLoginHint": "Leeres Gästefeld: „Schreibgeschützt fortfahren“ für Server ohne Passwort. Login erfordert ein Passwort und sendet „hello“, wenn das Feld leer ist.",
     "unreadPosts": "{{count}} neu",
     "closeManage": "Schließen",
-    "upgradeAccess": "Upgrade-Zugang"
+    "upgradeAccess": "Upgrade-Zugang",
+    "leavingRoom": "Verlassen",
+    "leaveRoomInProgress": "Raum verlassen...",
+    "leaveRoomHint": "Warten auf die Bestätigung der Abmeldung durch Ihr Funkgerät. Dies kann einige Sekunden über dem Netz dauern.",
+    "leaveRoomFailed": "Raum konnte nicht verlassen werden"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

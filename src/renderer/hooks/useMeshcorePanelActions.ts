@@ -42,6 +42,7 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       loginRoom: runtime.loginRoom,
       loginRoomWithSaved: runtime.loginRoomWithSaved,
       cancelRoomLogin: runtime.cancelRoomLogin,
+      leaveRoom: runtime.leaveRoom,
       sendRoomPost: runtime.sendRoomPost,
       sendRoomAdminCliCommand: runtime.sendRoomAdminCliCommand,
       clearCliHistory: runtime.clearCliHistory,

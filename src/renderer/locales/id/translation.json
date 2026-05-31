@@ -2000,7 +2000,11 @@
     "emptyGuestLoginHint": "Kolom tamu kosong: gunakan Lanjutkan hanya baca untuk server tanpa kata sandi. Login memerlukan kata sandi dan mengirim \"hello\" saat kolom kosong.",
     "unreadPosts": "{{count}} baru",
     "closeManage": "Tutup",
-    "upgradeAccess": "Tingkatkan akses"
+    "upgradeAccess": "Tingkatkan akses",
+    "leavingRoom": "pergi",
+    "leaveRoomInProgress": "Meninggalkan ruangan…",
+    "leaveRoomHint": "Menunggu radio Anda mengonfirmasi keluar. Ini bisa memakan waktu beberapa detik di atas jaring.",
+    "leaveRoomFailed": "Tidak dapat meninggalkan ruangan"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

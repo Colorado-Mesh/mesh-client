@@ -2000,7 +2000,11 @@
     "emptyGuestLoginHint": "空のゲストフィールド：空のパスワードサーバーの場合は、読み取り専用で続行を使用します。ログインにはパスワードが必要で、フィールドが空の場合に「hello」を送信します。",
     "unreadPosts": "新着 {{count}} 件",
     "closeManage": "閉じる",
-    "upgradeAccess": "アクセスをアップグレード"
+    "upgradeAccess": "アクセスをアップグレード",
+    "leavingRoom": "出庫",
+    "leaveRoomInProgress": "部屋を出る…",
+    "leaveRoomHint": "ラジオでログアウトが確認されるのを待っています。これにはメッシュ上で数秒かかる場合があります。",
+    "leaveRoomFailed": "部屋を出ることができませんでした"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

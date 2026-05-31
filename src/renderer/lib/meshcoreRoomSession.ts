@@ -7,6 +7,10 @@ import {
   type MeshcoreRoomLoginRpcConnection,
   runMeshcoreRoomLogin,
 } from './meshcoreRoomLoginRpc';
+import {
+  type MeshcoreRoomLogoutRpcConnection,
+  runMeshcoreRoomLogout,
+} from './meshcoreRoomLogoutRpc';
 import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
 import {
   MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS,
@@ -37,6 +41,23 @@ export const MESHCORE_ROOM_PERM_READ_WRITE = 2;
 export const MESHCORE_ROOM_PERM_ADMIN = 3;
 
 const sessions = new Map<number, MeshcoreRoomSession>();
+
+type RoomSessionChangeListener = () => void;
+const roomSessionChangeListeners = new Set<RoomSessionChangeListener>();
+
+function notifyRoomSessionChanged(): void {
+  for (const listener of roomSessionChangeListeners) {
+    listener();
+  }
+}
+
+/** Subscribe to room session map changes (login, logout, clear). Returns unsubscribe. */
+export function subscribeMeshcoreRoomSessionChanges(cb: RoomSessionChangeListener): () => void {
+  roomSessionChangeListeners.add(cb);
+  return () => {
+    roomSessionChangeListeners.delete(cb);
+  };
+}
 
 /** Serializes room logins so concurrent BLE login frames do not collide. */
 let roomLoginChain: Promise<void> = Promise.resolve();
@@ -101,10 +122,13 @@ export function meshcoreClearAllRoomSessions(): void {
   }
   roomLoginAbortControllers.clear();
   sessions.clear();
+  notifyRoomSessionChanged();
 }
 
 export function meshcoreClearRoomSession(nodeId: number): void {
+  if (!sessions.has(nodeId)) return;
   sessions.delete(nodeId);
+  notifyRoomSessionChanged();
 }
 
 function roleFromPermissionsByte(permissions: number): MeshcoreRoomRole {
@@ -152,6 +176,7 @@ export function meshcoreApplyRoomSession(
     loggedInAt: Date.now(),
     syncSince: params.syncSince,
   });
+  notifyRoomSessionChanged();
 }
 
 /** Default room guest password when firmware uses factory defaults (see MeshCore ROOM_PASSWORD). */
@@ -267,6 +292,36 @@ export async function meshcoreRoomLogin(
   const next = roomLoginChain.then(run, run);
   roomLoginChain = next.catch(() => {});
   await next;
+}
+
+/** Minimal connection surface for room server logout. */
+export type MeshcoreRoomLogoutConn = MeshcoreRoomLogoutRpcConnection;
+
+export function meshcoreRoomLogoutFailureMessage(err: unknown): string {
+  const msg = errLikeToLogString(err).toLowerCase();
+  if (msg.includes('timeout')) {
+    return 'Room logout timed out. The room may be out of range or not responding.';
+  }
+  if (msg.includes('rejected')) {
+    return 'Room logout rejected by radio.';
+  }
+  return 'Could not leave room';
+}
+
+/**
+ * Logout from a room server and clear local session on success.
+ * Failure point: radio timeout or Err — throws; caller shows UI error; session kept.
+ */
+export async function meshcoreRoomLogout(
+  conn: MeshcoreRoomLogoutConn,
+  nodeId: number,
+  pubKey: Uint8Array,
+  opts?: {
+    companionTransport?: MeshcoreCompanionTransport;
+  },
+): Promise<void> {
+  await runMeshcoreRoomLogout(conn, pubKey, opts);
+  meshcoreClearRoomSession(nodeId);
 }
 
 /** Best-effort re-login using stored session passwords (e.g. before post or admin CLI). */

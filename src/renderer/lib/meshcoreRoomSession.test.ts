@@ -9,6 +9,7 @@ import {
   meshcoreIsRoomLoginAbortError,
   meshcoreRoomCanPost,
   meshcoreRoomLogin,
+  meshcoreRoomLogout,
   meshcoreRoomTryRelogin,
 } from './meshcoreRoomSession';
 
@@ -17,9 +18,15 @@ vi.mock('./meshcoreRoomLoginRpc', () => ({
   runMeshcoreRoomLogin: vi.fn(),
 }));
 
+vi.mock('./meshcoreRoomLogoutRpc', () => ({
+  runMeshcoreRoomLogout: vi.fn(),
+}));
+
 import { runMeshcoreRoomLogin } from './meshcoreRoomLoginRpc';
+import { runMeshcoreRoomLogout } from './meshcoreRoomLogoutRpc';
 
 const mockRunMeshcoreRoomLogin = vi.mocked(runMeshcoreRoomLogin);
+const mockRunMeshcoreRoomLogout = vi.mocked(runMeshcoreRoomLogout);
 
 describe('meshcoreRoomSession', () => {
   afterEach(() => {
@@ -184,5 +191,25 @@ describe('meshcoreRoomSession', () => {
 
   it('exports abort message constant', () => {
     expect(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE).toBe('Room login cancelled');
+  });
+
+  it('logout clears session on success', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogout.mockResolvedValue(undefined);
+    meshcoreApplyRoomSession(42, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreRoomLogout(conn, 42, pubKey);
+    expect(mockRunMeshcoreRoomLogout).toHaveBeenCalledWith(conn, pubKey, undefined);
+    expect(meshcoreIsRoomLoggedIn(42)).toBe(false);
   });
 });

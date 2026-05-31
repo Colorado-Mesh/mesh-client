@@ -2000,7 +2000,11 @@
     "emptyGuestLoginHint": "Champ invité vide : utilisez « Continuer en lecture seule » pour les serveurs sans mot de passe. La connexion nécessite un mot de passe et envoie « hello » si le champ est vide.",
     "unreadPosts": "{{count}} nouveaux",
     "closeManage": "Fermer",
-    "upgradeAccess": "Mise à niveau vers Access"
+    "upgradeAccess": "Mise à niveau vers Access",
+    "leavingRoom": "Sortie en cours…",
+    "leaveRoomInProgress": "Quitter la salle…",
+    "leaveRoomHint": "En attente de la confirmation de la déconnexion de votre radio. Cela peut prendre quelques secondes sur le maillage.",
+    "leaveRoomFailed": "Impossible de quitter la salle"
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",
