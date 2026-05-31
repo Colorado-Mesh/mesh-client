@@ -102,6 +102,7 @@ import {
   readMeshcoreIdentityAsync,
 } from './lib/letsMeshJwt';
 import { meshcoreChatMessagesForDisplay } from './lib/meshcoreChannelText';
+import { syncMeshcoreDisplayReplyRepairs } from './lib/meshcoreStoreDedup';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './lib/meshtasticMqttTlsMigration';
@@ -680,6 +681,20 @@ function AppContent({
     () => meshcoreChatMessagesForDisplay(messageRecordsToChatMessages(meshcoreStoreMessages)),
     [meshcoreStoreMessages],
   );
+
+  useEffect(() => {
+    if (!meshcoreIdentityId) return;
+    const timer = window.setTimeout(() => {
+      syncMeshcoreDisplayReplyRepairs(
+        meshcoreIdentityId,
+        meshcoreStoreMessages,
+        meshcoreUiMessages,
+      );
+    }, 500);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [meshcoreIdentityId, meshcoreStoreMessages, meshcoreUiMessages]);
   const meshtasticUiNodes = useMemo(() => {
     if (!meshtasticNodesById) return new Map<number, MeshNode>();
     return nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesById));

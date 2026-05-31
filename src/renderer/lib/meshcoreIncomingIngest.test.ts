@@ -169,6 +169,24 @@ describe('parseMeshcoreChannelIncomingFromThread (canonical live ingest)', () =>
     });
     expect(parsed.replyId).toBeUndefined();
   });
+
+  it('resolves explicit stale wire key with generic body when parent thread is complete', () => {
+    seedStore([
+      nv0n('Thank you.', 1780239830519),
+      nv0n('Message B - reply to this please.', 1780240608140),
+    ]);
+    const prior = listChatMessagesFromStore(ID);
+    const parsed = parseMeshcoreChannelIncomingFromThread(prior, {
+      rawText: `🫈Wherewolf Mane: @[${NV0N}#1780239830519] sounds good`,
+      senderId: 203,
+      displayName: '🫈Wherewolf Mane',
+      channel: CH,
+      timestamp: 1780240702000,
+      receivedVia: 'rf',
+    });
+    expect(parsed.replyId).toBe(1780240608140);
+    expect(parsed.replyPreviewText).toContain('Message B');
+  });
 });
 
 describe('ingestMeshcoreChannelMessage + store persist', () => {

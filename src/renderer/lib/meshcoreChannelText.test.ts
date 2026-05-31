@@ -9,6 +9,7 @@ import {
   meshcoreChannelRepairRawText,
   meshcoreChatMessagesForDisplay,
   meshcorePayloadIsTapbackEmojiOnly,
+  meshcoreReplyBodyReferencesParent,
   normalizeMeshcoreIncomingText,
   parseMeshcoreBracketPrefix,
   parseMeshcorePlainBracketLine,
@@ -795,6 +796,87 @@ describe('repairMeshcoreDisplayMessages', () => {
     const out = meshcoreChatMessagesForDisplay([thankYou, messageB, wherewolf]);
     expect(out[2]?.replyId).toBe(1780240608140);
     expect(out[2]?.replyPreviewText).toContain('Message B');
+  });
+
+  it('overrides stale explicit @[Name#key] when body is generic (sounds good)', () => {
+    const thankYou: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Thank you.',
+      channel: 6,
+      timestamp: 1780239830519,
+      status: 'acked',
+    };
+    const messageB: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Message B - reply to this please.',
+      channel: 6,
+      timestamp: 1780240608140,
+      status: 'acked',
+    };
+    const reply: ChatMessage = {
+      sender_id: 203,
+      sender_name: '🫈Wherewolf Mane',
+      payload: 'sounds good',
+      channel: 6,
+      timestamp: 1780240702000,
+      status: 'acked',
+      replyId: 1780239830519,
+      replyPreviewText: 'Thank you.',
+      replyPreviewSender: '🛜 NV0N 01',
+      meshcoreDedupeKey: `🫈Wherewolf Mane: @[🛜 NV0N 01#1780239830519] sounds good`,
+    };
+    const out = meshcoreChatMessagesForDisplay([thankYou, messageB, reply]);
+    expect(out[2]?.replyId).toBe(1780240608140);
+    expect(out[2]?.replyPreviewText).toContain('Message B');
+  });
+
+  it('keeps stale explicit @[Name#key] when body references the keyed parent', () => {
+    const thankYou: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Thank you.',
+      channel: 6,
+      timestamp: 1780239830519,
+      status: 'acked',
+    };
+    const messageB: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Message B - reply to this please.',
+      channel: 6,
+      timestamp: 1780240608140,
+      status: 'acked',
+    };
+    const reply: ChatMessage = {
+      sender_id: 203,
+      sender_name: '🫈Wherewolf Mane',
+      payload: 'about your thank you note — still thinking',
+      channel: 6,
+      timestamp: 1780240702000,
+      status: 'acked',
+      replyId: 1780239830519,
+      replyPreviewText: 'Thank you.',
+      replyPreviewSender: '🛜 NV0N 01',
+      meshcoreDedupeKey: `🫈Wherewolf Mane: @[🛜 NV0N 01#1780239830519] about your thank you note — still thinking`,
+    };
+    const out = meshcoreChatMessagesForDisplay([thankYou, messageB, reply]);
+    expect(out[2]?.replyId).toBe(1780239830519);
+    expect(out[2]?.replyPreviewText).toContain('Thank you');
+  });
+});
+
+describe('meshcoreReplyBodyReferencesParent', () => {
+  it('returns false for generic short replies', () => {
+    expect(meshcoreReplyBodyReferencesParent('sounds good', 'Thank you.')).toBe(false);
+    expect(meshcoreReplyBodyReferencesParent('agreed', 'Message B - reply to this please.')).toBe(
+      false,
+    );
+  });
+
+  it('returns true when body quotes parent text', () => {
+    expect(meshcoreReplyBodyReferencesParent('about your thank you note', 'Thank you.')).toBe(true);
   });
 });
 

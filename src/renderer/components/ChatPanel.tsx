@@ -1891,28 +1891,20 @@ function ChatPanel({
                             const orig =
                               msg.replyId != null
                                 ? protocol === 'meshtastic'
-                                  ? findMeshtasticParentMessageForReply(
-                                      regularMessages,
-                                      msg.replyId,
-                                      {
-                                        replyPreviewSender: msg.replyPreviewSender,
-                                        beforeTimestamp: msg.timestamp,
-                                        channel: msg.channel,
-                                        to: msg.to,
-                                        excludeSenderId: msg.sender_id,
-                                      },
-                                    )
-                                  : findMeshcoreParentMessageForReply(
-                                      regularMessages,
-                                      msg.replyId,
-                                      {
-                                        replyPreviewSender: msg.replyPreviewSender,
-                                        beforeTimestamp: msg.timestamp,
-                                        channel: msg.channel,
-                                        to: msg.to,
-                                        excludeSenderId: msg.sender_id,
-                                      },
-                                    )
+                                  ? findMeshtasticParentMessageForReply(viewMessages, msg.replyId, {
+                                      replyPreviewSender: msg.replyPreviewSender,
+                                      beforeTimestamp: msg.timestamp,
+                                      channel: msg.channel,
+                                      to: msg.to,
+                                      excludeSenderId: msg.sender_id,
+                                    })
+                                  : findMeshcoreParentMessageForReply(viewMessages, msg.replyId, {
+                                      replyPreviewSender: msg.replyPreviewSender,
+                                      beforeTimestamp: msg.timestamp,
+                                      channel: msg.channel,
+                                      to: msg.to,
+                                      excludeSenderId: msg.sender_id,
+                                    })
                                 : undefined;
                             const quoteSnippet =
                               orig != null

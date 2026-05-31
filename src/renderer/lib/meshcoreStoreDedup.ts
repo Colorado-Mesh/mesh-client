@@ -4,8 +4,11 @@ import {
   findMeshcoreTapbackEchoDuplicate,
   MESHCORE_ROOM_MESSAGE_CHANNEL,
   meshcoreMessageDedupeKey,
+  messageToDbRow,
 } from '../hooks/meshcore/meshcoreHookPreamble';
+import type { MessageRecord } from '../stores/messageStore';
 import { deleteMessage, upsertMessage, useMessageStore } from '../stores/messageStore';
+import { errLikeToLogString } from './errLikeToLogString';
 import type {
   BuildMeshcoreChannelIncomingOpts,
   BuildMeshcoreDmIncomingOpts,
@@ -313,4 +316,61 @@ export function upsertMeshcoreMessageWithDedup(
   record.id = canonicalId;
   upsertMessage(identityId, record);
   return { inserted: true, storeUpdated: true, message: msg, canonicalId };
+}
+
+function meshcoreReplyRepairMatchKey(msg: ChatMessage): string {
+  const roomKey =
+    msg.roomServerId != null
+      ? String(msg.roomServerId)
+      : msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL && msg.to != null
+        ? String(msg.to)
+        : '';
+  return [msg.sender_id, msg.channel, msg.timestamp, msg.payload, msg.to ?? '', roomKey].join('|');
+}
+
+export function meshcoreReplyFieldsDiffer(a: ChatMessage, b: ChatMessage): boolean {
+  return (
+    (a.replyId ?? undefined) !== (b.replyId ?? undefined) ||
+    (a.replyPreviewText ?? undefined) !== (b.replyPreviewText ?? undefined) ||
+    (a.replyPreviewSender ?? undefined) !== (b.replyPreviewSender ?? undefined)
+  );
+}
+
+/**
+ * Persist display-repaired reply metadata when `meshcoreChatMessagesForDisplay` corrects stale
+ * store/DB rows. Failure point: DB IPC — logged; Zustand update still applies for UI consistency.
+ */
+export function syncMeshcoreDisplayReplyRepairs(
+  identityId: IdentityId,
+  storeRecords: MessageRecord[],
+  repaired: ChatMessage[],
+): void {
+  if (storeRecords.length === 0 || repaired.length === 0) return;
+
+  const recordIdByKey = new Map<string, string>();
+  const rawByKey = new Map<string, ChatMessage>();
+  for (const rec of storeRecords) {
+    const raw = messageRecordToChatMessage(rec);
+    const key = meshcoreReplyRepairMatchKey(raw);
+    recordIdByKey.set(key, rec.id);
+    rawByKey.set(key, raw);
+  }
+
+  for (const fixed of repaired) {
+    if (fixed.replyId == null && !fixed.replyPreviewSender && !fixed.replyPreviewText) continue;
+    const key = meshcoreReplyRepairMatchKey(fixed);
+    const raw = rawByKey.get(key);
+    if (!raw || !meshcoreReplyFieldsDiffer(raw, fixed)) continue;
+    const recordId = recordIdByKey.get(key);
+    if (!recordId) continue;
+
+    const record = chatMessageToMessageRecord(fixed);
+    record.id = recordId;
+    upsertMessage(identityId, record);
+    void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(fixed)).catch((e: unknown) => {
+      console.warn(
+        '[meshcoreStoreDedup] syncMeshcoreDisplayReplyRepairs save failed ' + errLikeToLogString(e),
+      );
+    });
+  }
 }

@@ -59,6 +59,10 @@ function handleTextMessage(
   const record = useMessageStore.getState().messages[identityId]?.[event.payload.id];
   if (!record) return;
 
+  const priorReplyId = record.replyTo != null ? Number(record.replyTo) : undefined;
+  const priorReplyPreviewText = record.replyPreviewText;
+  const priorReplyPreviewSender = record.replyPreviewSender;
+
   const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
   const messages = listChatMessages(identityId);
   const isChannel = event.payload.id.startsWith('ch:');
@@ -163,7 +167,9 @@ function handleTextMessage(
 
   const isEcho = myNodeNum > 0 && senderId === myNodeNum;
   const replyUpgraded =
-    stored.replyId !== parsedRaw.replyId || stored.replyPreviewText !== parsedRaw.replyPreviewText;
+    stored.replyId !== priorReplyId ||
+    stored.replyPreviewText !== priorReplyPreviewText ||
+    stored.replyPreviewSender !== priorReplyPreviewSender;
   if ((inserted || storeUpdated || replyUpgraded) && !isEcho) {
     void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(stored)).catch((e: unknown) => {
       console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));

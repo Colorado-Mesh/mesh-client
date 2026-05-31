@@ -500,6 +500,111 @@ function normalizePayloadMatchText(text: string): string {
   return text.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+const GENERIC_MESHCORE_REPLY_BODIES = new Set([
+  'thanks',
+  'thank you',
+  'agreed',
+  'yes',
+  'no',
+  'ok',
+  'okay',
+  '+1',
+  'yep',
+  'nope',
+  'sure',
+  'cool',
+  'nice',
+  'lol',
+  'haha',
+  'sounds good',
+  'got it',
+]);
+
+/**
+ * True when a reply body substantively references `parentPayload` (keep an explicit wire `#key`
+ * parent). Generic short replies and tapbacks return false so a stale keyed parent can upgrade.
+ */
+export function meshcoreReplyBodyReferencesParent(body: string, parentPayload: string): boolean {
+  const bodyNorm = normalizePayloadMatchText(body);
+  const parentNorm = normalizePayloadMatchText(parentPayload);
+  if (!bodyNorm || !parentNorm) return false;
+  if (meshcorePayloadIsTapbackEmojiOnly(bodyNorm)) return false;
+  if (bodyNorm.length <= 20 && GENERIC_MESHCORE_REPLY_BODIES.has(bodyNorm)) return false;
+
+  if (bodyNorm === parentNorm) return true;
+
+  const shorter = bodyNorm.length <= parentNorm.length ? bodyNorm : parentNorm;
+  const longer = bodyNorm.length <= parentNorm.length ? parentNorm : bodyNorm;
+  if (shorter.length >= 8 && longer.includes(shorter)) return true;
+  if (shorter.length >= 4 && shorter.length / longer.length >= 0.4 && longer.includes(shorter)) {
+    return true;
+  }
+
+  const parentTokens = new Set(
+    meshcoreDisplayNameTokens(parentPayload).filter((t) => t.length >= 4),
+  );
+  if (parentTokens.size === 0) return false;
+  let shared = 0;
+  for (const t of meshcoreDisplayNameTokens(body)) {
+    if (t.length >= 4 && parentTokens.has(t)) shared++;
+  }
+  return shared >= 2 || (shared >= 1 && bodyNorm.length >= 12);
+}
+
+function resolveMeshcoreLatestBracketParentKey(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+  targetName: string,
+): number | undefined {
+  if (msg.channel >= 0) {
+    return resolveMeshcoreBracketParentKey(prior, {
+      channel: msg.channel,
+      targetName,
+      beforeTimestamp: msg.timestamp,
+      to: msg.to,
+    });
+  }
+  if (msg.channel === -1 && msg.to != null) {
+    return (
+      resolveMeshcoreBracketParentKeyDm(prior, {
+        peerNodeId: msg.sender_id,
+        myNodeId: msg.to,
+        targetName,
+        beforeTimestamp: msg.timestamp,
+      }) ??
+      resolveMeshcoreBracketParentKeyDm(prior, {
+        peerNodeId: msg.to,
+        myNodeId: msg.sender_id,
+        targetName,
+        beforeTimestamp: msg.timestamp,
+      })
+    );
+  }
+  return undefined;
+}
+
+function tryUpgradeMeshcoreReplyToLatestSameSender(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+  targetName: string,
+  lookupOpts: MeshcoreReplyLookupOptions,
+  currentParent: ChatMessage | undefined,
+  explicitWireKey: boolean,
+): { replyId: number; parent: ChatMessage } | null {
+  const resolvedKey = resolveMeshcoreLatestBracketParentKey(msg, prior, targetName);
+  if (resolvedKey == null) return null;
+  const resolvedParent = findMeshcoreParentMessageForReply(prior, resolvedKey, lookupOpts);
+  if (!resolvedParent) return null;
+  if (!currentParent) {
+    return { replyId: resolvedKey, parent: resolvedParent };
+  }
+  if (resolvedParent.timestamp <= currentParent.timestamp) return null;
+  if (explicitWireKey && meshcoreReplyBodyReferencesParent(msg.payload, currentParent.payload)) {
+    return null;
+  }
+  return { replyId: resolvedKey, parent: resolvedParent };
+}
+
 /** Bounded reply letter token (e.g. `reply to b`) — alphanumeric only, no RegExp injection. */
 function parseMeshcoreReplyLetterRef(payload: string): string | undefined {
   const lower = payload.trim().toLowerCase();
@@ -702,65 +807,32 @@ function refreshMeshcoreReplyParent(msg: ChatMessage, prior: readonly ChatMessag
     if (hintParent) {
       replyId = hintParent.packetId ?? hintParent.timestamp;
       parent = hintParent;
-    } else if (!explicitWireKey) {
-      let resolvedKey: number | undefined;
-      if (msg.channel >= 0) {
-        resolvedKey = resolveMeshcoreBracketParentKey(prior, {
-          channel: msg.channel,
-          targetName,
-          beforeTimestamp: msg.timestamp,
-          to: msg.to,
-        });
-      } else if (msg.channel === -1 && msg.to != null) {
-        resolvedKey =
-          resolveMeshcoreBracketParentKeyDm(prior, {
-            peerNodeId: msg.sender_id,
-            myNodeId: msg.to,
-            targetName,
-            beforeTimestamp: msg.timestamp,
-          }) ??
-          resolveMeshcoreBracketParentKeyDm(prior, {
-            peerNodeId: msg.to,
-            myNodeId: msg.sender_id,
-            targetName,
-            beforeTimestamp: msg.timestamp,
-          });
-      }
-      if (resolvedKey != null) {
-        const resolvedParent = findMeshcoreParentMessageForReply(prior, resolvedKey, lookupOpts);
-        if (resolvedParent && (!parent || resolvedParent.timestamp > parent.timestamp)) {
-          replyId = resolvedKey;
-          parent = resolvedParent;
-        }
+    } else {
+      const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
+        msg,
+        prior,
+        targetName,
+        lookupOpts,
+        parent,
+        explicitWireKey,
+      );
+      if (upgraded) {
+        replyId = upgraded.replyId;
+        parent = upgraded.parent;
       }
     }
   } else if (!parent && targetName) {
-    let resolvedKey: number | undefined;
-    if (msg.channel >= 0) {
-      resolvedKey = resolveMeshcoreBracketParentKey(prior, {
-        channel: msg.channel,
-        targetName,
-        beforeTimestamp: msg.timestamp,
-        to: msg.to,
-      });
-    } else if (msg.channel === -1 && msg.to != null) {
-      resolvedKey =
-        resolveMeshcoreBracketParentKeyDm(prior, {
-          peerNodeId: msg.sender_id,
-          myNodeId: msg.to,
-          targetName,
-          beforeTimestamp: msg.timestamp,
-        }) ??
-        resolveMeshcoreBracketParentKeyDm(prior, {
-          peerNodeId: msg.to,
-          myNodeId: msg.sender_id,
-          targetName,
-          beforeTimestamp: msg.timestamp,
-        });
-    }
-    if (resolvedKey != null) {
-      replyId = resolvedKey;
-      parent = findMeshcoreParentMessageForReply(prior, replyId, lookupOpts);
+    const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
+      msg,
+      prior,
+      targetName,
+      lookupOpts,
+      parent,
+      false,
+    );
+    if (upgraded) {
+      replyId = upgraded.replyId;
+      parent = upgraded.parent;
     }
   }
 
