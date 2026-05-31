@@ -5,12 +5,20 @@ import { useMeshcoreRoomAuth } from '@/renderer/hooks/useMeshcoreRoomAuth';
 import { MESHCORE_PAYLOAD_LIMIT } from '@/renderer/lib/chatComposerLimits';
 import {
   loadPersistedRoomsLastRead,
+  loadStarred,
   mergeRoomLastReadWatermark,
   notifyPersistedRoomsLastReadChanged,
   savePersistedRoomsLastRead,
+  saveStarred,
+  type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { CliHistoryEntry } from '@/renderer/lib/meshcore/meshcoreHookTypes';
+import {
+  type MeshcoreRoomAclEntry,
+  meshcoreRoomAclLevelLabel,
+  parseMeshcoreRoomAclResponse,
+} from '@/renderer/lib/meshcoreRoomAclParser';
 import {
   getMeshcoreRoomCredential,
   listMeshcoreRoomCredentialNodeIds,
@@ -20,6 +28,7 @@ import {
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
   meshcoreIsRoomLoginAbortError,
+  meshcoreRoomCanAdmin,
   meshcoreRoomCanPost,
   meshcoreRoomEffectiveGuestPassword,
   subscribeMeshcoreRoomSessionChanges,
@@ -64,10 +73,59 @@ interface Props {
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
   meshcoreCliErrors?: Map<number, string>;
   onClearCliHistory?: (nodeId: number) => void;
+  onMessageNode?: (nodeNum: number) => void;
 }
 
 function formatTimestamp(ts: number): string {
   return new Date(ts).toLocaleString();
+}
+
+function roomPostRowKey(m: ChatMessage): string {
+  return m.roomServerId != null
+    ? `room:${m.roomServerId}:${Math.floor(m.timestamp / 1000)}:${m.sender_id}`
+    : `${m.timestamp}:${m.sender_id}:${m.payload}`;
+}
+
+function roomMsgStarId(m: ChatMessage): string {
+  return roomPostRowKey(m);
+}
+
+function canDmMeshcorePoster(
+  senderId: number,
+  myNodeNum: number,
+  nodes: Map<number, MeshNode>,
+): boolean {
+  if (senderId === 0 || senderId === myNodeNum) return false;
+  const node = nodes.get(senderId);
+  if (!node || node.hw_model === 'Room') return false;
+  return Boolean(node.public_key_hex?.trim());
+}
+
+interface RecognizedPoster {
+  senderId: number;
+  senderName: string;
+  lastPostAt: number;
+  node?: MeshNode;
+}
+
+function buildRecognizedPosters(
+  roomPosts: ChatMessage[],
+  nodes: Map<number, MeshNode>,
+): RecognizedPoster[] {
+  const byId = new Map<number, RecognizedPoster>();
+  for (const m of roomPosts) {
+    if (m.sender_id === 0) continue;
+    const existing = byId.get(m.sender_id);
+    if (!existing || m.timestamp > existing.lastPostAt) {
+      byId.set(m.sender_id, {
+        senderId: m.sender_id,
+        senderName: m.sender_name || nodes.get(m.sender_id)?.long_name || 'Unknown',
+        lastPostAt: m.timestamp,
+        node: nodes.get(m.sender_id),
+      });
+    }
+  }
+  return [...byId.values()].sort((a, b) => b.lastPostAt - a.lastPostAt);
 }
 
 export default function RoomsPanel({
@@ -88,6 +146,7 @@ export default function RoomsPanel({
   meshcoreCliHistories,
   meshcoreCliErrors,
   onClearCliHistory,
+  onMessageNode,
 }: Props) {
   const { t } = useTranslation();
   const { ensureRoomAuth, RemoteAuthModal } = useMeshcoreRoomAuth();
@@ -117,6 +176,15 @@ export default function RoomsPanel({
   const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
     loadPersistedRoomsLastRead(),
   );
+  const [streamView, setStreamView] = useState<'posts' | 'starred'>('posts');
+  const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred('meshcore'));
+  const [membersOpen, setMembersOpen] = useState(true);
+  const [aclEntries, setAclEntries] = useState<MeshcoreRoomAclEntry[]>([]);
+  const [aclLoading, setAclLoading] = useState(false);
+  const [aclError, setAclError] = useState<string | null>(null);
+  const [aclFetchedAt, setAclFetchedAt] = useState<number | null>(null);
+  const [scrollToRowKey, setScrollToRowKey] = useState<string | null>(null);
+  const postRowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const ownNodeIdSet = useMemo(
     () => (myNodeNum > 0 ? new Set([myNodeNum]) : new Set<number>()),
@@ -351,6 +419,81 @@ export default function RoomsPanel({
   }, [selectedRoomId, syncEnabled, syncInterval]);
 
   const roomViewKey = selectedRoomId != null ? `room:${selectedRoomId}` : 'room:none';
+
+  const starredIdSet = useMemo(() => new Set(starred.map((s) => s.starId)), [starred]);
+  const roomStarred = useMemo(
+    () =>
+      starred
+        .filter((s) => s.viewKey.startsWith('room:'))
+        .sort((a, b) => b.starredAt - a.starredAt),
+    [starred],
+  );
+  const recognizedPosters = useMemo(
+    () => buildRecognizedPosters(roomPosts, nodes),
+    [nodes, roomPosts],
+  );
+  const canAdminRoom = selectedRoomId != null && meshcoreRoomCanAdmin(selectedRoomId);
+
+  useEffect(() => {
+    saveStarred('meshcore', starred);
+  }, [starred]);
+
+  useEffect(() => {
+    if (streamView !== 'posts' || !scrollToRowKey) return;
+    const el = postRowRefs.current.get(scrollToRowKey);
+    if (el) {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setScrollToRowKey(null);
+    }
+  }, [scrollToRowKey, streamView, roomPosts]);
+
+  const toggleStar = useCallback(
+    (msg: ChatMessage) => {
+      const starId = roomMsgStarId(msg);
+      setStarred((prev) => {
+        if (prev.some((s) => s.starId === starId)) {
+          return prev.filter((s) => s.starId !== starId);
+        }
+        const entry: StarredMessage = {
+          starId,
+          timestamp: msg.timestamp,
+          payload: msg.payload,
+          sender_name: msg.sender_name ?? '',
+          sender_id: msg.sender_id,
+          viewKey: roomViewKey,
+          channel: msg.channel,
+          to: msg.to ?? null,
+          starredAt: Date.now(),
+        };
+        return [...prev, entry];
+      });
+    },
+    [roomViewKey],
+  );
+
+  const handleRefreshAcl = useCallback(async () => {
+    if (selectedRoomId == null || !canAdminRoom) return;
+    setAclLoading(true);
+    setAclError(null);
+    try {
+      const response = await onSendRoomAdminCli(selectedRoomId, 'get acl');
+      const parsed = parseMeshcoreRoomAclResponse(response);
+      setAclEntries(parsed);
+      setAclFetchedAt(Date.now());
+    } catch (e: unknown) {
+      console.warn('[RoomsPanel] fetch ACL failed ' + errLikeToLogString(e));
+      setAclError(e instanceof Error ? e.message : t('roomsPanel.membersAclFetchFailed'));
+      setAclEntries([]);
+    } finally {
+      setAclLoading(false);
+    }
+  }, [canAdminRoom, onSendRoomAdminCli, selectedRoomId, t]);
+
+  useEffect(() => {
+    setAclEntries([]);
+    setAclError(null);
+    setAclFetchedAt(null);
+  }, [selectedRoomId]);
 
   const mentionNodes = useMemo(() => {
     const map = new Map<number, MeshNode>();
@@ -755,6 +898,22 @@ export default function RoomsPanel({
                   <button
                     type="button"
                     onClick={() => {
+                      setStreamView((v) => (v === 'starred' ? 'posts' : 'starred'));
+                    }}
+                    className={`rounded border px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 ${
+                      streamView === 'starred'
+                        ? 'border-amber-600/50 bg-amber-900/30 text-amber-300'
+                        : 'border-gray-600 bg-gray-800'
+                    }`}
+                    aria-pressed={streamView === 'starred'}
+                    aria-label={t('chatPanel.starredMessages')}
+                    title={t('chatPanel.starredMessages')}
+                  >
+                    {t('chatPanel.starredMessages')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
                       void handleAdminLogin();
                     }}
                     disabled={!isConnected}
@@ -768,6 +927,111 @@ export default function RoomsPanel({
                     {t('roomsPanel.manageRoom')}
                   </button>
                 </div>
+              </div>
+
+              <div className="border-b border-gray-700 px-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMembersOpen((o) => !o);
+                  }}
+                  className="flex w-full items-center justify-between text-left text-xs font-medium text-gray-300"
+                  aria-expanded={membersOpen}
+                  aria-label={t('roomsPanel.membersHeading')}
+                >
+                  {t('roomsPanel.membersHeading')}
+                  <span className="text-gray-500">{membersOpen ? '▾' : '▸'}</span>
+                </button>
+                {membersOpen && (
+                  <div className="mt-2 space-y-3 text-xs">
+                    <div>
+                      <p className="mb-1 font-medium text-gray-400">
+                        {t('roomsPanel.membersRecognizedHeading')}
+                      </p>
+                      {recognizedPosters.length === 0 ? (
+                        <p className="text-gray-500 italic">
+                          {t('roomsPanel.membersRecognizedEmpty')}
+                        </p>
+                      ) : (
+                        <ul className="max-h-28 space-y-1 overflow-y-auto">
+                          {recognizedPosters.map((p) => (
+                            <li
+                              key={p.senderId}
+                              className="flex items-center justify-between gap-2 rounded bg-gray-800/50 px-2 py-1"
+                            >
+                              <span className="truncate text-gray-200">{p.senderName}</span>
+                              <span className="shrink-0 text-gray-500">
+                                {formatTimestamp(p.lastPostAt)}
+                              </span>
+                              {onMessageNode &&
+                                canDmMeshcorePoster(p.senderId, myNodeNum, nodes) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      onMessageNode(p.senderId);
+                                    }}
+                                    className="shrink-0 rounded border border-gray-600 px-1.5 py-0.5 text-[10px] text-cyan-300 hover:bg-gray-700"
+                                    aria-label={t('nodeDetailModal.messageButton')}
+                                    title={t('nodeDetailModal.messageButton')}
+                                  >
+                                    {t('nodeDetailModal.messageButton')}
+                                  </button>
+                                )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    {canAdminRoom && (
+                      <div>
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <p className="font-medium text-gray-400">
+                            {t('roomsPanel.membersAclHeading')}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void handleRefreshAcl();
+                            }}
+                            disabled={!isConnected || aclLoading}
+                            className="rounded border border-gray-600 px-2 py-0.5 text-[10px] text-gray-300 hover:bg-gray-700 disabled:opacity-40"
+                            aria-label={t('roomsPanel.membersRefreshAcl')}
+                          >
+                            {aclLoading
+                              ? t('roomsPanel.membersAclLoading')
+                              : t('roomsPanel.membersRefreshAcl')}
+                          </button>
+                        </div>
+                        <p className="mb-1 text-gray-500">{t('roomsPanel.membersAclRemoteHint')}</p>
+                        {aclError && <p className="mb-1 text-red-400">{aclError}</p>}
+                        {aclFetchedAt != null && (
+                          <p className="mb-1 text-gray-500">
+                            {t('roomsPanel.membersAclLastFetched', {
+                              time: formatTimestamp(aclFetchedAt),
+                            })}
+                          </p>
+                        )}
+                        {aclEntries.length === 0 && !aclLoading ? (
+                          <p className="text-gray-500 italic">{t('roomsPanel.membersAclEmpty')}</p>
+                        ) : (
+                          <ul className="max-h-28 space-y-1 overflow-y-auto font-mono">
+                            {aclEntries.map((entry) => (
+                              <li
+                                key={`${entry.pubkeyHex}:${entry.permissionLevel}`}
+                                className="rounded bg-gray-800/50 px-2 py-1 text-gray-300"
+                              >
+                                <span className="break-all">{entry.pubkeyHex}</span>
+                                <span className="ml-2 text-amber-200/90">
+                                  {meshcoreRoomAclLevelLabel(entry.permissionLevel, t)}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {leaveError && (
@@ -788,20 +1052,71 @@ export default function RoomsPanel({
               <div
                 ref={streamRef}
                 onScroll={handleStreamScroll}
-                className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2"
+                className={`min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2 ${
+                  streamView === 'starred' ? '' : ''
+                }`}
               >
-                {roomPosts.length === 0 ? (
+                {streamView === 'starred' ? (
+                  roomStarred.length === 0 ? (
+                    <p className="text-sm text-gray-500">{t('chatPanel.noStarredMessages')}</p>
+                  ) : (
+                    roomStarred.map((s) => {
+                      const roomLabel = s.viewKey.startsWith('room:')
+                        ? (nodes.get(Number.parseInt(s.viewKey.slice(5), 10))?.long_name ??
+                          s.viewKey)
+                        : s.viewKey;
+                      return (
+                        <div
+                          key={s.starId}
+                          className="rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-sm"
+                        >
+                          <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
+                            <span className="font-medium text-gray-300">{s.sender_name}</span>
+                            <span>{formatTimestamp(s.timestamp)}</span>
+                            <span className="rounded bg-slate-700 px-1 text-[9px] text-gray-400">
+                              {roomLabel}
+                            </span>
+                          </div>
+                          <p className="break-words whitespace-pre-wrap text-gray-200">
+                            {s.payload}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const [, roomRaw] = s.viewKey.split(':');
+                              const roomId = Number.parseInt(roomRaw ?? '', 10);
+                              if (Number.isFinite(roomId)) {
+                                setSelectedRoomId(roomId);
+                              }
+                              setStreamView('posts');
+                              setScrollToRowKey(s.starId);
+                            }}
+                            className="mt-2 text-[10px] text-cyan-400 hover:text-cyan-200"
+                            aria-label={t('chatPanel.goToMessage')}
+                          >
+                            {t('chatPanel.goToMessage')}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )
+                ) : roomPosts.length === 0 ? (
                   <p className="text-sm text-gray-500">{t('roomsPanel.noPostsYet')}</p>
                 ) : (
                   roomPosts.map((m) => {
                     const isOwn = m.sender_id === myNodeNum;
-                    const rowKey =
-                      m.roomServerId != null
-                        ? `room:${m.roomServerId}:${Math.floor(m.timestamp / 1000)}:${m.sender_id}`
-                        : `${m.timestamp}:${m.sender_id}:${m.payload}`;
+                    const rowKey = roomPostRowKey(m);
+                    const starId = roomMsgStarId(m);
+                    const isStarred = starredIdSet.has(starId);
+                    const showDm =
+                      onMessageNode != null && canDmMeshcorePoster(m.sender_id, myNodeNum, nodes);
                     return (
                       <div
                         key={rowKey}
+                        ref={(el) => {
+                          if (el) postRowRefs.current.set(rowKey, el);
+                          else postRowRefs.current.delete(rowKey);
+                        }}
                         className={`group/msg rounded-lg px-3 py-2 text-sm ${
                           isOwn
                             ? 'bg-purple-900/30 text-purple-100'
@@ -812,6 +1127,66 @@ export default function RoomsPanel({
                           <span className="font-medium text-gray-300">{m.sender_name}</span>
                           <span>{formatTimestamp(m.timestamp)}</span>
                           <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+                            {showDm && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onMessageNode?.(m.sender_id);
+                                }}
+                                className="rounded p-0.5 text-gray-500 hover:text-cyan-300"
+                                aria-label={t('nodeDetailModal.messageButton')}
+                                title={t('nodeDetailModal.messageButton')}
+                              >
+                                <svg
+                                  className="h-3.5 w-3.5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                  />
+                                </svg>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                toggleStar(m);
+                              }}
+                              className={`rounded p-0.5 transition-colors ${
+                                isStarred
+                                  ? 'text-amber-400 hover:text-amber-200'
+                                  : 'text-gray-500 hover:text-amber-400'
+                              }`}
+                              aria-label={
+                                isStarred
+                                  ? t('chatPanel.unstarMessage')
+                                  : t('chatPanel.starMessage')
+                              }
+                              title={
+                                isStarred
+                                  ? t('chatPanel.unstarMessage')
+                                  : t('chatPanel.starMessage')
+                              }
+                            >
+                              <svg
+                                className="h-3.5 w-3.5"
+                                fill={isStarred ? 'currentColor' : 'none'}
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                                />
+                              </svg>
+                            </button>
                             <button
                               type="button"
                               onClick={() => {
@@ -873,7 +1248,9 @@ export default function RoomsPanel({
                 )}
               </div>
 
-              <div className="border-t border-gray-700 p-3">
+              <div
+                className={`border-t border-gray-700 p-3 ${streamView === 'starred' ? 'hidden' : ''}`}
+              >
                 {!canPost ? (
                   <div className="space-y-2">
                     <p className="text-xs text-amber-200/90">{t('roomsPanel.readOnlyHint')}</p>

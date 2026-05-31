@@ -129,7 +129,7 @@ import {
   setMeshcoreRoomLastPostAt,
   touchMeshcoreRoomLastSyncAt,
 } from '../lib/meshcoreRoomSyncStorage';
-import { upsertMeshcoreMessageWithDedup } from '../lib/meshcoreStoreDedup';
+import { meshcoreMessageStoreId, upsertMeshcoreMessageWithDedup } from '../lib/meshcoreStoreDedup';
 import {
   buildMeshcoreSetOtherParamsFrame,
   enrichMeshCoreSelfInfo,
@@ -203,7 +203,7 @@ import type {
 } from '../lib/types';
 import { mirrorMqttStatusToConnection, setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
-import { useMessageStore } from '../stores/messageStore';
+import { updateMessageStatus, useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
@@ -746,9 +746,9 @@ export function useMeshcoreRuntime() {
     });
   }, [selfInfo?.batteryMilliVolts, state.connectionType]);
 
-  const addMessage = useCallback((msg: ChatMessage) => {
+  const addMessage = useCallback((msg: ChatMessage): string | undefined => {
     const storeId = meshcoreIdentityIdRef.current;
-    let result: { inserted: boolean; message: ChatMessage };
+    let result: { inserted: boolean; message: ChatMessage; canonicalId: string };
     if (storeId) {
       result = upsertMeshcoreMessageWithDedup(storeId, msg);
     } else {
@@ -769,7 +769,7 @@ export function useMeshcoreRuntime() {
           return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
         });
       });
-      result = { inserted, message: msg };
+      result = { inserted, message: msg, canonicalId: meshcoreMessageStoreId(msg) };
     }
 
     const incomingKey = meshcoreMessageDedupeKey(result.message);
@@ -807,6 +807,7 @@ export function useMeshcoreRuntime() {
           console.warn('[useMeshcoreRuntime] saveMeshcoreMessage error ' + errLikeToLogString(e));
         });
     }
+    return storeId ? result.canonicalId : undefined;
   }, []);
 
   useEffect(() => {
@@ -3537,7 +3538,8 @@ export function useMeshcoreRuntime() {
         roomServerId: nodeId,
         to: nodeId,
       };
-      addMessage(tempMsg);
+      const storeId = meshcoreIdentityIdRef.current;
+      const canonicalId = addMessage(tempMsg);
       try {
         const authorPubKey = selfInfo?.publicKey;
         if (!authorPubKey || authorPubKey.length < 4) {
@@ -3550,21 +3552,25 @@ export function useMeshcoreRuntime() {
         console.debug(
           `[useMeshcoreRuntime] sendRoomPost txtType=${MESHCORE_TXT_TYPE_SIGNED_PLAIN} prefix=${prefixHex} bodyLen=${text.length} room=0x${nodeId.toString(16)}`,
         );
-        const result = await Promise.race([
-          conn.sendTextMessage(pubKey, wireText, MESHCORE_TXT_TYPE_SIGNED_PLAIN),
-          new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('timeout')), MESHCORE_ROOM_POST_SENT_TIMEOUT_MS);
-          }),
-        ]);
+        const result = await repeaterRemoteRpcRef.current(async () =>
+          Promise.race([
+            conn.sendTextMessage(pubKey, wireText, MESHCORE_TXT_TYPE_SIGNED_PLAIN),
+            new Promise<never>((_, reject) => {
+              setTimeout(() => reject(new Error('timeout')), MESHCORE_ROOM_POST_SENT_TIMEOUT_MS);
+            }),
+          ]),
+        );
         void fetchAndUpdateLocalStats();
         const acked: ChatMessage = {
           ...tempMsg,
           status: 'acked',
           packetId: result?.expectedAckCrc,
         };
-        const storeId = meshcoreIdentityIdRef.current;
         if (storeId) {
           upsertMeshcoreMessageWithDedup(storeId, acked);
+          if (canonicalId) {
+            updateMessageStatus(storeId, canonicalId, 'acked');
+          }
         }
         setMessages((prev) =>
           prev.map((m) =>
@@ -3580,10 +3586,13 @@ export function useMeshcoreRuntime() {
           });
         void setMeshcoreRoomLastPostAt(nodeId, sentAt);
       } catch (e: unknown) {
-        const failed: ChatMessage = { ...tempMsg, status: 'failed' };
-        const storeId = meshcoreIdentityIdRef.current;
+        const errMsg = e instanceof Error ? e.message : String(e);
+        const failed: ChatMessage = { ...tempMsg, status: 'failed', error: errMsg };
         if (storeId) {
           upsertMeshcoreMessageWithDedup(storeId, failed);
+          if (canonicalId) {
+            updateMessageStatus(storeId, canonicalId, 'failed', errMsg);
+          }
         }
         setMessages((prev) =>
           prev.map((m) =>

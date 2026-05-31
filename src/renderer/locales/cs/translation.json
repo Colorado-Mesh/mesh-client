@@ -2004,7 +2004,17 @@
     "leavingRoom": "Odchod",
     "leaveRoomInProgress": "Opouštím místnost...",
     "leaveRoomHint": "Čeká se na potvrzení odhlášení z rádia. To může trvat několik sekund nad síťkou.",
-    "leaveRoomFailed": "Místnost se nepodařilo opustit"
+    "leaveRoomFailed": "Místnost se nepodařilo opustit",
+    "membersHeading": "zdarma",
+    "membersRecognizedHeading": "Rozpoznané plakáty",
+    "membersRecognizedEmpty": "V této místnosti zatím nejsou žádné rozpoznané plakáty.",
+    "membersAclHeading": "Kontrola přístupu (ACL)",
+    "membersAclEmpty": "Nebyly vráceny žádné položky ACL. Vzdálené `get acl` je často sériové pouze na pokojovém firmwaru.",
+    "membersAclRemoteHint": "Nabídka ACL může být přes rádio prázdná, i když mají uživatelé přístup. Použijte sériový port USB nebo setperm v části Správa níže.",
+    "membersRefreshAcl": "Obnovit ACL",
+    "membersAclLoading": "Načítání ACL...",
+    "membersAclLastFetched": "ACL načteno {{time}}",
+    "membersAclFetchFailed": "Nelze stáhnout"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

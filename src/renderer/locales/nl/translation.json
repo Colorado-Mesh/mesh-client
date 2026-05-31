@@ -2004,7 +2004,17 @@
     "leavingRoom": "Latende",
     "leaveRoomInProgress": "Ruimte verlaten…",
     "leaveRoomHint": "Wachten op je radio om uitloggen te bevestigen. Dit kan een paar seconden duren over het mesh.",
-    "leaveRoomFailed": "Kan de ruimte niet verlaten"
+    "leaveRoomFailed": "Kan de ruimte niet verlaten",
+    "membersHeading": "leden",
+    "membersRecognizedHeading": "Herkende posters",
+    "membersRecognizedEmpty": "Er zijn nog geen herkende posters in deze ruimte.",
+    "membersAclHeading": "Toegangscontrole (ACL)",
+    "membersAclEmpty": "Geen ACL-vermeldingen geretourneerd. Remote `get acl` is vaak alleen serieel op ruimtefirmware.",
+    "membersAclRemoteHint": "ACL-advertentie kan leeg zijn via de radio, zelfs wanneer gebruikers toegang hebben. Gebruik USB-serieel of setperm in Manage hieronder.",
+    "membersRefreshAcl": "ACL vernieuwen",
+    "membersAclLoading": "ACL laden...",
+    "membersAclLastFetched": "ACL opgehaald {{time}}",
+    "membersAclFetchFailed": "Ophalen mislukt"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

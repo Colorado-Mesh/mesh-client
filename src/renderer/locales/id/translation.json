@@ -2004,7 +2004,17 @@
     "leavingRoom": "pergi",
     "leaveRoomInProgress": "Meninggalkan ruangan…",
     "leaveRoomHint": "Menunggu radio Anda mengonfirmasi keluar. Ini bisa memakan waktu beberapa detik di atas jaring.",
-    "leaveRoomFailed": "Tidak dapat meninggalkan ruangan"
+    "leaveRoomFailed": "Tidak dapat meninggalkan ruangan",
+    "membersHeading": "Members",
+    "membersRecognizedHeading": "Poster yang dikenal",
+    "membersRecognizedEmpty": "Belum ada poster yang dikenal di ruangan ini.",
+    "membersAclHeading": "Access Control List (ACL)",
+    "membersAclEmpty": "Tidak ada entri ACL yang dikembalikan. Remote `get acl` sering hanya serial pada firmware ruangan.",
+    "membersAclRemoteHint": "Iklan ACL mungkin kosong melalui radio meskipun pengguna memiliki akses. Gunakan USB serial atau setperm di Kelola di bawah ini.",
+    "membersRefreshAcl": "Segarkan ACL",
+    "membersAclLoading": "Memuat ACL…",
+    "membersAclLastFetched": "ACL diambil {{time}}",
+    "membersAclFetchFailed": "Tidak dapat mengambil ACL"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

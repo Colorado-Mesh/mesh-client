@@ -2004,7 +2004,17 @@
     "leavingRoom": "Çıkış",
     "leaveRoomInProgress": "Odadan çıkılıyor…",
     "leaveRoomHint": "Radyonuzun oturumu kapatmayı onaylaması bekleniyor. Bu, ağ üzerinde birkaç saniye sürebilir.",
-    "leaveRoomFailed": "Odadan çıkılamadı"
+    "leaveRoomFailed": "Odadan çıkılamadı",
+    "membersHeading": "Üyeler",
+    "membersRecognizedHeading": "Tanınan posterler",
+    "membersRecognizedEmpty": "Bu odada henüz tanınmış poster yok.",
+    "membersAclHeading": "Erişim Denetim Listesi (ACL)",
+    "membersAclEmpty": "Hiçbir ACL girişi döndürülmedi. Uzaktan `get acl` genellikle sadece seri olarak oda yazılımındadır.",
+    "membersAclRemoteHint": "Kullanıcıların erişimi olsa bile ACL listesi telsiz üzerinden boş olabilir. Aşağıdaki Yönet bölümünde USB seri veya setperm kullanın.",
+    "membersRefreshAcl": "ACL'yi yenile",
+    "membersAclLoading": "ACL yükleniyor…",
+    "membersAclLastFetched": "ACL {{time}} aldı",
+    "membersAclFetchFailed": "Alınamadı"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

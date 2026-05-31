@@ -2004,7 +2004,17 @@
     "syncInterval120": "Every 2 hours",
     "syncInterval240": "Every 4 hours",
     "saveSyncConfig": "Save sync settings",
-    "lastSync": "Last sync"
+    "lastSync": "Last sync",
+    "membersHeading": "Members",
+    "membersRecognizedHeading": "Recognized posters",
+    "membersRecognizedEmpty": "No recognized posters in this room yet.",
+    "membersAclHeading": "Access control (ACL)",
+    "membersAclEmpty": "No ACL entries returned. Remote `get acl` is often serial-only on room firmware.",
+    "membersAclRemoteHint": "ACL listing may be empty over the radio even when users have access. Use USB serial or setperm in Manage below.",
+    "membersRefreshAcl": "Refresh ACL",
+    "membersAclLoading": "Loading ACL…",
+    "membersAclLastFetched": "ACL fetched {{time}}",
+    "membersAclFetchFailed": "Could not fetch ACL"
   },
   "searchModal": {
     "closeSearch": "Close search",

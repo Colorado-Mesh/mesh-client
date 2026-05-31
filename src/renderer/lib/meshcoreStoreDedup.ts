@@ -66,6 +66,41 @@ function findStoreRecordIdForMessage(identityId: IdentityId, msg: ChatMessage): 
   return undefined;
 }
 
+function meshcoreIsRoomPostMessage(msg: ChatMessage): boolean {
+  return msg.roomServerId != null || msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL;
+}
+
+/** Merge outbound lifecycle fields when the dedupe key matches exactly (optimistic send → ack/fail). */
+function mergeExactKeyDuplicate(existing: ChatMessage, incoming: ChatMessage): ChatMessage | null {
+  const mergedReceivedVia = mergeMeshcoreReceivedVia(existing.receivedVia, incoming.receivedVia);
+  const statusAdvances =
+    existing.status === 'sending' && (incoming.status === 'acked' || incoming.status === 'failed');
+  const richerPacketId = incoming.packetId != null && existing.packetId == null;
+  const richerError = incoming.error != null && existing.error == null;
+
+  if (
+    !statusAdvances &&
+    mergedReceivedVia === existing.receivedVia &&
+    !richerPacketId &&
+    !richerError
+  ) {
+    return null;
+  }
+
+  if (statusAdvances && meshcoreIsRoomPostMessage(existing)) {
+    return mergeRoomPostDuplicate(existing, incoming);
+  }
+
+  return {
+    ...existing,
+    ...incoming,
+    receivedVia: mergedReceivedVia,
+    status: statusAdvances ? incoming.status : (existing.status ?? incoming.status),
+    packetId: incoming.packetId ?? existing.packetId,
+    error: incoming.error ?? existing.error,
+  };
+}
+
 function mergeRoomPostDuplicate(existing: ChatMessage, incoming: ChatMessage): ChatMessage {
   const timestamp =
     incoming.receivedVia === 'rf' && incoming.timestamp !== existing.timestamp
@@ -139,9 +174,8 @@ export function upsertMeshcoreMessageWithDedup(
       findStoreRecordIdForMessage(identityId, exactMatch) ??
       preferredId ??
       meshcoreMessageStoreId(exactMatch);
-    const mergedReceivedVia = mergeMeshcoreReceivedVia(exactMatch.receivedVia, msg.receivedVia);
-    if (mergedReceivedVia !== exactMatch.receivedVia) {
-      const merged: ChatMessage = { ...exactMatch, receivedVia: mergedReceivedVia };
+    const merged = mergeExactKeyDuplicate(exactMatch, msg);
+    if (merged) {
       const record = chatMessageToMessageRecord(merged);
       record.id = canonicalId;
       upsertMessage(identityId, record);

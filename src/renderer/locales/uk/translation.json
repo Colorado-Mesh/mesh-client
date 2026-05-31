@@ -2004,7 +2004,17 @@
     "leavingRoom": "йде",
     "leaveRoomInProgress": "Вихід з кімнати…",
     "leaveRoomHint": "Очікується підтвердження виходу з системи за допомогою радіоприймача. Це може зайняти кілька секунд над сіттю.",
-    "leaveRoomFailed": "Не вдалося залишити кімнату"
+    "leaveRoomFailed": "Не вдалося залишити кімнату",
+    "membersHeading": "Учасники",
+    "membersRecognizedHeading": "Визнані плакати",
+    "membersRecognizedEmpty": "У цій кімнаті ще немає розпізнаних плакатів.",
+    "membersAclHeading": "Список контролю доступу (ACL)",
+    "membersAclEmpty": "Не повернуто жодного запису ACL. Пульт дистанційного керування \"get acl\" часто використовується лише в прошивці кімнати.",
+    "membersAclRemoteHint": "Список ACL може бути порожнім по радіо, навіть коли користувачі мають доступ. Використовуйте послідовність USB або setperm в розділі Керування нижче.",
+    "membersRefreshAcl": "Оновити ACL",
+    "membersAclLoading": "Завантаження ACL…",
+    "membersAclLastFetched": "Отримано ACL {{time}}",
+    "membersAclFetchFailed": "Не вдалось отримати"
   },
   "searchModal": {
     "closeSearch": "Закрити розклад пошуку",

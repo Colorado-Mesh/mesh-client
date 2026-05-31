@@ -494,4 +494,81 @@ describe('RoomsPanel', () => {
     });
     expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
+
+  it('shows message poster control when poster has a public key', () => {
+    meshcoreClearAllRoomSessions();
+    const roomId = 0x2001;
+    const posterId = 0xabcd1234;
+    const room = makeRoom(roomId, 'Chat Room');
+    const poster: MeshNode = {
+      node_id: posterId,
+      long_name: 'Poster',
+      short_name: '',
+      hw_model: 'Companion',
+      battery: 0,
+      snr: 0,
+      rssi: 0,
+      last_heard: Date.now() / 1000,
+      latitude: null,
+      longitude: null,
+      public_key_hex: 'aa'.repeat(32),
+    };
+    const nodes = new Map<number, MeshNode>([
+      [room.node_id, room],
+      [poster.node_id, poster],
+    ]);
+    meshcoreApplyRoomSession(roomId, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const msg = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Hello',
+      roomServerId: roomId,
+      authorId: posterId,
+      authorName: 'Poster',
+      timestamp: Date.now(),
+      receivedVia: 'rf',
+    });
+    const onMessageNode = vi.fn();
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: roomId,
+      messages: [msg],
+      onMessageNode,
+    });
+
+    const dmButtons = screen.getAllByLabelText('nodeDetailModal.messageButton');
+    const lastDmButton = dmButtons.at(-1);
+    if (lastDmButton == null) throw new Error('expected DM button on room post');
+    fireEvent.click(lastDmButton);
+    expect(onMessageNode).toHaveBeenCalledWith(posterId);
+  });
+
+  it('persists starred room posts under meshcore storage', async () => {
+    meshcoreClearAllRoomSessions();
+    const roomId = 0x2002;
+    const room = makeRoom(roomId, 'Star Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(roomId, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const msg = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Bookmark me',
+      roomServerId: roomId,
+      authorId: 0x11,
+      authorName: 'Author',
+      timestamp: 1_700_000_000_000,
+      receivedVia: 'rf',
+    });
+
+    renderRoomsPanel(nodes, { initialRoomTarget: roomId, messages: [msg] });
+
+    await userEvent.click(screen.getByLabelText('chatPanel.starMessage'));
+    const raw = localStorage.getItem('mesh-client:starred:meshcore');
+    expect(raw).toBeTruthy();
+    expect(raw).toContain('Bookmark me');
+  });
 });

@@ -2004,7 +2004,17 @@
     "leavingRoom": "Уходит...",
     "leaveRoomInProgress": "Выход из комнаты…",
     "leaveRoomHint": "Ожидание подтверждения выхода из системы с помощью радиоприемника. Это может занять несколько секунд.",
-    "leaveRoomFailed": "Не удалось выйти из комнаты"
+    "leaveRoomFailed": "Не удалось выйти из комнаты",
+    "membersHeading": "Члены",
+    "membersRecognizedHeading": "Признанные плакаты",
+    "membersRecognizedEmpty": "В этой комнате пока нет узнаваемых плакатов.",
+    "membersAclHeading": "Список управления доступом (ACL)",
+    "membersAclEmpty": "Записи ACL не возвращены. Пульт дистанционного управления «get acl» часто работает только с последовательным доступом в комнатной прошивке.",
+    "membersAclRemoteHint": "Список ACL может быть пустым по радио, даже если у пользователей есть доступ. Используйте последовательный порт USB или setperm в разделе «Управление» ниже.",
+    "membersRefreshAcl": "Обновить ACL",
+    "membersAclLoading": "Загрузка ACL…",
+    "membersAclLastFetched": "Получено ACL {{time}}",
+    "membersAclFetchFailed": "Получение не выполнено"
   },
   "searchModal": {
     "closeSearch": "Закрыть поиск",

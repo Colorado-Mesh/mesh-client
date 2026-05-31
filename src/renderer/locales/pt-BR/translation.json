@@ -2004,7 +2004,17 @@
     "leavingRoom": "Partir",
     "leaveRoomInProgress": "Saindo da sala…",
     "leaveRoomHint": "Aguardando o seu rádio confirmar o logout. Isso pode levar alguns segundos sobre a malha.",
-    "leaveRoomFailed": "Não foi possível sair da sala"
+    "leaveRoomFailed": "Não foi possível sair da sala",
+    "membersHeading": "Membros",
+    "membersRecognizedHeading": "Cartazes reconhecidos",
+    "membersRecognizedEmpty": "Ainda não há cartazes reconhecidos nesta sala.",
+    "membersAclHeading": "Lista de Controle de Acesso (ACL)",
+    "membersAclEmpty": "Nenhuma entrada ACL retornada. O `get acl` remoto geralmente é apenas serial no firmware da sala.",
+    "membersAclRemoteHint": "A listagem de ACL pode estar vazia no rádio, mesmo quando os usuários têm acesso. Use USB serial ou setperm em Gerenciar abaixo.",
+    "membersRefreshAcl": "Atualizar ACL",
+    "membersAclLoading": "Carregando ACL…",
+    "membersAclLastFetched": "ACL obtido {{time}}",
+    "membersAclFetchFailed": "Não foi possível obter a ACL"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

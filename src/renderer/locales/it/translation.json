@@ -2004,7 +2004,17 @@
     "leavingRoom": "Lasciare",
     "leaveRoomInProgress": "Lasciare spazio...",
     "leaveRoomHint": "In attesa che la radio confermi il logout. Questo può richiedere alcuni secondi sulla rete.",
-    "leaveRoomFailed": "Impossibile lasciare spazio"
+    "leaveRoomFailed": "Impossibile lasciare spazio",
+    "membersHeading": "Soci",
+    "membersRecognizedHeading": "Manifesti riconosciuti",
+    "membersRecognizedEmpty": "Ancora nessun poster riconosciuto in questa stanza.",
+    "membersAclHeading": "Elenco dei controlli di accesso (ACL)",
+    "membersAclEmpty": "Nessuna voce ACL restituita. Il \"get acl\" remoto è spesso solo seriale sul firmware della stanza.",
+    "membersAclRemoteHint": "L'elenco ACL potrebbe essere vuoto sulla radio anche quando gli utenti hanno accesso. Utilizzare USB seriale o setperm in Gestisci di seguito.",
+    "membersRefreshAcl": "Aggiorna ACL",
+    "membersAclLoading": "Caricamento ACL in corso...",
+    "membersAclLastFetched": "ACL recuperato {{time}}",
+    "membersAclFetchFailed": "Impossibile recuperare l'ACL"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

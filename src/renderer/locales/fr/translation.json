@@ -2004,7 +2004,17 @@
     "leavingRoom": "Sortie en cours…",
     "leaveRoomInProgress": "Quitter la salle…",
     "leaveRoomHint": "En attente de la confirmation de la déconnexion de votre radio. Cela peut prendre quelques secondes sur le maillage.",
-    "leaveRoomFailed": "Impossible de quitter la salle"
+    "leaveRoomFailed": "Impossible de quitter la salle",
+    "membersHeading": "Bénéficiares",
+    "membersRecognizedHeading": "Affiches reconnues",
+    "membersRecognizedEmpty": "Pas encore d'affiches reconnues dans cette salle.",
+    "membersAclHeading": "Contrôle d'accès (ACL)",
+    "membersAclEmpty": "Aucune entrée ACL retournée. La télécommande « get acl » est souvent en série uniquement sur le micrologiciel de la pièce.",
+    "membersAclRemoteHint": "La liste ACL peut être vide sur la radio même lorsque les utilisateurs y ont accès. Utilisez USB série ou setperm dans Gérer ci-dessous.",
+    "membersRefreshAcl": "Actualiser ACL",
+    "membersAclLoading": "Chargement de l'ACL…",
+    "membersAclLastFetched": "ACL récupéré {{time}}",
+    "membersAclFetchFailed": "Impossible de télécharger"
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",

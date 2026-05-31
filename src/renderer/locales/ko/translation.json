@@ -2004,7 +2004,17 @@
     "leavingRoom": "떠나기",
     "leaveRoomInProgress": "방을 나가는 중…",
     "leaveRoomHint": "라디오에서 로그아웃을 확인하는 중입니다. 메시에 몇 초 정도 걸릴 수 있습니다.",
-    "leaveRoomFailed": "자리를 비울 수 없음"
+    "leaveRoomFailed": "자리를 비울 수 없음",
+    "membersHeading": "회원 디렉토리",
+    "membersRecognizedHeading": "인정받은 포스터",
+    "membersRecognizedEmpty": "이 방에 아직 인식된 포스터가 없습니다.",
+    "membersAclHeading": "액세스 제어 (ACL)",
+    "membersAclEmpty": "반환된 ACL 항목이 없습니다. 원격 `GET ACL` 은 종종 룸 펌웨어에서 직렬 전용입니다.",
+    "membersAclRemoteHint": "ACL 목록은 사용자가 액세스할 수 있는 경우에도 라디오를 통해 비어 있을 수 있습니다. 아래 관리에서 USB 시리얼 또는 setperm을 사용하십시오.",
+    "membersRefreshAcl": "ACL 새로 고침",
+    "membersAclLoading": "ACL 로드 중...",
+    "membersAclLastFetched": "ACL 조회 {{time}}",
+    "membersAclFetchFailed": "가져올 수 없음"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

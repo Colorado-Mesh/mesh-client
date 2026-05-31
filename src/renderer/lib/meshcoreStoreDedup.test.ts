@@ -161,6 +161,59 @@ describe('meshcoreStoreDedup', () => {
     expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(1);
   });
 
+  it('merges optimistic room post ack on exact dedupe key', () => {
+    const roomId = 0xac200e59;
+    const authorId = 0x44;
+    const sentAt = 1_700_000_003_000;
+
+    const optimistic = {
+      sender_id: authorId,
+      sender_name: 'Me',
+      payload: 'wave',
+      meshcoreDedupeKey: 'wave',
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: sentAt,
+      status: 'sending' as const,
+      roomServerId: roomId,
+      to: roomId,
+    };
+    upsertMeshcoreMessageWithDedup(ID, optimistic);
+
+    const acked = { ...optimistic, status: 'acked' as const, packetId: 0xdeadbeef };
+    const result = upsertMeshcoreMessageWithDedup(ID, acked);
+
+    expect(result.inserted).toBe(false);
+    expect(result.message.status).toBe('acked');
+    expect(result.message.packetId).toBe(0xdeadbeef);
+    expect(useMessageStore.getState().messages[ID]?.[result.canonicalId]?.status).toBe('acked');
+  });
+
+  it('merges optimistic room post failed on exact dedupe key', () => {
+    const roomId = 0xac200e59;
+    const authorId = 0x55;
+    const sentAt = 1_700_000_004_000;
+
+    const optimistic = {
+      sender_id: authorId,
+      sender_name: 'Me',
+      payload: 'oops',
+      meshcoreDedupeKey: 'oops',
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: sentAt,
+      status: 'sending' as const,
+      roomServerId: roomId,
+      to: roomId,
+    };
+    upsertMeshcoreMessageWithDedup(ID, optimistic);
+
+    const failed = { ...optimistic, status: 'failed' as const, error: 'timeout' };
+    const result = upsertMeshcoreMessageWithDedup(ID, failed);
+
+    expect(result.inserted).toBe(false);
+    expect(result.message.status).toBe('failed');
+    expect(result.message.error).toBe('timeout');
+  });
+
   it('merges event-131 replay with live event-7 room post within skew window', () => {
     const roomId = 0xac200e59;
     const authorId = 0x33;

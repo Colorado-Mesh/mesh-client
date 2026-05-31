@@ -2004,7 +2004,17 @@
     "leavingRoom": "Verlassen",
     "leaveRoomInProgress": "Raum verlassen...",
     "leaveRoomHint": "Warten auf die Bestätigung der Abmeldung durch Ihr Funkgerät. Dies kann einige Sekunden über dem Netz dauern.",
-    "leaveRoomFailed": "Raum konnte nicht verlassen werden"
+    "leaveRoomFailed": "Raum konnte nicht verlassen werden",
+    "membersHeading": "Mitglieder",
+    "membersRecognizedHeading": "Anerkannte Plakate",
+    "membersRecognizedEmpty": "Noch keine anerkannten Poster in diesem Raum.",
+    "membersAclHeading": "Access Control List (ACL)",
+    "membersAclEmpty": "Es wurden keine ACL-Einträge zurückgegeben. Remote- \"get acl\" ist oft nur seriell auf der Raum-Firmware.",
+    "membersAclRemoteHint": "Die ACL-Liste kann über das Radio leer sein, auch wenn Benutzer Zugriff haben. Verwenden Sie USB seriell oder setperm in Verwalten unten.",
+    "membersRefreshAcl": "ACL aktualisieren",
+    "membersAclLoading": "ACL wird geladen...",
+    "membersAclLastFetched": "ACL abgerufen {{time}}",
+    "membersAclFetchFailed": "ACL konnte nicht abgerufen werden"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

@@ -2549,6 +2549,7 @@ function AppContent({
                                 meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}
                                 meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
                                 onClearCliHistory={meshcorePanelActions.clearCliHistory}
+                                onMessageNode={handleMessageNode}
                               />
                             </div>
                           </Suspense>

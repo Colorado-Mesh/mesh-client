@@ -2004,7 +2004,17 @@
     "leavingRoom": "办公室",
     "leaveRoomInProgress": "正在离开房间……",
     "leaveRoomHint": "正在等待您的收音机确认注销。这可能需要几秒钟的时间。",
-    "leaveRoomFailed": "出不去了"
+    "leaveRoomFailed": "出不去了",
+    "membersHeading": "成员名字",
+    "membersRecognizedHeading": "公认的海报",
+    "membersRecognizedEmpty": "这个房间里还没有公认的海报。",
+    "membersAclHeading": "访问控制(ACL)",
+    "membersAclEmpty": "未返回任何ACL条目。远程“get acl”通常仅在房间固件上串行。",
+    "membersAclRemoteHint": "即使用户有访问权限，无线电中的ACL列表也可能为空。在下面的“管理”中使用USB串行或setperm。",
+    "membersRefreshAcl": "刷新ACL",
+    "membersAclLoading": "正在加载ACL…",
+    "membersAclLastFetched": "ACL 已于 {{time}} 获取",
+    "membersAclFetchFailed": "无法获取"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

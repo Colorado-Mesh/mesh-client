@@ -2004,7 +2004,17 @@
     "leavingRoom": "Opuszczając",
     "leaveRoomInProgress": "Opuszczanie pokoju…",
     "leaveRoomHint": "Oczekiwanie na potwierdzenie wylogowania przez radio. Może to potrwać kilka sekund.",
-    "leaveRoomFailed": "Nie można opuścić pokoju"
+    "leaveRoomFailed": "Nie można opuścić pokoju",
+    "membersHeading": "Członkowie",
+    "membersRecognizedHeading": "Rozpoznane plakaty",
+    "membersRecognizedEmpty": "Brak rozpoznanych plakatów w tym pokoju.",
+    "membersAclHeading": "Kontrola dostępu (ACL)",
+    "membersAclEmpty": "Nie zwrócono żadnych wpisów ACL. Zdalne „get acl” jest często tylko szeregowe w firmware pokoju.",
+    "membersAclRemoteHint": "Lista ACL może być pusta przez radio, nawet jeśli użytkownicy mają do niej dostęp. Użyj portu szeregowego USB lub setperm w sekcji Zarządzaj poniżej.",
+    "membersRefreshAcl": "Odśwież listę ACL",
+    "membersAclLoading": "Ładowanie listy ACL…",
+    "membersAclLastFetched": "Pobrano ACL {{time}}",
+    "membersAclFetchFailed": "Nie można pobrać"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",
